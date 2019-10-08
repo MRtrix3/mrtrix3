@@ -255,7 +255,7 @@ namespace MR
 
         void ODF::draw (const Projection& projection, bool is_3D, int, int)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (is_3D)
             return;
 
@@ -369,7 +369,7 @@ namespace MR
             gl::Disable (gl::DEPTH_TEST);
             gl::DepthMask (gl::FALSE_);
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
 
           update_preview();
         }

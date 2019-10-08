@@ -27,7 +27,7 @@ namespace MR {
     template <class VarArrayType, class CountArrayType>
     default_type welch_satterthwaite (const VarArrayType& variances, const CountArrayType& counts)
     {
-      assert (variances.size() == counts.size());
+      assert (size_t(variances.size()) == size_t(counts.size()));
       default_type numerator = 0.0, denominator = 0.0;
       for (size_t i = 0; i != size_t(variances.size()); ++i) {
         const default_type ks2 = (1.0 / (counts[i] - 1)) * variances[i];

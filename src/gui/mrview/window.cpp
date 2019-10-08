@@ -241,7 +241,7 @@ namespace MR
         show_FPS (false),
         current_option (0) {
           main = this;
-          GUI::App::set_main_window (this);
+          GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
 
           setDockOptions (AllowTabbedDocks | VerticalTabs);
@@ -1465,7 +1465,7 @@ namespace MR
 
       void Window::paintGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
@@ -1474,9 +1474,9 @@ namespace MR
 
         GL_CHECK_ERROR;
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         mode->paintGL();
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
 
         if (show_FPS) {
@@ -1517,13 +1517,13 @@ namespace MR
         glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 
       void Window::initGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL::init ();
 
         font.initGL();
@@ -1536,7 +1536,7 @@ namespace MR
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 

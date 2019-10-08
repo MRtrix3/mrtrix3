@@ -9,7 +9,9 @@ if [ $# == 0 ]; then
   for lib_path in lib/mrtrix3/*; do
     if [[ -d ${lib_path} && ! ( ${lib_path} == *"__pycache__"* ) ]]; then
       for src_file in ${lib_path}/*.py; do
-        tests="$tests $src_file"
+        if [[ -f ${src_file} ]]; then
+          tests="$tests $src_file"
+        fi
       done
     elif [[ ${lib_path} == *.py ]]; then
       tests="$tests $lib_path"

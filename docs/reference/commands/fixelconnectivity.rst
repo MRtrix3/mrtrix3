@@ -6,7 +6,7 @@ fixelconnectivity
 Synopsis
 --------
 
-Generate one or more fixel-fixel connectivity matrices
+Generate a fixel-fixel connectivity matrix
 
 Usage
 --------
@@ -17,22 +17,15 @@ Usage
 
 -  *fixel_directory*: the directory containing the fixels between which connectivity will be quantified
 -  *tracks*: the tracks used to determine fixel-fixel connectivity
--  *matrix*: the output fixel-fixel connectivity matrix
+-  *matrix*: the output fixel-fixel connectivity matrix directory path
 
 Description
 -----------
 
-If this command is used within a typical Fixel-Based Analysis (FBA) pipeline, one would be expected to utilise the -smoothing command-line option, as this will provide the matrix by which fixel data should be smoothed in template space, as opposed to statistical testing which would typically use the full output connectivity matrix
+This command will generate a directory containing three images, which encodes the fixel-fixel connectivity matrix. Documentation regarding this format and how to use it will come in the future.
 
 Options
 -------
-
-Options for generating an additional connectivity matrix
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-smoothing path** generate a second fixel-fixel connectivity matrix that incorporates both streamlines-based connectivity and spatial distance, which is typically used for smoothing fixel-based data
-
--  **-fwhm value** manually specify the full-width half-maximum of the fixel data smoothing matrix (default: 10mm)
 
 Options that influence generation of the connectivity matrix / matrices
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

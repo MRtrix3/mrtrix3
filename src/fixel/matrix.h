@@ -31,7 +31,9 @@ namespace MR
     {
 
 
-      using index_type = uint32_t;
+      using index_image_type = uint64_t;
+      using fixel_index_type = uint32_t;
+      using count_type = uint32_t;
       using connectivity_value_type = float;
 
 
@@ -41,24 +43,24 @@ namespace MR
       class InitElement
       { NOMEMALIGN
         public:
-          using ValueType = index_type;
+          using ValueType = fixel_index_type;
           InitElement() :
-              fixel_index (std::numeric_limits<index_type>::max()),
+              fixel_index (std::numeric_limits<fixel_index_type>::max()),
               track_count (0) { }
-          InitElement (const index_type fixel_index) :
+          InitElement (const fixel_index_type fixel_index) :
               fixel_index (fixel_index),
               track_count (1) { }
-          InitElement (const index_type fixel_index, const ValueType track_count) :
+          InitElement (const fixel_index_type fixel_index, const ValueType track_count) :
               fixel_index (fixel_index),
               track_count (track_count) { }
           InitElement (const InitElement&) = default;
           FORCE_INLINE InitElement& operator++() { track_count++; return *this; }
           FORCE_INLINE InitElement& operator= (const InitElement& that) { fixel_index = that.fixel_index; track_count = that.track_count; return *this; }
-          FORCE_INLINE index_type index() const { return fixel_index; }
+          FORCE_INLINE fixel_index_type index() const { return fixel_index; }
           FORCE_INLINE ValueType value() const { return track_count; }
           FORCE_INLINE bool operator< (const InitElement& that) const { return fixel_index < that.fixel_index; }
         private:
-          index_type fixel_index;
+          fixel_index_type fixel_index;
           ValueType track_count;
       };
 
@@ -71,13 +73,11 @@ namespace MR
           using BaseType = vector<InitElement>;
           InitFixel() :
               track_count (0) { }
-          void add (const vector<index_type>& indices);
-          index_type count() const { return track_count; }
+          void add (const vector<fixel_index_type>& indices);
+          count_type count() const { return track_count; }
         private:
-          index_type track_count;
+          count_type track_count;
       };
-
-
 
 
 
@@ -103,6 +103,7 @@ namespace MR
 
 
 
+
       // With the internally normalised CFE expression, want to store a
       //   multiplicative factor per fixel
       class NormFixel : public vector<NormElement>
@@ -122,137 +123,110 @@ namespace MR
             norm_multiplier = connectivity_value_type (0);
             for (const auto& c : *this)
               norm_multiplier += c.value();
-            norm_multiplier = connectivity_value_type (1) / norm_multiplier;
+            norm_multiplier = norm_multiplier ? (connectivity_value_type (1) / norm_multiplier) : connectivity_value_type(0);
+          }
+          void normalise (const connectivity_value_type sum) {
+            norm_multiplier = sum ? (connectivity_value_type(1) / sum) : connectivity_value_type(0);
           }
           connectivity_value_type norm_multiplier;
       };
 
 
 
+
+
+
       // Different types are used depending on whether the connectivity matrix
       //   is in the process of being built, or whether it has been normalised
+      // TODO Revise
       using init_matrix_type = vector<InitFixel>;
-      using norm_matrix_type = vector<NormFixel>;
+
+
+
 
 
 
       // Generate a fixel-fixel connectivity matrix
       init_matrix_type generate (
           const std::string& track_filename,
-          Image<index_type>& index_image,
+          Image<fixel_index_type>& index_image,
           Image<bool>& fixel_mask,
           const float angular_threshold);
 
 
 
-      // From an initial fixel-fixel connectivity matrix, generate a
-      //   "normalised" connectivity matrix, where the entries are
-      //   floating-point and range from 0.0 to 1.0, and weak
-      //   entries have been culled from the matrix.
-      // Additionally, if required:
-      //   - Convert fixel indices based on a lookup table
-      //   - Generate a second connectivity matrix for the purposes
-      //     of smoothing, which additionally modulates the connection
-      //     weights by a spatial distance factor (and re-applies the
-      //     connectivity threshold after doing so)
-      // Note that this function will erase data from the input
-      //   initiali connectivity matrix as it processes, in order to
-      //   free up RAM for storing the output matrices.
-      void normalise (
-          init_matrix_type& init_matrix,
-          Image<index_type>& index_image,
-          IndexRemapper index_mapper,
-          const float connectivity_threshold,
-          norm_matrix_type& normalised_matrix,
-          const float smoothing_fwhm,
-          norm_matrix_type& smoothing_matrix);
 
 
 
+      // New code for handling load/save of fixel-fixel connectivity matrix
+      // Use something akin to the fixel directory format, with a sub-directory
+      //   within an existing fixel directory containing the following data:
+      // - index.mif: Similar to the index image in the fixel directory format,
+      //   but has dimensions Nx1x1x2, where:
+      //     - N is the number of fixels in the fixel template
+      //     - The first volume contains the number of connected fixels for that fixel
+      //     - The second volume contains the offset of the first connected fixel for that fixel
+      // - connectivity.mif: Floating-point image of dimension Cx1x1, where C is the total
+      //   number of fixel-fixel connections stored in the entire matrix. Each value should be
+      //   between 0.0 and 1.0, corresponding to the fraction of streamlines passing through
+      //   the fixel that additionally pass through some other fixel.
+      // - fixel.mif: Unsigned integer image of dimension Cx1x1, where C is the total number of
+      //   fixel-fixel connections stored in the entire matrix. Each value indexes the
+      //   fixel to which the fixel-fixel connection refers.
+      //
+      // In order to avoid duplication of memory usage, the writing function should
+      //   perform, for each fixel in turn:
+      // - Normalisation of the matrix
+      // - Writing to the three images
+      // - Erasing the memory used for that matrix in the initial building
 
-      // Template functions to save/load sparse matrices to/from file
-      template <class FixelType>
-      void save (vector<FixelType>& data, const std::string& filepath)
-      {
-        File::OFStream out (filepath);
-        ProgressBar progress ("Saving fixel-fixel connectivity matrix to file \"" + filepath + "\"", data.size());
-        for (const auto& f : data) {
-          for (size_t i = 0; i != f.size(); ++i) {
-            if (i)
-              out << ",";
-            out << f[i].index() << ":" << f[i].value();
-          }
-          out << "\n";
-          ++progress;
-        }
-      }
+      void normalise_and_write (init_matrix_type& matrix,
+                                const connectivity_value_type threshold,
+                                const std::string& path,
+                                const KeyValues& keyvals = KeyValues());
 
-      template <class FixelType>
-      void load (const std::string& filepath, vector<FixelType>& data)
-      {
-        data.clear();
-        std::ifstream in (filepath);
-        ProgressBar progress ("Loading fixel-fixel connectivity matrix from file \"" + filepath + "\"");
-        for (std::string line; std::getline (in, line); ) {
-          data.emplace_back (FixelType());
-          auto entries = MR::split (line, ",");
-          for (const auto& entry : entries) {
-            auto pair = MR::split (entry, ":");
-            if (pair.size() != 2) {
-              Exception e ("Malformed sparse matrix in file \"" + filepath + "\": does not consist of comma-separated pair");
-              e.push_back ("Line: \"" + line + "\"");
-              e.push_back ("Entry: \"" + entry + "\"");
-              throw e;
-            }
-            try {
-              data[data.size()-1].emplace_back (typename FixelType::ElementType (to<index_type>(pair[0]), to<typename FixelType::ElementType::ValueType>(pair[1])));
-            } catch (Exception& e) {
-              e.push_back ("Malformed sparse matrix in file \"" + filepath + "\": could not convert comma-separated pair to numerical values");
-              e.push_back ("Line: \"" + line + "\"");
-              e.push_back ("Entry: \"" + entry + "\"");
-              throw e;
-            }
-          }
-          ++progress;
-        }
-      }
 
-      template <class FixelType>
-      void load (const std::string& filepath, const IndexRemapper& index_remapper, vector<FixelType>& data)
-      {
-        data.clear();
-        std::ifstream in (filepath);
-        index_type counter = 0;
-        ProgressBar progress ("Loading fixel-fixel connectivity matrix \"" + filepath + "\"");
-        for (std::string line; std::getline (in, line); ) {
-          data.emplace_back (FixelType());
-          const index_type internal_index = index_remapper.e2i (counter);
-          if (internal_index != index_remapper.invalid) {
-            auto entries = MR::split (line, ",");
-            for (const auto& entry : entries) {
-              auto pair = MR::split (entry, ":");
-              if (pair.size() != 2) {
-                Exception e ("Malformed sparse matrix in file \"" + filepath + "\": does not consist of comma_separated pair");
-                e.push_back ("Line: \"" + line + "\"");
-                e.push_back ("Entry: \"" + entry + "\"");
-                throw e;
-              }
-              try {
-                const index_type external_index = to<index_type>(pair[0]);
-                const typename FixelType::ElementType::ValueType value = to<typename FixelType::ElementType::ValueType>(pair[1]);
-                data[data.size()-1].emplace_back (typename FixelType::ElementType (index_remapper.e2i (external_index), value));
-              } catch (Exception& e) {
-                e.push_back ("Malformed sparse matrix in file \"" + filepath + "\": could not convert comma-separated pair to numerical values");
-                e.push_back ("Line: \"" + line + "\"");
-                e.push_back ("Entry: \"" + entry + "\"");
-                throw e;
-              }
-            }
-          }
-          ++counter;
-          ++progress;
-        }
-      }
+
+      // Wrapper class for reading the connectivity matrix from the filesystem
+      class Reader
+      { MEMALIGN(Reader)
+
+        public:
+          Reader (const std::string& path, const Image<bool>& mask);
+          Reader (const std::string& path);
+
+          // TODO Entirely feasible to construct this thing using scratch storage;
+          //   would need two passes over the pre-normalised data in order to calculate
+          //   the number of fixel-fixel connections, but it could be done
+          //
+          // It would require restoration of the old Matrix::normalise() function,
+          //   but modification to write out to scratch index / fixel / value images
+          //   rather than "norm_matrix_type"
+          //
+          // This would permit usage of fixelcfestats with tractogram as input
+          //
+          // TODO Could pre-exponentiation of connectivity values be done beforehand using an mrcalc call?
+          // Expect fixelcfestats to be provided with a data file, from which it will find the
+          //   index & fixel images
+
+          NormFixel operator[] (const size_t index) const;
+
+          // TODO Define iteration constructs?
+
+          size_t size() const { return index_image.size (0); }
+          size_t size (const size_t) const;
+
+        protected:
+          const std::string directory;
+          // Not to be manipulated directly; need to copy in order to ensure thread-safety
+          Image<index_image_type> index_image;
+          Image<fixel_index_type> fixel_image;
+          Image<connectivity_value_type> value_image;
+          Image<bool> mask_image;
+
+
+      };
+
 
 
     }

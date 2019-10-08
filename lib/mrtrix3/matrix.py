@@ -1,12 +1,18 @@
 # Various utility functions related to vector and matrix data
 
+
+
+import re
+from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
+
+
+
 _TRANSFORM_LAST_ROW = [ 0.0, 0.0, 0.0, 1.0 ]
 
 
 
 # Dot product between two vectors / matrices
 def dot(input_a, input_b): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   if not input_a:
     if input_b:
       raise MRtrixError('Dimension mismatch (0 vs. ' + str(len(input_b)) + ')')
@@ -14,10 +20,10 @@ def dot(input_a, input_b): #pylint: disable=unused-variable
   if is_2d_matrix(input_a):
     if not is_2d_matrix(input_b):
       raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
-    #if len(input_a[0]) != len(input_b):
-    #  raise MRtrixError('Invalid dimensions for matrix dot product(' + \
-    #                        str(len(input_a)) + 'x' + str(len(input_a[0])) + ' vs. ' + \
-    #                        str(len(input_b)) + 'x' + str(len(input_b[0])) + ')')
+    if len(input_a[0]) != len(input_b):
+      raise MRtrixError('Invalid dimensions for matrix dot product(' + \
+                            str(len(input_a)) + 'x' + str(len(input_a[0])) + ' vs. ' + \
+                            str(len(input_b)) + 'x' + str(len(input_b[0])) + ')')
     return [[sum(x*y for x,y in zip(a_row,b_col)) for b_col in zip(*input_b)] for a_row in input_a]
   if is_2d_matrix(input_b):
     raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
@@ -61,8 +67,6 @@ def transpose(data): #pylint: disable=unused-variable
 # Load a text file containing numeric data
 #   (can be a different number of entries in each row)
 def load_numeric(filename, **kwargs):
-  import re
-
   dtype = kwargs.pop('dtype', float)
   delimiter = kwargs.pop('delimiter', ' ')
   comments = kwargs.pop('comments', '#')
@@ -98,7 +102,6 @@ def load_numeric(filename, **kwargs):
 
 # Load a text file containing specifically matrix data
 def load_matrix(filename, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   data = load_numeric(filename, **kwargs)
   columns = len(data[0])
   for line in data[1:]:
@@ -110,13 +113,13 @@ def load_matrix(filename, **kwargs): #pylint: disable=unused-variable
 
 # Load a text file containing specifically affine spatial transformation data
 def load_transform(filename, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   data = load_matrix(filename, **kwargs)
   if len(data) == 4:
     if any(a!=b for a, b in zip(data[3], _TRANSFORM_LAST_ROW)):
       raise MRtrixError('File "' + filename + '" does not contain a valid transform (fourth line contains values other than "0,0,0,1")')
-    data = data[0:3]
-  elif len(data) != 3:
+  elif len(data) == 3:
+    data.append(_TRANSFORM_LAST_ROW)
+  else:
     raise MRtrixError('File "' + filename + '" does not contain a valid transform (must contain 3 or 4 lines)')
   if len(data[0]) != 4:
     raise MRtrixError('File "' + filename + '" does not contain a valid transform (must contain 4 columns)')
@@ -126,7 +129,6 @@ def load_transform(filename, **kwargs): #pylint: disable=unused-variable
 
 # Load a text file containing specifically vector data
 def load_vector(filename, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   data = load_matrix(filename, **kwargs)
   if len(data) == 1:
     return data[0]
@@ -139,8 +141,6 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
 
 # Save numeric data to a text file
 def save_numeric(filename, data, **kwargs):
-  from mrtrix3 import COMMAND_HISTORY_STRING
-
   fmt = kwargs.pop('fmt', '%.14e')
   delimiter = kwargs.pop('delimiter', ' ')
   newline = kwargs.pop('newline', '\n')

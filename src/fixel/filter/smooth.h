@@ -19,6 +19,9 @@
 #include "fixel/matrix.h"
 #include "fixel/filter/base.h"
 
+#define DEFAULT_FIXEL_SMOOTHING_FWHM 10.0
+#define DEFAULT_FIXEL_SMOOTHING_MINWEIGHT 0.01
+
 namespace MR
 {
   namespace Fixel
@@ -35,12 +38,12 @@ namespace MR
        *
        * Typical usage:
        * \code
-       * auto input = Image<float>::open (argument[0]);
-       * Fixel::Matrix::norm_matrix_type matrix;
-       * Fixel::Matrix::load (argument[1], matrix);
-       * Fixel::Filter::Smooth smooth_filter (matrix);
-       * auto output = Image::create<float> (argument[2], input);
-       * smooth_filter (input, output);
+       * auto fixel_index = Image<index_type>::open (index_image_path);
+       * auto fixel_data_in = Image<float>::open (fixel_data_path);
+       * auto fixel_matrix = Fixel::Matrix::Reader (fixel_matrix_path);
+       * Fixel::Filter::Smooth smooth_filter (fixel_index, fixel_matrix);
+       * auto fixel_data_out = Image::create<float> (fixel_data_out, fixel_data_in);
+       * smooth_filter (fixel_data_in, fixel_data_out);
        *
        * \endcode
        */
@@ -49,13 +52,31 @@ namespace MR
       { MEMALIGN (Smooth)
 
         public:
-          Smooth (const Fixel::Matrix::norm_matrix_type& matrix) :
-              matrix (matrix) { }
+          Smooth (Image<index_type> index_image,
+                  const Matrix::Reader& matrix,
+                  const Image<bool>& mask_image,
+                  const float smoothing_fwhm,
+                  const float smoothing_threshold);
+          Smooth (Image<index_type> index_image,
+                  const Matrix::Reader& matrix,
+                  const Image<bool>& mask_image);
+          Smooth (Image<index_type> index_image,
+                  const Matrix::Reader& matrix,
+                  const float smoothing_fwhm,
+                  const float smoothing_threshold);
+          Smooth (Image<index_type> index_image,
+                  const Matrix::Reader& matrix);
 
-          void operator() (Image<float>& input, Image<float>& output) const;
+          void set_fwhm (const float fwhm);
+
+          void operator() (Image<float>& input, Image<float>& output) const override;
 
         protected:
-          const Fixel::Matrix::norm_matrix_type& matrix;
+          Image<bool> mask_image;
+          Matrix::Reader matrix;
+          vector<Eigen::Vector3f> fixel_positions;
+          float stdev, gaussian_const1, gaussian_const2, threshold;
+
       };
     //! @}
 

@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "gui/gui.h"
 #include "gui/opengl/gl.h"
 #include "file/config.h"
 
@@ -24,13 +25,23 @@ namespace MR
     namespace GL
     {
 
+      Area* glwidget = nullptr;
+
+#ifndef NDEBUG
+      void __assert_context_is_current (QWidget* glarea) {
+        auto __current_context = Context::current();
+        auto __expected_context = Context::get (glarea ? glarea : glwidget);
+        assert (__current_context == __expected_context);
+      }
+#endif
+
 
       void set_default_context () {
         //CONF option: VSync
         //CONF default: 0 (false)
         //CONF Whether the screen update should synchronise with the monitor's
         //CONF vertical refresh (to avoid tearing artefacts).
-        
+
         //CONF option: NeedOpenGLCoreProfile
         //CONF default: 1 (true)
         //CONF Whether the creation of an OpenGL 3.3 context requires it to be
@@ -54,7 +65,7 @@ namespace MR
           f.setVersion (3,3);
           f.setProfile (GL::Format::CoreProfile);
         }
-        
+
         f.setDepthBufferSize (24);
         f.setRedBufferSize (8);
         f.setGreenBufferSize (8);
@@ -65,7 +76,7 @@ namespace MR
         f.setSwapInterval (swap_interval);
 
         int nsamples = File::Config::get_int ("MSAA", 0);
-        if (nsamples > 1) 
+        if (nsamples > 1)
           f.setSamples (nsamples);
 
         GL::Format::setDefaultFormat (f);
@@ -81,7 +92,7 @@ namespace MR
         INFO ("GL renderer:  " + std::string ( (const char*) gl::GetString (gl::RENDERER)));
         INFO ("GL version:   " + std::string ( (const char*) gl::GetString (gl::VERSION)));
         INFO ("GL vendor:    " + std::string ( (const char*) gl::GetString (gl::VENDOR)));
-        
+
         GLint gl_version (0), gl_version_major (0);
         gl::GetIntegerv (gl::MAJOR_VERSION, &gl_version_major);
         gl::GetIntegerv (gl::MINOR_VERSION, &gl_version);
@@ -109,7 +120,7 @@ namespace MR
         */
       }
 
-      const char* ErrorString (GLenum errorcode) 
+      const char* ErrorString (GLenum errorcode)
       {
         switch (errorcode) {
           case gl::INVALID_ENUM: return "invalid value for enumerated argument";
