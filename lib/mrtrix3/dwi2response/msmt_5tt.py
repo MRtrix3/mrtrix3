@@ -1,3 +1,9 @@
+import os, shutil
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('msmt_5tt', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -17,7 +23,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.out_wm)
   app.check_output_path(app.ARGS.out_gm)
   app.check_output_path(app.ARGS.out_csf)
@@ -25,7 +30,6 @@ def check_output_paths(): #pylint: disable=unused-variable
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  from mrtrix3 import app, path, run
   run.command('mrconvert ' + path.from_user(app.ARGS.in_5tt) + ' ' + path.to_scratch('5tt.mif'))
   if app.ARGS.dirs:
     run.command('mrconvert ' + path.from_user(app.ARGS.dirs) + ' ' + path.to_scratch('dirs.mif') + ' -strides 0,0,0,1')
@@ -38,15 +42,12 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import os, shutil
-  from mrtrix3 import app, image, MRtrixError, path, run
-
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...
 
   # Verify input 5tt image
   stderr_5ttcheck = run.command('5ttcheck 5tt.mif').stderr
-  if stderr_5ttcheck:
+  if '[WARNING]' in stderr_5ttcheck:
     app.warn('Command 5ttcheck indicates minor problems with provided input 5TT image \'' + app.ARGS.in_5tt + '\':')
     for line in stderr_5ttcheck.splitlines():
       app.warn(line)

@@ -25,6 +25,8 @@
 
 #define MRTRIX_USE_ZSTATISTIC_LOOKUP
 
+//#define GLM_ALL_STATS_DEBUG
+
 namespace MR
 {
   namespace Math
@@ -217,7 +219,8 @@ namespace MR
 
         matrix_type stdev (const matrix_type& measurements, const matrix_type& design)
         {
-          const matrix_type sse = (measurements - design * solve_betas (measurements, design)).colwise().squaredNorm();
+          const matrix_type residuals = measurements - design * solve_betas (measurements, design);
+          const matrix_type sse = residuals.colwise().squaredNorm();
           return (sse.array() / value_type(design.rows()-Math::rank (design))).sqrt();
         }
 
@@ -273,9 +276,7 @@ namespace MR
 
 
 
-// TODO all_stats() needs to be updated to reflect heteroscedasticity
 
-//#define GLM_ALL_STATS_DEBUG
 
         void all_stats (const matrix_type& measurements,
                         const matrix_type& design,
@@ -292,7 +293,7 @@ namespace MR
           //   that's being displayed by that outer looping function
           std::unique_ptr<ProgressBar> progress;
           if (measurements.cols() > 1)
-            progress.reset (new ProgressBar ("Calculating basic properties of default permutation", 6));
+            progress.reset (new ProgressBar ("Calculating basic properties of default permutation", 5));
 #endif
           betas = solve_betas (measurements, design);
 #ifdef GLM_ALL_STATS_DEBUG
@@ -332,9 +333,9 @@ namespace MR
             ++*progress;
 #endif
           if (variance_groups.size())
-            std_effect_size = abs_effect_size.array().colwise() / stdev.array().col(0);
-          else
             std_effect_size = matrix_type::Constant (measurements.cols(), hypotheses.size(), NaN);
+          else
+            std_effect_size = abs_effect_size.array().colwise() / stdev.transpose().array().col(0);
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max " << std_effect_size.array().maxCoeff() << "\n";
 #endif
@@ -505,14 +506,14 @@ namespace MR
           // eval() calls necessary for older versions of Eigen / compiler to work:
           //   can't seem to map Eigen template result to const matrix_type& as the Math::pinv() input
           // TODO See if some better template trickery can be done
-          const matrix_type D = Math::pinv ((design.transpose() * design).eval());
+          const matrix_type D = (design.transpose() * design).inverse();
           // Note: Cu is transposed with respect to how contrast matrices are stored elsewhere
           const matrix_type Cu = Eigen::FullPivLU<matrix_type> (c).kernel();
-          const matrix_type inv_cDc = Math::pinv ((c * D * c.transpose()).eval());
+          const matrix_type inv_cDc = (c * D * c.transpose()).inverse();
           // Note: Cv is transposed with respect to convention just as Cu is
           const matrix_type Cv = Cu - c.transpose() * inv_cDc * c * D * Cu;
           const matrix_type X = design * D * c.transpose() * inv_cDc;
-          const matrix_type Z = design * D * Cv * Math::pinv ((Cv.transpose() * D * Cv).eval());
+          const matrix_type Z = design * D * Cv * (Cv.transpose() * D * Cv).inverse();
           return Partition (X, Z);
         }
 

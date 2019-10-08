@@ -1,3 +1,9 @@
+import os, shutil
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, matrix, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('tournier', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -14,7 +20,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output)
 
 
@@ -30,9 +35,6 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import os, shutil
-  from mrtrix3 import app, image, matrix, MRtrixError, path, run
-
   lmax_option = ''
   if app.ARGS.lmax:
     lmax_option = ' -lmax ' + app.ARGS.lmax
@@ -79,8 +81,9 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrcalc ' + prefix + 'first_peaks.mif -sqrt 1 ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div -sub 2 -pow -mult '+ prefix + 'CF.mif')
     app.cleanup(prefix + 'first_peaks.mif')
     app.cleanup(prefix + 'second_peaks.mif')
+    voxel_count = int(image.statistic(prefix + 'CF.mif', 'count'))
     # Select the top-ranked voxels
-    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(app.ARGS.sf_voxels) + ' ' + prefix + 'SF.mif')
+    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(min([app.ARGS.sf_voxels, voxel_count])) + ' ' + prefix + 'SF.mif')
     # Generate a new response function based on this selection
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
     app.cleanup(prefix + 'first_dir.mif')
@@ -102,7 +105,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Select a greater number of top single-fibre voxels, and dilate (within bounds of initial mask);
     #   these are the voxels that will be re-tested in the next iteration
-    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(app.ARGS.iter_voxels) + ' - | maskfilter - dilate - -npass ' + str(app.ARGS.dilate) + ' | mrcalc mask.mif - -mult ' + prefix + 'SF_dilated.mif')
+    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(min([app.ARGS.iter_voxels, voxel_count])) + ' - | maskfilter - dilate - -npass ' + str(app.ARGS.dilate) + ' | mrcalc mask.mif - -mult ' + prefix + 'SF_dilated.mif')
     app.cleanup(prefix + 'CF.mif')
 
     iteration += 1

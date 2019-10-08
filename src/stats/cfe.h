@@ -17,6 +17,7 @@
 #ifndef __stats_cfe_h__
 #define __stats_cfe_h__
 
+#include "types.h"
 #include "math/stats/typedefs.h"
 #include "stats/enhance.h"
 
@@ -35,13 +36,17 @@ namespace MR
 
     class CFE : public Stats::EnhancerBase { MEMALIGN (CFE)
       public:
-        CFE (const Fixel::Matrix::norm_matrix_type& connectivity_matrix,
-             const value_type dh, const value_type E, const value_type H);
+        CFE (const Fixel::Matrix::Reader& connectivity_matrix,
+             const value_type dh, const value_type E, const value_type H, const value_type C,
+             const bool norm);
         virtual ~CFE() { }
 
       protected:
-        const Fixel::Matrix::norm_matrix_type& connectivity_matrix;
-        const value_type dh, E, H;
+        Fixel::Matrix::Reader matrix;
+        const value_type dh, E, H, C;
+        const bool normalise;
+
+        mutable vector<value_type> h_pow_H;
 
         void operator() (in_column_type, out_column_type) const override;
     };

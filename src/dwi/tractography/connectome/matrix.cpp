@@ -197,6 +197,7 @@ void Matrix<T>::write_assignments (const std::string& path) const
   if (!track_assignments)
     throw Exception ("Cannot write streamline assignments to file as they were not stored during processing");
   File::OFStream stream (path);
+  stream << "# " << App::command_history_string << "\n";
   for (auto i = assignments_single.begin(); i != assignments_single.end(); ++i)
     stream << str(*i) << "\n";
   for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)

@@ -48,9 +48,7 @@ namespace MR
           + Argument ("size").type_float (0.0)
 
       + Option ("angle",
-            "set the maximum angle between successive steps: "
-            "default is chosen such that minimum radius of curvature is one voxel; "
-            "interpretation depends on order of integration (see Description).")
+            "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize)")
           + Argument ("theta").type_float (0.0)
 
       + Option ("minlength",

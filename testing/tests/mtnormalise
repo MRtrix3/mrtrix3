@@ -1,0 +1,2 @@
+mtnormalise -mask dwi2fod/msmt/mask.mif dwi2fod/msmt/wm.mif tmp_wm.mif dwi2fod/msmt/gm.mif tmp_gm.mif dwi2fod/msmt/csf.mif tmp_csf.mif -check_norm tmp_field.mif && testing_diff_image tmp_wm.mif mtnormalise/wm.mif -abs 1e-5 && testing_diff_image tmp_gm.mif mtnormalise/gm.mif -abs 1e-5 && testing_diff_image tmp_csf.mif mtnormalise/csf.mif -abs 1e-5 && testing_diff_image tmp_field.mif mtnormalise/field.mif -abs 1e-5 
+

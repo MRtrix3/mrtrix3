@@ -186,16 +186,21 @@ namespace MR
                                            matrix_type& output_enhanced)
       {
         assert (stats_calculator);
+        ProgressBar progress (std::string("Running GLM ") + (enhancer ? "and enhancement algorithm " : "") + "for default permutation", 4);
         output_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
         output_zstats    .resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
         output_enhanced  .resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
         const matrix_type default_shuffle (matrix_type::Identity (stats_calculator->num_inputs(), stats_calculator->num_inputs()));
+        ++progress;
+
         (*stats_calculator) (default_shuffle, output_statistics, output_zstats);
+        ++progress;
 
         if (enhancer)
           (*enhancer) (output_zstats, output_enhanced);
         else
           output_enhanced = output_statistics;
+        ++progress;
 
         if (empirical_enhanced.size())
           output_enhanced.array() /= empirical_enhanced.array();

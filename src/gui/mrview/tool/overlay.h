@@ -63,7 +63,7 @@ namespace MR
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void right_click_menu_slot (const QPoint&);
-            void volume_changed (int);
+            void onSetVolumeIndex ();
             void update_slot (int unused);
             void values_changed ();
             void upper_threshold_changed (int unused);
@@ -92,13 +92,13 @@ namespace MR
              QPushButton* hide_all_button;
              Model* image_list_model;
              QListView* image_list_view;
-             QLabel* volume_label;
-             SpinBox* volume_selecter;
              ColourMapButton* colourmap_button;
              AdjustButton *min_value, *max_value, *lower_threshold, *upper_threshold;
              QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
              InterpolateCheckBox* interpolate_check_box;
              QSlider *opacity_slider;
+             QGroupBox *volume_box;
+             GridLayout *volume_index_layout;
 
              void update_selection ();
              void updateGL() {
