@@ -29,8 +29,6 @@ Note that if the -mask option is used, the output fixel directory will still con
 
 In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
 
-In MRtrix3 statistical inference commands, when F-tests are performed, it is the square root of the F-statistic that is internally calculated and tracked. This is to ensure that statistical enhancement algorithms operate comparably for both t-test and F-test hypotheses. Any export of F-statistics to file will take the square of this internal value such that it is the actual F-statistic that is written to file. This approach may however have consequences in the control of statistical enhancement algorithms; for instance, if manually setting a cluster-forming threshold, this should be determined based on the value of sqrt(F).
-
 Options
 -------
 

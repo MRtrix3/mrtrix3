@@ -50,18 +50,6 @@ namespace MR
             "The contrast matrix must also reflect the presence of this additional column.";
 
 
-        const char* const sqrt_f_description =
-            "In MRtrix3 statistical inference commands, when F-tests are performed, "
-            "it is the square root of the F-statistic that is internally calculated and "
-            "tracked. This is to ensure that statistical enhancement algorithms operate "
-            "comparably for both t-test and F-test hypotheses. Any export of F-statistics "
-            "to file will take the square of this internal value such that it is the actual "
-            "F-statistic that is written to file. This approach may however have consequences "
-            "in the control of statistical enhancement algorithms; for instance, if manually "
-            "setting a cluster-forming threshold, this should be determined based on the "
-            "value of sqrt(F).";
-
-
         App::OptionGroup glm_options (const std::string& element_name)
         {
           using namespace App;
@@ -1243,4 +1231,3 @@ namespace MR
     }
   }
 }
-
