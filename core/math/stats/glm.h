@@ -40,7 +40,6 @@ namespace MR
 
 
         extern const char* const column_ones_description;
-        extern const char* const sqrt_f_description;
 
         App::OptionGroup glm_options (const std::string& element_name);
 

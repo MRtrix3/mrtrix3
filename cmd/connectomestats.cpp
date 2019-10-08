@@ -61,8 +61,7 @@ void usage ()
   SYNOPSIS = "Connectome group-wise statistics at the edge level using non-parametric permutation testing";
 
   DESCRIPTION
-      + Math::Stats::GLM::column_ones_description
-      + Math::Stats::GLM::sqrt_f_description;
+      + Math::Stats::GLM::column_ones_description;
 
 
   ARGUMENTS

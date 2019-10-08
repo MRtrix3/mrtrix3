@@ -48,8 +48,7 @@ void usage ()
     "statistical enhancement that occurs between the data; however family-wise error control "
     "will be used."
 
-  + Math::Stats::GLM::column_ones_description
-  + Math::Stats::GLM::sqrt_f_description;
+  + Math::Stats::GLM::column_ones_description;
 
 
   ARGUMENTS
@@ -274,4 +273,3 @@ void run()
 
   }
 }
-

@@ -55,8 +55,7 @@ void usage ()
   SYNOPSIS = "Voxel-based analysis using permutation testing and threshold-free cluster enhancement";
 
   DESCRIPTION
-      + Math::Stats::GLM::column_ones_description
-      + Math::Stats::GLM::sqrt_f_description;
+      + Math::Stats::GLM::column_ones_description;
 
   REFERENCES
    + "* If not using the -threshold command-line option:\n"

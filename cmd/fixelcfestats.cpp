@@ -68,8 +68,7 @@ void usage ()
     "outside the processing mask will immediately disappear from view as soon as any data-file-based fixel colouring or "
     "thresholding is applied."
 
-  + Math::Stats::GLM::column_ones_description
-  + Math::Stats::GLM::sqrt_f_description;
+  + Math::Stats::GLM::column_ones_description;
 
   REFERENCES
   + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A." // Internal
