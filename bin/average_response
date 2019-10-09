@@ -3,11 +3,11 @@ import sys
 
 def errorMessage(msg):
   sys.stderr.write(msg + '\n')
-  exit(1)
+  sys.exit(1)
 
 if len(sys.argv) < 3 :
   sys.stderr.write("example usage: average_response input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt\n")
-  exit(1)
+  sys.exit(1)
 
 num_bvals = 0
 num_coeff = 0
