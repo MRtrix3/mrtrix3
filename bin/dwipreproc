@@ -272,13 +272,13 @@ def grads_match(one, two):
   # - If both are zero, skip this check
   # - If one is zero and the other is not, volumes don't match
   # - If neither is zero, test the dot product
-  if any([val for val in one[0:3]]):
-    if not any([val for val in two[0:3]]):
+  if any(one[0:3]):
+    if not any(two[0:3]):
       return False
     dot_product = one[0]*two[0] + one[1]*two[1] + one[2]*two[2]
     if abs(dot_product) < 0.999:
       return False
-  elif any([val for val in two[0:3]]):
+  elif any(two[0:3]):
     return False
   # b-value
   if abs(one[3]-two[3]) > 10.0:
