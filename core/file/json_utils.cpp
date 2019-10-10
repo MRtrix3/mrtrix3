@@ -125,9 +125,11 @@ namespace MR
           // Assume that image being written to disk is going to have its transform adjusted,
           //   so modify the phase encoding scheme appropriately before writing to JSON
           for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
-            auto new_line = pe_scheme.row (row);
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_line = pe_scheme.row (row);
             for (ssize_t axis = 0; axis != 3; ++axis)
-              new_line[axis] = H.stride (order[axis]) > 0 ? pe_scheme(row, order[axis]) : -pe_scheme(row, order[axis]);
+              new_line[axis] = pe_scheme(row, order[axis]) && H.stride (order[axis]) < 0 ?
+                               -pe_scheme(row, order[axis]) :
+                               pe_scheme(row, order[axis]);
             pe_scheme.row (row) = new_line;
           }
           PhaseEncoding::set_scheme (H_adj, pe_scheme);
