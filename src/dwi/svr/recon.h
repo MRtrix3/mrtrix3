@@ -490,7 +490,10 @@ namespace MR
               float ww = (useweights) ? std::sqrt(recmat.W(z,v)) : 1.0f;
               project_slice_y2x(v, z, tmp, rhs.segment((nz*v+z)*nxy, nxy), ww);
             }
-            T.noalias() += r * recmat.Y.row(idx);
+            Eigen::RowVectorXf qr = recmat.Y.row(idx);
+            for (size_t j = 0; j < nxyz; j++) {
+              if (r[j] != 0.0f) T.row(j) += r[j] * qr;
+            }
           }, zero);
         INFO("Transpose projection - regularisers");
         Eigen::Ref<const Eigen::VectorXf> ref1 = rhs.segment(nxyz*nv, nxyz*nc);
