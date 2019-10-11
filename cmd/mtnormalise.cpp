@@ -34,7 +34,9 @@ const char* poly_order_choices[] = { "0", "1", "2", "3", nullptr };
 
 void usage ()
 {
-  AUTHOR = "Thijs Dhollander (thijs.dhollander@gmail.com), Rami Tabbara (rami.tabbara@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "Thijs Dhollander (thijs.dhollander@gmail.com), Rami Tabbara (rami.tabbara@florey.edu.au), "
+    "David Raffelt (david.raffelt@florey.edu.au), Jonas Rosnarho-Tornstrand (jonas.rosnarho-tornstrand@kcl.ac.uk) "
+    "and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Multi-tissue informed log-domain intensity normalisation";
 
