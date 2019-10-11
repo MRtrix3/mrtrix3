@@ -319,7 +319,7 @@ void run ()
   const bool axes_set_manually = opt.size();
   if (opt.size()) {
     vector<int> axes = opt[0][0];
-    if (slice_axes.size() != 2)
+    if (axes.size() != 2)
       throw Exception ("slice axes must be specified as a comma-separated 2-vector");
     slice_axes = { size_t(axes[0]), size_t(axes[1]) };
   }
