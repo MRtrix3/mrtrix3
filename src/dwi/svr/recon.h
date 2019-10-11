@@ -185,10 +185,10 @@ namespace MR
           });
         INFO("Forward projection - regularisers");
         Eigen::Ref<Eigen::VectorXf> ref1 = dst.segment(nxyz*nv, nxyz*nc);
-        Eigen::Map<RowMatrixXf, Eigen::Aligned16> Yreg1 (ref1.data(), nxyz, nc);
+        Eigen::Map<RowMatrixXf> Yreg1 (ref1.data(), nxyz, nc);
         Yreg1.noalias() += L * X;
         Eigen::Ref<Eigen::VectorXf> ref2 = dst.segment(nxyz*(nv+nc), nxyz*nc);
-        Eigen::Map<RowMatrixXf, Eigen::Aligned16> Yreg2 (ref2.data(), nxyz, nc);
+        Eigen::Map<RowMatrixXf> Yreg2 (ref2.data(), nxyz, nc);
         Yreg2.noalias() += Z * X;
       }
 
@@ -497,10 +497,10 @@ namespace MR
           }, zero);
         INFO("Transpose projection - regularisers");
         Eigen::Ref<const Eigen::VectorXf> ref1 = rhs.segment(nxyz*nv, nxyz*nc);
-        Eigen::Map<const RowMatrixXf, Eigen::Aligned16> Yreg1 (ref1.data(), nxyz, nc);
+        Eigen::Map<const RowMatrixXf> Yreg1 (ref1.data(), nxyz, nc);
         X.noalias() += recmat.L.adjoint() * Yreg1;
         Eigen::Ref<const Eigen::VectorXf> ref2 = rhs.segment(nxyz*(nv+nc), nxyz*nc);
-        Eigen::Map<const RowMatrixXf, Eigen::Aligned16> Yreg2 (ref2.data(), nxyz, nc);
+        Eigen::Map<const RowMatrixXf> Yreg2 (ref2.data(), nxyz, nc);
         X.noalias() += recmat.Z.adjoint() * Yreg2;
       }
 
