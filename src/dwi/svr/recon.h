@@ -16,14 +16,13 @@
 #include "types.h"
 #include "header.h"
 #include "transform.h"
-#include "math/SH.h"
-#include "dwi/shells.h"
 #include "parallel_for.h"
 #include "interp/linear.h"
 #include "interp/cubic.h"
 
 #include "dwi/svr/param.h"
 #include "dwi/svr/psf.h"
+#include "dwi/svr/qspacebasis.h"
 
 
 namespace MR {
@@ -120,18 +119,14 @@ namespace MR
 
 
       // Custom API:
-      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const Eigen::MatrixXf& grad,
-                  const int lmax, const vector<Eigen::MatrixXf>& rf, const SSP<float,2>& ssp,
-                  const float reg, const float zreg)
-        : lmax (lmax),
-          nx (in.size(0)), ny (in.size(1)), nz (in.size(2)), nv (in.size(3)),
-          nxy (nx*ny), nc (get_ncoefs(rf)), ne (rigid.rows() / nv),
-          T0 (in),  // Preserve original resolution.
-          shellbasis (init_shellbasis(grad, rf)),
+      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const QSpaceBasis& basis,
+                  const SSP<float,2>& ssp, const float reg, const float zreg)
+        : nx (in.size(0)), ny (in.size(1)), nz (in.size(2)), nv (in.size(3)),
+          nxy (nx*ny), nc (basis.get_ncoefs()), ne (rigid.rows() / nv),
+          T0 (in), qbasis (basis),
           ssp (ssp), motion (rigid), htmp(in)
       {
         INFO("Multiband factor " + str(nz/ne) + " detected.");
-        init_Y(grad);
 
         float scale = std::sqrt(1.0f * nv);
         init_laplacian(scale*reg);
@@ -148,13 +143,8 @@ namespace MR
 
       ReconMatrixAdjoint adjoint() const;
 
-      const RowMatrixXf& getY() const { return Y; }
-
-      const Eigen::MatrixXf& getWeights() const { return W; }
-
-      void setWeights(const Eigen::MatrixXf& weights) { W = weights; }
-
-      const Eigen::MatrixXf& getShellBasis(const int shellidx) const { return shellbasis[shellidx]; }
+      const Eigen::MatrixXf& getWeights() const        { return W; }
+      void setWeights (const Eigen::MatrixXf& weights) { W = weights; }
 
       void setField(const Image<float>& fieldmap, const size_t fieldidx, const Eigen::MatrixXf& petable)
       {
@@ -176,7 +166,7 @@ namespace MR
             size_t v = idx/ne;
             auto tmp = Image<float>::scratch(htmp);
             Eigen::Map<Eigen::VectorXf> q (tmp.address(), nxyz);
-            q.noalias() = X * Y.row(idx).adjoint();
+            q.noalias() = X * qbasis.get_projection(idx);
             for (size_t z = idx%ne; z < nz; z += ne) {
               Eigen::Ref<Eigen::VectorXf> r = dst.segment((nz*v+z)*nxy, nxy);
               project_slice_x2y(v, z, r, tmp);
@@ -194,14 +184,12 @@ namespace MR
 
 
     private:
-      const int lmax;
       const size_t nx, ny, nz, nv, nxy, nc, ne;
       const Transform T0;
-      const vector<Eigen::MatrixXf> shellbasis;
+      const QSpaceBasis qbasis;
       const SSP<float,2> ssp;
 
       RowMatrixXf motion;
-      RowMatrixXf Y;
       Eigen::MatrixXf W;
       SparseMat L, Z;
 
@@ -210,63 +198,6 @@ namespace MR
       Image<float> field;
       Eigen::MatrixXf pe;
       transform_type Tf;
-
-      vector<Eigen::MatrixXf> init_shellbasis(const Eigen::MatrixXf& grad, const vector<Eigen::MatrixXf>& rf) const
-      {
-        Shells shells (grad.template cast<double>());
-        vector<Eigen::MatrixXf> basis;
-
-        for (size_t s = 0; s < shells.count(); s++) {
-          Eigen::MatrixXf B;
-          if (rf.empty()) {
-            B.setIdentity(Math::SH::NforL(lmax), Math::SH::NforL(lmax));
-          }
-          else {
-            B.setZero(nc, Math::SH::NforL(lmax));
-            size_t j = 0;
-            for (auto& r : rf) {
-              for (size_t l = 0; l < r.cols() and 2*l <= lmax; l++)
-                for (size_t i = l*(2*l-1); i < (l+1)*(2*l+1); i++, j++)
-                  B(j,i) = r(s,l);
-            }
-          }
-          basis.push_back(B);
-        }
-
-        return basis;
-      }
-
-      void init_Y(const Eigen::MatrixXf& grad)
-      {
-        DEBUG("initialise Y");
-        assert (grad.rows() == nv);     // one gradient per volume
-
-        vector<size_t> idx = get_shellidx(grad);
-        Y.resize(nv*ne, nc);
-
-        Eigen::Vector3f vec;
-        Eigen::Matrix3f rot;
-        rot.setIdentity();
-        Eigen::VectorXf delta;
-
-        for (size_t v = 0; v < nv; v++) {
-          vec = {grad(v, 0), grad(v, 1), grad(v, 2)};
-          for (size_t e = 0; e < ne; e++) {
-            // rotate vector with motion parameters
-            rot = get_rotation(motion.row(v*ne+e));
-            // evaluate basis functions
-            Math::SH::delta(delta, rot*vec, lmax);
-            Y.row(v*ne+e) = shellbasis[idx[v]]*delta;
-          }
-        }
-
-      }
-
-      inline Eigen::Matrix3f get_rotation(const Eigen::VectorXf& p) const
-      {
-        Eigen::Matrix3f m = se3exp(p).topLeftCorner<3,3>();
-        return m;
-      }
 
       inline transform_type get_transform(const Eigen::VectorXf& p) const
       {
@@ -284,33 +215,6 @@ namespace MR
       {
         return size_t(z*nxy + y*nx + x);
       }
-
-      inline size_t get_ncoefs(const vector<Eigen::MatrixXf>& rf) const
-      {
-        size_t n = 0;
-        if (rf.empty()) {
-          n = Math::SH::NforL(lmax);
-        } else {
-          for (auto& r : rf)
-            n += Math::SH::NforL(std::min(2*(int(r.cols())-1), lmax));
-        }
-        return n;
-      }
-
-      vector<size_t> get_shellidx(const Eigen::MatrixXf& grad) const
-      {
-        Shells shells (grad.template cast<double>());
-        vector<size_t> idx (shells.volumecount());
-
-        for (size_t s = 0; s < shells.count(); s++) {
-          for (auto v : shells[s].get_volumes())
-            idx[v] = s;
-        }
-        return idx;
-      }
-
-      inline size_t get_grad_idx(const size_t idx) const { return idx / nxy; }
-      inline size_t get_grad_idx(const size_t v, const size_t z) const { return v*nz + z; }
 
       template <typename VectorType1, typename ImageType2>
       void project_slice_x2y(const int v, const int z, VectorType1& dst, const ImageType2& rhs) const
@@ -490,7 +394,7 @@ namespace MR
               float ww = (useweights) ? std::sqrt(recmat.W(z,v)) : 1.0f;
               project_slice_y2x(v, z, tmp, rhs.segment((nz*v+z)*nxy, nxy), ww);
             }
-            Eigen::RowVectorXf qr = recmat.Y.row(idx);
+            Eigen::RowVectorXf qr = recmat.qbasis.get_projection(idx);
             for (size_t j = 0; j < nxyz; j++) {
               if (r[j] != 0.0f) T.row(j) += r[j] * qr;
             }

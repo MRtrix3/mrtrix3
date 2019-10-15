@@ -16,6 +16,8 @@
 #include "phase_encoding.h"
 #include "dwi/shells.h"
 #include "adapter/extract.h"
+
+#include "dwi/svr/qspacebasis.h"
 #include "dwi/svr/recon.h"
 
 #define DEFAULT_LMAX 4
@@ -237,16 +239,18 @@ void run ()
   value_type tol = get_option_value("tolerance", DEFAULT_TOL);
   size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
 
+  DWI::SVR::QSpaceBasis qbasis {gradsub, lmax, rf, motionsub};
+
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
-  DWI::SVR::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, ssp, reg, zreg);
+  DWI::SVR::ReconMatrix R (dwisub, motionsub, qbasis, ssp, reg, zreg);
   R.setWeights(Wsub);
   if (hasfield)
     R.setField(fieldmap, fieldidx, PEsub);
 
 
-  size_t ncoefs = R.getY().cols();
+  size_t ncoefs = qbasis.get_ncoefs();
   size_t padding = get_option_value("padding", Math::SH::NforL(lmax));
   if (padding < Math::SH::NforL(lmax))
     throw Exception("user-provided padding too small.");
@@ -292,7 +296,7 @@ void run ()
     Eigen::VectorXf c (shells.count() * Math::SH::NforL(lmax));
     Eigen::MatrixXf x2mssh (c.size(), ncoefs); x2mssh.setZero();
     for (int k = 0; k < shells.count(); k++)
-      x2mssh.middleRows(k*Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose();
+      x2mssh.middleRows(k*Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = qbasis.getShellBasis(k).transpose();
     auto mssh2x = x2mssh.fullPivHouseholderQr();
     size_t j = 0, k = 0;
     for (auto l = Loop("loading initialisation", {0, 1, 2})(init); l; l++, j+=ncoefs) {
@@ -351,7 +355,7 @@ void run ()
     c = x.segment(j, ncoefs);
     for (int k = 0; k < shells.count(); k++) {
       out.index(3) = k;
-      sh.head(Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose() * c;
+      sh.head(Math::SH::NforL(lmax)) = qbasis.getShellBasis(k).transpose() * c;
       out.row(4) = sh;
     }
   }
