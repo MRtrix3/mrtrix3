@@ -16,6 +16,7 @@
 #include "math/SH.h"
 #include "dwi/shells.h"
 #include "adapter/base.h"
+#include "algo/loop.h"
 
 #include "dwi/svr/param.h"
 
@@ -160,26 +161,89 @@ namespace MR
 
           QSpaceMapping (const ImageType& parent, const QSpaceBasis& basis)
             : base_type (parent), basis (basis)
-          {  }
+          {
+            assert (parent.ndim() == 4);
+            assert (parent.size(3) == basis.get_ncoefs());
+            set_shotidx(0);
+          }
 
           FORCE_INLINE size_t ndim () const { return 3; }
 
-          FORCE_INLINE value_type value () const {
+          FORCE_INLINE value_type value () {
             vector_type c = parent().row(3);
-            value_type s = basis.get_projection(v_, z_).adjoint() * c;
-            return s;
+            return qr.adjoint() * c;
           }
 
           FORCE_INLINE void adjoint_add (value_type val) {
             if (val != 0)
-              parent().row(3) += val * basis.get_projection(v_, z_);
+              parent().row(3) += val * qr;
           }
 
-          FORCE_INLINE void set_encoding_index (size_t v, size_t z) { v_ = v; z_ = z; }
+          FORCE_INLINE void set_shotidx (size_t idx) {
+            idx_ = idx;
+            qr = basis.get_projection(idx_);
+          }
 
         private:
-          QSpaceBasis basis;
-          size_t v_, z_;
+          const QSpaceBasis& basis;
+          size_t idx_;
+          vector_type qr;
+      };
+
+
+      template <class ImageType>
+      class Buffer : public Adapter::Base<Buffer<ImageType>, ImageType>
+      {
+        MEMALIGN (Buffer<ImageType>)
+        public:
+          using base_type = Adapter::Base<Buffer<ImageType>, ImageType>;
+          using value_type = typename ImageType::value_type;
+
+          using base_type::parent;
+
+          Buffer (const ImageType& parent)
+            : base_type (parent)
+          {
+            Header hdr (parent);
+            buffer = Image<value_type>::scratch(hdr, "temporary buffer");
+            mask = Image<bool>::scratch(hdr, "buffer mask");
+            set_shotidx(0);
+          }
+
+          void move_index (size_t axis, ssize_t increment) {
+            parent().index(axis) += increment;
+            buffer.index(axis) += increment;
+            mask.index(axis) += increment;
+          }
+          void reset () {
+            parent().reset();
+            buffer.reset();
+            mask.reset();
+          }
+
+          void flush () {
+            for (auto l = Loop() (mask); l; l++)
+              mask.value() = false;
+            mask.reset();
+          }
+
+          FORCE_INLINE value_type value () {
+            if (mask.value()) return buffer.value();
+            else {
+              buffer.value() = parent().value();
+              mask.value() = true;
+              return buffer.value();
+            }
+          }
+
+          FORCE_INLINE void set_shotidx (size_t idx) {
+            flush();
+            parent().set_shotidx(idx);
+          }
+
+        private:
+          Image<value_type> buffer;
+          Image<bool> mask;
       };
 
 
