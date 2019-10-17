@@ -132,9 +132,9 @@ namespace MR
 
           MotionMapping (const ImageType& projection, const Header& source,
                          const Eigen::MatrixXf& rigid)
-            : base_type (projection), yhdr (source), motion (rigid),
-              interp (projection, 0.0f), Tr (projection), Ts (source),
-              Ts2r (Ts.scanner2voxel * Tr.voxel2scanner)
+            : base_type (projection),
+              interp (projection, 0.0f), yhdr (source), motion (rigid),
+              Tr (projection), Ts (source), Ts2r (Ts.scanner2voxel * Tr.voxel2scanner)
           { }
 
           // Adapter attributes -----------------------------------------------
@@ -173,24 +173,24 @@ namespace MR
           }
 
           void set_shotidx (size_t idx) {
-            parent().set_shotidx(idx);
+            interp.set_shotidx(idx);
             Ts2r = Ts.scanner2voxel * get_transform(motion.row(idx)) * Tr.voxel2scanner;
           }
 
         private:
+          Interp::CubicAdjoint<ImageType> interp;
           const Header& yhdr;
           Eigen::MatrixXf motion;
-          Interp::CubicAdjoint<ImageType> interp;
           ssize_t x[3];
           const Transform Tr, Ts;
           transform_type Ts2r;    // vox-to-vox transform, mapping vectors in source space to recon space
 
-          inline transform_type get_transform(const Eigen::VectorXf& p) const {
+          FORCE_INLINE transform_type get_transform(const Eigen::VectorXf& p) const {
             transform_type T (se3exp(p).cast<double>());
             return T;
           }
 
-          inline default_type clampdim (default_type r, size_t axis) const {
+          FORCE_INLINE default_type clampdim (default_type r, size_t axis) const {
             return (r < 0) ? 0 : (r > size(axis)-1) ? size(axis)-1 : r;
           }
 
@@ -209,6 +209,9 @@ namespace MR
           {
             INFO("Multiband factor " + str(source.size(2)/ne) + " detected.");
           }
+
+          const Header& xheader() const { return xhdr; }
+          const Header& yheader() const { return yhdr; }
 
           template <typename ImageType1, typename ImageType2>
           void x2y(const ImageType1& X, const ImageType2& Y) const

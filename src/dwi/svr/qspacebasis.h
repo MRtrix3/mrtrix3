@@ -201,14 +201,17 @@ namespace MR
 
           using base_type::parent;
 
+          Buffer () : base_type() { }
+
           Buffer (const ImageType& parent)
             : base_type (parent)
           {
             Header hdr (parent);
             buffer = Image<value_type>::scratch(hdr, "temporary buffer");
             mask = Image<bool>::scratch(hdr, "buffer mask");
-            set_shotidx(0);
           }
+
+          Buffer (const Buffer& other) : Buffer (other.parent()) { }
 
           void move_index (size_t axis, ssize_t increment) {
             parent().index(axis) += increment;
@@ -224,7 +227,7 @@ namespace MR
           void flush () {
             for (auto l = Loop() (mask); l; l++)
               mask.value() = false;
-            mask.reset();
+            reset();
           }
 
           FORCE_INLINE value_type value () {
