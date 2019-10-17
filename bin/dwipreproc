@@ -230,7 +230,7 @@ if eddy_mporder:
     slice_timing = dwi_header.keyval()['SliceTiming'][0]
     app.var(slice_timing)
     if len(slice_timing) != dwi_num_slices:
-      app.error('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+      app.error('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + str(len(slice_timing)) + ') does not match number of slices (' + str(dwi_header.size()[2]) + ')')
 
 # Use new features of dirstat to query the quality of the diffusion acquisition scheme
 # Need to know the mean b-value in each shell, and the asymmetry value of each shell
