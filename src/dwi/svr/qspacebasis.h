@@ -170,23 +170,26 @@ namespace MR
           FORCE_INLINE size_t ndim () const { return 3; }
 
           FORCE_INLINE value_type value () {
-            vector_type c = parent().row(3);
-            return qr.adjoint() * c;
+            value_type res = 0; size_t i = 0;
+            for (auto l = Loop(3) (parent()); l; l++, i++)
+              res += qr[i] * parent().value();
+            return res;
           }
 
           FORCE_INLINE void adjoint_add (value_type val) {
-            if (val != 0)
-              parent().row(3) += val * qr;
+            if (val != 0) {
+              size_t i = 0;
+              for (auto l = Loop(3) (parent()); l; l++, i++)
+                parent().value() += qr[i] * val;
+            }
           }
 
           FORCE_INLINE void set_shotidx (size_t idx) {
-            idx_ = idx;
-            qr = basis.get_projection(idx_);
+            qr = basis.get_projection(idx);
           }
 
         private:
           const QSpaceBasis& basis;
-          size_t idx_;
           vector_type qr;
       };
 
