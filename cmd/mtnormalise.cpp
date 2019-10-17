@@ -27,7 +27,7 @@ using namespace App;
 
 #define DEFAULT_REFERENCE_VALUE 0.28209479177
 #define DEFAULT_MAIN_ITER_VALUE 15
-#define DEFAULT_BALANCE_MAXITER_VALUE 8
+#define DEFAULT_BALANCE_MAXITER_VALUE 7
 #define DEFAULT_POLY_ORDER 3
 
 const char* poly_order_choices[] = { "0", "1", "2", "3", nullptr };
@@ -76,11 +76,15 @@ void usage ()
     + Option ("mask", "the mask defines the data used to compute the intensity normalisation. This option is mandatory.").required ()
     + Argument ("image").type_image_in ()
 
-    + Option ("order", "the maximum order of the polynomial basis used to fit the normalisation field in the log-domain. An order of 0 is equivalent to not allowing spatial variance of the intensity normalisation factor. (default: " + str(DEFAULT_POLY_ORDER) + ")")
+    + Option ("order", "the maximum order of the polynomial basis used to fit the normalisation field in the log-domain. "
+        "An order of 0 is equivalent to not allowing spatial variance of the intensity normalisation factor. "
+        "(default: " + str(DEFAULT_POLY_ORDER) + ")")
     + Argument ("number").type_choice (poly_order_choices)
 
-    + Option ("niter", "set the number of iterations. (default: " + str(DEFAULT_MAIN_ITER_VALUE) + ")")
-    + Argument ("number").type_integer()
+    + Option ("niter", "set the number of iterations. The first (and potentially only) entry applies to the main loop. "
+        "If supplied as a comma-separated list of integers, the second entry applies to the inner loop to update the balance factors "
+        "(default: " + str(DEFAULT_MAIN_ITER_VALUE) + "," + str(DEFAULT_BALANCE_MAXITER_VALUE) + ").")
+    + Argument ("number").type_sequence_int()
 
     + Option ("reference", "specify the (positive) reference value to which the summed tissue compartments will be normalised. "
         "(default: " + str(DEFAULT_REFERENCE_VALUE, 6) + ", SH DC term for unit angular integral)")
@@ -212,7 +216,7 @@ IndexType index_mask_voxels (size_t& num_voxels)
 
 Eigen::MatrixXd initialise_basis (IndexType& index, size_t num_voxels, int order)
 {
-  struct BasisInitialiser {
+  struct BasisInitialiser { NOMEMALIGN
     BasisInitialiser (const Transform& transform, const PolyBasisFunction& basis_function, Eigen::MatrixXd& basis) :
       basis_function (basis_function),
       transform (transform),
@@ -255,7 +259,7 @@ void load_data (Eigen::MatrixXd& data, const std::string& image_name, IndexType&
   auto in = ImageType::open (image_name);
   check_dimensions (index, in, 0, 3);
 
-  struct Loader {
+  struct Loader { NOMEMALIGN
     public:
       Loader (Eigen::MatrixXd& data, int num) : data (data), num (num) { }
 
@@ -300,7 +304,7 @@ size_t detect_outliers (
   double lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
   double upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
 
-  struct SetWeight {
+  struct SetWeight { NOMEMALIGN
     size_t& changed;
     const double lower_outlier_threshold, upper_outlier_threshold;
 
@@ -357,7 +361,7 @@ void update_field (
     Eigen::VectorXd& field_coeffs,
     Eigen::VectorXd& field)
 {
-  struct LogWeight {
+  struct LogWeight { NOMEMALIGN
     double operator() (double sum, double weight) const {
       return sum > 0.0 ? weight * (std::log(sum) - log_norm_value) : 0.0;
     }
@@ -389,7 +393,7 @@ ImageType compute_full_field (int order, const Eigen::VectorXd& field_coeffs, co
   auto out = ImageType::scratch (header, "full field");
   Transform transform (out);
 
-  struct FieldWriter {
+  struct FieldWriter { NOMEMALIGN
     void operator() (ImageType& field) const {
       Eigen::Vector3 vox (field.index(0), field.index(1), field.index(2));
       Eigen::Vector3 pos = transform.voxel2scanner * vox;
@@ -421,7 +425,7 @@ void write_weights (const Eigen::VectorXd& data, IndexType& index, const std::st
 
   auto out = ImageType::create (output_file_name, header);
 
-  struct Write {
+  struct Write { NOMEMALIGN
     void operator() (ImageType& out, IndexType& index) const {
       const uint32_t idx = index.value();
       if (idx != std::numeric_limits<uint32_t>::max()) {
@@ -446,7 +450,7 @@ void write_output (
 {
   using ReplicatorType = Adapter::Replicate<ImageType>;
 
-  struct Scaler {
+  struct Scaler { NOMEMALIGN
     void operator() (ImageType& original, ImageType& corrected, ReplicatorType& field) const {
       corrected.value() = balance_factor * original.value() / field.value();
     }
@@ -484,9 +488,22 @@ void run ()
     throw Exception ("The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
 
   const int order = get_option_value<int> ("order", DEFAULT_POLY_ORDER);
-  const size_t max_iter = get_option_value ("niter", DEFAULT_MAIN_ITER_VALUE);
   const float reference_value = get_option_value ("reference", DEFAULT_REFERENCE_VALUE);
   const float log_ref_value = std::log (reference_value);
+
+  size_t max_iter = DEFAULT_MAIN_ITER_VALUE;
+  size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
+  auto opt = get_options ("niter");
+  if (opt.size()) {
+    vector<int> num = opt[0][0];
+    if (num.size() < 1 && num.size() > 2)
+      throw Exception ("unexpected number of entries provided to option \"niter\"");
+    max_iter = num[0];
+    if (num.size() > 1)
+      max_balance_iter = num[1];
+    if (max_iter < 1 || max_balance_iter < 1)
+      throw Exception ("number of iterations must be positive");
+  }
 
   // Setting the n_tissue_types
   const size_t n_tissue_types = argument.size()/2;
@@ -503,7 +520,7 @@ void run ()
 
   auto basis = initialise_basis (index, num_voxels, order);
 
-  struct finite_and_positive { double operator() (double v) const { return std::isfinite(v) && v > 0.0; } };
+  struct finite_and_positive { NOMEMALIGN double operator() (double v) const { return std::isfinite(v) && v > 0.0; } };
   Eigen::VectorXd weights = data.rowwise().sum().unaryExpr (finite_and_positive());
 
   Eigen::VectorXd field = Eigen::VectorXd::Ones (num_voxels);
@@ -520,7 +537,6 @@ void run ()
     while (++iter <= max_iter) {
       INFO ("Iteration: " + str(iter));
 
-      const size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
       size_t balance_iter = 1;
 
       // Iteratively compute tissue balance factors with outlier rejection
@@ -549,7 +565,7 @@ void run ()
 
   auto full_field = compute_full_field (order, field_coeffs, index);
 
-  auto opt = get_options ("check_norm");
+  opt = get_options ("check_norm");
   if (opt.size()) {
     auto out = ImageType::create (opt[0][0], full_field);
     threaded_copy (full_field, out);
