@@ -66,54 +66,6 @@ namespace MR
     };
   }
 
-  template <typename ValueType>
-  class ImageView : public ImageBase<ImageView<ValueType>, ValueType>
-  {
-    MEMALIGN (ImageView<ValueType>)
-    public:
-      using value_type = ValueType;
-
-      ImageView (const Header& hdr, ValueType* data)
-        : templatehdr (hdr), data_pointer (data),
-          x (hdr.ndim(), 0), strides (Stride::get(hdr))
-      { }
-
-      FORCE_INLINE bool valid () const { return data_pointer; }
-      FORCE_INLINE bool operator! () const { return !valid(); }
-
-      FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return templatehdr.keyval(); }
-
-      FORCE_INLINE const std::string& name() const { return templatehdr.name(); }
-      FORCE_INLINE const transform_type& transform() const { return templatehdr.transform(); }
-
-      FORCE_INLINE size_t  ndim () const { return templatehdr.ndim(); }
-      FORCE_INLINE ssize_t size (size_t axis) const { return templatehdr.size (axis); }
-      FORCE_INLINE default_type spacing (size_t axis) const { return templatehdr.spacing (axis); }
-      FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
-
-      FORCE_INLINE size_t offset () const { return data_offset; }
-
-      FORCE_INLINE void reset () {
-        for (size_t n = 0; n < ndim(); ++n)
-          this->index(n) = 0;
-      }
-
-      FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
-      FORCE_INLINE void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
-
-      FORCE_INLINE bool is_direct_io () const { return true; }
-
-      FORCE_INLINE ValueType get_value () const { return data_pointer[data_offset]; }
-      FORCE_INLINE void set_value (ValueType val) { data_pointer[data_offset] = val; }
-
-    protected:
-      const Header& templatehdr;    // template image header
-      value_type* data_pointer;     // pointer to data address
-      vector<ssize_t> x;
-      Stride::List strides;
-      size_t data_offset;
-  };
-
   namespace DWI
   {
     namespace SVR
@@ -216,8 +168,7 @@ namespace MR
           template <typename ImageType1, typename ImageType2>
           void x2y(const ImageType1& X, const ImageType2& Y) const
           {
-            auto qmap0 = Adapter::make<QSpaceMapping> (X, qbasis);
-            auto qmap = Adapter::make<Buffer> (qmap0);
+            auto qmap = Adapter::makebuffered<QSpaceMapping> (X, qbasis);
             auto map_x2y = Adapter::make<MotionMapping> (qmap, yhdr, motion);
 
             struct MapSliceX2Y {   MEMALIGN(MapSliceX2Y);

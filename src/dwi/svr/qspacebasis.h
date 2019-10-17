@@ -23,6 +23,71 @@
 
 namespace MR
 {
+  namespace Adapter
+  {
+    template <class ImageType>
+    class Buffer : public Adapter::Base<Buffer<ImageType>, ImageType>
+    {
+      MEMALIGN (Buffer<ImageType>)
+      public:
+        using base_type = Adapter::Base<Buffer<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
+
+        using base_type::parent;
+
+        Buffer (const ImageType& parent)
+          : base_type (parent)
+        {
+          Header hdr (parent);
+          buffer = Image<value_type>::scratch(hdr, "temporary buffer");
+          mask = Image<bool>::scratch(hdr, "buffer mask");
+        }
+
+        Buffer (const Buffer& other) : Buffer (other.parent()) { }
+
+        void move_index (size_t axis, ssize_t increment) {
+          parent().index(axis) += increment;
+          buffer.index(axis) += increment;
+          mask.index(axis) += increment;
+        }
+        void reset () {
+          parent().reset();
+          buffer.reset();
+          mask.reset();
+        }
+
+        void flush () {
+          for (auto l = Loop() (mask); l; l++)
+            mask.value() = false;
+          reset();
+        }
+
+        FORCE_INLINE value_type value () {
+          if (mask.value()) return buffer.value();
+          else {
+            buffer.value() = parent().value();
+            mask.value() = true;
+            return buffer.value();
+          }
+        }
+
+        FORCE_INLINE void set_shotidx (size_t idx) {
+          flush();
+          parent().set_shotidx(idx);
+        }
+
+      private:
+        Image<value_type> buffer;
+        Image<bool> mask;
+    };
+
+    template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
+    inline Buffer<AdapterType<ImageType>> makebuffered (const ImageType& parent, Args&&... args) {
+      return { { parent, std::forward<Args> (args)... } };
+    }
+
+  }
+
   namespace DWI
   {
     namespace SVR
@@ -191,65 +256,6 @@ namespace MR
         private:
           const QSpaceBasis& basis;
           vector_type qr;
-      };
-
-
-      template <class ImageType>
-      class Buffer : public Adapter::Base<Buffer<ImageType>, ImageType>
-      {
-        MEMALIGN (Buffer<ImageType>)
-        public:
-          using base_type = Adapter::Base<Buffer<ImageType>, ImageType>;
-          using value_type = typename ImageType::value_type;
-
-          using base_type::parent;
-
-          Buffer () : base_type() { }
-
-          Buffer (const ImageType& parent)
-            : base_type (parent)
-          {
-            Header hdr (parent);
-            buffer = Image<value_type>::scratch(hdr, "temporary buffer");
-            mask = Image<bool>::scratch(hdr, "buffer mask");
-          }
-
-          Buffer (const Buffer& other) : Buffer (other.parent()) { }
-
-          void move_index (size_t axis, ssize_t increment) {
-            parent().index(axis) += increment;
-            buffer.index(axis) += increment;
-            mask.index(axis) += increment;
-          }
-          void reset () {
-            parent().reset();
-            buffer.reset();
-            mask.reset();
-          }
-
-          void flush () {
-            for (auto l = Loop() (mask); l; l++)
-              mask.value() = false;
-            reset();
-          }
-
-          FORCE_INLINE value_type value () {
-            if (mask.value()) return buffer.value();
-            else {
-              buffer.value() = parent().value();
-              mask.value() = true;
-              return buffer.value();
-            }
-          }
-
-          FORCE_INLINE void set_shotidx (size_t idx) {
-            flush();
-            parent().set_shotidx(idx);
-          }
-
-        private:
-          Image<value_type> buffer;
-          Image<bool> mask;
       };
 
 

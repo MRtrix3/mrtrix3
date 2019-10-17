@@ -22,44 +22,59 @@
 
 #include "dwi/svr/param.h"
 #include "dwi/svr/psf.h"
+#include "dwi/svr/mapping.h"
 #include "dwi/svr/qspacebasis.h"
 
 
-namespace MR {
-  namespace Interp {
-    template <class ImageType>
-    class CubicAdjoint : public Cubic <ImageType>
-    { MEMALIGN(CubicAdjoint<ImageType>)
-      public:
-        using typename Cubic<ImageType>::value_type;
-        using Cubic<ImageType>::clamp;
-        using Cubic<ImageType>::P;
-        using Cubic<ImageType>::weights_vec;
+namespace MR
+{
+  template <typename ValueType>
+  class ImageView : public ImageBase<ImageView<ValueType>, ValueType>
+  {
+    MEMALIGN (ImageView<ValueType>)
+    public:
+      using value_type = ValueType;
 
-        CubicAdjoint (const ImageType& parent, value_type outofbounds = 0)
-            : Cubic <ImageType> (parent, outofbounds)
-        { }
+      ImageView (const Header& hdr, ValueType* data)
+        : templatehdr (hdr), data_pointer (data),
+          x (hdr.ndim(), 0), strides (Stride::get(hdr))
+      { }
 
-        //! Add value to local region by interpolation weights.
-        void adjoint_add (value_type val) {
-          if (Base<ImageType>::out_of_bounds) return;
+      FORCE_INLINE bool valid () const { return data_pointer; }
+      FORCE_INLINE bool operator! () const { return !valid(); }
 
-          ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
+      FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return templatehdr.keyval(); }
 
-          size_t i(0);
-          for (ssize_t z = 0; z < 4; ++z) {
-            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
-            for (ssize_t y = 0; y < 4; ++y) {
-              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
-              for (ssize_t x = 0; x < 4; ++x) {
-                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
-                ImageType::value() += weights_vec[i++] * val;
-              }
-            }
-          }
-        }
-    };
-  }
+      FORCE_INLINE const std::string& name() const { return templatehdr.name(); }
+      FORCE_INLINE const transform_type& transform() const { return templatehdr.transform(); }
+
+      FORCE_INLINE size_t  ndim () const { return templatehdr.ndim(); }
+      FORCE_INLINE ssize_t size (size_t axis) const { return templatehdr.size (axis); }
+      FORCE_INLINE default_type spacing (size_t axis) const { return templatehdr.spacing (axis); }
+      FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
+
+      FORCE_INLINE size_t offset () const { return data_offset; }
+
+      FORCE_INLINE void reset () {
+        for (size_t n = 0; n < ndim(); ++n)
+          this->index(n) = 0;
+      }
+
+      FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
+      FORCE_INLINE void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
+
+      FORCE_INLINE bool is_direct_io () const { return true; }
+
+      FORCE_INLINE ValueType get_value () const { return data_pointer[data_offset]; }
+      FORCE_INLINE void set_value (ValueType val) { data_pointer[data_offset] = val; }
+
+    protected:
+      const Header& templatehdr;    // template image header
+      value_type* data_pointer;     // pointer to data address
+      vector<ssize_t> x;
+      Stride::List strides;
+      size_t data_offset;
+  };
 
   namespace DWI {
     namespace SVR {
