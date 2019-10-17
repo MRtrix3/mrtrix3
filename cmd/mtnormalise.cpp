@@ -498,11 +498,13 @@ void run ()
     vector<int> num = opt[0][0];
     if (num.size() < 1 && num.size() > 2)
       throw Exception ("unexpected number of entries provided to option \"niter\"");
+    for (const int n : num)
+      if (n < 1)
+        throw Exception ("number of iterations must be positive");
+
     max_iter = num[0];
     if (num.size() > 1)
       max_balance_iter = num[1];
-    if (max_iter < 1 || max_balance_iter < 1)
-      throw Exception ("number of iterations must be positive");
   }
 
   // Setting the n_tissue_types
