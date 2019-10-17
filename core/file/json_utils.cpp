@@ -78,18 +78,32 @@ namespace MR
             result.insert (std::make_pair (i.key(), str<int>(i.value())));
           } else if (i->is_number_float()) {
             result.insert (std::make_pair (i.key(), str<float>(i.value())));
+          } else if (i->is_string()) {
+            const std::string s = unquote(i.value());
+            result.insert (std::make_pair (i.key(), s));
           } else if (i->is_array()) {
-            vector<std::string> s;
-            for (auto j = i->cbegin(); j != i->cend(); ++j) {
-              if (j->is_array()) {
+            size_t num_array = 0;
+            for (const auto j : *i)
+              if (j.is_array())
+                ++num_array;
+            if (num_array == 0) {
+              vector<std::string> line;
+              for (const auto k : *i)
+                line.push_back (str(k));
+              H.keyval().insert (std::make_pair (i.key(), join (line, ",")));
+            }
+            else if (num_array == i->size()) {
+              vector<std::string> s;
+              for (const auto j : *i) {
                 vector<std::string> line;
-                for (auto k : *j)
+                for (const auto k : j)
                   line.push_back (unquote(str(k)));
                 s.push_back (join(line, ","));
-              } else {
-                s.push_back (unquote(str(*j)));
               }
+              H.keyval().insert (std::make_pair (i.key(), join(s, "\n")));
             }
+            else
+              throw Exception ("JSON entry contains mixture of elements and arrays");
             result.insert (std::make_pair (i.key(), join(s, "\n")));
           } else if (i->is_string()) {
             const std::string s = unquote(i.value());
