@@ -58,7 +58,7 @@ namespace MR
               ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
               for (ssize_t x = 0; x < 4; ++x) {
                 ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
-                ImageType::value() += weights_vec[i++] * val;
+                ImageType::adjoint_add(weights_vec[i++] * val);
               }
             }
           }
@@ -165,8 +165,12 @@ namespace MR
           const Header& xheader() const { return xhdr; }
           const Header& yheader() const { return yhdr; }
 
+          size_t rows() const { return voxel_count(yhdr); }
+          size_t cols() const { return voxel_count(xhdr); }
+
+
           template <typename ImageType1, typename ImageType2>
-          void x2y(const ImageType1& X, const ImageType2& Y) const
+          void x2y(const ImageType1& X, ImageType2& Y) const
           {
             // create adapters
             auto qmap = Adapter::makebuffered<QSpaceMapping> (X, qbasis);
@@ -201,7 +205,7 @@ namespace MR
           }
 
           template <typename ImageType1, typename ImageType2>
-          void y2x(const ImageType1& X, const ImageType2& Y) const
+          void y2x(ImageType1& X, const ImageType2& Y) const
           {
             // create adapters
             auto qmap = Adapter::makebuffered_add<QSpaceMapping> (X, qbasis);

@@ -261,14 +261,14 @@ namespace MR
 
           FORCE_INLINE size_t ndim () const { return 3; }
 
-          FORCE_INLINE value_type value () {
+          value_type value () {
             value_type res = 0; size_t i = 0;
             for (auto l = Loop(3) (parent()); l; l++, i++)
               res += qr[i] * parent().value();
             return res;
           }
 
-          FORCE_INLINE void adjoint_add (value_type val) {
+          void adjoint_add (value_type val) {
             if (val != 0) {
               size_t i = 0;
               for (auto l = Loop(3) (parent()); l; l++, i++)

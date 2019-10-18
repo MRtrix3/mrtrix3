@@ -116,7 +116,7 @@ typedef float value_type;
 void run ()
 {
   // Load input data
-  auto dwi = Image<value_type>::open(argument[0]);
+  auto dwi = Image<value_type>::open(argument[0]).with_direct_io({1, 2, 3, 4});
 
   // Read motion parameters
   auto opt = get_options("motion");
@@ -241,19 +241,32 @@ void run ()
 
   DWI::SVR::QSpaceBasis qbasis {gradsub, lmax, rf, motionsub};
 
-
-  // Set up scattered data matrix
-  INFO("initialise reconstruction matrix");
-  DWI::SVR::ReconMatrix R (dwisub, motionsub, qbasis, ssp, reg, zreg);
-  R.setWeights(Wsub);
-  if (hasfield)
-    R.setField(fieldmap, fieldidx, PEsub);
-
-
   size_t ncoefs = qbasis.get_ncoefs();
   size_t padding = get_option_value("padding", Math::SH::NforL(lmax));
   if (padding < Math::SH::NforL(lmax))
     throw Exception("user-provided padding too small.");
+
+  // Create recon header
+  Header rechdr (dwisub);
+  rechdr.ndim() = 4;
+  rechdr.size(3) = ncoefs;
+  Stride::set (rechdr, {2, 3, 4, 1});
+  rechdr.datatype() = DataType::Float32;
+  rechdr.sanitise();
+
+
+  // Create mapping
+  DWI::SVR::ReconMapping map (rechdr, dwisub, qbasis, motionsub, ssp);
+
+  // Set up scattered data matrix
+  INFO("initialise reconstruction matrix");
+  DWI::SVR::ReconMatrix R (map, reg, zreg);
+  R.setWeights(Wsub);
+//  if (hasfield)
+//    R.setField(fieldmap, fieldidx, PEsub);
+
+
+
 
   // Read input data to vector
   Eigen::VectorXf y (R.rows()); y.setZero();
@@ -369,18 +382,8 @@ void run ()
     header.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
     DWI::set_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
-    Eigen::VectorXf p (R.rows());
-    R.project(p, x, false);
-    j = 0;
-    auto ii = idx.begin();
-    for (auto l = Loop("saving source prediction", 3)(spred); l; l++) {
-      auto iii = std::find(ii, idx.end(), spred.index(3));
-      if (!complete || iii != idx.end()) {
-        ii = iii;
-        for (auto l2 = Loop({0, 1, 2})(spred); l2; l2++)
-          spred.value() = p[j++];
-      }
-    }
+    auto recon = ImageView<value_type>(rechdr, x.data());
+    map.x2y(recon, spred);
   }
 
 

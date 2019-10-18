@@ -14,16 +14,9 @@
 #include <Eigen/Sparse>
 
 #include "types.h"
-#include "header.h"
-#include "transform.h"
-#include "parallel_for.h"
-#include "interp/linear.h"
-#include "interp/cubic.h"
+#include "image.h"
 
-#include "dwi/svr/param.h"
-#include "dwi/svr/psf.h"
 #include "dwi/svr/mapping.h"
-#include "dwi/svr/qspacebasis.h"
 
 
 namespace MR
@@ -36,9 +29,11 @@ namespace MR
       using value_type = ValueType;
 
       ImageView (const Header& hdr, ValueType* data)
-        : templatehdr (hdr), data_pointer (data),
-          x (hdr.ndim(), 0), strides (Stride::get(hdr))
-      { }
+        : templatehdr (hdr), data_pointer (data), x (hdr.ndim(), 0),
+          strides (Stride::get(hdr)), data_offset (Stride::offset(hdr))
+      {
+        INFO ("image view \"" + name() + "\" initialised with strides = " + str(strides) + ", start = " + str(data_offset));
+      }
 
       FORCE_INLINE bool valid () const { return data_pointer; }
       FORCE_INLINE bool operator! () const { return !valid(); }
@@ -119,8 +114,8 @@ namespace MR
         IsRowMajor = true
       };
 
-      Eigen::Index rows() const { return nxy*nz*nv + 2*nxy*nz*nc; }
-      Eigen::Index cols() const { return nxy*nz*nc; }
+      Eigen::Index rows() const { return map.rows() + 2*map.cols(); }
+      Eigen::Index cols() const { return map.cols(); }
 
       template<typename Rhs>
       Eigen::Product<ReconMatrix,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
@@ -130,30 +125,16 @@ namespace MR
       typedef Eigen::SparseMatrix<float, Eigen::RowMajor, StorageIndex> SparseMat;
       typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> RowMatrixXf;
 
-      typedef Interp::LinearInterp<Image<float>, Interp::LinearInterpProcessingType::ValueAndDerivative> FieldInterpType;
-
-
       // Custom API:
-      ReconMatrix(const Header& in, const Eigen::MatrixXf& rigid, const QSpaceBasis& basis,
-                  const SSP<float,2>& ssp, const float reg, const float zreg)
-        : nx (in.size(0)), ny (in.size(1)), nz (in.size(2)), nv (in.size(3)),
-          nxy (nx*ny), nc (basis.get_ncoefs()), ne (rigid.rows() / nv),
-          T0 (in), qbasis (basis),
-          ssp (ssp), motion (rigid), htmp(in)
+      ReconMatrix(const ReconMapping& map, const float reg, const float zreg)
+        : map (map)
       {
-        INFO("Multiband factor " + str(nz/ne) + " detected.");
-
+        size_t nz = map.yheader().size(2);
+        size_t nv = map.yheader().size(3);
+        W.resize(nz,nv); W.setOnes();
         float scale = std::sqrt(1.0f * nv);
         init_laplacian(scale*reg);
         init_zreg(scale*zreg);
-        assert (motion.rows() == nv*ne);
-
-        // set header for temporary images.
-        htmp.ndim() = 3;
-        htmp.stride(0) = 1;
-        htmp.stride(1) = 2;
-        htmp.stride(2) = 3;
-        htmp.sanitise();
       }
 
       ReconMatrixAdjoint adjoint() const;
@@ -161,34 +142,22 @@ namespace MR
       const Eigen::MatrixXf& getWeights() const        { return W; }
       void setWeights (const Eigen::MatrixXf& weights) { W = weights; }
 
-      void setField(const Image<float>& fieldmap, const size_t fieldidx, const Eigen::MatrixXf& petable)
-      {
-        field = fieldmap;
-        pe = petable;
-        Tf = Transform(field).scanner2voxel
-            * get_transform(motion.block(fieldidx*ne,0,ne,6).colwise().mean()).inverse()
-            * T0.voxel2scanner;
-      }
-
       template <typename VectorType1, typename VectorType2>
       void project(VectorType1& dst, const VectorType2& rhs, bool useweights = true) const
       {
         INFO("Forward projection.");
-        size_t nxyz = nxy*nz;
-        Eigen::Map<const RowMatrixXf> X (rhs.data(), nxyz, nc);
-        Thread::parallel_for<size_t>(0, nv*ne,
-          [&](size_t idx) {
-            size_t v = idx/ne;
-            auto tmp = Image<float>::scratch(htmp);
-            Eigen::Map<Eigen::VectorXf> q (tmp.address(), nxyz);
-            q.noalias() = X * qbasis.get_projection(idx);
-            for (size_t z = idx%ne; z < nz; z += ne) {
-              Eigen::Ref<Eigen::VectorXf> r = dst.segment((nz*v+z)*nxy, nxy);
-              project_slice_x2y(v, z, r, tmp);
-              if (useweights) r *= std::sqrt(W(z,v));
-            }
-          });
+        Eigen::VectorXf copy = rhs;
+        ImageView<float> recon (map.xheader(), copy.data());
+        ImageView<float> source (map.yheader(), dst.data());
+        map.x2y(recon, source);
+        if (useweights) {
+          for (auto l = Loop() (source); l; l++)
+            source.value() *= std::sqrt(W(source.index(2), source.index(3)));
+        }
         INFO("Forward projection - regularisers");
+        size_t nxyz = recon.size(0)*recon.size(1)*recon.size(2);
+        size_t nc = recon.size(3), nv = source.size(3);
+        Eigen::Map<const RowMatrixXf> X (rhs.data(), nxyz, nc);
         Eigen::Ref<Eigen::VectorXf> ref1 = dst.segment(nxyz*nv, nxyz*nc);
         Eigen::Map<RowMatrixXf> Yreg1 (ref1.data(), nxyz, nc);
         Yreg1.noalias() += L * X;
@@ -199,98 +168,9 @@ namespace MR
 
 
     private:
-      const size_t nx, ny, nz, nv, nxy, nc, ne;
-      const Transform T0;
-      const QSpaceBasis qbasis;
-      const SSP<float,2> ssp;
-
-      RowMatrixXf motion;
+      const ReconMapping& map;
       Eigen::MatrixXf W;
       SparseMat L, Z;
-
-      Header htmp;
-
-      Image<float> field;
-      Eigen::MatrixXf pe;
-      transform_type Tf;
-
-      inline transform_type get_transform(const Eigen::VectorXf& p) const
-      {
-        transform_type T (se3exp(p).cast<double>());
-        return T;
-      }
-
-      inline transform_type get_Ts2r(const size_t v, const size_t z) const
-      {
-        transform_type Ts2r = T0.scanner2voxel * get_transform(motion.row(v*ne+z%ne)) * T0.voxel2scanner;
-        return Ts2r;
-      }
-
-      inline size_t get_idx(const int x, const int y, const int z) const
-      {
-        return size_t(z*nxy + y*nx + x);
-      }
-
-      template <typename VectorType1, typename ImageType2>
-      void project_slice_x2y(const int v, const int z, VectorType1& dst, const ImageType2& rhs) const
-      {
-        std::unique_ptr<FieldInterpType> finterp;
-        if (field.valid())
-          finterp = make_unique<FieldInterpType>(field, 0.0f);
-
-        Eigen::Vector3 ps, pr, peoffset;
-        float iJac;
-        transform_type Ts2r = get_Ts2r(v, z);
-        if (field.valid()) {
-          peoffset = pe.block<1,3>(v, 0).transpose().cast<double>();
-        }
-
-        Interp::Cubic<ImageType2> source (rhs, 0.0f);
-
-        size_t i = 0;
-        for (size_t y = 0; y < ny; y++) {         // in-plane
-          ps[1] = y;
-          for (size_t x = 0; x < nx; x++, i++) {
-            ps[0] = x;
-            for (int s = -ssp.size(); s <= ssp.size(); s++) {       // ssp neighbourhood
-              ps[2] = z+s;
-              // get slice position in recon space
-              ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
-              // update motion matrix
-              source.voxel(pr);
-              dst[i] += (ssp(s)*iJac) * source.value();
-            }
-          }
-        }
-      }
-
-      inline void ps2pr(const Eigen::Vector3& ps, Eigen::Vector3& pr, const transform_type& Ts2r,
-                        std::unique_ptr<FieldInterpType>& field, const Eigen::Vector3 pe, float& invjac) const
-      {
-        pr = Ts2r * ps;
-        // clip pr to edges
-        pr[0] = (pr[0] < 0) ? 0 : (pr[0] > nx-1) ? nx-1 : pr[0];
-        pr[1] = (pr[1] < 0) ? 0 : (pr[1] > ny-1) ? ny-1 : pr[1];
-        pr[2] = (pr[2] < 0) ? 0 : (pr[2] > nz-1) ? nz-1 : pr[2];
-        // field mapping
-        invjac = 1.0;
-        if (field) {
-          float B0 = 0.0f;
-          Eigen::Vector3 p1 = pr;
-          Eigen::RowVector3f dB0;
-          // fixed point inversion
-          for (int j = 0; j < 30; j++) {
-            field->voxel(Tf * pr);
-            field->value_and_gradient(B0, dB0);
-            pr = Ts2r * (ps - B0 * pe);
-            if ((p1 - pr).norm() < 0.1f) break;
-            p1 = pr;
-          }
-          // Jacobian
-          dB0 *= (Tf * Ts2r).rotation().cast<float>();
-          invjac = 1.0 / std::max(0.1, 1. + 2. * dB0 * pe.cast<float>());
-        }
-      }
 
       void init_laplacian(const float lambda)
       {
@@ -300,8 +180,14 @@ namespace MR
         D << -6, 1;
         D *= lambda;
 
-        L.resize(nxy*nz, nxy*nz);
-        L.reserve(Eigen::VectorXi::Constant(nxy*nz, 7));
+        size_t nx = map.xheader().size(0);
+        size_t ny = map.xheader().size(1);
+        size_t nz = map.xheader().size(2);
+        size_t nxy = nx*ny, nxyz = nxy*nz;
+        auto get_idx = [&] (size_t x, size_t y, size_t z) { return z*nxy + y*nx + x; };
+
+        L.resize(nxyz, nxyz);
+        L.reserve(Eigen::VectorXi::Constant(nxyz, 7));
         for (size_t z = 0; z < nz; z++) {
           for (size_t y = 0; y < ny; y++) {
             for (size_t x = 0; x < nx; x++) {
@@ -327,8 +213,14 @@ namespace MR
         D << 70, -56, 28, -8, 1;
         D *= lambda;
 
-        Z.resize(nxy*nz, nxy*nz);
-        Z.reserve(Eigen::VectorXi::Constant(nxy*nz, 9));
+        size_t nx = map.xheader().size(0);
+        size_t ny = map.xheader().size(1);
+        size_t nz = map.xheader().size(2);
+        size_t nxy = nx*ny, nxyz = nxy*nz;
+        auto get_idx = [&] (size_t x, size_t y, size_t z) { return z*nxy + y*nx + x; };
+
+        Z.resize(nxyz, nxyz);
+        Z.reserve(Eigen::VectorXi::Constant(nxyz, 9));
         for (size_t z = 0; z < nz; z++) {
           for (size_t y = 0; y < ny; y++) {
             for (size_t x = 0; x < nx; x++) {
@@ -378,43 +270,30 @@ namespace MR
       }
 
       using RowMatrixXf = ReconMatrix::RowMatrixXf;
-      using FieldInterpType = ReconMatrix::FieldInterpType;
-
 
       // Custom API:
       ReconMatrixAdjoint(const ReconMatrix& m)
-        : recmat (m),
-          nx (m.nx), ny (m.ny), nz (m.nz), nv (m.nv), nxy (nx*ny), nc (m.nc), ne (m.ne)
+        : recmat (m), map (m.map)
       { }
 
-      const ReconMatrix& adjoint() const
-      {
-        return recmat;
-      }
+      const ReconMatrix& adjoint() const { return recmat; }
 
       template <typename VectorType1, typename VectorType2>
       void project(VectorType1& dst, const VectorType2& rhs, bool useweights = true) const
       {
         INFO("Transpose projection.");
-        size_t nxyz = nxy*nz;
-        Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
-        RowMatrixXf zero (nxyz, nc); zero.setZero();
-        X = Thread::parallel_sum<RowMatrixXf, size_t>(0, nv*ne,
-          [&](size_t idx, RowMatrixXf& T) {
-            size_t v = idx/ne;
-            auto tmp = Image<float>::scratch(recmat.htmp);
-            Eigen::Map<Eigen::VectorXf> r (tmp.address(), nxyz);
-            r.setZero();
-            for (size_t z = idx%ne; z < nz; z += ne) {
-              float ww = (useweights) ? std::sqrt(recmat.W(z,v)) : 1.0f;
-              project_slice_y2x(v, z, tmp, rhs.segment((nz*v+z)*nxy, nxy), ww);
-            }
-            Eigen::RowVectorXf qr = recmat.qbasis.get_projection(idx);
-            for (size_t j = 0; j < nxyz; j++) {
-              if (r[j] != 0.0f) T.row(j) += r[j] * qr;
-            }
-          }, zero);
+        ImageView<float> recon (map.xheader(), dst.data());
+        Eigen::VectorXf copy = rhs;  // temporary for weighted input
+        ImageView<float> source (map.yheader(), copy.data());
+        if (useweights) {
+          for (auto l = Loop() (source); l; l++)
+            source.value() *= std::sqrt(recmat.W(source.index(2), source.index(3)));
+        }
+        map.y2x(recon, source);
         INFO("Transpose projection - regularisers");
+        size_t nxyz = recon.size(0)*recon.size(1)*recon.size(2);
+        size_t nc = recon.size(3), nv = source.size(3);
+        Eigen::Map<RowMatrixXf> X (dst.data(), nxyz, nc);
         Eigen::Ref<const Eigen::VectorXf> ref1 = rhs.segment(nxyz*nv, nxyz*nc);
         Eigen::Map<const RowMatrixXf> Yreg1 (ref1.data(), nxyz, nc);
         X.noalias() += recmat.L.adjoint() * Yreg1;
@@ -425,42 +304,7 @@ namespace MR
 
     private:
       const ReconMatrix& recmat;
-      const size_t nx, ny, nz, nv, nxy, nc, ne;
-
-
-      template <typename ImageType1, typename VectorType2>
-      void project_slice_y2x(const int v, const int z, ImageType1& dst, const VectorType2& rhs, const float weight) const
-      {
-        std::unique_ptr<FieldInterpType> finterp;
-        if (recmat.field.valid())
-          finterp = make_unique<FieldInterpType>(recmat.field, 0.0f);
-
-        Eigen::Vector3 ps, pr, peoffset;
-        float iJac;
-        transform_type Ts2r = recmat.get_Ts2r(v, z);
-        if (recmat.field.valid()) {
-          peoffset = recmat.pe.block<1,3>(v, 0).transpose().cast<double>();
-        }
-
-        Interp::CubicAdjoint<ImageType1> target (dst, 0.0f);
-
-        size_t i = 0;
-        for (size_t y = 0; y < ny; y++) {         // in-plane
-          ps[1] = y;
-          for (size_t x = 0; x < nx; x++, i++) {
-            ps[0] = x;
-            float tmp = weight * rhs[i];
-            for (int s = -recmat.ssp.size(); s <= recmat.ssp.size(); s++) {       // ssp neighbourhood
-              ps[2] = z+s;
-              // get slice position in recon space
-              recmat.ps2pr(ps, pr, Ts2r, finterp, peoffset, iJac);
-              // update motion matrix
-              target.voxel(pr);
-              target.adjoint_add (recmat.ssp(s) * iJac * tmp);
-            }
-          }
-        }
-      }
+      const ReconMapping& map;
 
     };
 
