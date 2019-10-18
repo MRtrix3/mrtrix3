@@ -168,12 +168,14 @@ namespace MR
           template <typename ImageType1, typename ImageType2>
           void x2y(const ImageType1& X, const ImageType2& Y) const
           {
+            // create adapters
             auto qmap = Adapter::makebuffered<QSpaceMapping> (X, qbasis);
-            auto map_x2y = Adapter::make<MotionMapping> (qmap, yhdr, motion);
+            auto spatialmap = Adapter::make<MotionMapping> (qmap, yhdr, motion);
 
+            // define per-slice mapping
             struct MapSliceX2Y {   MEMALIGN(MapSliceX2Y);
               ImageType2 out;
-              decltype(map_x2y) pred;
+              decltype(spatialmap) pred;
               size_t ne;
               const vector<size_t>& axouter;
               const vector<size_t>& axslice;
@@ -191,9 +193,46 @@ namespace MR
                   }
                 }
               }
-            } func = {Y, map_x2y, ne, outer_axes, slice_axes};
+            } func = {Y, spatialmap, ne, outer_axes, slice_axes};
 
+            // run across all slices
             ThreadedLoop ("forward projection", Y, outer_axes, slice_axes)
+              .run_outer (func);
+          }
+
+          template <typename ImageType1, typename ImageType2>
+          void y2x(const ImageType1& X, const ImageType2& Y) const
+          {
+            // create adapters
+            auto qmap = Adapter::makebuffered_add<QSpaceMapping> (X, qbasis);
+            auto spatialmap = Adapter::make<MotionMapping> (qmap, yhdr, motion);
+
+            // define per-slice mapping
+            struct MapSliceY2X {   MEMALIGN(MapSliceY2X);
+              ImageType2 in;
+              decltype(spatialmap) pred;
+              size_t ne;
+              const vector<size_t>& axouter;
+              const vector<size_t>& axslice;
+              // define slice-wise operation
+              void operator() (Iterator& pos) {
+                size_t z = pos.index(2);
+                size_t v = pos.index(3);
+                if (z < ne) {
+                  assign_pos_of (pos, axouter).to (in);
+                  pred.set_shotidx(v*ne+z%ne);
+                  for (size_t zz = z; zz < in.size(2); zz += ne) {
+                    in.index(2) = pred.index(2) = zz;
+                    for (auto i = Loop(axslice) (in, pred); i; ++i)
+                      pred.adjoint_add (in.value());
+                  }
+                  pred.set_shotidx(0); // trigger delayed write back
+                }
+              }
+            } func = {Y, spatialmap, ne, outer_axes, slice_axes};
+
+            // run across all slices
+            ThreadedLoop ("transpose projection", Y, outer_axes, slice_axes)
               .run_outer (func);
           }
 

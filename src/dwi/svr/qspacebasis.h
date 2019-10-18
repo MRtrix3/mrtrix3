@@ -35,15 +35,15 @@ namespace MR
 
         using base_type::parent;
 
-        Buffer (const ImageType& parent)
-          : base_type (parent)
+        Buffer (const ImageType& parent, bool readonly = true)
+          : base_type (parent), readmode (readonly)
         {
           Header hdr (parent);
           buffer = Image<value_type>::scratch(hdr, "temporary buffer");
           mask = Image<bool>::scratch(hdr, "buffer mask");
         }
 
-        Buffer (const Buffer& other) : Buffer (other.parent()) { }
+        Buffer (const Buffer& other) : Buffer (other.parent(), other.readmode) { }
 
         void move_index (size_t axis, ssize_t increment) {
           parent().index(axis) += increment;
@@ -57,17 +57,38 @@ namespace MR
         }
 
         void flush () {
+          // delayed write back
+          if (!readmode) {
+            for (auto l = Loop() (mask, buffer, parent()); l; l++) {
+              if (mask.value()) {
+                parent().adjoint_add(buffer.value());     // not thread safe !
+              }
+            }
+          }
+          // clear buffer
           for (auto l = Loop() (mask); l; l++)
             mask.value() = false;
           reset();
         }
 
-        FORCE_INLINE value_type value () {
-          if (mask.value()) return buffer.value();
-          else {
+        value_type value () {
+          assert (readmode);
+          if (mask.value()) {
+            return buffer.value();
+          } else {
             buffer.value() = parent().value();
             mask.value() = true;
             return buffer.value();
+          }
+        }
+
+        void adjoint_add (value_type val) {
+          assert (!readmode);
+          if (mask.value()) {
+            buffer.value() += val;
+          } else {
+            buffer.value() = val;
+            mask.value() = true;
           }
         }
 
@@ -79,11 +100,17 @@ namespace MR
       private:
         Image<value_type> buffer;
         Image<bool> mask;
+        bool readmode;
     };
 
     template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
     inline Buffer<AdapterType<ImageType>> makebuffered (const ImageType& parent, Args&&... args) {
-      return { { parent, std::forward<Args> (args)... } };
+      return { { parent, std::forward<Args> (args)... } , true };
+    }
+
+    template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
+    inline Buffer<AdapterType<ImageType>> makebuffered_add (const ImageType& parent, Args&&... args) {
+      return { { parent, std::forward<Args> (args)... } , false };
     }
 
   }
