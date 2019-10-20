@@ -870,7 +870,7 @@ class progressBar(object): #pylint: disable=unused-variable
       sys.stderr.write('\r' + self.scriptname + ': ' + colourExec + '[' + ('100%' if self.multiplier else 'done') + ']' + colourClear + ' ' + colourConsole + self.message + colourClear + clearLine + '\n')
     else:
       if self.newline:
-        sys.stderr.write(self.scriptname + ': ' + self.message + ' [' + ('=' * (self.value/2)) + ']\n')
+        sys.stderr.write(self.scriptname + ': ' + self.message + ' [' + ('=' * int(self.value/2)) + ']\n')
       else:
         sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)) + ']\n')
     sys.stderr.flush()
