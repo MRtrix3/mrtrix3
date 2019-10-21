@@ -41,9 +41,10 @@ namespace MR
         {
           Header hdr (parent);
           buffer = Image<value_type>::scratch(hdr, "temporary buffer");
-          mask = Image<bool>::scratch(hdr, "temporary buffer mask");
-          if (!readmode)
-            lock = Image<bool>::scratch(hdr, "temporary buffer lock");
+          mask = Image<uint8_t>::scratch(hdr, "temporary buffer mask");
+          // initialise lock image
+          static_assert (sizeof(std::atomic_flag) == sizeof(uint8_t), "std::atomic_flag expected to be 1 byte");
+          if (!readmode) lock = Image<uint8_t>::scratch(hdr, "temporary buffer lock");
         }
 
         Buffer (const Buffer& other)
@@ -51,7 +52,7 @@ namespace MR
         {
           Header hdr (other.parent());
           buffer = Image<value_type>::scratch(hdr, "temporary buffer");
-          mask = Image<bool>::scratch(hdr, "temporary buffer mask");
+          mask = Image<uint8_t>::scratch(hdr, "temporary buffer mask");
         }
 
         void move_index (size_t axis, ssize_t increment) {
@@ -111,9 +112,9 @@ namespace MR
 
       private:
         Image<value_type> buffer;
-        Image<bool> mask;
+        Image<uint8_t> mask;
         bool readmode;
-        Image<bool> lock;
+        Image<uint8_t> lock;
     };
 
     template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
