@@ -321,6 +321,10 @@ void run ()
     vector<int> axes = opt[0][0];
     if (axes.size() != 2)
       throw Exception ("slice axes must be specified as a comma-separated 2-vector");
+    if (std::max (axes[0], axes[1]) >= header.ndim())
+      throw Exception ("slice axes must be within the dimensionality of the image");
+    if (axes[0] == axes[1])
+      throw Exception ("two independent slice axes must be specified");
     slice_axes = { size_t(axes[0]), size_t(axes[1]) };
   }
 
