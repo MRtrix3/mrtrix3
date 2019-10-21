@@ -27,7 +27,7 @@ namespace MR
     {
 
     template <class ImageType>
-      class Replicate : 
+      class Replicate :
         public Base<Replicate<ImageType>,ImageType>
     { MEMALIGN(Replicate<ImageType>)
       public:
@@ -45,6 +45,8 @@ namespace MR
             pos_ (std::max<size_t> (parent().ndim(), header_.ndim()), 0)
           {
             for (size_t n = 0; n < std::min<size_t> (parent().ndim(), header_.ndim()); ++n) {
+              if (n < parent().ndim())
+                parent().index(n) = 0;
               if (parent().size(n) > 1 && parent().size(n) != header_.size(n))
                 throw Exception ("cannot replicate over non-singleton dimensions");
             }

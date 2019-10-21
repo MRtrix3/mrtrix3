@@ -1,6 +1,28 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import math
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, path, run
+
+
 DEFAULT_TARGET_INTENSITY=1000
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  from mrtrix3 import app
   parser = subparsers.add_parser('individual', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   parser.set_synopsis('Intensity normalise a DWI series based on the b=0 signal within a supplied mask')
@@ -14,14 +36,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output_dwi)
 
 
 
 def execute(): #pylint: disable=unused-variable
-  import math
-  from mrtrix3 import app, MRtrixError, path, run
 
   grad_option = ''
   if app.ARGS.grad:

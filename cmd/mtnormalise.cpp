@@ -277,6 +277,7 @@ void run_primitive () {
   auto opt = get_options ("mask");
 
   auto orig_mask = MaskType::open (opt[0][0]);
+  check_dimensions (header_3D, orig_mask);
   auto initial_mask = MaskType::scratch (orig_mask, "Initial processing mask");
   auto mask = MaskType::scratch (orig_mask, "Processing mask");
   auto prev_mask = MaskType::scratch (orig_mask, "Previous processing mask");
