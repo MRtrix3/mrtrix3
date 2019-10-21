@@ -20,7 +20,7 @@ case  $test in
     $py ./configure -nooptim && $py ./build -nowarnings -persistent -nopaginate
     ;;
   "run")
-    $py ./configure -assert && $py ./build -nowarnings -persistent -nopaginate && ./run_tests && ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log
+    $py ./configure -assert && $py ./build -nowarnings -persistent -nopaginate && ./run_tests units && ./run_tests binaries && ./docs/generate_user_docs.sh && git diff --exit-code docs/ > gitdiff.log
     ;;
   *)
     echo "Envvar \"test\" not defined";
