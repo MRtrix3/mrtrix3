@@ -32,7 +32,7 @@ namespace MR
         : templatehdr (hdr), data_pointer (data), x (hdr.ndim(), 0),
           strides (Stride::get(hdr)), data_offset (Stride::offset(hdr))
       {
-        INFO ("image view \"" + name() + "\" initialised with strides = " + str(strides) + ", start = " + str(data_offset));
+        DEBUG ("image view \"" + name() + "\" initialised with strides = " + str(strides) + ", start = " + str(data_offset));
       }
 
       FORCE_INLINE bool valid () const { return data_pointer; }
@@ -62,6 +62,11 @@ namespace MR
 
       FORCE_INLINE ValueType get_value () const { return data_pointer[data_offset]; }
       FORCE_INLINE void set_value (ValueType val) { data_pointer[data_offset] = val; }
+
+      //! return RAM address of current voxel
+      FORCE_INLINE ValueType* address () const {
+        return static_cast<ValueType*>(data_pointer) + data_offset;
+      }
 
     protected:
       const Header& templatehdr;    // template image header

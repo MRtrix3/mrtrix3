@@ -10,6 +10,7 @@
 #define __dwi_svr_qspacebasis_h__
 
 
+#include <atomic>
 #include <Eigen/Dense>
 
 #include "types.h"
@@ -40,10 +41,18 @@ namespace MR
         {
           Header hdr (parent);
           buffer = Image<value_type>::scratch(hdr, "temporary buffer");
-          mask = Image<bool>::scratch(hdr, "buffer mask");
+          mask = Image<bool>::scratch(hdr, "temporary buffer mask");
+          if (!readmode)
+            lock = Image<bool>::scratch(hdr, "temporary buffer lock");
         }
 
-        Buffer (const Buffer& other) : Buffer (other.parent(), other.readmode) { }
+        Buffer (const Buffer& other)
+          : base_type (other.parent()), readmode (other.readmode), lock (other.lock)
+        {
+          Header hdr (other.parent());
+          buffer = Image<value_type>::scratch(hdr, "temporary buffer");
+          mask = Image<bool>::scratch(hdr, "temporary buffer mask");
+        }
 
         void move_index (size_t axis, ssize_t increment) {
           parent().index(axis) += increment;
@@ -59,9 +68,12 @@ namespace MR
         void flush () {
           // delayed write back
           if (!readmode) {
-            for (auto l = Loop() (mask, buffer, parent()); l; l++) {
+            for (auto l = Loop() (parent(), buffer, mask, lock); l; l++) {
               if (mask.value()) {
-                parent().adjoint_add(buffer.value());     // not thread safe !
+                std::atomic_flag* flag = reinterpret_cast<std::atomic_flag*> (lock.address());
+                while (flag->test_and_set(std::memory_order_acquire)) ;
+                parent().adjoint_add(buffer.value());
+                flag->clear(std::memory_order_release);
               }
             }
           }
@@ -101,6 +113,7 @@ namespace MR
         Image<value_type> buffer;
         Image<bool> mask;
         bool readmode;
+        Image<bool> lock;
     };
 
     template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
@@ -271,8 +284,12 @@ namespace MR
           void adjoint_add (value_type val) {
             if (val != 0) {
               size_t i = 0;
-              for (auto l = Loop(3) (parent()); l; l++, i++)
+              for (auto l = Loop(3) (parent()); l; l++, i++) {
                 parent().value() += qr[i] * val;
+//                std::atomic<value_type>* at = reinterpret_cast<std::atomic<value_type>*> (parent().address());
+//                value_type prev = *at, diff = qr[i] * val;
+//                while (!at->compare_exchange_weak (prev, prev + diff, std::memory_order_relaxed)) ;
+              }
             }
           }
 
