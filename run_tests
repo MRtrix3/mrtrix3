@@ -1,43 +1,98 @@
 #!/bin/bash
 
-datadir="data"
-testdir="tests"
-commandlist=""
-while test $# -gt 0
-do
-    case "$1" in
-        -scripts)
-            datadir="script_data"
-            testdir="script_tests"
-            ;;
-        *)
-            commandlist="$commandlist $1"
-            ;;
-    esac
-    shift
-done
 
-LOGFILE=testing.log
-echo logging to \""$LOGFILE"\"
-
-cat > $LOGFILE <<EOD
--------------------------------------------
-  Testing MRtrix3 installation
--------------------------------------------
-
-EOD
-
-echo -n "fetching test data... "
-git submodule update --init testing/$datadir >> $LOGFILE 2>&1
-
-if [ $? != 0 ]; then
-  echo ERROR!
+if test "$#" -ne 1; then
+  echo "Script must be provided with single input argument: \"binaries\", \"scripts\", \"units\", or the name of a specific test to be run."
   exit 1
-else
+fi
+
+
+if [ -d testing/data/ ]; then
+  echo -n "Deleting old testing data directory testing/data/"
+  rm -rf testing/data/
   echo OK
 fi
 
 
+datadir=""
+testsdir=""
+testlist=""
+teststring=""
+case $1 in
+  binaries)
+    datadir="testing/binaries/data/"
+    testsdir="testing/binaries/tests/"
+    teststring="binaries"
+    ;;
+  scripts)
+    datadir="testing/scripts/data/"
+    testsdir="testing/scripts/tests/"
+    teststring="scripts"
+    ;;
+  units)
+    testsdir="testing/tests/"
+    teststring="unit tests"
+    ;;
+  *)
+    for item in testing/binaries/tests/* testing/scripts/tests/* testing/tests/*; do
+      if [[ $(basename $item) == $1 ]]; then
+        testlist=$item
+        if [[ $item == testing/binaries/tests/* ]]; then
+          datadir="testing/binaries/data/"
+          teststring="binary \""$1"\""
+        elif [[ $item == testing/scripts/tests/* ]]; then
+          datadir="testing/scripts/data/"
+          teststring="script \""$1"\""
+        else
+          teststring="unit test \""$1"\""
+        fi
+        break
+      fi
+    done
+    if [ -z $testlist ]; then
+      echo "Unable to find requested test \""$1"\""
+      exit 1
+    fi
+    ;;
+esac
+
+
+LOGFILE=testing.log
+cat > $LOGFILE <<EOD
+------------------------------------------
+  Testing MRtrix3 $teststring
+------------------------------------------
+
+EOD
+
+
+if [ ! -z $datadir ]; then
+  echo -n "fetching requisite test data... "
+  git submodule update --init $datadir >> $LOGFILE 2>&1
+  if [ $? != 0 ]; then
+    echo ERROR!
+    exit 1
+  else
+    echo OK
+  fi
+fi
+
+
+if [ ! -z $testsdir ]; then
+  echo -n "building list of tests... "
+  for item in $testsdir/*; do
+    testlist="$testlist $(basename $item)"
+  done
+  if [ -z "$testlist" ]; then
+    echo ERROR!
+    exit 1
+  fi
+  echo OK
+  cat >> $LOGFILE <<EOD
+## Tests: ${testlist}
+
+EOD
+fi
 
 echo -n "building testing commands... "
 cat >> $LOGFILE <<EOD
@@ -63,13 +118,6 @@ else
 fi
 
 
-# generate list of tests to run if none have been requested explicitly
-if [ -z "$commandlist" ]; then
-  for n in testing/$testdir/*; do
-    commandlist="$commandlist $(basename $n)"
-  done
-fi
-
 a_test_has_failed=false
 
 cat >> $LOGFILE <<EOD
@@ -78,17 +126,18 @@ PATH is set to $PATH
 EOD
 
 
-for command in $commandlist; do
+for testitem in $testlist; do
 
   cat >> $LOGFILE <<EOD
 -------------------------------------------
 
-## running "${command}"...
+## running "${testitem}"...
 
 EOD
 
-  echo -n 'running "'${command}'"... '
-  rm -rf testing/$datadir/tmp* testing/$datadir/*-tmp-*
+  echo -n 'running "'${testitem}'"... '
+  rm -f testing/$datadir/tmp*.*
+  rm -rf testing/$datadir/*-tmp-*/
   ((ntests=0))
   ((success=0))
   while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
@@ -97,7 +146,7 @@ EOD
     echo -n '# command: '$cmd >> $LOGFILE
     (
       export PATH="$(pwd)/testing/bin:$(pwd)/bin:$PATH";
-      cd testing/$datadir/
+      cd $datadir
       eval $cmd
     ) > .__tmp.log 2>&1
 
@@ -110,7 +159,7 @@ EOD
     cat .__tmp.log >> $LOGFILE
     echo "" >> $LOGFILE
     ((ntests++))
-  done < testing/$testdir/$command
+  done < $testsdir$testitem
 
   echo -n $success of $ntests passed
   if [[ $success -lt $ntests ]]; then
@@ -118,13 +167,13 @@ EOD
     a_test_has_failed=true
     cat >> $LOGFILE <<EOD
 
-## ERROR: $(($ntests-$success)) tests failed for "${command}"
+## ERROR: $(($ntests-$success)) tests failed for "${testitem}"
 
 EOD
   else
     echo ""
     cat >> $LOGFILE <<EOD
-## $ntests tests completed OK for "${command}"
+## $ntests tests completed OK for "${testitem}"
 
 EOD
   fi
