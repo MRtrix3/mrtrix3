@@ -18,6 +18,7 @@
 #define __file_json_utils_h__
 
 #include "file/json.h"
+#include "file/key_value.h"
 
 namespace MR
 {
@@ -30,6 +31,16 @@ namespace MR
 
       void load (Header&, const std::string&);
       void save (const Header&, const std::string&);
+
+      KeyValues read (const nlohmann::json& json);
+      void read (const nlohmann::json& json,
+                 Header& header,
+                 const bool realign);
+
+      void write (const KeyValues& keyval, nlohmann::json& json);
+      void write (const Header& header,
+                  nlohmann::json& json,
+                  const bool realign);
 
     }
   }

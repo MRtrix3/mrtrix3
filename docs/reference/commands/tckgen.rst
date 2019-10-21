@@ -21,7 +21,7 @@ Usage
 Description
 -----------
 
-By default, tckgen produces a fixed number of streamlines, by attempting to seed from new random locations until the target number of streamlines have been selected (in other words, after all inclusion & exclusion criteria have been applied), or the maximum number of seeds has been exceeded (by default, this is 1000× the desired number of selected streamlines). Use the -select and/or -seeds options to modify as required. See also the Seeding options section for alternative seeding strategies.
+By default, tckgen produces a fixed number of streamlines, by attempting to seed from new random locations until the target number of streamlines have been selected (in other words, after all inclusion & exclusion criteria have been applied), or the maximum number of seeds has been exceeded (by default, this is 1000 x the desired number of selected streamlines). Use the -select and/or -seeds options to modify as required. See also the Seeding options section for alternative seeding strategies.
 
 Below is a list of available tracking algorithms, the input image data that they require, and a brief description of their behaviour:
 
@@ -55,7 +55,7 @@ Streamlines tractography options
 
 -  **-step size** set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).
 
--  **-angle theta** set the maximum angle between successive steps: default is chosen such that minimum radius of curvature is one voxel; interpretation depends on order of integration (see Description).
+-  **-angle theta** set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize)
 
 -  **-minlength value** set the minimum length of any track in mm (default is 5 x voxelsize without ACT, 2 x voxelsize with ACT).
 
