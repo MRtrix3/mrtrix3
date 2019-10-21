@@ -821,7 +821,7 @@ def execute(): #pylint: disable=unused-variable
       app.debug('New: ' + str(new_slice_groups))
       slice_groups = new_slice_groups
 
-    matrix.save_numeric('slspec.txt', slice_groups, header='')
+    matrix.save_numeric('slspec.txt', slice_groups, header='', fmt='%d')
     eddy_manual_options.append('--slspec=slspec.txt')
 
 
