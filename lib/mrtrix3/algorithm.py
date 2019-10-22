@@ -32,7 +32,7 @@ def _algorithms_path():
 
 # This function needs to be safe to run in order to populate the help page; that is, no app initialisation has been run
 def get_list(): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   algorithm_list = [ ]
   for filename in os.listdir(_algorithms_path()):
     filename = filename.split('.')
