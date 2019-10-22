@@ -36,8 +36,8 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
-  from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   num_inputs = len(app.ARGS.inputs)
   if num_inputs < 2:

@@ -101,7 +101,7 @@ else:
 #   "mrtrix3.execute()"
 # , rather than executing this function directly
 def _execute(module): #pylint: disable=unused-variable
-  from mrtrix3 import run
+  from mrtrix3 import run #pylint: disable=import-outside-toplevel
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
 
   # Set up signal handlers
@@ -279,7 +279,7 @@ def check_output_path(item): #pylint: disable=unused-variable
 
 
 def make_scratch_dir(): #pylint: disable=unused-variable
-  from mrtrix3 import run
+  from mrtrix3 import run #pylint: disable=import-outside-toplevel
   global ARGS, CONTINUE_OPTION, EXEC_NAME, SCRATCH_DIR, WORKING_DIR
   if CONTINUE_OPTION:
     debug('Skipping scratch directory creation due to use of -continue option')
@@ -459,7 +459,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
   WRAPOFF = '\033[?7l'
 
   def __init__(self, msg, target=0):
-    from mrtrix3 import run
+    from mrtrix3 import run #pylint: disable=import-outside-toplevel
     global EXEC_NAME, VERBOSITY
     self.counter = 0
     self.isatty = sys.stderr.isatty()
@@ -499,7 +499,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
       self._update()
 
   def done(self):
-    from mrtrix3 import run
+    from mrtrix3 import run #pylint: disable=import-outside-toplevel
     global EXEC_NAME, VERBOSITY
     self.iscomplete = True
     if self.multiplier:
@@ -1090,7 +1090,7 @@ def add_dwgrad_import_options(): #pylint: disable=unused-variable
   options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide the diffusion gradient table in FSL bvecs/bvals format')
   CMDLINE.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
 def read_dwgrad_import_options(): #pylint: disable=unused-variable
-  from mrtrix3 import path
+  from mrtrix3 import path #pylint: disable=import-outside-toplevel
   global ARGS
   assert ARGS
   if ARGS.grad:
@@ -1107,7 +1107,7 @@ def add_dwgrad_export_options(): #pylint: disable=unused-variable
   options.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
   CMDLINE.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
 def read_dwgrad_export_options(): #pylint: disable=unused-variable
-  from mrtrix3 import path
+  from mrtrix3 import path #pylint: disable=import-outside-toplevel
   global ARGS
   assert ARGS
   if ARGS.export_grad_mrtrix:
@@ -1126,7 +1126,7 @@ def read_dwgrad_export_options(): #pylint: disable=unused-variable
 
 # Handler function for dealing with system signals
 def handler(signum, _frame):
-  from mrtrix3 import run
+  from mrtrix3 import run #pylint: disable=import-outside-toplevel
   global _SIGNALS, EXEC_NAME, SCRATCH_DIR, WORKING_DIR
   # Terminate any child processes in the run module
   try:

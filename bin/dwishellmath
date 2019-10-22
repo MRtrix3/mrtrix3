@@ -20,7 +20,7 @@ SUPPORTED_OPS = ['mean', 'median', 'sum', 'product', 'rms', 'norm', 'var', 'std'
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=no-name-in-module
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Daan Christiaens (daan.christiaens@kcl.ac.uk)')
   cmdline.set_synopsis('Apply an mrmath operation to each b-value shell in a DWI series')
   cmdline.add_description('The output of this command is a 4D image, where '
@@ -35,8 +35,8 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
-  from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
   # check inputs and outputs
   dwi_header = image.Header(path.from_user(app.ARGS.input, False))
   if len(dwi_header.size()) != 4:

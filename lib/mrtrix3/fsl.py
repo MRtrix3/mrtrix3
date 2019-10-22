@@ -30,7 +30,7 @@ _SUFFIX = ''
 #   a meaningful return code, and may run via SGE, which then requires waiting for
 #   the output files to appear.
 def check_first(prefix, structures): #pylint: disable=unused-variable
-  from mrtrix3 import app, path
+  from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
   existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
   if existing_file_count != len(vtk_files):
@@ -48,7 +48,7 @@ def check_first(prefix, structures): #pylint: disable=unused-variable
 #   version of eddy be used, and the various names that this command could
 #   conceivably be installed as.
 def eddy_binary(cuda): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if cuda:
     if find_executable('eddy_cuda'):
       app.debug('Selected soft-linked CUDA version (\'eddy_cuda\')')
@@ -93,7 +93,7 @@ def eddy_binary(cuda): #pylint: disable=unused-variable
 # Note that if FSL 4 and 5 are installed side-by-side, the approach taken in this
 #   function will select the version 5 executable.
 def exe_name(name): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if find_executable(name):
     output = name
   elif find_executable('fsl5.0-' + name):
@@ -110,7 +110,7 @@ def exe_name(name): #pylint: disable=unused-variable
 #   ignore the FSLOUTPUTTYPE environment variable. Therefore, the safest approach is:
 # Whenever receiving an output image from an FSL command, explicitly search for the path
 def find_image(name): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevelvvvv
   prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
   if os.path.isfile(prefix + suffix()):
     app.debug('Image at expected location: \"' + prefix + suffix() + '\"')
@@ -128,7 +128,7 @@ def find_image(name): #pylint: disable=unused-variable
 #   to the relevant command. Therefore use this function to 'guess' what the names
 #   of images provided by FSL commands will be.
 def suffix(): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   global _SUFFIX
   if _SUFFIX:
     return _SUFFIX
