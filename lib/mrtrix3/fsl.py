@@ -110,7 +110,7 @@ def exe_name(name): #pylint: disable=unused-variable
 #   ignore the FSLOUTPUTTYPE environment variable. Therefore, the safest approach is:
 # Whenever receiving an output image from an FSL command, explicitly search for the path
 def find_image(name): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevelvvvv
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
   if os.path.isfile(prefix + suffix()):
     app.debug('Image at expected location: \"' + prefix + suffix() + '\"')
