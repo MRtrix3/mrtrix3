@@ -16,7 +16,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 LOGFILE=testing.log
-echo logging to \""$LOGFILE"\"
 
 if test "$#" -ne 1; then
   echo "Script must be provided with single input argument: \"binaries\", \"scripts\", \"units\", or the name of a specific test to be run."
@@ -74,6 +73,7 @@ case $1 in
 esac
 
 
+echo logging to \""$LOGFILE"\"
 cat > $LOGFILE <<EOD
 ------------------------------------------
   Testing MRtrix3 $teststring
@@ -130,6 +130,13 @@ if [ $? != 0 ]; then
   echo ERROR!
   exit 1
 else
+  echo OK
+fi
+
+
+if [[ $datadir == "testing/scripts/data/" && -d "testing/scripts/tmp/" ]]; then
+  echo -n "Erasing old script test output directory... "
+  rm -rf testing/scripts/tmp/
   echo OK
 fi
 
@@ -196,6 +203,7 @@ EOD
   fi
 
 done
+
 
 if [ ${a_test_has_failed} = true ];
 then
