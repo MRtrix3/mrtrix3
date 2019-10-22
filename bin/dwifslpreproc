@@ -25,7 +25,7 @@ from distutils.spawn import find_executable
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=no-name-in-module
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Perform diffusion image pre-processing using FSL\'s eddy tool; including inhomogeneity distortion correction using FSL\'s topup tool if possible')
   cmdline.add_description('This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.')
@@ -79,8 +79,8 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module
-  from mrtrix3 import app, fsl, image, matrix, path, phaseencoding, run, utils #pylint: disable=no-name-in-module
+  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, fsl, image, matrix, path, phaseencoding, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
 
   if utils.is_windows():
     raise MRtrixError('Script cannot run on Windows due to FSL dependency')
