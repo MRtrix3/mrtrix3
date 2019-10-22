@@ -205,6 +205,14 @@ EOD
 done
 
 
+if [[ ! -z $testsdir && ! -z $datadir ]]; then
+  echo -n "Cleaning up temporary files..."
+  rm -f $datadir/tmp*.*
+  rm -rf $datadir/tmp-*/
+  rm -rf $datadir/*-tmp-*/
+  echo OK
+
+
 if [ ${a_test_has_failed} = true ];
 then
   exit 1
