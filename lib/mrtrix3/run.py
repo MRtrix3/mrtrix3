@@ -206,7 +206,7 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 
 def command(cmd, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   global shared #pylint: disable=invalid-name
 
   shell = kwargs.pop('shell', False)
@@ -457,7 +457,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
 
 
 def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not fn_to_execute:
     raise TypeError('Invalid input to run.function()')
 
@@ -502,7 +502,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
 # When running on Windows, add the necessary '.exe' so that hopefully the correct
 #   command is found by subprocess
 def exe_name(item):
-  from mrtrix3 import app, utils
+  from mrtrix3 import app, utils #pylint: disable=import-outside-toplevel
   if not utils.is_windows():
     path = item
   elif item.endswith('.exe'):
@@ -529,7 +529,7 @@ def exe_name(item):
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
 def version_match(item):
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not item in EXE_LIST:
     app.debug('Command ' + item + ' not found in MRtrix3 bin/ directory')
     return item
@@ -548,7 +548,7 @@ def version_match(item):
 # If the target executable is not a binary, but is actually a script, use the
 #   shebang at the start of the file to alter the subprocess call
 def _shebang(item):
-  from mrtrix3 import app, utils
+  from mrtrix3 import app, utils #pylint: disable=import-outside-toplevel
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
   if os.sep in item:
     path = item

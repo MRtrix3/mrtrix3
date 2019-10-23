@@ -32,7 +32,8 @@ namespace MR
       void load (Header&, const std::string&);
       void save (const Header&, const std::string&);
 
-      KeyValues read (const nlohmann::json& json);
+      KeyValues read (const nlohmann::json& json,
+                      const KeyValues& preexisting = KeyValues());
       void read (const nlohmann::json& json,
                  Header& header,
                  const bool realign);

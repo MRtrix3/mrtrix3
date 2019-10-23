@@ -20,7 +20,7 @@
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm, app #pylint: disable=no-name-in-module
+  from mrtrix3 import algorithm, app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Perform B1 field inhomogeneity correction for a DWI volume series')
   common_options = cmdline.add_argument_group('Options common to all dwibiascorrect algorithms')
@@ -34,8 +34,8 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
-  from mrtrix3 import algorithm, app, image, path, run #pylint: disable=no-name-in-module
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import algorithm, app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Find out which algorithm the user has requested
   alg = algorithm.get_module(app.ARGS.algorithm)
