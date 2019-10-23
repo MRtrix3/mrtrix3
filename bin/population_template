@@ -89,11 +89,11 @@ def abspath(*arg):
   return os.path.abspath(os.path.join(*arg))
 
 def relpath(*arg):
-  from mrtrix3 import app #pylint: disable=no-name-in-module
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   return os.path.relpath(os.path.join(*arg), app.WORKING_DIR)
 
 def check_linear_transformation (transformation, cmd, max_scaling = 0.5, max_shear = 0.2, max_rot = None, pause_on_warn = True):
-  from mrtrix3 import app, run, utils #pylint: disable=no-name-in-module
+  from mrtrix3 import app, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
 
   if max_rot is None:
     max_rot = 2 * math.pi
@@ -169,8 +169,8 @@ class Input(object):
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module
-  from mrtrix3 import app, image, matrix, path, run #pylint: disable=no-name-in-module
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   if not app.ARGS.type in REGISTRATION_MODES:
     raise MRtrixError("registration type must be one of %s. provided: %s" % (str(["rigid", "affine", "rigid_affine"]), app.ARGS.type))

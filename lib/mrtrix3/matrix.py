@@ -156,7 +156,7 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
 
 # Save numeric data to a text file
 def save_numeric(filename, data, **kwargs):
-  fmt = kwargs.pop('fmt', '%.14e')
+  fmt = kwargs.pop('fmt', '%6f')
   delimiter = kwargs.pop('delimiter', ' ')
   newline = kwargs.pop('newline', '\n')
   add_to_command_history = bool(kwargs.pop('add_to_command_history', True))
