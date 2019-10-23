@@ -79,10 +79,8 @@ namespace MR
             }
           }
           // clear buffer
-          memset(mask.buffer->get_data_pointer(), 0, footprint(*mask.buffer));
-          //for (auto l = Loop() (mask); l; l++)
-          //  mask.value() = false;
           reset();
+          memset(mask.address(), 0, footprint<uint8_t>(voxel_count(mask)));
         }
 
         value_type value () {
@@ -286,12 +284,8 @@ namespace MR
           void adjoint_add (value_type val) {
             if (val != 0) {
               size_t i = 0;
-              for (auto l = Loop(3) (parent()); l; l++, i++) {
+              for (auto l = Loop(3) (parent()); l; l++, i++)
                 parent().value() += qr[i] * val;
-//                std::atomic<value_type>* at = reinterpret_cast<std::atomic<value_type>*> (parent().address());
-//                value_type prev = *at, diff = qr[i] * val;
-//                while (!at->compare_exchange_weak (prev, prev + diff, std::memory_order_relaxed)) ;
-              }
             }
           }
 
