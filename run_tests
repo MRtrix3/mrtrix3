@@ -206,7 +206,7 @@ done
 
 
 if [[ ! -z $testsdir && ! -z $datadir ]]; then
-  echo -n "Cleaning up temporary files..."
+  echo -n "Cleaning up temporary files... "
   rm -f $datadir/tmp*.*
   rm -rf $datadir/tmp-*/
   rm -rf $datadir/*-tmp-*/
