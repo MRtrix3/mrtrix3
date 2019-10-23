@@ -65,9 +65,9 @@ namespace MR
 
 
 
-      KeyValues read (const nlohmann::json& json)
+      KeyValues read (const nlohmann::json& json, const KeyValues& preexisting)
       {
-        KeyValues result;
+        KeyValues result (preexisting);
         for (auto i = json.cbegin(); i != json.cend(); ++i) {
 
           if (i->is_boolean()) {
@@ -101,7 +101,7 @@ namespace MR
 
       void read (const nlohmann::json& json, Header& header, const bool realign)
       {
-        header.keyval() = read (json);
+        header.keyval() = read (json, header.keyval());
         if (realign && !Header::do_not_realign_transform) {
 
           // The corresponding header may have been rotated on image load prior to the JSON
