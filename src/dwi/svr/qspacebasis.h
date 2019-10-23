@@ -27,16 +27,16 @@ namespace MR
   namespace Adapter
   {
     template <class ImageType>
-    class Buffer : public Adapter::Base<Buffer<ImageType>, ImageType>
+    class Cache : public Adapter::Base<Cache<ImageType>, ImageType>
     {
-      MEMALIGN (Buffer<ImageType>)
+      MEMALIGN (Cache<ImageType>)
       public:
-        using base_type = Adapter::Base<Buffer<ImageType>, ImageType>;
+        using base_type = Adapter::Base<Cache<ImageType>, ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::parent;
 
-        Buffer (const ImageType& parent, bool readonly = true)
+        Cache (const ImageType& parent, bool readonly = true)
           : base_type (parent), readmode (readonly)
         {
           Header hdr (parent);
@@ -47,7 +47,7 @@ namespace MR
           if (!readmode) lock = Image<uint8_t>::scratch(hdr, "temporary buffer lock");
         }
 
-        Buffer (const Buffer& other)
+        Cache (const Cache& other)
           : base_type (other.parent()), readmode (other.readmode), lock (other.lock)
         {
           Header hdr (other.parent());
@@ -69,8 +69,8 @@ namespace MR
         void flush () {
           // delayed write back
           if (!readmode) {
-            for (auto l = Loop() (parent(), buffer, mask, lock); l; l++) {
-              if (mask.value()) {
+            for (auto l = Loop() (mask); l; l++) {
+              if (mask.value()) { assign_pos_of (mask).to (parent(), buffer, lock);
                 std::atomic_flag* flag = reinterpret_cast<std::atomic_flag*> (lock.address());
                 while (flag->test_and_set(std::memory_order_acquire)) ;
                 parent().adjoint_add(buffer.value());
@@ -79,8 +79,9 @@ namespace MR
             }
           }
           // clear buffer
-          for (auto l = Loop() (mask); l; l++)
-            mask.value() = false;
+          memset(mask.buffer->get_data_pointer(), 0, footprint(*mask.buffer));
+          //for (auto l = Loop() (mask); l; l++)
+          //  mask.value() = false;
           reset();
         }
 
@@ -118,12 +119,12 @@ namespace MR
     };
 
     template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
-    inline Buffer<AdapterType<ImageType>> makebuffered (const ImageType& parent, Args&&... args) {
+    inline Cache<AdapterType<ImageType>> makecached (const ImageType& parent, Args&&... args) {
       return { { parent, std::forward<Args> (args)... } , true };
     }
 
     template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
-    inline Buffer<AdapterType<ImageType>> makebuffered_add (const ImageType& parent, Args&&... args) {
+    inline Cache<AdapterType<ImageType>> makecached_add (const ImageType& parent, Args&&... args) {
       return { { parent, std::forward<Args> (args)... } , false };
     }
 

@@ -173,7 +173,7 @@ namespace MR
           void x2y(const ImageType1& X, ImageType2& Y) const
           {
             // create adapters
-            auto qmap = Adapter::makebuffered<QSpaceMapping> (X, qbasis);
+            auto qmap = Adapter::makecached<QSpaceMapping> (X, qbasis);
             auto spatialmap = Adapter::make<MotionMapping> (qmap, yhdr, motion);
 
             // define per-slice mapping
@@ -208,7 +208,7 @@ namespace MR
           void y2x(ImageType1& X, const ImageType2& Y) const
           {
             // create adapters
-            auto qmap = Adapter::makebuffered_add<QSpaceMapping> (X, qbasis);
+            auto qmap = Adapter::makecached_add<QSpaceMapping> (X, qbasis);
             auto spatialmap = Adapter::make<MotionMapping> (qmap, yhdr, motion);
 
             // define per-slice mapping
