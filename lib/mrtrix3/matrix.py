@@ -161,7 +161,7 @@ def save_numeric(filename, data, **kwargs):
   newline = kwargs.pop('newline', '\n')
   add_to_command_history = bool(kwargs.pop('add_to_command_history', True))
   header = kwargs.pop('header', { })
-  footer = kwargs.pop('footer', '')
+  footer = kwargs.pop('footer', { })
   comments = kwargs.pop('comments', '# ')
   encoding = kwargs.pop('encoding', None)
   if kwargs:
@@ -171,14 +171,15 @@ def save_numeric(filename, data, **kwargs):
   if encoding:
     encode_args['encoding'] = encoding
 
-  if isinstance(header, str):
-    header = { 'comments' : header }
-  elif isinstance(header, list):
-    header = { 'comments' : '\n'.join(str(entry) for entry in header) }
-  elif isinstance(header, dict):
-    header = dict((key, str(value)) for key, value in header.items())
-  else:
-    raise TypeError('Unrecognised input to matrix.save_numeric() using "header=" option')
+  if header:
+    if isinstance(header, str):
+      header = { 'comments' : header }
+    elif isinstance(header, list):
+      header = { 'comments' : '\n'.join(str(entry) for entry in header) }
+    elif isinstance(header, dict):
+      header = dict((key, str(value)) for key, value in header.items())
+    else:
+      raise TypeError('Unrecognised input to matrix.save_numeric() using "header=" option')
 
   if add_to_command_history:
     if 'command_history' in header:
@@ -186,18 +187,20 @@ def save_numeric(filename, data, **kwargs):
     else:
       header['command_history'] = COMMAND_HISTORY_STRING
 
-  if isinstance(footer, str):
-    footer = { 'comments' : footer }
-  elif isinstance(footer, list):
-    footer = { 'comments' : '\n'.join(str(entry) for entry in footer) }
-  elif isinstance(footer, dict):
-    footer = dict((key, str(value)) for key, value in footer.items())
-  else:
-    raise TypeError('Unrecognised input to matrix.save_numeric() using "footer=" option')
+  if footer:
+    if isinstance(footer, str):
+      footer = { 'comments' : footer }
+    elif isinstance(footer, list):
+      footer = { 'comments' : '\n'.join(str(entry) for entry in footer) }
+    elif isinstance(footer, dict):
+      footer = dict((key, str(value)) for key, value in footer.items())
+    else:
+      raise TypeError('Unrecognised input to matrix.save_numeric() using "footer=" option')
 
   with open(filename, 'wb') as outfile:
-    for key, value in header.items():
-      outfile.write((comments + key + ': ' + value + newline).encode(**encode_args))
+    for key, value in sorted(header.items()):
+      for line in value.splitlines():
+        outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
 
     if data:
       if isinstance(data[0], list):
@@ -211,8 +214,9 @@ def save_numeric(filename, data, **kwargs):
         fmt = delimiter.join([fmt, ] * len(data))
         outfile.write(((fmt % tuple(data) + newline).encode(**encode_args)))
 
-    for key, value in footer.items():
-      outfile.write((comments + key + ': ' + value + newline).encode(**encode_args))
+    for key, value in sorted(footer.items()):
+      for line in value.splitlines():
+        outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
 
 
 
