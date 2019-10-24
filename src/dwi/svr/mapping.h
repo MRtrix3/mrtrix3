@@ -33,6 +33,39 @@ namespace MR
   namespace Interp
   {
     template <class ImageType>
+    class LinearAdjoint : public Linear <ImageType>
+    { MEMALIGN(LinearAdjoint<ImageType>)
+      public:
+        using typename Linear<ImageType>::value_type;
+        using Linear<ImageType>::clamp;
+        using Linear<ImageType>::P;
+        using Linear<ImageType>::factors;
+
+        LinearAdjoint (const ImageType& parent, value_type outofbounds = 0)
+            : Linear <ImageType> (parent, outofbounds)
+        { }
+
+        //! Add value to local region by interpolation weights.
+        void adjoint_add (value_type val) {
+          if (Base<ImageType>::out_of_bounds) return;
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])), ssize_t (std::floor (P[1])), ssize_t (std::floor (P[2])) };
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 2; ++z) {
+            ImageType::index(2) = clamp (c[2] + z, ImageType::size (2));
+            for (ssize_t y = 0; y < 2; ++y) {
+              ImageType::index(1) = clamp (c[1] + y, ImageType::size (1));
+              for (ssize_t x = 0; x < 2; ++x) {
+                ImageType::index(0) = clamp (c[0] + x, ImageType::size (0));
+                ImageType::adjoint_add(factors[i++] * val);
+              }
+            }
+          }
+        }
+    };
+
+    template <class ImageType>
     class CubicAdjoint : public Cubic <ImageType>
     { MEMALIGN(CubicAdjoint<ImageType>)
       public:
@@ -64,6 +97,7 @@ namespace MR
           }
         }
     };
+
   }
 
   namespace DWI
@@ -83,9 +117,9 @@ namespace MR
           using base_type::parent;
 
           MotionMapping (const ImageType& projection, const Header& source,
-                         const Eigen::MatrixXf& rigid)
+                         const Eigen::MatrixXf& rigid, const SSP<float,2>& ssp)
             : base_type (projection),
-              interp (projection, 0.0f), yhdr (source), motion (rigid),
+              interp (projection, 0.0f), yhdr (source), motion (rigid), ssp (ssp),
               Tr (projection), Ts (source), Ts2r (Ts.scanner2voxel * Tr.voxel2scanner)
           { }
 
@@ -111,17 +145,23 @@ namespace MR
           // ------------------------------------------------------------------
 
           value_type value () {
-            Eigen::Vector3 pr = Ts2r * Eigen::Vector3 (x[0], x[1], x[2]);
-            for (int k = 0; k < 3; k++) pr[k] = clampdim(pr[k], k);
-            interp.voxel (pr);
-            return interp.value();
+            value_type res = 0;
+            for (int z = -ssp.size(); z <= ssp.size(); z++) {
+              Eigen::Vector3 pr = Ts2r * Eigen::Vector3 (x[0], x[1], x[2]+z);
+              for (int k = 0; k < 3; k++) pr[k] = clampdim(pr[k], k);
+              interp.voxel (pr);
+              res += ssp(z) * interp.value();
+            }
+            return res;
           }
 
           void adjoint_add (value_type val) {
-            Eigen::Vector3 pr = Ts2r * Eigen::Vector3 (x[0], x[1], x[2]);
-            for (int k = 0; k < 3; k++) pr[k] = clampdim(pr[k], k);
-            interp.voxel (pr);
-            interp.adjoint_add(val);
+            for (int z = -ssp.size(); z <= ssp.size(); z++) {
+              Eigen::Vector3 pr = Ts2r * Eigen::Vector3 (x[0], x[1], x[2]+z);
+              for (int k = 0; k < 3; k++) pr[k] = clampdim(pr[k], k);
+              interp.voxel (pr);
+              interp.adjoint_add(ssp(z) * val);
+            }
           }
 
           void set_shotidx (size_t idx) {
@@ -133,6 +173,7 @@ namespace MR
           Interp::CubicAdjoint<ImageType> interp;
           const Header& yhdr;
           Eigen::MatrixXf motion;
+          SSP<float,2> ssp;
           ssize_t x[3];
           const Transform Tr, Ts;
           transform_type Ts2r;    // vox-to-vox transform, mapping vectors in source space to recon space
@@ -174,7 +215,7 @@ namespace MR
           {
             // create adapters
             auto qmap = Adapter::makecached<QSpaceMapping> (X, qbasis);
-            auto spatialmap = Adapter::make<MotionMapping> (qmap, yhdr, motion);
+            auto spatialmap = Adapter::make<MotionMapping> (qmap, yhdr, motion, ssp);
 
             // define per-slice mapping
             struct MapSliceX2Y {   MEMALIGN(MapSliceX2Y);
@@ -209,7 +250,7 @@ namespace MR
           {
             // create adapters
             auto qmap = Adapter::makecached_add<QSpaceMapping> (X, qbasis);
-            auto spatialmap = Adapter::make<MotionMapping> (qmap, yhdr, motion);
+            auto spatialmap = Adapter::make<MotionMapping> (qmap, yhdr, motion, ssp);
 
             // define per-slice mapping
             struct MapSliceY2X {   MEMALIGN(MapSliceY2X);
