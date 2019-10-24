@@ -87,7 +87,21 @@ void run () {
     try {
       Filter::MaskClean clean_filter (temp_mask, std::string("applying mask cleaning filter"));
       clean_filter.set_scale (scale);
-      clean_filter (temp_mask, output);
+      clean_filter (temp_mask, temp_mask);
+      for (auto l = Loop (0,3) (input, temp_mask, output); l; ++l) {
+        if (temp_mask.value()) {
+          bool all_zero = true;
+          for (auto vl = Loop (3) (input); vl; ++vl) {
+            if (std::isfinite (input.value()) && input.value()) {
+              all_zero = false;
+              break;
+            }
+          }
+          output.value() = !all_zero;
+        } else {
+          output.value() = false;
+        }
+      }
     } catch (...) {
       WARN("Unable to run mask cleaning filter (image is not truly 3D); skipping");
       for (auto l = Loop (0,3) (temp_mask, output); l; ++l)
