@@ -55,13 +55,14 @@ namespace MR
           mask = Image<uint8_t>::scratch(hdr, "temporary buffer mask");
         }
 
-        void move_index (size_t axis, ssize_t increment) {
-          parent().index(axis) += increment;
-          buffer.index(axis) += increment;
-          mask.index(axis) += increment;
+        FORCE_INLINE ssize_t get_index (size_t axis) const {
+          return buffer.get_index(axis);
         }
-        void reset () {
-          parent().reset();
+        FORCE_INLINE void move_index (size_t axis, ssize_t increment) {
+          buffer.move_index(axis, increment);
+          mask.move_index(axis, increment);
+        }
+        FORCE_INLINE void reset () {
           buffer.reset();
           mask.reset();
         }
@@ -81,27 +82,19 @@ namespace MR
           // clear buffer
           reset();
           memset(mask.address(), 0, footprint<uint8_t>(voxel_count(mask)));
+          memset(buffer.address(), 0, footprint<value_type>(voxel_count(buffer)));
         }
 
         value_type value () {
           assert (readmode);
-          if (mask.value()) {
-            return buffer.value();
-          } else {
-            buffer.value() = parent().value();
-            mask.value() = true;
-            return buffer.value();
-          }
+          if (!mask.value()) load();
+          return buffer.value();
         }
 
         void adjoint_add (value_type val) {
           assert (!readmode);
-          if (mask.value()) {
-            buffer.value() += val;
-          } else {
-            buffer.value() = val;
-            mask.value() = true;
-          }
+          buffer.value() += val;
+          mask.value() = true;
         }
 
         FORCE_INLINE void set_shotidx (size_t idx) {
@@ -114,6 +107,12 @@ namespace MR
         Image<uint8_t> mask;
         bool readmode;
         Image<uint8_t> lock;
+
+        FORCE_INLINE void load () {
+          assign_pos_of (buffer).to (parent());
+          buffer.value() = parent().value();
+          mask.value() = true;
+        }
     };
 
     template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
@@ -269,24 +268,22 @@ namespace MR
           {
             assert (parent.ndim() == 4);
             assert (parent.size(3) == basis.get_ncoefs());
+            assert (parent.stride(3) == 1);
             set_shotidx(0);
           }
 
           FORCE_INLINE size_t ndim () const { return 3; }
 
           value_type value () {
-            value_type res = 0; size_t i = 0;
-            for (auto l = Loop(3) (parent()); l; l++, i++)
-              res += qr[i] * parent().value();
-            return res;
+            assert (parent().index(3) == 0);
+            Eigen::Map<vector_type> c = {parent().address(), qr.size()};
+            return qr.dot(c);
           }
 
           void adjoint_add (value_type val) {
-            if (val != 0) {
-              size_t i = 0;
-              for (auto l = Loop(3) (parent()); l; l++, i++)
-                parent().value() += qr[i] * val;
-            }
+            assert (parent().index(3) == 0);
+            Eigen::Map<vector_type> c = {parent().address(), qr.size()};
+            c += val * qr;
           }
 
           FORCE_INLINE void set_shotidx (size_t idx) {
