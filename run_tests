@@ -211,6 +211,7 @@ if [[ ! -z $testsdir && ! -z $datadir ]]; then
   rm -rf $datadir/tmp-*/
   rm -rf $datadir/*-tmp-*/
   echo OK
+fi
 
 
 if [ ${a_test_has_failed} = true ];
