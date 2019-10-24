@@ -38,7 +38,7 @@ case  $test in
     $py ./configure -nooptim && $py ./build -nowarnings -persistent -nopaginate
     ;;
   "run")
-    $py ./configure -assert && $py ./build -nowarnings -persistent -nopaginate && ./run_tests
+    $py ./configure -assert && $py ./build -nowarnings -persistent -nopaginate && ./run_tests units && mv testing.log testing_units.log && ./run_tests binaries && mv testing.log testing_binaries.log
     ;;
   *)
     echo "Envvar \"test\" not defined";

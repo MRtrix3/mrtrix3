@@ -28,8 +28,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('-mask', metavar='image', help='Provide a brain mask image')
   cmdline.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
 
-  app.add_dwgrad_export_options()
-  app.add_dwgrad_import_options()
+  app.add_dwgrad_export_options(cmdline)
+  app.add_dwgrad_import_options(cmdline)
 
 
 
