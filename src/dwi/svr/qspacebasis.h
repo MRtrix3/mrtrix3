@@ -11,6 +11,7 @@
 
 
 #include <atomic>
+#include <algorithm>
 #include <Eigen/Dense>
 
 #include "types.h"
@@ -27,74 +28,46 @@ namespace MR
   namespace Adapter
   {
     template <class ImageType>
-    class Cache : public Adapter::Base<Cache<ImageType>, ImageType>
+    class ReadCache : public Adapter::Base<ReadCache<ImageType>, ImageType>
     {
-      MEMALIGN (Cache<ImageType>)
+      MEMALIGN (ReadCache<ImageType>)
       public:
-        using base_type = Adapter::Base<Cache<ImageType>, ImageType>;
+        using base_type = Adapter::Base<ReadCache<ImageType>, ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::parent;
 
-        Cache (const ImageType& parent, bool readonly = true)
-          : base_type (parent), readmode (readonly)
+        ReadCache (const ImageType& parent)
+          : base_type (parent)
         {
           Header hdr (parent);
           buffer = Image<value_type>::scratch(hdr, "temporary buffer");
-          mask = Image<uint8_t>::scratch(hdr, "temporary buffer mask");
-          // initialise lock image
-          static_assert (sizeof(std::atomic_flag) == sizeof(uint8_t), "std::atomic_flag expected to be 1 byte");
-          if (!readmode) lock = Image<uint8_t>::scratch(hdr, "temporary buffer lock");
         }
 
-        Cache (const Cache& other)
-          : base_type (other.parent()), readmode (other.readmode), lock (other.lock)
-        {
-          Header hdr (other.parent());
-          buffer = Image<value_type>::scratch(hdr, "temporary buffer");
-          mask = Image<uint8_t>::scratch(hdr, "temporary buffer mask");
-        }
+        ReadCache (const ReadCache& other)
+          : ReadCache (other.parent())
+        { }
 
         FORCE_INLINE ssize_t get_index (size_t axis) const {
           return buffer.get_index(axis);
         }
         FORCE_INLINE void move_index (size_t axis, ssize_t increment) {
           buffer.move_index(axis, increment);
-          mask.move_index(axis, increment);
         }
         FORCE_INLINE void reset () {
           buffer.reset();
-          mask.reset();
         }
 
         void flush () {
-          // delayed write back
-          if (!readmode) {
-            for (auto l = Loop() (mask); l; l++) {
-              if (mask.value()) { assign_pos_of (mask).to (parent(), buffer, lock);
-                std::atomic_flag* flag = reinterpret_cast<std::atomic_flag*> (lock.address());
-                while (flag->test_and_set(std::memory_order_acquire)) ;
-                parent().adjoint_add(buffer.value());
-                flag->clear(std::memory_order_release);
-              }
-            }
-          }
           // clear buffer
           reset();
-          memset(mask.address(), 0, footprint<uint8_t>(voxel_count(mask)));
-          memset(buffer.address(), 0, footprint<value_type>(voxel_count(buffer)));
+          std::fill_n(buffer.address(), voxel_count(buffer), value_type(NAN));
         }
 
-        value_type value () {
-          assert (readmode);
-          if (!mask.value()) load();
-          return buffer.value();
-        }
-
-        void adjoint_add (value_type val) {
-          assert (!readmode);
-          buffer.value() += val;
-          mask.value() = true;
+        FORCE_INLINE value_type value () {
+          value_type val = *buffer.address();
+          if (!std::isfinite(val)) load(val);
+          return val;
         }
 
         FORCE_INLINE void set_shotidx (size_t idx) {
@@ -104,25 +77,87 @@ namespace MR
 
       private:
         Image<value_type> buffer;
-        Image<uint8_t> mask;
-        bool readmode;
-        Image<uint8_t> lock;
 
-        FORCE_INLINE void load () {
+        FORCE_INLINE void load (value_type& val) {
           assign_pos_of (buffer).to (parent());
-          buffer.value() = parent().value();
-          mask.value() = true;
+          *buffer.address() = val = parent().value();
         }
     };
 
+    template <class ImageType>
+    class WriteCache : public Adapter::Base<WriteCache<ImageType>, ImageType>
+    {
+      MEMALIGN (WriteCache<ImageType>)
+      public:
+        using base_type = Adapter::Base<WriteCache<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
+
+        using base_type::parent;
+
+        WriteCache (const ImageType& parent)
+          : base_type (parent)
+        {
+          Header hdr (parent);
+          buffer = Image<value_type>::scratch(hdr, "temporary buffer");
+          // initialise lock image
+          static_assert (sizeof(std::atomic_flag) == sizeof(uint8_t), "std::atomic_flag expected to be 1 byte");
+          lock = Image<uint8_t>::scratch(hdr, "temporary buffer lock");
+        }
+
+        WriteCache (const WriteCache& other)
+          : base_type (other.parent()), lock (other.lock)
+        {
+          Header hdr (other.parent());
+          buffer = Image<value_type>::scratch(hdr, "temporary buffer");
+        }
+
+        FORCE_INLINE ssize_t get_index (size_t axis) const {
+          return buffer.get_index(axis);
+        }
+        FORCE_INLINE void move_index (size_t axis, ssize_t increment) {
+          buffer.move_index(axis, increment);
+        }
+        FORCE_INLINE void reset () {
+          buffer.reset();
+        }
+
+        void flush () {
+          // delayed write back
+          for (auto l = Loop() (buffer); l; l++) {
+            if (buffer.value()) { assign_pos_of (buffer).to (parent(), lock);
+              std::atomic_flag* flag = reinterpret_cast<std::atomic_flag*> (lock.address());
+              while (flag->test_and_set(std::memory_order_acquire)) ;
+              parent().adjoint_add(buffer.value());
+              flag->clear(std::memory_order_release);
+            }
+          }
+          // clear buffer
+          reset();
+          std::fill_n(buffer.address(), voxel_count(buffer), value_type(0));
+        }
+
+        FORCE_INLINE void adjoint_add (value_type val) {
+          *buffer.address() += val;
+        }
+
+        FORCE_INLINE void set_shotidx (size_t idx) {
+          flush();
+          parent().set_shotidx(idx);
+        }
+
+      private:
+        Image<value_type> buffer;
+        Image<uint8_t> lock;
+    };
+
     template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
-    inline Cache<AdapterType<ImageType>> makecached (const ImageType& parent, Args&&... args) {
-      return { { parent, std::forward<Args> (args)... } , true };
+    inline ReadCache<AdapterType<ImageType>> makecached (const ImageType& parent, Args&&... args) {
+      return { { parent, std::forward<Args> (args)... } };
     }
 
     template <template <class ImageType> class AdapterType, class ImageType, typename... Args>
-    inline Cache<AdapterType<ImageType>> makecached_add (const ImageType& parent, Args&&... args) {
-      return { { parent, std::forward<Args> (args)... } , false };
+    inline WriteCache<AdapterType<ImageType>> makecached_add (const ImageType& parent, Args&&... args) {
+      return { { parent, std::forward<Args> (args)... } };
     }
 
   }
@@ -274,13 +309,16 @@ namespace MR
 
           FORCE_INLINE size_t ndim () const { return 3; }
 
-          value_type value () {
+          FORCE_INLINE ssize_t get_index (size_t axis) const { return parent().get_index (axis); }
+          FORCE_INLINE void move_index (size_t axis, ssize_t increment) { parent().move_index (axis, increment); }
+
+          FORCE_INLINE value_type value () const {
             assert (parent().index(3) == 0);
             Eigen::Map<vector_type> c = {parent().address(), qr.size()};
             return qr.dot(c);
           }
 
-          void adjoint_add (value_type val) {
+          FORCE_INLINE void adjoint_add (value_type val) {
             assert (parent().index(3) == 0);
             Eigen::Map<vector_type> c = {parent().address(), qr.size()};
             c += val * qr;
