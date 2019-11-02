@@ -239,7 +239,8 @@ def save_transform(filename, data, **kwargs): #pylint: disable=unused-variable
     raise TypeError('Input to matrix.save_transform() must be a 3x4 or 4x4 matrix')
   for line in data:
     if len(line) != 4:
-      raise TypeError('Input to matrix.save_matrix() must be a 3x4 or 4x4 matrix')
+      raise TypeError('Input to matrix.save_transform() must be a 3x4 or 4x4 matrix')
+  kwargs['fmt'] = kwargs['fmt'] if 'fmt' in kwargs else '%18.15f'
   if len(data) == 4:
     if any(a!=b for a, b in zip(data[3], _TRANSFORM_LAST_ROW)):
       raise TypeError('Input to matrix.save_transform() is not a valid affine matrix (fourth line contains values other than "0,0,0,1")')
