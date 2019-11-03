@@ -177,9 +177,14 @@ namespace MR
             } else { // Proceed as normal
 
               const vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
+              if (candidate == gradient_vector.end()) {
+                recalculate = POS_GRADIENT;
+                if (!removed_this_iteration)
+                  another_iteration = false;
+                goto end_iteration;
+              }
 
               const track_t candidate_index = candidate->get_tck_index();
-
               if (candidate->get_cost_gradient() >= 0.0) {
                 recalculate = POS_GRADIENT;
                 if (!removed_this_iteration)
