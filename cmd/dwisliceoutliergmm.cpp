@@ -289,7 +289,8 @@ void run ()
   }
 
   // Output
-  Eigen::ArrayXXf Wfull = W.replicate(mb, 1);
+  Eigen::ArrayXXf Wfull = 1e6 * W.replicate(mb, 1);
+  Wfull = 1e-6 * Wfull.round();
   save_matrix(Wfull, argument[2]);
 
 }

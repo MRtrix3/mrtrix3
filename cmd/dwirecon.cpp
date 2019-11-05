@@ -16,6 +16,8 @@
 #include "phase_encoding.h"
 #include "dwi/shells.h"
 #include "adapter/extract.h"
+
+#include "dwi/svr/qspacebasis.h"
 #include "dwi/svr/recon.h"
 
 #define DEFAULT_LMAX 4
@@ -117,7 +119,7 @@ typedef float value_type;
 void run ()
 {
   // Load input data
-  auto dwi = Image<value_type>::open(argument[0]);
+  auto dwi = Image<value_type>::open(argument[0]).with_direct_io({1, 2, 3, 4});
 
   // Read motion parameters
   auto opt = get_options("motion");
@@ -252,40 +254,63 @@ void run ()
   value_type tol = get_option_value("tolerance", DEFAULT_TOL);
   size_t maxiter = get_option_value("maxiter", DEFAULT_MAXITER);
 
+  DWI::SVR::QSpaceBasis qbasis {gradsub, lmax, rf, motionsub};
 
-  // Set up scattered data matrix
-  INFO("initialise reconstruction matrix");
-  DWI::SVR::ReconMatrix R (dwisub, motionsub, gradsub, lmax, rf, ssp, reg, zreg);
-  R.setWeights(Wsub);
-  R.setVoxelWeights(Wvox);
-  if (hasfield)
-    R.setField(fieldmap, fieldidx, PEsub);
-
-
-  size_t ncoefs = R.getY().cols();
+  size_t ncoefs = qbasis.get_ncoefs();
   size_t padding = get_option_value("padding", Math::SH::NforL(lmax));
   if (padding < Math::SH::NforL(lmax))
     throw Exception("user-provided padding too small.");
 
+  // Create recon header
+  Header rechdr (dwisub);
+  rechdr.ndim() = 4;
+  rechdr.size(3) = ncoefs;
+  Stride::set (rechdr, {2, 3, 4, 1});
+  rechdr.datatype() = DataType::Float32;
+  rechdr.sanitise();
+
+
+  // Create mapping
+  DWI::SVR::ReconMapping map (rechdr, dwisub, qbasis, motionsub, ssp);
+
+  // Set up scattered data matrix
+  INFO("initialise reconstruction matrix");
+  DWI::SVR::ReconMatrix R (map, reg, zreg);
+  R.setWeights(Wsub);
+
+  R.setVoxelWeights(Wvox);
+
+//  if (hasfield)
+//    R.setField(fieldmap, fieldidx, PEsub);
+
+
+
+
   // Read input data to vector
-  Eigen::VectorXf y (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
-  size_t j = 0;
-  for (auto l = Loop("loading image data", {0, 1, 2, 3})(dwisub); l; l++, j++) {
-    y[j] = dwisub.value();
+  Eigen::VectorXf y (R.rows()); y.setZero();
+  size_t j = 0, v = 0;
+  for (auto lv = Loop("loading image data", 3)(dwisub); lv; lv++, v++) {
+    size_t z = 0;
+    for (auto lz = Loop(2)(dwisub); lz; lz++, z++) {
+      float ww = std::sqrt(Wsub(z,v));
+      for (auto lxy = Loop({0,1})(dwisub); lxy; lxy++, j++) {
+        y[j] = ww * std::sqrt(Wvox[j]) * dwisub.value();
+      }
+    }
   }
 
   // Fit scattered data in basis...
   INFO("initialise conjugate gradient solver");
 
-  Eigen::ConjugateGradient<DWI::SVR::ReconMatrix, Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+  Eigen::LeastSquaresConjugateGradient<DWI::SVR::ReconMatrix, Eigen::IdentityPreconditioner> cg;
   cg.compute(R);
 
   cg.setTolerance(tol);
   cg.setMaxIterations(maxiter);
 
   // Compute M'y
-  Eigen::VectorXf p (R.cols());
-  R.project_y2x(p, y);
+  //Eigen::VectorXf p (R.cols());
+  //R.project_y2x(p, y);
 
   // Solve M'M x = M'y
   Eigen::VectorXf x (R.cols());
@@ -302,7 +327,7 @@ void run ()
     Eigen::VectorXf c (shells.count() * Math::SH::NforL(lmax));
     Eigen::MatrixXf x2mssh (c.size(), ncoefs); x2mssh.setZero();
     for (int k = 0; k < shells.count(); k++)
-      x2mssh.middleRows(k*Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose();
+      x2mssh.middleRows(k*Math::SH::NforL(lmax), Math::SH::NforL(lmax)) = qbasis.getShellBasis(k).transpose();
     auto mssh2x = x2mssh.fullPivHouseholderQr();
     size_t j = 0, k = 0;
     for (auto l = Loop("loading initialisation", {0, 1, 2})(init); l; l++, j+=ncoefs) {
@@ -314,11 +339,13 @@ void run ()
       x0.segment(j, ncoefs) = mssh2x.solve(c);
     }
     INFO("solve from given starting point");
-    x = cg.solveWithGuess(p, x0);
+    //x = cg.solveWithGuess(p, x0);
+    x = cg.solveWithGuess(y, x0);
   }
   else {
     INFO("solve from zero starting point");
-    x = cg.solve(p);
+    //x = cg.solve(p);
+    x = cg.solve(y);
   }
 
   CONSOLE("CG: #iterations: " + str(cg.iterations()));
@@ -359,7 +386,7 @@ void run ()
     c = x.segment(j, ncoefs);
     for (int k = 0; k < shells.count(); k++) {
       out.index(3) = k;
-      sh.head(Math::SH::NforL(lmax)) = R.getShellBasis(k).transpose() * c;
+      sh.head(Math::SH::NforL(lmax)) = qbasis.getShellBasis(k).transpose() * c;
       out.row(4) = sh;
     }
   }
@@ -373,18 +400,8 @@ void run ()
     header.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
     DWI::set_DW_scheme (header, gradsub);
     auto spred = Image<value_type>::create(opt[0][0], header);
-    Eigen::VectorXf p (dwisub.size(0)*dwisub.size(1)*dwisub.size(2)*dwisub.size(3));
-    R.project_x2y(p, x);
-    j = 0;
-    auto ii = idx.begin();
-    for (auto l = Loop("saving source prediction", 3)(spred); l; l++) {
-      auto iii = std::find(ii, idx.end(), spred.index(3));
-      if (!complete || iii != idx.end()) {
-        ii = iii;
-        for (auto l2 = Loop({0, 1, 2})(spred); l2; l2++)
-          spred.value() = p[j++];
-      }
-    }
+    auto recon = ImageView<value_type>(rechdr, x.data());
+    map.x2y(recon, spred);
   }
 
 
