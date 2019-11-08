@@ -31,6 +31,8 @@ Options
 
 -  **-all** print all properties, rather than the first and last 2 of each.
 
+-  **-name** print the file system path of the image
+
 -  **-format** image file format
 
 -  **-ndim** number of image dimensions
