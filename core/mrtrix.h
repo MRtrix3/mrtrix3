@@ -86,7 +86,7 @@ namespace MR
         stream.precision (max_digits<T>::value());
     stream << value;
     if (stream.fail())
-      throw Exception ("error converting value to string");
+      throw Exception (std::string("error converting type \"") + typeid(T).name() + "\" value to string");
     return stream.str();
   }
 
@@ -133,18 +133,32 @@ namespace MR
     T value;
     stream >> value;
     if (stream.fail()) {
-      const std::string lstring = lowercase (string);
-      if (lstring == "nan")
-        return std::numeric_limits<T>::quiet_NaN();
-      else if (lstring == "-nan")
-        return -std::numeric_limits<T>::quiet_NaN();
-      else if (lstring == "inf")
-        return std::numeric_limits<T>::infinity();
-      else if (lstring == "-inf")
-        return -std::numeric_limits<T>::infinity();
-      throw Exception ("error converting string \"" + string + "\"");
+      if (std::is_floating_point<T>::value) {
+        const std::string lstring = lowercase (string);
+        if (lstring == "nan")
+          return std::numeric_limits<T>::quiet_NaN();
+        else if (lstring == "-nan")
+          return -std::numeric_limits<T>::quiet_NaN();
+        else if (lstring == "inf")
+          return std::numeric_limits<T>::infinity();
+        else if (lstring == "-inf")
+          return -std::numeric_limits<T>::infinity();
+      }
+      throw Exception ("error converting string \"" + string + "\" to type \"" + typeid(T).name() + "\"");
+    } else if (!stream.eof()) {
+      throw Exception ("incomplete use of string \"" + string + "\" in conversion to type \"" + typeid(T).name() + "\"");
     }
     return value;
+  }
+
+  template <> inline bool to<bool> (const std::string& string)
+  {
+    std::string value = lowercase (string);
+    if (value == "true" || value == "yes")
+      return true;
+    if (value == "false" || value == "no")
+      return false;
+    return to<int> (value);
   }
 
 
@@ -264,30 +278,53 @@ namespace MR
     if (value.imag())
       stream << std::showpos << value.imag() << "i";
     if (stream.fail())
-      throw Exception ("error converting value to string");
+      throw Exception ("error converting complex float value to string");
     return stream.str();
   }
 
 
   template <> inline cfloat to<cfloat> (const std::string& string)
   {
-    std::istringstream stream (string);
-    float real, imag;
-    stream >> real;
-    if (stream.fail())
-      throw Exception ("error converting string \"" + string + "\"");
-    if (stream.eof())
-      return cfloat (real, 0.0f);
+    if (!string.size())
+      throw Exception ("cannot convert empty string to complex float");
 
-    if (stream.peek() == 'i' || stream.peek() == 'j')
-      return cfloat (0.0f, real);
+    vector<cfloat> candidates;
+    for (ssize_t i = -1; i <= ssize_t(string.size()); ++i) {
+      std::string first, second;
+      if (i == -1) {
+        first = "0";
+        second = string;
+      } else if (i == string.size()) {
+        first = string;
+        second = "0i";
+      } else {
+        if (!(string[i] == '+' || string[i] == '-'))
+          continue;
+        first = string.substr(0, i);
+        second = string.substr(string[i] == '-' ? i : i+1);
+      }
+      if (!(second.back() == 'i' || second.back() == 'j'))
+        continue;
+      second.pop_back();
+      if (second.empty() || second == "-" || second == "+")
+        second.push_back ('1');
+      try {
+        candidates.push_back (cfloat (to<float> (first), to<float> (second)));
+      } catch (Exception&) { }
+    }
 
-    stream >> imag;
-    if (stream.fail())
-      return cfloat (real, 0.0f);
-    else if (stream.peek() != 'i' && stream.peek() != 'j')
-      throw Exception ("error converting string \"" + string + "\"");
-    return cfloat (real, imag);
+    if (candidates.empty())
+      throw Exception ("error converting string \"" + string + "\" to complex float (no valid conversion)");
+
+    for (size_t i = 1; i != candidates.size(); ++i) {
+      if (!(candidates[i].real() == candidates[0].real() ||
+            (std::isnan (candidates[i].real()) && std::isnan (candidates[0].real()))))
+        throw Exception ("error converting string \"" + string + "\" to complex float (ambiguity in real component)");
+      if (!(candidates[i].imag() == candidates[0].imag() ||
+            (std::isnan (candidates[i].imag()) && std::isnan (candidates[0].imag()))))
+        throw Exception ("error converting string \"" + string + "\" to complex float (ambiguity in imaginary component)");
+    }
+    return candidates[0];
   }
 
 
@@ -302,43 +339,58 @@ namespace MR
     if (value.imag())
       stream << std::showpos << value.imag() << "i";
     if (stream.fail())
-      throw Exception ("error converting value to string");
+      throw Exception ("error converting complex double value to string");
     return stream.str();
   }
 
 
   template <> inline cdouble to<cdouble> (const std::string& string)
   {
-    std::istringstream stream (string);
-    double real, imag;
-    stream >> real;
-    if (stream.fail())
-      throw Exception ("error converting string \"" + string + "\"");
-    if (stream.eof())
-      return cdouble (real, 0.0);
+    if (!string.size())
+      throw Exception ("cannot convert empty string to complex double");
 
-    if (stream.peek() == 'i' || stream.peek() == 'j')
-      return cdouble (0.0, real);
+    vector<cdouble> candidates;
+    for (ssize_t i = -1; i <= ssize_t(string.size()); ++i) {
+      std::string first, second;
+      if (i == -1) {
+        first = "0";
+        second = string;
+      } else if (i == string.size()) {
+        first = string;
+        second = "0i";
+      } else {
+        if (!(string[i] == '+' || string[i] == '-'))
+          continue;
+        first = string.substr(0, i);
+        second = string.substr(string[i] == '-' ? i : i+1);
+      }
+      if (!(second.back() == 'i' || second.back() == 'j'))
+        continue;
+      second.pop_back();
+      if (second.empty() || second == "-" || second == "+")
+        second.push_back ('1');
+      try {
+        candidates.push_back (cdouble (to<double> (first), to<double> (second)));
+      } catch (Exception&) { }
+    }
 
-    stream >> imag;
-    if (stream.fail())
-      return cdouble (real, 0.0);
-    else if (stream.peek() != 'i' && stream.peek() != 'j')
-      throw Exception ("error converting string \"" + string + "\"");
-    return cdouble (real, imag);
+    if (candidates.empty())
+      throw Exception ("error converting string \"" + string + "\" to complex double (no valid conversion)");
+
+    for (size_t i = 1; i != candidates.size(); ++i) {
+      if (!(candidates[i].real() == candidates[0].real() ||
+            (std::isnan (candidates[i].real()) && std::isnan (candidates[0].real()))))
+        throw Exception ("error converting string \"" + string + "\" to complex double (ambiguity in real component)");
+      if (!(candidates[i].imag() == candidates[0].imag() ||
+            (std::isnan (candidates[i].imag()) && std::isnan (candidates[0].imag()))))
+        throw Exception ("error converting string \"" + string + "\" to complex double (ambiguity in imaginary component)");
+    }
+    return candidates[0];
   }
 
 
 
-  template <> inline bool to<bool> (const std::string& string)
-  {
-    std::string value = lowercase (string);
-    if (value == "true" || value == "yes")
-      return true;
-    if (value == "false" || value == "no")
-      return false;
-    return to<int> (value);
-  }
+
 
 
 }
