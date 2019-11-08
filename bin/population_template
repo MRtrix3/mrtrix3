@@ -1,6 +1,23 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # Generates an unbiased group-average template via image registration of images to a midway space.
+
+import math, os, shutil
 
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
@@ -59,8 +76,12 @@ def usage(cmdline): #pylint: disable=unused-variable
   options.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)')
   options.add_argument('-leave_one_out', help='Register each input image to a template that does not contain that image. Valid choices: 0, 1, auto. (Default: auto (true if n_subjects larger than 2 and smaller than 15)) ')
   options.add_argument('-aggregate', help='Measure used to aggregate information from transformed images to the template image. Valid choices: %s. Default: mean' % ', '.join(AGGREGATION_MODES))
+  options.add_argument('-aggregation_weights', help='file containing weights used for weighted image aggregation. The file must contain lines with "image_name weight.')
   options.add_argument('-nanmask', action='store_true', help='Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation. Only works if -mask_dir has been input.')
 
+# TODO: add option to copy input images into scratch directory
+# TODO: add option to initialise warps
+# TODO: add weights file for weighted aggregation
 
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
@@ -71,31 +92,32 @@ except NameError:
 
 
 def abspath(*arg):
-  import os
   return os.path.abspath(os.path.join(*arg))
 
 
 def relpath(*arg):
-  import os
-  from mrtrix3 import app #pylint: disable=no-name-in-module
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   return os.path.relpath(os.path.join(*arg), app.WORKING_DIR)
 
-def copy(src, dst, *, follow_symlinks=True):
+def copy(src, dst, follow_symlinks=True):
   """Copy data but do not set mode bits. Return the file's destination.
 
   mimics shutil.copy but without setting mode bits as shutil.copymode can fail on exotic mounts
   (observed on cifs with file_mode=0777).
   """
-  import os, shutil
+  import os, sys, shutil
   if os.path.isdir(dst):
     dst = os.path.join(dst, os.path.basename(src))
-  shutil.copyfile(src, dst, follow_symlinks=follow_symlinks)
+  if sys.version_info[0] > 2:
+    shutil.copyfile(src, dst, follow_symlinks=follow_symlinks)
+  else:
+    shutil.copyfile(src, dst)
   return dst
 
 
 def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True):
   import math, os
-  from mrtrix3 import app, run  # pylint: disable=no-name-in-module
+  from mrtrix3 import app, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
   if max_rot is None:
     max_rot = 2 * math.pi
   def load_key_value(file_path):
@@ -176,9 +198,11 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
 def aggregate(images, output, mode, force=True):
   from mrtrix3 import MRtrixError, run  # pylint: disable=no-name-in-module
   if mode == 'mean':
-    run.command('mrmath ' + ' '.join(images) + ' mean ' + output, force=force)
+    run.command(['mrmath', images, 'mean', '-keep_unary_axes', output], force=force)
   elif mode == 'median':
-    run.command('mrmath ' + ' '.join(images) + ' median ' + output, force=force)
+    run.command(['mrmath', images, 'median', '-keep_unary_axes', output], force=force)
+  elif mode == 'weighted':
+    assert 0, "TODO: weighted average"  # TODO
   else:
     raise MRtrixError("aggregation mode %s not understood" % mode)
 
@@ -188,7 +212,7 @@ def inplace_nan_mask(images, masks, progress=True):
   from mrtrix3 import app, run  # pylint: disable=no-name-in-module
   assert len(images) == len(masks), (len(images), len(masks))
   if progress:
-    pbar = app.ProgressBar('Nanmasking', len(images))
+    pbar = app.ProgressBar('NaN masking', len(images))
   for image, mask in zip(images, masks):
     target_dir = os.path.split(image)[0]
     masked = os.path.join(target_dir, '__' + os.path.split(image)[1])
@@ -202,8 +226,9 @@ def inplace_nan_mask(images, masks, progress=True):
 
 def calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes):
   import os
+  from mrtrix3 import app, run, path  # pylint: disable=no-name-in-module
   progress = app.ProgressBar('Preparations for leave one out registration', len(inputs) * len(contrasts) + 1)
-  for c in range(n_contrasts):
+  for c in range(len(contrasts)):
     for i in inputs:
       if n_volumes[c] > 0:
         run.command('mrconvert ' + os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix) +
@@ -212,8 +237,8 @@ def calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes):
         run.command('mrcalc ' + os.path.join('input_transformed' + i.contrasts[c], '%s.mif' % i.prefix) +
                     ' -finite isfinite%s/%s.mif' % (i.contrasts[c], i.prefix), force=True)
       progress.increment()
-  for c in range(n_contrasts):
-    run.command('mrmath ' + path.all_in_dir('isfinite%s' % contrasts[c]) + ' sum ' + isfinite_count[c], force=True)
+  for c in range(len(contrasts)):
+    run.command(['mrmath', path.all_in_dir('isfinite%s' % contrasts[c]), 'sum', isfinite_count[c]], force=True)
   progress.done()
 
 
@@ -223,27 +248,60 @@ def get_common_postfix(file_list):
 
 
 class Input:
-  def __init__(self, filenames, prefix, directories, contrasts, mask_filename='', mask_directory=''):
+  """
+      Class that holds input information specific to a single image (multiple contrasts)
+
+      Attributes
+      ----------
+      filenames : list of str
+        for each constrast the input file paths stripped of their respective directories
+
+      prefix : str
+
+      directories : list of str
+        user-provided input directories containing the input images, one for each contrast
+
+      contrasts : list of str
+        string used to separate temporary files by contrast. ['', '_c1', ..., '_cn'] for n contrasts
+
+      mask_filename: list of str
+        see filenames
+
+      mask_directory: str
+        user-provied mask directory
+
+      paths_in: list of str
+        full path to input images TODO:
+
+      mask: list of str
+        input mask
+
+      aggregation_weight: float
+        weights used in image aggregation that forms the template. Has to be normalised across inputs.
+
+      """
+  def __init__(self, filenames, prefix, directories, contrasts, mask_filename='', mask_directory='', agg_weight=None):
     self.filenames = filenames
     self.prefix = prefix
     self.directories = directories
     self.contrasts = contrasts
     self.mask_filename = mask_filename
     self.mask_directory = mask_directory
-    assert (max([f.count(' ') for f in filenames]) == 0)
-    assert (max([p.count(' ') for p in prefix]) == 0)
-    assert (mask_filename.count(' ') == 0)
+    assert (max([f.count(' ') for f in filenames]) == 0), "TODO test me"
+    assert (max([p.count(' ') for p in prefix]) == 0), "TODO test me"
+    assert (mask_filename.count(' ') == 0), "TODO test me"
     assert (len(self.directories) == len(self.filenames))
     assert (len(self.filenames) == len(self.contrasts))
     import os
     from mrtrix3 import path  # pylint: disable=no-name-in-module
     self.paths_in = [path.from_user(abspath(d, f), True) for d, f in zip(self.directories, self.filenames)]
     self.mask = path.from_user(os.path.join(mask_directory, mask_filename), True)
+    self.aggregation_weight = agg_weight
 
 
-def execute():  #pylint: disable=unused-variable
-  import math, os, shutil
-  from mrtrix3 import app, image, matrix, MRtrixError, path, run  #pylint: disable=no-name-in-module
+def execute(): #pylint: disable=unused-variable
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   if not app.ARGS.type in REGISTRATION_MODES:
     raise MRtrixError("registration type must be one of %s. provided: %s" % (str(["rigid", "affine", "rigid_affine"]), app.ARGS.type))
@@ -346,6 +404,13 @@ def execute():  #pylint: disable=unused-variable
       raise MRtrixError("aggregation type must be one of %s. provided: %s" % (str(AGGREGATION_MODES), app.ARGS.aggregate))
     agg_measure = app.ARGS.aggregate
 
+  agg_weights = app.ARGS.aggregation_weights
+  if agg_weights is not None:
+    agg_measure = "weighted_" + agg_measure
+    if not agg_measure == 'weighted_mean':
+      raise MRtrixError(
+        "aggregation weights can only be used with the '-aggregate mean' option. provided: %s" % (app.ARGS.aggregate))
+
   initial_alignment = app.ARGS.initial_alignment
   if initial_alignment not in ["mass", "robust_mass", "geometric", "none"]:
     raise MRtrixError('initial_alignment must be one of ' + " ".join(["mass", "robust_mass", "geometric", "none"]))
@@ -386,9 +451,9 @@ def execute():  #pylint: disable=unused-variable
     raise MRtrixError('you cannot use NaN masking when no subject masks were input using -mask_dir')
 
   commonPostfix = [get_common_postfix(files) for files in in_files]
-  for postfix in commonPostfix:
+  for ipostfix, postfix in enumerate(commonPostfix):
     if len(postfix) == 0:
-      raise MRtrixError('image filenames do not have a common postfix')
+      raise MRtrixError('image filenames do not have a common postfix:\n' + '\n'.join(in_files[ipostfix]))
   contrasts = [''] + ["_c" + c for c in map(str, range(1, n_contrasts))]
   inputs = []
   for ifile, fname in enumerate(in_files[0]):
@@ -419,7 +484,7 @@ def execute():  #pylint: disable=unused-variable
       raise MRtrixError('leave_one_out not understood: ' + str(leave_one_out))
 
   if leave_one_out == 'auto':
-    leave_one_out = len(inputs) > 2 and len(inputs) < 15
+    leave_one_out = 2 < len(inputs) < 15
   else:
     leave_one_out = bool(int(leave_one_out))
   if leave_one_out:
@@ -458,19 +523,24 @@ def execute():  #pylint: disable=unused-variable
   # automatically detect SH series
   do_fod_registration = False
   n_volumes = []
+  c_fod_reorientation = []
   for c in range(n_contrasts):
     image_size = image.Header(relpath(inputs[0].directories[c], inputs[0].filenames[c])).size()
     if len(image_size) < 3 or len(image_size) > 4:
       raise MRtrixError('only 3 and 4 dimensional images can be used to build a template')
     if len(image_size) == 4:
-      n_volumes.append(image_size[3])
       val = (math.sqrt(1 + 8 * image_size[3]) - 3.0) / 4.0
-      if not (val - int(val)) and not noreorientation:
-        do_fod_registration = True
+      c_fod_reorientation.append(not (val - int(val)) and not noreorientation)
+      n_volumes.append(image_size[3])
+      do_fod_registration = do_fod_registration or c_fod_reorientation[-1]
     else:
+      c_fod_reorientation.append(False)
       n_volumes.append(0)
   if do_fod_registration:
-    app.console("SH Series detected, performing FOD registration")
+    app.console("SH Series detected, performing FOD registration in contrast: " +
+                ', '.join(app.ARGS.input_dir[i] for i in range(n_contrasts) if c_fod_reorientation[i]))
+  c_mrtransform_reorientation = [' -reorient_fod ' + ('yes' if c_fod_reorientation[i] else 'no') + ' '
+                                 for i in range(n_contrasts)]
 
   if nanmask_input:
     app.console("NaN masking transformed images")
@@ -700,7 +770,7 @@ def execute():  #pylint: disable=unused-variable
     progress = app.ProgressBar('Resampling input images to template space with no initial alignment', len(inputs) * n_contrasts)
     for i in inputs:
       for c in range(n_contrasts):
-        run.command('mrtransform ' + i.paths_in[c] + ' -interp linear ' +
+        run.command('mrtransform ' + i.paths_in[c] + c_mrtransform_reorientation[c] + ' -interp linear ' +
                     '-template ' + current_template[c] + ' ' +
                     os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') +
                     outofbounds_option +
@@ -730,12 +800,9 @@ def execute():  #pylint: disable=unused-variable
         with open(os.path.join('linear_transforms_initial', '%s.txt' % (i.prefix)), 'w') as fout:
           fout.write('1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n')
   else:
-    progress = app.ProgressBar('Performing initial rigid registration to template', len(inputs))
+    progress = app.ProgressBar('Performing initial rigid registration to template (via first contrast)', len(inputs))
     mask_option = ''
-    if do_fod_registration:
-      lmax_option = ' -rigid_lmax 0 '
-    else:
-      lmax_option = ' -noreorientation '
+    lmax_option = ' -rigid_lmax 0 ' if c_fod_reorientation[0] else ' -noreorientation '
     if n_contrasts > 1:
       contrast_weight_option = ' -mc_weights ' + ','.join(app.ARGS.mc_weight_initial_alignment) + ' '
     else:
@@ -779,7 +846,7 @@ def execute():  #pylint: disable=unused-variable
                   output_option)
       # translate input images to centre of mass without interpolation
       for c in range(n_contrasts):
-        run.command('mrtransform ' + i.paths_in[c] +
+        run.command('mrtransform ' + i.paths_in[c] + c_mrtransform_reorientation[c] +
                     ' -linear ' + os.path.join('linear_transforms_initial', i.prefix + '.txt') +
                     datatype_option +
                     ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '_translated.mif'))
@@ -818,7 +885,7 @@ def execute():  #pylint: disable=unused-variable
       mask_filenames = []
       for i in inputs:
         mask_filenames.append(os.path.join('masks_transformed', i.prefix + '.mif'))
-      run.command('mrmath ' + ' '.join(mask_filenames) + ' max mask_translated.mif')
+      run.command(['mrmath', mask_filenames, 'max', 'mask_translated.mif'])
       run.command('mrgrid average_header.mif crop -mask mask_translated.mif average_header_cropped.mif')
       # pad average space to allow for deviation from initial alignment
       run.command('mrgrid average_header_cropped.mif pad -uniform 10 average_header.mif', force=True)
@@ -840,7 +907,7 @@ def execute():  #pylint: disable=unused-variable
     progress = app.ProgressBar('Reslicing input images to average header', len(inputs) * n_contrasts)
     for c in range(n_contrasts):
       for i in inputs:
-        run.command('mrtransform ' +
+        run.command('mrtransform ' + c_mrtransform_reorientation[c] +
                     ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '_translated.mif') +
                     ' ' + os.path.join('input_transformed' + i.contrasts[c], i.prefix + '.mif') +
                     ' -interp linear -template average_header.mif' +
@@ -852,7 +919,7 @@ def execute():  #pylint: disable=unused-variable
 
     if nanmask_input:
       inplace_nan_mask([os.path.join('input_transformed' + contrasts[c], i.prefix + '.mif') for i in inputs for c in range(n_contrasts)],
-                     [os.path.join('masks_transformed', i.prefix + '.mif') for i in inputs for c in range(n_contrasts)])
+        [os.path.join('masks_transformed', i.prefix + '.mif') for i in inputs for c in range(n_contrasts)])
 
     if leave_one_out:
       calculate_isfinite(inputs, isfinite_count, contrasts, n_volumes)
@@ -970,7 +1037,7 @@ def execute():  #pylint: disable=unused-variable
       progress = app.ProgressBar('Transforming all subjects to revised template', len(inputs) * n_contrasts)
       for c in range(n_contrasts):
         for i in inputs:
-          run.command('mrtransform ' + i.paths_in[c] +
+          run.command('mrtransform ' + c_mrtransform_reorientation[c] + i.paths_in[c] +
                       ' -template ' + current_template[c] +
                       ' -linear ' + os.path.join('linear_transforms_%i' % level, '%s.txt' % i.prefix) +
                       ' ' + os.path.join('input_transformed' + contrasts[c], '%s.mif' % i.prefix) +

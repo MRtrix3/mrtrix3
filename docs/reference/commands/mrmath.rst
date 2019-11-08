@@ -48,6 +48,8 @@ Options
 
 -  **-axis index** perform operation along a specified axis of a single input image
 
+-  **-keep_unary_axes** Keep unary axes in input images prior to calculating the stats. The default is to wipe axes with single elements.
+
 Data type options
 ^^^^^^^^^^^^^^^^^
 

@@ -33,8 +33,8 @@ namespace MR
       for (size_t i = 0; i < in1.ndim(); ++i) {
         if (std::isfinite (in1.spacing(i)))
           if (abs ((in1.spacing(i) - in2.spacing(i)) / (in1.spacing(i) + in2.spacing(i))) > 1e-4)
-            throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching voxel spacings " +
-                str(in1.spacing(i)) + " vs " + str(in2.spacing(i)));
+            throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching voxel spacings on axis " + str(i) +
+                " (" + str(in1.spacing(i)) + " vs " + str(in2.spacing(i)) + ")");
       }
       for (size_t i  = 0; i < 3; ++i) {
         for (size_t j  = 0; j < 4; ++j) {

@@ -53,7 +53,7 @@ namespace MR
 
         BaseFixel::~BaseFixel()
         {
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           vertex_buffer.clear ();
           direction_buffer.clear ();
           vertex_array_object.clear ();
@@ -217,7 +217,7 @@ namespace MR
 
         void BaseFixel::render (const Projection& projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           start (fixel_shader);
           projection.set (fixel_shader);
 
@@ -270,7 +270,7 @@ namespace MR
           }
 
           stop (fixel_shader);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -299,7 +299,7 @@ namespace MR
                                                const MR::Header &fixel_header,
                                                const MR::Transform &transform)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           // Code below "inspired" by ODF::draw
           Eigen::Vector3f p (Window::main->target());
           p += projection.screen_normal() * (projection.screen_normal().dot (Window::main->focus() - p));
@@ -373,7 +373,7 @@ namespace MR
           if(!regular_grid_buffer_pos.size())
             return;
 
-          MRView::GrabContext context;
+          GL::Context::Grab context;
 
           regular_grid_vao.bind ();
           regular_grid_vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -416,7 +416,7 @@ namespace MR
             gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
           }
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -424,8 +424,8 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           load_image_buffer ();
 
@@ -467,7 +467,7 @@ namespace MR
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
 
           dir_buffer_dirty = true;
           value_buffer_dirty = true;
@@ -478,8 +478,8 @@ namespace MR
 
         void BaseFixel::reload_directions_buffer ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           vertex_array_object.bind ();
 
@@ -489,14 +489,14 @@ namespace MR
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void BaseFixel::reload_values_buffer ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           if (scale_type == Unity)
             return;
@@ -512,14 +512,14 @@ namespace MR
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void BaseFixel::reload_colours_buffer ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           if (colour_type == Direction)
             return;
@@ -535,14 +535,14 @@ namespace MR
           gl::EnableVertexAttribArray (3);
           gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void BaseFixel::reload_threshold_buffer ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           const auto& fixel_val = current_fixel_threshold_state ();
           const auto& val_buffer = fixel_val.buffer_store;
@@ -555,7 +555,7 @@ namespace MR
           gl::EnableVertexAttribArray (4);
           gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
       }
     }

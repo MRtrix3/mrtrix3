@@ -60,7 +60,8 @@ class BoundsCheck { MEMALIGN(BoundsCheck)
     template <class ImageTypeIn, class ImageTypeOut>
       void operator() (ImageTypeIn& in, ImageTypeOut& out)
       {
-        if ((vec - Eigen::Matrix<value_type, 3, 1>(in.row(3))).isMuchSmallerThan(precision)) {
+        val = Eigen::Matrix<value_type, 3, 1>(in.row(3));
+        if ((vec - val).isMuchSmallerThan(precision) || (vec.hasNaN() && val.hasNaN())) {
           count++;
           for (auto l = Loop (3) (out); l; ++l)
             out.value() = NaN;
@@ -77,6 +78,7 @@ class BoundsCheck { MEMALIGN(BoundsCheck)
     const Eigen::Matrix<value_type, 3, 1> vec;
     size_t& counter;
     size_t count;
+    Eigen::Matrix<value_type, 3, 1> val;
 };
 
 

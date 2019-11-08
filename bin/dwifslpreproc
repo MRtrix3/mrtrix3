@@ -1,25 +1,48 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # Script for performing DWI pre-processing using FSL 5.0 (onwards) tools eddy / topup / applytopup
 
+
+
+import itertools, json, math, os, shutil, sys
+from distutils.spawn import find_executable
+
+
+
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=no-name-in-module
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Perform diffusion image pre-processing using FSL\'s eddy tool; including inhomogeneity distortion correction using FSL\'s topup tool if possible')
   cmdline.add_description('This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.')
+  cmdline.add_description('The script will attempt to run the CUDA version of eddy; if this does not succeed for any reason, or is not present on the system, the CPU version will be attempted instead. By default, the CUDA eddy binary found that indicates compilation against the most recent version of CUDA will be attempted; this can be over-ridden by providing a soft-link "eddy_cuda" within your path that links to the binary you wish to be executed.')
   cmdline.add_description('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to eddy is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).')
   cmdline.add_example_usage('A basic DWI acquisition, where all image volumes are acquired in a single protocol with fixed phase encoding',
-                            'dwipreproc DWI_in.mif DWI_out.mif -rpe_none -pe_dir ap -readout_time 0.55',
+                            'dwifslpreproc DWI_in.mif DWI_out.mif -rpe_none -pe_dir ap -readout_time 0.55',
                             'Due to use of a single fixed phase encoding, no EPI distortion correction can be applied in this case.')
   cmdline.add_example_usage('DWIs all acquired with a single fixed phase encoding; but additionally a pair of b=0 images with reversed phase encoding to estimate the inhomogeneity field',
-                            'mrcat b0_ap.mif b0_pa.mif b0_pair.mif -axis 3; dwipreproc DWI_in.mif DWI_out.mif -rpe_pair -se_epi b0_pair.mif -pe_dir ap -readout_time 0.72 -align_seepi',
+                            'mrcat b0_ap.mif b0_pa.mif b0_pair.mif -axis 3; dwifslpreproc DWI_in.mif DWI_out.mif -rpe_pair -se_epi b0_pair.mif -pe_dir ap -readout_time 0.72 -align_seepi',
                             'Here the two individual b=0 volumes are concatenated into a single 4D image series, and this is provided to the script via the -se_epi option. Note that with the -rpe_pair option used here, which indicates that the SE-EPI image series contains one or more pairs of b=0 images with reversed phase encoding, the FIRST HALF of the volumes in the SE-EPI series must possess the same phase encoding as the input DWI series, while the second half are assumed to contain the opposite phase encoding direction but identical total readout time. Use of the -align_seepi option is advocated as long as its use is valid (more information in the Description section).')
   cmdline.add_example_usage('All DWI directions & b-values are acquired twice, with the phase encoding direction of the second acquisition protocol being reversed with respect to the first',
-                            'mrcat DWI_lr.mif DWI_rl.mif DWI_all.mif -axis 3; dwipreproc DWI_all.mif DWI_out.mif -rpe_all -pe_dir lr -readout_time 0.66',
+                            'mrcat DWI_lr.mif DWI_rl.mif DWI_all.mif -axis 3; dwifslpreproc DWI_all.mif DWI_out.mif -rpe_all -pe_dir lr -readout_time 0.66',
                             'Here the two acquisition protocols are concatenated into a single DWI series containing all acquired volumes. The direction indicated via the -pe_dir option should be the direction of phase encoding used in acquisition of the FIRST HALF of volumes in the input DWI series; ie. the first of the two files that was provided to the mrcat command. In this usage scenario, the output DWI series will contain the same number of image volumes as ONE of the acquired DWI series (ie. half of the number in the concatenated series); this is because the script will identify pairs of volumes that possess the same diffusion sensitisation but reversed phase encoding, and perform explicit recombination of those volume pairs in such a way that image contrast in regions of inhomogeneity is determined from the stretched rather than the compressed image.')
   cmdline.add_example_usage('Any acquisition scheme that does not fall into one of the example usages above',
-                            'mrcat DWI_*.mif DWI_all.mif -axis 3; mrcat b0_*.mif b0_all.mif -axis 3; dwipreproc DWI_all.mif DWI_out.mif -rpe_header -se_epi b0_all.mif -align_seepi',
-                            'With this usage, the relevant phase encoding information is determined entirely based on the contents of the relevant image headers, and dwipreproc prepares all metadata for the executed FSL commands accordingly. This can therefore be used if the particular DWI acquisition strategy used does not correspond to one of the simple examples as described in the prior examples. This usage is predicated on the headers of the input files containing appropriately-named key-value fields such that MRtrix3 tools identify them as such. In some cases, conversion from DICOM using MRtrix3 commands will automatically extract and embed this information; however this is not true for all scanner vendors and/or software versions. In the latter case it may be possible to manually provide these metadata; either using the -json_import command-line option of dwipreproc, or the -json_import or one of the -import_pe_* command-line options of MRtrix3\'s mrconvert command (and saving in .mif format) prior to running dwipreproc.')
+                            'mrcat DWI_*.mif DWI_all.mif -axis 3; mrcat b0_*.mif b0_all.mif -axis 3; dwifslpreproc DWI_all.mif DWI_out.mif -rpe_header -se_epi b0_all.mif -align_seepi',
+                            'With this usage, the relevant phase encoding information is determined entirely based on the contents of the relevant image headers, and dwifslpreproc prepares all metadata for the executed FSL commands accordingly. This can therefore be used if the particular DWI acquisition strategy used does not correspond to one of the simple examples as described in the prior examples. This usage is predicated on the headers of the input files containing appropriately-named key-value fields such that MRtrix3 tools identify them as such. In some cases, conversion from DICOM using MRtrix3 commands will automatically extract and embed this information; however this is not true for all scanner vendors and/or software versions. In the latter case it may be possible to manually provide these metadata; either using the -json_import command-line option of dwifslpreproc, or the -json_import or one of the -import_pe_* command-line options of MRtrix3\'s mrconvert command (and saving in .mif format) prior to running dwifslpreproc.')
   cmdline.add_citation('Andersson, J. L. & Sotiropoulos, S. N. An integrated approach to correction for off-resonance effects and subject movement in diffusion MR imaging. NeuroImage, 2015, 125, 1063-1078', is_external=True)
   cmdline.add_citation('Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', is_external=True)
   cmdline.add_citation('Skare, S. & Bammer, R. Jacobian weighting of distortion corrected EPI data. Proceedings of the International Society for Magnetic Resonance in Medicine, 2010, 5063', condition='If performing recombination of diffusion-weighted volume pairs with opposing phase encoding directions', is_external=True)
@@ -37,8 +60,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('-eddy_options', metavar=('" EddyOptions"'), help='Manually provide additional command-line options to the eddy command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to eddy)')
   cmdline.add_argument('-eddyqc_text', metavar=('directory'), help='Copy the various text-based statistical outputs generated by eddy, and the output of eddy_qc (if installed), into an output directory')
   cmdline.add_argument('-eddyqc_all', metavar=('directory'), help='Copy ALL outputs generated by eddy (including images), and the output of eddy_qc (if installed), into an output directory')
-  app.add_dwgrad_export_options()
-  app.add_dwgrad_import_options()
+  app.add_dwgrad_export_options(cmdline)
+  app.add_dwgrad_import_options(cmdline)
   rpe_options = cmdline.add_argument_group('Options for specifying the acquisition phase-encoding design; note that one of the -rpe_* options MUST be provided')
   rpe_options.add_argument('-rpe_none', action='store_true', help='Specify that no reversed phase-encoding image data is being provided; eddy will perform eddy current and motion correction only')
   rpe_options.add_argument('-rpe_pair', action='store_true', help='Specify that a set of images (typically b=0 volumes) will be provided for use in inhomogeneity field estimation only (using the -se_epi option)')
@@ -55,11 +78,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 
-
 def execute(): #pylint: disable=unused-variable
-  import itertools, json, math, os, shutil, sys
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, CONFIG, fsl, image, matrix, MRtrixError, path, phaseencoding, run, utils #pylint: disable=no-name-in-module
+  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, fsl, image, matrix, path, phaseencoding, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
 
   if utils.is_windows():
     raise MRtrixError('Script cannot run on Windows due to FSL dependency')
@@ -178,13 +199,13 @@ def execute(): #pylint: disable=unused-variable
       slice_encoding_direction = dwi_header.keyval()['SliceEncodingDirection']
       app.debug('Slice encoding direction: ' + slice_encoding_direction)
       if not slice_encoding_direction.startswith('k'):
-        raise MRtrixError('DWI header indicates that 3rd spatial axis is not the slice axis; this is not yet compatible with --mporder option in eddy, nor supported in dwipreproc')
+        raise MRtrixError('DWI header indicates that 3rd spatial axis is not the slice axis; this is not yet compatible with --mporder option in eddy, nor supported in dwifslpreproc')
       slice_encoding_direction = image.axis2dir(slice_encoding_direction)
     else:
       app.console('No slice encoding direction information present; assuming third axis corresponds to slices')
       slice_encoding_direction = [0,0,1]
   if '--resamp=lsr' in eddy_manual_options:
-    raise MRtrixError('dwipreproc does not currently support least-squares reconstruction; this cannot be simply passed via -eddy_options')
+    raise MRtrixError('dwifslpreproc does not currently support least-squares reconstruction; this cannot be simply passed via -eddy_options')
   if eddy_mporder:
     slspec_option = [ s for s in eddy_manual_options if s.startswith('--slspec') ]
     slice_groups = [ ]
@@ -262,13 +283,13 @@ def execute(): #pylint: disable=unused-variable
     # - If both are zero, skip this check
     # - If one is zero and the other is not, volumes don't match
     # - If neither is zero, test the dot product
-    if any([val for val in one[0:3]]):
-      if not any([val for val in two[0:3]]):
+    if any(one[0:3]):
+      if not any(two[0:3]):
         return False
       dot_product = one[0]*two[0] + one[1]*two[1] + one[2]*two[2]
       if abs(dot_product) < 0.999:
         return False
-    elif any([val for val in two[0:3]]):
+    elif any(two[0:3]):
       return False
     # b-value
     if abs(one[3]-two[3]) > 10.0:
@@ -437,7 +458,7 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.se_epi:
 
     # Newest version of eddy requires that topup field be on the same grid as the eddy input DWI
-    if not image.match(dwi_header, se_epi_header, 3):
+    if not image.match(dwi_header, se_epi_header, up_to_dim=3):
       app.console('DWIs and SE-EPI images used for inhomogeneity field estimation are defined on different image grids; '
                   'the latter will be automatically re-gridded to match the former')
       new_se_epi_path = 'se_epi_regrid.mif'
@@ -800,7 +821,7 @@ def execute(): #pylint: disable=unused-variable
       app.debug('New: ' + str(new_slice_groups))
       slice_groups = new_slice_groups
 
-    matrix.save_numeric('slspec.txt', slice_groups, header='')
+    matrix.save_numeric('slspec.txt', slice_groups, header='', fmt='%d')
     eddy_manual_options.append('--slspec=slspec.txt')
 
 
@@ -976,7 +997,7 @@ def execute(): #pylint: disable=unused-variable
     #   visualising the script intermediate files, and it gives the user a warning about an out-of-date FSL)
     field_map_image = fsl.find_image('field_map')
     field_map_header = image.Header(field_map_image)
-    if not image.match('topup_in.nii', field_map_header, 3):
+    if not image.match('topup_in.nii', field_map_header, up_to_dim=3):
       app.warn('topup output field image has erroneous header; recommend updating FSL to version 5.0.8 or later')
       new_field_map_image = 'field_map_fix.mif'
       run.command('mrtransform ' + field_map_image + ' -replace topup_in.nii ' + new_field_map_image)

@@ -1,6 +1,12 @@
 Maximum spherical harmonic degree *l*:sub:`max`
 -----------------------------------------------
 
+The *l*:sub:`max` value refers to the highest harmonic order :math:`l` included
+in the :ref:`spherical_harmonics` series. It determines the highest angular
+frequency band to be included in the series: higher *l*:sub:`max` values allow
+sharper details to be represented, but require more coefficients to be stored
+and processed.
+
 What determines *l*:sub:`max` for my image data?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

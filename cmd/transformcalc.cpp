@@ -305,6 +305,7 @@ void run ()
       out << "S: " << S.row(0).format(fmt);
       out << "S: " << S.row(1).format(fmt);
       out << "S: " << S.row(2).format(fmt);
+      out << "jacobian_det: " << str(transform.linear().topLeftCorner<3,3>().determinant()) << "\n";
 
       break;
     }
