@@ -294,7 +294,7 @@ namespace MR
       if (i == -1) {
         first = "0";
         second = string;
-      } else if (i == string.size()) {
+      } else if (i == ssize_t(string.size())) {
         first = string;
         second = "0i";
       } else {
@@ -355,7 +355,7 @@ namespace MR
       if (i == -1) {
         first = "0";
         second = string;
-      } else if (i == string.size()) {
+      } else if (i == ssize_t(string.size())) {
         first = string;
         second = "0i";
       } else {
