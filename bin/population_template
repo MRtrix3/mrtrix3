@@ -76,7 +76,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   options.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)')
   options.add_argument('-leave_one_out', help='Register each input image to a template that does not contain that image. Valid choices: 0, 1, auto. (Default: auto (true if n_subjects larger than 2 and smaller than 15)) ')
   options.add_argument('-aggregate', help='Measure used to aggregate information from transformed images to the template image. Valid choices: %s. Default: mean' % ', '.join(AGGREGATION_MODES))
-  options.add_argument('-aggregation_weights', help='file containing weights used for weighted image aggregation. The file must contain lines with "image_name weight.')
+  options.add_argument('-aggregation_weights', help='Comma separated file containing weights used for weighted image aggregation. Each row must contain the identifiers of the input image and its weight. Note that this weighs intensity values not transformations (shape).')
   options.add_argument('-nanmask', action='store_true', help='Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation. Only works if -mask_dir has been input.')
   options.add_argument('-copy_input', action='store_true', help='Copy input images and masks into local scratch directory.')
 
@@ -205,11 +205,14 @@ def aggregate(INP, output, contrast_idx, mode, force=True):
     run.command(['mrmath', images, 'median', '-keep_unary_axes', output], force=force)
   elif mode == 'weighted_mean':
     cmd = ['mrcalc', '0']
-    weights = [i.aggregate_weight for i in INP]
+    weights = [i.aggregation_weight for i in INP]
     assert not any([w is None for w in weights]), weights
+    wsum = sum([float(w) for w in weights])
+    if wsum <= 0:
+      raise MRtrixError("the sum of aggregetion weights has to be positive")
     for weight, image in zip(weights, images):
-      cmd += [image, '%.16f' % weight, '-mult', '-add']
-    cmd += ['%.16f' % sum([float(w) for w in weights]), '-div', output]
+      cmd += [image, weight, '-mult', '-add']
+    cmd += ['%.16f' % wsum, '-div', output]
     run.command(cmd, force=force)
   else:
     raise MRtrixError("aggregation mode %s not understood" % mode)
@@ -232,21 +235,28 @@ def inplace_nan_mask(images, masks, progress=True):
     pbar.done()
 
 
-def calculate_isfinite(INP, isfinite_count, contrasts, n_volumes):
+def calculate_isfinite(INP, CON):
   import os
   from mrtrix3 import app, run, path  # pylint: disable=no-name-in-module
-  progress = app.ProgressBar('Preparations for leave one out registration', len(INP) * len(contrasts) + 1)
-  for c in range(len(contrasts)):
+  progress = app.ProgressBar('Preparations for leave one out registration', len(INP) * CON.n_contrasts + 1)
+  agg_weights = [float(i.aggregation_weight) for i in INP if i.aggregation_weight is not None]
+  for c in range(CON.n_contrasts):
     for i in INP:
-      if n_volumes[c] > 0:
-        run.command('mrconvert ' + i.ims_transformed[c] +
-                    ' -coord 3 0 - | mrcalc - -finite isfinite%s/%s.mif' % (contrasts[c], i.uid), force=True)
+      if CON.n_volumes[c] > 0:
+        cmd = 'mrconvert ' + i.ims_transformed[c] + ' -coord 3 0 - | mrcalc - -finite'
       else:
-        run.command('mrcalc ' + os.path.join('input_transformed' + contrasts[c], i.uid + '.mif') +
-                    ' -finite isfinite%s/%s.mif' % (contrasts[c], i.uid), force=True)
+        cmd = 'mrcalc ' + i.ims_transformed[c] + ' -finite'
+      if i.aggregation_weight:
+        cmd += ' %s -mult ' % i.aggregation_weight
+      cmd += ' isfinite%s/%s.mif' % (CON.suff[c], i.uid)
+      run.command(cmd, force=True)
       progress.increment()
-  for c in range(len(contrasts)):
-    run.command(['mrmath', path.all_in_dir('isfinite%s' % contrasts[c]), 'sum', isfinite_count[c]], force=True)
+  for c in range(CON.n_contrasts):
+    cmd = ['mrmath', path.all_in_dir('isfinite%s' % CON.suff[c]), 'sum']
+    if len(agg_weights):
+      agg_weight_norm = str(float(len(agg_weights)) / sum(agg_weights))
+      cmd += ['-', '|', 'mrcalc', '-', agg_weight_norm, '-mult']
+    run.command(cmd + [CON.isfinite_count[c]], force=True)
   progress.done()
 
 
@@ -285,7 +295,7 @@ class Contrasts:
     from mrtrix3 import MRtrixError, path, app  # pylint: disable=no-name-in-module
 
     n_contrasts = len(app.ARGS.input_dir)
-
+    
     for mode in ['initial_alignment', 'rigid', 'affine', 'nl']:
       opt = app.ARGS.__dict__.get('mc_weight_' + mode, None)
       if opt:
@@ -298,45 +308,13 @@ class Contrasts:
       else:
         opt = ["1"] * n_contrasts
       self.__dict__['mc_weight_%s' % mode] = opt
-      self.__dict__['mc_weight_%s_option' % mode] = ' -mc_weights '+','.join(opt)+' ' if n_contrasts > 1 else ''
-
-    # if app.ARGS.mc_weight_rigid:
-    #   if n_contrasts == 1:
-    #     raise MRtrixError('mc_weight_rigid requires multiple input contrasts')
-    #   else:
-    #     app.ARGS.mc_weight_rigid = app.ARGS.mc_weight_rigid.split(',')
-    #     if len(args.mc_weight_rigid) != n_contrasts:
-    #       raise MRtrixError('mc_weight_rigid needs to be defined for each contrast')
-    # else:
-    #   app.ARGS.mc_weight_rigid = n_contrasts * ["1"]
-    # self.rigid_weight_option = ''
-    # if n_contrasts > 1:
-    #   self.rigid_weight_option = ' -mc_weights ' + ','.join(app.ARGS.mc_weight_rigid) + ' '
-    #
-    # if app.ARGS.mc_weight_affine:
-    #   if n_contrasts == 1:
-    #     raise MRtrixError('mc_weight_affine requires multiple input contrasts')
-    #   else:
-    #     app.ARGS.mc_weight_affine = app.ARGS.mc_weight_affine.split(',')
-    #     if len(app.ARGS.mc_weight_affine) != n_contrasts:
-    #       raise MRtrixError('mc_weight_affine needs to be defined for each contrast')
-    # else:
-    #   args.mc_weight_affine = n_contrasts * ["1"]
-
-    # if args.mc_weight_nl:
-    #   if n_contrasts == 1:
-    #     raise MRtrixError('mc_weight_nl requires multiple input contrasts')
-    #   else:
-    #     app.ARGS.mc_weight_nl = app.ARGS.mc_weight_nl.split(',')
-    #     if len(app.ARGS.mc_weight_nl) != n_contrasts:
-    #       raise MRtrixError('mc_weight_nl needs to be defined for each contrast')
-    # else:
-    #   app.ARGS.mc_weight_nl = n_contrasts * ["1"]
+      self.__dict__['%s_weight_option' % mode] = ' -mc_weights '+','.join(opt)+' ' if n_contrasts > 1 else ''
 
     self.suff = [''] + ["_c" + c for c in map(str, range(1, n_contrasts))]
     self.names = [os.path.relpath(f, os.path.commonprefix(app.ARGS.input_dir)) for f in app.ARGS.input_dir]
     self.templates_out = [path.from_user(t, True) for t in app.ARGS.template]
 
+    self.isfinite_count = ['isfinite' + c + '.mif' for c in self.suff]
     self.weights = [None for _ in range(self.n_contrasts)]
     self.templates = [None for _ in range(self.n_contrasts)]
 
@@ -399,7 +377,7 @@ class Input:
         copy files into folders in current working directory. modifies _local_ims and  _local_msk
 
       """
-  def __init__(self, uid, filenames, directories, contrasts, mask_filename='', mask_directory='', agg_weight=None):
+  def __init__(self, uid, filenames, directories, contrasts, mask_filename='', mask_directory=''):
     import os
     from mrtrix3 import path, app  # pylint: disable=no-name-in-module
     self.contrasts = contrasts
@@ -420,19 +398,27 @@ class Input:
     self.ims_transformed = [os.path.join('input_transformed'+contrasts[i], uid + '.mif') for i in range(n_contrasts)]
     self.msk_transformed = os.path.join('mask_transformed', uid + '.mif')
 
-    self.aggregation_weight = agg_weight
+    self.aggregation_weight = None
 
     self._local_ims = []
     self._local_msk = None
 
   def __repr__(self, *args, **kwargs):
     s = '\nInput ['
-    for k in sorted(self.__dict__.keys()):
-      if k.startswith('_'):
-        continue
+    for k in sorted([k for k in self.__dict__.keys() if not k.startswith('_')]):
       s += '\n\t' + str(k) + ': ' + str(self.__dict__[k])
     s += '\n]'
     return s
+
+  def info(self):
+    message = ['input: ' + self.uid]
+    if self.aggregation_weight:
+      message += ['weight: ' + self.aggregation_weight]
+    for c, f in zip(self.contrasts, self.ims_filenames):
+      message += [((c + ': ') if c else '') + '"' + f + '"']
+    if self.msk_filename:
+      message += ['mask: ' + self.msk_filename]
+    return ', '.join(message)
 
   def cache_local(self):
     import os
@@ -466,7 +452,7 @@ class Input:
   msk_path = property(get_msk_path)
 
 
-def parse_input_files(in_files, mask_files, CON):
+def parse_input_files(in_files, mask_files, CON, f_agg_weight=None):
   """
     matches input images across contrasts and pair them with masks.
     extracts unique identifiers from mask and image filenames by stripping common pre and postfix (per contrast)
@@ -535,11 +521,33 @@ def parse_input_files(in_files, mask_files, CON):
         raise MRtrixError('no matching mask image was found for input image ' + fname)
       index = mask_uids.index(uid)
       # uid, filenames, directories, contrasts, mask_filename = '', mask_directory = '', agg_weight = None
-      INP.append(Input(uid, fnames, dirs, contrasts, agg_weight=None,
+      INP.append(Input(uid, fnames, dirs, contrasts,
                           mask_filename=mask_files[index],
                           mask_directory=abspath(path.from_user(app.ARGS.mask_dir, False))))
     else:
-      INP.append(uid, Input(fnames, dirs, contrasts, agg_weight=None))
+      INP.append(uid, Input(uid, fnames, dirs, contrasts))
+
+  # parse aggregation weights and match to inputs
+  if f_agg_weight:
+    import csv
+    try:
+      with open(f_agg_weight, 'r') as f:
+        agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in csv.reader(f, delimiter=',', quotechar='#'))
+    except UnicodeDecodeError:
+      with open(f_agg_weight, 'r') as f:
+        agg_weights = dict(
+          (row[0].lstrip().rstrip(), row[1]) for row in csv.reader(f.read().decode('utf-8', errors='replace'),
+                                                                   delimiter=',', quotechar='#'))
+    pref = get_common_prefix(agg_weights.keys())
+    suff = get_common_postfix(agg_weights.keys())
+    for k in agg_weights.keys():
+      agg_weights[k.lstrip(re.escape(pref)).rstrip(re.escape(suff))] = agg_weights.pop(k).lstrip().rstrip()
+
+    for i in INP:
+      if i.uid not in agg_weights:
+        raise MRtrixError('aggregation weight not found for %s' % i.uid)
+      i.aggregation_weight = agg_weights[i.uid]
+
   return INP
 
 
@@ -570,10 +578,10 @@ def execute(): #pylint: disable=unused-variable
     app.ARGS.template.append(path.from_user(t[1], True))
 
   CON = Contrasts()
-  app.warn(str(CON))
+  app.debug(str(CON))
 
   for inputDir in app.ARGS.input_dir:
-    if not os.path.exists(inputDir):
+    if not os.path.isdir(inputDir):
       raise MRtrixError('input directory not found: ' + inputDir)
 
   in_files = [sorted(path.all_in_dir(inputDir, dir_path=False)) for inputDir in app.ARGS.input_dir]
@@ -606,15 +614,16 @@ def execute(): #pylint: disable=unused-variable
   agg_measure = 'mean'
   if app.ARGS.aggregate is not None:
     if not app.ARGS.aggregate in AGGREGATION_MODES:
-      raise MRtrixError("aggregation type must be one of %s. provided: %s" % (str(AGGREGATION_MODES), app.ARGS.aggregate))
+      app.error("aggregation type must be one of %s. provided: %s" % (str(AGGREGATION_MODES), app.ARGS.aggregate))
     agg_measure = app.ARGS.aggregate
 
   agg_weights = app.ARGS.aggregation_weights
   if agg_weights is not None:
     agg_measure = "weighted_" + agg_measure
     if not agg_measure == 'weighted_mean':
-      raise MRtrixError(
-        "aggregation weights can only be used with the '-aggregate mean' option. provided: %s" % (app.ARGS.aggregate))
+      app.error("aggregation weights require '-aggregate mean' option. provided: %s" % (app.ARGS.aggregate))
+      if not os.path.isfile(app.ARGS.aggregation_weights):
+        app.error("aggregation weights file not found: %s" % app.ARGS.aggregation_weights)
 
   initial_alignment = app.ARGS.initial_alignment
   if initial_alignment not in ["mass", "robust_mass", "geometric", "none"]:
@@ -633,7 +642,7 @@ def execute(): #pylint: disable=unused-variable
     use_masks = True
     app.ARGS.mask_dir = relpath(app.ARGS.mask_dir)
     maskDir = app.ARGS.mask_dir
-    if not os.path.exists(maskDir):
+    if not os.path.isdir(maskDir):
       raise MRtrixError('mask directory not found')
     mask_files = sorted(path.all_in_dir(maskDir, dir_path=False))
     if len(mask_files) < len(in_files[0]):
@@ -649,9 +658,7 @@ def execute(): #pylint: disable=unused-variable
   if nanmask_input and not use_masks:
     raise MRtrixError('you cannot use NaN masking when no subject masks were input using -mask_dir')
 
-  INP = parse_input_files(in_files, mask_files, CON)
-  for i in INP:
-    app.debug(str(i))
+  INP = parse_input_files(in_files, mask_files, CON, agg_weights)
 
   leave_one_out = 'auto'
   if app.ARGS.leave_one_out is not None:
@@ -686,7 +693,7 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.transformed_dir:
     app.ARGS.transformed_dir = [relpath(d) for d in app.ARGS.transformed_dir.split(',')]
     if len(app.ARGS.transformed_dir) != n_contrasts:
-      raise MRtrixError('require multiple transformed directories if multi-contrast registration is used')
+      raise MRtrixError('require multiple comma separated transformed directories if multi-contrast registration is used')
     for d in app.ARGS.transformed_dir:
       app.check_output_path(d)
 
@@ -698,24 +705,24 @@ def execute(): #pylint: disable=unused-variable
 
   # automatically detect SH series in each contrast
   do_fod_registration = False  # in any contrast
-  n_volumes = []
-  c_fod_reorientation = []
+  CON.n_volumes = []
+  CON.fod_reorientation = []
   for c in range(n_contrasts):
     image_size = image.Header(INP[0].get_ims_path(False)[c]).size()
     if len(image_size) < 3 or len(image_size) > 4:
       raise MRtrixError('only 3 and 4 dimensional images can be used to build a template')
     if len(image_size) == 4:
       val = (math.sqrt(1 + 8 * image_size[3]) - 3.0) / 4.0
-      c_fod_reorientation.append(not (val - int(val)) and not noreorientation)
-      n_volumes.append(image_size[3])
-      do_fod_registration = do_fod_registration or c_fod_reorientation[-1]
+      CON.fod_reorientation.append(not (val - int(val)) and not noreorientation)
+      CON.n_volumes.append(image_size[3])
+      do_fod_registration = do_fod_registration or CON.fod_reorientation[-1]
     else:
-      c_fod_reorientation.append(False)
-      n_volumes.append(0)
+      CON.fod_reorientation.append(False)
+      CON.n_volumes.append(0)
   if do_fod_registration:
     app.console("SH Series detected, performing FOD registration in contrast: " +
-                ', '.join(app.ARGS.input_dir[i] for i in range(n_contrasts) if c_fod_reorientation[i]))
-  c_mrtransform_reorientation = [' -reorient_fod ' + ('yes' if c_fod_reorientation[i] else 'no') + ' '
+                ', '.join(app.ARGS.input_dir[i] for i in range(n_contrasts) if CON.fod_reorientation[i]))
+  c_mrtransform_reorientation = [' -reorient_fod ' + ('yes' if CON.fod_reorientation[i] else 'no') + ' '
                                  for i in range(n_contrasts)]
 
   if nanmask_input:
@@ -852,6 +859,12 @@ def execute(): #pylint: disable=unused-variable
       for istage, [scale, niter] in enumerate(zip(nl_scales, nl_niter)):
         app.console('(%02i) nonlinear scale: %.4f, niter: %i, no reorientation' % (istage, scale, niter))
 
+  app.console('-' * 60)
+  app.console('input images:')
+  app.console('-' * 60)
+  for i in INP:
+    app.console('\t' + i.info())
+
   app.make_scratch_dir()
   app.goto_scratch_dir()
 
@@ -860,8 +873,6 @@ def execute(): #pylint: disable=unused-variable
 
   for contrast in CON.suff:
     path.make_dir('isfinite' + contrast)
-
-  isfinite_count = ['isfinite' + contrast + '.mif' for contrast in CON.suff]
 
   path.make_dir('linear_transforms_initial')
   path.make_dir('linear_transforms')
@@ -923,12 +934,12 @@ def execute(): #pylint: disable=unused-variable
       run.command('mrconvert average_header.mif -coord 3 0 -axes 0,1,2 ' + avh3d)
     run.command('mrconvert ' + avh3d + ' -axes 0,1,2,-1 ' + avh4d)
     for c in range(1, n_contrasts):
-      if n_volumes[c] == 0:
+      if CON.n_volumes[c] == 0:
         run.function(copy, avh3d, 'average_header' + CON.suff[c] + '.mif')
-      elif n_volumes[c] == 1:
+      elif CON.n_volumes[c] == 1:
         run.function(copy, avh4d, 'average_header' + CON.suff[c] + '.mif')
       else:
-        run.command('mrcat ' + ' '.join([avh3d] * n_volumes[c]) + ' -axis 3 average_header' + CON.suff[c] + '.mif')
+        run.command('mrcat ' + ' '.join([avh3d] * CON.n_volumes[c]) + ' -axis 3 average_header' + CON.suff[c] + '.mif')
     run.function(os.remove, avh3d)
     run.function(os.remove, avh4d)
 
@@ -959,7 +970,7 @@ def execute(): #pylint: disable=unused-variable
                        [i.msk_transformed for i in INP for c in range(n_contrasts)])
 
     if leave_one_out:
-      calculate_isfinite(INP, isfinite_count, CON.suff, n_volumes)
+      calculate_isfinite(INP, CON)
 
     if not dolinear:
       for i in INP:
@@ -969,8 +980,8 @@ def execute(): #pylint: disable=unused-variable
     progress = app.ProgressBar('Performing initial rigid registration to template', len(INP))
     mask_option = ''
     c = 0
-    lmax_option = ' -rigid_lmax 0 ' if c_fod_reorientation[c] else ' -noreorientation '
-    contrast_weight_option = CON.mc_weight_initial_alignment_option
+    lmax_option = ' -rigid_lmax 0 ' if CON.fod_reorientation[c] else ' -noreorientation '
+    contrast_weight_option = CON.initial_alignment_weight_option
     for i in INP:
       output_option = ' -rigid ' + os.path.join('linear_transforms_initial', i.uid + '.txt')
       images = ' + '.join([p + ' ' + t for p, t in zip(i.ims_path, CON.template)])
@@ -978,7 +989,7 @@ def execute(): #pylint: disable=unused-variable
         mask_option = ' -mask1 ' + i.msk_path
         if initial_alignment == 'robust_mass':
           if not os.path.isfile('robust/template.mif'):
-            if n_volumes[c] > 0:
+            if CON.n_volumes[c] > 0:
               run.command('mrconvert ' + CON.template[c] + ' -coord 3 0 - | mrconvert - -axes 0,1,2 robust/template.mif')
             else:
               run.command('mrconvert ' + CON.template[c] + ' robust/template.mif')
@@ -1077,12 +1088,12 @@ def execute(): #pylint: disable=unused-variable
                        [i.msk_transformed for i in INP for c in range(n_contrasts)])
 
     if leave_one_out:
-      calculate_isfinite(INP, isfinite_count, CON.suff, n_volumes)
+      calculate_isfinite(INP, CON)
 
   CON.template = ['initial_template' + contrast + '.mif' for contrast in CON.suff]
   for c in range(n_contrasts):
     aggregate(INP, 'initial_template' + CON.suff[c] + '.mif', c, agg_measure)
-    if n_volumes[c] == 1:
+    if CON.n_volumes[c] == 1:
       run.function(shutil.move, 'initial_template' + CON.suff[c] + '.mif', 'tmp.mif')
       run.command('mrconvert tmp.mif initial_template' + CON.suff[c] + '.mif -axes 0,1,2,-1')
 
@@ -1105,7 +1116,6 @@ def execute(): #pylint: disable=unused-variable
         lmax_option = ' -noreorientation'
         metric_option = ''
         mrregister_log_option = ''
-        contrast_weight_option = ''
         if regtype == 'rigid':
           scale_option = ' -rigid_scale ' + str(scale)
           niter_option = ' -rigid_niter ' + str(niter)
@@ -1139,9 +1149,11 @@ def execute(): #pylint: disable=unused-variable
           tmpl = []
           for c in range(n_contrasts):
             isfinite = 'isfinite%s/%s.mif' % (CON.suff[c], i.uid)
-            run.command('mrcalc ' + isfinite_count[c] + ' ' + isfinite + ' -sub - | mrcalc ' + CON.template[c] +
-                        ' ' + isfinite_count[c] + ' -mult ' + i.ims_transformed[c] + ' -sub - -div loo_%s' % CON.template[c],
-                        force=True)
+            weight = i.aggregation_weight if i.aggregation_weight is not None else '1'
+            # loo = (template * weighted sum - weight * this) / (weighted sum - weight)
+            run.command('mrcalc ' + CON.isfinite_count[c] + ' ' + isfinite + ' -sub - | mrcalc ' + CON.template[c] +
+                        ' ' + CON.isfinite_count[c] + ' -mult ' + i.ims_transformed[c] + ' ' + weight + ' -mult ' +
+                        ' -sub - -div loo_%s' % CON.template[c], force=True)
             tmpl.append('loo_%s' % CON.template[c])
           images = ' + '.join([p + ' ' + t for p, t in zip(i.ims_path, tmpl)])
         else:
@@ -1211,12 +1223,12 @@ def execute(): #pylint: disable=unused-variable
                          [i.msk_transformed for i in INP for c in range(n_contrasts)], progress=False)
 
       if leave_one_out:
-        calculate_isfinite(INP, isfinite_count, CON.suff, n_volumes)
+        calculate_isfinite(INP, CON)
 
       for c in range(n_contrasts):
         CON.template[c] = 'linear_template%02i%s.mif' % (level, CON.suff[c])
         aggregate(INP, CON.template[c], c, agg_measure)
-        if n_volumes[c] == 1:
+        if CON.n_volumes[c] == 1:
           run.function(shutil.move, CON.template[c], 'tmp.mif')
           run.command('mrconvert tmp.mif ' + CON.template[c] + ' -axes 0,1,2,-1')
           run.function(os.remove, 'tmp.mif')
@@ -1258,16 +1270,17 @@ def execute(): #pylint: disable=unused-variable
         else:
           lmax_option = ' -noreorientation'
 
-        contrast_weight_option = CON.mc_weight_nl_option
+        contrast_weight_option = CON.nl_weight_option
 
         if leave_one_out:
           tmpl = []
           for c in range(n_contrasts):
-            current = i.ims_transformed[c]
             isfinite = 'isfinite%s/%s.mif' % (CON.suff[c], i.uid)
-            run.command('mrcalc ' + isfinite_count[c] + ' ' + isfinite + ' -neg -add - | mrcalc ' +
-                        CON.template[c] + ' ' + isfinite_count[c] + ' -mult ' + current +
-                        ' -neg -add - -div loo_%s' %CON.template[c], force=True)
+            weight = i.aggregation_weight if i.aggregation_weight is not None else '1'
+            # loo = (template * weighted sum - weight * this) / (weighted sum - weight)
+            run.command('mrcalc ' + CON.isfinite_count[c] + ' ' + isfinite + ' -sub - | mrcalc ' + CON.template[c] +
+                        ' ' + CON.isfinite_count[c] + ' -mult ' + i.ims_transformed[c] + ' ' + weight + ' -mult ' +
+                        ' -sub - -div loo_%s' % CON.template[c], force=True)
             tmpl.append('loo_%s' % CON.template[c])
           images = ' + '.join([p + ' ' + t for p, t in zip(i.ims_path, tmpl)])
         else:
@@ -1313,12 +1326,12 @@ def execute(): #pylint: disable=unused-variable
       progress.done()
 
       if leave_one_out:
-        calculate_isfinite(INP, isfinite_count, CON.suff, n_volumes)
+        calculate_isfinite(INP, CON)
 
       for c in range(n_contrasts):
         CON.template[c] = 'nl_template%02i%s.mif' % (level, CON.suff[c])
         aggregate(INP, CON.template[c], c, agg_measure)
-        if n_volumes[c] == 1:
+        if CON.n_volumes[c] == 1:
           run.function(shutil.move, CON.template[c], 'tmp.mif')
           run.command('mrconvert tmp.mif ' + CON.template[c] + ' -axes 0,1,2,-1')
           run.function(os.remove, 'tmp.mif')
@@ -1353,7 +1366,7 @@ def execute(): #pylint: disable=unused-variable
     for i in INP:
       run.command('mrconvert ' + os.path.join('warps', i.uid + '.mif') + ' ' +
                   os.path.join(warp_path, i.uid + '.mif'),
-                  mrconvert_keyval=i.ims_path[0], force=app.FORCE_OVERWRITE)
+                  mrconvert_keyval=i.get_ims_path(False)[0], force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
 
@@ -1371,8 +1384,8 @@ def execute(): #pylint: disable=unused-variable
       os.makedirs(transformed_path)
       progress = app.ProgressBar('Copying transformed images to output directory "' + transformed_path + '"')
       for i in INP:
-        run.command(['mrconvert', i.ims_transformed[c], os.path.join(transformed_path, i.filenames[c])],
-                    mrconvert_keyval=i.ims_path[0], force=app.FORCE_OVERWRITE)
+        run.command(['mrconvert', i.ims_transformed[c], os.path.join(transformed_path, i.ims_filenames[c])],
+                    mrconvert_keyval=i.get_ims_path(False)[0], force=app.FORCE_OVERWRITE)
         progress.increment()
       progress.done()
 
