@@ -15,8 +15,6 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-LOGFILE=testing.log
-
 if test "$#" -ne 1; then
   echo "Script must be provided with single input argument: \"binaries\", \"scripts\", \"units\", or the name of a specific test to be run."
   exit 1
@@ -73,6 +71,7 @@ case $1 in
 esac
 
 
+LOGFILE="testing_"$1".log"
 echo logging to \""$LOGFILE"\"
 cat > $LOGFILE <<EOD
 ------------------------------------------
