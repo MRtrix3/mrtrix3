@@ -15,8 +15,7 @@ Usage
 
     population_template input_dir template [ options ]
 
--  *input_dir*: The input directory containing all images used to build the template
--  *template*: The output template image
+-  *input_dir template*: Pair of an input directory containing all images used to build the template and the output template image. For multi-contrast registration, provide multiple pairs separated by a plus sign. Example: wm_dir template_wm.mif + gm_dir template_gm.mif
 
 Description
 -----------
@@ -26,13 +25,16 @@ First a template is optimised with linear registration (rigid and/or affine, bot
 Options
 -------
 
-- **-type registration_stage(s)** Specify the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration), and "nonlinear", as well as combinations of registration types: "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear". Default: rigid_affine_nonlinear
+Input, output and general options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-type** Specifiy the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration) and "nonlinear" as well as cominations of registration types: "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear". Default: rigid_affine_nonlinear
 
 - **-voxel_size** Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma separated values.
 
-- **-initial_alignment mode** Method of alignment to form the initial template. Options are "mass" (default), "geometric" and "none".
+- **-initial_alignment** Method of alignment to form the initial template. Options are "mass" (default), "robust_mass" (requires masks), "geometric" and "none".
 
-- **-mask_dir** Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly
+- **-mask_dir** Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly. Note that masks are used for registration, not for aggregation. To exclude areas from aggregation, NaN-mask your input images.
 
 - **-warp_dir** Output a directory containing warps from each input to the template. If the folder does not exist it will be created
 
@@ -40,18 +42,28 @@ Options
 
 - **-linear_transformations_dir** Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created
 
-- **-template_mask** Output a template mask. Only works if -mask_dir has been provided. The template mask is computed as the intersection of all subject masks in template space.
+- **-template_mask** Output a template mask. Only works if -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.
 
 - **-noreorientation** Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
+
+- **-leave_one_out** Register each input image to a template that does not contain that image. Valid choices: 0, 1, auto. (Default: auto (true if n_subjects larger than 2 and smaller than 15)) 
+
+- **-aggregate** Measure used to aggregate information from transformed images to the template image. Valid choices: mean, median. Default: mean
+
+- **-aggregation_weights** Comma separated file containing weights used for weighted image aggregation. Each row must contain the identifiers of the input image and its weight. Note that this weighs intensity values not transformations (shape).
+
+- **-nanmask** Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation. Only works if -mask_dir has been input.
+
+- **-copy_input** Copy input images and masks into local scratch directory.
 
 Options for the non-linear registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-nl_scale** Specify the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
+- **-nl_scale** Specifiy the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
 
-- **-nl_lmax** Specify the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4). The list must be the same length as the nl_scale factor list
+- **-nl_lmax** Specifiy the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4). The list must be the same length as the nl_scale factor list
 
-- **-nl_niter** Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list
+- **-nl_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: 5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5). The list must be the same length as the nl_scale factor list
 
 - **-nl_update_smooth** Regularise the gradient update field with Gaussian smoothing (standard deviation in voxel units, Default 2.0 x voxel_size)
 
@@ -64,19 +76,30 @@ Options for the linear registration
 
 - **-linear_no_pause** Do not pause the script if a linear registration seems implausible
 
-- **-linear_estimator** Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
+- **-linear_estimator** Choose estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: None (no robust estimator used)
 
-- **-rigid_scale** Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly define the number of template levels
+- **-rigid_scale** Specifiy the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly  define the number of template levels
 
-- **-rigid_lmax** Specify the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
+- **-rigid_lmax** Specifiy the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
 
-- **-rigid_niter** Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:50 for each scale). This must be a single number or a list of same length as the linear_scale factor list
+- **-rigid_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:50 for each scale). This must be a single number or a list of same length as the linear_scale factor list
 
-- **-affine_scale** Specify the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and rigid_scale implicitly define the number of template levels
+- **-affine_scale** Specifiy the multi-resolution pyramid used to build the affine template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and rigid_scale implicitly define the number of template levels
 
-- **-affine_lmax** Specify the lmax used for affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
+- **-affine_lmax** Specifiy the lmax used for affine registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
 
-- **-affine_niter** Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). This must be a single number or a list of same length as the linear_scale factor list
+- **-affine_niter** Specifiy the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). This must be a single number or a list of same length as the linear_scale factor list
+
+Multi-contrast options
+^^^^^^^^^^^^^^^^^^^^^^
+
+- **-mc_weight_initial_alignment** Weight contribution of each contrast to the initial alignment. Comma separated, default: 1.0
+
+- **-mc_weight_rigid** Weight contribution of each contrast to the objective of rigid registration. Comma separated, default: 1.0
+
+- **-mc_weight_affine** Weight contribution of each contrast to the objective of affine registration. Comma separated, default: 1.0
+
+- **-mc_weight_nl** Weight contribution of each contrast to the objective of nonlinear registration. Comma separated, default: 1.0
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
