@@ -431,7 +431,7 @@ class Input:
   def info(self):
     message = ['input: ' + self.uid]
     if self.aggregation_weight:
-      message += ['weight: ' + self.aggregation_weight]
+      message += ['agg weight: ' + self.aggregation_weight]
     for c, f in zip(self.contrasts, self.ims_filenames):
       message += [((c + ': ') if c else '') + '"' + f + '"']
     if self.msk_filename:
@@ -695,10 +695,10 @@ def execute(): #pylint: disable=unused-variable
     leave_one_out = bool(int(leave_one_out))
   if leave_one_out:
     app.console('performing leave-one-out registration')
-    # check that at least 2 weights are non-zero if weighted aggregation is used
+    # check that at sum of weights is positive for any grouping if weighted aggregation is used
     weights = [float(i.aggregation_weight) for i in INP if i.aggregation_weight is not None]
-    if weights and len(filter(lambda x: abs(x) > 1e-6, weights)) < 2:
-      raise MRtrixError('leave-one-out registration requires at least two non-zero weights')
+    if weights and sum(weights) - max(weights) <= 0:
+      raise MRtrixError('leave-one-out registration requires positive aggregation weights in all groupings')
 
   noreorientation = app.ARGS.noreorientation
 
