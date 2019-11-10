@@ -42,9 +42,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 
   options = cmdline.add_argument_group('Multi-contrast options')
   options.add_argument('-mc_weight_initial_alignment', help='Weight contribution of each contrast to the initial alignment. Comma separated, default: 1.0')
-  options.add_argument('-mc_weight_rigid', help='Weight contribution of each contrast to the rigid registration. Comma separated, default: 1.0')
-  options.add_argument('-mc_weight_affine', help='Weight contribution of each contrast to the affine registration. Comma separated, default: 1.0')
-  options.add_argument('-mc_weight_nl', help='Weight contribution of each contrast to the nonlinear registration. Comma separated, default: 1.0')
+  options.add_argument('-mc_weight_rigid', help='Weight contribution of each contrast to the objective of rigid registration. Comma separated, default: 1.0')
+  options.add_argument('-mc_weight_affine', help='Weight contribution of each contrast to the objective of affine registration. Comma separated, default: 1.0')
+  options.add_argument('-mc_weight_nl', help='Weight contribution of each contrast to the objective of nonlinear registration. Comma separated, default: 1.0')
 
   linoptions = cmdline.add_argument_group('Options for the linear registration')
   linoptions.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
@@ -80,8 +80,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   options.add_argument('-nanmask', action='store_true', help='Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation. Only works if -mask_dir has been input.')
   options.add_argument('-copy_input', action='store_true', help='Copy input images and masks into local scratch directory.')
 
-# TODO: add option to initialise warps
-# TODO: add aggregation_weights parsing
+# ENH: add option to initialise warps / transformations
 
 # Binds raw_input() to input() in Python2, so that input() can be used
 #   and the code will work on both Python 2 and 3
@@ -204,14 +203,15 @@ def aggregate(INP, output, contrast_idx, mode, force=True):
   elif mode == 'median':
     run.command(['mrmath', images, 'median', '-keep_unary_axes', output], force=force)
   elif mode == 'weighted_mean':
-    cmd = ['mrcalc', '0']
     weights = [i.aggregation_weight for i in INP]
     assert not any([w is None for w in weights]), weights
     wsum = sum([float(w) for w in weights])
+    cmd = ['mrcalc']
     if wsum <= 0:
       raise MRtrixError("the sum of aggregetion weights has to be positive")
     for weight, image in zip(weights, images):
-      cmd += [image, weight, '-mult', '-add']
+      if float(weight) != 0:
+        cmd += [image, weight, '-mult'] + (['-add'] if len(cmd) > 1 else [])
     cmd += ['%.16f' % wsum, '-div', output]
     run.command(cmd, force=force)
   else:
@@ -281,12 +281,27 @@ class Contrasts:
       Attributes
       ----------
       suff: list of str
-        identifiers used for contrast-specific filenames and folders ['', '_c1', ..., '_cn']
+        identifiers used for contrast-specific filenames and folders ['_c0', '_c1', ...]
 
-      contrast_names: list of str
+      names: list of str
+        derived from constrast-specific input folder
+
+      templates_out: list of str
+        full path to output templates
 
       templates: list of str
-        current template names
+        holds current template names during registration
+
+      isfinite_count: list of str
+        filenames of images holding (weighted) number of finite-valued voxels across all images
+
+      mc_weight_<mode>: list of str
+        contrast-specific weight used during initialisation / registration
+
+      <mode>_weight_option: list of str
+        weight option to be passed to mrregister, <mode> = {'initial_alignment', 'rigid', 'affine', 'nl'}
+
+      n_contrasts: int
 
       """
 
@@ -310,13 +325,16 @@ class Contrasts:
       self.__dict__['mc_weight_%s' % mode] = opt
       self.__dict__['%s_weight_option' % mode] = ' -mc_weights '+','.join(opt)+' ' if n_contrasts > 1 else ''
 
-    self.suff = [''] + ["_c" + c for c in map(str, range(1, n_contrasts))]
+    self.suff = ["_c" + c for c in map(str, range(n_contrasts))]
     self.names = [os.path.relpath(f, os.path.commonprefix(app.ARGS.input_dir)) for f in app.ARGS.input_dir]
+
     self.templates_out = [path.from_user(t, True) for t in app.ARGS.template]
+    if not len(self.templates_out) == n_contrasts:
+      raise MRtrixError('number of templates (%i) does not match number of input directories (%i)' %
+                        (len(self.templates_out), n_contrasts))
+    self.templates = [None for _ in range(self.n_contrasts)]
 
     self.isfinite_count = ['isfinite' + c + '.mif' for c in self.suff]
-    self.weights = [None for _ in range(self.n_contrasts)]
-    self.templates = [None for _ in range(self.n_contrasts)]
 
   @property
   def n_contrasts(self):
@@ -525,7 +543,7 @@ def parse_input_files(in_files, mask_files, CON, f_agg_weight=None):
                           mask_filename=mask_files[index],
                           mask_directory=abspath(path.from_user(app.ARGS.mask_dir, False))))
     else:
-      INP.append(uid, Input(uid, fnames, dirs, contrasts))
+      INP.append(Input(uid, fnames, dirs, contrasts))
 
   # parse aggregation weights and match to inputs
   if f_agg_weight:
@@ -547,6 +565,12 @@ def parse_input_files(in_files, mask_files, CON, f_agg_weight=None):
       if i.uid not in agg_weights:
         raise MRtrixError('aggregation weight not found for %s' % i.uid)
       i.aggregation_weight = agg_weights[i.uid]
+    app.console('Using aggregration weights ' + f_agg_weight)
+    weights = [float(i.aggregation_weight) for i in INP if i.aggregation_weight is not None]
+    if sum(weights) <= 0:
+      raise MRtrixError('Sum of aggregation weights is not positive: ' + str(weights))
+    if any([w < 0 for w in weights]):
+      app.warn('Negative aggregation weights: ' + str(weights))
 
   return INP
 
@@ -555,7 +579,7 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import MRtrixError, app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   if not app.ARGS.type in REGISTRATION_MODES:
-    raise MRtrixError("registration type must be one of %s. provided: %s" % (str(["rigid", "affine", "rigid_affine"]), app.ARGS.type))
+    raise MRtrixError("registration type must be one of %s. provided: %s" % (str(REGISTRATION_MODES), app.ARGS.type))
   dorigid     = "rigid"     in app.ARGS.type
   doaffine    = "affine"    in app.ARGS.type
   dolinear    = dorigid or doaffine
@@ -631,7 +655,7 @@ def execute(): #pylint: disable=unused-variable
 
   linear_estimator = app.ARGS.linear_estimator
   if linear_estimator and not linear_estimator.lower() == 'none':
-    if not dononlinear:
+    if not dolinear:
       raise MRtrixError('linear_estimator specified when no linear registration is requested')
     if linear_estimator not in ["l1", "l2", "lp"]:
       raise MRtrixError('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]))
@@ -665,13 +689,17 @@ def execute(): #pylint: disable=unused-variable
     leave_one_out = app.ARGS.leave_one_out
     if not leave_one_out in ['0', '1', 'auto']:
       raise MRtrixError('leave_one_out not understood: ' + str(leave_one_out))
-
   if leave_one_out == 'auto':
     leave_one_out = 2 < len(INP) < 15
   else:
     leave_one_out = bool(int(leave_one_out))
   if leave_one_out:
     app.console('performing leave-one-out registration')
+    # check that at least 2 weights are non-zero if weighted aggregation is used
+    weights = [float(i.aggregation_weight) for i in INP if i.aggregation_weight is not None]
+    if weights and len(filter(lambda x: abs(x) > 1e-6, weights)) < 2:
+      raise MRtrixError('leave-one-out registration requires at least two non-zero weights')
+
   noreorientation = app.ARGS.noreorientation
 
   do_pause_on_warn = True
@@ -803,19 +831,23 @@ def execute(): #pylint: disable=unused-variable
   app.console('-' * 60)
   app.console('initial alignment of images: %s' % initial_alignment)
   app.console('-' * 60)
-  for c in range(n_contrasts):
-    app.console('\tcontrast: %s, weight: %s, suffix: %s' % (CON.names[c], CON.mc_weight_initial_alignment[c], CON.suff[c]))
+  if n_contrasts > 1:
+    for c in range(n_contrasts):
+      app.console('\tcontrast "%s": %s, objective weight: %s' % (
+        CON.suff[c], CON.names[c], CON.mc_weight_initial_alignment[c]))
 
   if dolinear:
     app.console('-' * 60)
     app.console('linear registration stages:')
     app.console('-' * 60)
-    if 'rigid' in linear_type and n_contrasts > 1:
+    if n_contrasts > 1:
       for c in range(n_contrasts):
-        app.console('\tcontrast (rigid): %s, weight: %s, suffix: %s' % (CON.names[c], CON.mc_weight_rigid[c], CON.suff[c]))
-    if 'affine' in linear_type and n_contrasts > 1:
-      for c in range(n_contrasts):
-        app.console('\tcontrast (affine): %s, weight: %s, suffix: %s' % (CON.names[c], CON.mc_weight_affine[c], CON.suff[c]))
+        msg = '\tcontrast "%s": %s' % (CON.suff[c], CON.names[c])
+        if 'rigid' in linear_type:
+          msg += ', objective weight rigid: %s' % CON.mc_weight_rigid[c]
+        if 'affine' in linear_type:
+          msg += ', objective weight affine: %s' % CON.mc_weight_affine[c]
+        app.console(msg)
 
     if do_fod_registration:
       for istage, [tpe, scale, lmax, niter] in enumerate(zip(linear_type, linear_scales, linear_lmax, linear_niter)):
@@ -846,7 +878,8 @@ def execute(): #pylint: disable=unused-variable
     app.console('-' * 60)
     if n_contrasts > 1:
       for c in range(n_contrasts):
-        app.console('\tcontrast: %s, weight: %s, suffix: %s' % (CON.names[c], CON.mc_weight_nl[c], CON.suff[c]))
+        app.console('\tcontrast "%s": %s, objective weight: %s' % (
+          CON.suff[c], CON.names[c], CON.mc_weight_nl[c]))
 
     if do_fod_registration:
       if len(nl_scales) != len(nl_lmax):
@@ -933,7 +966,7 @@ def execute(): #pylint: disable=unused-variable
     else:
       run.command('mrconvert average_header.mif -coord 3 0 -axes 0,1,2 ' + avh3d)
     run.command('mrconvert ' + avh3d + ' -axes 0,1,2,-1 ' + avh4d)
-    for c in range(1, n_contrasts):
+    for c in range(n_contrasts):
       if CON.n_volumes[c] == 0:
         run.function(copy, avh3d, 'average_header' + CON.suff[c] + '.mif')
       elif CON.n_volumes[c] == 1:
@@ -1105,7 +1138,8 @@ def execute(): #pylint: disable=unused-variable
   else:
     for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
       progress = app.ProgressBar(
-        'Optimising template with linear registration (stage {0} of {1})'.format(level + 1, len(linear_scales)),
+        'Optimising template with {2} registration (linear stage {0} of {1})'.format(
+          level + 1, len(linear_scales), linear_type[level]),
         len(INP) * n_contrasts)
       for i in INP:
         initialise_option = ''
