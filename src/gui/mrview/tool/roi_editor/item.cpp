@@ -61,7 +61,10 @@ namespace MR
           value_min = 0.0f; value_max = 1.0f;
           set_windowing (0.0f, 1.0f);
           min_max_set();
-          alpha = 1.0f;
+          //CONF option: MRViewRoiAlpha
+          //CONF default: 0.5
+          //CONF The default alpha of a ROI overlay.
+          alpha =  MR::File::Config::get_float ("MRViewRoiAlpha", 0.5f);
           colour = preset_colours[current_preset_colour++];
           if (current_preset_colour >= 6)
             current_preset_colour = 0;
