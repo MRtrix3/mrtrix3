@@ -108,7 +108,7 @@ namespace MR
             default_type asq = sfm * sfm;
 
             default_type denom = smm * sff;
-            if (std::isnan(sfm) || std::isnan(denom) || std::abs (denom) < denominator_threshold) {
+            if (std::isnan(sfm) || std::isnan(denom) || MR::abs (denom) < denominator_threshold) {
               // if (std::abs (asq) > robustness_parameter)
               //   thread_voxel_count++; // TODO to count or not to count?
               im1_update.row(3) = 0.0;

@@ -132,7 +132,7 @@ namespace MR
 
             total_update.fill(0.0);
             for (ssize_t vol = 0; vol < nvols; ++vol) {
-              if (std::abs (speed[vol]) * weight[vol] < intensity_difference_threshold)
+              if (MR::abs (speed[vol]) * weight[vol] < intensity_difference_threshold)
                 continue;
               im1_gradient.index(3) = vol;
               im2_gradient.index(3) = vol;

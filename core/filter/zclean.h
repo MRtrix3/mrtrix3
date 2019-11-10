@@ -167,7 +167,7 @@ namespace MR
               INFO("median: " + str(median) + ", changed: " + str((median - previous_median)));
               INFO("mad: " + str(mad) + ", changed: " + str((mad - previous_mad)));
               INFO("lower: " + str(lower) + " upper: " + str(upper));
-              float change = std::abs(median - previous_median) / previous_mad;
+              float change = MR::abs(median - previous_median) / previous_mad;
               INFO("convergence: "+str(change));
               if (change < 1e-2)
                 break;
@@ -309,7 +309,7 @@ namespace MR
           }
           median = Math::median(vals);
           for (auto & v : vals)
-            v = std::abs(v - median);
+            v = MR::abs(v - median);
           mad = Math::median(vals);
         }
 

@@ -39,7 +39,7 @@ namespace MR
       const transform_type & trafo_before, transform_type & median_trafo, MR::vector<default_type> & scores);
 
     template <typename ParamType, typename StageType, typename MetricType, typename TransformType>
-    struct RobustStage {
+    struct RobustStage { NOMEMALIGN()
 
       RobustStage (ParamType & params, const StageType & stage, MetricType & metric, bool do_reorientation,
       const Eigen::MatrixXd & aPSF_directions, const Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> & optimiser_weights,

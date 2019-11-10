@@ -130,7 +130,7 @@ void run () {
   vector<Header> input1, input2;
   const size_t n_images = 1 + (argument.size() - 2 ) / 3;
   { // parse arguments and load input headers
-    if (std::abs(float (n_images) - (1.0 + float (argument.size() - 2 ) / 3.0)) > 1.e-6) {
+    if (MR::abs(float (n_images) - (1.0 + float (argument.size() - 2 ) / 3.0)) > 1.e-6) {
       std::string err;
       for (const auto & a : argument)
         err += " " + str(a);
@@ -791,7 +791,7 @@ void run () {
     if (do_nonlinear) {
       default_type sm = 0.0;
       std::for_each (mc_weights.begin(), mc_weights.end(), [&] (default_type n) {sm += n;});
-      if (std::abs (sm - n_images) > 1.e-6)
+      if (MR::abs (sm - n_images) > 1.e-6)
         WARN ("mc_weights do not sum to the number of contrasts. This changes the regularisation of the nonlinear registration.");
     }
 
