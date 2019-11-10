@@ -1023,7 +1023,7 @@ class Parser(argparse.ArgumentParser):
         name = arg.metavar
       else:
         name = arg.dest
-      text += '-  *' + name + '*: ' + arg.help.replace('|', '\\|') + '\n'
+      text += '-  *' + (' '.join(name) if isinstance(name, tuple) else name)  + '*: ' + arg.help.replace('|', '\\|') + '\n'
     text += '\n'
     if self._description:
       text += 'Description\n'
