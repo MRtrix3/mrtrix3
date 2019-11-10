@@ -177,7 +177,7 @@ namespace MR
   }
 
 
-  inline std::string strip (const std::string& string, const std::string& ws = {" \0\t\n", 4}, bool left = true, bool right = true)
+  inline std::string strip (const std::string& string, const std::string& ws = {" \0\t\r\n", 5}, bool left = true, bool right = true)
   {
     std::string::size_type start = (left ? string.find_first_not_of (ws) : 0);
     if (start == std::string::npos)
