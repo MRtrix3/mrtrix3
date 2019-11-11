@@ -276,7 +276,7 @@ void run ()
     else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes)
       DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
-    if (name)       std::cout << argument[i] << "\n";
+    if (name)       std::cout << header.name() << "\n";
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
     if (size)       print_dimensions (header);
