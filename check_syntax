@@ -20,9 +20,18 @@ echo -n "Checking syntax and memory alignment for Eigen 3.3 compatibility... "
 echo "Checking syntax and memory alignment for Eigen 3.3 compatibility..." > $LOG
 echo "" >> $LOG
 
+grep=grep
+if [[ "$OSTYPE" == darwin* ]]; then
+  if ! hash ggrep 2>/dev/null; then
+    echo 'Note that this script requires gnu-grep which you can install for instance via "brew install grep"'
+  else
+    grep=ggrep
+  fi
+fi
+
 retval=0
 
-for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_moc.cpp'); do
+for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp'); do
 
 # files to ignore:
   [[ "$f" -ef "src/gui/shview/icons.h" ||
@@ -41,7 +50,7 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_mo
 # process the file to strip comments, macros, etc:
   cat $f | \
 # remove C preprocessor macros:
-  grep -v '^#' | \
+  $grep -v '^#' | \
 # remove C++ single-line comments:
   perl -pe 's|//.*$||' | \
 # remove all newlines to make file one long line:
@@ -64,32 +73,32 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_mo
     perl -pe 's|<[^{};<]*?>||g' | \
     perl -pe 's|<[^{};<]*?>||g' | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Eo '(enum\s*)?\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))?' | \
+    $grep -Eo '(enum\s*)?\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))?' | \
 # remove matches that correspond to an enum class declaration:
-    grep -Ev '\benum\s*class\b' | \
+    $grep -Ev '\benum\s*class\b' | \
 # remove matches that are properly specified:
-    grep -Ev '\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))'
+    $grep -Ev '\b(class|struct)\b[^;{]*?{(\s*(MEMALIGN\s*\([^\)]*\)|NOMEMALIGN))'
   )
 
 # detect any instances of std::vector:
   res="$res"$(
     cat .check_syntax.tmp | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Po '(?<!::)std::vector\b'
+    $grep -Po '(?<!::)std::vector\b'
   )
 
 # detect any instances of std::make_shared:
   res="$res"$(
     cat .check_syntax.tmp | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Po '(?<!::)std::make_shared\b'
+    $grep -Po '(?<!::)std::make_shared\b'
   )
 
 # detect any instances of "using namespace std;":
   res="$res"$(
     cat .check_syntax.tmp | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Po '\busing\s+namespace\s+std\s*;'
+    $grep -Po '\busing\s+namespace\s+std\s*;'
   )
 
 # detect any instances of std::abs (outside of the SFINAE call in core/types.h):
@@ -97,7 +106,7 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_mo
     res="$res"$(
       cat .check_syntax.tmp | \
 # match for the parts we're interested in and output just the bits that match:
-      grep -Po '(?<!::)std::abs\b'
+      $grep -Po '(?<!::)std::abs\b'
     )
   fi
 
@@ -105,8 +114,8 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | grep -v '_mo
   res="$res"$(
     cat .check_syntax2.tmp | \
 # match for the parts we're interested in and output just the bits that match:
-    grep -Po '\w*print\w*.*?%\d?zu\b' |
-    grep -Po '\w*print(?!.*?print).*?$'
+    $grep -Po '\w*print\w*.*?%\d?zu\b' |
+    $grep -Po '\w*print(?!.*?print).*?$'
   )
 
 
