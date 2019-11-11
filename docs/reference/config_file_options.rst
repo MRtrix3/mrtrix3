@@ -334,6 +334,12 @@ List of MRtrix3 configuration file options
 
      The factor by which the ODF overlay is scaled.
 
+.. option:: MRViewRoiAlpha
+
+    *default: 0.5*
+
+     The default alpha of a ROI overlay.
+
 .. option:: MRViewRotateModifierKey
 
     *default: ctrl*
