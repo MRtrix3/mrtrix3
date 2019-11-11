@@ -58,7 +58,7 @@ namespace MR
             void reset_colourmap (const ColourMapButton&) override;
 
             QPushButton* hide_all_button;
-            bool do_lock_to_grid, do_crop_to_slice;
+            bool do_lock_to_grid, do_crop_to_slice, is_bidirectional;
             bool not_3D;
             float line_opacity;
             Model* fixel_list_model;
@@ -72,6 +72,7 @@ namespace MR
             void hide_all_slot ();
             void on_lock_to_grid_slot (bool is_checked);
             void on_crop_to_slice_slot (bool is_checked);
+            void on_directional_slot (bool is_checked);
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
             void length_multiplier_slot ();
@@ -103,7 +104,7 @@ namespace MR
             QSlider *line_thickness_slider;
             QSlider *opacity_slider;
 
-            QGroupBox *lock_to_grid, *crop_to_slice;
+            QGroupBox *lock_to_grid, *crop_to_slice, *bidirectional;
 
             void add_images (vector<std::string>& list);
             void dropEvent (QDropEvent* event) override;
@@ -113,6 +114,7 @@ namespace MR
             void update_gui_scaling_controls (bool reload_scaling_types = true);
             void update_gui_colour_controls (bool reload_colour_types = true);
             void update_gui_threshold_controls (bool reload_threshold_types = true);
+            void update_directionality (bool reload_directionality = true);
         };
       }
     }

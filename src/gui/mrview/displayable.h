@@ -41,10 +41,12 @@ namespace MR
       const uint32_t DiscardUpper = 0x40000000;
       const uint32_t Transparency = 0x80000000;
       const uint32_t Lighting = 0x01000000;
+      const uint32_t Directionality = 0x02000000;
       const uint32_t DiscardLowerEnabled = 0x00100000;
       const uint32_t DiscardUpperEnabled = 0x00200000;
       const uint32_t TransparencyEnabled = 0x00400000;
       const uint32_t LightingEnabled = 0x00800000;
+      const uint32_t UniDirectionalEnabled = 0x01000000;
 
       class Image;
       namespace Tool { class BaseFixel; }
@@ -128,12 +130,13 @@ namespace MR
 
           uint32_t flags () const { return flags_; }
 
-          void set_allowed_features (bool thresholding, bool transparency, bool lighting) {
+          void set_allowed_features (bool thresholding, bool transparency, bool lighting, bool unidirectionality=false) {
             uint32_t cmap = flags_;
             set_bit (cmap, DiscardLowerEnabled, thresholding);
             set_bit (cmap, DiscardUpperEnabled, thresholding);
             set_bit (cmap, TransparencyEnabled, transparency);
             set_bit (cmap, LightingEnabled, lighting);
+            set_bit (cmap, UniDirectionalEnabled, unidirectionality);
             flags_ = cmap;
           }
 
@@ -165,6 +168,11 @@ namespace MR
             set_bit (InvertScale, yesno);
           }
 
+          void set_uni_directional (bool yesno) {
+            if (!uni_directional_enabled()) return;
+            set_bit (Directionality, yesno);
+          }
+
           bool scale_inverted () const {
             return flags_ & InvertScale;
           }
@@ -185,6 +193,10 @@ namespace MR
             return flags_ & LightingEnabled;
           }
 
+          bool uni_directional_enabled () const {
+            return flags_ & UniDirectionalEnabled;
+          }
+
           bool use_discard_lower () const {
             return discard_lower_enabled() && ( flags_ & DiscardLower );
           }
@@ -199,6 +211,10 @@ namespace MR
 
           bool use_lighting () const {
             return lighting_enabled() && ( flags_ & Lighting );
+          }
+
+          bool use_uni_directional () const {
+            return uni_directional_enabled() && ( flags_ & Directionality );
           }
 
 

@@ -92,6 +92,7 @@ namespace MR
           Base (parent),
           do_lock_to_grid (true),
           do_crop_to_slice (true),
+          is_bidirectional (true),
           not_3D (true),
           line_opacity (1.0) {
 
@@ -248,6 +249,12 @@ namespace MR
             connect (crop_to_slice, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slice_slot (bool)));
             default_opt_grid->addWidget (crop_to_slice, 3, 0, 1, 2);
 
+            bidirectional = new QGroupBox (tr("bidirectional"));
+            bidirectional->setCheckable (true);
+            bidirectional->setChecked (true);
+            connect (bidirectional, SIGNAL (clicked (bool)), this, SLOT (on_directional_slot (bool)));
+            default_opt_grid->addWidget (bidirectional, 4, 0, 1, 2);
+
             main_box->addLayout (default_opt_grid, 0);
 
             main_box->addStretch ();
@@ -403,6 +410,7 @@ namespace MR
           update_gui_scaling_controls ();
           update_gui_threshold_controls ();
           update_gui_colour_controls ();
+          update_directionality ();
         }
 
 
@@ -500,6 +508,17 @@ namespace MR
           line_thickness_slider->setValue (static_cast<int>(first_fixel->get_line_thickenss () * 1.0e5f));
 
           length_combobox->setCurrentIndex (first_fixel->get_scale_type_index ());
+        }
+
+
+        void Fixel::update_directionality (bool reload_dimensionality)
+        {
+          if (!reload_dimensionality) return;
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            auto& fixel_image = *fixel_list_model->get_fixel_image (indices[i]);
+            fixel_image.set_uni_directional (!is_bidirectional && fixel_image.has_values ());
+          }
         }
 
 
@@ -632,6 +651,16 @@ namespace MR
           do_crop_to_slice = is_checked;
           lock_to_grid->setEnabled(do_crop_to_slice);
 
+          window().updateGL();
+        }
+
+        void Fixel::on_directional_slot (bool is_checked)
+        {
+          is_bidirectional = is_checked;
+          for (size_t i = 0; i < fixel_list_model->items.size(); ++i)
+            fixel_list_model->items[i]->set_uni_directional (!is_bidirectional);
+
+          update_directionality (false);
           window().updateGL();
         }
 
