@@ -174,8 +174,7 @@ namespace MR
 
       std::string underline (const std::string& text, bool ignore_whitespace = false)
       {
-        size_t ws (0), m (0);
-        if (ignore_whitespace) ws = std::count(text.begin(), text.end(), ' ');
+        size_t m (0);
         std::string retval (3*text.size(), '\0');
         for (size_t n = 0; n < text.size(); ++n) {
           if (ignore_whitespace and text[n]==' ')

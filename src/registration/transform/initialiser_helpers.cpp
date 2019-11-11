@@ -25,7 +25,6 @@
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
 #include "debug.h"
-// #include "timer.h"
 // #define DEBUG_INIT
 
 namespace MR
@@ -81,7 +80,7 @@ namespace MR
                 local_mu.setZero();
                 start_vol.resize (std::max(contrast_settings.size(), size_t(1)), 0);
                 weight.resize (std::max(contrast_settings.size(), size_t(1)), 1.0);
-                for (ssize_t idx = 0; idx < contrast_settings.size(); idx++) {
+                for (size_t idx = 0; idx < contrast_settings.size(); idx++) {
                   start_vol[idx] = contrast_settings[idx].start;
                   weight[idx] = contrast_settings[idx].weight;
                 }
@@ -106,7 +105,7 @@ namespace MR
                 default_type yc = scanner_pos[1] - centre[1];
                 default_type zc = scanner_pos[2] - centre[2];
 
-                for (ssize_t idx = 0; idx < start_vol.size(); idx++) {
+                for (size_t idx = 0; idx < start_vol.size(); idx++) {
                   if (image.ndim() > 3)
                     image.index(3) = start_vol[idx];
 
@@ -227,7 +226,7 @@ namespace MR
               centre_of_mass.setZero();
               start_vol.resize (std::max(contrast_settings.size(), size_t(1)), 0);
               weight.resize (std::max(contrast_settings.size(), size_t(1)), 1.0);
-              for (ssize_t idx = 0; idx < contrast_settings.size(); idx++) {
+              for (size_t idx = 0; idx < contrast_settings.size(); idx++) {
                 start_vol[idx] = contrast_settings[idx].start;
                 weight[idx] = contrast_settings[idx].weight;
               }
@@ -247,7 +246,7 @@ namespace MR
               }
               voxel_pos << (default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2);
               scanner = transform.voxel2scanner * voxel_pos;
-              for (ssize_t idx = 0; idx < start_vol.size(); idx++) {
+              for (size_t idx = 0; idx < start_vol.size(); idx++) {
                 if (image.ndim() > 3)
                   image.index(3) = start_vol[idx];
                 if (std::isfinite ((default_type)image.value())) {
@@ -393,9 +392,6 @@ namespace MR
           new_header1.spacing(3) = 1;
           new_header2.spacing(3) = 1;
 
-          // VAR(f1);
-          // VAR(f2);
-
           Image<default_type> im1_moments = Image<default_type>::create(f1, new_header1);
           Image<default_type> im2_moments = Image<default_type>::create(f2, new_header2);
 
@@ -430,8 +426,6 @@ namespace MR
 #endif
 
         void MomentsInitialiser::run () {
-          // Timer timer;
-          // timer.start();
           if (!calculate_eigenvectors(im1, im2, mask1, mask2)) {
             WARN ("Image moments not successful. Using centre of mass instead.");
             Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
@@ -505,14 +499,6 @@ namespace MR
           assert(abs(A.determinant() - 1.0) < 0.0001);
           A = A.transpose().eval(); // A * im2_evec = im1_evec
 
-          // MAT(A);
-          // Eigen::Matrix<default_type, 3, 3> A2 (A);
-          // Eigen::AngleAxis<default_type> aa(A2);
-          // aa.fromRotationMatrix(A);
-           // = Eigen::AngleAxis<default_type>(A);
-          // VEC(aa.axis());
-          // VAR(aa.angle());
-
           Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
           Eigen::Vector3 offset = im1_centre_of_mass - im2_centre_of_mass;
           transform.set_centre_without_transform_update (centre);
@@ -531,9 +517,6 @@ namespace MR
           VEC(im2_centre_of_mass);
           transform.debug();
 #endif
-          // VAR(timer.elapsed());
-
-          // MomentsInitialiser::create_moments_images ();
         }
 
         bool MomentsInitialiser::calculate_eigenvectors (
@@ -544,7 +527,6 @@ namespace MR
             Eigen::VectorXd m = Eigen::VectorXd::Zero (4); // m000, m100, m010, m001
             Eigen::VectorXd mu = Eigen::VectorXd::Zero (6); // mu110, mu011, mu101, mu200, mu020, mu002
             get_geometric_centre (image_1, im1_centre);
-            // get_moments (image_1, mask_1, im1_centre, m[0], m[1], m[2], m[3], mu[0], mu[1], mu[2], mu[3], mu[4], mu[5]);
             ThreadedLoop (image_1, 0, 3, 2).run (WeightedMomentsFunctor<Image<default_type>, Image<default_type>> (image_1, mask_1, im1_centre, m, mu, contrast_settings), image_1);
             im1_centre_of_mass << m[1] / m[0], m[2] / m[0], m[3] / m[0];
             im1_covariance_matrix(0, 0) = mu[3] / m[0];
@@ -558,7 +540,6 @@ namespace MR
             im1_covariance_matrix(2, 2) = mu[5] / m[0];
 
             get_geometric_centre (image_2, im2_centre);
-            // get_moments (image_2, mask_2, im2_centre, m[0], m[1], m[2], m[3], mu[0], mu[1], mu[2], mu[3], mu[4], mu[5]);
             m.setZero();
             mu.setZero();
             ThreadedLoop (image_2, 0, 3, 2).run (WeightedMomentsFunctor<Image<default_type>, Image<default_type>> (image_2, mask_2, im2_centre, m, mu, contrast_settings), image_2);
