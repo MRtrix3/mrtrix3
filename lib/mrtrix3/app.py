@@ -544,14 +544,14 @@ class _PlusSep (argparse._AppendAction):
   def __call__(self, parser, namespace, values, option_string=None):
     out = []
     wasplus = True
-    for v in values:
-      if v == '+':
+    for val in values:
+      if val == '+':
         wasplus = True
         continue
       if wasplus:
-        out.append([v])
+        out.append([val])
       else:
-        out[-1].append(v)
+        out[-1].append(val)
       wasplus = False
     super(_PlusSep, self).__call__(parser, namespace, out, option_string)
 
@@ -561,7 +561,7 @@ class Parser(argparse.ArgumentParser):
   # pylint: disable=protected-access
   def __init__(self, *args_in, **kwargs_in):
     global _DEFAULT_COPYRIGHT
-    self.PlusSep = _PlusSep
+    self.plus_sep = _PlusSep
     self._author = None
     self._citation_list = [ ]
     self._copyright = _DEFAULT_COPYRIGHT
@@ -730,14 +730,7 @@ class Parser(argparse.ArgumentParser):
     def underline(text, ignore_whitespace = True):
       if not ignore_whitespace:
         return ''.join( '_' + chr(0x08) + c for c in text)
-      else:
-        s = ''
-        for c in text:
-          if c != ' ':
-            s += '_' + chr(0x08) + c
-          else:
-            s += c
-        return s
+      return ''.join( '_' + chr(0x08) + c if c != ' ' else c for c in text)
 
     wrapper_args = textwrap.TextWrapper(width=80, initial_indent='', subsequent_indent='                     ')
     wrapper_other = textwrap.TextWrapper(width=80, initial_indent='     ', subsequent_indent='     ')
