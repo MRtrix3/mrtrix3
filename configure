@@ -277,7 +277,8 @@ path = os.environ['PATH']
 if path.endswith ('\\'):
   path = path[:-1]
 oldpath = path.split(':')
-cleanpath = [ entry for entry in oldpath if 'anaconda' not in entry.lower() ]
+exclude_exp = re.compile('anaconda|miniconda', re.IGNORECASE)
+cleanpath = [p for p in oldpath if not exclude_exp.search(p)]
 if not oldpath == cleanpath:
   report ('WARNING: Anaconda removed from PATH to avoid conflicts\n\n')
 path = os.pathsep.join(cleanpath)
