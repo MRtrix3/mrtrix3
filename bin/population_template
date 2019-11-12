@@ -179,7 +179,7 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
         newcmd += ' -' + what + '_init_translation mass -' + what + '_init_rotation search'
       app.console("by the one obtained with:")
       app.console(newcmd)
-      run.command(newcmd)
+      run.command(newcmd, force=True)
       return check_linear_transformation(transformation, newcmd, max_scaling, max_shear, max_rot, pause_on_warn=pause_on_warn)
     if pause_on_warn:
       app.warn("you might want to manually repeat mrregister with different parameters and overwrite the transformation file: \n%s" % transformation)
@@ -971,6 +971,8 @@ def execute(): #pylint: disable=unused-variable
         run.command('mrcat ' + ' '.join([avh3d] * CON.n_volumes[cid]) + ' -axis 3 average_header' + CON.suff[cid] + '.mif')
     run.function(os.remove, avh3d)
     run.function(os.remove, avh4d)
+  else:
+    run.function(shutil.move, 'average_header.mif', 'average_header_c0.mif')
 
   CON.templates = ['average_header' + csuff + '.mif' for csuff in CON.suff]
 
@@ -1029,12 +1031,12 @@ def execute(): #pylint: disable=unused-variable
             contrast_weight_option = ''
             run.command(' '.join(cmd) +
                         ' - | mrfilter - zclean -zlower 3 -zupper 3 robust/image_' + inp.uid + '.mif'
-                        '.mif -maskin ' + inp.msk_path + ' -maskout robust/mask_' + inp.uid + '.mif')
+                        ' -maskin ' + inp.msk_path + ' -maskout robust/mask_' + inp.uid + '.mif')
           else:
             run.command('mrfilter ' + inp.ims_path[0] + ' zclean -zlower 3 -zupper 3 robust/image_' + inp.uid + '.mif' +
-                        '.mif -maskin ' + inp.msk_path + ' -maskout robust/mask_' + inp.uid + '.mif')
+                        ' -maskin ' + inp.msk_path + ' -maskout robust/mask_' + inp.uid + '.mif')
           images = 'robust/image_' + inp.uid + '.mif robust/template.mif'
-          mask_option = ' -mask1 ' + 'robust/mask_' + inp.uid[cid] + '.mif'
+          mask_option = ' -mask1 ' + 'robust/mask_' + inp.uid + '.mif'
           lmax_option = ''
 
       run.command('mrregister ' + images +
@@ -1334,10 +1336,6 @@ def execute(): #pylint: disable=unused-variable
                       ' -interp nearest ',
                       force=True)
 
-        if nanmask_input:
-          inplace_nan_mask([inp.ims_transformed[cid] for inp in INP for cid in range(n_contrasts)],
-                           [inp.msk_transformed for inp in INP for cid in range(n_contrasts)], progress=False)
-
         if leave_one_out:
           for im_temp in tmpl:
             run.function(os.remove, im_temp)
@@ -1347,6 +1345,10 @@ def execute(): #pylint: disable=unused-variable
 
         progress.increment()
       progress.done()
+
+      if nanmask_input:
+        inplace_nan_mask([_inp.ims_transformed[cid] for _inp in INP for cid in range(n_contrasts)],
+                         [_inp.msk_transformed for _inp in INP for cid in range(n_contrasts)], progress=True)
 
       if leave_one_out:
         calculate_isfinite(INP, CON)
