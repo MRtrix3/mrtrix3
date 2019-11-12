@@ -204,7 +204,7 @@ namespace MR
           }
 
 
-          const bool is_symmetric () const {
+          bool is_symmetric () const {
             return !nonsymmetric;
           }
 
