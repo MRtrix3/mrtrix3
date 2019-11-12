@@ -17,7 +17,7 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import math, os, shutil, re
+import math, os, sys, shutil, re
 
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
@@ -103,11 +103,10 @@ def copy(src, dst, follow_symlinks=True):
   mimics shutil.copy but without setting mode bits as shutil.copymode can fail on exotic mounts
   (observed on cifs with file_mode=0777).
   """
-  import sys
   if os.path.isdir(dst):
     dst = os.path.join(dst, os.path.basename(src))
   if sys.version_info[0] > 2:
-    shutil.copyfile(src, dst, follow_symlinks=follow_symlinks)
+    shutil.copyfile(src, dst, follow_symlinks=follow_symlinks)   # pylint: disable=unexpected-keyword-arg
   else:
     shutil.copyfile(src, dst)
   return dst
@@ -182,7 +181,7 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
       app.console(newcmd)
       run.command(newcmd)
       return check_linear_transformation(transformation, newcmd, max_scaling, max_shear, max_rot, pause_on_warn=pause_on_warn)
-    elif pause_on_warn:
+    if pause_on_warn:
       app.warn("you might want to manually repeat mrregister with different parameters and overwrite the transformation file: \n%s" % transformation)
       app.console('The command that failed the test was: \n' + cmd)
       app.console('Working directory: \n' + os.getcwd())
@@ -191,7 +190,7 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
 
 
 def aggregate(inputs, output, contrast_idx, mode, force=True):
-  from mrtrix3 import MRtrixError, run  # pylint: disable=no-name-in-module
+  from mrtrix3 import MRtrixError, run  # pylint: disable=no-name-in-module, import-outside-toplevel
 
   images = [inp.ims_transformed[contrast_idx] for inp in inputs]
   if mode == 'mean':
@@ -215,7 +214,7 @@ def aggregate(inputs, output, contrast_idx, mode, force=True):
 
 
 def inplace_nan_mask(images, masks, progress=True):
-  from mrtrix3 import app, run  # pylint: disable=no-name-in-module
+  from mrtrix3 import app, run  # pylint: disable=no-name-in-module, import-outside-toplevel
   assert len(images) == len(masks), (len(images), len(masks))
   if progress:
     pbar = app.ProgressBar('NaN masking', len(images))
@@ -231,7 +230,7 @@ def inplace_nan_mask(images, masks, progress=True):
 
 
 def calculate_isfinite(inputs, contrasts):
-  from mrtrix3 import app, run, path  # pylint: disable=no-name-in-module
+  from mrtrix3 import app, run, path  # pylint: disable=no-name-in-module, import-outside-toplevel
   progress = app.ProgressBar('Preparations for leave one out registration', len(inputs) * contrasts.n_contrasts + 1)
   agg_weights = [float(inp.aggregation_weight) for inp in inputs if inp.aggregation_weight is not None]
   for cid in range(contrasts.n_contrasts):
@@ -259,14 +258,14 @@ def get_common_postfix(file_list):
 
 
 def get_common_prefix(file_list):
-  return os.path.commonprefix([i for i in file_list])
+  return os.path.commonprefix(file_list)
 
 
 def str2filename(string):
   return "".join(c for c in string if c.isalnum() or c in ('.', '_')).rstrip()
 
 
-class Contrasts:
+class Contrasts(object):
   """
       Class that parses arguments and holds information specific to each image contrast
 
@@ -304,7 +303,7 @@ class Contrasts:
       """
 
   def __init__(self):
-    from mrtrix3 import MRtrixError, path, app  # pylint: disable=no-name-in-module
+    from mrtrix3 import MRtrixError, path, app  # pylint: disable=no-name-in-module, import-outside-toplevel
 
     n_contrasts = len(app.ARGS.input_dir)
 
@@ -333,10 +332,9 @@ class Contrasts:
       if opt:
         if n_contrasts == 1:
           raise MRtrixError('mc_weight_' + mode+' requires multiple input contrasts')
-        else:
-          opt = opt.split(',')
-          if len(opt) != n_contrasts:
-            raise MRtrixError('mc_weight_' + mode+' needs to be defined for each contrast')
+        opt = opt.split(',')
+        if len(opt) != n_contrasts:
+          raise MRtrixError('mc_weight_' + mode+' needs to be defined for each contrast')
       else:
         opt = ["1"] * n_contrasts
       self.__dict__['mc_weight_%s' % mode] = opt
@@ -357,7 +355,7 @@ class Contrasts:
     return text
 
 
-class Input:
+class Input(object):
   """
       Class that holds input information specific to a single image (multiple contrasts)
 
@@ -447,7 +445,7 @@ class Input:
     return ', '.join(message)
 
   def cache_local(self):
-    from mrtrix3 import run, path  # pylint: disable=no-name-in-module
+    from mrtrix3 import run, path  # pylint: disable=no-name-in-module, import-outside-toplevel
     contrasts = self.contrasts
     for cid, csuff in enumerate(contrasts):
       if not os.path.isdir('input' + csuff):
@@ -462,7 +460,7 @@ class Input:
 
   def get_ims_path(self, quoted=True):
     """ return path to input images """
-    from mrtrix3 import path  # pylint: disable=no-name-in-module
+    from mrtrix3 import path  # pylint: disable=no-name-in-module, import-outside-toplevel
     if self._local_ims:
       return self._local_ims
     return [path.from_user(abspath(d, f), quoted) for d, f in zip(self._im_directories, self.ims_filenames)]
@@ -470,7 +468,7 @@ class Input:
 
   def get_msk_path(self, quoted=True):
     """ return path to input mask """
-    from mrtrix3 import path  # pylint: disable=no-name-in-module
+    from mrtrix3 import path  # pylint: disable=no-name-in-module, import-outside-toplevel
     if self._local_msk:
       return self._local_msk
     return path.from_user(os.path.join(self._msk_directory, self.msk_filename), quoted) if self.msk_filename else None
@@ -550,7 +548,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
 
   # parse aggregation weights and match to inputs
   if f_agg_weight:
-    import csv
+    import csv  # pylint: import-outside-toplevel
     try:
       with open(f_agg_weight, 'r') as fweights:
         agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in csv.reader(fweights, delimiter=',', quotechar='#'))
@@ -614,7 +612,7 @@ def execute(): #pylint: disable=unused-variable
   if len(in_files[0]) <= 1:
     raise MRtrixError('Not enough images found in input directory ' + app.ARGS.input_dir[0] +
                       '. More than one image is needed to generate a population template')
-  elif n_contrasts > 1:
+  if n_contrasts > 1:
     for cid in range(1, n_contrasts):
       if len(in_files[cid]) != len(in_files[0]):
         raise MRtrixError('Found %i images in input directory %s ' % (len(app.ARGS.input_dir[0]), app.ARGS.input_dir[0]) +
