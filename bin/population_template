@@ -17,7 +17,7 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import math, os, sys, shutil, re
+import collections, math, os, sys, shutil, re
 
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
@@ -486,7 +486,6 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
     TODO check if no common grid & trafo across contrasts (only relevant for robust init?)
 
   """
-  import collections
   from mrtrix3 import MRtrixError, app, path, image  # pylint: disable=no-name-in-module, import-outside-toplevel
   contrasts = contrasts.suff
   inputs = []
@@ -548,7 +547,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
 
   # parse aggregation weights and match to inputs
   if f_agg_weight:
-    import csv  # pylint: import-outside-toplevel
+    import csv  # pylint: disable=import-outside-toplevel
     try:
       with open(f_agg_weight, 'r') as fweights:
         agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in csv.reader(fweights, delimiter=',', quotechar='#'))
