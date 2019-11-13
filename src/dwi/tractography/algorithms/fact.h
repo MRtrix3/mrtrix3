@@ -52,7 +52,7 @@ namespace MR
           if (rk4)
             throw Exception ("4th-order Runge-Kutta integration not valid for FACT algorithm");
 
-          set_step_size (rk4 ? 0.5f : 0.1f, false);
+          set_step_size (0.1f, false);
           set_num_points();
           set_cutoff (TCKGEN_DEFAULT_CUTOFF_FIXEL);
 

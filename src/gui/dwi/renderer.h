@@ -228,12 +228,6 @@ namespace MR
           } dixel;
 
         private:
-          class GrabContext : public Context::Grab
-          { NOMEMALIGN
-            public:
-              GrabContext (QGLWidget* context) :
-                  Context::Grab (context) { }
-          };
           QGLWidget* context_;
 
 

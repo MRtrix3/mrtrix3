@@ -1,3 +1,24 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import os.path, shutil
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('freesurfer', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -10,14 +31,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output)
 
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  import shutil
-  from mrtrix3 import app, path, run
   run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'))
   if app.ARGS.lut:
     run.function(shutil.copyfile, path.from_user(app.ARGS.lut, False), path.to_scratch('LUT.txt', False))
@@ -25,9 +43,6 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import os.path
-  from mrtrix3 import app, MRtrixError, path, run
-
   lut_input_path = 'LUT.txt'
   if not os.path.exists('LUT.txt'):
     freesurfer_home = os.environ.get('FREESURFER_HOME', '')
@@ -53,7 +68,7 @@ def execute(): #pylint: disable=unused-variable
     image = 'indices.mif'
   else:
     image = 'indices_cropped.mif'
-    run.command('mrthreshold indices.mif - -abs 0.5 | maskfilter - dilate - | mrgrid indices.mif crop ' + image + ' -mask -')
+    run.command('mrthreshold indices.mif - -abs 0.5 | mrgrid indices.mif crop ' + image + ' -mask -')
 
   # Convert into the 5TT format for ACT
   run.command('mrcalc ' + image + ' 1 -eq cgm.mif')
@@ -64,4 +79,4 @@ def execute(): #pylint: disable=unused-variable
 
   run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - result.mif -datatype float32')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
