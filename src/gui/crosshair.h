@@ -13,41 +13,39 @@
  */
 
 
-#ifndef __image_handler_default_h__
-#define __image_handler_default_h__
+#ifndef __gui_crosshair_h__
+#define __gui_crosshair_h__
 
 #include "types.h"
-#include "image_io/base.h"
-#include "file/mmap.h"
+
+#include "gui/opengl/gl.h"
+#include "gui/opengl/shader.h"
 
 namespace MR
 {
-  namespace ImageIO
+  namespace GUI
   {
 
-    class Default : public Base
+
+    class ModelViewProjection;
+
+
+    class Crosshair
     { NOMEMALIGN
       public:
-        Default (const Header& header) :
-          Base (header),
-          bytes_per_segment (0) { }
-        Default (Default&&) noexcept = default;
-
+          Crosshair() { }
+          void render (const Eigen::Vector3f& focus,
+                       const ModelViewProjection& MVP) const;
       protected:
-        vector<std::shared_ptr<File::MMap> > mmaps;
-        int64_t bytes_per_segment;
-
-        virtual void load (const Header&, size_t);
-        virtual void unload (const Header&);
-
-        void map_files (const Header&);
-        void copy_to_mem (const Header&);
-
+        mutable GL::VertexBuffer VB;
+        mutable GL::VertexArrayObject VAO;
+        mutable GL::Shader::Program program;
     };
+
+
+
 
   }
 }
 
 #endif
-
-
