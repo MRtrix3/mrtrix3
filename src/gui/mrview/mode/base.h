@@ -166,9 +166,9 @@ namespace MR
               for (int i = 0; i < tools.size(); ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
                 if (dock) {
-                  ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+                  GL::assert_context_is_current();
                   dock->tool->draw (projection, is_3D, axis, slice);
-                  ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+                  GL::assert_context_is_current();
                 }
               }
             }

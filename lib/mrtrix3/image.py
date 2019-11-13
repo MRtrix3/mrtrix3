@@ -1,13 +1,33 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # A collection of functions for extracting information from images. Mostly these involve
 #   calling the relevant MRtrix3 binaries in order to parse image headers / process image
 #   data, rather than trying to duplicate support for all possible image formats natively
 #   in Python.
 
+
+import json, math, os, shlex, subprocess
+from mrtrix3 import MRtrixError
+
+
+
 # Class for importing header information from an image file for reading
 class Header(object):
   def __init__(self, image_path):
-    import json, os, subprocess
-    from mrtrix3 import app, MRtrixError, path, run
+    from mrtrix3 import app, path, run #pylint: disable=import-outside-toplevel
     filename = path.name_temporary('json')
     command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename ]
     if app.VERBOSITY > 1:
@@ -74,7 +94,7 @@ class Header(object):
 #   an axis index, nor a phase-encoding indication string (e.g. AP);
 #   it only accepts NIfTI codes, i.e. i, i-, j, j-, k, k-
 def axis2dir(string): #pylint: disable=unused-variable
-  from mrtrix3 import app, MRtrixError
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if string == 'i':
     direction = [1,0,0]
   elif string == 'i-':
@@ -98,7 +118,7 @@ def axis2dir(string): #pylint: disable=unused-variable
 #   have dimension greater than one: This means that the data can plausibly represent
 #   spatial information, and 3D interpolation can be performed
 def check_3d_nonunity(image_in): #pylint: disable=unused-variable
-  from mrtrix3 import app, MRtrixError
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not isinstance(image_in, Header):
     if not isinstance(image_in, str):
       raise MRtrixError('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
@@ -117,8 +137,7 @@ def check_3d_nonunity(image_in): #pylint: disable=unused-variable
 #   interest. Note however that parsing the output of mrinfo e.g. into list / numerical
 #   form is not performed by this function.
 def mrinfo(image_path, field): #pylint: disable=unused-variable
-  import subprocess
-  from mrtrix3 import app, run
+  from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
   command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field ]
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
@@ -135,9 +154,12 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
 
 # Check to see whether the fundamental header properties of two images match
 # Inputs can be either _Header class instances, or file paths
-def match(image_one, image_two, up_to_dim=0): #pylint: disable=unused-variable, too-many-return-statements
-  import math
-  from mrtrix3 import app, MRtrixError
+def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too-many-return-statements
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
+  up_to_dim = kwargs.pop('up_to_dim', 0)
+  check_transform = kwargs.pop('check_transform', True)
+  if kwargs:
+    raise TypeError('Unsupported keyword arguments passed to image.match(): ' + str(kwargs))
   if not isinstance(image_one, Header):
     if not isinstance(image_one, str):
       raise MRtrixError('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
@@ -168,14 +190,15 @@ def match(image_one, image_two, up_to_dim=0): #pylint: disable=unused-variable, 
         app.debug(debug_prefix + ' voxel size mismatch (' + str(image_one.spacing()) + ' ' + str(image_two.spacing()) + ')')
         return False
   # Image transform
-  for line_one, line_two in zip(image_one.transform(), image_two.transform()):
-    for one, two in zip(line_one[:3], line_two[:3]):
-      if abs(one-two) > 1e-4:
-        app.debug(debug_prefix + ' transform (rotation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
+  if check_transform:
+    for line_one, line_two in zip(image_one.transform(), image_two.transform()):
+      for one, two in zip(line_one[:3], line_two[:3]):
+        if abs(one-two) > 1e-4:
+          app.debug(debug_prefix + ' transform (rotation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
+          return False
+      if abs(line_one[3]-line_two[3]) > 1e-2:
+        app.debug(debug_prefix + ' transform (translation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
         return False
-    if abs(line_one[3]-line_two[3]) > 1e-2:
-      app.debug(debug_prefix + ' transform (translation) mismatch (' + str(image_one.transform()) + ' ' + str(image_two.transform()) + ')')
-      return False
   # Everything matches!
   app.debug(debug_prefix + ' image match')
   return True
@@ -189,8 +212,7 @@ def match(image_one, image_two, up_to_dim=0): #pylint: disable=unused-variable, 
 # - Integer(s) if statistic is 'count';
 #     floating-point otherwise
 def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
-  import shlex, subprocess
-  from mrtrix3 import app, MRtrixError, run
+  from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
   command = [ run.exe_name(run.version_match('mrstats')), image_path, '-output', stat ]
   if options:
     command.extend(shlex.split(options))

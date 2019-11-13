@@ -55,12 +55,12 @@ void usage ()
 
   SYNOPSIS = "Perform streamlines tractography";
 
-  DESCRIPTION 
+  DESCRIPTION
     + "By default, tckgen produces a fixed number of streamlines, by attempting "
       "to seed from new random locations until the target number of "
       "streamlines have been selected (in other words, after all inclusion & "
       "exclusion criteria have been applied), or the maximum number of seeds "
-      "has been exceeded (by default, this is 1000× the desired number of selected "
+      "has been exceeded (by default, this is 1000 x the desired number of selected "
       "streamlines). Use the -select and/or -seeds options to modify as "
       "required. See also the Seeding options section for alternative seeding "
       "strategies."
@@ -129,9 +129,15 @@ void usage ()
       "voxel for each streamline. These data are then sampled via trilinear "
       "interpolation at each streamline step, the diffusion tensor model is fitted, "
       "and the streamline follows the orientation of the principal eigenvector of "
-      "that tensor.";
+      "that tensor."
 
-  REFERENCES 
+    + "Note that the behaviour of the -angle option varies slightly depending on the "
+      "order of integration: for any first-order method, this angle corresponds to the "
+      "deviation in streamline trajectory per step; for higher-order methods, this "
+      "corresponds to the change in underlying fibre orientation between the start and "
+      "end points of each step.";
+
+  REFERENCES
    + "References based on streamlines algorithm used:"
 
    + "* FACT:\n"

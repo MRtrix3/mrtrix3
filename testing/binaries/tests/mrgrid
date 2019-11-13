@@ -1,0 +1,16 @@
+mrgrid dwi.mif pad -uniform 3 - | testing_diff_image - mrpad/out.mif
+mrgrid dwi.mif pad -axis 0 1,2 - | testing_diff_image - mrpad/out2.mif
+mrgrid dwi.mif pad -axis 0 1,2 -uniform 3 - | testing_diff_image - mrpad/out3.mif
+mrgrid dwi.mif pad -axis 0 1,2 -axis 1 0,2 - | testing_diff_image - mrpad/out4.mif
+mrgrid dwi.mif regrid -scale 0.4 -datatype uint16 - | testing_diff_image - mrresize/out1.mif
+mrgrid dwi.mif regrid -scale 1.6 -datatype float32 - | testing_diff_image - mrresize/out2.mif -voxel 1e-5
+mrgrid dwi.mif regrid -scale 1.6 -datatype float32 -interp linear - | testing_diff_image - mrresize/out3.mif -voxel 1e-5
+mrgrid dwi.mif regrid -scale 1.6 -datatype float32 -interp sinc - | testing_diff_image - mrresize/out4.mif -voxel 1e-4
+mrgrid dwi.mif regrid -scale 2 -datatype float32 -interp nearest - | testing_diff_image - mrresize/out5.mif -voxel 1e-5
+mrgrid dwi.mif regrid -scale 1.9,0.5,1.3 -datatype float32 - | testing_diff_image - mrresize/out6.mif -voxel 1e-5
+mrgrid dwi.mif regrid -size 13,7,15 -datatype float32 - | testing_diff_image - mrresize/out7.mif -voxel 1e-5
+mrgrid dwi.mif regrid -vox 1.5,2.6,1.8 -datatype float32 - | testing_diff_image - mrresize/out8.mif -voxel 1e-5
+maskfilter mrcrop/mask.mif dilate - | mrgrid noise.mif crop -mask - -uniform 0 - | testing_diff_image - mrcrop/out.mif
+mrgrid noise.mif crop -mask mrcrop/mask.mif - | testing_diff_image - mrcrop/out.mif
+mrgrid noise.mif crop -axis 2 1:3 -axis 0 3:5 - | testing_diff_image - mrcrop/out2.mif
+mrgrid noise.mif crop -axis 2 1,5 -axis 0 3,0 - | testing_diff_image - mrcrop/out2.mif
