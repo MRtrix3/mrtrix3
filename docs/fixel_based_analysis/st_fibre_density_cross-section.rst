@@ -32,7 +32,7 @@ Pre-processsing steps
 2. Motion and distortion correction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/dwipreproc.rst
+.. include:: common_fba_steps/dwifslpreproc.rst
 
 
 3. Estimate a temporary brain mask

@@ -1,5 +1,20 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # automatically set the PATH environment variable to include the MRtrix3
 # executables and scripts. This script must be run after a successful build,
 # from the MRtrix3 toplevel folder:
@@ -21,7 +36,7 @@ import sys, os, platform, subprocess
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
-  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).splitlines()[0].strip()
+  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).decode(errors='ignore').splitlines()[0].strip()
   sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
 
 # check whether we are in the right location:

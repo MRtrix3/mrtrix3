@@ -372,5 +372,12 @@ void run ()
     responses.row(shell_index) = rf;
   }
 
-  save_matrix (responses, argument[3]);
+  KeyValues keyvals;
+  if (shells) {
+    std::string line = str<int>((*shells)[0].get_mean());
+    for (size_t i = 1; i != (*shells).count(); ++i)
+      line += "," + str<int>((*shells)[i].get_mean());
+    keyvals["Shells"] = line;
+  }
+  save_matrix (responses, argument[3], keyvals);
 }

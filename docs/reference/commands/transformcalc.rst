@@ -16,7 +16,7 @@ Usage
     transformcalc [ options ]  inputs [ inputs ... ] operation output
 
 -  *inputs*: the input(s) for the specified operation
--  *operation*: the operation to perform, one of: invert, half, rigid, header, average, interpolate, decompose, align_vertices_rigid (see description section for details).
+-  *operation*: the operation to perform, one of: invert, half, rigid, header, average, interpolate, decompose, align_vertices_rigid, align_vertices_rigid_scale (see description section for details).
 -  *output*: the output transformation matrix.
 
 Example usages
@@ -54,11 +54,11 @@ Example usages
 
     The output is a key-value text file containing: scaling: vector of 3 scaling factors in x, y, z direction; shear: list of shear factors for xy, xz, yz axes; angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; angle_axis: angle in radians and rotation axis; translation : translation vector along x, y, z axes in mm; R: composed roation matrix (R = rot_x * rot_y * rot_z); S: composed scaling and shear matrix
 
--   *Align two sets of landmarks using a rigid transformation*::
+-   *Calculate transformation that aligns two images based on sets of corresponding landmarks*::
 
-        $ transformcalc input moving.txt fixed.txt align_vertices_rigid output
+        $ transformcalc input moving.txt fixed.txt align_vertices_rigid rigid.txt
 
-    Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row of moving.txt and fixed.txt. Requires 3 or more vertices in each file. Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873
+    Similary, 'align_vertices_rigid_scale' produces an affine matrix (rigid and global scale). Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row of moving.txt and fixed.txt. Requires 3 or more vertices in each file. Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873
 
 Options
 -------

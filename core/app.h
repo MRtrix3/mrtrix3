@@ -44,6 +44,7 @@ namespace MR
     extern int log_level;
     extern int exit_error_code;
     extern std::string NAME;
+    extern std::string command_history_string;
     extern bool overwrite_files;
     extern void (*check_overwrite_files_func) (const std::string& name);
     extern bool fail_on_warn;

@@ -534,9 +534,10 @@ namespace MR
           for (size_t d = 3; d < image->image.ndim(); ++d) {
             SpinBox* vol_index = new SpinBox (this);
             vol_index->setMinimum (0);
-            vol_index->setPrefix (tr((str(d+1) + ": ").c_str()));;
+            vol_index->setPrefix (tr((str(d+1) + ": ").c_str()));
             vol_index->setValue (image->image.index(d));
             vol_index->setMaximum (image->image.size(d) - 1);
+            vol_index->setEnabled (image->image.size(d) > 1);
             volume_index_layout->addWidget (vol_index, volume_index_layout->count()/3, volume_index_layout->count()%3);
             connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
           }
@@ -567,11 +568,12 @@ namespace MR
           if(!window().image())
             return;
 
-          auto focus (window().focus());
-          std::cout << str(focus[0]) << ", " << str(focus[1]) << ", " << str(focus[2]) << std::endl;
+          Eigen::VectorXf focus (window().focus());
+          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+          std::cout << focus.transpose().format(fmt) << "\n";
 
           QClipboard *clip = QApplication::clipboard();
-          QString input = QString::fromStdString(str(focus[0])+", "+str(focus[1])+", "+str(focus[2]));
+          QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
           clip->setText(input);
         }
 
@@ -580,12 +582,12 @@ namespace MR
           if(!window().image())
             return;
 
-          auto focus (window().focus());
-          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
-          std::cout << str(focus[0]) << ", " << str(focus[1]) << ", " << str(focus[2]) << std::endl;
+          Eigen::VectorXf focus = window().image()->transform().scanner2voxel.cast<float>() * window().focus();
+          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+          std::cout << focus.transpose().format(fmt) << "\n";
 
           QClipboard *clip = QApplication::clipboard();
-          QString input = QString::fromStdString(str(focus[0])+", "+str(focus[1])+", "+str(focus[2]));
+          QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
           clip->setText(input);
         }
 

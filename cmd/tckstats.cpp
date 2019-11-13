@@ -238,6 +238,7 @@ void run ()
   opt = get_options ("histogram");
   if (opt.size()) {
     File::OFStream out (opt[0][0], std::ios_base::out | std::ios_base::trunc);
+    out << "# " << App::command_history_string << "\n";
     if (!std::isfinite (step_size))
       step_size = 1.0f;
     if (weights_provided) {

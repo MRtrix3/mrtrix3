@@ -1,6 +1,24 @@
 #!/usr/bin/env python
 
-import os, sys
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+
+import math, os, sys
+
+
 
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
@@ -15,18 +33,14 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import math
-  from mrtrix3 import app, MRtrixError #pylint: disable=no-name-in-module
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, matrix #pylint: disable=no-name-in-module, import-outside-toplevel
 
   app.check_output_path(app.ARGS.output)
 
   data = [ ] # 3D matrix: Subject, b-value, ZSH coefficient
   for filepath in app.ARGS.inputs:
-    with open(filepath, 'r') as file_in:
-      try:
-        subject = [ [ float(f) for f in line.split() ] for line in file_in.read().splitlines() ]
-      except ValueError:
-        raise MRtrixError('File \'' + filepath + '\' contains non-numerical values')
+    subject = matrix.load_matrix(filepath)
     if any(len(line) != len(subject[0]) for line in subject[1:]):
       raise MRtrixError('File \'' + filepath + '\' does not contain the same number of entries per line (multi-shell response functions must have the same number of coefficients per b-value; pad the data with zeroes if necessary)')
     if data:
@@ -59,11 +73,9 @@ def execute(): #pylint: disable=unused-variable
       app.debug('Subject l=0 terms: ' + str(subj_lzero_terms))
       app.debug('Resulting multipler: ' + str(multiplier))
     weighted_sum_coeffs = [ [ a + multiplier*b for a, b in zip(linea, lineb) ] for linea, lineb in zip(weighted_sum_coeffs, subject) ]
-  mean_coeffs = [ [ f/len(data) for f in line ] for line in weighted_sum_coeffs ]
 
-  with open(app.ARGS.output, 'w') as file_out:
-    for line in mean_coeffs:
-      file_out.write(' '.join([ "{0:.5f}".format(f) for f in line ]) + '\n')
+  mean_coeffs = [ [ f/len(data) for f in line ] for line in weighted_sum_coeffs ]
+  matrix.save_matrix(app.ARGS.output, mean_coeffs)
 
 
 

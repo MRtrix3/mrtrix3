@@ -324,9 +324,9 @@ namespace MR
         Image<ValueType> get_image (bool read_write_if_existing = false);
 
       //! get generic key/value text attributes
-      const std::map<std::string, std::string>& keyval () const { return keyval_; }
+      const KeyValues& keyval () const { return keyval_; }
       //! get/set generic key/value text attributes
-      std::map<std::string, std::string>& keyval () { return keyval_; }
+      KeyValues& keyval () { return keyval_; }
       //! merge key/value entries from another header
       void merge_keyval (const Header& H);
 
@@ -347,7 +347,7 @@ namespace MR
       vector<Axis> axes_;
       transform_type transform_;
       std::string name_;
-      std::map<std::string, std::string> keyval_;
+      KeyValues keyval_;
       const char* format_;
 
       //! additional information relevant for images stored on file
