@@ -84,8 +84,7 @@ for n in `echo "$cmdlist" | sort`; do
   esac
   $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
   case $n in *.cpp)
-    s='print ".. _'${cmdname}':\n\n'${cmdname}'\n===================\n\n" if $. == 1; $. = 0 if eof'
-    perl -i -pe "$s" $dirpath/$cmdname.rst
+    sed -ie "1i.. _$cmdname:\n\n$cmdname\n===================\n" $dirpath/$cmdname.rst
   esac
   echo '    commands/'"$cmdname" >> $toctree_file
   echo '    |'"$logopath"'|, :ref:`'"$cmdname"'`, "'`$cmdpath __print_synopsis__`'"' >> $table_file
