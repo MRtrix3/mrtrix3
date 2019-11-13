@@ -1,5 +1,27 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+
+import math, os, re, shutil
+
+
+POSTFIXES = [ 'B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB' ]
+
+
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Clean up residual temporary files & scratch directories from MRtrix3 commands')
@@ -9,12 +31,14 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('-fail', metavar='file', nargs=1, help='Write list of items that could not be deleted to a text file')
   cmdline.flag_mutually_exclusive_options([ 'test', 'fail' ])
 
+
+
 def execute(): #pylint: disable=unused-variable
-  import math, re, shutil
-  
-  file_regex = re.compile('^mrtrix-tmp-[a-zA-Z0-9]{6}\..*$')
-  dir_regex = re.compile('^\w+-tmp-[a-zA-Z0-9]{6}$')
-  
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
+
+  file_regex = re.compile(r"^mrtrix-tmp-[a-zA-Z0-9]{6}\..*$")
+  dir_regex = re.compile(r"^\w+-tmp-[a-zA-Z0-9]{6}$")
+
   files_to_delete = [ ]
   dirs_to_delete = [ ]
   root_dir = os.path.abspath(app.ARGS.path)
@@ -70,7 +94,6 @@ def execute(): #pylint: disable=unused-variable
         except_list.append(dirpath)
       progress.increment()
     progress.done()
-    POSTFIXES = [ 'B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB' ]
     postfix_index = int(math.floor(math.log(size_deleted, 1024))) if size_deleted else 0
     if postfix_index:
       size_deleted = round(size_deleted / math.pow(1024, postfix_index), 2)
@@ -79,9 +102,9 @@ def execute(): #pylint: disable=unused-variable
     if except_list:
       app.console(str(len(files_to_delete) + len(dirs_to_delete) - len(except_list)) + ' of ' + str(len(files_to_delete) + len(dirs_to_delete)) + ' items erased' + print_freed())
       if app.ARGS.fail:
-        with open(app.ARGS.fail, 'w') as f:
+        with open(app.ARGS.fail, 'w') as outfile:
           for item in except_list:
-            f.write(item + '\n')
+            outfile.write(item + '\n')
         app.console('List of items not successfully erased written to file "' + app.ARGS.fail + '"')
       else:
         app.console('Items that could not be erased:')
@@ -91,16 +114,9 @@ def execute(): #pylint: disable=unused-variable
       app.console('All items deleted successfully' + print_freed())
   else:
     app.console('No files or directories found')
-  
-  
 
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(LIB_FOLDER):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, LIB_FOLDER)
+
+
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member
