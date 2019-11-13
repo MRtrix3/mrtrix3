@@ -37,8 +37,8 @@ namespace MR
 
       void init()
       {
-        ::MR::ProgressInfo::display_func = ::MR::GUI::Dialog::ProgressBar::display;
-        ::MR::ProgressInfo::done_func = ::MR::GUI::Dialog::ProgressBar::done;
+        ::MR::ProgressBar::display_func = ::MR::GUI::Dialog::ProgressBar::display;
+        ::MR::ProgressBar::done_func = ::MR::GUI::Dialog::ProgressBar::done;
         ::MR::File::Dicom::select_func = ::MR::GUI::Dialog::select_dicom;
         ::MR::Exception::display_func = ::MR::GUI::Dialog::display_exception;
 

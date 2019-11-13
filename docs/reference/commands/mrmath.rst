@@ -48,6 +48,8 @@ Options
 
 -  **-axis index** perform operation along a specified axis of a single input image
 
+-  **-keep_unary_axes** Keep unary axes in input images prior to calculating the stats. The default is to wipe axes with single elements.
+
 Data type options
 ^^^^^^^^^^^^^^^^^
 
@@ -58,13 +60,15 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 

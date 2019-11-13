@@ -19,6 +19,7 @@
 #include <cctype>
 #include <set>
 
+#include "app.h"
 #include "axes.h"
 #include "mrtrix.h"
 #include "phase_encoding.h"
@@ -74,35 +75,8 @@ namespace MR
 
 
 
-  void Header::merge (const Header& H, const bool concat_volumes)
+  void Header::merge_keyval (const Header& H)
   {
-    Eigen::MatrixXd dw_scheme, pe_scheme;
-    if (concat_volumes) {
-      try {
-        auto this_dw_scheme = DWI::parse_DW_scheme (*this);
-        DWI::validate_DW_scheme (this_dw_scheme, *this, true);
-        auto that_dw_scheme = DWI::parse_DW_scheme (H);
-        DWI::validate_DW_scheme (that_dw_scheme, H, true);
-        if (this_dw_scheme.cols() != that_dw_scheme.cols())
-          throw Exception ("Number of columns in DW schemes of headers \"" + name() + "\" and \"" + H.name() + "\" do not match");
-        dw_scheme.resize (this_dw_scheme.rows() + that_dw_scheme.rows(), that_dw_scheme.cols());
-        if (this_dw_scheme.rows())
-          dw_scheme.topRows (this_dw_scheme.rows()) = this_dw_scheme;
-        dw_scheme.bottomRows (that_dw_scheme.rows()) = that_dw_scheme;
-      } catch (Exception&) { }
-      try {
-        auto this_pe_scheme = PhaseEncoding::parse_scheme (*this);
-        auto that_pe_scheme = PhaseEncoding::parse_scheme (H);
-        if (!this_pe_scheme.rows() || !that_pe_scheme.rows())
-          throw Exception ("PE scheme needs to be present in both headers");
-        if (this_pe_scheme.cols() != that_pe_scheme.cols())
-          throw Exception ("Number of columns in PE schemes of headers \"" + name() + "\" and \"" + H.name() + "\" do not match");
-        pe_scheme.resize (this_pe_scheme.rows() + that_pe_scheme.rows(), that_pe_scheme.cols());
-        pe_scheme.topRows (this_pe_scheme.rows()) = this_pe_scheme;
-        pe_scheme.bottomRows (that_pe_scheme.rows()) = that_pe_scheme;
-      } catch (Exception&) { }
-    }
-
     std::map<std::string, std::string> new_keyval;
     std::set<std::string> unique_comments;
     for (const auto& item : keyval()) {
@@ -124,7 +98,7 @@ namespace MR
             unique_comments.insert (c);
           }
         }
-      } else if (item.first != "command_history") {
+      } else {
         auto it = keyval().find (item.first);
         if (it == keyval().end() || it->second == item.second)
           new_keyval.insert (item);
@@ -133,11 +107,6 @@ namespace MR
       }
     }
     std::swap (keyval_, new_keyval);
-
-    if (concat_volumes) {
-      DWI::set_DW_scheme (*this, dw_scheme);
-      PhaseEncoding::set_scheme (*this, pe_scheme);
-    }
   }
 
 
@@ -175,11 +144,11 @@ namespace MR
       INFO ("opening image \"" + image_name + "\"...");
 
       File::ParsedName::List list;
-      vector<int> num = list.parse_scan_check (image_name);
+      const vector<int> num = list.parse_scan_check (image_name);
 
       const Formats::Base** format_handler = Formats::handlers;
-      size_t item = 0;
-      H.name() = list[item].name();
+      size_t item_index = 0;
+      H.name() = list[item_index].name();
 
       for (; *format_handler; format_handler++) {
         if ( (H.io = (*format_handler)->read (H)) )
@@ -192,35 +161,81 @@ namespace MR
 
       H.format_ = (*format_handler)->description;
 
-      const bool merge_4d_schemes = (H.ndim() == 3 && num.size() == 1);
-
-      while (++item < list.size()) {
-        Header header (H);
-        std::unique_ptr<ImageIO::Base> io_handler;
-        header.name() = list[item].name();
-        header.keyval().clear();
-        if (!(io_handler = (*format_handler)->read (header)))
-          throw Exception ("image specifier contains mixed format files");
-        assert (io_handler);
-        H.check (header);
-        H.merge (header, merge_4d_schemes);
-        H.io->merge (*io_handler);
-      }
-
       if (num.size()) {
-        int a = 0, n = 0;
-        for (size_t i = 0; i < H.ndim(); i++)
-          if (H.stride(i))
-            ++n;
-        H.axes_.resize (n + num.size());
 
-        for (size_t i = 0; i < num.size(); ++i) {
-          while (H.stride(a)) ++a;
-          H.size(a) = num[num.size()-1-i];
-          H.stride(a) = ++n;
+        const Header template_header (H);
+
+        // Convenient to know a priori which loop index corresponds to which image axis
+        // This needs to detect unity-sized axes and flag the loop to concatenate data along that axis
+        vector<size_t> loopindex2axis;
+        size_t axis;
+        for (axis = 0; axis != H.ndim(); ++axis) {
+          if (H.size (axis) == 1) {
+            loopindex2axis.push_back (axis);
+            if (loopindex2axis.size() == num.size())
+              break;
+          }
         }
+        for (; loopindex2axis.size() < num.size(); ++axis)
+          loopindex2axis.push_back (axis);
+        std::reverse (loopindex2axis.begin(), loopindex2axis.end());
+
+        // Reimplemented support for [] notation using recursive function calls
+        // Note that the very first image header has already been opened before this function is
+        //   invoked for the first time; "vector<Header>& this_data" is used to propagate this
+        //   data to deeper layers when necessary
+        std::function<void(Header&, vector<Header>&, const size_t)>
+        import = [&] (Header& result, vector<Header>& this_data, const size_t loop_index) -> void
+        {
+          if (loop_index == num.size()-1) {
+            vector<std::unique_ptr<ImageIO::Base>> ios;
+            if (this_data.size())
+              ios.push_back (std::move (this_data[0].io));
+            for (size_t i = this_data.size(); i != size_t(num[loop_index]); ++i) {
+              Header header (template_header);
+              std::unique_ptr<ImageIO::Base> io_handler;
+              header.name() = list[++item_index].name();
+              header.keyval().clear();
+              if (!(io_handler = (*format_handler)->read (header)))
+                throw Exception ("image specifier contains mixed format files");
+              assert (io_handler);
+              template_header.check (header);
+              this_data.push_back (std::move (header));
+              ios.push_back (std::move (io_handler));
+            }
+            result = concatenate (this_data, loopindex2axis[loop_index], false);
+            result.io = std::move (ios[0]);
+            for (size_t i = 1; i != ios.size(); ++i)
+              result.io->merge (*ios[i]);
+            return;
+          } // End branch for when loop_index is the maximum, ie. innermost loop
+          // For each coordinate along this axis, need to concatenate headers from the
+          //   next lower axis
+          vector<Header> nested_data;
+          // The nested concatenation may still include the very first header that has already been read;
+          //   this needs to be propagated through to the nested call
+          if (this_data.size()) {
+            assert (this_data.size() == 1);
+            nested_data.push_back (std::move (this_data[0]));
+            this_data.clear();
+          }
+          for (size_t i = 0; i != size_t(num[loop_index]); ++i) {
+            Header temp;
+            import (temp, nested_data, loop_index+1);
+            this_data.push_back (std::move (temp));
+            nested_data.clear();
+          }
+          result = concatenate (this_data, loopindex2axis[loop_index], false);
+          result.io = std::move (this_data[0].io);
+          for (size_t i = 1; i != size_t(num[loop_index]); ++i)
+            result.io->merge (*this_data[i].io);
+        };
+
+        vector<Header> headers;
+        headers.push_back (std::move (H));
+        import (H, headers, 0);
         H.name() = image_name;
-      }
+      } // End branching for [] notation
 
       H.sanitise();
       if (!do_not_realign_transform)
@@ -264,36 +279,10 @@ namespace MR
     try {
       INFO ("creating image \"" + image_name + "\"...");
       if (add_to_command_history) {
-
-        auto argv_quoted = [] (const std::string& s) -> std::string {
-          for (size_t i = 0; i != s.size(); ++i) {
-            if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
-
-              std::string escaped_string ("\'");
-              for (auto c : s) {
-                switch (c) {
-                  case '\'': escaped_string.append ("\\\'"); break;
-                  case '\\': escaped_string.append ("\\\\"); break;
-                  default: escaped_string.push_back (c); break;
-                }
-              }
-              escaped_string.push_back ('\'');
-              return escaped_string;
-
-            }
-          }
-          return s;
-        };
-
-        std::string cmd = App::argv[0];
-        for (int n = 1; n < App::argc; ++n)
-          cmd += std::string(" ") + argv_quoted (App::argv[n]);
-        cmd += std::string ("  (version=") + App::mrtrix_version;
-        if (App::project_version)
-          cmd += std::string (", project=") + App::project_version;
-        cmd += ")";
-        add_line (H.keyval()["command_history"], cmd);
-
+        // Make sure the current command is not concatenated more than once
+        const auto command_history = split_lines (H.keyval()["command_history"]);
+        if (!(command_history.size() && command_history.back() == App::command_history_string))
+          add_line (H.keyval()["command_history"], App::command_history_string);
       }
 
       H.keyval()["mrtrix_version"] = App::mrtrix_version;
@@ -338,7 +327,7 @@ namespace MR
       for (size_t n = 0; n < Pdim.size(); ++n) {
         while (a < int(H.ndim()) && H.stride(a))
           a++;
-        Pdim[n] = Hdim[a];
+        Pdim[n] = Hdim[a++];
       }
       parser.calculate_padding (Pdim);
 
@@ -358,7 +347,6 @@ namespace MR
       if (split_4d_schemes) {
         try {
           DWI::check_DW_scheme (template_header, dw_scheme);
-          DWI::stash_DW_scheme (H, dw_scheme);
           DWI::set_DW_scheme (H, dw_scheme.row (0));
         } catch (Exception&) {
           dw_scheme.resize (0, 0);
@@ -410,7 +398,6 @@ namespace MR
         }
         std::shared_ptr<ImageIO::Base> io_handler ((*format_handler)->create (header));
         assert (io_handler);
-        H.merge (header, split_4d_schemes);
         H.io->merge (*io_handler);
       }
 
@@ -436,6 +423,10 @@ namespace MR
         H.name() = image_name;
       }
 
+      if (split_4d_schemes) {
+        DWI::set_DW_scheme (H, dw_scheme);
+        PhaseEncoding::set_scheme (H, pe_scheme);
+      }
       H.io->set_image_is_new (true);
       H.io->set_readwrite (true);
 
@@ -473,8 +464,6 @@ namespace MR
     H.io = make_unique<ImageIO::Scratch> (H);
     return H;
   }
-
-
 
 
 
@@ -699,6 +688,134 @@ namespace MR
       INFO ("Slice encoding direction has been modified according to internal header transform realignment");
     }
 
+  }
+
+
+
+
+
+
+
+  Header concatenate (const vector<Header>& headers, const size_t axis_to_concat, const bool permit_datatype_mismatch)
+  {
+    Exception e ("Unable to concatenate " + str(headers.size()) + " images along axis " + str(axis_to_concat) + ": ");
+
+    auto datatype_test = [&] (const bool condition)
+    {
+      if (condition && !permit_datatype_mismatch) {
+        e.push_back ("Mismatched data types");
+        throw e;
+      }
+      return condition;
+    };
+
+    auto concat_scheme = [] (Eigen::MatrixXd& existing, const Eigen::MatrixXd& extra)
+    {
+      if (!existing.rows())
+        return;
+      if (!extra.rows() || (extra.cols() != existing.cols())) {
+        existing.resize (0, 0);
+        return;
+      }
+      existing.conservativeResize (existing.rows() + extra.rows(), existing.cols());
+      existing.bottomRows (extra.rows()) = extra;
+    };
+
+    if (headers.empty())
+      return Header();
+
+    size_t global_max_nonunity_dim = 0;
+    for (const auto& H : headers) {
+      if (axis_to_concat > H.ndim() + 1) {
+        e.push_back ("Image \"" + H.name() + "\" is only " + str(H.ndim()) + "D");
+        throw e;
+      }
+      ssize_t this_max_nonunity_dim;
+      for (this_max_nonunity_dim = H.ndim()-1; this_max_nonunity_dim >= 0 && H.size (this_max_nonunity_dim) <= 1; --this_max_nonunity_dim);
+      global_max_nonunity_dim = std::max (global_max_nonunity_dim, size_t(std::max (ssize_t(0), this_max_nonunity_dim)));
+    }
+
+    Header result (headers[0]);
+
+    if (axis_to_concat >= result.ndim()) {
+      result.ndim() = axis_to_concat + 1;
+      result.size(axis_to_concat) = 1;
+    }
+
+    result.stride (axis_to_concat) = result.ndim()+1;
+
+    for (size_t axis = 0; axis != result.ndim(); ++axis) {
+      if (axis != axis_to_concat && result.size (axis) <= 1) {
+        for (const auto& H : headers) {
+          if (H.ndim() > axis) {
+            result.size(axis) = H.size (axis);
+            result.spacing(axis) = H.spacing (axis);
+            break;
+          }
+        }
+      }
+    }
+
+    Eigen::MatrixXd dw_scheme, pe_scheme;
+    if (axis_to_concat == 3) {
+      try {
+        dw_scheme = DWI::get_DW_scheme (result);
+      } catch (Exception&) { }
+      try {
+        pe_scheme = PhaseEncoding::get_scheme (result);
+      } catch (Exception&) { }
+    }
+
+    for (size_t i = 1; i != headers.size(); ++i) {
+      const Header& H (headers[i]);
+
+      // Check that dimensions of image are compatible with concatenation
+      for (size_t axis = 0; axis <= global_max_nonunity_dim; ++axis) {
+        if (axis != axis_to_concat && axis < H.ndim() && H.size (axis) != result.size (axis)) {
+          e.push_back ("Images \"" + result.name() + "\" and \"" + H.name() + "\" have inequal sizes along axis " + str(axis_to_concat) + " (" + str(result.size (axis)) + " vs " + str(H.size (axis)) + ")");
+          throw e;
+        }
+      }
+
+      // Expand the image along the axis of concatenation
+      result.size (axis_to_concat) += H.ndim() <= axis_to_concat ? 1 : H.size (axis_to_concat);
+
+      // Concatenate 4D schemes if necessary
+      if (axis_to_concat == 3) {
+        try {
+          const auto extra_dw = DWI::get_DW_scheme (H);
+          concat_scheme (dw_scheme, extra_dw);
+        } catch (Exception&) {
+          dw_scheme.resize (0, 0);
+        }
+        try {
+          const auto extra_pe = PhaseEncoding::get_scheme (H);
+          concat_scheme (pe_scheme, extra_pe);
+        } catch (Exception&) {
+          pe_scheme.resize (0, 0);
+        }
+      }
+
+      // Resolve key-value pairs
+      result.merge_keyval (H);
+
+      // Resolve discrepancies in datatype;
+      //   also throw an exception if such mismatch is not permitted
+      if (datatype_test (!result.datatype().is_complex() && H.datatype().is_complex()))
+        result.datatype().set_flag (DataType::Complex);
+      if (datatype_test (result.datatype().is_integer() && !result.datatype().is_signed() && H.datatype().is_signed()))
+        result.datatype().set_flag (DataType::Signed);
+      if (datatype_test (result.datatype().is_integer() && H.datatype().is_floating_point()))
+        result.datatype() = H.datatype();
+      if (datatype_test (result.datatype().bytes() < H.datatype().bytes()))
+        result.datatype() = (result.datatype()() & DataType::Attributes) + (H.datatype()() & DataType::Type);
+    }
+
+    if (axis_to_concat == 3) {
+      DWI::set_DW_scheme (result, dw_scheme);
+      PhaseEncoding::set_scheme (result, pe_scheme);
+    }
+    return result;
   }
 
 

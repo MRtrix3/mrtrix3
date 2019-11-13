@@ -1,8 +1,29 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # Functions relating to handling phase encoding information
+
+
+
+from mrtrix3 import MRtrixError
+
+
 
 # From a user-specified string, determine the axis and direction of phase encoding
 def direction(string): #pylint: disable=unused-variable
-  from mrtrix3 import app, MRtrixError
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   pe_dir = ''
   try:
     pe_axis = abs(int(string))
@@ -50,7 +71,7 @@ def direction(string): #pylint: disable=unused-variable
 # Extract a phase-encoding scheme from a pre-loaded image header,
 #   or from a path to the image
 def get_scheme(arg): #pylint: disable=unused-variable
-  from mrtrix3 import app, image, MRtrixError
+  from mrtrix3 import app, image #pylint: disable=import-outside-toplevel
   if not isinstance(arg, image.Header):
     if not isinstance(arg, str):
       raise MRtrixError('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')

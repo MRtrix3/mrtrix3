@@ -1,13 +1,36 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+from distutils.spawn import find_executable
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, path, run
+
+
+
 OPT_N4_BIAS_FIELD_CORRECTION = {
     's': ('4','shrink-factor applied to spatial dimensions'),
     'b':('[100,3]','[initial mesh resolution in mm, spline order] This value is optimised for human adult data and needs to be adjusted for rodent data.'),
     'c':('[1000,0.0]', '[numberOfIterations,convergenceThreshold]')}
 
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('ants', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Perform DWI bias field correction using the N4 algorithm as provided in ANTs')
-  parser.add_citation('', 'Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320', True)
+  parser.add_citation('Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320', is_external=True)
   ants_options = parser.add_argument_group('Options for ANTs N4BiasFieldCorrection command')
   for key in sorted(OPT_N4_BIAS_FIELD_CORRECTION):
     ants_options.add_argument('-ants.'+key, metavar=OPT_N4_BIAS_FIELD_CORRECTION[key][0], help='N4BiasFieldCorrection option -%s. %s' % (key,OPT_N4_BIAS_FIELD_CORRECTION[key][1]))
@@ -27,9 +50,6 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, MRtrixError, path, run
-
   if not find_executable('N4BiasFieldCorrection'):
     raise MRtrixError('Could not find ANTS program N4BiasFieldCorrection; please check installation')
 
@@ -61,6 +81,6 @@ def execute(): #pylint: disable=unused-variable
 
   # Common final steps for all algorithms
   run.command('mrcalc in.mif bias.mif -div result.mif')
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
   if app.ARGS.bias:
-    run.command('mrconvert bias.mif ' + path.from_user(app.ARGS.bias) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+    run.command('mrconvert bias.mif ' + path.from_user(app.ARGS.bias), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)

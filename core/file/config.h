@@ -18,6 +18,7 @@
 #define __file_config_h__
 
 #include <map>
+#include "types.h"
 #include "file/key_value.h"
 
 namespace MR
@@ -33,33 +34,21 @@ namespace MR
           config[key] = value;
         }
         static std::string get (const std::string& key) {
-          std::map<std::string, std::string>::iterator i = config.find (key);
+          const KeyValues::const_iterator i = config.find (key);
           return (i != config.end() ? i->second : "");
         }
         static std::string get (const std::string& key, const std::string& default_value) {
-          std::map<std::string, std::string>::iterator i = config.find (key);
+          KeyValues::iterator i = config.find (key);
           return (i != config.end() ? i->second : default_value);
         }
 
-        static void set_bool (const std::string& key, bool value) {
-          set (key, (value ? "true" : "false"));
-        }
-        static bool get_bool (const std::string& key, bool default_value);
-
-        static void set_int (const std::string& key, int value) {
-          set (key, str (value));
-        }
-        static int get_int (const std::string& key, int default_value);
-
-        static void set_float (const std::string& key, float value) {
-          set (key, str (value));
-        }
+        static bool  get_bool  (const std::string& key, bool default_value);
+        static int   get_int   (const std::string& key, int default_value);
         static float get_float (const std::string& key, float default_value);
-
-        static void get_RGB (const std::string& key, float* ret, float default_R, float default_G, float default_B);
+        static void  get_RGB   (const std::string& key, float* ret, float default_R, float default_G, float default_B);
 
       private:
-        static std::map<std::string, std::string> config;
+        static KeyValues config;
     };
   }
 }

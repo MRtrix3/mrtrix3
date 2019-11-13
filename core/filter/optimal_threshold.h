@@ -81,7 +81,7 @@ namespace MR
 
           class CorrelationFunctor { NOMEMALIGN
             public:
-              CorrelationFunctor (double threshold, double& overall_sum, double& overall_mean_xy) : 
+              CorrelationFunctor (double threshold, double& overall_sum, double& overall_mean_xy) :
                 threshold (threshold), overall_sum (overall_sum), overall_mean_xy (overall_mean_xy),
                 sum (0), mean_xy (0.0) { }
 
@@ -188,13 +188,16 @@ namespace MR
           using input_value_type = typename ImageType::value_type;
 
           input_value_type min, max;
-          min_max (input, min, max);
+          if (mask.valid())
+            min_max (input, mask, min, max);
+          else
+            min_max (input, min, max);
 
           input_value_type optimal_threshold = 0.0;
           {
             ImageCorrelationCostFunction<ImageType, MaskType> cost_function (input, mask);
             optimal_threshold = Math::golden_section_search (cost_function, "optimising threshold",
-                min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
+                min + 0.001*(max-min), 0.5*(min+max), max-0.001*(max-min));
           }
 
           return optimal_threshold;
@@ -244,7 +247,7 @@ namespace MR
           template <class InputImageType, class OutputImageType>
             void operator() (InputImageType& input, OutputImageType& output)
             {
-              auto mask = Image<bool>();
+              Image<bool> mask;
               operator() (input, output, mask);
             }
 
@@ -252,7 +255,6 @@ namespace MR
           template <class InputImageType, class OutputImageType, class MaskType>
             void operator() (InputImageType& input, OutputImageType& output, MaskType& mask)
             {
-              axes_.resize (4);
               using input_value_type = typename InputImageType::value_type;
 
               input_value_type optimal_threshold = estimate_optimal_threshold (input, mask);

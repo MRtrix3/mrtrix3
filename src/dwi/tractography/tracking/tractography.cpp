@@ -48,7 +48,7 @@ namespace MR
           + Argument ("size").type_float (0.0)
 
       + Option ("angle",
-            "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).")
+            "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize)")
           + Argument ("theta").type_float (0.0)
 
       + Option ("minlength",
