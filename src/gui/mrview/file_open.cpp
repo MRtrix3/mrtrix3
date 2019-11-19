@@ -14,42 +14,31 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <locale>
-#include <clocale>
-#include "gui/gui.h"
-#include "gui/opengl/gl.h"
+#include "gui/mrview/file_open.h"
+#include "gui/mrview/window.h"
 
 namespace MR
 {
   namespace GUI
   {
 
-
-
-    QWidget* App::main_window = nullptr;
-    App* App::application = nullptr;
-
-
-
-    App::App (int& cmdline_argc, char** cmdline_argv) :
-      QApplication (cmdline_argc, cmdline_argv)
+    bool App::event (QEvent *event)
     {
-      application = this;
-      ::MR::File::Config::init ();
-      ::MR::GUI::GL::set_default_context ();
-
-      QLocale::setDefault(QLocale::c());
-      std::locale::global (std::locale::classic());
-      std::setlocale (LC_ALL, "C");
-
-      setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
+      if (event->type() == QEvent::FileOpen) {
+        QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
+        vector<std::unique_ptr<MR::Header>> list;
+        try {
+          list.push_back (make_unique<MR::Header> (MR::Header::open (openEvent->file().toUtf8().data())));
+        }
+        catch (Exception& E) {
+          E.display();
+        }
+        reinterpret_cast<MRView::Window*> (main_window)->add_images (list);
+      }
+      return QApplication::event(event);
     }
-
 
 
   }
 }
-
-
-
 
