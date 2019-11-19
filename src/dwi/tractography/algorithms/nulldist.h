@@ -74,7 +74,7 @@ namespace MR
         return CONTINUE;
       }
 
-      float get_metric() override { return uniform(*rng); }
+      float get_metric() override { return uniform(rng); }
 
 
       protected:
@@ -154,7 +154,7 @@ namespace MR
         sample_idx = S.num_samples;
       }
 
-      float get_metric() override { return uniform(*rng); }
+      float get_metric() override { return uniform(rng); }
 
 
       protected:

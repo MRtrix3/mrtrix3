@@ -35,8 +35,8 @@ namespace MR
           if (seeders.size() && !(in->is_finite() == is_finite()))
             throw Exception ("Cannot use a combination of seed types where some are number-limited and some are not!");
 
-          if (!App::get_options ("max_seed_attempts").size()) 
-            for (auto& i : seeders) 
+          if (!App::get_options ("max_seed_attempts").size())
+            for (auto& i : seeders)
               if (i->get_max_attempts() != in->get_max_attempts())
                 throw Exception ("Cannot use a combination of seed types where the default maximum number "
                     "of sampling attempts per seed is unequal, unless you use the -max_seed_attempts option.");
@@ -77,7 +77,7 @@ namespace MR
 
             do {
               float incrementer = 0.0;
-              const float sample = uniform (*rng) * total_volume;
+              const float sample = uniform (rng) * total_volume;
               for (auto& i : seeders)
                 if ((incrementer += i->vol()) > sample)
                   return i->get_seed (p, d);
