@@ -23,7 +23,7 @@ namespace MR
     namespace Tractography
     {
 
-      thread_local Math::RNG* rng = nullptr;
+      thread_local Math::RNG rng;
 
     }
   }
