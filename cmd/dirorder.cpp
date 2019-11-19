@@ -56,7 +56,7 @@ vector<size_t> optimise (const Eigen::MatrixXd& directions, const size_t first_v
 {
   vector<size_t> indices (1, first_volume);
   vector<size_t> remaining;
-  for (ssize_t n = 0; n < directions.rows(); ++n)
+  for (size_t n = 0; n < size_t(directions.rows()); ++n)
     if (n != indices[0])
       remaining.push_back (n);
 
@@ -95,7 +95,7 @@ value_type calc_cost (const Eigen::MatrixXd& directions, const vector<size_t>& o
   Eigen::MatrixXd subset (start, 3);
   for (size_t i = 0; i != start; ++i)
     subset.row(i) = directions.row(order[i]);
-  for (size_t N = start+1; N < directions.rows(); ++N) {
+  for (size_t N = start+1; N < size_t(directions.rows()); ++N) {
     // Don't include condition numbers where precisely the number of coefficients
     //   for that spherical harmonic degree are included, as these tend to
     //   be outliers
@@ -118,7 +118,7 @@ void run ()
   value_type min_cost = std::numeric_limits<value_type>::infinity();
   vector<size_t> best_order;
   ProgressBar progress ("Determining best reordering", directions.rows());
-  for (size_t first_volume = 0; first_volume != directions.rows(); ++first_volume) {
+  for (size_t first_volume = 0; first_volume != size_t(directions.rows()); ++first_volume) {
     const vector<size_t> order = optimise (directions, first_volume);
     const value_type cost = calc_cost (directions, order);
     if (cost < min_cost) {
