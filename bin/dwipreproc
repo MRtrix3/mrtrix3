@@ -460,7 +460,7 @@ if app.args.se_epi:
     #   SE-EPI data according to the shift in the FoV. If this option is
     #   _not_ used, then we can only guess that the real-space position of
     #   the subject has not moved, and therefore an explicit re-grid is necessary
-    if align_seepi and image.match(dwi_header, se_epi_header, 3, False):
+    if app.args.align_seepi and image.match(dwi_header, se_epi_header, 3, False):
       app.console('SE-EPI images used for inhomogeneity field estimation have a '
                   'different FoV placement to the DWIs, but voxel size / dimensions are identical; '
                   'replacing header transformation with that of DWIs')
