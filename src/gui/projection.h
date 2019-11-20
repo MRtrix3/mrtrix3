@@ -1,21 +1,23 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_projection_h__
 #define __gui_projection_h__
 
+#include "gui/crosshair.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/font.h"
 #include "gui/opengl/transformation.h"
@@ -167,11 +169,12 @@ namespace MR
 
 
     class Projection : public ModelViewProjection
-    { MEMALIGN(Projection)
+    { NOMEMALIGN
       public:
         Projection (GL::Area* parent, const GL::Font& font) :
-          glarea (parent),
-          font (font) { }
+            glarea (parent),
+            font (font),
+            crosshair (new Crosshair()) { }
 
         void set_viewport (const QWidget& frame, int x, int y, int w, int h) {
           ModelViewProjection::set_viewport (x, y, w, h);
@@ -189,7 +192,7 @@ namespace MR
         }
 #endif
 
-        void render_crosshairs (const Eigen::Vector3f& focus) const;
+        void render_crosshairs (const Eigen::Vector3f& focus) const { crosshair->render (focus, *this); }
 
         void setup_render_text (float red = 1.0, float green = 1.0, float blue = 0.0) const {
           font.start (width(), height(), red, green, blue);
@@ -202,7 +205,11 @@ namespace MR
 
         void render_text_align (int x, int y, const std::string& text, int halign = 0, int valign = 0) const {
           QString s (text.c_str());
+          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           int w = font.metric.width (s);
+          #else
+          int w = font.metric.horizontalAdvance (s);
+          #endif
           int h = font.metric.height();
           if (halign == 0) x -= w/2;
           else if (halign > 0) x -= w;
@@ -217,8 +224,14 @@ namespace MR
             inset = font.metric.height() / 2;
           if (x < inset)
             x = inset;
+          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           if (x + font.metric.width (s) + inset > width())
             x = width() - font.metric.width (s) - inset;
+          #else
+          if (x + font.metric.horizontalAdvance (s) + inset > width())
+            x = width() - font.metric.horizontalAdvance (s) - inset;
+          #endif
+
           if (y < inset)
             y = inset;
           if (y + font.metric.height() + inset > height())
@@ -230,9 +243,15 @@ namespace MR
           QString s (text.c_str());
           int x, y;
 
+          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           if (position & RightEdge) x = width() - font.metric.height() / 2 - font.metric.width (s);
           else if (position & LeftEdge) x = font.metric.height() / 2;
           else x = (width() - font.metric.width (s)) / 2;
+          #else
+          if (position & RightEdge) x = width() - font.metric.height() / 2 - font.metric.horizontalAdvance (s);
+          else if (position & LeftEdge) x = font.metric.height() / 2;
+          else x = (width() - font.metric.horizontalAdvance (s)) / 2;
+          #endif
 
           if (position & TopEdge) y = height() - 1.5 * font.metric.height() - line * font.metric.lineSpacing();
           else if (position & BottomEdge) y = font.metric.height() / 2 + line * font.metric.lineSpacing();
@@ -262,9 +281,7 @@ namespace MR
       protected:
         GL::Area* glarea;
         const GL::Font& font;
-        mutable GL::VertexBuffer crosshairs_VB;
-        mutable GL::VertexArrayObject crosshairs_VAO;
-        mutable GL::Shader::Program crosshairs_program;
+        std::shared_ptr<Crosshair> crosshair;
     };
 
 

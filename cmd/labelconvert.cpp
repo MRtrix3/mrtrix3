@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -53,12 +54,18 @@ void usage ()
   + "Typical usage is to convert a parcellation image provided by some other software, based on "
     "the lookup table provided by that software, to conform to a new lookup table, particularly "
     "one where the node indices increment from 1, in preparation for connectome construction; "
-    "examples of such target lookup table files are provided in share//mrtrix3//labelconvert//";
+    "examples of such target lookup table files are provided in share//mrtrix3//labelconvert//, "
+    "but can be created by the user to provide the desired node set // ordering // colours.";
 
+  EXAMPLES
+  + Example ("Convert a Desikan-Killiany parcellation image as provided by FreeSurfer to have nodes incrementing from 1",
+             "labelconvert aparc+aseg.mgz FreeSurferColorLUT.txt mrtrix3//share//mrtrix3//labelconvert//fs_default.txt nodes.mif",
+             "Paths to the files in the example above would need to be revised according to their "
+             "locations on the user's system.");
 
   ARGUMENTS
   + Argument ("path_in",   "the input image").type_image_in()
-  + Argument ("lut_in",    "the connectome lookup table for the input image").type_file_in()
+  + Argument ("lut_in",    "the connectome lookup table corresponding to the input image").type_file_in()
   + Argument ("lut_out",   "the target connectome lookup table for the output image").type_file_in()
   + Argument ("image_out", "the output image").type_image_out();
 

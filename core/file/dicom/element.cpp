@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "file/path.h"
 #include "file/dicom/element.h"
@@ -44,6 +45,21 @@ namespace MR {
           stream << str(item.fraction, 6).substr(1);
         return stream;
       }
+
+
+
+
+
+      const char* Element::type_as_str[] = { "invalid",
+                                             "integer",
+                                             "unsigned integer",
+                                             "floating-point",
+                                             "date",
+                                             "time",
+                                             "string",
+                                             "sequence",
+                                             "other",
+                                             nullptr };
 
 
 
@@ -431,7 +447,9 @@ namespace MR {
           }
         }
         catch (Exception& e) {
-          e.display();
+          DEBUG ("Error converting data at offset " + str(offset(start)) + " to " + type_as_str[type()] + " type: ");
+          for (auto& s : e.description)
+            DEBUG (s);
           return "invalid entry";
         }
         return "";
@@ -502,6 +520,7 @@ namespace MR {
 
         return stream;
       }
+
 
 
     }

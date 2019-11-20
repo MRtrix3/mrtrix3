@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "app.h"
 #include "timer.h"
@@ -240,7 +241,7 @@ namespace MR
         show_FPS (false),
         current_option (0) {
           main = this;
-          GUI::App::set_main_window (this);
+          GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
 
           setDockOptions (AllowTabbedDocks | VerticalTabs);
@@ -1163,16 +1164,15 @@ namespace MR
       void Window::set_image_volume (size_t axis, ssize_t index)
       {
         assert (image());
+        assert (axis < image()->image.ndim());
         if (index < 0)
           index = wrap_volumes_action->isChecked() ? index+image()->image.size(axis) : 0;
         else if (index >= image()->image.size(axis))
           index = wrap_volumes_action->isChecked() ? index-image()->image.size(axis) : image()->image.size(axis)-1;
         image()->image.index (axis) = index;
         set_image_navigation_menu();
-        if (axis == 3)
-          emit volumeChanged (index);
-        else if (axis == 4)
-          emit volumeGroupChanged (index);
+        if (axis >= 3)
+          emit volumeChanged ();
         updateGL();
       }
 
@@ -1502,7 +1502,7 @@ namespace MR
 
       void Window::paintGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
@@ -1511,9 +1511,9 @@ namespace MR
 
         GL_CHECK_ERROR;
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         mode->paintGL();
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
 
         if (show_FPS) {
@@ -1554,13 +1554,13 @@ namespace MR
         glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 
       void Window::initGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL::init ();
 
         font.initGL();
@@ -1573,7 +1573,7 @@ namespace MR
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 
