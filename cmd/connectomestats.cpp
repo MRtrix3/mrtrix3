@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -32,7 +33,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* algorithms[] = { "nbs", "nbse", "none", nullptr };
+const char* algorithms[] = { "nbs", "tfnbs", "none", nullptr };
 
 
 
@@ -48,6 +49,18 @@ void usage ()
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Connectome group-wise statistics at the edge level using non-parametric permutation testing";
+
+  DESCRIPTION
+  + "For the TFNBS algorithm, default parameters for statistical enhancement "
+    "have been set based on the work in: \n"
+    "Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A Novel Threshold-Free Network-Based Statistics Method: Demonstration using Simulated Pathology. OHBM, 2015, 4144; \n"
+    "and: \n"
+    "Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A novel threshold-free network-based statistical method: Demonstration and parameter optimisation using in vivo simulated pathology. In Proc ISMRM, 2015, 2846. \n"
+    "Note however that not only was the optimisation of these parameters not "
+    "very precise, but the outcomes of statistical inference (for both this "
+    "algorithm and the NBS method) can vary markedly for even small changes to "
+    "enhancement parameters. Therefore the specificity of results obtained using "
+    "either of these methods should be interpreted with caution.";
 
 
   ARGUMENTS
@@ -80,9 +93,9 @@ void usage ()
                "Zalesky, A.; Fornito, A. & Bullmore, E. T. Network-based statistic: Identifying differences in brain networks. \n"
                "NeuroImage, 2010, 53, 1197-1207"
 
-             + "* If using the NBSE algorithm: \n"
-               "Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A Novel Threshold-Free Network-Based Statistics Method: Demonstration using Simulated Pathology. \n"
-               "OHBM, 2015, 4144"
+             + "* If using the TFNBS algorithm: \n"
+               "Baggio, H.C.; Abos, A.; Segura, B.; Campabadal, A.; Garcia-Diaz, A.; Uribe, C.; Compta, Y.; Marti, M.J.; Valldeoriola, F.; Junque, C. Statistical inference in brain graphs using threshold-free network-based statistics."
+               "HBM, 2018, 39, 2289-2302"
 
              + "* If using the -nonstationary option: \n"
                "Salimi-Khorshidi, G.; Smith, S.M. & Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
@@ -239,12 +252,12 @@ void run()
 
     const matrix_type betas = Math::Stats::GLM::solve_betas (data, design);
     for (size_t i = 0; i < size_t(contrast.cols()); ++i) {
-      save_matrix (mat2vec.V2M (betas.col(i)), output_prefix + "_beta_" + str(i) + ".csv");
+      save_matrix (mat2vec.V2M (betas.col(i)), output_prefix + "beta_" + str(i) + ".csv");
       ++progress;
     }
 
     const matrix_type abs_effects = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-    save_matrix (mat2vec.V2M (abs_effects.col(0)), output_prefix + "_abs_effect.csv");
+    save_matrix (mat2vec.V2M (abs_effects.col(0)), output_prefix + "abs_effect.csv");
     ++progress;
 
     const matrix_type std_effects = Math::Stats::GLM::std_effect_size (data, design, contrast);
@@ -255,11 +268,11 @@ void run()
           first_std_effect (i, j) = 0.0;
       }
     }
-    save_matrix (first_std_effect, output_prefix + "_std_effect.csv");
+    save_matrix (first_std_effect, output_prefix + "std_effect.csv");
     ++progress;
 
     const matrix_type stdev = Math::Stats::GLM::stdev (data, design);
-    save_matrix (mat2vec.V2M(stdev.row(0)), output_prefix + "_std_dev.csv");
+    save_matrix (mat2vec.V2M(stdev.row(0)), output_prefix + "std_dev.csv");
   }
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
@@ -275,7 +288,7 @@ void run()
       Stats::PermTest::PermutationStack perm_stack (nperms_nonstationary, design.rows(), "precomputing empirical statistic for non-stationarity adjustment...", true);
       Stats::PermTest::precompute_empirical_stat (glm_ttest, enhancer, perm_stack, empirical_statistic);
     }
-    save_matrix (mat2vec.V2M (empirical_statistic), output_prefix + "_empirical.csv");
+    save_matrix (mat2vec.V2M (empirical_statistic), output_prefix + "empirical.csv");
   }
 
   // Precompute default statistic and enhanced statistic
@@ -284,8 +297,8 @@ void run()
 
   Stats::PermTest::precompute_default_permutation (glm_ttest, enhancer, empirical_statistic, enhanced_output, std::shared_ptr<vector_type>(), tvalue_output);
 
-  save_matrix (mat2vec.V2M (tvalue_output),   output_prefix + "_tvalue.csv");
-  save_matrix (mat2vec.V2M (enhanced_output), output_prefix + "_enhanced.csv");
+  save_matrix (mat2vec.V2M (tvalue_output),   output_prefix + "tvalue.csv");
+  save_matrix (mat2vec.V2M (enhanced_output), output_prefix + "enhanced.csv");
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
@@ -307,11 +320,11 @@ void run()
                                          uncorrected_pvalues, std::shared_ptr<vector_type>());
     }
 
-    save_vector (null_distribution, output_prefix + "_null_dist.txt");
+    save_vector (null_distribution, output_prefix + "null_dist.txt");
     vector_type pvalue_output (num_edges);
     Math::Stats::Permutation::statistic2pvalue (null_distribution, enhanced_output, pvalue_output);
-    save_matrix (mat2vec.V2M (pvalue_output),       output_prefix + "_fwe_pvalue.csv");
-    save_matrix (mat2vec.V2M (uncorrected_pvalues), output_prefix + "_uncorrected_pvalue.csv");
+    save_matrix (mat2vec.V2M (pvalue_output),       output_prefix + "fwe_pvalue.csv");
+    save_matrix (mat2vec.V2M (uncorrected_pvalues), output_prefix + "uncorrected_pvalue.csv");
 
   }
 

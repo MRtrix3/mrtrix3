@@ -21,7 +21,7 @@ Usage
 Description
 -----------
 
-By default, tckgen produces a fixed number of streamlines, by attempting to seed from new random locations until the target number of streamlines have been selected (in other words, after all inclusion & exclusion criteria have been applied), or the maximum number of seeds has been exceeded (by default, this is 1000× the desired number of selected streamlines). Use the -select and/or -seeds options to modify as required. See also the Seeding options section for alternative seeding strategies.
+By default, tckgen produces a fixed number of streamlines, by attempting to seed from new random locations until the target number of streamlines have been selected (in other words, after all inclusion & exclusion criteria have been applied), or the maximum number of seeds has been exceeded (by default, this is 1000 x the desired number of selected streamlines). Use the -select and/or -seeds options to modify as required. See also the Seeding options section for alternative seeding strategies.
 
 Below is a list of available tracking algorithms, the input image data that they require, and a brief description of their behaviour:
 
@@ -41,6 +41,8 @@ Below is a list of available tracking algorithms, the input image data that they
 
 - Tensor_Prob: A probabilistic algorithm that takes as input a 4D diffusion-weighted image (DWI) series. Within each image voxel, a residual bootstrap is performed to obtain a unique realisation of the DWI data in that voxel for each streamline. These data are then sampled via trilinear interpolation at each streamline step, the diffusion tensor model is fitted, and the streamline follows the orientation of the principal eigenvector of that tensor.
 
+Note that the behaviour of the -angle option varies slightly depending on the order of integration: for any first-order method, this angle corresponds to the deviation in streamline trajectory per step; for higher-order methods, this corresponds to the change in underlying fibre orientation between the start and end points of each step.
+
 Options
 -------
 
@@ -53,7 +55,7 @@ Streamlines tractography options
 
 -  **-step size** set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).
 
--  **-angle theta** set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).
+-  **-angle theta** set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize)
 
 -  **-minlength value** set the minimum length of any track in mm (default is 5 x voxelsize without ACT, 2 x voxelsize with ACT).
 
@@ -74,17 +76,17 @@ Streamlines tractography options
 Tractography seeding mechanisms; at least one must be provided
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-seed_image image** seed streamlines entirely at random within a mask image 
+-  **-seed_image image**  *(multiple uses permitted)* seed streamlines entirely at random within a mask image 
 
--  **-seed_sphere spec** spherical seed as four comma-separated values (XYZ position and radius)
+-  **-seed_sphere spec**  *(multiple uses permitted)* spherical seed as four comma-separated values (XYZ position and radius)
 
--  **-seed_random_per_voxel image num_per_voxel** seed a fixed number of streamlines per voxel in a mask image; random placement of seeds in each voxel
+-  **-seed_random_per_voxel image num_per_voxel**  *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; random placement of seeds in each voxel
 
--  **-seed_grid_per_voxel image grid_size** seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid (grid_size argument is per axis; so a grid_size of 3 results in 27 seeds per voxel)
+-  **-seed_grid_per_voxel image grid_size**  *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; place seeds on a 3D mesh grid (grid_size argument is per axis; so a grid_size of 3 results in 27 seeds per voxel)
 
--  **-seed_rejection image** seed from an image using rejection sampling (higher values = more probable to seed from)
+-  **-seed_rejection image**  *(multiple uses permitted)* seed from an image using rejection sampling (higher values = more probable to seed from)
 
--  **-seed_gmwmi image** seed from the grey matter - white matter interface (only valid if using ACT framework). Input image should be a 3D seeding volume; seeds drawn within this image will be optimised to the interface using the 5TT image provided using the -act option.
+-  **-seed_gmwmi image**  *(multiple uses permitted)* seed from the grey matter - white matter interface (only valid if using ACT framework). Input image should be a 3D seeding volume; seeds drawn within this image will be optimised to the interface using the 5TT image provided using the -act option.
 
 -  **-seed_dynamic fod_image** determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, it should NOT be used as a substitute for the SIFT method itself.
 
@@ -106,11 +108,11 @@ Tractography seeding options and parameters
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-include spec** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
+-  **-include spec**  *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
 
--  **-exclude spec** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
+-  **-exclude spec**  *(multiple uses permitted)* specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
 
--  **-mask spec** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
+-  **-mask spec**  *(multiple uses permitted)* specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
 
 Anatomically-Constrained Tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -142,13 +144,15 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -185,16 +189,19 @@ References based on command-line options:
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 

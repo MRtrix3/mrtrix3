@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -38,10 +39,12 @@ void usage ()
     "to the amplitude data."
 
   + "The directions can be defined either as a DW gradient scheme (for example to compute "
-    "the SH representation of the DW signal) or a set of [az el] pairs as output by the dirgen "
-    "command. The DW gradient scheme or direction set can be supplied within the input "
-    "image header or using the -gradient or -directions option. Note that if a direction set "
-    "and DW gradient scheme can be found, the direction set will be used by default."
+    "the SH representation of the DW signal), a set of [az el] pairs as output by the dirgen "
+    "command, or a set of [ x y z ] directions in Cartesian coordinates. The DW "
+    "gradient scheme or direction set can be supplied within the input image "
+    "header or using the -gradient or -directions option. Note that if a "
+    "direction set and DW gradient scheme can be found, the direction set "
+    "will be used by default."
 
   + Math::SH::encoding_description;
 
@@ -62,7 +65,7 @@ void usage ()
   + Option ("directions", "the directions corresponding to the input amplitude image used to sample AFD. "
                           "By default this option is not required providing the direction set is supplied "
                           "in the amplitude image. This should be supplied as a list of directions [az el], "
-                          "as generated using the dirgen command")
+                          "as generated using the dirgen command, or as a list of [ x y z ] Cartesian coordinates.")
   +   Argument ("file").type_file_in()
 
   + Option ("rician", "correct for Rician noise induced bias, using noise map supplied")
@@ -84,10 +87,10 @@ class Amp2SHCommon { MEMALIGN(Amp2SHCommon)
   public:
     template <class MatrixType>
       Amp2SHCommon (const MatrixType& sh2amp,
-          const vector<size_t>& bzeros, 
-          const vector<size_t>& dwis, 
+          const vector<size_t>& bzeros,
+          const vector<size_t>& dwis,
           bool normalise_to_bzero) :
-        sh2amp (sh2amp), 
+        sh2amp (sh2amp),
         amp2sh (Math::pinv (sh2amp)),
         bzeros (bzeros),
         dwis (dwis),
@@ -105,14 +108,14 @@ class Amp2SHCommon { MEMALIGN(Amp2SHCommon)
 
 class Amp2SH { MEMALIGN(Amp2SH)
   public:
-    Amp2SH (const Amp2SHCommon& common) : 
-      C (common), 
+    Amp2SH (const Amp2SHCommon& common) :
+      C (common),
       a (common.amp2sh.cols()),
       s (common.amp2sh.rows()),
       c (common.amp2sh.rows()) { }
 
     template <class SHImageType, class AmpImageType>
-      void operator() (SHImageType& SH, AmpImageType& amp) 
+      void operator() (SHImageType& SH, AmpImageType& amp)
       {
         get_amps (amp);
         c.noalias() = C.amp2sh * a;
@@ -123,7 +126,7 @@ class Amp2SH { MEMALIGN(Amp2SH)
 
     // Rician-corrected version:
     template <class SHImageType, class AmpImageType, class NoiseImageType>
-      void operator() (SHImageType& SH, AmpImageType& amp, const NoiseImageType& noise) 
+      void operator() (SHImageType& SH, AmpImageType& amp, const NoiseImageType& noise)
       {
         w = Eigen::VectorXd::Ones (C.sh2amp.rows());
 
@@ -134,7 +137,7 @@ class Amp2SH { MEMALIGN(Amp2SH)
           sh2amp = C.sh2amp;
           if (get_rician_bias (sh2amp, noise.value()))
             break;
-          for (ssize_t n = 0; n < sh2amp.rows(); ++n) 
+          for (ssize_t n = 0; n < sh2amp.rows(); ++n)
             sh2amp.row (n).array() *= w[n];
 
           s.noalias() = sh2amp.transpose() * ap;
@@ -188,7 +191,7 @@ class Amp2SH { MEMALIGN(Amp2SH)
         norm_amp += Math::pow2 (a[n]);
         ap[n] += diff;
       }
-      return norm_diff/norm_amp < 1.0e-8; 
+      return norm_diff/norm_amp < 1.0e-8;
     }
 };
 
@@ -206,7 +209,9 @@ void run ()
   auto opt = get_options ("directions");
   if (opt.size()) {
     dirs = load_matrix (opt[0][0]);
-  } 
+    if (dirs.cols() == 3)
+      dirs = Math::Sphere::cartesian2spherical (dirs);
+  }
   else {
     auto hit = header.keyval().find ("directions");
     if (hit != header.keyval().end()) {
@@ -222,7 +227,7 @@ void run ()
       }
       header.keyval()["basis_directions"] = hit->second;
       header.keyval().erase (hit);
-    } 
+    }
     else {
       auto grad = DWI::get_valid_DW_scheme (amp);
       DWI::Shells shells (grad);

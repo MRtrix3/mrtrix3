@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_algorithms_iFOD_calibrator_h__
 #define __dwi_tractography_algorithms_iFOD_calibrator_h__
@@ -41,7 +42,7 @@ namespace MR {
           for (ssize_t j = -extent; j <= extent; ++j) {
             float x = i + 0.5*j, y = SQRT_3_OVER_2*j;
             float n = Math::pow2(x) + Math::pow2(y);
-            if (n > maxR) 
+            if (n > maxR)
               continue;
             n = spacing * std::sqrt (n);
             float z = std::cos (n);
@@ -61,14 +62,15 @@ namespace MR {
         };
       }
 
-      template <class Method> 
-        void calibrate (Method& method) 
+      template <class Method>
+        void calibrate (Method& method)
         {
           typename Method::Calibrate calibrate_func (method);
           const float sqrt3 = std::sqrt (3.0);
+          const float max_angle = std::isfinite (method.S.max_angle_ho) ? method.S.max_angle_ho : method.S.max_angle_1o;
 
           vector<Pair> amps;
-          for (float el = 0.0; el < method.S.max_angle; el += 0.001) {
+          for (float el = 0.0; el < max_angle; el += 0.001) {
             amps.push_back (Pair (el, calibrate_func (el)));
             if (!std::isfinite (amps.back().amp) || amps.back().amp <= 0.0) break;
           }
@@ -76,9 +78,9 @@ namespace MR {
 
           float N_min = Inf, theta_min = NaN, ratio = NaN;
           for (size_t i = 1; i < amps.size(); ++i) {
-            float N = Math::pow2 (method.S.max_angle);
+            float N = Math::pow2 (max_angle);
             float Ns =  N * (1.0+amps[0].amp/amps[i].amp)/(2.0*Math::pow2(zero));
-            auto dirs = direction_grid (method.S.max_angle + amps[i].el, sqrt3*amps[i].el);
+            auto dirs = direction_grid (max_angle + amps[i].el, sqrt3*amps[i].el);
             N = Ns+dirs.size();
             //std::cout << amps[i].el << " " << amps[i].amp << " " << Ns << " " << dirs.size() << " " << Ns+dirs.size() << "\n";
             if (N > 0.0 && N < N_min) {
@@ -88,10 +90,10 @@ namespace MR {
             }
           }
 
-          method.calibrate_list = direction_grid (method.S.max_angle+theta_min, sqrt3*theta_min);
+          method.calibrate_list = direction_grid (max_angle+theta_min, sqrt3*theta_min);
           method.calibrate_ratio = ratio;
 
-          INFO ("rejection sampling will use " + str (method.calibrate_list.size()) 
+          INFO ("rejection sampling will use " + str (method.calibrate_list.size())
               + " directions with a ratio of " + str (method.calibrate_ratio) + " (predicted number of samples per step = " + str (N_min) + ")");
         }
 

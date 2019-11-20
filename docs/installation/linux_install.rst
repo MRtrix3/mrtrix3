@@ -3,7 +3,7 @@
 Linux installation
 ==================
 
-We outline the steps for installing *MRtrix3* on a Linux machine. Please consult 
+We outline the steps for installing *MRtrix3* on a Linux machine. Please consult
 the `MRtrix3 forum <http://community.mrtrix.org/>`__ if you encounter any
 issues with the configure, build or runtime operations of *MRtrix3*.
 
@@ -16,7 +16,7 @@ To install *MRtrix3*, you will need the following:
    compiler (GCC version >= 4.9, clang)
 -  `Python <https://www.python.org/>`__ version >= 2.7
 -  The `zlib <http://www.zlib.net/>`__ compression library
--  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2 
+-  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
 
 and optionally:
@@ -24,10 +24,9 @@ and optionally:
 - `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
 - `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
   certain applications, currently only ``mrdegibbs``)
-  
-  
+- `libpng <http://www.libpng.org>`__ (for PNG support)
 
-.. WARNING:: 
+.. WARNING::
 
     To run the GUI components of *MRtrix3* (``mrview`` &
     ``shview``), you will also need:
@@ -35,8 +34,10 @@ and optionally:
     -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver
 
     Note that this implies you *cannot run the GUI components over a remote
-    X11 connection*, since it can't support OpenGL 3.3+ rendering - see
-    :ref:`remote_display` for details.
+    X11 connection*, since it can't support OpenGL 3.3+ rendering. The
+    most up-to-date recommendations in this context can be found in the
+    [relevant Wiki entry](http://community.mrtrix.org/t/remote-display-issues/2547)
+    on the [*MRtrix3* community forum](http://community.mrtrix.org).
 
 Install Dependencies
 --------------------
@@ -49,20 +50,19 @@ for hints on how to proceed in this case.
 
 -  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
-       sudo apt-get install git g++ python python-numpy libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev
+       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev libpng-dev
 
 -  RPM-based distros (Fedora, CentOS)::
 
-       sudo yum install git g++ python numpy eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev fftw-devel libtiff-devel
+       sudo yum install git g++ python eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev fftw-devel libtiff-devel libpng-devel
 
    on Fedora 24, this is reported to work::
 
-           sudo yum install git gcc-c++ python numpy eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel
-
+           sudo yum install git gcc-c++ python eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel libpng-devel
 
 -  Arch Linux::
 
-       sudo pacman -Syu git python python-numpy gcc zlib eigen qt5-svg fftw libtiff
+       sudo pacman -Syu git python gcc zlib eigen qt5-svg fftw libtiff libpng
 
 If this doesn't work
 ^^^^^^^^^^^^^^^^^^^^
@@ -79,8 +79,6 @@ packages:
 
 -  Python version >2.7
 
--  NumPy
-
 -  the zlib compression library and its corresponding development
    header/include files
 
@@ -94,7 +92,7 @@ packages:
    qmake, rcc & moc executables (note these will probably be included in
    one of the other packages).
 
-.. WARNING::  
+.. WARNING::
 
     The compiler included in Ubuntu 12.04 and other older distributions is no
     longer capable of compiling *MRtrix3*, as it now requires C++11 support.
@@ -154,12 +152,12 @@ Set up *MRtrix3*
 
 1. Update the shell startup file, so that the locations of *MRtrix3* commands
    and scripts will be added to your ``PATH`` envionment variable.
-   
+
    If you are not familiar or comfortable with modification of shell files,
    *MRtrix3* now provides a convenience script that will perform this setup
    for you (assuming that you are using ``bash`` or equivalent interpreter).
    From the top level *MRtrix3* directory, run the following::
-   
+
        ./set_path
 
 2. Close the terminal and start another one to ensure the startup file
@@ -169,8 +167,8 @@ Set up *MRtrix3*
 
 4. You may also want to have a look through the :ref:`config_file_options`
    and set anything you think might be required on your system.
-   
-  .. NOTE:: 
+
+  .. NOTE::
     The above assumes that your shell will read the ``~/.bashrc`` file at
     startup time. This is not always guaranteed, depending on how your system
     is configured. If you find that the above doesn't work (e.g. typing
@@ -211,7 +209,7 @@ However, note that this means the executables produced will likely *not run* on
 a different CPUs with different instruction sets, resulting in 'illegal
 instruction' runtime errors. If you intend to run *MRtrix3* on a variety of
 different systems with a range of CPUs, or you have no idea what the CPU is on
-your target system, it is safest to avoid changing the default. 
+your target system, it is safest to avoid changing the default.
 
 Specifying a different CPU architecture is done by setting the ``ARCH`` environment
 variable prior to invoking ``./configure``. The value of this variable will
@@ -220,7 +218,7 @@ performance *on the current system*, you can specify ``native`` as
 the architecture, leaving it up to the compiler to detect your particular CPU
 and its available instructions. For example::
 
-    export ARCH=native 
+    export ARCH=native
     ./configure
     ./build
 
@@ -273,7 +271,7 @@ beforehand. Use the ``-nogui`` option to skip installation of GUI
 components, which rely on Qt.
 
 You can then deploy the software onto target systems, as described in the
-:ref:`deployment` section. 
+:ref:`deployment` section.
 
 
 Standalone packager
@@ -323,7 +321,9 @@ Limitations
 
 -  **Installation on remote systems:** bear in mind that running the GUI
    components over a remote X11 connection is not possible, since the
-   GLX protocol does not support OpenGL 3 and above (see :ref:`remote_display`
+   GLX protocol does not support OpenGL 3 and above (see
+   [relevant Wiki entry](http://community.mrtrix.org/t/remote-display-issues/2547)
+   of the [*MRtrix3* community forum](http://community.mrtrix.org)
    for details). You may be able to use an OpenGL-capable VNC connection, but
    if that is not possible, there is little point in installing the GUI
    components on the remote server. The recommendation would be to configure
@@ -355,6 +355,6 @@ shell)::
 
 Note that the above command will only add *MRtrix3* to the ``PATH`` for the
 current session. You would need to add the equivalent line to your users'
-startup scripts, using whichever mechanism is appropriate for your system. 
+startup scripts, using whichever mechanism is appropriate for your system.
 
 

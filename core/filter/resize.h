@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __image_filter_resize_h__
 #define __image_filter_resize_h__
@@ -40,6 +41,8 @@ namespace MR
      *  Also note that if the image is down-sampled, the appropriate smoothing is automatically applied.
      *  using Gaussian smoothing.
      *
+     *  Automatic oversampling is applied except for nearest-neighbour interpolation, which uses no oversampling.
+     *
      * Typical usage:
      * \code
      * auto input = Image<default_type>::open (argument[0]);
@@ -58,18 +61,20 @@ namespace MR
         template <class HeaderType>
         Resize (const HeaderType& in) :
             Base (in),
-            interp_type (2) { } // Cubic
+            interp_type (2), // Cubic
+            transformation (Adapter::NoTransform),
+            oversampling (Adapter::AutoOverSample),
+            out_of_bounds_value (nullptr) { }
 
+        ~Resize () { delete out_of_bounds_value; }
 
-        void set_voxel_size (default_type size)
-        {
+        void set_voxel_size (default_type size) {
           vector <default_type> voxel_size (3, size);
           set_voxel_size (voxel_size);
         }
 
 
-        void set_voxel_size (const vector<default_type>& voxel_size)
-        {
+        void set_voxel_size (const vector<default_type>& voxel_size) {
           if (voxel_size.size() != 3)
             throw Exception ("the voxel size must be defined using a value for all three dimensions.");
 
@@ -88,8 +93,7 @@ namespace MR
         }
 
 
-        void set_size (const vector<int>& image_res)
-        {
+        void set_size (const vector<int>& image_res) {
           if (image_res.size() != 3)
             throw Exception ("the image resolution must be defined for 3 spatial dimensions");
           vector<default_type> new_voxel_size (3);
@@ -102,14 +106,12 @@ namespace MR
         }
 
 
-        void set_scale_factor (default_type scale)
-        {
+        void set_scale_factor (default_type scale) {
           set_scale_factor (vector<default_type> (3, scale));
         }
 
 
-        void set_scale_factor (const vector<default_type> & scale)
-        {
+        void set_scale_factor (const vector<default_type> & scale) {
           if (scale.size() != 3)
             throw Exception ("a scale factor for each spatial dimension is required");
           vector<default_type> new_voxel_size (3);
@@ -121,28 +123,50 @@ namespace MR
           set_voxel_size (new_voxel_size);
         }
 
+        void set_oversample (vector<int> oversample) {
+          if (oversample.size() == 1)
+            oversample.resize (3, oversample[0]);
+          else if (oversample.size() != 3 and oversample.size() != 0)
+            throw Exception ("FIXME oversample requires either a vector of a 0 (auto), 1 or 3 integers integer, got " + str(oversample.size()));
+          for (auto f : oversample) {
+            if (f < 1)
+              throw Exception ("oversample factors must be positive integers");
+          }
+          oversampling = oversample;
+        }
 
         void set_interp_type (int type) {
           interp_type = type;
+          if (interp_type == 0) // nearest
+            set_oversample (vector<int> (3, 1));
         }
 
+        void set_transform (const transform_type& trafo) {
+          transform_ = trafo;
+        }
+
+        void set_out_of_bounds_value (default_type value) {
+          out_of_bounds_value = new default_type;
+          *out_of_bounds_value = value;
+        }
 
         template <class InputImageType, class OutputImageType>
-          void operator() (InputImageType& input, OutputImageType& output)
-          {
+          void operator() (InputImageType& input, OutputImageType& output) {
+            const typename InputImageType::value_type oob = out_of_bounds_value ?
+             *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
             switch (interp_type) {
             case 0:
               // Prevent use of oversampling when using nearest-neighbour interpolation
-              reslice <Interp::Nearest> (input, output, Adapter::NoTransform, { 1, 1, 1 });
+              reslice <Interp::Nearest> (input, output, transformation, oversampling, oob);
               break;
             case 1:
-              reslice <Interp::Linear> (input, output);
+              reslice <Interp::Linear> (input, output, transformation, oversampling, oob);
               break;
             case 2:
-              reslice <Interp::Cubic> (input, output);
+              reslice <Interp::Cubic> (input, output, transformation, oversampling, oob);
               break;
             case 3:
-              reslice <Interp::Sinc> (input, output);
+              reslice <Interp::Sinc> (input, output, transformation, oversampling, oob);
               break;
             default:
               assert (0);
@@ -152,6 +176,9 @@ namespace MR
 
       protected:
         int interp_type;
+        transform_type transformation;
+        vector<int> oversampling;
+        default_type *out_of_bounds_value;
     };
     //! @}
   }

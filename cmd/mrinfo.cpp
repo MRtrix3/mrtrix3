@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <map>
 #include <string>
@@ -21,6 +22,7 @@
 #include "phase_encoding.h"
 #include "types.h"
 #include "file/json.h"
+#include "file/json_utils.h"
 #include "dwi/gradient.h"
 
 
@@ -72,6 +74,7 @@ void usage ()
 
   OPTIONS
     +   Option ("all", "print all properties, rather than the first and last 2 of each.")
+    +   Option ("name", "print the file system path of the image")
     +   Option ("format", "image file format")
     +   Option ("ndim", "number of image dimensions")
     +   Option ("size", "image size along each axis")
@@ -80,7 +83,7 @@ void usage ()
     +   Option ("strides", "data strides i.e. order and direction of axes data layout")
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
-    +   Option ("transform", "the voxel to image transformation")
+    +   Option ("transform", "the transformation from image coordinates [mm] to scanner / real world coordinates [mm]")
 
     + NoRealignOption
 
@@ -190,39 +193,6 @@ void print_properties (const Header& header, const std::string& key, const size_
   }
 }
 
-template <class JSON>
-void keyval2json (const Header& header, JSON& json)
-{
-  for (const auto& kv : header.keyval()) {
-    // Text entries that in fact contain matrix / vector data will be
-    //   converted to numerical matrices / vectors and written as such
-    try {
-      const auto M = parse_matrix (kv.second);
-      if (M.rows() == 1 && M.cols() == 1)
-        throw Exception ("Single scalar value rather than a matrix");
-      for (ssize_t row = 0; row != M.rows(); ++row) {
-        vector<default_type> data (M.cols());
-        for (ssize_t i = 0; i != M.cols(); ++i)
-          data[i] = M (row, i);
-        if (json.find (kv.first) == json.end())
-          json[kv.first] = { data };
-        else
-          json[kv.first].push_back (data);
-      }
-    } catch (...) {
-      if (json.find (kv.first) == json.end()) {
-        json[kv.first] = kv.second;
-      } else if (json[kv.first] != kv.second) {
-        // If the value for this key differs between images, turn the JSON entry into an array
-        if (json[kv.first].is_array())
-          json[kv.first].push_back (kv.second);
-        else
-          json[kv.first] = { json[kv.first], kv.second };
-      }
-    }
-  }
-}
-
 void header2json (const Header& header, nlohmann::json& json)
 {
   // Capture _all_ header fields, not just the optional key-value pairs
@@ -248,7 +218,7 @@ void header2json (const Header& header, nlohmann::json& json)
                         { T(2,0), T(2,1), T(2,2), T(2,3) },
                         {    0.0,    0.0,    0.0,    1.0 } };
   // Load key-value entries into a nested keyval.* member
-  keyval2json (header, json["keyval"]);
+  File::JSON::write (header, json["keyval"], false);
 }
 
 
@@ -271,9 +241,13 @@ void run ()
   std::unique_ptr<nlohmann::json> json_keyval (get_options ("json_keyval").size() ? new nlohmann::json : nullptr);
   std::unique_ptr<nlohmann::json> json_all    (get_options ("json_all").size() ? new nlohmann::json : nullptr);
 
+  if (json_all && argument.size() > 1)
+    throw Exception ("Cannot use -json_all option with multiple input images");
+
   if (get_options ("norealign").size())
     Header::do_not_realign_transform = true;
 
+  const bool name          = get_options("name")          .size();
   const bool format        = get_options("format")        .size();
   const bool ndim          = get_options("ndim")          .size();
   const bool size          = get_options("size")          .size();
@@ -302,6 +276,7 @@ void run ()
     else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes)
       DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
+    if (name)       std::cout << header.name() << "\n";
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
     if (size)       print_dimensions (header);
@@ -322,7 +297,7 @@ void run ()
     PhaseEncoding::export_commandline (header);
 
     if (json_keyval)
-      keyval2json (header, *json_keyval);
+      File::JSON::write (header, *json_keyval, false);
 
     if (json_all)
       header2json (header, *json_all);
