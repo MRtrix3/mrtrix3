@@ -146,13 +146,9 @@ namespace MR
         bool attempt_scalar (const std::pair<std::string, std::string>& kv, nlohmann::json& json)
         {
           try {
-            std::stringstream stream (kv.second);
-            T temp;
-            stream >> temp;
-            if (stream && stream.eof()) {
-              json[kv.first] = temp;
-              return true;
-            }
+            const T temp = to<T> (kv.second);
+            json[kv.first] = temp;
+            return true;
           } catch (...) { }
           return false;
         }
@@ -219,7 +215,6 @@ namespace MR
         };
 
         for (const auto& kv : keyval) {
-
           if (attempt_scalar<int> (kv, json)) continue;
           if (attempt_scalar<default_type> (kv, json)) continue;
           if (attempt_scalar<bool> (kv, json)) continue;
