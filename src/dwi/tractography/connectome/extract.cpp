@@ -87,13 +87,14 @@ WriterExemplars::WriterExemplars (const Tractography::Properties& properties, co
   else
     length = std::round (to<float>(max_dist_it->second) / step_size) + 1;
 
+  size_t index = 0;
   if (exclusive) {
     for (size_t i = 0; i != nodes.size(); ++i) {
       const node_t one = nodes[i];
       for (size_t j = i; j != nodes.size(); ++j) {
         const node_t two = nodes[j];
         selectors.push_back (Selector (one, two));
-        exemplars.push_back (Exemplar (length, std::make_pair (one, two), std::make_pair (COMs[one], COMs[two])));
+        exemplars.push_back (Exemplar (index++, length, std::make_pair (one, two), std::make_pair (COMs[one], COMs[two])));
       }
     }
   } else {
@@ -103,7 +104,7 @@ WriterExemplars::WriterExemplars (const Tractography::Properties& properties, co
       for (node_t two = one; two != COMs.size(); ++two) {
         if (std::find (nodes.begin(), nodes.end(), one) != nodes.end() || std::find (nodes.begin(), nodes.end(), two) != nodes.end()) {
           selectors.push_back (Selector (one, two));
-          exemplars.push_back (Exemplar (length, std::make_pair (one, two), std::make_pair (COMs[one], COMs[two])));
+          exemplars.push_back (Exemplar (index++, length, std::make_pair (one, two), std::make_pair (COMs[one], COMs[two])));
         }
       }
     }
