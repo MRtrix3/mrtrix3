@@ -85,6 +85,7 @@ namespace MR
 
 
     std::string NAME;
+    std::string command_history_string;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
     //ENVVAR name: MRTRIX_QUIET
@@ -1234,6 +1235,31 @@ namespace MR
         E.push_back ("Running ./build again may correct error");
         throw E;
       }
+
+      auto argv_quoted = [] (const std::string& s) -> std::string {
+        for (size_t i = 0; i != s.size(); ++i) {
+          if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
+            std::string escaped_string ("\'");
+            for (auto c : s) {
+              switch (c) {
+                case '\'': escaped_string.append ("\\\'"); break;
+                case '\\': escaped_string.append ("\\\\"); break;
+                default: escaped_string.push_back (c); break;
+              }
+            }
+            escaped_string.push_back ('\'');
+            return escaped_string;
+          }
+        }
+        return s;
+      };
+      command_history_string = argv[0];
+      for (int n = 1; n < argc; ++n)
+        command_history_string += std::string(" ") + argv_quoted (argv[n]);
+      command_history_string += std::string ("  (version=") + mrtrix_version;
+      if (project_version)
+        command_history_string += std::string (", project=") + project_version;
+      command_history_string += ")";
 
       std::locale::global (std::locale::classic());
       std::setlocale (LC_ALL, "C");

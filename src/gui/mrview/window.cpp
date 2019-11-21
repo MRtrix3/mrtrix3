@@ -241,7 +241,7 @@ namespace MR
         show_FPS (false),
         current_option (0) {
           main = this;
-          GUI::App::set_main_window (this);
+          GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
 
           setDockOptions (AllowTabbedDocks | VerticalTabs);
@@ -837,6 +837,10 @@ namespace MR
 
       void Window::add_images (vector<std::unique_ptr<MR::Header>>& list)
       {
+        if (list.empty())
+          return;
+
+        QList<QAction*> new_actions;
         for (size_t i = 0; i < list.size(); ++i) {
           const std::string name = list[i]->name(); // Gets move-constructed out
           QAction* action = new Image (std::move (*list[i]));
@@ -845,12 +849,32 @@ namespace MR
           action->setCheckable (true);
           action->setToolTip (name.c_str());
           action->setStatusTip (name.c_str());
-          image_group->addAction (action);
-          image_menu->addAction (action);
           connect (action, SIGNAL(scalingChanged()), this, SLOT(on_scaling_changed()));
-
-          if (!i) image_select_slot (action);
+          new_actions.push_back (action);
         }
+
+        QList<QAction*> previous_actions = image_group->actions();
+        previous_actions.push_back (nullptr);
+        QAction* selected = image_group->checkedAction();
+        for (auto* action : image_group->actions()) {
+          image_group->removeAction (action);
+          image_menu->removeAction (action);
+        }
+
+        for (auto* action : previous_actions) {
+          if (action) {
+            image_group->addAction (action);
+            image_menu->addAction (action);
+          }
+          if (action == selected) {
+            for (auto* added : new_actions) {
+              image_group->addAction (added);
+              image_menu->addAction (added);
+            }
+          }
+        }
+
+        image_select_slot (new_actions[0]);
         set_image_menu();
       }
 
@@ -1140,10 +1164,13 @@ namespace MR
       void Window::set_image_volume (size_t axis, ssize_t index)
       {
         assert (image());
-        image()->image.index (axis) = index;
-        set_image_navigation_menu();
-        emit volumeChanged (index);
-        updateGL();
+        assert (axis < image()->image.ndim());
+        if (image()->image.index (axis) != index) {
+          image()->image.index (axis) = index;
+          set_image_navigation_menu();
+          emit volumeChanged ();
+          updateGL();
+        }
       }
 
 
@@ -1206,7 +1233,6 @@ namespace MR
       {
         size_t vol = image()->image.index(3)+1;
         set_image_volume (3, vol);
-        emit volumeChanged(vol);
       }
 
 
@@ -1216,7 +1242,6 @@ namespace MR
       {
         size_t vol = image()->image.index(3)-1;
         set_image_volume (3, vol);
-        emit volumeChanged(vol);
       }
 
 
@@ -1227,10 +1252,8 @@ namespace MR
         bool ok;
         size_t vol = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(3), 0, maxvol, 1, &ok);
-        if (ok) {
+        if (ok)
           set_image_volume (3, vol);
-          emit volumeChanged(vol);
-        }
       }
 
       void Window::image_goto_volume_group_slot ()
@@ -1240,10 +1263,8 @@ namespace MR
         bool ok;
         size_t grp = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(4), 0, maxvolgroup, 1, &ok);
-        if (ok) {
+        if (ok)
           set_image_volume (4, grp);
-          emit volumeGroupChanged(grp);
-        }
       }
 
 
@@ -1251,7 +1272,6 @@ namespace MR
       {
         size_t vol = image()->image.index(4)+1;
         set_image_volume (4, vol);
-        emit volumeGroupChanged(vol);
       }
 
 
@@ -1261,7 +1281,6 @@ namespace MR
       {
         size_t vol = image()->image.index(4)-1;
         set_image_volume (4, vol);
-        emit volumeGroupChanged(vol);
       }
 
 
@@ -1470,7 +1489,7 @@ namespace MR
 
       void Window::paintGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
@@ -1479,9 +1498,9 @@ namespace MR
 
         GL_CHECK_ERROR;
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         mode->paintGL();
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
 
         if (show_FPS) {
@@ -1522,13 +1541,13 @@ namespace MR
         glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 
       void Window::initGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL::init ();
 
         font.initGL();
@@ -1541,7 +1560,7 @@ namespace MR
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 

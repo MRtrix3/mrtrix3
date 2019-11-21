@@ -17,6 +17,7 @@
 #include <fstream>
 
 #include "command.h"
+#include "types.h"
 
 #include <Eigen/Dense>
 #include "math/math.h"
@@ -42,42 +43,77 @@ void usage ()
 }
 
 
+
+
+
+
 void run ()
 {
 
-  const Eigen::MatrixXf in1 = load_matrix<float> (argument[0]);
-  const Eigen::MatrixXf in2 = load_matrix<float> (argument[1]);
+  const default_type tolerance_frac = get_option_value ("frac", 0.0);
+  const default_type tolerance_abs = get_option_value ("abs", 0.0);
+
+  Eigen::MatrixXd in1, in2;
+
+  try {
+    in1 = load_matrix<double> (argument[0]);
+    in2 = load_matrix<double> (argument[1]);
+  } catch (Exception&) {
+
+    const auto in1c = load_matrix<cdouble> (argument[0]);
+    const auto in2c = load_matrix<cdouble> (argument[1]);
+
+    if (in1c.rows() != in2c.rows() || in1c.cols() != in2c.cols())
+      throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + "\" do not have matching sizes"
+                       " (" + str(in1.rows()) + "x" + str(in1c.cols()) + " vs " + str(in2c.rows()) + "x" + str(in2c.cols()) + ")");
+
+    if (bool(tolerance_frac)) {
+      for (size_t col = 0; col != in1c.cols(); ++col) {
+        for (size_t row = 0; row != in1c.rows(); ++row) {
+          if ((abs (in1c(row, col).real() - in2c(row, col).real()) / (0.5 * (in1c(row, col).real() + in2c(row, col).real())) > tolerance_frac)
+              || (abs (in1c(row, col).imag() - in2c(row, col).imag()) / (0.5 * (in1c(row, col).imag() + in2c(row, col).imag())) > tolerance_frac))
+            throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + " do not match within fractional precision of " + str(tolerance_frac)
+                             + " ((" + str(row) + ", " + str(col) + "): " + str(in1c(row, col)) + " vs " + str(in2c(row, col)) + ")");
+        }
+      }
+    }
+
+    if (bool(tolerance_abs) || !bool(tolerance_frac)) {
+      for (size_t col = 0; col != in1c.cols(); ++col) {
+        for (size_t row = 0; row != in1c.rows(); ++row) {
+          if ((abs (in1c(row, col).real() - in2c(row, col).real()) > tolerance_abs)
+              || (abs (in1c(row, col).imag() - in2c(row, col).imag()) > tolerance_abs))
+            throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + " do not match within absolute precision of " + str(tolerance_abs)
+                             + " ((" + str(row) + ", " + str(col) + "): " + str(in1c(row, col)) + " vs " + str(in2c(row, col)) + ")");
+        }
+      }
+    }
+
+    return;
+  }
 
   if (in1.rows() != in2.rows() || in1.cols() != in2.cols())
     throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + "\" do not have matching sizes"
                      " (" + str(in1.rows()) + "x" + str(in1.cols()) + " vs " + str(in2.rows()) + "x" + str(in2.cols()) + ")");
 
-  const size_t numel = in1.size();
-
-  auto opt = get_options ("frac");
-  if (opt.size()) {
-
-    const double tol = opt[0][0];
-
-    for (size_t i = 0; i != numel; ++i) {
-      if (abs ((*(in1.data()+i) - *(in2.data()+i)) / (0.5 * (*(in1.data()+i) + *(in2.data()+i)))) > tol)
-        throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + " do not match within fractional precision of " + str(tol)
-                         + " (" + str(*(in1.data()+i)) + " vs " + str(*(in2.data()+i)) + ")");
+  if (bool(tolerance_frac)) {
+    for (size_t col = 0; col != in1.cols(); ++col) {
+      for (size_t row = 0; row != in1.rows(); ++row) {
+        if (abs (in1(row, col) - in2(row, col)) / (0.5 * (in1(row, col) + in2(row, col))) > tolerance_frac)
+          throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + " do not match within fractional precision of " + str(tolerance_abs)
+                           + " ((" + str(row) + ", " + str(col) + "): " + str(in1(row, col)) + " vs " + str(in2(row, col)) + ")");
+      }
     }
+  }
 
-  } else {
-
-    double tol = 0.0;
-    opt = get_options ("abs");
-    if (opt.size())
-      tol = opt[0][0];
-
-    for (size_t i = 0; i != numel; ++i) {
-      if (abs (*(in1.data()+i) - *(in2.data()+i)) > tol)
-        throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + " do not match within absolute precision of " + str(tol)
-                         + " (" + str(*(in1.data()+i)) + " vs " + str(*(in2.data()+i)) + ")");
+  if (bool(tolerance_abs) || !bool(tolerance_frac)) {
+    for (size_t col = 0; col != in1.cols(); ++col) {
+      for (size_t row = 0; row != in1.rows(); ++row) {
+        if (abs (in1(row, col) - in2(row, col)) > tolerance_abs)
+          throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + " do not match within absolute precision of " + str(tolerance_abs)
+                           + " ((" + str(row) + ", " + str(col) + "): " + str(in1(row, col)) + " vs " + str(in2(row, col)) + ")");
+      }
     }
-
   }
 
   CONSOLE ("data checked OK");

@@ -23,7 +23,6 @@ using namespace App;
 void usage ()
 {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
-
   SYNOPSIS = "Compare two images for differences in the basic contents of their headers";
 
   ARGUMENTS

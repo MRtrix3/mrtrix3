@@ -6,7 +6,7 @@ dirflip
 Synopsis
 --------
 
-Optimise the polarity of the directions in a scheme with respect to a unipolar electrostatic repulsion model, by inversion of individual directions
+Invert the polarity of individual directions so as to optimise a unipolar electrostatic repulsion model
 
 Usage
 --------
@@ -26,7 +26,7 @@ The orientations themselves are not affected, only their polarity; this is neces
 Options
 -------
 
--  **-permutations num** number of permutations to try.
+-  **-permutations num** number of permutations to try (default: 100000000)
 
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
 

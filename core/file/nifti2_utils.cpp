@@ -264,8 +264,8 @@ namespace MR
         // magic number:
         Raw::store<int32_t> (header_size, &NH.sizeof_hdr, is_BE);
 
-        strncpy ( (char*) &NH.magic, single_file ? "n+2\0" : "ni2\0", 4);
-        strncpy ( (char*) &NH.magic+4, signature_extra, 4);
+        memcpy (&NH.magic, single_file ? "n+2\0" : "ni2\0", 4);
+        memcpy (&NH.magic+4, signature_extra, 4);
 
         // data type:
         int16_t dt = 0;

@@ -434,7 +434,7 @@ namespace MR
                 ValueType c = c0 * cp - s0 * sp;
                 ValueType s = s0 * cp + c0 * sp;
                 for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
-                  v += get (f,l,m) * (c * val[index (l,m)] + s * val[index (l,-m)]);
+                  v += get (f,l,m) * Math::sqrt2 * (c * val[index (l,m)] + s * val[index (l,-m)]);
                 c0 = c;
                 s0 = s;
               }

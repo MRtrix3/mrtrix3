@@ -171,6 +171,9 @@ void run ()
     std::string line;
     ProgressBar progress ("reading streamline assignments file");
     while (std::getline (stream, line)) {
+      line = strip (line.substr (0, line.find_first_of ('#')));
+      if (line.empty())
+        continue;
       std::stringstream line_stream (line);
       vector<node_t> nodes;
       while (1) {

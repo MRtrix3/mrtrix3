@@ -1,22 +1,43 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # Collection of convenience functions for manipulating filesystem paths
 
 
 
+import ctypes, errno, inspect, os, random, string, subprocess, time
+from distutils.spawn import find_executable
 # Function can be used in isolation if potentially needing to place quotation marks around a
 #   filesystem path that is to be included as part of a command string
 try:
   from shlex import quote
 except ImportError:
   from pipes import quote
+from mrtrix3 import CONFIG
 
 
 
 # List the content of a directory
-def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: disable=unused-variable
-  import ctypes, os
-  from mrtrix3 import is_windows
+def all_in_dir(directory, **kwargs): #pylint: disable=unused-variable
+  from mrtrix3 import utils #pylint: disable=import-outside-toplevel
+  dir_path = kwargs.pop('dir_path', True)
+  ignore_hidden_files = kwargs.pop('ignore_hidden_files', True)
+  if kwargs:
+    raise TypeError('Unsupported keyword arguments passed to path.all_in_dir(): ' + str(kwargs))
   def is_hidden(directory, filename):
-    if is_windows():
+    if utils.is_windows():
       try:
         attrs = ctypes.windll.kernel32.GetFileAttributesW(u"%s" % str(os.path.join(directory, filename)))
         assert attrs != -1
@@ -41,8 +62,7 @@ def all_in_dir(directory, dir_path=True, ignore_hidden_files=True): #pylint: dis
 #   If the filesystem path provided by the script is to be interpreted in isolation, rather than as one part
 #     of a command string, then parameter 'escape' should be set to False in order to not add quotation marks
 def from_user(filename, escape=True): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   fullpath = os.path.abspath(os.path.join(app.WORKING_DIR, filename))
   if escape:
     fullpath = quote(fullpath)
@@ -53,8 +73,7 @@ def from_user(filename, escape=True): #pylint: disable=unused-variable
 
 # Make a directory if it doesn't exist; don't do anything if it does already exist
 def make_dir(path): #pylint: disable=unused-variable
-  import errno, os
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   try:
     os.makedirs(path)
     app.debug('Created directory ' + path)
@@ -69,8 +88,7 @@ def make_dir(path): #pylint: disable=unused-variable
 # If the filesystem path separator is provided as the 'suffix' input, then the function will generate a new
 #   directory rather than a file.
 def make_temporary(suffix): #pylint: disable=unused-variable
-  import errno, os
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   is_directory = suffix in '\\/' and len(suffix) == 1
   while True:
     temp_path = name_temporary(suffix)
@@ -91,8 +109,7 @@ def make_temporary(suffix): #pylint: disable=unused-variable
 # Note: Doesn't actually create anything; just gives a unique name that won't over-write anything.
 # If you want to create a temporary file / directory, use the make_temporary() function above.
 def name_temporary(suffix): #pylint: disable=unused-variable
-  import os.path, random, string
-  from mrtrix3 import app, CONFIG
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   dir_path = CONFIG['TmpFileDir'] if 'TmpFileDir' in CONFIG else (app.SCRATCH_DIR if app.SCRATCH_DIR else os.getcwd())
   prefix = CONFIG['TmpFilePrefix'] if 'TmpFilePrefix' in CONFIG else 'mrtrix-tmp-'
   full_path = dir_path
@@ -110,8 +127,7 @@ def name_temporary(suffix): #pylint: disable=unused-variable
 # This function appears here rather than in the algorithm module as some scripts may
 #   need to access the shared data directory but not actually be using the algorithm module
 def script_subdir_name(): #pylint: disable=unused-variable
-  import inspect, os
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   frameinfo = inspect.stack()[-1]
   try:
     frame = frameinfo.frame
@@ -132,8 +148,7 @@ def script_subdir_name(): #pylint: disable=unused-variable
 # For data that is stored in a named sub-directory specifically for a particular script, this function will
 #   need to be used in conjunction with scriptSubDirName()
 def shared_data_path(): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   result = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))
   app.debug(result)
   return result
@@ -145,8 +160,7 @@ def shared_data_path(): #pylint: disable=unused-variable
 #   as long as parameter 'escape' is true (if the path yielded by this function is to be interpreted in
 #   isolation rather than as one part of a command string, parameter 'escape' should be set to False)
 def to_scratch(filename, escape=True): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   fullpath = os.path.abspath(os.path.join(app.SCRATCH_DIR, filename))
   if escape:
     fullpath = quote(fullpath)
@@ -173,15 +187,12 @@ def to_scratch(filename, escape=True): #pylint: disable=unused-variable
 #   increases if the file still doesn't exist, until the program is only checking
 #   for the file once a minute.
 def wait_for(paths): #pylint: disable=unused-variable
-  import os, time
-  from mrtrix3 import app, is_windows
+  from mrtrix3 import app, utils #pylint: disable=import-outside-toplevel
 
   def in_use(path):
-    import subprocess
-    from distutils.spawn import find_executable
     if not os.path.isfile(path):
       return None
-    if is_windows():
+    if utils.is_windows():
       if not os.access(path, os.W_OK):
         return None
       try:
