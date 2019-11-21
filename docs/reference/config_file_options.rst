@@ -414,6 +414,12 @@ List of MRtrix3 configuration file options
      The position of all visible tool colourbars within the main window in MRView.
      Valid values are: bottomleft, bottomright, topleft, topright.
 
+.. option:: MRViewWrapVolumes
+
+    *default: false*
+
+     Wrap volumes around when cycling through
+
 .. option:: MSAA
 
     *default: 0 (false)*
