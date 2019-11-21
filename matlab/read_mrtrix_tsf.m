@@ -1,12 +1,27 @@
+% Copyright (c) 2008-2019 the MRtrix3 contributors.
+%
+% This Source Code Form is subject to the terms of the Mozilla Public
+% License, v. 2.0. If a copy of the MPL was not distributed with this
+% file, You can obtain one at http://mozilla.org/MPL/2.0/.
+%
+% Covered Software is provided under this License on an "as is"
+% basis, without warranty of any kind, either expressed, implied, or
+% statutory, including, without limitation, warranties that the
+% Covered Software is free of defects, merchantable, fit for a
+% particular purpose or non-infringing.
+% See the Mozilla Public License v. 2.0 for more details.
+%
+% For more details, see http://www.mrtrix.org/.
+
 function tsf = read_mrtrix_tsf (filename)
 
-% function: tracks = read_mrtrix_tsf (filename)
+% function: tsf = read_mrtrix_tsf (filename)
 %
-% returns a structure containing the header information and data for the MRtrix 
+% returns a structure containing the header information and data for the MRtrix
 % format tsf 'filename' (i.e. files with the extension '.tsf').
 
 f = fopen (filename, 'r');
-if (f<1) 
+if (f<1)
   disp (['error opening ' filename ]);
   return
 end
@@ -34,7 +49,7 @@ while 1
       file = value;
     elseif strcmp(key, 'datatype')
       tsf.datatype = value;
-    else 
+    else
       tsf = setfield (tsf, key, value);
     end
   end
@@ -72,7 +87,7 @@ else
   return;
 end
 
-if (f<1) 
+if (f<1)
   disp (['error opening ' filename ]);
   return
 end
@@ -89,5 +104,5 @@ for n = 1:(prod(size(k)))
   tsf.data{end+1} = data(pk:(k(n)-1),:);
   pk = k(n)+1;
 end
-  
+
 

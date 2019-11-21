@@ -33,6 +33,7 @@ and optionally:
 - `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
 - `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
   certain applications, currently only ``mrdegibbs``)
+- `libpng <http://www.libpng.org>`__ (for PNG support)  
 
 .. NOTE::
     All of these dependencies are installed below by the MSYS2 package manager.
@@ -77,7 +78,7 @@ Install *MRtrix3* dependencies
 
 1. From the **'MinGW-w64 Win64 Shell'** run::
 
-        pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff
+        pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-libpng
     
    Sometimes ``pacman`` may fail to find a particular package from any of
    the available mirrors. If this occurs, you can download the relevant
