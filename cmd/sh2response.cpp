@@ -47,6 +47,9 @@ void usage ()
 
   SYNOPSIS = "Generate an appropriate response function from the image data for spherical deconvolution";
 
+  DESCRIPTION
+  + Math::SH::encoding_description;
+
   ARGUMENTS
     + Argument ("SH", "the spherical harmonic decomposition of the diffusion-weighted images").type_image_in()
     + Argument ("mask", "the mask containing the voxels from which to estimate the response function").type_image_in()
