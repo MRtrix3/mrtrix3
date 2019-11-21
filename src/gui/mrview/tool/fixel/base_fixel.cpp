@@ -178,7 +178,7 @@ namespace MR
           else
             source += "    gl_Position = end;\n";
 
-            source += "    EmitVertex();\n";
+          source += "    EmitVertex();\n";
 
           if (fixel.fixel_tool.is_bidirectional())
             source +=
