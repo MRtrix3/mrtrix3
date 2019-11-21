@@ -22,7 +22,7 @@ if not os.path.isdir(lib_folder):
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
-import math, itertools, shutil
+import math, itertools, shutil, six
 from mrtrix3 import app, file, fsl, image, path, phaseEncoding, run #pylint: disable=redefined-builtin
 
 
@@ -232,11 +232,7 @@ if eddy_mporder:
     # Fudges necessary to maniupulate nature of slice timing data in cases where
     #   bad JSON formatting has led to the data not being simply a list of floats
     #   (whether from MRtrix3 DICOM conversion or from anything else)
-    try:
-      basestring
-    except NameError:
-      basestring = str
-    if isinstance(slice_timing, basestring):
+    if isinstance(slice_timing, six.string_types):
       slice_timing = slice_timing.split()
     if not isinstance(slice_timing, list):
       app.error('Cannot use slice timing information in image header for slice-to-volume correction: Data is not a list')
