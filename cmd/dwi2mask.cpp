@@ -81,7 +81,7 @@ void run () {
   PhaseEncoding::clear_scheme (H_out);
   auto output = Image<bool>::create (argument[1], H_out);
 
-  unsigned int scale = get_option_value ("clean_scale", DEFAULT_CLEAN_SCALE);
+  unsigned int scale = get_option_value<unsigned int> ("clean_scale", DEFAULT_CLEAN_SCALE);
 
   if (scale > 0) {
     try {
@@ -92,7 +92,7 @@ void run () {
         if (temp_mask.value()) {
           bool all_zero = true;
           for (auto vl = Loop (3) (input); vl; ++vl) {
-            if (std::isfinite (input.value()) && input.value()) {
+            if (std::isfinite (float(input.value())) && input.value()) {
               all_zero = false;
               break;
             }
