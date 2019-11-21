@@ -90,11 +90,11 @@ void usage ()
     + Argument ("choice").type_choice (transformation_choices)
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2. "
-    "Note that -transformed needs to be repeated for each contrast if multi-constrast registration is used.").allow_multiple()
+    "Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.").allow_multiple()
     + Argument ("image").type_image_out ()
 
   + Option ("transformed_midway", "image1 and image2 after registration transformed and regridded to the midway space. "
-    "Note that -transformed_midway needs to be repeated for each contrast if multi-constrast registration is used.").allow_multiple()
+    "Note that -transformed_midway needs to be repeated for each contrast if multi-contrast registration is used.").allow_multiple()
     + Argument ("image1_transformed").type_image_out ()
     + Argument ("image2_transformed").type_image_out ()
 
@@ -130,7 +130,7 @@ void run () {
   vector<Header> input1, input2;
   const size_t n_images = 1 + (argument.size() - 2 ) / 3;
   { // parse arguments and load input headers
-    if (MR::abs(float (n_images) - (1.0 + float (argument.size() - 2 ) / 3.0)) > 1.e-6) {
+    if ((n_images - 1) * 3 + 2 != argument.size()) {
       std::string err;
       for (const auto & a : argument)
         err += " " + str(a);
@@ -203,7 +203,7 @@ void run () {
   // reorientation_forbidden required for output of transformed images because do_reorientation might change
   const bool reorientation_forbidden (get_options ("noreorientation").size());
   // do_reorientation == false --> registration without reorientation.
-  // will be do_reorientation set to false if registration of all input SH images has lmax==0
+  // will be set to false if registration of all input SH images has lmax==0
   bool do_reorientation = !reorientation_forbidden;
 
   Eigen::MatrixXd directions_cartesian;
@@ -223,7 +223,7 @@ void run () {
       WARN ("Multi contrast image has different header transformation from first image. Ignoring transformation of " + str(input2[i].name()));
   }
 
-  // multi contrast settings
+  // multi-contrast settings
   vector<Registration::MultiContrastSetting> mc_params (n_images);
   for (auto& mc : mc_params) {
     mc.do_reorientation = do_reorientation;
@@ -248,8 +248,7 @@ void run () {
       mc_params[i].image_lmax = 0;
       CONSOLE ("3D input pair "+input1[i].name()+", "+input2[i].name());
     } else { // more than one volume
-      value_type val = (std::sqrt (float (1 + 8 * nvols1)) - 3.0) / 4.0;
-      if (!(val - (int)val) && do_reorientation && nvols1 > 1) {
+      if (do_reorientation && nvols1 > 1 && SH::NforL(SH::LforN(nvols1)) == nvols1) {
         CONSOLE ("SH image input pair "+input1[i].name()+", "+input2[i].name());
         mc_params[i].do_reorientation = true;
         mc_params[i].image_lmax = Math::SH::LforN (nvols1);
@@ -1054,8 +1053,7 @@ void run () {
         Image<value_type> im1_transformed = Image<value_type>::create (im1_transformed_paths[idx], transformed_header);
 
         const size_t nvols = im1_image.ndim() == 3 ? 1 : im1_image.size(3);
-        const value_type val = (std::sqrt (float (1 + 8 * nvols)) - 3.0) / 4.0;
-        const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && !(val - (int)val);
+        const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && SH::NforL(SH::LforN(nvols)) == nvols;
 
         if (do_nonlinear) {
           Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, out_of_bounds_value);
@@ -1115,8 +1113,7 @@ void run () {
           midway_header.size(3) = im1_image.size(3);
 
         const size_t nvols = im1_image.ndim() == 3 ? 1 : im1_image.size(3);
-        const value_type val = (std::sqrt (float (1 + 8 * nvols)) - 3.0) / 4.0;
-        const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && !(val - (int)val);
+        const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && SH::NforL(SH::LforN(nvols)) == nvols;
 
         if (do_nonlinear) {
           auto im1_midway = Image<default_type>::create (input1_midway_transformed_paths[idx], midway_header);

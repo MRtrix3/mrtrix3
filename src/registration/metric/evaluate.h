@@ -100,7 +100,6 @@ namespace MR
                 im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
 
                 {
-                //    LogLevelLatch log_level (0); TODO uncomment
                   if (params.mc_settings.size()) {
                     DEBUG ("Tissue contrast specific FOD reorientation");
                     Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions, false, params.mc_settings);
@@ -182,7 +181,6 @@ namespace MR
                 im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch (params.im2_image));
 
                 {
-                  // LogLevelLatch log_level (0); // TODO uncomment
                   if (params.mc_settings.size()) {
                     DEBUG ("Tissue contrast specific FOD reorientation");
                     Registration::Transform::reorient (params.im1_image, *im1_image_reoriented, params.transformation.get_transform_half(), directions, false, params.mc_settings);

@@ -32,9 +32,9 @@ Options
 
 -  **-type choice** the registration type. Valid choices are: rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)
 
--  **-transformed image**  *(multiple uses permitted)* image1 after registration transformed and regridded to the space of image2. Note that -transformed needs to be repeated for each contrast if multi-constrast registration is used.
+-  **-transformed image**  *(multiple uses permitted)* image1 after registration transformed and regridded to the space of image2. Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.
 
--  **-transformed_midway image1_transformed image2_transformed**  *(multiple uses permitted)* image1 and image2 after registration transformed and regridded to the midway space. Note that -transformed_midway needs to be repeated for each contrast if multi-constrast registration is used.
+-  **-transformed_midway image1_transformed image2_transformed**  *(multiple uses permitted)* image1 and image2 after registration transformed and regridded to the midway space. Note that -transformed_midway needs to be repeated for each contrast if multi-contrast registration is used.
 
 -  **-mask1 filename** a mask to define the region of image1 to use for optimisation.
 
@@ -151,16 +151,14 @@ Non-linear registration options
 
 -  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
--  **-cc radius** use cc metric with radius
-
--  **-diagnostics_image path** use cc metric with radius
+-  **-diagnostics_image path** write intermediate images for diagnostics purposes
 
 FOD registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-directions file** the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)
+-  **-directions file** the directions used for FOD reorientation using apodised point spread functions (Default: 60 directions)
 
--  **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
+-  **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
 
 Multi-contrast options
 ^^^^^^^^^^^^^^^^^^^^^^

@@ -300,29 +300,6 @@ namespace MR
           if (contrast_settings.size()>1)
             WARN ("rotation search does not support multiple contrasts. using only first volume of first contrasts");
 
-          // Image<default_type> im1_0, im2_0;
-          // struct CropNWeight { MEMALIGN (CropNWeight)
-          //   CropNWeight (const vector<MultiContrastSetting>& contrast_settings)  {
-          //     for (auto & mc : contrast_settings) {
-          //       ivols.push_back (mc.start);
-          //       w.push_back (mc.weight);
-          //     }
-          //   }
-
-          //   void operator() (Image<default_type>& output, Image<default_type>& input) {
-          //     for (size_t ovol = 0; ovol < w.size(); ++ovol) {
-          //       output.index(3) = ovol;
-          //       input.index(3) = ivols[ovol];
-          //       output.value() = w[ovol] * input.value();
-          //     }
-          //   }
-          //   vector<default_type> w;
-          //   vector<size_t> ivols;
-          // };
-
-          // ThreadedLoop (im1, 0 , 3).run (CropNWeight(contrast_settings), im1, im1_0);
-          // ThreadedLoop (im2, 0 , 3).run (CropNWeight(contrast_settings), im2, im2_0);
-
           RotationSearch::ExhaustiveRotationSearch<decltype(metric)> (
             im1, im2,
             init.init_translation.unmasked1 ? bogus_mask : mask1,
@@ -344,7 +321,7 @@ namespace MR
           Image<default_type> bogus_mask;
           Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
 
-          // TODO: add option to use mask instead of image intensities
+          // ENH: add option to use mask instead of image intensities
 
           get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_of_mass, contrast_settings);
           get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_of_mass, contrast_settings);
@@ -477,16 +454,6 @@ namespace MR
           MAT(im2_evec);
           VEC(im2_eval);
 #endif
-
-          // TODO decide whether rotation matrix is sensible
-          // Eigen::EigenSolver<Eigen::Matrix<default_type, 3, 3>> es((Eigen::Matrix<default_type, 3, 3>) A);
-          // MAT(es.eigenvalues().real().transpose());
-          // const Eigen::Matrix<default_type, 3, 3> evec (es.eigenvectors().real().cast<default_type>());
-          // MAT(evec);
-          // Eigen::Quaternion<default_type, Eigen::AutoAlign> quaternion (evec);
-          // std::cerr << "\nw:" << quaternion.w() << " x:" << quaternion.x() << " y:" << quaternion.y() << " z:" << quaternion.z() << "\n";
-          // Eigen::Quaternion<default_type, Eigen::AutoAlign> quaternion ((Eigen::Matrix<default_type, 3, 3>) A);
-          // std::cerr << "\nw:" << quaternion.w() << " x:" << quaternion.x() << " y:" << quaternion.y() << " z:" << quaternion.z() << "\n";
 
           // get rotation matrix that aligns all eigenvectors
           auto im1_evec_transpose = im1_evec.transpose().eval();
