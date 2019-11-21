@@ -26,7 +26,7 @@ namespace MR {
 
         bool Downsampler::operator() (Tracking::GeneratedTrack& tck) const
         {
-          if (ratio <= 1 || tck.empty())
+          if (ratio <= 1 || tck.size() < 2)
             return false;
           size_t index_old = ratio;
           if (tck.get_seed_index()) {
