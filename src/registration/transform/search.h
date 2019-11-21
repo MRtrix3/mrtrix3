@@ -165,22 +165,6 @@ namespace MR
                                   midway_image_header.spacing(2) * translation_extent * (midway_image_header.size(2) - 0.5);
               }
 
-              // first iteration
-              // {
-              //
-              //   // parameters.make_diagnostics_image ("/tmp/debugme"+str(iteration)+".mif", true); // REMOVEME
-              //   Metric::ThreadKernel<MetricType, ParamType> kernel (metric, parameters, cost, gradient, &cnt);
-              //   ThreadedLoop (parameters.midway_image, 0, 3).run (kernel);
-              //   if (cnt == 0)
-              //     throw Exception ("zero voxel overlap at initialisation. input matrix wrong?");
-              //   overlap_it[0] = cnt;
-              //   cost_it[0] = cost(0) / static_cast<default_type>(cnt);
-              //   T = parameters.transformation.get_transform();
-              //   trafo_it.push_back (T);
-              //   if (debug)
-              //     std::cout << str(iteration) + " " + str(cost) + " " + str(cnt) << " " << T.matrix().row(0) << " " << T.matrix().row(1) << " " << T.matrix().row(2) << std::endl;
-              // }
-
               while ( ++iteration < iterations ) {
                 ++progress;
                 if (iteration > 0) {
@@ -292,6 +276,7 @@ namespace MR
             // gen_uniform_rotation_axes generates roughly uniformly distributed points on sphere
             // starting on z-axis up to -z-axis (max_cone_angle_deg=180). points are stored as matrix
             // of azimuth and elevation
+            // ENH: less brute-force approach (for instance: fixed set of electrostatic repulsion directions, rotate all to gap centre)
             FORCE_INLINE void gen_uniform_rotation_axes ( const size_t& n_dir, const default_type& max_cone_angle_deg ) {
               assert (n_dir > 1);
               assert (max_cone_angle_deg > 0.0);
@@ -323,10 +308,6 @@ namespace MR
             }
 
             FORCE_INLINE void gen_local_quaternion () {
-              // Eigen::Vector3d normal ( -std::cos (az_el(idx,1)), -std::sin (az_el(idx,0)) * std::cos (az_el(idx,0)), 0.0);
-              // Eigen::AngleAxis<default_type> aa (az_el(idx,1), normal);
-              // Eigen::Vector3d normal ( xyz.row(idx) );
-              // Eigen::AngleAxis<default_type> aa (angle, normal);
               if (idx_dir == local_search_directions) {
                 idx_dir = 0;
                 ++idx_angle;

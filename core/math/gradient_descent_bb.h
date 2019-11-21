@@ -45,7 +45,7 @@ namespace MR
           }
   };
 
-    //! Computes the minimum of a function using a Barzilai Borwein gradient descent approach.
+    //! Computes the minimum of a function using a Barzilai Borwein gradient descent approach. ENH: implement stabilised version https://arxiv.org/abs/1907.06409
     template <class Function, class UpdateFunctor=LinearUpdateBB>
       class GradientDescentBB
       { MEMALIGN(GradientDescentBB<Function,UpdateFunctor>)
@@ -218,7 +218,6 @@ namespace MR
 
           void compute_normg_and_step () {
             if (preconditioner_weights.size()) {
-              // value_type g_projected = g2.squaredNorm();
               g2.array() *= preconditioner_weights.array();
             }
             normg = g2.norm();

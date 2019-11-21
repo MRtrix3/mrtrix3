@@ -65,10 +65,10 @@ namespace MR
                            "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
       + Argument ("num").type_sequence_int ()
 
-      + Option("cc", "use cc metric with radius")
-      + Argument ("radius").type_integer (1,100)
+      // + Option("cc", "use cc metric with radius")
+      // + Argument ("radius").type_integer (1,100)
 
-      + Option("diagnostics_image", "use cc metric with radius")
+      + Option("diagnostics_image", "write intermediate images for diagnostics purposes")
       + Argument("path");
 
 
