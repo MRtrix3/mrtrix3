@@ -49,7 +49,7 @@ namespace MR
       public:
       class Shared : public SharedBase { MEMALIGN(Shared)
         public:
-        Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set, bool is_deterministic = true) :
+        Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set) {
 
           if (is_act() && act().backtrack())

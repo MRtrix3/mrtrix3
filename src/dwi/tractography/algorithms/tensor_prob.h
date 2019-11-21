@@ -38,7 +38,7 @@ namespace MR
             class Shared : public Tensor_Det::Shared { MEMALIGN(Shared)
               public:
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
-                  Tensor_Det::Shared (diff_path, property_set, false) {
+                  Tensor_Det::Shared (diff_path, property_set) {
 
                     if (is_act() && act().backtrack())
                       throw Exception ("Sorry, backtracking not currently enabled for TensorProb algorithm");
