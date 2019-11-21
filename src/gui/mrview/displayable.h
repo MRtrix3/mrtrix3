@@ -202,7 +202,7 @@ namespace MR
           }
 
 
-          class Shader : public GL::Shader::Program { MEMALIGN(Shader)
+          class Shader : public GL::Shader::Program { NOMEMALIGN
             public:
               virtual std::string fragment_shader_source (const Displayable& object) = 0;
               virtual std::string geometry_shader_source (const Displayable&) { return std::string(); }

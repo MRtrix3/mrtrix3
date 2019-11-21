@@ -1,3 +1,24 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import os
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, fsl, path, run, utils
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fsl', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -21,10 +42,7 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app, fsl, is_windows, MRtrixError, path, run
-
-  if is_windows():
+  if utils.is_windows():
     raise MRtrixError('Script cannot run using FSL on Windows due to FSL dependency')
 
   if not os.environ.get('FSLDIR', ''):
@@ -47,6 +65,6 @@ def execute(): #pylint: disable=unused-variable
   # Rather than using a bias field estimate of 1.0 outside the brain mask, zero-fill the
   #   output image outside of this mask
   run.command('mrcalc in.mif ' + bias_path + ' -div mask.mif -mult result.mif')
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
   if app.ARGS.bias:
-    run.command('mrconvert ' + bias_path + ' ' + path.from_user(app.ARGS.bias) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+    run.command('mrconvert ' + bias_path + ' ' + path.from_user(app.ARGS.bias), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)

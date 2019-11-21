@@ -1,9 +1,26 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+
 SUPPORTED_OPS = ['mean', 'median', 'sum', 'product', 'rms', 'norm', 'var', 'std', 'min', 'max', 'absmax', 'magmax']
 
 
 def usage(cmdline): #pylint: disable=unused-variable
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Daan Christiaens (daan.christiaens@kcl.ac.uk)')
   cmdline.set_synopsis('Apply an mrmath operation to each b-value shell in a DWI series')
   cmdline.add_description('The output of this command is a 4D image, where '
@@ -14,11 +31,12 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('output', help='The output image series')
   cmdline.add_example_usage('To compute the mean diffusion-weighted signal in each b-value shell',
                             'dwishellmath dwi.mif mean shellmeans.mif')
-  app.add_dwgrad_import_options()
+  app.add_dwgrad_import_options(cmdline)
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import image, MRtrixError, path, run
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
   # check inputs and outputs
   dwi_header = image.Header(path.from_user(app.ARGS.input, False))
   if len(dwi_header.size()) != 4:
@@ -39,17 +57,9 @@ def execute(): #pylint: disable=unused-variable
     files.append(filename)
   # concatenate to output file
   run.command('mrcat -axis 3 ' + ' '.join(files) + ' out.mif')
-  run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.input)))
+  run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
 
 
-
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(LIB_FOLDER):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, LIB_FOLDER)
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member

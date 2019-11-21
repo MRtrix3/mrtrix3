@@ -1,5 +1,20 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # Script for 'repairing' a FreeSurfer parcellation image
 # FreeSurfer's sub-cortical structure segmentation has been observed to be highly variable
 #   under scan-rescan conditions. This introduces unwanted variability into the connectome,
@@ -10,6 +25,7 @@
 
 
 
+import math, os
 
 
 
@@ -32,13 +48,14 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import math
-  from mrtrix3 import fsl, image, is_windows, MRtrixError, path, run
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, fsl, image, path, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
+
+  if utils.is_windows():
+    raise MRtrixError('Script cannot run on Windows due to FSL dependency')
+
   app.check_output_path(path.from_user(app.ARGS.output, False))
   image.check_3d_nonunity(path.from_user(app.ARGS.t1, False))
-
-  if is_windows():
-    raise MRtrixError('Script cannot run on Windows due to FSL dependency')
 
   fsl_path = os.environ.get('FSLDIR', '')
   if not fsl_path:
@@ -147,20 +164,12 @@ def execute(): #pylint: disable=unused-variable
   # Insert the new delineations of all SGM structures in a single call
   # Enforce unsigned integer datatype of output image
   run.command('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif -datatype uint32')
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + app.mrconvert_output_option(path.from_user(app.ARGS.parc)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.parc), force=app.FORCE_OVERWRITE)
 
 
 
 
 
-
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(LIB_FOLDER):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, LIB_FOLDER)
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member

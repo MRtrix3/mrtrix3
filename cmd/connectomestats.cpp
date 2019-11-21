@@ -33,7 +33,7 @@ using namespace MR;
 using namespace App;
 
 
-const char* algorithms[] = { "nbs", "nbse", "none", nullptr };
+const char* algorithms[] = { "nbs", "tfnbs", "none", nullptr };
 
 
 
@@ -49,6 +49,18 @@ void usage ()
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Connectome group-wise statistics at the edge level using non-parametric permutation testing";
+
+  DESCRIPTION
+  + "For the TFNBS algorithm, default parameters for statistical enhancement "
+    "have been set based on the work in: \n"
+    "Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A Novel Threshold-Free Network-Based Statistics Method: Demonstration using Simulated Pathology. OHBM, 2015, 4144; \n"
+    "and: \n"
+    "Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A novel threshold-free network-based statistical method: Demonstration and parameter optimisation using in vivo simulated pathology. In Proc ISMRM, 2015, 2846. \n"
+    "Note however that not only was the optimisation of these parameters not "
+    "very precise, but the outcomes of statistical inference (for both this "
+    "algorithm and the NBS method) can vary markedly for even small changes to "
+    "enhancement parameters. Therefore the specificity of results obtained using "
+    "either of these methods should be interpreted with caution.";
 
 
   ARGUMENTS
@@ -81,9 +93,9 @@ void usage ()
                "Zalesky, A.; Fornito, A. & Bullmore, E. T. Network-based statistic: Identifying differences in brain networks. \n"
                "NeuroImage, 2010, 53, 1197-1207"
 
-             + "* If using the NBSE algorithm: \n"
-               "Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A Novel Threshold-Free Network-Based Statistics Method: Demonstration using Simulated Pathology. \n"
-               "OHBM, 2015, 4144"
+             + "* If using the TFNBS algorithm: \n"
+               "Baggio, H.C.; Abos, A.; Segura, B.; Campabadal, A.; Garcia-Diaz, A.; Uribe, C.; Compta, Y.; Marti, M.J.; Valldeoriola, F.; Junque, C. Statistical inference in brain graphs using threshold-free network-based statistics."
+               "HBM, 2018, 39, 2289-2302"
 
              + "* If using the -nonstationary option: \n"
                "Salimi-Khorshidi, G.; Smith, S.M. & Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"

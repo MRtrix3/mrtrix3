@@ -129,7 +129,7 @@ namespace MR
 
         void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           // Setup OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -140,7 +140,7 @@ namespace MR
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
 
           render_tools (with_projection, false, axis, slice (axis));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -150,7 +150,7 @@ namespace MR
 
         void LightBox::paint (Projection&)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           GLint x = projection.x_position(), y = projection.y_position();
           GLint w = projection.width(), h = projection.height();
           GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
@@ -230,7 +230,7 @@ namespace MR
           }
 
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -240,7 +240,7 @@ namespace MR
 
         void LightBox::draw_grid()
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if(n_cols < 1 && n_rows < 1)
             return;
 
@@ -311,7 +311,7 @@ namespace MR
           frame_program.start();
           gl::DrawArrays (gl::LINES, 0, num_points / 2);
           frame_program.stop();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 

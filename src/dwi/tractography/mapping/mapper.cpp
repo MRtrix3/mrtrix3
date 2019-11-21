@@ -47,8 +47,8 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
   switch (contrast) {
 
     case TDI: out.factor = 1.0; break;
-    case LENGTH: out.factor = tck.calc_length(); break;
-    case INVLENGTH: out.factor = 1.0 / tck.calc_length(); break;
+    case LENGTH: out.factor = Tractography::length (tck); break;
+    case INVLENGTH: out.factor = 1.0 / Tractography::length (tck); break;
 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:

@@ -52,9 +52,10 @@ namespace MR
           if (rk4)
             throw Exception ("4th-order Runge-Kutta integration not valid for FACT algorithm");
 
-          set_step_size (0.1f, true);
+          set_step_and_angle (TCKGEN_DEFAULT_STEP_FIRSTORDER, TCKGEN_DEFAULT_ANGLE_DETERMINISTIC, false);
+          set_num_points();
           set_cutoff (TCKGEN_DEFAULT_CUTOFF_FIXEL);
-          dot_threshold = std::cos (max_angle);
+          dot_threshold = std::cos (max_angle_1o);
 
           properties["method"] = "FACT";
         }
@@ -105,7 +106,7 @@ namespace MR
         const float max_norm = do_next (dir);
 
         if (max_norm < S.threshold)
-          return BAD_SIGNAL;
+          return MODEL;
 
         pos += S.step_size * dir;
         return CONTINUE;

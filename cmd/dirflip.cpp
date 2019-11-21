@@ -32,8 +32,7 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Optimise the polarity of the directions in a scheme with respect to a "
-    "unipolar electrostatic repulsion model, by inversion of individual directions";
+  SYNOPSIS = "Invert the polarity of individual directions so as to optimise a unipolar electrostatic repulsion model";
 
   DESCRIPTION
   + "The orientations themselves are not affected, only their "
@@ -46,7 +45,7 @@ void usage ()
 
 
   OPTIONS
-    + Option ("permutations", "number of permutations to try.")
+    + Option ("permutations", "number of permutations to try (default: " + str(DEFAULT_PERMUTATIONS) + ")")
     +   Argument ("num").type_integer (1)
 
     + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");

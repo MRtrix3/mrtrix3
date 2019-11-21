@@ -42,6 +42,9 @@ namespace MR
 #ifdef MRTRIX_TIFF_SUPPORT
     TIFF          tiff_handler;
 #endif
+#ifdef MRTRIX_PNG_SUPPORT
+    PNG           png_handler;
+#endif
     MRtrix_sparse mrtrix_sparse_handler;
 
 
@@ -65,6 +68,9 @@ namespace MR
 #ifdef MRTRIX_TIFF_SUPPORT
       &tiff_handler,
 #endif
+#ifdef MRTRIX_PNG_SUPPORT
+      &png_handler,
+#endif
       &mrtrix_sparse_handler,
       nullptr
     };
@@ -87,10 +93,16 @@ namespace MR
       ".msf",
       ".msh",
       ".dcm",
+#ifdef MRTRIX_TIFF_SUPPORT
       ".tiff",
       ".tif",
       ".TIFF",
       ".TIF",
+#endif
+#ifdef MRTRIX_PNG_SUPPORT
+      ".png",
+      ".PNG",
+#endif
       nullptr
     };
 

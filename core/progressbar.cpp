@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+
 #include "app.h"
 #include "progressbar.h"
 
@@ -41,26 +42,33 @@ namespace MR
 
 
 
-    void display_func_terminal (ProgressInfo& p)
+    void display_func_multithreaded (const ProgressBar& p)
     {
-      __need_newline = true;
-      if (p.multiplier)
-        __print_stderr (printf (WRAP_OFF_CODE "\r%s: [%3" PRI_SIZET "%%] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
-              App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));
-      else
-        __print_stderr (printf (WRAP_OFF_CODE "\r%s: [%s] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
-              App::NAME.c_str(), busy[p.value%6], p.text.c_str(), p.ellipsis.c_str()));
+      ProgressBar::notification_is_genuine = true;
+      ProgressBar::notifier.notify_all();
     }
 
 
-    void done_func_terminal (ProgressInfo& p)
+    void display_func_terminal (const ProgressBar& p)
     {
-      if (p.multiplier)
+      __need_newline = true;
+      if (p.show_percent())
+        __print_stderr (printf (WRAP_OFF_CODE "\r%s: [%3" PRI_SIZET "%%] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
+              App::NAME.c_str(), p.value(), p.text().c_str(), p.ellipsis().c_str()));
+      else
+        __print_stderr (printf (WRAP_OFF_CODE "\r%s: [%s] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
+              App::NAME.c_str(), busy[p.value()%6], p.text().c_str(), p.ellipsis().c_str()));
+    }
+
+
+    void done_func_terminal (const ProgressBar& p)
+    {
+      if (p.show_percent())
         __print_stderr (printf ("\r%s: [100%%] %s" CLEAR_LINE_CODE "\n",
-              App::NAME.c_str(), p.text.c_str()));
+              App::NAME.c_str(), p.text().c_str()));
       else
         __print_stderr (printf ("\r%s: [done] %s" CLEAR_LINE_CODE "\n",
-              App::NAME.c_str(), p.text.c_str()));
+              App::NAME.c_str(), p.text().c_str()));
       __need_newline = false;
     }
 
@@ -70,23 +78,23 @@ namespace MR
 
 
 
-    void display_func_redirect (ProgressInfo& p)
+    void display_func_redirect (const ProgressBar& p)
     {
       static size_t count = 0;
       static size_t next_update_at = 0;
       // need to update whole line since text may have changed:
-      if (p.text_has_been_modified) {
+      if (p.text_has_been_modified()) {
         __need_newline = false;
-        if (p.value == 0 && p.current_val == 0)
+        if (p.value() == 0 && p.count() == 0)
           count = next_update_at = 0;
         if (count++ == next_update_at) {
-          if (p.multiplier) {
+          if (p.show_percent()) {
             __print_stderr (printf ("%s: [%3" PRI_SIZET "%%] %s%s\n",
-                  App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));;
+                  App::NAME.c_str(), p.value(), p.text().c_str(), p.ellipsis().c_str()));;
           }
           else {
             __print_stderr (printf ("%s: [%s] %s%s\n",
-                  App::NAME.c_str(), busy[p.value%6], p.text.c_str(), p.ellipsis.c_str()));
+                  App::NAME.c_str(), busy[p.value()%6], p.text().c_str(), p.ellipsis().c_str()));
           }
           if (next_update_at)
             next_update_at *= 2;
@@ -97,21 +105,21 @@ namespace MR
       // text is static - can simply append to the current line:
       else {
         __need_newline = true;
-        if (p.multiplier) {
-          if (p.value == 0) {
+        if (p.show_percent()) {
+          if (p.value() == 0) {
             __print_stderr (printf ("%s: %s%s [",
-                  App::NAME.c_str(), p.text.c_str(), p.ellipsis.c_str()));;
+                  App::NAME.c_str(), p.text().c_str(), p.ellipsis().c_str()));;
           }
-          else if (p.value%2 == 0) {
+          else if (p.value()%2 == 0) {
             __print_stderr (printf ("="));
           }
         }
         else {
-          if (p.value == 0) {
+          if (p.value() == 0) {
             __print_stderr (printf ("%s: %s%s ",
-                  App::NAME.c_str(), p.text.c_str(), p.ellipsis.c_str()));;
+                  App::NAME.c_str(), p.text().c_str(), p.ellipsis().c_str()));;
           }
-          else if (!(p.value & (p.value-1))) {
+          else if (!(p.value() & (p.value()-1))) {
             __print_stderr (".");
           }
         }
@@ -119,18 +127,18 @@ namespace MR
     }
 
 
-    void done_func_redirect (ProgressInfo& p)
+    void done_func_redirect (const ProgressBar& p)
     {
-      if (p.text_has_been_modified) {
-        if (p.multiplier) {
-          __print_stderr (printf ("%s: [100%%] %s\n", App::NAME.c_str(), p.text.c_str()));;
+      if (p.text_has_been_modified()) {
+        if (p.show_percent()) {
+          __print_stderr (printf ("%s: [100%%] %s\n", App::NAME.c_str(), p.text().c_str()));;
         }
         else {
-          __print_stderr (printf ("%s: [done] %s\n", App::NAME.c_str(), p.text.c_str()));
+          __print_stderr (printf ("%s: [done] %s\n", App::NAME.c_str(), p.text().c_str()));
         }
       }
       else {
-        if (p.multiplier)
+        if (p.show_percent())
           __print_stderr (printf ("]\n"));
         else
           __print_stderr (printf (" done\n"));
@@ -141,11 +149,31 @@ namespace MR
   }
 
 
-  void (*ProgressInfo::display_func) (ProgressInfo& p) = display_func_terminal;
-  void (*ProgressInfo::done_func) (ProgressInfo& p) = done_func_terminal;
+  void (*ProgressBar::display_func) (const ProgressBar& p) = display_func_terminal;
+  void (*ProgressBar::done_func) (const ProgressBar& p) = done_func_terminal;
+  void (*ProgressBar::previous_display_func) (const ProgressBar& p) = nullptr;
+
+  std::condition_variable ProgressBar::notifier;
+  bool ProgressBar::notification_is_genuine = false;
+  std::mutex ProgressBar::mutex;
+  void* ProgressBar::data = nullptr;
+  bool ProgressBar::progressbar_active = false;
+
+  ProgressBar::SwitchToMultiThreaded::SwitchToMultiThreaded () {
+    ProgressBar::previous_display_func = ProgressBar::display_func;
+    ProgressBar::display_func = display_func_multithreaded;
+  }
+
+
+  ProgressBar::SwitchToMultiThreaded::~SwitchToMultiThreaded () {
+    ProgressBar::display_func = ProgressBar::previous_display_func;
+    ProgressBar::previous_display_func = nullptr;
+  }
 
 
 
+
+  void (*previous_display_func) (ProgressBar& p);
 
 
 
@@ -163,12 +191,12 @@ namespace MR
 
 
     if (stderr_to_file) {
-      ProgressInfo::display_func = display_func_redirect;
-      ProgressInfo::done_func = done_func_redirect;
+      ProgressBar::display_func = display_func_redirect;
+      ProgressBar::done_func = done_func_redirect;
     }
     else {
-      ProgressInfo::display_func = display_func_terminal;
-      ProgressInfo::done_func = done_func_terminal;
+      ProgressBar::display_func = display_func_terminal;
+      ProgressBar::done_func = done_func_terminal;
     }
 
     return stderr_to_file;

@@ -19,11 +19,13 @@
 
 #include <cinttypes>
 #include <complex>
+#include <cstddef>
+#include <deque>
+#include <map>
+#include <memory>
 #include <iostream>
 #include <vector>
-#include <deque>
-#include <cstddef>
-#include <memory>
+
 
 #define NOMEMALIGN
 
@@ -230,6 +232,10 @@ namespace MR
 
   //! the type for the affine transform of an image:
   using transform_type = Eigen::Transform<default_type, 3, Eigen::AffineCompact>;
+
+
+  //! used in various places for storing key-value pairs
+  using KeyValues = std::map<std::string, std::string>;
 
 
   //! check whether type is complex:

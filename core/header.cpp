@@ -19,6 +19,7 @@
 #include <cctype>
 #include <set>
 
+#include "app.h"
 #include "axes.h"
 #include "mrtrix.h"
 #include "phase_encoding.h"
@@ -165,9 +166,19 @@ namespace MR
         const Header template_header (H);
 
         // Convenient to know a priori which loop index corresponds to which image axis
+        // This needs to detect unity-sized axes and flag the loop to concatenate data along that axis
         vector<size_t> loopindex2axis;
-        for (size_t i = 0; i != num.size(); ++i)
-          loopindex2axis.push_back (H.ndim() + num.size() - i - 1);
+        size_t axis;
+        for (axis = 0; axis != H.ndim(); ++axis) {
+          if (H.size (axis) == 1) {
+            loopindex2axis.push_back (axis);
+            if (loopindex2axis.size() == num.size())
+              break;
+          }
+        }
+        for (; loopindex2axis.size() < num.size(); ++axis)
+          loopindex2axis.push_back (axis);
+        std::reverse (loopindex2axis.begin(), loopindex2axis.end());
 
         // Reimplemented support for [] notation using recursive function calls
         // Note that the very first image header has already been opened before this function is
@@ -268,36 +279,10 @@ namespace MR
     try {
       INFO ("creating image \"" + image_name + "\"...");
       if (add_to_command_history) {
-
-        auto argv_quoted = [] (const std::string& s) -> std::string {
-          for (size_t i = 0; i != s.size(); ++i) {
-            if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
-
-              std::string escaped_string ("\'");
-              for (auto c : s) {
-                switch (c) {
-                  case '\'': escaped_string.append ("\\\'"); break;
-                  case '\\': escaped_string.append ("\\\\"); break;
-                  default: escaped_string.push_back (c); break;
-                }
-              }
-              escaped_string.push_back ('\'');
-              return escaped_string;
-
-            }
-          }
-          return s;
-        };
-
-        std::string cmd = App::argv[0];
-        for (int n = 1; n < App::argc; ++n)
-          cmd += std::string(" ") + argv_quoted (App::argv[n]);
-        cmd += std::string ("  (version=") + App::mrtrix_version;
-        if (App::project_version)
-          cmd += std::string (", project=") + App::project_version;
-        cmd += ")";
-        add_line (H.keyval()["command_history"], cmd);
-
+        // Make sure the current command is not concatenated more than once
+        const auto command_history = split_lines (H.keyval()["command_history"]);
+        if (!(command_history.size() && command_history.back() == App::command_history_string))
+          add_line (H.keyval()["command_history"], App::command_history_string);
       }
 
       H.keyval()["mrtrix_version"] = App::mrtrix_version;
@@ -505,7 +490,7 @@ namespace MR
   {
     std::string desc (
         "************************************************\n"
-        "Image:               \"" + name() + "\"\n"
+        "Image name:          \"" + name() + "\"\n"
         "************************************************\n");
 
     desc += "  Dimensions:        ";
@@ -754,9 +739,10 @@ namespace MR
 
     if (axis_to_concat >= result.ndim()) {
       result.ndim() = axis_to_concat + 1;
-      result.stride(axis_to_concat) = axis_to_concat+1;
       result.size(axis_to_concat) = 1;
     }
+
+    result.stride (axis_to_concat) = result.ndim()+1;
 
     for (size_t axis = 0; axis != result.ndim(); ++axis) {
       if (axis != axis_to_concat && result.size (axis) <= 1) {
@@ -785,7 +771,7 @@ namespace MR
 
       // Check that dimensions of image are compatible with concatenation
       for (size_t axis = 0; axis <= global_max_nonunity_dim; ++axis) {
-        if (axis != axis_to_concat && H.size (axis) != result.size (axis)) {
+        if (axis != axis_to_concat && axis < H.ndim() && H.size (axis) != result.size (axis)) {
           e.push_back ("Images \"" + result.name() + "\" and \"" + H.name() + "\" have inequal sizes along axis " + str(axis_to_concat) + " (" + str(result.size (axis)) + " vs " + str(H.size (axis)) + ")");
           throw e;
         }
