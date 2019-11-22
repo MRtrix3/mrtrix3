@@ -80,6 +80,9 @@ OPTIONS
     -nowarnings
        do not print out non-fatal compiler messages (warnings, etc)
 
+    -dryrun
+       do not actually execute the compiler and linking commands (used for testing)
+
     -showdep[=target|all]
        print the list of dependencies for every target (with -showdep=target;
        the default) or for all files
@@ -133,6 +136,7 @@ system = None
 dependencies = 0
 dep_recursive = False
 verbose = False
+dryrun = False
 persistent = False
 nowarnings = False
 paginate = True
@@ -357,6 +361,8 @@ for arg in sys.argv[1:]:
     sys.exit (0)
   elif '-verbose'.startswith(arg):
     verbose = True
+  elif '-dryrun'.startswith(arg):
+    dryrun = True
   elif '-persistent'.startswith(arg):
     persistent = True
   elif '-nowarnings'.startswith(arg):
@@ -921,6 +927,9 @@ def fillin (template, keyvalue):
 def execute (message, cmd, working_dir=None):
   disp (message + os.linesep)
   log (' '.join(cmd) + os.linesep)
+
+  if dryrun:
+    return 0
 
   try:
     start = timer()
