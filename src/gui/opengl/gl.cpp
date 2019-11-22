@@ -14,7 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/gui.h"
 #include "gui/opengl/gl.h"
 #include "file/config.h"
 
