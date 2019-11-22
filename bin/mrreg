@@ -1,0 +1,519 @@
+#!/usr/bin/env python
+
+# Script for registration
+
+
+# Make the corresponding MRtrix3 Python libraries available
+import inspect, os, sys
+lib_folder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile(inspect.currentframe()))[0], os.pardir, 'lib')))
+if not os.path.isdir(lib_folder):
+  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
+  sys.exit(1)
+sys.path.insert(0, lib_folder)
+
+
+from mrtrix3 import app, image, path, run
+
+global DEBUG
+DEBUG = False
+
+def debug(s):
+  if DEBUG:
+    print('\033[03;34m' +str(s) + '\033[0m')
+
+def quote_ws(s):
+  # return pipes.quote(s)
+  if s.count(' '):
+    debug('fixing quotes: '+str(s)+' --> '+'\''+s+'\'')
+    return '\''+s+'\''
+  return s
+
+def run_command(cmd, dry_run):
+  if dry_run:
+    print (cmd)
+  else:
+    # if app.args.info:
+      # cmd += ['-info']
+    run.command(cmd)
+
+import re, subprocess, shlex, pipes
+def parse_stages(argv):
+  stages = []
+  # argument input[ "image 1.mif"] works but not input["image 1.mif"]
+  # so here we split 'text["something quoted"' off as two arguments: 'text[' and "'something quoted'"
+  bracket = re.compile('(\w+)\[(\w+.*)')
+  args = []
+  for a in argv:
+    m = bracket.findall(a)
+    assert (len(m) < 2)
+    if not m:
+      args.append(a)
+    else:
+      debug('fix bracket '+a+' --> ' + str(m[0][0]) + '[ ' + str(m[0][1]))
+      args += [m[0][0]+'[', quote_ws(m[0][1])] # [quote_ws(s) for s in m[0]]
+  debug("args:")
+  debug(args)
+
+  # stage parsing
+  debug("stage parsing")
+  p = re.compile('\W*(\w+)\[(.*?)\]')
+  scmd = subprocess.list2cmdline(args)
+  # scmd = ' '.join([pipes.quote(s) for s in args])
+  debug("scmd:")
+  debug(scmd)
+  parsed = set()
+
+  for m in p.finditer(scmd):
+    stage_options = []
+    debug(m.groups()[1])
+    stage_options = shlex.split(m.groups()[1])
+    # here we split what=val into three arguments, stages need to join or process it.
+    # the following are equivalent: what=val, what = val, what= val, what =val
+    # this is to allow whitespaces between '=' and 'val' which allows shell tab completion
+    # invalid: what=, what =
+    s_args = []
+    for i, so in enumerate(stage_options):
+      idx = so.find('=')
+      if idx != -1:
+        if idx > 0:
+          s_args += [so[:idx]]
+        s_args += ['=']
+        if idx < len(so) - 1:
+          s_args += [so[idx+1:].lstrip()]
+        else: # check if next is an argument
+          if len(stage_options) - 1 == i or stage_options[i+1].find('=') != -1:
+            app.error('stage parsing failed. stage options using "=" need to be followed by values. stage: "'+ m.groups()[0]+'" options: '+str(stage_options))
+      else:
+        s_args.append(so)
+    if m.groups()[0] != 'input':
+      debug('stage: ' + m.groups()[0] + ': '+str(s_args))
+    stages.append((m.groups()[0], s_args))
+    parsed = parsed.union(set(range(*m.span())))
+  toparse=''.join([scmd[i] for i in sorted(list(set(range(0,len(scmd))) - parsed))])
+  return toparse, stages
+
+def get_class(t):
+  if not 'Stage_'+t[0].upper() in globals():
+    app.error('stage "'+t[0]+'" not defined')
+  return globals()['Stage_'+t[0].upper()](t)
+# c = get_class(('init','translation=mass'))
+
+## Multiple dispatch, single argument
+def multi(dispatch_fn):
+  def _inner(*args, **kwargs):
+    return _inner.__multi__.get(dispatch_fn(*args, **kwargs), _inner.__multi_default__)(*args, **kwargs)
+  _inner.__multi__ = {}
+  _inner.__multi_default__ = lambda *args, **kwargs: None  # Default default
+  return _inner
+
+def method(dispatch_fn, dispatch_key=None):
+  def apply_decorator(fn):
+    if dispatch_key is None: # Default case
+      dispatch_fn.__multi_default__ = fn
+    else:
+      dispatch_fn.__multi__[dispatch_key] = fn
+    return dispatch_fn
+  return apply_decorator
+
+## Multiple dispatch, multiple arguments
+registry = {}
+class MultiMethod(object):
+  def __init__(self, name):
+    self.name = name
+    self.typemap = {}
+  def __call__(self, *args):
+    types = tuple(arg.__class__ for arg in args)
+    function = self.typemap.get(types)
+    if function is None:
+      raise TypeError("no match")
+    return function(*args)
+  def register(self, types, function):
+    if types in self.typemap:
+      raise TypeError("duplicate registration")
+    self.typemap[types] = function
+
+def multimethod(*types):
+  def register(function):
+    name = function.__name__
+    mm = registry.get(name)
+    if mm is None:
+      mm = registry[name] = MultiMethod(name)
+    mm.register(types, function)
+    return mm
+  return register
+
+### define mutable variables each stage has access to
+class Shared:
+  def __init__(self):
+    self.istage = None
+    # input images at original resolution. used if im1 is None. underscore to omit from debug output
+    self._im1_fullres = None
+    self._im2_fullres = None
+    # resized input images
+    self.im1 = None
+    self.im2 = None
+    # linear and nonlinear transformations
+    self.affine = None
+    self.warp = None
+  # def __init__(self, dictionary):
+  #   for k, v in dictionary.items():
+  #     setattr(self, k, v)
+  #   self.set_to_defaults()
+
+  def __str__(self):
+    d = self.__dict__
+    return ', '.join([(str(k)+':'+str(d[k])) for k in sorted(d.keys()) if d[k] is not None and k[0] != '_'])
+
+class Stage:
+  # shared is a (mutable) class attribute --> shared is synchronised across all Stage instances
+  shared = Shared()
+
+  # parse the options and create the command to be executede
+  def mrtrix_options(self):
+    # converts ['arg', '=', 'val1', 'val2'] to ['-arg', 'val1', 'val2']
+    cmd = []
+    idx = set([i for i, x in enumerate(self.args) if x == "="])
+    for i, arg in enumerate(self.args):
+      if i+1 in idx:
+        cmd.append('-'+arg)
+      elif i in idx:
+        continue
+      else:
+        cmd.append(arg)
+    return cmd
+
+  # execute the stage. modify shared values if necessary.
+  def run (self, dry_run = False):
+    # set up command:
+    cmd = [self.command]
+    cmd += [self.shared.im1, self.shared.im2]
+    cmd += self.mrtrix_options()
+    # run it
+    run_command(cmd, dry_run)
+    # modify shared variables
+    self.shared.im1 = 'im1_post_stage_'+str(self.shared.istage)+'.mif'
+
+  def __init__(self, v):
+    self.name = v[0]
+    self.command = self.name
+    self.args = v[1]
+
+  def __module__(self):
+    return self.name
+
+  def __str__(self):
+    return "%s[%s]" % (self.name.ljust(9), ' '.join([str(x) for x in self.args]))
+
+  def info(self):
+    app.console('%03i: ' % self.shared.istage + str(self))
+    debug(self.shared)
+
+class Stage_INIT(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = 'mrreg_init'
+
+  def run(self, dry_run = False):
+    istage = self.shared.istage
+    affine_out = '%03i.mat' % istage
+    if self.shared.im1:
+      assert (self.shared.im2 is not None)
+      args = [self.shared.im1, self.shared.im2]
+    else:
+      assert (self.shared._im1_fullres is not None)
+      assert (self.shared._im2_fullres is not None)
+      args = [self.shared._im1_fullres, self.shared._im2_fullres]
+    args += [affine_out]
+    if self.args:
+      args += self.mrtrix_options()
+    cmd = [self.command] + args
+    run_command(cmd, dry_run)
+    self.shared.affine = affine_out
+
+class Stage_RESIZE(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = None
+    self.scale = None
+  def run(self, dry_run = False):
+    opt = self.mrtrix_options()
+    scale = None
+    for i, o in enumerate(opt):
+      if o.startswith('-s'):
+        if len(opt)<i+2:
+          app.error('-scale option requires one argument. received: '+ str(opt))
+        scale = opt[i+1]
+    if not scale:
+      app.warn('resize requested but no scale specified. using scale=1. options received: '+' '.join(self.args))
+      scale = '1'
+    assert (self.shared._im1_fullres is not None)
+    assert (self.shared._im2_fullres is not None)
+    im1 = 'im1_%03i.mif' % self.shared.istage
+    im2 = 'im2_%03i.mif' % self.shared.istage
+    cmds = []
+    cmds.append([['mrresize', self.shared._im1_fullres, '-'] + ['-scale',scale],['mrfilter','-','smooth',im1]])
+    cmds.append([['mrresize', self.shared._im2_fullres, '-'] + ['-scale',scale],['mrfilter','-','smooth',im2]])
+    for cmd in cmds:
+      run_command(cmd, dry_run)
+
+    self.shared.im1 = im1
+    self.shared.im2 = im2
+
+
+
+class Stage_LIN(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = 'mrreg_lin'
+    self.name = 'linear'
+  def run(self, dry_run = False):
+    if self.shared.warp:
+      app.warn('linear registration follows nonlinear registration. ignoring warp')
+    cmd = [self.command]
+    if self.shared.im1:
+      assert (self.shared.im2 is not None)
+      cmd += [self.shared.im1, self.shared.im2]
+    else:
+      assert (self.shared._im1_fullres is not None)
+      assert (self.shared._im2_fullres is not None)
+      cmd += [self.shared._im1_fullres, self.shared._im2_fullres]
+
+    if self.shared.affine:
+      cmd += ['-affine_init_matrix',self.shared.affine]
+    affine_out = '%03i.mat' % self.shared.istage
+    cmd += ['-affine', affine_out]
+    if self.args:
+      cmd += self.mrtrix_options()
+    run_command(cmd, dry_run)
+    self.shared.affine = affine_out
+
+class Stage_NL(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = 'mrreg_nl'
+    self.name = 'nonlinear'
+  def run(self, dry_run = False):
+    cmd = [self.command]
+    if self.shared.im1:
+      assert (self.shared.im2 is not None)
+      cmd += [self.shared.im1, self.shared.im2]
+    else:
+      assert (self.shared._im1_fullres is not None)
+      assert (self.shared._im2_fullres is not None)
+      cmd += [self.shared._im1_fullres, self.shared._im2_fullres]
+
+    if self.shared.affine:
+      cmd += ['-affine',self.shared.affine]
+    elif self.shared.warp:
+      cmd += ['-nl_init',self.shared.warp]
+    warp_out = 'w%03i.mif' % self.shared.istage
+    cmd += ['-nl_warp_full', warp_out]
+    if self.args:
+      cmd += self.mrtrix_options()
+    run_command(cmd, dry_run)
+    self.shared.affine = None
+    self.shared.warp = warp_out
+
+class Stage_OUT(Stage):
+  def __init__(self, v):
+    Stage.__init__(self, v)
+    self.command = None
+  def run(self, dry_run = False):
+    import shutil
+    warp_out = None
+    trafo_out = None
+    opt = self.mrtrix_options()
+    if len(opt) < 1:
+      app.error('out: requires options')
+    skip_next = False
+    for i in range(len(opt)):
+      if skip_next:
+        continue
+      o = opt[i]
+      if o.startswith('-w'):
+        if len(opt) < i + 2:
+          app.error('out: -warp option requires one argument')
+        warp_out = path.fromUser(opt[i+1], False)
+        skip_next = True
+      elif o.startswith('-a'):
+        if len(opt) < i + 2:
+          app.error('out: -affine option requires one argument')
+        trafo_out = path.fromUser(opt[i+1], False)
+        skip_next = True
+      else:
+        app.error('out: unexpected option: '+str(opt))
+    if warp_out:
+      if not self.shared.warp:
+        app.error('out: warp requested but no warp generated')
+      app.checkOutputPath(warp_out)
+      cmd = [shutil.copy2,self.shared.warp,warp_out]
+      print (cmd) if dry_run else run.function(*cmd)
+    if trafo_out:
+      if not self.shared.affine:
+        app.error('out: affine requested but no affine generated')
+      app.checkOutputPath(trafo_out)
+      cmd = [shutil.copy2,self.shared.affine,trafo_out]
+      print (cmd) if dry_run else run.function(*cmd)
+
+valid_stage_names = [x[6:].lower() for x in globals().keys() if x.startswith('Stage_')]
+default = dict(linear='init[-moments] lin[affine_scale=0.3] lin[affine_scale=0.5] lin[affine_scale=1]',
+  nonlinear='nl[nl_scale=0.3] nl[nl_scale=0.5] nl[nl_scale=1]')
+
+app.init('MRtrix3 (TODO@gmail.com)','Symmetric linear and nonlinear registration')
+app.cmdline.addDescription('mrreg acts as a wrapper script for linear and nonlinear registration tasks\n\
+ valid stages are: '+'[] '.join(valid_stage_names)+'[].\n \
+ valid predefined configurations are: conf['+'] conf['.join(default.keys())+']')
+
+app.cmdline.add_argument("input", nargs='+', help='example: mrreg im1.mif im2.mif '+default['linear']+' out[affine=affine.txt]')
+
+general_options = app.cmdline.add_argument_group('General options')
+# general_options.add_argument('-init', choices=choice_init, help='valid choices: '+', '.join(choice_init), default='mass')
+# general_options.add_argument('-linear', choices=choice_linear_type, help='valid choices: '+', '.join(choice_linear_type), default='affine')
+# general_options.add_argument('-nonlinear', action='store_true', help='run nonlinear registration')
+general_options.add_argument('-lmax', help='The maximum harmonic degree(s)')
+general_options.add_argument('-dry_run', help='Test command line arguments', default=False)
+# general_options.add_argument('-mask1', help='Provide a mask for image1')
+# general_options.add_argument('-mask2', help='Provide a mask for image2')
+# app.cmdline.flagMutuallyExclusiveOptions( [ 'grad', 'fslgrad' ] )
+
+app.parse()
+DEBUG = app.args.debug
+debug("sys.argv")
+debug(sys.argv[1:])
+
+toparse, stages = parse_stages(sys.argv[1:])
+### remove stages from sys.argv
+sys.argv = [sys.argv[0]] + toparse.split()
+# add dummy argument if no arguments were found to prevent showing help
+if len(stages) > 0 and len(toparse.split()) == 0:
+  sys.argv.append('%i[stages]'%len(stages))
+
+### command line parsing to handle options
+app.parse()
+
+DEBUG=app.args.debug
+
+### option parsing
+if app.args.lmax:
+  app.console('option: -lmax='+app.args.lmax)
+
+# app.args.input quoted input get split but remain quoted --> join and split
+app.args.input = shlex.split(' '.join(app.args.input))
+### remaining argument parsing
+if len(app.args.input ) != 0 and len(app.args.input ) != 2:
+  app.error('expected no argument. received: ' + toparse)
+if len(app.args.input ):
+  stages.insert(0,('input',app.args.input ))
+
+### remove input from processing stages
+images = []
+current_stages = []
+for stage in stages:
+  if stage[0] == 'input':
+    images += (stage[1])
+  else:
+    current_stages.append(stage)
+stages = current_stages
+app.console ("input images:")
+app.console (str(images))
+
+if len(stages) == 0:
+  app.error('require at least one stage')
+
+debug ("stages:")
+for i, stage in enumerate(stages):
+  debug ('%03i: ' % i +str(stage))
+
+
+class Algorithm:
+  def __init__(self):
+    self.stages = []
+
+  def add(self, nxt):
+    self.stages.append(nxt)
+
+  # def info(self):
+  #   d = self.var.__dict__
+  #   return ', '.join([(str(k)+':'+str(d[k])) for k in sorted(d.keys()) if d[k] is not None])
+
+  ### define rules between stages.
+  # pre_run_check: stage specific rules before stage is executed
+  @multi
+  def pre_run_check(self, obj):
+    return obj.__class__
+
+  ## default rule
+  @method(pre_run_check)
+  def pre_run_check(self, *args, **kwargs):
+    # debug ('No pre_run_check defined for '+args[0].name)
+    return None
+
+  ## stage type specific rules
+  @method(pre_run_check, Stage_INIT)
+  def pre_run_check(self, obj):
+    debug ('pre_run_check: '+obj.name)
+    stage = self.stages[self.istage]
+    if self.istage > 0:
+      for i in range(0, self.istage)[::-1]:
+        if self.stages[i].name == 'linear':
+          app.error('init stage after affine stage')
+    return None
+
+  @multimethod(Stage_INIT, Stage_INIT)
+  def check(a, b):
+    app.error ('stage "' +a.name+'" followed by "'+b.name+'"')
+
+  @multimethod(Stage_RESIZE, Stage_RESIZE)
+  def check(a, b):
+    app.error ('stage "' +a.name+'" followed by "'+b.name+'"')
+
+  def run (self):
+    # self.stages[0].shared.set_to_defaults()
+
+    for istage, cs in enumerate(self.stages):
+      self.istage = istage
+      cs.shared.istage = istage
+      self.pre_run_check(self.stages[istage])
+      # app.console ('%03i: '%istage+str(cs))
+      cs.info()
+      cs.run(dry_run = app.args.dry_run)
+      app.debug('done')
+      ns = True if istage < len(self.stages) - 1 else None
+      if ns:
+        try:
+          self.check(self.stages[istage],self.stages[istage+1])
+        except TypeError:
+          pass
+
+A = Algorithm()
+for stage in stages:
+  to_add = None
+  if stage[0] == 'def':
+    if stage[1][0] not in default:
+      app.error('not defined default config:'+str(stage[1]))
+    to_add = shlex.split(default[stage[1][0]])
+  elif stage[0] == 'conf':
+    if not os.path.isfile(stage[1][0]):
+      app.error('could not open config file:'+str(stage[1]))
+    with open(stage[1][0],'r') as fc:
+      to_add = shlex.split(' '.join(fc.readlines()))
+  if to_add:
+    toparse_, sub_stages = parse_stages(to_add)
+    if toparse_:
+      app.error('unexpected argments:'+str(toparse_))
+    for s1 in sub_stages:
+      A.add(get_class(s1))
+  else:
+    A.add(get_class(stage))
+
+app.makeTempDir()
+app.gotoTempDir()
+
+A.stages[0].shared._im1_fullres=path.fromUser(images[0], False)
+A.stages[0].shared._im2_fullres=path.fromUser(images[1], False)
+
+A.run()
+
+
+app.complete()
+

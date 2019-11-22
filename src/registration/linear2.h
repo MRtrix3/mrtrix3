@@ -1,27 +1,24 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2017 the MRtrix3 contributors
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, you can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Covered Software is provided under this License on an "as is"
- * basis, without warranty of any kind, either expressed, implied, or
- * statutory, including, without limitation, warranties that the
- * Covered Software is free of defects, merchantable, fit for a
- * particular purpose or non-infringing.
- * See the Mozilla Public License v. 2.0 for more details.
+ * MRtrix is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  *
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_linear_h__
-#define __registration_linear_h__
 
-#include <iostream>
+#ifndef __registration_linear2_h__
+#define __registration_linear2_h__
+
+#include <vector>
 
 #include "app.h"
 #include "image.h"
-#include "types.h"
 #include "math/average_space.h"
 #include "filter/normalise.h"
 #include "filter/resize.h"
@@ -31,34 +28,34 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "registration/metric/params.h"
-// #include "registration/metric/local_cross_correlation.h"
+#include "registration/metric/local_cross_correlation.h"
 #include "registration/metric/evaluate.h"
-#include "registration/transform/initialiser.h"
 #include "math/gradient_descent.h"
 #include "math/gradient_descent_bb.h"
+#include "registration/transform/initialiser.h"
 // #include "math/check_gradient.h"
 #include "math/rng.h"
 #include "math/math.h"
-
+#include <iostream>
 #include "registration/multi_resolution_lmax.h"
 #include "registration/multi_contrast.h"
+#include "registration/transform/affine.h"
+#include "registration/transform/robust.h"
 
 namespace MR
 {
   namespace Registration
   {
 
-    extern const App::OptionGroup adv_init_options;
     extern const App::OptionGroup lin_stage_options;
     extern const App::OptionGroup rigid_options;
     extern const App::OptionGroup affine_options;
     extern const App::OptionGroup fod_options;
     extern const char* optim_algo_names[];
 
-    enum LinearMetricType {Diff, NCC};
+    enum LinearMetricType {Diff, LCC};
     enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
-    enum OptimiserAlgoType {bbgd, gd, none};
-
+    enum OptimiserAlgoType {bbgd, gd, bbgd_robust, none};
 
     struct StageSetting {  MEMALIGN(StageSetting)
       StageSetting() :
@@ -69,6 +66,7 @@ namespace MR
         optimiser_default (OptimiserAlgoType::bbgd),
         optimiser_first (OptimiserAlgoType::bbgd),
         optimiser_last (OptimiserAlgoType::gd),
+        transform_projector (1, Transform::TransformProjectionType::affine),
         loop_density (1.0),
         fod_lmax (-1) {}
 
@@ -92,6 +90,7 @@ namespace MR
       default_type scale_factor;
       vector<OptimiserAlgoType> optimisers;
       OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
+      vector<Transform::TransformProjectionType> transform_projector;
       default_type loop_density;
       ssize_t fod_lmax;
       vector<std::string> diagnostics_images;
@@ -101,29 +100,35 @@ namespace MR
 
       public:
 
-        Transform::Init::LinearInitialisationParams init;
-
         Linear () :
           stages (3),
           kernel_extent (3, 1),
           grad_tolerance (1.0e-6),
-          step_tolerance (1.0e-10),
+          // step_tolerance (1.0e-10),
           log_stream (nullptr),
-          init_translation_type (Transform::Init::mass),
-          init_rotation_type (Transform::Init::none),
           robust_estimate (false),
           do_reorientation (false),
-          //CONF option: RegAnalyseDescent
+          do_nonsymmetric (false),
+          //CONF option: reg_analyse_descent
           //CONF default: 0 (false)
           //CONF Linear registration: write comma separated gradient descent parameters and gradients
-          //CONF to stdout and verbose gradient descent output to stderr.
-          analyse_descent (File::Config::get_bool ("RegAnalyseDescent", false)) {
+          //CONF to stdout and verbose gradient descent output to stderr
+          analyse_descent (File::Config::get_bool ("reg_analyse_descent", false)),
+          transform_projector_default (Transform::TransformProjectionType::affine) {
             stages[0].scale_factor = 0.25;
             stages[0].fod_lmax = 0;
             stages[1].scale_factor = 0.5;
             stages[1].fod_lmax = 2;
             stages[2].scale_factor = 1.0;
             stages[2].fod_lmax = 4;
+        }
+
+        void set_transform_projector (const  Transform::TransformProjectionType& type) {
+          transform_projector_default = type;
+          if (stages.size())
+            for (auto & stage : stages)
+              for (auto & tp : stage.transform_projector)
+                tp = type;
         }
 
         // set_scale_factor needs to be the first option that is set as it overwrites the stage vector
@@ -133,6 +138,8 @@ namespace MR
             if (scalefactor[level] <= 0 || scalefactor[level] > 1.0)
               throw Exception ("the linear registration scale factor for each multi-resolution level must be between 0 and 1");
             stages[level].scale_factor = scalefactor[level];
+            if (level > 2)
+              stages[level].fod_lmax = stages[2].fod_lmax;
           }
         }
 
@@ -171,6 +178,8 @@ namespace MR
             stage.optimisers[0] = stage.optimiser_first;
             if (stage.stage_iterations > 1)
             stage.optimisers[stage.stage_iterations - 1] = stage.optimiser_last;
+
+            stage.transform_projector.resize(stage.stage_iterations, transform_projector_default);
           }
         }
 
@@ -248,16 +257,14 @@ namespace MR
           kernel_extent = extent;
         }
 
-        void set_init_translation_type (Transform::Init::InitType type) {
-          init_translation_type = type;
-        }
-
-        void set_init_rotation_type (Transform::Init::InitType type) {
-          init_rotation_type = type;
-        }
 
         void use_robust_estimate (bool use) {
           robust_estimate = use;
+        }
+
+
+        void use_nonsymmetric (bool use) {
+          do_nonsymmetric = use;
         }
 
 
@@ -330,20 +337,10 @@ namespace MR
                 if (s.fod_lmax < 0)
                   throw Exception ("the lmax needs to be defined for each registration stage");
 
-            if (init_translation_type == Transform::Init::mass)
-              Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
-            else if (init_translation_type == Transform::Init::geometric)
-              Transform::Init::initialise_using_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
-            else if (init_translation_type == Transform::Init::set_centre_mass) // doesn't change translation or linear matrix
-              Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
-            else if (init_translation_type == Transform::Init::set_centre_geometric) // doesn't change translation or linear matrix
-              Transform::Init::set_centre_via_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
-
-            if (init_rotation_type == Transform::Init::moments)
-              Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
-            else if (init_rotation_type == Transform::Init::rot_search)
-              Transform::Init::initialise_using_rotation_search (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
-
+            if (!std::isfinite(transform.get_centre()(0)) or !std::isfinite(transform.get_centre()(1)) or !std::isfinite(transform.get_centre()(2))) {
+              Transform::Init::LinearInitialisationParams init;
+              Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts); // doesn't change translation or linear matrix
+            }
 
             INFO ("Transformation before registration:");
             INFO (transform.info());
@@ -353,32 +350,13 @@ namespace MR
               INFO(stage.info());
             }
 
-            // TODO global search
-            // if (global_search) {
-            //   GlobalSearch::GlobalSearch transformation_search;
-            //   if (log_stream) {
-            //     transformation_search.set_log_stream(log_stream);
-            //   }
-            //   // std::ofstream outputFile( "/tmp/log.txt" );
-            //   // transformation_search.set_log_stream(outputFile.rdbuf());
-            //   // transformation_search.set_log_stream(std::cerr.rdbuf());
-            //   transformation_search.run_masked (metric, transform, im1_image, im2_image, im1_mask, im2_mask, init);
-            //   // transform.debug();
-            // }
-
             using MidwayImageType = Header;
-            using ProcessedImageType = Im1ImageType;
+            using ProcessedImageType = Im2ImageType;
             using ProcessedMaskType = Image<bool>;
 
-#ifdef REGISTRATION_CUBIC_INTERP
-            // using Im1ImageInterpolatorType = Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative>;
-            // using Im2ImageInterpolatorType = Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative>;
-            // using ProcessedImageInterpolatorType = Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative>;
-#else
             using Im1ImageInterpolatorType = Interp::LinearInterp<Im1ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;
             using Im2ImageInterpolatorType = Interp::LinearInterp<Im2ImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;
             using ProcessedImageInterpolatorType = Interp::LinearInterp<ProcessedImageType, Interp::LinearInterpProcessingType::ValueAndDerivative>;
-#endif
 
             using ParamType = Metric::Params<TransformType,
                                    Im1ImageType,
@@ -398,7 +376,11 @@ namespace MR
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
 
             // calculate midway (affine average) space which will be constant for each resolution level
-            midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform.get_transform_half_inverse(), transform.get_transform_half());
+            if (do_nonsymmetric) {
+              midway_image_header = Header(im2_image);
+            } else {
+              midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform.get_transform_half_inverse(), transform.get_transform_half());
+            }
 
             for (size_t istage = 0; istage < stages.size(); istage++) {
               auto& stage = stages[istage];
@@ -422,15 +404,14 @@ namespace MR
               INFO ("smoothing image 1");
               auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, stage.scale_factor, do_reorientation, stage_contrasts);
               INFO ("smoothing image 2");
-              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, stage.scale_factor, do_reorientation, stage_contrasts, &stage_contrasts);
+              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, (do_nonsymmetric) ? 1.0 : stage.scale_factor, do_reorientation, stage_contrasts, &stage_contrasts);
 
               DEBUG ("after downsampling:");
               for (const auto & mc : stage_contrasts)
                 INFO (str(mc));
 
-
               Filter::Resize midway_resize_filter (midway_image_header);
-              midway_resize_filter.set_scale_factor (stage.scale_factor);
+              midway_resize_filter.set_scale_factor ( (do_nonsymmetric) ? 1.0 : stage.scale_factor );
               Header midway_resized (midway_resize_filter);
 
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
@@ -460,73 +441,83 @@ namespace MR
                 midway_image_header.spacing(2));
               Eigen::Vector3d coherence(spacing);
               Eigen::Vector3d stop(spacing);
-              //CONF option: RegCoherenceLen
+              //CONF option: reg_coherence_len
               //CONF default: 3.0
-              //CONF Linear registration: estimated spatial coherence length in voxels.
-              default_type reg_coherence_len = File::Config::get_float ("RegCoherenceLen", 3.0); // = 3 stdev blur
+              //CONF Linear registration: estimated spatial coherence length in voxels
+              default_type reg_coherence_len = File::Config::get_float ("reg_coherence_len", 3.0); // = 3 stdev blur
               coherence *= reg_coherence_len * 1.0 / (2.0 * stage.scale_factor);
-              //CONF option: RegStopLen
+              //CONF option: reg_stop_len
               //CONF default: 0.0001
-              //CONF Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration.
-              default_type reg_stop_len = File::Config::get_float ("RegStopLen", 0.0001);
+              //CONF Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration
+              default_type reg_stop_len = File::Config::get_float ("reg_stop_len", 0.0001);
               stop.array() *= reg_stop_len;
               DEBUG ("coherence length: " + str(coherence));
               DEBUG ("stop length:      " + str(stop));
-              transform.get_gradient_descent_updator()->set_control_points (parameters.control_points, coherence, stop, spacing);
+              parameters.transformation.get_gradient_descent_updator()->set_control_points (parameters.control_points, coherence, stop, spacing);
 
               // convergence check using slope of smoothed parameter trajectories
               Eigen::VectorXd slope_threshold = Eigen::VectorXd::Ones (12);
-              //CONF option: RegGdConvergenceThresh
+              //CONF option: reg_gd_convergence_thresh
               //CONF default: 5e-3
               //CONF Linear registration: threshold for convergence check using the smoothed control point trajectories
-              //CONF measured in fraction of a voxel.
-              slope_threshold.fill (spacing.mean() * File::Config::get_float ("RegGdConvergenceThresh", 5e-3f));
+              //CONF measured in fraction of a voxel
+              slope_threshold.fill (spacing.mean() * File::Config::get_float ("reg_gd_convergence_thresh", 5e-3f));
               DEBUG ("convergence slope threshold: " + str(slope_threshold[0]));
-              //CONF option: RegGdConvergenceDataSmooth
+              //CONF option: reg_gd_convergence_data_smooth
               //CONF default: 0.8
               //CONF Linear registration: control point trajectory smoothing value used in convergence check
-              //CONF parameter range: [0...1].
-              const default_type alpha (MR::File::Config::get_float ("RegGdConvergenceDataSmooth", 0.8));
+              //CONF parameter range: [0...1]
+              const default_type alpha (MR::File::Config::get_float ("reg_gd_convergence_data_smooth", 0.8));
               if ( (alpha < 0.0f ) || (alpha > 1.0f) )
-                throw Exception ("config file option RegGdConvergenceDataSmooth has to be in the range: [0...1]");
-              //CONF option: RegGdConvergenceSlopeSmooth
+                throw Exception ("config file option reg_gd_convergence_data_smooth has to be in the range: [0...1]");
+              //CONF option: reg_gd_convergence_slope_smooth
               //CONF default: 0.1
               //CONF Linear registration: control point trajectory slope smoothing value used in convergence check
-              //CONF parameter range: [0...1].
-              const default_type beta (MR::File::Config::get_float ("RegGdConvergenceSlopeSmooth", 0.1));
+              //CONF parameter range: [0...1]
+              const default_type beta (MR::File::Config::get_float ("reg_gd_convergence_slope_smooth", 0.1));
               if ( (beta < 0.0f ) || (beta > 1.0f) )
-                throw Exception ("config file option RegGdConvergenceSlopeSmooth has to be in the range: [0...1]");
-              size_t buffer_len (MR::File::Config::get_float ("RegGdConvergenceBufferLen", 4));
-              //CONF option: RegGdConvergenceMinIter
+                throw Exception ("config file option reg_gd_convergence_slope_smooth has to be in the range: [0...1]");
+              size_t buffer_len (MR::File::Config::get_float ("reg_gd_convergence_buffer_len", 4));
+              //CONF option: reg_gd_convergence_min_iter
               //CONF default: 10
-              //CONF Linear registration: minimum number of iterations until convergence check is activated.
-              size_t min_iter (MR::File::Config::get_float ("RegGdConvergenceMinIter", 10));
-              transform.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
-
-              Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              if (do_reorientation && stage.fod_lmax > 0)
-                evaluate.set_directions (aPSF_directions);
+              //CONF Linear registration: minimum number of iterations until convergence check is activated
+              size_t min_iter (MR::File::Config::get_float ("reg_gd_convergence_min_iter", 10));
+              parameters.transformation.get_gradient_descent_updator()->set_convergence_check (slope_threshold, alpha, beta, buffer_len, min_iter);
 
               INFO ("registration stage running...");
               for (auto stage_iter = 1U; stage_iter <= stage.stage_iterations; ++stage_iter) {
-                if (stage.gd_max_iter > 0 and stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd) {
-                  Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                  optim (evaluate, *transform.get_gradient_descent_updator());
-                  optim.be_verbose (analyse_descent);
-                  optim.precondition (optimiser_weights);
-                  optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
-                  parameters.optimiser_update (optim, evaluate.overlap());
-                  INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
-                  str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
-                } else if (stage.gd_max_iter > 0) {
-                  Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
-                    optim (evaluate, *transform.get_gradient_descent_updator());
-                  optim.be_verbose (analyse_descent);
-                  optim.precondition (optimiser_weights);
-                  optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
-                  parameters.optimiser_update (optim, evaluate.overlap());
-                  INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
-                  str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
+                parameters.transformation.get_gradient_descent_updator()->set_projection_type (stage.transform_projector[stage_iter - 1]);
+                if (stage.gd_max_iter > 0) {
+                  if (stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd) {
+                    Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
+                    if (do_reorientation && stage.fod_lmax > 0)
+                      evaluate.set_directions (aPSF_directions);
+                    Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
+                      optim (evaluate, *parameters.transformation.get_gradient_descent_updator());
+                    optim.be_verbose (analyse_descent);
+                    optim.precondition (optimiser_weights);
+                    optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
+                    parameters.optimiser_update (optim, evaluate.overlap());
+                    INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
+                    str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
+                  } else if (stage.optimisers[stage_iter - 1] == OptimiserAlgoType::gd) {
+                    Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
+                    if (do_reorientation && stage.fod_lmax > 0)
+                      evaluate.set_directions (aPSF_directions);
+                    Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
+                      optim (evaluate, *parameters.transformation.get_gradient_descent_updator());
+                    optim.be_verbose (analyse_descent);
+                    optim.precondition (optimiser_weights);
+                    optim.run (stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
+                    parameters.optimiser_update (optim, evaluate.overlap());
+                    INFO ("    iteration: "+str(stage_iter)+"/"+str(stage.stage_iterations)+" GD iterations: "+
+                    str(optim.function_evaluations())+" cost: "+str(optim.value())+" overlap: "+str(evaluate.overlap()));
+                  } else if (stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd_robust) {
+                    if (parameters.loop_density != 1.0L)
+                      throw Exception ("bbgd_robust and batch gradient descent not implemented");
+                    parameters.robust_estimate_subset = true;
+                    RobustStage<ParamType, decltype(stage), MetricType, TransformType> rstage (parameters, stage, metric, do_reorientation, aPSF_directions, optimiser_weights, grad_tolerance);
+                  }
                 }
 
                 if (log_stream) {
@@ -539,11 +530,15 @@ namespace MR
                 // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
                 if (stage.diagnostics_images.size()) {
                   CONSOLE("    creating diagnostics image: " + stage.diagnostics_images[stage_iter - 1]);
-                  parameters.make_diagnostics_image (stage.diagnostics_images[stage_iter - 1], File::Config::get_bool ("RegLinregDiagnosticsImageMasked", false));
+                  parameters.make_diagnostics_image (stage.diagnostics_images[stage_iter - 1], File::Config::get_bool ("reg_linreg_diagnostics_image_masked", false));
                 }
               }
-              // update midway (affine average) space using the current transformations
-              midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation.get_transform_half_inverse(), parameters.transformation.get_transform_half());
+              if (do_nonsymmetric) {
+                midway_image_header = Header(im2_image);
+              } else {
+                // update midway (affine average) space using the current transformations
+                midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation.get_transform_half_inverse(), parameters.transformation.get_transform_half());
+              }
             }
             INFO("linear registration done");
             INFO (transform.info());
@@ -581,19 +576,18 @@ namespace MR
         vector<MultiContrastSetting> contrasts, stage_contrasts;
         vector<size_t> kernel_extent;
         default_type grad_tolerance;
-        default_type step_tolerance;
+        // default_type step_tolerance;
         std::streambuf* log_stream;
-        Transform::Init::InitType init_translation_type, init_rotation_type;
         bool robust_estimate;
         bool do_reorientation;
+        bool do_nonsymmetric;
         Eigen::MatrixXd aPSF_directions;
         const bool analyse_descent;
+        Transform::TransformProjectionType transform_projector_default;
 
         Header midway_image_header;
     };
 
-    void set_init_translation_model_from_option (Registration::Linear& registration, const int& option);
-    void set_init_rotation_model_from_option (Registration::Linear& registration, const int& option);
     void parse_general_options (Registration::Linear& registration);
   }
 }

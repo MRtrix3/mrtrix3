@@ -48,6 +48,7 @@ namespace MR
               default_type scale;
               size_t directions;
               bool run_global;
+              double translation_extent;
               struct global_search { MEMALIGN(global_search)
                 size_t iterations;
                 global_search () :
@@ -58,7 +59,8 @@ namespace MR
                 angles (5),
                 scale (0.15),
                 directions (250),
-                run_global (false) {
+                run_global (false),
+                translation_extent (0.05) {
                   angles[0] =  2.0 / 180.0 * Math::pi;
                   angles[1] =  5.0 / 180.0 * Math::pi;
                   angles[2] = 10.0 / 180.0 * Math::pi;
@@ -81,7 +83,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
 
         extern void set_centre_via_image_centres (
           const Image<default_type>& im1,
@@ -105,7 +108,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
 
         extern void initialise_using_FOD (
           Image<default_type>& im1,
@@ -122,7 +126,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
 
         extern void initialise_using_image_mass (
           Image<default_type>& im1,
@@ -130,7 +135,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
       }
     }
   }
