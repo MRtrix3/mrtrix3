@@ -113,28 +113,16 @@ def copy(src, dst, follow_symlinks=True):
 
 
 def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True):
-  from mrtrix3 import app, run #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
   if max_rot is None:
     max_rot = 2 * math.pi
-  def load_key_value(file_path):
-    res = {}
-    with open(file_path, "r") as ftrafo:
-      for line in ftrafo.readlines():
-        if len(line) == 1 or line.startswith("#"):
-          continue
-        name, var = line.rstrip().partition(":")[::2]
-        if name in res.keys():
-          res[name].append(var.split())
-        else:
-          res[name] = var.split()
-    return res
 
   good = True
   run.command('transformcalc ' + transformation + ' decompose ' + transformation + 'decomp')
   if not os.path.isfile(transformation + 'decomp'):  # does not exist if run with -continue option
     app.console(transformation + 'decomp not found. skipping check')
     return True
-  data = load_key_value(transformation + 'decomp')
+  data = utils.load_keyval(transformation + 'decomp')
   run.function(os.remove, transformation + 'decomp')
   scaling = [float(value) for value in data['scaling']]
   if any([a < 0 for a in scaling]) or any([a > (1 + max_scaling) for a in scaling]) or any(
