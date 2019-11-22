@@ -14,42 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <locale>
-#include <clocale>
+#ifndef __gui_mrview_file_open_h__
+#define __gui_mrview_file_open_h__
+
 #include "gui/gui.h"
-#include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-
-
-
-    QWidget* App::main_window = nullptr;
-    App* App::application = nullptr;
-
-
-
-    App::App (int& cmdline_argc, char** cmdline_argv) :
-      QApplication (cmdline_argc, cmdline_argv)
-    {
-      application = this;
-      ::MR::File::Config::init ();
-      ::MR::GUI::GL::set_default_context ();
-
-      QLocale::setDefault(QLocale::c());
-      std::locale::global (std::locale::classic());
-      std::setlocale (LC_ALL, "C");
-
-      setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
-    }
-
-
-
-  }
-}
-
-
-
+#endif
 
