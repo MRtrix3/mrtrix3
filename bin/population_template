@@ -113,7 +113,7 @@ def copy(src, dst, follow_symlinks=True):
 
 
 def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True):
-  from mrtrix3 import app, run, utils #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, run #pylint: disable=no-name-in-module, import-outside-toplevel
   if max_rot is None:
     max_rot = 2 * math.pi
   def load_key_value(file_path):
