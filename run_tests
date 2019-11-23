@@ -160,6 +160,7 @@ EOD
   echo -n 'running "'${testitem}'"... '
   rm -f $datadir/tmp*.*
   rm -rf $datadir/tmp-*/
+  rm -rf $datadir/tmp_*/
   rm -rf $datadir/*-tmp-*/
   ((ntests=0))
   ((success=0))
