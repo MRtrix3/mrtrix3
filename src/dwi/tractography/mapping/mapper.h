@@ -295,6 +295,8 @@ namespace MR {
         template <class Cont>
           void TrackMapperBase::voxelise_ends (const Streamline<>& tck, Cont& out) const
           {
+            if (!tck.size())
+              return;
             for (size_t end = 0; end != 2; ++end) {
               const auto vox = round (scanner2voxel * (end ? tck.back() : tck.front()));
               if (check (vox, info)) {
