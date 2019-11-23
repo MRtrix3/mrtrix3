@@ -29,7 +29,7 @@ namespace MR {
 
         bool Upsampler::operator() (const Streamline<>& in, Streamline<>& out) const
         {
-          if (get_ratio() == 1) {
+          if (get_ratio() == 1 || in.size() == 1) {
             out = in;
             return true;
           }
