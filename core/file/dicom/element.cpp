@@ -318,7 +318,7 @@ namespace MR {
           auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++)
-            V[n] = to<int32_t> (strings[n]);
+            V[n] = to<int32_t> (strip (strings[n]));
         }
         else
           report_unknown_tag_with_implicit_syntax();
@@ -342,7 +342,7 @@ namespace MR {
           auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++)
-            V[n] = to<uint32_t> (strings[n]);
+            V[n] = to<uint32_t> (strip (strings[n]));
         }
         else
           report_unknown_tag_with_implicit_syntax();
@@ -364,7 +364,7 @@ namespace MR {
           auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++)
-            V[n] = to<default_type> (strings[n]);
+            V[n] = to<default_type> (strip (strings[n]));
         }
         else
           report_unknown_tag_with_implicit_syntax();
@@ -377,7 +377,7 @@ namespace MR {
       Date Element::get_date () const
       {
         assert (type() == DATE);
-        return Date (std::string (reinterpret_cast<const char*> (data), size));
+        return Date (strip (std::string (reinterpret_cast<const char*> (data), size)));
       }
 
 
@@ -386,7 +386,7 @@ namespace MR {
       Time Element::get_time () const
       {
         assert (type() == TIME);
-        return Time (std::string (reinterpret_cast<const char*> (data), size));
+        return Time (strip (std::string (reinterpret_cast<const char*> (data), size)));
       }
 
 
