@@ -97,7 +97,7 @@ namespace MR {
               for (uint32_t m = 0; m < nitems; m++) {
                 uint32_t length = Raw::fetch_LE<uint32_t> (p);
                 if (length)
-                  return to<int> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
+                  return to<int> (strip (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4))));
                 p += 16 + 4*((length+3)/4);
               }
               return 0;
@@ -108,7 +108,7 @@ namespace MR {
               for (uint32_t m = 0; m < nitems; m++) {
                 uint32_t length = Raw::fetch_LE<uint32_t> (p);
                 if (length)
-                  return to<default_type> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
+                  return to<default_type> (strip (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4))));
                 p += 16 + 4*((length+3)/4);
               }
               return NaN;
@@ -121,7 +121,7 @@ namespace MR {
                   DEBUG ("CSA entry contains fewer items than expected - trailing entries will be set to NaN");
                 for (uint32_t m = 0; m < std::min<size_t> (nitems, v.size()); m++) {
                   uint32_t length = Raw::fetch_LE<uint32_t> (p);
-                  v[m] = length ? to<default_type> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4))) : NaN;
+                  v[m] = length ? to<default_type> (strip (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)))) : NaN;
                   p += 16 + 4*((length+3)/4);
                 }
                 for (uint32_t m = nitems; m < v.size(); ++m)
