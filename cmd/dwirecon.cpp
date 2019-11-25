@@ -76,6 +76,9 @@ void usage ()
     + Argument ("map").type_image_in()
     + Argument ("idx").type_integer()
 
+  + Option ("template", "Template header to determine the reconstruction grid.")
+    + Argument ("header").type_image_in()
+
   + DWI::GradImportOptions()
 
   + PhaseEncoding::ImportOptions
@@ -248,6 +251,10 @@ void run ()
 
   // Create recon header
   Header rechdr (dwisub);
+  opt = get_options("template");
+  if (opt.size()) {
+    rechdr = Header::open(opt[0][0]);
+  }
   rechdr.ndim() = 4;
   rechdr.size(3) = ncoefs;
   Stride::set (rechdr, {2, 3, 4, 1});
@@ -335,13 +342,13 @@ void run ()
 
 
   // Write result to output file
-  Header header (dwisub);
-  header.ndim() = 5;
-  header.size(3) = shells.count();
-  header.size(4) = padding;
-  Stride::set_from_command_line (header, {3, 4, 5, 2, 1});
-  header.datatype() = DataType::from_command_line (DataType::Float32);
-  PhaseEncoding::set_scheme (header, Eigen::MatrixXf());
+  Header msshhdr (rechdr);
+  msshhdr.ndim() = 5;
+  msshhdr.size(3) = shells.count();
+  msshhdr.size(4) = padding;
+  Stride::set_from_command_line (msshhdr, {3, 4, 5, 2, 1});
+  msshhdr.datatype() = DataType::from_command_line (DataType::Float32);
+  PhaseEncoding::set_scheme (msshhdr, Eigen::MatrixXf());
   // store b-values and counts
   {
   std::stringstream ss;
@@ -349,17 +356,17 @@ void run ()
     ss << b << ",";
   std::string key = "shells";
   std::string val = ss.str(); val.erase(val.length()-1);
-  header.keyval()[key] = val;
+  msshhdr.keyval()[key] = val;
   } {
   std::stringstream ss;
   for (auto c : shells.get_counts())
     ss << c << ",";
   std::string key = "shellcounts";
   std::string val = ss.str(); val.erase(val.length()-1);
-  header.keyval()[key] = val;
+  msshhdr.keyval()[key] = val;
   }
 
-  auto out = Image<value_type>::create (argument[1], header);
+  auto out = Image<value_type>::create (argument[1], msshhdr);
 
   j = 0;
   Eigen::VectorXf c (ncoefs);
@@ -378,10 +385,10 @@ void run ()
   bool complete = get_options("complete").size();
   opt = get_options("spred");
   if (opt.size()) {
-    Header header (dwisub);
-    header.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
-    DWI::set_DW_scheme (header, gradsub);
-    auto spred = Image<value_type>::create(opt[0][0], header);
+    Header spredhdr (dwisub);
+    spredhdr.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
+    DWI::set_DW_scheme (spredhdr, gradsub);
+    auto spred = Image<value_type>::create(opt[0][0], spredhdr);
     auto recon = ImageView<value_type>(rechdr, x.data());
     map.x2y(recon, spred);
   }

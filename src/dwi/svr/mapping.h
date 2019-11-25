@@ -166,7 +166,7 @@ namespace MR
 
           void set_shotidx (size_t idx) {
             interp.set_shotidx(idx);
-            Ts2r = Ts.scanner2voxel * get_transform(motion.row(idx)) * Tr.voxel2scanner;
+            Ts2r = Tr.scanner2voxel * get_transform(motion.row(idx)) * Ts.voxel2scanner;
           }
 
         private:
@@ -184,7 +184,7 @@ namespace MR
           }
 
           FORCE_INLINE default_type clampdim (default_type r, size_t axis) const {
-            return (r < 0) ? 0 : (r > size(axis)-1) ? size(axis)-1 : r;
+            return (r < 0) ? 0 : (r > parent().size(axis)-1) ? parent().size(axis)-1 : r;
           }
 
       };
