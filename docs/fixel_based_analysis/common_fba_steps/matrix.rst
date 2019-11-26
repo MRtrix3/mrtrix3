@@ -1,7 +1,7 @@
 Generation of the fixel-fixel connectivity matrix based on the whole-brain
 streamlines tractogram is performed as follows::
 
-    fixelconnectivity ../template tracks_2_million_sift.tck ../template/matrix
+    fixelconnectivity fixel_mask/ tracks_2_million_sift.tck matrix/
 
 The output directory should contain three images: `index.mif`, `fixels.mif`
 and `values.mif`; these are used to encode the fixel-fixel connectivity
