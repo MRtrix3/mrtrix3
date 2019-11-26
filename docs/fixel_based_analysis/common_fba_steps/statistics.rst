@@ -1,9 +1,9 @@
 Statistical analysis using CFE is performed separately for each metric
 (FD, log(FC), and FDC) as follows::
 
-     fixelcfestats fd_smooth files.txt design_matrix.txt contrast_matrix.txt ../template/matrix stats_fd
-     fixelcfestats log_fc_smooth files.txt design_matrix.txt contrast_matrix.txt ../template/matrix stats_log_fc
-     fixelcfestats fdc_smooth files.txt design_matrix.txt contrast_matrix.txt ../template/matrix stats_fdc
+     fixelcfestats fd_smooth/ files.txt design_matrix.txt contrast_matrix.txt matrix/ stats_fd/
+     fixelcfestats log_fc_smooth/ files.txt design_matrix.txt contrast_matrix.txt matrix/ stats_log_fc/
+     fixelcfestats fdc_smooth/ files.txt design_matrix.txt contrast_matrix.txt matrix/ stats_fdc/
 
 The input :code:`files.txt` is a text file containing the filename of each
 file (i.e. *not* the full path) to be analysed inside the input fixel
