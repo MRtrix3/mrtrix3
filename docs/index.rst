@@ -54,6 +54,7 @@ These applications have been written from scratch in C++, using the functionalit
 
    fixel_based_analysis/st_fibre_density_cross-section
    fixel_based_analysis/mt_fibre_density_cross-section
+   fixel_based_analysis/mitigating_brain_cropping
    fixel_based_analysis/computing_effect_size_wrt_controls
    fixel_based_analysis/displaying_results_with_streamlines
 
