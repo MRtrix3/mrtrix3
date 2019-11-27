@@ -14,7 +14,7 @@ The way to achieve this at the point of statistical inference is for the fixel d
 to contain the value NaN (Not A Number) in any location where a valid quantitative
 metric could not be obtained for that particular subject. Such data are removed
 from the GLM on a fixel-by-fixel basis. This technique is explained in greater
-detail and demonstrated in [Smith2019]_.
+detail and demonstrated in [Smith2019a]_.
 
 The following instructions describe a way to modify to a typical Fixel-Based Analysis
 pipeline, in order to ensure that any location in the template image where image data
