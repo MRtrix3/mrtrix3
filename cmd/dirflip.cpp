@@ -21,7 +21,7 @@
 #include "thread.h"
 #include "dwi/directions/file.h"
 
-#define DEFAULT_PERMUTATIONS 1e8
+#define DEFAULT_PERMUTATIONS 100000000
 
 
 using namespace MR;
@@ -153,7 +153,7 @@ void run ()
 {
   auto directions = DWI::Directions::load_cartesian (argument[0]);
 
-  size_t num_permutations = get_option_value ("permutations", DEFAULT_PERMUTATIONS);
+  size_t num_permutations = get_option_value<size_t> ("permutations", DEFAULT_PERMUTATIONS);
 
   vector<int> signs;
   {
