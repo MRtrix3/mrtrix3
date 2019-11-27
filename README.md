@@ -7,7 +7,7 @@ Please visit the [official website for MRtrix](http://www.mrtrix.org) to access 
 ## Getting help
 
 Support and general discussion is hosted on the [MRtrix3 Community Forum](http://community.mrtrix.org/). Please
-address all MRtrix3-related queries there. You can use you GitHub or Google login to post questions.
+address all MRtrix3-related queries there. You can use your GitHub or Google login to post questions.
 
 ## Quick install
 
