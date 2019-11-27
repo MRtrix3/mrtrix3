@@ -1,6 +1,6 @@
 # MRtrix
 
-[![Build Status](https://travis-ci.org/MRtrix3/mrtrix3.svg?branch=updated_syntax)](https://travis-ci.org/MRtrix3/mrtrix3)
+[![Build Status](https://github.com/jdtournier/mrtrix3/workflows/checks/badge.svg)](https://github.com/jdtournier/mrtrix3/actions)
 
 Please visit the [official website for MRtrix](http://www.mrtrix.org) to access the [documentation for MRtrix3](http://mrtrix.readthedocs.org/), including detailed installation instructions.
 
