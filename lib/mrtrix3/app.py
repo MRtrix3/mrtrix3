@@ -458,7 +458,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
   INTERVAL = 0.1
   WRAPON = '\033[?7h'
   WRAPOFF = '\033[?7l'
-  
+
   def __init__(self, msg, target=0):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     global EXEC_NAME, VERBOSITY
