@@ -74,6 +74,7 @@ void usage ()
 
   OPTIONS
     +   Option ("all", "print all properties, rather than the first and last 2 of each.")
+    +   Option ("name", "print the file system path of the image")
     +   Option ("format", "image file format")
     +   Option ("ndim", "number of image dimensions")
     +   Option ("size", "image size along each axis")
@@ -246,6 +247,7 @@ void run ()
   if (get_options ("norealign").size())
     Header::do_not_realign_transform = true;
 
+  const bool name          = get_options("name")          .size();
   const bool format        = get_options("format")        .size();
   const bool ndim          = get_options("ndim")          .size();
   const bool size          = get_options("size")          .size();
@@ -274,6 +276,7 @@ void run ()
     else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes)
       DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
+    if (name)       std::cout << header.name() << "\n";
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
     if (size)       print_dimensions (header);

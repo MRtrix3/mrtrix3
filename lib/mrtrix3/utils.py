@@ -1,3 +1,18 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # Various utility functions / classes that don't sensibly slot into any other module
 
 
@@ -16,7 +31,7 @@ import platform, re
 #     all commands within the list will be executed sequentially within the constructor
 class RunList(object): #pylint: disable=unused-variable
   def __init__(self, message, value):
-    from mrtrix3 import app, run
+    from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
     if isinstance(value, int):
       self.progress = app.ProgressBar(message, value)
       self.target_count = value
@@ -35,12 +50,12 @@ class RunList(object): #pylint: disable=unused-variable
                       'integer (number of commands/functions to run), or a '
                       'list of command strings to execute')
   def command(self, cmd):
-    from mrtrix3 import run
+    from mrtrix3 import run #pylint: disable=import-outside-toplevel
     assert self.valid
     run.command(cmd)
     self._increment()
   def function(self, func, *args, **kwargs):
-    from mrtrix3 import run
+    from mrtrix3 import run #pylint: disable=import-outside-toplevel
     assert self.valid
     run.function(func, *args, **kwargs)
     self._increment()
