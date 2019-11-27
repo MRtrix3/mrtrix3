@@ -494,14 +494,16 @@ namespace MR
           // eval() calls necessary for older versions of Eigen / compiler to work:
           //   can't seem to map Eigen template result to const matrix_type& as the Math::pinv() input
           // TODO See if some better template trickery can be done
-          const matrix_type D = (design.transpose() * design).inverse();
+          matrix_type D = (design.transpose() * design).inverse();
           // Note: Cu is transposed with respect to how contrast matrices are stored elsewhere
-          const matrix_type Cu = Eigen::FullPivLU<matrix_type> (c).kernel();
-          const matrix_type inv_cDc = (c * D * c.transpose()).inverse();
+          matrix_type Cu = Eigen::FullPivLU<matrix_type> (c).kernel();
+          matrix_type inv_cDc = (c * D * c.transpose()).inverse();
           // Note: Cv is transposed with respect to convention just as Cu is
-          const matrix_type Cv = Cu - c.transpose() * inv_cDc * c * D * Cu;
-          const matrix_type X = design * D * c.transpose() * inv_cDc;
-          const matrix_type Z = design * D * Cv * (Cv.transpose() * D * Cv).inverse();
+          matrix_type Cv = Cu - c.transpose() * inv_cDc * c * D * Cu;
+          matrix_type X = design * D * c.transpose() * inv_cDc;
+          // Using pseudoinverse here results in a zero-filled matrix in the event
+          //   where there are no nuisance regressors; .inverse() leads to NaNs
+          matrix_type Z = design * D * Cv * Math::pinv (Cv.transpose() * D * Cv);
           return Partition (X, Z);
         }
 
