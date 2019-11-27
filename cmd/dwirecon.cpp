@@ -249,6 +249,14 @@ void run ()
   if (padding < Math::SH::NforL(lmax))
     throw Exception("user-provided padding too small.");
 
+
+  // Create source header - needed due to stride handling
+  Header srchdr (dwisub);
+  Stride::set (srchdr, {1, 2, 3, 4});
+  DWI::set_DW_scheme (srchdr, gradsub);
+  srchdr.datatype() = DataType::Float32;
+  srchdr.sanitise();
+
   // Create recon header
   Header rechdr (dwisub);
   opt = get_options("template");
@@ -263,7 +271,7 @@ void run ()
 
 
   // Create mapping
-  DWI::SVR::ReconMapping map (rechdr, dwisub, qbasis, motionsub, ssp);
+  DWI::SVR::ReconMapping map (rechdr, srchdr, qbasis, motionsub, ssp);
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
@@ -275,7 +283,7 @@ void run ()
 
 
 
-  // Read input data to vector
+  // Read input data to vector (this enforces positive strides!)
   Eigen::VectorXf y (R.rows()); y.setZero();
   size_t j = 0, v = 0;
   for (auto lv = Loop("loading image data", 3)(dwisub); lv; lv++, v++) {
@@ -297,11 +305,7 @@ void run ()
   cg.setTolerance(tol);
   cg.setMaxIterations(maxiter);
 
-  // Compute M'y
-  //Eigen::VectorXf p (R.cols());
-  //R.project_y2x(p, y);
-
-  // Solve M'M x = M'y
+  // Solve y = M x
   Eigen::VectorXf x (R.cols());
   opt = get_options("init");
   if (opt.size()) {
@@ -328,12 +332,10 @@ void run ()
       x0.segment(j, ncoefs) = mssh2x.solve(c);
     }
     INFO("solve from given starting point");
-    //x = cg.solveWithGuess(p, x0);
     x = cg.solveWithGuess(y, x0);
   }
   else {
     INFO("solve from zero starting point");
-    //x = cg.solve(p);
     x = cg.solve(y);
   }
 
@@ -385,17 +387,13 @@ void run ()
   bool complete = get_options("complete").size();
   opt = get_options("spred");
   if (opt.size()) {
-    Header spredhdr (dwisub);
-    spredhdr.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
-    DWI::set_DW_scheme (spredhdr, gradsub);
-    auto spred = Image<value_type>::create(opt[0][0], spredhdr);
+    srchdr.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
+    auto spred = Image<value_type>::create(opt[0][0], srchdr);
     auto recon = ImageView<value_type>(rechdr, x.data());
     map.x2y(recon, spred);
   }
 
 
 }
-
-
 
 
