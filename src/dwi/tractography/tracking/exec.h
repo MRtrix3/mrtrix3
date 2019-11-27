@@ -129,7 +129,7 @@ namespace MR
               if (track_rejected (item)) {
                 item.clear();
                 item.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
-              } else if (S.downsampler.valid() || (S.is_act() && S.act().crop_at_gmwmi())) {
+              } else if (S.downsampler.get_ratio() > 1 || (S.is_act() && S.act().crop_at_gmwmi())) {
                 S.downsampler (item);
                 check_downsampled_length (item);
               } else {

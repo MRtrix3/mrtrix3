@@ -65,9 +65,9 @@ namespace MR
 
 
 
-      KeyValues read (const nlohmann::json& json)
+      KeyValues read (const nlohmann::json& json, const KeyValues& preexisting)
       {
-        KeyValues result;
+        KeyValues result (preexisting);
         for (auto i = json.cbegin(); i != json.cend(); ++i) {
 
           if (i->is_boolean()) {
@@ -101,7 +101,7 @@ namespace MR
 
       void read (const nlohmann::json& json, Header& header, const bool realign)
       {
-        header.keyval() = read (json);
+        header.keyval() = read (json, header.keyval());
         if (realign && !Header::do_not_realign_transform) {
 
           // The corresponding header may have been rotated on image load prior to the JSON
@@ -146,13 +146,9 @@ namespace MR
         bool attempt_scalar (const std::pair<std::string, std::string>& kv, nlohmann::json& json)
         {
           try {
-            std::stringstream stream (kv.second);
-            T temp;
-            stream >> temp;
-            if (stream && stream.eof()) {
-              json[kv.first] = temp;
-              return true;
-            }
+            const T temp = to<T> (kv.second);
+            json[kv.first] = temp;
+            return true;
           } catch (...) { }
           return false;
         }
@@ -219,7 +215,6 @@ namespace MR
         };
 
         for (const auto& kv : keyval) {
-
           if (attempt_scalar<int> (kv, json)) continue;
           if (attempt_scalar<default_type> (kv, json)) continue;
           if (attempt_scalar<bool> (kv, json)) continue;

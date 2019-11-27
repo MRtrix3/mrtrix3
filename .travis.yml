@@ -133,9 +133,10 @@ after_failure:
         cat configure.log
         cat build.log
         ;;
-      *)
+      "run")
         cat configure.log
         cat build.log
-        cat testing.log
+        cat testing_units.log
+        cat testing_binaries.log
     esac
   - sleep 10
