@@ -107,8 +107,8 @@ List of MRtrix3 commands
     commands/tckmap
     commands/tckresample
     commands/tcksample
-    commands/tcksift
     commands/tcksift2
+    commands/tcksift
     commands/tckstats
     commands/tcktransform
     commands/tensor2metric
@@ -206,7 +206,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrstats`, "Compute images statistics"
     |cpp.png|, :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     |cpp.png|, :ref:`mrtransform`, "Apply spatial transformations to an image"
-    |python.png|, :ref:`mrtrix_cleanup`, ""
+    |python.png|, :ref:`mrtrix_cleanup`, "Clean up residual temporary files & scratch directories from MRtrix3 commands"
     |cpp.png|, :ref:`mrview`, "The MRtrix image viewer"
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
@@ -230,8 +230,8 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`tckmap`, "Use track data as a form of contrast for producing a high-resolution image"
     |cpp.png|, :ref:`tckresample`, "Resample each streamline in a track file to a new set of vertices"
     |cpp.png|, :ref:`tcksample`, "Sample values of an associated image along tracks"
-    |cpp.png|, :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
     |cpp.png|, :ref:`tcksift2`, "Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities"
+    |cpp.png|, :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
     |cpp.png|, :ref:`tckstats`, "Calculate statistics on streamlines lengths"
     |cpp.png|, :ref:`tcktransform`, "Apply a spatial transformation to a tracks file"
     |cpp.png|, :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"
