@@ -929,8 +929,30 @@ int main (int argc, char* argv[]) {
 }
 ''', 'EIGEN_CFLAGS', '"-isystem /usr/include/eigen3"')
 
+
 if not openmp:
   eigen_cflags += [ '-DEIGEN_DONT_PARALLELIZE' ]
+
+
+if compile_test ('Eigen3 Unsupported', cpp_flags + eigen_cflags, ld_flags, '''
+#include <iostream>
+#include <Eigen/Core>
+#include <unsupported/Eigen/SpecialFunctions>
+
+using array_type = Eigen::Array<double, 1, 1>;
+
+int main (int argc, char* argv[]) {
+  auto test = Eigen::betainc (array_type::Constant (10.0), array_type::Constant (0.5), array_type::Constant (1.0));
+  std::cout << "Present";
+  return (0);
+}
+''', on_failure='not found; custom functions to be used'):
+  cpp_flags += [ '-DMRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS' ]
+
+
+
+
+
 
 
 

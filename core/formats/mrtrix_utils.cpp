@@ -80,7 +80,7 @@ namespace MR
 
 
 
-    bool next_keyvalue (File::KeyValue& kv, std::string& key, std::string& value)
+    bool next_keyvalue (File::KeyValue::Reader& kv, std::string& key, std::string& value)
     {
       key.clear(); value.clear();
       if (!kv.next())

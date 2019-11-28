@@ -14,12 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __bitset_h__
-#define __bitset_h__
+#ifndef __misc_bitset_h__
+#define __misc_bitset_h__
 
 
 #include <atomic>
-#include <cstdint>
+#include <stdint.h>
+
 #include "mrtrix.h"
 
 
@@ -109,8 +110,8 @@ namespace MR {
        * data.
        * \returns a Value or ConstValue class used to manipulate the bit data at
        * the specified index */
-      ConstValue operator[] (const size_t i) const { return ConstValue (*this, i); }
-      Value      operator[] (const size_t i)       { return Value      (*this, i); }
+      ConstValue operator[] (const size_t i) const { assert (i < bits); return ConstValue (*this, i); }
+      Value      operator[] (const size_t i)       { assert (i < bits); return Value      (*this, i); }
 
       //! the number of boolean elements in the set
       /*! The size of the BitSet. Note that this is the number of boolean values
@@ -188,19 +189,21 @@ namespace MR {
 
       const uint8_t* get_data_ptr() const { return data; }
 
-      friend std::ostream& operator<< (std::ostream&, BitSet&);
+      friend std::ostream& operator<< (std::ostream&, const BitSet&);
 
 
     protected:
-      size_t   bits;
-      size_t   bytes;
+      size_t bits;
+      size_t bytes;
 
-      size_t excess_bits() const { return (bits - (8 * (bytes - 1))); }
+      bool have_excess_bits() const { return (bits & size_t(7)); }
+      size_t excess_bits() const { return (8*bytes - bits); }
+      uint8_t excess_bit_mask() const { assert (have_excess_bits()); return 0xFF << (8-excess_bits()); }
 
       bool test  (const size_t index) const
       {
         assert (index < bits);
-        return (data[index>>3] & masks[index&7]);
+        return (data[index>>3] & masks[index&size_t(7)]);
       }
 
       void set   (const size_t index)
@@ -208,7 +211,7 @@ namespace MR {
         assert (index < bits);
         std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (((uint8_t*) data) + (index>>3));
         uint8_t prev = *at, new_value;
-        do { new_value = prev | masks[index&7]; } while (!at->compare_exchange_weak (prev, new_value));
+        do { new_value = prev | masks[index&size_t(7)]; } while (!at->compare_exchange_weak (prev, new_value));
       }
 
       void reset (const size_t index)
@@ -216,7 +219,7 @@ namespace MR {
         assert (index < bits);
         std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (((uint8_t*) data) + (index>>3));
         uint8_t prev = *at, new_value;
-        do { new_value = prev & ~masks[index&7]; } while (!at->compare_exchange_weak (prev, new_value));
+        do { new_value = prev & ~masks[index&size_t(7)]; } while (!at->compare_exchange_weak (prev, new_value));
       }
 
 
@@ -224,19 +227,6 @@ namespace MR {
       uint8_t* data;
 
       static const uint8_t masks[8];
-      static const char dbyte_to_hex[16];
-
-      std::string byte_to_hex (const uint8_t d) const
-      {
-        std::string out;
-        for (size_t i = 0; i != 2; ++i) {
-          const uint8_t dm = i ? (d & 0x0F) : ((d & 0xF0) >> 4);
-          out.push_back (dbyte_to_hex[dm]);
-        }
-        return out;
-      }
-
-
 
   };
 
