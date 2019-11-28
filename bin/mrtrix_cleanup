@@ -48,9 +48,10 @@ def execute(): #pylint: disable=unused-variable
   progress = app.ProgressBar(print_msg)
   for dirname, subdirlist, filelist in os.walk(root_dir):
     files_to_delete.extend([ os.path.join(dirname, filename) for filename in filter(file_regex.search, filelist) ])
-    temp = filter(dir_regex.search, subdirlist)
-    dirs_to_delete.extend([os.path.join(dirname, subdirname) for subdirname in temp])
-    subdirlist[:] = [ subdirname for subdirname in set(subdirlist)^set(temp) ]
+    temp = set(filter(dir_regex.search, subdirlist))
+    if temp:
+      dirs_to_delete.extend([os.path.join(dirname, subdirname) for subdirname in temp])
+      subdirlist[:] = list(set(subdirlist)-temp)
     progress.increment()
   progress.done()
 
