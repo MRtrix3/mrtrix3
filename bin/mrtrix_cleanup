@@ -26,18 +26,26 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Clean up residual temporary files & scratch directories from MRtrix3 commands')
   cmdline.add_description('This script will search the file system for any temporary files or directories that have been left behind by failed or terminated MRtrix3 commands, and attempt to delete them.')
+  cmdline.add_description('This script should not be run while other MRtrix3 commands are being executed: it may delete temporary items during operation that may lead to unexpected behaviour.')
   cmdline.add_argument('path', help='Path from which to commence filesystem search')
   cmdline.add_argument('-test', action='store_true', help='Run script in test mode: will list identified files / directories, but not attempt to delete them')
-  cmdline.add_argument('-fail', metavar='file', nargs=1, help='Write list of items that could not be deleted to a text file')
-  cmdline.flag_mutually_exclusive_options([ 'test', 'fail' ])
+  cmdline.add_argument('-failed', metavar='file', nargs=1, help='Write list of items that the script failed to delete to a text file')
+  cmdline.flag_mutually_exclusive_options([ 'test', 'failed' ])
 
 
 
 def execute(): #pylint: disable=unused-variable
+  from mrtrix3 import CONFIG #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
 
   file_regex = re.compile(r"^mrtrix-tmp-[a-zA-Z0-9]{6}\..*$")
+  file_config_regex = re.compile(r"^" + CONFIG['TmpFilePrefix'] + r"[a-zA-Z0-9]{6}\..*$") \
+                      if 'TmpFilePrefix' in CONFIG and CONFIG['TmpFilePrefix'] != 'mrtrix-tmp-' \
+                      else None
   dir_regex = re.compile(r"^\w+-tmp-[a-zA-Z0-9]{6}$")
+  dir_config_regex = re.compile(r"^" + CONFIG['ScriptScratchPrefix'] + r"[a-zA-Z0-9]{6}$") \
+                      if 'ScriptScratchPrefix' in CONFIG \
+                      else None
 
   files_to_delete = [ ]
   dirs_to_delete = [ ]
@@ -48,10 +56,17 @@ def execute(): #pylint: disable=unused-variable
   progress = app.ProgressBar(print_msg)
   for dirname, subdirlist, filelist in os.walk(root_dir):
     files_to_delete.extend([ os.path.join(dirname, filename) for filename in filter(file_regex.search, filelist) ])
-    temp = set(filter(dir_regex.search, subdirlist))
-    if temp:
-      dirs_to_delete.extend([os.path.join(dirname, subdirname) for subdirname in temp])
-      subdirlist[:] = list(set(subdirlist)-temp)
+    if file_config_regex:
+      files_to_delete.extend([ os.path.join(dirname, filename) for filename in filter(file_config_regex.search, filelist) ])
+    items = set(filter(dir_regex.search, subdirlist))
+    if items:
+      dirs_to_delete.extend([os.path.join(dirname, subdirname) for subdirname in items])
+      subdirlist[:] = list(set(subdirlist)-items)
+    if dir_config_regex:
+      items = set(filter(dir_config_regex.search, subdirlist))
+      if items:
+        dirs_to_delete.extend([os.path.join(dirname, subdirname) for subdirname in items])
+        subdirlist[:] = list(set(subdirlist)-items)
     progress.increment()
   progress.done()
 
@@ -102,11 +117,11 @@ def execute(): #pylint: disable=unused-variable
       return ' (' + str(size_deleted) + POSTFIXES[postfix_index] + ' freed)' if size_deleted else ''
     if except_list:
       app.console(str(len(files_to_delete) + len(dirs_to_delete) - len(except_list)) + ' of ' + str(len(files_to_delete) + len(dirs_to_delete)) + ' items erased' + print_freed())
-      if app.ARGS.fail:
-        with open(app.ARGS.fail, 'w') as outfile:
+      if app.ARGS.failed:
+        with open(app.ARGS.failed, 'w') as outfile:
           for item in except_list:
             outfile.write(item + '\n')
-        app.console('List of items not successfully erased written to file "' + app.ARGS.fail + '"')
+        app.console('List of items script failed to erase written to file "' + app.ARGS.failed + '"')
       else:
         app.console('Items that could not be erased:')
         for item in except_list:

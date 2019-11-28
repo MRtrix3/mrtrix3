@@ -22,12 +22,14 @@ Description
 
 This script will search the file system for any temporary files or directories that have been left behind by failed or terminated MRtrix3 commands, and attempt to delete them.
 
+This script should not be run while other MRtrix3 commands are being executed: it may delete temporary items during operation that may lead to unexpected behaviour.
+
 Options
 -------
 
 - **-test** Run script in test mode: will list identified files / directories, but not attempt to delete them
 
-- **-fail file** Write list of items that could not be deleted to a text file
+- **-failed file** Write list of items that the script failed to delete to a text file
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
