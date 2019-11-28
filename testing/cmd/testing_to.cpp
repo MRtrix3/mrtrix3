@@ -61,6 +61,9 @@ void run ()
     "0",
     "1",
     "2",
+    "0 ",
+    " 1",
+    "0 0",
     "0a",
     "a0",
     "true",
@@ -71,6 +74,7 @@ void run ()
     "FALSE",
     "fals",
     "falsee",
+    "true ",
     "yes",
     "YES",
     "yeah",
@@ -104,12 +108,16 @@ void run ()
     "a1+i",
     "1+1+i",
     "-1-i",
-    "inf+infi" };
+    "inf+infi",
+    " -inf+-nani " };
 
   const vector<bool> bool_tests = {
     true,  // "0"
     true,  // "1"
     true,  // "2"
+    true,  // "0 "
+    true,  // " 1"
+    false, // "0 0"
     false, // "0a"
     false, // "a0"
     true,  // "true"
@@ -120,6 +128,7 @@ void run ()
     true,  // "FALSE"
     false, // "fals"
     false, // "falsee"
+    true,  // "true "
     true,  // "yes"
     true,  // "YES"
     false, // "yeah"
@@ -153,13 +162,17 @@ void run ()
     false, // "a1+i"
     false, // "1+1+i"
     false, // "-1-i"
-    false  // "inf+infi"
+    false, // "inf+infi"
+    false  // " -inf+-nani "
   };
 
   const vector<bool> int_tests = {
       true,  // "0"
       true,  // "1"
       true,  // "2"
+      true,  // "0 "
+      true,  // " 1"
+      false, // "0 0"
       false, // "0a"
       false, // "a0"
       false, // "true"
@@ -170,6 +183,7 @@ void run ()
       false, // "FALSE"
       false, // "fals"
       false, // "falsee"
+      false, // "true "
       false, // "yes"
       false, // "YES"
       false, // "yeah"
@@ -203,13 +217,17 @@ void run ()
       false, // "a1+i"
       false, // "1+1+i"
       false, // "-1-i"
-      false  // "inf+infi"
+      false, // "inf+infi"
+      false  // " -inf+-nani "
   };
 
   const vector<bool> float_tests = {
       true,  // "0"
       true,  // "1"
       true,  // "2"
+      true,  // "0 "
+      true,  // " 1"
+      false, // "0 0"
       false, // "0a"
       false, // "a0"
       false, // "true"
@@ -220,6 +238,7 @@ void run ()
       false, // "FALSE"
       false, // "fals"
       false, // "falsee"
+      false, // "true "
       false, // "yes"
       false, // "YES"
       false, // "yeah"
@@ -253,13 +272,17 @@ void run ()
       false, // "a1+i"
       false, // "1+1+i"
       false, // "-1-i"
-      false  // "inf+infi"
+      false, // "inf+infi"
+      false  // " -inf+-nani "
   };
 
   const vector<bool> complex_tests = {
       true,  // "0"
       true,  // "1"
       true,  // "2"
+      true,  // "0 "
+      true,  // " 1"
+      false, // "0 0"
       false, // "0a"
       false, // "a0"
       false, // "true"
@@ -270,6 +293,7 @@ void run ()
       false, // "FALSE"
       false, // "fals"
       false, // "falsee"
+      false, // "true "
       false, // "yes"
       false, // "YES"
       false, // "yeah"
@@ -303,7 +327,8 @@ void run ()
       false, // "a1+i"
       false, // "1+1+i"
       true,  // "-1-i"
-      true   // "inf+infi"
+      true,  // "inf+infi"
+      true   //" -inf+-nani "
   };
 
   test<bool> (data, bool_tests);
