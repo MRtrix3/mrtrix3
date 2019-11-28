@@ -15,7 +15,6 @@
  */
 
 #include "app.h"
-#include "bitset.h"
 #include "command.h"
 #include "datatype.h"
 #include "header.h"
@@ -25,8 +24,8 @@
 #include "types.h"
 
 #include "algo/loop.h"
-
 #include "math/SH.h"
+#include "misc/bitset.h"
 
 
 using namespace MR;
@@ -171,7 +170,7 @@ void check_and_update (Header& H, const conv_t conversion)
   }
 
   if (progress)
-    progress = NULL;
+    progress.reset (nullptr);
 
   // First is ratio to be used for SH basis decision, second is gradient of regression
   std::pair<float, float> regression = std::make_pair (0.0f, 0.0f);
@@ -333,5 +332,5 @@ void run ()
 
   }
 
-};
+}
 

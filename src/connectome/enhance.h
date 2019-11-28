@@ -20,7 +20,6 @@
 #include <memory>
 #include <stdint.h>
 
-#include "bitset.h"
 #include "types.h"
 
 #include "connectome/mat2vec.h"
@@ -36,7 +35,6 @@ namespace MR {
 
 
       using value_type = Math::Stats::value_type;
-      using vector_type = Math::Stats::vector_type;
 
 
 
@@ -48,7 +46,7 @@ namespace MR {
           virtual ~PassThrough() { }
 
         private:
-          value_type operator() (const vector_type&, vector_type&) const override;
+          void operator() (in_column_type, out_column_type) const override;
 
       };
 
@@ -66,11 +64,11 @@ namespace MR {
 
           void set_threshold (const value_type t) { threshold = t; }
 
-          value_type operator() (const vector_type& in, vector_type& out) const override {
-            return (*this) (in, threshold, out);
+          void operator() (in_column_type in, out_column_type out) const override {
+            (*this) (in, threshold, out);
           }
 
-          value_type operator() (const vector_type&, const value_type, vector_type&) const override;
+          void operator() (in_column_type, const value_type, out_column_type) const override;
 
         protected:
           std::shared_ptr< vector< vector<size_t> > > adjacency;
