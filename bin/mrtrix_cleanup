@@ -51,22 +51,23 @@ def execute(): #pylint: disable=unused-variable
   dirs_to_delete = [ ]
   root_dir = os.path.abspath(app.ARGS.path)
   print_search_dir = ('' if os.path.abspath(os.getcwd()) == root_dir else ' from ' + root_dir)
+  def file_search(regex):
+    files_to_delete.extend([ os.path.join(dirname, filename) for filename in filter(regex.search, filelist) ])
+  def dir_search(regex):
+    items = set(filter(regex.search, subdirlist))
+    if items:
+      dirs_to_delete.extend([os.path.join(dirname, subdirname) for subdirname in items])
+      subdirlist[:] = list(set(subdirlist)-items)
   def print_msg():
     return 'Searching' + print_search_dir + ' (found ' + str(len(files_to_delete)) + ' files, ' + str(len(dirs_to_delete)) + ' directories)'
   progress = app.ProgressBar(print_msg)
   for dirname, subdirlist, filelist in os.walk(root_dir):
-    files_to_delete.extend([ os.path.join(dirname, filename) for filename in filter(file_regex.search, filelist) ])
+    file_search(file_regex)
     if file_config_regex:
-      files_to_delete.extend([ os.path.join(dirname, filename) for filename in filter(file_config_regex.search, filelist) ])
-    items = set(filter(dir_regex.search, subdirlist))
-    if items:
-      dirs_to_delete.extend([os.path.join(dirname, subdirname) for subdirname in items])
-      subdirlist[:] = list(set(subdirlist)-items)
+      file_search(file_config_regex)
+    dir_search(dir_regex)
     if dir_config_regex:
-      items = set(filter(dir_config_regex.search, subdirlist))
-      if items:
-        dirs_to_delete.extend([os.path.join(dirname, subdirname) for subdirname in items])
-        subdirlist[:] = list(set(subdirlist)-items)
+      dir_search(dir_config_regex)
     progress.increment()
   progress.done()
 
