@@ -3,44 +3,43 @@
 _realname=mrtrix3
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=3.0_RC3
+pkgver=3.0_RC3_latest_38_gfce5dd14
 pkgrel=1
 arch=('x86_64')
 pkgdesc="Tools for the analysis of diffusion MRI data (mingw-w64)"
 depends=("python"
-         "${MINGW_PACKAGE_PREFIX}-qt4"
+         "${MINGW_PACKAGE_PREFIX}-qt5"
          "${MINGW_PACKAGE_PREFIX}-fftw"
          "${MINGW_PACKAGE_PREFIX}-libtiff"
          "${MINGW_PACKAGE_PREFIX}-zlib")
-makedepends=("python"
-             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+makedepends=("git"
+             "python"
+             "pkg-config"
              "${MINGW_PACKAGE_PREFIX}-gcc"
-             "${MINGW_PACKAGE_PREFIX}-qt4"
+             "${MINGW_PACKAGE_PREFIX}-qt5"
              "${MINGW_PACKAGE_PREFIX}-eigen3")
 
-#options=('!strip' 'debug')
+
 license=("MPL")
 url="http://www.mrtrix.org/"
-#install=${_realname}-${CARCH}.install
-source=(https://github.com/MRtrix3/${_realname}/archive/$pkgver.tar.gz)
-sha256sums=('1eebd96d476772b4f1aaad2d362af575e70fd2de0bede61a658758ffd9793b4d')
+source=("${_realname}::git+https://github.com/MRtrix3/${_realname}.git")
+sha512sums=('SKIP')
 
-prepare() {
-  echo ${srcdir}
-  echo ${_realname}
-  cd "${srcdir}/${_realname}-${pkgver}"
-  #patch -p1 -i "../../0001-fix-legacy-fixel-code.patch"
+
+pkgver() {
+  cd "${_realname}"
+  git describe --abbrev=8 | tr '-' '_'
 }
 
 build() {
-  cd "${_realname}-${pkgver}"
-  ./configure 
+  cd "${_realname}"
+  ./configure
   ./build
 }
 
 package() {
 
-  cd "${_realname}-${pkgver}"
+  cd "${_realname}"
 
   install -d "${pkgdir}${MINGW_PREFIX}/bin/"
   install -D bin/* "${pkgdir}${MINGW_PREFIX}/bin/"
@@ -52,4 +51,4 @@ package() {
   mkdir -p "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}-${pkgver}"
   cp LICENCE.txt "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}-${pkgver}"
 }
-# dummy.
+
