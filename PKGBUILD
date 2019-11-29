@@ -22,7 +22,7 @@ makedepends=("git"
 
 license=("MPL")
 url="http://www.mrtrix.org/"
-source=("${_realname}::git+https://github.com/GITUSER/${_realname}.git#tag=TAGNAME")
+source=("${_realname}::git+https://github.com/GIT_USER/${_realname}.git#tag=TAGNAME")
 sha512sums=('SKIP')
 
 
