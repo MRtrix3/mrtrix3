@@ -3,7 +3,7 @@
 _realname=mrtrix3
 pkgbase=mingw-w64-${_realname}
 pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
-pkgver=3.0_RC3_latest_38_gfce5dd14
+pkgver=0
 pkgrel=1
 arch=('x86_64')
 pkgdesc="Tools for the analysis of diffusion MRI data (mingw-w64)"
@@ -22,7 +22,7 @@ makedepends=("git"
 
 license=("MPL")
 url="http://www.mrtrix.org/"
-source=("${_realname}::git+https://github.com/MRtrix3/${_realname}.git")
+source=("${_realname}::git+https://github.com/MRtrix3/${_realname}.git#tag=${TAGNAME}")
 sha512sums=('SKIP')
 
 
