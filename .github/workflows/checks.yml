@@ -149,6 +149,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      QT_SELECT: qt5
+
     steps:
     - uses: actions/checkout@v1
 
