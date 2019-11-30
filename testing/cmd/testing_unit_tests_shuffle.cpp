@@ -55,7 +55,7 @@ void run ()
   block_indices << BLOCK_INDICES;
   assert (block_indices.size() == ROWS);
   vector<std::set<size_t>> blocks (block_indices.maxCoeff()+1);
-  for (size_t i = 0; i != block_indices.size(); ++i)
+  for (ssize_t i = 0; i != block_indices.size(); ++i)
     blocks[block_indices[i]].insert (i);
 
   auto test = [&] (const bool result, const std::string msg)
