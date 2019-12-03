@@ -837,6 +837,10 @@ namespace MR
 
       void Window::add_images (vector<std::unique_ptr<MR::Header>>& list)
       {
+        if (list.empty())
+          return;
+
+        QList<QAction*> new_actions;
         for (size_t i = 0; i < list.size(); ++i) {
           const std::string name = list[i]->name(); // Gets move-constructed out
           QAction* action = new Image (std::move (*list[i]));
@@ -845,12 +849,32 @@ namespace MR
           action->setCheckable (true);
           action->setToolTip (name.c_str());
           action->setStatusTip (name.c_str());
-          image_group->addAction (action);
-          image_menu->addAction (action);
           connect (action, SIGNAL(scalingChanged()), this, SLOT(on_scaling_changed()));
-
-          if (!i) image_select_slot (action);
+          new_actions.push_back (action);
         }
+
+        QList<QAction*> previous_actions = image_group->actions();
+        previous_actions.push_back (nullptr);
+        QAction* selected = image_group->checkedAction();
+        for (auto* action : image_group->actions()) {
+          image_group->removeAction (action);
+          image_menu->removeAction (action);
+        }
+
+        for (auto* action : previous_actions) {
+          if (action) {
+            image_group->addAction (action);
+            image_menu->addAction (action);
+          }
+          if (action == selected) {
+            for (auto* added : new_actions) {
+              image_group->addAction (added);
+              image_menu->addAction (added);
+            }
+          }
+        }
+
+        image_select_slot (new_actions[0]);
         set_image_menu();
       }
 

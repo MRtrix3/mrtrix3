@@ -17,6 +17,8 @@
 #ifndef __gui_app_h__
 #define __gui_app_h__
 
+#include <QApplication>
+
 #include "app.h"
 #include "file/config.h"
 #include "gui/opengl/gl.h"
@@ -27,15 +29,14 @@ namespace MR
   {
 
 
-    class App : public QObject { NOMEMALIGN
-      Q_OBJECT
+    class App : public QApplication { NOMEMALIGN
 
       public:
         App (int& cmdline_argc, char** cmdline_argv);
 
-        ~App () {
-          delete qApp;
-        }
+        // this needs to be defined on a per-application basis:
+        virtual bool event (QEvent *event) override;
+
 
         static void set_main_window (QWidget* window, GL::Area* glarea) {
           main_window = window;

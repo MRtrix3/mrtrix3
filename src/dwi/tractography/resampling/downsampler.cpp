@@ -26,8 +26,10 @@ namespace MR {
 
         bool Downsampler::operator() (Tracking::GeneratedTrack& tck) const
         {
-          if (ratio <= 1 || tck.empty())
+          if (!valid())
             return false;
+          if (ratio == 1 || tck.size() <= 2)
+            return true;
           size_t index_old = ratio;
           if (tck.get_seed_index()) {
             index_old = (((tck.get_seed_index() - 1) % ratio) + 1);
@@ -49,12 +51,14 @@ namespace MR {
         bool Downsampler::operator() (const Streamline<>& in, Streamline<>& out) const
         {
           out.clear();
+          if (!valid())
+            return false;
+          if (ratio == 1 || in.size() <= 2) {
+            out = in;
+            return true;
+          }
           out.index = in.index;
           out.weight = in.weight;
-          if (ratio <= 1 || in.empty())
-            return false;
-          if (in.size() == 1)
-            return true;
           out.push_back (in.front());
           const size_t midpoint = in.size()/2;
           size_t index = (((midpoint - 1) % ratio) + 1);

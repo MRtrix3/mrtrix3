@@ -9,7 +9,7 @@
 //   git tag -s 3.3
 //   git push
 
-#define MRTRIX_BASE_VERSION "3.0_RC3"
+#define MRTRIX_BASE_VERSION "3.0_RC4"
 
 #endif
 
