@@ -29,12 +29,12 @@ namespace MR
         {
           size_t ndim = fixel_data->ndim ();
 
-          if (ndim != 4)
+          if (ndim < 4)
             throw InvalidImageException ("Vector image " + filename
                                        + " should contain 4 dimensions. Instead "
                                        + str(ndim) + " found.");
 
-          size_t dim4_len = fixel_data->size (3);
+          const size_t dim4_len = fixel_data->size (3);
 
           if (dim4_len % 3)
             throw InvalidImageException ("Expecting 4th-dimension size of vector image "
@@ -47,11 +47,31 @@ namespace MR
             slice_fixel_counts [axis].resize (fixel_data->size (axis), 0);
           }
 
+          reload_image_buffer();
+        }
+
+
+
+
+
+        void Image4D::reload_image_buffer ()
+        {
+          const size_t dim4_len = fixel_data->size (3);
           const size_t n_fixels = dim4_len / 3;
 
           FixelValue &fixel_val_store = fixel_values["Length"];
 
-          for (auto l = Loop(*fixel_data) (*fixel_data); l; ++l) {
+          pos_buffer_store.clear();
+          dir_buffer_store.clear();
+          fixel_val_store.clear();
+
+          for (size_t axis = 0; axis < 3; ++axis) {
+            std::fill (slice_fixel_indices[axis].begin(), slice_fixel_indices[axis].end(), vector<GLint>());
+            std::fill (slice_fixel_sizes[axis].begin(), slice_fixel_sizes[axis].end(), vector<GLsizei>());
+            std::fill (slice_fixel_counts[axis].begin(), slice_fixel_counts[axis].end(), 0);
+          }
+
+          for (auto l = Loop(*fixel_data, 0, 3) (*fixel_data); l; ++l) {
 
             const std::array<int, 3> voxel {{ int(fixel_data->index (0)),
               int(fixel_data->index (1)), int(fixel_data->index (2)) }};
@@ -87,7 +107,35 @@ namespace MR
               voxel_to_indices_map[voxel].push_back (point_index);
             }
           }
+
+          dir_buffer_dirty = true;
+          value_buffer_dirty = true;
+          colour_buffer_dirty = true;
+          threshold_buffer_dirty = true;
         }
+
+
+        void Image4D::update_image_buffers ()
+        {
+          if (trackable()) {
+            ssize_t target_volume = 0;
+            if (tracking) {
+              if (Window::main->image()) {
+                const auto image = Window::main->image()->image;
+                if (image.ndim() >= 4)
+                  target_volume = image.index(3);
+                target_volume = std::min (target_volume, fixel_data->size(4)-1);
+              }
+            }
+            if (fixel_data->index(4) != target_volume) {
+              fixel_data->index(4) = target_volume;
+              reload_image_buffer();
+            }
+          }
+          BaseFixel::update_image_buffers();
+        }
+
+
       }
     }
   }
