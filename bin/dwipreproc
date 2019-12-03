@@ -272,13 +272,13 @@ def grads_match(one, two):
   # - If both are zero, skip this check
   # - If one is zero and the other is not, volumes don't match
   # - If neither is zero, test the dot product
-  if any([val for val in one[0:3]]):
-    if not any([val for val in two[0:3]]):
+  if any(one[0:3]):
+    if not any(two[0:3]):
       return False
     dot_product = one[0]*two[0] + one[1]*two[1] + one[2]*two[2]
     if abs(dot_product) < 0.999:
       return False
-  elif any([val for val in two[0:3]]):
+  elif any(two[0:3]):
     return False
   # b-value
   if abs(one[3]-two[3]) > 10.0:
@@ -516,7 +516,7 @@ if app.args.se_epi:
         app.console('No phase-encoding contrast present in SE-EPI images; will examine again after combining with DWI b=0 images')
         new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_dwibzeros.mif'
         # Don't worry about trying to produce a balanced scheme here
-        run.command('dwiextract dwi.mif - -bzero | mrcat - se_epi.mif ' + new_se_epi_path + ' -axis 3')
+        run.command('dwiextract dwi.mif - -bzero | mrcat - ' + se_epi_path + ' ' + new_se_epi_path + ' -axis 3')
         se_epi_header = image.Header(new_se_epi_path)
         se_epi_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
         if se_epi_pe_scheme_has_contrast:
