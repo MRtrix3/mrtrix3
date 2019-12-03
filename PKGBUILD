@@ -17,7 +17,10 @@ makedepends=("git"
              "pkg-config"
              "${MINGW_PACKAGE_PREFIX}-gcc"
              "${MINGW_PACKAGE_PREFIX}-qt5"
-             "${MINGW_PACKAGE_PREFIX}-eigen3")
+             "${MINGW_PACKAGE_PREFIX}-eigen3"
+             "${MINGW_PACKAGE_PREFIX}-fftw"
+             "${MINGW_PACKAGE_PREFIX}-libtiff"
+             "${MINGW_PACKAGE_PREFIX}-zlib")
 
 
 license=("MPL")
