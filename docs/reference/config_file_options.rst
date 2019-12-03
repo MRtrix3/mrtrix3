@@ -357,6 +357,12 @@ List of MRtrix3 configuration file options
 
      The factor by which the ODF overlay is scaled.
 
+.. option:: MRViewRoiAlpha
+
+    *default: 0.5*
+
+     The default alpha of a ROI overlay.
+
 .. option:: MRViewRotateModifierKey
 
     *default: ctrl*
@@ -407,6 +413,12 @@ List of MRtrix3 configuration file options
 
      The position of all visible tool colourbars within the main window in MRView.
      Valid values are: bottomleft, bottomright, topleft, topright.
+
+.. option:: MRViewWrapVolumes
+
+    *default: false*
+
+     Wrap volumes around when cycling through
 
 .. option:: MSAA
 

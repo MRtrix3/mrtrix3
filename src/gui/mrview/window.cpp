@@ -354,6 +354,19 @@ namespace MR
           prev_slice_action->setShortcut (tr ("Down"));
           addAction (prev_slice_action);
 
+          image_menu->addSeparator();
+
+          //CONF option: MRViewWrapVolumes
+          //CONF default: false
+          //CONF Wrap volumes around when cycling through
+          wrap_volumes_action = image_menu->addAction (tr ("Wrap volumes"), this, SLOT (wrap_volumes_slot()));
+          wrap_volumes_action->setShortcut (tr ("w"));
+          wrap_volumes_action->setCheckable (true);
+          wrap_volumes_action->setChecked (File::Config::get_bool("MRViewWrapVolumes",false));
+          addAction (wrap_volumes_action);
+
+          image_menu->addSeparator();
+
           next_image_volume_action = image_menu->addAction (tr ("Next volume"), this, SLOT (image_next_volume_slot()));
           next_image_volume_action->setShortcut (tr ("Right"));
           addAction (next_image_volume_action);
@@ -365,6 +378,8 @@ namespace MR
           goto_image_volume_action = image_menu->addAction (tr ("Go to volume..."), this, SLOT (image_goto_volume_slot()));
           goto_image_volume_action->setShortcut (tr ("g"));
           addAction (goto_image_volume_action);
+
+          image_menu->addSeparator();
 
           next_image_volume_group_action = image_menu->addAction (tr ("Next volume group"), this, SLOT (image_next_volume_group_slot()));
           next_image_volume_group_action->setShortcut (tr ("Shift+Right"));
@@ -1066,6 +1081,15 @@ namespace MR
 
 
 
+
+      void Window::wrap_volumes_slot ()
+      {
+        set_image_navigation_menu();
+      }
+
+
+
+
       void Window::updateGL ()
       {
         glarea->update();
@@ -1165,12 +1189,15 @@ namespace MR
       {
         assert (image());
         assert (axis < image()->image.ndim());
-        if (image()->image.index (axis) != index) {
-          image()->image.index (axis) = index;
-          set_image_navigation_menu();
+        if (index < 0)
+          index = wrap_volumes_action->isChecked() ? index+image()->image.size(axis) : 0;
+        else if (index >= image()->image.size(axis))
+          index = wrap_volumes_action->isChecked() ? index-image()->image.size(axis) : image()->image.size(axis)-1;
+        image()->image.index (axis) = index;
+        set_image_navigation_menu();
+        if (axis >= 3)
           emit volumeChanged ();
-          updateGL();
-        }
+        updateGL();
       }
 
 
@@ -1231,7 +1258,7 @@ namespace MR
 
       void Window::image_next_volume_slot ()
       {
-        size_t vol = image()->image.index(3)+1;
+        ssize_t vol = image()->image.index(3)+1;
         set_image_volume (3, vol);
       }
 
@@ -1240,7 +1267,7 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        size_t vol = image()->image.index(3)-1;
+        ssize_t vol = image()->image.index(3)-1;
         set_image_volume (3, vol);
       }
 
@@ -1250,7 +1277,7 @@ namespace MR
         size_t maxvol = image()->image.size(3) - 1;
         auto label = std::string ("volume (0...") + str(maxvol) + std::string (")");
         bool ok;
-        size_t vol = QInputDialog::getInt (this, tr("Go to..."),
+        ssize_t vol = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(3), 0, maxvol, 1, &ok);
         if (ok)
           set_image_volume (3, vol);
@@ -1261,7 +1288,7 @@ namespace MR
         size_t maxvolgroup = image()->image.size(4) - 1;
         auto label = std::string ("volume group (0...") + str(maxvolgroup) + std::string (")");
         bool ok;
-        size_t grp = QInputDialog::getInt (this, tr("Go to..."),
+        ssize_t grp = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(4), 0, maxvolgroup, 1, &ok);
         if (ok)
           set_image_volume (4, grp);
@@ -1270,7 +1297,7 @@ namespace MR
 
       void Window::image_next_volume_group_slot ()
       {
-        size_t vol = image()->image.index(4)+1;
+        ssize_t vol = image()->image.index(4)+1;
         set_image_volume (4, vol);
       }
 
@@ -1279,7 +1306,7 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        size_t vol = image()->image.index(4)-1;
+        ssize_t vol = image()->image.index(4)-1;
         set_image_volume (4, vol);
       }
 
@@ -1425,18 +1452,28 @@ namespace MR
           if (imagep->image.ndim() > 3) {
             if (imagep->image.size(3) > 1)
               show_goto_volume = true;
-            if (imagep->image.index(3) > 0)
-              show_prev_volume = true;
-            if (imagep->image.index(3) < imagep->image.size(3)-1)
-              show_next_volume = true;
+            if (wrap_volumes_action->isChecked()) {
+              show_prev_volume = show_next_volume = true;
+            }
+            else {
+              if (imagep->image.index(3) > 0)
+                show_prev_volume = true;
+              if (imagep->image.index(3) < imagep->image.size(3)-1)
+                show_next_volume = true;
+            }
 
             if (imagep->image.ndim() > 4) {
               if (imagep->image.size(4) > 1)
                 show_goto_volume_group = true;
-              if (imagep->image.index(4) > 0)
-                show_prev_volume_group = true;
-              if (imagep->image.index(4) < imagep->image.size(4)-1)
-                show_next_volume_group = true;
+              if (wrap_volumes_action->isChecked()) {
+                show_prev_volume_group = show_next_volume_group = true;
+              }
+              else {
+                if (imagep->image.index(4) > 0)
+                  show_prev_volume_group = true;
+                if (imagep->image.index(4) < imagep->image.size(4)-1)
+                  show_next_volume_group = true;
+              }
             }
           }
         }
