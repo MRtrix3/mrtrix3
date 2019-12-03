@@ -229,7 +229,7 @@ namespace MR
             source += using_geom ? "in vec3 g_tangent;\n" : "in vec3 v_tangent;\n";
 
           if (threshold_type != TrackThresholdType::None)
-            source += using_geom ? "in float g_amp;\n" : "in vec3 v_amp;\n";
+            source += using_geom ? "in float g_amp;\n" : "in float v_amp;\n";
 
           if (use_lighting && (using_geom || using_points)) {
             source +=
