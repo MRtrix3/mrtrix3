@@ -252,9 +252,15 @@ namespace MR
             connect (bidirectional, SIGNAL (clicked (bool)), this, SLOT (on_checkbox_slot (bool)));
             default_opt_grid->addWidget (bidirectional, 4, 0, 1, 2);
 
-            track_main_volume = new QCheckBox (tr("track main image volume"));
+            track_main_volume = new QCheckBox (tr("cine mode"));
             track_main_volume->setCheckable (true);
             track_main_volume->setChecked (false);
+            track_main_volume->setToolTip (
+                tr("When activated, the vector field displayed will be\n"
+                   "taken from the volume group (5th axis) at the same index\n"
+                   "as the volume displayed in the main image.\n\n"
+                   "This allows the vector field to follow the time course of the\n"
+                   "the main image"));
             connect (track_main_volume, SIGNAL (clicked (bool)), this, SLOT (on_set_tracking_slot (bool)));
             default_opt_grid->addWidget (track_main_volume, 5, 0, 1, 2);
 
