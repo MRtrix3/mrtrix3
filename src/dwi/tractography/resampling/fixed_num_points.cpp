@@ -30,10 +30,13 @@ namespace MR {
         {
           // Perform an explicit calculation of streamline length
           // From this, derive the spline position of each sample
-          assert (in.size() > 1);
           out.clear();
+          if (!valid())
+            return false;
           out.index = in.index;
           out.weight = in.weight;
+          if (in.size() < 2)
+            return true;
           value_type length = 0.0;
           vector<value_type> steps;
           for (size_t i = 1; i != in.size(); ++i) {

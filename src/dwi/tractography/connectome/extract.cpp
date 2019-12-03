@@ -16,7 +16,7 @@
 
 #include "dwi/tractography/connectome/extract.h"
 
-#include "bitset.h"
+#include "misc/bitset.h"
 
 
 namespace MR {

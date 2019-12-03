@@ -32,6 +32,7 @@ function prepend {
 mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
 export PATH=$mrtrix_root/bin:"$PATH"
 dirpath=${mrtrix_root}'/docs/reference/commands'
+export LC_ALL=C
 
 
 # Erase legacy files

@@ -338,6 +338,7 @@ inline vector<int> set_header (Header& header, const ImageType& input)
 
 
 
+
 template <typename T, class InputType>
 void copy_permute (const InputType& in, Header& header_out, const std::string& output_filename)
 {
