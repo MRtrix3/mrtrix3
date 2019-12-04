@@ -452,13 +452,29 @@ if app.args.se_epi:
 
   # Newest version of eddy requires that topup field be on the same grid as the eddy input DWI
   if not image.match(dwi_header, se_epi_header, 3):
-    app.console('DWIs and SE-EPI images used for inhomogeneity field estimation are defined on different image grids; '
-                'the latter will be automatically re-gridded to match the former')
-    new_se_epi_path = 'se_epi_regrid.mif'
-    run.command('mrtransform ' + se_epi_path + ' - -interp sinc -template dwi.mif | mrcalc - 0.0 -max ' + new_se_epi_path)
+    # If the number of voxels and voxel size are equivalent, but the header
+    #   transformation is not, let's replace the header transformation of the
+    #   SE-EPI image with that of the DWIs, so that the grids do overlap
+    # But only do this if we are using the -align_seepi option;
+    #   in that case we're essentially rigid transforming the provided
+    #   SE-EPI data according to the shift in the FoV. If this option is
+    #   _not_ used, then we can only guess that the real-space position of
+    #   the subject has not moved, and therefore an explicit re-grid is necessary
+    if app.args.align_seepi and image.match(dwi_header, se_epi_header, 3, False):
+      app.console('SE-EPI images used for inhomogeneity field estimation have a '
+                  'different FoV placement to the DWIs, but voxel size / dimensions are identical; '
+                  'replacing header transformation with that of DWIs')
+      new_se_epi_path = 'se_epi_transform.mif'
+      run.command('mrtransform ' + se_epi_path + ' -replace dwi.mif ' + new_se_epi_path)
+    else:
+      app.console('DWIs and SE-EPI images used for inhomogeneity field estimation are defined on different image grids; '
+                  'the latter will be automatically re-gridded to match the former')
+      new_se_epi_path = 'se_epi_regrid.mif'
+      run.command('mrtransform ' + se_epi_path + ' - -interp sinc -template dwi.mif | mrcalc - 0.0 -max ' + new_se_epi_path)
     file.delTemporary(se_epi_path)
     se_epi_path = new_se_epi_path
     se_epi_header = image.Header(se_epi_path)
+
 
   # 3 possible sources of PE information: DWI header, topup image header, command-line
   # Any pair of these may conflict, and any one could be absent
