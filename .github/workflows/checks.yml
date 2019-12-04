@@ -167,12 +167,12 @@ jobs:
     - name: pylint (Python 2)
       run: |
          echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
-         PYTHON=python2 ./run_pylint
+         PYTHON=python2 ./run_pylint || { cat pylint.log; false; }
 
     - name: pylint (Python 3)
       run: |
          echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
-         PYTHON=python3 ./run_pylint
+         PYTHON=python3 ./run_pylint || { cat pylint.log; false; }
 
     - name: check building of documentation
       run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
