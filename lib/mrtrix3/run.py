@@ -548,7 +548,6 @@ def version_match(item):
 # If the target executable is not a binary, but is actually a script, use the
 #   shebang at the start of the file to alter the subprocess call
 def _shebang(item):
-  from mrtrix3 import MRtrixError
   from mrtrix3 import app, utils #pylint: disable=import-outside-toplevel
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
   if os.sep in item:
