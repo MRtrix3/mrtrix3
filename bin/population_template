@@ -721,17 +721,14 @@ def execute(): #pylint: disable=unused-variable
   cns.n_volumes = []
   cns.fod_reorientation = []
   for cid in range(n_contrasts):
-    image_size = image.Header(ins[0].get_ims_path(False)[cid]).size()
+    header = image.Header(ins[0].get_ims_path(False)[cid])
+    image_size, isSH = header.size(), header.isSH()
     if len(image_size) < 3 or len(image_size) > 4:
       raise MRtrixError('only 3 and 4 dimensional images can be used to build a template')
-    if len(image_size) == 4 and image_size[3] > 1:
-      val = (math.sqrt(1 + 8 * image_size[3]) - 3.0) / 4.0
-      cns.fod_reorientation.append(not (val - int(val)) and not noreorientation)
+    if len(image_size) == 4:
+      cns.fod_reorientation.append(isSH and not noreorientation)
       cns.n_volumes.append(image_size[3])
       do_fod_registration = do_fod_registration or cns.fod_reorientation[-1]
-    elif len(image_size) == 4 and image_size[3] == 1:
-      cns.fod_reorientation.append(False)
-      cns.n_volumes.append(1)
     else:
       cns.fod_reorientation.append(False)
       cns.n_volumes.append(0)
