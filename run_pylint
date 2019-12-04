@@ -8,14 +8,16 @@ if [ $# == 0 ]; then
   for lib_path in lib/mrtrix3/*; do
     if [[ -d ${lib_path} && ! ( ${lib_path} == *"__pycache__"* ) ]]; then
       for src_file in ${lib_path}/*.py; do
-        tests="$tests $src_file"
+        if [[ -f ${src_file} ]]; then
+          tests="$tests $src_file"
+        fi
       done
     elif [[ ${lib_path} == *.py && ! ( ${lib_path} == *"_"* ) ]]; then
       tests="$tests $lib_path"
     fi
   done
   for bin_path in bin/*; do
-    if head ${bin_path} -n1 | grep -q "#!/usr/bin/env python"; then
+    if [[ -f ${bin_path} ]] && head ${bin_path} -n1 | grep -q "#!/usr/bin/env python"; then
       tests="$tests $bin_path"
     fi
   done
