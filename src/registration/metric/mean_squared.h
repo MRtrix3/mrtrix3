@@ -328,7 +328,7 @@ namespace MR
               return diff_values.array().square();
             }
           private:
-            size_t volumes;
+            ssize_t volumes;
             Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values;
             Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 1> im2_values;
             Eigen::VectorXd diff_values;
