@@ -57,7 +57,7 @@ namespace MR
             throw Exception ("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
           }
 
-          set_step_size (0.1f, rk4);
+          set_step_size (rk4 ? 0.25f : 0.1f, rk4);
           // max_angle needs to be set because it influences the cone in which FOD amplitudes are sampled
           if (rk4) {
             max_angle_1o = 0.5f * max_angle_ho;
