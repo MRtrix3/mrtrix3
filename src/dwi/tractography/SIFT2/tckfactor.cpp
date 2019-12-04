@@ -367,6 +367,73 @@ namespace MR {
 
 
 
+      // TODO Return to const
+      // Will need to write modulation factors to a local variable rather than overwriting fixel data
+      void TckFactor::output_minimum_factors (const std::string& path)
+      {
+        // Get the weights to use in each voxel
+        // - If there is no 5TT image, just use the processing mask
+        // - If there is, then the weight is the square of the sum of the WM and PATH volumes
+        // This image controls the magnitude with which the reconstruction density ratio
+        //   will be permitted to modulate the streamline weights
+        Image<float> voxel_weights;
+        if (act_5tt.valid()) {
+          voxel_weights = Image<float>::scratch (proc_mask, "Scratch voxel weights image for min factors");
+          Image<float> temp_5tt (act_5tt);
+          for (auto l = Loop(voxel_weights) (temp_5tt, voxel_weights); l; ++l) {
+            float tissue_sum = 0.0;
+            temp_5tt.index(3) = 2; tissue_sum += temp_5tt.value();
+            temp_5tt.index(3) = 4; tissue_sum += temp_5tt.value();
+            voxel_weights.value() = Math::pow2 (tissue_sum);
+          }
+        } else {
+          voxel_weights = Image<float> (proc_mask);
+        }
+
+        // TODO Store modulated reconstruction ratios in a local vector
+        decltype(coefficients) modulated_recon_ratios (fixels.size());
+
+        // Update the per-fixel weights based on this image
+        VoxelAccessor v (accessor());
+        for (auto l = Loop(voxel_weights) (v, voxel_weights); l; ++l) {
+          for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i)
+            i().set_weight (voxel_weights.value());
+        }
+
+        const float u = mu();
+
+        // TODO Generate modified streamline weights
+        // Don't bother multi-threading for now
+        // TODO Modify calculations to take into account tissues
+        decltype(coefficients) mod_weights (coefficients.size());
+        ProgressBar progress ("Calculating modulated streamline weights", coefficients.size());
+        for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
+          const float weight = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
+                               0.0 :
+                               std::exp (coefficients[i]);
+          SIFT::TrackContribution* this_contributions (contributions[i]);
+          float mod_factor = 1.0;
+          if (this_contributions) {
+            float max_recon_ratio = 1.0;
+            for (size_t f = 0; f != this_contributions->dim(); ++f) {
+              const ssize_t fixel_index = (*this_contributions)[f].get_fixel_index();
+              const float recon_ratio = u * fixels[fixel_index].get_TD() / fixels[fixel_index].get_FOD();
+              // Deviation from unity should be modulated by new processing mask weight
+              const float modulated_recon_ratio = (fixels[fixel_index].get_weight() * (recon_ratio - 1.0f)) + 1.0f;
+              max_recon_ratio = std::max(max_recon_ratio, modulated_recon_ratio);
+            }
+            mod_factor = 1.0f / std::max (1.0f, max_recon_ratio);
+          }
+          mod_weights[i] = weight * mod_factor;
+        }
+
+        save_vector (mod_weights, path);
+
+      }
+
+
+
+
 
       void TckFactor::output_all_debug_images (const std::string& prefix) const
       {

@@ -104,6 +104,7 @@ namespace MR {
 
           void output_factors (const std::string&) const;
           void output_coefficients (const std::string&) const;
+          void output_minimum_factors (const std::string&);
 
           void output_all_debug_images (const std::string&) const;
 

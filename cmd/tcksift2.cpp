@@ -134,6 +134,9 @@ void usage ()
   + Option ("out_coeffs", "output text file containing the weighting coefficient for each streamline")
     + Argument ("path").type_file_out()
 
+  + Option ("out_min", "output streamline weights reflecting the estimated minimum intra-cellular cross-sectional area")
+    + Argument ("file").type_file_out()
+
   + SIFT2RegularisationOption
   + SIFT2AlgorithmOption;
 
@@ -234,6 +237,12 @@ void run ()
     File::OFStream out_mu (opt[0][0]);
     out_mu << tckfactor.mu();
   }
+
+  // Do not execute this function any earlier:
+  //   it modifies the fixel processing mask weights
+  opt = get_options ("out_min");
+  if (opt.size())
+    tckfactor.output_minimum_factors (opt[0][0]);
 
 }
 
