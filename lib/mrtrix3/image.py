@@ -85,6 +85,12 @@ class Header(object):
     return self._transform
   def keyval(self):
     return self._keyval
+  def isSH(self):
+    """ is 4D image, with more than one volume, matching the number of coefficients of SH series """
+    from mrtrix3 import sh  #pylint: disable=import-outside-toplevel
+    if len(self._size) != 4 or self._size[3] == 1:
+      return False
+    return sh.NforL(sh.LforN(self._size[3])) == self._size[3]
 
 
 
