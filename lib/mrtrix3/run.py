@@ -587,7 +587,7 @@ def _shebang(item):
             return []
           shebang = [ sys.executable ] + shebang[2:]
           app.debug('File \"' + item + '\": Using current Python interpreter')
-        if utils.is_windows():
+        elif utils.is_windows():
           shebang = [ os.path.abspath(find_executable(exe_name(shebang[1]))) ] + shebang[2:]
       elif utils.is_windows():
         shebang = [ os.path.abspath(find_executable(exe_name(os.path.basename(shebang[0])))) ] + shebang[1:]
