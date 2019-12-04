@@ -228,7 +228,7 @@ void run ()
       if (volumes[index])
         COMs[index] = (transform.voxel2scanner * (COMs[index] * (1.0f / float(volumes[index]))).cast<default_type>()).cast<float>();
       else
-        COMs[index][0] = COMs[index][1] = COMs[index][2] = NAN;
+        COMs[index][0] = COMs[index][1] = COMs[index][2] = NaN;
     }
 
     // If user specifies a subset of nodes, only a subset of exemplars need to be calculated
