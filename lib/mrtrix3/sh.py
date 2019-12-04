@@ -21,13 +21,13 @@
 
 import math
 
-def NforL(lmax):
-    """ number of even-degree coefficients for the given lmax """
-    return (lmax+1) * (lmax+2) // 2
+def n_for_l(lmax): #pylint: disable=unused-variable
+  """ number of even-degree coefficients for the given lmax """
+  return (lmax+1) * (lmax+2) // 2
 
 
-def LforN(N):
-    """ largest even-degree given number of coefficients """
-    if N == 0:
-        return 0
-    return 2 * int(math.floor(math.sqrt(1.0 + 8.0 * N - 3.0) / 4.0))
+def l_for_n(coeffs): #pylint: disable=unused-variable
+  """ largest even-degree given number of coefficients """
+  if coeffs == 0:
+    return 0
+  return 2 * int(math.floor(math.sqrt(1.0 + 8.0 * coeffs - 3.0) / 4.0))
