@@ -547,6 +547,13 @@ please run "./configure" prior to invoking this script
 
 ''')
 
+# renamed internal string substitutions
+if 'LDFLAGS' in ld or 'LDLIB_FLAGS' in ld_lib:
+  fail ('''configuration file is out of date!
+please run "./configure" prior to invoking this script
+
+''')
+
 if separate_project:
   cpp_flags += [ '-DMRTRIX_PROJECT' ]
 
