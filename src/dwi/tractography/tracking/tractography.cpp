@@ -48,7 +48,11 @@ namespace MR
           + Argument ("size").type_float (0.0)
 
       + Option ("angle",
-            "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize)")
+            "set the maximum angle between successive steps "
+            "(default depends on algorithm: "
+            + str(TCKGEN_DEFAULT_ANGLE_DETERMINISTIC) + " for deterministic algorithms / nulldist1; "
+            + str(TCKGEN_DEFAULT_ANGLE_IFOD1) + " for iFOD1; "
+            + str(TCKGEN_DEFAULT_ANGLE_IFOD2) + " for iFOD2 / nulldist2)")
           + Argument ("theta").type_float (0.0)
 
       + Option ("minlength",

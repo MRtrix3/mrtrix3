@@ -43,7 +43,9 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set)
         {
-          set_step_size (rk4 ? 0.25f : 0.1f, rk4);
+          set_step_and_angle (rk4 ? TCKGEN_DEFAULT_STEP_RK4 : TCKGEN_DEFAULT_STEP_FIRSTORDER,
+                              TCKGEN_DEFAULT_ANGLE_IFOD1,
+                              rk4);
           set_num_points();
           set_cutoff (0.0f);
           sin_max_angle_1o = std::sin (max_angle_1o);

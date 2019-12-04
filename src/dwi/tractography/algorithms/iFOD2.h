@@ -73,13 +73,15 @@ namespace MR
                   if (rk4)
                     throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
+                  set_step_and_angle (TCKGEN_DEFAULT_STEP_IFOD2, TCKGEN_DEFAULT_ANGLE_IFOD2, true);
+                  sin_max_angle_ho = std::sin (max_angle_ho);
                   set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
 
                   properties["method"] = "iFOD2";
                   properties.set (lmax, "lmax");
                   properties.set (num_samples, "samples_per_step");
                   properties.set (max_trials, "max_trials");
-                  fod_power = 1.0f/num_samples;
+                  fod_power = 1.0/num_samples;
                   properties.set (fod_power, "fod_power");
                   bool precomputed = true;
                   properties.set (precomputed, "sh_precomputed");
@@ -88,9 +90,7 @@ namespace MR
 
                   // num_samples is number of samples excluding first point
                   --num_samples;
-                  set_step_size (0.5f, true);
-                  sin_max_angle_ho = std::sin (max_angle_ho);
-                  INFO ("iFOD2 using " + str(num_samples) + " vertices per " + str(step_size) + "mm step");
+                  INFO ("iFOD2 generating " + str(num_samples) + " vertices per " + str (step_size) + " mm step");
 
                   // iFOD2 by default downsamples after track propagation back to the desired 'step size'
                   //   i.e. the sub-step detail is removed from the output
