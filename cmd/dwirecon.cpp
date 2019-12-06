@@ -311,7 +311,7 @@ void run ()
   if (opt.size()) {
     // load initialisation
     auto init = Image<value_type>::open(opt[0][0]).with_direct_io({3, 4, 5, 2, 1});
-    check_dimensions(dwi, init, 0, 3);
+    check_dimensions(rechdr, init, 0, 3);
     if ((init.size(3) != shells.count()) || (init.size(4) < Math::SH::NforL(lmax)))
       throw Exception("dimensions of init image don't match.");
     // init vector
