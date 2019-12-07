@@ -129,13 +129,13 @@ void usage ()
 
   + SIFT::SIFTModelProcMaskOption
   + SIFT::SIFTModelOption
+
+  + Option ("modulate", "modulate streamline weights to reflect the estimated minimum intra-cellular cross-sectional area")
+
   + SIFT::SIFTOutputOption
 
   + Option ("out_coeffs", "output text file containing the weighting coefficient for each streamline")
     + Argument ("path").type_file_out()
-
-  + Option ("out_min", "output streamline weights reflecting the estimated minimum intra-cellular cross-sectional area")
-    + Argument ("file").type_file_out()
 
   + SIFT2RegularisationOption
   + SIFT2AlgorithmOption;
@@ -223,26 +223,20 @@ void run ()
 
   }
 
-  tckfactor.output_factors (argument[2]);
+  if (get_options("modulate").size())
+    tckfactor.modulate_factors ();
 
+  tckfactor.output_factors (argument[2]);
   auto opt = get_options ("out_coeffs");
   if (opt.size())
     tckfactor.output_coefficients (opt[0][0]);
-
   if (output_debug)
     tckfactor.output_all_debug_images ("after");
-
   opt = get_options ("out_mu");
   if (opt.size()) {
     File::OFStream out_mu (opt[0][0]);
     out_mu << tckfactor.mu();
   }
-
-  // Do not execute this function any earlier:
-  //   it modifies the fixel processing mask weights
-  opt = get_options ("out_min");
-  if (opt.size())
-    tckfactor.output_minimum_factors (opt[0][0]);
 
 }
 

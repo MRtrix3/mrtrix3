@@ -343,33 +343,10 @@ namespace MR {
 
 
 
-      void TckFactor::output_factors (const std::string& path) const
-      {
-        if (size_t(coefficients.size()) != contributions.size())
-          throw Exception ("Cannot output weighting factors if they have not first been estimated!");
-        try {
-          decltype(coefficients) weights (coefficients.size());
-          for (SIFT::track_t i = 0; i != num_tracks(); ++i)
-            weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
-                         0.0 :
-                         std::exp (coefficients[i]);
-          save_vector (weights, path);
-        } catch (...) {
-          WARN ("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
-        }
-      }
-
-
-      void TckFactor::output_coefficients (const std::string& path) const
-      {
-        save_vector (coefficients, path);
-      }
-
-
-
       // TODO Return to const
-      // Will need to write modulation factors to a local variable rather than overwriting fixel data
-      void TckFactor::output_minimum_factors (const std::string& path)
+      // TODO Changing function call so that -output_debug will reflect modulated factors
+      // Note that this will include updating fixel TDs
+      void TckFactor::modulate_factors ()
       {
         // Get the weights to use in each voxel
         // - If there is no 5TT image, just use the processing mask
@@ -404,8 +381,7 @@ namespace MR {
 
         // TODO Generate modified streamline weights
         // Don't bother multi-threading for now
-        // TODO Modify calculations to take into account tissues
-        decltype(coefficients) mod_weights (coefficients.size());
+        // TODO May need to be based on pathological tissue only, rather than including WM
         ProgressBar progress ("Calculating modulated streamline weights", coefficients.size());
         for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
           const float weight = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
@@ -424,12 +400,53 @@ namespace MR {
             }
             mod_factor = 1.0f / std::max (1.0f, max_recon_ratio);
           }
-          mod_weights[i] = weight * mod_factor;
+          coefficients[i] = weight * mod_factor;
         }
 
-        save_vector (mod_weights, path);
+        // Multi-threaded calculation of updated streamline density, and mean weighting coefficient, in each fixel
+        for (vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
+          i->clear_TD();
+          i->clear_mean_coeff();
+        }
+        {
+          SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+          FixelUpdater worker (*this);
+          Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
+        }
+        // Scale the fixel mean coefficient terms (each streamline in the fixel is weighted by its length)
+        for (vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i)
+          i->normalise_mean_coeff();
 
       }
+
+
+
+
+      void TckFactor::output_factors (const std::string& path) const
+      {
+        if (size_t(coefficients.size()) != contributions.size())
+          throw Exception ("Cannot output weighting factors if they have not first been estimated!");
+        try {
+          decltype(coefficients) weights (coefficients.size());
+          for (SIFT::track_t i = 0; i != num_tracks(); ++i)
+            weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
+                         0.0 :
+                         std::exp (coefficients[i]);
+          save_vector (weights, path);
+        } catch (...) {
+          WARN ("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
+        }
+      }
+
+
+      void TckFactor::output_coefficients (const std::string& path) const
+      {
+        save_vector (coefficients, path);
+      }
+
+
+
+
 
 
 
