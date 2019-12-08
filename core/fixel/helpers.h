@@ -1,25 +1,29 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __fixel_helpers_h__
 #define __fixel_helpers_h__
 
-#include "formats/mrtrix_utils.h"
-#include "fixel/keys.h"
-#include "algo/loop.h"
+#include "image.h"
 #include "image_diff.h"
+#include "algo/loop.h"
+#include "fixel/keys.h"
+#include "fixel/types.h"
+#include "formats/mrtrix_utils.h"
+
 
 namespace MR
 {
@@ -33,52 +37,62 @@ namespace MR
 
   namespace Fixel
   {
-    FORCE_INLINE bool is_index_image (const Header& in)
+    FORCE_INLINE bool is_index_filename (const std::string& path)
     {
-      bool is_index = false;
-      if (in.ndim() == 4) {
-        if (in.size(3) == 2) {
-          for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
-               it != supported_sparse_formats.end(); ++it) {
-            if (Path::basename (in.name()) == "index" + *it)
-              is_index = true;
-          }
-        }
+      for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
+           it != supported_sparse_formats.end(); ++it) {
+        if (Path::basename (path) == "index" + *it)
+          return true;
       }
-      return is_index;
+      return false;
     }
 
-    template <class IndexHeaderType>
-    FORCE_INLINE void check_index_image (const IndexHeaderType& index)
+    template <class HeaderType>
+    FORCE_INLINE bool is_index_image (const HeaderType& in)
+    {
+      return is_index_filename (in.name())
+          && in.ndim() == 4
+          && in.size(3) == 2;
+    }
+
+    template <class HeaderType>
+    FORCE_INLINE void check_index_image (const HeaderType& index)
     {
       if (!is_index_image (index))
         throw InvalidImageException (index.name() + " is not a valid fixel index image. Image must be 4D with 2 volumes in the 4th dimension");
     }
 
-
-    FORCE_INLINE bool is_data_file (const Header& in)
+    template <class HeaderType>
+    FORCE_INLINE bool is_data_file (const HeaderType& in)
     {
       return in.ndim() == 3 && in.size(2) == 1;
     }
 
 
-    FORCE_INLINE bool is_directions_file (const Header& in)
+    FORCE_INLINE bool is_directions_filename (const std::string& path)
     {
-      bool is_directions = false;
-      if (in.ndim() == 3) {
-        if (in.size(1) == 3 && in.size(2) == 1) {
-          for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
-               it != supported_sparse_formats.end(); ++it) {
-            if (Path::basename (in.name()) == "directions" + *it)
-              is_directions = true;
-          }
-        }
+      for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
+           it != supported_sparse_formats.end(); ++it) {
+        if (Path::basename (path) == "directions" + *it)
+          return true;
       }
-      return is_directions;
+      return false;
+    }
+
+    template <class HeaderType>
+    FORCE_INLINE bool is_directions_file (const HeaderType& in)
+    {
+      return is_directions_filename (in.name())
+          && in.ndim() == 3
+          && in.size(1) == 3
+          && in.size(2) == 1;
     }
 
 
-    FORCE_INLINE void check_data_file (const Header& in)
+
+
+    template <class HeaderType>
+    FORCE_INLINE void check_data_file (const HeaderType& in)
     {
       if (!is_data_file (in))
         throw InvalidImageException (in.name() + " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
@@ -94,15 +108,15 @@ namespace MR
 
 
     template <class IndexHeaderType>
-    FORCE_INLINE uint32_t get_number_of_fixels (IndexHeaderType& index_header) {
+    FORCE_INLINE index_type get_number_of_fixels (IndexHeaderType& index_header) {
       check_index_image (index_header);
       if (index_header.keyval().count (n_fixels_key)) {
         return std::stoul (index_header.keyval().at(n_fixels_key));
       } else {
-        auto index_image = Image<uint32_t>::open (index_header.name());
+        auto index_image = Image<index_type>::open (index_header.name());
         index_image.index(3) = 1;
-        uint32_t num_fixels = 0;
-        uint32_t max_offset = 0;
+        index_type num_fixels = 0;
+        index_type max_offset = 0;
         for (auto i = MR::Loop (index_image, 0, 3) (index_image); i; ++i) {
           if (index_image.value() > max_offset) {
             max_offset = index_image.value();
@@ -123,12 +137,12 @@ namespace MR
 
       if (is_index_image (index_header)) {
         if (index_header.keyval().count (n_fixels_key)) {
-          fixels_match = std::stoul (index_header.keyval().at(n_fixels_key)) == (uint32_t)data_header.size(0);
+          fixels_match = std::stoul (index_header.keyval().at(n_fixels_key)) == (index_type)data_header.size(0);
         } else {
-          auto index_image = Image<uint32_t>::open (index_header.name());
+          auto index_image = Image<index_type>::open (index_header.name());
           index_image.index(3) = 1;
-          uint32_t num_fixels = 0;
-          uint32_t max_offset = 0;
+          index_type num_fixels = 0;
+          index_type max_offset = 0;
           for (auto i = MR::Loop (index_image, 0, 3) (index_image); i; ++i) {
             if (index_image.value() > max_offset) {
               max_offset = index_image.value();
@@ -137,7 +151,7 @@ namespace MR
               index_image.index(3) = 1;
             }
           }
-          fixels_match = (max_offset + num_fixels) == (uint32_t)data_header.size(0);
+          fixels_match = (max_offset + num_fixels) == (index_type)data_header.size(0);
         }
       }
 
@@ -243,17 +257,15 @@ namespace MR
 
       auto dir_walker = Path::Dir (fixel_directory_path);
       std::string fname;
-      while ((fname = dir_walker.read_name ()).size ()) {
-        Header tmp_header;
-        auto full_path = Path::join (fixel_directory_path, fname);
-        if (Path::has_suffix (fname, supported_sparse_formats)
-              && is_directions_file (tmp_header = Header::open (full_path))) {
+      while ((fname = dir_walker.read_name()).size()) {
+        if (is_directions_filename (fname)) {
+          Header tmp_header = Header::open (Path::join (fixel_directory_path, fname));
           if (is_directions_file (tmp_header)) {
             if (fixels_match (index_header, tmp_header)) {
               if (directions_found == true)
                 throw Exception ("multiple directions files found in fixel image directory: " + fixel_directory_path);
               directions_found = true;
-              header = std::move(tmp_header);
+              header = std::move (tmp_header);
             } else {
               WARN ("fixel directions file (" + fname + ") does not contain the same number of elements as fixels in the index file" );
             }
@@ -275,6 +287,10 @@ namespace MR
       header.size(0) = get_number_of_fixels (index);
       header.size(1) = 1;
       header.size(2) = 1;
+      header.stride(0) = 1;
+      header.stride(1) = 2;
+      header.stride(2) = 3;
+      header.transform() = transform_type::Identity();
       header.datatype() = DataType::Float32;
       header.datatype().set_byte_order_native();
       return header;
@@ -307,16 +323,16 @@ namespace MR
 
       // If the index file already exists check it is the same as the input index file
       if (Path::exists (output_path) && !App::overwrite_files) {
-        auto input_image = input_header.get_image<uint32_t>();
-        auto output_image = Image<uint32_t>::open (output_path);
+        auto input_image = input_header.get_image<index_type>();
+        auto output_image = Image<index_type>::open (output_path);
 
         if (!images_match_abs (input_image, output_image))
           throw Exception ("output sparse image directory (" + output_directory + ") already contains index file, "
                            "which is not the same as the expected output. Use -force to override if desired");
 
       } else {
-        auto output_image = Image<uint32_t>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
-        auto input_image = input_header.get_image<uint32_t>();
+        auto output_image = Image<index_type>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
+        auto input_image = input_header.get_image<index_type>();
         threaded_copy (input_image, output_image);
       }
     }
@@ -328,8 +344,8 @@ namespace MR
 
       // If the index file already exists check it is the same as the input index file
       if (Path::exists (output_path) && !App::overwrite_files) {
-        auto input_image = input_header.get_image<uint32_t>();
-        auto output_image = Image<uint32_t>::open (output_path);
+        auto input_image = input_header.get_image<index_type>();
+        auto output_image = Image<index_type>::open (output_path);
 
         if (!images_match_abs (input_image, output_image))
           throw Exception ("output sparse image directory (" + output_directory + ") already contains a directions file, "

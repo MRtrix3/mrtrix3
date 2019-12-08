@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "apply.h"
 #include "command.h"
@@ -30,9 +31,12 @@
 #include "fixel/helpers.h"
 #include "fixel/keys.h"
 #include "fixel/loop.h"
+#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
+
+using Fixel::index_type;
 
 
 const char* operations[] = {
@@ -67,7 +71,15 @@ void usage ()
   + "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')"
   + "- A 4D directionally-encoded colour image: dec_unit, dec_scaled"
   + "- A 4D scalar image of fixel values with one 3D volume per fixel: split_data"
-  + "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir";
+  + "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir"
+
+  + "The -weighted option deals with the case where there is some per-fixel metric of interest "
+    "that you wish to collapse into a single scalar measure per voxel, but each fixel possesses "
+    "a different volume, and you wish for those fixels with greater volume to have a greater "
+    "influence on the calculation than fixels with lesser volume. For instance, when estimating "
+    "a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's "
+    "mean axon diameter should be weigthed by its relative volume within the voxel in the "
+    "calculation of that voxel mean.";
 
   REFERENCES
     + "* Reference for 'complexity' operation:\n"
@@ -86,25 +98,23 @@ void usage ()
                       "fixels, padding where necessary.")
       + Argument ("N").type_integer(1)
 
-  + Option ("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume. "
-                        "E.g. when estimating a voxel-based measure of mean axon diameter, a fixel's mean axon diameter "
-                        "should be weigthed by its relative volume within the voxel. Note that AFD can be used as a psuedomeasure of fixel volume.")
+  + Option ("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume.")
       + Argument ("fixel_in").type_image_in ();
 
 }
 
 
 
-using FixelIndexType = Image<uint32_t>;
+using FixelIndexType = Image<index_type>;
 using FixelDataType = Image<float>;
 
 
 
 struct set_offset { NOMEMALIGN
-  FORCE_INLINE set_offset (uint32_t offset) : offset (offset) { }
+  FORCE_INLINE set_offset (index_type offset) : offset (offset) { }
   template <class DataType>
     FORCE_INLINE void operator() (DataType& data) { data.index(0) = offset; }
-  uint32_t offset;
+  index_type offset;
 };
 
 struct inc_fixel { NOMEMALIGN
@@ -115,18 +125,18 @@ struct inc_fixel { NOMEMALIGN
 
 
 struct LoopFixelsInVoxelWithMax { NOMEMALIGN
-  const size_t num_fixels;
-  const size_t max_fixels;
-  const uint32_t offset;
+  const index_type num_fixels;
+  const index_type max_fixels;
+  const index_type offset;
 
   template <class... DataType>
   struct Run { NOMEMALIGN
-    const size_t num_fixels;
-    const size_t max_fixels;
-    const uint32_t offset;
-    uint32_t fixel_index;
+    const index_type num_fixels;
+    const index_type max_fixels;
+    const index_type offset;
+    index_type fixel_index;
     const std::tuple<DataType&...> data;
-    FORCE_INLINE Run (const size_t num_fixels, const size_t max_fixels, const uint32_t offset, const std::tuple<DataType&...>& data) :
+    FORCE_INLINE Run (const index_type num_fixels, const index_type max_fixels, const index_type offset, const std::tuple<DataType&...>& data) :
       num_fixels (num_fixels), max_fixels (max_fixels), offset (offset), fixel_index (0), data (data) {
       apply (set_offset (offset), data);
     }
@@ -134,7 +144,7 @@ struct LoopFixelsInVoxelWithMax { NOMEMALIGN
     FORCE_INLINE void operator++() { if (!padding()) apply (inc_fixel (), data); ++fixel_index; }
     FORCE_INLINE void operator++(int) { operator++(); }
     FORCE_INLINE bool padding() const { return (max_fixels && fixel_index >= num_fixels); }
-    FORCE_INLINE size_t count() const { return max_fixels ? max_fixels : num_fixels; }
+    FORCE_INLINE index_type count() const { return max_fixels ? max_fixels : num_fixels; }
   };
 
   template <class... DataType>
@@ -147,7 +157,7 @@ struct LoopFixelsInVoxelWithMax { NOMEMALIGN
 class Base
 { NOMEMALIGN
   public:
-    Base (FixelDataType& data, const size_t max_fixels, const bool pad = false, const float pad_value = 0.0) :
+    Base (FixelDataType& data, const index_type max_fixels, const bool pad = false, const float pad_value = 0.0) :
         data (data),
         max_fixels (max_fixels),
         pad (pad),
@@ -157,14 +167,14 @@ class Base
       FORCE_INLINE LoopFixelsInVoxelWithMax
       Loop (FixelIndexType& index) {
         index.index(3) = 0;
-        const size_t num_fixels = index.value();
+        const index_type num_fixels = index.value();
         index.index(3) = 1;
-        const uint32_t offset = index.value();
+        const index_type offset = index.value();
         return { num_fixels, max_fixels, offset };
       }
 
     FixelDataType data;
-    const size_t max_fixels;
+    const index_type max_fixels;
     const bool pad;
     const float pad_value;
 
@@ -174,7 +184,7 @@ class Base
 class Mean : protected Base
 { MEMALIGN (Mean)
   public:
-    Mean (FixelDataType& data, const size_t max_fixels, FixelDataType& vol) :
+    Mean (FixelDataType& data, const index_type max_fixels, FixelDataType& vol) :
         Base (data, max_fixels),
         vol (vol) {}
 
@@ -208,7 +218,7 @@ class Mean : protected Base
 class Sum : protected Base
 { MEMALIGN (Sum)
   public:
-    Sum (FixelDataType& data, const size_t max_fixels, FixelDataType& vol) :
+    Sum (FixelDataType& data, const index_type max_fixels, FixelDataType& vol) :
         Base (data, max_fixels),
         vol (vol) {}
 
@@ -234,23 +244,23 @@ class Sum : protected Base
 class Product : protected Base
 { MEMALIGN (Product)
   public:
-    Product (FixelDataType& data, const size_t max_fixels) :
+    Product (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
 
     void operator() (FixelIndexType& index, Image<float>& out)
     {
       index.index(3) = 0;
-      size_t num_fixels = index.value();
+      index_type num_fixels = index.value();
       if (!num_fixels) {
         out.value() = 0.0;
         return;
       }
       index.index(3) = 1;
-      uint32_t offset = index.value();
+      index_type offset = index.value();
       data.index(0) = offset;
       out.value() = data.value();
       num_fixels = max_fixels ? std::min (max_fixels, num_fixels) : num_fixels;
-      for (size_t f = 1; f != num_fixels; ++f) {
+      for (index_type f = 1; f != num_fixels; ++f) {
         data.index(0)++;
         out.value() *= data.value();
       }
@@ -261,7 +271,7 @@ class Product : protected Base
 class Min : protected Base
 { MEMALIGN (Min)
   public:
-    Min (FixelDataType& data, const size_t max_fixels) :
+    Min (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
 
     void operator() (FixelIndexType& index, Image<float>& out)
@@ -279,7 +289,7 @@ class Min : protected Base
 class Max : protected Base
 { MEMALIGN (Max)
   public:
-    Max (FixelDataType& data, const size_t max_fixels) :
+    Max (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
 
     void operator() (FixelIndexType& index, Image<float>& out)
@@ -297,7 +307,7 @@ class Max : protected Base
 class AbsMax : protected Base
 { MEMALIGN (AbsMax)
   public:
-    AbsMax (FixelDataType& data, const size_t max_fixels) :
+    AbsMax (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
 
     void operator() (FixelIndexType& index, Image<float>& out)
@@ -315,7 +325,7 @@ class AbsMax : protected Base
 class MagMax : protected Base
 { MEMALIGN (MagMax)
   public:
-    MagMax (FixelDataType& data, const size_t num_fixels) :
+    MagMax (FixelDataType& data, const index_type num_fixels) :
         Base (data, num_fixels) { }
 
     void operator() (FixelIndexType& index, Image<float>& out)
@@ -333,13 +343,13 @@ class MagMax : protected Base
 class Complexity : protected Base
 { MEMALIGN (Complexity)
   public:
-    Complexity (FixelDataType& data, const size_t max_fixels) :
+    Complexity (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
 
     void operator() (FixelIndexType& index, Image<float>& out)
     {
       index.index(3) = 0;
-      size_t num_fixels = index.value();
+      index_type num_fixels = index.value();
       num_fixels = max_fixels ? std::min (num_fixels, max_fixels) : num_fixels;
       if (num_fixels <= 1) {
         out.value() = 0.0;
@@ -361,10 +371,10 @@ class Complexity : protected Base
 class SF : protected Base
 { MEMALIGN (SF)
   public:
-    SF (FixelDataType& data, const size_t max_fixels) :
+    SF (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
 
-    void operator() (Image<uint32_t>& index, FixelDataType& out)
+    void operator() (Image<index_type>& index, FixelDataType& out)
     {
       default_type max = 0.0;
       default_type sum = 0.0;
@@ -382,11 +392,11 @@ class SF : protected Base
 class DEC_unit : protected Base
 { MEMALIGN (DEC_unit)
   public:
-    DEC_unit (FixelDataType& data, const size_t max_fixels, FixelDataType& vol, Image<float>& dir) :
+    DEC_unit (FixelDataType& data, const index_type max_fixels, FixelDataType& vol, Image<float>& dir) :
         Base (data, max_fixels),
         vol (vol), dir (dir) {}
 
-    void operator() (Image<uint32_t>& index, Image<float>& out)
+    void operator() (Image<index_type>& index, Image<float>& out)
     {
       Eigen::Vector3 sum_dec = {0.0, 0.0, 0.0};
       if (vol.valid()) {
@@ -414,7 +424,7 @@ class DEC_unit : protected Base
 class DEC_scaled : protected Base
 { MEMALIGN (DEC_scaled)
   public:
-    DEC_scaled (FixelDataType& data, const size_t max_fixels, FixelDataType& vol, Image<float>& dir) :
+    DEC_scaled (FixelDataType& data, const index_type max_fixels, FixelDataType& vol, Image<float>& dir) :
         Base (data, max_fixels),
         vol (vol), dir (dir) {}
 
@@ -457,7 +467,7 @@ class DEC_scaled : protected Base
 class SplitData : protected Base
 { MEMALIGN (SplitData)
   public:
-    SplitData (FixelDataType& data, const size_t max_fixels) :
+    SplitData (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels, true) { }
 
     void operator() (FixelIndexType& index, Image<float>& out)
@@ -473,7 +483,7 @@ class SplitData : protected Base
 class SplitDir : protected Base
 { MEMALIGN (SplitDir)
   public:
-    SplitDir (FixelDataType& dir, const size_t max_fixels) :
+    SplitDir (FixelDataType& dir, const index_type max_fixels) :
         Base (dir, max_fixels, true, NAN) { }
 
     void operator() (FixelIndexType& index, Image<float>& out)
@@ -515,7 +525,7 @@ void run ()
 
   const int op = argument[1];
 
-  const size_t max_fixels = get_option_value ("number", 0);
+  const index_type max_fixels = get_option_value ("number", 0);
   if (max_fixels && op == 7)
     throw Exception ("\"count\" statistic is meaningless if constraining the number of fixels per voxel using the -number option");
 
@@ -524,6 +534,7 @@ void run ()
   H_out.datatype().set_byte_order_native();
   H_out.keyval().erase (Fixel::n_fixels_key);
   if (op == 7) { // count
+    H_out.ndim() = 3;
     H_out.datatype() = DataType::UInt8;
   } else if (op == 10 || op == 11) { // dec
     H_out.ndim() = 4;
@@ -534,14 +545,16 @@ void run ()
       // 3 volumes per fixel if performing split_dir
       H_out.size(3) = (op == 13) ? (3 * max_fixels) : max_fixels;
     } else {
-      uint32_t max_count = 0;
+      index_type max_count = 0;
       for (auto l = Loop ("determining largest fixel count", in_index_image, 0, 3) (in_index_image); l; ++l)
-        max_count = std::max (max_count, (uint32_t)in_index_image.value());
+        max_count = std::max (max_count, (index_type)in_index_image.value());
       if (max_count == 0)
         throw Exception ("fixel image is empty");
       // 3 volumes per fixel if performing split_dir
       H_out.size(3) = (op == 13) ? (3 * max_count) : max_count;
     }
+  } else {
+    H_out.ndim() = 3;
   }
 
   if (op == 10 || op == 11 || op == 13)  // dec or split_dir
@@ -573,7 +586,7 @@ void run ()
     case 4:  loop.run (Max        (in_data, max_fixels), in_index_image, out); break;
     case 5:  loop.run (AbsMax     (in_data, max_fixels), in_index_image, out); break;
     case 6:  loop.run (MagMax     (in_data, max_fixels), in_index_image, out); break;
-    case 7:  loop.run ([](Image<uint32_t>& index, Image<float>& out) { // count
+    case 7:  loop.run ([](Image<index_type>& index, Image<float>& out) { // count
                           out.value() = index.value();
                        }, in_index_image, out); break;
     case 8:  loop.run (Complexity (in_data, max_fixels), in_index_image, out); break;

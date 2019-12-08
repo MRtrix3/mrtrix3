@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <unsupported/Eigen/MatrixFunctions>
 #include <algorithm>
@@ -38,22 +39,24 @@ void usage ()
   SYNOPSIS = "Convert linear transformation matrices";
 
   DESCRIPTION
-  + "This command allows to convert the transformation matrix provided by FSL's flirt command "
-    "and ITK's linear transformation format to a format usable in MRtrix.";
+  + "This command allows to convert transformation matrices provided by other registration "
+    "softwares to a format usable in MRtrix3. Example usages are provided below.";
+
+  EXAMPLES
+  + Example ("Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix3",
+             "transformconvert transform_flirt.mat flirt_in.nii flirt_ref.nii flirt_import transform_mrtrix.txt",
+             "The two images provided as inputs for this operation must be in the correct order: first the image "
+             "that was provided to flirt via the -in option, second the image that was provided to flirt via the "
+             "-ref option.")
+
+  + Example ("Convert a plain text transformation matrix file produced by ITK's affine registration "
+             "(e.g. ANTS, Slicer) into a format usable by MRtrix3",
+             "transformconvert transform_itk.txt itk_import transform_mrtrix.txt",
+             "");
 
   ARGUMENTS
-  + Argument ("input", "the input for the specified operation").allow_multiple()
-  + Argument ("operation", "the operation to perform, one of:\n" + join(operations, ", ") + "."
-    + "\n\nflirt_import: "
-    + "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
-        "You'll need to provide as additional arguments the NIfTI images that were passed to flirt "
-        "with the -in and -ref options:\nmatrix_in in ref flirt_import output"
-
-    + "\n\nitk_import: "
-    + "Convert a plain text transformation matrix file produced by ITK's (ANTS, Slicer) affine registration "
-    + "into a format usable by MRtrix."
-    ).type_choice (operations)
-
+  + Argument ("input", "the input(s) for the specified operation").allow_multiple()
+  + Argument ("operation", "the operation to perform, one of:\n" + join(operations, ", ")).type_choice (operations)
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 }
 
@@ -137,7 +140,7 @@ void parse_itk_trafo (const std::string& itk_file, TransformationType& transform
   // QuaternionRigidTransform_double_3_3?
   // QuaternionRigidTransform_float_3_3?
 
-  File::KeyValue file (itk_file, first_line.c_str());
+  File::KeyValue::Reader file (itk_file, first_line.c_str());
   std::string line;
   size_t invalid (2);
   while (file.next()) {

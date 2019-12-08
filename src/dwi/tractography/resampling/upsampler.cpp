@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/resampling/upsampler.h"
 
@@ -28,13 +29,15 @@ namespace MR {
 
         bool Upsampler::operator() (const Streamline<>& in, Streamline<>& out) const
         {
-          if (get_ratio() == 1 || in.size() < 2) {
+          if (get_ratio() == 1 || in.size() == 1) {
             out = in;
             return true;
           }
           out.clear();
           out.index = in.index;
           out.weight = in.weight;
+          if (in.empty())
+            return true;
           Streamline<> in_padded (in);
           interp_prepare (in_padded);
           for (size_t i = 3; i < in_padded.size(); ++i) {

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <string>
 
@@ -50,13 +51,48 @@ void usage ()
   SYNOPSIS = "Perform various editing operations on track files";
 
   DESCRIPTION
-  + "This command can be used to perform various manipulations on track data. "
-    "This includes: "
-    "merging data from multiple track files into one; "
-    "extracting only a finite number of tracks; "
-    "selecting a subset of tracks based on various criteria, for instance regions of interest."
+  + "This command can be used to perform various types of manipulations "
+    "on track data. A range of such manipulations are demonstrated in the "
+    "examples provided below."
 
   + DWI::Tractography::preserve_track_order_desc;
+
+  EXAMPLES
+  + Example ("Concatenate data from multiple track files into one",
+             "tckedit *.tck all_tracks.tck",
+             "Here the wildcard operator is used to select all files in the "
+             "current working directory that have the .tck filetype suffix; but "
+             "input files can equivalently be specified one at a time explicitly.")
+
+  + Example ("Extract a reduced number of streamlines",
+             "tckedit in_many.tck out_few.tck -number 1k -skip 500",
+             "The number of streamlines requested would typically be less "
+             "than the number of streamlines in the input track file(s); if it "
+             "is instead greater, then the command will issue a warning upon "
+             "completion. By default the streamlines for the output file are "
+             "extracted from the start of the input file(s); in this example the "
+             "command is instead instructed to skip the first 500 streamlines, and "
+             "write to the output file streamlines 501-1500.")
+
+  + Example ("Extract streamlines based on selection criteria",
+             "tckedit in.tck out.tck -include ROI1.mif -include ROI2.mif -minlength 25",
+             "Multiple criteria can be added in a single invocation of tckedit, "
+             "and a streamline must satisfy all criteria imposed in order to be "
+             "written to the output file. Note that both -include and -exclude "
+             "options can be specified multiple times to provide multiple "
+             "waypoints / exclusion masks.")
+
+  + Example ("Select only those streamline vertices within a mask",
+             "tckedit in.tck cropped.tck -mask mask.mif",
+             "The -mask option is applied to each streamline vertex independently, "
+             "rather than to each streamline, retaining only those streamline vertices "
+             "within the mask. As such, use of this option may result in a greater "
+             "number of output streamlines than input streamlines, as a single input "
+             "streamline may have the vertices at either endpoint retained but some "
+             "vertices at its midpoint removed, effectively cutting one long streamline "
+             "into multiple shorter streamlines.");
+
+
 
   ARGUMENTS
   + Argument ("tracks_in",  "the input track file(s)").type_tracks_in().allow_multiple()
@@ -115,31 +151,38 @@ void run ()
     input_file_list.push_back (argument[file_index]);
 
     Properties p;
-    Reader<float> reader (argument[file_index], p);
+    Reader<float> (argument[file_index], p);
 
-    for (vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
+    for (const auto& i : p.comments) {
       bool present = false;
-      for (vector<std::string>::const_iterator j = properties.comments.begin(); !present && j != properties.comments.end(); ++j)
-        present = (*i == *j);
+      for (const auto& j: properties.comments)
+        if ( (present = (i == j)) )
+          break;
       if (!present)
-        properties.comments.push_back (*i);
+        properties.comments.push_back (i);
     }
 
-    // ROI paths are ignored - otherwise tckedit will try to find the ROIs used
-    //   during streamlines generation!
+    for (const auto& i : p.prior_rois) {
+      const auto potential_matches = properties.prior_rois.equal_range (i.first);
+      bool present = false;
+      for (auto j = potential_matches.first; !present && j != potential_matches.second; ++j)
+        present = (i.second == j->second);
+      if (!present)
+        properties.prior_rois.insert (i);
+    }
 
     size_t this_count = 0, this_total_count = 0;
 
-    for (Properties::const_iterator i = p.begin(); i != p.end(); ++i) {
-      if (i->first == "count") {
-        this_count = to<float>(i->second);
-      } else if (i->first == "total_count") {
-        this_total_count += to<float>(i->second);
+    for (const auto& i : p) {
+      if (i.first == "count") {
+        this_count = to<float> (i.second);
+      } else if (i.first == "total_count") {
+        this_total_count += to<float> (i.second);
       } else {
-        Properties::iterator existing = properties.find (i->first);
+        auto existing = properties.find (i.first);
         if (existing == properties.end())
-          properties.insert (*i);
-        else if (i->second != existing->second)
+          properties.insert (i);
+        else if (i.second != existing->second)
           existing->second = "variable";
       }
     }
@@ -178,9 +221,9 @@ void run ()
   Receiver receiver (output_path, properties, number, skip);
 
   Thread::run_queue (
-      loader, 
+      loader,
       Thread::batch (Streamline<>()),
-      Thread::multi (worker), 
+      Thread::multi (worker),
       Thread::batch (Streamline<>()),
       receiver);
 

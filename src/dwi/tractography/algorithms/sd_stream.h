@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_algorithms_sd_stream_h__
 #define __dwi_tractography_algorithms_sd_stream_h__
@@ -47,16 +48,10 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
-          set_step_size (0.1f);
-          dot_threshold = std::cos (max_angle);
-
+          set_step_size (0.1f, rk4);
+          dot_threshold = std::cos (max_angle_1o);
+          set_num_points();
           set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
-
-          if (rk4) {
-            INFO ("minimum radius of curvature = " + str(step_size / (max_angle / (0.5 * Math::pi))) + " mm");
-          } else {
-            INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
-          }
 
           properties["method"] = "SDStream";
 
@@ -126,7 +121,7 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
       const Eigen::Vector3f prev_dir (dir);
 
       if (!find_peak())
-        return BAD_SIGNAL;
+        return MODEL;
 
       if (prev_dir.dot (dir) < S.dot_threshold)
         return HIGH_CURVATURE;

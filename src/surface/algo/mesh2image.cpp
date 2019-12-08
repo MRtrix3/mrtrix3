@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "surface/algo/mesh2image.h"
 
@@ -217,7 +218,9 @@ namespace MR
           //   by the normal at the vertex.
           // Each voxel not directly on the mesh should then be assigned as prelim_inside or prelim_outside
           //   depending on whether the summed value is positive or negative
-          auto sum_distances = Image<float>::scratch (image, "Sum of distances from polygon planes");
+          H.datatype() = DataType::Float32;
+          H.datatype().set_byte_order_native();
+          auto sum_distances = Image<float>::scratch (H, "Sum of distances from polygon planes");
           Vox adj_voxel;
           for (size_t i = 0; i != mesh.num_vertices(); ++i) {
             const Vox centre_voxel (mesh.vert(i));
@@ -489,7 +492,7 @@ namespace MR
                   }
 
                   if (min_edge_distance_on_plane > 0.0) {
-                    if (std::abs (distance_from_plane) < std::abs (best_min_distance_from_interior_projection)) {
+                    if (abs (distance_from_plane) < abs (best_min_distance_from_interior_projection)) {
                       best_min_distance_from_interior_projection = distance_from_plane;
                       best_result_inside = is_inside;
                     }

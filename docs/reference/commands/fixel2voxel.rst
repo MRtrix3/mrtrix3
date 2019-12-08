@@ -36,25 +36,29 @@ Fixel data can be reduced to voxel data in a number of ways:
 
 - A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir
 
+The -weighted option deals with the case where there is some per-fixel metric of interest that you wish to collapse into a single scalar measure per voxel, but each fixel possesses a different volume, and you wish for those fixels with greater volume to have a greater influence on the calculation than fixels with lesser volume. For instance, when estimating a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's mean axon diameter should be weigthed by its relative volume within the voxel in the calculation of that voxel mean.
+
 Options
 -------
 
 -  **-number N** use only the largest N fixels in calculation of the voxel-wise statistic; in the case of "split_data" and "split_dir", output only the largest N fixels, padding where necessary.
 
--  **-weighted fixel_in** weight the contribution of each fixel to the per-voxel result according to its volume. E.g. when estimating a voxel-based measure of mean axon diameter, a fixel's mean axon diameter should be weigthed by its relative volume within the voxel. Note that AFD can be used as a psuedomeasure of fixel volume.
+-  **-weighted fixel_in** weight the contribution of each fixel to the per-voxel result according to its volume.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -71,16 +75,19 @@ References
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au) & David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 
