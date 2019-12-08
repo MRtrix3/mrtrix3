@@ -22,7 +22,8 @@ if not os.path.isdir(lib_folder):
   sys.exit(1)
 sys.path.insert(0, lib_folder)
 
-import math, itertools, shutil, six, subprocess
+import math, itertools, shutil, subprocess
+import six
 from mrtrix3 import app, file, fsl, image, path, phaseEncoding, run #pylint: disable=redefined-builtin
 
 
