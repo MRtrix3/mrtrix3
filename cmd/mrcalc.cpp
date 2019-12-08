@@ -1,17 +1,183 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
+
+
+
+/**********************************************************************
+  CONVENIENCE MACROS:
+ **********************************************************************/
+
+#ifdef SECTION
+
+#undef SECTION_TITLE
+#undef UNARY_OP
+#undef BINARY_OP
+#undef TERNARY_OP
+
+# if SECTION == 1 // usage section
+
+#define SECTION_TITLE(TITLE) \
+  + OptionGroup (TITLE)
+
+#define UNARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
+  + Option (#OPTION, FEEDBACK " : " DESCRIPTION).allow_multiple()
+
+#define BINARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
+  + Option (#OPTION, FEEDBACK " : " DESCRIPTION).allow_multiple()
+
+#define TERNARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
+  + Option (#OPTION, FEEDBACK " : " DESCRIPTION).allow_multiple()
+
+# elif SECTION == 2 // code section
+
+#define SECTION_TITLE(TITLE)
+
+#define UNARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
+  class Op_##OPTION : public OpUnary { NOMEMALIGN \
+    public: \
+      Op_##OPTION () : OpUnary (FEEDBACK, FLAGS & COMPLEX_MAPS_TO_REAL, FLAGS & REAL_MAPS_TO_COMPLEX) { } \
+      complex_type R (real_type v) const REAL_OPERATION \
+      complex_type Z (complex_type v) const COMPLEX_OPERATION \
+  };
+
+#define BINARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
+  class Op_##OPTION : public OpBinary { NOMEMALIGN \
+    public: \
+      Op_##OPTION () : OpBinary (FEEDBACK, FLAGS & COMPLEX_MAPS_TO_REAL, FLAGS & REAL_MAPS_TO_COMPLEX) { } \
+      complex_type R (real_type a, real_type b) const REAL_OPERATION \
+      complex_type Z (complex_type a, complex_type b) const COMPLEX_OPERATION \
+  };
+
+#define TERNARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
+  class Op_##OPTION : public OpTernary { NOMEMALIGN \
+    public: \
+      Op_##OPTION () : OpTernary (FEEDBACK, FLAGS & COMPLEX_MAPS_TO_REAL, FLAGS & REAL_MAPS_TO_COMPLEX) { } \
+      complex_type R (real_type a, real_type b, real_type c) const REAL_OPERATION \
+      complex_type Z (complex_type a, complex_type b, complex_type c) const COMPLEX_OPERATION \
+  };
+
+# elif SECTION == 3 // parsing section
+
+#define SECTION_TITLE(TITLE)
+
+#define UNARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
+  else if (opt->is (#OPTION)) unary_operation (opt->id, stack, Op_##OPTION());
+
+#define BINARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
+  else if (opt->is (#OPTION)) binary_operation (opt->id, stack, Op_##OPTION());
+
+#define TERNARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
+  else if (opt->is (#OPTION)) ternary_operation (opt->id, stack, Op_##OPTION());
+
+# endif
+
+#define NORMAL 0U
+#define COMPLEX_MAPS_TO_REAL 1U
+#define REAL_MAPS_TO_COMPLEX 2U
+#define NOT_IMPLEMENTED { throw Exception ("operation not supported"); }
+
+
+
+/**********************************************************************
+  Operations defined below:
+ **********************************************************************/
+
+SECTION_TITLE ("basic operations")
+UNARY_OP (abs, "|%1|", COMPLEX_MAPS_TO_REAL, "return absolute value (magnitude) of real or complex number", { return abs (v); }, { return abs (v); } )
+UNARY_OP (neg, "-%1", NORMAL, "negative value", { return -v; }, { return -v; })
+BINARY_OP (add, "(%1 + %2)", NORMAL, "add values", { return a+b; }, { return a+b; })
+BINARY_OP (subtract, "(%1 - %2)", NORMAL, "subtract nth operand from (n-1)th", { return a-b; }, { return a-b; })
+BINARY_OP (multiply, "(%1 * %2)", NORMAL, "multiply values", { return a*b; }, { return a*b; })
+BINARY_OP (divide, "(%1 / %2)", NORMAL, "divide (n-1)th operand by nth", { return a/b; }, { return a/b; })
+BINARY_OP (min, "min (%1, %2)", NORMAL, "smallest of last two operands", { return std::min (a, b); }, NOT_IMPLEMENTED)
+BINARY_OP (max, "max (%1, %2)", NORMAL, "greatest of last two operands", { return std::max (a, b); }, NOT_IMPLEMENTED)
+
+SECTION_TITLE ("comparison operators")
+BINARY_OP (lt, "(%1 < %2)", NORMAL, "less-than operator (true=1, false=0)", { return a < b; }, NOT_IMPLEMENTED)
+BINARY_OP (gt, "(%1 > %2)", NORMAL, "greater-than operator (true=1, false=0)", { return a > b; }, NOT_IMPLEMENTED)
+BINARY_OP (le, "(%1 <= %2)", NORMAL, "less-than-or-equal-to operator (true=1, false=0)", { return a <= b; }, NOT_IMPLEMENTED)
+BINARY_OP (ge, "(%1 >= %2)", NORMAL, "greater-than-or-equal-to operator (true=1, false=0)", { return a >= b; }, NOT_IMPLEMENTED)
+BINARY_OP (eq, "(%1 == %2)", COMPLEX_MAPS_TO_REAL, "equal-to operator (true=1, false=0)", { return a == b; }, { return a == b; })
+BINARY_OP (neq, "(%1 != %2)", COMPLEX_MAPS_TO_REAL, "not-equal-to operator (true=1, false=0)", { return a != b; }, { return a != b; })
+
+SECTION_TITLE ("conditional operators")
+TERNARY_OP (if, "(%1 ? %2 : %3)", NORMAL, "if first operand is true (non-zero), return second operand, otherwise return third operand", { return a ? b : c; }, { return is_true(a) ? b : c; })
+TERNARY_OP (replace, "(%1, %2 -> %3)", NORMAL, "Wherever first operand is equal to the second operand, replace with third operand", { return (a==b) ? c : a; }, { return (a==b) ? c : a; })
+
+SECTION_TITLE ("power functions")
+UNARY_OP (sqrt, "sqrt (%1)", NORMAL, "square root", { return std::sqrt (v); }, { return std::sqrt (v); })
+BINARY_OP (pow, "%1^%2", NORMAL, "raise (n-1)th operand to nth power", { return std::pow (a, b); }, { return std::pow (a, b); })
+
+SECTION_TITLE ("nearest integer operations")
+UNARY_OP (round, "round (%1)", NORMAL, "round to nearest integer", { return std::round (v); }, NOT_IMPLEMENTED)
+UNARY_OP (ceil, "ceil (%1)", NORMAL, "round up to nearest integer", { return std::ceil (v); }, NOT_IMPLEMENTED)
+UNARY_OP (floor, "floor (%1)", NORMAL, "round down to nearest integer", { return std::floor (v); }, NOT_IMPLEMENTED)
+
+SECTION_TITLE ("logical operators")
+UNARY_OP (not, "!%1", NORMAL, "NOT operator: true (1) if operand is false (i.e. zero)", { return !v; }, { return !is_true (v); })
+BINARY_OP (and, "(%1 && %2)", NORMAL, "AND operator: true (1) if both operands are true (i.e. non-zero)", { return a && b; }, { return is_true(a) && is_true(b); })
+BINARY_OP (or, "(%1 || %2)", NORMAL, "OR operator: true (1) if either operand is true (i.e. non-zero)", { return a || b; }, { return is_true(a) || is_true(b); })
+BINARY_OP (xor, "(%1 ^^ %2)", NORMAL, "XOR operator: true (1) if only one of the operands is true (i.e. non-zero)", { return (!a) != (!b); }, { return is_true(a) != is_true(b); })
+
+SECTION_TITLE ("classification functions")
+UNARY_OP (isnan, "isnan (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is not-a-number (NaN)", { return std::isnan (v); }, { return std::isnan (v.real()) || std::isnan (v.imag()); })
+UNARY_OP (isinf, "isinf (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is infinite (Inf)", { return std::isinf (v); }, { return std::isinf (v.real()) || std::isinf (v.imag()); })
+UNARY_OP (finite, "finite (%1)", COMPLEX_MAPS_TO_REAL, "true (1) if operand is finite (i.e. not NaN or Inf)", { return std::isfinite (v); }, { return std::isfinite (v.real()) && std::isfinite (v.imag()); })
+
+SECTION_TITLE ("complex numbers")
+BINARY_OP (complex, "(%1 + %2 i)", REAL_MAPS_TO_COMPLEX, "create complex number using the last two operands as real,imaginary components", { return complex_type (a, b); }, NOT_IMPLEMENTED)
+BINARY_OP (polar, "(%1 /_ %2)", REAL_MAPS_TO_COMPLEX, "create complex number using the last two operands as magnitude,phase components (phase in radians)", { return std::polar (a, b); }, NOT_IMPLEMENTED)
+UNARY_OP (real, "real (%1)", COMPLEX_MAPS_TO_REAL, "real part of complex number", { return v; }, { return v.real(); })
+UNARY_OP (imag, "imag (%1)", COMPLEX_MAPS_TO_REAL, "imaginary part of complex number", { return 0.0; }, { return v.imag(); })
+UNARY_OP (phase, "phase (%1)", COMPLEX_MAPS_TO_REAL, "phase of complex number (use -abs for magnitude)", { return v < 0.0 ? Math::pi : 0.0; }, { return std::arg (v); })
+UNARY_OP (conj, "conj (%1)", NORMAL, "complex conjugate", { return v; }, { return std::conj (v); })
+UNARY_OP (proj, "proj (%1)", REAL_MAPS_TO_COMPLEX, "projection onto the Riemann sphere", { return std::proj (v); }, { return std::proj (v); })
+
+SECTION_TITLE ("exponential functions")
+UNARY_OP (exp, "exp (%1)", NORMAL, "exponential function", { return std::exp (v); }, { return std::exp (v); })
+UNARY_OP (log, "log (%1)", NORMAL, "natural logarithm", { return std::log (v); }, { return std::log (v); })
+UNARY_OP (log10, "log10 (%1)", NORMAL, "common logarithm", { return std::log10 (v); }, { return std::log10 (v); })
+
+SECTION_TITLE ("trigonometric functions")
+UNARY_OP (cos, "cos (%1)", NORMAL, "cosine", { return std::cos (v); }, { return std::cos (v); })
+UNARY_OP (sin, "sin (%1)", NORMAL, "sine", { return std::sin (v); }, { return std::sin (v); })
+UNARY_OP (tan, "tan (%1)", NORMAL, "tangent", { return std::tan (v); }, { return std::tan (v); })
+UNARY_OP (acos, "acos (%1)", NORMAL, "inverse cosine", { return std::acos (v); }, { return std::acos (v); })
+UNARY_OP (asin, "asin (%1)", NORMAL, "inverse sine", { return std::asin (v); }, { return std::asin (v); })
+UNARY_OP (atan, "atan (%1)", NORMAL, "inverse tangent", { return std::atan (v); }, { return std::atan (v); })
+
+SECTION_TITLE ("hyperbolic functions")
+UNARY_OP (cosh, "cosh (%1)", NORMAL, "hyperbolic cosine", { return std::cosh (v); }, { return std::cosh (v); })
+UNARY_OP (sinh, "sinh (%1)", NORMAL, "hyperbolic sine", { return std::sinh (v); }, { return std::sinh (v); })
+UNARY_OP (tanh, "tanh (%1)", NORMAL, "hyperbolic tangent", { return std::tanh (v); }, { return std::tanh (v); })
+UNARY_OP (acosh, "acosh (%1)", NORMAL, "inverse hyperbolic cosine", { return std::acosh (v); }, { return std::acosh (v); })
+UNARY_OP (asinh, "asinh (%1)", NORMAL, "inverse hyperbolic sine", { return std::asinh (v); }, { return std::asinh (v); })
+UNARY_OP (atanh, "atanh (%1)", NORMAL, "inverse hyperbolic tangent", { return std::atanh (v); }, { return std::atanh (v); })
+
+
+
+#undef SECTION
+
+#else
+
+
+/**********************************************************************
+  Main program
+ **********************************************************************/
 
 #include "command.h"
 #include "image.h"
@@ -21,9 +187,15 @@
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
 
-
 using namespace MR;
 using namespace App;
+
+
+using real_type = float;
+using complex_type = cfloat;
+static bool transform_mis_match_reported (false);
+
+inline bool is_true (const complex_type& z) { return z.real() || z.imag(); }
 
 
 void usage () {
@@ -43,21 +215,7 @@ DESCRIPTION
   "images) are pushed onto the stack in the order they appear "
   "(as arguments) on the command-line, and operators (specified "
   "as options) operate on and consume the top-most entries in "
-  "the stack, and push their output as a new entry on the stack. "
-  "For example:"
-
-  + "    $ mrcalc a.mif 2 -mult r.mif"
-
-  + "performs the operation r = 2*a for every voxel a,r in "
-  "images a.mif and r.mif respectively. Similarly:"
-
-  + "    $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
-
-  + "performs the operation r = 9.3*exp(-a/b), and:"
-
-  + "    $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
-
-  + "performs r = (a+b)/(c*d+4.2)."
+  "the stack, and push their output as a new entry on the stack."
 
   + "As an additional feature, this command will allow images with different "
   "dimensions to be processed, provided they satisfy the following "
@@ -72,76 +230,41 @@ DESCRIPTION
   "volume consists of the 3D image scaled by the corresponding value for "
   "that volume in the single-voxel image.";
 
+EXAMPLES
+  + Example ("Double the value stored in every voxel",
+             "mrcalc a.mif 2 -mult r.mif",
+             "This performs the operation: r = 2*a  for every voxel a,r in "
+             "images a.mif and r.mif respectively.")
+
+  + Example ("A more complex example",
+             "mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif",
+             "This performs the operation: r = 9.3*exp(-a/b)")
+
+  + Example ("Another complex example",
+             "mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif",
+             "This performs: r = (a+b)/(c*d+4.2).")
+
+  + Example ("Rescale the densities in a SH l=0 image",
+             "mrcalc ODF_CSF.mif 4 pi -mult -sqrt -div ODF_CSF_scaled.mif",
+             "This applies the spherical harmonic basis scaling factor: "
+             "1.0/sqrt(4*pi), such that a single-tissue voxel containing the "
+             "same intensities as the response function of that tissue "
+             "should contain the value 1.0.");
+
 ARGUMENTS
   + Argument ("operand", "an input image, intensity value, or the special keywords "
       "'rand' (random number between 0 and 1) or 'randn' (random number from unit "
-      "std.dev. normal distribution).").type_various().allow_multiple();
+      "std.dev. normal distribution) or the mathematical constants 'e' and 'pi'.").type_various().allow_multiple();
 
 OPTIONS
-  + OptionGroup ("Unary operators")
 
-  + Option ("abs", "absolute value").allow_multiple()
-  + Option ("neg", "negative value").allow_multiple()
-  + Option ("sqrt", "square root").allow_multiple()
-  + Option ("exp", "exponential function").allow_multiple()
-  + Option ("log", "natural logarithm").allow_multiple()
-  + Option ("log10", "common logarithm").allow_multiple()
-  + Option ("cos", "cosine").allow_multiple()
-  + Option ("sin", "sine").allow_multiple()
-  + Option ("tan", "tangent").allow_multiple()
-  + Option ("cosh", "hyperbolic cosine").allow_multiple()
-  + Option ("sinh", "hyperbolic sine").allow_multiple()
-  + Option ("tanh", "hyperbolic tangent").allow_multiple()
-  + Option ("acos", "inverse cosine").allow_multiple()
-  + Option ("asin", "inverse sine").allow_multiple()
-  + Option ("atan", "inverse tangent").allow_multiple()
-  + Option ("acosh", "inverse hyperbolic cosine").allow_multiple()
-  + Option ("asinh", "inverse hyperbolic sine").allow_multiple()
-  + Option ("atanh", "inverse hyperbolic tangent").allow_multiple()
-  + Option ("round", "round to nearest integer").allow_multiple()
-  + Option ("ceil", "round up to nearest integer").allow_multiple()
-  + Option ("floor", "round down to nearest integer").allow_multiple()
-  + Option ("isnan", "true (1) is operand is not-a-number (NaN)").allow_multiple()
-  + Option ("isinf", "true (1) is operand is infinite (Inf)").allow_multiple()
-  + Option ("finite", "true (1) is operand is finite (i.e. not NaN or Inf)").allow_multiple()
-
-  + Option ("real", "real part of complex number").allow_multiple()
-  + Option ("imag", "imaginary part of complex number").allow_multiple()
-  + Option ("phase", "phase of complex number").allow_multiple()
-  + Option ("conj", "complex conjugate").allow_multiple()
-
-  + OptionGroup ("Binary operators")
-
-  + Option ("add", "add values").allow_multiple()
-  + Option ("subtract", "subtract nth operand from (n-1)th").allow_multiple()
-  + Option ("multiply", "multiply values").allow_multiple()
-  + Option ("divide", "divide (n-1)th operand by nth").allow_multiple()
-  + Option ("pow", "raise (n-1)th operand to nth power").allow_multiple()
-  + Option ("min", "smallest of last two operands").allow_multiple()
-  + Option ("max", "greatest of last two operands").allow_multiple()
-  + Option ("lt", "less-than operator (true=1, false=0)").allow_multiple()
-  + Option ("gt", "greater-than operator (true=1, false=0)").allow_multiple()
-  + Option ("le", "less-than-or-equal-to operator (true=1, false=0)").allow_multiple()
-  + Option ("ge", "greater-than-or-equal-to operator (true=1, false=0)").allow_multiple()
-  + Option ("eq", "equal-to operator (true=1, false=0)").allow_multiple()
-  + Option ("neq", "not-equal-to operator (true=1, false=0)").allow_multiple()
-
-  + Option ("complex", "create complex number using the last two operands as real,imaginary components").allow_multiple()
-
-  + OptionGroup ("Ternary operators")
-
-  + Option ("if", "if first operand is true (non-zero), return second operand, otherwise return third operand").allow_multiple()
-  + Option ("replace", "Wherever first operand is equal to the second operand, replace with third operand").allow_multiple()
-
+#define SECTION 1
+#include "mrcalc.cpp"
 
   + DataType::options();
 }
 
 
-
-using real_type = float;
-using complex_type = cfloat;
-static bool transform_mis_match_reported (false);
 
 
 /**********************************************************************
@@ -242,18 +365,23 @@ class StackEntry { NOMEMALIGN
           image.reset (new Image<complex_type> (header.get_image<complex_type>()));
           image_list.insert (std::make_pair (arg, LoadedImage (image, image_is_complex)));
         }
-        catch (Exception&) {
+        catch (Exception& e_image) {
           try {
             std::string a = lowercase (arg);
-            if      (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
-            else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
-            else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
-            else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
+            if      (a == "pi")    { value = Math::pi; }
+            else if (a == "e")     { value = Math::e; }
             else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gaussian = false; }
             else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gaussian = true; }
             else                   { value =  to<complex_type> (arg); }
-          } catch (Exception&) {
-            throw Exception (std::string ("Could not interpret string \"") + arg + "\" as either an image path or a numerical value");
+          } catch (Exception& e_number) {
+            Exception e (std::string ("Could not interpret string \"") + arg + "\" as either an image path or a numerical value");
+            e.push_back ("As image: ");
+            for (size_t i = 0; i != e_image.num(); ++i)
+              e.push_back (e_image[i]);
+            e.push_back ("As numerical value: ");
+            for (size_t i = 0; i != e_number.num(); ++i)
+              e.push_back (e_number[i]);
+            throw e;
           }
         }
       }
@@ -603,29 +731,7 @@ void get_header (const StackEntry& entry, Header& header)
       header.spacing(n) = entry.image->spacing(n);
   }
 
-  const auto header_grad = DWI::parse_DW_scheme (header);
-  if (header_grad.rows()) {
-    const auto entry_grad = DWI::parse_DW_scheme (*entry.image);
-    if (entry_grad.rows()) {
-      if (!entry_grad.isApprox (header_grad))
-        DWI::clear_DW_scheme (header);
-    }
-  }
-
-  const auto header_pe = PhaseEncoding::get_scheme (header);
-  if (header_pe.rows()) {
-    const auto entry_pe = PhaseEncoding::get_scheme (*entry.image);
-    if (entry_pe.rows()) {
-      if (!entry_pe.isApprox (header_pe))
-        PhaseEncoding::clear_scheme (header);
-    }
-  }
-
-  auto slice_encoding_it = entry.image->keyval().find ("SliceEncodingDirection");
-  if (slice_encoding_it != entry.image->keyval().end()) {
-    if (header.keyval()["SliceEncodingDirection"] != slice_encoding_it->second)
-      header.keyval().erase (header.keyval().find ("SliceEncodingDirection"));
-  }
+  header.merge_keyval (*entry.image);
 }
 
 
@@ -780,314 +886,12 @@ class OpTernary : public OpBase { NOMEMALIGN
 };
 
 
-
 /**********************************************************************
-        UNARY OPERATIONS:
+        EXPAND OPERATIONS:
 **********************************************************************/
 
-class OpAbs : public OpUnary { NOMEMALIGN
-  public:
-    OpAbs () : OpUnary ("|%1|", true) { }
-    complex_type R (real_type v) const { return abs (v); }
-    complex_type Z (complex_type v) const { return abs (v); }
-};
-
-class OpNeg : public OpUnary { NOMEMALIGN
-  public:
-    OpNeg () : OpUnary ("-%1") { }
-    complex_type R (real_type v) const { return -v; }
-    complex_type Z (complex_type v) const { return -v; }
-};
-
-class OpSqrt : public OpUnary { NOMEMALIGN
-  public:
-    OpSqrt () : OpUnary ("sqrt (%1)") { }
-    complex_type R (real_type v) const { return std::sqrt (v); }
-    complex_type Z (complex_type v) const { return std::sqrt (v); }
-};
-
-class OpExp : public OpUnary { NOMEMALIGN
-  public:
-    OpExp () : OpUnary ("exp (%1)") { }
-    complex_type R (real_type v) const { return std::exp (v); }
-    complex_type Z (complex_type v) const { return std::exp (v); }
-};
-
-class OpLog : public OpUnary { NOMEMALIGN
-  public:
-    OpLog () : OpUnary ("log (%1)") { }
-    complex_type R (real_type v) const { return std::log (v); }
-    complex_type Z (complex_type v) const { return std::log (v); }
-};
-
-class OpLog10 : public OpUnary { NOMEMALIGN
-  public:
-    OpLog10 () : OpUnary ("log10 (%1)") { }
-    complex_type R (real_type v) const { return std::log10 (v); }
-    complex_type Z (complex_type v) const { return std::log10 (v); }
-};
-
-class OpCos : public OpUnary { NOMEMALIGN
-  public:
-    OpCos () : OpUnary ("cos (%1)") { }
-    complex_type R (real_type v) const { return std::cos (v); }
-    complex_type Z (complex_type v) const { return std::cos (v); }
-};
-
-class OpSin : public OpUnary { NOMEMALIGN
-  public:
-    OpSin () : OpUnary ("sin (%1)") { }
-    complex_type R (real_type v) const { return std::sin (v); }
-    complex_type Z (complex_type v) const { return std::sin (v); }
-};
-
-class OpTan : public OpUnary { NOMEMALIGN
-  public:
-    OpTan () : OpUnary ("tan (%1)") { }
-    complex_type R (real_type v) const { return std::tan (v); }
-    complex_type Z (complex_type v) const { return std::tan (v); }
-};
-
-class OpCosh : public OpUnary { NOMEMALIGN
-  public:
-    OpCosh () : OpUnary ("cosh (%1)") { }
-    complex_type R (real_type v) const { return std::cosh (v); }
-    complex_type Z (complex_type v) const { return std::cosh (v); }
-};
-
-class OpSinh : public OpUnary { NOMEMALIGN
-  public:
-    OpSinh () : OpUnary ("sinh (%1)") { }
-    complex_type R (real_type v) const { return std::sinh (v); }
-    complex_type Z (complex_type v) const { return std::sinh (v); }
-};
-
-class OpTanh : public OpUnary { NOMEMALIGN
-  public:
-    OpTanh () : OpUnary ("tanh (%1)") { }
-    complex_type R (real_type v) const { return std::tanh (v); }
-    complex_type Z (complex_type v) const { return std::tanh (v); }
-};
-
-class OpAcos : public OpUnary { NOMEMALIGN
-  public:
-    OpAcos () : OpUnary ("acos (%1)") { }
-    complex_type R (real_type v) const { return std::acos (v); }
-};
-
-class OpAsin : public OpUnary { NOMEMALIGN
-  public:
-    OpAsin () : OpUnary ("asin (%1)") { }
-    complex_type R (real_type v) const { return std::asin (v); }
-};
-
-class OpAtan : public OpUnary { NOMEMALIGN
-  public:
-    OpAtan () : OpUnary ("atan (%1)") { }
-    complex_type R (real_type v) const { return std::atan (v); }
-};
-
-class OpAcosh : public OpUnary { NOMEMALIGN
-  public:
-    OpAcosh () : OpUnary ("acosh (%1)") { }
-    complex_type R (real_type v) const { return std::acosh (v); }
-};
-
-class OpAsinh : public OpUnary { NOMEMALIGN
-  public:
-    OpAsinh () : OpUnary ("asinh (%1)") { }
-    complex_type R (real_type v) const { return std::asinh (v); }
-};
-
-class OpAtanh : public OpUnary { NOMEMALIGN
-  public:
-    OpAtanh () : OpUnary ("atanh (%1)") { }
-    complex_type R (real_type v) const { return std::atanh (v); }
-};
-
-
-class OpRound : public OpUnary { NOMEMALIGN
-  public:
-    OpRound () : OpUnary ("round (%1)") { }
-    complex_type R (real_type v) const { return std::round (v); }
-};
-
-class OpCeil : public OpUnary { NOMEMALIGN
-  public:
-    OpCeil () : OpUnary ("ceil (%1)") { }
-    complex_type R (real_type v) const { return std::ceil (v); }
-};
-
-class OpFloor : public OpUnary { NOMEMALIGN
-  public:
-    OpFloor () : OpUnary ("floor (%1)") { }
-    complex_type R (real_type v) const { return std::floor (v); }
-};
-
-class OpReal : public OpUnary { NOMEMALIGN
-  public:
-    OpReal () : OpUnary ("real (%1)", true) { }
-    complex_type Z (complex_type v) const { return v.real(); }
-};
-
-class OpImag : public OpUnary { NOMEMALIGN
-  public:
-    OpImag () : OpUnary ("imag (%1)", true) { }
-    complex_type Z (complex_type v) const { return v.imag(); }
-};
-
-class OpPhase : public OpUnary { NOMEMALIGN
-  public:
-    OpPhase () : OpUnary ("phase (%1)", true) { }
-    complex_type Z (complex_type v) const { return std::arg (v); }
-};
-
-class OpConj : public OpUnary { NOMEMALIGN
-  public:
-    OpConj () : OpUnary ("conj (%1)") { }
-    complex_type Z (complex_type v) const { return std::conj (v); }
-};
-
-class OpIsNaN : public OpUnary { NOMEMALIGN
-  public:
-    OpIsNaN () : OpUnary ("isnan (%1)", true, false) { }
-    complex_type R (real_type v) const { return std::isnan (v) != 0; }
-    complex_type Z (complex_type v) const { return std::isnan (v.real()) != 0 || std::isnan (v.imag()) != 0; }
-};
-
-class OpIsInf : public OpUnary { NOMEMALIGN
-  public:
-    OpIsInf () : OpUnary ("isinf (%1)", true, false) { }
-    complex_type R (real_type v) const { return std::isinf (v) != 0; }
-    complex_type Z (complex_type v) const { return std::isinf (v.real()) != 0 || std::isinf (v.imag()) != 0; }
-};
-
-class OpFinite : public OpUnary { NOMEMALIGN
-  public:
-    OpFinite () : OpUnary ("finite (%1)", true, false) { }
-    complex_type R (real_type v) const { return std::isfinite (v) != 0; }
-    complex_type Z (complex_type v) const { return std::isfinite (v.real()) != 0|| std::isfinite (v.imag()) != 0; }
-};
-
-
-/**********************************************************************
-        BINARY OPERATIONS:
-**********************************************************************/
-
-class OpAdd : public OpBinary { NOMEMALIGN
-  public:
-    OpAdd () : OpBinary ("(%1 + %2)") { }
-    complex_type R (real_type a, real_type b) const { return a+b; }
-    complex_type Z (complex_type a, complex_type b) const { return a+b; }
-};
-
-class OpSubtract : public OpBinary { NOMEMALIGN
-  public:
-    OpSubtract () : OpBinary ("(%1 - %2)") { }
-    complex_type R (real_type a, real_type b) const { return a-b; }
-    complex_type Z (complex_type a, complex_type b) const { return a-b; }
-};
-
-class OpMultiply : public OpBinary { NOMEMALIGN
-  public:
-    OpMultiply () : OpBinary ("(%1 * %2)") { }
-    complex_type R (real_type a, real_type b) const { return a*b; }
-    complex_type Z (complex_type a, complex_type b) const { return a*b; }
-};
-
-class OpDivide : public OpBinary { NOMEMALIGN
-  public:
-    OpDivide () : OpBinary ("(%1 / %2)") { }
-    complex_type R (real_type a, real_type b) const { return a/b; }
-    complex_type Z (complex_type a, complex_type b) const { return a/b; }
-};
-
-class OpPow : public OpBinary { NOMEMALIGN
-  public:
-    OpPow () : OpBinary ("%1^%2") { }
-    complex_type R (real_type a, real_type b) const { return std::pow (a, b); }
-    complex_type Z (complex_type a, complex_type b) const { return std::pow (a, b); }
-};
-
-class OpMin : public OpBinary { NOMEMALIGN
-  public:
-    OpMin () : OpBinary ("min (%1, %2)") { }
-    complex_type R (real_type a, real_type b) const { return std::min (a, b); }
-};
-
-class OpMax : public OpBinary { NOMEMALIGN
-  public:
-    OpMax () : OpBinary ("max (%1, %2)") { }
-    complex_type R (real_type a, real_type b) const { return std::max (a, b); }
-};
-
-class OpLessThan : public OpBinary { NOMEMALIGN
-  public:
-    OpLessThan () : OpBinary ("(%1 < %2)") { }
-    complex_type R (real_type a, real_type b) const { return a < b; }
-};
-
-class OpGreaterThan : public OpBinary { NOMEMALIGN
-  public:
-    OpGreaterThan () : OpBinary ("(%1 > %2)") { }
-    complex_type R (real_type a, real_type b) const { return a > b; }
-};
-
-class OpLessThanOrEqual : public OpBinary { NOMEMALIGN
-  public:
-    OpLessThanOrEqual () : OpBinary ("(%1 <= %2)") { }
-    complex_type R (real_type a, real_type b) const { return a <= b; }
-};
-
-class OpGreaterThanOrEqual : public OpBinary { NOMEMALIGN
-  public:
-    OpGreaterThanOrEqual () : OpBinary ("(%1 >= %2)") { }
-    complex_type R (real_type a, real_type b) const { return a >= b; }
-};
-
-class OpEqual : public OpBinary { NOMEMALIGN
-  public:
-    OpEqual () : OpBinary ("(%1 == %2)", true) { }
-    complex_type R (real_type a, real_type b) const { return a == b; }
-    complex_type Z (complex_type a, complex_type b) const { return a == b; }
-};
-
-class OpNotEqual : public OpBinary { NOMEMALIGN
-  public:
-    OpNotEqual () : OpBinary ("(%1 != %2)", true) { }
-    complex_type R (real_type a, real_type b) const { return a != b; }
-    complex_type Z (complex_type a, complex_type b) const { return a != b; }
-};
-
-class OpComplex : public OpBinary { NOMEMALIGN
-  public:
-    OpComplex () : OpBinary ("(%1 + %2 i)", false, true) { }
-    complex_type R (real_type a, real_type b) const { return complex_type (a, b); }
-};
-
-
-
-
-
-
-
-/**********************************************************************
-        TERNARY OPERATIONS:
-**********************************************************************/
-
-class OpIf : public OpTernary { NOMEMALIGN
-  public:
-    OpIf () : OpTernary ("(%1 ? %2 : %3)") { }
-    complex_type R (real_type a, real_type b, real_type c) const { return a ? b : c; }
-    complex_type Z (complex_type a, complex_type b, complex_type c) const { return a.real() ? b : c; }
-};
-
-class OpReplace : public OpTernary { NOMEMALIGN
-  public:
-    OpReplace () : OpTernary ("(%1, %2 -> %3)") { }
-    complex_type R (real_type a, real_type b, real_type c) const { return ((a==b) || (std::isnan(a) && std::isnan(b))) ? c : a; }
-    complex_type Z (complex_type a, complex_type b, complex_type c) const { return (a==b) ? c : a; }
-};
+#define SECTION 2
+#include "mrcalc.cpp"
 
 
 
@@ -1102,66 +906,14 @@ void run () {
 
     const Option* opt = match_option (App::argv[n]);
     if (opt) {
-      if (opt->is ("abs")) unary_operation (opt->id, stack, OpAbs());
-      else if (opt->is ("neg")) unary_operation (opt->id, stack, OpNeg());
-      else if (opt->is ("sqrt")) unary_operation (opt->id, stack, OpSqrt());
-      else if (opt->is ("exp")) unary_operation (opt->id, stack, OpExp());
-      else if (opt->is ("log")) unary_operation (opt->id, stack, OpLog());
-      else if (opt->is ("log10")) unary_operation (opt->id, stack, OpLog10());
 
-      else if (opt->is ("cos")) unary_operation (opt->id, stack, OpCos());
-      else if (opt->is ("sin")) unary_operation (opt->id, stack, OpSin());
-      else if (opt->is ("tan")) unary_operation (opt->id, stack, OpTan());
-
-      else if (opt->is ("cosh")) unary_operation (opt->id, stack, OpCosh());
-      else if (opt->is ("sinh")) unary_operation (opt->id, stack, OpSinh());
-      else if (opt->is ("tanh")) unary_operation (opt->id, stack, OpTanh());
-
-      else if (opt->is ("acos")) unary_operation (opt->id, stack, OpAcos());
-      else if (opt->is ("asin")) unary_operation (opt->id, stack, OpAsin());
-      else if (opt->is ("atan")) unary_operation (opt->id, stack, OpAtan());
-
-      else if (opt->is ("acosh")) unary_operation (opt->id, stack, OpAcosh());
-      else if (opt->is ("asinh")) unary_operation (opt->id, stack, OpAsinh());
-      else if (opt->is ("atanh")) unary_operation (opt->id, stack, OpAtanh());
-
-      else if (opt->is ("round")) unary_operation (opt->id, stack, OpRound());
-      else if (opt->is ("ceil")) unary_operation (opt->id, stack, OpCeil());
-      else if (opt->is ("floor")) unary_operation (opt->id, stack, OpFloor());
-
-      else if (opt->is ("real")) unary_operation (opt->id, stack, OpReal());
-      else if (opt->is ("imag")) unary_operation (opt->id, stack, OpImag());
-      else if (opt->is ("phase")) unary_operation (opt->id, stack, OpPhase());
-      else if (opt->is ("conj")) unary_operation (opt->id, stack, OpConj());
-
-      else if (opt->is ("isnan")) unary_operation (opt->id, stack, OpIsNaN());
-      else if (opt->is ("isinf")) unary_operation (opt->id, stack, OpIsInf());
-      else if (opt->is ("finite")) unary_operation (opt->id, stack, OpFinite());
-
-      else if (opt->is ("add")) binary_operation (opt->id, stack, OpAdd());
-      else if (opt->is ("subtract")) binary_operation (opt->id, stack, OpSubtract());
-      else if (opt->is ("multiply")) binary_operation (opt->id, stack, OpMultiply());
-      else if (opt->is ("divide")) binary_operation (opt->id, stack, OpDivide());
-      else if (opt->is ("pow")) binary_operation (opt->id, stack, OpPow());
-
-      else if (opt->is ("min")) binary_operation (opt->id, stack, OpMin());
-      else if (opt->is ("max")) binary_operation (opt->id, stack, OpMax());
-      else if (opt->is ("lt")) binary_operation (opt->id, stack, OpLessThan());
-      else if (opt->is ("gt")) binary_operation (opt->id, stack, OpGreaterThan());
-      else if (opt->is ("le")) binary_operation (opt->id, stack, OpLessThanOrEqual());
-      else if (opt->is ("ge")) binary_operation (opt->id, stack, OpGreaterThanOrEqual());
-      else if (opt->is ("eq")) binary_operation (opt->id, stack, OpEqual());
-      else if (opt->is ("neq")) binary_operation (opt->id, stack, OpNotEqual());
-
-      else if (opt->is ("complex")) binary_operation (opt->id, stack, OpComplex());
-
-      else if (opt->is ("if")) ternary_operation (opt->id, stack, OpIf());
-      else if (opt->is ("replace")) ternary_operation (opt->id, stack, OpReplace());
-
-      else if (opt->is ("datatype")) ++n;
+      if (opt->is ("datatype")) ++n;
       else if (opt->is ("nthreads")) ++n;
       else if (opt->is ("force") || opt->is ("info") || opt->is ("debug") || opt->is ("quiet"))
         continue;
+
+#define SECTION 3
+#include "mrcalc.cpp"
 
       else
         throw Exception (std::string ("operation \"") + opt->id + "\" not yet implemented!");
@@ -1177,5 +929,5 @@ void run () {
   run_operations (stack);
 }
 
-
+#endif
 

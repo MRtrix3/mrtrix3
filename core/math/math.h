@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __math_math_h__
 #define __math_math_h__
@@ -19,9 +20,11 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "types.h"
-#include "mrtrix.h"
+#include "app.h"
 #include "exception.h"
+#include "mrtrix.h"
+#include "types.h"
+#include "file/key_value.h"
 #include "file/ofstream.h"
 
 namespace MR
@@ -32,6 +35,7 @@ namespace MR
     /** @defgroup mathconstants Mathematical constants
       @{ */
 
+    constexpr double e = 2.71828182845904523536;
     constexpr double pi = 3.14159265358979323846;
     constexpr double pi_2 = pi / 2.0;
     constexpr double pi_4 = pi / 4.0;
@@ -128,10 +132,11 @@ namespace MR
 
   //! write the matrix \a M to file
   template <class MatrixType>
-    void save_matrix (const MatrixType& M, const std::string& filename)
+    void save_matrix (const MatrixType& M, const std::string& filename, const KeyValues& keyvals = KeyValues(), const bool add_to_command_history = true)
     {
       DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
+      File::KeyValue::write (out, keyvals, "# ", add_to_command_history);
       Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
       out << M.format(fmt);
       out << "\n";
@@ -150,19 +155,21 @@ namespace MR
         if (sbuf.empty())
           continue;
 
-        V.push_back (vector<ValueType>());
-
         const auto elements = MR::split (sbuf, " ,;\t", true);
+        V.push_back (vector<ValueType>());
         try {
           for (const auto& entry : elements)
             V.back().push_back (to<ValueType> (entry));
-        } catch (...) {
-          throw Exception ("File \"" + filename + "\" contains non-numerical data");
+        } catch (Exception& e) {
+          e.push_back ("Cannot load row " + str(V.size()) + " of file \"" + filename + "\" as delimited numerical matrix data:");
+          e.push_back (sbuf);
+          throw e;
         }
 
         if (V.size() > 1)
           if (V.back().size() != V[0].size())
-            throw Exception ("uneven rows in matrix file \"" + filename + "\"");
+            throw Exception ("uneven rows in matrix file \"" + filename + "\" " +
+                             "(first row: " + str(V[0].size()) + " columns; row " + str(V.size()) + ": " + str(V.back().size()) + " columns)");
       }
       if (stream.bad())
         throw Exception (strerror (errno));
@@ -178,15 +185,9 @@ namespace MR
     Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename)
     {
       DEBUG ("loading matrix file \"" + filename + "\"...");
-      vector<vector<ValueType>> V;
-      try {
-        V = load_matrix_2D_vector<ValueType> (filename);
-      } catch (Exception& e) {
-        throw e;
-      }
+      const vector<vector<ValueType>> V = load_matrix_2D_vector<ValueType> (filename);
 
       Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M (V.size(), V[0].size());
-
       for (ssize_t i = 0; i < M.rows(); i++)
         for (ssize_t j = 0; j < M.cols(); j++)
           M(i,j) = V[i][j];
@@ -218,12 +219,7 @@ namespace MR
   {
     DEBUG ("loading transform file \"" + filename + "\"...");
 
-    vector<vector<default_type>> V;
-    try {
-      V = load_matrix_2D_vector<> (filename);
-    } catch (Exception& e) {
-      throw e;
-    }
+    const vector<vector<default_type>> V = load_matrix_2D_vector<> (filename);
 
     if (V.empty())
       throw Exception ("transform in file " + filename + " is empty");
@@ -244,10 +240,11 @@ namespace MR
   }
 
   //! write the transform \a M to file
-  inline void save_transform (const transform_type& M, const std::string& filename)
+  inline void save_transform (const transform_type& M, const std::string& filename, const KeyValues& keyvals = KeyValues(), const bool add_to_command_history = true)
   {
     DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
+    File::KeyValue::write (out, keyvals, "# ", add_to_command_history);
     Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
     out << M.matrix().format(fmt);
     out << "\n0 0 0 1\n";
@@ -255,10 +252,11 @@ namespace MR
 
   //! write the vector \a V to file
   template <class VectorType>
-    void save_vector (const VectorType& V, const std::string& filename)
+    void save_vector (const VectorType& V, const std::string& filename, const KeyValues& keyvals = KeyValues(), const bool add_to_command_history = true)
     {
       DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);
+      File::KeyValue::write (out, keyvals, "# ", add_to_command_history);
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
         out << str(V[i], 10) << " ";
       out << str(V[V.size() - 1], 10) << "\n";

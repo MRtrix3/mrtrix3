@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <iomanip>
 #include <string>
@@ -61,7 +62,10 @@ namespace MR
           value_min = 0.0f; value_max = 1.0f;
           set_windowing (0.0f, 1.0f);
           min_max_set();
-          alpha = 1.0f;
+          //CONF option: MRViewRoiAlpha
+          //CONF default: 0.5
+          //CONF The default alpha of a ROI overlay.
+          alpha =  MR::File::Config::get_float ("MRViewRoiAlpha", 0.5f);
           colour = preset_colours[current_preset_colour++];
           if (current_preset_colour >= 6)
             current_preset_colour = 0;
@@ -76,31 +80,31 @@ namespace MR
           name << "ROI" << std::setfill('0') << std::setw(5) << new_roi_counter++ << ".mif";
           filename = name.str();
 
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           bind();
           allocate();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
 
         void ROI_Item::zero ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           bind();
           vector<GLubyte> data (header().size(0)*header().size(1));
           for (int n = 0; n < header().size(2); ++n)
             upload_data ({ { 0, 0, n } }, { { header().size(0), header().size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void ROI_Item::load ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           bind();
           auto image = header().get_image<bool>();
           vector<GLubyte> data (image.size(0)*image.size(1));
@@ -113,7 +117,7 @@ namespace MR
             ++progress;
           }
           filename = header().name();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 

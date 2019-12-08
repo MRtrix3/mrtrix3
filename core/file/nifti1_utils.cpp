@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "header.h"
 #include "raw.h"
@@ -184,7 +185,7 @@ namespace MR
             // check voxel sizes:
             for (size_t axis = 0; axis != 3; ++axis) {
               if (size_t(ndim) > axis)
-                if (abs(H.spacing(axis) - std::sqrt (Math::pow2 (M(0,axis)) + Math::pow2 (M(1,axis)) + Math::pow2 (M(2,axis)))) > 1e-4) {
+                if (abs(H.spacing(axis) - M.col(axis).head<3>().norm()) > 1e-4) {
                     WARN ("voxel spacings inconsistent between NIFTI s-form and header field pixdim");
                     break;
                 }
@@ -193,7 +194,7 @@ namespace MR
             // normalize each transform axis:
             for (size_t axis = 0; axis != 3; ++axis) {
               if (size_t(ndim) > axis)
-                M.col(axis).array() /= H.spacing (axis);
+                M.col(axis).normalize();
             }
 
           }
@@ -203,8 +204,10 @@ namespace MR
 
             Eigen::Quaterniond Q (0.0, Raw::fetch_<float32> (&NH.quatern_b, is_BE), Raw::fetch_<float32> (&NH.quatern_c, is_BE), Raw::fetch_<float32> (&NH.quatern_d, is_BE));
             const double w = 1.0 - Q.squaredNorm();
-            Q.w() = w < 1.0e-7 ? 0.0 : std::sqrt (w);
-            Q.normalize();
+            if (w < 1.0e-7)
+              Q.normalize();
+            else
+              Q.w() = std::sqrt (w);
             M_qform.matrix().topLeftCorner<3,3>() = Q.matrix();
 
             M_qform.translation()[0] = Raw::fetch_<float32> (&NH.qoffset_x, is_BE);
@@ -219,7 +222,7 @@ namespace MR
             if (sform_code) {
               Header header2 (H);
               header2.transform() = M_qform;
-              if (!voxel_grids_match_in_scanner_space (H, header2)) {
+              if (!voxel_grids_match_in_scanner_space (H, header2, 0.1)) {
                 //CONF option: NIfTIUseSform
                 //CONF default: 0 (false)
                 //CONF A boolean value to control whether, in cases where both
@@ -296,7 +299,12 @@ namespace MR
 
         const auto hit = H.keyval().find("comments");
         auto comments = split_lines (hit == H.keyval().end() ? std::string() : hit->second);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
         strncpy ( (char*) &NH.db_name, comments.size() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
+#pragma GCC diagnostic pop
         Raw::store<int32_t> (16384, &NH.extents, is_BE);
         NH.regular = 'r';
         NH.dim_info = 0;

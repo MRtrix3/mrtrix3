@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
@@ -164,8 +165,7 @@ namespace MR
           void imageChanged ();
           void imageVisibilityChanged (bool);
           void scalingChanged ();
-          void volumeChanged (size_t);
-          void volumeGroupChanged (size_t);
+          void volumeChanged ();
 
         public slots:
           void on_scaling_changed ();
@@ -189,6 +189,7 @@ namespace MR
           void full_screen_slot ();
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
+          void wrap_volumes_slot ();
 
           void hide_image_slot ();
           void slice_next_slot ();
@@ -276,6 +277,7 @@ namespace MR
                   *next_image_volume_group_action,
                   *prev_image_volume_group_action,
                   *goto_image_volume_group_action,
+                  *wrap_volumes_action,
                   *image_list_area,
 
                   *reset_windowing_action,
@@ -336,19 +338,6 @@ namespace MR
           friend class Window::GLArea;
           friend class GrabContext;
       };
-
-
-      class GrabContext : private Context::Grab { NOMEMALIGN
-        public:
-          GrabContext () : Context::Grab (Window::main->glarea) { }
-      };
-
-
-#ifndef NDEBUG
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
-#else
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
-#endif
 
 
     }

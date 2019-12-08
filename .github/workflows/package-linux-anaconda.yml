@@ -1,0 +1,33 @@
+name: package-linux-anaconda
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  package:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: install conda-build # and anaconda-client
+      run: $CONDA/bin/conda install -y conda-build #anaconda-client
+
+    - name: fetch recipe
+      run: |
+        git clone https://github.com/MRtrix3/conda-build.git
+        mv conda-build/* .
+
+    - name: build package
+      run: ./run.sh ${GITHUB_REF#refs/*/} ${GITHUB_REPOSITORY%/*} conda-linux
+
+#    - name: upload package to Anaconda.org
+#      run: $CONDA/bin/anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload -u MRtrix3 $(sudo $CONDA/bin/conda build conda-build/ --output)
+
+    - name: Upload package to GitHub Release
+      uses: AButler/upload-release-assets@v2.0
+      with:
+        files: '*.tar.bz2'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+

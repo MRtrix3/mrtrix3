@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __fixel_legacy_image_h__
 #define __fixel_legacy_image_h__
@@ -20,6 +21,7 @@
 
 #include "image.h"
 #include "header.h"
+#include "types.h"
 #include "image_io/sparse.h"
 #include "fixel/legacy/keys.h"
 
@@ -125,14 +127,14 @@ namespace MR
             if (typeid (*ptr) != typeid (ImageIO::SparseLegacy))
               throw Exception ("cannot create sparse image to access non-sparse data");
             // Use the header information rather than trying to access this from the handler
-            std::map<std::string, std::string>::const_iterator name_it = keyval().find (Fixel::Legacy::name_key);
+            KeyValues::const_iterator name_it = keyval().find (Fixel::Legacy::name_key);
             if (name_it == keyval().end())
               throw Exception ("cannot create sparse image without knowledge of underlying class type in the image header");
             // TODO temporarily disabled this to allow updated_syntax tests to pass with files generated with master branch.
   //          const std::string& class_name = name_it->second;
   //          if (str(typeid(DataType).name()) != class_name)
   //            throw Exception ("class type of sparse image buffer (" + str(typeid(DataType).name()) + ") does not match that in image header (" + class_name + ")");
-            std::map<std::string, std::string>::const_iterator size_it = keyval().find (Fixel::Legacy::size_key);
+            KeyValues::const_iterator size_it = keyval().find (Fixel::Legacy::size_key);
             if (size_it == keyval().end())
               throw Exception ("cannot create sparse image without knowledge of underlying class size in the image header");
             const size_t class_size = to<size_t>(size_it->second);

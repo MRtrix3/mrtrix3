@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -32,11 +33,11 @@ void usage ()
 
   SYNOPSIS = "Convert mean dwi (trace-weighted) images to mean ADC maps";
 
-  ARGUMENTS 
+  ARGUMENTS
     + Argument ("input", "the input image.").type_image_in ()
     + Argument ("output", "the output image.").type_image_out ();
 
-  OPTIONS 
+  OPTIONS
     + DWI::GradImportOptions();
 }
 
@@ -50,8 +51,8 @@ class DWI2ADC { MEMALIGN(DWI2ADC)
   public:
     DWI2ADC (const Eigen::MatrixXd& binv, size_t dwi_axis) :
       dwi (binv.cols()),
-      adc (2), 
-      binv (binv), 
+      adc (2),
+      binv (binv),
       dwi_axis (dwi_axis) { }
 
     template <class DWIType, class ADCType>
@@ -97,10 +98,10 @@ void run () {
 
   Header header (dwi);
   header.datatype() = DataType::Float32;
-  header.ndim() = 4;
-  header.size(3) = 2;
   DWI::stash_DW_scheme (header, grad);
   PhaseEncoding::clear_scheme (header);
+  header.ndim() = 4;
+  header.size(3) = 2;
 
   auto adc = Image<value_type>::create (argument[1], header);
 

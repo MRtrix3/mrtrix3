@@ -23,9 +23,11 @@ Description
 
 If a linear transform is applied without a template image the command will modify the image header transform matrix
 
-FOD reorientation (with apodised point spread functions) will be performed by default if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). The -no_reorientation option can be used to force reorientation off if required.
+FOD reorientation (with apodised point spread functions) can be performed if the number of volumes in the 4th dimension equals the number of coefficients in an antipodally symmetric spherical harmonic series (e.g. 6, 15, 28 etc). For such data, the -reorient_fod yes/no option must be used to specify if reorientation is required.
 
-If a DW scheme is contained in the header (or specified separately), and the number of directions matches the number of volumes in the images, any transformation applied using the -linear option will be also be applied to the directions.
+The output image intensity can be modulated using the (local or global) volume change if a linear or nonlinear transformation is applied. 'FOD' modulation preserves the apparent fibre density across the fibre bundle width and can only be applied if FOD reorientation is used. Alternatively, non-directional scaling by the Jacobian determinant can be applied to any image type. 
+
+If a DW scheme is contained in the header (or specified separately), and the number of directions matches the number of volumes in the images, any transformation applied using the -linear option will also be applied to the directions.
 
 When the -template option is used to specify the target image grid, the image provided via this option will not influence the axis data strides of the output image; these are determined based on the input image, or the input to the -strides option.
 
@@ -70,11 +72,11 @@ Non-linear transformation options
 Fibre orientation distribution handling options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-modulate** modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation
+-  **-modulate intensity modulation method** Valid choices are: fod and jac. fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation. jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation to preserve the total intensity before and after the transformation.
 
 -  **-directions file** directions defining the number and orientation of the apodised point spread functions used in FOD reorientation (Default: 300 directions)
 
--  **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
+-  **-reorient_fod boolean** specify whether to perform FOD reorientation. This is required if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -84,6 +86,13 @@ DW gradient table import options
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-bvalue_scaling mode** specifies whether the b-values should be scaled by the square of the corresponding DW gradient norm, as often required for multi-shell or DSI DW acquisition schemes. The default action can also be set in the MRtrix config file, under the BValueScaling entry. Valid choices are yes/no, true/false, 0/1 (default: true).
+
+DW gradient table export options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-export_grad_mrtrix path** export the diffusion-weighted gradient table to file in MRtrix format
+
+-  **-export_grad_fsl bvecs_path bvals_path** export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
 
 Data type options
 ^^^^^^^^^^^^^^^^^
@@ -100,18 +109,22 @@ Additional generic options for mrtransform
 
 -  **-nan** Use NaN as the out of bounds value (Default: 0.0)
 
+-  **-no_reorientation** deprecated, use -reorient_fod instead
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -130,16 +143,19 @@ References
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 
