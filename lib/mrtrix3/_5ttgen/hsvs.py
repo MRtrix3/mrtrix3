@@ -1,6 +1,35 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+
+
 import glob, os, re
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, path, run
+
+
+
+# Potential future improvements:
+# - Automatic segmentation of anterior commissure (potentially even posterior commissure...)
+# - Accept T1-weighted image as input; run all FreeSurfer steps
+# - Operate on HCP data
+# - Rather than hard-coding structure indices, read file FreeSurferColorLUT.txt from the FreeSurfer installation, find structures by name, then extract the integer index
+# - Option to utilise output of FreeSurfer thalamic nuclei segmentation module; provide explicit command-line control of segmentation mechanism similar to how hippocampi are handled
+# - Improve logic w.r.t. tissue combination, in order to reduce prevalence of "gaps" between structures caused by independent voxel2mesh | meshfilter smooth operations on adjacent structures
+
+
 
 
 HIPPOCAMPI_CHOICES = [ 'subfields', 'first', 'aseg' ]
@@ -11,21 +40,13 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('hsvs', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), using FreeSurfer and FSL tools')
-  # TODO Permit either FreeSurfer directory or T1 image as input
-  # TODO Operate on HCP pre-processed data
   parser.add_argument('input',  help='The input FreeSurfer subject directory')
   parser.add_argument('output', help='The output 5TT image')
   parser.add_argument('-template', help='Provide an image that will form the template for the generated 5TT image')
   parser.add_argument('-hippocampi', choices=HIPPOCAMPI_CHOICES, help='Select method to be used for hippocampi (& amygdalae) segmentation; options are: ' + ','.join(HIPPOCAMPI_CHOICES))
   parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter')
 
-  # TODO Add references
 
-# TODO STILL need to do something about anterior commissure
-
-
-
-# TODO If releasing, these should ideally read from FreeSurferColorLUT.txt to get the indices
 
 ASEG_STRUCTURES = [ ( 4,  3, 'Left-Lateral-Ventricle'),
                     ( 5,  3, 'Left-Inf-Lat-Vent'),
@@ -87,14 +108,24 @@ BRAIN_STEM_ASEG = [ (16, 'Brain-Stem'),
                     (60, 'Right-VentralDC') ]
 
 
-SGM_FIRST_MAP = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area', \
-                  'L_Amyg':'Left-Amygdala',        'R_Amyg':'Right-Amygdala', \
-                  'L_Caud':'Left-Caudate',         'R_Caud':'Right-Caudate', \
-                  'L_Hipp':'Left-Hippocampus',     'R_Hipp':'Right-Hippocampus', \
-                  'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum', \
-                  'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen', \
+SGM_FIRST_MAP = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area',
+                  'L_Amyg':'Left-Amygdala',        'R_Amyg':'Right-Amygdala',
+                  'L_Caud':'Left-Caudate',         'R_Caud':'Right-Caudate',
+                  'L_Hipp':'Left-Hippocampus',     'R_Hipp':'Right-Hippocampus',
+                  'L_Pall':'Left-Pallidum',        'R_Pall':'Right-Pallidum',
+                  'L_Puta':'Left-Putamen',         'R_Puta':'Right-Putamen',
                   'L_Thal':'Left-Thalamus-Proper', 'R_Thal':'Right-Thalamus-Proper' }
 
+
+
+
+def check_file(filepath):
+  if not os.path.isfile(filepath):
+    raise MRtrixError('Required input file missing (expected location: ' + filepath + ')')
+
+def check_dir(dirpath):
+  if not os.path.isdir(dirpath):
+    raise MRtrixError('Unable to find sub-directory \'' + dirpath + '\' within input directory')
 
 
 
@@ -105,24 +136,15 @@ def check_output_paths(): #pylint: disable=unused-variable
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  # FreeSurfer files will be accessed in-place; no need to pre-convert them into the temporary directory
-  # TODO Pre-convert aparc image so that it doesn't have to be repeatedly uncompressed
+  # Most freeSurfer files will be accessed in-place; no need to pre-convert them into the temporary directory
+  # However convert aparc image so that it does not have to be repeatedly uncompressed
+  run.command('mrconvert ' + path.from_user(os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), True) + ' ' + path.to_scratch('aparc.mif', True))
   if app.ARGS.template:
     run.command('mrconvert ' + path.from_user(app.ARGS.template, True) + ' ' + path.to_scratch('template.mif', True) + ' -axes 0,1,2')
 
 
 
 def execute(): #pylint: disable=unused-variable
-
-
-  def check_file(filepath):
-    if not os.path.isfile(filepath):
-      raise MRtrixError('Required input file missing (expected location: ' + filepath + ')')
-
-  def check_dir(dirpath):
-    if not os.path.isdir(dirpath):
-      raise MRtrixError('Unable to find sub-directory \'' + dirpath + '\' within input directory')
-
 
   subject_dir = os.path.abspath(path.from_user(app.ARGS.input, False))
   if not os.path.isdir(subject_dir):
@@ -131,7 +153,8 @@ def execute(): #pylint: disable=unused-variable
   mri_dir = os.path.join(subject_dir, 'mri')
   check_dir(surf_dir)
   check_dir(mri_dir)
-  aparc_image = os.path.join(mri_dir, 'aparc+aseg.mgz')
+  #aparc_image = os.path.join(mri_dir, 'aparc+aseg.mgz')
+  aparc_image = 'aparc.mif'
   mask_image = os.path.join(mri_dir, 'brainmask.mgz')
   reg_file = os.path.join(mri_dir, 'transforms', 'talairach.xfm')
   check_file(aparc_image)
@@ -579,7 +602,6 @@ def execute(): #pylint: disable=unused-variable
     app.console('Running FSL fast to segment the cerebellum based on intensity information')
 
     # Run FSL FAST just within the cerebellum
-    # TESTME Should bias field estimation be disabled within fast?
     # FAST memory usage can also be huge when using a high-resolution template image:
     #   Crop T1 image around the cerebellum before feeding to FAST, then re-sample to full template image FoV
     fast_input_image = 'T1_cerebellum.nii'
@@ -708,6 +730,9 @@ def execute(): #pylint: disable=unused-variable
     app.console('Cropping final 5TT image')
     crop_mask_image = 'crop_mask.mif'
     run.command('mrconvert ' + precrop_result_image + ' -coord 3 0,1,2,4 - | mrmath - sum - -axis 3 | mrthreshold - - -abs 0.001 | maskfilter - dilate ' + crop_mask_image)
-    run.command('mrcrop ' + precrop_result_image + ' result.mif -mask ' + crop_mask_image)
+    run.command('mrgrid ' + precrop_result_image + ' crop result.mif -mask ' + crop_mask_image)
     app.cleanup(crop_mask_image)
     app.cleanup(precrop_result_image)
+
+  app.warn('Algorithm not capable of segmenting anterior commissure; '
+           'recommend performing manual segmentation and using "5ttedit -wm"')

@@ -15,7 +15,7 @@ Usage
 
     5ttgen algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: freesurfer, fsl, gif
+-  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: freesurfer, fsl, gif, hsvs
 
 Description
 -----------
@@ -346,6 +346,96 @@ References
 
 
 **Author:** Matteo Mancini (m.mancini@ucl.ac.uk)
+
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
+
+For more details, see http://www.mrtrix.org/.
+
+.. _5ttgen_hsvs:
+
+5ttgen hsvs
+===========
+
+Synopsis
+--------
+
+Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), using FreeSurfer and FSL tools
+
+Usage
+-----
+
+::
+
+    5ttgen hsvs input output [ options ]
+
+-  *input*: The input FreeSurfer subject directory
+-  *output*: The output 5TT image
+
+Options
+-------
+
+- **-template** Provide an image that will form the template for the generated 5TT image
+
+- **-hippocampi** Select method to be used for hippocampi (& amygdalae) segmentation; options are: subfields,first,aseg
+
+- **-white_stem** Classify the brainstem as white matter
+
+Options common to all 5ttgen algorithms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocrop** Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
+
+- **-sgm_amyg_hipp** Represent the amygdalae and hippocampi as sub-cortical grey matter in the 5TT image
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages.
+
+- **-force** force overwrite of output files.
+
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+
+- **-help** display this information page and exit.
+
+- **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+* Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938
+
+--------------
+
+
+
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
