@@ -74,7 +74,9 @@ ASEG_STRUCTURES = [ ( 4,  3, 'Left-Lateral-Ventricle'),
                     (62,  3, 'Right-vessel'),
                     (63,  3, 'Right-choroid-plexus'),
                     (72,  3, '5th-Ventricle'),
-                    (192, 2, 'Corpus_Callosum'),
+                    (77,  4, 'WM-hypointensities'),
+                    (78,  4, 'Left-WM-hypointensities'),
+                    (79,  4, 'Right-WM-hypointensities'),
                     (250, 2, 'Fornix') ]
 
 
@@ -605,7 +607,7 @@ def execute(): #pylint: disable=unused-variable
     # FAST memory usage can also be huge when using a high-resolution template image:
     #   Crop T1 image around the cerebellum before feeding to FAST, then re-sample to full template image FoV
     fast_input_image = 'T1_cerebellum.nii'
-    run.command('mrcrop ' + t1_cerebellum_masked + ' -mask ' + cerebellum_mask_image + ' ' + fast_input_image)
+    run.command('mrgrid ' + t1_cerebellum_masked + ' crop -mask ' + cerebellum_mask_image + ' ' + fast_input_image)
     app.cleanup(t1_cerebellum_masked)
     # Cleanup of cerebellum_mask_image:
     #   May be same image as cerebellum_volume_image, which is required later
