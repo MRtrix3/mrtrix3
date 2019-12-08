@@ -167,7 +167,7 @@ namespace MR
         H_sh.stride (3) = 0;
         auto out = Image<float>::create (path, H_sh);
         VoxelAccessor v (accessor());
-        for (auto l = Loop (out) (out, v); l; ++l) {
+        for (auto l = Loop (v) (out, v); l; ++l) {
           if (v.value()) {
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> sum = Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (N);
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
