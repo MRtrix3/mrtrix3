@@ -485,7 +485,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
       raise MRtrixError('mask filenames do not have a common postfix')
     mask_common_prefix = get_common_prefix([os.path.split(m)[1] for m in mask_files])
     for mfile in mask_files:
-      mask_uids.append(os.path.split(mfile)[1].rstrip(re.escape(mask_common_postfix)).lstrip(re.escape(mask_common_prefix)))
+      mask_uids.append(os.path.split(mfile)[1].rstrip(re.escape(mask_common_postfix)))
     mask_uids = [str2filename(uid) for uid in mask_uids]
     if len(mask_uids) != len(set(mask_uids)):
       non_unique = [uid for uid, count in collections.Counter(mask_uids).items() if count > 1]
@@ -503,7 +503,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
 
   c_uids = []
   for cid, files in enumerate(in_files):
-    c_uids.append([str2filename(fname.rstrip(re.escape(common_postfix[cid])).lstrip(re.escape(common_prefix[cid]))) for fname in files])
+    c_uids.append([str2filename(fname.rstrip(re.escape(common_postfix[cid]))) for fname in files])
   for uids in c_uids:
     if len(uids) != len(set(uids)):
       non_unique = [uid for uid, count in collections.Counter(uids).items() if count > 1]
