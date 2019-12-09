@@ -69,7 +69,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   options.add_argument('-initial_alignment', default='mass', help='Method of alignment to form the initial template. Options are "mass" (default), "robust_mass" (requires masks), "geometric" and "none".')
   options.add_argument('-mask_dir', help='Optionally input a set of masks inside a single directory, one per input image (with the same file name prefix). Using masks will speed up registration significantly. Note that masks are used for registration, not for aggregation. To exclude areas from aggregation, NaN-mask your input images.')
   options.add_argument('-warp_dir', help='Output a directory containing warps from each input to the template. If the folder does not exist it will be created')
-  options.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created')
+  options.add_argument('-transformed_dir', help='Output a directory containing the input images transformed to the template. If the folder does not exist it will be created. For multi-contrast registration, provide comma separated list of directories.')
   options.add_argument('-linear_transformations_dir', help='Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created')
   options.add_argument('-template_mask', help='Output a template mask. Only works if -mask_dir has been input. The template mask is computed as the intersection of all subject masks in template space.')
   options.add_argument('-noreorientation', action='store_true', help='Turn off FOD reorientation in mrregister. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)')
@@ -249,8 +249,8 @@ def get_common_prefix(file_list):
   return os.path.commonprefix(file_list)
 
 
-def str2filename(string):
-  return "".join(c for c in string if c.isalnum() or c in ('.', '_')).rstrip()
+def str2filename(string, include_list=('.', '_')):
+  return "".join(c for c in string if c.isalnum() or c in include_list).rstrip()
 
 
 class Contrasts(object):
@@ -466,7 +466,13 @@ class Input(object):
 def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
   """
     matches input images across contrasts and pair them with masks.
-    extracts unique identifiers from mask and image filenames by stripping common pre and postfix (per contrast)
+    extracts unique identifiers from mask and image filenames by stripping common pre and postfix (per contrast and for masks)
+
+    in_files: list of lists
+      the inner list holds filenames specific to a contrast
+
+    mask_files:
+      can be empty
 
     returns list of Input
 
@@ -490,25 +496,35 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
     if len(mask_uids) != len(set(mask_uids)):
       non_unique = [uid for uid, count in collections.Counter(mask_uids).items() if count > 1]
       MRtrixError("mask identifiers not unique:\n" + '""\n'.join(non_unique))
-    app.debug('mask uids:' + str(mask_uids))
+    if app.VERBOSITY > 1:
+      app.console('mask uids:' + str(mask_uids))
 
   # images uids
   common_postfix = [get_common_postfix(files) for files in in_files]
-  app.debug("common_postfix:" + str(common_postfix))
   common_prefix = [get_common_prefix(files) for files in in_files]
-  app.debug("common_prefix:" + str(common_prefix))
+  xcontrast_xsubject_pre_postfix = (str2filename(get_common_postfix(common_prefix)).lstrip('_-'),
+                                    str2filename(get_common_prefix([os.path.splitext(re.sub('.gz$', '', pfix))[0].rstrip('_-') for pfix in common_postfix])))
+  if app.VERBOSITY > 1:
+    app.console("common_postfix:" + str(common_postfix))
+    app.console("common_prefix:" + str(common_prefix))
+    app.console("xcontrast_xsubject_pre_postfix: " + str(xcontrast_xsubject_pre_postfix))
   for ipostfix, postfix in enumerate(common_postfix):
     if not postfix:
       raise MRtrixError('image filenames do not have a common postfix:\n' + '\n'.join(in_files[ipostfix]))
 
   c_uids = []
   for cid, files in enumerate(in_files):
-    c_uids.append([str2filename(fname.rstrip(re.escape(common_postfix[cid])).lstrip(re.escape(common_prefix[cid]))) for fname in files])
+    c_uids.append([str2filename(re.sub(re.escape(common_postfix[cid])+'$', '',
+                                       re.sub('^'+re.escape(common_prefix[cid]), '', fname))) for fname in files])
+    if not all([len(_uid) for _uid in c_uids[-1]]):
+      MRtrixError("No uniquely identifiable part of filename found in file :\n" + '""\n'.join(non_unique))
+
   for uids in c_uids:
     if len(uids) != len(set(uids)):
       non_unique = [uid for uid, count in collections.Counter(uids).items() if count > 1]
       MRtrixError("image identifiers not unique:\n" + '""\n'.join(non_unique))
-  app.debug('uids by contrast:' + str(c_uids))
+  if app.VERBOSITY > 1:
+    app.console('uids by contrast:' + str(c_uids))
 
   # join images and masks
   for ifile, fname in enumerate(in_files[0]):
@@ -525,7 +541,8 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
 
     if mask_files:
       if uid not in mask_uids:
-        raise MRtrixError('no matching mask image was found for input image ' + fname)
+        raise MRtrixError('no matching mask image was found for input image ' + fname + ' with uid "'+uid+'". '
+                          'Mask uid candidates: ' + ', '.join(['"%s"' % m for m in mask_uids]))
       index = mask_uids.index(uid)
       # uid, filenames, directories, contrasts, mask_filename = '', mask_directory = '', agg_weight = None
       inputs.append(Input(uid, fnames, dirs, contrasts,
@@ -543,10 +560,10 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
       with open(f_agg_weight, 'r') as fweights:
         reader = csv.reader(fweights.read().decode('utf-8', errors='replace'), delimiter=',', quotechar='#')
         agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in reader)
-    pref = get_common_prefix(agg_weights.keys())
-    suff = get_common_postfix(agg_weights.keys())
+    pref = '^' + re.escape(get_common_prefix(list(agg_weights.keys())))
+    suff = re.escape(get_common_postfix(list(agg_weights.keys()))) + '$'
     for key in agg_weights.keys():
-      agg_weights[key.lstrip(re.escape(pref)).rstrip(re.escape(suff))] = agg_weights.pop(key).strip()
+      agg_weights[re.sub(suff, '', re.sub(pref, '', key))] = agg_weights.pop(key).strip()
 
     for inp in inputs:
       if inp.uid not in agg_weights:
@@ -559,7 +576,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
     if any([w < 0 for w in weights]):
       app.warn('Negative aggregation weights: ' + str(weights))
 
-  return inputs
+  return inputs, xcontrast_xsubject_pre_postfix
 
 
 def execute(): #pylint: disable=unused-variable
@@ -588,7 +605,7 @@ def execute(): #pylint: disable=unused-variable
     app.ARGS.input_dir.append(relpath(inargs[0]))
     app.ARGS.template.append(path.from_user(inargs[1], True))
 
-  cns = Contrasts()  # pylint: disable=invalid-name
+  cns = Contrasts()
   app.debug(str(cns))
 
   for input_dir in app.ARGS.input_dir:
@@ -667,7 +684,7 @@ def execute(): #pylint: disable=unused-variable
   if nanmask_input and not use_masks:
     raise MRtrixError('you cannot use NaN masking when no subject masks were input using -mask_dir')
 
-  ins = parse_input_files(in_files, mask_files, cns, agg_weights)  # pylint: disable=invalid-name
+  ins, xcontrast_xsubject_pre_postfix = parse_input_files(in_files, mask_files, cns, agg_weights)
 
   leave_one_out = 'auto'
   if app.ARGS.leave_one_out is not None:
@@ -1378,7 +1395,8 @@ def execute(): #pylint: disable=unused-variable
     progress = app.ProgressBar('Copying non-linear warps to output directory "' + warp_path + '"')
     for inp in ins:
       run.command('mrconvert ' + os.path.join('warps', inp.uid + '.mif') + ' ' +
-                  os.path.join(warp_path, inp.uid + '.mif'),
+                  path.quote(os.path.join(warp_path, xcontrast_xsubject_pre_postfix[0] +
+                                          inp.uid + xcontrast_xsubject_pre_postfix[1] + '.mif')),
                   mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
@@ -1387,7 +1405,11 @@ def execute(): #pylint: disable=unused-variable
     linear_transformations_path = path.from_user(app.ARGS.linear_transformations_dir, False)
     if os.path.exists(linear_transformations_path):
       run.function(shutil.rmtree, linear_transformations_path)
-    run.function(shutil.copytree, 'linear_transforms', linear_transformations_path)
+    os.makedirs(linear_transformations_path)
+    for inp in ins:
+      run.function(copy, os.path.join('linear_transforms', inp.uid + '.txt'),
+                   os.path.join(linear_transformations_path, xcontrast_xsubject_pre_postfix[0] +
+                                inp.uid + xcontrast_xsubject_pre_postfix[1] + '.txt'))
 
   if app.ARGS.transformed_dir:
     for cid, trdir in enumerate(app.ARGS.transformed_dir):
