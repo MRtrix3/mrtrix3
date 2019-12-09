@@ -736,5 +736,7 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(crop_mask_image)
     app.cleanup(precrop_result_image)
 
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), False), force=app.FORCE_OVERWRITE)
+
   app.warn('Algorithm not capable of segmenting anterior commissure; '
            'recommend performing manual segmentation and using "5ttedit -wm"')
