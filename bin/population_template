@@ -637,14 +637,14 @@ def execute(): #pylint: disable=unused-variable
 
   initial_alignment = app.ARGS.initial_alignment
   if initial_alignment not in ["mass", "robust_mass", "geometric", "none"]:
-    raise MRtrixError('initial_alignment must be one of ' + " ".join(["mass", "robust_mass", "geometric", "none"]))
+    raise MRtrixError('initial_alignment must be one of ' + " ".join(["mass", "robust_mass", "geometric", "none"]) + " provided: " + str(initial_alignment))
 
   linear_estimator = app.ARGS.linear_estimator
   if linear_estimator and not linear_estimator.lower() == 'none':
     if not dolinear:
       raise MRtrixError('linear_estimator specified when no linear registration is requested')
     if linear_estimator not in ["l1", "l2", "lp"]:
-      raise MRtrixError('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]))
+      raise MRtrixError('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]) + " provided: " + str(linear_estimator))
 
   use_masks = False
   mask_files = []
@@ -1379,7 +1379,7 @@ def execute(): #pylint: disable=unused-variable
     for inp in ins:
       run.command('mrconvert ' + os.path.join('warps', inp.uid + '.mif') + ' ' +
                   os.path.join(warp_path, inp.uid + '.mif'),
-                  mrconvert_keyval=inp.get_ims_path(False)[0], force=app.FORCE_OVERWRITE)
+                  mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
 
