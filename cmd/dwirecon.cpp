@@ -79,6 +79,9 @@ void usage ()
     + Argument ("map").type_image_in()
     + Argument ("idx").type_integer()
 
+  + Option ("template", "Template header to determine the reconstruction grid.")
+    + Argument ("header").type_image_in()
+
   + DWI::GradImportOptions()
 
   + PhaseEncoding::ImportOptions
@@ -261,8 +264,20 @@ void run ()
   if (padding < Math::SH::NforL(lmax))
     throw Exception("user-provided padding too small.");
 
+
+  // Create source header - needed due to stride handling
+  Header srchdr (dwisub);
+  Stride::set (srchdr, {1, 2, 3, 4});
+  DWI::set_DW_scheme (srchdr, gradsub);
+  srchdr.datatype() = DataType::Float32;
+  srchdr.sanitise();
+
   // Create recon header
   Header rechdr (dwisub);
+  opt = get_options("template");
+  if (opt.size()) {
+    rechdr = Header::open(opt[0][0]);
+  }
   rechdr.ndim() = 4;
   rechdr.size(3) = ncoefs;
   Stride::set (rechdr, {2, 3, 4, 1});
@@ -271,7 +286,7 @@ void run ()
 
 
   // Create mapping
-  DWI::SVR::ReconMapping map (rechdr, dwisub, qbasis, motionsub, ssp);
+  DWI::SVR::ReconMapping map (rechdr, srchdr, qbasis, motionsub, ssp);
 
   // Set up scattered data matrix
   INFO("initialise reconstruction matrix");
@@ -286,7 +301,7 @@ void run ()
 
 
 
-  // Read input data to vector
+  // Read input data to vector (this enforces positive strides!)
   Eigen::VectorXf y (R.rows()); y.setZero();
   size_t j = 0, v = 0;
   for (auto lv = Loop("loading image data", 3)(dwisub); lv; lv++, v++) {
@@ -308,17 +323,13 @@ void run ()
   cg.setTolerance(tol);
   cg.setMaxIterations(maxiter);
 
-  // Compute M'y
-  //Eigen::VectorXf p (R.cols());
-  //R.project_y2x(p, y);
-
-  // Solve M'M x = M'y
+  // Solve y = M x
   Eigen::VectorXf x (R.cols());
   opt = get_options("init");
   if (opt.size()) {
     // load initialisation
     auto init = Image<value_type>::open(opt[0][0]).with_direct_io({3, 4, 5, 2, 1});
-    check_dimensions(dwi, init, 0, 3);
+    check_dimensions(rechdr, init, 0, 3);
     if ((init.size(3) != shells.count()) || (init.size(4) < Math::SH::NforL(lmax)))
       throw Exception("dimensions of init image don't match.");
     // init vector
@@ -339,12 +350,10 @@ void run ()
       x0.segment(j, ncoefs) = mssh2x.solve(c);
     }
     INFO("solve from given starting point");
-    //x = cg.solveWithGuess(p, x0);
     x = cg.solveWithGuess(y, x0);
   }
   else {
     INFO("solve from zero starting point");
-    //x = cg.solve(p);
     x = cg.solve(y);
   }
 
@@ -353,13 +362,13 @@ void run ()
 
 
   // Write result to output file
-  Header header (dwisub);
-  header.ndim() = 5;
-  header.size(3) = shells.count();
-  header.size(4) = padding;
-  Stride::set_from_command_line (header, {3, 4, 5, 2, 1});
-  header.datatype() = DataType::from_command_line (DataType::Float32);
-  PhaseEncoding::set_scheme (header, Eigen::MatrixXf());
+  Header msshhdr (rechdr);
+  msshhdr.ndim() = 5;
+  msshhdr.size(3) = shells.count();
+  msshhdr.size(4) = padding;
+  Stride::set_from_command_line (msshhdr, {3, 4, 5, 2, 1});
+  msshhdr.datatype() = DataType::from_command_line (DataType::Float32);
+  PhaseEncoding::set_scheme (msshhdr, Eigen::MatrixXf());
   // store b-values and counts
   {
   std::stringstream ss;
@@ -367,17 +376,17 @@ void run ()
     ss << b << ",";
   std::string key = "shells";
   std::string val = ss.str(); val.erase(val.length()-1);
-  header.keyval()[key] = val;
+  msshhdr.keyval()[key] = val;
   } {
   std::stringstream ss;
   for (auto c : shells.get_counts())
     ss << c << ",";
   std::string key = "shellcounts";
   std::string val = ss.str(); val.erase(val.length()-1);
-  header.keyval()[key] = val;
+  msshhdr.keyval()[key] = val;
   }
 
-  auto out = Image<value_type>::create (argument[1], header);
+  auto out = Image<value_type>::create (argument[1], msshhdr);
 
   j = 0;
   Eigen::VectorXf c (ncoefs);
@@ -396,17 +405,13 @@ void run ()
   bool complete = get_options("complete").size();
   opt = get_options("spred");
   if (opt.size()) {
-    Header header (dwisub);
-    header.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
-    DWI::set_DW_scheme (header, gradsub);
-    auto spred = Image<value_type>::create(opt[0][0], header);
+    srchdr.size(3) = (complete) ? dwi.size(3) : dwisub.size(3);
+    auto spred = Image<value_type>::create(opt[0][0], srchdr);
     auto recon = ImageView<value_type>(rechdr, x.data());
     map.x2y(recon, spred);
   }
 
 
 }
-
-
 
 

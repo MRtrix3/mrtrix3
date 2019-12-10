@@ -117,7 +117,7 @@ namespace MR
           using base_type::parent;
 
           MotionMapping (const ImageType& projection, const Header& source,
-                         const Eigen::MatrixXf& rigid, const SSP<float,2>& ssp)
+                         const Eigen::MatrixXf& rigid, const SSP<float>& ssp)
             : base_type (projection),
               interp (projection, 0.0f), yhdr (source), motion (rigid), ssp (ssp),
               Tr (projection), Ts (source), Ts2r (Ts.scanner2voxel * Tr.voxel2scanner)
@@ -147,7 +147,7 @@ namespace MR
           value_type value () {
             value_type res = 0;
             for (int z = -ssp.size(); z <= ssp.size(); z++) {
-              Eigen::Vector3 pr = Ts2r * Eigen::Vector3 (x[0], x[1], x[2]+z);
+              Eigen::Vector3 pr = Ts2r * Eigen::Vector3 (x[0], x[1], x[2] + z);
               for (int k = 0; k < 3; k++) pr[k] = clampdim(pr[k], k);
               interp.voxel (pr);
               res += ssp(z) * interp.value();
@@ -157,7 +157,7 @@ namespace MR
 
           void adjoint_add (value_type val) {
             for (int z = -ssp.size(); z <= ssp.size(); z++) {
-              Eigen::Vector3 pr = Ts2r * Eigen::Vector3 (x[0], x[1], x[2]+z);
+              Eigen::Vector3 pr = Ts2r * Eigen::Vector3 (x[0], x[1], x[2] + z);
               for (int k = 0; k < 3; k++) pr[k] = clampdim(pr[k], k);
               interp.voxel (pr);
               interp.adjoint_add(ssp(z) * val);
@@ -166,14 +166,14 @@ namespace MR
 
           void set_shotidx (size_t idx) {
             interp.set_shotidx(idx);
-            Ts2r = Ts.scanner2voxel * get_transform(motion.row(idx)) * Tr.voxel2scanner;
+            Ts2r = Tr.scanner2voxel * get_transform(motion.row(idx)) * Ts.voxel2scanner;
           }
 
         private:
           Interp::CubicAdjoint<ImageType> interp;
           const Header& yhdr;
           Eigen::MatrixXf motion;
-          SSP<float,2> ssp;
+          SSP<float> ssp;
           ssize_t x[3];
           const Transform Tr, Ts;
           transform_type Ts2r;    // vox-to-vox transform, mapping vectors in source space to recon space
@@ -184,7 +184,7 @@ namespace MR
           }
 
           FORCE_INLINE default_type clampdim (default_type r, size_t axis) const {
-            return (r < 0) ? 0 : (r > size(axis)-1) ? size(axis)-1 : r;
+            return (r < 0) ? 0 : (r > parent().size(axis)-1) ? parent().size(axis)-1 : r;
           }
 
       };
@@ -195,7 +195,7 @@ namespace MR
         MEMALIGN(ReconMapping);
         public:
           ReconMapping(const Header& recon, const Header& source, const QSpaceBasis& basis,
-                       const Eigen::MatrixXf& rigid, const SSP<float,2>& ssp)
+                       const Eigen::MatrixXf& rigid, const SSP<float>& ssp)
             : xhdr (recon), yhdr (source), ne (rigid.rows() / source.size(3)),
               outer_axes ({2,3}), slice_axes ({0,1}),
               qbasis (basis), motion (rigid), ssp (ssp)
@@ -289,7 +289,7 @@ namespace MR
 
           const QSpaceBasis qbasis;
           const Eigen::MatrixXf motion;
-          const SSP<float,2> ssp;
+          const SSP<float> ssp;
 
       };
 
