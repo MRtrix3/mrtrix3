@@ -159,6 +159,8 @@ void run() {
     throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
 
   auto mask_header = Header::open (argument[3]);
+  if (!(mask_header.ndim() == 3 || (mask_header.ndim() == 4 && mask_header.size(3) == 1)))
+    throw Exception ("Template mask is not a 3D image");
   // Load Mask and compute adjacency
   auto mask_image = mask_header.get_image<value_type>();
   Filter::Connector connector (do_26_connectivity);
@@ -172,7 +174,7 @@ void run() {
     ProgressBar progress("loading images", subjects.size());
     for (size_t subject = 0; subject < subjects.size(); subject++) {
       LogLevelLatch log_level (0);
-      auto input_image = Image<float>::open (subjects[subject]); //.with_direct_io (3); <- Should be inputting 3D images?
+      auto input_image = Image<float>::open (subjects[subject]);
       check_dimensions (input_image, mask_image, 0, 3);
       int index = 0;
       vector<vector<int> >::iterator it;
