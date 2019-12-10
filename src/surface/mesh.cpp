@@ -510,31 +510,63 @@ namespace MR
 
       if (magic_number == FreeSurfer::triangle_file_magic_number) {
 
-        char c;
-        for (size_t i = 0; i != 2; ++i) {
-          do {
-            in.read (&c, 1);
-          } while (c != '\n');
+        std::string comment;
+        std::getline (in, comment);
+        const off64_t first_newline_offset = in.tellg();
+
+        // Some FreeSurfer files will have a second comment line; others will not
+        // Need to make honest attempt at both possible scenarios
+        auto load_triangles = [&] () {
+          const int32_t num_vertices = FreeSurfer::get_BE<int32_t> (in);
+          if (num_vertices <= 0)
+            throw Exception ("Error reading FreeSurfer file: Non-positive vertex count");
+          const int32_t num_polygons = FreeSurfer::get_BE<int32_t> (in);
+          if (num_polygons <= 0)
+            throw Exception ("Error reading FreeSurfer file: Non-positive polygon count");
+          try {
+            vertices.reserve (num_vertices);
+            triangles.reserve (num_polygons);
+          } catch (std::bad_alloc&) {
+            vertices.shrink_to_fit();
+            triangles.shrink_to_fit();
+            throw Exception ("Error reading FreeSurfer file: Memory allocation ("
+                             + str(num_vertices) + " vertices, " + str(num_polygons) + " polygons = erroneous?)");
+          }
+          for (int32_t i = 0; i != num_vertices; ++i) {
+            float temp[3];
+            for (size_t axis = 0; axis != 3; ++axis)
+              temp[axis] = FreeSurfer::get_BE<float> (in);
+            vertices.push_back (Vertex (temp[0], temp[1], temp[2]));
+          }
+          if (!in.good())
+            throw Exception ("Error reading FreeSurfer file: EOF reached");
+          for (int32_t i = 0; i != num_polygons; ++i) {
+            std::array<int32_t, 3> temp;
+            for (size_t v = 0; v != 3; ++v)
+              temp[v] = FreeSurfer::get_BE<int32_t> (in);
+            triangles.push_back (Triangle (temp));
+          }
+          if (!in.good())
+            throw Exception ("Error reading FreeSurfer file: EOF reached");
+        };
+
+        try {
+          load_triangles();
+        } catch (Exception& e_onecomment) {
+          try {
+            in.seekg (first_newline_offset);
+            std::string second_comment;
+            std::getline (in, second_comment);
+            load_triangles();
+          } catch (Exception& e_twocomments) {
+            Exception e ("Unable to read FreeSurfer file \"" + path + "\"");
+            e.push_back ("Error if file header is one-line comment:");
+            e.push_back (e_onecomment);
+            e.push_back ("Error if file header is two-line comment:");
+            e.push_back (e_twocomments);
+            throw e;
+          }
         }
-        const int32_t num_vertices = FreeSurfer::get_BE<int32_t> (in);
-        const int32_t num_polygons = FreeSurfer::get_BE<int32_t> (in);
-        vertices.reserve (num_vertices);
-        for (int32_t i = 0; i != num_vertices; ++i) {
-          float temp[3];
-          for (size_t axis = 0; axis != 3; ++axis)
-            temp[axis] = FreeSurfer::get_BE<float> (in);
-          vertices.push_back (Vertex (temp[0], temp[1], temp[2]));
-        }
-        if (!in.good())
-          throw Exception ("Error reading FreeSurfer file: EOF reached");
-        for (int32_t i = 0; i != num_polygons; ++i) {
-          std::array<int32_t, 3> temp;
-          for (size_t v = 0; v != 3; ++v)
-            temp[v] = FreeSurfer::get_BE<int32_t> (in);
-          triangles.push_back (Triangle (temp));
-        }
-        if (!in.good())
-          throw Exception ("Error reading FreeSurfer file: EOF reached");
 
       } else if (magic_number == FreeSurfer::quad_file_magic_number) {
 
