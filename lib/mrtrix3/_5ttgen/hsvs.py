@@ -33,6 +33,7 @@ from mrtrix3 import app, fsl, path, run
 
 
 HIPPOCAMPI_CHOICES = [ 'subfields', 'first', 'aseg' ]
+THALAMI_CHOICES = [ 'nuclei', 'first', 'aseg' ]
 
 
 
@@ -44,48 +45,45 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('output', help='The output 5TT image')
   parser.add_argument('-template', help='Provide an image that will form the template for the generated 5TT image')
   parser.add_argument('-hippocampi', choices=HIPPOCAMPI_CHOICES, help='Select method to be used for hippocampi (& amygdalae) segmentation; options are: ' + ','.join(HIPPOCAMPI_CHOICES))
+  parser.add_argument('-thalami', choices=THALAMI_CHOICES, help='Select method to be used for thalamic segmentation; options are: ' + ','.join(THALAMI_CHOICES))
   parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter')
 
 
 
 ASEG_STRUCTURES = [ ( 4,  3, 'Left-Lateral-Ventricle'),
                     ( 5,  3, 'Left-Inf-Lat-Vent'),
-                    ( 9,  1, 'Left-Thalamus'),
-                    (10,  1, 'Left-Thalamus-Proper'),
-                    (11,  1, 'Left-Caudate'),
-                    (12,  1, 'Left-Putamen'),
-                    (13,  1, 'Left-Pallidum'),
                     (14,  3, '3rd-Ventricle'),
                     (15,  3, '4th-Ventricle'),
                     (24,  3, 'CSF'),
                     (25,  4, 'Left-Lesion'),
-                    (26,  1, 'Left-Accumbens-area'),
                     (30,  3, 'Left-vessel'),
                     (31,  3, 'Left-choroid-plexus'),
                     (43,  3, 'Right-Lateral-Ventricle'),
                     (44,  3, 'Right-Inf-Lat-Vent'),
-                    (48,  1, 'Right-Thalamus'),
-                    (49,  1, 'Right-Thalamus-Proper'),
-                    (50,  1, 'Right-Caudate'),
-                    (51,  1, 'Right-Putamen'),
-                    (52,  1, 'Right-Pallidum'),
                     (57,  4, 'Right-Lesion'),
-                    (58,  1, 'Right-Accumbens-area'),
                     (62,  3, 'Right-vessel'),
                     (63,  3, 'Right-choroid-plexus'),
                     (72,  3, '5th-Ventricle'),
-                    (77,  4, 'WM-hypointensities'),
-                    (78,  4, 'Left-WM-hypointensities'),
-                    (79,  4, 'Right-WM-hypointensities'),
                     (250, 2, 'Fornix') ]
 
 
 HIPP_ASEG = [ (17,  1, 'Left-Hippocampus'),
               (53,  1, 'Right-Hippocampus') ]
 
-
 AMYG_ASEG = [ (18,  1, 'Left-Amygdala'),
               (54,  1, 'Right-Amygdala') ]
+
+THAL_ASEG = [ (10,  1, 'Left-Thalamus-Proper'),
+              (49,  1, 'Right-Thalamus-Proper') ]
+
+OTHER_SGM_ASEG = [ (11,  1, 'Left-Caudate'),
+                   (12,  1, 'Left-Putamen'),
+                   (13,  1, 'Left-Pallidum'),
+                   (26,  1, 'Left-Accumbens-area'),
+                   (50,  1, 'Right-Caudate'),
+                   (51,  1, 'Right-Putamen'),
+                   (52,  1, 'Right-Pallidum'),
+                   (58,  1, 'Right-Accumbens-area') ]
 
 
 CEREBELLUM_ASEG = [ ( 6,  3, 'Left-Cerebellum-Exterior'),
@@ -96,7 +94,8 @@ CEREBELLUM_ASEG = [ ( 6,  3, 'Left-Cerebellum-Exterior'),
                     (47,  1, 'Right-Cerebellum-Cortex') ]
 
 
-CORPUS_CALLOSUM_ASEG = [ (251, 'CC_Posterior'),
+CORPUS_CALLOSUM_ASEG = [ (192, 'Corpus_Callosum'),
+                         (251, 'CC_Posterior'),
                          (252, 'CC_Mid_Posterior'),
                          (253, 'CC_Central'),
                          (254, 'CC_Mid_Anterior'),
@@ -133,7 +132,7 @@ def check_dir(dirpath):
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  pass
+  app.check_output_path(app.ARGS.output)
 
 
 
@@ -199,7 +198,7 @@ def execute(): #pylint: disable=unused-variable
   have_hipp_subfields = False
   hipp_subfield_has_amyg = False
   # Could result in multiple matches
-  hipp_subfield_regex = re.compile(r'[lr]h\.hippo[a-zA-Z]*Labels-[a-zA-Z0-9]*\.v[0-9]+\.?[a-zA-Z0-9]*\.mg[hz]')
+  hipp_subfield_regex = re.compile(r'^[lr]h\.hippo[a-zA-Z]*Labels-[a-zA-Z0-9]*\.v[0-9]+\.?[a-zA-Z0-9]*\.mg[hz]$')
   hipp_subfield_all_images = sorted(list(filter(hipp_subfield_regex.match, os.listdir(mri_dir))))
   # Remove any images that provide segmentations in FreeSurfer voxel space; we want the high-resolution versions
   hipp_subfield_all_images = [ item for item in hipp_subfield_all_images if 'FSvoxelSpace' not in item ]
@@ -223,6 +222,26 @@ def execute(): #pylint: disable=unused-variable
   if have_hipp_subfields:
     hipp_subfield_has_amyg = 'Amyg' in hipp_subfield_image_suffix
 
+  # Perform a similar search for thalamic nuclei submodule output
+  thal_nuclei_image = None
+  thal_nuclei_regex = re.compile(r'^ThalamicNuclei\.v[0-9]+\.?[a-zA-Z0-9]*.mg[hz]$')
+  thal_nuclei_all_images = sorted(list(filter(thal_nuclei_regex.match, os.listdir(mri_dir))))
+  thal_nuclei_all_images = [ item for item in thal_nuclei_all_images if 'FSvoxelSpace' not in item ]
+  if thal_nuclei_all_images:
+    have_thalamic_nuclei = True
+    if len(thal_nuclei_all_images) == 1:
+      thal_nuclei_image = thal_nuclei_all_images[0]
+    else:
+      # How to choose which version to use?
+      # Start with software version
+      thal_nuclei_versions = [ int(item.split('.')[1].lstrip('v')) for item in thal_nuclei_all_images ]
+      thal_nuclei_all_images = [ filepath for filepath, version_number in zip(thal_nuclei_all_images, thal_nuclei_versions) if version_number == max(thal_nuclei_versions) ]
+      if len(thal_nuclei_all_images) == 1:
+        thal_nuclei_image = thal_nuclei_all_images[0]
+      else:
+        # Revert to filename length
+        thal_nuclei_all_images = sorted(thal_nuclei_all_images, key=len)
+        thal_nuclei_image = thal_nuclei_all_images[0]
 
   # If particular hippocampal segmentation method is requested, make sure we can perform such;
   #   if not, decide how to segment hippocampus based on what's available
@@ -237,16 +256,16 @@ def execute(): #pylint: disable=unused-variable
   else:
     if have_hipp_subfields:
       hippocampi_method = 'subfields'
-      app.console('Hippocampal subfields module output detected; will utilise for hippocampi ' + \
-                  ('and amygdalae ' if hipp_subfield_has_amyg else '') + \
-                  'segmentation')
+      app.console('Hippocampal subfields module output detected; will utilise for hippocampi '
+                  + ('and amygdalae ' if hipp_subfield_has_amyg else '')
+                  + 'segmentation')
     elif have_first:
       hippocampi_method = 'first'
-      app.console('No hippocampal subfields module output detected, but FSL FIRST is installed; ' + \
+      app.console('No hippocampal subfields module output detected, but FSL FIRST is installed; '
                   'will utilise latter for hippocampi segmentation')
     else:
       hippocampi_method = 'aseg'
-      app.console('Neither hippocampal subfields module output nor FSL FIRST detected; ' + \
+      app.console('Neither hippocampal subfields module output nor FSL FIRST detected; '
                   'FreeSurfer aseg will be used for hippocampi segmentation')
 
   if hippocampi_method == 'subfields':
@@ -265,6 +284,27 @@ def execute(): #pylint: disable=unused-variable
              + '(hsvs algorithm always assigns hippocampi & ampygdalae as sub-cortical grey matter)')
 
 
+  # Similar logic for thalami
+  thalami_method = app.ARGS.thalami
+  if thalami_method:
+    if thalami_method == 'nuclei':
+      if not thal_nuclei_image:
+        raise MRtrixError('Could not find thalamic nuclei module output')
+    elif thalami_method == 'first':
+      if not have_first:
+        raise MRtrixError('Cannot use "first" method for thalami segmentation; check FSL installation')
+  else:
+    if thal_nuclei_image:
+      thalami_method = 'nuclei'
+      app.console('Will utilise detected thalamic nuclei module output')
+    elif have_first:
+      thalami_method = 'first'
+      app.console('No thalamic nuclei module output detected, but FSL FIRST is installed; '
+                  'will utilise latter for thalami segmentation')
+    else:
+      thalami_method = 'aseg'
+      app.console('Neither thalamic nuclei module output nor FSL FIRST detected; '
+                  'FreeSurfer aseg will be used for thalami segmentation')
 
 
   ###########################
@@ -299,18 +339,16 @@ def execute(): #pylint: disable=unused-variable
   # Get other structures that need to be converted from the aseg voxel image
   from_aseg = ASEG_STRUCTURES.copy()
   if hippocampi_method == 'subfields':
-    if not hipp_subfield_has_amyg:
+    if not hipp_subfield_has_amyg and not have_first:
       from_aseg.extend(AMYG_ASEG)
-    if have_first:
-      from_aseg = [ entry for entry in from_aseg if entry[2] not in SGM_FIRST_MAP.values() ]
-  elif hippocampi_method == 'first':
-    # Wouldn't still be executing if first were not installed
-    from_aseg = [ entry for entry in from_aseg if entry[2] not in SGM_FIRST_MAP.values() ]
   elif hippocampi_method == 'aseg':
-    from_aseg.extend(AMYG_ASEG)
-    if have_first:
-      from_aseg = [ entry for entry in from_aseg if entry[2] not in SGM_FIRST_MAP.values() ]
     from_aseg.extend(HIPP_ASEG)
+    from_aseg.extend(AMYG_ASEG)
+  if thalami_method == 'aseg':
+    from_aseg.extend(THAL_ASEG)
+  if not have_first:
+    from_aseg.extend(OTHER_SGM_ASEG)
+
   progress = app.ProgressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(from_aseg))
   for (index, tissue, name) in from_aseg:
     init_mesh_path = name + '_init.vtk'
@@ -396,7 +434,8 @@ def execute(): #pylint: disable=unused-variable
 
 
   if hippocampi_method == 'subfields':
-    progress = app.ProgressBar('Using detected FreeSurfer hippocampal subfields module output', 64 if hipp_subfield_has_amyg else 32)
+    progress = app.ProgressBar('Using detected FreeSurfer hippocampal subfields module output',
+                               64 if hipp_subfield_has_amyg else 32)
 
     subfields = [ ( hipp_lut_file, 'hipp' ) ]
     if hipp_subfield_has_amyg:
@@ -427,7 +466,30 @@ def execute(): #pylint: disable=unused-variable
     progress.done()
 
 
-
+  if thalami_method == 'nuclei':
+    progress = app.ProgressBar('Using detected FreeSurfer thalamic nuclei module output', 6)
+    for hemi in ['Left', 'Right']:
+      thal_mask_path = hemi + '_Thalamus_mask.mif'
+      init_mesh_path = hemi + '_Thalamus_init.vtk'
+      smooth_mesh_path = hemi + '_Thalamus.vtk'
+      thalamus_image = hemi + '_Thalamus.mif'
+      if hemi == 'Right':
+        run.command('mrthreshold ' + os.path.join(mri_dir, thal_nuclei_image) + ' -abs 8200 ' + thal_mask_path)
+      else:
+        run.command('mrcalc ' + os.path.join(mri_dir, thal_nuclei_image) + ' 0 -gt '
+                    + os.path.join(mri_dir, thal_nuclei_image) + ' 8200 -lt '
+                    + '-mult ' + thal_mask_path)
+      run.command('voxel2mesh ' + thal_mask_path + ' ' + init_mesh_path)
+      app.cleanup(thal_mask_path)
+      progress.increment()
+      run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path + ' -smooth_spatial 2 -smooth_influence 2')
+      app.cleanup(init_mesh_path)
+      progress.increment()
+      run.command('mesh2voxel ' + smooth_mesh_path + ' ' + template_image + ' ' + thalamus_image)
+      app.cleanup(smooth_mesh_path)
+      progress.increment()
+      tissue_images[1].append(thalamus_image)
+    progress.done()
 
   if have_first:
     app.console('Running FSL FIRST to segment sub-cortical grey matter structures')
@@ -438,6 +500,8 @@ def execute(): #pylint: disable=unused-variable
         from_first = { key: value for key, value in from_first.items() if 'Amygdala' not in value }
     elif hippocampi_method == 'aseg':
       from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value }
+    if thalami_method != 'first':
+      from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
     run.command(first_cmd + ' -s ' + ','.join(from_first.keys()) + ' -i T1.nii -b -o first')
     fsl.check_first('first', from_first.keys())
     app.cleanup(glob.glob('T1_to_std_sub.*'))
@@ -736,7 +800,9 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(crop_mask_image)
     app.cleanup(precrop_result_image)
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), False), force=app.FORCE_OVERWRITE)
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
+              mrconvert_keyval=path.from_user(os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), True),
+              force=app.FORCE_OVERWRITE)
 
   app.warn('Algorithm not capable of segmenting anterior commissure; '
            'recommend performing manual segmentation and using "5ttedit -wm"')
