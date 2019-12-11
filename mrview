@@ -1,0 +1,7 @@
+#!/bin/bash
+f="${BASH_SOURCE}"
+while [[ -L "${f}" ]]; do
+  f=$(readlink "${f}")
+done
+f=$(dirname "${f}")
+"${f}"/../../MRView.app/Contents/MacOS/mrview "$@"
