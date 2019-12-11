@@ -63,8 +63,9 @@ namespace MR
         transform_ (Eigen::Matrix<default_type,3,4>::Constant (NaN)),
         format_ (nullptr),
         offset_ (0.0),
-        scale_ (1.0) {
-        }
+        scale_ (1.0),
+        realign_perm_ {0, 1, 2},
+        realign_flip_ {false, false, false} {}
 
       explicit Header (Header&& H) noexcept :
         axes_ (std::move (H.axes_)),
@@ -75,7 +76,9 @@ namespace MR
         io (std::move (H.io)),
         datatype_ (std::move (H.datatype_)),
         offset_ (H.offset_),
-        scale_ (H.scale_) {}
+        scale_ (H.scale_),
+        realign_perm_ {0, 1, 2},
+        realign_flip_ {false, false, false} {}
 
       Header& operator= (Header&& H) noexcept {
         axes_ = std::move (H.axes_);
@@ -87,6 +90,8 @@ namespace MR
         datatype_ = std::move (H.datatype_);
         offset_ = H.offset_;
         scale_ = H.scale_;
+        realign_perm_ = H.realign_perm_;
+        realign_flip_ = H.realign_flip_;
         return *this;
       }
 
@@ -101,7 +106,9 @@ namespace MR
         format_ (H.format_),
         datatype_ (H.datatype_),
         offset_ (datatype().is_integer() ? H.offset_ : 0.0),
-        scale_ (datatype().is_integer() ? H.scale_ : 1.0) { }
+        scale_ (datatype().is_integer() ? H.scale_ : 1.0),
+        realign_perm_ (H.realign_perm_),
+        realign_flip_ (H.realign_flip_) { }
 
       //! copy constructor from type of class derived from Header
       /*! This invokes the standard Header(const Header&) copy-constructor. */
@@ -119,7 +126,9 @@ namespace MR
           format_ (nullptr),
           datatype_ (DataType::from<typename HeaderType::value_type>()),
           offset_ (0.0),
-          scale_ (1.0) {
+          scale_ (1.0),
+          realign_perm_ {0, 1, 2},
+          realign_flip_ {false, false, false} {
             axes_.resize (original.ndim());
             for (size_t n = 0; n < original.ndim(); ++n) {
               size(n) = original.size(n);
@@ -141,6 +150,8 @@ namespace MR
         datatype_ = H.datatype_;
         offset_ = datatype().is_integer() ? H.offset_ : 0.0;
         scale_ = datatype().is_integer() ? H.scale_ : 1.0;
+        realign_perm_ = H.realign_perm_;
+        realign_flip_ = H.realign_flip_;
         io.reset();
         return *this;
       }
@@ -169,6 +180,8 @@ namespace MR
           datatype_ = DataType::from<typename HeaderType::value_type>();
           offset_ = 0.0;
           scale_ = 1.0;
+          realign_perm_ = {0, 1, 2};
+          realign_flip_ = {false, false, false};
           io.reset();
           return *this;
         }
@@ -197,6 +210,9 @@ namespace MR
       const transform_type& transform () const { return transform_; }
       //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
       transform_type& transform () { return transform_; }
+
+      //! get information on how the transform was modified on image load
+      void realignment (std::array<size_t, 3>& perm, std::array<bool, 3>& flip) const { perm = realign_perm_; flip = realign_flip_; }
 
       class NDimProxy { NOMEMALIGN
         public:
@@ -363,6 +379,10 @@ namespace MR
 
       //! realign transform to match RAS coordinate system as closely as possible
       void realign_transform ();
+      /*! store information about how image was
+       * realigned via realign_transform(). */
+      std::array<size_t, 3> realign_perm_;
+      std::array<bool, 3> realign_flip_;
 
       void sanitise_voxel_sizes ();
       void sanitise_transform ();
