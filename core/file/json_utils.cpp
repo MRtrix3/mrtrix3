@@ -58,7 +58,7 @@ namespace MR
       void save (const Header& H, const std::string& path)
       {
         nlohmann::json json;
-        write (H, json);
+        write (H, json, true);
         File::OFStream out (path);
         out << json.dump(4);
       }
@@ -267,10 +267,10 @@ namespace MR
 
 
 
-      void write (const Header& header, nlohmann::json& json)
+      void write (const Header& header, nlohmann::json& json, const bool realign)
       {
-        const bool realign = Formats::is_nifti (header);
-        if (!realign) {
+        const bool do_realign = realign && Formats::is_nifti (header);
+        if (!do_realign) {
           write (header.keyval(), json);
           return;
         }
