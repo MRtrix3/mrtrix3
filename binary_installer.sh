@@ -119,17 +119,15 @@ mkdir -p ${PREFIX}/mrtrix3/bin/plugins/{platforms,imageformats}
 cp ${PREFIX}_dep/plugins/platforms/libqcocoa${QT_POSTFIX}.dylib  ${PREFIX}/mrtrix3/bin/plugins/platforms
 cp ${PREFIX}_dep/plugins/imageformats/libqsvg${QT_POSTFIX}.dylib ${PREFIX}/mrtrix3/bin/plugins/imageformats
 
-mkdir -p ${PREFIX}/mrtrix3/{MR,SH}View.app/Contents/MacOS
-
+cp -r ${PLD}/MRView.app ${PREFIX} 
+mkdir -p ${PREFIX}/MRView.app/Contents/MacOS/
 mv ${PREFIX}/mrtrix3/bin/mrview ${PREFIX}/MRView.app/Contents/MacOS/
-cd ${PREFIX}/MRView.app/Contents
-ln -s ../../mrtrix3/lib
-ln -s ../../mrtrix3/bin/plugins
+cp ${PLD}/mrview ${PREFIX}/mrtrix3/bin
 
+cp -r ${PLD}/SHView.app ${PREFIX}     
+mkdir -p ${PREFIX}/SHView.app/Contents/MacOS/
 mv ${PREFIX}/mrtrix3/bin/shview ${PREFIX}/SHView.app/Contents/MacOS/
-cd ${PREFIX}/SHView.app/Contents
-ln -s ../../mrtrix3/lib
-ln -s ../../mrtrix3/bin/plugins
+cp ${PLD}/shview ${PREFIX}/mrtrix3/bin
 
 tar cfz ${PLD}/mrtrix3.tar.gz ${PREFIX}
 
