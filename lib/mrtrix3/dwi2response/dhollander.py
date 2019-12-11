@@ -35,7 +35,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-sfwm', type=float, default=0.5, help='Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)')
   options.add_argument('-gm', type=float, default=2.0, help='Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)')
   options.add_argument('-csf', type=float, default=10.0, help='Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)')
-  options.add_argument('-algo', type=int, default=2016, help='Select version of algorithm to use, based on year of corresponding publication: 2016 or 2019 (default: 2016).')
+  options.add_argument('-wm_algo', metavar='algorithm', help='dwi2response algorithm to use for WM single-fibre voxel selection (default: built-in Dhollander 2019)')
 
 
 
@@ -62,9 +62,6 @@ def execute(): #pylint: disable=unused-variable
 
   # CHECK INPUTS AND OPTIONS
   app.console('-------')
-
-  if app.ARGS.algo not in [ 2016, 2019 ]:
-    raise MRtrixError ('valid values for -algo are 2016 or 2019')
 
   # Get b-values and number of volumes per b-value.
   bvalues = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
@@ -224,11 +221,15 @@ def execute(): #pylint: disable=unused-variable
 
   # Get final voxels for single-fibre WM response function estimation from refined WM.
   app.console('* single-fibre WM:')
-  app.console(' * Selecting final voxels (' + str(app.ARGS.sfwm) + '% of refined WM) using ' + str(app.ARGS.algo) + ' version of algorithm...')
+  app.console(' * Selecting final voxels (' + str(app.ARGS.sfwm) + '% of refined WM)...')
   voxsfwmcount = int(round(statrefwmcount * app.ARGS.sfwm / 100.0))
 
-  if app.ARGS.algo == 2016:
-    run.command('dwi2response tournier dwi.mif _respsfwmss.txt -mask refined_wm.mif -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(10*voxsfwmcount) + ' -voxels voxels_sfwm.mif -scratch ' + app.SCRATCH_DIR, show=False)
+  if app.ARGS.wm_algo:
+    recursive_cleanup_option=''
+    if not app.DO_CLEANUP:
+      recursive_cleanup_option = ' -nocleanup'
+    app.console('Selecting WM single-fibre voxels using \'' + app.ARGS.wm_algo + '\' algorithm')
+    run.command('dwi2response ' + app.ARGS.wm_algo + ' dwi.mif _respsfwmss.txt -mask refined_wm.mif -sf_voxels ' + str(voxsfwmcount) + ' -iter_voxels ' + str(10*voxsfwmcount) + ' -voxels voxels_sfwm.mif -scratch ' + path.quote(app.SCRATCH_DIR) + recursive_cleanup_option, show=False)
   else:
     run.command('mrmath dwi.mif mean mean_sig.mif -axis 3', show=False)
     refwmcoef = image.statistic('mean_sig.mif', 'median', '-mask refined_wm.mif') * math.sqrt(4.0 * math.pi)
