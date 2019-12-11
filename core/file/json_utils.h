@@ -40,8 +40,7 @@ namespace MR
 
       void write (const KeyValues& keyval, nlohmann::json& json);
       void write (const Header& header,
-                  nlohmann::json& json,
-                  const bool realign);
+                  nlohmann::json& json);
 
     }
   }

@@ -610,13 +610,11 @@ namespace MR
   void Header::realign_transform ()
   {
     // find which row of the transform is closest to each scanner axis:
-    size_t perm [3];
-    bool flip[3];
-    Axes::get_permutation_to_make_axial (transform(), perm, flip);
+    Axes::get_permutation_to_make_axial (transform(), realign_perm_, realign_flip_);
 
     // check if image is already near-axial, return if true:
-    if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 &&
-        !flip[0] && !flip[1] && !flip[2])
+    if (realign_perm_[0] == 0 && realign_perm_[1] == 1 && realign_perm_[2] == 2 &&
+        !realign_flip_[0] && !realign_flip_[1] && !realign_flip_[2])
       return;
 
     auto M (transform());
@@ -624,7 +622,7 @@ namespace MR
 
     // modify translation vector:
     for (size_t i = 0; i < 3; ++i) {
-      if (flip[i]) {
+      if (realign_flip_[i]) {
         const default_type length = (size(i)-1) * spacing(i);
         auto axis = M.matrix().col (i);
         for (size_t n = 0; n < 3; ++n) {
@@ -637,9 +635,9 @@ namespace MR
     // switch and/or invert rows if needed:
     for (size_t i = 0; i < 3; ++i) {
       auto row = M.matrix().row(i).head<3>();
-      row = Eigen::RowVector3d (row[perm[0]], row[perm[1]], row[perm[2]]);
+      row = Eigen::RowVector3d (row[realign_perm_[0]], row[realign_perm_[1]], row[realign_perm_[2]]);
 
-      if (flip[i])
+      if (realign_flip_[i])
         stride(i) = -stride(i);
     }
 
@@ -648,9 +646,9 @@ namespace MR
 
     // switch axes to match:
     Axis a[] = {
-      axes_[perm[0]],
-      axes_[perm[1]],
-      axes_[perm[2]]
+      axes_[realign_perm_[0]],
+      axes_[realign_perm_[1]],
+      axes_[realign_perm_[2]]
     };
     axes_[0] = a[0];
     axes_[1] = a[1];
@@ -666,8 +664,8 @@ namespace MR
       for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
         Eigen::VectorXd new_line (pe_scheme.row (row));
         for (ssize_t axis = 0; axis != 3; ++axis) {
-          new_line[axis] = pe_scheme(row, perm[axis]);
-          if (new_line[axis] && flip[axis])
+          new_line[axis] = pe_scheme(row, realign_perm_[axis]);
+          if (new_line[axis] && realign_flip_[axis])
             new_line[axis] = -new_line[axis];
         }
         pe_scheme.row (row) = new_line;
@@ -683,7 +681,7 @@ namespace MR
       const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
       Eigen::Vector3 new_dir;
       for (size_t axis = 0; axis != 3; ++axis)
-        new_dir[axis] = orig_dir[perm[axis]] * (flip[axis] ? -1.0 : 1.0);
+        new_dir[axis] = orig_dir[realign_perm_[axis]] * (realign_flip_[axis] ? -1.0 : 1.0);
       slice_encoding_it->second = Axes::dir2id (new_dir);
       INFO ("Slice encoding direction has been modified according to internal header transform realignment");
     }
