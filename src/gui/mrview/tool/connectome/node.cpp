@@ -72,8 +72,8 @@ namespace MR
         Node::Mesh::Mesh (MR::Surface::Mesh& in) :
             count (3 * in.num_triangles())
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           vector<float> vertices;
           vertices.reserve (3 * in.num_vertices());
@@ -118,7 +118,7 @@ namespace MR
           index_buffer.bind();
           if (indices.size())
             gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof (unsigned int), &indices[0], gl::STATIC_DRAW);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         Node::Mesh::Mesh (Mesh&& that) :
@@ -133,7 +133,7 @@ namespace MR
 
         Node::Mesh::~Mesh()
         {
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           vertex_buffer.clear();
           normal_buffer.clear();
           vertex_array_object.clear();
@@ -153,13 +153,13 @@ namespace MR
         void Node::Mesh::render() const
         {
           assert (count);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           normal_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           index_buffer.bind();
           gl::DrawElements (gl::TRIANGLES, count, gl::UNSIGNED_INT, (void*)0);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 

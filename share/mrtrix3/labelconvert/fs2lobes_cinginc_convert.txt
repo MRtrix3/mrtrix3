@@ -1,3 +1,18 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # Lookup table for MRtrix command labelconvert
 # Extracts the relevant grey matter parcellations from the default FreeSurfer segmentation (desikan_killiany), but segmentations are summarised into lobes and subcortical areas
 # Cingulate nodes are included in the (approximately) relevant lobes
@@ -87,12 +102,12 @@
 11    ctx-rh-precuneus
 12    ctx-rh-rostralanteriorcingulate
 12    ctx-rh-rostralmiddlefrontal
-12    ctx-rh-superiorfrontal     
-11    ctx-rh-superiorparietal    
-9     ctx-rh-superiortemporal    
-11    ctx-rh-supramarginal       
-12    ctx-rh-frontalpole         
-9     ctx-rh-temporalpole        
-9     ctx-rh-transversetemporal  
+12    ctx-rh-superiorfrontal
+11    ctx-rh-superiorparietal
+9     ctx-rh-superiortemporal
+11    ctx-rh-supramarginal
+12    ctx-rh-frontalpole
+9     ctx-rh-temporalpole
+9     ctx-rh-transversetemporal
 #x    ctx-rh-insula
 

@@ -31,6 +31,8 @@ Options
 
 -  **-all** print all properties, rather than the first and last 2 of each.
 
+-  **-name** print the file system path of the image
+
 -  **-format** image file format
 
 -  **-ndim** number of image dimensions
@@ -47,7 +49,7 @@ Options
 
 -  **-multiplier** image intensity multiplier
 
--  **-transform** the voxel to image transformation
+-  **-transform** the transformation from image coordinates [mm] to scanner / real world coordinates [mm]
 
 -  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
 

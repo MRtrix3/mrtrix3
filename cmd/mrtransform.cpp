@@ -192,6 +192,8 @@ void usage ()
 
     + DWI::GradImportOptions()
 
+    + DWI::GradExportOptions()
+
     + DataType::options ()
 
     + Stride::Options
@@ -645,6 +647,8 @@ void run ()
           output, warp, directions_cartesian.transpose(), modulate_fod);
     }
 
+    DWI::export_grad_commandline (output);
+
   // No reslicing required, so just modify the header and do a straight copy of the data
   } else {
 
@@ -675,6 +679,8 @@ void run ()
       if (modulate_jac)
         apply_linear_jacobian (output, transform);
     }
+
+    DWI::export_grad_commandline (output);
   }
 }
 

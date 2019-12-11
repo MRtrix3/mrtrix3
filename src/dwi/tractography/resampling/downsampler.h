@@ -33,11 +33,11 @@ namespace MR {
         { MEMALIGN(Downsampler)
 
           public:
-            Downsampler () : ratio (1) { }
+            Downsampler () : ratio (0) { }
             Downsampler (const size_t downsample_ratio) : ratio (downsample_ratio) { }
 
             bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid() const override { return (ratio > 1); }
+            bool valid() const override { return (ratio >= 1); }
 
             // This version guarantees that the seed point is retained, and
             //   updates the index of the seed point appropriately

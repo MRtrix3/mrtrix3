@@ -20,6 +20,11 @@ Usage
 -  *directions*: a 4D image containing the direction vectors along which to estimate the response function
 -  *response*: the output axially-symmetric spherical harmonic coefficients
 
+Description
+-----------
+
+The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link: https://mrtrix.readthedocs.io/en/3.0_RC4/concepts/spherical_harmonics.html
+
 Options
 -------
 

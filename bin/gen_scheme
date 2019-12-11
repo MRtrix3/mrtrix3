@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 set -e
 
 if [ "$#" -eq 0 ]; then
@@ -12,7 +27,7 @@ SYNOPSIS
 
        numPE        the number of phase-encoding directions to be included in
                     the scheme (most scanners will only support a single PE
-                    direction per sequence, so this will typically be 1). 
+                    direction per sequence, so this will typically be 1).
 
        bvalue       the b-value of the shell
 
@@ -24,7 +39,7 @@ DESCRIPTION
     This script generates a diffusion gradient table according to the
     parameters specified. For most users, something like the following would be
     appropriate:
-    
+
         gen_scheme 1 0 5 750 20 3000 60
 
     which will geneate a multi-shell diffusion gradient table with a single
@@ -32,13 +47,13 @@ DESCRIPTION
     volumes.
 
     The gradient table is generated using the following procedure:
-    
+
     - The directions for each shell are optimally distributed using a bipolar
-      electrostatic repulsion model (using the command 'dirgen'). 
+      electrostatic repulsion model (using the command 'dirgen').
 
     - These are then split into numPE sets (if numPE != 1) using a brute-force
       random search for the most optimally-distributed subsets (using the command
-      'dirsplit'). 
+      'dirsplit').
 
     - Each of the resulting sets is then rearranged by inversion of individual
       directions through the origin (i.e. direction vector x => -x) using a
@@ -53,13 +68,13 @@ DESCRIPTION
       b-value and directional domains. In other words, the approach aims to
       ensure that if the acquisition is cut short, the set of volumes acquired
       nonetheless contains the same relative proportions of b-values as
-      specified, with directions that are near-uniformly distributed. 
+      specified, with directions that are near-uniformly distributed.
 
     The primary output of this command is a file called 'dw_scheme.txt',
     consisting of a 5-column table, with one line per volume. Each column
     consists of [ x y z b PE ], where [ x y z ] is the unit direction vector, b
-    is the b-value in unit of s/mm², and PE is a integer ID from 1 to numPE. 
-    
+    is the b-value in unit of s/mm², and PE is a integer ID from 1 to numPE.
+
     The command also retains all of the subsets generated along the way, which
     you can safely delete once the command has completed. Since this can
     consist of quite a few files, it is recommended to run this command within
@@ -107,16 +122,16 @@ else
       if [ $nPE -gt 2 ]; then
         dirsplit dirs-b$1-$2-1.txt dirs-b$1-$2-1{1..2}.txt -force $perm
         dirsplit dirs-b$1-$2-2.txt dirs-b$1-$2-2{1..2}.txt -force $perm
-	# TODO: the rest...
-	for n in dirs-b$1-$2-{1,2}{1,2}.txt; do
+        # TODO: the rest...
+        for n in dirs-b$1-$2-{1,2}{1,2}.txt; do
           dirflip $n ${n%.txt}-flip.txt -force $perm
-	  merge=$merge" "${n%.txt}-flip.txt
+          merge=$merge" "${n%.txt}-flip.txt
         done
-      else 
+      else
         for n in dirs-b$1-$2-{1,2}.txt; do
           dirflip $n ${n%.txt}-flip.txt -force $perm
           merge=$merge" "${n%.txt}-flip.txt
-	done
+        done
       fi
     else
       dirflip dirs-b$1-$2.txt dirs-b$1-$2-flip.txt -force $perm

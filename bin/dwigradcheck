@@ -1,7 +1,26 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import copy, numbers, os, shutil, sys
+
+
+
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=no-name-in-module
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Check the orientation of the diffusion gradient table')
   cmdline.add_citation('Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962')
@@ -9,18 +28,15 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('-mask', metavar='image', help='Provide a brain mask image')
   cmdline.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
 
-  app.add_dwgrad_export_options()
-  app.add_dwgrad_import_options()
-
-
-
+  app.add_dwgrad_export_options(cmdline)
+  app.add_dwgrad_import_options(cmdline)
 
 
 
 
 def execute(): #pylint: disable=unused-variable
-  import copy, numbers, os, shutil, sys
-  from mrtrix3 import app, image, matrix, MRtrixError, path, run #pylint: disable=no-name-in-module
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()
   if len(image_dimensions) != 4:

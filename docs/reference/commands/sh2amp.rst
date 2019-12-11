@@ -19,6 +19,11 @@ Usage
 -  *directions*: the list of directions along which the SH functions will be sampled, generated using the dirgen command
 -  *output*: the output image consisting of the amplitude of the SH functions along the specified directions.
 
+Description
+-----------
+
+The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link: https://mrtrix.readthedocs.io/en/3.0_RC4/concepts/spherical_harmonics.html
+
 Options
 -------
 
