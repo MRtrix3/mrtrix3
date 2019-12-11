@@ -289,7 +289,7 @@ namespace MR
 
 
             // Settings for colour bars
-            ColourMap::Renderer colourbar_renderer;
+            ColourMapper colourbar_renderer;
             bool show_node_colour_bar, show_edge_colour_bar;
 
 

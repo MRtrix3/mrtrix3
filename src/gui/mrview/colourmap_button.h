@@ -19,7 +19,7 @@
 
 #include "mrtrix.h"
 #include "gui/opengl/gl.h"
-#include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourmapper.h"
 
 namespace MR
 {
@@ -64,7 +64,7 @@ private:
 
     ColourMapButtonObserver& observer;
     QActionGroup *core_colourmaps_actions;
-    ColourMap::Renderer colourbar_renderer;
+    ColourMapper colourbar_renderer;
 
     QMenu* colourmap_menu;
     QAction* custom_colour_action;

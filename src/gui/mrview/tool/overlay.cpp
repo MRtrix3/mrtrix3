@@ -17,7 +17,7 @@
 #include "gui/mrview/tool/overlay.h"
 
 #include "mrtrix.h"
-#include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourmapper.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"

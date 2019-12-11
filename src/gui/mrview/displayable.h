@@ -21,7 +21,7 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 #include "gui/projection.h"
-#include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourmapper.h"
 
 
 namespace MR
