@@ -79,7 +79,7 @@ namespace MR
                   properties.set (lmax, "lmax");
                   properties.set (num_samples, "samples_per_step");
                   properties.set (max_trials, "max_trials");
-                  fod_power = 1.0/num_samples;
+                  fod_power = 1.0f/num_samples;
                   properties.set (fod_power, "fod_power");
                   bool precomputed = true;
                   properties.set (precomputed, "sh_precomputed");
@@ -88,9 +88,9 @@ namespace MR
 
                   // num_samples is number of samples excluding first point
                   --num_samples;
-                  INFO ("iFOD2 using " + str(num_samples) + " vertices per " + str(step_size) + "mm step");
                   set_step_size (0.5f, true);
                   sin_max_angle_ho = std::sin (max_angle_ho);
+                  INFO ("iFOD2 using " + str(num_samples) + " vertices per " + str(step_size) + "mm step");
 
                   // iFOD2 by default downsamples after track propagation back to the desired 'step size'
                   //   i.e. the sub-step detail is removed from the output

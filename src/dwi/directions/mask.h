@@ -20,7 +20,8 @@
 
 #include <fstream>
 
-#include "bitset.h"
+#include "misc/bitset.h"
+
 #include "dwi/directions/set.h"
 
 

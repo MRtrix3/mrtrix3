@@ -87,6 +87,13 @@ DW gradient table import options
 
 -  **-bvalue_scaling mode** specifies whether the b-values should be scaled by the square of the corresponding DW gradient norm, as often required for multi-shell or DSI DW acquisition schemes. The default action can also be set in the MRtrix config file, under the BValueScaling entry. Valid choices are yes/no, true/false, 0/1 (default: true).
 
+DW gradient table export options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-export_grad_mrtrix path** export the diffusion-weighted gradient table to file in MRtrix format
+
+-  **-export_grad_fsl bvecs_path bvals_path** export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
+
 Data type options
 ^^^^^^^^^^^^^^^^^
 

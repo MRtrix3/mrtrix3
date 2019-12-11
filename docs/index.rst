@@ -54,6 +54,7 @@ These applications have been written from scratch in C++, using the functionalit
 
    fixel_based_analysis/st_fibre_density_cross-section
    fixel_based_analysis/mt_fibre_density_cross-section
+   fixel_based_analysis/mitigating_brain_cropping
    fixel_based_analysis/computing_effect_size_wrt_controls
    fixel_based_analysis/displaying_results_with_streamlines
 
@@ -76,7 +77,7 @@ These applications have been written from scratch in C++, using the functionalit
    concepts/dw_scheme
    concepts/pe_scheme
    concepts/global_intensity_normalisation
-   concepts/orthonormal_sh_basis
+   concepts/spherical_harmonics
    concepts/sh_basis_lmax
    concepts/fixels_dixels
    concepts/afd_connectivity

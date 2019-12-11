@@ -1,0 +1,28 @@
+mrthreshold dwi_mean.mif > tmp.txt && testing_diff_matrix tmp.txt mrthreshold/3d_default.txt
+mrthreshold dwi_mean.mif - | testing_diff_image - mrthreshold/3d_default.mif
+mrthreshold dwi_mean.mif - -comparison lt | testing_diff_image - mrthreshold/3d_invert.mif
+mrthreshold dwi_mean.mif - -abs 100 | testing_diff_image - mrthreshold/3d_abs100.mif
+mrthreshold dwi_mean.mif - -percentile 50 | testing_diff_image - mrthreshold/3d_perc50.mif
+mrthreshold dwi_mean.mif - -top 20 | testing_diff_image - mrthreshold/3d_top20.mif
+mrthreshold dwi_mean.mif - -bottom 20 | testing_diff_image - mrthreshold/3d_bottom20.mif
+mrthreshold dwi_mean.mif - -percentile 90 | testing_diff_image - mrthreshold/3d_top10perc.mif
+mrthreshold dwi_mean.mif - -percentile 10 -comparison lt | testing_diff_image - mrthreshold/3d_bottom10perc.mif
+mrthreshold dwi_mean.mif - -mask mask.mif | testing_diff_image - mrthreshold/3d_masked.mif
+mrthreshold dwi_mean.mif - -percentile 50 -mask mask.mif | testing_diff_image - mrthreshold/3d_median_masked.mif
+mrcalc dwi_mean.mif mask.mif -mult - | mrthreshold - -percentile 50 -ignorezero - | testing_diff_image - $(mrcalc mrthreshold/3d_median_masked.mif mask.mif -mult -)
+mrconvert mask.mif -axes 0,1,2,-1 - | mrthreshold dwi_mean.mif - -mask - | testing_diff_image - mrthreshold/3d_masked.mif
+mrcalc mrthreshold/3d_masked.mif mask.mif -mult tmp.mif -force && mrthreshold dwi_mean.mif -mask mask.mif -out_masked - | testing_diff_image - tmp.mif
+mrthreshold dwi.mif > tmp.txt && testing_diff_matrix tmp.txt mrthreshold/4d_default.txt
+mrthreshold dwi.mif - | testing_diff_image - mrthreshold/4d_default.mif
+mrthreshold dwi.mif - -percentile 50 | testing_diff_image - mrthreshold/4d_median.mif
+mrthreshold dwi.mif - -mask mask.mif | testing_diff_image - mrthreshold/4d_default_masked.mif
+mrthreshold dwi.mif - -mask mask.mif -percentile 50 | testing_diff_image - mrthreshold/4d_median_masked.mif
+mrthreshold dwi.mif - -allvolumes | testing_diff_image - mrthreshold/4d_default_allvolumes.mif
+mrthreshold dwi.mif - -percentile 50 -allvolumes | testing_diff_image - mrthreshold/4d_median_allvolumes.mif
+mrthreshold dwi.mif - -mask mask.mif -allvolumes | testing_diff_image - mrthreshold/4d_default_masked_allvolumes.mif
+mrthreshold dwi.mif - -percentile 50 -mask mask.mif -allvolumes | testing_diff_image - mrthreshold/4d_median_masked_allvolumes.mif
+mrconvert dwi.mif tmp-[]-in.mif -force && for i in tmp-*-in.mif; do mrthreshold $i ${i%"in.mif"}out.mif -force -quiet; done && mrthreshold dwi.mif - | testing_diff_image - tmp-[]-out.mif
+mrconvert dwi.mif tmp-[]-in.mif -force && for i in tmp-*-in.mif; do mrthreshold $i ${i%"in.mif"}out.mif -mask mask.mif -force -quiet; done && mrthreshold dwi.mif - -mask mask.mif | testing_diff_image - tmp-[]-out.mif
+mrconvert dwi.mif tmp-[]-in.mif -force && for i in tmp-*-in.mif; do mrthreshold $i ${i%"in.mif"}out.mif -percentile 50 -force -quiet; done && mrthreshold dwi.mif - -percentile 50 | testing_diff_image - tmp-[]-out.mif
+mrconvert dwi.mif tmp-[]-in.mif -force && for i in tmp-*-in.mif; do mrthreshold $i ${i%"in.mif"}out.mif -percentile 50 -mask mask.mif -force -quiet; done && mrthreshold dwi.mif - -percentile 50 -mask mask.mif | testing_diff_image - tmp-[]-out.mif
+
