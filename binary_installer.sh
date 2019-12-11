@@ -12,23 +12,23 @@ if [ -f "${PLD}/mrtrix3-build-deps.tar.gz" ]; then
   tar xfz ${PLD}/mrtrix3-build-deps.tar.gz
 else
   # Grab latest versions from git
-  EIGEN_VERSION=$(git ls-remote --tags https://github.com/eigenteam/eigen-git-mirror | awk '{print $2}' | grep -v '\^{}$' | grep -v '-' | sort -V | tail -1)
+  EIGEN_VERSION=$(git ls-remote --tags https://github.com/eigenteam/eigen-git-mirror.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v '-' | sort -V | tail -1)
   EIGEN_VERSION=${EIGEN_VERSION#*/*/}
   echo "Using eigen ${EIGEN_VERSION}"
-  
-  TIFF_VERSION=$(git ls-remote --tags  https://gitlab.com/libtiff/libtiff.git/ | awk '{print $2}' | grep -v '\^{}$' | grep v.* | sort -V | tail -1)
+
+  TIFF_VERSION=$(git ls-remote --tags https://gitlab.com/libtiff/libtiff.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
   TIFF_VERSION=${TIFF_VERSION#*/*/v}
   echo "Using tiff ${TIFF_VERSION}"
   
-  PNG_VERSION=$(git ls-remote --tags  https://github.com/glennrp/libpng.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
+  PNG_VERSION=$(git ls-remote --tags https://github.com/glennrp/libpng.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
   PNG_VERSION=${PNG_VERSION#*/*/v}
   echo "Using png ${PNG_VERSION}"
   
-  FFTW_VERSION=$(git ls-remote --tags https://github.com/FFTW/fftw3 | awk '{print $2}' | grep -v '\^{}$' | grep 'fftw-3' | sort -V | tail -1)
+  FFTW_VERSION=$(git ls-remote --tags https://github.com/FFTW/fftw3.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep 'fftw-3' | sort -V | tail -1)
   FFTW_VERSION=${FFTW_VERSION#*/*/fftw-}
   echo "Using fftw ${FFTW_VERSION}"
   
-  QT_VERSION=$(git ls-remote --tags https://github.com/qt/qt5 | awk '{print $2}' | grep -v '\^{}$' | grep -v '-' | grep '5.9' | sort -V | tail -1)
+  QT_VERSION=$(git ls-remote --tags https://github.com/qt/qt5.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v '-' | grep '5.9' | sort -V | tail -1)
   QT_VERSION=${QT_VERSION#*/*/v}
   echo "Using qt ${QT_VERSION}"
 
@@ -93,30 +93,45 @@ else
   cd ..
   QTSVG_SECONDS=${SECONDS}
 
-  tar cpfz ${PLD}/mrtrix3-build-deps.tar.gz mrtrix3 qtbase-opensource-src-${QT_VERSION}
+  tar cpfz ${PLD}/mrtrix3-build-deps.tar.gz mrtrix3
 fi
 
 # MRTRIX3
 SECONDS=0
 git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${BRANCH}
 cd mrtrix3-src
-CFLAGS="-I${PREFIX}/include" LINKFLAGS="-L${PREFIX}/lib" PATH=${PREFIX}/bin:${PATH} ./configure
+CFLAGS="-I${PREFIX}/include" LINKFLAGS="-L${PREFIX}/lib" TIFF_LINKFLAGS="-llzma -ltiff" PATH=${PREFIX}/bin:${PATH} ./configure
 NUMBER_OF_PROCESSORS=${THREADS} ./build
+MRTRIX_VERSION=$(cat lib/mrtrix3/_version.py | awk '{print $3}' | tr -d '"')
 cd ..
-mv ${PREFIX} ${PREFIX}_dep
-mkdir ${PREFIX}
-cp -r mrtrix3-src/bin    ${PREFIX}/
-cp -r mrtrix3-src/lib    ${PREFIX}/
-cp -r mrtrix3-src/share  ${PREFIX}/
-cp -r mrtrix3-src/matlab ${PREFIX}/
-cp mrtrix3-src/set_path  ${PREFIX}/
-cp ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Svg,Widgets}${QT_POSTFIX}.*.dylib ${PREFIX}/lib
-mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats}
-cp ${PREFIX}_dep/plugins/platforms/libqcocoa${QT_POSTFIX}.dylib ${PREFIX}/bin/plugins/platforms
-cp ${PREFIX}_dep/plugins/imageformats/libqsvg${QT_POSTFIX}.dylib ${PREFIX}/bin/plugins/imageformats
 MRTRIX_SECONDS=${SECONDS}
-MRTRIX_VERSION=$(cat mrtrix3/lib/mrtrix3/_version.py | awk '{print $3}' | tr -d '"')
-tar cfz ${PLD}/mrtrix3.tar.gz mrtrix3
+
+
+mv ${PREFIX} ${PREFIX}_dep
+mkdir -p ${PREFIX}/mrtrix3
+cp -r ${PREFIX}-src/bin    ${PREFIX}/mrtrix3
+cp -r ${PREFIX}-src/lib    ${PREFIX}/mrtrix3
+cp -r ${PREFIX}-src/share  ${PREFIX}/mrtrix3
+cp -r ${PREFIX}-src/matlab ${PREFIX}/mrtrix3
+cp ${PREFIX}-src/set_path  ${PREFIX}/mrtrix3
+cp ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Svg,Widgets}${QT_POSTFIX}.*.dylib ${PREFIX}/mrtrix3/lib
+mkdir -p ${PREFIX}/mrtrix3/bin/plugins/{platforms,imageformats}
+cp ${PREFIX}_dep/plugins/platforms/libqcocoa${QT_POSTFIX}.dylib  ${PREFIX}/mrtrix3/bin/plugins/platforms
+cp ${PREFIX}_dep/plugins/imageformats/libqsvg${QT_POSTFIX}.dylib ${PREFIX}/mrtrix3/bin/plugins/imageformats
+
+mkdir -p ${PREFIX}/mrtrix3/{MR,SH}View.app/Contents/MacOS
+
+mv ${PREFIX}/mrtrix3/bin/mrview ${PREFIX}/MRView.app/Contents/MacOS/
+cd ${PREFIX}/MRView.app/Contents
+ln -s ../../mrtrix3/lib
+ln -s ../../mrtrix3/bin/plugins
+
+mv ${PREFIX}/mrtrix3/bin/shview ${PREFIX}/SHView.app/Contents/MacOS/
+cd ${PREFIX}/SHView.app/Contents
+ln -s ../../mrtrix3/lib
+ln -s ../../mrtrix3/bin/plugins
+
+tar cfz ${PLD}/mrtrix3.tar.gz ${PREFIX}
 
 TOTAL_SECONDS=$((EIGEN_SECONDS + TIFF_SECONDS + PNG_SECONDS + FFTW_SECONDS + QTBASE_SECONDS + QTSVG_SECONDS + MRTRIX_SECONDS))
 echo "eigen ${EIGEN_VERSION}: ${EIGEN_SECONDS} s"
