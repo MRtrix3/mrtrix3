@@ -37,8 +37,8 @@ else
   curl -s -O -L http://bitbucket.org/eigen/eigen/get/${EIGEN_VERSION}.tar.bz2
   tar xf ${EIGEN_VERSION}.tar.bz2
   mkdir -p ${PREFIX}/include/eigen3
-  cp -r eigen*/Eigen ${PREFIX}/include
-  cp -r eigen*/unsupported ${PREFIX}/include
+  cp -R eigen*/Eigen ${PREFIX}/include
+  cp -R eigen*/unsupported ${PREFIX}/include
   EIGEN_SECONDS=${SECONDS}
 
   # TIFF
@@ -109,22 +109,22 @@ MRTRIX_SECONDS=${SECONDS}
 
 mv ${PREFIX} ${PREFIX}_dep
 mkdir -p ${PREFIX}/mrtrix3
-cp -r ${PREFIX}-src/bin    ${PREFIX}/mrtrix3
-cp -r ${PREFIX}-src/lib    ${PREFIX}/mrtrix3
-cp -r ${PREFIX}-src/share  ${PREFIX}/mrtrix3
-cp -r ${PREFIX}-src/matlab ${PREFIX}/mrtrix3
+cp -R ${PREFIX}-src/bin    ${PREFIX}/mrtrix3
+cp -R ${PREFIX}-src/lib    ${PREFIX}/mrtrix3
+cp -R ${PREFIX}-src/share  ${PREFIX}/mrtrix3
+cp -R ${PREFIX}-src/matlab ${PREFIX}/mrtrix3
 cp ${PREFIX}-src/set_path  ${PREFIX}/mrtrix3
 cp ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Svg,Widgets}${QT_POSTFIX}.*.dylib ${PREFIX}/mrtrix3/lib
 mkdir -p ${PREFIX}/mrtrix3/bin/plugins/{platforms,imageformats}
 cp ${PREFIX}_dep/plugins/platforms/libqcocoa${QT_POSTFIX}.dylib  ${PREFIX}/mrtrix3/bin/plugins/platforms
 cp ${PREFIX}_dep/plugins/imageformats/libqsvg${QT_POSTFIX}.dylib ${PREFIX}/mrtrix3/bin/plugins/imageformats
 
-cp -r ${PLD}/MRView.app ${PREFIX} 
+cp -R ${PLD}/MRView.app ${PREFIX} 
 mkdir -p ${PREFIX}/MRView.app/Contents/MacOS/
 mv ${PREFIX}/mrtrix3/bin/mrview ${PREFIX}/MRView.app/Contents/MacOS/
 cp ${PLD}/mrview ${PREFIX}/mrtrix3/bin
 
-cp -r ${PLD}/SHView.app ${PREFIX}     
+cp -R ${PLD}/SHView.app ${PREFIX}     
 mkdir -p ${PREFIX}/SHView.app/Contents/MacOS/
 mv ${PREFIX}/mrtrix3/bin/shview ${PREFIX}/SHView.app/Contents/MacOS/
 cp ${PLD}/shview ${PREFIX}/mrtrix3/bin
