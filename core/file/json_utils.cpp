@@ -82,17 +82,34 @@ namespace MR
             const std::string s = unquote(i.value());
             result.insert (std::make_pair (i.key(), s));
           } else if (i->is_array()) {
-            size_t num_array = 0;
+            size_t num_subarrays = 0;
             for (const auto j : *i)
               if (j.is_array())
-                ++num_array;
-            if (num_array == 0) {
-              vector<std::string> line;
-              for (const auto k : *i)
-                line.push_back (str(k));
-              result.insert (std::make_pair (i.key(), join (line, ",")));
+                ++num_subarrays;
+            if (num_subarrays == 0) {
+              bool all_string = true;
+              bool all_numeric = true;
+              for (const auto k : *i) {
+                if (!k.is_string())
+                  all_string = false;
+                if (!(k.is_number()))
+                  all_numeric = false;
+              }
+              if (all_string) {
+                vector<std::string> lines;
+                for (const auto k : *i)
+                  lines.push_back (unquote(k));
+                result.insert (std::make_pair (i.key(), join (lines, "\n")));
+              } else if (all_numeric) {
+                vector<std::string> line;
+                for (const auto k : *i)
+                  line.push_back (str(k));
+                result.insert (std::make_pair (i.key(), join (line, ",")));
+              } else {
+                throw Exception ("JSON entry \"" + i.key() + "\" is array but contains mixed data types");
+              }
             }
-            else if (num_array == i->size()) {
+            else if (num_subarrays == i->size()) {
               vector<std::string> s;
               for (const auto j : *i) {
                 vector<std::string> line;
@@ -103,10 +120,7 @@ namespace MR
               result.insert (std::make_pair (i.key(), join(s, "\n")));
             }
             else
-              throw Exception ("JSON entry contains mixture of elements and arrays");
-          } else if (i->is_string()) {
-            const std::string s = unquote(i.value());
-            result.insert (std::make_pair (i.key(), s));
+              throw Exception ("JSON entry \"" + i.key() + "\" contains mixture of elements and arrays");
           }
         }
         return result;
