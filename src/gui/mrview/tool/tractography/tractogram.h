@@ -21,7 +21,7 @@
 #include "gui/mrview/displayable.h"
 #include "dwi/tractography/properties.h"
 #include "gui/mrview/tool/tractography/tractography.h"
-#include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourmapper.h"
 
 
 namespace MR

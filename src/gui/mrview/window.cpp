@@ -233,8 +233,8 @@ namespace MR
         orient (),
         field_of_view (100.0),
         anatomical_plane (2),
-        colourbar_position (ColourMap::Position::BottomRight),
-        tools_colourbar_position (ColourMap::Position::TopRight),
+        colourbar_position (ColourMapper::Position::BottomRight),
+        tools_colourbar_position (ColourMapper::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
         tool_has_focus (nullptr),
         best_FPS (NAN),
@@ -774,18 +774,18 @@ namespace MR
 
 
 
-      ColourMap::Position Window::parse_colourmap_position_str (const std::string& position_str) {
+      ColourMapper::Position Window::parse_colourmap_position_str (const std::string& position_str) {
 
-        ColourMap::Position pos(ColourMap::Position::None);
+        ColourMapper::Position pos(ColourMapper::Position::None);
 
         if(position_str == "bottomleft")
-          pos = ColourMap::Position::BottomLeft;
+          pos = ColourMapper::Position::BottomLeft;
         else if(position_str == "bottomright")
-          pos = ColourMap::Position::BottomRight;
+          pos = ColourMapper::Position::BottomRight;
         else if(position_str == "topleft")
-          pos = ColourMap::Position::TopLeft;
+          pos = ColourMapper::Position::TopLeft;
         else if(position_str == "topright")
-          pos = ColourMap::Position::TopRight;
+          pos = ColourMapper::Position::TopRight;
 
         return pos;
       }
