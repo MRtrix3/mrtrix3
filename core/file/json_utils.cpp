@@ -90,7 +90,7 @@ namespace MR
               vector<std::string> line;
               for (const auto k : *i)
                 line.push_back (str(k));
-              H.keyval().insert (std::make_pair (i.key(), join (line, ",")));
+              result.insert (std::make_pair (i.key(), join (line, ",")));
             }
             else if (num_array == i->size()) {
               vector<std::string> s;
@@ -100,11 +100,10 @@ namespace MR
                   line.push_back (unquote(str(k)));
                 s.push_back (join(line, ","));
               }
-              H.keyval().insert (std::make_pair (i.key(), join(s, "\n")));
+              result.insert (std::make_pair (i.key(), join(s, "\n")));
             }
             else
               throw Exception ("JSON entry contains mixture of elements and arrays");
-            result.insert (std::make_pair (i.key(), join(s, "\n")));
           } else if (i->is_string()) {
             const std::string s = unquote(i.value());
             result.insert (std::make_pair (i.key(), s));
