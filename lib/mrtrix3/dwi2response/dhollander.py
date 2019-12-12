@@ -229,7 +229,7 @@ def execute(): #pylint: disable=unused-variable
     if not app.DO_CLEANUP:
       recursive_cleanup_option = ' -nocleanup'
     app.console('Selecting WM single-fibre voxels using \'' + app.ARGS.wm_algo + '\' algorithm')
-    run.command('dwi2response ' + app.ARGS.wm_algo + ' dwi.mif _respsfwmss.txt -mask refined_wm.mif -number ' + str(voxsfwmcount) + ' -iter_voxels ' + str(10*voxsfwmcount) + ' -max_iters 1 -voxels voxels_sfwm.mif -scratch ' + path.quote(app.SCRATCH_DIR) + recursive_cleanup_option, show=False)
+    run.command('dwi2response ' + app.ARGS.wm_algo + ' dwi.mif _respsfwmss.txt -mask refined_wm.mif -number ' + str(voxsfwmcount) + ' -iter_voxels ' + str(10*voxsfwmcount) + ' -voxels voxels_sfwm.mif -scratch ' + path.quote(app.SCRATCH_DIR) + recursive_cleanup_option, show=False)
   else:
     run.command('mrmath dwi.mif mean mean_sig.mif -axis 3', show=False)
     refwmcoef = image.statistic('mean_sig.mif', 'median', '-mask refined_wm.mif') * math.sqrt(4.0 * math.pi)
@@ -273,5 +273,5 @@ def execute(): #pylint: disable=unused-variable
   run.function(shutil.copyfile, 'response_gm.txt', path.from_user(app.ARGS.out_gm, False), show=False)
   run.function(shutil.copyfile, 'response_csf.txt', path.from_user(app.ARGS.out_csf, False), show=False)
   if app.ARGS.voxels:
-    run.command('mrconvert check_voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE, show=False)
+    run.command('mrconvert check_voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE, show=False)
   app.console('-------')
