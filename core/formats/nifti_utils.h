@@ -17,7 +17,7 @@
 
 #include <string>
 
-#include "header.h"
+#include "types.h"
 
 
 namespace MR
@@ -27,14 +27,16 @@ namespace MR
 
 
 
-    inline bool is_nifti (const Header& H)
+    /*! basic convenience function to determine whether an image path
+     *  corresponds to a NIfTI-format image. */
+    inline bool is_nifti (const std::string& path)
     {
-      const std::string format = H.format();
-      return (format == "NIfTI-1.1" ||
-              format == "NIfTI-2" ||
-              format == "NIfTI-1.1 (GZip compressed)" ||
-              format == "NIfTI-2 (GZip compressed)" ||
-              format == "AnalyseAVW / NIfTI");
+      static const vector<std::string> exts { ".nii", ".nii.gz", ".img" };
+      for (const auto& ext : exts) {
+        if (path.substr (path.size() - ext.size()) == ext)
+          return true;
+      }
+      return false;
     }
 
 

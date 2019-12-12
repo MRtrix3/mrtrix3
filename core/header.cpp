@@ -43,7 +43,8 @@ namespace MR
                  "and/or header contents as they are actually stored in the header, "
                  "rather than as MRtrix interprets them.");
 
-  bool Header::do_not_realign_transform = false;
+
+  bool Header::do_realign_transform = true;
 
 
 
@@ -238,7 +239,7 @@ namespace MR
       } // End branching for [] notation
 
       H.sanitise();
-      if (!do_not_realign_transform)
+      if (do_realign_transform)
         H.realign_transform();
     }
     catch (Exception& E) {
@@ -671,7 +672,7 @@ namespace MR
         pe_scheme.row (row) = new_line;
       }
       PhaseEncoding::set_scheme (*this, pe_scheme);
-      INFO ("Phase encoding scheme has been modified according to internal header transform realignment");
+      INFO ("Phase encoding scheme modified to conform to MRtrix3 internal header transform realignment");
     }
 
     // If there's any slice encoding direction information present in the
@@ -683,7 +684,7 @@ namespace MR
       for (size_t axis = 0; axis != 3; ++axis)
         new_dir[axis] = orig_dir[realign_perm_[axis]] * (realign_flip_[axis] ? -1.0 : 1.0);
       slice_encoding_it->second = Axes::dir2id (new_dir);
-      INFO ("Slice encoding direction has been modified according to internal header transform realignment");
+      INFO ("Slice encoding direction has been modified to conform to MRtrix3 internal header transform realignment");
     }
 
   }
