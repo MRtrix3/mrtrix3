@@ -352,7 +352,7 @@ namespace MR
 
       /*! use to prevent automatic realignment of transform matrix into
        * near-standard (RAS) coordinate system. */
-      static bool do_not_realign_transform;
+      static bool do_realign_transform;
 
       //! return a string with the full description of the header
       std::string description (bool print_all = false) const;
