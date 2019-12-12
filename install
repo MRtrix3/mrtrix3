@@ -1,0 +1,14 @@
+#!/bin/bash -ex
+ID="10jzGUyUSoOW6eR3uKGr4E2nj96b2uUh7"
+URL="https://drive.google.com/uc?export=download"  
+TARBALL="$(curl -sc /tmp/gcokie "${URL}&id=${ID}" | grep -o '="uc-name.*</span>' | sed 's/.*">//;s/<.a> .*//')"  
+getcode="$(awk '/_warning_/ {print $NF}' /tmp/gcokie)"  
+curl -Lb /tmp/gcokie "${URL}&confirm=${getcode}&id=${ID}" -o "${TARBALL}" 
+INSTALLDIR=$HOME/Applications
+echo $TARBALL
+echo "Installing ${TARBALL} to ${INSTALLDIR}..."
+tar xf $TARBALL -C $INSTALLDIR
+echo "Adding MRtrix binaries to the \$PATH variable..."
+cd $INSTALLDIR/mrtrix3/mrtrix3
+./set_path
+echo "Please open a new shell to make the MRtrix binaries available on the \$PATH"
