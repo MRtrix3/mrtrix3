@@ -132,6 +132,8 @@ Options for the 'dhollander' algorithm
 
 - **-csf** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
 
+- **-wm_algo algorithm** dwi2response algorithm to use for WM single-fibre voxel selection (default: built-in Dhollander 2019)
+
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -649,7 +651,7 @@ Options specific to the 'tournier' algorithm
 
 - **-iter_voxels** Number of single-fibre voxels to select when preparing for the next iteration
 
-- **-sf_voxels** Number of single-fibre voxels to use when calculating response function
+- **-number** Number of single-fibre voxels to use when calculating response function
 
 - **-dilate** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration
 
