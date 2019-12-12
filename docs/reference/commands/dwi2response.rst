@@ -649,7 +649,7 @@ Options
 Options specific to the 'tournier' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-iter_voxels** Number of single-fibre voxels to select when preparing for the next iteration
+- **-iter_voxels** Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)
 
 - **-number** Number of single-fibre voxels to use when calculating response function
 
