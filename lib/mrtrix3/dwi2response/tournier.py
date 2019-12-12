@@ -28,7 +28,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')
   options.add_argument('-iter_voxels', type=int, default=3000, help='Number of single-fibre voxels to select when preparing for the next iteration')
-  options.add_argument('-sf_voxels', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')
+  options.add_argument('-number', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')
   options.add_argument('-dilate', type=int, default=1, help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
   options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
 
@@ -98,7 +98,7 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(prefix + 'second_peaks.mif')
     voxel_count = int(image.statistic(prefix + 'CF.mif', 'count'))
     # Select the top-ranked voxels
-    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(min([app.ARGS.sf_voxels, voxel_count])) + ' ' + prefix + 'SF.mif')
+    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(min([app.ARGS.number, voxel_count])) + ' ' + prefix + 'SF.mif')
     # Generate a new response function based on this selection
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
     app.cleanup(prefix + 'first_dir.mif')
