@@ -34,6 +34,9 @@ namespace MR
       namespace Algorithms
       {
 
+        extern const App::OptionGroup iFODOptions;
+        void load_iFOD_options (Tractography::Properties&);
+
     using namespace MR::DWI::Tractography::Tracking;
 
     class iFOD1 : public MethodBase { MEMALIGN(iFOD1)
@@ -45,6 +48,7 @@ namespace MR
           lmax (Math::SH::LforN (source.size(3))),
           max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
           sin_max_angle_1o (std::sin (max_angle_1o)),
+          fod_power (1.0f),
           mean_samples (0.0),
           mean_truncations (0.0),
           max_max_truncation (0.0),
@@ -75,6 +79,7 @@ namespace MR
           properties["method"] = "iFOD1";
           properties.set (lmax, "lmax");
           properties.set (max_trials, "max_trials");
+          properties.set (fod_power, "fod_power");
           bool precomputed = true;
           properties.set (precomputed, "sh_precomputed");
           if (precomputed)
@@ -105,7 +110,7 @@ namespace MR
         }
 
         size_t lmax, max_trials;
-        float sin_max_angle_1o;
+        float sin_max_angle_1o, fod_power;
         Math::SH::PrecomputedAL<float> precomputer;
 
         private:
@@ -188,7 +193,7 @@ namespace MR
         if (max_val <= 0.0)
           return CALIBRATOR;
 
-        max_val *= calibrate_ratio;
+        max_val = std::pow (max_val, S.fod_power) * calibrate_ratio;
 
         num_sample_runs++;
 
@@ -198,6 +203,7 @@ namespace MR
 
           if (val > S.threshold) {
 
+            val = std::pow (val, S.fod_power);
             if (val > max_val) {
               DEBUG ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
               ++num_truncations;
@@ -260,7 +266,7 @@ namespace MR
 
           float operator() (float el)
           {
-            return Math::SH::value (P.values, Eigen::Vector3f (std::sin (el), 0.0, std::cos(el)), P.S.lmax);
+            return std::pow (Math::SH::value (P.values, Eigen::Vector3f (std::sin (el), 0.0, std::cos(el)), P.S.lmax), P.S.fod_power);
           }
 
         private:

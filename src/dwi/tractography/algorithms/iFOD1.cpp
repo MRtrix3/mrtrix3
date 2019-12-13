@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/tractography/algorithms/iFOD2.h"
+#include "dwi/tractography/algorithms/iFOD1.h"
 
 
 namespace MR
@@ -28,17 +28,16 @@ namespace MR
 
         using namespace App;
 
-        const OptionGroup iFOD2Options = OptionGroup ("Options specific to the iFOD2 tracking algorithm")
+        const OptionGroup iFODOptions = OptionGroup ("Options specific to the iFOD tracking algorithms")
 
-        + Option ("samples",
-                  "set the number of FOD samples to take per step (Default: " + str(TCKGEN_DEFAULT_IFOD2_NSAMPLES) + ").")
-          + Argument ("number").type_integer (2, 100);
+        + Option ("power", "raise the FOD to the power specified (defaults are: 1.0 for iFOD1; 1.0/nsamples for iFOD2).")
+          + Argument ("value").type_float (0.0);
 
 
-        void load_iFOD2_options (Tractography::Properties& properties)
+        void load_iFOD_options (Tractography::Properties& properties)
         {
-          auto opt = get_options ("samples");
-          if (opt.size()) properties["samples_per_step"] = str<unsigned int> (opt[0][0]);
+          auto opt = get_options ("power");
+          if (opt.size()) properties["fod_power"] = str<float> (opt[0][0]);
         }
 
       }

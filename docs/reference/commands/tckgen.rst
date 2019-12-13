@@ -55,7 +55,7 @@ Streamlines tractography options
 
 -  **-step size** set the step size of the algorithm in mm (default is 0.1 x voxelsize; if using RK4, 0.25 x voxelsize; for iFOD2: 0.5 x voxelsize).
 
--  **-angle theta** set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize)
+-  **-angle theta** set the maximum angle between successive steps (default depends on algorithm: 60 for deterministic algorithms / nulldist1; 15 for iFOD1; 45 for iFOD2 / nulldist2)
 
 -  **-minlength value** set the minimum length of any track in mm (default is 5 x voxelsize without ACT, 2 x voxelsize with ACT).
 
@@ -123,12 +123,15 @@ Anatomically-Constrained Tractography options
 
 -  **-crop_at_gmwmi** crop streamline endpoints more precisely as they cross the GM-WM interface
 
+Options specific to the iFOD tracking algorithms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-power value** raise the FOD to the power specified (defaults are: 1.0 for iFOD1; 1.0/nsamples for iFOD2).
+
 Options specific to the iFOD2 tracking algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-samples number** set the number of FOD samples to take per step (Default: 4).
-
--  **-power value** raise the FOD to the power specified (default is 1/nsamples).
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

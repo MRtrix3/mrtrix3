@@ -213,7 +213,8 @@ void usage ()
 
   + DWI::Tractography::ACT::ACTOption
 
-  + DWI::Tractography::Algorithms::iFOD2Option
+  + DWI::Tractography::Algorithms::iFODOptions
+  + DWI::Tractography::Algorithms::iFOD2Options
 
   + DWI::GradImportOptions();
 
@@ -243,6 +244,8 @@ void run ()
   Seeding::load_seed_mechanisms (properties);
   Seeding::load_seed_parameters (properties);
 
+  if (algorithm == 1 || algorithm == 2)
+    Algorithms::load_iFOD_options (properties);
   if (algorithm == 2)
     Algorithms::load_iFOD2_options (properties);
 
