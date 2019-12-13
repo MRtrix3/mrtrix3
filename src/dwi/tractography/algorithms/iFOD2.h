@@ -42,7 +42,7 @@ namespace MR
       namespace Algorithms
       {
 
-        extern const App::OptionGroup iFOD2Option;
+        extern const App::OptionGroup iFOD2Options;
         void load_iFOD2_options (Tractography::Properties&);
 
         using namespace MR::DWI::Tractography::Tracking;
