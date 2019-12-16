@@ -523,6 +523,10 @@ namespace MR
           const int32_t num_polygons = FreeSurfer::get_BE<int32_t> (in);
           if (num_polygons <= 0)
             throw Exception ("Error reading FreeSurfer file: Non-positive polygon count");
+          if (num_polygons > 3*num_vertices)
+            throw Exception ("Error reading FreeSurfer file: More polygons than triplets of vertices");
+          if (num_polygons < num_vertices / 3)
+            throw Exception ("Error reading FreeSurfer file: Not enough polygons to use all vertices");
           try {
             vertices.reserve (num_vertices);
             triangles.reserve (num_polygons);
@@ -564,6 +568,7 @@ namespace MR
             e.push_back (e_onecomment);
             e.push_back ("Error if file header is two-line comment:");
             e.push_back (e_twocomments);
+            e.display();
             throw e;
           }
         }
