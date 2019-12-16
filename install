@@ -1,4 +1,8 @@
 #!/bin/bash -e
+if [ $EUID == 0 ]; then
+  echo "ERROR: this script cannot be used using ROOT privileges. Please run as a regular user or without sudo."
+  exit
+fi
 if [ $# -gt 0 ] && [ "$1" != "-f" ]; then
   echo "This installer will download the binaries for the latest stable MRtrix3 release, unpack them to ${HOME}/Applications/mrtrix3, and modify the \$PATH eviornment variable accordingly."
   echo "Use the -f option to replace an existing MRtrix3 installation in $HOME/Applications/mrtrix3 without warning."
