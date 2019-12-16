@@ -1,14 +1,35 @@
-#!/bin/bash -ex
+#!/bin/bash -e
+if [ $# -gt 0 ] && [ "$1" != "-f" ]; then
+  echo "This installer will download the binaries for the latest stable MRtrix3 release, unpack them to ${HOME}/Applications/mrtrix3, and modify the \$PATH eviornment variable accordingly."
+  echo "Use the -f option to replace an existing MRtrix3 installation in $HOME/Applications/mrtrix3 without warning."
+  echo "Use the -h option to display this help."
+  exit
+fi 
+echo "This installer will download the binaries for the latest stable MRtrix3 release, unpack them to ${HOME}/Applications/mrtrix3, and modify the \$PATH eviornment variable accordingly."
+if [ -d "$HOME/Applications/mrtrix3" ] || [ -L "$HOME/Applications/mrtrix3" ] ; then
+  if [ "$1" != "-f" ]; then
+    echo "WARNING: ${HOME}/Applications/mrtrix3 already exists (run with -f option to suppress this warning!). Are you sure you want to replace your existing MRtrix3 installation?"
+    select yn in "Yes" "No"; do
+      case $yn in
+        Yes ) break;;
+        No ) exit;;
+      esac
+    done
+  fi
+  echo "Removing prior stable MRtrix3 installation in ${HOME}/Applications/mrtrix3..."
+  rm -rf "${HOME}/Applications/mrtrix3"
+fi
+echo "Downloading binaries ..."
+# TODO: Download tarball of latest stable binary release from github instead of hardcoded tarball
 ID="10jzGUyUSoOW6eR3uKGr4E2nj96b2uUh7"
-URL="https://drive.google.com/uc?export=download"  
+URL="https://drive.google.com/uc?export=download"
 TARBALL="$(curl -sc /tmp/gcokie "${URL}&id=${ID}" | grep -o '="uc-name.*</span>' | sed 's/.*">//;s/<.a> .*//')"  
 getcode="$(awk '/_warning_/ {print $NF}' /tmp/gcokie)"  
-curl -Lb /tmp/gcokie "${URL}&confirm=${getcode}&id=${ID}" -o "${TARBALL}" 
-INSTALLDIR=$HOME/Applications
-echo $TARBALL
-echo "Installing ${TARBALL} to ${INSTALLDIR}..."
-tar xf $TARBALL -C $INSTALLDIR
-echo "Adding MRtrix binaries to the \$PATH variable..."
-cd $INSTALLDIR/mrtrix3/mrtrix3
+curl -sLb /tmp/gcokie "${URL}&confirm=${getcode}&id=${ID}" -o "${TARBALL}" 
+echo "Installing binaries to ${HOME}/Applications/mrtrix3 ..."
+tar xf "$TARBALL" -C "${HOME}/Applications"
+echo "Adding MRtrix3 to the \$PATH variable ..."
+cd "$HOME/Applications/mrtrix3/mrtrix3"
 ./set_path
-echo "Please open a new shell to make the MRtrix binaries available on the \$PATH"
+echo "Installation complete! Please open a new terminal window to make the MRtrix3 binaries available!"
+exit
