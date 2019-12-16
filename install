@@ -31,6 +31,7 @@ TARBALL="$(curl -sc /tmp/gcokie "${URL}&id=${ID}" | grep -o '="uc-name.*</span>'
 getcode="$(awk '/_warning_/ {print $NF}' /tmp/gcokie)"  
 curl -sLb /tmp/gcokie "${URL}&confirm=${getcode}&id=${ID}" -o "${TARBALL}" 
 echo "Installing binaries to ${HOME}/Applications/mrtrix3 ..."
+mkdir -p "${HOME}/Applications"
 tar xf "$TARBALL" -C "${HOME}/Applications"
 echo "Adding MRtrix3 to the \$PATH variable ..."
 cd "$HOME/Applications/mrtrix3/mrtrix3"
