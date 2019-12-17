@@ -70,5 +70,5 @@ def execute(): #pylint: disable=unused-variable
 
   run.command('mrcalc ' + path.from_user(app.ARGS.input_dwi) + ' ' + str(multiplier) + ' -mult - | ' + \
               'mrconvert - ' + path.from_user(app.ARGS.output_dwi) + grad_option, \
-              mrconvert_keyval=path.from_user(app.ARGS.input_dwi), \
+              mrconvert_keyval=path.from_user(app.ARGS.input_dwi, False), \
               force=app.FORCE_OVERWRITE)
