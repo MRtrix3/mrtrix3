@@ -13,10 +13,10 @@ Usage
 
 ::
 
-    mrregister [ options ]  image1 image2[ + contrast1 contrast2 ... ]
+    mrregister [ options ]  image1 image2[ contrast1 contrast2 ... ]
 
 -  *image1 image2*: input image 1 ('moving') and input image 2 ('template')
--  *+ contrast1 contrast2*: optional list of additional input images used as additional contrasts. Can be used multiple times. contrastX and imageX must share the same coordinate system. 
+-  *contrast1 contrast2*: optional list of additional input images used as additional contrasts. Can be used multiple times. contrastX and imageX must share the same coordinate system. 
 
 Description
 -----------
