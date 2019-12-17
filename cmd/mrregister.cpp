@@ -81,7 +81,7 @@ void usage ()
 
   ARGUMENTS
     + Argument ("image1 image2", "input image 1 ('moving') and input image 2 ('template')").type_image_in()
-    + Argument ("+ contrast1 contrast2", "optional list of additional input images used as additional contrasts. "
+    + Argument ("contrast1 contrast2", "optional list of additional input images used as additional contrasts. "
       "Can be used multiple times. contrastX and imageX must share the same coordinate system. ").type_image_in().optional().allow_multiple();
 
   OPTIONS
@@ -128,9 +128,9 @@ using value_type = double;
 void run () {
 
   vector<Header> input1, input2;
-  const size_t n_images = 1 + (argument.size() - 2 ) / 3;
+  const size_t n_images = argument.size() / 2;
   { // parse arguments and load input headers
-    if ((n_images - 1) * 3 + 2 != argument.size()) {
+    if (n_images * 2 != argument.size()) {
       std::string err;
       for (const auto & a : argument)
         err += " " + str(a);
@@ -139,8 +139,6 @@ void run () {
 
     bool is1 = true;
     for (const auto& arg : argument) {
-      if (str(arg) == "+")
-        continue;
       if (is1)
         input1.push_back (Header::open (str(arg)));
       else
