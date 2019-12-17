@@ -50,6 +50,9 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
+# TODO Convert these values so that the behaviour is the same as that of the external labelconvert files
+#   i.e. tissues are from 1 to 5
+
 ASEG_STRUCTURES = [ ( 4,  3, 'Left-Lateral-Ventricle'),
                     ( 5,  3, 'Left-Inf-Lat-Vent'),
                     (14,  3, '3rd-Ventricle'),
@@ -294,13 +297,17 @@ def execute(): #pylint: disable=unused-variable
       if not have_first:
         raise MRtrixError('Cannot use "first" method for thalami segmentation; check FSL installation')
   else:
-    if thal_nuclei_image:
-      thalami_method = 'nuclei'
-      app.console('Will utilise detected thalamic nuclei module output')
-    elif have_first:
+    # Not happy with outputs of thalamic nuclei submodule; default to FIRST
+    if have_first:
       thalami_method = 'first'
-      app.console('No thalamic nuclei module output detected, but FSL FIRST is installed; '
-                  'will utilise latter for thalami segmentation')
+      if thal_nuclei_image:
+        app.console('Thalamic nuclei submodule output ignored in favour of FSL FIRST '
+                    '(can override using -thalami option)')
+      else:
+        app.console('Will utilise FSL FIRST for thalami segmentation')
+    elif thal_nuclei_image:
+      thalami_method = 'nuclei'
+      app.console('Will utilise detected thalamic nuclei submodule output')
     else:
       thalami_method = 'aseg'
       app.console('Neither thalamic nuclei module output nor FSL FIRST detected; '
