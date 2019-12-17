@@ -38,7 +38,7 @@ Input, output and general options
 
 - **-warp_dir** Output a directory containing warps from each input to the template. If the folder does not exist it will be created
 
-- **-transformed_dir** Output a directory containing the input images transformed to the template. If the folder does not exist it will be created
+- **-transformed_dir** Output a directory containing the input images transformed to the template. If the folder does not exist it will be created. For multi-contrast registration, provide comma separated list of directories.
 
 - **-linear_transformations_dir** Output a directory containing the linear transformations used to generate the template. If the folder does not exist it will be created
 
