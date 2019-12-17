@@ -1,13 +1,13 @@
 # MRtrix
 
-[![Build Status](https://travis-ci.org/MRtrix3/mrtrix3.svg?branch=updated_syntax)](https://travis-ci.org/MRtrix3/mrtrix3)
+[![Build Status](https://github.com/MRtrix3/mrtrix3/workflows/checks/badge.svg)](https://github.com/MRtrix3/mrtrix3/actions)
 
 Please visit the [official website for MRtrix](http://www.mrtrix.org) to access the [documentation for MRtrix3](http://mrtrix.readthedocs.org/), including detailed installation instructions.
 
 ## Getting help
 
 Support and general discussion is hosted on the [MRtrix3 Community Forum](http://community.mrtrix.org/). Please
-address all MRtrix3-related queries there. You can use you GitHub or Google login to post questions.
+address all MRtrix3-related queries there. You can use your GitHub or Google login to post questions.
 
 ## Quick install
 

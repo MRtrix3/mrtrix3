@@ -189,6 +189,7 @@ namespace MR
           void full_screen_slot ();
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
+          void wrap_volumes_slot ();
 
           void hide_image_slot ();
           void slice_next_slot ();
@@ -276,6 +277,7 @@ namespace MR
                   *next_image_volume_group_action,
                   *prev_image_volume_group_action,
                   *goto_image_volume_group_action,
+                  *wrap_volumes_action,
                   *image_list_area,
 
                   *reset_windowing_action,

@@ -1,0 +1,38 @@
+name: package-macos-anaconda
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  package:
+
+    runs-on: macos-latest
+
+    steps:
+
+    - name: fetch MacOSX 10.11 SDK
+      run: curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/MacOSX10.11.sdk/MacOSX10.11.sdk.tar.xz | sudo tar xf - -C /opt/
+
+    - name: install conda-build # and anaconda-client
+      run: sudo $CONDA/bin/conda install -y conda-build # anaconda-client
+
+    - name: fetch recipe
+      run: |
+        git clone https://github.com/MRtrix3/conda-build.git
+        mv conda-build/* .
+        { echo "CONDA_BUILD_SYSROOT:"; echo "  - /opt/MacOSX10.11.sdk        # [osx]"; } > conda_build_config.yaml
+
+    - name: build package
+      run: sudo CONDA="$CONDA" ./run.sh ${GITHUB_REF#refs/*/} ${GITHUB_REPOSITORY%/*} conda-macos
+
+#    - name: upload package
+#      run: $CONDA/bin/anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload -u MRtrix3 $(sudo $CONDA/bin/conda build conda-build/ --output)
+
+    - name: Upload package to GitHub Release
+      uses: AButler/upload-release-assets@v2.0
+      with:
+        files: '*.tar.bz2'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+
