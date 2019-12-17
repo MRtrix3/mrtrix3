@@ -134,9 +134,9 @@ void run ()
       upper = image_max;
     }
   }
-  const float multiplier = 1.0 / (upper - lower);
+  const float multiplier = 1.0f / (upper - lower);
 
-  auto scale = [&] (const float value) { return (multiplier * (value - lower)); };
+  auto scale = [&] (const float value) { return std::max (0.0f, std::min (1.0f, multiplier * (value - lower))); };
 
   Header H_out (H_in);
   H_out.ndim() = 4;
