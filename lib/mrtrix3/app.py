@@ -538,30 +538,11 @@ class ProgressBar(object): #pylint: disable=unused-variable
 #   MRtrix3 binaries, and defining functions for exporting the help page for the purpose of
 #   automated self-documentation.
 
-class _PlusSep (argparse._AppendAction):
-
-  # pylint: disable=protected-access
-  def __call__(self, parser, namespace, values, option_string=None):
-    out = []
-    wasplus = True
-    for val in values:
-      if val == '+':
-        wasplus = True
-        continue
-      if wasplus:
-        out.append([val])
-      else:
-        out[-1].append(val)
-      wasplus = False
-    super(_PlusSep, self).__call__(parser, namespace, out, option_string)
-
-
 class Parser(argparse.ArgumentParser):
 
   # pylint: disable=protected-access
   def __init__(self, *args_in, **kwargs_in):
     global _DEFAULT_COPYRIGHT
-    self.plus_sep = _PlusSep
     self._author = None
     self._citation_list = [ ]
     self._copyright = _DEFAULT_COPYRIGHT
@@ -757,15 +738,7 @@ class Parser(argparse.ArgumentParser):
       usage += ' ' + self._subparsers._group_actions[0].dest + ' ...'
     # Find compulsory input arguments
     for arg in self._positionals._group_actions:
-      if arg.metavar:
-        if isinstance(arg, _PlusSep):
-          if arg.nargs == '+':
-            usage += ' ' + ' '.join(arg.metavar)
-            usage += ' [ + ' + ' '.join(arg.metavar) + '... ] '
-          elif arg.nargs == '*':
-            usage += ' [ ' + ' '.join(arg.metavar) + ' ? ] ' + ' [ + ' + ' '.join(arg.metavar) + '... ] '
-      else:
-        usage += ' ' + arg.dest
+      usage += ' ' + arg.dest
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact
