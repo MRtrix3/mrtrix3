@@ -212,7 +212,8 @@ def _execute(module): #pylint: disable=unused-variable
       sys.stderr.write(EXEC_NAME + ':\n')
     else:
       sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] Failed ' + ('command' if is_cmd else 'function') + ' did not provide any output information' + ANSI.clear + '\n')
-    sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] For debugging, inspect contents of scratch directory: ' + SCRATCH_DIR + ANSI.clear + '\n')
+    if SCRATCH_DIR:
+      sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] For debugging, inspect contents of scratch directory: ' + SCRATCH_DIR + ANSI.clear + '\n')
     sys.stderr.flush()
   except MRtrixError as exception:
     return_code = 1
@@ -475,7 +476,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
     self.wrapon = '' if self.newline else ProgressBar.WRAPON
     VERBOSITY = run.shared.verbosity = VERBOSITY - 1 if VERBOSITY else 0
     if self.isatty:
-      sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.wrapoff + self.newline)
+      sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
     else:
       sys.stderr.write(EXEC_NAME + ': ' + self.message + '... [' + self.newline)
     sys.stderr.flush()

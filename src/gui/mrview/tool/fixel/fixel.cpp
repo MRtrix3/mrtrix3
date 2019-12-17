@@ -90,8 +90,6 @@ namespace MR
 
         Fixel::Fixel (Dock* parent) :
           Base (parent),
-          do_lock_to_grid (true),
-          do_crop_to_slice (true),
           not_3D (true),
           line_opacity (1.0) {
 
@@ -216,8 +214,8 @@ namespace MR
             main_box->addLayout (hlayout);
             hlayout->addWidget (new QLabel ("length multiplier"));
             length_multiplier = new AdjustButton (this, 0.01);
-            length_multiplier->setMin (0.1);
-            length_multiplier->setValue (1.0);
+            length_multiplier->setMin (0.001);
+            length_multiplier->setValue (10.0);
             connect (length_multiplier, SIGNAL (valueChanged()), this, SLOT (length_multiplier_slot()));
             hlayout->addWidget (length_multiplier);
 
@@ -236,17 +234,35 @@ namespace MR
             default_opt_grid->addWidget (new QLabel ("opacity"), 1, 0);
             default_opt_grid->addWidget (opacity_slider, 1, 1);
 
-            lock_to_grid = new QGroupBox (tr("lock to grid"));
+            lock_to_grid = new QCheckBox (tr("lock to grid"));
             lock_to_grid->setCheckable (true);
             lock_to_grid->setChecked (true);
-            connect (lock_to_grid, SIGNAL (clicked (bool)), this, SLOT (on_lock_to_grid_slot (bool)));
+            connect (lock_to_grid, SIGNAL (clicked (bool)), this, SLOT (on_checkbox_slot (bool)));
             default_opt_grid->addWidget (lock_to_grid, 2, 0, 1, 2);
 
-            crop_to_slice = new QGroupBox (tr("crop to slice"));
+            crop_to_slice = new QCheckBox (tr("crop to slice"));
             crop_to_slice->setCheckable (true);
             crop_to_slice->setChecked (true);
-            connect (crop_to_slice, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slice_slot (bool)));
+            connect (crop_to_slice, SIGNAL (clicked (bool)), this, SLOT (on_checkbox_slot (bool)));
             default_opt_grid->addWidget (crop_to_slice, 3, 0, 1, 2);
+
+            bidirectional = new QCheckBox (tr("bi-directional"));
+            bidirectional->setCheckable (true);
+            bidirectional->setChecked (true);
+            connect (bidirectional, SIGNAL (clicked (bool)), this, SLOT (on_checkbox_slot (bool)));
+            default_opt_grid->addWidget (bidirectional, 4, 0, 1, 2);
+
+            track_main_volume = new QCheckBox (tr("cine mode"));
+            track_main_volume->setCheckable (true);
+            track_main_volume->setChecked (false);
+            track_main_volume->setToolTip (
+                tr("When activated, the vector field displayed will be\n"
+                   "taken from the volume group (5th axis) at the same index\n"
+                   "as the volume displayed in the main image.\n\n"
+                   "This allows the vector field to follow the time course of the\n"
+                   "the main image"));
+            connect (track_main_volume, SIGNAL (clicked (bool)), this, SLOT (on_set_tracking_slot (bool)));
+            default_opt_grid->addWidget (track_main_volume, 5, 0, 1, 2);
 
             main_box->addLayout (default_opt_grid, 0);
 
@@ -403,6 +419,7 @@ namespace MR
           update_gui_scaling_controls ();
           update_gui_threshold_controls ();
           update_gui_colour_controls ();
+          update_gui_tracking_controls ();
         }
 
 
@@ -559,6 +576,42 @@ namespace MR
         }
 
 
+
+
+
+        void Fixel::update_gui_tracking_controls ()
+        {
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          size_t n_images (indices.size ());
+
+          if (!n_images) {
+            track_main_volume->setEnabled (false);
+            return;
+          }
+
+          size_t num_checked = 0;
+          for (size_t i = 0; i < n_images; ++i) {
+            Image4D* fixel = dynamic_cast<Image4D*> (fixel_list_model->get_fixel_image (indices[i]));
+            if (!fixel) {
+              track_main_volume->setEnabled (false);
+              return;
+            }
+            if (!fixel->trackable()) {
+              track_main_volume->setEnabled (false);
+              return;
+            }
+            if (fixel->tracking)
+              ++num_checked;
+          }
+
+          track_main_volume->setEnabled (true);
+          track_main_volume->setCheckState ( num_checked ? ( num_checked == n_images ? Qt::Checked : Qt::PartiallyChecked ) : Qt::Unchecked );
+        }
+
+
+
+
+
         void Fixel::opacity_slot (int opacity)
         {
           line_opacity = Math::pow2 (static_cast<float>(opacity)) / 1.0e6f;
@@ -620,20 +673,11 @@ namespace MR
         }
 
 
-        void Fixel::on_lock_to_grid_slot(bool is_checked)
+        void Fixel::on_checkbox_slot(bool)
         {
-          do_lock_to_grid = is_checked;
           window().updateGL();
         }
 
-
-        void Fixel::on_crop_to_slice_slot (bool is_checked)
-        {
-          do_crop_to_slice = is_checked;
-          lock_to_grid->setEnabled(do_crop_to_slice);
-
-          window().updateGL();
-        }
 
 
         void Fixel::toggle_show_colour_bar (bool visible, const ColourMapButton&)
@@ -697,8 +741,23 @@ namespace MR
           }
 
           window().updateGL();
-
         }
+
+
+
+        void Fixel::on_set_tracking_slot (bool is_checked)
+        {
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            Image4D* fixel = dynamic_cast<Image4D*> (fixel_list_model->get_fixel_image (indices[i]));
+            assert (fixel != nullptr);
+            if (fixel)
+              fixel->tracking = is_checked;
+          }
+          window().updateGL();
+        }
+
+
 
 
         void Fixel::on_set_scaling_slot ()

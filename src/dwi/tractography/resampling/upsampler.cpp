@@ -29,13 +29,15 @@ namespace MR {
 
         bool Upsampler::operator() (const Streamline<>& in, Streamline<>& out) const
         {
-          if (get_ratio() == 1 || in.size() < 2) {
+          if (get_ratio() == 1 || in.size() == 1) {
             out = in;
             return true;
           }
           out.clear();
           out.index = in.index;
           out.weight = in.weight;
+          if (in.empty())
+            return true;
           Streamline<> in_padded (in);
           interp_prepare (in_padded);
           for (size_t i = 3; i < in_padded.size(); ++i) {
