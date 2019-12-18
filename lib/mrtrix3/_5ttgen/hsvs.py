@@ -53,6 +53,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 # TODO Convert these values so that the behaviour is the same as that of the external labelconvert files
 #   i.e. tissues are from 1 to 5
 
+# TODO Merge lateral ventricles and choroid plexus prior to voxel2mesh
+# Alternatively, see if merging all of a particular tissue prior to
+#   voxel2mesh could work
+
 ASEG_STRUCTURES = [ ( 4,  3, 'Left-Lateral-Ventricle'),
                     ( 5,  3, 'Left-Inf-Lat-Vent'),
                     (14,  3, '3rd-Ventricle'),
@@ -437,7 +441,6 @@ def execute(): #pylint: disable=unused-variable
   run.command('mesh2voxel ' + bs_smoothed_mesh_path + ' ' + template_image + ' brain_stem.mif')
   app.cleanup(bs_smoothed_mesh_path)
   progress.done()
-  tissue_images[2 if app.ARGS.white_stem else 4].append('brain_stem.mif')
 
 
   if hippocampi_method == 'subfields':
@@ -558,7 +561,7 @@ def execute(): #pylint: disable=unused-variable
   # Construct images with the partial volume of each tissue
   progress = app.ProgressBar('Combining segmentations of all structures corresponding to each tissue type', 5)
   for tissue in range(0,5):
-    run.command('mrmath ' + ' '.join(tissue_images[tissue]) + ' sum - | mrcalc - 1.0 -min tissue' + str(tissue) + '_init.mif')
+    run.command('mrmath ' + ' '.join(tissue_images[tissue]) + (' brain_stem.mif' if tissue == 2 else '') + ' sum - | mrcalc - 1.0 -min tissue' + str(tissue) + '_init.mif')
     app.cleanup(tissue_images[tissue])
     progress.increment()
   progress.done()
@@ -784,7 +787,33 @@ def execute(): #pylint: disable=unused-variable
   tissue_images = new_tissue_images
 
 
+
+  # Move brain stem from white matter to pathology at final step:
+  #   this prevents the brain stem segmentation from overwriting other
+  #   structures that it otherwise wouldn't if it were written to WM
+  if not app.ARGS.white_stem:
+    progress = app.ProgressBar('Moving brain stem to volume index 4', 3)
+    new_tissue_images = [ tissue_images[0],
+                          tissue_images[1],
+                          os.path.splitext(tissue_images[2])[0] + '_no_brainstem.mif',
+                          tissue_images[3],
+                          os.path.splitext(tissue_images[4])[0] + '_with_brainstem.mif' ]
+    run.command('mrcalc ' + tissue_images[2] + ' brain_stem.mif -min brain_stem_white_overlap.mif')
+    app.cleanup('brain_stem.mif')
+    progress.increment()
+    run.command('mrcalc ' + tissue_images[2] + ' brain_stem_white_overlap.mif -sub ' + new_tissue_images[2])
+    app.cleanup(tissue_images[2])
+    progress.increment()
+    run.command('mrcalc ' + tissue_images[4] + ' brain_stem_white_overlap.mif -add ' + new_tissue_images[4])
+    app.cleanup(tissue_images[2])
+    app.cleanup('brain_stem_white_overlap.mif')
+    progress.done()
+    tissue_images = new_tissue_images
+
+
+
   # Finally, concatenate the volumes to produce the 5TT image
+  app.console('Concatenating tissue volumes into 5TT format')
   precrop_result_image = '5TT.mif'
   if bs_cropmask_path:
     run.command('mrcat ' + ' '.join(tissue_images) + ' - -axis 3 | ' + \
@@ -810,6 +839,3 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
               mrconvert_keyval=path.from_user(os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), True),
               force=app.FORCE_OVERWRITE)
-
-  app.warn('Algorithm not capable of segmenting anterior commissure; '
-           'recommend performing manual segmentation and using "5ttedit -wm"')
