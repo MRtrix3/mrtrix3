@@ -57,6 +57,11 @@ namespace MR
              * assuming the matrices \e H & \e A don't change, but the vectors
              * \e b & \e t do.
              *
+             * It is also possible to use equality constraints by telling the
+             * solver how many of the constraints should be treated as equality
+             * constraints. If non-zero, the corresponding last rows of the
+             * constraint matrix (and vector) will be treated as equalities.
+             *
              *  - \a problem_matrix: \e H
              *  - \a constraint_matrix: \e A
              *  - \a solution_min_norm_regularisation: an additional minimum
@@ -145,7 +150,7 @@ namespace MR
             using matrix_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
             using vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
 
-            Solver (const Problem<value_type>& problem) :
+            Solver (const Problem<value_type>& problem, size_t num_equalities = 0) :
               P (problem),
               BtB (P.chol_HtH.rows(), P.chol_HtH.cols()),
               B (P.B.rows(), P.B.cols()),
@@ -157,7 +162,7 @@ namespace MR
               l (lambda.size()),
               active (lambda.size(), false) { }
 
-            size_t operator() (vector_type& x, const vector_type& b, const vector_type& t = vector_type())
+            size_t operator() (vector_type& x, const vector_type& b, const vector_type& t = vector_type(), size_t num_eq = 0)
             {
 #ifdef MRTRIX_ICLS_DEBUG
               std::ofstream l_stream ("l.txt");
@@ -170,11 +175,15 @@ namespace MR
               if (t.size())
                 c_u -= t;
 
+              const size_t num_ineq = P.num_constraints() - num_eq;
+
               // set all Lagrangian multipliers to zero:
               lambda.setZero();
               lambda_prev.setZero();
               // set active set empty:
               std::fill (active.begin(), active.end(), false);
+              if (num_eq > 0)
+                std::fill (active.begin() + num_ineq, active.end(), true);
 
               // initial estimate of constraint values:
               c = c_u;
@@ -185,7 +194,7 @@ namespace MR
               size_t min_c_index;
               size_t niter = 0;
 
-              while (c.minCoeff (&min_c_index) < -P.tol) {
+              while (c.head(num_ineq).minCoeff (&min_c_index) < -P.tol) {
                 bool active_set_changed = !active[min_c_index];
                 active[min_c_index] = true;
 
@@ -215,7 +224,7 @@ namespace MR
                   value_type s_min = std::numeric_limits<value_type>::infinity();
                   size_t s_min_index = 0;
                   size_t a = 0;
-                  for (size_t n = 0; n < active.size(); ++n) {
+                  for (size_t n = 0; n < num_ineq; ++n) {
                     if (active[n]) {
                       if (l_active[a] < 0.0) {
                         value_type s = lambda_prev[n] / (lambda_prev[n] - l_active[a]);
