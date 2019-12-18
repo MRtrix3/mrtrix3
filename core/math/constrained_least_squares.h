@@ -53,9 +53,9 @@ namespace MR
             Problem () { }
             //! set up constrained least-squares problem
             /*! the problem is to solve norm(\e Hx - \e b) subject to \e Ax >=
-             * 0. This sets up a class to be re-used and shared across threads,
-             * assuming the matrices \e H & \e A don't change, but the vector
-             * \e b does.
+             * t. This sets up a class to be re-used and shared across threads,
+             * assuming the matrices \e H & \e A don't change, but the vectors
+             * \e b & \e t do.
              *
              *  - \a problem_matrix: \e H
              *  - \a constraint_matrix: \e A
@@ -122,11 +122,7 @@ namespace MR
                   b2d.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (H);
 
                 // project constraint onto preconditioned quadratic domain,
-                // and normalise each row to help preconditioning (the norm of
-                // each row is irrelevant to the constraint itself):
                 B.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (constraint_matrix);
-                for (ssize_t n = 0; n < B.rows(); ++n)
-                  B.row(n).normalize();
               }
 
             size_t num_parameters () const { return H.cols(); }
@@ -161,7 +157,7 @@ namespace MR
               l (lambda.size()),
               active (lambda.size(), false) { }
 
-            size_t operator() (vector_type& x, const vector_type& b)
+            size_t operator() (vector_type& x, const vector_type& b, const vector_type& t = vector_type())
             {
 #ifdef MRTRIX_ICLS_DEBUG
               std::ofstream l_stream ("l.txt");
@@ -171,6 +167,8 @@ namespace MR
               y_u = P.b2d.transpose() * b;
               // compute constraint violations for unconstrained solution:
               c_u = P.B * y_u;
+              if (t.size())
+                c_u -= t;
 
               // set all Lagrangian multipliers to zero:
               lambda.setZero();
@@ -180,6 +178,7 @@ namespace MR
 
               // initial estimate of constraint values:
               c = c_u;
+
               // initial estimate of solution:
               x = y_u;
 
@@ -205,7 +204,7 @@ namespace MR
 
                   BtB.resize (num_active, num_active);
                   // solve for l in B*B'l = -c_u by Cholesky decomposition:
-                  BtB = B_active * B_active.transpose();
+                  BtB.template triangularView<Eigen::Lower>() = B_active * B_active.transpose();
                   BtB.diagonal().array() += P.lambda_min_norm;
                   BtB.template selfadjointView<Eigen::Lower>().llt().solveInPlace (l_active);
 
@@ -266,6 +265,8 @@ namespace MR
 
                 // compute constraint values at updated solution:
                 c = P.B * x;
+                if (t.size())
+                  c -= t;
               }
 
               // project back to unconditioned domain:
