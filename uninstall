@@ -4,12 +4,19 @@ if [ "$1" != "-f" ]; then
   echo "In addition it will:"
   echo "* remove symbolic links in /usr/local/bin to the binaries that used to be in /usr/local/mrtrix/bin"
   echo "* remove symbolic links in /Applications to the app bundles that used to be in /usr/local/mrtrix/bin"
-  echo "* request that you enter your password to allow system-wide uninstallation"
-  if [ ! -d "/usr/local/mrtrix3" ] ; then
-    echo "ERROR: Could not find an existing installation."
-    exit
-  fi
-  echo "Are you sure you want to continue the uninstallation?"
+fi
+
+if [ $EUID != 0 ]; then
+  echo "ERROR: This script requires root privileges, please run as: sudo "$0" "$@""
+  exit
+fi
+
+if [ ! -d "/usr/local/mrtrix3" ] ; then
+  echo "WARNING: Could not find an existing installation."
+fi
+
+if [ "$1" != "-f" ]; then
+  echo "Are you sure you want to continue the installation?"
   select yn in "Yes" "No"; do
     case $yn in
       Yes ) break;;
@@ -17,18 +24,17 @@ if [ "$1" != "-f" ]; then
     esac
   done
 fi
-if [ $EUID == 0 ]; then
-  if [ -f /usr/local/mrtrix3/symlinks ]; then
-    echo "Removing symbolic links ..."
-    for l in $(cat /usr/local/mrtrix3/symlinks); do
-      if [ -L "${l}" ]; then
-        unlink $l
-      fi
-    done
-  fi
-  echo "Removing installation in /usr/local/mrtrix3..."
-  rm -rf "/usr/local/mrtrix3"
-  echo "Unistallation complete!"
-else
-  exec sudo "$0" "$@" -f
+
+if [ -f /usr/local/mrtrix3/symlinks ]; then
+  echo "Removing symbolic links ..."
+  for l in $(cat /usr/local/mrtrix3/symlinks); do
+    if [ -L "${l}" ]; then
+      unlink $l
+    fi
+  done
 fi
+
+echo "Removing installation in /usr/local/mrtrix3 ..."
+rm -rf "/usr/local/mrtrix3"
+
+echo "Unistallation complete!"

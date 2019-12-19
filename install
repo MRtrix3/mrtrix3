@@ -4,10 +4,18 @@ if [ "$1" != "-f" ]; then
   echo "In addition it will:"
   echo "* create symbolic links in /usr/local/bin to the binaries in /usr/local/mrtrix/bin"
   echo "* create symbolic links in /Applications to the app bundles in /usr/local/mrtrix/bin"
-  echo "* request that you enter your password to allow system-wide installation"
-  if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
-    echo "WARNING: /usr/local/mrtrix3 already exists and will be replaced during installation."
-  fi
+fi
+
+if [ $EUID != 0 ]; then
+  echo "ERROR: This script requires root privileges, please run as: sudo "$0" "$@""
+  exit
+fi
+
+if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
+  echo "WARNING: /usr/local/mrtrix3 already exists and will be replaced during installation."
+fi
+
+if [ "$1" != "-f" ]; then
   echo "Are you sure you want to continue the installation?"
   select yn in "Yes" "No"; do
     case $yn in
@@ -16,36 +24,38 @@ if [ "$1" != "-f" ]; then
     esac
   done
 fi
-if [ $EUID == 0 ]; then
-  if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
-    if [ "$1" == "-f" ]; then
-      echo "Removing prior installation in /usr/local/mrtrix3..."
-      rm -rf "/usr/local/mrtrix3"
-    fi
+
+if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
+  if [ "$1" == "-f" ]; then
+    echo "Removing prior installation in /usr/local/mrtrix3..."
+    rm -rf "/usr/local/mrtrix3"
   fi
-  echo "Downloading ..."
-  # TODO: Download tarball of latest stable binary release from github instead of hardcoded tarball
-  ID="10jzGUyUSoOW6eR3uKGr4E2nj96b2uUh7"
-  URL="https://drive.google.com/uc?export=download"
-  TARBALL="$(curl -sc /tmp/gcokie "${URL}&id=${ID}" | grep -o '="uc-name.*</span>' | sed 's/.*">//;s/<.a> .*//')"
-  getcode="$(awk '/_warning_/ {print $NF}' /tmp/gcokie)"
-  curl -sLb /tmp/gcokie "${URL}&confirm=${getcode}&id=${ID}" -o "${TARBALL}"
-  echo "Installing to /usr/local/mrtrix3 ..."
-  tar xf "$TARBALL" -C /usr/local
-  echo "Creating symlinks in /usr/local/bin ..."
-  cd /usr/local/bin
-  touch /usr/local/mrtrix3/symlinks
-  for target in $(find ../mrtrix3/bin -maxdepth 1 -type f ! -name "*.*"); do
-    ln -sf "${target}"
-    echo /usr/local/bin/"$(basename "${target}")" >> /usr/local/mrtrix3/symlinks
-  done
-  echo "Creating symlinks in /Applications ..."
-  cd /Applications
-  for target in /usr/local/mrtrix3/bin/*.app; do
-    ln -sf "${target}"
-    echo /Applications/"$(basename "${target}")" >> /usr/local/mrtrix3/symlinks
-  done
-  echo "Installation complete!"
-else
-  exec sudo "$0" "$@" -f
 fi
+
+echo "Downloading ..."
+# TODO: Download tarball of latest stable binary release from github instead of hardcoded tarball
+ID="10jzGUyUSoOW6eR3uKGr4E2nj96b2uUh7"
+URL="https://drive.google.com/uc?export=download"
+TARBALL="$(curl -sc /tmp/gcokie "${URL}&id=${ID}" | grep -o '="uc-name.*</span>' | sed 's/.*">//;s/<.a> .*//')"
+getcode="$(awk '/_warning_/ {print $NF}' /tmp/gcokie)"
+curl -sLb /tmp/gcokie "${URL}&confirm=${getcode}&id=${ID}" -o "${TARBALL}"
+
+echo "Installing to /usr/local/mrtrix3 ..."
+tar xf "$TARBALL" -C /usr/local
+
+echo "Creating symlinks in /usr/local/bin ..."
+cd /usr/local/bin
+touch /usr/local/mrtrix3/symlinks
+for target in $(find ../mrtrix3/bin -maxdepth 1 -type f ! -name "*.*"); do
+  ln -sf "${target}"
+  echo /usr/local/bin/"$(basename "${target}")" >> /usr/local/mrtrix3/symlinks
+done
+
+echo "Creating symlinks in /Applications ..."
+cd /Applications
+for target in /usr/local/mrtrix3/bin/*.app; do
+  ln -sf "${target}"
+  echo /Applications/"$(basename "${target}")" >> /usr/local/mrtrix3/symlinks
+done
+
+echo "Installation complete!"
