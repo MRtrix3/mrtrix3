@@ -31,7 +31,6 @@
 #include "gui/lighting_dock.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
-#include "gui/mrview/colourbars.h"
 #include "gui/mrview/spin_box.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
@@ -290,7 +289,6 @@ namespace MR
 
 
             // Settings for colour bars
-            ColourBars colourbar_renderer;
             bool show_node_colour_bar, show_edge_colour_bar;
 
 
