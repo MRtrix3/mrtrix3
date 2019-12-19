@@ -18,6 +18,8 @@
 #define __gui_mrview_colourmap_button_h__
 
 #include "mrtrix.h"
+
+#include "colourmap.h"
 #include "gui/opengl/gl.h"
 
 namespace MR
