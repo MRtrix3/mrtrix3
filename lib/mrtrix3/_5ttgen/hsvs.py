@@ -50,55 +50,52 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
-# TODO Convert these values so that the behaviour is the same as that of the external labelconvert files
-#   i.e. tissues are from 1 to 5
-
 # TODO Merge lateral ventricles and choroid plexus prior to voxel2mesh
 # Alternatively, see if merging all of a particular tissue prior to
 #   voxel2mesh could work
 
-ASEG_STRUCTURES = [ ( 4,  3, 'Left-Lateral-Ventricle'),
-                    ( 5,  3, 'Left-Inf-Lat-Vent'),
-                    (14,  3, '3rd-Ventricle'),
-                    (15,  3, '4th-Ventricle'),
-                    (24,  3, 'CSF'),
-                    (25,  4, 'Left-Lesion'),
-                    (30,  3, 'Left-vessel'),
-                    (31,  3, 'Left-choroid-plexus'),
-                    (43,  3, 'Right-Lateral-Ventricle'),
-                    (44,  3, 'Right-Inf-Lat-Vent'),
-                    (57,  4, 'Right-Lesion'),
-                    (62,  3, 'Right-vessel'),
-                    (63,  3, 'Right-choroid-plexus'),
-                    (72,  3, '5th-Ventricle'),
-                    (250, 2, 'Fornix') ]
+ASEG_STRUCTURES = [ ( 4,  4, 'Left-Lateral-Ventricle'),
+                    ( 5,  4, 'Left-Inf-Lat-Vent'),
+                    (14,  4, '3rd-Ventricle'),
+                    (15,  4, '4th-Ventricle'),
+                    (24,  4, 'CSF'),
+                    (25,  5, 'Left-Lesion'),
+                    (30,  4, 'Left-vessel'),
+                    (31,  4, 'Left-choroid-plexus'),
+                    (43,  4, 'Right-Lateral-Ventricle'),
+                    (44,  4, 'Right-Inf-Lat-Vent'),
+                    (57,  5, 'Right-Lesion'),
+                    (62,  4, 'Right-vessel'),
+                    (63,  4, 'Right-choroid-plexus'),
+                    (72,  4, '5th-Ventricle'),
+                    (250, 3, 'Fornix') ]
 
 
-HIPP_ASEG = [ (17,  1, 'Left-Hippocampus'),
-              (53,  1, 'Right-Hippocampus') ]
+HIPP_ASEG = [ (17,  2, 'Left-Hippocampus'),
+              (53,  2, 'Right-Hippocampus') ]
 
-AMYG_ASEG = [ (18,  1, 'Left-Amygdala'),
-              (54,  1, 'Right-Amygdala') ]
+AMYG_ASEG = [ (18,  2, 'Left-Amygdala'),
+              (54,  2, 'Right-Amygdala') ]
 
-THAL_ASEG = [ (10,  1, 'Left-Thalamus-Proper'),
-              (49,  1, 'Right-Thalamus-Proper') ]
+THAL_ASEG = [ (10,  2, 'Left-Thalamus-Proper'),
+              (49,  2, 'Right-Thalamus-Proper') ]
 
-OTHER_SGM_ASEG = [ (11,  1, 'Left-Caudate'),
-                   (12,  1, 'Left-Putamen'),
-                   (13,  1, 'Left-Pallidum'),
-                   (26,  1, 'Left-Accumbens-area'),
-                   (50,  1, 'Right-Caudate'),
-                   (51,  1, 'Right-Putamen'),
-                   (52,  1, 'Right-Pallidum'),
-                   (58,  1, 'Right-Accumbens-area') ]
+OTHER_SGM_ASEG = [ (11,  2, 'Left-Caudate'),
+                   (12,  2, 'Left-Putamen'),
+                   (13,  2, 'Left-Pallidum'),
+                   (26,  2, 'Left-Accumbens-area'),
+                   (50,  2, 'Right-Caudate'),
+                   (51,  2, 'Right-Putamen'),
+                   (52,  2, 'Right-Pallidum'),
+                   (58,  2, 'Right-Accumbens-area') ]
 
 
-CEREBELLUM_ASEG = [ ( 6,  3, 'Left-Cerebellum-Exterior'),
-                    ( 7,  2, 'Left-Cerebellum-White-Matter'),
-                    ( 8,  1, 'Left-Cerebellum-Cortex'),
-                    (45,  3, 'Right-Cerebellum-Exterior'),
-                    (46,  2, 'Right-Cerebellum-White-Matter'),
-                    (47,  1, 'Right-Cerebellum-Cortex') ]
+CEREBELLUM_ASEG = [ ( 6,  4, 'Left-Cerebellum-Exterior'),
+                    ( 7,  3, 'Left-Cerebellum-White-Matter'),
+                    ( 8,  2, 'Left-Cerebellum-Cortex'),
+                    (45,  4, 'Right-Cerebellum-Exterior'),
+                    (46,  3, 'Right-Cerebellum-White-Matter'),
+                    (47,  2, 'Right-Cerebellum-Cortex') ]
 
 
 CORPUS_CALLOSUM_ASEG = [ (192, 'Corpus_Callosum'),
@@ -369,7 +366,7 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(init_mesh_path)
     run.command('mesh2voxel ' + smoothed_mesh_path + ' ' + template_image + ' ' + name + '.mif')
     app.cleanup(smoothed_mesh_path)
-    tissue_images[tissue].append(name + '.mif')
+    tissue_images[tissue-1].append(name + '.mif')
     progress.increment()
   progress.done()
 
