@@ -17,15 +17,15 @@ else
   TIFF_VERSION=$(git ls-remote --tags https://gitlab.com/libtiff/libtiff.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
   TIFF_VERSION=${TIFF_VERSION#*/*/v}
   echo "Using tiff ${TIFF_VERSION}"
-  
+
   PNG_VERSION=$(git ls-remote --tags https://github.com/glennrp/libpng.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
   PNG_VERSION=${PNG_VERSION#*/*/v}
   echo "Using png ${PNG_VERSION}"
-  
+
   FFTW_VERSION=$(git ls-remote --tags https://github.com/FFTW/fftw3.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep 'fftw-3' | sort -V | tail -1)
   FFTW_VERSION=${FFTW_VERSION#*/*/fftw-}
   echo "Using fftw ${FFTW_VERSION}"
-  
+
   QT_VERSION=$(git ls-remote --tags https://github.com/qt/qt5.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v '-' | grep '5.9' | sort -V | tail -1)
   QT_VERSION=${QT_VERSION#*/*/v}
   echo "Using qt ${QT_VERSION}"
@@ -65,7 +65,7 @@ else
   ./configure -q -prefix ${PREFIX} --enable-shared=NO
   make install > /dev/null
   cd ..
-  rm -r ${FNAME} ${DNAME} 
+  rm -r ${FNAME} ${DNAME}
   PNG_SECONDS=${SECONDS}
 
   # FFTW
@@ -78,7 +78,7 @@ else
   ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking --enable-sse2 --enable-avx
   make install > /dev/null
   cd ..
-  rm -r ${FNAME} ${DNAME} 
+  rm -r ${FNAME} ${DNAME}
   FFTW_SECONDS=${SECONDS}
 
   # QT5 BASE
@@ -92,12 +92,12 @@ else
   make -j ${THREADS} > /dev/null
   make install > /dev/null
   cd ..
-  rm -r ${FNAME} ${DNAME} 
+  rm -r ${FNAME} ${DNAME}
   QTBASE_SECONDS=${SECONDS}
 
   # QT5 SVG
   SECONDS=0
-  DNAME=qtsvg-opensource-src-${QT_VERSION} 
+  DNAME=qtsvg-opensource-src-${QT_VERSION}
   FNAME=${DNAME}.tar.xz
   curl -s -O http://ftp1.nluug.nl/languages/qt/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/${FNAME}
   tar xf ${FNAME}
@@ -106,7 +106,7 @@ else
   make -j ${THREADS} > /dev/null
   make install > /dev/null
   cd ..
-  rm -r ${FNAME} ${DNAME} 
+  rm -r ${FNAME} ${DNAME}
   QTSVG_SECONDS=${SECONDS}
 
   tar cpfz ${PREFIX}-build-deps.tar.gz mrtrix3
@@ -124,28 +124,27 @@ MRTRIX_SECONDS=${SECONDS}
 
 
 mv ${PREFIX} ${PREFIX}_dep
-mkdir -p ${PREFIX}/mrtrix3
-cp -R ${PREFIX}-src/bin    ${PREFIX}/mrtrix3
-cp -R ${PREFIX}-src/lib    ${PREFIX}/mrtrix3
-cp -R ${PREFIX}-src/share  ${PREFIX}/mrtrix3
-cp -R ${PREFIX}-src/matlab ${PREFIX}/mrtrix3
-cp ${PREFIX}-src/set_path  ${PREFIX}/mrtrix3
+mkdir -p ${PREFIX}
+cp -R ${PREFIX}-src/bin    ${PREFIX}
+cp -R ${PREFIX}-src/lib    ${PREFIX}
+cp -R ${PREFIX}-src/share  ${PREFIX}
+cp -R ${PREFIX}-src/matlab ${PREFIX}
 rm -rf ${PREFIX}-src
-cp ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Svg,Widgets}${QT_POSTFIX}.*.dylib ${PREFIX}/mrtrix3/lib
-mkdir -p ${PREFIX}/mrtrix3/bin/plugins/{platforms,imageformats}
-cp ${PREFIX}_dep/plugins/platforms/libqcocoa${QT_POSTFIX}.dylib  ${PREFIX}/mrtrix3/bin/plugins/platforms
-cp ${PREFIX}_dep/plugins/imageformats/libqsvg${QT_POSTFIX}.dylib ${PREFIX}/mrtrix3/bin/plugins/imageformats
+cp ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Svg,Widgets}${QT_POSTFIX}.*.dylib ${PREFIX}/lib
+mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats}
+cp ${PREFIX}_dep/plugins/platforms/libqcocoa${QT_POSTFIX}.dylib  ${PREFIX}/bin/plugins/platforms
+cp ${PREFIX}_dep/plugins/imageformats/libqsvg${QT_POSTFIX}.dylib ${PREFIX}/bin/plugins/imageformats
 rm -rf ${PREFIX}_dep
 
-cp -R ${PLD}/MRView.app ${PREFIX} 
-mkdir -p ${PREFIX}/MRView.app/Contents/MacOS/
-mv ${PREFIX}/mrtrix3/bin/mrview ${PREFIX}/MRView.app/Contents/MacOS/
-cp ${PLD}/mrview ${PREFIX}/mrtrix3/bin
+cp -R ${PLD}/MRView.app ${PREFIX}/bin
+mkdir -p ${PREFIX}/bin/MRView.app/Contents/MacOS/
+mv ${PREFIX}/bin/mrview ${PREFIX}/bin/MRView.app/Contents/MacOS/
+cp ${PLD}/mrview ${PREFIX}/bin
 
-cp -R ${PLD}/SHView.app ${PREFIX}     
-mkdir -p ${PREFIX}/SHView.app/Contents/MacOS/
-mv ${PREFIX}/mrtrix3/bin/shview ${PREFIX}/SHView.app/Contents/MacOS/
-cp ${PLD}/shview ${PREFIX}/mrtrix3/bin
+cp -R ${PLD}/SHView.app ${PREFIX}/bin
+mkdir -p ${PREFIX}/bin/SHView.app/Contents/MacOS/
+mv ${PREFIX}/bin/shview ${PREFIX}/bin/SHView.app/Contents/MacOS/
+cp ${PLD}/shview ${PREFIX}/bin
 
 cd ${PREFIX}/..
 tar cfz mrtrix3.tar.gz mrtrix3

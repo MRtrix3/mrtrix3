@@ -3,5 +3,5 @@ f="${BASH_SOURCE}"
 while [[ -L "${f}" ]]; do
   f=$(readlink "${f}")
 done
-f=$(dirname "${f}")
-"${f}"/../../SHView.app/Contents/MacOS/shview "$@"
+f="$(dirname "${BASH_SOURCE}")/$(dirname "${f}")"
+"${f}"/SHView.app/Contents/MacOS/shview "$@"
