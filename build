@@ -1,7 +1,9 @@
 #!/bin/bash -ex
+
+TAGNAME="$1"
+
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
 PLD=$(pwd)
-BRANCH=dev
 THREADS=$(sysctl -n hw.ncpu)
 PREFIX=${PLD}/mrtrix3
 if [ -f "${PREFIX}-build-deps.tar.gz" ]; then
@@ -114,7 +116,7 @@ fi
 
 # MRTRIX3
 SECONDS=0
-git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${BRANCH}
+git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${TAGNAME}
 cd ${PREFIX}-src
 MRTRIX_VERSION=$(git describe --abbrev=8 | tr '-' '_')
 CFLAGS="-I${PREFIX}/include" LINKFLAGS="-L${PREFIX}/lib" TIFF_LINKFLAGS="-llzma -ltiff" PATH=${PREFIX}/bin:${PATH} ./configure
@@ -147,7 +149,7 @@ mv ${PREFIX}/bin/shview ${PREFIX}/bin/SHView.app/Contents/MacOS/
 cp ${PLD}/shview ${PREFIX}/bin
 
 cd ${PREFIX}/..
-tar cfz mrtrix3.tar.gz mrtrix3
+tar cfz mrtrix3-macos-${TAGNAME}.tar.gz mrtrix3
 rm -rf ${PREFIX}
 
 TOTAL_SECONDS=$((EIGEN_SECONDS + TIFF_SECONDS + PNG_SECONDS + FFTW_SECONDS + QTBASE_SECONDS + QTSVG_SECONDS + MRTRIX_SECONDS))
