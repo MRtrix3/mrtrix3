@@ -16,7 +16,7 @@ if [ ! -d "/usr/local/mrtrix3" ] ; then
 fi
 
 if [ "$1" != "-f" ]; then
-  echo "Are you sure you want to continue the installation?"
+  echo "Are you sure you want to continue the uninstallation?"
   select yn in "Yes" "No"; do
     case $yn in
       Yes ) break;;
