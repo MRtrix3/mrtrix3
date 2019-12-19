@@ -2,8 +2,8 @@
 if [ "$1" != "-f" ]; then
   echo "This uninstaller will remove MRtrix3 from /usr/local/mrtrix3."
   echo "In addition it will:"
-  echo "* remove symbolic links in /usr/local/bin to the binaries that used to be in /usr/local/mrtrix/bin"
-  echo "* remove symbolic links in /Applications to the app bundles that used to be in /usr/local/mrtrix/bin"
+  echo "* remove symbolic links in /usr/local/bin to the binaries that used to be in /usr/local/mrtrix3/bin"
+  echo "* remove symbolic links in /Applications to the app bundles that used to be in /usr/local/mrtrix3/bin"
 fi
 
 if [ $EUID != 0 ]; then
