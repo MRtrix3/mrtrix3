@@ -8,6 +8,11 @@ sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/MRtrix3/macos-insta
 
 The ``install``-script will download the binaries for the latest MRtrix3 release, unpack them to /usr/local/mrtrix3. In addition it will create the appropriate symlinks in /usr/local/bin and /Applications.
 
+Uninstallation is as simple as:
+```
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/MRtrix3/macos-installer/master/uninstall)"
+```
+
 # For developers/power users
 ``./build`` will download and build MRtrix3 and all its dependencies, create Application bundles for MRView and SHview (including icon sets), and package everything up in a tarball.
 
