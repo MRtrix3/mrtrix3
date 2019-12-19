@@ -58,12 +58,13 @@ namespace MR
           };
 
           ColourBars();
-          void begin_render_colourbars (Projection* projection,
+
+          void begin (Projection* projection,
               const Position position,
               const size_t ncolourbars) {
             current_position = position;
             current_projection = projection;
-            current_ncolourbars = ncolourbars;
+            current_count = ncolourbars;
             current_colourbar_index = 0;
           }
 
@@ -74,10 +75,10 @@ namespace MR
 
           void render (const Displayable& object, bool inverted);
 
-          void end_render_colourbars () {
+          void end () {
             current_position = Position::None;
             current_projection = nullptr;
-            current_ncolourbars = 0;
+            current_count = 0;
             current_colourbar_index = 0;
           }
 
@@ -85,8 +86,8 @@ namespace MR
           GL::VertexBuffer VB;
           GL::VertexArrayObject VAO;
           GL::Shader::Program frame_program, program;
-          size_t current_index;
-          bool current_inverted;
+          size_t current_colourmap_index;
+          bool current_colourmap_inverted;
           const GLfloat width, height, inset, text_offset, colourbar_padding;
 
           void setup (size_t index, bool inverted);
@@ -95,7 +96,7 @@ namespace MR
           static size_t max_n_rows;
           Position current_position;
           Projection* current_projection;
-          size_t current_ncolourbars, current_colourbar_index;
+          size_t current_count, current_colourbar_index;
       };
 
 
