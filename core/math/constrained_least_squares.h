@@ -83,6 +83,8 @@ namespace MR
              */
             Problem (const matrix_type& problem_matrix,
                 const matrix_type& constraint_matrix,
+                const vector_type& thresholds = vector_type(),
+                size_t num_equalities = 0,
                 value_type solution_min_norm_regularisation = 0.0,
                 value_type constraint_min_norm_regularisation = 0.0,
                 size_t max_iterations = 0,
@@ -90,9 +92,11 @@ namespace MR
                 bool problem_in_standard_form = false) :
               H (problem_matrix),
               chol_HtH (H.cols(), H.cols()),
+              t (thresholds),
               lambda_min_norm (constraint_min_norm_regularisation),
               tol (tolerance),
-              max_niter (max_iterations ? max_iterations : 10*problem_matrix.cols()) {
+              max_niter (max_iterations ? max_iterations : 10*problem_matrix.cols()),
+              num_eq (num_equalities) {
 
                 if (H.cols() != constraint_matrix.cols())
                   throw Exception ("FIXME: dimensions of problem and constraint matrices do not match (ICLS)");
@@ -128,15 +132,24 @@ namespace MR
 
                 // project constraint onto preconditioned quadratic domain,
                 B.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight> (constraint_matrix);
+                for (ssize_t n = 0; n < B.rows(); ++n) {
+                  double norm = B.row(n).norm();
+                  B.row(n) /= norm;
+                  if (t.size())
+                    t[n] /= norm;
+                }
+
               }
 
             size_t num_parameters () const { return H.cols(); }
             size_t num_measurements () const { return H.rows(); }
             size_t num_constraints () const { return B.rows(); }
+            size_t num_equalities () const { return num_eq; }
 
             matrix_type H, chol_HtH, B, b2d;
+            vector_type t;
             value_type lambda_min_norm, tol;
-            size_t max_niter;
+            size_t max_niter, num_eq;
         };
 
 
@@ -150,7 +163,7 @@ namespace MR
             using matrix_type = Eigen::Matrix<value_type,Eigen::Dynamic,Eigen::Dynamic>;
             using vector_type = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
 
-            Solver (const Problem<value_type>& problem, size_t num_equalities = 0) :
+            Solver (const Problem<value_type>& problem) :
               P (problem),
               BtB (P.chol_HtH.rows(), P.chol_HtH.cols()),
               B (P.B.rows(), P.B.cols()),
@@ -162,7 +175,7 @@ namespace MR
               l (lambda.size()),
               active (lambda.size(), false) { }
 
-            size_t operator() (vector_type& x, const vector_type& b, const vector_type& t = vector_type(), size_t num_eq = 0)
+            size_t operator() (vector_type& x, const vector_type& b)
             {
 #ifdef MRTRIX_ICLS_DEBUG
               std::ofstream l_stream ("l.txt");
@@ -172,9 +185,10 @@ namespace MR
               y_u = P.b2d.transpose() * b;
               // compute constraint violations for unconstrained solution:
               c_u = P.B * y_u;
-              if (t.size())
-                c_u -= t;
+              if (P.t.size())
+                c_u -= P.t;
 
+              const size_t num_eq = P.num_equalities();
               const size_t num_ineq = P.num_constraints() - num_eq;
 
               // set all Lagrangian multipliers to zero:
@@ -274,8 +288,8 @@ namespace MR
 
                 // compute constraint values at updated solution:
                 c = P.B * x;
-                if (t.size())
-                  c -= t;
+                if (P.t.size())
+                  c -= P.t;
               }
 
               // project back to unconditioned domain:
