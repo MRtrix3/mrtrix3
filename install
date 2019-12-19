@@ -25,11 +25,25 @@ if [ "$1" != "-f" ]; then
   done
 fi
 
-if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
-  if [ "$1" == "-f" ]; then
-    echo "Removing prior installation in /usr/local/mrtrix3..."
-    rm -rf "/usr/local/mrtrix3"
+if [ -f /usr/local/mrtrix3/symlinks ]; then
+  echo "Removing symbolic links of previous installation ..."
+  for l in $(cat /usr/local/mrtrix3/symlinks); do
+    if [ -L "${l}" ]; then
+      unlink "${l}"
+    fi
+  done
+fi
+
+echo "Removing symbolic links to homebrew mrtrix3 binaries ..."  
+for f in /usr/local/bin/*; do
+  if [[ $"(readlink "${f}")" = *"mrtrix3"* ]]; then
+    unlink "${f}";
   fi
+done
+
+if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
+  echo "Removing previous installation in /usr/local/mrtrix3 ..."
+  rm -rf "/usr/local/mrtrix3"
 fi
 
 echo "Downloading ..."
