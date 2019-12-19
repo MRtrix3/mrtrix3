@@ -36,8 +36,8 @@ namespace MR
 
 
       ColourBars::ColourBars () :
-        current_index (0),
-        current_inverted (false),
+        current_colourmap_index (0),
+        current_colourmap_inverted (false),
         //CONF option: MRViewColourBarWidth
         //CONF default: 20
         //CONF The width of the colourbar in MRView, in pixels.
@@ -61,7 +61,7 @@ namespace MR
         //CONF The width in pixels between horizontally adjacent colour bars.
         colourbar_padding (MR::File::Config::get_float ("MRViewColourBarHorizontalPadding", 100.0f))
       {
-        end_render_colourbars ();
+        end ();
       }
 
 
@@ -114,8 +114,8 @@ namespace MR
         frame_program.attach (frame_fragment_shader);
         frame_program.link();
 
-        current_index = index;
-        current_inverted = inverted;
+        current_colourmap_index = index;
+        current_colourmap_inverted = inverted;
       }
 
 
@@ -137,7 +137,7 @@ namespace MR
         if (!current_position) return;
         if (ColourMap::maps[colourmap].special) return;
 
-        if (!program || !frame_program || colourmap != current_index || current_inverted != inverted)
+        if (!program || !frame_program || colourmap != current_colourmap_index || current_colourmap_inverted != inverted)
           setup (colourmap, inverted);
 
         if (!VB || !VAO) {
@@ -159,8 +159,8 @@ namespace MR
         float max_frac = std::min(std::max(0.0f, (local_max_value - global_min_value) / global_range), 1.0f);
         float min_frac = std::min(std::max(0.0f, (local_min_value - global_min_value) / global_range), max_frac);
 
-        int max_bars_per_row = std::max((int)std::ceil((float)(current_ncolourbars) / max_n_rows), 1);
-        int ncols = (int)std::ceil((float)current_ncolourbars / max_bars_per_row);
+        int max_bars_per_row = std::max((int)std::ceil((float)(current_count) / max_n_rows), 1);
+        int ncols = (int)std::ceil((float)current_count / max_bars_per_row);
         int column_index = current_colourbar_index % max_bars_per_row;
         int row_index = current_colourbar_index / max_bars_per_row;
         float scaled_width = width / max_bars_per_row;
