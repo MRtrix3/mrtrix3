@@ -54,19 +54,15 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 # Alternatively, see if merging all of a particular tissue prior to
 #   voxel2mesh could work
 
-ASEG_STRUCTURES = [ ( 4,  4, 'Left-Lateral-Ventricle'),
-                    ( 5,  4, 'Left-Inf-Lat-Vent'),
+ASEG_STRUCTURES = [ ( 5,  4, 'Left-Inf-Lat-Vent'),
                     (14,  4, '3rd-Ventricle'),
                     (15,  4, '4th-Ventricle'),
                     (24,  4, 'CSF'),
                     (25,  5, 'Left-Lesion'),
                     (30,  4, 'Left-vessel'),
-                    (31,  4, 'Left-choroid-plexus'),
-                    (43,  4, 'Right-Lateral-Ventricle'),
                     (44,  4, 'Right-Inf-Lat-Vent'),
                     (57,  5, 'Right-Lesion'),
                     (62,  4, 'Right-vessel'),
-                    (63,  4, 'Right-choroid-plexus'),
                     (72,  4, '5th-Ventricle'),
                     (250, 3, 'Fornix') ]
 
@@ -88,6 +84,12 @@ OTHER_SGM_ASEG = [ (11,  2, 'Left-Caudate'),
                    (51,  2, 'Right-Putamen'),
                    (52,  2, 'Right-Pallidum'),
                    (58,  2, 'Right-Accumbens-area') ]
+
+
+VENTRICLE_CP_ASEG = [ [ ( 4,  4, 'Left-Lateral-Ventricle'),
+                        (31,  4, 'Left-choroid-plexus')     ],
+                      [ (43,  4, 'Right-Lateral-Ventricle'),
+                        (63,  4, 'Right-choroid-plexus')    ] ]
 
 
 CEREBELLUM_ASEG = [ ( 6,  4, 'Left-Cerebellum-Exterior'),
@@ -356,8 +358,7 @@ def execute(): #pylint: disable=unused-variable
     from_aseg.extend(THAL_ASEG)
   if not have_first:
     from_aseg.extend(OTHER_SGM_ASEG)
-
-  progress = app.ProgressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(from_aseg))
+  progress = app.ProgressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(from_aseg) + 2)
   for (index, tissue, name) in from_aseg:
     init_mesh_path = name + '_init.vtk'
     smoothed_mesh_path = name + '.vtk'
@@ -367,6 +368,19 @@ def execute(): #pylint: disable=unused-variable
     run.command('mesh2voxel ' + smoothed_mesh_path + ' ' + template_image + ' ' + name + '.mif')
     app.cleanup(smoothed_mesh_path)
     tissue_images[tissue-1].append(name + '.mif')
+    progress.increment()
+  # Lateral ventricles are separate as we want to combine with choroid plexus prior to mesh conversion
+  for hemi_index, hemi_name in enumerate(['Left', 'Right']):
+    name = hemi_name + '_LatVent_ChorPlex'
+    init_mesh_path = name + '_init.vtk'
+    smoothed_mesh_path = name + '.vtk'
+    run.command('mrcalc ' + ' '.join(aparc_image + ' ' + str(index) + ' -eq' for index, tissue, name in VENTRICLE_CP_ASEG[hemi_index]) + ' -add - | '
+                + 'voxel2mesh - -threshold 0.5 ' + init_mesh_path)
+    run.command('meshfilter ' + init_mesh_path + ' smooth ' + smoothed_mesh_path)
+    app.cleanup(init_mesh_path)
+    run.command('mesh2voxel ' + smoothed_mesh_path + ' ' + template_image + ' ' + name + '.mif')
+    app.cleanup(smoothed_mesh_path)
+    tissue_images[3].append(name + '.mif')
     progress.increment()
   progress.done()
 
