@@ -18,8 +18,6 @@ sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/MRtrix3/macos-insta
 
 ``./install`` will download the latest tarball that was generated using ``build`` and unpack it to /usr/local/mrtrix3. In addition, it will create the appropriate symlinks in /usr/local/bin and /Applications.
 
-``./install -f`` will do the same as ``./install``, but skips user dialogs.
-
 ``./uninstall`` will remove the installation at /usr/local/mrtrix3. In addition, it will remove corresponding symlinks in /usr/local/bin and /Applications.
 
-``./uninstall -f`` will do the same as ``./uninstall``, but skips user dialogs.
+Adding `` -f`` to ``./(un)install`` will skip user dialogs.
