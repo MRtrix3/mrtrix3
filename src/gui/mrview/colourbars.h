@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_colourmap_h__
-#define __gui_mrview_colourmap_h__
+#ifndef __gui_mrview_colourbars_h__
+#define __gui_mrview_colourbars_h__
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
@@ -42,7 +42,7 @@ namespace MR
 
 
 
-      class ColourMapper { NOMEMALIGN
+      class ColourBars { NOMEMALIGN
         public:
 
           enum Position {
@@ -57,7 +57,7 @@ namespace MR
             BottomRight = Bottom | Right
           };
 
-          ColourMapper();
+          ColourBars();
           void begin_render_colourbars (Projection* projection,
               const Position position,
               const size_t ncolourbars) {
@@ -80,9 +80,6 @@ namespace MR
             current_ncolourbars = 0;
             current_colourbar_index = 0;
           }
-
-          static void create_menu (QWidget* parent, QActionGroup*& group,
-              QMenu* menu, QAction** & actions, bool create_shortcuts = false, bool use_special = true);
 
         protected:
           GL::VertexBuffer VB;
