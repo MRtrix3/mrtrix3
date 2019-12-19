@@ -16,7 +16,7 @@
 
 #include "file/config.h"
 #include "gui/opengl/font.h"
-#include "gui/mrview/colourmapper.h"
+#include "gui/mrview/colourbars.h"
 #include "gui/mrview/displayable.h"
 #include "gui/projection.h"
 
@@ -26,50 +26,16 @@ namespace MR
   {
     namespace MRView
     {
-      //CONF option: MRViewMaxNumColourmapRows
+      //CONF option: MRViewMaxNumColourBarRows
       //CONF default: 3
       //CONF The maximal number of rows used to layout a collection of rendered colourbars
       //CONF Note, that all tool-specific colourbars will form a single collection.
-      size_t ColourMapper::max_n_rows = File::Config::get_int ("MRViewMaxNumColourBarRows", 3);
-
-
-
-      void ColourMapper::create_menu (QWidget* parent, QActionGroup*& group,
-          QMenu* menu, QAction** & actions, bool create_shortcuts, bool use_special)
-      {
-        group = new QActionGroup (parent);
-        group->setExclusive (true);
-        actions = new QAction* [ColourMap::num()];
-        bool in_scalar_section = true;
-
-        for (size_t n = 0; ColourMap::maps[n].name; ++n) {
-          if (ColourMap::maps[n].special && !use_special)
-            continue;
-          QAction* action = new QAction (ColourMap::maps[n].name, parent);
-          action->setCheckable (true);
-          group->addAction (action);
-
-          if (ColourMap::maps[n].special && in_scalar_section) {
-            menu->addSeparator();
-            in_scalar_section = false;
-          }
-
-          menu->addAction (action);
-          parent->addAction (action);
-
-          if (create_shortcuts)
-            action->setShortcut (QObject::tr (std::string ("Ctrl+" + str (n+1)).c_str()));
-
-          actions[n] = action;
-        }
-
-        actions[0]->setChecked (true);
-      }
+      size_t ColourBars::max_n_rows = File::Config::get_int ("MRViewMaxNumColourBarRows", 3);
 
 
 
 
-      ColourMapper::ColourMapper () :
+      ColourBars::ColourBars () :
         current_index (0),
         current_inverted (false),
         //CONF option: MRViewColourBarWidth
@@ -90,7 +56,7 @@ namespace MR
         //CONF How far away from the colourbar to place the associated text,
         //CONF in pixels.
         text_offset (MR::File::Config::get_float ("MRViewColourBarTextOffset", 10.0f)),
-        //CONF option: MRViewColourHorizontalPadding
+        //CONF option: MRViewColourBarHorizontalPadding
         //CONF default: 100
         //CONF The width in pixels between horizontally adjacent colour bars.
         colourbar_padding (MR::File::Config::get_float ("MRViewColourBarHorizontalPadding", 100.0f))
@@ -105,7 +71,7 @@ namespace MR
 
 
 
-      void ColourMapper::setup (size_t index, bool inverted)
+      void ColourBars::setup (size_t index, bool inverted)
       {
         program.clear();
         frame_program.clear();
@@ -154,7 +120,7 @@ namespace MR
 
 
 
-      void ColourMapper::render (const Displayable& object, bool inverted)
+      void ColourBars::render (const Displayable& object, bool inverted)
       {
         render (object.colourmap, inverted, object.scaling_min (), object.scaling_max (),
             object.scaling_min (), object.display_range,
@@ -163,7 +129,7 @@ namespace MR
 
 
 
-      void ColourMapper::render (size_t colourmap, bool inverted,
+      void ColourBars::render (size_t colourmap, bool inverted,
           float local_min_value, float local_max_value,
           float global_min_value, float global_range,
           Eigen::Array3f colour)

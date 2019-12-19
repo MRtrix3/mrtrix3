@@ -15,8 +15,9 @@
  */
 
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
+
 #include "gui/dialog/file.h"
-#include "gui/mrview/colourmapper.h"
+#include "gui/mrview/colourmap_menu.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 
 
@@ -53,7 +54,7 @@ namespace MR
           // Colourmap menu:
           colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
 
-          ColourMapper::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
+          MRView::create_colourmap_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
           connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
           colourmap_actions[1]->setChecked (true);
 
