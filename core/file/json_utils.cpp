@@ -163,7 +163,7 @@ namespace MR
               Eigen::VectorXd new_line = pe_scheme.row (row);
               for (ssize_t axis = 0; axis != 3; ++axis) {
                 new_line[axis] = pe_scheme(row, perm[axis]);
-                if (new_line[axis] && flip[axis])
+                if (new_line[axis] && flip[perm[axis]])
                   new_line[axis] = -new_line[axis];
               }
               pe_scheme.row (row) = new_line;
@@ -181,7 +181,7 @@ namespace MR
             const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
             Eigen::Vector3 new_dir;
             for (size_t axis = 0; axis != 3; ++axis)
-              new_dir[axis] = flip[axis] ? -orig_dir[perm[axis]] : orig_dir[perm[axis]];
+              new_dir[axis] = flip[perm[axis]] ? -orig_dir[perm[axis]] : orig_dir[perm[axis]];
             slice_encoding_it->second = Axes::dir2id (new_dir);
             INFO ("Slice encoding direction read from JSON file modified to conform to prior MRtrix3 internal transform realignment of input image");
           } else {
