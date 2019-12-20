@@ -76,9 +76,8 @@ namespace MR
 
       KeyValues read (const nlohmann::json& json, const KeyValues& preexisting)
       {
-        KeyValues result (preexisting);
+        KeyValues result;
         for (auto i = json.cbegin(); i != json.cend(); ++i) {
-
           if (i->is_boolean()) {
             result.insert (std::make_pair (i.key(), i.value() ? "true" : "false"));
           } else if (i->is_number_integer()) {
@@ -90,13 +89,13 @@ namespace MR
             result.insert (std::make_pair (i.key(), s));
           } else if (i->is_array()) {
             size_t num_subarrays = 0;
-            for (const auto j : *i)
+            for (const auto& j : *i)
               if (j.is_array())
                 ++num_subarrays;
             if (num_subarrays == 0) {
               bool all_string = true;
               bool all_numeric = true;
-              for (const auto k : *i) {
+              for (const auto& k : *i) {
                 if (!k.is_string())
                   all_string = false;
                 if (!(k.is_number()))
@@ -104,12 +103,12 @@ namespace MR
               }
               if (all_string) {
                 vector<std::string> lines;
-                for (const auto k : *i)
+                for (const auto& k : *i)
                   lines.push_back (unquote(k));
                 result.insert (std::make_pair (i.key(), join (lines, "\n")));
               } else if (all_numeric) {
                 vector<std::string> line;
-                for (const auto k : *i)
+                for (const auto& k : *i)
                   line.push_back (str(k));
                 result.insert (std::make_pair (i.key(), join (line, ",")));
               } else {
@@ -118,9 +117,9 @@ namespace MR
             }
             else if (num_subarrays == i->size()) {
               vector<std::string> s;
-              for (const auto j : *i) {
+              for (const auto& j : *i) {
                 vector<std::string> line;
-                for (const auto k : j)
+                for (const auto& k : j)
                   line.push_back (unquote(str(k)));
                 s.push_back (join(line, ","));
               }
@@ -128,6 +127,14 @@ namespace MR
             }
             else
               throw Exception ("JSON entry \"" + i.key() + "\" contains mixture of elements and arrays");
+          }
+        }
+        for (const auto& kv : preexisting) {
+          if (kv.first == "comments" && result.find ("comments") != result.end()) {
+            add_line (result["comments"], kv.second);
+          } else {
+            // Will not overwrite existing entries
+            result.insert (kv);
           }
         }
         return result;
