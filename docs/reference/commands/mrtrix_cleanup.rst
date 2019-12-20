@@ -20,7 +20,9 @@ Usage
 Description
 -----------
 
-This script will search the file system for any temporary files or directories that have been left behind by failed or terminated MRtrix3 commands, and attempt to delete them.
+This script will search the file system at the specified location (and in sub-directories thereof) for any temporary files or directories that have been left behind by failed or terminated MRtrix3 commands, and attempt to delete them.
+
+Note that the script's search for temporary items will not extend beyond the user-specified filesystem location. This means that any built-in or user-specified default location for MRtrix3 piped data and scripts will not be automatically searched. Cleanup of such locations should instead be performed explicitly: e.g. "mrtrix_cleanup /tmp/" to remove residual piped images from /tmp/.
 
 This script should not be run while other MRtrix3 commands are being executed: it may delete temporary items during operation that may lead to unexpected behaviour.
 
