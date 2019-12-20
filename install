@@ -46,13 +46,8 @@ if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
   rm -rf "/usr/local/mrtrix3"
 fi
 
-echo "Downloading ..."
-# TODO: Download tarball of latest stable binary release from github instead of hardcoded tarball
-TARBALL="_mrtrix3.tar.gz"
-curl -sL https://github.com/jdtournier/mrtrix3/releases/download/3.0_macos/mrtrix3-macos-3.0_macos.tar.gz -o "$TARBALL"
-
 echo "Installing to /usr/local/mrtrix3 ..."
-tar xf "$TARBALL" -C /usr/local
+curl -sL https://github.com/jdtournier/mrtrix3/releases/download/3.0_macos/mrtrix3-macos-3.0_macos.tar.gz | tar xf - -C /usr/local
 
 echo "Creating symlinks in /usr/local/bin ..."
 cd /usr/local/bin
