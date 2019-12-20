@@ -119,9 +119,9 @@ namespace MR
 
               auto &colourbar_renderer = window().colourbar_renderer;
 
-              colourbar_renderer.begin_render_colourbars (&projection, window().colourbar_position, 1);
+              colourbar_renderer.begin (&projection, window().colourbar_position, 1);
               colourbar_renderer.render (*image(), image()->scale_inverted());
-              colourbar_renderer.end_render_colourbars ();
+              colourbar_renderer.end ();
 
               QList<QAction*> tools = window().tools()->actions();
               size_t num_tool_colourbars = 0;
@@ -132,7 +132,7 @@ namespace MR
               }
 
 
-              colourbar_renderer.begin_render_colourbars (&projection, window().tools_colourbar_position, num_tool_colourbars);
+              colourbar_renderer.begin (&projection, window().tools_colourbar_position, num_tool_colourbars);
 
               for (size_t i = 0, N = tools.size(); i < N; ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
@@ -140,7 +140,7 @@ namespace MR
                   dock->tool->draw_colourbars ();
               }
 
-              colourbar_renderer.end_render_colourbars ();
+              colourbar_renderer.end ();
 
             }
             GL_CHECK_ERROR;
