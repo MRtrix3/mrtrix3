@@ -31,19 +31,18 @@ namespace MR
 
 
 
-    App::App (int& cmdline_argc, char** cmdline_argv)
+    App::App (int& cmdline_argc, char** cmdline_argv) :
+      QApplication (cmdline_argc, cmdline_argv)
     {
       application = this;
       ::MR::File::Config::init ();
       ::MR::GUI::GL::set_default_context ();
 
-      new QApplication (cmdline_argc, cmdline_argv);
-
       QLocale::setDefault(QLocale::c());
       std::locale::global (std::locale::classic());
       std::setlocale (LC_ALL, "C");
 
-      qApp->setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
+      setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
     }
 
 

@@ -25,10 +25,12 @@
 #include "fixel/helpers.h"
 #include "fixel/keys.h"
 #include "fixel/loop.h"
+#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
 
+using Fixel::index_type;
 
 
 void usage ()
@@ -60,7 +62,7 @@ void run ()
   auto in_data_image = Fixel::open_fixel_data_file<float> (argument[0]);
 
   Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
-  auto in_index_image =in_index_header.get_image<uint32_t>();
+  auto in_index_image =in_index_header.get_image<index_type>();
   auto in_directions_image = Fixel::find_directions_header (Fixel::get_fixel_directory (argument[0])).get_image<float>().with_direct_io();
 
   size_t lmax = 8;

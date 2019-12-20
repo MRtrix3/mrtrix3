@@ -212,7 +212,8 @@ def _execute(module): #pylint: disable=unused-variable
       sys.stderr.write(EXEC_NAME + ':\n')
     else:
       sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] Failed ' + ('command' if is_cmd else 'function') + ' did not provide any output information' + ANSI.clear + '\n')
-    sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] For debugging, inspect contents of scratch directory: ' + SCRATCH_DIR + ANSI.clear + '\n')
+    if SCRATCH_DIR:
+      sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] For debugging, inspect contents of scratch directory: ' + SCRATCH_DIR + ANSI.clear + '\n')
     sys.stderr.flush()
   except MRtrixError as exception:
     return_code = 1

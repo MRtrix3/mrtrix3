@@ -113,6 +113,11 @@ References
    NeuroImage 119 (2015), pp. 338-51.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/26163802>`__\ ]
 
+.. [Smith2019a] R.E. Smith, D. Dimond, S. Bray, A. Connelly.
+   *Mitigation of DWI brain cropping in Fixel-Based Analysis.*
+   In Proc OHBM (2019), W765
+   [`full text link <https://www.researchgate.net/publication/332495497_Mitigation_of_DWI_brain_cropping_in_Fixel-Based_Analysis>`__\ ]
+
 .. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B.Vos, M.A. Viergever, and A. Leemans.
    *Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data.*
    NeuroImage, 86 (2014), pp. 67–80.

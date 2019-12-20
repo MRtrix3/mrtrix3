@@ -46,9 +46,11 @@ List of MRtrix3 commands
     commands/fixel2tsf
     commands/fixel2voxel
     commands/fixelcfestats
+    commands/fixelconnectivity
     commands/fixelconvert
     commands/fixelcorrespondence
     commands/fixelcrop
+    commands/fixelfilter
     commands/fixelreorient
     commands/fod2dec
     commands/fod2fixel
@@ -107,8 +109,8 @@ List of MRtrix3 commands
     commands/tckmap
     commands/tckresample
     commands/tcksample
-    commands/tcksift2
     commands/tcksift
+    commands/tcksift2
     commands/tckstats
     commands/tcktransform
     commands/tensor2metric
@@ -169,9 +171,11 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
     |cpp.png|, :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
     |cpp.png|, :ref:`fixelcfestats`, "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing"
+    |cpp.png|, :ref:`fixelconnectivity`, "Generate a fixel-fixel connectivity matrix"
     |cpp.png|, :ref:`fixelconvert`, "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format"
     |cpp.png|, :ref:`fixelcorrespondence`, "Obtain fixel-fixel correpondence between a subject fixel image and a template fixel mask"
     |cpp.png|, :ref:`fixelcrop`, "Crop/remove fixels from sparse fixel image using a binary fixel mask"
+    |cpp.png|, :ref:`fixelfilter`, "Perform filtering operations on fixel-based data"
     |cpp.png|, :ref:`fixelreorient`, "Reorient fixel directions"
     |cpp.png|, :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
     |cpp.png|, :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
@@ -230,8 +234,8 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`tckmap`, "Use track data as a form of contrast for producing a high-resolution image"
     |cpp.png|, :ref:`tckresample`, "Resample each streamline in a track file to a new set of vertices"
     |cpp.png|, :ref:`tcksample`, "Sample values of an associated image along tracks"
-    |cpp.png|, :ref:`tcksift2`, "Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities"
     |cpp.png|, :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
+    |cpp.png|, :ref:`tcksift2`, "Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities"
     |cpp.png|, :ref:`tckstats`, "Calculate statistics on streamlines lengths"
     |cpp.png|, :ref:`tcktransform`, "Apply a spatial transformation to a tracks file"
     |cpp.png|, :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"
