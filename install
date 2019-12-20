@@ -48,11 +48,8 @@ fi
 
 echo "Downloading ..."
 # TODO: Download tarball of latest stable binary release from github instead of hardcoded tarball
-ID="10jzGUyUSoOW6eR3uKGr4E2nj96b2uUh7"
-URL="https://drive.google.com/uc?export=download"
-TARBALL="$(curl -sc /tmp/gcokie "${URL}&id=${ID}" | grep -o '="uc-name.*</span>' | sed 's/.*">//;s/<.a> .*//')"
-getcode="$(awk '/_warning_/ {print $NF}' /tmp/gcokie)"
-curl -sLb /tmp/gcokie "${URL}&confirm=${getcode}&id=${ID}" -o "${TARBALL}"
+TARBALL="_mrtrix3.tar.gz"
+curl -sL https://github.com/jdtournier/mrtrix3/releases/download/3.0_macos/mrtrix3-macos-3.0_macos.tar.gz -o "$TARBALL"
 
 echo "Installing to /usr/local/mrtrix3 ..."
 tar xf "$TARBALL" -C /usr/local
