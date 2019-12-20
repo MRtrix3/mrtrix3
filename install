@@ -50,8 +50,14 @@ for f in /usr/local/bin/*; do
   fi
 done
 
-echo "Installing to /usr/local/mrtrix3 ..."
-curl -sL https://github.com/jdtournier/mrtrix3/releases/download/3.0_macos/mrtrix3-macos-3.0_macos.tar.gz | tar xf - -C /usr/local
+url=$(curl -s https://api.github.com/repos/jdtournier/mrtrix3/releases/latest | sed -En 's|.*browser_download_url.*(https://github.com/.*/mrtrix3-macos-.*.tar.gz).*|\1|p')
+echo "Downloading "${url}" ..."
+curl -sL "${url}" -O
+
+tarball=$(basename "${url}")
+echo "Unpacking "${tarball}" to /usr/local/mrtrix3 ..."
+tar xf "${tarball}" -C /usr/local
+rm "${tarball}"
 
 echo "Creating symlinks in /usr/local/bin ..."
 cd /usr/local/bin
