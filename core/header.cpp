@@ -666,7 +666,7 @@ namespace MR
         Eigen::VectorXd new_line (pe_scheme.row (row));
         for (ssize_t axis = 0; axis != 3; ++axis) {
           new_line[axis] = pe_scheme(row, realign_perm_[axis]);
-          if (new_line[axis] && realign_flip_[axis])
+          if (new_line[axis] && realign_flip_[realign_perm_[axis]])
             new_line[axis] = -new_line[axis];
         }
         pe_scheme.row (row) = new_line;
@@ -682,7 +682,7 @@ namespace MR
       const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
       Eigen::Vector3 new_dir;
       for (size_t axis = 0; axis != 3; ++axis)
-        new_dir[axis] = orig_dir[realign_perm_[axis]] * (realign_flip_[axis] ? -1.0 : 1.0);
+        new_dir[axis] = orig_dir[realign_perm_[axis]] * (realign_flip_[realign_perm_[axis]] ? -1.0 : 1.0);
       slice_encoding_it->second = Axes::dir2id (new_dir);
       INFO ("Slice encoding direction has been modified to conform to MRtrix3 internal header transform realignment");
     }
