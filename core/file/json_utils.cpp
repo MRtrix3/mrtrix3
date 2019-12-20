@@ -309,7 +309,7 @@ namespace MR
           for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
             Eigen::VectorXd new_line = pe_scheme.row (row);
             for (ssize_t axis = 0; axis != 3; ++axis)
-              new_line[order[axis]] = header.stride (order[axis]) > 0 ? pe_scheme(row, axis) : -pe_scheme(row, axis);
+              new_line[axis] = header.stride (order[axis]) > 0 ? pe_scheme(row, order[axis]) : -pe_scheme(row, order[axis]);
             pe_scheme.row (row) = new_line;
           }
           PhaseEncoding::set_scheme (H_adj, pe_scheme);
@@ -320,10 +320,11 @@ namespace MR
           const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
           Eigen::Vector3 new_dir;
           for (size_t axis = 0; axis != 3; ++axis)
-            new_dir[order[axis]] = header.stride (order[axis]) > 0 ? orig_dir[axis] : -orig_dir[axis];
+            new_dir[axis] = header.stride (order[axis]) > 0 ? orig_dir[order[axis]] : -orig_dir[order[axis]];
           slice_encoding_it->second = Axes::dir2id (new_dir);
           INFO ("Slice encoding direction written to JSON file modified according to expected output NIfTI header transform realignment");
         }
+
         write (H_adj.keyval(), json);
       }
 
