@@ -12,7 +12,8 @@ if [ $EUID != 0 ]; then
 fi
 
 if [ ! -d "/usr/local/mrtrix3" ] ; then
-  echo "WARNING: Could not find an existing installation."
+  echo "ERROR: Could not find an existing installation."
+  exit
 fi
 
 if [ "$1" != "-f" ]; then
