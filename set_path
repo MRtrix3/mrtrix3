@@ -60,7 +60,10 @@ module's toplevel folder).
 filename = os.path.expanduser('~')
 sysname = platform.system().lower()
 if sysname == 'darwin':
-  filename = os.path.join(filename, '.bash_profile')
+  if os.getenv('SHELL') == '/bin/zsh':
+    filename = os.path.join(filename, '.zprofile')
+  else:
+    filename = os.path.join(filename, '.bash_profile')
 else:
   filename = os.path.join(filename, '.bashrc')
 

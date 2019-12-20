@@ -15,7 +15,6 @@
  */
 
 #include "gui/mrview/colourmap_button.h"
-#include "gui/mrview/colourmap.h"
 #include "math/rng.h"
 
 

@@ -49,7 +49,7 @@ namespace MR
             rk4 (false),
             stop_on_all_include (false),
             implicit_max_num_seeds (properties.find ("max_num_seeds") == properties.end()),
-            downsampler ()
+            downsampler (1)
 #ifdef DEBUG_TERMINATIONS
           , debug_header (Header::open (properties.find ("act") == properties.end() ? diff_path : properties["act"])),
             transform (debug_header)

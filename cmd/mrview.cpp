@@ -20,6 +20,7 @@
 #include "memory.h"
 #include "gui/mrview/icons.h"
 #include "gui/mrview/window.h"
+#include "gui/mrview/file_open.h"
 #include "gui/mrview/mode/list.h"
 #include "gui/mrview/tool/list.h"
 

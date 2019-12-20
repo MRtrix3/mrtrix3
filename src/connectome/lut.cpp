@@ -130,6 +130,7 @@ LUT::file_format LUT::guess_file_format (const std::string& path)
   size_t line_counter = 0;
   while (std::getline (in_lut, line)) {
     ++line_counter;
+    line = strip (line);
     if (line.size() > 1 && line[0] != '#') {
       // Before splitting by whitespace, need to capture any strings that are
       //   encased within quotation marks
