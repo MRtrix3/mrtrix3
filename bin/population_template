@@ -739,7 +739,7 @@ def execute(): #pylint: disable=unused-variable
     progress = app.ProgressBar('Copying non-linear warps to output directory "' + warp_path + '"')
     for i in inputs:
       run.command('mrconvert ' + os.path.join('warps', '%s.mif' % i.prefix) + ' ' + os.path.join(warp_path, '%s.mif' % i.prefix), \
-                  mrconvert_keyval=path.from_user(os.path.join(input_dir, i.filename)), \
+                  mrconvert_keyval=path.from_user(os.path.join(input_dir, i.filename), False), \
                   force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
@@ -758,7 +758,7 @@ def execute(): #pylint: disable=unused-variable
     progress = app.ProgressBar('Copying transformed images to output directory "' + transformed_path + '"')
     for i in inputs:
       run.command('mrconvert ' + os.path.join('inputs_transformed', '%s.mif' % i.prefix) + ' ' + os.path.join(transformed_path, '%s.mif' % i.prefix), \
-                  mrconvert_keyval=path.from_user(os.path.join(input_dir, i.filename)), \
+                  mrconvert_keyval=path.from_user(os.path.join(input_dir, i.filename), False), \
                   force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
