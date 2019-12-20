@@ -34,8 +34,6 @@
 namespace MR
 {
 
-  extern const App::Option NoRealignOption;
-
   /*! \defgroup ImageAPI Image access
    * \brief Classes and functions providing access to image data.
    *
