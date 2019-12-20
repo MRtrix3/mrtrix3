@@ -34,17 +34,21 @@ if [ -f /usr/local/mrtrix3/symlinks ]; then
   done
 fi
 
-echo "Removing symbolic links to homebrew mrtrix3 binaries ..."  
-for f in /usr/local/bin/*; do
-  if [[ $"(readlink "${f}")" = *"mrtrix3"* ]]; then
-    unlink "${f}";
-  fi
-done
-
 if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
   echo "Removing previous installation in /usr/local/mrtrix3 ..."
   rm -rf "/usr/local/mrtrix3"
 fi
+
+has_warned=0
+for f in /usr/local/bin/*; do
+  if [[ $"(readlink "${f}")" = *"mrtrix3"* ]]; then
+    if [ has_warned == 0 ]; then
+      echo "WARNING: Removing symbolic links to homebrew mrtrix3 binaries ..."
+      has_warned=1
+    fi
+    unlink "${f}"
+  fi
+done
 
 echo "Installing to /usr/local/mrtrix3 ..."
 curl -sL https://github.com/jdtournier/mrtrix3/releases/download/3.0_macos/mrtrix3-macos-3.0_macos.tar.gz | tar xf - -C /usr/local
