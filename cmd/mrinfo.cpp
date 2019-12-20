@@ -85,8 +85,6 @@ void usage ()
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the transformation from image coordinates [mm] to scanner / real world coordinates [mm]")
 
-    + NoRealignOption
-
     + FieldExportOptions
 
     + GradImportOptions

@@ -51,8 +51,6 @@ Options
 
 -  **-transform** the transformation from image coordinates [mm] to scanner / real world coordinates [mm]
 
--  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
-
 Options for exporting image header fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
