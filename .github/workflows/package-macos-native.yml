@@ -21,7 +21,7 @@ jobs:
     - name: Upload package to GitHub Release
       uses: AButler/upload-release-assets@v2.0
       with:
-        files: 'macos-installer/mrtrix3-*.tar.gz'
+        files: 'macos-installer/mrtrix3-macos-*.tar.gz'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
 
 
