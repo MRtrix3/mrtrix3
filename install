@@ -55,14 +55,13 @@ if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
   rm -rf "/usr/local/mrtrix3"
 fi
 
-has_warned=0
-for f in /usr/local/bin/*; do
-  if [[ $"(readlink "${f}")" = *"mrtrix3"* ]]; then
-    if [ has_warned == 0 ]; then
-      echo "WARNING: Removing symbolic links to homebrew mrtrix3 binaries ..."
-      has_warned=1
+for l in /usr/local/bin/*; do
+  if [ -L "${l}" ]; then
+    t="$(readlink "${l}")"
+    if [[ "${t}" == *"mrtrix3"* ]]; then
+      echo "WARNING: Removing symbolic link "${l}" to "${t}" (conflicting homebrew installation?) ..."
+      unlink "${l}"
     fi
-    unlink "${f}"
   fi
 done
 
