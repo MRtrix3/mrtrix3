@@ -25,6 +25,22 @@ if [ "$1" != "-f" ]; then
   done
 fi
 
+url=$(curl -s https://api.github.com/repos/jdtournier/mrtrix3/releases/latest | sed -En 's|.*browser_download_url.*(https://github.com/.*/mrtrix3-macos-.*.tar.gz).*|\1|p')
+
+if [ -z "${url}" ]; then
+  echo "ERROR: Could not find tarball of latest release ..."
+  exit
+fi
+
+echo "Downloading "${url}" ..."
+curl -sL "${url}" -O
+
+tarball=$(basename "${url}")
+if [ ! -f "${tarball}" ]; then
+  echo "ERROR: Download not sucessful ..."
+  exit
+fi
+
 if [ -f /usr/local/mrtrix3/symlinks ]; then
   echo "Removing symbolic links of previous installation ..."
   for l in $(cat /usr/local/mrtrix3/symlinks); do
@@ -50,11 +66,6 @@ for f in /usr/local/bin/*; do
   fi
 done
 
-url=$(curl -s https://api.github.com/repos/jdtournier/mrtrix3/releases/latest | sed -En 's|.*browser_download_url.*(https://github.com/.*/mrtrix3-macos-.*.tar.gz).*|\1|p')
-echo "Downloading "${url}" ..."
-curl -sL "${url}" -O
-
-tarball=$(basename "${url}")
 echo "Unpacking "${tarball}" to /usr/local/mrtrix3 ..."
 tar xf "${tarball}" -C /usr/local
 rm "${tarball}"
