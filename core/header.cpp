@@ -335,12 +335,12 @@ namespace MR
       const bool split_4d_schemes = (parser.ndim() == 1 && template_header.ndim() == 4);
       Eigen::MatrixXd dw_scheme, pe_scheme;
       try {
-        dw_scheme = DWI::get_DW_scheme (template_header);
+        dw_scheme = DWI::parse_DW_scheme (template_header);
       } catch (Exception&) {
         DWI::clear_DW_scheme (H);
       }
       try {
-        pe_scheme = PhaseEncoding::get_scheme (template_header);
+        pe_scheme = PhaseEncoding::parse_scheme (template_header);
       } catch (Exception&) {
         PhaseEncoding::clear_scheme (H);
       }
