@@ -42,7 +42,7 @@ namespace MR
 
     extern const App::OptionGroup nonlinear_options;
 
-
+    enum NonLinearMetricType {NL_Diff, NL_NCC};
     class NonLinear
     { MEMALIGN(NonLinear)
 
