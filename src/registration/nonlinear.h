@@ -29,8 +29,7 @@
 #include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
 #include "registration/metric/demons.h"
-#include "registration/metric/demons_cc.h"
-#include "registration/metric/cc_helper.h"
+#include "registration/metric/demons_lncc.h"
 #include "registration/metric/demons4D.h"
 #include "registration/multi_resolution_lmax.h"
 #include "math/average_space.h"
@@ -59,6 +58,7 @@ namespace MR
           do_reorientation (false),
           fod_lmax (3),
           use_cc (false),
+          cc_extent (3, 3),
           diagnostics_image_prefix ("") {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
@@ -160,16 +160,16 @@ namespace MR
               }
               auto im1_warped = Image<default_type>::scratch (warped_header);
               auto im2_warped = Image<default_type>::scratch (warped_header);
-
-              Image<default_type> im_cca, im_ccc, im_ccb, im_cc1, im_cc2;
-              if (use_cc) {
-                DEBUG ("Initialising CC images");
-                im_cca = Image<default_type>::scratch(warped_header);
-                im_ccb = Image<default_type>::scratch(warped_header);
-                im_ccc = Image<default_type>::scratch(warped_header);
-                im_cc1 = Image<default_type>::scratch(warped_header);
-                im_cc2 = Image<default_type>::scratch(warped_header);
-              }
+//
+//              Image<default_type> im_cca, im_ccc, im_ccb, im_cc1, im_cc2;
+//              if (use_cc) {
+//                DEBUG ("Initialising CC images");
+//                im_cca = Image<default_type>::scratch(warped_header);
+//                im_ccb = Image<default_type>::scratch(warped_header);
+//                im_ccc = Image<default_type>::scratch(warped_header);
+//                im_cc1 = Image<default_type>::scratch(warped_header);
+//                im_cc2 = Image<default_type>::scratch(warped_header);
+//              }
 
               Header field_header (midway_image_header_resized);
               field_header.ndim() = 4;
@@ -267,25 +267,37 @@ namespace MR
                 default_type cost_new = 0.0;
                 size_t voxel_count = 0;
 
-                if (use_cc) {
-                  Metric::cc_precompute (im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, im_cca, im_ccb, im_ccc, im_cc1, im_cc2, cc_extent);
-                  // display<Image<default_type>>(im_cca);
-                  // display<Image<default_type>>(im_ccb);
-                  // display<Image<default_type>>(im_ccc);
-                  // display<Image<default_type>>(im_cc1);
-                  // display<Image<default_type>>(im_cc2);
-                }
+//                if (use_cc) {
+//                  Metric::cc_precompute (im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, im_cca, im_ccb, im_ccc, im_cc1, im_cc2, cc_extent);
+//                  // display<Image<default_type>>(im_cca);
+//                  // display<Image<default_type>>(im_ccb);
+//                  // display<Image<default_type>>(im_ccc);
+//                  // display<Image<default_type>>(im_cc1);
+//                  // display<Image<default_type>>(im_cc2);
+//                }
 
                 if (im1_image.ndim() == 4) {
-                  assert (!use_cc && "TODO");
-                  Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                  if (use_cc) {
+                    ssize_t local_extent = cc_extent[1];
+                    Metric::run_DemonsLNCC_4D (cost_new, voxel_count, local_extent, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, *im1_update_new, *im2_update_new, &stage_contrasts);
+                  } else {
+                    Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
                     cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, &stage_contrasts);
-                  ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
+                    ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
+                  }
                 } else {
                   if (use_cc) {
-                    Metric::DemonsCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
-                      cost_new, voxel_count, im_cc1, im_cc2, im1_mask_warped, im2_mask_warped);
-                    ThreadedLoop (im_cc1, 0, 3).run (metric, im_cc1, im_cc2, im_cca, im_ccb, im_ccc, *im1_update_new, *im2_update_new);
+                    ssize_t local_extent = cc_extent[1];
+                    default_type volume_weight_default = 1.0;
+                    bool flag_combine_updates = false;
+                    if (local_extent > 0) {
+                      Metric::DemonsLNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, local_extent, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, volume_weight_default, flag_combine_updates);
+                      ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, *im1_update_new, *im2_update_new);
+                    } else {
+                      Metric::DemonsGNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, volume_weight_default, flag_combine_updates);
+                          metric.precompute ();
+                      ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, *im1_update_new, *im2_update_new);
+                    }
                   } else {
                     Metric::Demons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
                       cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);

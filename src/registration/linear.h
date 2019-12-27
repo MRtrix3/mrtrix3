@@ -32,6 +32,7 @@
 #include "interp/nearest.h"
 #include "registration/metric/params.h"
 // #include "registration/metric/local_cross_correlation.h"
+// #include "registration/metric/global_cross_correlation.h"
 #include "registration/metric/evaluate.h"
 #include "registration/transform/initialiser.h"
 #include "math/gradient_descent.h"
@@ -65,6 +66,7 @@ namespace MR
         stage_iterations (1),
         gd_max_iter (500),
         scale_factor (1.0),
+        metric (LinearMetricType::Diff),
         optimisers (1, OptimiserAlgoType::bbgd),
         optimiser_default (OptimiserAlgoType::bbgd),
         optimiser_first (OptimiserAlgoType::bbgd),
@@ -75,6 +77,7 @@ namespace MR
       std::string info (const bool& do_reorientation = true) {
         std::string st;
         st = "scale factor " + str(scale_factor, 3);
+        st += ", metric: " + str(linear_metric_choices[metric]);
         if (do_reorientation)
           st += ", lmax " + str(fod_lmax);
         st += ", GD max_iter " + str(gd_max_iter);
@@ -90,6 +93,7 @@ namespace MR
       }
       size_t stage_iterations, gd_max_iter;
       default_type scale_factor;
+      LinearMetricType metric;
       vector<OptimiserAlgoType> optimisers;
       OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
       default_type loop_density;
@@ -105,7 +109,8 @@ namespace MR
 
         Linear () :
           stages (3),
-          kernel_extent (3, 1),
+          kernel_extent (3, 4),
+          grid_spacing (1),
           grad_tolerance (1.0e-6),
           step_tolerance (1.0e-10),
           log_stream (nullptr),
@@ -134,6 +139,11 @@ namespace MR
               throw Exception ("the linear registration scale factor for each multi-resolution level must be between 0 and 1");
             stages[level].scale_factor = scalefactor[level];
           }
+        }
+        
+        void set_metric (const LinearMetricType& type) {
+          for (size_t i = 0; i < stages.size (); ++i)
+            stages[i].metric = type;
         }
 
         // needs to be set before set_stage_iterations is set
@@ -242,10 +252,19 @@ namespace MR
 
         void set_extent (const vector<size_t> extent) {
           for (size_t d = 0; d < extent.size(); ++d) {
-            if (extent[d] < 1)
-              throw Exception ("the neighborhood kernel extent must be at least 1 voxel");
+            if ((int) extent[d] < 0)
+              throw Exception ("the neighborhood kernel extent must be at least 1 voxel for LNCC - or 0 for global NCC");
           }
           kernel_extent = extent;
+        }
+        
+        bool get_lncc_extent_mode () {
+          // returns true when the kernel extent is greater than 0 (requirement for LNCC similarity)
+          if (kernel_extent[1] > 0) {
+            return true;
+          } else {
+            return false;
+          }
         }
 
         void set_init_translation_type (Transform::Init::InitType type) {
@@ -437,6 +456,8 @@ namespace MR
               parameters.loop_density = stage.loop_density;
               if (contrasts.size())
                 parameters.set_mc_settings (stage_contrasts);
+              if (grid_spacing > 1)
+                parameters.set_grid_spacing (grid_spacing);
 
 
               // if (robust_estimate)
@@ -580,6 +601,7 @@ namespace MR
         vector<StageSetting> stages;
         vector<MultiContrastSetting> contrasts, stage_contrasts;
         vector<size_t> kernel_extent;
+        ssize_t grid_spacing;
         default_type grad_tolerance;
         default_type step_tolerance;
         std::streambuf* log_stream;

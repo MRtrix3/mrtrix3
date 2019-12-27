@@ -27,6 +27,7 @@
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/difference_robust.h"
 #include "registration/metric/local_cross_correlation.h"
+#include "registration/metric/global_cross_correlation.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
@@ -431,10 +432,19 @@ void run () {
       default:
         break;
     }
+    rigid_registration.set_metric (rigid_metric);
   }
 
-  if (rigid_metric == Registration::NCC)
-    throw Exception ("TODO: cross correlation metric not yet implemented");
+  opt = get_options ("rigid_extent");
+  if (opt.size ()) {
+    if (!do_rigid)
+      throw Exception ("the rigid lncc kernel extent have been input when no rigid registration is requested");
+    if (rigid_metric != Registration::NCC)
+      throw Exception ("rigid_extent set but cost function is not ncc");
+    vector<int> lncc_radius = parse_ints (opt[0][0]);
+    vector<size_t> extent(3, lncc_radius[0]);
+    rigid_registration.set_extent (extent);
+  }
 
   opt = get_options ("rigid_metric.diff.estimator");
   Registration::LinearRobustMetricEstimatorType rigid_estimator = Registration::None;
@@ -583,10 +593,19 @@ void run () {
       default:
         break;
     }
+    affine_registration.set_metric (affine_metric);
   }
 
-  if (affine_metric == Registration::NCC)
-    throw Exception ("TODO cross correlation metric not yet implemented");
+  opt = get_options ("affine_extent");
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine lncc kernel extent have been input when no affine registration is requested");
+    if (affine_metric != Registration::NCC)
+      throw Exception ("affine_extent set but cost function is not ncc");
+    vector<int> lncc_radius = parse_ints (opt[0][0]);
+    vector<size_t> extent(3, lncc_radius[0]);
+    affine_registration.set_extent (extent);
+  }
 
   opt = get_options ("affine_metric.diff.estimator");
   Registration::LinearRobustMetricEstimatorType affine_estimator = Registration::None;
@@ -771,6 +790,35 @@ void run () {
         throw Exception ("the requested -nl_lmax exceeds the lmax of the input images");
   }
 
+  opt = get_options ("nl_metric");
+  Registration::NonLinearMetricType nl_metric = Registration::NL_Diff;
+  if (opt.size()) {
+    switch ((int)opt[0][0]){
+      case 0:
+        nl_metric = Registration::NL_Diff;
+        break;
+      case 1:
+        nl_metric = Registration::NL_NCC;
+        break;
+      default:
+        break;
+    }
+    if (nl_metric == Registration::NL_NCC){
+      nl_registration.set_metric_cc ();
+    }
+  }
+    
+  opt = get_options ("nl_extent");
+  if (opt.size ()) {
+    if (!do_nonlinear) {
+        throw Exception ("the nonlinear lncc kernel extent have been input when no nonlinear registration is requested");
+      if (nl_metric != Registration::NL_NCC)
+        throw Exception ("nl_extent set but cost function is not ncc");
+      vector<int> lncc_radius = parse_ints (opt[0][0]);
+      vector<size_t> extent(3, lncc_radius[0]);
+      nl_registration.set_extent (extent);
+    }
+  }
 
   // ******  MC options  *******
   // TODO: set tissue specific lmax?
@@ -846,8 +894,18 @@ void run () {
     if (images2.ndim() == 4) {
       if (do_reorientation)
         rigid_registration.set_directions (directions_cartesian);
-      // if (rigid_metric == Registration::NCC) // TODO
-      if (rigid_metric == Registration::Diff) {
+      if (rigid_metric == Registration::NCC) {
+        if (rigid_registration.get_lncc_extent_mode()) {
+          Registration::Metric::LocalCrossCorrelation4D metric;
+          ssize_t spacing = 3;      // TODO: automate selection / spacing for space lncc computation grid
+          rigid_registration.set_grid_spacing (spacing);
+          rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
+        } else {
+          Registration::Metric::GlobalCrossCorrelation4D metric;
+          rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
+        }
+      }
+      else if (rigid_metric == Registration::Diff) {
         if (rigid_estimator == Registration::None) {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
           rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
@@ -867,10 +925,15 @@ void run () {
       } else throw Exception ("FIXME: metric selection");
     } else { // 3D
       if (rigid_metric == Registration::NCC){
-        Registration::Metric::LocalCrossCorrelation metric;
-        vector<size_t> extent(3,3);
-        rigid_registration.set_extent (extent);
-        rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
+        if (rigid_registration.get_lncc_extent_mode()) {
+          Registration::Metric::LocalCrossCorrelation metric;
+          ssize_t spacing = 3;      // TODO: automate selection / spacing for space lncc computation grid
+          rigid_registration.set_grid_spacing (spacing);
+          rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
+        } else {
+          Registration::Metric::GlobalCrossCorrelation metric;
+          rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
+        }
       }
       else if (rigid_metric == Registration::Diff) {
         if (rigid_estimator == Registration::None) {
@@ -915,8 +978,18 @@ void run () {
     if (images2.ndim() == 4) {
       if (do_reorientation)
         affine_registration.set_directions (directions_cartesian);
-      // if (affine_metric == Registration::NCC) // TODO
-      if (affine_metric == Registration::Diff) {
+      if (affine_metric == Registration::NCC) {
+        if (affine_registration.get_lncc_extent_mode()) {
+          Registration::Metric::LocalCrossCorrelation4D metric;
+          ssize_t spacing = 3;      // TODO: automate selection / spacing for space lncc computation grid
+          affine_registration.set_grid_spacing (spacing);
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        } else {
+          Registration::Metric::GlobalCrossCorrelation4D metric;
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        }
+      }
+      else if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
           affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
@@ -936,10 +1009,15 @@ void run () {
       } else throw Exception ("FIXME: metric selection");
     } else { // 3D
       if (affine_metric == Registration::NCC){
-        Registration::Metric::LocalCrossCorrelation metric;
-        vector<size_t> extent(3,3);
-        affine_registration.set_extent (extent);
-        affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        if (affine_registration.get_lncc_extent_mode()) {
+          Registration::Metric::LocalCrossCorrelation metric;
+          ssize_t spacing = 3;      // TODO: automate selection / spacing for space lncc computation grid
+          affine_registration.set_grid_spacing (spacing);
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        } else {
+          Registration::Metric::GlobalCrossCorrelation metric;
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        }
       }
       else if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {

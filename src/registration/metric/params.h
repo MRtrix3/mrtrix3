@@ -77,6 +77,7 @@ namespace MR
                     im1_mask (im1_mask),
                     im2_mask (im2_mask),
                     loop_density (1.0),
+                    grid_spacing (1),
                     control_point_exent (10.0, 10.0, 10.0),
                     robust_estimate_subset (false),
                     robust_estimate_use_score (false) {
@@ -111,6 +112,14 @@ namespace MR
 
             if ((mc_weights.array() == 1.0).all())
               mc_weights = Eigen::Matrix<default_type, Eigen::Dynamic, 1>();
+          }
+          
+          void set_grid_spacing (ssize_t spacing) {
+            grid_spacing = spacing;
+          }
+          
+          ssize_t get_grid_spacing () {
+            return grid_spacing;
           }
 
           Eigen::VectorXd get_weights () const {
@@ -237,6 +246,7 @@ namespace MR
           MR::copy_ptr<Im1MaskInterpolatorType> im1_mask_interp;
           MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
           default_type loop_density;
+          ssize_t grid_spacing;
           Eigen::Vector3 control_point_exent;
 
           bool robust_estimate_subset;

@@ -196,6 +196,7 @@ namespace MR
                 params.set_im2_iterpolator (*im2_image_reoriented);
               }
 
+              metric.precompute (params);     // for global cc - to avoid using processed image for looping
               // estimate (params.transformation, metric, params, overall_cost_function, gradient, x, &overlap_count);
               if (params.loop_density < 1.0) {
                 DEBUG ("stochastic gradient descent, density: " + str(params.loop_density));
