@@ -540,7 +540,7 @@ namespace MR
         
           void set_metric_cc () {
             use_cc = true;
-            cc_extent = vector<size_t>(3, 2);
+            cc_extent = vector<size_t>(3, 3);
           }
         
           void set_extent (const vector<size_t> extent) {

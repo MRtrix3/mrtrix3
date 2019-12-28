@@ -810,14 +810,13 @@ void run () {
     
   opt = get_options ("nl_extent");
   if (opt.size ()) {
-    if (!do_nonlinear) {
+    if (!do_nonlinear)
         throw Exception ("the nonlinear lncc kernel extent have been input when no nonlinear registration is requested");
       if (nl_metric != Registration::NL_NCC)
         throw Exception ("nl_extent set but cost function is not ncc");
       vector<int> lncc_radius = parse_ints (opt[0][0]);
       vector<size_t> extent(3, lncc_radius[0]);
       nl_registration.set_extent (extent);
-    }
   }
 
   // ******  MC options  *******
