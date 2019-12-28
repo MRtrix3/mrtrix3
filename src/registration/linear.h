@@ -55,6 +55,7 @@ namespace MR
     extern const App::OptionGroup affine_options;
     extern const App::OptionGroup fod_options;
     extern const char* optim_algo_names[];
+    extern const char* linear_metric_choices[];
 
     enum LinearMetricType {Diff, NCC};
     enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
@@ -279,6 +280,9 @@ namespace MR
           robust_estimate = use;
         }
 
+        void set_grid_spacing (ssize_t spacing) {
+            grid_spacing = spacing;
+        }
 
         void set_grad_tolerance (const float& tolerance) {
           grad_tolerance = tolerance;

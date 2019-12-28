@@ -529,13 +529,39 @@ namespace MR
             return midway_image_header;
           }
 
-          void metric_cc (int radius) {
-            if (radius < 1)
-              throw Exception ("CC radius needs to be larger than 1");
+//          void metric_cc (int radius) {
+//            if (radius < 1)
+//              throw Exception ("CC radius needs to be larger than 1");
+//            use_cc = true;
+//            INFO("Cross correlation radius: " + str(radius));
+//            cc_extent = vector<size_t>(3, radius * 2 + 1);
+//          }
+//
+        
+          void set_metric_cc () {
             use_cc = true;
-            INFO("Cross correlation radius: " + str(radius));
-            cc_extent = vector<size_t>(3, radius * 2 + 1);
+            cc_extent = vector<size_t>(3, 2);
           }
+        
+          void set_extent (const vector<size_t> extent) {
+            for (size_t d = 0; d < extent.size(); ++d) {
+                if ((int) extent[d] < 0)
+                    throw Exception ("the neighborhood kernel extent must be at least 1 voxel for LNCC - or 0 for global NCC");
+            }
+            use_cc = true;
+            cc_extent = extent;
+          }
+        
+          bool get_lncc_extent_mode () {
+            
+            // returns true when the kernel extent is greater than 0 (requirement for LNCC similarity)
+            if (cc_extent[1] > 0) {
+                return true;
+            } else {
+                return false;
+            }
+          }
+        
 
           void set_diagnostics_image (const std::basic_string<char>& path) {
             diagnostics_image_prefix = path;
@@ -571,10 +597,10 @@ namespace MR
           bool do_reorientation;
           vector<int> fod_lmax;
           bool use_cc;
-          std::basic_string<char> diagnostics_image_prefix;
-
           vector<size_t> cc_extent;
 
+          std::basic_string<char> diagnostics_image_prefix;
+        
           transform_type im1_to_mid_linear;
           transform_type im2_to_mid_linear;
           Header midway_image_header;
