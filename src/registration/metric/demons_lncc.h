@@ -542,7 +542,7 @@ namespace MR
                     mc_sum = mc_sum + mc.weight;
                 }
                 for (const auto & mc : *contrast_settings) {
-                    volume_weights.segment(mc.start,mc.nvols).fill(mc.weight / mc_sum);
+                    volume_weights.segment(mc.start,mc.nvols).fill(mc.weight);
                 }
                 
             } else {
@@ -558,7 +558,7 @@ namespace MR
             
             for (int i=0; i<nvols; i++) {
                 
-                default_type volume_weight = volume_weights[i] / mc_sum;
+                default_type volume_weight = volume_weights[i];
                 bool flag_combine_updates;
                 
                 if (i==0) {
