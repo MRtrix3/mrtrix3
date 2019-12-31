@@ -542,7 +542,7 @@ namespace MR
                     mc_sum = mc_sum + mc.weight;
                 }
                 for (const auto & mc : *contrast_settings) {
-                    volume_weights.segment(mc.start,mc.nvols).fill(mc.weight);
+                    volume_weights.segment(mc.start,mc.nvols).fill(mc.weight / mc_sum);
                 }
                 
             } else {
