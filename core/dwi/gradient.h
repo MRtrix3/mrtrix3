@@ -45,6 +45,8 @@ namespace MR
       {
         if (!grad.rows())
           throw Exception ("no valid diffusion gradient table found");
+        if (grad.cols() < 4)
+          throw Exception ("unexpected diffusion gradient table matrix dimensions");
 
         if (header.ndim() == 4) {
           if (header.size (3) != (int) grad.rows())
