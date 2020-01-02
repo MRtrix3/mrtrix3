@@ -245,7 +245,11 @@ namespace MR
       //   number of vertices, it may be saved in big-endian format, so try flipping everything
       // Actually, should pop up at the first polygon read: number of points in polygon won't be 3 or 4
 
-      verify_data();
+      try {
+        verify_data();
+      } catch(Exception& e) {
+        throw Exception (e, "Error verifying surface data from VTK file \"" + path + "\"");
+      }
     }
 
 
@@ -383,7 +387,11 @@ namespace MR
       if (warn_nonstandard_normals)
         WARN ("File " + Path::basename (path) + " contains non-standard normals, which will be ignored");
 
-      verify_data();
+      try {
+        verify_data();
+      } catch(Exception& e) {
+        throw Exception (e, "Error verifying surface data from STL file \"" + path + "\"");
+      }
     }
 
 
@@ -495,7 +503,11 @@ namespace MR
       if (object.size())
         name = object;
 
-      verify_data();
+      try {
+        verify_data();
+      } catch(Exception& e) {
+        throw Exception (e, "Error verifying surface data from OBJ file \"" + path + "\"");
+      }
     }
 
 
@@ -519,14 +531,14 @@ namespace MR
         auto load_triangles = [&] () {
           const int32_t num_vertices = FreeSurfer::get_BE<int32_t> (in);
           if (num_vertices <= 0)
-            throw Exception ("Error reading FreeSurfer file: Non-positive vertex count");
+            throw Exception ("Error reading FreeSurfer file: Non-positive vertex count (" + str(num_vertices) + ")");
           const int32_t num_polygons = FreeSurfer::get_BE<int32_t> (in);
           if (num_polygons <= 0)
-            throw Exception ("Error reading FreeSurfer file: Non-positive polygon count");
+            throw Exception ("Error reading FreeSurfer file: Non-positive polygon count (" + str(num_polygons) + ")");
           if (num_polygons > 3*num_vertices)
-            throw Exception ("Error reading FreeSurfer file: More polygons than triplets of vertices");
+            throw Exception ("Error reading FreeSurfer file: More polygons (" + str(num_polygons) + ") than triple the number of vertices (" + str(num_vertices) + ")");
           if (num_polygons < num_vertices / 3)
-            throw Exception ("Error reading FreeSurfer file: Not enough polygons to use all vertices");
+            throw Exception ("Error reading FreeSurfer file: Not enough polygons (" + str(num_polygons) + ") to use all vertices (" + str(num_vertices) + ")");
           try {
             vertices.reserve (num_vertices);
             triangles.reserve (num_polygons);
@@ -537,30 +549,33 @@ namespace MR
                              + str(num_vertices) + " vertices, " + str(num_polygons) + " polygons = erroneous?)");
           }
           for (int32_t i = 0; i != num_vertices; ++i) {
-            float temp[3];
+            std::array<float, 3> temp;
             for (size_t axis = 0; axis != 3; ++axis)
               temp[axis] = FreeSurfer::get_BE<float> (in);
+            if (!in.good())
+              throw Exception ("Error reading FreeSurfer file: EOF reached after " + str(vertices.size()) + " of " + str(num_vertices) + " vertices");
             vertices.push_back (Vertex (temp[0], temp[1], temp[2]));
           }
-          if (!in.good())
-            throw Exception ("Error reading FreeSurfer file: EOF reached");
           for (int32_t i = 0; i != num_polygons; ++i) {
             std::array<int32_t, 3> temp;
             for (size_t v = 0; v != 3; ++v)
               temp[v] = FreeSurfer::get_BE<int32_t> (in);
+            if (!in.good())
+              throw Exception ("Error reading FreeSurfer file: EOF reached after " + str(triangles.size()) + " of " + str(num_polygons) + " triangles");
             triangles.push_back (Triangle (temp));
           }
-          if (!in.good())
-            throw Exception ("Error reading FreeSurfer file: EOF reached");
         };
 
         try {
           load_triangles();
         } catch (Exception& e_onecomment) {
+          vertices.clear();
+          triangles.clear();
+          in.clear();
+          in.seekg (first_newline_offset, std::ios_base::beg);
+          std::string second_comment;
+          std::getline (in, second_comment);
           try {
-            in.seekg (first_newline_offset);
-            std::string second_comment;
-            std::getline (in, second_comment);
             load_triangles();
           } catch (Exception& e_twocomments) {
             Exception e ("Unable to read FreeSurfer file \"" + path + "\"");
@@ -595,7 +610,11 @@ namespace MR
         throw Exception ("File " + Path::basename (path) + " is not a FreeSurfer surface file");
       }
 
-      verify_data();
+      try {
+        verify_data();
+      } catch(Exception& e) {
+        throw Exception (e, "Error verifying surface data from FreeSurfer file \"" + path + "\"");
+      }
     }
 
 
@@ -788,5 +807,3 @@ namespace MR
 
   }
 }
-
-
