@@ -32,14 +32,15 @@ REGISTRATION_MODES = ['rigid', 'affine', 'nonlinear', 'rigid_affine', 'rigid_non
 
 AGGREGATION_MODES = ["mean", "median"]
 
-image_ext = 'mif nii mih mgh mgz img hdr'.split()
+IMAGEEXT = 'mif nii mih mgh mgz img hdr'.split()
 
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)')
 
   cmdline.set_synopsis('Generates an unbiased group-average template from a series of images')
   cmdline.add_description('First a template is optimised with linear registration (rigid and/or affine, both by default), then non-linear registration is used to optimise the template further.')
-  cmdline.add_argument("input", nargs='+', metavar=('input_dir', 'template'), help='Pair of an input directory containing all images used to build the template and the output template image. For multi-contrast registration, provide multiple pairs. Example: wm_dir template_wm.mif gm_dir template_gm.mif')
+  cmdline.add_argument("input_dir", nargs='+', help='Input directory containing all images used to build the template')
+  cmdline.add_argument("template", help='Corresponding output template image. For multi-contrast registration, provide multiple paired input_dir and template arguments. Example: WM_dir WM_template.mif GM_dir GM_template.mif')
 
   options = cmdline.add_argument_group('Multi-contrast options')
   options.add_argument('-mc_weight_initial_alignment', help='Weight contribution of each contrast to the initial alignment. Comma separated, default: 1.0')
@@ -507,8 +508,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
   # xcontrast_xsubject_pre_postfix: prefix and postfix of the common part across contrasts and subjects,
   # without image extensions and leading or trailing '_' or '-'
   xcontrast_xsubject_pre_postfix = [str2filename(get_common_postfix(common_prefix)).lstrip('_-'),
-                                    str2filename(get_common_prefix([re.sub('.('+'|'.join(image_ext)+')(.gz)?$', '', pfix).rstrip('_-')
-                                                 for pfix in common_postfix]))]
+                                    str2filename(get_common_prefix([re.sub('.('+'|'.join(IMAGEEXT)+')(.gz)?$', '', pfix).rstrip('_-') for pfix in common_postfix]))]
   if app.VERBOSITY > 1:
     app.console("common_postfix: " + str(common_postfix))
     app.console("common_prefix: " + str(common_prefix))
@@ -595,18 +595,19 @@ def execute(): #pylint: disable=unused-variable
   dononlinear = "nonlinear" in app.ARGS.type
   assert (dorigid + doaffine + dononlinear >= 1), "FIXME: registration type not valid"
 
-  app.ARGS.input = app.ARGS.input
-  n_contrasts = len(app.ARGS.input) // 2
-  if len(app.ARGS.input) != 2 * n_contrasts:
-    raise MRtrixError('expected two arguments per contrast, received %i: %s' % (len(app.ARGS.input), ', '.join(app.ARGS.input)))
+
+  input_output = app.ARGS.input_dir + [app.ARGS.template]
+  n_contrasts = len(input_output) // 2
+  if len(input_output) != 2 * n_contrasts:
+    raise MRtrixError('expected two arguments per contrast, received %i: %s' % (len(input_output), ', '.join(input_output)))
   if n_contrasts > 1:
     app.console('Generating population template using multi-contrast registration')
 
+  # reorder arguments for multi-contrast registration as after command line parsing app.ARGS.input_dir holds all but one argument
   app.ARGS.input_dir = []
   app.ARGS.template = []
-  app.console(str(app.ARGS.input))
   for i_contrast in range(n_contrasts):
-    inargs = (app.ARGS.input[i_contrast*2], app.ARGS.input[i_contrast*2+1])
+    inargs = (input_output[i_contrast*2], input_output[i_contrast*2+1])
     if not os.path.isdir(inargs[0]):
       raise MRtrixError('input directory %s not found' % inargs[0])
     app.ARGS.input_dir.append(relpath(inargs[0]))
