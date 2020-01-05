@@ -981,7 +981,7 @@ def execute(): #pylint: disable=unused-variable
     run.function(os.remove, avh3d)
     run.function(os.remove, avh4d)
   else:
-    run.function(shutil.move, 'average_header.mif', 'average_header_c0.mif')
+    run.function(shutil.move, 'average_header.mif', 'average_header' + cns.suff[0] + '.mif')
 
   cns.templates = ['average_header' + csuff + '.mif' for csuff in cns.suff]
 
@@ -999,8 +999,8 @@ def execute(): #pylint: disable=unused-variable
     if use_masks:
       progress = app.ProgressBar('Reslicing input masks to average header', len(ins))
       for inp in ins:
-        run.command('mrtransform ' + inp.ims_path[cid] + ' ' + inp.msk_transformed +
-                    '-interp nearest -template average_header.mif' +
+        run.command('mrtransform ' + inp.ims_path[cid] + ' ' + inp.msk_transformed + ' ' +
+                    '-interp nearest -template ' + cns.templates[0] + ' ' +
                     datatype_option)
         progress.increment()
       progress.done()
@@ -1016,6 +1016,9 @@ def execute(): #pylint: disable=unused-variable
       for inp in ins:
         with open(os.path.join('linear_transforms_initial', inp.uid + '.txt'), 'w') as fout:
           fout.write('1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n')
+
+    run.function(copy, 'average_header' + cns.suff[0] + '.mif', 'average_header.mif')
+
   else:
     progress = app.ProgressBar('Performing initial rigid registration to template', len(ins))
     mask_option = ''
