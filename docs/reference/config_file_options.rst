@@ -269,6 +269,12 @@ List of MRtrix3 configuration file options
 
      The height of the colourbar in MRView, in pixels.
 
+.. option:: MRViewColourBarHorizontalPadding
+
+    *default: 100*
+
+     The width in pixels between horizontally adjacent colour bars.
+
 .. option:: MRViewColourBarInset
 
     *default: 20*
@@ -295,12 +301,6 @@ List of MRtrix3 configuration file options
     *default: 20*
 
      The width of the colourbar in MRView, in pixels.
-
-.. option:: MRViewColourHorizontalPadding
-
-    *default: 100*
-
-     The width in pixels between horizontally adjacent colour bars.
 
 .. option:: MRViewDefaultTractGeomType
 
@@ -336,7 +336,7 @@ List of MRtrix3 configuration file options
 
      Initial window size of MRView in pixels.
 
-.. option:: MRViewMaxNumColourmapRows
+.. option:: MRViewMaxNumColourBarRows
 
     *default: 3*
 
