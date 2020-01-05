@@ -85,6 +85,7 @@ List of MRtrix3 commands
     commands/mrstats
     commands/mrthreshold
     commands/mrtransform
+    commands/mrtrix_cleanup
     commands/mrview
     commands/mtnormalise
     commands/peaks2amp
@@ -209,6 +210,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrstats`, "Compute images statistics"
     |cpp.png|, :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     |cpp.png|, :ref:`mrtransform`, "Apply spatial transformations to an image"
+    |python.png|, :ref:`mrtrix_cleanup`, "Clean up residual temporary files & scratch directories from MRtrix3 commands"
     |cpp.png|, :ref:`mrview`, "The MRtrix image viewer"
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"

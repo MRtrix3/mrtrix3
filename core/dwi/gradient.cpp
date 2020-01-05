@@ -206,7 +206,7 @@ namespace MR
         const auto opt_fsl = get_options ("fslgrad");
         if (opt_fsl.size()) {
           if (opt_mrtrix.size())
-            throw Exception ("Please provide diffusion gradient table using either -grad or -fslgrad option (not both)");
+            throw Exception ("Diffusion gradient table can be provided using either -grad or -fslgrad option, but NOT both");
           grad = load_bvecs_bvals (header, opt_fsl[0][0], opt_fsl[0][1]);
         }
         if (!opt_mrtrix.size() && !opt_fsl.size())
