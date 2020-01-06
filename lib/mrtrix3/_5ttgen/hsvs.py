@@ -16,8 +16,9 @@
 
 
 import glob, os, re
+from distutils.spawn import find_executable
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, fsl, path, run
+from mrtrix3 import app, fsl, image, path, run
 
 
 
@@ -35,13 +36,17 @@ from mrtrix3 import app, fsl, path, run
 HIPPOCAMPI_CHOICES = [ 'subfields', 'first', 'aseg' ]
 THALAMI_CHOICES = [ 'nuclei', 'first', 'aseg' ]
 
+# Have not had success segmenting the posterior commissure
+# FAST just doesn't run well there, at least with a severely reduced window of data
+# Though it may actually get envelloped within the brain stem, in which case it's not as much of a concern
+ATTEMPT_PC = True
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('hsvs', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), using FreeSurfer and FSL tools')
-  parser.add_argument('input',  help='The input FreeSurfer subject directory')
+  parser.add_argument('input', help='The input FreeSurfer subject directory')
   parser.add_argument('output', help='The output 5TT image')
   parser.add_argument('-template', help='Provide an image that will form the template for the generated 5TT image')
   parser.add_argument('-hippocampi', choices=HIPPOCAMPI_CHOICES, help='Select method to be used for hippocampi (& amygdalae) segmentation; options are: ' + ','.join(HIPPOCAMPI_CHOICES))
@@ -49,10 +54,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter')
 
 
-
-# TODO Merge lateral ventricles and choroid plexus prior to voxel2mesh
-# Alternatively, see if merging all of a particular tissue prior to
-#   voxel2mesh could work
 
 ASEG_STRUCTURES = [ ( 5,  4, 'Left-Inf-Lat-Vent'),
                     (14,  4, '3rd-Ventricle'),
@@ -199,6 +200,17 @@ def execute(): #pylint: disable=unused-variable
     have_first = first_cmd and os.path.isdir(first_atlas_path)
   else:
     app.warn('Environment variable FSLDIR is not set; script will run without FSL components')
+
+  acpc_string = 'anterior ' + ('& posterior commissures' if ATTEMPT_PC else 'commissure')
+  have_acpcdetect = bool(find_executable('acpcdetect')) and 'ARTHOME' in os.environ
+  if have_acpcdetect:
+    if have_fast:
+      app.console('ACPCdetect and FSL FAST will be used for explicit segmentation of ' + acpc_string)
+    else:
+      app.warn('ACPCdetect is installed, but FSL FAST not found; cannot segment ' + acpc_string)
+      have_acpcdetect = False
+  else:
+    app.warn('ACPCdetect not installed; cannot segment ' + acpc_string)
 
   # Need to perform a better search for hippocampal subfield output: names & version numbers may change
   have_hipp_subfields = False
@@ -542,6 +554,77 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(glob.glob('first*'))
     progress.done()
 
+  # Run ACPCdetect, use results to draw spherical ROIs on T1 that will be fed to FSL FAST,
+  #   the WM components of which will then be added to the 5TT
+  if have_acpcdetect:
+    progress = app.ProgressBar('Using ACPCdetect and FAST to segment ' + acpc_string, 5)
+    # ACPCdetect requires input image to be 16-bit
+    # We also want to realign to RAS beforehand so that we can interpret the output voxel locations properly
+    acpcdetect_input_image = 'T1RAS_16b.nii'
+    run.command('mrconvert ' + norm_image + ' -datatype uint16 -stride +1,+2,+3 ' + acpcdetect_input_image)
+    progress.increment()
+    run.command('acpcdetect -i ' + acpcdetect_input_image)
+    progress.increment()
+    # We need the header in order to go from voxel coordinates to scanner coordinates
+    acpcdetect_input_header = image.Header(acpcdetect_input_image)
+    acpcdetect_output_path = os.path.splitext(acpcdetect_input_image)[0] + '_ACPC.txt'
+    app.cleanup(acpcdetect_input_image)
+    with open(acpcdetect_output_path, 'r') as f:
+      acpcdetect_output_data = f.read().splitlines()
+    # Need to scan through the contents of this file,
+    #   isolating the AC and PC locations
+    ac_voxel = pc_voxel = None
+    for index, line in enumerate(acpcdetect_output_data):
+      if 'AC' in line and 'voxel location' in line:
+        ac_voxel = [float(item) for item in acpcdetect_output_data[index+1].strip().split()]
+      elif 'PC' in line and 'voxel location' in line:
+        pc_voxel = [float(item) for item in acpcdetect_output_data[index+1].strip().split()]
+    if not ac_voxel or not pc_voxel:
+      raise MRtrixError('Error parsing text file from "acpcdetect"')
+
+    def voxel2scanner(voxel, header):
+      return [ voxel[0]*header.spacing()[0]*header.transform()[axis][0]
+               + voxel[1]*header.spacing()[1]*header.transform()[axis][1]
+               + voxel[2]*header.spacing()[2]*header.transform()[axis][2]
+               + header.transform()[axis][3]
+               for axis in range(0,3) ]
+
+    ac_scanner = voxel2scanner(ac_voxel, acpcdetect_input_header)
+    pc_scanner = voxel2scanner(pc_voxel, acpcdetect_input_header)
+
+    # Generate the mask image within which FAST will be run
+    # TODO Should FAST be run on a larger image, and then only the window within the sphere mask used?
+    # Alternatively, should FAST be run on a whole-brain image, and then only the
+    #   segments corresponding to cerebellum / AC / PC extracted?
+    # Latter is not ideal in the scenario where a high-resolution template image is used
+    acpc_prefix = 'ACPC' if ATTEMPT_PC else 'AC'
+    acpc_mask_image = acpc_prefix + '_FAST_mask.mif'
+    run.command('mrcalc ' + template_image + ' nan -eq - | '
+                'mredit - ' + acpc_mask_image + ' -scanner '
+                '-sphere ' + ','.join(str(value) for value in ac_scanner) + ' 8 1 '
+                + ('-sphere ' + ','.join(str(value) for value in pc_scanner) + ' 5 1' if ATTEMPT_PC else ''))
+    progress.increment()
+
+    acpc_t1_masked_image = acpc_prefix + '_T1.nii'
+    run.command('mrtransform ' + norm_image + ' -template ' + template_image + ' - | '
+                'mrcalc - ' + acpc_mask_image + ' -mult ' + acpc_t1_masked_image)
+    app.cleanup(acpc_mask_image)
+    progress.increment()
+
+    run.command(fast_cmd + ' -N ' + acpc_t1_masked_image)
+    app.cleanup(acpc_t1_masked_image)
+    progress.increment()
+
+    # Ideally don't want to have to add these manually; instead add all outputs from FAST
+    #   to the 5TT (both cerebellum and AC / PC) in a single go
+    # This should involve grabbing just the WM component of these images
+    # Actually, in retrospect, it may be preferable to do the AC PC segmentation
+    #   earlier on, and simply add them to the list of WM structures
+    acpc_wm_image = acpc_prefix + '.mif'
+    run.command('mrconvert ' + fsl.find_image(acpc_prefix + '_T1_pve_2') + ' ' + acpc_wm_image)
+    tissue_images[2].append(acpc_wm_image)
+    app.cleanup(glob.glob(os.path.splitext(acpc_t1_masked_image)[0] + '*'))
+    progress.done()
 
 
   # If we don't have FAST, do cerebellar segmentation in a comparable way to the cortical GM / WM:
@@ -722,7 +805,8 @@ def execute(): #pylint: disable=unused-variable
     #   to the sub-cortical grey matter component
 
     # Some of these voxels may have existing non-zero tissue components.
-    #   In that case, let's find a multiplier to apply to cerebellum tissues such that the sum does not exceed 1.0
+    # In that case, let's find a multiplier to apply to cerebellum tissues such that the
+    #   sum does not exceed 1.0
     new_tissue_images = [ 'tissue0_fast.mif', 'tissue1_fast.mif', 'tissue2_fast.mif', 'tissue3_fast.mif', 'tissue4_fast.mif' ]
     new_tissue_sum_image = 'tissuesum_01234_fast.mif'
     cerebellum_multiplier_image = 'Cerebellar_multiplier.mif'
