@@ -39,7 +39,7 @@ THALAMI_CHOICES = [ 'nuclei', 'first', 'aseg' ]
 # Have not had success segmenting the posterior commissure
 # FAST just doesn't run well there, at least with a severely reduced window of data
 # Though it may actually get envelloped within the brain stem, in which case it's not as much of a concern
-ATTEMPT_PC = True
+ATTEMPT_PC = False
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
