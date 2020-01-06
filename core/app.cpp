@@ -173,13 +173,17 @@ namespace MR
       }
 
 
-      std::string underline (const std::string& text)
+      std::string underline (const std::string& text, bool ignore_whitespace = false)
       {
+        size_t m (0);
         std::string retval (3*text.size(), '\0');
         for (size_t n = 0; n < text.size(); ++n) {
-          retval[3*n] = '_';
-          retval[3*n+1] = 0x08U;
-          retval[3*n+2] = text[n];
+          if (ignore_whitespace and text[n]==' ')
+            retval[m++] = ' ';
+          else
+            retval[m++] = '_';
+          retval[m++] = 0x08U;
+          retval[m++] = text[n];
         }
         return retval;
       }
@@ -297,12 +301,12 @@ namespace MR
         s = bold (s) + "\n\n     ";
       else
         s += ": ";
-      s += ( format ? underline (NAME) : NAME ) + " [ options ]";
+      s += ( format ? underline (NAME, true) : NAME ) + " [ options ]";
 
       for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
         if (ARGUMENTS[i].flags & Optional)
-          s += "[";
+          s += " [";
         s += std::string(" ") + ARGUMENTS[i].id;
 
         if (ARGUMENTS[i].flags & AllowMultiple) {
@@ -375,7 +379,7 @@ namespace MR
 
     std::string Argument::syntax (int format) const
     {
-      std::string retval = paragraph (( format ? underline (id) : id ), desc, HELP_ARG_INDENT);
+      std::string retval = paragraph (( format ? underline (id, true) : id ), desc, HELP_ARG_INDENT);
       if (format)
         retval += "\n";
       return retval;

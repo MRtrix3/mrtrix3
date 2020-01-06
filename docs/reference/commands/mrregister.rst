@@ -13,10 +13,10 @@ Usage
 
 ::
 
-    mrregister [ options ]  image1 image2
+    mrregister [ options ]  image1 image2[ contrast1 contrast2 ... ]
 
--  *image1*: input image 1 ('moving')
--  *image2*: input image 2 ('template')
+-  *image1 image2*: input image 1 ('moving') and input image 2 ('template')
+-  *contrast1 contrast2*: optional list of additional input images used as additional contrasts. Can be used multiple times. contrastX and imageX must share the same coordinate system. 
 
 Description
 -----------
@@ -32,13 +32,15 @@ Options
 
 -  **-type choice** the registration type. Valid choices are: rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)
 
--  **-transformed image** image1 after registration transformed to the space of image2
+-  **-transformed image**  *(multiple uses permitted)* image1 after registration transformed and regridded to the space of image2. Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.
 
--  **-transformed_midway image1_transformed image2_transformed** image1 and image2 after registration transformed to the midway space
+-  **-transformed_midway image1_transformed image2_transformed**  *(multiple uses permitted)* image1 and image2 after registration transformed and regridded to the midway space. Note that -transformed_midway needs to be repeated for each contrast if multi-contrast registration is used.
 
 -  **-mask1 filename** a mask to define the region of image1 to use for optimisation.
 
 -  **-mask2 filename** a mask to define the region of image2 to use for optimisation.
+
+-  **-nan** use NaN as out of bounds value. (Default: 0.0)
 
 Rigid registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -149,12 +151,19 @@ Non-linear registration options
 
 -  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
+-  **-diagnostics_image path** write intermediate images for diagnostics purposes
+
 FOD registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-directions file** the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)
+-  **-directions file** the directions used for FOD reorientation using apodised point spread functions (Default: 60 directions)
 
--  **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
+-  **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
+
+Multi-contrast options
+^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-mc_weights weights** relative weight of images used for multi-contrast registration. Default: 1.0 (equal weighting)
 
 Data type options
 ^^^^^^^^^^^^^^^^^

@@ -550,10 +550,10 @@ class ProgressBar(object): #pylint: disable=unused-variable
 #   that are common for all scripts, providing a custom help page that is consistent with the
 #   MRtrix3 binaries, and defining functions for exporting the help page for the purpose of
 #   automated self-documentation.
+
 class Parser(argparse.ArgumentParser):
 
   # pylint: disable=protected-access
-
   def __init__(self, *args_in, **kwargs_in):
     global _DEFAULT_COPYRIGHT
     self._author = None
@@ -712,7 +712,7 @@ class Parser(argparse.ArgumentParser):
       trailing_ellipsis = ' ...'
     for arg in self._positionals._group_actions:
       if arg.metavar:
-        argument_list.append(arg.metavar)
+        argument_list.append(' '.join(arg.metavar))
       else:
         argument_list.append(arg.dest)
     return self.prog + ' ' + ' '.join(argument_list) + ' [ options ]' + trailing_ellipsis
@@ -721,8 +721,10 @@ class Parser(argparse.ArgumentParser):
     def bold(text):
       return ''.join( c + chr(0x08) + c for c in text)
 
-    def underline(text):
-      return ''.join( '_' + chr(0x08) + c for c in text)
+    def underline(text, ignore_whitespace = True):
+      if not ignore_whitespace:
+        return ''.join( '_' + chr(0x08) + c for c in text)
+      return ''.join( '_' + chr(0x08) + c if c != ' ' else c for c in text)
 
     wrapper_args = textwrap.TextWrapper(width=80, initial_indent='', subsequent_indent='                     ')
     wrapper_other = textwrap.TextWrapper(width=80, initial_indent='     ', subsequent_indent='     ')
@@ -749,10 +751,7 @@ class Parser(argparse.ArgumentParser):
       usage += ' ' + self._subparsers._group_actions[0].dest + ' ...'
     # Find compulsory input arguments
     for arg in self._positionals._group_actions:
-      if arg.metavar:
-        usage += ' ' + arg.metavar
-      else:
-        usage += ' ' + arg.dest
+      usage += ' ' + arg.dest
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact
@@ -764,7 +763,7 @@ class Parser(argparse.ArgumentParser):
     for arg in self._positionals._group_actions:
       line = '        '
       if arg.metavar:
-        name = arg.metavar
+        name = " ".join(arg.metavar)
       else:
         name = arg.dest
       line += name + ' '*(max(13-len(name), 1)) + arg.help
@@ -1003,7 +1002,7 @@ class Parser(argparse.ArgumentParser):
         name = arg.metavar
       else:
         name = arg.dest
-      text += '-  *' + name + '*: ' + arg.help.replace('|', '\\|') + '\n'
+      text += '-  *' + (' '.join(name) if isinstance(name, tuple) else name)  + '*: ' + arg.help.replace('|', '\\|') + '\n'
     text += '\n'
     if self._description:
       text += 'Description\n'
