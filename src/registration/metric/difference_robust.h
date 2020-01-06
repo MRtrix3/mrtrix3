@@ -19,6 +19,7 @@
 
 #include "math/math.h"
 #include "registration/metric/robust_estimators.h"
+#include "registration/metric/linear_base.h"
 
 namespace MR
 {
@@ -27,8 +28,9 @@ namespace MR
     namespace Metric
     {
       template<class Estimator = L2>
-        class DifferenceRobust { MEMALIGN(DifferenceRobust<Estimator>)
+        class DifferenceRobust : public LinearBase { MEMALIGN(DifferenceRobust<Estimator>)
           public:
+            DifferenceRobust () = delete;
             DifferenceRobust (Estimator est) : estimator(est) {}
 
             template <class Params>
@@ -37,6 +39,8 @@ namespace MR
                                        const Eigen::Vector3 im2_point,
                                        const Eigen::Vector3 midway_point,
                                        Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
+
+                assert (!this->weighted && "FIXME: set_weights not implemented for 3D metric");
 
                 typename Params::Im1ValueType im1_value;
                 typename Params::Im2ValueType im2_value;
@@ -65,8 +69,9 @@ namespace MR
         };
 
       template<class Im1Type, class Im2Type, class Estimator = L2>
-        class DifferenceRobust4D { MEMALIGN(DifferenceRobust4D<Im1Type,Im2Type,Estimator>)
+        class DifferenceRobust4D : public LinearBase { MEMALIGN(DifferenceRobust4D<Im1Type,Im2Type,Estimator>)
           public:
+            DifferenceRobust4D () = delete;
             DifferenceRobust4D (const Im1Type& im1, const Im2Type& im2, const Estimator& est) :
               volumes(im1.size(3)),
               estimator(est) {
@@ -76,6 +81,7 @@ namespace MR
               im2_values.resize(volumes, 1);
               diff_values.resize(volumes, 1);
             };
+
 
           /** requires_initialisation:
           type_trait to distinguish metric types that require a call to init before the operator() is called */
@@ -116,7 +122,9 @@ namespace MR
               const Eigen::Matrix<default_type, 4, 1> jacobian_vec (params.transformation.get_jacobian_vector_wrt_params (midway_point));
               diff_values = im1_values - im2_values;
 
-              Eigen::Matrix<default_type, Eigen::Dynamic, 1> residuals, grads;
+              if (this->weighted)
+                diff_values.array() *= this->mc_weights.array();
+
               estimator (diff_values.template cast<default_type>(), residuals, grads);
 
               Eigen::Matrix<default_type, 1, 3> g;
@@ -133,6 +141,7 @@ namespace MR
           private:
             ssize_t volumes;
             Estimator estimator;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> residuals, grads;
             Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 3> im1_grad;
             Eigen::Matrix<typename Im2Type::value_type, Eigen::Dynamic, 3> im2_grad;
             Eigen::Matrix<typename Im1Type::value_type, Eigen::Dynamic, 1> im1_values, diff_values;

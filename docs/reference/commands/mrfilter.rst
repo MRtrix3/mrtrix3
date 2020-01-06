@@ -22,7 +22,7 @@ Usage
 Description
 -----------
 
-The available filters are: fft, gradient, median, smooth, normalise.
+The available filters are: fft, gradient, median, smooth, normalise, zclean.
 
 Each filter has its own unique set of optional parameters.
 
@@ -69,6 +69,19 @@ Options for smooth filter
 -  **-fwhm mm** apply Gaussian smoothing with the specified full-width half maximum. The FWHM is defined in mm (Default 1 voxel * 2.3548). This can be specified either as a single value to be used for all axes, or as a comma-separated list of the FWHM for each axis.
 
 -  **-extent voxels** specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.
+
+Options for zclean filter
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-zupper num** define high intensity outliers: default: 2.5
+
+-  **-zlower num** define low intensity outliers: default: 2.5
+
+-  **-bridge num** number of voxels to gap to fill holes in mask: default: 4
+
+-  **-maskin image** initial mask that defines the maximum spatial extent and the region from which to smaple the intensity range.
+
+-  **-maskout image** Output a refined mask based on a spatially coherent region with normal intensity range.
 
 Stride options
 ^^^^^^^^^^^^^^
