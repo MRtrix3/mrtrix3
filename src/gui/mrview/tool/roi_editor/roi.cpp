@@ -84,6 +84,8 @@ namespace MR
 
           list_view = new QListView (this);
           list_view->setSelectionMode (QAbstractItemView::SingleSelection);
+          list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+          list_view->setTextElideMode (Qt::ElideLeft);
           list_view->setDragEnabled (true);
           list_view->setDragDropMode (QAbstractItemView::InternalMove);
           list_view->setAcceptDrops (true);
