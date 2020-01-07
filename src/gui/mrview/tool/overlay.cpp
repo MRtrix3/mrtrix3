@@ -103,6 +103,8 @@ namespace MR
 
             image_list_view = new QListView (this);
             image_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
+            image_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+            image_list_view->setTextElideMode (Qt::ElideLeft);
             image_list_view->setDragEnabled (true);
             image_list_view->setDragDropMode (QAbstractItemView::InternalMove);
             image_list_view->setAcceptDrops (true);

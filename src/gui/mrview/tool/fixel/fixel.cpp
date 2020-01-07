@@ -122,6 +122,8 @@ namespace MR
             fixel_list_view = new QListView (this);
             fixel_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
             fixel_list_view->setDragEnabled (true);
+            fixel_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+            fixel_list_view->setTextElideMode (Qt::ElideLeft);
             fixel_list_view->viewport()->setAcceptDrops (true);
             fixel_list_view->setDropIndicatorShown (true);
 

@@ -138,6 +138,8 @@ namespace MR
             tractogram_list_view = new QListView (this);
             tractogram_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
             tractogram_list_view->setDragEnabled (true);
+            tractogram_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+            tractogram_list_view->setTextElideMode (Qt::ElideLeft);
             tractogram_list_view->viewport()->setAcceptDrops (true);
             tractogram_list_view->setDropIndicatorShown (true);
 
