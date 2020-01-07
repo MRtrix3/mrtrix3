@@ -38,7 +38,7 @@
 #define TRACKING_BATCH_SIZE 10
 
 
-#define TCKGEN_HIGHLY_VERBOSE
+//#define TCKGEN_HIGHLY_VERBOSE
 
 
 
@@ -133,7 +133,11 @@ namespace MR
                 item.set_status (GeneratedTrack::status_t::ACCEPTED);
 #ifdef TCKGEN_HIGHLY_VERBOSE
                 std::cerr << "Track accepted\n\n\n";
+#endif
               } else {
+                item.clear();
+                item.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
+#ifdef TCKGEN_HIGHLY_VERBOSE
                 std::cerr << "Track rejected\n\n\n";
 #endif
               }
@@ -163,8 +167,6 @@ namespace MR
                 } else {
 #ifdef TCKGEN_HIGHLY_VERBOSE
                   std::cerr << "iterate() terminated by method() due to: " << termination_descriptions[method_term] << "\n";
-                  if (method_term == EXIT_IMAGE)
-                    std::cerr << "Break here\n";
 #endif
                   return method_term;
                 }
@@ -752,5 +754,3 @@ namespace MR
 }
 
 #endif
-
-
