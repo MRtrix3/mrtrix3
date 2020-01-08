@@ -37,14 +37,18 @@ namespace MR
             "tckgen will keep seeding streamlines until this number of "
             "streamlines have been selected, or the maximum allowed "
             "number of seeds has been exceeded (see -seeds option). "
-            "By default, 5000 streamlines are to be selected. "
+            "By default, " + str(TCKGEN_DEFAULT_NUM_SELECTED_TRACKS) + " "
+            "streamlines are to be selected. "
             "Set to zero to disable, which will result in streamlines "
             "being seeded until the number specified by -seeds has been "
             "reached.")
           + Argument ("number").type_integer (0)
 
       + Option ("step",
-            "set the step size of the algorithm in mm (default is 0.1 x voxelsize; if using RK4, 0.25 x voxelsize; for iFOD2: 0.5 x voxelsize).")
+            "set the step size of the algorithm in mm (defaults: "
+            "for first-order algorithms, " + str(TCKGEN_DEFAULT_STEP_FIRSTORDER, 2) + " x voxelsize; " +
+            "if using RK4, " + str(TCKGEN_DEFAULT_STEP_RK4, 2) + " x voxelsize; "
+            "for iFOD2: " + str(TCKGEN_DEFAULT_STEP_IFOD2, 2) + " x voxelsize).")
           + Argument ("size").type_float (0.0)
 
       + Option ("angle",
@@ -56,12 +60,14 @@ namespace MR
           + Argument ("theta").type_float (0.0)
 
       + Option ("minlength",
-            "set the minimum length of any track in mm "
-            "(default is 5 x voxelsize without ACT, 2 x voxelsize with ACT).")
+            "set the minimum length of any track in mm (defaults: "
+            "without ACT, " + str(TCKGEN_DEFAULT_MINLENGTH_VOXELS_NOACT, 2) + " x voxelsize; " +
+            "with ACT, " + str(TCKGEN_DEFAULT_MINLENGTH_VOXELS_WITHACT, 2) + " x voxelsize).")
           + Argument ("value").type_float (0.0)
 
       + Option ("maxlength",
-            "set the maximum length of any track in mm (default is 100 x voxelsize).")
+            "set the maximum length of any track in mm "
+            "(default: " + str(TCKGEN_DEFAULT_MAXLENGTH_VOXELS, 2) + " x voxelsize).")
           + Argument ("value").type_float (0.0)
 
       + Option ("cutoff",
