@@ -501,6 +501,13 @@ List of MRtrix3 configuration file options
      The default colour to use for objects (i.e. SH glyphs) when not
      colouring by direction.
 
+.. option:: RealignTransform
+
+    *default: 1 (true)*
+
+     A boolean value to indicate whether all images should be realigned
+     to an approximately axial orientation at load.
+
 .. option:: RegAnalyseDescent
 
     *default: 0 (false)*
