@@ -188,10 +188,12 @@ namespace MR
           if (downsampler.get_ratio() > 1)
             properties["output_step_size"] = str (step_size * downsampler.get_ratio());
 
-          max_dist = 100.0f * vox();
+          max_dist = TCKGEN_DEFAULT_MAXLENGTH_VOXELS * vox();
           properties.set (max_dist, "max_dist");
 
-          min_dist = is_act() ? (2.0f * vox()) : (5.0f * vox());
+          min_dist = is_act() ?
+                     (TCKGEN_DEFAULT_MINLENGTH_VOXELS_WITHACT * vox()) :
+                     (TCKGEN_DEFAULT_MINLENGTH_VOXELS_NOACT * vox());
           properties.set (min_dist, "min_dist");
 
           max_angle_1o = angle;
