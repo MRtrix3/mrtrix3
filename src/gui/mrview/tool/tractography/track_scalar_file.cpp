@@ -204,13 +204,16 @@ namespace MR
 
             assert (tractogram->intensity_scalar_filename.length());
             intensity_file_button->setText (shorten (Path::basename (tractogram->intensity_scalar_filename), 35, 0).c_str());
+            intensity_file_button->setToolTip (tractogram->intensity_scalar_filename.c_str());
 
           } else {
             colour_groupbox->setVisible (false);
+            intensity_file_button->setToolTip (tr ("Open (track) scalar file for colouring streamlines"));
           }
 
           threshold_file_combobox->removeItem (3);
           threshold_file_combobox->blockSignals (true);
+          threshold_file_combobox->setToolTip (QString());
           switch (tractogram->get_threshold_type()) {
             case TrackThresholdType::None:
               threshold_file_combobox->setCurrentIndex (0);
@@ -221,6 +224,7 @@ namespace MR
             case TrackThresholdType::SeparateFile:
               assert (tractogram->threshold_scalar_filename.length());
               threshold_file_combobox->addItem (shorten (Path::basename (tractogram->threshold_scalar_filename), 35, 0).c_str());
+              threshold_file_combobox->setToolTip (tractogram->threshold_scalar_filename.c_str());
               threshold_file_combobox->setCurrentIndex (3);
               break;
           }
