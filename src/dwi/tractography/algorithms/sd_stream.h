@@ -53,7 +53,7 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
                               rk4);
           dot_threshold = std::cos (max_angle_1o);
           set_num_points();
-          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD * (is_act() ? TCKGEN_CUTOFF_ACT_MULTIPLIER : 1.0));
 
           properties["method"] = "SDStream";
 

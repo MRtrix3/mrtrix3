@@ -66,10 +66,11 @@ namespace MR
 
       + Option ("cutoff",
             "set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks "
-            "(defaults are: " +
+            "(defaults: " +
             str(TCKGEN_DEFAULT_CUTOFF_FOD, 2) + " for FOD-based algorithms; " +
             str(TCKGEN_DEFAULT_CUTOFF_FIXEL, 2) + " for fixel-based algorithms; " +
-            str(TCKGEN_DEFAULT_CUTOFF_FA, 2) + " for tensor-based algorithms).")
+            str(TCKGEN_DEFAULT_CUTOFF_FA, 2) + " for tensor-based algorithms; " +
+            "threshold multiplied by " + str(TCKGEN_CUTOFF_ACT_MULTIPLIER) + " when using ACT).")
           + Argument ("value").type_float (0.0)
 
       + Option ("trials",

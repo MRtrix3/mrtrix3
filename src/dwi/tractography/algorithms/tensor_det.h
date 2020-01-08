@@ -59,7 +59,7 @@ namespace MR
                               TCKGEN_DEFAULT_ANGLE_DETERMINISTIC,
                               rk4);
           set_num_points();
-          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FA);
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FA * (is_act() ? TCKGEN_CUTOFF_ACT_MULTIPLIER : 1.0));
 
           properties["method"] = "TensorDet";
 

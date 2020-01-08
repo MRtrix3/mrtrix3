@@ -54,7 +54,7 @@ namespace MR
 
           set_step_and_angle (TCKGEN_DEFAULT_STEP_FIRSTORDER, TCKGEN_DEFAULT_ANGLE_DETERMINISTIC, false);
           set_num_points();
-          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FIXEL);
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FIXEL * (is_act() ? TCKGEN_CUTOFF_ACT_MULTIPLIER : 1.0));
           dot_threshold = std::cos (max_angle_1o);
 
           properties["method"] = "FACT";
