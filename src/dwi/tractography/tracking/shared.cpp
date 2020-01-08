@@ -130,6 +130,7 @@ namespace MR
           INFO ("Total number of track terminations: " + str (sum_terminations));
           INFO ("Termination reason probabilities:");
           for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
+            std::string term_type;
             bool to_print;
             switch (i) {
               case CONTINUE:             term_type = "Unknown";                       to_print = false;    break;

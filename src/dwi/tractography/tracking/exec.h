@@ -387,7 +387,7 @@ namespace MR
                         std::cerr << "(" << recursion_depth << ", " << tck.size() << "): Streamline terminated due to: " << termination_descriptions[functor_termination] << "\n";
 #endif
                       }
-                    } else if (tck.size() >= S.max_num_points) {
+                    } else if (tck.size() >= S.max_num_points_preds) {
 #ifdef TCKGEN_HIGHLY_VERBOSE
                       std::cerr << "(" << recursion_depth << ", " << tck.size() << "): Track terminated due to reaching maximum length\n";
 #endif
@@ -545,11 +545,12 @@ namespace MR
                     break;
 
                   case CALIBRATOR: case MODEL: case HIGH_CURVATURE:
-                    if (method.act().sgm_depth)
+                    if (method.act().sgm_depth) {
                       termination = TERM_IN_SGM;
                       tck.set_status (GeneratedTrack::status_t::UNDEFINED);
-                    } else if (!method.act().in_pathology())
+                    } else if (!method.act().in_pathology()) {
                       tck.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
+                    }
                     break;
 
                 }

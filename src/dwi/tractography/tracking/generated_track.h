@@ -75,7 +75,7 @@ namespace MR
             {
               stream << str(tck.size()) << " vertices, seed index " << str(tck.seed_index) << ", status ";
               switch (tck.status) {
-                case status_t::INVALID:        stream << "INVALID"; break;
+                case status_t::UNDEFINED:      stream << "UNDEFINED"; break;
                 case status_t::SEED_REJECTED:  stream << "SEED_REJECTED"; break;
                 case status_t::TRACK_REJECTED: stream << "TRACK_REJECTED"; break;
                 case status_t::ACCEPTED:       stream << "ACCEPTED"; break;
