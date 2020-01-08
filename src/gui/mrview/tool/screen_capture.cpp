@@ -441,6 +441,7 @@ namespace MR
           if (!path.size()) return;
           directory->setPath (path);
           folder_button->setText (shorten (path.toUtf8().constData(), 20, 0).c_str());
+          folder_button->setToolTip (path);
           on_output_update ();
         }
 
