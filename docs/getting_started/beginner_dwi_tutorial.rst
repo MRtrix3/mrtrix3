@@ -1,6 +1,8 @@
 Beginner DWI tutorial
 =====================
 
+.. WARNING:: This tutorial is not intended to show the optimal or even recommended way of processing. It is merely a simplified example, intended to familiarise the user with the typical command line interface of certain basic processing steps.
+
 This tutorial will hopefully provide enough information for a novice
 user to get from the raw DW image data to performing some streamlines
 tractography. It may also be useful for experienced MRtrix users in
@@ -22,9 +24,9 @@ current-induced distortions and inter-volume subject motion. Procedures
 for this correct are not yet implemented in *MRtrix3*, though we do provide
 a script for interfacing with the relevant FSL tools:
 
-``dwipreproc <Input DWI series> <Output corrected DWI series> [options]``
+``dwifslpreproc <Input DWI series> <Output corrected DWI series> [options]``
 
-For more details, see the :ref:`dwipreproc` help file. In
+For more details, see the :ref:`dwifslpreproc` help file. In
 particular, it is necessary to manually specify what type of reversed
 phase-encoding acquisition has taken place (if any), and potentially
 provide additional relevant input images or provide details of the
@@ -54,7 +56,7 @@ Response function estimation
 To perform spherical deconvolution, the DWI signal emanating from a
 single coherently-oriented fibre bundle must be estimated. We provide a
 script for doing this, which has :ref:`a range of algorithms and
-parameters <response_fn_estimation>`. This example will use
+parameters <response_function_estimation>`. This example will use
 fairly sensible defaults:
 
 .. code::

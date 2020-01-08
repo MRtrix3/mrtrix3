@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_algorithms_nulldist_h__
 #define __dwi_tractography_algorithms_nulldist_h__
@@ -41,11 +43,13 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set)
         {
-          set_step_size (0.1);
-          sin_max_angle = std::sin (max_angle);
+          set_step_size (rk4 ? 0.5f : 0.1f, rk4);
+          set_num_points();
+          set_cutoff (0.0f);
+          sin_max_angle_1o = std::sin (max_angle_1o);
           properties["method"] = "Nulldist1";
         }
-        float sin_max_angle;
+        float sin_max_angle_1o;
       };
 
       NullDist1 (const Shared& shared) :
@@ -54,14 +58,14 @@ namespace MR
         source (S.source) { }
 
 
-      bool init() {
+      bool init() override {
         if (!get_data (source))
           return false;
         dir = S.init_dir.allFinite() ? S.init_dir : random_direction();
         return true;
       }
 
-      term_t next () {
+      term_t next () override {
         if (!get_data (source))
           return EXIT_IMAGE;
         dir = rand_dir (dir);
@@ -70,14 +74,14 @@ namespace MR
         return CONTINUE;
       }
 
-      float get_metric() { return uniform(*rng); }
+      float get_metric() override { return uniform(*rng); }
 
 
       protected:
       const Shared& S;
       Interpolator<Image<float>>::type source;
 
-      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle_1o, S.sin_max_angle_1o)); }
 
     };
 
@@ -89,6 +93,7 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           iFOD2::Shared (diff_path, property_set)
         {
+          set_cutoff (0.0f);
           properties["method"] = "Nulldist2";
         }
       };
@@ -109,7 +114,7 @@ namespace MR
         tangents (S.num_samples),
         sample_idx (S.num_samples) { }
 
-      bool init() {
+      bool init() override {
         if (!get_data (source))
           return false;
         dir = S.init_dir.allFinite() ? S.init_dir : random_direction();
@@ -117,7 +122,7 @@ namespace MR
         return true;
       }
 
-      term_t next () {
+      term_t next () override {
 
         if (++sample_idx < S.num_samples) {
           pos = positions[sample_idx];
@@ -143,13 +148,13 @@ namespace MR
         MethodBase::reverse_track();
       }
 
-      void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
+      void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step) override
       {
         iFOD2::truncate_track (tck, length_to_revert_from, revert_step);
         sample_idx = S.num_samples;
       }
 
-      float get_metric() { return uniform(*rng); }
+      float get_metric() override { return uniform(*rng); }
 
 
       protected:

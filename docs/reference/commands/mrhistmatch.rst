@@ -6,15 +6,16 @@ mrhistmatch
 Synopsis
 --------
 
-Modify the intensities of one image to match the histogram of another via a non-linear transform
+Modify the intensities of one image to match the histogram of another
 
 Usage
 --------
 
 ::
 
-    mrhistmatch [ options ]  input target output
+    mrhistmatch [ options ]  type input target output
 
+-  *type*: type of histogram matching to perform; options are: scale,linear,nonlinear
 -  *input*: the input image to be modified
 -  *target*: the input image from which to derive the target histogram
 -  *output*: the output image
@@ -22,11 +23,15 @@ Usage
 Options
 -------
 
+Image masking options
+^^^^^^^^^^^^^^^^^^^^^
+
 -  **-mask_input image** only generate input histogram based on a specified binary mask image
 
 -  **-mask_target image** only generate target histogram based on a specified binary mask image
 
--  **-cdfs path** output the histogram CDFs to a text file (for debugging).
+Non-linear histogram matching options
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-bins num** the number of bins to use to generate the histograms
 
@@ -35,13 +40,15 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -56,17 +63,20 @@ References
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 

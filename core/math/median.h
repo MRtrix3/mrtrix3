@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __math_median_h__
 #define __math_median_h__
@@ -19,6 +21,7 @@
 #include <limits>
 
 #include "types.h"
+#include "app.h"
 
 
 namespace MR
@@ -105,18 +108,18 @@ namespace MR
         }
         dist[i] = sdist;
         if (denum == 0.0 or std::isnan(denum)){
-          WARN( "Couldn't compute geometric median!" );
+          WARN ("Could not compute geometric median!" );
           break;
         }
 
         median = s1 / denum;
         if (i > 3){
-          convergence=(std::abs(dist[i]-dist[i-2])<precision);
+          convergence=(abs(dist[i]-dist[i-2])<precision);
         }
         ++i;
       }
       if (i == numIter)
-        WARN( "Weiszfeld's median algorithm did not converge after "+str(numIter)+" iterations");
+        WARN ("Weiszfeld's median algorithm did not converge after "+str(numIter)+" iterations");
       // std::cerr << str(dist) << std::endl;
       return convergence;
     }

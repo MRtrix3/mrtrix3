@@ -1,20 +1,23 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
+
 #include "gui/dialog/file.h"
-#include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourmap_menu.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 
 
@@ -51,7 +54,7 @@ namespace MR
           // Colourmap menu:
           colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
 
-          ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
+          MRView::create_colourmap_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
           connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
           colourmap_actions[1]->setChecked (true);
 

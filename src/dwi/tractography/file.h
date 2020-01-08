@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_file_h__
 #define __dwi_tractography_file_h__
@@ -50,8 +52,8 @@ namespace MR
           virtual bool operator() (Streamline<ValueType>&) = 0;
           virtual ~ReaderInterface() { }
       };
-      
-      
+
+
       template <class ValueType>
       class WriterInterface
       { NOMEMALIGN
@@ -73,11 +75,8 @@ namespace MR
             current_index (0) {
               open (file, "tracks", properties);
               auto opt = App::get_options ("tck_weights_in");
-              if (opt.size()) {
-                weights_file.reset (new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in));
-                if (!weights_file->good())
-                  throw Exception ("Unable to open streamlines weights file " + str(opt[0][0]));
-              }
+              if (opt.size())
+                weights = load_vector<ValueType> (opt[0][0]);
             }
 
 
@@ -104,11 +103,13 @@ namespace MR
                 if (std::isnan (p[0])) {
                   tck.index = current_index++;
 
-                  if (weights_file) {
+                  if (weights.size()) {
 
-                    (*weights_file) >> tck.weight;
-                    if (weights_file->fail()) {
-                      WARN ("Streamline weights file contains less entries than .tck file; only read " + str(current_index-1) + " streamlines");
+                    if (tck.index < size_t(weights.size())) {
+                      tck.weight = weights[tck.index];
+                    } else {
+                      WARN ("Streamline weights file contains less entries (" + str(weights.size()) + ") than .tck file; "
+                            "ceasing reading of streamline data");
                       in.close();
                       tck.clear();
                       return false;
@@ -135,15 +136,15 @@ namespace MR
           using __ReaderBase__::dtype;
 
           uint64_t current_index;
-          std::unique_ptr<std::ifstream> weights_file;
+          Eigen::Matrix<ValueType, Eigen::Dynamic, 1> weights;
 
           //! takes care of byte ordering issues
 
             Eigen::Matrix<ValueType,3,1> get_next_point ()
-            { 
+            {
               using namespace ByteOrder;
               switch (dtype()) {
-                case DataType::Float32LE: 
+                case DataType::Float32LE:
                   {
                     float p[3];
                     in.read ((char*) p, sizeof (p));
@@ -177,12 +178,11 @@ namespace MR
           //! Check that the weights file does not contain excess entries
           void check_excess_weights()
           {
-            if (!weights_file)
+            if (!weights.size())
               return;
-            float temp;
-            (*weights_file) >> temp;
-            if (!weights_file->fail())
-              WARN ("Streamline weights file contains more entries than .tck file");
+            if (size_t(weights.size()) > current_index) {
+              WARN ("Streamline weights file contains more entries (" + str(weights.size()) + ") than .tck file (" + str(current_index) + ")");
+            }
           }
 
           Reader (const Reader&) = delete;
@@ -238,6 +238,7 @@ namespace MR
 
             const_cast<Properties&> (properties).set_timestamp();
             const_cast<Properties&> (properties).set_version_info();
+            const_cast<Properties&> (properties).update_command_history();
 
             create (out, properties, "tracks");
             barrier_addr = out.tellp();
@@ -256,20 +257,20 @@ namespace MR
 
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {
-            if (tck.size()) {
-              // allocate buffer on the stack for performance:
-              NON_POD_VLA (buffer, vector_type, tck.size()+2);
-              for (size_t n = 0; n < tck.size(); ++n)
-                format_point (tck[n], buffer[n]);
-              format_point (delimiter(), buffer[tck.size()]);
-
-              commit (buffer, tck.size()+1);
-
-              if (weights_name.size()) 
-                write_weights (str(tck.weight) + "\n");
-
-              ++count;
+            // allocate buffer on the stack for performance:
+            NON_POD_VLA (buffer, vector_type, tck.size()+2);
+            for (size_t n = 0; n < tck.size(); ++n) {
+              assert (tck[n].allFinite());
+              format_point (tck[n], buffer[n]);
             }
+            format_point (delimiter(), buffer[tck.size()]);
+
+            commit (buffer, tck.size()+1);
+
+            if (weights_name.size())
+              write_weights (str(tck.weight) + "\n");
+
+            ++count;
             ++total_count;
             return true;
           }
@@ -280,7 +281,7 @@ namespace MR
             if (weights_name.size())
               throw Exception ("Cannot change output streamline weights file path");
             weights_name = path;
-            App::check_overwrite (name);
+            App::check_overwrite (weights_name);
             File::OFStream out (weights_name, std::ios::out | std::ios::binary | std::ios::trunc);
           }
 
@@ -296,7 +297,7 @@ namespace MR
           //! perform per-point byte-swapping if required
           void format_point (const vector_type& src, vector_type& dest) {
             using namespace ByteOrder;
-            if (dtype.is_little_endian()) 
+            if (dtype.is_little_endian())
               dest = { LE(src[0]), LE(src[1]), LE(src[2]) };
             else
               dest = { BE(src[0]), BE(src[1]), BE(src[2]) };
@@ -352,7 +353,7 @@ namespace MR
        * It also helps reduce file fragmentation when multiple processes write
        * to file concurrently. The size of the write-back buffer defaults to
        * 16MB, and can be set in the config file using the
-       * TrackWriterBufferSize field (in bytes). 
+       * TrackWriterBufferSize field (in bytes).
        * */
       template <typename ValueType = float>
         class Writer : public WriterUnbuffered<ValueType>
@@ -376,9 +377,9 @@ namespace MR
           //CONF The size of the write-back buffer (in bytes) to use when
           //CONF writing track files. MRtrix will store the output tracks in a
           //CONF relatively large buffer to limit the number of write() calls,
-          //CONF avoid associated issues such as file fragmentation. 
+          //CONF avoid associated issues such as file fragmentation.
           Writer (const std::string& file, const Properties& properties, size_t default_buffer_capacity = 16777216) :
-            WriterUnbuffered<ValueType> (file, properties), 
+            WriterUnbuffered<ValueType> (file, properties),
             buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (vector_type)),
             buffer (new vector_type [buffer_capacity]),
             buffer_size (0) { }
@@ -392,19 +393,19 @@ namespace MR
 
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {
-            if (tck.size()) {
-              if (buffer_size + tck.size() + 2 > buffer_capacity)
-                commit ();
+            if (buffer_size + tck.size() + 2 > buffer_capacity)
+              commit ();
 
-              for (const auto& i : tck)
-                add_point (i);
-              add_point (delimiter());
-
-              if (weights_name.size())
-                weights_buffer += str (tck.weight) + ' ';
-
-              ++count;
+            for (const auto& i : tck) {
+              assert (i.allFinite());
+              add_point (i);
             }
+            add_point (delimiter());
+
+            if (weights_name.size())
+              weights_buffer += str (tck.weight) + ' ';
+
+            ++count;
             ++total_count;
             return true;
           }
@@ -416,7 +417,7 @@ namespace MR
           size_t buffer_size;
           std::string weights_buffer;
 
-          //! add point to buffer and increment buffer_size accordingly 
+          //! add point to buffer and increment buffer_size accordingly
           void add_point (const vector_type& p) {
             format_point (p, buffer[buffer_size++]);
           }

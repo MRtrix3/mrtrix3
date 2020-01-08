@@ -34,11 +34,28 @@ By default, this produces all relevant metrics for the direction set provided. I
 
 Metrics are produced assuming a unipolar or bipolar electrostatic repulsion model, producing the potential energy (total, mean, min & max), and the nearest-neighbour angles (mean, min & max). The condition number is also produced for the spherical harmonic fits up to the highest harmonic order supported by the number of volumes. Finally, the norm of the mean direction vector is provided as a measure of the overall symmetry of the direction set (important with respect to eddy-current resilience).
 
-Specific metrics can also be queried independently via the "-output" option, using these shorthands: U/B for unipolar/bipolar model, E/N for energy and nearest-neighbour respectively, t/-/+ for total/min/max respectively (mean implied otherwise); SHn for condition number of SH fit at order n (with n an even integer); ASYM for asymmetry index (norm of mean direction vector); and N for the number of directions. For example:
+Specific metrics can also be queried independently via the "-output" option, using these shorthands: U/B for unipolar/bipolar model, E/N for energy and nearest-neighbour respectively, t/-/+ for total/min/max respectively (mean implied otherwise); SHn for condition number of SH fit at order n (with n an even integer); ASYM for asymmetry index (norm of mean direction vector); N for the number of directions.
 
--output BN,BN-,BN+   requests the mean, min and max nearest-neighour angles assuming a bipolar model.
+Example usages
+--------------
 
--output UE,SH8,SYM   requests the mean unipolar electrostatic energy, condition number of SH fit at order 8, and the asymmetry index.
+-   *Default usage*::
+
+        $ dirstat directions.txt
+
+    This provides a pretty-printed list of all metrics available.
+
+-   *Write a single metric of interest to standard output*::
+
+        $ dirstat grad.b -shell 3000 -output SH8
+
+    requests the condition number of SH fit of b=3000 shell directions at SH order 8
+
+-   *Write multiple metrics of interest to standard output*::
+
+        $ dirstat dwi.mif -output BN,BN-,BN+
+
+    requests the mean, min and max nearest-neighour angles assuming a bipolar model.
 
 Options
 -------
@@ -48,7 +65,7 @@ Options
 DW shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-shells list** specify one or more diffusion-weighted gradient shells to use during processing, as a comma-separated list of the desired approximate b-values. Note that some commands are incompatible with multiple shells, and will throw an error if more than one b-value is provided.
+-  **-shells b-values** specify one or more b-values to use during processing, as a comma-separated list of the desired approximate b-values (b-values are clustered to allow for small deviations). Note that some commands are incompatible with multiple b-values, and will report an error if more than one b-value is provided. WARNING: note that, even though the b=0 volumes are never referred to as shells in the literature, they still have to be explicitly included in the list of b-values as provided to the -shell option! Several algorithms which include the b=0 volumes in their computations may otherwise return an undesired result.
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -64,13 +81,15 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -82,15 +101,18 @@ Standard options
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2017 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/.
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 

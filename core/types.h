@@ -1,30 +1,44 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
 
-
-#include <stdint.h>
+#include <cinttypes>
 #include <complex>
+#include <cstddef>
+#include <deque>
+#include <map>
+#include <memory>
 #include <iostream>
 #include <vector>
-#include <deque>
-#include <cstddef>
-#include <memory>
+
 
 #define NOMEMALIGN
+
+#ifdef _WIN32
+#  ifdef _WIN64
+#    define PRI_SIZET PRIu64
+#  else
+#    define PRI_SIZET PRIu32
+#  endif
+#else
+#  define PRI_SIZET "zu"
+#endif
+
 
 namespace MR {
 
@@ -220,6 +234,10 @@ namespace MR
   using transform_type = Eigen::Transform<default_type, 3, Eigen::AffineCompact>;
 
 
+  //! used in various places for storing key-value pairs
+  using KeyValues = std::map<std::string, std::string>;
+
+
   //! check whether type is complex:
   template <class ValueType> struct is_complex : std::false_type { NOMEMALIGN };
   template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type { NOMEMALIGN };
@@ -245,7 +263,7 @@ namespace MR
         vector() { }
     };
 
-  
+
   template <typename X, int N=(alignof(X)>::MR::malloc_align)>
     class deque : public ::std::deque<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
       public:
@@ -271,17 +289,18 @@ namespace MR
       return std::unique_ptr<X> (new X (std::forward<Args> (args)...));
     }
 
+
+  // required to allow use of abs() call on unsigned integers in template
+  // functions, etc, since the standard labels such calls ill-formed:
+  // http://en.cppreference.com/w/cpp/numeric/math/abs
+  template <typename X>
+    inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && std::is_unsigned<X>::value,X>::type abs (X x) { return x; }
+  template <typename X>
+    inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && !std::is_unsigned<X>::value,X>::type abs (X x) { return std::abs(x); }
 }
 
 namespace std
 {
-  // these are not defined in the standard, but are needed
-  // for use in generic templates
-  FORCE_INLINE uint8_t abs (uint8_t x) { return x; }
-  FORCE_INLINE uint16_t abs (uint16_t x) { return x; }
-  FORCE_INLINE uint32_t abs (uint32_t x) { return x; }
-  FORCE_INLINE uint64_t abs (uint64_t x) { return x; }
-
 
   template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
   {

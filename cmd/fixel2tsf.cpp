@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -19,6 +21,7 @@
 #include "image.h"
 #include "fixel/helpers.h"
 #include "fixel/keys.h"
+#include "fixel/types.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
@@ -29,6 +32,8 @@
 
 using namespace MR;
 using namespace App;
+
+using Fixel::index_type;
 
 
 #define DEFAULT_ANGULAR_THRESHOLD 45.0
@@ -70,7 +75,7 @@ void run ()
                      "therefore the input fixel data file must have dimension Nx1x1");
 
   Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
-  auto in_index_image = in_index_header.get_image<uint32_t>();
+  auto in_index_image = in_index_header.get_image<index_type>();
   auto in_directions_image = Fixel::find_directions_header (Fixel::get_fixel_directory (argument[0])).get_image<float>().with_direct_io();
 
   DWI::Tractography::Properties properties;
@@ -98,7 +103,7 @@ void run ()
   while (reader (tck)) {
     SetVoxelDir dixels;
     mapper (tck, dixels);
-    vector<float> scalars (tck.size(), 0.0);
+    vector<float> scalars (tck.size(), 0.0f);
     for (size_t p = 0; p < tck.size(); ++p) {
       voxel_pos = transform.scanner2voxel * tck[p].cast<default_type> ();
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
@@ -106,17 +111,17 @@ void run ()
           assign_pos_of (*d).to (in_index_image);
           Eigen::Vector3f dir = d->get_dir().cast<float>();
           dir.normalize();
-          float largest_dp = 0.0;
+          float largest_dp = 0.0f;
           int32_t closest_fixel_index = -1;
 
           in_index_image.index(3) = 0;
-          uint32_t num_fixels_in_voxel = in_index_image.value();
+          index_type num_fixels_in_voxel = in_index_image.value();
           in_index_image.index(3) = 1;
-          uint32_t offset = in_index_image.value();
+          index_type offset = in_index_image.value();
 
           for (size_t fixel = 0; fixel < num_fixels_in_voxel; ++fixel) {
             in_directions_image.index(0) = offset + fixel;
-            float dp = std::abs (dir.dot (Eigen::Vector3f (in_directions_image.row(1))));
+            const float dp = abs (dir.dot (Eigen::Vector3f (in_directions_image.row(1))));
             if (dp > largest_dp) {
               largest_dp = dp;
               closest_fixel_index = fixel;
@@ -124,9 +129,13 @@ void run ()
           }
           if (largest_dp > angular_threshold_dp) {
             in_data_image.index(0) = offset + closest_fixel_index;
-            scalars[p] = in_data_image.value();
+            const float value = in_data_image.value();
+            if (std::isfinite (value))
+              scalars[p] = in_data_image.value();
+            else
+              scalars[p] = 0.0f;
           } else {
-            scalars[p] = 0.0;
+            scalars[p] = 0.0f;
           }
           break;
         }

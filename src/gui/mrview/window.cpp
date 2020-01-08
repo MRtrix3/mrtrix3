@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "app.h"
 #include "timer.h"
@@ -231,15 +233,15 @@ namespace MR
         orient (),
         field_of_view (100.0),
         anatomical_plane (2),
-        colourbar_position (ColourMap::Position::BottomRight),
-        tools_colourbar_position (ColourMap::Position::TopRight),
+        colourbar_position (ColourBars::Position::BottomRight),
+        tools_colourbar_position (ColourBars::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
         tool_has_focus (nullptr),
         best_FPS (NAN),
         show_FPS (false),
         current_option (0) {
           main = this;
-          GUI::App::set_main_window (this);
+          GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
 
           setDockOptions (AllowTabbedDocks | VerticalTabs);
@@ -352,6 +354,19 @@ namespace MR
           prev_slice_action->setShortcut (tr ("Down"));
           addAction (prev_slice_action);
 
+          image_menu->addSeparator();
+
+          //CONF option: MRViewWrapVolumes
+          //CONF default: false
+          //CONF Wrap volumes around when cycling through
+          wrap_volumes_action = image_menu->addAction (tr ("Wrap volumes"), this, SLOT (wrap_volumes_slot()));
+          wrap_volumes_action->setShortcut (tr ("w"));
+          wrap_volumes_action->setCheckable (true);
+          wrap_volumes_action->setChecked (File::Config::get_bool("MRViewWrapVolumes",false));
+          addAction (wrap_volumes_action);
+
+          image_menu->addSeparator();
+
           next_image_volume_action = image_menu->addAction (tr ("Next volume"), this, SLOT (image_next_volume_slot()));
           next_image_volume_action->setShortcut (tr ("Right"));
           addAction (next_image_volume_action);
@@ -363,6 +378,8 @@ namespace MR
           goto_image_volume_action = image_menu->addAction (tr ("Go to volume..."), this, SLOT (image_goto_volume_slot()));
           goto_image_volume_action->setShortcut (tr ("g"));
           addAction (goto_image_volume_action);
+
+          image_menu->addSeparator();
 
           next_image_volume_group_action = image_menu->addAction (tr ("Next volume group"), this, SLOT (image_next_volume_group_slot()));
           next_image_volume_group_action->setShortcut (tr ("Shift+Right"));
@@ -717,6 +734,9 @@ namespace MR
 
       void Window::parse_arguments ()
       {
+        if (MR::App::get_options ("norealign").size())
+          Header::do_not_realign_transform = true;
+
         if (MR::App::argument.size()) {
           if (MR::App::option.size())  {
             // check that first non-standard option appears after last argument:
@@ -754,18 +774,18 @@ namespace MR
 
 
 
-      ColourMap::Position Window::parse_colourmap_position_str (const std::string& position_str) {
+      ColourBars::Position Window::parse_colourmap_position_str (const std::string& position_str) {
 
-        ColourMap::Position pos(ColourMap::Position::None);
+        ColourBars::Position pos(ColourBars::Position::None);
 
         if(position_str == "bottomleft")
-          pos = ColourMap::Position::BottomLeft;
+          pos = ColourBars::Position::BottomLeft;
         else if(position_str == "bottomright")
-          pos = ColourMap::Position::BottomRight;
+          pos = ColourBars::Position::BottomRight;
         else if(position_str == "topleft")
-          pos = ColourMap::Position::TopLeft;
+          pos = ColourBars::Position::TopLeft;
         else if(position_str == "topright")
-          pos = ColourMap::Position::TopRight;
+          pos = ColourBars::Position::TopRight;
 
         return pos;
       }
@@ -832,6 +852,10 @@ namespace MR
 
       void Window::add_images (vector<std::unique_ptr<MR::Header>>& list)
       {
+        if (list.empty())
+          return;
+
+        QList<QAction*> new_actions;
         for (size_t i = 0; i < list.size(); ++i) {
           const std::string name = list[i]->name(); // Gets move-constructed out
           QAction* action = new Image (std::move (*list[i]));
@@ -840,12 +864,32 @@ namespace MR
           action->setCheckable (true);
           action->setToolTip (name.c_str());
           action->setStatusTip (name.c_str());
-          image_group->addAction (action);
-          image_menu->addAction (action);
           connect (action, SIGNAL(scalingChanged()), this, SLOT(on_scaling_changed()));
-
-          if (!i) image_select_slot (action);
+          new_actions.push_back (action);
         }
+
+        QList<QAction*> previous_actions = image_group->actions();
+        previous_actions.push_back (nullptr);
+        QAction* selected = image_group->checkedAction();
+        for (auto* action : image_group->actions()) {
+          image_group->removeAction (action);
+          image_menu->removeAction (action);
+        }
+
+        for (auto* action : previous_actions) {
+          if (action) {
+            image_group->addAction (action);
+            image_menu->addAction (action);
+          }
+          if (action == selected) {
+            for (auto* added : new_actions) {
+              image_group->addAction (added);
+              image_menu->addAction (added);
+            }
+          }
+        }
+
+        image_select_slot (new_actions[0]);
         set_image_menu();
       }
 
@@ -1037,6 +1081,15 @@ namespace MR
 
 
 
+
+      void Window::wrap_volumes_slot ()
+      {
+        set_image_navigation_menu();
+      }
+
+
+
+
       void Window::updateGL ()
       {
         glarea->update();
@@ -1051,12 +1104,8 @@ namespace MR
 
       void Window::image_reset_slot ()
       {
-        Image* imagep = image();
-        if (imagep) {
-          imagep->reset_windowing (anatomical_plane, snap_to_image_action->isChecked());
-          on_scaling_changed();
-          glarea->update();
-        }
+        if (image())
+          mode->reset_windowing ();
       }
 
 
@@ -1136,6 +1185,24 @@ namespace MR
       }
 
 
+      void Window::set_image_volume (size_t axis, ssize_t index)
+      {
+        assert (image());
+        assert (axis < image()->image.ndim());
+        if (index < 0)
+          index = wrap_volumes_action->isChecked() ? index+image()->image.size(axis) : 0;
+        else if (index >= image()->image.size(axis))
+          index = wrap_volumes_action->isChecked() ? index-image()->image.size(axis) : image()->image.size(axis)-1;
+        image()->image.index (axis) = index;
+        set_image_navigation_menu();
+        if (axis >= 3)
+          emit volumeChanged ();
+        updateGL();
+      }
+
+
+
+
       void Window::set_image_visibility (bool flag) {
         image_hide_action->setChecked(! flag);
         mode->set_visible(flag);
@@ -1191,9 +1258,8 @@ namespace MR
 
       void Window::image_next_volume_slot ()
       {
-        size_t vol = image()->image.index(3)+1;
+        ssize_t vol = image()->image.index(3)+1;
         set_image_volume (3, vol);
-        emit volumeChanged(vol);
       }
 
 
@@ -1201,9 +1267,8 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        size_t vol = image()->image.index(3)-1;
+        ssize_t vol = image()->image.index(3)-1;
         set_image_volume (3, vol);
-        emit volumeChanged(vol);
       }
 
 
@@ -1212,12 +1277,10 @@ namespace MR
         size_t maxvol = image()->image.size(3) - 1;
         auto label = std::string ("volume (0...") + str(maxvol) + std::string (")");
         bool ok;
-        size_t vol = QInputDialog::getInt (this, tr("Go to..."),
+        ssize_t vol = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(3), 0, maxvol, 1, &ok);
-        if (ok) {
+        if (ok)
           set_image_volume (3, vol);
-          emit volumeChanged(vol);
-        }
       }
 
       void Window::image_goto_volume_group_slot ()
@@ -1225,20 +1288,17 @@ namespace MR
         size_t maxvolgroup = image()->image.size(4) - 1;
         auto label = std::string ("volume group (0...") + str(maxvolgroup) + std::string (")");
         bool ok;
-        size_t grp = QInputDialog::getInt (this, tr("Go to..."),
+        ssize_t grp = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(4), 0, maxvolgroup, 1, &ok);
-        if (ok) {
+        if (ok)
           set_image_volume (4, grp);
-          emit volumeGroupChanged(grp);
-        }
       }
 
 
       void Window::image_next_volume_group_slot ()
       {
-        size_t vol = image()->image.index(4)+1;
+        ssize_t vol = image()->image.index(4)+1;
         set_image_volume (4, vol);
-        emit volumeGroupChanged(vol);
       }
 
 
@@ -1246,9 +1306,8 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        size_t vol = image()->image.index(4)-1;
+        ssize_t vol = image()->image.index(4)-1;
         set_image_volume (4, vol);
-        emit volumeGroupChanged(vol);
       }
 
 
@@ -1393,18 +1452,28 @@ namespace MR
           if (imagep->image.ndim() > 3) {
             if (imagep->image.size(3) > 1)
               show_goto_volume = true;
-            if (imagep->image.index(3) > 0)
-              show_prev_volume = true;
-            if (imagep->image.index(3) < imagep->image.size(3)-1)
-              show_next_volume = true;
+            if (wrap_volumes_action->isChecked()) {
+              show_prev_volume = show_next_volume = true;
+            }
+            else {
+              if (imagep->image.index(3) > 0)
+                show_prev_volume = true;
+              if (imagep->image.index(3) < imagep->image.size(3)-1)
+                show_next_volume = true;
+            }
 
             if (imagep->image.ndim() > 4) {
               if (imagep->image.size(4) > 1)
                 show_goto_volume_group = true;
-              if (imagep->image.index(4) > 0)
-                show_prev_volume_group = true;
-              if (imagep->image.index(4) < imagep->image.size(4)-1)
-                show_next_volume_group = true;
+              if (wrap_volumes_action->isChecked()) {
+                show_prev_volume_group = show_next_volume_group = true;
+              }
+              else {
+                if (imagep->image.index(4) > 0)
+                  show_prev_volume_group = true;
+                if (imagep->image.index(4) < imagep->image.size(4)-1)
+                  show_next_volume_group = true;
+              }
             }
           }
         }
@@ -1457,7 +1526,7 @@ namespace MR
 
       void Window::paintGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
@@ -1466,9 +1535,9 @@ namespace MR
 
         GL_CHECK_ERROR;
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         mode->paintGL();
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
 
         if (show_FPS) {
@@ -1509,13 +1578,13 @@ namespace MR
         glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 
       void Window::initGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL::init ();
 
         font.initGL();
@@ -1528,7 +1597,7 @@ namespace MR
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 
@@ -1638,6 +1707,7 @@ namespace MR
           default: return;
         }
         event->accept();
+        glarea->update();
       }
 
 
@@ -1792,9 +1862,11 @@ namespace MR
           }
 
           if (opt.opt->is ("size")) {
-            vector<int> glsize = opt[0];
+            vector<int> glsize = parse_ints (opt[0]);
             if (glsize.size() != 2)
-              throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
+              throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
+            if (glsize[0] < 1 || glsize[1] < 1)
+              throw Exception ("values provided to -size option must be positive");
             QSize oldsize = glarea->size();
             QSize winsize = size();
             resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
@@ -1829,6 +1901,17 @@ namespace MR
               }
             }
             glarea->update();
+            return;
+          }
+
+          if (opt.opt->is ("target")) {
+            if (image()) {
+              vector<default_type> pos = parse_floats (opt[0]);
+              if (pos.size() != 3)
+                throw Exception ("-target option expects a comma-separated list of 3 floating-point values");
+              set_target (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              glarea->update();
+            }
             return;
           }
 
@@ -1915,6 +1998,7 @@ namespace MR
               throw Exception ("-interpolation option expects a boolean");
             }
             image_interpolate_slot();
+            return;
           }
 
           if (opt.opt->is ("intensity_range")) {
@@ -2046,6 +2130,10 @@ namespace MR
               "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
           +   Argument ("x,y,z or boolean")
 
+          + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
+              "that will appear at the centre of the viewing window")
+          +   Argument ("x,y,z").type_sequence_float()
+
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
               "relative the image currently displayed. The new position should be supplied "
               "as a comma-separated list of floating-point values.").allow_multiple()
@@ -2090,7 +2178,7 @@ namespace MR
           +   Argument ("boolean").type_bool ()
 
           + Option ("intensity_range", "Set the image intensity range to that specified.").allow_multiple()
-          +   Argument ("min,max").type_sequence_int()
+          +   Argument ("min,max").type_sequence_float()
 
           + OptionGroup ("Window management options")
 

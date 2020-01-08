@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/gui.h"
 #include "command.h"
@@ -18,6 +20,7 @@
 #include "memory.h"
 #include "gui/mrview/icons.h"
 #include "gui/mrview/window.h"
+#include "gui/mrview/file_open.h"
 #include "gui/mrview/mode/list.h"
 #include "gui/mrview/tool/list.h"
 
@@ -27,7 +30,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = 
+  AUTHOR =
     "J-Donald Tournier (jdtournier@gmail.com), "
     "Dave Raffelt (david.raffelt@florey.edu.au), "
     "Robert E. Smith (robert.smith@florey.edu.au), "
@@ -35,28 +38,28 @@ void usage ()
     "Max Pietsch (maximilian.pietsch@kcl.ac.uk), "
     "Thijs Dhollander (thijs.dhollander@gmail.com)";
 
-  SYNOPSIS = "The MRtrix image viewer.";
+  SYNOPSIS = "The MRtrix image viewer";
 
   DESCRIPTION
   + "Any images listed as arguments will be loaded and available through the "
     "image menu, with the first listed displayed initially. Any subsequent "
     "command-line options will be processed as if the corresponding action had "
     "been performed through the GUI."
-    
+
   + "Note that because images loaded as arguments (i.e. simply listed on the "
     "command-line) are opened before the GUI is shown, subsequent actions to be "
     "performed via the various command-line options must appear after the last "
     "argument. This is to avoid confusion about which option will apply to which "
     "image. If you need fine control over this, please use the -load or -select_image "
     "options. For example:"
-    
+
   + "$ mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0"
-  
+
   + "or"
-  
+
   + "$ mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0";
 
-  REFERENCES 
+  REFERENCES
     + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "MRtrix: Diffusion tractography in crossing fiber regions. "
     "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";

@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <map>
 #include <string>
@@ -20,6 +22,7 @@
 #include "phase_encoding.h"
 #include "types.h"
 #include "file/json.h"
+#include "file/json_utils.h"
 #include "dwi/gradient.h"
 
 
@@ -71,15 +74,16 @@ void usage ()
 
   OPTIONS
     +   Option ("all", "print all properties, rather than the first and last 2 of each.")
+    +   Option ("name", "print the file system path of the image")
     +   Option ("format", "image file format")
     +   Option ("ndim", "number of image dimensions")
     +   Option ("size", "image size along each axis")
     +   Option ("spacing", "voxel spacing along each image dimension")
     +   Option ("datatype", "data type used for image data storage")
-    +   Option ("stride", "data strides i.e. order and direction of axes data layout")
+    +   Option ("strides", "data strides i.e. order and direction of axes data layout")
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
-    +   Option ("transform", "the voxel to image transformation")
+    +   Option ("transform", "the transformation from image coordinates [mm] to scanner / real world coordinates [mm]")
 
     + NoRealignOption
 
@@ -95,8 +99,8 @@ void usage ()
     + GradExportOptions
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
           "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
-    +   Option ("shellvalues", "list the average b-value of each shell")
-    +   Option ("shellcounts", "list the number of volumes in each shell")
+    +   Option ("shell_bvalues", "list the average b-value of each shell")
+    +   Option ("shell_sizes", "list the number of volumes in each shell")
 
     + PhaseEncoding::ExportOptions
     + Option ("petable", "print the phase encoding table");
@@ -141,15 +145,15 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_shells (const Header& header, const bool shellvalues, const bool shellcounts)
+void print_shells (const Header& header, const bool shell_bvalues, const bool shell_sizes)
 {
   DWI::Shells dwshells (DWI::parse_DW_scheme (header));
-  if (shellvalues) {
+  if (shell_bvalues) {
     for (size_t i = 0; i < dwshells.count(); i++)
       std::cout << dwshells[i].get_mean() << " ";
     std::cout << "\n";
   }
-  if (shellcounts) {
+  if (shell_sizes) {
     for (size_t i = 0; i < dwshells.count(); i++)
       std::cout << dwshells[i].count() << " ";
     std::cout << "\n";
@@ -189,39 +193,6 @@ void print_properties (const Header& header, const std::string& key, const size_
   }
 }
 
-template <class JSON>
-void keyval2json (const Header& header, JSON& json)
-{
-  for (const auto& kv : header.keyval()) {
-    // Text entries that in fact contain matrix / vector data will be
-    //   converted to numerical matrices / vectors and written as such
-    try {
-      const auto M = parse_matrix (kv.second);
-      if (M.rows() == 1 && M.cols() == 1)
-        throw Exception ("Single scalar value rather than a matrix");
-      for (ssize_t row = 0; row != M.rows(); ++row) {
-        vector<default_type> data (M.cols());
-        for (ssize_t i = 0; i != M.cols(); ++i)
-          data[i] = M (row, i);
-        if (json.find (kv.first) == json.end())
-          json[kv.first] = { data };
-        else
-          json[kv.first].push_back (data);
-      }
-    } catch (...) {
-      if (json.find (kv.first) == json.end()) {
-        json[kv.first] = kv.second;
-      } else if (json[kv.first] != kv.second) {
-        // If the value for this key differs between images, turn the JSON entry into an array
-        if (json[kv.first].is_array())
-          json[kv.first].push_back (kv.second);
-        else
-          json[kv.first] = { json[kv.first], kv.second };
-      }
-    }
-  }
-}
-
 void header2json (const Header& header, nlohmann::json& json)
 {
   // Capture _all_ header fields, not just the optional key-value pairs
@@ -236,7 +207,7 @@ void header2json (const Header& header, nlohmann::json& json)
   json["spacing"] = spacing;
   vector<ssize_t> strides (Stride::get (header));
   Stride::symbolise (strides);
-  json["stride"] = strides;
+  json["strides"] = strides;
   json["format"] = header.format();
   json["datatype"] = header.datatype().specifier();
   json["intensity_offset"] = header.intensity_offset();
@@ -247,7 +218,7 @@ void header2json (const Header& header, nlohmann::json& json)
                         { T(2,0), T(2,1), T(2,2), T(2,3) },
                         {    0.0,    0.0,    0.0,    1.0 } };
   // Load key-value entries into a nested keyval.* member
-  keyval2json (header, json["keyval"]);
+  File::JSON::write (header, json["keyval"], false);
 }
 
 
@@ -270,48 +241,53 @@ void run ()
   std::unique_ptr<nlohmann::json> json_keyval (get_options ("json_keyval").size() ? new nlohmann::json : nullptr);
   std::unique_ptr<nlohmann::json> json_all    (get_options ("json_all").size() ? new nlohmann::json : nullptr);
 
+  if (json_all && argument.size() > 1)
+    throw Exception ("Cannot use -json_all option with multiple input images");
+
   if (get_options ("norealign").size())
     Header::do_not_realign_transform = true;
 
-  const bool format      = get_options("format")        .size();
-  const bool ndim        = get_options("ndim")          .size();
-  const bool size        = get_options("size")          .size();
-  const bool spacing     = get_options("spacing")       .size();
-  const bool datatype    = get_options("datatype")      .size();
-  const bool stride      = get_options("stride")        .size();
-  const bool offset      = get_options("offset")        .size();
-  const bool multiplier  = get_options("multiplier")    .size();
-  const auto properties  = get_options("property");
-  const bool transform   = get_options("transform")     .size();
-  const bool dwgrad      = get_options("dwgrad")        .size();
-  const bool shellvalues = get_options("shellvalues")   .size();
-  const bool shellcounts = get_options("shellcounts")   .size();
-  const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
-  const bool petable     = get_options("petable")       .size();
+  const bool name          = get_options("name")          .size();
+  const bool format        = get_options("format")        .size();
+  const bool ndim          = get_options("ndim")          .size();
+  const bool size          = get_options("size")          .size();
+  const bool spacing       = get_options("spacing")       .size();
+  const bool datatype      = get_options("datatype")      .size();
+  const bool strides       = get_options("strides")       .size();
+  const bool offset        = get_options("offset")        .size();
+  const bool multiplier    = get_options("multiplier")    .size();
+  const auto properties    = get_options("property");
+  const bool transform     = get_options("transform")     .size();
+  const bool dwgrad        = get_options("dwgrad")        .size();
+  const bool shell_bvalues = get_options("shell_bvalues") .size();
+  const bool shell_sizes   = get_options("shell_sizes")   .size();
+  const bool raw_dwgrad    = get_options("raw_dwgrad")    .size();
+  const bool petable       = get_options("petable")       .size();
 
-  const bool print_full_header = !(format || ndim || size || spacing || datatype || stride ||
+  const bool print_full_header = !(format || ndim || size || spacing || datatype || strides ||
       offset || multiplier || properties.size() || transform ||
-      dwgrad || export_grad || shellvalues || shellcounts || export_pe || petable ||
+      dwgrad || export_grad || shell_bvalues || shell_sizes || export_pe || petable ||
       json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
     auto header = Header::open (argument[i]);
     if (raw_dwgrad)
       DWI::set_DW_scheme (header, DWI::get_DW_scheme (header));
-    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shellvalues || shellcounts)
+    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes)
       DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
+    if (name)       std::cout << header.name() << "\n";
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
     if (size)       print_dimensions (header);
     if (spacing)    print_spacing (header);
     if (datatype)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
-    if (stride)     print_strides (header);
+    if (strides)    print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
     if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
-    if (shellvalues || shellcounts) print_shells (header, shellvalues, shellcounts);
+    if (shell_bvalues || shell_sizes) print_shells (header, shell_bvalues, shell_sizes);
     if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)
@@ -321,7 +297,7 @@ void run ()
     PhaseEncoding::export_commandline (header);
 
     if (json_keyval)
-      keyval2json (header, *json_keyval);
+      File::JSON::write (header, *json_keyval, false);
 
     if (json_all)
       header2json (header, *json_all);

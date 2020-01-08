@@ -1,25 +1,25 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #ifndef __gui_mrview_tool_tractogram_h__
 #define __gui_mrview_tool_tractogram_h__
 
-//#include "gui/mrview/tool/tractography/tractogram_enums.h"
 #include "gui/mrview/displayable.h"
 #include "dwi/tractography/properties.h"
 #include "gui/mrview/tool/tractography/tractography.h"
-#include "gui/mrview/colourmap.h"
 
 
 namespace MR
@@ -159,11 +159,11 @@ namespace MR
                                        vector<GLint>& starts,
                                        vector<GLint>& sizes,
                                        size_t& tck_count);
-                            
+
             void load_end_colours_onto_GPU (vector<Eigen::Vector3f>&);
 
-            void load_intensity_scalars_onto_GPU (vector<float>& buffer);
-            void load_threshold_scalars_onto_GPU (vector<float>& buffer);
+            void load_intensity_scalars_onto_GPU (vector<float>& buffer, size_t& tck_count);
+            void load_threshold_scalars_onto_GPU (vector<float>& buffer, size_t& tck_count);
 
             void render_streamlines ();
 

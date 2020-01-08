@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/tracking/tractography.h"
 
@@ -46,7 +48,7 @@ namespace MR
           + Argument ("size").type_float (0.0)
 
       + Option ("angle",
-            "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize).")
+            "set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize)")
           + Argument ("theta").type_float (0.0)
 
       + Option ("minlength",
@@ -59,8 +61,11 @@ namespace MR
           + Argument ("value").type_float (0.0)
 
       + Option ("cutoff",
-            "set the FA or FOD amplitude cutoff for terminating tracks "
-            "(default is " + str(TCKGEN_DEFAULT_CUTOFF, 2) + ").")
+            "set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks "
+            "(defaults are: " +
+            str(TCKGEN_DEFAULT_CUTOFF_FOD, 2) + " for FOD-based algorithms; " +
+            str(TCKGEN_DEFAULT_CUTOFF_FIXEL, 2) + " for fixel-based algorithms; " +
+            str(TCKGEN_DEFAULT_CUTOFF_FA, 2) + " for tensor-based algorithms).")
           + Argument ("value").type_float (0.0)
 
       + Option ("trials",
@@ -79,7 +84,7 @@ namespace MR
 
       + Option ("downsample", "downsample the generated streamlines to reduce output file size "
                               "(default is (samples-1) for iFOD2, no downsampling for all other algorithms)")
-          + Argument ("factor").type_integer (2);
+          + Argument ("factor").type_integer (1);
 
 
 
@@ -114,18 +119,6 @@ namespace MR
 
         opt = get_options ("rk4");
         if (opt.size()) properties["rk4"] = "1";
-
-        opt = get_options ("include");
-        for (size_t i = 0; i < opt.size(); ++i)
-          properties.include.add (ROI (opt[i][0]));
-
-        opt = get_options ("exclude");
-        for (size_t i = 0; i < opt.size(); ++i)
-          properties.exclude.add (ROI (opt[i][0]));
-
-        opt = get_options ("mask");
-        for (size_t i = 0; i < opt.size(); ++i)
-          properties.mask.add (ROI (opt[i][0]));
 
         opt = get_options ("stop");
         if (opt.size()) {

@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "phase_encoding.h"
 
@@ -45,41 +47,7 @@ namespace MR
 
 
 
-    std::string dir2id (const Eigen::Vector3& axis)
-    {
-      if (axis[0] == -1) {
-        assert (!axis[1]); assert (!axis[2]); return "i-";
-      } else if (axis[0] == 1) {
-        assert (!axis[1]); assert (!axis[2]); return "i";
-      } else if (axis[1] == -1) {
-        assert (!axis[0]); assert (!axis[2]); return "j-";
-      } else if (axis[1] == 1) {
-        assert (!axis[0]); assert (!axis[2]); return "j";
-      } else if (axis[2] == -1) {
-        assert (!axis[0]); assert (!axis[1]); return "k-";
-      } else if (axis[2] == 1) {
-        assert (!axis[0]); assert (!axis[1]); return "k";
-      } else {
-        throw Exception ("Malformed phase-encode direction: \"" + str(axis.transpose()) + "\"");
-      }
-    }
-    Eigen::Vector3 id2dir (const std::string& id)
-    {
-      if (id == "i-")
-        return { -1,  0,  0 };
-      else if (id == "i")
-        return {  1,  0,  0 };
-      else if (id == "j-")
-        return {  0, -1,  0 };
-      else if (id == "j")
-        return {  0,  1,  0 };
-      else if (id == "k-")
-        return {  0,  0, -1 };
-      else if (id == "k")
-        return {  0,  0,  1 };
-      else
-        throw Exception ("Malformed phase-encode identifier: \"" + id + "\"");
-    }
+
 
 
 
@@ -111,7 +79,7 @@ namespace MR
         const auto it_time = header.keyval().find ("TotalReadoutTime");
         if (it_dir != header.keyval().end() && it_time != header.keyval().end()) {
           Eigen::Matrix<default_type, 4, 1> row;
-          row.head<3>() = id2dir (it_dir->second);
+          row.head<3>() = Axes::id2dir (it_dir->second);
           row[3] = to<default_type>(it_time->second);
           PE.resize ((header.ndim() > 3) ? header.size(3) : 1, 4);
           PE.rowwise() = row.transpose();
@@ -135,7 +103,7 @@ namespace MR
         const auto opt_eddy = get_options ("import_pe_eddy");
         if (opt_eddy.size()) {
           if (opt_table.size())
-            throw Exception ("Please provide phase encoding table using either -import_pe_table or -import_pe_eddy option (not both)");
+            throw Exception ("Phase encoding table can be provided using either -import_pe_table or -import_pe_eddy option, but NOT both");
           result = load_eddy (opt_eddy[0][0], opt_eddy[0][1]);
         }
         if (!opt_table.size() && !opt_eddy.size())

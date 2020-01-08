@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
@@ -311,14 +313,14 @@ namespace MR
 
         void Tractography::draw (const Projection& transform, bool is_3D, int, int)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           not_3D = !is_3D;
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
             if (tractogram->show && !hide_all_button->isChecked())
               tractogram->render (transform);
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -405,7 +407,7 @@ namespace MR
 
         void Tractography::tractogram_close_slot ()
         {
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
           while (indexes.size()) {
             tractogram_list_model->remove_item (indexes.first());
@@ -831,25 +833,28 @@ namespace MR
             +   Argument ("tracks").type_file_in()
 
             + Option ("tractography.thickness", "Line thickness of tractography display, [-1.0, 1.0], default is 0.0.").allow_multiple()
-            +   Argument("value").type_float ( -1.0, 1.0 )
+            +   Argument ("value").type_float ( -1.0, 1.0 )
 
-            + Option ("tractography.geometry", "The geometry type to use when rendering tractograms (options are: " + join(tractogram_geometry_types, ", ") + ")")
-            +   Argument("value").type_choice (tractogram_geometry_types)
+            + Option ("tractography.geometry", "The geometry type to use when rendering tractograms (options are: " + join(tractogram_geometry_types, ", ") + ")").allow_multiple()
+            +   Argument ("value").type_choice (tractogram_geometry_types)
 
             + Option ("tractography.opacity", "Opacity of tractography display, [0.0, 1.0], default is 1.0.").allow_multiple()
-            +   Argument("value").type_float ( 0.0, 1.0 )
+            +   Argument ("value").type_float ( 0.0, 1.0 )
 
-            + Option("tractography.slab", "Slab thickness of tractography display, in mm. -1 to turn off crop to slab.").allow_multiple()
-            +   Argument("value").type_float(-1, 1e6)
+            + Option ("tractography.slab", "Slab thickness of tractography display, in mm. -1 to turn off crop to slab.").allow_multiple()
+            +   Argument ("value").type_float(-1, 1e6)
+
+            + Option ("tractography.lighting", "Toggle the use of lighting of tractogram geometry").allow_multiple()
+            +  Argument ("value").type_bool()
 
             + Option ("tractography.tsf_load", "Load the specified tractography scalar file.").allow_multiple()
-            +  Argument("tsf").type_file_in()
+            +  Argument ("tsf").type_file_in()
 
-            + Option ("tractography.tsf_range", "Set range for the tractography scalar file. Requires tractography.tsf_load already provided. RangeMin,RangeMax").allow_multiple()
-            +  Argument("range").type_sequence_float()
+            + Option ("tractography.tsf_range", "Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.").allow_multiple()
+            +  Argument ("RangeMin,RangeMax").type_sequence_float()
 
-            + Option ("tractography.tsf_thresh", "Set thresholds for the tractography scalar file. Requires tractography.tsf_load already provided. ThresholdMin,ThesholdMax").allow_multiple()
-            +  Argument("thresh").type_sequence_float();
+            + Option ("tractography.tsf_thresh", "Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.").allow_multiple()
+            +  Argument ("ThresholdMin,ThesholdMax").type_sequence_float();
         }
 
         /*
@@ -970,7 +975,7 @@ namespace MR
             return true;
           }
 
-          if (opt.opt->is("tractography.slab")) {
+          if (opt.opt->is ("tractography.slab")) {
             float thickness = opt[0];
             try {
               bool crop = thickness > 0;
@@ -983,6 +988,13 @@ namespace MR
               }
             }
             catch (Exception& E) { E.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("tractography.lighting")) {
+            const bool value = bool(opt[0]);
+            lighting_group_box->setChecked (value);
+            use_lighting = bool(value);
             return true;
           }
 

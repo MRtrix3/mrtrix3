@@ -1,17 +1,20 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
 
-
+#include "app.h"
 #include "debug.h"
 
 #include "file/path.h"
@@ -28,18 +31,25 @@ namespace MR
   namespace File
   {
 
-    std::map<std::string, std::string> Config::config;
+    KeyValues Config::config;
+
+    //ENVVAR name: MRTRIX_CONFIGFILE
+    //ENVVAR This can be used to set the location of the system-wide
+    //ENVVAR configuration file. By default, this is ``/etc/mrtrix.conf``.
+    //ENVVAR This can be useful for deployments where access to the system's
+    //ENVVAR ``/etc`` folder is problematic, or to allow different versions of
+    //ENVVAR the software to have different configurations, etc.
 
     void Config::init ()
     {
       const char* sysconf_location = getenv ("MRTRIX_CONFIGFILE");
-      if (!sysconf_location) 
+      if (!sysconf_location)
         sysconf_location = MRTRIX_SYS_CONFIG_FILE;
 
       if (Path::is_file (sysconf_location)) {
         INFO (std::string("reading config file \"") + sysconf_location + "\"...");
         try {
-          KeyValue kv (sysconf_location);
+          KeyValue::Reader kv (sysconf_location);
           while (kv.next()) {
             config[kv.key()] = kv.value();
           }
@@ -53,7 +63,7 @@ namespace MR
       if (Path::is_file (path)) {
         INFO ("reading config file \"" + path + "\"...");
         try {
-          KeyValue kv (path);
+          KeyValue::Reader kv (path);
           while (kv.next()) {
             config[kv.key()] = kv.value();
           }
@@ -62,6 +72,10 @@ namespace MR
       } else {
         DEBUG ("No config file found at \"" + path + "\"");
       }
+
+      auto opt = App::get_options ("config");
+      for (const auto& keyval : opt)
+        config[std::string(keyval[0])] = std::string(keyval[1]);
     }
 
 
@@ -69,7 +83,7 @@ namespace MR
     bool Config::get_bool (const std::string& key, bool default_value)
     {
       std::string value = get (key);
-      if (value.empty()) 
+      if (value.empty())
         return default_value;
       try {
         return to<bool> (value);
@@ -84,7 +98,7 @@ namespace MR
     int Config::get_int (const std::string& key, int default_value)
     {
       std::string value = get (key);
-      if (value.empty()) 
+      if (value.empty())
         return default_value;
       try {
         return to<int> (value);
@@ -99,7 +113,7 @@ namespace MR
     float Config::get_float (const std::string& key, float default_value)
     {
       std::string value = get (key);
-      if (value.empty()) 
+      if (value.empty())
         return default_value;
       try {
         return to<float> (value);
@@ -118,7 +132,7 @@ namespace MR
       if (value.size()) {
         try {
           vector<default_type> V (parse_floats (value));
-          if (V.size() < 3) 
+          if (V.size() < 3)
             throw Exception ("malformed RGB entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
           ret[0] = V[0];
           ret[1] = V[1];
