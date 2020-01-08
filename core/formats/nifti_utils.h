@@ -14,41 +14,33 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __axes_h__
-#define __axes_h__
-
 
 #include <string>
 
 #include "types.h"
 
 
-
 namespace MR
 {
-  namespace Axes
+  namespace Formats
   {
 
 
 
-    //! convert axis directions between formats
-    /*! these helper functions convert the definition of
-       *  phase-encoding direction between a 3-vector (e.g.
-       *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
-       */
-    std::string    dir2id (const Eigen::Vector3&);
-    Eigen::Vector3 id2dir (const std::string&);
-
-
-
-    //! determine the axis permutations and flips necessary to make an image
-    //!   appear approximately axial
-    void get_permutation_to_make_axial (const transform_type& T, std::array<size_t, 3>& perm, std::array<bool, 3>& flip);
+    /*! basic convenience function to determine whether an image path
+     *  corresponds to a NIfTI-format image. */
+    inline bool is_nifti (const std::string& path)
+    {
+      static const vector<std::string> exts { ".nii", ".nii.gz", ".img" };
+      for (const auto& ext : exts) {
+        if (path.substr (path.size() - ext.size()) == ext)
+          return true;
+      }
+      return false;
+    }
 
 
 
   }
 }
-
-#endif
 

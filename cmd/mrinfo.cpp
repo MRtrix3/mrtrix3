@@ -85,8 +85,6 @@ void usage ()
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the transformation from image coordinates [mm] to scanner / real world coordinates [mm]")
 
-    + NoRealignOption
-
     + FieldExportOptions
 
     + GradImportOptions
@@ -218,7 +216,7 @@ void header2json (const Header& header, nlohmann::json& json)
                         { T(2,0), T(2,1), T(2,2), T(2,3) },
                         {    0.0,    0.0,    0.0,    1.0 } };
   // Load key-value entries into a nested keyval.* member
-  File::JSON::write (header, json["keyval"], false);
+  File::JSON::write (header, json["keyval"], header.name());
 }
 
 
@@ -245,7 +243,7 @@ void run ()
     throw Exception ("Cannot use -json_all option with multiple input images");
 
   if (get_options ("norealign").size())
-    Header::do_not_realign_transform = true;
+    Header::do_realign_transform = false;
 
   const bool name          = get_options("name")          .size();
   const bool format        = get_options("format")        .size();
@@ -297,7 +295,7 @@ void run ()
     PhaseEncoding::export_commandline (header);
 
     if (json_keyval)
-      File::JSON::write (header, *json_keyval, false);
+      File::JSON::write (header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));
 
     if (json_all)
       header2json (header, *json_all);
