@@ -75,7 +75,7 @@ namespace MR
 
                   set_step_and_angle (TCKGEN_DEFAULT_STEP_IFOD2, TCKGEN_DEFAULT_ANGLE_IFOD2, true);
                   sin_max_angle_ho = std::sin (max_angle_ho);
-                  set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
+                  set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD * (is_act() ? TCKGEN_CUTOFF_ACT_MULTIPLIER : 1.0));
 
                   properties["method"] = "iFOD2";
                   properties.set (lmax, "lmax");

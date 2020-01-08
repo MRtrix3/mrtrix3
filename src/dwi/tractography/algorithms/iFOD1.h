@@ -74,7 +74,7 @@ namespace MR
           }
           sin_max_angle_1o = std::sin (max_angle_1o);
           set_num_points();
-          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
+          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD * (is_act() ? TCKGEN_CUTOFF_ACT_MULTIPLIER : 1.0));
 
           properties["method"] = "iFOD1";
           properties.set (lmax, "lmax");
