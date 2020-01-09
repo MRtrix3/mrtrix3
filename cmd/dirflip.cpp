@@ -46,7 +46,7 @@ void usage ()
 
 
   OPTIONS
-    + Option ("permutations", "number of permutations to try (default: " + str(DEFAULT_PERMUTATIONS) + ")")
+    + Option ("permutations", "number of permutations to try (default: " + str(default_permutations) + ")")
     +   Argument ("num").type_integer (1)
 
     + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");

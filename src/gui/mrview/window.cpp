@@ -735,7 +735,7 @@ namespace MR
       void Window::parse_arguments ()
       {
         if (MR::App::get_options ("norealign").size())
-          Header::do_not_realign_transform = true;
+          Header::do_realign_transform = false;
 
         if (MR::App::argument.size()) {
           if (MR::App::option.size())  {
@@ -2195,11 +2195,7 @@ namespace MR
           + OptionGroup ("Debugging options")
 
           + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
-              "The maximum over the last 3 seconds is also displayed.")
-
-          + OptionGroup ("Other options")
-
-          + NoRealignOption;
+              "The maximum over the last 3 seconds is also displayed.");
 
       }
 

@@ -16,6 +16,7 @@
 
 #include "app.h"
 #include "debug.h"
+#include "header.h"
 
 #include "file/path.h"
 #include "file/config.h"
@@ -76,6 +77,12 @@ namespace MR
       auto opt = App::get_options ("config");
       for (const auto& keyval : opt)
         config[std::string(keyval[0])] = std::string(keyval[1]);
+
+      //CONF option: RealignTransform
+      //CONF default: 1 (true)
+      //CONF A boolean value to indicate whether all images should be realigned
+      //CONF to an approximately axial orientation at load.
+      Header::do_realign_transform = get_bool("RealignTransform", true);
     }
 
 
