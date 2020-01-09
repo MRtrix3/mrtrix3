@@ -55,7 +55,7 @@ Streamlines tractography options
 
 -  **-step size** set the step size of the algorithm in mm (defaults: for first-order algorithms, 0.1 x voxelsize; if using RK4, 0.25 x voxelsize; for iFOD2: 0.5 x voxelsize).
 
--  **-angle theta** set the maximum angle between successive steps (default depends on algorithm: 60 for deterministic algorithms / nulldist1; 15 for iFOD1; 45 for iFOD2 / nulldist2)
+-  **-angle theta** set the maximum angle in degrees between successive steps (defaults: 60 for deterministic algorithms; 15 for iFOD1 / nulldist1; 45 for iFOD2 / nulldist2)
 
 -  **-minlength value** set the minimum length of any track in mm (defaults: without ACT, 5 x voxelsize; with ACT, 2 x voxelsize).
 
@@ -63,7 +63,7 @@ Streamlines tractography options
 
 -  **-cutoff value** set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks (defaults: 0.1 for FOD-based algorithms; 0.1 for fixel-based algorithms; 0.1 for tensor-based algorithms; threshold multiplied by 0.5 when using ACT).
 
--  **-trials number** set the maximum number of sampling trials at each point (only used for probabilistic tracking).
+-  **-trials number** set the maximum number of sampling trials at each point (only used for iFOD1 / iFOD2) (default: 1000).
 
 -  **-noprecomputed** do NOT pre-compute legendre polynomial values. Warning: this will slow down the algorithm by a factor of approximately 4.
 

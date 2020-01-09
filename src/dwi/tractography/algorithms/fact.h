@@ -21,6 +21,7 @@
 
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 
 
@@ -52,9 +53,9 @@ namespace MR
           if (rk4)
             throw Exception ("4th-order Runge-Kutta integration not valid for FACT algorithm");
 
-          set_step_and_angle (TCKGEN_DEFAULT_STEP_FIRSTORDER, TCKGEN_DEFAULT_ANGLE_DETERMINISTIC, false);
+          set_step_and_angle (Defaults::stepsize_voxels_firstorder, Defaults::angle_deterministic, false);
           set_num_points();
-          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FIXEL * (is_act() ? TCKGEN_CUTOFF_ACT_MULTIPLIER : 1.0));
+          set_cutoff (Defaults::cutoff_fixel * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
           dot_threshold = std::cos (max_angle_1o);
 
           properties["method"] = "FACT";

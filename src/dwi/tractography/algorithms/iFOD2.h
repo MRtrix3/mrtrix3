@@ -29,10 +29,6 @@
 #include "dwi/tractography/algorithms/calibrator.h"
 
 
-#define TCKGEN_DEFAULT_IFOD2_NSAMPLES 4
-
-
-
 namespace MR
 {
   namespace DWI
@@ -55,8 +51,8 @@ namespace MR
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                     SharedBase (diff_path, property_set),
                     lmax (Math::SH::LforN (source.size(3))),
-                    num_samples (TCKGEN_DEFAULT_IFOD2_NSAMPLES),
-                    max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
+                    num_samples (Defaults::ifod2_nsamples),
+                    max_trials (Defaults::max_trials_per_step),
                     sin_max_angle_ho (NaN),
                     mean_samples (0.0),
                     mean_truncations (0.0),
@@ -73,9 +69,9 @@ namespace MR
                   if (rk4)
                     throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
-                  set_step_and_angle (TCKGEN_DEFAULT_STEP_IFOD2, TCKGEN_DEFAULT_ANGLE_IFOD2, true);
+                  set_step_and_angle (Defaults::stepsize_voxels_ifod2, Defaults::angle_ifod2, true);
                   sin_max_angle_ho = std::sin (max_angle_ho);
-                  set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD * (is_act() ? TCKGEN_CUTOFF_ACT_MULTIPLIER : 1.0));
+                  set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
                   properties["method"] = "iFOD2";
                   properties.set (lmax, "lmax");

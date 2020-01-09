@@ -31,7 +31,7 @@ namespace MR
         const OptionGroup iFOD2Options = OptionGroup ("Options specific to the iFOD2 tracking algorithm")
 
         + Option ("samples",
-                  "set the number of FOD samples to take per step (Default: " + str(TCKGEN_DEFAULT_IFOD2_NSAMPLES) + ").")
+                  "set the number of FOD samples to take per step (Default: " + str(Tracking::Defaults::ifod2_nsamples) + ").")
           + Argument ("number").type_integer (2, 100);
 
 
