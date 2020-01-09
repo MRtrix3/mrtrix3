@@ -20,6 +20,7 @@
 #include "math/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 
@@ -46,7 +47,7 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
           lmax (Math::SH::LforN (source.size(3))),
-          max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
+          max_trials (Defaults::max_trials_per_step),
           sin_max_angle_1o (std::sin (max_angle_1o)),
           fod_power (1.0f),
           mean_samples (0.0),
@@ -61,8 +62,8 @@ namespace MR
             throw Exception ("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
           }
 
-          set_step_and_angle (rk4 ? TCKGEN_DEFAULT_STEP_RK4 : TCKGEN_DEFAULT_STEP_FIRSTORDER,
-                              TCKGEN_DEFAULT_ANGLE_IFOD1,
+          set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                              Defaults::angle_ifod1,
                               rk4);
 
           // max_angle_1o needs to be set because it influences the cone in which FOD amplitudes are sampled
@@ -74,7 +75,7 @@ namespace MR
           }
           sin_max_angle_1o = std::sin (max_angle_1o);
           set_num_points();
-          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD * (is_act() ? TCKGEN_CUTOFF_ACT_MULTIPLIER : 1.0));
+          set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
           properties["method"] = "iFOD1";
           properties.set (lmax, "lmax");

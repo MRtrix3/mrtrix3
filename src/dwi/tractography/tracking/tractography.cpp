@@ -37,7 +37,7 @@ namespace MR
             "tckgen will keep seeding streamlines until this number of "
             "streamlines have been selected, or the maximum allowed "
             "number of seeds has been exceeded (see -seeds option). "
-            "By default, " + str(TCKGEN_DEFAULT_NUM_SELECTED_TRACKS) + " "
+            "By default, " + str(Defaults::num_selected_tracks) + " "
             "streamlines are to be selected. "
             "Set to zero to disable, which will result in streamlines "
             "being seeded until the number specified by -seeds has been "
@@ -46,42 +46,42 @@ namespace MR
 
       + Option ("step",
             "set the step size of the algorithm in mm (defaults: "
-            "for first-order algorithms, " + str(TCKGEN_DEFAULT_STEP_FIRSTORDER, 2) + " x voxelsize; " +
-            "if using RK4, " + str(TCKGEN_DEFAULT_STEP_RK4, 2) + " x voxelsize; "
-            "for iFOD2: " + str(TCKGEN_DEFAULT_STEP_IFOD2, 2) + " x voxelsize).")
+            "for first-order algorithms, " + str(Defaults::stepsize_voxels_firstorder, 2) + " x voxelsize; " +
+            "if using RK4, " + str(Defaults::stepsize_voxels_rk4, 2) + " x voxelsize; "
+            "for iFOD2: " + str(Defaults::stepsize_voxels_ifod2, 2) + " x voxelsize).")
           + Argument ("size").type_float (0.0)
 
       + Option ("angle",
-            "set the maximum angle between successive steps "
-            "(default depends on algorithm: "
-            + str(TCKGEN_DEFAULT_ANGLE_DETERMINISTIC) + " for deterministic algorithms / nulldist1; "
-            + str(TCKGEN_DEFAULT_ANGLE_IFOD1) + " for iFOD1; "
-            + str(TCKGEN_DEFAULT_ANGLE_IFOD2) + " for iFOD2 / nulldist2)")
+            "set the maximum angle in degrees between successive steps (defaults: "
+            + str(Defaults::angle_deterministic) + " for deterministic algorithms; "
+            + str(Defaults::angle_ifod1) + " for iFOD1 / nulldist1; "
+            + str(Defaults::angle_ifod2) + " for iFOD2 / nulldist2)")
           + Argument ("theta").type_float (0.0)
 
       + Option ("minlength",
             "set the minimum length of any track in mm (defaults: "
-            "without ACT, " + str(TCKGEN_DEFAULT_MINLENGTH_VOXELS_NOACT, 2) + " x voxelsize; " +
-            "with ACT, " + str(TCKGEN_DEFAULT_MINLENGTH_VOXELS_WITHACT, 2) + " x voxelsize).")
+            "without ACT, " + str(Defaults::minlength_voxels_noact) + " x voxelsize; " +
+            "with ACT, " + str(Defaults::minlength_voxels_withact) + " x voxelsize).")
           + Argument ("value").type_float (0.0)
 
       + Option ("maxlength",
             "set the maximum length of any track in mm "
-            "(default: " + str(TCKGEN_DEFAULT_MAXLENGTH_VOXELS, 2) + " x voxelsize).")
+            "(default: " + str(Defaults::maxlength_voxels) + " x voxelsize).")
           + Argument ("value").type_float (0.0)
 
       + Option ("cutoff",
             "set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks "
             "(defaults: " +
-            str(TCKGEN_DEFAULT_CUTOFF_FOD, 2) + " for FOD-based algorithms; " +
-            str(TCKGEN_DEFAULT_CUTOFF_FIXEL, 2) + " for fixel-based algorithms; " +
-            str(TCKGEN_DEFAULT_CUTOFF_FA, 2) + " for tensor-based algorithms; " +
-            "threshold multiplied by " + str(TCKGEN_CUTOFF_ACT_MULTIPLIER) + " when using ACT).")
+            str(Defaults::cutoff_fod, 2) + " for FOD-based algorithms; " +
+            str(Defaults::cutoff_fixel, 2) + " for fixel-based algorithms; " +
+            str(Defaults::cutoff_fa, 2) + " for tensor-based algorithms; " +
+            "threshold multiplied by " + str(Defaults::cutoff_act_multiplier) + " when using ACT).")
           + Argument ("value").type_float (0.0)
 
       + Option ("trials",
-            "set the maximum number of sampling trials at each point (only "
-            "used for probabilistic tracking).")
+            "set the maximum number of sampling trials at each point "
+            "(only used for iFOD1 / iFOD2) "
+            "(default: " + str(Defaults::max_trials_per_step) + ").")
           + Argument ("number").type_integer (1)
 
       + Option ("noprecomputed",

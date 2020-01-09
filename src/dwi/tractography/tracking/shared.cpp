@@ -56,7 +56,7 @@ namespace MR
 #endif
         {
           if (properties.find ("max_num_tracks") == properties.end())
-            max_num_tracks = (properties.find ("max_num_seeds") == properties.end()) ? TCKGEN_DEFAULT_NUM_SELECTED_TRACKS : 0;
+            max_num_tracks = (properties.find ("max_num_seeds") == properties.end()) ? Defaults::num_selected_tracks : 0;
           properties.set (max_num_tracks, "max_num_tracks");
 
           properties.set (unidirectional, "unidirectional");
@@ -65,7 +65,7 @@ namespace MR
 
           properties["source"] = source.name();
 
-          max_num_seeds = TCKGEN_DEFAULT_SEED_TO_SELECT_RATIO * max_num_tracks;
+          max_num_seeds = Defaults::seed_to_select_ratio * max_num_tracks;
           properties.set (max_num_seeds, "max_num_seeds");
 
           assert (properties.seeds.num_seeds());
@@ -188,12 +188,12 @@ namespace MR
           if (downsampler.get_ratio() > 1)
             properties["output_step_size"] = str (step_size * downsampler.get_ratio());
 
-          max_dist = TCKGEN_DEFAULT_MAXLENGTH_VOXELS * vox();
+          max_dist = Defaults::maxlength_voxels * vox();
           properties.set (max_dist, "max_dist");
 
           min_dist = is_act() ?
-                     (TCKGEN_DEFAULT_MINLENGTH_VOXELS_WITHACT * vox()) :
-                     (TCKGEN_DEFAULT_MINLENGTH_VOXELS_NOACT * vox());
+                     (Defaults::minlength_voxels_withact * vox()) :
+                     (Defaults::minlength_voxels_noact * vox());
           properties.set (min_dist, "min_dist");
 
           max_angle_1o = angle;

@@ -20,6 +20,7 @@
 #include "math/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 
 
@@ -48,12 +49,12 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
-          set_step_and_angle (rk4 ? TCKGEN_DEFAULT_STEP_RK4 : TCKGEN_DEFAULT_STEP_FIRSTORDER,
-                              TCKGEN_DEFAULT_ANGLE_DETERMINISTIC,
+          set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                              Defaults::angle_deterministic,
                               rk4);
           dot_threshold = std::cos (max_angle_1o);
           set_num_points();
-          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD * (is_act() ? TCKGEN_CUTOFF_ACT_MULTIPLIER : 1.0));
+          set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
           properties["method"] = "SDStream";
 

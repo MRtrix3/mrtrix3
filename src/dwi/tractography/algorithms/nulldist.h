@@ -43,8 +43,8 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set)
         {
-          set_step_and_angle (rk4 ? TCKGEN_DEFAULT_STEP_RK4 : TCKGEN_DEFAULT_STEP_FIRSTORDER,
-                              TCKGEN_DEFAULT_ANGLE_IFOD1,
+          set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                              Defaults::angle_ifod1,
                               rk4);
           set_num_points();
           set_cutoff (0.0f);
