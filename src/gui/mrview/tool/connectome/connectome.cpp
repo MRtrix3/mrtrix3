@@ -865,7 +865,7 @@ namespace MR
 
         void Connectome::image_open_slot()
         {
-          const std::string path = Dialog::File::get_image (this, "Select connectome parcellation image");
+          const std::string path = Dialog::File::get_image (this, "Select connectome parcellation image", &current_folder);
           if (path.empty())
             return;
 
@@ -896,7 +896,7 @@ namespace MR
 
         void Connectome::matrix_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open");
+          vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open", &current_folder);
           if (list.empty())
             return;
           add_matrices (list);
@@ -2693,7 +2693,7 @@ namespace MR
 
         bool Connectome::import_vector_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv)");
+          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv)", &current_folder);
           if (path.empty())
             return false;
           try {
@@ -2717,7 +2717,7 @@ namespace MR
 
         bool Connectome::import_matrix_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)");
+          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)", &current_folder);
           if (path.empty())
             return false;
           MR::Connectome::matrix_type temp;
@@ -3782,7 +3782,7 @@ namespace MR
         void Connectome::get_meshes()
         {
           // Request exemplar track file path from user
-          const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)");
+          const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)", &current_folder);
           if (!path.size()) return;
           Surface::MeshMulti meshes;
           meshes.load (path);
@@ -3800,7 +3800,7 @@ namespace MR
         void Connectome::get_exemplars()
         {
           // Request exemplar track file path from user
-          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars", "Track files (*.tck)");
+          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars", "Track files (*.tck)", &current_folder);
           if (!path.size()) return;
           MR::DWI::Tractography::Properties properties;
           MR::DWI::Tractography::Reader<float> reader (path, properties);

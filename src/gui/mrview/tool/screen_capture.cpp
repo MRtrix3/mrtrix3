@@ -18,6 +18,7 @@
 
 #include "mrtrix.h"
 #include "file/path.h"
+#include "gui/dialog/file.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/screen_capture.h"
@@ -205,7 +206,7 @@ namespace MR
 
           main_box->addStretch ();
 
-          directory = new QDir();
+          current_folder = ".";
 
           connect (&window(), SIGNAL (imageChanged()), this, SLOT (on_image_changed()));
           on_image_changed();
@@ -327,7 +328,6 @@ namespace MR
 
           size_t frames_value = frames->value();
 
-          std::string folder (directory->path().toUtf8().constData());
           std::string prefix (prefix_textbox->text().toUtf8().constData());
           float radians = degrees_button->value() * (Math::pi / 180.0) / frames_value;
           size_t first_index = start_index->value();
@@ -345,7 +345,7 @@ namespace MR
               break;
 
             if (with_capture)
-              win.captureGL (Path::join (folder, prefix + printf ("%04d.png", i)));
+              win.captureGL (Path::join (current_folder, prefix + printf ("%04d.png", i)));
 
             // Rotation
             Math::Versorf orientation (win.orientation());
@@ -437,11 +437,10 @@ namespace MR
 
         void Capture::select_output_folder_slot ()
         {
-          const QString path = QFileDialog::getExistingDirectory (this, tr("Directory"), directory->path());
+          const std::string path = Dialog::File::get_folder (this, "Directory", &current_folder);
           if (!path.size()) return;
-          directory->setPath (path);
-          folder_button->setText (shorten (path.toUtf8().constData(), 20, 0).c_str());
-          folder_button->setToolTip (path);
+          folder_button->setText (shorten (current_folder, 20, 0).c_str());
+          folder_button->setToolTip (current_folder.c_str());
           on_output_update ();
         }
 
@@ -479,9 +478,10 @@ namespace MR
         bool Capture::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("capture.folder")) {
-            directory->setPath (std::string(opt[0]).c_str());
-            QString path (shorten(directory->path().toUtf8().constData(), 20, 0).c_str());
-            folder_button->setText(path);
+            current_folder = std::string (opt[0]);
+            QString path (shorten(current_folder, 20, 0).c_str());
+            folder_button->setText (path);
+            folder_button->setToolTip (current_folder.c_str());
             on_output_update ();
             return true;
           }

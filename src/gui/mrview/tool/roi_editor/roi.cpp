@@ -295,7 +295,7 @@ namespace MR
 
         void ROI::open_slot ()
         {
-          vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
+          vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open", &current_folder);
           if (names.empty())
             return;
           vector<std::unique_ptr<MR::Header>> list;
@@ -353,7 +353,7 @@ namespace MR
             MR::Header header (roi->header());
             header.ndim() = 3;
             header.datatype() = DataType::Bit;
-            std::string name = GUI::Dialog::File::get_save_image_name (&window(), "Select name of ROI to save", roi->get_filename());
+            std::string name = GUI::Dialog::File::get_save_image_name (&window(), "Select name of ROI to save", roi->get_filename(), &current_folder);
             if (name.size()) {
               auto out = MR::Image<bool>::create (name, header);
               roi->save (out, data.data());

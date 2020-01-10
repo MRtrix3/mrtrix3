@@ -30,8 +30,9 @@ namespace MR
       namespace Tool
       {
 
-        TrackScalarFileOptions::TrackScalarFileOptions (QWidget* parent) :
+        TrackScalarFileOptions::TrackScalarFileOptions (Tractography* parent) :
             QGroupBox ("Scalar file options", parent),
+            tool (parent),
             tractogram (nullptr)
         {
           main_box = new Tool::Base::VBoxLayout (this);
@@ -252,7 +253,7 @@ namespace MR
 
         bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot ()
         {
-          std::string scalar_file = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
+          std::string scalar_file = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "", &tool->current_folder);
           return open_intensity_track_scalar_file_slot(scalar_file);
         }
 
@@ -368,7 +369,7 @@ namespace MR
               }
               break;
             case 2:
-              file_path = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
+              file_path = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "", &tool->current_folder);
               if (!file_path.empty()) {
                 try {
                   tractogram->load_threshold_track_scalars (file_path);

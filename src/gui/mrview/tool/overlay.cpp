@@ -192,7 +192,7 @@ namespace MR
 
         void Overlay::image_open_slot ()
         {
-          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
+          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open", &current_folder);
           if (overlay_names.empty())
             return;
           vector<std::unique_ptr<MR::Header>> list;
