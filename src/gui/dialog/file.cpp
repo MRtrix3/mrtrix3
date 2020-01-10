@@ -49,8 +49,6 @@ namespace MR
             new_folder = qstring.toUtf8().data();
             if (folder)
               *folder = new_folder;
-            else
-              QDir::setCurrent (new_folder.c_str());
           }
           return new_folder;
         }
@@ -68,8 +66,6 @@ namespace MR
             std::string new_folder = Path::dirname (filename);
             if (folder)
               *folder = new_folder;
-            else
-              QDir::setCurrent (new_folder.c_str());
           }
           return filename;
         }
@@ -89,8 +85,6 @@ namespace MR
             std::string new_folder = Path::dirname (list[0]);
             if (folder)
               *folder = new_folder;
-            else
-              QDir::setCurrent (new_folder.c_str());
           }
           return list;
         }
@@ -137,8 +131,6 @@ namespace MR
             std::string new_folder = Path::dirname (filename);
             if (folder)
               *folder = new_folder;
-            else
-              QDir::setCurrent (new_folder.c_str());
           }
           return filename;
         }
