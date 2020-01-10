@@ -34,13 +34,14 @@ namespace MR
       namespace Tool
       {
         class Tractogram;
+        class Tractography;
 
           class TrackScalarFileOptions : public QGroupBox, public DisplayableVisitor
           { MEMALIGN(TrackScalarFileOptions)
             Q_OBJECT
 
             public:
-              TrackScalarFileOptions (QWidget*);
+              TrackScalarFileOptions (Tractography*);
               virtual ~TrackScalarFileOptions () {}
 
               void set_tractogram (Tractogram* selected_tractogram);
@@ -70,6 +71,7 @@ namespace MR
               void reset_intensity_slot ();
 
             protected:
+              Tractography* tool;
               Tractogram *tractogram;
               Tool::Base::VBoxLayout *main_box;
               QGroupBox *colour_groupbox;

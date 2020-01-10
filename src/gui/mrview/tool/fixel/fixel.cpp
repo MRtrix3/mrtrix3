@@ -335,9 +335,8 @@ namespace MR
 
         void Fixel::fixel_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_files (this,
-                                                                   "Select fixel images to open",
-                                                                   GUI::Dialog::File::image_filter_string);
+          vector<std::string> list = Dialog::File::get_files (this, "Select fixel images to open",
+              GUI::Dialog::File::image_filter_string, &current_folder);
           add_images (list);
         }
 
