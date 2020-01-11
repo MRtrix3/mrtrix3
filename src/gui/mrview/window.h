@@ -244,6 +244,7 @@ namespace MR
           int anatomical_plane, annotations;
           ColourBars::Position colourbar_position, tools_colourbar_position;
           bool snap_to_image_axes_and_voxel;
+          std::string current_folder;
 
           float background_colour[3];
 
