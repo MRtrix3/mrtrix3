@@ -66,8 +66,6 @@ namespace MR
               clear();
               is_min = is_max = false;
             }
-            emit valueChanged();
-            emit valueChanged(value());
           }
 
 
