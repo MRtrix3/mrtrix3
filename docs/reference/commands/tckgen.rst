@@ -53,17 +53,17 @@ Streamlines tractography options
 
 -  **-select number** set the desired number of streamlines to be selected by tckgen, after all selection criteria have been applied (i.e. inclusion/exclusion ROIs, min/max length, etc). tckgen will keep seeding streamlines until this number of streamlines have been selected, or the maximum allowed number of seeds has been exceeded (see -seeds option). By default, 5000 streamlines are to be selected. Set to zero to disable, which will result in streamlines being seeded until the number specified by -seeds has been reached.
 
--  **-step size** set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).
+-  **-step size** set the step size of the algorithm in mm (defaults: for first-order algorithms, 0.1 x voxelsize; if using RK4, 0.25 x voxelsize; for iFOD2: 0.5 x voxelsize).
 
--  **-angle theta** set the maximum angle between successive steps (default is 90deg x stepsize / voxelsize)
+-  **-angle theta** set the maximum angle in degrees between successive steps (defaults: 60 for deterministic algorithms; 15 for iFOD1 / nulldist1; 45 for iFOD2 / nulldist2)
 
--  **-minlength value** set the minimum length of any track in mm (default is 5 x voxelsize without ACT, 2 x voxelsize with ACT).
+-  **-minlength value** set the minimum length of any track in mm (defaults: without ACT, 5 x voxelsize; with ACT, 2 x voxelsize).
 
--  **-maxlength value** set the maximum length of any track in mm (default is 100 x voxelsize).
+-  **-maxlength value** set the maximum length of any track in mm (default: 100 x voxelsize).
 
--  **-cutoff value** set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks (defaults are: 0.05 for FOD-based algorithms; 0.05 for fixel-based algorithms; 0.1 for tensor-based algorithms).
+-  **-cutoff value** set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks (defaults: 0.1 for FOD-based algorithms; 0.1 for fixel-based algorithms; 0.1 for tensor-based algorithms; threshold multiplied by 0.5 when using ACT).
 
--  **-trials number** set the maximum number of sampling trials at each point (only used for probabilistic tracking).
+-  **-trials number** set the maximum number of sampling trials at each point (only used for iFOD1 / iFOD2) (default: 1000).
 
 -  **-noprecomputed** do NOT pre-compute legendre polynomial values. Warning: this will slow down the algorithm by a factor of approximately 4.
 
@@ -123,12 +123,15 @@ Anatomically-Constrained Tractography options
 
 -  **-crop_at_gmwmi** crop streamline endpoints more precisely as they cross the GM-WM interface
 
+Options specific to the iFOD tracking algorithms
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-power value** raise the FOD to the power specified (defaults are: 1.0 for iFOD1; 1.0/nsamples for iFOD2).
+
 Options specific to the iFOD2 tracking algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-samples number** set the number of FOD samples to take per step (Default: 4).
-
--  **-power value** raise the FOD to the power specified (default is 1/nsamples).
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -182,6 +185,8 @@ References based on command-line options:
 * -act, -backtrack, -seed_gmwmi:Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. NeuroImage, 2012, 62, 1924-1938
 
 * -seed_dynamic:Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. NeuroImage, 2015, 119, 338-351
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 
