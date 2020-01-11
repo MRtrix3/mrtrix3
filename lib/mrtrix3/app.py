@@ -73,6 +73,12 @@ For more details, see http://www.mrtrix.org/.'''
 
 
 
+_MRTRIX3_CORE_REFERENCE = 'Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. \
+MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. \
+NeuroImage, 2019, 202, 116137'
+
+
+
 _SIGNALS = { 'SIGALRM': 'Timer expiration',
              'SIGBUS' : 'Bus error: Accessing invalid address (out of storage space?)',
              'SIGFPE' : 'Floating-point arithmetic exception',
@@ -838,15 +844,15 @@ class Parser(argparse.ArgumentParser):
     text += '\n'
     text += bold('COPYRIGHT') + '\n'
     text += wrapper_other.fill(self._copyright) + '\n'
-    if self._citation_list:
+    text += '\n'
+    text += bold('REFERENCES') + '\n'
+    text += '\n'
+    for entry in self._citation_list:
+      if entry[0]:
+        text += wrapper_other.fill('* ' + entry[0] + ':') + '\n'
+      text += wrapper_other.fill(entry[1]) + '\n'
       text += '\n'
-      text += bold('REFERENCES') + '\n'
-      text += '\n'
-      for entry in self._citation_list:
-        if entry[0]:
-          text += wrapper_other.fill('* ' + entry[0] + ':') + '\n'
-        text += wrapper_other.fill(entry[1]) + '\n'
-        text += '\n'
+    text += wrapper_other.fill(_MRTRIX3_CORE_REFERENCE) + '\n\n'
     command = CONFIG.get('HelpCommand', 'less -X')
     if command:
       try:
@@ -960,14 +966,14 @@ class Parser(argparse.ArgumentParser):
       if self._is_option_group(group):
         text += '#### ' + group.title + '\n\n'
         text += print_group_options(group)
-    if self._citation_list:
-      text += '## References\n\n'
-      for ref in self._citation_list:
-        ref_text = ''
-        if ref[0]:
-          ref_text += ref[0] + ': '
-        ref_text += ref[1]
-        text += ref_text + '\n\n'
+    text += '## References\n\n'
+    for ref in self._citation_list:
+      ref_text = ''
+      if ref[0]:
+        ref_text += ref[0] + ': '
+      ref_text += ref[1]
+      text += ref_text + '\n\n'
+    text += _MRTRIX3_CORE_REFERENCE + '\n\n'
     text += '---\n\n'
     text += '**Author:** ' + self._author + '\n\n'
     text += '**Copyright:** ' + self._copyright + '\n\n'
@@ -1046,18 +1052,16 @@ class Parser(argparse.ArgumentParser):
         text += group.title + '\n'
         text += '^'*len(group.title) + '\n'
         text += print_group_options(group)
-    if self._citation_list:
-      text += '\n'
-      text += 'References\n'
-      text += '^^^^^^^^^^\n\n'
-      for ref in self._citation_list:
-        ref_text = '* '
-        if ref[0]:
-          ref_text += ref[0] + ': '
-        ref_text += ref[1]
-        text += ref_text + '\n\n'
-    else:
-      text += '\n'
+    text += '\n'
+    text += 'References\n'
+    text += '^^^^^^^^^^\n\n'
+    for ref in self._citation_list:
+      ref_text = '* '
+      if ref[0]:
+        ref_text += ref[0] + ': '
+      ref_text += ref[1]
+      text += ref_text + '\n\n'
+    text += _MRTRIX3_CORE_REFERENCE + '\n\n'
     text += '--------------\n\n\n\n'
     text += '**Author:** ' + self._author + '\n\n'
     text += '**Copyright:** ' + self._copyright + '\n\n'
