@@ -56,7 +56,7 @@ namespace MR
 #endif
         {
           if (properties.find ("max_num_tracks") == properties.end())
-            max_num_tracks = (properties.find ("max_num_seeds") == properties.end()) ? TCKGEN_DEFAULT_NUM_SELECTED_TRACKS : 0;
+            max_num_tracks = (properties.find ("max_num_seeds") == properties.end()) ? Defaults::num_selected_tracks : 0;
           properties.set (max_num_tracks, "max_num_tracks");
 
           properties.set (unidirectional, "unidirectional");
@@ -65,7 +65,7 @@ namespace MR
 
           properties["source"] = source.name();
 
-          max_num_seeds = TCKGEN_DEFAULT_SEED_TO_SELECT_RATIO * max_num_tracks;
+          max_num_seeds = Defaults::seed_to_select_ratio * max_num_tracks;
           properties.set (max_num_seeds, "max_num_seeds");
 
           assert (properties.seeds.num_seeds());
@@ -179,7 +179,7 @@ namespace MR
 
 
 
-        void SharedBase::set_step_size (float voxel_frac, bool is_higher_order)
+        void SharedBase::set_step_and_angle (const float voxel_frac, const float angle, const bool is_higher_order)
         {
           step_size = voxel_frac * vox();
           properties.set (step_size, "step_size");
@@ -188,24 +188,22 @@ namespace MR
           if (downsampler.get_ratio() > 1)
             properties["output_step_size"] = str (step_size * downsampler.get_ratio());
 
-          max_dist = 100.0f * vox();
+          max_dist = Defaults::maxlength_voxels * vox();
           properties.set (max_dist, "max_dist");
 
-          min_dist = is_act() ? (2.0f * vox()) : (5.0f * vox());
+          min_dist = is_act() ?
+                     (Defaults::minlength_voxels_withact * vox()) :
+                     (Defaults::minlength_voxels_noact * vox());
           properties.set (min_dist, "min_dist");
 
+          max_angle_1o = angle;
+          properties.set (max_angle_1o, "max_angle");
           const std::string angle_msg = is_higher_order ?
                                         "maximum angular change in fibre orientation per step" :
                                         "maximum deviation angle per step";
-
-          max_angle_1o = 90.0f * step_size / vox();
-          properties.set (max_angle_1o, "max_angle");
           INFO (angle_msg + " = " + str (max_angle_1o) + " deg");
-          // Both automated calculation of angle, and user-specified angles,
-          //   are in degrees
           max_angle_1o *= Math::pi / 180.0;
           cos_max_angle_1o = std::cos (max_angle_1o);
-
           min_radius = step_size / (2.0f * std::sin (0.5f * max_angle_1o));
           INFO ("Minimum radius of curvature = " + str(min_radius) + "mm");
 
@@ -217,7 +215,9 @@ namespace MR
             max_angle_1o = float(Math::pi);
             cos_max_angle_1o = 0.0f;
           }
+
         }
+
 
 
 
