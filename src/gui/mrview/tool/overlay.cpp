@@ -772,9 +772,9 @@ namespace MR
               if (values.size() != 2)
                 throw Exception ("must provide exactly two comma-separated values to the -overlay.intensity option");
               min_value->blockSignals (true);
-              min_value->setValue (values[0]);
+              min_value->setMin (values[0]);
               min_value->blockSignals (false);
-              max_value->setValue (values[1]);
+              max_value->setMax (values[1]);
             }
             catch (Exception& e) { e.display(); }
             return true;
