@@ -258,7 +258,7 @@ namespace MR
   //! For example, [ x y z ], [ x y z 1 1 ] can both be considered 3D,
   //! but [ x y z 1 n ] will throw an exception.
   template <class HeaderType>
-    FORCE_INLINE void check_ND (const HeaderType& in, size_t N)
+    FORCE_INLINE void check_effective_dimensionality (const HeaderType& in, size_t N)
     {
       if (in.ndim() < N)
         throw Exception ("Image \"" + in.name() + "\" does not represent " + str(N) + "D data (too few dimensions)");

@@ -192,7 +192,7 @@ void run() {
 
   // Load analysis mask and compute adjacency
   auto mask_header = Header::open (argument[3]);
-  check_ND (mask_header, 3);
+  check_effective_dimensionality (mask_header, 3);
   auto mask_image = mask_header.get_image<bool>();
   std::shared_ptr<Voxel2Vector> v2v = make_shared<Voxel2Vector> (mask_image, mask_header);
   SubjectVoxelImport::set_mapping (v2v);
