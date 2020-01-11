@@ -18,11 +18,11 @@
 #define __dwi_tractography_roi_h__
 
 #include "app.h"
-#include "bitset.h"
 #include "image.h"
 #include "image.h"
 #include "interp/linear.h"
 #include "math/rng.h"
+#include "misc/bitset.h"
 
 
 namespace MR
