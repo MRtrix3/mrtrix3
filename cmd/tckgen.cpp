@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -54,12 +55,12 @@ void usage ()
 
   SYNOPSIS = "Perform streamlines tractography";
 
-  DESCRIPTION 
+  DESCRIPTION
     + "By default, tckgen produces a fixed number of streamlines, by attempting "
       "to seed from new random locations until the target number of "
       "streamlines have been selected (in other words, after all inclusion & "
       "exclusion criteria have been applied), or the maximum number of seeds "
-      "has been exceeded (by default, this is 1000× the desired number of selected "
+      "has been exceeded (by default, this is 1000 x the desired number of selected "
       "streamlines). Use the -select and/or -seeds options to modify as "
       "required. See also the Seeding options section for alternative seeding "
       "strategies."
@@ -128,9 +129,15 @@ void usage ()
       "voxel for each streamline. These data are then sampled via trilinear "
       "interpolation at each streamline step, the diffusion tensor model is fitted, "
       "and the streamline follows the orientation of the principal eigenvector of "
-      "that tensor.";
+      "that tensor."
 
-  REFERENCES 
+    + "Note that the behaviour of the -angle option varies slightly depending on the "
+      "order of integration: for any first-order method, this angle corresponds to the "
+      "deviation in streamline trajectory per step; for higher-order methods, this "
+      "corresponds to the change in underlying fibre orientation between the start and "
+      "end points of each step.";
+
+  REFERENCES
    + "References based on streamlines algorithm used:"
 
    + "* FACT:\n"
@@ -206,7 +213,8 @@ void usage ()
 
   + DWI::Tractography::ACT::ACTOption
 
-  + DWI::Tractography::Algorithms::iFOD2Option
+  + DWI::Tractography::Algorithms::iFODOptions
+  + DWI::Tractography::Algorithms::iFOD2Options
 
   + DWI::GradImportOptions();
 
@@ -235,6 +243,8 @@ void run ()
   Seeding::load_seed_mechanisms (properties);
   Seeding::load_seed_parameters (properties);
 
+  if (algorithm == 1 || algorithm == 2)
+    Algorithms::load_iFOD_options (properties);
   if (algorithm == 2)
     Algorithms::load_iFOD2_options (properties);
 

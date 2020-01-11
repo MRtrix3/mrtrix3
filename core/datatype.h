@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __data_type_h__
 #define __data_type_h__
@@ -62,6 +63,17 @@ namespace MR
       bool is_signed () const {
         return dt & Signed;
       }
+      bool is_byte_order_native () {
+        if (bits() <= 8)
+          return true;
+        if (!is_little_endian() && !is_big_endian())
+          throw Exception ("byte order not set!");
+#ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
+        return is_big_endian();
+#else
+        return is_little_endian();
+#endif
+      }
       bool is_little_endian () const {
         return dt & LittleEndian;
       }
@@ -75,6 +87,11 @@ namespace MR
       bool is_floating_point () const {
         const uint8_t type = dt & Type;
         return ((type == Float32) || (type == Float64));
+      }
+      void set_floating_point () {
+        if (!is_floating_point()) {
+          dt = Native;
+        }
       }
       void set_byte_order_native () {
         if (dt != Bit && dt != Int8 && dt != UInt8) {

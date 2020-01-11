@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <Eigen/Geometry>
 #include <unsupported/Eigen/MatrixFunctions>
@@ -37,6 +38,7 @@ const char* operations[] = {
   "interpolate",
   "decompose",
   "align_vertices_rigid",
+  "align_vertices_rigid_scale",
   NULL
 };
 
@@ -47,49 +49,55 @@ void usage ()
   SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  + Argument ("inputs", "the inputs for the specified operation").allow_multiple()
+  + Argument ("inputs", "the input(s) for the specified operation").allow_multiple()
   + Argument ("operation", "the operation to perform, one of: " + join(operations, ", ") + " (see description section for details).").type_choice (operations)
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
-  DESCRIPTION
-      + "invert: invert the input transformation:"
-      + "matrix_in invert output"
+  EXAMPLES
+  + Example ("Invert a transformation",
+             "transformcalc matrix_in.txt invert matrix_out.txt",
+             "")
 
-      + "half: calculate the matrix square root of the input transformation:"
-      + "matrix_in half output"
+  + Example ("Calculate the matrix square root of the input transformation (halfway transformation)",
+             "transformcalc matrix_in.txt half matrix_out.txt",
+             "")
 
-      + "rigid: calculate the rigid transformation of the affine input transformation:"
-      + "matrix_in rigid output"
+  + Example ("Calculate the rigid component of an affine input transformation",
+             "transformcalc affine_in.txt rigid rigid_out.txt",
+             "")
 
-      + "header: calculate the transformation matrix from an original image and an image with modified header:"
-      + "mov mapmovhdr header output"
+  + Example ("Calculate the transformation matrix from an original image and an image with modified header",
+             "transformcalc mov mapmovhdr header output",
+             "")
 
-      + "average: calculate the average affine matrix of all input matrices:"
-      + "input ... average output"
+  + Example ("Calculate the average affine matrix of a set of input matrices",
+             "transformcalc input1.txt ... inputN.txt average matrix_out.txt",
+             "")
 
-      + "interpolate: create interpolated transformation matrix between input (t=0) and input2 (t=1). "
-        "Based on matrix decomposition with linear interpolation of "
-        "translation, rotation and stretch described in "
-        "Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
-        "Matrix, 92, 258-264. doi:10.1.1.56.1336:"
-      + "input input2 interpolate output"
+  + Example ("Create interpolated transformation matrix between two inputs",
+             "transformcalc input1.txt input2.txt interpolate matrix_out.txt",
+             "Based on matrix decomposition with linear interpolation of "
+             "translation, rotation and stretch described in: "
+             "Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
+             "Matrix, 92, 258-264. doi:10.1.1.56.1336")
 
-      + "decompose: decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S). "
-        "The output is a key-value text file containing: "
-        "scaling: vector of 3 scaling factors in x, y, z direction; "
-        "shear: list of shear factors for xy, xz, yz axes; "
-        "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; "
-        "angle_axis: angle in radians and rotation axis; "
-        "translation : translation vector along x, y, z axes in mm; "
-        "R: composed roation matrix (R = rot_x * rot_y * rot_z); "
-        "S: composed scaling and shear matrix:"
-      + "matrix_in decompose output"
+  + Example ("Decompose transformation matrix M into translation, rotation and stretch and shear (M = T * R * S)",
+             "transformcalc matrix_in.txt decompose matrixes_out.txt",
+             "The output is a key-value text file containing: "
+             "scaling: vector of 3 scaling factors in x, y, z direction; "
+             "shear: list of shear factors for xy, xz, yz axes; "
+             "angles: list of Euler angles about static x, y, z axes in radians in the range [0:pi]x[-pi:pi]x[-pi:pi]; "
+             "angle_axis: angle in radians and rotation axis; "
+             "translation : translation vector along x, y, z axes in mm; "
+             "R: composed roation matrix (R = rot_x * rot_y * rot_z); "
+             "S: composed scaling and shear matrix")
 
-      + "align_vertices_rigid: align two sets of landmarks using a rigid transformation. "
-        "Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row "
-        "of moving.txt and fixed.txt. Requires 3 or more vertices in each file. "
-        "Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873:"
-      + "input moving.txt fixed.txt align_vertices_rigid output";
+  + Example ("Calculate transformation that aligns two images based on sets of corresponding landmarks",
+             "transformcalc input moving.txt fixed.txt align_vertices_rigid rigid.txt",
+             "Similary, 'align_vertices_rigid_scale' produces an affine matrix (rigid and global scale). "
+             "Vertex coordinates are in scanner space, corresponding vertices must be stored in the same row "
+             "of moving.txt and fixed.txt. Requires 3 or more vertices in each file. "
+             "Algorithm: Kabsch 'A solution for the best rotation to relate two sets of vectors' DOI:10.1107/S0567739476001873");
 
 }
 
@@ -97,27 +105,28 @@ template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
-transform_type align_corresponding_vertices (const Eigen::MatrixXd &target_vertices, const Eigen::MatrixXd &moving_vertices, bool scale) {
+transform_type align_corresponding_vertices (const Eigen::MatrixXd &src_vertices, const Eigen::MatrixXd &trg_vertices, bool scale) {
   //  this function aligns two sets of vertices which must have corresponding vertices stored in the same row
   //
   //  scale == false --> Kabsch
-  //  minimise (target_vertices.row(i) - M * moving_vertices.row(i) + t).squaredNorm();
+  //  minimise (src_vertices.row(i) - M * trg_vertices.row(i) + t).squaredNorm();
   //
-  //  scale == true --> Umeyama
+  //  scale == true
   //  nonrigid version of Kabsch algorithm that also includes scale (not shear)
   //
-  assert(target_vertices.rows() == moving_vertices.rows());
-  const size_t n = moving_vertices.rows();
-  assert (n > 2);
+  assert(src_vertices.rows() == trg_vertices.rows());
+  const size_t n = trg_vertices.rows();
+  if (n < 3)
+    throw Exception ("vertex alignment requires at least 3 points");
 
-  assert(target_vertices.cols() == moving_vertices.cols());
-  assert(target_vertices.cols() == 3 && "align_corresponding_vertices implemented only for 3D data");
+  assert(src_vertices.cols() == trg_vertices.cols());
+  assert(src_vertices.cols() == 3 && "align_corresponding_vertices implemented only for 3D data");
 
-  Eigen::VectorXd moving_centre = moving_vertices.colwise().mean();
-  Eigen::VectorXd target_centre = target_vertices.colwise().mean();
-  Eigen::MatrixXd moving_centered = moving_vertices.rowwise() - moving_centre.transpose();
-  Eigen::MatrixXd target_centered = target_vertices.rowwise() - target_centre.transpose();
-  Eigen::MatrixXd cov = (target_centered.adjoint() * moving_centered) / default_type (n - 1);
+  Eigen::VectorXd trg_centre = trg_vertices.colwise().mean();
+  Eigen::VectorXd src_centre = src_vertices.colwise().mean();
+  Eigen::MatrixXd trg_centred = trg_vertices.rowwise() - trg_centre.transpose();
+  Eigen::MatrixXd src_centred = src_vertices.rowwise() - src_centre.transpose();
+  Eigen::MatrixXd cov = (src_centred.adjoint() * trg_centred) / default_type (n - 1);
 
   Eigen::JacobiSVD<Eigen::Matrix3d> svd (cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
@@ -136,18 +145,25 @@ transform_type align_corresponding_vertices (const Eigen::MatrixXd &target_verti
   R = Eigen::Quaterniond(R).normalized().toRotationMatrix();
 
   if (scale) {
-    default_type fsq = 0;
-    for (size_t i = 0; i < n; ++ i)
-      fsq += moving_centered.row(i).squaredNorm();
+    default_type fsq_t = 0.0;
+    default_type fsq_s = 0.0;
+    for (size_t i = 0; i < n; ++ i) {
+      fsq_t += trg_centred.row(i).squaredNorm();
+      fsq_s += src_centred.row(i).squaredNorm();
+    }
     // calculate and apply the scale
-    default_type fscale = svd.singularValues().dot(e) / fsq;
+    default_type fscale = sqrt(fsq_t / fsq_s); // Umeyama: svd.singularValues().dot(e) / fsq;
+    DEBUG("scaling: "+str(fscale));
     R *= fscale;
   }
 
-  transform_type T;
-  T.linear() = R;
-  T.translation() = target_centre - (R * moving_centre);
-  return T;
+  transform_type T1 = transform_type::Identity();
+  transform_type T2 = transform_type::Identity();
+  transform_type T3 = transform_type::Identity();
+  T1.translation() = trg_centre;
+  T2.linear() = R;
+  T3.translation() = -src_centre;
+  return T1 * T2 * T3;
 }
 
 void run ()
@@ -276,6 +292,7 @@ void run ()
 
 
       File::OFStream out (output_path);
+      out << "# " << App::command_history_string << "\n";
       Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
       out << "scaling: "     << Eigen::RowVector3d(S(0,0), S(1,1), S(2,2)).format(fmt);
       out << "shear: "       << Eigen::RowVector3d(S(0,1), S(0,2), S(1,2)).format(fmt);
@@ -288,15 +305,16 @@ void run ()
       out << "S: " << S.row(0).format(fmt);
       out << "S: " << S.row(1).format(fmt);
       out << "S: " << S.row(2).format(fmt);
+      out << "jacobian_det: " << str(transform.linear().topLeftCorner<3,3>().determinant()) << "\n";
 
       break;
     }
-    case 7: { // align_vertices_rigid
+    case 7: case 8: { // align_vertices_rigid and align_vertices_rigid_scale
       if (num_inputs != 2)
-        throw Exception ("align_vertices_rigid requires 2 input");
+        throw Exception ("align_vertices_rigid requires 2 inputs");
       const Eigen::MatrixXd target_vertices = load_matrix (argument[0]);
       const Eigen::MatrixXd moving_vertices = load_matrix (argument[1]);
-      const transform_type T = align_corresponding_vertices (target_vertices, moving_vertices, false);
+      const transform_type T = align_corresponding_vertices (moving_vertices, target_vertices, op==8);
       save_transform (T, output_path);
       break;
     }

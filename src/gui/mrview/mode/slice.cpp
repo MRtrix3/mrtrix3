@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/mode/slice.h"
 
@@ -27,7 +28,7 @@ namespace MR
       {
 
 
-        std::string Slice::Shader::vertex_shader_source (const Displayable&) 
+        std::string Slice::Shader::vertex_shader_source (const Displayable&)
         {
           return
             "layout(location = 0) in vec3 vertpos;\n"
@@ -94,7 +95,7 @@ namespace MR
 
         void Slice::paint (Projection& with_projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           // set up OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -102,13 +103,13 @@ namespace MR
           gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
           draw_plane (plane(), slice_shader, with_projection);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         // Draw without setting up matrices/no crosshairs/no orientation labels
         void Slice::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           // render image:
           if (visible) {
             if (snap_to_image())
@@ -118,18 +119,18 @@ namespace MR
           }
 
           render_tools (with_projection, false, axis, slice (axis));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void Slice::draw_plane (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           setup_projection (axis, with_projection);
           draw_plane_primitive (axis, shader_program, with_projection);
           draw_crosshairs (with_projection);
           draw_orientation_labels (with_projection);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
