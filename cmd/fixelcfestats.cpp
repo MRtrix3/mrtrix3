@@ -62,6 +62,12 @@ void usage ()
   SYNOPSIS = "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing";
 
   DESCRIPTION
+  + "Unlike previous versions of this command, where a whole-brain tractogram file would be provided as input "
+    "in order to generate the fixel-fixel connectivity matrix and smooth fixel data, this version expects to be "
+    "provided with the directory path to a pre-calculated fixel-fixel connectivity matrix (likely generated using "
+    "the MRtrix3 command fixelconnectivity), and for the input fixel data to have already been smoothed (likely "
+    "using the MRtrix3 command fixelfilter)."
+
   + "Note that if the -mask option is used, the output fixel directory will still contain the same set of fixels as that "
     "present in the input fixel template, in order to retain fixel correspondence. However a consequence of this is that "
     "all fixels in the template will be initialy visible when the output fixel directory is loaded in mrview. Those fixels "
@@ -95,7 +101,9 @@ void usage ()
 
   + Argument ("contrast", "the contrast matrix, specified as rows of weights").type_file_in ()
 
-  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_directory_in ()
+  // .type_various() rather than .type_directory_in() to catch people trying to
+  //   pass a track file, and give a more informative error message
+  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_various ()
 
   + Argument ("out_fixel_directory", "the output directory where results will be saved. Will be created if it does not exist").type_text();
 
@@ -229,6 +237,11 @@ std::string SubjectFixelImport::fixel_directory;
 
 void run()
 {
+  if (Path::has_suffix (argument[4], ".tck"))
+    throw Exception ("This version of fixelcfestats requires as input not a track file, but a "
+                     "pre-calculated fixel-fixel connectivity matrix; in addition, input fixel "
+                     "data must be pre-smoothed. Please check command / pipeline documentation "
+                     "specific to this software version.");
 
   const value_type cfe_dh = get_option_value ("cfe_dh", DEFAULT_CFE_DH);
   const value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
