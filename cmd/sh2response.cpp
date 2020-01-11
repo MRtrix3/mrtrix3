@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "exception.h"
@@ -46,6 +47,9 @@ void usage ()
 
   SYNOPSIS = "Generate an appropriate response function from the image data for spherical deconvolution";
 
+  DESCRIPTION
+  + Math::SH::encoding_description;
+
   ARGUMENTS
     + Argument ("SH", "the spherical harmonic decomposition of the diffusion-weighted images").type_image_in()
     + Argument ("mask", "the mask containing the voxels from which to estimate the response function").type_image_in()
@@ -66,7 +70,7 @@ using value_type = double;
 
 
 
-void run () 
+void run ()
 {
   auto SH = Image<value_type>::open(argument[0]);
   Math::SH::check (SH);
@@ -97,7 +101,7 @@ void run ()
   auto loop = Loop ("estimating response function", SH, 0, 3);
   for (auto l = loop(mask, SH, dir); l; ++l) {
 
-    if (!mask.value()) 
+    if (!mask.value())
       continue;
 
     Eigen::Vector3d d = dir.row(3);
@@ -128,10 +132,10 @@ void run ()
       value_type val = AL[l] * d_dot_s / d_dot_d;
       response[Math::ZSH::index(l)] += val;
 
-      if (dump_stream.is_open()) 
+      if (dump_stream.is_open())
         dump_stream << val << " ";
     }
-    if (dump_stream.is_open()) 
+    if (dump_stream.is_open())
       dump_stream << "\n";
 
     ++count;

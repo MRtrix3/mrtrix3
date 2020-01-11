@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_connectome_metric_h__
 #define __dwi_tractography_connectome_metric_h__
@@ -78,9 +79,9 @@ class Metric { MEMALIGN(Metric)
     {
       double result = 1.0;
       if (scale_by_length)
-        result *= tck.calc_length();
+        result *= Tractography::length (tck);
       else if (scale_by_invlength)
-        result = (tck.size() > 1 ? (result / tck.calc_length()) : 0.0);
+        result = (tck.size() > 1 ? (result / Tractography::length (tck)) : 0.0);
       if (scale_by_file) {
         if (tck.index >= size_t(file_values.size()))
           throw Exception ("File " + file_path + " does not contain enough entries for this tractogram");
