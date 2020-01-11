@@ -812,7 +812,7 @@ namespace MR
 
       void Window::image_open_slot ()
       {
-        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
+        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open", &current_folder);
         if (image_list.empty())
           return;
 
@@ -832,7 +832,7 @@ namespace MR
 
       void Window::image_import_DICOM_slot ()
       {
-        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import");
+        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import", &current_folder);
         if (folder.empty())
           return;
 
@@ -897,7 +897,7 @@ namespace MR
 
       void Window::image_save_slot ()
       {
-        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination");
+        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination", &current_folder);
         if (image_name.empty())
           return;
 
