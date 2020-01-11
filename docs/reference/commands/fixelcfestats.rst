@@ -25,6 +25,8 @@ Usage
 Description
 -----------
 
+Unlike previous versions of this command, where a whole-brain tractogram file would be provided as input in order to generate the fixel-fixel connectivity matrix and smooth fixel data, this version expects to be provided with the directory path to a pre-calculated fixel-fixel connectivity matrix (likely generated using the MRtrix3 command fixelconnectivity), and for the input fixel data to have already been smoothed (likely using the MRtrix3 command fixelfilter).
+
 Note that if the -mask option is used, the output fixel directory will still contain the same set of fixels as that present in the input fixel template, in order to retain fixel correspondence. However a consequence of this is that all fixels in the template will be initialy visible when the output fixel directory is loaded in mrview. Those fixels outside the processing mask will immediately disappear from view as soon as any data-file-based fixel colouring or thresholding is applied.
 
 In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
