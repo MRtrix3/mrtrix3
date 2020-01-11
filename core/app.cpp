@@ -36,6 +36,10 @@
 #define HELP_OPTION_INDENT 2, 20
 #define HELP_EXAMPLE_INDENT 7
 
+#define MRTRIX_CORE_REFERENCE "Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. " \
+                              "MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. " \
+                              "NeuroImage, 2019, 202, 116137"
+
 
 namespace MR
 {
@@ -284,10 +288,10 @@ namespace MR
         + bold ("COPYRIGHT") + "\n"
         + paragraph ("", COPYRIGHT, HELP_PURPOSE_INDENT) + "\n"
         + [&](){
-          if (REFERENCES.size() == 0) return std::string();
           std::string s = bold ("REFERENCES") + "\n";
           for (size_t n = 0; n < REFERENCES.size(); ++n)
             s += paragraph ("", REFERENCES[n], HELP_PURPOSE_INDENT) + "\n";
+          s += paragraph ("", MRTRIX_CORE_REFERENCE, HELP_PURPOSE_INDENT) + "\n";
           return s;
         }();
     }
@@ -772,11 +776,11 @@ namespace MR
       for (size_t i = 0; i < __standard_options.size(); ++i)
         s += format_option (__standard_options[i]);
 
-      if (REFERENCES.size()) {
-        s += std::string ("## References\n\n");
-        for (size_t i = 0; i < REFERENCES.size(); ++i)
-          s += indent_newlines (REFERENCES[i]) + "\n\n";
-      }
+      s += std::string ("## References\n\n");
+      for (size_t i = 0; i < REFERENCES.size(); ++i)
+        s += indent_newlines (REFERENCES[i]) + "\n\n";
+      s += indent_newlines (MRTRIX_CORE_REFERENCE) + "\n\n";
+
       s += std::string("---\n\nMRtrix ") + mrtrix_version + ", built " + build_date + "\n\n"
         "\n\n**Author:** " + AUTHOR
         + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
@@ -903,11 +907,11 @@ namespace MR
       for (size_t i = 0; i < __standard_options.size(); ++i)
         s += format_option (__standard_options[i]);
 
-      if (REFERENCES.size()) {
-        s += std::string ("References\n^^^^^^^^^^\n\n");
-        for (size_t i = 0; i < REFERENCES.size(); ++i)
-          s += indent_newlines (REFERENCES[i]) + "\n\n";
-      }
+      s += std::string ("References\n^^^^^^^^^^\n\n");
+      for (size_t i = 0; i < REFERENCES.size(); ++i)
+        s += indent_newlines (REFERENCES[i]) + "\n\n";
+      s += indent_newlines (MRTRIX_CORE_REFERENCE) + "\n\n";
+
       s += std::string("--------------\n\n") +
         "\n\n**Author:** " + (char*)AUTHOR
         + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
