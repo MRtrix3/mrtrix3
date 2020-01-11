@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_algorithms_iFOD1_h__
 #define __dwi_tractography_algorithms_iFOD1_h__
@@ -19,6 +20,7 @@
 #include "math/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 
@@ -33,6 +35,9 @@ namespace MR
       namespace Algorithms
       {
 
+        extern const App::OptionGroup iFODOptions;
+        void load_iFOD_options (Tractography::Properties&);
+
     using namespace MR::DWI::Tractography::Tracking;
 
     class iFOD1 : public MethodBase { MEMALIGN(iFOD1)
@@ -42,8 +47,9 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
           lmax (Math::SH::LforN (source.size(3))),
-          max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
-          sin_max_angle (std::sin (max_angle)),
+          max_trials (Defaults::max_trials_per_step),
+          sin_max_angle_1o (std::sin (max_angle_1o)),
+          fod_power (1.0f),
           mean_samples (0.0),
           mean_truncations (0.0),
           max_max_truncation (0.0),
@@ -56,20 +62,25 @@ namespace MR
             throw Exception ("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
           }
 
-          set_step_size (0.1f);
-          if (rk4) {
-            max_angle = 0.5 * max_angle_rk4;
-            INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * Math::pi))) + " mm");
-          } else {
-            INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
-          }
-          sin_max_angle = std::sin (max_angle);
+          set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                              Defaults::angle_ifod1,
+                              rk4);
 
-          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
+          // max_angle_1o needs to be set because it influences the cone in which FOD amplitudes are sampled
+          if (rk4) {
+            max_angle_1o = max_angle_ho;
+            cos_max_angle_1o = std::cos (max_angle_1o);
+            max_angle_ho = Math::pi_2;
+            cos_max_angle_ho = 0.0;
+          }
+          sin_max_angle_1o = std::sin (max_angle_1o);
+          set_num_points();
+          set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
           properties["method"] = "iFOD1";
           properties.set (lmax, "lmax");
           properties.set (max_trials, "max_trials");
+          properties.set (fod_power, "fod_power");
           bool precomputed = true;
           properties.set (precomputed, "sh_precomputed");
           if (precomputed)
@@ -100,7 +111,7 @@ namespace MR
         }
 
         size_t lmax, max_trials;
-        float sin_max_angle;
+        float sin_max_angle_1o, fod_power;
         Math::SH::PrecomputedAL<float> precomputer;
 
         private:
@@ -183,7 +194,7 @@ namespace MR
         if (max_val <= 0.0)
           return CALIBRATOR;
 
-        max_val *= calibrate_ratio;
+        max_val = std::pow (max_val, S.fod_power) * calibrate_ratio;
 
         num_sample_runs++;
 
@@ -193,6 +204,7 @@ namespace MR
 
           if (val > S.threshold) {
 
+            val = std::pow (val, S.fod_power);
             if (val > max_val) {
               DEBUG ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
               ++num_truncations;
@@ -211,7 +223,7 @@ namespace MR
           }
         }
 
-        return BAD_SIGNAL;
+        return MODEL;
       }
 
 
@@ -237,7 +249,7 @@ namespace MR
         );
       }
 
-      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle_1o, S.sin_max_angle_1o)); }
 
 
 
@@ -255,7 +267,7 @@ namespace MR
 
           float operator() (float el)
           {
-            return Math::SH::value (P.values, Eigen::Vector3f (std::sin (el), 0.0, std::cos(el)), P.S.lmax);
+            return std::pow (Math::SH::value (P.values, Eigen::Vector3f (std::sin (el), 0.0, std::cos(el)), P.S.lmax), P.S.fod_power);
           }
 
         private:

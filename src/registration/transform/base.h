@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __registration_transform_base_h__
 #define __registration_transform_base_h__
@@ -88,7 +89,9 @@ namespace MR
           using ParameterType = default_type;
           Base (size_t number_of_parameters) :
               number_of_parameters (number_of_parameters),
-              optimiser_weights (number_of_parameters) {
+              optimiser_weights (number_of_parameters),
+              nonsymmetric (false)
+            {
               trafo.matrix().setIdentity();
               trafo_half.matrix().setIdentity();
               trafo_half_inverse.matrix().setIdentity();
@@ -200,6 +203,15 @@ namespace MR
             return optimiser_weights;
           }
 
+
+          bool is_symmetric () const {
+            return !nonsymmetric;
+          }
+
+          void use_nonsymmetric (const bool asym) {
+            nonsymmetric = asym;
+          }
+
           void set_offset (const Eigen::Vector3& offset_in) {
             trafo.translation() = offset_in;
             compute_halfspace_transformations();
@@ -208,8 +220,8 @@ namespace MR
           std::string info () {
             Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
             INFO ("transformation:\n"+str(trafo.matrix().format(fmt)));
-            INFO ("transformation_half:\n"+str(trafo_half.matrix().format(fmt)));
-            INFO ("transformation_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
+            DEBUG ("transformation_half:\n"+str(trafo_half.matrix().format(fmt)));
+            DEBUG ("transformation_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
             return "centre: "+str(centre.transpose(),12);
           }
 
@@ -250,11 +262,17 @@ namespace MR
             tmp.template block<3,4>(0,0) = trafo.matrix();
             assert ((tmp.template block<3,3>(0,0).isApprox (trafo.linear())));
             assert (tmp.determinant() > 0);
-            tmp = tmp.sqrt().eval();
-            trafo_half.matrix() = tmp.template block<3,4>(0,0);
-            trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
-            assert (trafo.matrix().isApprox ((trafo_half*trafo_half).matrix()));
-            assert (trafo.inverse().matrix().isApprox ((trafo_half_inverse*trafo_half_inverse).matrix()));
+            if (nonsymmetric) {
+              trafo_half.matrix() = tmp.template block<3,4>(0,0);
+              trafo_half_inverse.setIdentity();
+              assert (trafo.matrix().isApprox (trafo.matrix()));
+            } else {
+              tmp = tmp.sqrt().eval();
+              trafo_half.matrix() = tmp.template block<3,4>(0,0);
+              trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
+              assert (trafo.matrix().isApprox ((trafo_half*trafo_half).matrix()));
+              assert (trafo.inverse().matrix().isApprox ((trafo_half_inverse*trafo_half_inverse).matrix()));
+            }
             // debug();
           }
 
@@ -264,6 +282,8 @@ namespace MR
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse;
           Eigen::Vector3 centre;
           Eigen::VectorXd optimiser_weights;
+          bool nonsymmetric;
+
       };
       //! @}
     }

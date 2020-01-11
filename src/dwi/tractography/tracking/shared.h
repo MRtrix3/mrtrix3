@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_tracking_shared_h__
 #define __dwi_tractography_tracking_shared_h__
@@ -58,9 +59,13 @@ namespace MR
             Image<float> source;
             Properties& properties;
             Eigen::Vector3f init_dir;
-            size_t max_num_tracks, max_num_seeds, min_num_points, max_num_points;
-            float max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
-            float step_size, threshold, init_threshold;
+            size_t max_num_tracks, max_num_seeds;
+            size_t min_num_points_preds, max_num_points_preds;
+            size_t min_num_points_postds, max_num_points_postds;
+            float min_dist, max_dist;
+            // Different variables for 1st-order integration vs. higher-order integration
+            float max_angle_1o, max_angle_ho, cos_max_angle_1o, cos_max_angle_ho;
+            float step_size, min_radius, threshold, init_threshold;
             size_t max_seed_attempts;
             bool unidirectional, rk4, stop_on_all_include, implicit_max_num_seeds;
             DWI::Tractography::Resampling::Downsampler downsampler;
@@ -69,17 +74,19 @@ namespace MR
             bool is_act() const { return bool (act_shared_additions); }
             const ACT::ACT_Shared_additions& act() const { return *act_shared_additions; }
 
-
             float vox () const
             {
               return std::pow (source.spacing(0)*source.spacing(1)*source.spacing(2), float (1.0/3.0));
             }
 
-            void set_step_size (float stepsize);
+            void set_step_and_angle (const float stepsize, const float angle, bool is_higher_order);
+            void set_num_points();
+            void set_num_points (const float angle_minradius_preds, const float max_step_postds);
             void set_cutoff (float cutoff);
 
             // This gets overloaded for iFOD2, as each sample is output rather than just each step, and there are
             //   multiple samples per step
+            // (Only utilised for Exec::satisfy_wm_requirement())
             virtual float internal_step_size() const { return step_size; }
 
 

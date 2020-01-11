@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "axes.h"
 #include "command.h"
@@ -31,6 +32,10 @@
 using namespace MR;
 using namespace App;
 
+
+
+bool add_to_command_history = true;
+
 void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)";
@@ -45,50 +50,20 @@ void usage ()
     "specific region of interest, or flip the images. Some of the possible "
     "operations are described in more detail below."
 
-  + "The -coord option is used to select the coordinates within the input "
-    "image that are to be retained in the output image. This can therefore "
-    "be used to include or exclude subsets of slices along a particular "
-    "spatial axis, or volumes / series within higher dimensions. "
-    "For instance: "
-    "-coord 3 0 extracts the first volume from a 4D image; "
-    "-coord 1 24 extracts slice number 24 along the y-axis."
+  + "Note that for both the -coord and -axes options, indexing starts from 0 "
+    "rather than 1. E.g. "
+    "-coord 3 <#> selects volumes (the fourth dimension) from the series; "
+    "-axes 0,1,2 includes only the three spatial axes in the output image."
 
-  + "The colon operator can be particularly useful in conjunction with the "
-    "-coord option, in order to select multiple coordinates. "
-    "For instance: "
-    "-coord 3 1:59 "
-    "would select all but the first volume from an image containing 60 volumes."
+  + "Additionally, for the second input to the -coord option and the -axes "
+    "option, you can use any valid number sequence in the selection, as well "
+    "as the 'end' keyword (see the main documentation for details); this can be "
+    "particularly useful to select multiple coordinates."
 
   + "The -vox option is used to change the size of the voxels in the output "
-    "image. Note that this does not re-sample the image based on a new "
-    "voxel size (that is done using the mrresize command); this only changes "
-    "the voxel size as reported in the image header. Voxel sizes for "
-    "individual axes can be set independently, using a comma-separated list of "
-    "values; e.g. "
-    "-vox 1,,3.5 "
-    "will change the voxel size along the x & z axes to 1.0mm and 3.5mm "
-    "respectively, and leave the y-axis voxel size unchanged."
-
-  + "The -axes option specifies which axes from the input image will be used "
-    "to form the output image. This allows the permutation, omission, or "
-    "addition of axes into the output image. The axes should be supplied as a "
-    "comma-separated list of axis indices, e.g. "
-    "-axes 0,1,2 "
-    "would select only the three spatial axes to form the output image. If an "
-    "axis from the input image is to be omitted from the output image, it must "
-    "have dimension 1; either in the input image itself, or a single coordinate "
-    "along that axis must be selected by the user by using the -coord option. "
-    "An axis of unity dimension can be inserted by supplying -1 at the "
-    "corresponding position in the list."
-
-  + "The -scaling option specifies the data scaling parameters stored within "
-    "the image header that are used to rescale the image intensity values. "
-    "Where the raw data stored in a particular voxel is I, the value within "
-    "that voxel is interpreted as: "
-    "value = offset + (scale x I). "
-    "To adjust this scaling, the relevant parameters must be provided as a "
-    "comma-separated 2-vector of floating-point values, in the format "
-    "\"offset,scale\" (no quotation marks)."
+    "image as reported in the image header; note however that this does not "
+    "re-sample the image based on a new voxel size (that is done using the "
+    "mrresize command)."
 
   + "By default, the intensity scaling parameters in the input image header "
     "are passed through to the output image header when writing to an integer "
@@ -96,10 +71,88 @@ void usage ()
     "images. Note that the -scaling option will therefore have no effect for "
     "floating-point or binary output images."
 
-  + "Note that for both the -coord and -axes options, indexing starts from 0 "
-    "rather than 1. E.g. "
-    "-coord 3 <#> selects volumes (the fourth dimension) from the series; "
-    "-axes 0,1,2 includes only the three spatial axes in the output image.";
+  + "The -axes option specifies which axes from the input image will be used "
+    "to form the output image. This allows the permutation, omission, or "
+    "addition of axes into the output image. The axes should be supplied as a "
+    "comma-separated list of axis indices. If an axis from the input image is "
+    "to be omitted from the output image, it must either already have a size of "
+    "1, or a single coordinate along that axis must be selected by the user by "
+    "using the -coord option. Examples are provided further below.";
+
+
+  EXAMPLES
+  + Example ("Extract the first volume from a 4D image, and make the output a 3D image",
+             "mrconvert in.mif -coord 3 0 -axes 0,1,2 out.mif",
+             "The -coord 3 0 option extracts, from axis number 3 (which is the "
+             "fourth axis since counting begins from 0; this is the axis that "
+             "steps across image volumes), only coordinate number 0 (i.e. the "
+             "first volume). The -axes 0,1,2 ensures that only the first three "
+             "axes (i.e. the spatial axes) are retained; if this option were not "
+             "used in this example, then image out.mif would be a 4D image, "
+             "but it would only consist of a single volume, and mrinfo would "
+             "report its size along the fourth axis as 1.")
+
+  + Example ("Extract slice number 24 along the AP direction",
+             "mrconvert volume.mif slice.mif -coord 1 24",
+             "MRtrix3 uses a RAS (Right-Anterior-Superior) axis "
+             "convention, and internally reorients images upon loading "
+             "in order to conform to this as far as possible. So for "
+             "non-exotic data, axis 1 should correspond (approximately) to the "
+             "anterior-posterior direction.")
+
+  + Example ("Extract only every other volume from a 4D image",
+             "mrconvert all.mif every_other.mif -coord 3 1:2:end",
+             "This example demonstrates two features: Use of the "
+             "colon syntax to conveniently specify a number sequence "
+             "(in the format \'start:step:stop\'); and use of the \'end\' "
+             "keyword to generate this sequence up to the size of the "
+             "input image along that axis (i.e. the number of volumes).")
+
+  + Example ("Alter the image header to report a new isotropic voxel size",
+             "mrconvert in.mif isotropic.mif -vox 1.25",
+             "By providing a single value to the -vox option only, the "
+             "specified value is used to set the voxel size in mm for all "
+             "three spatial axes in the output image.")
+
+  + Example ("Alter the image header to report a new anisotropic voxel size",
+             "mrconvert in.mif anisotropic.mif -vox 1,,3.5",
+             "This example will change the reported voxel size along the first "
+             "and third axes (ideally left-right and inferior-superior) to "
+             "1.0mm and 3.5mm respectively, and leave the voxel size along the "
+             "second axis (ideally anterior-posterior) unchanged.")
+
+  + Example ("Turn a single-volume 4D image into a 3D image",
+             "mrconvert 4D.mif 3D.mif -axes 0,1,2",
+             "Sometimes in the process of extracting or calculating a single "
+             "3D volume from a 4D image series, the size of the image reported "
+             "by mrinfo will be \"X x Y x Z x 1\", indicating that the resulting "
+             "image is in fact also 4D, it just happens to contain only one "
+             "volume. This example demonstrates how to convert this into a "
+             "genuine 3D image (i.e. mrinfo will report the size as \"X x Y x Z\".")
+
+  + Example ("Insert an axis of size 1 into the image",
+             "mrconvert XYZD.mif XYZ1D.mif -axes 0,1,2,-1,3",
+             "This example uses the value -1 as a flag to indicate to mrconvert "
+             "where a new axis of unity size is to be inserted. In this particular "
+             "example, the input image has four axes: the spatial axes X, Y and Z, "
+             "and some form of data D is stored across the fourth axis (i.e. "
+             "volumes). Due to insertion of a new axis, the output image is 5D: "
+             "the three spatial axes (XYZ), a single volume (the size of the "
+             "output image along the fourth axis will be 1), and data D "
+             "will be stored as volume groups along the fifth axis of the image.")
+
+  + Example ("Manually reset the data scaling parameters stored within the image header to defaults",
+             "mrconvert with_scaling.mif without_scaling.mif -scaling 0.0,1.0",
+             "This command-line option alters the parameters stored within the image "
+             "header that provide a linear mapping from raw intensity values stored "
+             "in the image data to some other scale. Where the raw data stored in a "
+             "particular voxel is I, the value within that voxel is interpreted as: "
+             "value = offset + (scale x I).  To adjust this scaling, the relevant "
+             "parameters must be provided as a comma-separated 2-vector of "
+             "floating-point values, in the format \"offset,scale\" (no quotation "
+             "marks). This particular example sets the offset to zero and the scale "
+             "to one, which equates to no rescaling of the raw intensity data.");
+
 
   ARGUMENTS
   + Argument ("input", "the input image.").type_image_in ()
@@ -110,13 +163,15 @@ void usage ()
   + OptionGroup ("Options for manipulating fundamental image properties")
 
   + Option ("coord",
-            "retain data from the input image only at the coordinates specified")
-  .allow_multiple()
+            "retain data from the input image only at the coordinates "
+            "specified in the selection along the specified axis. The selection "
+            "argument expects a number sequence, which can also include the "
+            "'end' keyword.").allow_multiple()
     + Argument ("axis").type_integer (0)
-    + Argument ("coord").type_sequence_int()
+    + Argument ("selection").type_sequence_int()
 
   + Option ("vox",
-            "change the voxel dimensions of the output image")
+            "change the voxel dimensions reported in the output image header")
     + Argument ("sizes").type_sequence_float()
 
   + Option ("axes",
@@ -152,6 +207,10 @@ void usage ()
             "append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).").allow_multiple()
   + Argument ("key").type_text()
   + Argument ("value").type_text()
+
+  + Option ("copy_properties",
+            "clear all generic properties and replace with the properties from the image / file specified.")
+  + Argument ("source").type_various()
 
 
   + Stride::Options
@@ -259,9 +318,11 @@ inline vector<int> set_header (Header& header, const ImageType& input)
 
   opt = get_options ("vox");
   if (opt.size()) {
-    vector<default_type> vox = opt[0][0];
+    vector<default_type> vox = parse_floats (opt[0][0]);
     if (vox.size() > header.ndim())
       throw Exception ("too many axes supplied to -vox option");
+    if (vox.size() == 1)
+      vox.resize (3, vox[0]);
     for (size_t n = 0; n < vox.size(); ++n) {
       if (std::isfinite (vox[n]))
         header.spacing(n) = vox[n];
@@ -277,11 +338,12 @@ inline vector<int> set_header (Header& header, const ImageType& input)
 
 
 
+
 template <typename T, class InputType>
 void copy_permute (const InputType& in, Header& header_out, const std::string& output_filename)
 {
   const auto axes = set_header (header_out, in);
-  auto out = Image<T>::create (output_filename, header_out);
+  auto out = Image<T>::create (output_filename, header_out, add_to_command_history);
   DWI::export_grad_commandline (out);
   PhaseEncoding::export_commandline (out);
   auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes);
@@ -336,8 +398,27 @@ void run ()
 
 
 
+  opt = get_options ("copy_properties");
+  if (opt.size()) {
+    header_out.keyval().clear();
+    if (str(opt[0][0]) != "NULL") {
+      try {
+        const Header source = Header::open (opt[0][0]);
+        header_out.keyval() = source.keyval();
+      } catch (...) {
+        try {
+          File::JSON::load (header_out, opt[0][0]);
+        } catch (...) {
+          throw Exception ("Unable to obtain header key-value entries from spec \"" + str(opt[0][0]) + "\"");
+        }
+      }
+    }
+  }
+
   opt = get_options ("clear_property");
   for (size_t n = 0; n < opt.size(); ++n) {
+    if (str(opt[n][0]) == "command_history")
+      add_to_command_history = false;
     auto entry = header_out.keyval().find (opt[n][0]);
     if (entry == header_out.keyval().end()) {
       WARN ("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
@@ -347,12 +428,18 @@ void run ()
   }
 
   opt = get_options ("set_property");
-  for (size_t n = 0; n < opt.size(); ++n)
+  for (size_t n = 0; n < opt.size(); ++n) {
+    if (str(opt[n][0]) == "command_history")
+      add_to_command_history = false;
     header_out.keyval()[opt[n][0].as_text()] = opt[n][1].as_text();
+  }
 
   opt = get_options ("append_property");
-  for (size_t n = 0; n < opt.size(); ++n)
+  for (size_t n = 0; n < opt.size(); ++n) {
+    if (str(opt[n][0]) == "command_history")
+      add_to_command_history = false;
     add_line (header_out.keyval()[opt[n][0].as_text()], opt[n][1].as_text());
+  }
 
 
 
@@ -461,6 +548,6 @@ void run ()
 
   opt = get_options ("json_export");
   if (opt.size())
-    File::JSON::save (header_out, opt[0][0]);
+    File::JSON::save (header_out, opt[0][0], argument[1]);
 }
 

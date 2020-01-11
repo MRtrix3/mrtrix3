@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "math/average_space.h"
 
@@ -89,32 +90,32 @@ namespace MR
     return corners;
   }
 
-  Eigen::PermutationMatrix<Eigen::Dynamic,Eigen::Dynamic> iterative_closest_point_match (
-    const Eigen::MatrixXd &target_vertices, const Eigen::MatrixXd &moving_vertices) {
-    assert(target_vertices.rows() == moving_vertices.rows());
-    const int n = moving_vertices.rows();
-    assert (n > 1 && "more than one vertex required");
-    assert(target_vertices.cols() == moving_vertices.cols());
+  // Eigen::PermutationMatrix<Eigen::Dynamic,Eigen::Dynamic> iterative_closest_point_match (
+  //   const Eigen::MatrixXd &target_vertices, const Eigen::MatrixXd &moving_vertices) {
+  //   assert(target_vertices.rows() == moving_vertices.rows());
+  //   const int n = moving_vertices.rows();
+  //   assert (n > 1 && "more than one vertex required");
+  //   assert(target_vertices.cols() == moving_vertices.cols());
 
-    Eigen::PermutationMatrix<Eigen::Dynamic,Eigen::Dynamic> perm(n);
-    perm.setIdentity();
-    for (int trow = 0; trow < n; trow++) {
-      double sqnorm = std::numeric_limits<double>::max();
-      int *idx = perm.indices().size() + perm.indices().data() + 1;
-      for (auto mrow = perm.indices().data()+trow ; mrow < perm.indices().data() + perm.indices().size(); mrow++) {
-        double sn = (target_vertices.row(trow) - moving_vertices.row(*mrow)).squaredNorm();
-        if (sn < sqnorm) {
-          sqnorm = sn;
-          idx = mrow;
-        }
-      }
-      assert (idx <= perm.indices().size() + perm.indices().data());
-      std::iter_swap (perm.indices().data() + trow, idx);
-    }
-    return perm;
-    // A_perm = A * perm; // permute columns
-    // A_perm = perm * A; // permute rows
-  }
+  //   Eigen::PermutationMatrix<Eigen::Dynamic,Eigen::Dynamic> perm(n);
+  //   perm.setIdentity();
+  //   for (int trow = 0; trow < n; trow++) {
+  //     double sqnorm = std::numeric_limits<double>::max();
+  //     int *idx = perm.indices().size() + perm.indices().data() + 1;
+  //     for (auto mrow = perm.indices().data()+trow ; mrow < perm.indices().data() + perm.indices().size(); mrow++) {
+  //       double sn = (target_vertices.row(trow) - moving_vertices.row(*mrow)).squaredNorm();
+  //       if (sn < sqnorm) {
+  //         sqnorm = sn;
+  //         idx = mrow;
+  //       }
+  //     }
+  //     assert (idx <= perm.indices().size() + perm.indices().data());
+  //     std::iter_swap (perm.indices().data() + trow, idx);
+  //   }
+  //   return perm;
+  //   // A_perm = A * perm; // permute columns
+  //   // A_perm = perm * A; // permute rows
+  // }
 
   Eigen::Quaterniond rot_match_coordinates (const Eigen::MatrixXd &target_vertices, const Eigen::MatrixXd &moving_vertices) {
     // rotate moving_vertices to minimise distance between closest vertices between target_vertices and moving_vertices
@@ -162,60 +163,6 @@ namespace MR
     return res;
   }
 
-
-  transform_type align_corresponding_vertices (const Eigen::MatrixXd &target_vertices, const Eigen::MatrixXd &moving_vertices, bool scale) {
-      //  this function aligns two sets of vertices which must have corresponding vertices stored in the same row
-      //
-      //  scale == false --> Kabsch: "A solution for the best rotation to relate two sets of vectors"
-      //  minimise (target_vertices.row(i) - M * moving_vertices.row(i) + t).squaredNorm();
-      //
-      //  scale == true --> Umeyama: "Least-Squares Rigid Motion Using SVD"
-      //  nonrigid version of Kabsch algorithm that also includes scale (not shear)
-      //
-      assert(target_vertices.rows() == moving_vertices.rows());
-      const size_t n = moving_vertices.rows();
-      assert (n > 2);
-
-      assert(target_vertices.cols() == moving_vertices.cols());
-      assert(target_vertices.cols() == 3 && "align_corresponding_vertices implemented only for 3D data");
-
-      Eigen::VectorXd moving_centre = moving_vertices.colwise().mean();
-      Eigen::VectorXd target_centre = target_vertices.colwise().mean();
-      Eigen::MatrixXd moving_centered = moving_vertices.rowwise() - moving_centre.transpose();
-      Eigen::MatrixXd target_centered = target_vertices.rowwise() - target_centre.transpose();
-      Eigen::MatrixXd cov = (target_centered.adjoint() * moving_centered) / default_type (n - 1);
-
-      Eigen::JacobiSVD<Eigen::Matrix3d> svd (cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
-
-      // rotation matrix
-      Eigen::MatrixXd R = svd.matrixV() * svd.matrixU().transpose();
-
-      // calculate determinant of V*U^T to disambiguate rotation sign
-      default_type f_det = R.determinant();
-      Eigen::Vector3d e(1, 1, (f_det < 0)? -1 : 1);
-
-      // recompute the rotation if the determinant was negative
-      if (f_det < 0)
-        R.noalias() = svd.matrixV() * e.asDiagonal() * svd.matrixU().transpose();
-
-      // renormalize the rotation
-      // R = Eigen::Quaterniond(R).normalized().toRotationMatrix();
-
-      if (scale) {
-        default_type fsq = 0;
-        for (size_t i = 0; i < n; ++ i)
-          fsq += moving_centered.row(i).squaredNorm();
-        // calculate and apply the scale
-        default_type fscale = svd.singularValues().dot(e) / fsq;
-        R *= fscale;
-      }
-
-      transform_type T;
-      T.linear() = R;
-      T.translation() = target_centre - (R * moving_centre);
-      return T;
-  }
-
   void compute_average_voxel2scanner (Eigen::Transform<default_type, 3, Eigen::Projective>& average_v2s_trafo,
                                       Eigen::Vector3d& average_space_extent,
                                       Eigen::Vector3d& projected_voxel_sizes,
@@ -259,19 +206,24 @@ namespace MR
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es (quaternions * quaternions.transpose(), Eigen::ComputeEigenvectors);
     Eigen::Quaterniond average_quat;
     average_quat.coeffs() = es.eigenvectors().col(3).transpose();
+    average_quat.normalize();
     const Eigen::Matrix3d Raverage (average_quat.toRotationMatrix());
-    Eigen::MatrixXd temp = Eigen::MatrixXd (3, num_images);
+    Eigen::MatrixXd rot_vox_size = Eigen::MatrixXd (3, num_images);
     for (size_t itrafo = 0; itrafo < num_images; itrafo++) {
-      temp.col(itrafo) = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs().rowwise().sum();
+      Eigen::MatrixXd M = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs();
+      if (voxel_subsampling == 0)
+        rot_vox_size.col(itrafo) = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs().diagonal();
+      else
+        rot_vox_size.col(itrafo) = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs().colwise().sum();
     }
 
     switch (voxel_subsampling) {
-      case 0: // maximum voxel size determined by minimum of all projected input image voxel sizes
-          projected_voxel_sizes = temp.transpose().colwise().minCoeff().transpose();
+      case 0: // maximum voxel size determined by minimum of all projected input image voxel sizes, sampling at or above Nyquist limit
+        projected_voxel_sizes = rot_vox_size.rowwise().minCoeff();
         break;
       case 1: // maximum voxel size determined by mean of all projected input image voxel sizes
-          projected_voxel_sizes = temp.transpose().colwise().mean().transpose();
-          break;
+        projected_voxel_sizes = rot_vox_size.rowwise().mean();
+        break;
       default:
         assert( 0 && "compute_average_voxel2scanner: invalid voxel_subsampling option");
         break;
@@ -308,9 +260,9 @@ namespace MR
   }
 
   Header compute_minimum_average_header (const vector<Header>& input_headers,
+                                         const vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with,
                                          int voxel_subsampling,
-                                         const Eigen::Matrix<default_type, 4, 1>& padding,
-                                         const vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with) {
+                                         Eigen::Matrix<default_type, 4, 1> padding) {
     Eigen::Transform<default_type, 3, Eigen::Projective> average_v2s_trafo;
     Eigen::Vector3d average_space_voxel_extent;
     Eigen::Vector3d projected_voxel_sizes;

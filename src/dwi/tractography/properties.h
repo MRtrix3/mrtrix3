@@ -1,23 +1,26 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_properties_h__
 #define __dwi_tractography_properties_h__
 
 #include <map>
+#include "app.h"
 #include "timer.h"
+#include "types.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/list.h"
 
@@ -33,7 +36,7 @@ namespace MR
     {
 
 
-      class Properties : public std::map<std::string, std::string> { MEMALIGN(Properties)
+      class Properties : public KeyValues { MEMALIGN(Properties)
         public:
 
           Properties () {
@@ -50,22 +53,33 @@ namespace MR
               (*this)["project_version"] = App::project_version;
           }
 
+          void update_command_history () {
+            // Make sure the current command is not concatenated more than once
+            const auto command_history = split_lines ((*this)["command_history"]);
+            if (!(command_history.size() && command_history.back() == App::command_history_string))
+              add_line ((*this)["command_history"], App::command_history_string);
+          }
+
+          // In use at time of execution
           ROIUnorderedSet include, exclude, mask;
           ROIOrderedSet ordered_include;
           Seeding::List seeds;
+
+          // As stored within the header of an existing .tck file
+          std::multimap<std::string, std::string> prior_rois;
+
           vector<std::string> comments;
-          std::multimap<std::string, std::string> roi;
 
 
           void clear () {
-            std::map<std::string, std::string>::clear();
+            KeyValues::clear();
             seeds.clear();
             include.clear();
             exclude.clear();
             mask.clear();
             ordered_include.clear();
+            prior_rois.clear();
             comments.clear();
-            roi.clear();
           }
 
           template <typename T> void set (T& variable, const std::string& name) {
@@ -73,7 +87,6 @@ namespace MR
             else variable = to<T> ((*this)[name]);
           }
 
-          void load_ROIs ();
       };
 
 
@@ -132,7 +145,7 @@ namespace MR
       {
         stream << "seeds: " << P.seeds;
         stream << "include: " << P.include << ", ordered_include: " << P.ordered_include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
-        for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i)
+        for (KeyValues::const_iterator i = P.begin(); i != P.end(); ++i)
           stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
         for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)

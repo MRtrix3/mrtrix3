@@ -1,8 +1,23 @@
+% Copyright (c) 2008-2019 the MRtrix3 contributors.
+%
+% This Source Code Form is subject to the terms of the Mozilla Public
+% License, v. 2.0. If a copy of the MPL was not distributed with this
+% file, You can obtain one at http://mozilla.org/MPL/2.0/.
+%
+% Covered Software is provided under this License on an "as is"
+% basis, without warranty of any kind, either expressed, implied, or
+% statutory, including, without limitation, warranties that the
+% Covered Software is free of defects, merchantable, fit for a
+% particular purpose or non-infringing.
+% See the Mozilla Public License v. 2.0 for more details.
+%
+% For more details, see http://www.mrtrix.org/.
+
 function image = read_mrtrix (filename)
 
 % function: image = read_mrtrix (filename)
 %
-% returns a structure containing the header information and data for the MRtrix 
+% returns a structure containing the header information and data for the MRtrix
 % format image 'filename' (i.e. files with the extension '.mif' or '.mih').
 
 f = fopen (filename, 'r');
@@ -41,7 +56,7 @@ while 1
       file = value;
     elseif strcmp(key, 'dw_scheme')
       dw_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
-    else 
+    else
       image = add_field (image, key, value);
     end
   end
@@ -80,12 +95,12 @@ if strcmp(byteorder, 'le')
 elseif strcmp(byteorder, 'be')
   f = fopen (file, 'r', 'b');
   datatype = datatype(1:end-2);
-else 
+else
   if strcmp(datatype, 'bit')
     datatype = 'bit1';
-    f = fopen(file, 'r', 'b'); 
+    f = fopen(file, 'r', 'b');
   else
-    f = fopen(file, 'r'); 
+    f = fopen(file, 'r');
   end
 end
 
