@@ -897,7 +897,7 @@ namespace MR
 
       void Window::image_save_slot ()
       {
-        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination", &current_folder);
+        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination", "", &current_folder);
         if (image_name.empty())
           return;
 
