@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __image_h__
 #define __image_h__
@@ -56,7 +57,7 @@ namespace MR
         FORCE_INLINE bool operator! () const { return !valid(); }
 
         //! get generic key/value text attributes
-        FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return buffer->keyval(); }
+        FORCE_INLINE const KeyValues& keyval () const { return buffer->keyval(); }
 
         FORCE_INLINE const std::string& name() const { return buffer->name(); }
         FORCE_INLINE const transform_type& transform() const { return buffer->transform(); }
@@ -97,7 +98,11 @@ namespace MR
         friend std::ostream& operator<< (std::ostream& stream, const Image& V) {
           stream << "\"" << V.name() << "\", datatype " << DataType::from<Image::value_type>().specifier() << ", index [ ";
           for (size_t n = 0; n < V.ndim(); ++n) stream << V.index(n) << " ";
-          stream << "], current offset = " << V.offset() << ", value = " << V.value();
+          stream << "], current offset = " << V.offset() << ", ";
+          if (is_out_of_bounds(V))
+            stream << "outside FoV";
+          else
+            stream << "value = " << V.value();
           if (!V.data_pointer) stream << " (using indirect IO)";
           else stream << " (using direct IO, data at " << V.data_pointer << ")";
           return stream;

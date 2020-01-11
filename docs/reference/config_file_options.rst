@@ -269,6 +269,12 @@ List of MRtrix3 configuration file options
 
      The height of the colourbar in MRView, in pixels.
 
+.. option:: MRViewColourBarHorizontalPadding
+
+    *default: 100*
+
+     The width in pixels between horizontally adjacent colour bars.
+
 .. option:: MRViewColourBarInset
 
     *default: 20*
@@ -295,12 +301,6 @@ List of MRtrix3 configuration file options
     *default: 20*
 
      The width of the colourbar in MRView, in pixels.
-
-.. option:: MRViewColourHorizontalPadding
-
-    *default: 100*
-
-     The width in pixels between horizontally adjacent colour bars.
 
 .. option:: MRViewDefaultTractGeomType
 
@@ -336,7 +336,7 @@ List of MRtrix3 configuration file options
 
      Initial window size of MRView in pixels.
 
-.. option:: MRViewMaxNumColourmapRows
+.. option:: MRViewMaxNumColourBarRows
 
     *default: 3*
 
@@ -356,6 +356,12 @@ List of MRtrix3 configuration file options
     *default: 1.0*
 
      The factor by which the ODF overlay is scaled.
+
+.. option:: MRViewRoiAlpha
+
+    *default: 0.5*
+
+     The default alpha of a ROI overlay.
 
 .. option:: MRViewRotateModifierKey
 
@@ -407,6 +413,12 @@ List of MRtrix3 configuration file options
 
      The position of all visible tool colourbars within the main window in MRView.
      Valid values are: bottomleft, bottomright, topleft, topright.
+
+.. option:: MRViewWrapVolumes
+
+    *default: false*
+
+     Wrap volumes around when cycling through
 
 .. option:: MSAA
 
@@ -489,6 +501,13 @@ List of MRtrix3 configuration file options
      The default colour to use for objects (i.e. SH glyphs) when not
      colouring by direction.
 
+.. option:: RealignTransform
+
+    *default: 1 (true)*
+
+     A boolean value to indicate whether all images should be realigned
+     to an approximately axial orientation at load.
+
 .. option:: RegAnalyseDescent
 
     *default: 0 (false)*
@@ -547,23 +566,23 @@ List of MRtrix3 configuration file options
 
      Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration.
 
-.. option:: ScriptTmpDir
+.. option:: ScriptScratchDir
 
     *default: `.`*
 
-     The location in which to generate the temporary directories to be
+     The location in which to generate the scratch directories to be
      used by MRtrix Python scripts. By default they will be generated
      in the working directory.
      Note that this setting does not influence the location in which
      piped images and other temporary files are created by MRtrix3;
      that is determined based on config file option :option:`TmpFileDir`.
 
-.. option:: ScriptTmpPrefix
+.. option:: ScriptScratchPrefix
 
     *default: `<script>-tmp-`*
 
      The prefix to use when generating a unique name for a Python
-     script temporary directory. By default the name of the invoked
+     script scratch directory. By default the name of the invoked
      script itself will be used, followed by `-tmp-` (six random
      characters are then appended to produce a unique name in cases
      where a script may be run multiple times in parallel).
@@ -615,9 +634,9 @@ List of MRtrix3 configuration file options
      Note that this location can also be manipulated using the
      :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
      config file. Note also that this setting does not influence the
-     location in which Python scripts construct their temporary
+     location in which Python scripts construct their scratch
      directories; that is determined based on config file option
-     ScriptTmpDir.
+     ScriptScratchDir.
 
 .. option:: TmpFilePrefix
 

@@ -13,10 +13,10 @@ Usage
 
 ::
 
-    mrregister [ options ]  image1 image2
+    mrregister [ options ]  image1 image2[ contrast1 contrast2 ... ]
 
--  *image1*: input image 1 ('moving')
--  *image2*: input image 2 ('template')
+-  *image1 image2*: input image 1 ('moving') and input image 2 ('template')
+-  *contrast1 contrast2*: optional list of additional input images used as additional contrasts. Can be used multiple times. contrastX and imageX must share the same coordinate system. 
 
 Description
 -----------
@@ -32,13 +32,15 @@ Options
 
 -  **-type choice** the registration type. Valid choices are: rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)
 
--  **-transformed image** image1 after registration transformed to the space of image2
+-  **-transformed image**  *(multiple uses permitted)* image1 after registration transformed and regridded to the space of image2. Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.
 
--  **-transformed_midway image1_transformed image2_transformed** image1 and image2 after registration transformed to the midway space
+-  **-transformed_midway image1_transformed image2_transformed**  *(multiple uses permitted)* image1 and image2 after registration transformed and regridded to the midway space. Note that -transformed_midway needs to be repeated for each contrast if multi-contrast registration is used.
 
 -  **-mask1 filename** a mask to define the region of image1 to use for optimisation.
 
 -  **-mask2 filename** a mask to define the region of image2 to use for optimisation.
+
+-  **-nan** use NaN as out of bounds value. (Default: 0.0)
 
 Rigid registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -149,12 +151,19 @@ Non-linear registration options
 
 -  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
+-  **-diagnostics_image path** write intermediate images for diagnostics purposes
+
 FOD registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-directions file** the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)
+-  **-directions file** the directions used for FOD reorientation using apodised point spread functions (Default: 60 directions)
 
--  **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc
+-  **-noreorientation** turn off FOD reorientation. Reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
+
+Multi-contrast options
+^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-mc_weights weights** relative weight of images used for multi-contrast registration. Default: 1.0 (equal weighting)
 
 Data type options
 ^^^^^^^^^^^^^^^^^
@@ -166,13 +175,15 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -191,16 +202,19 @@ Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. Reorientat
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 

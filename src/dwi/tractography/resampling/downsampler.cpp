@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/resampling/downsampler.h"
 
@@ -25,8 +26,10 @@ namespace MR {
 
         bool Downsampler::operator() (Tracking::GeneratedTrack& tck) const
         {
-          if (ratio <= 1 || tck.empty())
+          if (!valid())
             return false;
+          if (ratio == 1 || tck.size() <= 2)
+            return true;
           size_t index_old = ratio;
           if (tck.get_seed_index()) {
             index_old = (((tck.get_seed_index() - 1) % ratio) + 1);
@@ -48,12 +51,14 @@ namespace MR {
         bool Downsampler::operator() (const Streamline<>& in, Streamline<>& out) const
         {
           out.clear();
+          if (!valid())
+            return false;
+          if (ratio == 1 || in.size() <= 2) {
+            out = in;
+            return true;
+          }
           out.index = in.index;
           out.weight = in.weight;
-          if (ratio <= 1 || in.empty())
-            return false;
-          if (in.size() == 1)
-            return true;
           out.push_back (in.front());
           const size_t midpoint = in.size()/2;
           size_t index = (((midpoint - 1) % ratio) + 1);

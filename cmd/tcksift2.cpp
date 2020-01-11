@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "exception.h"
@@ -98,7 +99,10 @@ const OptionGroup SIFT2AlgorithmOption = OptionGroup ("Options for controlling t
 
   + Option ("min_cf_decrease", "minimum decrease in the cost function (as a fraction of the initial value) that must occur each iteration for the algorithm to continue "
                                "(default: " + str(SIFT2_MIN_CF_DECREASE_DEFAULT, 2) + ")")
-    + Argument ("frac").type_float (0.0, 1.0);
+    + Argument ("frac").type_float (0.0, 1.0)
+
+  + Option ("linear", "perform a linear estimation of streamline weights, rather than the standard non-linear optimisation "
+                      "(typically does not provide as accurate a model fit; but only requires a single pass)");
 
 
 
@@ -109,7 +113,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline";
+  SYNOPSIS = "Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities";
 
   REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
@@ -173,44 +177,52 @@ void run ()
   if (output_debug)
     tckfactor.output_all_debug_images ("before");
 
-  auto opt = get_options ("csv");
-  if (opt.size())
-    tckfactor.set_csv_path (opt[0][0]);
+  if (get_options ("linear").size()) {
 
-  const float reg_tikhonov = get_option_value ("reg_tikhonov", SIFT2_REGULARISATION_TIKHONOV_DEFAULT);
-  const float reg_tv = get_option_value ("reg_tv", SIFT2_REGULARISATION_TV_DEFAULT);
-  tckfactor.set_reg_lambdas (reg_tikhonov, reg_tv);
+    tckfactor.calc_afcsa();
 
-  opt = get_options ("min_iters");
-  if (opt.size())
-    tckfactor.set_min_iters (int(opt[0][0]));
-  opt = get_options ("max_iters");
-  if (opt.size())
-    tckfactor.set_max_iters (int(opt[0][0]));
-  opt = get_options ("min_factor");
-  if (opt.size())
-    tckfactor.set_min_factor (float(opt[0][0]));
-  opt = get_options ("min_coeff");
-  if (opt.size())
-    tckfactor.set_min_coeff (float(opt[0][0]));
-  opt = get_options ("max_factor");
-  if (opt.size())
-    tckfactor.set_max_factor (float(opt[0][0]));
-  opt = get_options ("max_coeff");
-  if (opt.size())
-    tckfactor.set_max_coeff (float(opt[0][0]));
-  opt = get_options ("max_coeff_step");
-  if (opt.size())
-    tckfactor.set_max_coeff_step (float(opt[0][0]));
-  opt = get_options ("min_cf_decrease");
-  if (opt.size())
-    tckfactor.set_min_cf_decrease (float(opt[0][0]));
+  } else {
 
-  tckfactor.estimate_factors();
+    auto opt = get_options ("csv");
+    if (opt.size())
+      tckfactor.set_csv_path (opt[0][0]);
+
+    const float reg_tikhonov = get_option_value ("reg_tikhonov", SIFT2_REGULARISATION_TIKHONOV_DEFAULT);
+    const float reg_tv = get_option_value ("reg_tv", SIFT2_REGULARISATION_TV_DEFAULT);
+    tckfactor.set_reg_lambdas (reg_tikhonov, reg_tv);
+
+    opt = get_options ("min_iters");
+    if (opt.size())
+      tckfactor.set_min_iters (int(opt[0][0]));
+    opt = get_options ("max_iters");
+    if (opt.size())
+      tckfactor.set_max_iters (int(opt[0][0]));
+    opt = get_options ("min_factor");
+    if (opt.size())
+      tckfactor.set_min_factor (float(opt[0][0]));
+    opt = get_options ("min_coeff");
+    if (opt.size())
+      tckfactor.set_min_coeff (float(opt[0][0]));
+    opt = get_options ("max_factor");
+    if (opt.size())
+      tckfactor.set_max_factor (float(opt[0][0]));
+    opt = get_options ("max_coeff");
+    if (opt.size())
+      tckfactor.set_max_coeff (float(opt[0][0]));
+    opt = get_options ("max_coeff_step");
+    if (opt.size())
+      tckfactor.set_max_coeff_step (float(opt[0][0]));
+    opt = get_options ("min_cf_decrease");
+    if (opt.size())
+      tckfactor.set_min_cf_decrease (float(opt[0][0]));
+
+    tckfactor.estimate_factors();
+
+  }
 
   tckfactor.output_factors (argument[2]);
 
-  opt = get_options ("out_coeffs");
+  auto opt = get_options ("out_coeffs");
   if (opt.size())
     tckfactor.output_coefficients (opt[0][0]);
 

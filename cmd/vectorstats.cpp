@@ -1,25 +1,28 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
 #include "types.h"
 
 #include "file/path.h"
+#include "math/stats/fwe.h"
 #include "math/stats/glm.h"
-#include "math/stats/permutation.h"
+#include "math/stats/import.h"
+#include "math/stats/shuffle.h"
 #include "math/stats/typedefs.h"
 
 #include "stats/permtest.h"
@@ -27,6 +30,8 @@
 
 using namespace MR;
 using namespace App;
+using namespace MR::Math::Stats;
+using namespace MR::Math::Stats::GLM;
 
 
 
@@ -36,19 +41,30 @@ void usage ()
 
   SYNOPSIS = "Statistical testing of vector data using non-parametric permutation testing";
 
+  DESCRIPTION
+  + "This command can be used to perform permutation testing of any form of data. "
+    "The data for each input subject must be stored in a text file, with one value per row. "
+    "The data for each row across subjects will be tested independently, i.e. there is no "
+    "statistical enhancement that occurs between the data; however family-wise error control "
+    "will be used."
+
+  + Math::Stats::GLM::column_ones_description;
+
 
   ARGUMENTS
   + Argument ("input", "a text file listing the file names of the input subject data").type_file_in ()
 
-  + Argument ("design", "the design matrix. Note that a column of 1's will need to be added for correlations.").type_file_in ()
+  + Argument ("design", "the design matrix").type_file_in ()
 
-  + Argument ("contrast", "the contrast vector, specified as a single row of weights").type_file_in ()
+  + Argument ("contrast", "the contrast matrix").type_file_in ()
 
-  + Argument ("output", "the filename prefix for all output.").type_text();
+  + Argument ("output", "the filename prefix for all output").type_text();
 
 
   OPTIONS
-  + Stats::PermTest::Options (false);
+  + Math::Stats::shuffle_options (false)
+
+  + Math::Stats::GLM::glm_options ("element");
 
 }
 
@@ -56,144 +72,204 @@ void usage ()
 
 using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
+using Stats::PermTest::count_matrix_type;
+
+
+
+// Define data importer class that willl obtain data for a
+//   specific subject based on the string path to the data file for
+//   that subject
+//
+// This is far more simple than the equivalent functionality in other
+//   MRtrix3 statistical inference commands, since the data are
+//   already in a vectorised form.
+
+class SubjectVectorImport : public SubjectDataImportBase
+{ MEMALIGN(SubjectVectorImport)
+  public:
+    SubjectVectorImport (const std::string& path) :
+        SubjectDataImportBase (path),
+        data (load_vector (path)) { }
+
+    void operator() (matrix_type::RowXpr row) const override
+    {
+      assert (size_t(row.size()) == size());
+      row = data;
+    }
+
+    default_type operator[] (const size_t index) const override
+    {
+      assert (index < size());
+      return data[index];
+    }
+
+    size_t size() const override { return data.size(); }
+
+  private:
+    const vector_type data;
+
+};
 
 
 
 void run()
 {
 
-  // Read filenames
-  vector<std::string> filenames;
-  {
-    std::string folder = Path::dirname (argument[0]);
-    std::ifstream ifs (argument[0].c_str());
-    std::string temp;
-    while (getline (ifs, temp)) {
-      std::string filename (Path::join (folder, temp));
-      size_t p = filename.find_last_not_of(" \t");
-      if (std::string::npos != p)
-        filename.erase(p+1);
-      if (filename.size()) {
-        if (!MR::Path::exists (filename))
-          throw Exception ("Input data vector file not found: \"" + filename + "\"");
-        filenames.push_back (filename);
-      }
-    }
+  CohortDataImport importer;
+  importer.initialise<SubjectVectorImport> (argument[0]);
+  const size_t num_inputs = importer.size();
+  CONSOLE ("Number of subjects: " + str(num_inputs));
+  const size_t num_elements = importer[0]->size();
+  CONSOLE ("Number of elements: " + str(num_elements));
+  for (size_t i = 0; i != importer.size(); ++i) {
+    if (importer[i]->size() != num_elements)
+      throw Exception ("Subject file \"" + importer[i]->name() + "\" contains incorrect number of elements (" + str(importer[i]) + "; expected " + str(num_elements) + ")");
   }
-
-  const vector_type example_data = load_vector (filenames.front());
-  const size_t num_elements = example_data.size();
-
-  size_t num_perms = get_option_value ("nperms", DEFAULT_NUMBER_PERMUTATIONS);
 
   // Load design matrix
-  const matrix_type design = load_matrix (argument[2]);
-  if (size_t(design.rows()) != filenames.size())
-    throw Exception ("number of subjects does not match number of rows in design matrix");
+  const matrix_type design = load_matrix (argument[1]);
+  if (size_t(design.rows()) != num_inputs)
+    throw Exception ("Number of subjects (" + str(num_inputs) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
-  // Load permutations file if supplied
-  auto opt = get_options("permutations");
-  vector<vector<size_t> > permutations;
-  if (opt.size()) {
-    permutations = Math::Stats::Permutation::load_permutations_file (opt[0][0]);
-    num_perms = permutations.size();
-    if (permutations[0].size() != (size_t)design.rows())
-      throw Exception ("number of rows in the permutations file (" + str(opt[0][0]) + ") does not match number of rows in design matrix");
+  // Before validating the contrast matrix, we first need to see if there are any
+  //   additional design matrix columns coming from element-wise subject data
+  vector<CohortDataImport> extra_columns;
+  bool nans_in_columns = false;
+  auto opt = get_options ("column");
+  for (size_t i = 0; i != opt.size(); ++i) {
+    extra_columns.push_back (CohortDataImport());
+    extra_columns[i].initialise<SubjectVectorImport> (opt[i][0]);
+    if (!extra_columns[i].allFinite())
+      nans_in_columns = true;
   }
+  const ssize_t num_factors = design.cols() + extra_columns.size();
+  CONSOLE ("Number of factors: " + str(num_factors));
+  if (extra_columns.size()) {
+    CONSOLE ("Number of element-wise design matrix columns: " + str(extra_columns.size()));
+    if (nans_in_columns)
+      CONSOLE ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from voxel-wise design matrices accordingly");
+  }
+  check_design (design, extra_columns.size());
 
-  // Load contrast matrix
-  matrix_type contrast = load_matrix (argument[3]);
-  if (contrast.cols() > design.cols())
-    throw Exception ("too many contrasts for design matrix");
-  contrast.conservativeResize (contrast.rows(), design.cols());
+  // Load variance groups
+  auto variance_groups = GLM::load_variance_groups (num_inputs);
+  const size_t num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
+  if (num_vgs > 1)
+    CONSOLE ("Number of variance groups: " + str(num_vgs));
 
-  const std::string output_prefix = argument[4];
+  // Load hypotheses
+  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
+  const size_t num_hypotheses = hypotheses.size();
+  if (hypotheses[0].cols() != num_factors)
+    throw Exception ("The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
+                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
+                     + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
+  CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
+
+  const std::string output_prefix = argument[3];
 
   // Load input data
-  matrix_type data (num_elements, filenames.size());
-  {
-    ProgressBar progress ("Loading input vector data", filenames.size());
-    for (size_t subject = 0; subject < filenames.size(); subject++) {
+  matrix_type data (num_inputs, num_elements);
+  for (size_t subject = 0; subject != num_inputs; subject++)
+    (*importer[subject]) (data.row(subject));
 
-      const std::string& path (filenames[subject]);
-      vector_type subject_data;
-      try {
-        subject_data = load_vector (path);
-      } catch (Exception& e) {
-        throw Exception (e, "Error loading vector data for subject #" + str(subject) + " (file \"" + path + "\"");
+  const bool nans_in_data = !data.allFinite();
+  if (nans_in_data) {
+    INFO ("Non-finite values present in data; rows will be removed from element-wise design matrices accordingly");
+    if (!extra_columns.size()) {
+      INFO ("(Note that this will result in slower execution than if such values were not present)");
+    }
+  }
+
+  // Only add contrast matrix row number to image outputs if there's more than one hypothesis
+  auto postfix = [&] (const size_t i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
+
+  {
+    matrix_type betas (num_factors, num_elements);
+    matrix_type abs_effect_size (num_elements, num_hypotheses);
+    matrix_type std_effect_size (num_elements, num_hypotheses);
+    matrix_type stdev (num_vgs, num_elements);
+    vector_type cond (num_elements);
+
+    Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
+                                 cond, betas, abs_effect_size, std_effect_size, stdev);
+
+    ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_hypotheses) + (nans_in_data || extra_columns.size() ? 1 : 0));
+    save_matrix (betas, output_prefix + "betas.csv");
+    ++progress;
+    for (size_t i = 0; i != num_hypotheses; ++i) {
+      if (!hypotheses[i].is_F()) {
+        save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv");
+        ++progress;
+        if (num_vgs == 1)
+          save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv");
+      } else {
+        ++progress;
       }
-
-      if (size_t(subject_data.size()) != num_elements)
-        throw Exception ("Vector data for subject #" + str(subject) + " (file \"" + path + "\") is wrong length (" + str(subject_data.size()) + " , expected " + str(num_elements) + ")");
-
-      data.col(subject) = subject_data;
-
       ++progress;
     }
-  }
-
-  {
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation...", contrast.cols() + 3);
-
-    const matrix_type betas = Math::Stats::GLM::solve_betas (data, design);
-    for (size_t i = 0; i < size_t(contrast.cols()); ++i) {
-      save_vector (betas.col(i), output_prefix + "_beta_" + str(i) + ".csv");
+    if (nans_in_data || extra_columns.size()) {
+      save_vector (cond, output_prefix + "cond.csv");
       ++progress;
     }
-
-    const matrix_type abs_effects = Math::Stats::GLM::abs_effect_size (data, design, contrast);
-    save_vector (abs_effects.col(0), output_prefix + "_abs_effect.csv");
-    ++progress;
-
-    const matrix_type std_effects = Math::Stats::GLM::std_effect_size (data, design, contrast);
-    vector_type first_std_effect = std_effects.col(0);
-    for (size_t i = 0; i != num_elements; ++i) {
-      if (!std::isfinite (first_std_effect[i]))
-        first_std_effect[i] = 0.0;
-    }
-    save_vector (first_std_effect, output_prefix + "_std_effect.csv");
-    ++progress;
-
-    const matrix_type stdevs = Math::Stats::GLM::stdev (data, design);
-    save_vector (stdevs.col(0), output_prefix + "_std_dev.csv");
+    if (num_vgs == 1)
+      save_vector (stdev.row(0), output_prefix + "std_dev.csv");
+    else
+      save_matrix (stdev, output_prefix + "std_dev.csv");
   }
 
-  Math::Stats::GLMTTest glm_ttest (data, design, contrast);
+  // Construct the class for performing the initial statistical tests
+  std::shared_ptr<GLM::TestBase> glm_test;
+  if (extra_columns.size() || nans_in_data) {
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestVariableHeteroscedastic (extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+    else
+      glm_test.reset (new GLM::TestVariableHomoscedastic (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+  } else {
+    if (variance_groups.size())
+      glm_test.reset (new GLM::TestFixedHeteroscedastic (data, design, hypotheses, variance_groups));
+    else
+      glm_test.reset (new GLM::TestFixedHomoscedastic (data, design, hypotheses));
+  }
 
   // Precompute default statistic
   // Don't use convenience function: No enhancer!
-  // Manually construct default permutation
-  vector<size_t> default_permutation (filenames.size());
-  for (size_t i = 0; i != filenames.size(); ++i)
-    default_permutation[i] = i;
-  vector_type default_tvalues;
-  glm_ttest (default_permutation, default_tvalues);
-  save_vector (default_tvalues, output_prefix + "_tvalue.csv");
+  // Manually construct default shuffling matrix
+  // TODO Change to use convenience function; we make an empty enhancer later anyway
+  const matrix_type default_shuffle (matrix_type::Identity (num_inputs, num_inputs));
+  matrix_type default_statistic, default_zstat;
+  (*glm_test) (default_shuffle, default_statistic, default_zstat);
+  for (size_t i = 0; i != num_hypotheses; ++i) {
+    save_matrix (default_statistic.col(i), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    save_matrix (default_zstat.col(i), output_prefix + "Zstat" + postfix(i) + ".csv");
+  }
 
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
-    std::shared_ptr<Stats::EnhancerBase> enhancer;
-    vector_type null_distribution (num_perms), uncorrected_pvalues (num_perms);
-    vector_type empirical_distribution;
-
-    if (permutations.size()) {
-      Stats::PermTest::run_permutations (permutations, glm_ttest, enhancer, empirical_distribution,
-                                         default_tvalues, std::shared_ptr<vector_type>(),
-                                         null_distribution, std::shared_ptr<vector_type>(),
-                                         uncorrected_pvalues, std::shared_ptr<vector_type>());
-    } else {
-      Stats::PermTest::run_permutations (num_perms, glm_ttest, enhancer, empirical_distribution,
-                                         default_tvalues, std::shared_ptr<vector_type>(),
-                                         null_distribution, std::shared_ptr<vector_type>(),
-                                         uncorrected_pvalues, std::shared_ptr<vector_type>());
+    const bool fwe_strong = get_option_value ("strong", false);
+    if (fwe_strong && num_hypotheses == 1) {
+      WARN("Option -strong has no effect when testing a single hypothesis only");
     }
 
-    vector_type default_pvalues (num_elements);
-    Math::Stats::Permutation::statistic2pvalue (null_distribution, default_tvalues, default_pvalues);
-    save_vector (default_pvalues,     output_prefix + "_fwe_pvalue.csv");
-    save_vector (uncorrected_pvalues, output_prefix + "_uncorrected_pvalue.csv");
+    std::shared_ptr<Stats::EnhancerBase> enhancer;
+    matrix_type null_distribution, uncorrected_pvalues;
+    count_matrix_type null_contributions;
+    matrix_type empirical_distribution; // unused
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution, default_zstat, fwe_strong,
+                                       null_distribution, null_contributions, uncorrected_pvalues);
+    if (fwe_strong) {
+      save_vector (null_distribution.col(0), output_prefix + "null_dist.csv");
+    } else {
+      for (size_t i = 0; i != num_hypotheses; ++i)
+        save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
+    }
+    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_zstat);
+    for (size_t i = 0; i != num_hypotheses; ++i) {
+      save_vector (fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
+      save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");
+      save_vector (null_contributions.col(i), output_prefix + "null_contributions" + postfix(i) + ".csv");
+    }
 
   }
-
 }

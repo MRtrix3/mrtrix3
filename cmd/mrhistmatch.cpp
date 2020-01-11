@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <algorithm>
 #include <cmath>
@@ -21,6 +22,7 @@
 #include "header.h"
 #include "image.h"
 
+#include "adapter/replicate.h"
 #include "algo/histogram.h"
 #include "algo/loop.h"
 
@@ -74,29 +76,27 @@ void match_linear (Image<float>& input,
   vector<float> input_data, target_data;
   {
     ProgressBar progress ("Loading & sorting image data", 4);
-    if (mask_input.valid()) {
-      for (auto l = Loop(input) (input, mask_input); l; ++l) {
-        if (mask_input.value() && std::isfinite (static_cast<float>(input.value())))
-          input_data.push_back (input.value());
+
+    auto fill = [] (Image<float>& image, Image<bool>& mask) {
+      vector<float> data;
+      if (mask.valid()) {
+        Adapter::Replicate<Image<bool>> mask_replicate (mask, image);
+        for (auto l = Loop(image) (image, mask_replicate); l; ++l) {
+          if (mask_replicate.value() && std::isfinite (static_cast<float>(image.value())))
+            data.push_back (image.value());
+        }
+      } else {
+        for (auto l = Loop(image) (image); l; ++l) {
+          if (std::isfinite (static_cast<float>(image.value())))
+            data.push_back (image.value());
+        }
       }
-    } else {
-      for (auto l = Loop(input) (input); l; ++l) {
-        if (std::isfinite (static_cast<float>(input.value())))
-          input_data.push_back (input.value());
-      }
-    }
+      return data;
+    };
+
+    input_data  = fill (input,  mask_input);
     ++progress;
-    if (mask_target.valid()) {
-      for (auto l = Loop(target) (target, mask_target); l; ++l) {
-        if (mask_target.value() && std::isfinite (static_cast<float>(target.value())))
-          target_data.push_back (target.value());
-      }
-    } else {
-      for (auto l = Loop(target) (target); l; ++l) {
-        if (std::isfinite (static_cast<float>(target.value())))
-          target_data.push_back (target.value());
-      }
-    }
+    target_data = fill (target, mask_target);
     ++progress;
     std::sort (input_data.begin(), input_data.end());
     ++progress;
@@ -194,19 +194,17 @@ void run ()
 {
   auto input  = Image<float>::open (argument[1]);
   auto target = Image<float>::open (argument[2]);
-  if (input.ndim() > 3 || target.ndim() > 3)
-    throw Exception ("mrhistmatch currently only works on 3D images");
 
   Image<bool> mask_input, mask_target;
   auto opt = get_options ("mask_input");
   if (opt.size()) {
     mask_input = Image<bool>::open (opt[0][0]);
-    check_dimensions (input, mask_input);
+    check_dimensions (input, mask_input, 0, 3);
   }
   opt = get_options ("mask_target");
   if (opt.size()) {
     mask_target = Image<bool>::open (opt[0][0]);
-    check_dimensions (target, mask_target);
+    check_dimensions (target, mask_target, 0, 3);
   }
 
   switch (int(argument[0])) {

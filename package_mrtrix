@@ -1,4 +1,20 @@
 #!/bin/bash
+
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 cat <<EOF
 This script collates all the executables and runtime dependencies needed for
 MRtrix3, and creates a GZ compressed archive suitable for deployment on other
@@ -30,8 +46,8 @@ read
   set -e
   mkdir -p _package/mrtrix3/
   cp -r bin/ _package/mrtrix3/
-  cp -r lib/ _package/mrtrix3/ 
-  cp -r share/ _package/mrtrix3/ 
+  cp -r lib/ _package/mrtrix3/
+  cp -r share/ _package/mrtrix3/
 
   [ ${1:-"x"} == "-standalone" ] && (
     cat > _package/mrtrix3/launcher <<"EOF"
@@ -45,7 +61,7 @@ EOF
     (
       cd _package/mrtrix3/bin
       for n in *; do
-      file $n | grep -q script || ( 
+      file $n | grep -q script || (
         mv $n ../exe
         ln -s ../launcher $n
       )

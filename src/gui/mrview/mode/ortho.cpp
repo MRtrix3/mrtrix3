@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/mode/ortho.h"
 
@@ -32,7 +33,7 @@ namespace MR
 
         void Ortho::paint (Projection& projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           // set up OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -46,15 +47,15 @@ namespace MR
           // so need to guarantee depth test is off for subsequent plane.
           // Ideally, state should be restored by callee but this is safer
 
-          projections[0].set_viewport (window(), w, h, w, h); 
+          projections[0].set_viewport (window(), w, h, w, h);
           draw_plane (0, slice_shader, projections[0]);
 
           gl::Disable (gl::DEPTH_TEST);
-          projections[1].set_viewport (window(), 0, h, w, h); 
+          projections[1].set_viewport (window(), 0, h, w, h);
           draw_plane (1, slice_shader, projections[1]);
 
           gl::Disable (gl::DEPTH_TEST);
-          projections[2].set_viewport (window(), 0, 0, w, h); 
+          projections[2].set_viewport (window(), 0, 0, w, h);
           draw_plane (2, slice_shader, projections[2]);
 
           projection.set_viewport (window());
@@ -83,7 +84,7 @@ namespace MR
             };
             gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
           }
-          else 
+          else
             frame_VAO.bind();
 
           if (!frame_program) {
@@ -107,14 +108,14 @@ namespace MR
           frame_program.stop();
 
           gl::Enable (gl::DEPTH_TEST);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
 
 
 
-        const Projection* Ortho::get_current_projection () const  
+        const Projection* Ortho::get_current_projection () const
         {
           if (current_plane < 0 || current_plane > 2)
             return NULL;
@@ -125,22 +126,22 @@ namespace MR
 
         void Ortho::mouse_press_event ()
         {
-          if (window().mouse_position().x() < width()/2) 
-            if (window().mouse_position().y() >= height()/2) 
+          if (window().mouse_position().x() < width()/2)
+            if (window().mouse_position().y() >= height()/2)
               current_plane = 1;
-            else 
+            else
               current_plane = 2;
-          else 
+          else
             if (window().mouse_position().y() >= height()/2)
               current_plane = 0;
-            else 
+            else
               current_plane = -1;
         }
 
 
 
 
-        void Ortho::slice_move_event (float x) 
+        void Ortho::slice_move_event (float x)
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;

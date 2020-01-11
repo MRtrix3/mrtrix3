@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/tool/fixel/base_fixel.h"
 
@@ -52,7 +53,7 @@ namespace MR
 
         BaseFixel::~BaseFixel()
         {
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           vertex_buffer.clear ();
           direction_buffer.clear ();
           vertex_array_object.clear ();
@@ -88,8 +89,10 @@ namespace MR
         }
 
 
-        std::string BaseFixel::Shader::geometry_shader_source (const Displayable& fixel)
+        std::string BaseFixel::Shader::geometry_shader_source (const Displayable& object)
         {
+          const BaseFixel& fixel (dynamic_cast<const BaseFixel&> (object));
+
           std::string source =
               "layout(points) in;\n"
               "layout(triangle_strip, max_vertices = 4) out;\n"
@@ -156,21 +159,35 @@ namespace MR
           }
 
           source +=
-               "    vec4 start = MVP * (gl_in[0].gl_Position - line_offset);\n"
-               "    vec4 end = MVP * (gl_in[0].gl_Position + line_offset);\n"
-               "    vec4 line = end - start;\n"
-               "    vec4 normal =  normalize(vec4(-line.y, line.x, 0.0, 0.0));\n"
-               "    vec4 thick_vec =  line_thickness * normal;\n"
-               "    gl_Position = start - thick_vec;\n"
-               "    EmitVertex();\n"
-               "    gl_Position = start + thick_vec;\n"
-               "    EmitVertex();\n"
-               "    gl_Position = end - thick_vec;\n"
-               "    EmitVertex();\n"
-               "    gl_Position = end + thick_vec;\n"
-               "    EmitVertex();\n"
-               "    EndPrimitive();\n"
-               "}\n";
+              "    vec4 start = MVP * (gl_in[0].gl_Position";
+          if (fixel.fixel_tool.is_bidirectional())
+            source += " - line_offset";
+
+          source += ");\n"
+            "    vec4 end = MVP * (gl_in[0].gl_Position + line_offset);\n"
+            "    vec4 line = end - start;\n"
+            "    vec4 normal =  normalize(vec4(-line.y, line.x, 0.0, 0.0));\n"
+            "    vec4 thick_vec =  line_thickness * normal;\n"
+            "    gl_Position = start - thick_vec;\n"
+            "    EmitVertex();\n"
+            "    gl_Position = start + thick_vec;\n"
+            "    EmitVertex();\n";
+
+          if (fixel.fixel_tool.is_bidirectional())
+            source += "    gl_Position = end - thick_vec;\n";
+          else
+            source += "    gl_Position = end;\n";
+
+          source += "    EmitVertex();\n";
+
+          if (fixel.fixel_tool.is_bidirectional())
+            source +=
+              "    gl_Position = end + thick_vec;\n"
+              "    EmitVertex();\n";
+
+          source +=
+            "    EndPrimitive();\n"
+            "}\n";
 
           return source;
         }
@@ -179,11 +196,11 @@ namespace MR
         std::string BaseFixel::Shader::fragment_shader_source (const Displayable&)
         {
           std::string source =
-              "out vec3 outColour;\n"
-              "flat in vec3 fColour;\n"
-              "void main(){\n"
-              "  outColour = fColour;\n"
-              "}\n";
+            "out vec3 outColour;\n"
+            "flat in vec3 fColour;\n"
+            "void main(){\n"
+            "  outColour = fColour;\n"
+            "}\n";
           return source;
         }
 
@@ -191,27 +208,27 @@ namespace MR
         bool BaseFixel::Shader::need_update (const Displayable& object) const
         {
           const BaseFixel& fixel (dynamic_cast<const BaseFixel&> (object));
-          if (color_type != fixel.colour_type)
-            return true;
-          else if (scale_type != fixel.scale_type)
-            return true;
-          return Displayable::Shader::need_update (object);
+          return
+            (color_type != fixel.colour_type) ||
+            (scale_type != fixel.scale_type) ||
+            (bidirectional != fixel.fixel_tool.is_bidirectional()) ||
+            Displayable::Shader::need_update (object);
         }
 
 
         void BaseFixel::Shader::update (const Displayable& object)
         {
           const BaseFixel& fixel (dynamic_cast<const BaseFixel&> (object));
-          do_crop_to_slice = fixel.fixel_tool.do_crop_to_slice;
           color_type = fixel.colour_type;
           scale_type = fixel.scale_type;
+          bidirectional = fixel.fixel_tool.is_bidirectional();
           Displayable::Shader::update (object);
         }
 
 
         void BaseFixel::render (const Projection& projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           start (fixel_shader);
           projection.set (fixel_shader);
 
@@ -244,7 +261,7 @@ namespace MR
             gl::DepthMask (gl::TRUE_);
           }
 
-          if (!fixel_tool.do_crop_to_slice) {
+          if (!fixel_tool.is_cropped_to_slab()) {
             vertex_array_object.bind();
             for (size_t x = 0, N = slice_fixel_indices[0].size(); x < N; ++x) {
               if (slice_fixel_counts[0][x])
@@ -264,7 +281,7 @@ namespace MR
           }
 
           stop (fixel_shader);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -290,16 +307,16 @@ namespace MR
 
 
         void BaseFixel::update_interp_image_buffer (const Projection& projection,
-                                               const MR::Header &fixel_header,
-                                               const MR::Transform &transform)
+            const MR::Header &fixel_header,
+            const MR::Transform &transform)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           // Code below "inspired" by ODF::draw
           Eigen::Vector3f p (Window::main->target());
           p += projection.screen_normal() * (projection.screen_normal().dot (Window::main->focus() - p));
           p = transform.scanner2voxel.cast<float>() * p;
 
-          if (fixel_tool.do_lock_to_grid) {
+          if (fixel_tool.is_locked_to_grid()) {
             p[0] = (int)std::round (p[0]);
             p[1] = (int)std::round (p[1]);
             p[2] = (int)std::round (p[2]);
@@ -367,7 +384,7 @@ namespace MR
           if(!regular_grid_buffer_pos.size())
             return;
 
-          MRView::GrabContext context;
+          GL::Context::Grab context;
 
           regular_grid_vao.bind ();
           regular_grid_vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -410,7 +427,7 @@ namespace MR
             gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
           }
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -418,8 +435,8 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           load_image_buffer ();
 
@@ -461,7 +478,7 @@ namespace MR
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
 
           dir_buffer_dirty = true;
           value_buffer_dirty = true;
@@ -472,8 +489,8 @@ namespace MR
 
         void BaseFixel::reload_directions_buffer ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           vertex_array_object.bind ();
 
@@ -483,14 +500,14 @@ namespace MR
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void BaseFixel::reload_values_buffer ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           if (scale_type == Unity)
             return;
@@ -506,14 +523,14 @@ namespace MR
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void BaseFixel::reload_colours_buffer ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           if (colour_type == Direction)
             return;
@@ -529,14 +546,14 @@ namespace MR
           gl::EnableVertexAttribArray (3);
           gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void BaseFixel::reload_threshold_buffer ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           const auto& fixel_val = current_fixel_threshold_state ();
           const auto& val_buffer = fixel_val.buffer_store;
@@ -549,7 +566,7 @@ namespace MR
           gl::EnableVertexAttribArray (4);
           gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
       }
     }
