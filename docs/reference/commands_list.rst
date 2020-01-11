@@ -89,6 +89,7 @@ List of MRtrix3 commands
     commands/mrview
     commands/mtnormalise
     commands/peaks2amp
+    commands/peaks2fixel
     commands/population_template
     commands/responsemean
     commands/sh2amp
@@ -214,6 +215,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrview`, "The MRtrix image viewer"
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
+    |cpp.png|, :ref:`peaks2fixel`, "Convert peak directions image to a fixel directory"
     |python.png|, :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
     |python.png|, :ref:`responsemean`, "Calculate the mean response function from a set of text files"
     |cpp.png|, :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"

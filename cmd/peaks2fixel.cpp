@@ -67,7 +67,7 @@ void run ()
     auto dirs = get (input_directions);
     nfixels += dirs.size();
     for (const auto& d : dirs) {
-      if (std::abs (d.squaredNorm() - 1.0) > 1e-4)
+      if (MR::abs (d.squaredNorm() - 1.0) > 1e-4)
         all_unit_norm = false;
     }
   }
