@@ -15,7 +15,7 @@ Usage
 
     peaks2fixel [ options ]  directions fixels
 
--  *directions*: the input directions image. Each volume corresponds to the x, y & z component of each direction vector in turn.
+-  *directions*: the input directions image; each volume corresponds to the x, y & z component of each direction vector in turn.
 -  *fixels*: the output fixel directory.
 
 Options
@@ -39,6 +39,11 @@ Standard options
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

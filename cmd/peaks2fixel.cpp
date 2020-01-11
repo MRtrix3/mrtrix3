@@ -30,8 +30,8 @@ void usage ()
   SYNOPSIS = "Convert peak directions image to a fixel directory";
 
   ARGUMENTS
-  + Argument ("directions", "the input directions image. Each volume corresponds to the x, y & z "
-                             "component of each direction vector in turn.").type_image_in()
+  + Argument ("directions", "the input directions image; each volume corresponds to the x, y & z "
+                            "component of each direction vector in turn.").type_image_in()
 
   + Argument ("fixels", "the output fixel directory.").type_directory_out();
 }
@@ -108,10 +108,12 @@ void run ()
     index_image.index(3) = 1; index_image.value() = dirs.size() ? output_index : 0;
     for (auto d : dirs) {
       directions_image.index(0) = output_index;
-      directions_image.row(1) = d;
       if (amplitudes_image.valid()) {
+        directions_image.row(1) = d.normalized();
         amplitudes_image.index(0) = output_index;
         amplitudes_image.value() = d.norm();
+      } else {
+        directions_image.row(1) = d;
       }
       ++output_index;
     }
