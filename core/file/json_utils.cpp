@@ -309,7 +309,9 @@ namespace MR
           for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
             Eigen::VectorXd new_line = pe_scheme.row (row);
             for (ssize_t axis = 0; axis != 3; ++axis)
-              new_line[axis] = header.stride (order[axis]) > 0 ? pe_scheme(row, order[axis]) : -pe_scheme(row, order[axis]);
+              new_line[axis] = pe_scheme(row, order[axis]) && header.stride (order[axis]) < 0 ?
+                               -pe_scheme(row, order[axis]) :
+                               pe_scheme(row, order[axis]);
             pe_scheme.row (row) = new_line;
           }
           PhaseEncoding::set_scheme (H_adj, pe_scheme);
