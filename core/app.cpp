@@ -18,6 +18,7 @@
 #include <fcntl.h>
 #include <locale>
 #include <clocale>
+#include <algorithm>
 
 
 #include "app.h"
@@ -947,6 +948,11 @@ namespace MR
         for (size_t i = 0; i < candidates.size(); ++i)
           if (root == candidates[i]->id)
             return candidates[i];
+
+        // check if there is only one *unique* candidate
+        const auto cid = candidates[0]->id;
+        if ( std::all_of(++candidates.begin(), candidates.end(), [& cid](const Option* cand){return cand->id == cid;}) )
+          return candidates[0];
 
         // report something useful:
         root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
