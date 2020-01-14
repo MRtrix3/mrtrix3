@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __registration_linear_h__
 #define __registration_linear_h__
@@ -30,7 +31,7 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "registration/metric/params.h"
-#include "registration/metric/normalised_cross_correlation.h"
+// #include "registration/metric/local_cross_correlation.h"
 #include "registration/metric/evaluate.h"
 #include "registration/transform/initialiser.h"
 #include "math/gradient_descent.h"
@@ -40,6 +41,7 @@
 #include "math/math.h"
 
 #include "registration/multi_resolution_lmax.h"
+#include "registration/multi_contrast.h"
 
 namespace MR
 {
@@ -95,8 +97,7 @@ namespace MR
       vector<std::string> diagnostics_images;
     } ;
 
-    class Linear
-    { MEMALIGN(Linear)
+    class Linear { MEMALIGN(Linear)
 
       public:
 
@@ -207,6 +208,11 @@ namespace MR
             throw Exception ("the lmax must be defined for all stages (1 or " + str(stages.size())+")");
         }
 
+        // needs to be set after set_lmax
+        void set_mc_parameters (const vector<MultiContrastSetting>& mcs) {
+          contrasts = mcs;
+        }
+
         void set_loop_density (const vector<default_type>& loop_density_){
           for (size_t d = 0; d < loop_density_.size(); ++d)
             if (loop_density_[d] < 0.0 or loop_density_[d] > 1.0 )
@@ -263,6 +269,12 @@ namespace MR
           log_stream = stream;
         }
 
+        ssize_t get_lmax () {
+          ssize_t lmax=0;
+          for (auto& s : stages)
+            lmax = std::max(s.fod_lmax, lmax);
+          return (int) lmax;
+        }
 
         Header get_midway_header () {
           return Header(midway_image_header);
@@ -319,25 +331,24 @@ namespace MR
                   throw Exception ("the lmax needs to be defined for each registration stage");
 
             if (init_translation_type == Transform::Init::mass)
-              Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+              Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
             else if (init_translation_type == Transform::Init::geometric)
               Transform::Init::initialise_using_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
             else if (init_translation_type == Transform::Init::set_centre_mass) // doesn't change translation or linear matrix
-              Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init);
+              Transform::Init::set_centre_via_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
             else if (init_translation_type == Transform::Init::set_centre_geometric) // doesn't change translation or linear matrix
               Transform::Init::set_centre_via_image_centres (im1_image, im2_image, im1_mask, im2_mask, transform, init);
 
             if (init_rotation_type == Transform::Init::moments)
-              Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, init);
-            else if (init_rotation_type == Transform::Init::rot_search) {
-              Transform::Init::initialise_using_rotation_search (
-                im1_image, im2_image, im1_mask, im2_mask, transform, init);
-            }
+              Transform::Init::initialise_using_image_moments (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
+            else if (init_rotation_type == Transform::Init::rot_search)
+              Transform::Init::initialise_using_rotation_search (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
+
 
             INFO ("Transformation before registration:");
             INFO (transform.info());
 
-            INFO("Linear registration stage parameters:");
+            INFO ("Linear registration stage parameters:");
             for (auto & stage : stages) {
               INFO(stage.info());
             }
@@ -385,21 +396,38 @@ namespace MR
                                    Interp::Nearest<ProcessedMaskType>>;
 
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
-            const Eigen::Matrix<default_type, 4, 1> midspace_padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0);
-            const int midspace_voxel_subsampling = 1;
 
             // calculate midway (affine average) space which will be constant for each resolution level
-            midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform, midspace_voxel_subsampling, midspace_padding);
+            midway_image_header = compute_minimum_average_header (im1_image, im2_image, transform.get_transform_half_inverse(), transform.get_transform_half());
 
             for (size_t istage = 0; istage < stages.size(); istage++) {
               auto& stage = stages[istage];
 
               CONSOLE ("linear stage " + str(istage + 1) + "/"+str(stages.size()) + ", " + stage.info(do_reorientation));
+              // define or adjust tissue contrast lmax, nvols for this stage
+              stage_contrasts = contrasts;
+              if (stage_contrasts.size()) {
+                for (auto & mc : stage_contrasts) {
+                  mc.lower_lmax (stage.fod_lmax);
+                }
+              } else {
+                MultiContrastSetting mc (im1_image.ndim()<4? 1:im1_image.size(3), do_reorientation, stage.fod_lmax);
+                stage_contrasts.push_back(mc);
+              }
+
+              DEBUG ("before downsampling:");
+              for (const auto & mc : stage_contrasts)
+                DEBUG (str(mc));
 
               INFO ("smoothing image 1");
-              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, stage.scale_factor, do_reorientation, stage.fod_lmax);
+              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, stage.scale_factor, do_reorientation, stage_contrasts);
               INFO ("smoothing image 2");
-              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, stage.scale_factor, do_reorientation, stage.fod_lmax);
+              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, stage.scale_factor, do_reorientation, stage_contrasts, &stage_contrasts);
+
+              DEBUG ("after downsampling:");
+              for (const auto & mc : stage_contrasts)
+                INFO (str(mc));
+
 
               Filter::Resize midway_resize_filter (midway_image_header);
               midway_resize_filter.set_scale_factor (stage.scale_factor);
@@ -407,6 +435,10 @@ namespace MR
 
               ParamType parameters (transform, im1_smoothed, im2_smoothed, midway_resized, im1_mask, im2_mask);
               parameters.loop_density = stage.loop_density;
+              if (contrasts.size())
+                parameters.set_mc_settings (stage_contrasts);
+
+
               // if (robust_estimate)
               //   INFO ("using robust estimate");
               // parameters.robust_estimate = robust_estimate; // TODO
@@ -511,54 +543,42 @@ namespace MR
                 }
               }
               // update midway (affine average) space using the current transformations
-              midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation, midspace_voxel_subsampling, midspace_padding);
+              midway_image_header = compute_minimum_average_header (im1_image, im2_image, parameters.transformation.get_transform_half_inverse(), parameters.transformation.get_transform_half());
             }
             INFO("linear registration done");
             INFO (transform.info());
           }
 
-        template<class Im1ImageType, class Im2ImageType, class TransformType>
-        void write_transformed_images (
-          const Im1ImageType& im1_image,
-          const Im2ImageType& im2_image,
-          const TransformType& transformation,
-          const std::string& im1_path,
-          const std::string& im2_path,
-          const bool do_reorientation) {
+          // template<class ImageType, class TransformType>
+          // void transform_image_midway (const ImageType& input, const TransformType& transformation,
+          //   const bool do_reorientation, const bool input_is_one, const std::string& out_path, const Header& h_midway) {
+          //   if (do_reorientation and aPSF_directions.size() == 0)
+          //     throw Exception ("directions have to be calculated before reorientation");
 
-            if (do_reorientation and aPSF_directions.size() == 0)
-              throw Exception ("directions have to be calculated before reorientation");
-
-            Image<typename Im1ImageType::value_type> image1_midway;
-            Image<typename Im2ImageType::value_type> image2_midway;
-
-            Header image1_midway_header (midway_image_header);
-            image1_midway_header.datatype() = DataType::Float64;
-            image1_midway_header.ndim() = im1_image.ndim();
-            for (size_t dim = 3; dim < im1_image.ndim(); ++dim){
-              image1_midway_header.spacing(dim) = im1_image.spacing(dim);
-              image1_midway_header.size(dim) = im1_image.size(dim);
-            }
-            image1_midway = Image<typename Im1ImageType::value_type>::create (im1_path, image1_midway_header).with_direct_io();
-            Header image2_midway_header (midway_image_header);
-            image2_midway_header.datatype() = DataType::Float64;
-            image2_midway_header.ndim() = im2_image.ndim();
-            for (size_t dim = 3; dim < im2_image.ndim(); ++dim){
-              image2_midway_header.spacing(dim) = im2_image.spacing(dim);
-              image2_midway_header.size(dim) = im2_image.size(dim);
-            }
-            image2_midway = Image<typename Im2ImageType::value_type>::create (im2_path, image2_midway_header).with_direct_io();
-
-            Filter::reslice<Interp::Cubic> (im1_image, image1_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
-            Filter::reslice<Interp::Cubic> (im2_image, image2_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
-            if (do_reorientation){
-              Transform::reorient ("reorienting...", image1_midway, image1_midway, transformation.get_transform_half(), aPSF_directions);
-              Transform::reorient ("reorienting...", image2_midway, image2_midway, transformation.get_transform_half_inverse(), aPSF_directions);
-            }
-          }
+          //   Image<typename ImageType::value_type> image_midway;
+          //   Header midway_header (h_midway);
+          //   midway_header.ndim() = input.ndim();
+          //   for (size_t dim = 3; dim < input.ndim(); ++dim) {
+          //     midway_header.spacing(dim) = input.spacing(dim);
+          //     midway_header.size(dim) = input.size(dim);
+          //   }
+          //   image_midway = Image<typename ImageType::value_type>::create (out_path, midway_header).with_direct_io();
+          //   if (input_is_one) {
+          //     Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half(), Adapter::AutoOverSample, 0.0);
+          //     if (do_reorientation)
+          //  //     60 directions by default!
+          //       Transform::reorient ("reorienting...", image_midway, image_midway, transformation.get_transform_half(), aPSF_directions);
+          //   } else {
+          //     Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
+          //     if (do_reorientation)
+          //  //     60 directions by default!
+          //       Transform::reorient ("reorienting...", image_midway, image_midway, transformation.get_transform_half_inverse(), aPSF_directions);
+          //   }
+          // }
 
       protected:
         vector<StageSetting> stages;
+        vector<MultiContrastSetting> contrasts, stage_contrasts;
         vector<size_t> kernel_extent;
         default_type grad_tolerance;
         default_type step_tolerance;

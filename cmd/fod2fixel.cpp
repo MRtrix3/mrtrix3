@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -20,6 +21,7 @@
 
 #include "fixel/keys.h"
 #include "fixel/helpers.h"
+#include "fixel/types.h"
 
 #include "math/SH.h"
 
@@ -38,6 +40,7 @@ using namespace MR::DWI;
 using namespace MR::DWI::FMLS;
 using namespace App;
 
+using Fixel::index_type;
 
 
 const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sparse output images")
@@ -88,8 +91,7 @@ void usage ()
 
   + OptionGroup ("Other options for fod2fixel")
 
-  + Option ("mask",
-                "only perform computation within the specified binary brain mask image.")
+  + Option ("mask", "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in()
 
   + Option ("maxnum", "maximum number of fixels to output for any particular voxel (default: no limit)")
@@ -106,7 +108,7 @@ void usage ()
 class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 
   public:
-    Segmented_FOD_receiver (const Header& header, const uint32_t maxnum = 0, bool dir_as_peak = false) :
+    Segmented_FOD_receiver (const Header& header, const index_type maxnum = 0, bool dir_as_peak = false) :
         H (header), fixel_count (0), max_per_voxel (maxnum), dir_as_peak (dir_as_peak) { }
 
     void commit ();
@@ -134,11 +136,11 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 
     class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { MEMALIGN (Primitive_FOD_lobes)
       public:
-        Primitive_FOD_lobes (const FOD_lobes& in, const uint32_t maxcount, bool use_peak_dir) :
+        Primitive_FOD_lobes (const FOD_lobes& in, const index_type maxcount, bool use_peak_dir) :
             vox (in.vox)
         {
-          const uint32_t N = maxcount ? std::min (uint32_t(in.size()), maxcount) : in.size();
-          for (uint32_t i = 0; i != N; ++i) {
+          const index_type N = maxcount ? std::min (index_type(in.size()), maxcount) : in.size();
+          for (index_type i = 0; i != N; ++i) {
             const FOD_lobe& lobe (in[i]);
             if (use_peak_dir)
               this->emplace_back (lobe.get_peak_dir(0).cast<float>(), lobe.get_integral(), lobe.get_max_peak_value());
@@ -152,8 +154,8 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
     Header H;
     std::string fixel_directory_path, index_path, dir_path, afd_path, peak_path, disp_path;
     vector<Primitive_FOD_lobes> lobes;
-    uint32_t fixel_count;
-    uint32_t max_per_voxel;
+    index_type fixel_count;
+    index_type max_per_voxel;
     bool dir_as_peak;
 };
 
@@ -177,7 +179,7 @@ void Segmented_FOD_receiver::commit ()
     return;
 
   using DataImage = Image<float>;
-  using IndexImage = Image<uint32_t>;
+  using IndexImage = Image<index_type>;
 
   const auto index_filepath = Path::join (fixel_directory_path, index_path);
 
@@ -191,7 +193,7 @@ void Segmented_FOD_receiver::commit ()
   index_header.keyval()[Fixel::n_fixels_key] = str(fixel_count);
   index_header.ndim() = 4;
   index_header.size(3) = 2;
-  index_header.datatype() = DataType::from<uint32_t>();
+  index_header.datatype() = DataType::from<index_type>();
   index_header.datatype().set_byte_order_native();
   index_image = make_unique<IndexImage> (IndexImage::create (index_filepath, index_header));
 
@@ -293,7 +295,7 @@ void run ()
   auto fod_data = H.get_image<float>();
 
   const bool dir_as_peak = get_options ("dirpeak").size();
-  const uint32_t maxnum = get_option_value ("maxnum", 0);
+  const index_type maxnum = get_option_value ("maxnum", 0);
 
   Segmented_FOD_receiver receiver (H, maxnum, dir_as_peak);
 

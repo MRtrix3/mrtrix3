@@ -1,20 +1,20 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
-
 #include "app.h"
-#include "bitset.h"
 #include "command.h"
 #include "datatype.h"
 #include "header.h"
@@ -24,8 +24,8 @@
 #include "types.h"
 
 #include "algo/loop.h"
-
 #include "math/SH.h"
+#include "misc/bitset.h"
 
 
 using namespace MR;
@@ -56,7 +56,9 @@ void usage ()
 
     + "Note that the \"force_*\" conversion choices should only be used in cases where this "
       "command has previously been unable to automatically determine the SH basis from the "
-      "image data, but the user themselves are confident of the SH basis of the data.";
+      "image data, but the user themselves are confident of the SH basis of the data."
+
+    + Math::SH::encoding_description;
 
 
   ARGUMENTS
@@ -168,7 +170,7 @@ void check_and_update (Header& H, const conv_t conversion)
   }
 
   if (progress)
-    progress = NULL;
+    progress.reset (nullptr);
 
   // First is ratio to be used for SH basis decision, second is gradient of regression
   std::pair<float, float> regression = std::make_pair (0.0f, 0.0f);
@@ -330,5 +332,5 @@ void run ()
 
   }
 
-};
+}
 

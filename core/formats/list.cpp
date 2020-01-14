@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <cstdlib>
 
@@ -41,6 +42,9 @@ namespace MR
 #ifdef MRTRIX_TIFF_SUPPORT
     TIFF          tiff_handler;
 #endif
+#ifdef MRTRIX_PNG_SUPPORT
+    PNG           png_handler;
+#endif
     MRtrix_sparse mrtrix_sparse_handler;
 
 
@@ -64,6 +68,9 @@ namespace MR
 #ifdef MRTRIX_TIFF_SUPPORT
       &tiff_handler,
 #endif
+#ifdef MRTRIX_PNG_SUPPORT
+      &png_handler,
+#endif
       &mrtrix_sparse_handler,
       nullptr
     };
@@ -86,10 +93,16 @@ namespace MR
       ".msf",
       ".msh",
       ".dcm",
+#ifdef MRTRIX_TIFF_SUPPORT
       ".tiff",
       ".tif",
       ".TIFF",
       ".TIF",
+#endif
+#ifdef MRTRIX_PNG_SUPPORT
+      ".png",
+      ".PNG",
+#endif
       nullptr
     };
 

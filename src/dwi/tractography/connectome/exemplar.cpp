@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/connectome/exemplar.h"
 
@@ -116,9 +117,16 @@ void Exemplar::finalize (const float step_size)
   assert (!is_finalized);
   std::lock_guard<std::mutex> lock (mutex);
 
-  if (!weight || is_diagonal()) {
-    // No streamlines assigned, or a diagonal in the matrix; generate a straight line between the two nodes
-    // FIXME Is there an error in the new tractography tool that is causing omission of the first track segment?
+  // For diagonal matrix entries (self-connection), or if one of the two nodes
+  //   does not have a defined position in space, don't write an exemplar
+  if (is_diagonal() || !(node_COMs.first.allFinite() && node_COMs.second.allFinite())) {
+    clear();
+    is_finalized = true;
+    return;
+  }
+
+  // No streamlines assigned; generate a straight line between the two nodes
+  if (!weight) {
     clear();
     push_back (node_COMs.first);
     push_back (node_COMs.second);

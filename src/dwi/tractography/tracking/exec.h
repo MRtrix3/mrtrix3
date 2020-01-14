@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_tracking_exec_h__
 #define __dwi_tractography_tracking_exec_h__
@@ -22,6 +23,7 @@
 #include "dwi/directions/set.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/rng.h"
+#include "dwi/tractography/roi.h"
 #include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -112,7 +114,7 @@ namespace MR
               S (shared),
               method (shared),
               track_excluded (false),
-              track_included (S.properties.include.size(), false) { }
+              include_visitation (S.properties.include, S.properties.ordered_include) { }
 
 
             bool operator() (GeneratedTrack& item) {
@@ -128,8 +130,10 @@ namespace MR
               if (track_rejected (item)) {
                 item.clear();
                 item.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
-              } else {
+              } else if (S.downsampler.get_ratio() > 1 || (S.is_act() && S.act().crop_at_gmwmi())) {
                 S.downsampler (item);
+                check_downsampled_length (item);
+              } else {
                 item.set_status (GeneratedTrack::status_t::ACCEPTED);
               }
               return true;
@@ -142,12 +146,11 @@ namespace MR
             Math::RNG thread_local_RNG;
             Method method;
             bool track_excluded;
-            vector<bool> track_included;
+            IncludeROIVisitation include_visitation;
 
 
             term_t iterate ()
             {
-
               const term_t method_term = (S.rk4 ? next_rk4() : method.next());
 
               if (method_term)
@@ -168,13 +171,12 @@ namespace MR
               // If backtracking is not enabled, add streamline to include regions as it is generated
               // If it is enabled, this check can only be performed after the streamline is completed
               if (!(S.is_act() && S.act().backtrack()))
-                S.properties.include.contains (method.pos, track_included);
+                include_visitation (method.pos);
 
-              if (S.stop_on_all_include && traversed_all_include_regions())
+              if (S.stop_on_all_include && bool(include_visitation))
                 return TRAVERSE_ALL_INCLUDE;
 
               return CONTINUE;
-
             }
 
 
@@ -183,7 +185,7 @@ namespace MR
             {
               tck.clear();
               track_excluded = false;
-              track_included.assign (track_included.size(), false);
+              include_visitation.reset();
               method.dir = { NaN, NaN, NaN };
 
               if (S.properties.seeds.is_finite()) {
@@ -221,7 +223,7 @@ namespace MR
               if (S.is_act() && !unidirectional)
                 unidirectional = method.act().seed_is_unidirectional (method.pos, method.dir);
 
-              S.properties.include.contains (method.pos, track_included);
+              include_visitation (method.pos);
 
               const Eigen::Vector3f seed_dir (method.dir);
               tck.push_back (method.pos);
@@ -244,7 +246,6 @@ namespace MR
 
             void gen_track_unidir (GeneratedTrack& tck)
             {
-
               term_t termination = CONTINUE;
 
               if (S.is_act() && S.act().backtrack()) {
@@ -276,7 +277,7 @@ namespace MR
                         termination = CONTINUE;
                       }
                     }
-                  } else if (tck.size() >= S.max_num_points) {
+                  } else if (tck.size() >= S.max_num_points_preds) {
                     termination = LENGTH_EXCEED;
                   }
                 } while (!termination);
@@ -287,7 +288,7 @@ namespace MR
                   termination = iterate();
                   if (term_add_to_tck[termination])
                     tck.push_back (method.pos);
-                  if (!termination && tck.size() >= S.max_num_points)
+                  if (!termination && tck.size() >= S.max_num_points_preds)
                     termination = LENGTH_EXCEED;
                 } while (!termination);
 
@@ -302,7 +303,7 @@ namespace MR
 
               if (track_excluded) {
                 switch (termination) {
-                  case CALIBRATOR: case ENTER_CSF: case BAD_SIGNAL: case HIGH_CURVATURE:
+                  case CALIBRATOR: case ENTER_CSF: case MODEL: case HIGH_CURVATURE:
                     S.add_rejection (ACT_POOR_TERMINATION);
                     break;
                   case LENGTH_EXCEED:
@@ -346,7 +347,7 @@ namespace MR
                     track_excluded = true;
                     break;
 
-                  case CALIBRATOR: case BAD_SIGNAL: case HIGH_CURVATURE:
+                  case CALIBRATOR: case MODEL: case HIGH_CURVATURE:
                     if (method.act().sgm_depth)
                       termination = TERM_IN_SGM;
                     else if (!method.act().in_pathology())
@@ -365,7 +366,7 @@ namespace MR
                   case ENTER_CGM: case ENTER_CSF: case EXIT_SGM: case TERM_IN_SGM:
                     throw Exception ("\nFIXME: Have received ACT-based termination for non-ACT tracking in apply_priors()\n");
 
-                  case EXIT_IMAGE: case EXIT_MASK: case LENGTH_EXCEED: case CALIBRATOR: case BAD_SIGNAL: case HIGH_CURVATURE: case TRAVERSE_ALL_INCLUDE:
+                  case EXIT_IMAGE: case EXIT_MASK: case LENGTH_EXCEED: case CALIBRATOR: case MODEL: case HIGH_CURVATURE: case TRAVERSE_ALL_INCLUDE:
                     break;
 
                   case ENTER_EXCLUDE:
@@ -380,19 +381,19 @@ namespace MR
 
 
 
-            bool track_rejected (const vector<Eigen::Vector3f>& tck)
+            bool track_rejected (const GeneratedTrack& tck)
             {
 
               if (track_excluded)
                 return true;
 
-              // seedtest algorithm uses min_num_points = 1; should be 2 or more for all other algorithms
-              if (tck.size() == 1 && S.min_num_points > 1) {
+              // seedtest algorithm uses min_num_points_preds = 1; should be 2 or more for all other algorithms
+              if (tck.size() == 1 && S.min_num_points_preds > 1) {
                 S.add_rejection (NO_PROPAGATION_FROM_SEED);
                 return true;
               }
 
-              if (tck.size() < S.min_num_points) {
+              if (tck.size() < S.min_num_points_preds) {
                 S.add_rejection (TRACK_TOO_SHORT);
                 return true;
               }
@@ -406,12 +407,12 @@ namespace MR
 
                 if (S.act().backtrack()) {
                   for (const auto& i : tck)
-                    S.properties.include.contains (i, track_included);
+                    include_visitation (i);
                 }
 
               }
 
-              if (!traversed_all_include_regions()) {
+              if (!bool(include_visitation)) {
                 S.add_rejection (MISSED_INCLUDE_REGION);
                 return true;
               }
@@ -420,22 +421,10 @@ namespace MR
 
             }
 
-
-
-            bool traversed_all_include_regions ()
-            {
-              for (size_t n = 0; n < track_included.size(); ++n)
-                if (!track_included[n])
-                  return false;
-              return true;
-            }
-
-
-
             bool satisfy_wm_requirement (const vector<Eigen::Vector3f>& tck)
             {
               // If using the Seed_test algorithm (indicated by max_num_points == 2), don't want to execute this check
-              if (S.max_num_points == 2)
+              if (S.max_num_points_preds == 2)
                 return true;
               // If the seed was in SGM, need to confirm that one side of the track actually made it to WM
               if (method.act().seed_in_sgm && !method.act().sgm_seed_to_wm)
@@ -460,13 +449,12 @@ namespace MR
 
             void truncate_exit_sgm (vector<Eigen::Vector3f>& tck)
             {
-
               Interpolator<Image<float>>::type source (S.source);
 
               const size_t sgm_start = tck.size() - method.act().sgm_depth;
               assert (sgm_start >= 0 && sgm_start < tck.size());
               size_t best_termination = tck.size() - 1;
-              float min_value = INFINITY;
+              float min_value = std::numeric_limits<float>::infinity();
               for (size_t i = sgm_start; i != tck.size(); ++i) {
                 method.pos = tck[i];
                 method.get_data (source);
@@ -478,7 +466,78 @@ namespace MR
                 }
               }
               tck.erase (tck.begin() + best_termination + 1, tck.end());
+            }
 
+
+
+            void check_downsampled_length (GeneratedTrack& tck)
+            {
+              // Don't quantify the precise streamline length if we don't have to
+              //   (i.e. we know for sure that even in the presence of downsampling,
+              //   we're not going to break either of these two criteria)
+              if (tck.size() > S.min_num_points_postds && tck.size() < S.max_num_points_postds) {
+                tck.set_status (GeneratedTrack::status_t::ACCEPTED);
+                return;
+              }
+              const float length = Tractography::length (tck);
+              if (length < S.min_dist) {
+                tck.clear();
+                tck.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
+                S.add_rejection (TRACK_TOO_SHORT);
+              } else if (length > S.max_dist) {
+                if (S.is_act()) {
+                  tck.clear();
+                  tck.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
+                  S.add_rejection (TRACK_TOO_LONG);
+                } else {
+                  truncate_maxlength (tck);
+                  tck.set_status (GeneratedTrack::status_t::ACCEPTED);
+                }
+              } else {
+                tck.set_status (GeneratedTrack::status_t::ACCEPTED);
+              }
+            }
+
+
+
+            void truncate_maxlength (GeneratedTrack& tck)
+            {
+              // Chop the track short so that the length is precisely the maximum length
+              // If the truncation would result in removing the seed point, truncate all
+              //   the way back to the seed point, reverse the streamline, and then
+              //   truncate off the end (which used to be the start)
+              float length_sum = 0.0f;
+              size_t index;
+              for (index = 1; index != tck.size(); ++index) {
+                const float seg_length = (tck[index] - tck[index-1]).norm();
+                if (length_sum + seg_length > S.max_dist)
+                  break;
+                length_sum += seg_length;
+              }
+
+              // If we don't exceed the maximum length, this function should never have been called!
+              assert (index != tck.size());
+              // But nevertheless; if we happen to somehow get here, let's just allow processing to continue
+              if (index == tck.size())
+                return;
+
+              // Would truncation at this vertex (plus including a new small segment at the end) result in
+              //   discarding the seed point? If so:
+              //   - Truncate so that the seed point is the last point on the streamline
+              //   - Reverse the order of the vertices
+              //   - Re-run this function recursively in order to truncate from the opposite end of the streamline
+              if (tck.get_seed_index() >= index) {
+                tck.resize (tck.get_seed_index()+1);
+                tck.reverse();
+                truncate_maxlength (tck);
+                return;
+              }
+
+              // We want to determine a new vertex in between "index" and the prior vertex, which
+              //   is of the appropriate distance away from "index" in order to make the streamline
+              //   precisely the maximum length
+              tck.resize (index+1);
+              tck[index] = tck[index-1] + ((tck[index] - tck[index-1]).normalized() * (S.max_dist - length_sum));
             }
 
 
@@ -512,7 +571,7 @@ namespace MR
               const Eigen::Vector3f final_dir (method.dir);
               if ((termination = method.next()))
                 return termination;
-              if (dir_rk1.dot (method.dir) < S.cos_max_angle_rk4)
+              if (dir_rk1.dot (method.dir) < S.cos_max_angle_ho)
                 return HIGH_CURVATURE;
               method.pos = final_pos;
               method.dir = final_dir;

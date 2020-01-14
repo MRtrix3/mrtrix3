@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/file_base.h"
 #include "file/path.h"
@@ -27,15 +28,15 @@ namespace MR {
         dtype = DataType::Undefined;
 
         const std::string firstline ("mrtrix " + type);
-        File::KeyValue kv (file, firstline.c_str());
+        File::KeyValue::Reader kv (file, firstline.c_str());
         std::string data_file;
 
         while (kv.next()) {
           const std::string key = lowercase (kv.key());
-          if (key == "roi") {
+          if (key == "roi" || key == "prior_roi") {
             try {
               vector<std::string> V (split (kv.value(), " \t", true, 2));
-              properties.roi.insert (std::pair<std::string,std::string> (V[0], V[1]));
+              properties.prior_rois.insert (std::pair<std::string,std::string> (V[0], V[1]));
             }
             catch (...) {
               WARN ("invalid ROI specification in " + type  + " file \"" + file + "\" - ignored");

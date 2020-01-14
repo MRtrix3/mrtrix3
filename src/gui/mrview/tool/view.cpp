@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/tool/view.h"
 
@@ -250,23 +251,10 @@ namespace MR
           layout->addWidget (copy_focus_button, 1, 4);
 
           // Volume
-          volume_box = new QGroupBox ("Volume");
+          volume_box = new QGroupBox ("Volume indices (dimension: index)");
           main_box->addWidget (volume_box);
-          layout = new GridLayout;
-          volume_box->setLayout (layout);
-
-          layout->addWidget (new QLabel (tr("Index: ")), 0, 0);
-          vol_index = new SpinBox(this);
-          vol_index->setMinimum(0);
-          layout->addWidget (vol_index, 0, 1);
-
-          layout->addWidget (new QLabel (tr("Group: ")), 0, 2);
-          vol_group = new SpinBox(this);
-          vol_group->setMinimum(0);
-          layout->addWidget (vol_group, 0, 3);
-
-          connect(vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex(int)));
-          connect(vol_group, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeGroup(int)));
+          volume_index_layout = new GridLayout;
+          volume_box->setLayout (volume_index_layout);
 
           // Intensity
           group_box = new QGroupBox ("Intensity scaling");
@@ -482,8 +470,7 @@ namespace MR
           connect (&window(), SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
           connect (&window(), SIGNAL (modeChanged()), this, SLOT (onModeChanged()));
           connect (&window(), SIGNAL (fieldOfViewChanged()), this, SLOT (onFOVChanged()));
-          connect (&window(), SIGNAL (volumeChanged(size_t)), this, SLOT (onVolumeIndexChanged(size_t)));
-          connect (&window(), SIGNAL (volumeGroupChanged(size_t)), this, SLOT (onVolumeGroupChanged(size_t)));
+          connect (&window(), SIGNAL (volumeChanged()), this, SLOT (onVolumeIndexChanged()));
           onPlaneChanged();
           onFocusChanged();
           onScalingChanged();
@@ -493,6 +480,20 @@ namespace MR
           clip_planes_selection_changed_slot();
         }
 
+
+
+
+        void View::onVolumeIndexChanged()
+        {
+          assert (window().image());
+          const auto& image (window().image()->image);
+          assert (image.ndim() == size_t(volume_index_layout->count() + 3));
+
+          for (int i = 0; i < volume_index_layout->count(); ++i) {
+            auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
+            box->setValue (image.ndim() > size_t(i + 3) ? image.index(i + 3) : 0);
+          }
+        }
 
 
 
@@ -524,23 +525,21 @@ namespace MR
           focus_y->setRate (rate);
           focus_z->setRate (rate);
 
-          size_t dim = image->image.ndim();
-          if(dim > 3) {
-            volume_box->setVisible(true);
-            vol_index->setEnabled(true);
-            vol_index->setMaximum(image->image.size(3) - 1);
-            vol_index->setValue(image->image.index(3));
+          const int dim = image->image.ndim();
+          volume_box->setVisible(dim > 3);
 
-            if(dim > 4) {
-              vol_group->setEnabled(true);
-              vol_group->setMaximum(image->image.size(4) - 1);
-              vol_group->setValue(image->image.index(4));
-            } else
-              vol_group->setEnabled(false);
-          } else {
-            volume_box->setVisible(false);
-            vol_index->setEnabled(false);
-            vol_group->setEnabled(false);
+          while (volume_index_layout->count())
+            delete volume_index_layout->takeAt (volume_index_layout->count()-1)->widget();
+
+          for (size_t d = 3; d < image->image.ndim(); ++d) {
+            SpinBox* vol_index = new SpinBox (this);
+            vol_index->setMinimum (0);
+            vol_index->setPrefix (tr((str(d+1) + ": ").c_str()));
+            vol_index->setValue (image->image.index(d));
+            vol_index->setMaximum (image->image.size(d) - 1);
+            vol_index->setEnabled (image->image.size(d) > 1);
+            volume_index_layout->addWidget (vol_index, volume_index_layout->count()/3, volume_index_layout->count()%3);
+            connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
           }
 
           lower_threshold_check_box->setChecked (image->use_discard_lower());
@@ -569,11 +568,12 @@ namespace MR
           if(!window().image())
             return;
 
-          auto focus (window().focus());
-          std::cout << str(focus[0]) << ", " << str(focus[1]) << ", " << str(focus[2]) << std::endl;
+          Eigen::VectorXf focus (window().focus());
+          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+          std::cout << focus.transpose().format(fmt) << "\n";
 
           QClipboard *clip = QApplication::clipboard();
-          QString input = QString::fromStdString(str(focus[0])+", "+str(focus[1])+", "+str(focus[2]));
+          QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
           clip->setText(input);
         }
 
@@ -582,12 +582,12 @@ namespace MR
           if(!window().image())
             return;
 
-          auto focus (window().focus());
-          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
-          std::cout << str(focus[0]) << ", " << str(focus[1]) << ", " << str(focus[2]) << std::endl;
+          Eigen::VectorXf focus = window().image()->transform().scanner2voxel.cast<float>() * window().focus();
+          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+          std::cout << focus.transpose().format(fmt) << "\n";
 
           QClipboard *clip = QApplication::clipboard();
-          QString input = QString::fromStdString(str(focus[0])+", "+str(focus[1])+", "+str(focus[2]));
+          QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
           clip->setText(input);
         }
 
@@ -647,20 +647,23 @@ namespace MR
 
 
 
-        void View::onSetVolumeIndex (int value)
+        void View::onSetVolumeIndex ()
         {
-          if(window().image())
-            window().set_image_volume (3, value);
+          if (window().image()) {
+            const auto& image (window().image()->image);
+            assert (image.ndim() == size_t(volume_index_layout->count()+3));
+
+            for (int i = 0; i < volume_index_layout->count(); ++i) {
+              auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
+              if (image.ndim() <= size_t(i+3))
+                break;
+              window().set_image_volume (i+3, box->value());
+            }
+          }
         }
 
 
 
-
-        void View::onSetVolumeGroup (int value)
-        {
-          if(window().image())
-            window().set_image_volume (4, value);
-        }
 
 
 
@@ -1063,7 +1066,7 @@ namespace MR
           connect(light_box_show_grid, SIGNAL (toggled(bool)), &mode, SLOT (show_grid_slot(bool)));
           connect(light_box_show_4d, SIGNAL (toggled(bool)), &mode, SLOT (show_volumes_slot(bool)));
           connect(light_box_show_4d, SIGNAL (toggled(bool)), this, SLOT (light_box_toggle_volumes_slot(bool)));
-          connect(&window(), SIGNAL (volumeChanged(size_t)), &mode, SLOT (image_volume_changed_slot()));
+          connect(&window(), SIGNAL (volumeChanged()), &mode, SLOT (image_volume_changed_slot()));
 
           reset_light_box_gui_controls();
         }
