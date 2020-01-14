@@ -65,7 +65,7 @@ namespace MR
 
         extern const App::OptionGroup TrackOption;
 
-        void load_streamline_properties (Properties&);
+        void load_streamline_properties_and_rois (Properties&);
 
       }
     }
