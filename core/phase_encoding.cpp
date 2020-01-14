@@ -103,7 +103,7 @@ namespace MR
         const auto opt_eddy = get_options ("import_pe_eddy");
         if (opt_eddy.size()) {
           if (opt_table.size())
-            throw Exception ("Please provide phase encoding table using either -import_pe_table or -import_pe_eddy option (not both)");
+            throw Exception ("Phase encoding table can be provided using either -import_pe_table or -import_pe_eddy option, but NOT both");
           result = load_eddy (opt_eddy[0][0], opt_eddy[0][1]);
         }
         if (!opt_table.size() && !opt_eddy.size())
