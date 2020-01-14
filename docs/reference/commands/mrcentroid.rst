@@ -1,6 +1,6 @@
-.. _mrcentre:
+.. _mrcentroid:
 
-mrcentre
+mrcentroid
 ===================
 
 Synopsis
@@ -13,7 +13,7 @@ Usage
 
 ::
 
-    mrcentre [ options ]  input
+    mrcentroid [ options ]  input
 
 -  *input*: the input image
 
