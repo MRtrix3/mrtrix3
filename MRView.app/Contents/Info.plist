@@ -16,7 +16,6 @@
     <key>LSMinimumSystemVersion</key>         <string>10.7.5</string>
     <key>LSBackgroundOnly</key>               <string>0</string>
     <key>NSHighResolutionCapable</key>        <true/>
-    <key>NSRequiresAquaSystemAppearance</key> <true/>
 
     <key>CFBundleURLTypes</key>
     <array>
