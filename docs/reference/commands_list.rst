@@ -83,9 +83,7 @@ List of MRtrix3 commands
     commands/mrinfo
     commands/mrmath
     commands/mrmetric
-    commands/mrpad
     commands/mrregister
-    commands/mrresize
     commands/mrstats
     commands/mrthreshold
     commands/mrtransform
@@ -197,6 +195,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
     |cpp.png|, :ref:`mrcalc`, "Apply generic voxel-wise mathematical operations to images"
     |cpp.png|, :ref:`mrcat`, "Concatenate several images into one"
+    |cpp.png|, :ref:`mrcentre`, "Determine the centre of mass / centre of gravity of an image"
     |cpp.png|, :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
     |cpp.png|, :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     |cpp.png|, :ref:`mrcolour`, "Apply a colour map to an image"
@@ -261,11 +260,11 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`warpcorrect`, "Replaces voxels in a deformation field that point to a specific out of bounds location with nan,nan,nan"
     |cpp.png|, :ref:`warpinit`, "Create an initial warp image, representing an identity transformation"
     |cpp.png|, :ref:`warpinvert`, "Invert a non-linear warp field"
-  
-  
+
+
 .. |cpp.png| image:: cpp.png
    :alt: C++
-  
+
 .. |python.png| image:: python.png
    :alt: Python
-  
+
