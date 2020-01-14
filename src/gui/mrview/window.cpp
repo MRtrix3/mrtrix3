@@ -991,14 +991,14 @@ namespace MR
         if (dynamic_cast<Tool::__Action__*>(action)->dock)
           return;
 
-        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create();
-        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
-
         //CONF option: MRViewDockFloating
         //CONF default: 0 (false)
         //CONF Whether MRView tools should start docked in the main window, or
         //CONF floating (detached from the main window).
         bool floating = MR::File::Config::get_int ("MRViewDockFloating", 0);
+
+        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (floating);
+        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
 
         if (!floating) {
 
@@ -1016,7 +1016,6 @@ namespace MR
 
         }
 
-        tool->setFloating (floating);
         if (show) {
           tool->show();
           tool->raise();
