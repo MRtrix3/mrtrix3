@@ -28,7 +28,7 @@ else
   FFTW_VERSION=${FFTW_VERSION#*/*/fftw-}
   echo "Using fftw ${FFTW_VERSION}"
 
-  QT_VERSION=$(git ls-remote --tags https://github.com/qt/qt5.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v '-' | grep '5.9' | sort -V | tail -1)
+  QT_VERSION=$(git ls-remote --tags https://github.com/qt/qt5.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v '-' | grep '5.' | sort -V | tail -1)
   QT_VERSION=${QT_VERSION#*/*/v}
   echo "Using qt ${QT_VERSION}"
 
