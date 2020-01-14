@@ -68,7 +68,7 @@ List of MRtrix3 commands
     commands/mraverageheader
     commands/mrcalc
     commands/mrcat
-    commands/mrcentre
+    commands/mrcentroid
     commands/mrcheckerboardmask
     commands/mrclusterstats
     commands/mrcolour
@@ -195,7 +195,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
     |cpp.png|, :ref:`mrcalc`, "Apply generic voxel-wise mathematical operations to images"
     |cpp.png|, :ref:`mrcat`, "Concatenate several images into one"
-    |cpp.png|, :ref:`mrcentre`, "Determine the centre of mass / centre of gravity of an image"
+    |cpp.png|, :ref:`mrcentroid`, "Determine the centre of mass / centre of gravity of an image"
     |cpp.png|, :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
     |cpp.png|, :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     |cpp.png|, :ref:`mrcolour`, "Apply a colour map to an image"
