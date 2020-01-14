@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <unsupported/Eigen/FFT>
 
@@ -37,8 +38,8 @@ void usage ()
 
     + "This command is designed to run on data directly after it has been reconstructed by the scanner, "
     "before any interpolation of any kind has taken place. You should not run this command after any "
-    "form of motion correction (e.g. not after dwipreproc). Similarly, if you intend running dwidenoise, "
-    "you should run this command afterwards, since it has the potential to alter the noise structure, "
+    "form of motion correction (e.g. not after dwifslpreproc). Similarly, if you intend running dwidenoise, "
+    "you should run denoising before this command to not alter the noise structure, "
     "which would impact on dwidenoise's performance."
 
     + "Note that this method is designed to work on images acquired with full k-space coverage. "
@@ -318,24 +319,28 @@ void run ()
   const bool axes_set_manually = opt.size();
   if (opt.size()) {
     vector<int> axes = opt[0][0];
-    if (slice_axes.size() != 2)
+    if (axes.size() != 2)
       throw Exception ("slice axes must be specified as a comma-separated 2-vector");
+    if (size_t(std::max (axes[0], axes[1])) >= header.ndim())
+      throw Exception ("slice axes must be within the dimensionality of the image");
+    if (axes[0] == axes[1])
+      throw Exception ("two independent slice axes must be specified");
     slice_axes = { size_t(axes[0]), size_t(axes[1]) };
   }
 
   auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
     try {
-      const Eigen::Vector3 slice_endocing_axis_onehot = Axes::id2dir (slice_encoding_it->second);
+      const Eigen::Vector3 slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
       vector<size_t> auto_slice_axes = { 0, 0 };
-      if (slice_endocing_axis_onehot[0])
+      if (slice_encoding_axis_onehot[0])
         auto_slice_axes = { 1, 2 };
-      else if (slice_endocing_axis_onehot[1])
+      else if (slice_encoding_axis_onehot[1])
         auto_slice_axes = { 0, 2 };
-      else if (slice_endocing_axis_onehot[2])
+      else if (slice_encoding_axis_onehot[2])
         auto_slice_axes = { 0, 1 };
       else
-        throw Exception ("Fatal error: Invalid slice axis one-hot encoding [ " + str(slice_endocing_axis_onehot.transpose()) + " ]");
+        throw Exception ("Fatal error: Invalid slice axis one-hot encoding [ " + str(slice_encoding_axis_onehot.transpose()) + " ]");
       if (axes_set_manually) {
         if (slice_axes == auto_slice_axes) {
           INFO ("User's manual selection of within-slice axes consistent with \"SliceEncodingDirection\" field in image header");

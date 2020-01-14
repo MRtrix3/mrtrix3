@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
@@ -35,6 +36,14 @@ namespace MR {
           .allow_multiple()
           + Argument ("spec").type_various()
 
+       + Option("include_ordered",
+          "specify an inclusion region of interest, as either a binary mask image, "
+          "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
+          "must traverse ALL inclusion_ordered regions in the order they are "
+          "specified in order to be accepted.")
+       .allow_multiple()
+       + Argument("image").type_text()
+
       + Option ("exclude",
             "specify an exclusion region of interest, as either a binary mask image, "
             "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
@@ -56,6 +65,10 @@ namespace MR {
         auto opt = get_options ("include");
         for (size_t i = 0; i < opt.size(); ++i)
           properties.include.add (ROI (opt[i][0]));
+
+        opt = get_options("include_ordered");
+        for (size_t i = 0; i < opt.size(); ++i)
+           properties.ordered_include.add (ROI (opt[i][0]));
 
         opt = get_options ("exclude");
         for (size_t i = 0; i < opt.size(); ++i)

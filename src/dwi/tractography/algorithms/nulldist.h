@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_algorithms_nulldist_h__
 #define __dwi_tractography_algorithms_nulldist_h__
@@ -42,12 +43,15 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set)
         {
-          set_step_size (0.1f);
+          set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                              Defaults::angle_ifod1,
+                              rk4);
+          set_num_points();
           set_cutoff (0.0f);
-          sin_max_angle = std::sin (max_angle);
+          sin_max_angle_1o = std::sin (max_angle_1o);
           properties["method"] = "Nulldist1";
         }
-        float sin_max_angle;
+        float sin_max_angle_1o;
       };
 
       NullDist1 (const Shared& shared) :
@@ -79,7 +83,7 @@ namespace MR
       const Shared& S;
       Interpolator<Image<float>>::type source;
 
-      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle_1o, S.sin_max_angle_1o)); }
 
     };
 

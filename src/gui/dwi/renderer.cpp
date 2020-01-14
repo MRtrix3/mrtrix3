@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <map>
 
@@ -129,10 +130,6 @@ namespace MR
           "layout(location = 1) in float value;\n";
         }
 
-        std::string VSout = "";
-        if (mode_ == mode_t::DIXEL)
-          VSout = "_GSin";
-
         source +=
           "uniform float scale;\n"
           "uniform int reverse;\n"
@@ -146,32 +143,29 @@ namespace MR
           "uniform vec3 dec;\n";
         }
 
-        source +=
-          "out vec3 position"+VSout+", color"+VSout+";\n";
-
         if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
           source +=
-          "out vec3 vert_normal;\n";
+          "out vec3 vertex_position, vertex_color, vertex_normal;\n"
+          "out float amplitude;\n";
         } else if (mode_ == mode_t::DIXEL) {
           source +=
-          "out vec3 vert_dir;\n"
-          "out vec3 vert_pos;\n";
+          "out vec3 vertex_orig_direction, vertex_orig_position, vertex_orig_color;\n"
+          "out float orig_amplitude;\n";
         }
 
         source +=
-          "out float amplitude"+VSout+";\n"
           "void main () {\n";
 
         if (mode_ == mode_t::SH) {
           source +=
-          "  amplitude"+VSout+" = r_del_daz[0];\n";
+          "  amplitude = r_del_daz[0];\n";
         } else if (mode_ == mode_t::TENSOR) {
           source +=
           "  vec3 new_vertex = tensor * vertex;\n"
-          "  amplitude"+VSout+" = length(new_vertex);\n";
+          "  amplitude = length(new_vertex);\n";
         } else if (mode_ == mode_t::DIXEL) {
           source +=
-          "  amplitude"+VSout+" = value;\n";
+          "  orig_amplitude = value;\n";
         }
 
         if (use_lighting_ && (mode_ == mode_t::SH || mode_ == mode_t::TENSOR)) {
@@ -188,51 +182,51 @@ namespace MR
           "  vec3 d2 = vec3 (-r_del_daz[1]*caz*sel - r_del_daz[0]*caz*cel,\n"
           "                  -r_del_daz[1]*saz*sel - r_del_daz[0]*saz*cel,\n"
           "                  -r_del_daz[1]*cel     + r_del_daz[0]*sel);\n"
-          "  vert_normal = cross (d1, d2);\n";
+          "  vertex_normal = cross (d1, d2);\n";
           } else if (mode_ == mode_t::TENSOR) {
           source +=
-          "  vert_normal = normalize (inv_tensor * vertex);\n";
+          "  vertex_normal = normalize (inv_tensor * vertex);\n";
           }
           source +=
           "  if (reverse != 0)\n"
-          "    vert_normal = -vert_normal;\n"
-          "  vert_normal = normalize (mat3(MV) * vert_normal);\n";
+          "    vertex_normal = -vertex_normal;\n"
+          "  vertex_normal = normalize (mat3(MV) * vertex_normal);\n";
         }
 
         if (colour_by_direction_) {
           if (mode_ == mode_t::TENSOR) {
           source +=
-          "  color = dec;\n";
+          "  vertex_color = dec;\n";
           } else {
           source +=
-          "  color"+VSout+" = abs (vertex.xyz);\n";
+          "  vertex_" + std::string ( mode_ == mode_t::DIXEL ? "orig_" : "" ) + "color = abs (vertex.xyz);\n";
           }
         } else {
           source +=
-          "  color"+VSout+" = constant_color;\n";
+          "  vertex_" + std::string ( mode_ == mode_t::DIXEL ? "orig_" : "" ) + "color = constant_color;\n";
         }
 
         if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
           source +=
-          "  vec3 pos = " + std::string(mode_ == mode_t::TENSOR ? "new_vertex" : "vertex * amplitude"+VSout) + " * scale;\n"
+          "  vec3 pos = " + std::string(mode_ == mode_t::TENSOR ? "new_vertex" : "vertex * amplitude" ) + " * scale;\n"
           "  if (reverse != 0)\n"
           "    pos = -pos;\n";
           if (orthographic_) {
             source +=
-          "  position"+VSout+" = vec3(0.0, 0.0, 1.0);\n";
+          "  vertex_position = vec3(0.0, 0.0, 1.0);\n";
           } else {
             source +=
-          "  position"+VSout+" = -(MV * vec4 (pos, 1.0)).xyz;\n";
+          "  vertex_position = -(MV * vec4 (pos, 1.0)).xyz;\n";
           }
           source +=
           "  gl_Position = MVP * vec4 (pos + origin, 1.0);\n";
         } else if (mode_ == mode_t::DIXEL) {
           source +=
-          "  vert_dir = vertex;\n"
-          "  vert_pos = vertex * amplitude"+VSout+";\n"
+          "  vertex_orig_direction = vertex;\n"
+          "  vertex_orig_position = vertex * orig_amplitude;\n"
           "  if (reverse != 0) {\n"
-          "     vert_dir = -vert_dir;\n"
-          "     vert_pos = -vert_pos;\n"
+          "     vertex_orig_direction = -vertex_orig_direction;\n"
+          "     vertex_orig_position = -vertex_orig_position;\n"
           "  }\n";
         }
 
@@ -242,7 +236,8 @@ namespace MR
         return source;
       }
 
-      std::string Renderer::Shader::geometry_shader_source() const{
+      std::string Renderer::Shader::geometry_shader_source() const
+      {
         std::string source;
         if (mode_ == mode_t::DIXEL) {
           source +=
@@ -252,49 +247,35 @@ namespace MR
             "uniform vec3 origin;\n"
             "uniform float scale;\n"
             "uniform int reverse;\n"
-            "in vec3 vert_dir[], vert_pos[];\n"
-            "in vec3 position_GSin[], color_GSin[];\n"
-            "flat out vec3 face_normal;\n"
-            "out vec3 position_GSout, color_GSout;\n"
-            "in float amplitude_GSin[];\n"
-            "out float amplitude_GSout;\n"
+            "in vec3 vertex_orig_direction[], vertex_orig_position[], vertex_orig_color[];\n"
+            "in float orig_amplitude[];\n"
+            "out vec3 vertex_position, vertex_color, vertex_normal;\n"
+            "out float amplitude;\n"
             "void main() {\n"
-            "  vec3 mean_dir = normalize (vert_dir[0] + vert_dir[1] + vert_dir[2]);\n"
+            "  vec3 mean_dir = normalize (vertex_orig_direction[0] + vertex_orig_direction[1] + vertex_orig_direction[2]);\n"
             "  vec3 vertices[3];\n"
-            "  vec3 positions[3];\n";
-          for (size_t vertex = 0; vertex != 3; ++vertex) {
-            const std::string v = str(vertex);
-            source +=
-            "  if (dot (mean_dir, vert_dir["+v+"]) > 0.0) {\n"
-            "    vertices["+v+"] = vert_pos["+v+"];\n"
-            "    positions["+v+"] = position_GSin["+v+"];\n"
-            "  } else {\n"
-            "    vertices["+v+"] = -vert_pos["+v+"];\n"
-            "    positions["+v+"] = -position_GSin["+v+"];\n"
-            "  }\n";
-          }
-          source +=
-            "  face_normal = normalize (cross (vertices[1]-vertices[0], vertices[2]-vertices[1]));\n"
+            "  vec3 positions[3];\n"
+            "  for (int v = 0; v < 3; ++v) {\n"
+            "    if (dot (mean_dir, vertex_orig_direction[v]) > 0.0)\n"
+            "      vertices[v] = vertex_orig_position[v];\n"
+            "    else\n"
+            "      vertices[v] = -vertex_orig_position[v];\n"
+            "  }\n"
+            "  vertex_normal = normalize (cross (vertices[1]-vertices[0], vertices[2]-vertices[1]));\n"
             "  if (reverse != 0)\n"
-            "    face_normal = -face_normal;\n"
-            "  face_normal = normalize (mat3(MV) * face_normal);\n";
-          for (size_t vertex = 0; vertex != 3; ++vertex) {
-            const std::string v = str(vertex);
+            "    vertex_normal = -vertex_normal;\n"
+            "  vertex_normal = mat3(MV) * vertex_normal;\n"
+            "  for (int v = 0; v < 3; ++v) {\n"
+            "    gl_Position = MVP * vec4 (origin + (vertices[v] * scale), 1.0);\n";
+            if (orthographic_)
+              source += "    vertex_position = vec3(0.0, 0.0, 1.0);\n";
+            else
+              source += "    vertex_position = -(MV * vec4 (vertices[v] * scale, 1.0)).xyz;\n";
             source +=
-            "  gl_Position = MVP * vec4 (origin + (vertices["+v+"] * scale), 1.0);\n";
-            if (orthographic_) {
-              source +=
-            "  position_GSout = vec3(0.0, 0.0, 1.0);\n";
-            } else {
-              source +=
-            "  position_GSout = -(MV * vec4 (vertices["+v+"] * scale, 1.0)).xyz;\n";
-            }
-            source +=
-            "  color_GSout = color_GSin["+v+"];\n"
-            "  amplitude_GSout = amplitude_GSin["+v+"];\n"
-            "  EmitVertex();\n";
-          }
-          source +=
+            "    vertex_color = vertex_orig_color[v];\n"
+            "    amplitude = orig_amplitude[v];\n"
+            "    EmitVertex();\n"
+            "  }\n"
             "  EndPrimitive();\n"
             "}";
         }
@@ -304,27 +285,14 @@ namespace MR
       std::string Renderer::Shader::fragment_shader_source() const
       {
         std::string source;
-        std::string FSin = "";
-        if (mode_ == mode_t::DIXEL)
-          FSin = "_GSout";
         source +=
           "uniform float ambient, diffuse, specular, shine;\n"
           "uniform vec3 light_pos;\n"
-          "in float amplitude"+FSin+";\n"
-          "in vec3 position"+FSin+", color"+FSin+";\n";
-
-        if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
-          source +=
-          "in vec3 vert_normal;\n";
-        } else if (mode_ == mode_t::DIXEL) {
-          source +=
-          "flat in vec3 face_normal;\n";
-        }
-
-        source +=
+          "in float amplitude;\n"
+          "in vec3 vertex_position, vertex_color, vertex_normal;\n"
           "out vec3 final_color;\n"
           "void main() {\n"
-          "  if (amplitude"+FSin+" < 0.0) {\n";
+          "  if (amplitude < 0.0) {\n";
 
         if (hide_neg_values_) {
           source +=
@@ -336,21 +304,16 @@ namespace MR
 
         source +=
           "  }\n"
-          "  else final_color = color"+FSin+";\n";
+          "  else final_color = vertex_color;\n";
 
         if (use_lighting_) {
-          if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
           source +=
-          "  vec3 norm = normalize (vert_normal);\n";
-          } else if (mode_ == mode_t::DIXEL) {
+          "  vec3 norm = normalize (vertex_normal);\n";
           source +=
-          "  vec3 norm = face_normal;\n";
-          }
-          source +=
-          "  if (amplitude"+FSin+" < 0.0)\n"
+          "  if (amplitude < 0.0)\n"
           "    norm = -norm;\n"
           "  final_color *= ambient + diffuse * clamp (dot (norm, light_pos), 0, 1);\n"
-          "  final_color += specular * pow (clamp (dot (reflect (-light_pos, norm), normalize(position"+FSin+")), 0, 1), shine);\n";
+          "  final_color += specular * pow (clamp (dot (reflect (-light_pos, norm), normalize(vertex_position)), 0, 1), shine);\n";
         }
 
         source +=
@@ -372,7 +335,7 @@ namespace MR
 
       Renderer::SH::~SH()
       {
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         half_sphere.vertex_buffer.clear();
         half_sphere.index_buffer.clear();
         surface_buffer.clear();
@@ -382,7 +345,7 @@ namespace MR
       void Renderer::SH::initGL()
       {
         GL_CHECK_ERROR;
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         half_sphere.vertex_buffer.gen();
         surface_buffer.gen();
         half_sphere.index_buffer.gen();
@@ -420,7 +383,7 @@ namespace MR
         INFO ("updating ODF SH renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
         {
-          Renderer::GrabContext context (parent.context_);
+          GL::Context::Grab context (parent.context_);
           LOD = lod;
           half_sphere.LOD (LOD);
         }
@@ -501,7 +464,7 @@ namespace MR
 
       Renderer::Tensor::~Tensor()
       {
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         half_sphere.vertex_buffer.clear();
         half_sphere.index_buffer.clear();
         VAO.clear();
@@ -510,7 +473,7 @@ namespace MR
       void Renderer::Tensor::initGL()
       {
         GL_CHECK_ERROR;
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         half_sphere.vertex_buffer.gen();
         half_sphere.index_buffer.gen();
         VAO.gen();
@@ -536,7 +499,7 @@ namespace MR
         INFO ("updating tensor renderer...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
         {
-          Renderer::GrabContext context (parent.context_);
+          GL::Context::Grab context (parent.context_);
           LOD = lod;
           half_sphere.LOD (LOD);
         }
@@ -580,7 +543,7 @@ namespace MR
 
       Renderer::Dixel::~Dixel()
       {
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         vertex_buffer.clear();
         value_buffer.clear();
         index_buffer.clear();
@@ -590,7 +553,7 @@ namespace MR
       void Renderer::Dixel::initGL()
       {
         GL_CHECK_ERROR;
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         vertex_buffer.gen();
         value_buffer.gen();
         index_buffer.gen();
@@ -619,7 +582,7 @@ namespace MR
         assert (data.size() == vertex_count);
 
         GL_CHECK_ERROR;
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         VAO.bind();
         value_buffer.bind (gl::ARRAY_BUFFER);
         gl::BufferData (gl::ARRAY_BUFFER, vertex_count*sizeof(GLfloat), &data[0], gl::STREAM_DRAW);
@@ -675,7 +638,7 @@ namespace MR
         }
 
         GL_CHECK_ERROR;
-        Renderer::GrabContext context (parent.context_);
+        GL::Context::Grab context (parent.context_);
         VAO.bind();
         vertex_buffer.bind (gl::ARRAY_BUFFER);
         gl::BufferData (gl::ARRAY_BUFFER, dirs.size()*sizeof(Eigen::Vector3f), &directions_data[0], gl::STATIC_DRAW);

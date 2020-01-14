@@ -1,21 +1,22 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/connectome/extract.h"
 
-#include "bitset.h"
+#include "misc/bitset.h"
 
 
 namespace MR {
@@ -87,13 +88,14 @@ WriterExemplars::WriterExemplars (const Tractography::Properties& properties, co
   else
     length = std::round (to<float>(max_dist_it->second) / step_size) + 1;
 
+  size_t index = 0;
   if (exclusive) {
     for (size_t i = 0; i != nodes.size(); ++i) {
       const node_t one = nodes[i];
       for (size_t j = i; j != nodes.size(); ++j) {
         const node_t two = nodes[j];
         selectors.push_back (Selector (one, two));
-        exemplars.push_back (Exemplar (length, std::make_pair (one, two), std::make_pair (COMs[one], COMs[two])));
+        exemplars.push_back (Exemplar (index++, length, std::make_pair (one, two), std::make_pair (COMs[one], COMs[two])));
       }
     }
   } else {
@@ -103,7 +105,7 @@ WriterExemplars::WriterExemplars (const Tractography::Properties& properties, co
       for (node_t two = one; two != COMs.size(); ++two) {
         if (std::find (nodes.begin(), nodes.end(), one) != nodes.end() || std::find (nodes.begin(), nodes.end(), two) != nodes.end()) {
           selectors.push_back (Selector (one, two));
-          exemplars.push_back (Exemplar (length, std::make_pair (one, two), std::make_pair (COMs[one], COMs[two])));
+          exemplars.push_back (Exemplar (index++, length, std::make_pair (one, two), std::make_pair (COMs[one], COMs[two])));
         }
       }
     }

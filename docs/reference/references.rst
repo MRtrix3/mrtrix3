@@ -8,6 +8,11 @@ References
    NeuroImage, 123 (2015), pp. 89–101.
    [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811915007168>`__\ ]
 
+.. [CorderoGrande2019] L. Cordero-Grande, D. Christiaens, J. Hutter, A.N. Price, J.V. Hajnal
+   *Complex diffusion-weighted image estimation via matrix recovery under general noise models.*
+   NeuroImage 200 (2019), pp. 391-404
+   [`full text link <https://www.sciencedirect.com/science/article/pii/S1053811919305348>`__\ ]
+
 .. [Dhollander2014] T. Dhollander, L. Emsell, W. Van Hecke, F. Maes, S. Sunaert, and P. Suetens.
    *Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography.*
    NeuroImage, 94 (2014), pp. 312–336.
@@ -47,6 +52,11 @@ References
    *Feasibility and benefits of 3-tissue constrained spherical deconvolution for studying the brains of babies.*
    Proceedings of the 26th annual meeting of the International Society of Magnetic Resonance in Medicine (2018), pp. 3077.
    [`full text link <https://www.researchgate.net/publication/324770875_Feasibility_and_benefits_of_3-tissue_constrained_spherical_deconvolution_for_studying_the_brains_of_babies>`__\ ]
+
+.. [Dhollander2019] T. Dhollander, R. Mito, D. Raffelt, and A. Connelly.
+   *Improved white matter response function estimation for 3-tissue constrained spherical deconvolution.*
+   Proceedings of the 27th annual meeting of the International Society of Magnetic Resonance in Medicine (2019), pp. 555.
+   [`full text link <https://www.researchgate.net/publication/331165168_Improved_white_matter_response_function_estimation_for_3-tissue_constrained_spherical_deconvolution>`__\ ]
 
 .. [Jeurissen2014] B. Jeurissen, J.-D. Tournier, T. Dhollander, A. Connelly, and J.  Sijbers.
    *Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data.*
@@ -103,6 +113,11 @@ References
    NeuroImage 119 (2015), pp. 338-51.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/26163802>`__\ ]
 
+.. [Smith2019a] R.E. Smith, D. Dimond, S. Bray, A. Connelly.
+   *Mitigation of DWI brain cropping in Fixel-Based Analysis.*
+   In Proc OHBM (2019), W765
+   [`full text link <https://www.researchgate.net/publication/332495497_Mitigation_of_DWI_brain_cropping_in_Fixel-Based_Analysis>`__\ ]
+
 .. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B.Vos, M.A. Viergever, and A. Leemans.
    *Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data.*
    NeuroImage, 86 (2014), pp. 67–80.
@@ -127,6 +142,11 @@ References
    *Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging.*
    NMR Biomed., 26 (2013), pp. 1775–86.
    [`full text link <https://onlinelibrary.wiley.com/doi/abs/10.1002/nbm.3017>`__\ ]
+   
+.. [Tournier2019] J.-D. Tournier, R. E. Smith, D. Raffelt, R. Tabbara, T. Dhollander, M. Pietsch, D. Christiaens, B. Jeurissen, C.-H. Yeh, and A. Connelly.
+   *MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation.*
+   NeuroImage, 202 (2019), pp. 116–37.
+   [`fulltext link <https://www.sciencedirect.com/science/article/pii/S1053811919307281>`__\ ]
 
 .. [Veraart2016a] J. Veraart, E. Fieremans, and D.S. Novikov.
    *Diffusion MRI noise mapping using random matrix theory.*

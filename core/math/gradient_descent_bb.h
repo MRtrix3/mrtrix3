@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __math_gradient_descent_bb_h__
 #define __math_gradient_descent_bb_h__
@@ -44,7 +45,7 @@ namespace MR
           }
   };
 
-    //! Computes the minimum of a function using a Barzilai Borwein gradient descent approach.
+    //! Computes the minimum of a function using a Barzilai Borwein gradient descent approach. ENH: implement stabilised version https://arxiv.org/abs/1907.06409
     template <class Function, class UpdateFunctor=LinearUpdateBB>
       class GradientDescentBB
       { MEMALIGN(GradientDescentBB<Function,UpdateFunctor>)
@@ -127,6 +128,8 @@ namespace MR
             dt = func.init (x1);
             f = evaluate_func (x1, g1, verbose);
             normg = g1.norm();
+            if (normg == 0.0)
+              return;
             assert(std::isfinite(normg)); assert(!std::isnan(normg));
             dt /= normg;
             if (verbose) {
@@ -171,7 +174,7 @@ namespace MR
 
           bool iterate (std::ostream& log_os) {
             assert (std::isfinite (normg));
-            if (!update_func (x3, x2, g2, dt))
+            if ((normg == 0.0) or !update_func (x3, x2, g2, dt))
               return false;
 
             f = evaluate_func (x3, g3, verbose);
@@ -215,7 +218,6 @@ namespace MR
 
           void compute_normg_and_step () {
             if (preconditioner_weights.size()) {
-              // value_type g_projected = g2.squaredNorm();
               g2.array() *= preconditioner_weights.array();
             }
             normg = g2.norm();

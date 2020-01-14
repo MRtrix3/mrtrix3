@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "math/SH.h"
@@ -32,7 +33,14 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions";
+  SYNOPSIS = "Extract the peaks of a spherical harmonic function in each voxel";
+
+  DESCRIPTION
+  + "Peaks of the spherical harmonic function in each voxel are located by "
+    "commencing a Newton search along each of a set of pre-specified directions";
+
+  DESCRIPTION
+  + Math::SH::encoding_description;
 
   ARGUMENTS
   + Argument ("SH", "the input image of SH coefficients.")
@@ -74,6 +82,11 @@ void usage ()
 
   + Option ("fast",
             "use lookup table to compute associated Legendre polynomials (faster, but approximate).");
+
+  REFERENCES
+   + "Jeurissen, B.; Leemans, A.; Tournier, J.-D.; Jones, D.K.; Sijbers, J. "
+     "Investigating the prevalence of complex fiber configurations in white matter tissue with diffusion magnetic resonance imaging. "
+     "Human Brain Mapping, 2013, 34(11), 2747-2766";
 }
 
 

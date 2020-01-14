@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -19,7 +20,7 @@
 #include "thread.h"
 #include "dwi/directions/file.h"
 
-#define DEFAULT_PERMUTATIONS 1e8
+constexpr size_t default_permutations = 1e8;
 
 
 using namespace MR;
@@ -38,7 +39,7 @@ ARGUMENTS
 
 
 OPTIONS
-  + Option ("permutations", "number of permutations to try")
+  + Option ("permutations", "number of permutations to try (default: " + str(default_permutations) + ")")
   +   Argument ("num").type_integer (1)
 
   + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
@@ -170,7 +171,7 @@ void run ()
   if (num_subsets == 1)
     throw Exception ("Directions must be split across two or more output files");
 
-  const size_t num_permutations = get_option_value ("permutations", DEFAULT_PERMUTATIONS);
+  const size_t num_permutations = get_option_value<size_t> ("permutations", default_permutations);
 
   vector<vector<size_t>> best;
   {

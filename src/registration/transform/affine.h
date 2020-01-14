@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __registration_transform_affine_h__
 #define __registration_transform_affine_h__
@@ -29,23 +30,11 @@ namespace MR
   {
     namespace Transform
     {
-
-      class AffineLinearNonSymmetricUpdate { MEMALIGN(AffineLinearNonSymmetricUpdate)
-        public:
-          bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
-              const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
-              const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& g,
-              default_type step_size) {
-            assert (newx.size() == x.size());
-            assert (g.size() == x.size());
-            newx = x - step_size * g;
-            return !(newx.isApprox(x));
-        }
-      };
+      enum TransformProjectionType {rigid_nonsym, affine, affine_nonsym, none};
 
       class AffineUpdate { MEMALIGN(AffineUpdate)
         public:
-          AffineUpdate (): use_convergence_check (false) { }
+          AffineUpdate (): use_convergence_check (false), projection_type (TransformProjectionType::affine) { }
 
           bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -57,6 +46,11 @@ namespace MR
             const Eigen::Vector3d& coherence_dist,
             const Eigen::Vector3d& stop_length,
             const Eigen::Vector3d& voxel_spacing );
+
+          void set_projection_type (const TransformProjectionType& type) {
+            INFO ("projection type set to: " + str(type));
+            projection_type = type;
+          }
 
           void set_convergence_check (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& slope_threshold,
                                       default_type alpha,
@@ -70,6 +64,7 @@ namespace MR
 
         private:
           bool use_convergence_check;
+          TransformProjectionType projection_type;
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
           Eigen::Vector3d coherence_distance;
           Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;

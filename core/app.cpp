@@ -1,22 +1,24 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <unistd.h>
 #include <fcntl.h>
 #include <locale>
 #include <clocale>
+#include <algorithm>
 
 
 #include "app.h"
@@ -33,6 +35,11 @@
 #define HELP_PURPOSE_INDENT 0, 4
 #define HELP_ARG_INDENT 8, 20
 #define HELP_OPTION_INDENT 2, 20
+#define HELP_EXAMPLE_INDENT 7
+
+#define MRTRIX_CORE_REFERENCE "Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. " \
+                              "MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. " \
+                              "NeuroImage, 2019, 202, 116137"
 
 
 namespace MR
@@ -42,6 +49,7 @@ namespace MR
   {
 
     Description DESCRIPTION;
+    ExampleList EXAMPLES;
     ArgumentList ARGUMENTS;
     OptionList OPTIONS;
     Description REFERENCES;
@@ -49,38 +57,50 @@ namespace MR
 
     OptionGroup __standard_options = OptionGroup ("Standard options")
       + Option ("info", "display information messages.")
-      + Option ("quiet", "do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.")
+      + Option ("quiet", "do not display information messages or progress status; "
+                         "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.")
       + Option ("debug", "display debugging messages.")
-      + Option ("force", "force overwrite of output files. "
-          "Caution: Using the same file as input and output might cause unexpected behaviour.")
+      + Option ("force", "force overwrite of output files "
+                         "(caution: using the same file as input and output might cause unexpected behaviour).")
       + Option ("nthreads", "use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).")
         + Argument ("number").type_integer (0)
+      + Option ("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
+        + Argument ("key").type_text()
+        + Argument ("value").type_text()
       + Option ("help", "display this information page and exit.")
       + Option ("version", "display version information and exit.");
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2018 the MRtrix3 contributors."
-       "\n\n"
+       "Copyright (c) 2008-2019 the MRtrix3 contributors.\n"
+       "\n"
        "This Source Code Form is subject to the terms of the Mozilla Public\n"
        "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
-       "file, you can obtain one at http://mozilla.org/MPL/2.0/\n"
+       "file, You can obtain one at http://mozilla.org/MPL/2.0/.\n"
        "\n"
-       "MRtrix3 is distributed in the hope that it will be useful,\n"
-       "but WITHOUT ANY WARRANTY; without even the implied warranty\n"
-       "of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
+       "Covered Software is provided under this License on an \"as is\"\n"
+       "basis, without warranty of any kind, either expressed, implied, or\n"
+       "statutory, including, without limitation, warranties that the\n"
+       "Covered Software is free of defects, merchantable, fit for a\n"
+       "particular purpose or non-infringing.\n"
+       "See the Mozilla Public License v. 2.0 for more details.\n"
        "\n"
-       "For more details, see http://www.mrtrix.org/\n";
+       "For more details, see http://www.mrtrix.org/.\n";
     const char* SYNOPSIS = nullptr;
 
 
     std::string NAME;
+    std::string command_history_string;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
+    //ENVVAR name: MRTRIX_QUIET
+    //ENVVAR Do not display information messages or progress status. This has
+    //ENVVAR the same effect as the ``-quiet`` command-line option.
     int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
     int exit_error_code = 0;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
+    const std::thread::id main_thread_ID = std::this_thread::get_id();
 
     const char* project_version = nullptr;
     const char* project_build_date = nullptr;
@@ -158,13 +178,17 @@ namespace MR
       }
 
 
-      std::string underline (const std::string& text)
+      std::string underline (const std::string& text, bool ignore_whitespace = false)
       {
+        size_t m (0);
         std::string retval (3*text.size(), '\0');
         for (size_t n = 0; n < text.size(); ++n) {
-          retval[3*n] = '_';
-          retval[3*n+1] = 0x08U;
-          retval[3*n+2] = text[n];
+          if (ignore_whitespace and text[n]==' ')
+            retval[m++] = ' ';
+          else
+            retval[m++] = '_';
+          retval[m++] = 0x08U;
+          retval[m++] = text[n];
         }
         return retval;
       }
@@ -248,7 +272,7 @@ namespace MR
     {
       if (!format)
         return SYNOPSIS;
-      return bold("SYNOPSIS") + "\n" + paragraph ("", SYNOPSIS, HELP_PURPOSE_INDENT) + "\n";
+      return bold("SYNOPSIS") + "\n\n" + paragraph ("", SYNOPSIS, HELP_PURPOSE_INDENT) + "\n";
     }
 
 
@@ -265,12 +289,40 @@ namespace MR
         + bold ("COPYRIGHT") + "\n"
         + paragraph ("", COPYRIGHT, HELP_PURPOSE_INDENT) + "\n"
         + [&](){
-          if (REFERENCES.size() == 0) return std::string();
           std::string s = bold ("REFERENCES") + "\n";
           for (size_t n = 0; n < REFERENCES.size(); ++n)
             s += paragraph ("", REFERENCES[n], HELP_PURPOSE_INDENT) + "\n";
+          s += paragraph ("", MRTRIX_CORE_REFERENCE, HELP_PURPOSE_INDENT) + "\n";
           return s;
         }();
+    }
+
+
+
+    std::string usage_syntax (int format)
+    {
+      std::string s = "USAGE";
+      if (format)
+        s = bold (s) + "\n\n     ";
+      else
+        s += ": ";
+      s += ( format ? underline (NAME, true) : NAME ) + " [ options ]";
+
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+
+        if (ARGUMENTS[i].flags & Optional)
+          s += " [";
+        s += std::string(" ") + ARGUMENTS[i].id;
+
+        if (ARGUMENTS[i].flags & AllowMultiple) {
+          if (! (ARGUMENTS[i].flags & Optional))
+            s += std::string(" [ ") + ARGUMENTS[i].id;
+          s += " ...";
+        }
+        if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
+          s += " ]";
+      }
+      return s + "\n\n";
     }
 
 
@@ -293,30 +345,38 @@ namespace MR
 
 
 
-    std::string usage_syntax (int format)
+    Example::operator std::string () const
     {
-      std::string s = "USAGE";
+      return title + ": $ " + code + "  " + description;
+    }
+
+
+
+
+    std::string Example::syntax (int format) const
+    {
+      std::string s = paragraph ("", format ? underline (title + ":") + "\n" : title + ": ", HELP_PURPOSE_INDENT);
+      s += std::string (HELP_EXAMPLE_INDENT, ' ') + "$ " + code + "\n";
+      if (description.size())
+        s += paragraph ("", description, HELP_PURPOSE_INDENT);
       if (format)
-        s = bold (s) + "\n\n     ";
-      else
-        s += ": ";
-      s += ( format ? underline (NAME) : NAME ) + " [ options ]";
+        s += "\n";
+      return s;
+    }
 
-      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
-        if (ARGUMENTS[i].flags & Optional)
-          s += "[";
-        s += std::string(" ") + ARGUMENTS[i].id;
 
-        if (ARGUMENTS[i].flags & AllowMultiple) {
-          if (! (ARGUMENTS[i].flags & Optional))
-            s += std::string(" [ ") + ARGUMENTS[i].id;
-          s += " ...";
-        }
-        if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
-          s += " ]";
-      }
-      return s + "\n\n";
+
+    std::string ExampleList::syntax (int format) const
+    {
+      if (!size())
+        return std::string();
+      std::string s;
+      if (format)
+        s += bold ("EXAMPLE USAGES") + "\n\n";
+      for (size_t i = 0; i < size(); ++i)
+        s += (*this)[i].syntax (format);
+      return s;
     }
 
 
@@ -324,7 +384,7 @@ namespace MR
 
     std::string Argument::syntax (int format) const
     {
-      std::string retval = paragraph (( format ? underline (id) : id ), desc, HELP_ARG_INDENT);
+      std::string retval = paragraph (( format ? underline (id, true) : id ), desc, HELP_ARG_INDENT);
       if (format)
         retval += "\n";
       return retval;
@@ -357,12 +417,13 @@ namespace MR
       for (size_t i = 0; i < size(); ++i)
         opt += std::string (" ") + (*this)[i].id;
 
+      if (format && (flags & AllowMultiple))
+        opt += "  (multiple uses permitted)";
+
       if (format)
-        opt = "  " + opt + "\n" + paragraph ("", desc, HELP_PURPOSE_INDENT);
+        opt = "  " + opt + "\n" + paragraph ("", desc, HELP_PURPOSE_INDENT) + "\n";
       else
         opt = paragraph (opt, desc, HELP_OPTION_INDENT);
-      if (format)
-        opt += "\n";
       return opt;
     }
 
@@ -518,6 +579,7 @@ namespace MR
         + usage_syntax (format)
         + ARGUMENTS.syntax (format)
         + DESCRIPTION.syntax (format)
+        + EXAMPLES.syntax (format)
         + OPTIONS.syntax (format)
         + __standard_options.header (format)
         + __standard_options.contents (format)
@@ -592,6 +654,9 @@ namespace MR
       for (size_t i = 0; i < DESCRIPTION.size(); ++i)
         s += DESCRIPTION[i] + std::string("\n");
 
+      for (size_t i = 0; i < EXAMPLES.size(); ++i)
+        s += std::string (EXAMPLES[i]) + std::string("\n");
+
       for (size_t i = 0; i < ARGUMENTS.size(); ++i)
         s += ARGUMENTS[i].usage();
 
@@ -609,7 +674,6 @@ namespace MR
 
 
 
-
     std::string markdown_usage ()
     {
       /*
@@ -618,6 +682,7 @@ namespace MR
          + usage_syntax (format)
          + ARGUMENTS.syntax (format)
          + DESCRIPTION.syntax (format)
+         + EXAMPLES.syntax (format)
          + OPTIONS.syntax (format)
          + __standard_options.header (format)
          + __standard_options.contents (format)
@@ -663,6 +728,17 @@ namespace MR
           s += indent_newlines (DESCRIPTION[i]) + "\n\n";
       }
 
+      if (EXAMPLES.size()) {
+        s += "\n## Example usages\n\n";
+        for (size_t i = 0; i < EXAMPLES.size(); ++i) {
+          s += std::string ("__") + EXAMPLES[i].title + ":__\n";
+          s += std::string ("`$ ") + EXAMPLES[i].code + "`\n";
+          if (EXAMPLES[i].description.size())
+            s += EXAMPLES[i].description + "\n";
+          s += "\n";
+        }
+      }
+
 
       vector<std::string> group_names;
       for (size_t i = 0; i < OPTIONS.size(); ++i) {
@@ -674,7 +750,10 @@ namespace MR
         std::string f = std::string ("+ **-") + opt.id;
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
-        f += std::string("**<br>") + indent_newlines (opt.desc) + "\n\n";
+        f += "**";
+        if (opt.flags & AllowMultiple)
+          f+= "  *(multiple uses permitted)*";
+        f += std::string("<br>") + indent_newlines (opt.desc) + "\n\n";
         return f;
       };
 
@@ -698,11 +777,11 @@ namespace MR
       for (size_t i = 0; i < __standard_options.size(); ++i)
         s += format_option (__standard_options[i]);
 
-      if (REFERENCES.size()) {
-        s += std::string ("## References\n\n");
-        for (size_t i = 0; i < REFERENCES.size(); ++i)
-          s += indent_newlines (REFERENCES[i]) + "\n\n";
-      }
+      s += std::string ("## References\n\n");
+      for (size_t i = 0; i < REFERENCES.size(); ++i)
+        s += indent_newlines (REFERENCES[i]) + "\n\n";
+      s += indent_newlines (MRTRIX_CORE_REFERENCE) + "\n\n";
+
       s += std::string("---\n\nMRtrix ") + mrtrix_version + ", built " + build_date + "\n\n"
         "\n\n**Author:** " + AUTHOR
         + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
@@ -721,6 +800,7 @@ namespace MR
          + usage_syntax (format)
          + ARGUMENTS.syntax (format)
          + DESCRIPTION.syntax (format)
+         + EXAMPLES.syntax (format)
          + OPTIONS.syntax (format)
          + __standard_options.header (format)
          + __standard_options.contents (format)
@@ -780,6 +860,16 @@ namespace MR
           s += indent_newlines (DESCRIPTION[i]) + "\n\n";
       }
 
+      if (EXAMPLES.size()) {
+        s += "Example usages\n--------------\n\n";
+        for (size_t i = 0; i < EXAMPLES.size(); ++i) {
+          s += std::string ("-   *") + EXAMPLES[i].title + "*::\n\n";
+          s += std::string ("        $ ") + EXAMPLES[i].code + "\n\n";
+          if (EXAMPLES[i].description.size())
+            s += std::string ("    ") + EXAMPLES[i].description + "\n\n";
+        }
+      }
+
 
       vector<std::string> group_names;
       for (size_t i = 0; i < OPTIONS.size(); ++i) {
@@ -791,7 +881,10 @@ namespace MR
         std::string f = std::string ("-  **-") + opt.id;
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
-        f += std::string("** ") + escape_special (indent_newlines (opt.desc)) + "\n\n";
+        f += "**";
+        if (opt.flags & AllowMultiple)
+          f += "  *(multiple uses permitted)*";
+        f += std::string(" ") + escape_special (indent_newlines (opt.desc)) + "\n\n";
         return f;
       };
 
@@ -815,11 +908,11 @@ namespace MR
       for (size_t i = 0; i < __standard_options.size(); ++i)
         s += format_option (__standard_options[i]);
 
-      if (REFERENCES.size()) {
-        s += std::string ("References\n^^^^^^^^^^\n\n");
-        for (size_t i = 0; i < REFERENCES.size(); ++i)
-          s += indent_newlines (REFERENCES[i]) + "\n\n";
-      }
+      s += std::string ("References\n^^^^^^^^^^\n\n");
+      for (size_t i = 0; i < REFERENCES.size(); ++i)
+        s += indent_newlines (REFERENCES[i]) + "\n\n";
+      s += indent_newlines (MRTRIX_CORE_REFERENCE) + "\n\n";
+
       s += std::string("--------------\n\n") +
         "\n\n**Author:** " + (char*)AUTHOR
         + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
@@ -855,6 +948,11 @@ namespace MR
         for (size_t i = 0; i < candidates.size(); ++i)
           if (root == candidates[i]->id)
             return candidates[i];
+
+        // check if there is only one *unique* candidate
+        const auto cid = candidates[0]->id;
+        if ( std::all_of(++candidates.begin(), candidates.end(), [& cid](const Option* cand){return cand->id == cid;}) )
+          return candidates[0];
 
         // report something useful:
         root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
@@ -1079,8 +1177,8 @@ namespace MR
             throw Exception ("required input \"" + text + "\" is not a directory");
         }
         if (i.arg->type == ArgFileOut || i.arg->type == TracksOut) {
-          if (text.find_last_of (PATH_SEPARATOR) == text.size() - std::string(PATH_SEPARATOR).size())
-            throw Exception ("output path \"" + std::string(i) + "\" is not a valid file path (ends with \'" PATH_SEPARATOR "\")");
+          if (text.find_last_of (PATH_SEPARATORS) == text.size() - 1)
+            throw Exception ("output path \"" + std::string(i) + "\" is not a valid file path (ends with directory path separator)");
           check_overwrite (text);
         }
         if (i.arg->type == ArgDirectoryOut)
@@ -1107,8 +1205,8 @@ namespace MR
               throw Exception ("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");
           }
           if (arg.type == ArgFileOut || arg.type == TracksOut) {
-            if (text.find_last_of (PATH_SEPARATOR) == text.size() - std::string (PATH_SEPARATOR).size())
-              throw Exception ("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid file path (ends with \'" PATH_SEPARATOR "\")");
+            if (text.find_last_of (PATH_SEPARATORS) == text.size() - 1)
+              throw Exception ("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a valid file path (ends with directory path separator)");
             check_overwrite (text);
           }
           if (arg.type == ArgDirectoryOut)
@@ -1152,6 +1250,31 @@ namespace MR
         E.push_back ("Running ./build again may correct error");
         throw E;
       }
+
+      auto argv_quoted = [] (const std::string& s) -> std::string {
+        for (size_t i = 0; i != s.size(); ++i) {
+          if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
+            std::string escaped_string ("\'");
+            for (auto c : s) {
+              switch (c) {
+                case '\'': escaped_string.append ("\\\'"); break;
+                case '\\': escaped_string.append ("\\\\"); break;
+                default: escaped_string.push_back (c); break;
+              }
+            }
+            escaped_string.push_back ('\'');
+            return escaped_string;
+          }
+        }
+        return s;
+      };
+      command_history_string = argv[0];
+      for (int n = 1; n < argc; ++n)
+        command_history_string += std::string(" ") + argv_quoted (argv[n]);
+      command_history_string += std::string ("  (version=") + mrtrix_version;
+      if (project_version)
+        command_history_string += std::string (", project=") + project_version;
+      command_history_string += ")";
 
       std::locale::global (std::locale::classic());
       std::setlocale (LC_ALL, "C");
