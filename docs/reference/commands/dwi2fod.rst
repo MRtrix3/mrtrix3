@@ -22,7 +22,7 @@ Usage
 Description
 -----------
 
-The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link: https://mrtrix.readthedocs.io/en/3.0_RC3/concepts/spherical_harmonics.html
+The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link: https://mrtrix.readthedocs.io/en/3.0_RC4/concepts/spherical_harmonics.html
 
 Example usages
 --------------
@@ -116,9 +116,11 @@ References
 
 * If using csd algorithm:Tournier, J.-D.; Calamante, F. & Connelly, A. Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution. NeuroImage, 2007, 35, 1459-1472
 
-* If using msmt_csd algorithm:Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data NeuroImage, 2014, 103, 411-426
+* If using msmt_csd algorithm:Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. NeuroImage, 2014, 103, 411-426
 
-Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution.NeuroImage, 2004, 23, 1176-1185
+Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution. NeuroImage, 2004, 23, 1176-1185
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

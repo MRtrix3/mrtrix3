@@ -31,6 +31,8 @@ Options
 
 -  **-all** print all properties, rather than the first and last 2 of each.
 
+-  **-name** print the file system path of the image
+
 -  **-format** image file format
 
 -  **-ndim** number of image dimensions
@@ -48,8 +50,6 @@ Options
 -  **-multiplier** image intensity multiplier
 
 -  **-transform** the transformation from image coordinates [mm] to scanner / real world coordinates [mm]
-
--  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
 
 Options for exporting image header fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -111,6 +111,11 @@ Standard options
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

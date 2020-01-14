@@ -16,8 +16,8 @@
 
 #include "dwi/tractography/connectome/matrix.h"
 
-#include "bitset.h"
 #include "file/path.h"
+#include "misc/bitset.h"
 
 
 namespace MR {

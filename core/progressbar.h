@@ -187,7 +187,7 @@ namespace MR
 
 
   FORCE_INLINE ProgressBar::ProgressBar (const std::string& text, size_t target, int log_level) :
-    show (!progressbar_active && App::log_level >= log_level),
+    show (std::this_thread::get_id() == ::MR::App::main_thread_ID && !progressbar_active && App::log_level >= log_level),
     _text (text),
     _ellipsis ("... "),
     _value (0),

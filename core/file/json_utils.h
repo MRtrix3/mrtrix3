@@ -30,7 +30,7 @@ namespace MR
     {
 
       void load (Header&, const std::string&);
-      void save (const Header&, const std::string&);
+      void save (const Header&, const std::string&, const std::string&);
 
       KeyValues read (const nlohmann::json& json,
                       const KeyValues& preexisting = KeyValues());
@@ -41,7 +41,7 @@ namespace MR
       void write (const KeyValues& keyval, nlohmann::json& json);
       void write (const Header& header,
                   nlohmann::json& json,
-                  const bool realign);
+                  const std::string& image_path);
 
     }
   }
