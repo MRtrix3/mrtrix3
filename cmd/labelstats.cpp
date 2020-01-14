@@ -96,7 +96,7 @@ void run ()
   std::stringstream com_stringstream;
   com_stringstream << coms.format (fmt);
   const vector<std::string> com_strings = split(com_stringstream.str(), "\n");
-  assert (com_strings.size() == masses.size());
+  assert (com_strings.size() == size_t(masses.size()));
 
   // Find width of first non-empty string, in order to centralise header label
   size_t com_width = 0;
