@@ -213,7 +213,8 @@ void usage ()
 
   + DWI::Tractography::ACT::ACTOption
 
-  + DWI::Tractography::Algorithms::iFOD2Option
+  + DWI::Tractography::Algorithms::iFODOptions
+  + DWI::Tractography::Algorithms::iFOD2Options
 
   + DWI::GradImportOptions();
 
@@ -234,17 +235,23 @@ void run ()
   auto opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
-  load_rois (properties);
 
-  Tracking::load_streamline_properties (properties);
+  
 
   ACT::load_act_properties (properties);
 
   Seeding::load_seed_mechanisms (properties);
   Seeding::load_seed_parameters (properties);
 
+  if (algorithm == 1 || algorithm == 2)
+    Algorithms::load_iFOD_options (properties);
   if (algorithm == 2)
     Algorithms::load_iFOD2_options (properties);
+
+
+  //load ROIs and tractography specific options
+  //NB must occur before seed check below due to -select option override
+  Tracking::load_streamline_properties_and_rois(properties);
 
   // Check validity of options -select and -seeds; these are meaningless if seeds are number-limited
   // By over-riding the values in properties, the progress bar should still be valid
@@ -258,7 +265,10 @@ void run ()
       WARN ("Overriding -seeds option (maximum number of seeds that will be attempted to track from), as seeds can only provide a finite number");
     properties["max_num_seeds"] = str (properties.seeds.get_total_count());
 
+    
   }
+
+  
 
   switch (algorithm) {
     case 0:

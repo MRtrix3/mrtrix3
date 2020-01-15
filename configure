@@ -67,6 +67,9 @@ OPTIONS
 
     -openmp      enable OpenMP compiler flags.
 
+    -conda       prevent stripping anaconda/miniconda from the PATH (only use if
+                 you intend building with the conda toolchain - not recommended)
+
 
 ENVIRONMENT VARIABLES
 
@@ -181,6 +184,7 @@ verbose = False
 R_module = False
 openmp = False
 dev = False
+conda = False
 
 optimlevel = 3
 
@@ -212,6 +216,8 @@ for arg in sys.argv[1:]:
     nogui = True
   elif '-openmp'.startswith (arg):
     openmp = True
+  elif '-conda'.startswith (arg):
+    conda = True
   else:
     sys.stdout.write (usage_string)
     sys.exit (1)
@@ -271,7 +277,22 @@ if build_options:
 report ("""
 MRtrix build type requested: """ + build_type + '\n\n')
 
-path = os.environ['PATH']
+
+# if not using conda, remove any mention of conda from PATH:
+issue_conda_warning = False
+if conda:
+  path = os.environ['PATH']
+else:
+  path = []
+  for entry in os.environ['PATH'].split(os.pathsep):
+    if 'conda' in entry:
+      report ('WARNING: anaconda/miniconda detected in PATH ("' + entry + '") - removed to avoid conflicts\n')
+      issue_conda_warning = True
+    else:
+      path += [ entry ]
+  path = os.pathsep.join(path)
+  os.environ['PATH'] = path
+
 log ('PATH set to: ' + path)
 
 
@@ -648,7 +669,6 @@ ld_lib_flags = []
 
 if system.startswith('mingw') or system.startswith('msys'):
   system = 'windows'
-report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
   cpp_flags += [ '-pthread', '-fPIC' ]
   lib_suffix = '.so'
@@ -687,28 +707,48 @@ elif system == 'darwin':
 
 
 
-if 'ARCH' in os.environ.keys():
-  march = os.environ['ARCH']
-  if march:
-    report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
-    cpp_flags += [ '-march='+march ]
-
-
-
 
 # set CPP compiler:
 ld_cmdline = None
 if 'CXX' in os.environ.keys():
-  cxx = shlex.split (os.environ['CXX'])
+  cxx_env = os.environ['CXX']
+  if not conda and 'conda' in cxx_env:
+    report ('WARNING: anaconda/miniconda compiler set by CXX environment variable - ignored to avoid conflicts\n')
+    issue_conda_warning = True
+  else:
+    cxx = shlex.split (cxx_env)
 if 'CXX_ARGS' in os.environ.keys():
   cxx_args = shlex.split (os.environ['CXX_ARGS'])
 if 'LINK' in os.environ.keys():
-  ld_cmdline = shlex.split (os.environ['LINK'])
+  ld_env = os.environ['LINK']
+  if not conda and 'conda' in ld_env:
+    report ('WARNING: anaconda/miniconda linker set by LINK environment variable - ignored to avoid conflicts\n')
+    issue_conda_warning = True
+  else:
+    ld_cmdline = shlex.split (ld_env)
 if 'LINK_ARGS' in os.environ.keys():
   ld_args = shlex.split (os.environ['LINK_ARGS'])
 if 'LINKLIB_ARGS' in os.environ.keys():
   ld_lib_args = shlex.split (os.environ['LINKLIB_ARGS'])
 
+
+
+
+if issue_conda_warning:
+  report ('\nNOTE: if you intend to build with anaconda/miniconda (not recommended), pass the -conda flag to ./configure\n\n')
+
+
+
+
+
+
+report ('Detecting OS: ' + system + '\n')
+
+if 'ARCH' in os.environ.keys():
+  march = os.environ['ARCH']
+  if march:
+    report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
+    cpp_flags += [ '-march='+march ]
 
 
 

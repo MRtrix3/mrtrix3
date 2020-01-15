@@ -24,7 +24,7 @@
 
 #include "algo/loop.h"
 #include "algo/min_max.h"
-#include "gui/mrview/colourmap.h"
+#include "colourmap.h"
 
 using namespace MR;
 using namespace App;
@@ -36,7 +36,7 @@ vector<const char*> colourmap_choices_cstr;
 void usage ()
 {
 
-  const GUI::MRView::ColourMap::Entry* entry = GUI::MRView::ColourMap::maps;
+  const ColourMap::Entry* entry = ColourMap::maps;
   do {
     if (strcmp(entry->name, "Complex"))
       colourmap_choices_std.push_back (lowercase (entry->name));
@@ -85,7 +85,7 @@ void usage ()
 void run ()
 {
   Header H_in = Header::open (argument[0]);
-  const GUI::MRView::ColourMap::Entry colourmap = GUI::MRView::ColourMap::maps[argument[1]];
+  const ColourMap::Entry colourmap = ColourMap::maps[argument[1]];
   Eigen::Vector3 fixed_colour (NaN, NaN, NaN);
   if (colourmap.is_colour) {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))
@@ -134,9 +134,9 @@ void run ()
       upper = image_max;
     }
   }
-  const float multiplier = 1.0 / (upper - lower);
+  const float multiplier = 1.0f / (upper - lower);
 
-  auto scale = [&] (const float value) { return (multiplier * (value - lower)); };
+  auto scale = [&] (const float value) { return std::max (0.0f, std::min (1.0f, multiplier * (value - lower))); };
 
   Header H_out (H_in);
   H_out.ndim() = 4;
@@ -158,7 +158,7 @@ void run ()
     for (auto l_outer = Loop ("Scaling RGB colour image", H_in) (in, out); l_outer; ++l_outer)
       out.value() = scale (in.value());
   } else {
-    const GUI::MRView::ColourMap::Entry::basic_map_fn& map_fn = colourmap.basic_mapping;
+    const ColourMap::Entry::basic_map_fn& map_fn = colourmap.basic_mapping;
     for (auto l_outer = Loop ("Mapping intensities to RGB colours", H_in) (in, out); l_outer; ++l_outer) {
       const Eigen::Array3f colour = map_fn (scale (in.value()));
       for (auto l_inner = Loop(3) (out); l_inner; ++l_inner)

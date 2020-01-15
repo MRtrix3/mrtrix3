@@ -43,9 +43,12 @@ namespace MR
             size_ (container_cast<decltype(size_)>(size)),
             transform_ (original.transform()) {
 
-              for (size_t n = 0; n < ndim(); ++n)
+              for (size_t n = 0; n < ndim(); ++n) {
+                if (size_[n] < 1)
+                  throw Exception ("FIXME: sizes requested for Subset adapter must be positive");
                 if (from_[n] + size_[n] > original.size(n) || from_[n] < 0)
                   throw Exception ("FIXME: dimensions requested for Subset adapter are out of bounds!");
+              }
 
               for (size_t j = 0; j < 3; ++j)
                 for (size_t i = 0; i < 3; ++i)

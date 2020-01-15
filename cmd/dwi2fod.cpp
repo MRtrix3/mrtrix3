@@ -90,12 +90,12 @@ void usage ()
 
     + "* If using msmt_csd algorithm:\n"
     "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. " // Internal
-    "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data "
+    "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. "
     "NeuroImage, 2014, 103, 411-426"
 
     + "Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. " // Internal
     "Direct estimation of the fiber orientation density function from "
-    "diffusion-weighted MRI data using spherical deconvolution."
+    "diffusion-weighted MRI data using spherical deconvolution. "
     "NeuroImage, 2004, 23, 1176-1185";
 
   ARGUMENTS

@@ -183,6 +183,19 @@ namespace MR
         DIR* p;
     };
 
+
+
+    inline char delimiter (const std::string& filename)
+    {
+      if (Path::has_suffix (filename, ".tsv"))
+        return '\t';
+      else if (Path::has_suffix (filename, ".csv"))
+        return ',';
+      else
+        return ' ';
+    }
+
+
   }
 }
 

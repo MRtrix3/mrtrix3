@@ -7,7 +7,7 @@
 //   git add core/version.h
 //   git commit
 //   git tag -s 3.3
-//   git push
+//   git push --follow-tags
 
 #define MRTRIX_BASE_VERSION "3.0_RC4"
 

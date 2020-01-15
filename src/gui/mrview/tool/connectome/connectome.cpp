@@ -24,7 +24,6 @@
 #include "algo/threaded_loop.h"
 #include "file/path.h"
 #include "gui/dialog/file.h"
-#include "gui/mrview/colourmap.h"
 #include "math/math.h"
 #include "math/rng.h"
 

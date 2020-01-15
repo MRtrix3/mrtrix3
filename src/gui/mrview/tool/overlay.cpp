@@ -17,7 +17,6 @@
 #include "gui/mrview/tool/overlay.h"
 
 #include "mrtrix.h"
-#include "gui/mrview/colourmap.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
@@ -792,10 +791,9 @@ namespace MR
               auto values = parse_floats (opt[0]);
               if (values.size() != 2)
                 throw Exception ("must provide exactly two comma-separated values to the -overlay.intensity option");
-              min_value->blockSignals (true);
               min_value->setValue (values[0]);
-              min_value->blockSignals (false);
               max_value->setValue (values[1]);
+              values_changed();
             }
             catch (Exception& e) { e.display(); }
             return true;
