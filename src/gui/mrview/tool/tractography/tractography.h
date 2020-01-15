@@ -73,6 +73,7 @@ namespace MR
 
             GL::Lighting* lighting;
 
+
           private slots:
             void tractogram_open_slot ();
             void tractogram_close_slot ();

@@ -103,6 +103,8 @@ namespace MR
 
             image_list_view = new QListView (this);
             image_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
+            image_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+            image_list_view->setTextElideMode (Qt::ElideLeft);
             image_list_view->setDragEnabled (true);
             image_list_view->setDragDropMode (QAbstractItemView::InternalMove);
             image_list_view->setAcceptDrops (true);
@@ -190,7 +192,7 @@ namespace MR
 
         void Overlay::image_open_slot ()
         {
-          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
+          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open", &current_folder);
           if (overlay_names.empty())
             return;
           vector<std::unique_ptr<MR::Header>> list;

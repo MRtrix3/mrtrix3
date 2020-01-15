@@ -67,6 +67,8 @@ namespace MR
             Base (Dock* parent);
             Window& window () const { return *Window::main; }
 
+            std::string current_folder;
+
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
