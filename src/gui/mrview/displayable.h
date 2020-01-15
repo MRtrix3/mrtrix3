@@ -18,10 +18,11 @@
 #define __gui_mrview_displayable_h__
 
 #include "math/math.h"
+
+#include "colourmap.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 #include "gui/projection.h"
-#include "gui/mrview/colourmap.h"
 
 
 namespace MR

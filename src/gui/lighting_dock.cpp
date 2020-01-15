@@ -27,7 +27,6 @@ namespace MR
       QFrame (parent),
       info (lighting)
     {
-      QColor C;
       QVBoxLayout* main_box = new QVBoxLayout;
       setLayout (main_box);
       QGridLayout* grid_layout = new QGridLayout;

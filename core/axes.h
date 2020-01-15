@@ -43,7 +43,7 @@ namespace MR
 
     //! determine the axis permutations and flips necessary to make an image
     //!   appear approximately axial
-    void get_permutation_to_make_axial (const transform_type& T, size_t perm[3], bool flip[3]);
+    void get_permutation_to_make_axial (const transform_type& T, std::array<size_t, 3>& perm, std::array<bool, 3>& flip);
 
 
 

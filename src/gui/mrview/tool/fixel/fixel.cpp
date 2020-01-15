@@ -460,8 +460,8 @@ namespace MR
           // how many menu elements were actually created by ColourMap::create_menu()
           static size_t colourmap_count = 0;
           if (!colourmap_count) {
-            for (size_t i = 0; MR::GUI::MRView::ColourMap::maps[i].name; ++i) {
-              if (!MR::GUI::MRView::ColourMap::maps[i].special)
+            for (size_t i = 0; ColourMap::maps[i].name; ++i) {
+              if (!ColourMap::maps[i].special)
                 ++colourmap_count;
             }
           }

@@ -94,11 +94,6 @@ Debugging options
 
 -  **-fps** Display frames per second, averaged over the last 10 frames. The maximum over the last 3 seconds is also displayed.
 
-Other options
-^^^^^^^^^^^^^
-
--  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
-
 Overlay tool options
 ^^^^^^^^^^^^^^^^^^^^
 
@@ -205,6 +200,8 @@ References
 ^^^^^^^^^^
 
 Tournier, J.-D.; Calamante, F. & Connelly, A. MRtrix: Diffusion tractography in crossing fiber regions. Int. J. Imaging Syst. Technol., 2012, 22, 53-66
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

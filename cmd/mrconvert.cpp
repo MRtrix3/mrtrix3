@@ -548,6 +548,6 @@ void run ()
 
   opt = get_options ("json_export");
   if (opt.size())
-    File::JSON::save (header_out, opt[0][0]);
+    File::JSON::save (header_out, opt[0][0], argument[1]);
 }
 

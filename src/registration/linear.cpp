@@ -337,12 +337,12 @@ namespace MR
     const OptionGroup fod_options =
       OptionGroup ("FOD registration options")
 
-      + Option ("directions", "the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)")
+      + Option ("directions", "the directions used for FOD reorientation using apodised point spread functions (Default: 60 directions)")
       + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in ()
 
       + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
                                    "of volumes in the 4th dimension corresponds to the number of coefficients in an "
-                                   "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc");
+                                   "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)");
 
   }
 }
