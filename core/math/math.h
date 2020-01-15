@@ -19,7 +19,6 @@
 
 #include <cmath>
 #include <cstdlib>
-#include <locale>
 
 #include "app.h"
 #include "exception.h"
