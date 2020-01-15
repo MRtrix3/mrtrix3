@@ -206,7 +206,7 @@ done_painting:
         void Base::pan_event (const ModelViewProjection& proj)
         {
           set_target (target() - proj.screen_to_model_direction (window().mouse_displacement(), target()));
-          // updateGL(); # updateGL() causes pan gestures to remain in state Qt::GestureUpdated, never reaching Qt::GestureFinished on macOS
+          updateGL();
         }
 
         void Base::pan_event ()
