@@ -102,7 +102,7 @@ dwi2response dhollander
 Synopsis
 --------
 
-An improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This implementation includes the Dhollander et al. (2019) improvements for single-fibre WM response function estimation.
+Unsupervised estimation of WM, GM and CSF response functions that does not require a T1 image (or segmentation thereof)
 
 Usage
 -----
@@ -115,6 +115,11 @@ Usage
 -  *out_sfwm*: Output single-fibre WM response function text file
 -  *out_gm*: Output GM response function text file
 -  *out_csf*: Output CSF response function text file
+
+Description
+-----------
+
+This is an improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions, which includes the Dhollander et al. (2019) improvements for single-fibre WM response function estimation (prior to this update, the "dwi2response tournier" algorithm had been utilised specifically for the single-fibre WM response function estimation step).
 
 Options
 -------
@@ -132,7 +137,7 @@ Options for the 'dhollander' algorithm
 
 - **-csf** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
 
-- **-wm_algo algorithm** dwi2response algorithm to use for WM single-fibre voxel selection (default: built-in Dhollander 2019)
+- **-wm_algo algorithm** Use external dwi2response algorithm for WM single-fibre voxel selection (options: fa, tax, tournier) (default: built-in Dhollander 2019)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -185,7 +190,7 @@ References
 
 * Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5
 
-* Dhollander, T.; Mito, R.; Raffelt, D. & Connelly, A. Improved white matter response function estimation for 3-tissue constrained spherical deconvolution. Proc Intl Soc Mag Reson Med, 2019, 555
+* If -wm_algo option is not used: Dhollander, T.; Mito, R.; Raffelt, D. & Connelly, A. Improved white matter response function estimation for 3-tissue constrained spherical deconvolution. Proc Intl Soc Mag Reson Med, 2019, 555
 
 --------------
 
@@ -443,7 +448,7 @@ Options specific to the 'msmt_5tt' algorithm
 
 - **-pvf** Partial volume fraction threshold for tissue voxel selection (default: 0.95)
 
-- **-wm_algo algorithm** dwi2response algorithm to use for WM single-fibre voxel selection (default: tournier)
+- **-wm_algo algorithm** dwi2response algorithm to use for WM single-fibre voxel selection (options: fa, tax, tournier; default: tournier)
 
 - **-sfwm_fa_threshold** Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)
 
@@ -649,9 +654,9 @@ Options
 Options specific to the 'tournier' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-iter_voxels** Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)
-
 - **-number** Number of single-fibre voxels to use when calculating response function
+
+- **-iter_voxels** Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)
 
 - **-dilate** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration
 

@@ -18,13 +18,18 @@ from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, image, path, run
 
 
+WM_ALGOS = [ 'fa', 'tax', 'tournier' ]
+
+
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('dhollander', parents=[base_parser])
   parser.set_author('Thijs Dhollander (thijs.dhollander@gmail.com)')
-  parser.set_synopsis('An improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This implementation includes the Dhollander et al. (2019) improvements for single-fibre WM response function estimation.')
+  parser.set_synopsis('Unsupervised estimation of WM, GM and CSF response functions that does not require a T1 image (or segmentation thereof)')
+  parser.add_description('This is an improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions, which includes the Dhollander et al. (2019) improvements for single-fibre WM response function estimation (prior to this update, the "dwi2response tournier" algorithm had been utilised specifically for the single-fibre WM response function estimation step).')
   parser.add_citation('Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5')
-  parser.add_citation('Dhollander, T.; Mito, R.; Raffelt, D. & Connelly, A. Improved white matter response function estimation for 3-tissue constrained spherical deconvolution. Proc Intl Soc Mag Reson Med, 2019, 555')
+  parser.add_citation('Dhollander, T.; Mito, R.; Raffelt, D. & Connelly, A. Improved white matter response function estimation for 3-tissue constrained spherical deconvolution. Proc Intl Soc Mag Reson Med, 2019, 555',
+                      condition='If -wm_algo option is not used')
   parser.add_argument('input', help='Input DWI dataset')
   parser.add_argument('out_sfwm', help='Output single-fibre WM response function text file')
   parser.add_argument('out_gm', help='Output GM response function text file')
@@ -35,7 +40,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-sfwm', type=float, default=0.5, help='Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)')
   options.add_argument('-gm', type=float, default=2.0, help='Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)')
   options.add_argument('-csf', type=float, default=10.0, help='Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)')
-  options.add_argument('-wm_algo', metavar='algorithm', help='dwi2response algorithm to use for WM single-fibre voxel selection (default: built-in Dhollander 2019)')
+  options.add_argument('-wm_algo', metavar='algorithm', choices=WM_ALGOS, help='Use external dwi2response algorithm for WM single-fibre voxel selection (options: ' + ', '.join(WM_ALGOS) + ') (default: built-in Dhollander 2019)')
 
 
 
@@ -220,17 +225,26 @@ def execute(): #pylint: disable=unused-variable
   run.command('amp2response dwi.mif voxels_gm.mif safe_vecs.mif response_gm.txt' + bvalues_option + ' -isotropic', show=False)
 
   # Get final voxels for single-fibre WM response function estimation from refined WM.
-  app.console('* single-fibre WM:')
-  app.console(' * Selecting final voxels (' + str(app.ARGS.sfwm) + '% of refined WM)...')
+  app.console('* Single-fibre WM:')
+  app.console(' * Selecting final voxels'
+              + ('' if app.ARGS.wm_algo == 'tax' else (' ('+ str(app.ARGS.sfwm) + '% of refined WM)'))
+              + '...')
   voxsfwmcount = int(round(statrefwmcount * app.ARGS.sfwm / 100.0))
 
   if app.ARGS.wm_algo:
     recursive_cleanup_option=''
     if not app.DO_CLEANUP:
       recursive_cleanup_option = ' -nocleanup'
-    app.console('Selecting WM single-fibre voxels using \'' + app.ARGS.wm_algo + '\' algorithm')
-    run.command('dwi2response ' + app.ARGS.wm_algo + ' dwi.mif _respsfwmss.txt -mask refined_wm.mif -number ' + str(voxsfwmcount) + ' -voxels voxels_sfwm.mif -scratch ' + path.quote(app.SCRATCH_DIR) + recursive_cleanup_option, show=False)
+    app.console('   Selecting WM single-fibre voxels using \'' + app.ARGS.wm_algo + '\' algorithm')
+    if app.ARGS.wm_algo == 'tax' and app.ARGS.sfwm != 0.5:
+      app.warn('Single-fibre WM response function selection algorithm "tax" will not honour requested WM voxel percentage')
+    run.command('dwi2response ' + app.ARGS.wm_algo + ' dwi.mif _respsfwmss.txt -mask refined_wm.mif -voxels voxels_sfwm.mif'
+                + ('' if app.ARGS.wm_algo == 'tax' else (' -number ' + str(voxsfwmcount)))
+                + ' -scratch ' + path.quote(app.SCRATCH_DIR)
+                + recursive_cleanup_option,
+                show=False)
   else:
+    app.console('   Selecting WM single-fibre voxels using built-in (Dhollander et al., 2019) algorithm')
     run.command('mrmath dwi.mif mean mean_sig.mif -axis 3', show=False)
     refwmcoef = image.statistic('mean_sig.mif', 'median', '-mask refined_wm.mif') * math.sqrt(4.0 * math.pi)
     if sfwm_lmax:
