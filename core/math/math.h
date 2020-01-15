@@ -19,6 +19,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <locale>
 
 #include "app.h"
 #include "exception.h"
@@ -26,6 +27,7 @@
 #include "types.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
+#include "file/path.h"
 
 namespace MR
 {
@@ -137,8 +139,8 @@ namespace MR
       DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
       File::KeyValue::write (out, keyvals, "# ", add_to_command_history);
-      Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
-      out << M.format(fmt);
+      Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, std::string (1, Path::delimiter (filename)), "\n", "", "", "", "");
+      out << M.format (fmt);
       out << "\n";
     }
 
@@ -282,9 +284,10 @@ namespace MR
     DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
     File::KeyValue::write (out, keyvals, "# ", add_to_command_history);
-    Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
-    out << M.matrix().format(fmt);
-    out << "\n0 0 0 1\n";
+    const char d (Path::delimiter (filename));
+    Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, std::string (1, d), "\n", "", "", "", "");
+    out << M.matrix().format (fmt);
+    out << "\n0" << d << "0" << d << "0" << d << "1\n";
   }
 
   template <class Derived>
@@ -308,8 +311,9 @@ namespace MR
       DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);
       File::KeyValue::write (out, keyvals, "# ", add_to_command_history);
+      const char d (Path::delimiter (filename));
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
-        out << str(V[i], 10) << " ";
+        out << str(V[i], 10) << d;
       out << str(V[V.size() - 1], 10) << "\n";
     }
 
