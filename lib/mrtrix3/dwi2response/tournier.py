@@ -27,8 +27,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')
-  options.add_argument('-iter_voxels', type=int, default=0, help='Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)')
   options.add_argument('-number', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')
+  options.add_argument('-iter_voxels', type=int, default=0, help='Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)')
   options.add_argument('-dilate', type=int, default=1, help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
   options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
 
