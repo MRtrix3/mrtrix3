@@ -16,7 +16,7 @@ Usage
     fixel2voxel [ options ]  fixel_in operation image_out
 
 -  *fixel_in*: the input fixel data file
--  *operation*: the operation to apply, one of: mean, sum, product, min, max, absmax, magmax, count, complexity, sf, dec_unit, dec_scaled, split_data, split_dir.
+-  *operation*: the operation to apply, one of: mean, sum, product, min, max, absmax, magmax, count, complexity, sf, dec_unit, dec_scaled, none.
 -  *image_out*: the output scalar image.
 
 Description
@@ -32,16 +32,16 @@ Fixel data can be reduced to voxel data in a number of ways:
 
 - A 4D directionally-encoded colour image: dec_unit, dec_scaled
 
-- A 4D scalar image of fixel values with one 3D volume per fixel: split_data
-
-- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir
+- A 4D image containing all fixel data values in each voxel unmodified: none
 
 The -weighted option deals with the case where there is some per-fixel metric of interest that you wish to collapse into a single scalar measure per voxel, but each fixel possesses a different volume, and you wish for those fixels with greater volume to have a greater influence on the calculation than fixels with lesser volume. For instance, when estimating a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's mean axon diameter should be weigthed by its relative volume within the voxel in the calculation of that voxel mean.
 
 Options
 -------
 
--  **-number N** use only the largest N fixels in calculation of the voxel-wise statistic; in the case of "split_data" and "split_dir", output only the largest N fixels, padding where necessary.
+-  **-number N** use only the largest N fixels in calculation of the voxel-wise statistic; in the case of operation "none", output only the largest N fixels in each voxel.
+
+-  **-fill value** for "none" operation, specify the value to fill when number of fixels is fewer than the maximum (default: NaN)
 
 -  **-weighted fixel_in** weight the contribution of each fixel to the per-voxel result according to its volume.
 

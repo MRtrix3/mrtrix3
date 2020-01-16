@@ -34,6 +34,11 @@ void usage ()
                             "component of each direction vector in turn.").type_image_in()
 
   + Argument ("fixels", "the output fixel directory.").type_directory_out();
+
+  OPTIONS
+  + Option ("dataname", "the name of the output fixel data file encoding peak amplitudes")
+    + Argument ("path").type_text();
+
 }
 
 
@@ -58,6 +63,8 @@ vector<Eigen::Vector3> get (Image<float>& data)
 
 void run ()
 {
+  std::string dataname = get_option_value<std::string> ("dataname", "");
+
   auto input_header = Header::open (argument[0]);
   Peaks::check (input_header);
   auto input_directions = input_header.get_image<float>();
@@ -73,9 +80,15 @@ void run ()
   }
   INFO ("Number of fixels in input peaks image: " + str(nfixels));
   if (all_unit_norm) {
-    INFO ("All peaks have unit norm; no need to create amplitudes fixel data file");
-  } else {
-    INFO ("Peaks have variable amplitudes; will create additional fixel data file for amplitudes");
+    if (dataname.size()) {
+      WARN ("Input peaks image appears to not include amplitude information; "
+            "requested data file \"" + dataname + "\" will likely contain only ones");
+    } else {
+      INFO ("All peaks have unit norm; no need to create amplitudes fixel data file");
+    }
+  } else if (!dataname.size()) {
+    dataname = "amplitudes.mif";
+    INFO ("Peaks have variable amplitudes; will create additional fixel data file \"" + dataname + "\"");
   }
 
   Fixel::check_fixel_directory (argument[1], true, true);
@@ -96,9 +109,9 @@ void run ()
   auto directions_image = Image<float>::create (Path::join (argument[1], "directions.mif"), directions_header);
 
   Image<float> amplitudes_image;
-  if (!all_unit_norm) {
+  if (dataname.size()) {
     Header amplitudes_header = Fixel::data_header_from_index (index_header);
-    amplitudes_image = Image<float>::create (Path::join (argument[1], "amplitudes.mif"), amplitudes_header);
+    amplitudes_image = Image<float>::create (Path::join (argument[1], dataname), amplitudes_header);
   }
 
   uint32_t output_index = 0;
