@@ -77,11 +77,10 @@ void run ()
       const double norma = veca.norm(), normb = vecb.norm();
       veca.normalize(); vecb.normalize();
       const double dp = abs (veca.dot (vecb));
-      if (norma && normb && 1.0 - dp > tol || abs (norma - normb) > tol)
+      if (norma && normb && (1.0 - dp > tol))
         throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within specified precision of " + str(tol) + " ( [" + str(veca.transpose().cast<float>()) + "] vs [" + str(vecb.transpose().cast<float>()) + "], norms [" + str(norma) + " " + str(normb) + "], dot product = " + str(dp) + ")");
     }
   }, in1, in2);
 
   CONSOLE ("data checked OK");
 }
-
