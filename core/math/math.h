@@ -261,7 +261,7 @@ namespace MR
             centre[1] = to<default_type> (elements[1]);
             centre[2] = to<default_type> (elements[2]);
           } catch (...) {
-            throw Exception ("File \"" + filename + "\" contains non-numerical data in centre" + ": " + strip (line.substr (key.size())));
+            throw Exception ("File \"" + filename + "\" contains non-numerical data in centre: " + strip (line.substr (key.size())));
           }
           break;
         }
@@ -290,16 +290,16 @@ namespace MR
   }
 
   template <class Derived>
-  inline void save_transform (const Eigen::MatrixBase<Derived>& centre, const transform_type& M, const std::string& filename)
+  inline void save_transform (const transform_type& M, const Eigen::MatrixBase<Derived>& centre, const std::string& filename, const KeyValues& keyvals = KeyValues(), const bool add_to_command_history = true)
   {
     if (centre.rows() != 3 or centre.cols() != 1)
-      throw Exception ("save transform requires 3x1 vector as centre");
-    auto keyvals = KeyValues();
+      throw Exception ("save_transform() requires 3x1 vector as centre");
+    KeyValues local_keyvals = keyvals;
     Eigen::IOFormat centrefmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
     std::ostringstream os;
     os<<centre.transpose().format(centrefmt);
-    keyvals.insert(std::pair<std::string, std::string>("centre",  os.str()));
-    save_transform(M, filename, keyvals);
+    local_keyvals.insert(std::pair<std::string, std::string>("centre",  os.str()));
+    save_transform(M, filename, local_keyvals, add_to_command_history);
   }
 
   //! write the vector \a V to file
@@ -331,6 +331,3 @@ namespace MR
 }
 
 #endif
-
-
-
