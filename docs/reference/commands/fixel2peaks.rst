@@ -1,27 +1,32 @@
-.. _peaks2fixel:
+.. _fixel2peaks:
 
-peaks2fixel
+fixel2peaks
 ===================
 
 Synopsis
 --------
 
-Convert peak directions image to a fixel directory
+Convert data in the fixel directory format into a 4D image of 3-vectors
 
 Usage
 --------
 
 ::
 
-    peaks2fixel [ options ]  directions fixels
+    fixel2peaks [ options ]  in out
 
--  *directions*: the input directions image; each volume corresponds to the x, y & z component of each direction vector in turn.
--  *fixels*: the output fixel directory.
+-  *in*: the input fixel information
+-  *out*: the output peaks image
+
+Description
+-----------
+
+If a fixel data file is provided as input, then the 3-vectors in the output image will be scaled based on the data in that file. If the input is instead the fixel directory, or the index or directions file, then all output 3-vectors will possess unit norm.
 
 Options
 -------
 
--  **-dataname path** the name of the output fixel data file encoding peak amplitudes
+-  **-nan** fill excess peak data with NaNs rather than zeroes
 
 Standard options
 ^^^^^^^^^^^^^^^^

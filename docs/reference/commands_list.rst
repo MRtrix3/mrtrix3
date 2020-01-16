@@ -42,6 +42,7 @@ List of MRtrix3 commands
     commands/dwigradcheck
     commands/dwinormalise
     commands/dwishellmath
+    commands/fixel2peaks
     commands/fixel2sh
     commands/fixel2tsf
     commands/fixel2voxel
@@ -168,6 +169,7 @@ List of MRtrix3 commands
     |python.png|, :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
     |python.png|, :ref:`dwinormalise`, "Perform various forms of intensity normalisation of DWIs"
     |python.png|, :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
+    |cpp.png|, :ref:`fixel2peaks`, "Convert data in the fixel directory format into a 4D image of 3-vectors"
     |cpp.png|, :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
     |cpp.png|, :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
     |cpp.png|, :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
