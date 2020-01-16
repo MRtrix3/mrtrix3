@@ -247,7 +247,7 @@ namespace MR
         M(i,j) = V[i][j];
 
     if (centre.size() == 3) {
-      std::string key = "centre ";
+      std::string key = " centre: ";
       centre[0] = NaN;
       centre[1] = NaN;
       centre[2] = NaN;
@@ -292,15 +292,14 @@ namespace MR
   template <class Derived>
   inline void save_transform (const Eigen::MatrixBase<Derived>& centre, const transform_type& M, const std::string& filename)
   {
-    DEBUG ("saving transform to file \"" + filename + "\"...");
     if (centre.rows() != 3 or centre.cols() != 1)
       throw Exception ("save transform requires 3x1 vector as centre");
-    File::OFStream out (filename);
-    Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
-    Eigen::IOFormat centrefmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "#centre ", "", "", "");
-    out << centre.transpose().format(centrefmt) << "\n";
-    out << M.matrix().format(fmt);
-    out << "\n0 0 0 1\n";
+    auto keyvals = KeyValues();
+    Eigen::IOFormat centrefmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
+    std::ostringstream os;
+    os<<centre.transpose().format(centrefmt);
+    keyvals.insert(std::pair<std::string, std::string>("centre",  os.str()));
+    save_transform(M, filename, keyvals);
   }
 
   //! write the vector \a V to file
