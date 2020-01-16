@@ -61,7 +61,8 @@ namespace MR
           }
 
           // In use at time of execution
-          ROISet include, exclude, mask;
+          ROIUnorderedSet include, exclude, mask;
+          ROIOrderedSet ordered_include;
           Seeding::List seeds;
 
           // As stored within the header of an existing .tck file
@@ -76,6 +77,7 @@ namespace MR
             include.clear();
             exclude.clear();
             mask.clear();
+            ordered_include.clear();
             prior_rois.clear();
             comments.clear();
           }
@@ -86,6 +88,7 @@ namespace MR
           }
 
       };
+
 
 
       inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type)
@@ -141,7 +144,7 @@ namespace MR
       inline std::ostream& operator<< (std::ostream& stream, const Properties& P)
       {
         stream << "seeds: " << P.seeds;
-        stream << "include: " << P.include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
+        stream << "include: " << P.include << ", ordered_include: " << P.ordered_include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
         for (KeyValues::const_iterator i = P.begin(); i != P.end(); ++i)
           stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
