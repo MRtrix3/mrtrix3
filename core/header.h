@@ -62,8 +62,8 @@ namespace MR
         format_ (nullptr),
         offset_ (0.0),
         scale_ (1.0),
-        realign_perm_ {0, 1, 2},
-        realign_flip_ {false, false, false} {}
+        realign_perm_ {{0, 1, 2}},
+        realign_flip_ {{false, false, false}} {}
 
       explicit Header (Header&& H) noexcept :
         axes_ (std::move (H.axes_)),
@@ -75,8 +75,8 @@ namespace MR
         datatype_ (std::move (H.datatype_)),
         offset_ (H.offset_),
         scale_ (H.scale_),
-        realign_perm_ {0, 1, 2},
-        realign_flip_ {false, false, false} {}
+        realign_perm_ {{0, 1, 2}},
+        realign_flip_ {{false, false, false}} {}
 
       Header& operator= (Header&& H) noexcept {
         axes_ = std::move (H.axes_);
@@ -125,8 +125,8 @@ namespace MR
           datatype_ (DataType::from<typename HeaderType::value_type>()),
           offset_ (0.0),
           scale_ (1.0),
-          realign_perm_ {0, 1, 2},
-          realign_flip_ {false, false, false} {
+          realign_perm_ {{0, 1, 2}},
+          realign_flip_ {{false, false, false}} {
             axes_.resize (original.ndim());
             for (size_t n = 0; n < original.ndim(); ++n) {
               size(n) = original.size(n);
@@ -178,8 +178,8 @@ namespace MR
           datatype_ = DataType::from<typename HeaderType::value_type>();
           offset_ = 0.0;
           scale_ = 1.0;
-          realign_perm_ = {0, 1, 2};
-          realign_flip_ = {false, false, false};
+          realign_perm_ = {{0, 1, 2}};
+          realign_flip_ = {{false, false, false}};
           io.reset();
           return *this;
         }
