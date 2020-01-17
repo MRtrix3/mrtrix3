@@ -247,13 +247,18 @@ namespace MR
         M(i,j) = V[i][j];
 
     if (centre.size() == 3) {
-      std::string key = " centre: ";
+      const std::string key = " centre: ";
+      const std::string key_legacy = "centre ";
       centre[0] = NaN;
       centre[1] = NaN;
       centre[2] = NaN;
+      vector<std::string> elements;
       for (auto & line : comments) {
-        if (strncmp(line.c_str(), key.c_str(), key.size()) == 0) {
-          const auto elements = split (strip (line.substr (key.size())), " ,;\t", true);
+        if (strncmp(line.c_str(), key.c_str(), key.size()) == 0)
+          elements = split (strip (line.substr (key.size())), " ,;\t", true);
+        else if (strncmp(line.c_str(), key_legacy.c_str(), key_legacy.size()) == 0)
+          elements = split (strip (line.substr (key_legacy.size())), " ,;\t", true);
+        if (elements.size()) {
           if (elements.size() != 3)
             throw Exception ("could not parse centre in transformation file " + filename + ": " + strip (line.substr (key.size())));
           try {
