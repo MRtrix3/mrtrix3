@@ -45,7 +45,7 @@ namespace MR {
         {
           if (header.ndim() < 3)
             throw Exception ("Cannot perform streamline mapping on image with less than three dimensions");
-          return determine_upsample_ratio (header, get_step_size (properties), ratio);
+          return determine_upsample_ratio (header, properties.get_stepsize(), ratio);
         }
 
 
@@ -127,6 +127,3 @@ namespace MR {
     }
   }
 }
-
-
-

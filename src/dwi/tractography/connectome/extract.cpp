@@ -75,7 +75,7 @@ bool Selector::operator() (const vector<node_t>& nodes) const
 
 
 WriterExemplars::WriterExemplars (const Tractography::Properties& properties, const vector<node_t>& nodes, const bool exclusive, const node_t first_node, const vector<Eigen::Vector3f>& COMs) :
-    step_size (get_step_size (properties))
+    step_size (properties.get_stepsize())
 {
   if (!std::isfinite (step_size))
     step_size = 1.0f;
@@ -314,5 +314,3 @@ bool WriterExtraction::operator() (const Connectome::Streamline_nodelist& in) co
 }
 }
 }
-
-
