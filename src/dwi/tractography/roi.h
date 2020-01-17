@@ -74,16 +74,34 @@ namespace MR
               radius = F[3];
               radius2 = Math::pow2 (radius);
             }
-            catch (...) {
-              DEBUG ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
-              mask.reset (new Mask (spec));
+            catch (Exception& e_assphere) {
+              try {
+                mask.reset (new Mask (spec));
+              } catch (Exception& e_asimage) {
+                Exception e ("Unable to parse text \"" + spec + "\" as a ROI");
+                e.push_back ("If interpreted as sphere:");
+                for (size_t i = 0; i != e_assphere.num(); ++i)
+                  e.push_back ("  " + e_assphere[i]);
+                e.push_back ("If interpreted as image:");
+                for (size_t i = 0; i != e_asimage.num(); ++i)
+                  e.push_back ("  " + e_asimage[i]);
+                throw e;
+              }
             }
           }
 
           std::string shape () const { return (mask ? "image" : "sphere"); }
 
           std::string parameters () const {
-            return mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
+            return mask ?
+                   mask->name() :
+                   str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
+          }
+
+          float min_featurelength() const {
+            return mask ?
+                   std::min ({ mask->spacing(0), mask->spacing(1), mask->spacing(2) }) :
+                   radius;
           }
 
           bool contains (const Eigen::Vector3f& p) const
@@ -263,5 +281,3 @@ namespace MR
 }
 
 #endif
-
-
