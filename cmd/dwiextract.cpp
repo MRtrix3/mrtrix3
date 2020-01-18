@@ -106,10 +106,8 @@ void run()
         }
       }
       if (filter.size() == 4) {
-        if (abs (pe_scheme(i, 3) - filter[3]) > 5e-3) {
+        if (abs (pe_scheme(i, 3) - filter[3]) > 5e-3)
           keep = false;
-          break;
-        }
       }
       if (keep)
         new_volumes.push_back (i);

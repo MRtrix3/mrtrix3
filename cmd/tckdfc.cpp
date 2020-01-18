@@ -375,6 +375,7 @@ void run ()
     mapper.add_twdfc_static_image (fmri_image);
     Mapping::MapWriter<float> writer (header, argument[2], stat_vox);
     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), writer);
+    writer.finalise();
 
   } else {
 

@@ -42,7 +42,7 @@ namespace MR
     {
       __need_newline = true;
       if (p.multiplier)
-        __print_stderr (printf ("\r%s: [%3zu%%] %s%s" CLEAR_LINE_CODE,
+        __print_stderr (printf ("\r%s: [%3" PRI_SIZET "%%] %s%s" CLEAR_LINE_CODE,
               App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));
       else
         __print_stderr (printf ("\r%s: [%s] %s%s" CLEAR_LINE_CODE,
@@ -78,7 +78,7 @@ namespace MR
           count = next_update_at = 0;
         if (count++ == next_update_at) {
           if (p.multiplier) {
-            __print_stderr (printf ("%s: [%3zu%%] %s%s\n",
+            __print_stderr (printf ("%s: [%3" PRI_SIZET "%%] %s%s\n",
                   App::NAME.c_str(), p.value, p.text.c_str(), p.ellipsis.c_str()));;
           }
           else {

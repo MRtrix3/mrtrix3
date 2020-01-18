@@ -27,7 +27,7 @@ namespace MR {
       {
         vector<std::shared_ptr<Series>> series;
 
-        if (tree.size() == 0) 
+        if (tree.size() == 0)
           throw Exception ("DICOM tree its empty");
 
         std::string buf;
@@ -36,26 +36,26 @@ namespace MR {
           while (patient_p == NULL) {
             fprintf(stderr, "Select patient (q to abort):\n");
             for (size_t i = 0; i < tree.size(); i++) {
-              fprintf (stderr, "  %2zu - %s %s %s\n", 
-                  i+1, 
-                  tree[i]->name.c_str(),  
+              fprintf (stderr, "  %2" PRI_SIZET " - %s %s %s\n",
+                  i+1,
+                  tree[i]->name.c_str(),
                   format_ID(tree[i]->ID).c_str(),
                   format_date (tree[i]->DOB).c_str() );
             }
             std::cerr << "? ";
             std::cin >> buf;
-            if (!isdigit (buf[0])) { 
-              series.clear(); 
-              return series; 
+            if (!isdigit (buf[0])) {
+              series.clear();
+              return series;
             }
             int n = to<int>(buf) - 1;
-            if (n > (int) tree.size()) 
+            if (n > (int) tree.size())
               fprintf (stderr, "invalid selection - try again\n");
             else
               patient_p = tree[n].get();
           }
         }
-        else 
+        else
           patient_p = tree[0].get();
 
 
@@ -63,8 +63,8 @@ namespace MR {
         const Patient& patient (*patient_p);
 
         if (tree.size() > 1) {
-          fprintf (stderr, "patient: %s %s %s\n", 
-              patient.name.c_str(), 
+          fprintf (stderr, "patient: %s %s %s\n",
+              patient.name.c_str(),
               format_ID (patient.ID).c_str(),
               format_date (patient.DOB).c_str() );
         }
@@ -75,27 +75,27 @@ namespace MR {
           while (study_p == NULL) {
             fprintf (stderr, "Select study (q to abort):\n");
             for (size_t i = 0; i < patient.size(); i++) {
-              fprintf (stderr, "  %4zu - %s %s %s %s\n", 
-                  i+1, 
+              fprintf (stderr, "  %4" PRI_SIZET " - %s %s %s %s\n",
+                  i+1,
                   ( patient[i]->name.size() ? patient[i]->name.c_str() : "unnamed" ),
-                  format_ID (patient[i]->ID).c_str(), 
-                  format_date (patient[i]->date).c_str(), 
+                  format_ID (patient[i]->ID).c_str(),
+                  format_date (patient[i]->date).c_str(),
                   format_time (patient[i]->time).c_str() );
             }
             std::cerr << "? ";
             std::cin >> buf;
             if (!isdigit (buf[0])) {
-              series.clear(); 
-              return series; 
+              series.clear();
+              return series;
             }
             int n = to<int>(buf) - 1;
-            if (n > (int) patient.size()) 
+            if (n > (int) patient.size())
               fprintf (stderr, "invalid selection - try again\n");
-            else 
+            else
               study_p = patient[n].get();
           }
         }
-        else 
+        else
           study_p = patient[0].get();
 
 
@@ -103,7 +103,7 @@ namespace MR {
         const Study& study(*study_p);
 
         if (patient.size() > 1) {
-          fprintf (stderr, "study: %s %s %s %s\n", 
+          fprintf (stderr, "study: %s %s %s %s\n",
               ( study.name.size() ? study.name.c_str() : "unnamed" ),
               format_ID (study.ID).c_str(),
               format_date (study.date).c_str(),
@@ -116,28 +116,28 @@ namespace MR {
           while (series.size() == 0) {
             fprintf (stderr, "Select series ('q' to abort):\n");
             for (size_t i = 0; i < study.size(); i++) {
-              fprintf (stderr, "  %2zu - %4zu %s images %8s %s (%s) [%zu] %s\n", 
+              fprintf (stderr, "  %2" PRI_SIZET " - %4" PRI_SIZET " %s images %8s %s (%s) [%" PRI_SIZET "] %s\n",
                   i,
-                  study[i]->size(), 
-                  ( study[i]->modality.size() ? study[i]->modality.c_str() : "" ), 
-                  format_time (study[i]->time).c_str(), 
+                  study[i]->size(),
+                  ( study[i]->modality.size() ? study[i]->modality.c_str() : "" ),
+                  format_time (study[i]->time).c_str(),
                   ( study[i]->name.size() ? study[i]->name.c_str() : "unnamed" ),
                   ( (*study[i])[0]->sequence_name.size() ? (*study[i])[0]->sequence_name.c_str() : "?" ),
                   study[i]->number, study[i]->image_type.c_str());
             }
             std::cerr << "? ";
             std::cin >> buf;
-            if (!isdigit (buf[0])) { 
-              series.clear(); 
-              return (series); 
+            if (!isdigit (buf[0])) {
+              series.clear();
+              return (series);
             }
             vector<int> seq;
             try {
               seq = parse_ints (buf);
             }
-            catch (Exception) { 
-              fprintf (stderr, "Invalid number sequence - please try again\n"); 
-              seq.clear(); 
+            catch (Exception) {
+              fprintf (stderr, "Invalid number sequence - please try again\n");
+              seq.clear();
             }
             if (seq.size()) {
               for (size_t i = 0; i < seq.size(); i++) {

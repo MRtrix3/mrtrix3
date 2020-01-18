@@ -42,9 +42,9 @@ namespace MR
       if (files.size() * double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
         throw Exception ("image \"" + header.name() + "\" is larger than maximum accessible memory");
 
-      if (files.size() > MAX_FILES_PER_IMAGE) 
+      if (files.size() > MAX_FILES_PER_IMAGE)
         copy_to_mem (header);
-      else 
+      else
         map_files (header);
     }
 
@@ -58,7 +58,7 @@ namespace MR
 
         if (writable) {
           for (size_t n = 0; n < files.size(); n++) {
-            File::OFStream out (files[n].name, std::ios::out | std::ios::binary);
+            File::OFStream out (files[n].name, std::ios::in | std::ios::out | std::ios::binary);
             out.seekp (files[n].start, out.beg);
             out.write ((char*) (addresses[0].get() + n*bytes_per_segment), bytes_per_segment);
             if (!out.good())
@@ -94,7 +94,7 @@ namespace MR
       DEBUG ("loading image \"" + header.name() + "\"...");
       addresses.resize (files.size() > 1 && header.datatype().bits() *segsize != 8*size_t (bytes_per_segment) ? files.size() : 1);
       addresses[0].reset (new uint8_t [files.size() * bytes_per_segment]);
-      if (!addresses[0]) 
+      if (!addresses[0])
         throw Exception ("failed to allocate memory for image \"" + header.name() + "\"");
 
       if (is_new) memset (addresses[0].get(), 0, files.size() * bytes_per_segment);

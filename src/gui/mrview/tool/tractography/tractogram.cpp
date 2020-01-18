@@ -229,7 +229,7 @@ namespace MR
             source += using_geom ? "in vec3 g_tangent;\n" : "in vec3 v_tangent;\n";
 
           if (threshold_type != TrackThresholdType::None)
-            source += using_geom ? "in float g_amp;\n" : "in vec3 v_amp;\n";
+            source += using_geom ? "in float g_amp;\n" : "in float v_amp;\n";
 
           if (use_lighting && (using_geom || using_points)) {
             source +=
@@ -713,7 +713,7 @@ namespace MR
             while (file (tck_scalar)) {
 
               const size_t tck_size = tck_scalar.size();
-              assert (tck_size == size_t(track_sizes[intensity_scalar_buffers.size()][tck_count]));
+              assert (tck_size == size_t(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
               if (!tck_size)
                 continue;
@@ -808,7 +808,7 @@ namespace MR
             while (file (tck_scalar)) {
 
               const size_t tck_size = tck_scalar.size();
-              assert (tck_size == size_t(track_sizes[intensity_scalar_buffers.size()][tck_count]));
+              assert (tck_size == size_t(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
               if (!tck_size)
                 continue;

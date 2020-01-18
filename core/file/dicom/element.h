@@ -39,10 +39,12 @@ namespace MR {
       class Date { NOMEMALIGN
         public:
           Date (const std::string& entry) :
-              year  (to<uint32_t> (entry.substr (0, 4))),
-              month (to<uint32_t> (entry.substr (4, 2))),
-              day   (to<uint32_t> (entry.substr (6, 2)))
-          {
+            year(0), month(0), day(0) {
+            if (entry.size() >= 8) {
+              year = to<uint32_t> (entry.substr (0, 4));
+              month = to<uint32_t> (entry.substr (4, 2));
+              day = to<uint32_t> (entry.substr (6, 2));
+            }
             if (year < 1000 || month > 12 || day > 31)
               throw Exception ("Error converting string \"" + entry + "\" to date");
           }
@@ -150,6 +152,8 @@ namespace MR {
           double      get_float (size_t idx, double default_value = 0.0)                 const { auto v (get_float());  return check_get (idx, v.size()) ? v[idx] : default_value; }
           std::string get_string (size_t idx, std::string default_value = std::string()) const { auto v (get_string()); return check_get (idx, v.size()) ? v[idx] : default_value; }
 
+          std::string   as_string () const;
+
           size_t level () const { return parents.size(); }
 
           friend std::ostream& operator<< (std::ostream& stream, const Element& item);
@@ -159,8 +163,8 @@ namespace MR {
           }
 
 
-          template <typename VectorType> 
-            FORCE_INLINE void check_size (const VectorType v, size_t min_size = 1) { 
+          template <typename VectorType>
+            FORCE_INLINE void check_size (const VectorType v, size_t min_size = 1) {
               if (v.size() < min_size)
                 error_in_check_size (min_size, v.size());
             }
@@ -190,8 +194,8 @@ namespace MR {
           static void init_dict();
 
           bool check_get (size_t idx, size_t size) const { if (idx >= size) { error_in_get (idx); return false; } return true; }
-          void error_in_get (size_t idx) const; 
-          void error_in_check_size (size_t min_size, size_t actual_size) const; 
+          void error_in_get (size_t idx) const;
+          void error_in_check_size (size_t min_size, size_t actual_size) const;
           void report_unknown_tag_with_implicit_syntax () const;
       };
 

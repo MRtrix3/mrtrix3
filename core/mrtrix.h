@@ -162,7 +162,7 @@ namespace MR
   }
 
 
-  inline std::string strip (const std::string& string, const char* ws = " \t\n", bool left = true, bool right = true)
+  inline std::string strip (const std::string& string, const std::string& ws = {" \0\t\n", 4}, bool left = true, bool right = true)
   {
     std::string::size_type start = (left ? string.find_first_not_of (ws) : 0);
     if (start == std::string::npos)
@@ -175,15 +175,15 @@ namespace MR
 
   inline void replace (std::string& string, char orig, char final)
   {
-    for (std::string::iterator i = string.begin(); i != string.end(); ++i)
-      if (*i == orig) *i = final;
+    for (auto& c: string)
+      if (c == orig) c = final;
   }
 
   inline void replace (std::string& str, const std::string& from, const std::string& to)
   {
     if (from.empty()) return;
     size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    while ((start_pos = str.find (from, start_pos)) != std::string::npos) {
       str.replace (start_pos, from.length(), to);
       start_pos += to.length();
     }

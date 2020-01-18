@@ -9,8 +9,13 @@ Remote display issues
 
 The GUI components in *MRtrix3* (``mrview`` & ``shview``) use the OpenGL
 3.3 API to make full use of modern graphics cards. Unfortunately, X11
-forwarding is not supported for OpenGL >= 3. There are a number of
-reasons for this:
+forwarding is not officially supported for OpenGL >= 3.  So it is in general
+not possible to use ``mrview`` or ``shview`` over a standard remote X11
+connection. However, some users have reported success in
+running these applications remotely -- see the note below.
+
+There are a number of reasons for the lack of official OpenGL 3.3 remote
+rendering support:
 
 -  OpenGL 1 & 2 used the `OpenGL fixed function
    pipeline <https://www.opengl.org/wiki/Fixed_Function_Pipeline>`__
@@ -37,8 +42,23 @@ reasons for this:
    already been
    added <http://www.phoronix.com/scan.php?page=news_item&px=MTM0MDg>`__.
 
-So it is not possible to use ``mrview`` or ``shview`` over a standard
-remote X11 connection.
+.. NOTE::
+
+  Some users have reported successful remote rendering over X11 connections.
+  However, it's proved difficult to replicate across systems, most likely
+  because it will depend on both ends of the connection providing the right
+  features. We expect this will only work using the open-source `Mesa 3D
+  graphics library <https://www.mesa3d.org/intro.html>`__ drivers (they provide
+  OpenGL 3.3 support as of version 10.x), most likely using their `Gallium
+  llvmpipe software rasteriser <https://www.mesa3d.org/llvmpipe.html>`__. This
+  means that if it works, the connection will *not* support hardware
+  acceleration, and will most likely perform all its rendering on the remote
+  system. 
+
+  However, there is very little documentation around this, and as previously
+  noted, we are unsure of the correct settings required to get this work. We
+  welcome user insights on the topic!
+
 
 Why does *MRtrix3* use OpenGL 3.3 if it come with such limitations?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -155,14 +175,15 @@ There are three main reasons for this:
 3. **Your installation does support OpenGL 3.3, but only provides access
    to the 3.3 functionality through the _compatibility_ profile, not through the
    (default) core profile.** To see whether this is the problem,
-   you only need to add the line:
+   you only need to try setting the :option:`NeedOpenGLCoreProfile`
+   option in your `MRtrix configuration file <config>`__ (typically
+   ``~/.mrtrix.conf``):
 
    ::
 
        NeedOpenGLCoreProfile: 0
 
-   to your `MRtrix configuration file <config>`__ (typically, ``~/.mrtrix.conf``). If
-   it doesn't work, you're probably stuck with reason 2.
+   If this doesn't work, you're probably stuck with reason 2.
 
 
 MRView runs with visual artefacts or no display
@@ -170,7 +191,8 @@ MRView runs with visual artefacts or no display
 
 If you find that MRView displays with visual glitches or a blank screen,
 particularly in volume render mode, and on ATI/AMD hardware, you may find that
-setting::
+setting the `configuration file <config>`__ option :option:`NeedOpenGLCoreProfile`
+to zero::
 
     NeedOpenGLCoreProfile: 0
 
@@ -224,8 +246,9 @@ the **'MinGW-w64 Win64 Shell'** provided in this installation is known to
 support VT100 codes.
 
 2. Terminal colouring can be disabled using the MRtrix
-`configuration file <config>`__. Add the following line to either the
-system-wide or user config file to disable these advanced terminal features:
+`configuration file <config>`__. Set the config file option :option:`TerminalColor`
+within either the system-wide or user config file to disable these
+advanced terminal features:
 
 .. code::
 

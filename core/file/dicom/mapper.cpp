@@ -211,13 +211,13 @@ namespace MR {
         // Slice timing may come from a few different potential sources
         vector<float> slices_timing;
         if (image.images_in_mosaic) {
-          if (image.mosaic_slices_timing.size() != image.images_in_mosaic) {
-            WARN ("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) + ") does not match number of images in mosaic (" + str(image.images_in_mosaic) + "); omitting");
+          if (image.mosaic_slices_timing.size() < image.images_in_mosaic) {
+            WARN ("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) + ") is smaller than number of images in mosaic (" + str(image.images_in_mosaic) + "); omitting");
           } else {
             DEBUG ("Taking slice timing information from CSA mosaic info");
             // CSA mosaic defines these in ms; we want them in s
-            for (auto f : image.mosaic_slices_timing)
-              slices_timing.push_back (0.001 * f);
+            for (size_t n = 0; n < image.images_in_mosaic; ++n)
+              slices_timing.push_back (0.001 * image.mosaic_slices_timing[n]);
           }
         } else if (std::isfinite (frame.time_after_start)) {
           DEBUG ("Taking slice timing information from CSA TimeAfterStart field");
