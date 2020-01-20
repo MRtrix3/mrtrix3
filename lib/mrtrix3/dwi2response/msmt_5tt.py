@@ -19,6 +19,10 @@ from mrtrix3 import app, image, path, run
 
 
 
+WM_ALGOS = [ 'fa', 'tax', 'tournier' ]
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('msmt_5tt', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -33,8 +37,9 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-dirs', help='Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)')
   options.add_argument('-fa', type=float, default=0.2, help='Upper fractional anisotropy threshold for GM and CSF voxel selection (default: 0.2)')
   options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection (default: 0.95)')
-  options.add_argument('-wm_algo', metavar='algorithm', default='tournier', help='dwi2response algorithm to use for WM single-fibre voxel selection (default: tournier)')
+  options.add_argument('-wm_algo', metavar='algorithm', choices=WM_ALGOS, default='tournier', help='dwi2response algorithm to use for WM single-fibre voxel selection (options: ' + ', '.join(WM_ALGOS) + '; default: tournier)')
   options.add_argument('-sfwm_fa_threshold', type=float, help='Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)')
+
 
 
 def check_output_paths(): #pylint: disable=unused-variable
