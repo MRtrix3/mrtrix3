@@ -180,7 +180,7 @@ namespace MR
                   tolerance,
                   problem_in_standard_form) {
                 if (equality_constraint_vector.size() || inequality_constraint_vector.size()) {
-                  if (num_eq != equality_constraint_vector.size())
+                  if (ssize_t(num_eq) != equality_constraint_vector.size())
                     throw Exception ("FIXME: dimensions of equality constraint matrix and vector do not match (ICLS)");
                 }
               }
