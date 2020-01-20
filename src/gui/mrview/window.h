@@ -24,7 +24,7 @@
 #include "gui/gui.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/opengl/font.h"
-#include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourbars.h"
 #include "gui/mrview/colourmap_button.h"
 
 
@@ -149,7 +149,7 @@ namespace MR
 
           GL::Area* glwidget () const { return glarea; }
           GL::Lighting& lighting () { return *lighting_; }
-          ColourMap::Renderer colourbar_renderer;
+          ColourBars colourbar_renderer;
 
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
@@ -165,8 +165,7 @@ namespace MR
           void imageChanged ();
           void imageVisibilityChanged (bool);
           void scalingChanged ();
-          void volumeChanged (size_t);
-          void volumeGroupChanged (size_t);
+          void volumeChanged ();
 
         public slots:
           void on_scaling_changed ();
@@ -190,6 +189,7 @@ namespace MR
           void full_screen_slot ();
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
+          void wrap_volumes_slot ();
 
           void hide_image_slot ();
           void slice_next_slot ();
@@ -242,8 +242,9 @@ namespace MR
           Math::Versorf orient;
           float field_of_view;
           int anatomical_plane, annotations;
-          ColourMap::Position colourbar_position, tools_colourbar_position;
+          ColourBars::Position colourbar_position, tools_colourbar_position;
           bool snap_to_image_axes_and_voxel;
+          std::string current_folder;
 
           float background_colour[3];
 
@@ -277,6 +278,7 @@ namespace MR
                   *next_image_volume_group_action,
                   *prev_image_volume_group_action,
                   *goto_image_volume_group_action,
+                  *wrap_volumes_action,
                   *image_list_area,
 
                   *reset_windowing_action,
@@ -297,7 +299,7 @@ namespace MR
                   *about_action,
                   *aboutQt_action;
 
-          static ColourMap::Position parse_colourmap_position_str (const std::string& position_str);
+          static ColourBars::Position parse_colourmap_position_str (const std::string& position_str);
 
           void paintGL ();
           void initGL ();
@@ -337,19 +339,6 @@ namespace MR
           friend class Window::GLArea;
           friend class GrabContext;
       };
-
-
-      class GrabContext : private Context::Grab { NOMEMALIGN
-        public:
-          GrabContext () : Context::Grab (Window::main->glarea) { }
-      };
-
-
-#ifndef NDEBUG
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
-#else
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
-#endif
 
 
     }

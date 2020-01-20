@@ -67,7 +67,8 @@ namespace MR
           ImageTypeDestination& destination,
           WarpType& warp,
           const typename ImageTypeDestination::value_type value_when_out_of_bounds = Interpolator<ImageTypeSource>::default_out_of_bounds_value(),
-          vector<int> oversample = Adapter::AutoOverSample)
+          vector<int> oversample = Adapter::AutoOverSample,
+          const bool jacobian_modulate = false )
       {
 
         // reslice warp onto destination grid
@@ -82,20 +83,20 @@ namespace MR
            auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
            reslice<Interp::Cubic> (warp, warp_resliced, Adapter::NoTransform, oversample);
 
-           Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
+           Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds, jacobian_modulate);
 
            if (destination.ndim() == 4)
-             ThreadedLoop ("warping \"" + source.name() + "\"", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
+             ThreadedLoop ("warping \"" + source.name() + "\"" + (jacobian_modulate? " with Jacobian intensity modulation" : ""), interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
            else
-             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"", interp, destination);
+             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"" + (jacobian_modulate? " with Jacobian intensity modulation" : ""), interp, destination);
 
         // no need to reslice warp
         } else {
-           Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp, value_when_out_of_bounds);
+           Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp, value_when_out_of_bounds, jacobian_modulate);
            if (destination.ndim() == 4 && destination.is_direct_io())
-             ThreadedLoop ("warping \"" + source.name() + "\"", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
+             ThreadedLoop ("warping \"" + source.name() + "\"" + (jacobian_modulate? " with Jacobian intensity modulation" : ""), interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
            else
-             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"", interp, destination, 0, destination.ndim(), 2);
+             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"" + (jacobian_modulate? " with Jacobian intensity modulation" : ""), interp, destination, 0, destination.ndim(), 2);
         }
       }
 

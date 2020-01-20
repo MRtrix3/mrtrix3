@@ -108,7 +108,7 @@ namespace MR {
             mutable Image<bool> backtrack_mask;
 
             // Helper functions; find the last point on the streamline from which valid image information can be read
-            const ssize_t                  get_end_index (const Streamline<>&, const bool) const;
+            ssize_t                        get_end_index (const Streamline<>&, const bool) const;
             const Streamline<>::point_type get_end_point (const Streamline<>&, const bool) const;
 
         };

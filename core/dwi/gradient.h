@@ -17,17 +17,11 @@
 #ifndef __dwi_gradient_h__
 #define __dwi_gradient_h__
 
-// These lines are to silence deprecation warnings with Eigen & GCC v5
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <Eigen/SVD>
-#pragma GCC diagnostic pop
-
-
 #include "app.h"
 #include "file/path.h"
 #include "file/config.h"
 #include "header.h"
+#include "math/condition_number.h"
 #include "math/sphere.h"
 #include "math/SH.h"
 #include "dwi/shells.h"
@@ -42,6 +36,26 @@ namespace MR
 
     App::OptionGroup GradImportOptions (bool include_bvalue_scaling = true);
     App::OptionGroup GradExportOptions();
+
+
+
+    //! check that the DW scheme matches the DWI data in \a header
+    template <class MatrixType>
+      inline void check_DW_scheme (const Header& header, const MatrixType& grad)
+      {
+        if (!grad.rows())
+          throw Exception ("no valid diffusion gradient table found");
+        if (grad.cols() < 4)
+          throw Exception ("unexpected diffusion gradient table matrix dimensions");
+
+        if (header.ndim() == 4) {
+          if (header.size (3) != (int) grad.rows())
+            throw Exception ("number of studies in base image (" + str(header.size(3)) + ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
+        } else if (header.ndim() < 4 && grad.rows() != 1) {
+          throw Exception ("For images with less than four dimensions, gradient table can have one row only");
+        }
+      }
+
 
 
     //! ensure each non-b=0 gradient vector is normalised to unit amplitude
@@ -94,8 +108,7 @@ namespace MR
       else // Cartesian to spherical:
         g = Math::Sphere::cartesian2spherical (dirs).leftCols(2);
 
-      auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (Math::SH::init_transform (g, lmax)).singularValues();
-      return v[0] / v[v.size()-1];
+      return Math::condition_number (Math::SH::init_transform (g, lmax));
     }
 
 
@@ -133,6 +146,23 @@ namespace MR
 
 
 
+    namespace
+    {
+      template <class MatrixType>
+      std::string scheme2str (const MatrixType& G)
+      {
+        std::string dw_scheme;
+        for (ssize_t row = 0; row < G.rows(); ++row) {
+          std::string line = str(G(row,0), 10);
+          for (ssize_t col = 1; col < G.cols(); ++col)
+            line += "," + str(G(row,col), 10);
+          add_line (dw_scheme, line);
+        }
+        return dw_scheme;
+      }
+    }
+
+
 
     //! store the DW gradient encoding matrix in a header
     /*! this will store the DW gradient encoding matrix into the
@@ -147,19 +177,12 @@ namespace MR
             header.keyval().erase (it);
           return;
         }
-        std::string dw_scheme;
-        for (ssize_t row = 0; row < G.rows(); ++row) {
-          std::string line;
-          for (ssize_t col = 0; col < G.cols(); ++col) {
-            line += str(G(row,col), 10);
-            if (col < G.cols() - 1) line += ",";
-          }
-          add_line (dw_scheme, line);
+        try {
+          check_DW_scheme (header, G);
+          header.keyval()["dw_scheme"] = scheme2str (G);
+        } catch (Exception&) {
+          WARN ("attempt to add non-matching DW scheme to header - ignored");
         }
-        if (dw_scheme.size())
-          header.keyval()["dw_scheme"] = dw_scheme;
-        else
-          WARN ("attempt to add empty DW scheme to header - ignored");
       }
 
 
@@ -170,6 +193,11 @@ namespace MR
      * structure, under the key 'dw_scheme'.
      */
     Eigen::MatrixXd parse_DW_scheme (const Header& header);
+
+
+
+    //! clear any DW gradient encoding scheme from the header
+    void clear_DW_scheme (Header&);
 
 
 
@@ -185,17 +213,12 @@ namespace MR
     template <class MatrixType>
     void stash_DW_scheme (Header& header, const MatrixType& grad)
     {
-      set_DW_scheme (header, grad);
-      auto dw_scheme = header.keyval().find ("dw_scheme");
-      if (dw_scheme != header.keyval().end()) {
-        header.keyval()["prior_dw_scheme"] = dw_scheme->second;
-        header.keyval().erase (dw_scheme);
-      }
+      clear_DW_scheme (header);
+      if (grad.rows())
+        header.keyval()["prior_dw_scheme"] = scheme2str (grad);
     }
 
 
-    //! clear any DW gradient encoding scheme from the header
-    void clear_DW_scheme (Header&);
 
 
 
@@ -213,19 +236,6 @@ namespace MR
     Eigen::MatrixXd get_DW_scheme (const Header& header);
 
 
-    //! check that the DW scheme matches the DWI data in \a header
-    template <class MatrixType>
-      inline void check_DW_scheme (const Header& header, const MatrixType& grad)
-      {
-        if (!grad.rows())
-          throw Exception ("no valid diffusion gradient table found");
-
-        if (header.ndim() != 4)
-          throw Exception ("dwi image should contain 4 dimensions");
-
-        if (header.size (3) != (int) grad.rows())
-          throw Exception ("number of studies in base image (" + str(header.size(3)) + ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
-      }
 
 
     //! process GradExportOptions command-line options
@@ -303,8 +313,7 @@ namespace MR
         Eigen::MatrixXd mapping;
         do {
           mapping = Math::SH::init_transform (directions, lmax);
-          auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (mapping).singularValues();
-          auto cond = v[0] / v[v.size()-1];
+          const default_type cond = Math::condition_number (mapping);
           if (cond < 10.0)
             break;
           WARN ("directions are poorly distributed for lmax = " + str(lmax) + " (condition number = " + str (cond) + ")");

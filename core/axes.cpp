@@ -68,7 +68,7 @@ namespace MR
 
 
 
-    void get_permutation_to_make_axial (const transform_type& T, size_t perm[3], bool flip[3])
+    void get_permutation_to_make_axial (const transform_type& T, std::array<size_t, 3>& perm, std::array<bool, 3>& flip)
     {
       // Find which row of the transform is closest to each scanner axis
       decltype(T.matrix().topLeftCorner<3,3>())::Index index;

@@ -34,19 +34,31 @@ namespace MR
         class Program;
 
         template <GLint TYPE> class Object
-        { MEMALIGN(Object<TYPE>)
+        { NOMEMALIGN
           public:
             Object () : index_ (0) { }
             Object (const std::string& source) : index_ (0) { if(!source.empty()) compile (source); }
-            ~Object () {
+            Object (const Object&) = delete;
+            Object (Object&& other) : index_ (other.index_) { other.index_ = 0; }
+            Object& operator= (const Object&) = delete;
+            Object& operator= (Object&& other) {
+              clear();
+              index_ = other.index_;
+              other.index_ = 0;
+              return *this;
+            }
+            ~Object () { clear(); }
+
+            void clear() {
               if (index_) {
                 GL_DEBUG ("deleting OpenGL shader ID " + str(index_));
                 gl::DeleteShader (index_);
               }
+              index_ = 0;
             }
-            operator GLuint () const {
-              return (index_);
-            }
+
+            operator GLuint () const { return (index_); }
+
             void compile (const std::string& source) {
               std::string code = "#version 330 core\n" + source;
               DEBUG ("compiling OpenGL " + this->type() + " shader:\n" + code);
@@ -83,11 +95,20 @@ namespace MR
 
 
         class Program
-        { MEMALIGN(Program)
+        { NOMEMALIGN
           public:
             Program () : index_ (0) { }
+            Program (Program&& other) : index_ (other.index_) { other.index_ = 0; }
+            Program (const Program&) = delete;
+            Program& operator= (const Program&) = delete;
+            Program& operator= (Program&& other) {
+              clear();
+              index_ = other.index_;
+              other.index_ = 0;
+              return *this;
+            }
             ~Program () { clear(); }
-        
+
             void clear () {
               if (index_) {
                 GL_DEBUG ("deleting OpenGL shader program " + str(index_));
@@ -136,13 +157,6 @@ namespace MR
             void debug () const {
               assert (index_);
               print_log (true, "OpenGL shader program", index_);
-            }
-
-            Program& operator= (Program& P) {
-              clear();
-              index_ = P.index_;
-              P.index_ = 0;
-              return *this;
             }
 
           protected:

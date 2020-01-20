@@ -86,7 +86,8 @@ namespace MR
               }
             }
 
-            void create (File::OFStream& out, const Properties& properties, const std::string& type) {
+            void create (File::OFStream& out, const Properties& properties, const std::string& type)
+            {
               out << "mrtrix " + type + "\nEND\n";
 
               for (const auto& i : properties) {
