@@ -245,7 +245,7 @@ namespace MR
                                  "Default: diff")
         + Argument ("type").type_choice (linear_metric_choices)
       
-      + Option ("rigid_extent", "the radius of lncc kernel. If 0 - global ncc will be used as similarity metric. (Default: 4)")
+      + Option ("rigid_extent", "the radius of lncc kernel (voxels). If 0 - global ncc will be used as similarity metric. Optimal kernel for local ncc - 4. (Default: 0)")
         + Argument ("num").type_sequence_int ()
 
       + Option ("rigid_metric.diff.estimator", "Valid choices are: "
@@ -323,7 +323,7 @@ namespace MR
                                   "Default: l2")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
       
-      + Option ("affine_extent", "the radius of lncc kernel. If 0 - global ncc will be used as similarity metric. Optimal kernel for local ncc - 4. (Default: 0)")
+      + Option ("affine_extent", "the radius of lncc kernel (voxels). If 0 - global ncc will be used as similarity metric. Optimal kernel for local ncc - 4. (Default: 0)")
         + Argument ("num").type_sequence_int ()
 
       // + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
