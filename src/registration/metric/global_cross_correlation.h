@@ -255,7 +255,7 @@ namespace MR
                     if (std::isnan (default_type (computed_global_cost)))
                         return 0.0;
                     
-                    if (params.im1_mask_interp->value() > 0.5 && params.im2_mask_interp->value() > 0.5) {
+                    if (abs(params.im1_mask_interp->value()) > 0.5 && abs(params.im2_mask_interp->value()) > 0.5) {
                     
                         const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
 
@@ -410,7 +410,7 @@ namespace MR
                     
                     for (ssize_t i = 0; i < volumes; ++i) {
                         
-                        if ((default_type) im1_values[i] > 0.0 && (default_type) im2_values[i] > 0.0) {
+                        if (abs((default_type) im1_values[i]) > 0.0 && abs((default_type) im2_values[i]) > 0.0) {
 
                             local_count[i] = local_count[i] + 1;
                             local_sf[i] = local_sf[i] + im1_values[i];

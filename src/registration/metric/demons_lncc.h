@@ -111,15 +111,23 @@ namespace MR
                     return;
                 }
                 
-                if (im1_mask.valid() && im2_mask.valid()) {
-                    if (im1_mask.value() < 0.1 || im2_mask.value() < 0.1)
+                
+                if (im1_mask.valid()) {
+                    if (im1_mask.value() < 0.1)
                         return;
                 }
+                
+                
+                if (im2_mask.valid()) {
+                    if (im2_mask.value() < 0.1)
+                        return;
+                }
+                
                 
                 typename Im1ImageType::value_type im1_value = im1_image.value();
                 typename Im2ImageType::value_type im2_value = im2_image.value();
                 
-                if (im1_value < min_value_threshold || im2_value < min_value_threshold) {
+                if (abs(im1_value) < min_value_threshold || abs(im2_value) < min_value_threshold) {
                     return;
                 }
 
@@ -153,7 +161,7 @@ namespace MR
                             typename Im1ImageType::value_type im1_value_iter = im1_proc.value();
                             typename Im2ImageType::value_type im2_value_iter = im2_proc.value();
                             
-                            if (im1_value_iter > min_value_threshold && im2_value_iter > min_value_threshold && im1_value_iter == im1_value_iter && im2_value_iter == im2_value_iter ) {
+                            if (abs(im1_value_iter) > min_value_threshold && abs(im2_value_iter) > min_value_threshold && abs(im1_value_iter) == abs(im1_value_iter) && abs(im2_value_iter) == abs(im2_value_iter) ) {
                                 
                                 local_sf += im1_value_iter;
                                 local_sm += im2_value_iter;
@@ -306,18 +314,29 @@ namespace MR
                 
                 typename Im1MaskType::value_type im1_mask_value = 1.0;
                 typename Im2MaskType::value_type im2_mask_value = 1.0;
-                if (im1_mask.valid() && im2_mask.valid()) {
+                
+                
+                if (im1_mask.valid()) {
                     im1_mask_value = im1_mask.value();
-                    im2_mask_value = im2_mask.value();
-                    if (im1_mask_value < 0.1 || im2_mask_value < 0.1) {
+                    if (im1_mask_value < 0.1) {
                         return;
                     }
                 }
                 
+                
+                if (im2_mask.valid()) {
+                    im2_mask_value = im2_mask.value();
+                    if (im2_mask_value < 0.1) {
+                        return;
+                    }
+                }
+                
+                
+                
                 typename Im1ImageType::value_type im1_value = im1_image.value();
                 typename Im2ImageType::value_type im2_value = im2_image.value();
                 
-                if (im1_value < min_value_threshold || im2_value < min_value_threshold) {
+                if (abs(im1_value) < min_value_threshold || abs(im2_value) < min_value_threshold) {
                     return;
                 }
                 
@@ -466,8 +485,13 @@ namespace MR
                     return;
                 }
                 
-                if (im1_mask.valid() && im2_mask.valid()) {
-                    if (im1_mask.value() < 0.1 || im2_mask.value() < 0.1)
+                if (im1_mask.valid()) {
+                    if (im1_mask.value() < 0.1)
+                        return;
+                }
+                
+                if (im2_mask.valid()) {
+                    if (im2_mask.value() < 0.1)
                         return;
                 }
                 
@@ -475,7 +499,7 @@ namespace MR
                 typename Im1ImageType::value_type im1_value = im1_image.value();
                 typename Im2ImageType::value_type im2_value = im2_image.value();
                 
-                if (im1_value < min_value_threshold || im2_value < min_value_threshold) {
+                if (abs(im1_value) < min_value_threshold || abs(im2_value) < min_value_threshold) {
                     return;
                 }
 

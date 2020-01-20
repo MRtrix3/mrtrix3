@@ -110,7 +110,7 @@ namespace MR
 
         Linear () :
           stages (3),
-          kernel_extent (3, 4),
+          kernel_extent (3, 0),
           grid_spacing (1),
           grad_tolerance (1.0e-6),
           step_tolerance (1.0e-10),

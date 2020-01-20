@@ -69,11 +69,12 @@ namespace MR
                     params.im1_image_interp->value_and_gradient_wrt_scanner (im1_value, im1_grad);
                     if (std::isnan (default_type (im1_value)))
                         return 0.0;
+                    
                     params.im2_image_interp->value_and_gradient_wrt_scanner (im2_value, im2_grad);
                     if (std::isnan (default_type (im2_value)))
                         return 0.0;
                     
-                     if (im1_value < min_value_threshold || im2_value < min_value_threshold)
+                     if (abs(im1_value) < min_value_threshold || abs(im2_value) < min_value_threshold)
                          return 0.0;
                     
                     vector<size_t> extent = params.get_extent();
@@ -129,7 +130,7 @@ namespace MR
                                     params.im2_image_interp->value_and_gradient_wrt_scanner (im2_value_iter, im2_grad_iter);
                                 
                                     
-                                    if (im1_value_iter > min_value_threshold && im1_value_iter == im1_value_iter && im2_value_iter > min_value_threshold && im2_value_iter == im2_value_iter ) {
+                                    if (abs(im1_value_iter) > min_value_threshold && abs(im1_value_iter) == abs(im1_value_iter) && abs(im2_value_iter) > min_value_threshold && abs(im2_value_iter) == abs(im2_value_iter) ) {
                                         
                                         local_sf = local_sf + im1_value_iter;
                                         local_sm = local_sm + im2_value_iter;
@@ -336,7 +337,7 @@ namespace MR
                                 
                                 for (ssize_t i = 0; i < volumes; ++i) {
                                 
-                                    if (im1_values_iter[i] > 0 && im1_values_iter[i] == im1_values_iter[i] && im2_values_iter[i] > 0 && im2_values_iter[i] == im2_values_iter[i] ) {
+                                    if (abs(im1_values_iter[i]) > 0 && abs(im1_values_iter[i]) == abs(im1_values_iter[i]) && abs(im2_values_iter[i]) > 0 && abs(im2_values_iter[i]) == im2_values_iter[i] ) {
                                         
                                         sf_values[i] = sf_values[i] + im1_values_iter[i];
                                         sm_values[i] = sm_values[i] + im2_values_iter[i];

@@ -58,7 +58,7 @@ namespace MR
           do_reorientation (false),
           fod_lmax (3),
           use_cc (false),
-          cc_extent (3, 3),
+          cc_extent (3, 2),
           diagnostics_image_prefix ("") {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
@@ -540,7 +540,7 @@ namespace MR
         
           void set_metric_cc () {
             use_cc = true;
-            cc_extent = vector<size_t>(3, 3);
+            cc_extent = vector<size_t>(3, 2);
           }
         
           void set_extent (const vector<size_t> extent) {
