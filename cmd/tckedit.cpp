@@ -194,6 +194,7 @@ void run ()
   DEBUG ("estimated number of input tracks: " + str(count));
 
   load_rois (properties);
+  properties.compare_stepsize_rois();
 
   // Some properties from tracking may be overwritten by this editing process
   // Due to the potential use of masking, we have no choice but to clear the

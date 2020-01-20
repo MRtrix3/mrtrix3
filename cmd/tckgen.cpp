@@ -236,7 +236,7 @@ void run ()
   if (opt.size()) algorithm = opt[0][0];
 
 
-  
+
 
   ACT::load_act_properties (properties);
 
@@ -251,7 +251,8 @@ void run ()
 
   //load ROIs and tractography specific options
   //NB must occur before seed check below due to -select option override
-  Tracking::load_streamline_properties_and_rois(properties);
+  Tracking::load_streamline_properties_and_rois (properties);
+  properties.compare_stepsize_rois();
 
   // Check validity of options -select and -seeds; these are meaningless if seeds are number-limited
   // By over-riding the values in properties, the progress bar should still be valid
@@ -265,10 +266,9 @@ void run ()
       WARN ("Overriding -seeds option (maximum number of seeds that will be attempted to track from), as seeds can only provide a finite number");
     properties["max_num_seeds"] = str (properties.seeds.get_total_count());
 
-    
   }
 
-  
+
 
   switch (algorithm) {
     case 0:
@@ -303,4 +303,3 @@ void run ()
   }
 
 }
-
