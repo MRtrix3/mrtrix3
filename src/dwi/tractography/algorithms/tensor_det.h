@@ -28,6 +28,7 @@
 #include "dwi/tensor.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 
 
@@ -55,14 +56,11 @@ namespace MR
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
-          set_step_size (0.1f);
-          if (rk4) {
-            INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * Math::pi))) + " mm");
-          } else {
-            INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
-          }
-
-          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FA);
+          set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                              Defaults::angle_deterministic,
+                              rk4);
+          set_num_points();
+          set_cutoff (Defaults::cutoff_fa * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
           properties["method"] = "TensorDet";
 
@@ -161,14 +159,14 @@ namespace MR
         dwi2tensor (dt, S.binv, values);
 
         if (tensor2FA (dt) < S.threshold)
-          return BAD_SIGNAL;
+          return MODEL;
 
         Eigen::Vector3f prev_dir = dir;
 
         get_EV();
 
         float dot = prev_dir.dot (dir);
-        if (abs (dot) < S.cos_max_angle)
+        if (abs (dot) < S.cos_max_angle_1o)
           return HIGH_CURVATURE;
 
         if (dot < 0.0)

@@ -226,6 +226,7 @@ namespace MR
 
         render_frame = new RenderFrame (this);
         setCentralWidget (render_frame);
+        GUI::App::set_main_window (this, render_frame);
 
         render_frame->set_lmax (0);
         render_frame->set_LOD (5);

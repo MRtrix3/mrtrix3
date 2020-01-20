@@ -1,3 +1,24 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import math, shutil
+from mrtrix3 import CONFIG, MRtrixError
+from mrtrix3 import app, image, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('dhollander', parents=[base_parser])
   parser.set_author('Thijs Dhollander (thijs.dhollander@gmail.com)')
@@ -18,7 +39,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.out_sfwm)
   app.check_output_path(app.ARGS.out_gm)
   app.check_output_path(app.ARGS.out_csf)
@@ -36,9 +56,6 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import math, shutil
-  from mrtrix3 import CONFIG, app, image, MRtrixError, path, run
-
   bzero_threshold = float(CONFIG['BZeroThreshold']) if 'BZeroThreshold' in CONFIG else 10.0
 
 
@@ -246,5 +263,5 @@ def execute(): #pylint: disable=unused-variable
   run.function(shutil.copyfile, 'response_gm.txt', path.from_user(app.ARGS.out_gm, False), show=False)
   run.function(shutil.copyfile, 'response_csf.txt', path.from_user(app.ARGS.out_csf, False), show=False)
   if app.ARGS.voxels:
-    run.command('mrconvert check_voxels.mif ' + path.from_user(app.ARGS.voxels) + app.mrconvert_output_option(path.from_user(app.ARGS.input)), show=False)
+    run.command('mrconvert check_voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE, show=False)
   app.console('-------')

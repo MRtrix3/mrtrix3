@@ -33,11 +33,11 @@ void usage ()
 
   SYNOPSIS = "Convert mean dwi (trace-weighted) images to mean ADC maps";
 
-  ARGUMENTS 
+  ARGUMENTS
     + Argument ("input", "the input image.").type_image_in ()
     + Argument ("output", "the output image.").type_image_out ();
 
-  OPTIONS 
+  OPTIONS
     + DWI::GradImportOptions();
 }
 
@@ -51,8 +51,8 @@ class DWI2ADC { MEMALIGN(DWI2ADC)
   public:
     DWI2ADC (const Eigen::MatrixXd& binv, size_t dwi_axis) :
       dwi (binv.cols()),
-      adc (2), 
-      binv (binv), 
+      adc (2),
+      binv (binv),
       dwi_axis (dwi_axis) { }
 
     template <class DWIType, class ADCType>
@@ -98,10 +98,10 @@ void run () {
 
   Header header (dwi);
   header.datatype() = DataType::Float32;
-  header.ndim() = 4;
-  header.size(3) = 2;
   DWI::stash_DW_scheme (header, grad);
   PhaseEncoding::clear_scheme (header);
+  header.ndim() = 4;
+  header.size(3) = 2;
 
   auto adc = Image<value_type>::create (argument[1], header);
 

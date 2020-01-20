@@ -18,10 +18,11 @@
 #define __gui_mrview_displayable_h__
 
 #include "math/math.h"
+
+#include "colourmap.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 #include "gui/projection.h"
-#include "gui/mrview/colourmap.h"
 
 
 namespace MR
@@ -202,7 +203,7 @@ namespace MR
           }
 
 
-          class Shader : public GL::Shader::Program { MEMALIGN(Shader)
+          class Shader : public GL::Shader::Program { NOMEMALIGN
             public:
               virtual std::string fragment_shader_source (const Displayable& object) = 0;
               virtual std::string geometry_shader_source (const Displayable&) { return std::string(); }

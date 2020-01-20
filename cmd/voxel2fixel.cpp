@@ -22,9 +22,12 @@
 #include "fixel/helpers.h"
 #include "fixel/keys.h"
 #include "fixel/loop.h"
+#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
+
+using Fixel::index_type;
 
 
 void usage ()
@@ -49,7 +52,7 @@ void run ()
   auto scalar = Image<float>::open (argument[0]);
   std::string input_fixel_directory = argument[1];
   Fixel::check_fixel_directory (input_fixel_directory);
-  auto input_fixel_index = Fixel::find_index_header (input_fixel_directory).get_image<uint32_t>();
+  auto input_fixel_index = Fixel::find_index_header (input_fixel_directory).get_image<index_type>();
   check_dimensions (scalar, input_fixel_index, 0, 3);
 
   std::string output_fixel_directory = argument[2];

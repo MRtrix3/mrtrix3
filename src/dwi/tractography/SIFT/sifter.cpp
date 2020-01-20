@@ -91,7 +91,8 @@ namespace MR
 
         if (!csv_path.empty()) {
           File::OFStream csv_out (csv_path, std::ios_base::out | std::ios_base::trunc);
-          csv_out << "Iteration,Removed this iteration,Total removed,Remaining,Cost,TD,Mu,Recalculation,\n";
+          csv_out << "# " << App::command_history_string << "\n";
+          csv_out << "#Iteration,Removed this iteration,Total removed,Remaining,Cost,TD,Mu,Recalculation,\n";
           csv_out << "0,0,0," << str (tracks_remaining) << "," << str (init_cf) << "," << str (TD_sum) << "," << str (mu()) << ",Start,\n";
         }
 
@@ -130,7 +131,7 @@ namespace MR
           // Trying a heuristic for now; go for a sort size of 1000 following initial sort, assuming half of all
           //   remaining streamlines have a negative gradient
 
-          const track_t sort_size = std::min (num_tracks() / double(Thread::number_of_threads()), std::round (2000.0 * double(num_tracks()) / double(tracks_remaining)));
+          const track_t sort_size = std::min (std::ceil(num_tracks() / double(Thread::number_of_threads())), std::round (2000.0 * double(num_tracks()) / double(tracks_remaining)));
           MT_gradient_vector_sorter sorter (gradient_vector, sort_size);
 
           // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed
@@ -178,9 +179,14 @@ namespace MR
             } else { // Proceed as normal
 
               const vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
+              if (candidate == gradient_vector.end()) {
+                recalculate = POS_GRADIENT;
+                if (!removed_this_iteration)
+                  another_iteration = false;
+                goto end_iteration;
+              }
 
               const track_t candidate_index = candidate->get_tck_index();
-
               if (candidate->get_cost_gradient() >= 0.0) {
                 recalculate = POS_GRADIENT;
                 if (!removed_this_iteration)

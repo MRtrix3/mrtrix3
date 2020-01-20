@@ -1,6 +1,26 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import copy, numbers, os, shutil, sys
+
+
+
 def usage(cmdline): #pylint: disable=unused-variable
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Check the orientation of the diffusion gradient table')
   cmdline.add_citation('Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962')
@@ -8,25 +28,15 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('-mask', metavar='image', help='Provide a brain mask image')
   cmdline.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
 
-  grad_export = cmdline.add_argument_group('Options for exporting the estimated best gradient table')
-  grad_export.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
-  grad_export.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
-  cmdline.flag_mutually_exclusive_options( ['export_grad_mrtrix', 'export_grad_fsl' ])
-
-  grad_import = cmdline.add_argument_group('Options for importing the gradient table')
-  grad_import.add_argument('-grad', help='Provide a gradient table in MRtrix format')
-  grad_import.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide a gradient table in FSL bvecs/bvals format')
-  cmdline.flag_mutually_exclusive_options( ['grad', 'fslgrad' ])
-
-
-
+  app.add_dwgrad_export_options(cmdline)
+  app.add_dwgrad_import_options(cmdline)
 
 
 
 
 def execute(): #pylint: disable=unused-variable
-  import copy, numbers, shutil
-  from mrtrix3 import image, MRtrixError, path, run
+  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()
   if len(image_dimensions) != 4:
@@ -64,18 +74,8 @@ def execute(): #pylint: disable=unused-variable
       run.command('mrinfo data.mif -export_grad_fsl bvecs bvals')
 
   # Import both of these into local memory
-  with open('grad.b', 'r') as grad_file:
-    grad_mrtrix = grad_file.read().split('\n')
-  with open('bvecs', 'r') as bvecs_file:
-    grad_fsl = bvecs_file.read().split('\n')
-  # Erase the empty last line if necessary
-  if len(grad_mrtrix[-1]) <= 1:
-    grad_mrtrix.pop()
-  if len(grad_fsl[-1]) <= 1:
-    grad_fsl.pop()
-  # Turn into float matrices
-  grad_mrtrix = [ [ float(f) for f in line.split(' ') ] for line in grad_mrtrix ]
-  grad_fsl = [ [ float(f) for f in line.split() ] for line in grad_fsl ]
+  grad_mrtrix = matrix.load_matrix('grad.b')
+  grad_fsl = matrix.load_matrix('bvecs')
   # Is our gradient table of the correct length?
   if not len(grad_mrtrix) == num_volumes:
     raise MRtrixError('Number of entries in gradient table does not match number of DWI volumes')
@@ -190,11 +190,7 @@ def execute(): #pylint: disable=unused-variable
 
   # If requested, extract what has been detected as the best gradient table, and
   #   export it in the format requested by the user
-  grad_export_option = ''
-  if app.ARGS.export_grad_mrtrix:
-    grad_export_option = ' -export_grad_mrtrix ' + path.from_user(app.ARGS.export_grad_mrtrix)
-  elif app.ARGS.export_grad_fsl:
-    grad_export_option = ' -export_grad_fsl ' + path.from_user(app.ARGS.export_grad_fsl[0]) + ' ' + path.from_user(app.ARGS.export_grad_fsl[1])
+  grad_export_option = app.read_dwgrad_export_options()
   if grad_export_option:
     best = lengths[0]
     suffix = '_flip' + str(best[1]) + '_perm' + ''.join(str(item) for item in best[2]) + '_' + best[3]
@@ -202,16 +198,9 @@ def execute(): #pylint: disable=unused-variable
       grad_import_option = ' -grad grad' + suffix + '.b'
     elif best[3] == 'image':
       grad_import_option = ' -fslgrad bvecs' + suffix + ' bvals'
-    run.command('mrinfo data.mif' + grad_import_option + grad_export_option)
+    run.command('mrinfo data.mif' + grad_import_option + grad_export_option, force=app.FORCE_OVERWRITE)
 
 
-# Make the corresponding MRtrix3 Python libraries available
-import inspect, os, sys
-LIB_FOLDER = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(inspect.getfile(inspect.currentframe()))), os.pardir, 'lib'))
-if not os.path.isdir(LIB_FOLDER):
-  sys.stderr.write('Unable to locate MRtrix3 Python libraries')
-  sys.exit(1)
-sys.path.insert(0, LIB_FOLDER)
 # Execute the script
-from mrtrix3 import app
-app.execute()
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member

@@ -63,6 +63,8 @@ namespace MR
             Base (input),
             grad (grad)
         {
+          DWI::stash_DW_scheme (*this, grad);
+          PhaseEncoding::clear_scheme (*this);
           axes_.resize(3);
           datatype_ = DataType::Bit;
         }

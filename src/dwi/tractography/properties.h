@@ -18,7 +18,9 @@
 #define __dwi_tractography_properties_h__
 
 #include <map>
+#include "app.h"
 #include "timer.h"
+#include "types.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/list.h"
 
@@ -34,7 +36,7 @@ namespace MR
     {
 
 
-      class Properties : public std::map<std::string, std::string> { MEMALIGN(Properties)
+      class Properties : public KeyValues { MEMALIGN(Properties)
         public:
 
           Properties () {
@@ -51,8 +53,16 @@ namespace MR
               (*this)["project_version"] = App::project_version;
           }
 
+          void update_command_history () {
+            // Make sure the current command is not concatenated more than once
+            const auto command_history = split_lines ((*this)["command_history"]);
+            if (!(command_history.size() && command_history.back() == App::command_history_string))
+              add_line ((*this)["command_history"], App::command_history_string);
+          }
+
           // In use at time of execution
-          ROISet include, exclude, mask;
+          ROIUnorderedSet include, exclude, mask;
+          ROIOrderedSet ordered_include;
           Seeding::List seeds;
 
           // As stored within the header of an existing .tck file
@@ -62,11 +72,12 @@ namespace MR
 
 
           void clear () {
-            std::map<std::string, std::string>::clear();
+            KeyValues::clear();
             seeds.clear();
             include.clear();
             exclude.clear();
             mask.clear();
+            ordered_include.clear();
             prior_rois.clear();
             comments.clear();
           }
@@ -77,6 +88,7 @@ namespace MR
           }
 
       };
+
 
 
       inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type)
@@ -132,8 +144,8 @@ namespace MR
       inline std::ostream& operator<< (std::ostream& stream, const Properties& P)
       {
         stream << "seeds: " << P.seeds;
-        stream << "include: " << P.include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
-        for (std::map<std::string, std::string>::const_iterator i = P.begin(); i != P.end(); ++i)
+        stream << "include: " << P.include << ", ordered_include: " << P.ordered_include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
+        for (KeyValues::const_iterator i = P.begin(); i != P.end(); ++i)
           stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
         for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)

@@ -32,7 +32,7 @@ Pre-processsing steps
 2. Motion and distortion correction
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. include:: common_fba_steps/dwipreproc.rst
+.. include:: common_fba_steps/dwifslpreproc.rst
 
 3. Bias field correction
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -62,9 +62,9 @@ There is however no strict requirement for the final set of response functions t
 
 5. Upsampling DW images
 ^^^^^^^^^^^^^^^^^^^^^^^
-Upsampling DWI data *before* computing FODs increases anatomical contrast and improves downstream template building, registration, tractography and statistics. We recommend upsampling to an isotropic voxel size of 1.3 mm for human brains (if your original resolution is already higher, you can skip this step)::
+Upsampling DWI data *before* computing FODs increases anatomical contrast and improves downstream template building, registration, tractography and statistics. We recommend upsampling to an isotropic voxel size of 1.25 mm for human brains (if your original resolution is already higher, you can skip this step)::
 
-    foreach * : mrresize IN/dwi_denoised_unringed_preproc_unbiased.mif -vox 1.3 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
+    foreach * : mrresize IN/dwi_denoised_unringed_preproc_unbiased.mif -vox 1.25 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
 
 
 6. Compute upsampled brain mask images
@@ -135,7 +135,7 @@ In this step, we segment fixels from the FOD template. The result is the *fixel 
 
 .. NOTE:: Fixel images, which appear in the pipeline from this step onwards, are stored using the :ref:`fixel_format`, which stores all fixel data for a fixel image in a directory (i.e. a folder).
 
-.. WARNING:: This step ultimately determines the fixel mask in which statistical analysis will be performed, and hence also which fixels' statistics can contribute to others via the CFE mechanism; so it may have a substantial impact on the final result. Essentially, it can be detrimental to the result if the threshold value specified via the :code:`-fmls_peak_value` is *too high* and hence *excludes* genuine white matter fixels. This risk is substantially higher in voxels containing crossing fibres (and higher the more fibres are crossing in a single voxel). Even though 0.06 has been observed to be a decent default value for 3-tissue CSD population templates, it is still **strongly advised** to visualise the output fixel mask using :ref:`mrview`. Do this by opening the :code:`index.mif` found in :code:`../template/fixel_mask` via the *fixel plot tool*. If, with respect to known or normal anatomy, fixels are missing (especially paying attention to crossing areas), regenerate the mask with a lower value supplied to the :code:`-fmls_peak_value` option (of course, avoid lowering it *too* much, as too many false or noisy fixels may be introduced). For an *adult human* brain template, and using an isotropic template voxel size of 1.3 mm, it is expected to have several *hundreds of thousands* of fixels in the fixel mask (you can check this by :code:`mrinfo -size ../template/fixel_mask/directions.mif`, and looking at the size of the image along the first dimension).
+.. WARNING:: This step ultimately determines the fixel mask in which statistical analysis will be performed, and hence also which fixels' statistics can contribute to others via the CFE mechanism; so it may have a substantial impact on the final result. Essentially, it can be detrimental to the result if the threshold value specified via the :code:`-fmls_peak_value` is *too high* and hence *excludes* genuine white matter fixels. This risk is substantially higher in voxels containing crossing fibres (and higher the more fibres are crossing in a single voxel). Even though 0.06 has been observed to be a decent default value for 3-tissue CSD population templates, it is still **strongly advised** to visualise the output fixel mask using :ref:`mrview`. Do this by opening the :code:`index.mif` found in :code:`../template/fixel_mask` via the *fixel plot tool*. If, with respect to known or normal anatomy, fixels are missing (especially paying attention to crossing areas), regenerate the mask with a lower value supplied to the :code:`-fmls_peak_value` option (of course, avoid lowering it *too* much, as too many false or noisy fixels may be introduced). For an *adult human* brain template, and using an isotropic template voxel size of 1.25 mm, it is expected to have several *hundreds of thousands* of fixels in the fixel mask (you can check this by :code:`mrinfo -size ../template/fixel_mask/directions.mif`, and looking at the size of the image along the first dimension).
 
 13. Warp FOD images to template space
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -179,19 +179,29 @@ Statistical analysis using connectivity-based fixel enhancement (CFE) [Raffelt20
     cd ../template
     tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 wmfod_template.mif -seed_image template_mask.mif -mask template_mask.mif -select 20000000 -cutoff 0.06 tracks_20_million.tck
 
-.. WARNING:: *The command line above assumes you're working with MRtrix3 RC3 or above*. An important bug in the tractography code was fixed in that version of the software. If you are not able to update your installation, and are still working with an older version of MRtrix3, you should remove the `-cutoff 0.06` option in the command line above, in line with the instructions for older versions of MRtrix3.
+.. WARNING:: The appropriate FOD amplitude cutoff for FOD template tractography can vary considerably between different datasets, as well as different versions of *MRtrix3* due to historical software bugs. While the value of 0.06 is suggested as a reasonable value for multi-tissue data, it may be beneficial to first generate a smaller number of streamlines (e.g. 100,000) using this value, and visually confirm that the generated streamlines exhibit an appropriate extent of propagation at the ends of white matter pathways, before committing to generation of the dense tractogram.
 
 20. Reduce biases in tractogram densities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/sift.rst
 
-21. Perform statistical analysis of FD, FC, and FDC
+21. Generate fixel-fixel connectivity matrix
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: common_fba_steps/matrix.rst
+
+22. Smooth fixel data using fixel-fixel connectivity
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: common_fba_steps/smooth.rst
+
+23. Perform statistical analysis of FD, FC, and FDC
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/statistics.rst
 
-22. Visualise the results
+24. Visualise the results
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. include:: common_fba_steps/visualisation.rst
