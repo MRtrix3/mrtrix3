@@ -116,7 +116,6 @@ List of MRtrix3 commands
     commands/tckstats
     commands/tcktransform
     commands/tensor2metric
-    commands/test_rng
     commands/transformcalc
     commands/transformcompose
     commands/transformconvert
@@ -244,7 +243,6 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`tckstats`, "Calculate statistics on streamlines lengths"
     |cpp.png|, :ref:`tcktransform`, "Apply a spatial transformation to a tracks file"
     |cpp.png|, :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"
-    |cpp.png|, :ref:`test_rng`, "test RNG"
     |cpp.png|, :ref:`transformcalc`, "Perform calculations on linear transformation matrices"
     |cpp.png|, :ref:`transformcompose`, "Compose any number of linear transformations and/or warps into a single transformation"
     |cpp.png|, :ref:`transformconvert`, "Convert linear transformation matrices"
