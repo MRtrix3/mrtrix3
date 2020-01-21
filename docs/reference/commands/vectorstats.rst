@@ -56,7 +56,7 @@ Options related to the General Linear Model (GLM)
 
 -  **-fonly** only assess F-tests; do not perform statistical inference on entries in the contrast matrix
 
--  **-column path**  *(multiple uses permitted)* add a column to the design matrix corresponding to subject element-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
+-  **-column path** *(multiple uses permitted)* add a column to the design matrix corresponding to subject element-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -71,7 +71,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 

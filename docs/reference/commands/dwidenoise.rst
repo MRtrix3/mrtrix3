@@ -38,7 +38,9 @@ Options
 
 -  **-datatype float32/float64** Datatype for the eigenvalue decomposition (single or double precision). For complex input data, this will select complex float32 or complex float64 datatypes.
 
--  **-estimator Exp1/Exp2** Select the noise level estimator (default = Exp2), either: * Exp1: the original estimator used in Veraart et al. (2016), or * Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).
+-  **-estimator Exp1/Exp2** Select the noise level estimator (default = Exp2), either:  |br|
+   * Exp1: the original estimator used in Veraart et al. (2016), or  |br|
+   * Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -53,7 +55,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
