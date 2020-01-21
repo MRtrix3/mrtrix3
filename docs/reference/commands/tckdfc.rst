@@ -49,14 +49,15 @@ Options for setting the properties of the output image
 
 -  **-vox size** provide either an isotropic voxel size (in mm), or comma-separated list of 3 voxel dimensions.
 
--  **-stat_vox type** define the statistic for choosing the final voxel intensities for a given contrast type given the individual values from the tracks passing through each voxelOptions are: sum, min, mean, max (default: mean)
+-  **-stat_vox type** define the statistic for choosing the final voxel intensities for a given contrast type given the individual values from the tracks passing through each voxel |br|
+   Options are: sum, min, mean, max (default: mean)
 
 Other options for affecting the streamline sampling & mapping behaviour
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-backtrack** if no valid timeseries is found at the streamline endpoint, back-track along the streamline trajectory until a valid timeseries is found
 
--  **-upsample factor** upsample the tracks by some ratio using Hermite interpolation before mappipng (if omitted, an appropriate ratio will be determined automatically)
+-  **-upsample factor** upsample the tracks by some ratio using Hermite interpolation before mapping (if omitted, an appropriate ratio will be determined automatically)
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -71,7 +72,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 

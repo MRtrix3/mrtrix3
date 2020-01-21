@@ -36,8 +36,8 @@ void usage ()
 
   REFERENCES
   + "Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A." // Internal
-    "Investigating White Matter Fibre Density and Morphology using Fixel-Based Analysis. \n"
-    "Neuroimage, 2016, 10.1016/j.neuroimage.2016.09.029\n";
+    "Investigating White Matter Fibre Density and Morphology using Fixel-Based Analysis. "
+    "Neuroimage, 2016, 10.1016/j.neuroimage.2016.09.029";
 
   ARGUMENTS
   + Argument ("in", "the input deformation field").type_image_in();

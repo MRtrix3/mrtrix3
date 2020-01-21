@@ -225,7 +225,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
     |cpp.png|, :ref:`sh2response`, "Generate an appropriate response function from the image data for spherical deconvolution"
     |cpp.png|, :ref:`shbasis`, "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used"
-    |cpp.png|, :ref:`shconv`, "Perform a spherical convolution"
+    |cpp.png|, :ref:`shconv`, "Perform spherical convolution"
     |cpp.png|, :ref:`shview`, "View spherical harmonics surface plots"
     |cpp.png|, :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     |cpp.png|, :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
