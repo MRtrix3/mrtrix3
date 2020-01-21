@@ -55,7 +55,7 @@ namespace MR {
 
 
 
-        const ssize_t TWIImagePluginBase::get_end_index (const Streamline<>& tck, const bool end) const
+        ssize_t TWIImagePluginBase::get_end_index (const Streamline<>& tck, const bool end) const
         {
           ssize_t index = end ? tck.size() - 1 : 0;
           if (backtrack) {

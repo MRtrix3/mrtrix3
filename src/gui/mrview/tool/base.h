@@ -67,6 +67,8 @@ namespace MR
             Base (Dock* parent);
             Window& window () const { return *Window::main; }
 
+            std::string current_folder;
+
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
@@ -180,21 +182,21 @@ namespace MR
 
             virtual ~__Action__ () { delete dock; }
 
-            virtual Dock* create () = 0;
+            virtual Dock* create (bool floating) = 0;
             Dock* dock;
         };
         //! \endcond
 
 
         template <class T>
-          Dock* create (const QString& text)
+          Dock* create (const QString& text, bool floating)
           {
             Dock* dock = new Dock (text);
             Window::main->addDockWidget (Qt::RightDockWidgetArea, dock);
             dock->tool = new T (dock);
             dock->tool->adjustSize();
             dock->setWidget (dock->tool);
-            dock->setFloating (true);
+            dock->setFloating (floating);
             dock->show();
             return dock;
           }
@@ -210,8 +212,8 @@ namespace MR
                 int index) :
               __Action__ (parent, name, description, index) { }
 
-            virtual Dock* create () {
-              dock = Tool::create<T> (this->text());
+            virtual Dock* create (bool floating) {
+              dock = Tool::create<T> (this->text(), floating);
               return dock;
             }
         };

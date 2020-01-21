@@ -74,6 +74,7 @@ void usage ()
 
   OPTIONS
     +   Option ("all", "print all properties, rather than the first and last 2 of each.")
+    +   Option ("name", "print the file system path of the image")
     +   Option ("format", "image file format")
     +   Option ("ndim", "number of image dimensions")
     +   Option ("size", "image size along each axis")
@@ -83,8 +84,6 @@ void usage ()
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the transformation from image coordinates [mm] to scanner / real world coordinates [mm]")
-
-    + NoRealignOption
 
     + FieldExportOptions
 
@@ -217,7 +216,7 @@ void header2json (const Header& header, nlohmann::json& json)
                         { T(2,0), T(2,1), T(2,2), T(2,3) },
                         {    0.0,    0.0,    0.0,    1.0 } };
   // Load key-value entries into a nested keyval.* member
-  File::JSON::write (header, json["keyval"], false);
+  File::JSON::write (header, json["keyval"], header.name());
 }
 
 
@@ -244,8 +243,9 @@ void run ()
     throw Exception ("Cannot use -json_all option with multiple input images");
 
   if (get_options ("norealign").size())
-    Header::do_not_realign_transform = true;
+    Header::do_realign_transform = false;
 
+  const bool name          = get_options("name")          .size();
   const bool format        = get_options("format")        .size();
   const bool ndim          = get_options("ndim")          .size();
   const bool size          = get_options("size")          .size();
@@ -274,6 +274,7 @@ void run ()
     else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes)
       DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
+    if (name)       std::cout << header.name() << "\n";
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
     if (size)       print_dimensions (header);
@@ -294,7 +295,7 @@ void run ()
     PhaseEncoding::export_commandline (header);
 
     if (json_keyval)
-      File::JSON::write (header, *json_keyval, false);
+      File::JSON::write (header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));
 
     if (json_all)
       header2json (header, *json_all);

@@ -209,7 +209,7 @@ namespace MR
                   b_m += m[i];
                   b_n += n[i];
                 }
-                problem = Math::ICLS::Problem<double> (C, A,
+                problem = Math::ICLS::Problem<double> (C, A, Eigen::VectorXd(), 0,
                   solution_min_norm_regularisation, constraint_min_norm_regularisation);
 
                 INFO ("Multi-shell, multi-tissue CSD initialised successfully");

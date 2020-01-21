@@ -149,6 +149,7 @@ namespace MR
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
+          GL_CHECK_ERROR;
           gl::DrawArrays (gl::LINES, 0, 2);
           GL::assert_context_is_current();
         }

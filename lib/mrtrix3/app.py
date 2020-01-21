@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap
+import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
 import mrtrix3
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
@@ -70,6 +70,12 @@ particular purpose or non-infringing.
 See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.'''
+
+
+
+_MRTRIX3_CORE_REFERENCE = 'Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. \
+MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. \
+NeuroImage, 2019, 202, 116137'
 
 
 
@@ -212,7 +218,8 @@ def _execute(module): #pylint: disable=unused-variable
       sys.stderr.write(EXEC_NAME + ':\n')
     else:
       sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] Failed ' + ('command' if is_cmd else 'function') + ' did not provide any output information' + ANSI.clear + '\n')
-    sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] For debugging, inspect contents of scratch directory: ' + SCRATCH_DIR + ANSI.clear + '\n')
+    if SCRATCH_DIR:
+      sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] For debugging, inspect contents of scratch directory: ' + SCRATCH_DIR + ANSI.clear + '\n')
     sys.stderr.flush()
   except MRtrixError as exception:
     return_code = 1
@@ -455,18 +462,22 @@ class ProgressBar(object): #pylint: disable=unused-variable
            '  . ',
            ' .  ' ]
 
+  INTERVAL = 0.1
   WRAPON = '\033[?7h'
   WRAPOFF = '\033[?7l'
 
   def __init__(self, msg, target=0):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     global EXEC_NAME, VERBOSITY
+    if not (isinstance(msg, str) or callable(msg)):
+      raise TypeError('app.ProgressBar must be constructed using either a string or a function')
     self.counter = 0
     self.isatty = sys.stderr.isatty()
     self.iscomplete = False
     self.message = msg
     self.multiplier = 100.0/target if target else 0
     self.newline = '\n' if VERBOSITY > 1 else '' # If any more than default verbosity, may still get details printed in between progress updates
+    self.next_time = time.time() + ProgressBar.INTERVAL
     self.old_value = 0
     self.orig_verbosity = VERBOSITY
     self.value = 0
@@ -475,9 +486,9 @@ class ProgressBar(object): #pylint: disable=unused-variable
     self.wrapon = '' if self.newline else ProgressBar.WRAPON
     VERBOSITY = run.shared.verbosity = VERBOSITY - 1 if VERBOSITY else 0
     if self.isatty:
-      sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.wrapoff + self.newline)
+      sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapoff + self.newline)
     else:
-      sys.stderr.write(EXEC_NAME + ': ' + self.message + '... [' + self.newline)
+      sys.stderr.write(EXEC_NAME + ': ' + self._get_message() + '... [' + self.newline)
     sys.stderr.flush()
 
   def increment(self, msg=''):
@@ -489,6 +500,8 @@ class ProgressBar(object): #pylint: disable=unused-variable
       force_update = True
     if self.multiplier:
       new_value = int(round(self.counter * self.multiplier))
+    elif self.isatty:
+      new_value = self.counter
     else:
       new_value = int(round(math.log(self.counter, 2))) + 1
     if new_value != self.value:
@@ -496,7 +509,10 @@ class ProgressBar(object): #pylint: disable=unused-variable
       self.value = new_value
       force_update = True
     if force_update:
-      self._update()
+      current_time = time.time()
+      if current_time >= self.next_time:
+        self.next_time = current_time + ProgressBar.INTERVAL
+        self._update()
 
   def done(self):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
@@ -505,10 +521,10 @@ class ProgressBar(object): #pylint: disable=unused-variable
     if self.multiplier:
       self.value = 100
     if self.isatty:
-      sys.stderr.write('\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('100%' if self.multiplier else 'done') + ']' + ANSI.clear + ' ' + ANSI.console + self.message + ANSI.clear + ANSI.lineclear + '\n')
+      sys.stderr.write('\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('100%' if self.multiplier else 'done') + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + ANSI.clear + ANSI.lineclear + '\n')
     else:
       if self.newline:
-        sys.stderr.write(EXEC_NAME + ': ' + self.message + ' [' + ('=' * int(self.value/2)) + ']\n')
+        sys.stderr.write(EXEC_NAME + ': ' + self._get_message() + ' [' + ('=' * int(self.value/2)) + ']\n')
       else:
         sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)) + ']\n')
     sys.stderr.flush()
@@ -518,13 +534,16 @@ class ProgressBar(object): #pylint: disable=unused-variable
     global EXEC_NAME
     assert not self.iscomplete
     if self.isatty:
-      sys.stderr.write(self.wrapoff + '\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self.message + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
+      sys.stderr.write(self.wrapoff + '\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
     else:
       if self.newline:
-        sys.stderr.write(EXEC_NAME + ': ' + self.message + '... [' + ('=' * int(self.value/2)) + self.newline)
+        sys.stderr.write(EXEC_NAME + ': ' + self._get_message() + '... [' + ('=' * int(self.value/2)) + self.newline)
       else:
         sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)))
     sys.stderr.flush()
+
+  def _get_message(self):
+    return self.message() if callable(self.message) else self.message
 
 
 
@@ -537,10 +556,10 @@ class ProgressBar(object): #pylint: disable=unused-variable
 #   that are common for all scripts, providing a custom help page that is consistent with the
 #   MRtrix3 binaries, and defining functions for exporting the help page for the purpose of
 #   automated self-documentation.
+
 class Parser(argparse.ArgumentParser):
 
   # pylint: disable=protected-access
-
   def __init__(self, *args_in, **kwargs_in):
     global _DEFAULT_COPYRIGHT
     self._author = None
@@ -699,7 +718,7 @@ class Parser(argparse.ArgumentParser):
       trailing_ellipsis = ' ...'
     for arg in self._positionals._group_actions:
       if arg.metavar:
-        argument_list.append(arg.metavar)
+        argument_list.append(' '.join(arg.metavar))
       else:
         argument_list.append(arg.dest)
     return self.prog + ' ' + ' '.join(argument_list) + ' [ options ]' + trailing_ellipsis
@@ -708,8 +727,10 @@ class Parser(argparse.ArgumentParser):
     def bold(text):
       return ''.join( c + chr(0x08) + c for c in text)
 
-    def underline(text):
-      return ''.join( '_' + chr(0x08) + c for c in text)
+    def underline(text, ignore_whitespace = True):
+      if not ignore_whitespace:
+        return ''.join( '_' + chr(0x08) + c for c in text)
+      return ''.join( '_' + chr(0x08) + c if c != ' ' else c for c in text)
 
     wrapper_args = textwrap.TextWrapper(width=80, initial_indent='', subsequent_indent='                     ')
     wrapper_other = textwrap.TextWrapper(width=80, initial_indent='     ', subsequent_indent='     ')
@@ -736,10 +757,7 @@ class Parser(argparse.ArgumentParser):
       usage += ' ' + self._subparsers._group_actions[0].dest + ' ...'
     # Find compulsory input arguments
     for arg in self._positionals._group_actions:
-      if arg.metavar:
-        usage += ' ' + arg.metavar
-      else:
-        usage += ' ' + arg.dest
+      usage += ' ' + arg.dest
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact
@@ -751,7 +769,7 @@ class Parser(argparse.ArgumentParser):
     for arg in self._positionals._group_actions:
       line = '        '
       if arg.metavar:
-        name = arg.metavar
+        name = " ".join(arg.metavar)
       else:
         name = arg.dest
       line += name + ' '*(max(13-len(name), 1)) + arg.help
@@ -826,15 +844,15 @@ class Parser(argparse.ArgumentParser):
     text += '\n'
     text += bold('COPYRIGHT') + '\n'
     text += wrapper_other.fill(self._copyright) + '\n'
-    if self._citation_list:
+    text += '\n'
+    text += bold('REFERENCES') + '\n'
+    text += '\n'
+    for entry in self._citation_list:
+      if entry[0]:
+        text += wrapper_other.fill('* ' + entry[0] + ':') + '\n'
+      text += wrapper_other.fill(entry[1]) + '\n'
       text += '\n'
-      text += bold('REFERENCES') + '\n'
-      text += '\n'
-      for entry in self._citation_list:
-        if entry[0]:
-          text += wrapper_other.fill('* ' + entry[0] + ':') + '\n'
-        text += wrapper_other.fill(entry[1]) + '\n'
-        text += '\n'
+    text += wrapper_other.fill(_MRTRIX3_CORE_REFERENCE) + '\n\n'
     command = CONFIG.get('HelpCommand', 'less -X')
     if command:
       try:
@@ -948,14 +966,14 @@ class Parser(argparse.ArgumentParser):
       if self._is_option_group(group):
         text += '#### ' + group.title + '\n\n'
         text += print_group_options(group)
-    if self._citation_list:
-      text += '## References\n\n'
-      for ref in self._citation_list:
-        ref_text = ''
-        if ref[0]:
-          ref_text += ref[0] + ': '
-        ref_text += ref[1]
-        text += ref_text + '\n\n'
+    text += '## References\n\n'
+    for ref in self._citation_list:
+      ref_text = ''
+      if ref[0]:
+        ref_text += ref[0] + ': '
+      ref_text += ref[1]
+      text += ref_text + '\n\n'
+    text += _MRTRIX3_CORE_REFERENCE + '\n\n'
     text += '---\n\n'
     text += '**Author:** ' + self._author + '\n\n'
     text += '**Copyright:** ' + self._copyright + '\n\n'
@@ -990,7 +1008,7 @@ class Parser(argparse.ArgumentParser):
         name = arg.metavar
       else:
         name = arg.dest
-      text += '-  *' + name + '*: ' + arg.help.replace('|', '\\|') + '\n'
+      text += '-  *' + (' '.join(name) if isinstance(name, tuple) else name)  + '*: ' + arg.help.replace('|', '\\|') + '\n'
     text += '\n'
     if self._description:
       text += 'Description\n'
@@ -1034,18 +1052,16 @@ class Parser(argparse.ArgumentParser):
         text += group.title + '\n'
         text += '^'*len(group.title) + '\n'
         text += print_group_options(group)
-    if self._citation_list:
-      text += '\n'
-      text += 'References\n'
-      text += '^^^^^^^^^^\n\n'
-      for ref in self._citation_list:
-        ref_text = '* '
-        if ref[0]:
-          ref_text += ref[0] + ': '
-        ref_text += ref[1]
-        text += ref_text + '\n\n'
-    else:
-      text += '\n'
+    text += '\n'
+    text += 'References\n'
+    text += '^^^^^^^^^^\n\n'
+    for ref in self._citation_list:
+      ref_text = '* '
+      if ref[0]:
+        ref_text += ref[0] + ': '
+      ref_text += ref[1]
+      text += ref_text + '\n\n'
+    text += _MRTRIX3_CORE_REFERENCE + '\n\n'
     text += '--------------\n\n\n\n'
     text += '**Author:** ' + self._author + '\n\n'
     text += '**Copyright:** ' + self._copyright + '\n\n'

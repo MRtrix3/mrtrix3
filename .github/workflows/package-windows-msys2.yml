@@ -1,0 +1,40 @@
+name: package-windows-msys2
+
+on:
+  release:
+    types: [created]
+
+
+jobs:
+  package:
+
+    runs-on: windows-latest
+
+    env:
+      MSYSTEM: MINGW64
+      MSYSCON: defterm
+      CHERE_INVOKING: enabled_from_arguments
+      MSYS2_NOSTART: yes
+
+    steps:
+
+    - name: fetch and install MSYS2
+      run: bash -c 'curl -sL https://github.com/MRtrix3/MinGW/releases/download/1.0/msys2.tar.{0,1} | tar xf -'
+
+    - name: run qtbinpatcher
+      shell: cmd
+      run: msys64\msys2_shell.cmd -c "qtbinpatcher --qt-dir=$(dirname $(which qmake))"
+
+    - name: fetch PKGBUILD
+      shell: cmd
+      run: msys64\msys2_shell.cmd -c "git clone https://github.com/MRtrix3/MinGW.git && mv MinGW/* ."
+
+    - name: run makepkg
+      shell: cmd
+      run: msys64\msys2_shell.cmd -c "./run.sh ${GITHUB_REF#refs/*/} ${GITHUB_REPOSITORY%%/*}"
+
+    - name: Upload package to GitHub Release
+      uses: AButler/upload-release-assets@v2.0
+      with:
+        files: '*.tar.xz'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}

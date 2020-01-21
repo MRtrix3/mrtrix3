@@ -1,0 +1,193 @@
+name: checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, edited]
+    branches:
+      - master
+      - dev
+
+jobs:
+  linux-clang-build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      CFLAGS: -Werror
+      QT_SELECT: qt5
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install clang-8 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+
+    - name: configure
+      run: ./configure -assert || { cat configure.log; false; }
+
+    - name: build
+      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+
+    - name: unit tests
+      run: ./run_tests units || { cat testing_units.log; false; }
+
+    - name: binary tests
+      run: ./run_tests binaries || { cat testing_binaries.log; false; }
+
+
+
+
+
+
+  linux-gcc-build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      CXX: g++-9
+      CFLAGS: -Werror
+      QT_SELECT: qt5
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+
+    - name: configure
+      run: ./configure -nooptim || { cat configure.log; false; }
+
+    - name: build
+      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+
+
+
+
+
+
+  macos-build:
+
+    runs-on: macos-latest
+
+    env:
+      CFLAGS: -Werror
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install dependencies
+      run: |
+         brew update
+         brew install qt5 eigen pkg-config libtiff fftw libpng
+         brew link --force qt5
+
+    - name: configure
+      run: ./configure -assert || { cat configure.log; false; }
+
+    - name: build
+      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+
+    - name: unit tests
+      run: ./run_tests units || { cat testing_units.log; false; }
+
+    - name: binary tests
+      run: ./run_tests binaries || { cat testing_binaries.log; false; }
+
+    - name: check command documentation
+      run: ./docs/generate_user_docs.sh && git diff --exit-code docs/
+
+
+
+
+
+  windows-build:
+
+    runs-on: windows-latest
+
+    env:
+      CFLAGS: -Werror
+      MSYSTEM: MINGW64
+      MSYSCON: defterm
+      CHERE_INVOKING: enabled_from_arguments
+      MSYS2_NOSTART: yes
+
+    steps:
+
+    - uses: actions/checkout@v1
+
+    - name: fetch and install MSYS2
+      run: bash -c 'curl -sL https://github.com/MRtrix3/MinGW/releases/download/1.0/msys2.tar.{0,1} | tar xf -'
+
+    - name: run qtbinpatcher
+      shell: cmd
+      run: msys64\msys2_shell.cmd -c "qtbinpatcher --qt-dir=$(dirname $(which qmake))"
+
+    - name: configure
+      shell: cmd
+      run: msys64\msys2_shell.cmd -c "./configure -assert || { cat configure.log; false; }"
+
+    - name: build
+      shell: cmd
+      run: msys64\msys2_shell.cmd -c "./build -nowarnings -persistent -nopaginate || { cat build.log; false; }"
+
+    - name: unit tests
+      shell: cmd
+      run: msys64\msys2_shell.cmd -c "./run_tests units || { cat testing_units.log; false; }"
+
+    - name: binary tests
+      shell: cmd
+      run: msys64\msys2_shell.cmd -c "./run_tests binaries || { cat testing_binaries.log; false; }"
+
+
+
+
+  secondary-checks:
+
+    runs-on: ubuntu-latest
+
+    env:
+      QT_SELECT: qt5
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install pylint pylint3 python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme
+
+
+    - name: check syntax
+      run: ./check_syntax
+
+    - name: pylint (Python 2)
+      run: |
+         echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
+         PYTHON=python2 ./run_pylint || { cat pylint.log; false; }
+
+    - name: pylint (Python 3)
+      run: |
+         echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
+         PYTHON=python3 ./run_pylint || { cat pylint.log; false; }
+
+    - name: check building of documentation
+      run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
+
+    - name: install build dependencies
+      run: sudo apt-get install clang-8 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
+
+    - name: check configure with Python 2
+      run: python2 ./configure || { cat configure.log; false; }
+
+    - name: check build with Python 2
+      run: python2 ./build -dryrun || { cat build.log; false; }
+
+    - name: check configure with Python 3
+      run: python3 ./configure || { cat configure.log; false; }
+
+    - name: check build with Python 3
+      run: python3 ./build -dryrun || { cat build.log; false; }

@@ -22,7 +22,8 @@
 #include "thread.h"
 #include "dwi/directions/file.h"
 
-#define DEFAULT_PERMUTATIONS 1e8
+constexpr size_t default_permutations = 1e8;
+
 
 
 using namespace MR;
@@ -45,7 +46,7 @@ void usage ()
 
 
   OPTIONS
-    + Option ("permutations", "number of permutations to try.")
+    + Option ("permutations", "number of permutations to try (default: " + str(default_permutations) + ")")
     +   Argument ("num").type_integer (1)
 
     + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
@@ -153,7 +154,7 @@ void run ()
 {
   auto directions = DWI::Directions::load_cartesian (argument[0]);
 
-  size_t num_permutations = get_option_value ("permutations", DEFAULT_PERMUTATIONS);
+  size_t num_permutations = get_option_value<size_t> ("permutations", default_permutations);
 
   vector<int> signs;
   {
