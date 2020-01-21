@@ -769,7 +769,7 @@ def execute(): #pylint: disable=unused-variable
       json_path = prefix + '.json'
       temp_path = prefix + '_applytopup.nii'
       output_path = prefix + '_applytopup.mif'
-      run.command('dwiextract ' + dwi_path + import_dwi_pe_table_option + ' -pe ' + ','.join(str(value) for value in line) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
+      run.command('dwiextract ' + dwi_path + import_dwi_pe_table_option + ' -pe ' + ','.join(str(value) for value in line) + ' - | mrconvert - ' + input_path + ' -strides -1,+2,+3,+4 -json_export ' + json_path)
       run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
       app.cleanup(input_path)
       temp_path = fsl.find_image(temp_path)
