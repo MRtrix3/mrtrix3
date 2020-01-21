@@ -33,7 +33,8 @@ namespace MR
     {
       static const vector<std::string> exts { ".nii", ".nii.gz", ".img" };
       for (const auto& ext : exts) {
-        if (path.substr (path.size() - ext.size()) == ext)
+        if (path.size() >= ext.size() &&
+            path.substr (path.size() - ext.size()) == ext)
           return true;
       }
       return false;
@@ -43,4 +44,3 @@ namespace MR
 
   }
 }
-
