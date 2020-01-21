@@ -20,6 +20,7 @@ List of MRtrix3 commands
     commands/amp2response
     commands/amp2sh
     commands/connectome2tck
+    commands/connectomeedit
     commands/connectomestats
     commands/dcmedit
     commands/dcminfo
@@ -147,6 +148,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`amp2response`, "Estimate response function coefficients based on the DWI signal in single-fibre voxels"
     |cpp.png|, :ref:`amp2sh`, "Convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation"
     |cpp.png|, :ref:`connectome2tck`, "Extract streamlines from a tractogram based on their assignment to parcellated nodes"
+    |cpp.png|, :ref:`connectomeedit`, "Perform basic operations on a connectome"
     |cpp.png|, :ref:`connectomestats`, "Connectome group-wise statistics at the edge level using non-parametric permutation testing"
     |cpp.png|, :ref:`dcmedit`, "Edit DICOM file in-place"
     |cpp.png|, :ref:`dcminfo`, "Output DICOM fields in human-readable format"
