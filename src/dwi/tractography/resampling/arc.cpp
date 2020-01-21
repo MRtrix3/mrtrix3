@@ -28,12 +28,13 @@ namespace MR {
 
         bool Arc::operator() (const Streamline<>& in, Streamline<>& out) const
         {
-          assert (in.size());
-          assert (planes.size());
           out.clear();
+          if (!valid())
+            return false;
           out.index = in.index;
           out.weight = in.weight;
-
+          if (in.size() < 2)
+            return true;
           // Determine which points on the streamline correspond to the endpoints of the arc
           idx_start = idx_end = 0;
           size_t a (in.size()), b (in.size());
@@ -59,7 +60,7 @@ namespace MR {
           }
 
           if (!(idx_start && idx_end))
-            return false;
+            return true;
 
           const bool reverse = idx_start > idx_end;
           size_t i = idx_start;

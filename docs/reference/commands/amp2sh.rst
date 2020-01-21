@@ -25,7 +25,8 @@ The spherical harmonic decomposition is calculated by least-squares linear fitti
 
 The directions can be defined either as a DW gradient scheme (for example to compute the SH representation of the DW signal), a set of [az el] pairs as output by the dirgen command, or a set of [ x y z ] directions in Cartesian coordinates. The DW gradient scheme or direction set can be supplied within the input image header or using the -gradient or -directions option. Note that if a direction set and DW gradient scheme can be found, the direction set will be used by default.
 
-The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link: https://mrtrix3.readthedocs.io/en/3.0_RC3/concepts/spherical_harmonics.html
+The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0_RC4/concepts/spherical_harmonics.html
 
 Options
 -------
@@ -50,7 +51,8 @@ DW gradient table import options
 DW shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-shells b-values** specify one or more b-values to use during processing, as a comma-separated list of the desired approximate b-values (b-values are clustered to allow for small deviations). Note that some commands are incompatible with multiple b-values, and will report an error if more than one b-value is provided. WARNING: note that, even though the b=0 volumes are never referred to as shells in the literature, they still have to be explicitly included in the list of b-values as provided to the -shell option! Several algorithms which include the b=0 volumes in their computations may otherwise return an undesired result.
+-  **-shells b-values** specify one or more b-values to use during processing, as a comma-separated list of the desired approximate b-values (b-values are clustered to allow for small deviations). Note that some commands are incompatible with multiple b-values, and will report an error if more than one b-value is provided.  |br|
+   WARNING: note that, even though the b=0 volumes are never referred to as shells in the literature, they still have to be explicitly included in the list of b-values as provided to the -shell option! Several algorithms which include the b=0 volumes in their computations may otherwise return an undesired result.
 
 Stride options
 ^^^^^^^^^^^^^^
@@ -70,11 +72,16 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

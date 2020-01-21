@@ -1,7 +1,21 @@
-import collections, subprocess
-from mrtrix3 import MRtrixBaseError
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
 
-
+import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading
+from distutils.spawn import find_executable
+from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 
@@ -32,7 +46,6 @@ class Shared(object):
 
 
   def __init__(self):
-    import os, threading
     # If the main script has been executed in an SGE environment, don't allow
     #   sub-processes to themselves fork SGE jobs; but if the main script is
     #   itself not an SGE job ('JOB_ID' environment variable absent), then
@@ -83,7 +96,6 @@ class Shared(object):
   #   selected by default by the tempfile module, and in that case re-runs mkstemp()
   #   manually specifying an alternative temporary directory
   def make_temporary_file(self):
-    import os, tempfile
     try:
       return IOStream(*tempfile.mkstemp())
     except OSError:
@@ -100,7 +112,6 @@ class Shared(object):
   #   intended to be produced by this command; if it is, this will be the last
   #   thing that gets skipped by the -continue option
   def trigger_continue(self, entries):
-    import os
     assert self.get_continue()
     for entry in entries:
       # It's possible that the file might be defined in a '--option=XXX' style argument
@@ -135,7 +146,6 @@ class Shared(object):
 
   # Terminate any and all running processes, and delete any associated temporary files
   def terminate(self, signum): #pylint: disable=unused-variable
-    import os, signal, sys
     with self.lock:
       for process_list in self.process_lists:
         if process_list:
@@ -196,11 +206,7 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 
 def command(cmd, **kwargs): #pylint: disable=unused-variable
-
-  import itertools, os, shlex, string, sys
-  from distutils.spawn import find_executable
-  from mrtrix3 import ANSI, app, COMMAND_HISTORY_STRING, EXE_LIST
-
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   global shared #pylint: disable=invalid-name
 
   shell = kwargs.pop('shell', False)
@@ -306,7 +312,8 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     if mrconvert_keyval:
       if cmdstack[-1][0] != 'mrconvert':
         raise TypeError('Argument "mrconvert_keyval=" can only be used if the mrconvert command is being invoked')
-      cmdstack[-1].extend([ '-copy_properties', mrconvert_keyval.strip('"'), '-append_property', 'command_history', COMMAND_HISTORY_STRING ])
+      assert not (mrconvert_keyval[0] in [ '\'', '"' ] or mrconvert_keyval[-1] in [ '\'', '"' ])
+      cmdstack[-1].extend([ '-copy_properties', mrconvert_keyval, '-append_property', 'command_history', COMMAND_HISTORY_STRING ])
 
     for line in cmdstack:
       is_mrtrix_exe = line[0] in EXE_LIST
@@ -451,9 +458,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
 
 
 def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
-  import os, sys
-  from mrtrix3 import ANSI, app
-
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not fn_to_execute:
     raise TypeError('Invalid input to run.function()')
 
@@ -498,9 +503,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
 # When running on Windows, add the necessary '.exe' so that hopefully the correct
 #   command is found by subprocess
 def exe_name(item):
-  import os
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, BIN_PATH, utils
+  from mrtrix3 import app, utils #pylint: disable=import-outside-toplevel
   if not utils.is_windows():
     path = item
   elif item.endswith('.exe'):
@@ -527,19 +530,14 @@ def exe_name(item):
 #   (e.g. C:\Windows\system32\mrinfo.exe; On Windows, subprocess uses CreateProcess(),
 #   which checks system32\ before PATH)
 def version_match(item):
-  import os
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, BIN_PATH, EXE_LIST, MRtrixError
-
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not item in EXE_LIST:
     app.debug('Command ' + item + ' not found in MRtrix3 bin/ directory')
     return item
-
   exe_path_manual = os.path.join(BIN_PATH, exe_name(item))
   if os.path.isfile(exe_path_manual):
     app.debug('Version-matched executable for ' + item + ': ' + exe_path_manual)
     return exe_path_manual
-
   exe_path_sys = find_executable(exe_name(item))
   if exe_path_sys and os.path.isfile(exe_path_sys):
     app.debug('Using non-version-matched executable for ' + item + ': ' + exe_path_sys)
@@ -551,10 +549,7 @@ def version_match(item):
 # If the target executable is not a binary, but is actually a script, use the
 #   shebang at the start of the file to alter the subprocess call
 def _shebang(item):
-  import os
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, MRtrixError, utils
-
+  from mrtrix3 import app, utils #pylint: disable=import-outside-toplevel
   # If a complete path has been provided rather than just a file name, don't perform any additional file search
   if os.sep in item:
     path = item
@@ -580,19 +575,23 @@ def _shebang(item):
     if len(line) > 2 and line[0:2] == '#!':
       # Need to strip first in case there's a gap between the shebang symbol and the interpreter path
       shebang = line[2:].strip().split(' ')
-      if utils.is_windows():
-        # On Windows, /usr/bin/env can't be easily found, and any direct interpreter path will have a similar issue.
-        #   Instead, manually find the right interpreter to call using distutils
-        if os.path.basename(shebang[0]) == 'env':
-          new_shebang = [ os.path.abspath(find_executable(exe_name(shebang[1]))) ]
-          new_shebang.extend(shebang[2:])
-          shebang = new_shebang
-        else:
-          new_shebang = [ os.path.abspath(find_executable(exe_name(os.path.basename(shebang[0])))) ]
-          new_shebang.extend(shebang[1:])
-          shebang = new_shebang
-        if not shebang or not shebang[0]:
-          raise MRtrixError('malformed shebang in file \"' + item + '\": \"' + line + '\"')
+      # On Windows, /usr/bin/env can't be easily found, and any direct interpreter path will have a similar issue.
+      #   Instead, manually find the right interpreter to call using distutils
+      # Also if script is written in Python, try to execute it using the same interpreter as that currently running
+      if os.path.basename(shebang[0]) == 'env':
+        if len(shebang) < 2:
+          app.warn('Invalid shebang in script file \"' + item + '\" (missing interpreter after \"env\")')
+          return []
+        if shebang[1] == 'python':
+          if not sys.executable:
+            app.warn('Unable to self-identify Python interpreter; file \"' + item + '\" not guaranteed to execute on same version')
+            return []
+          shebang = [ sys.executable ] + shebang[2:]
+          app.debug('File \"' + item + '\": Using current Python interpreter')
+        elif utils.is_windows():
+          shebang = [ os.path.abspath(find_executable(exe_name(shebang[1]))) ] + shebang[2:]
+      elif utils.is_windows():
+        shebang = [ os.path.abspath(find_executable(exe_name(os.path.basename(shebang[0])))) ] + shebang[1:]
       app.debug('File \"' + item + '\": string \"' + line + '\": ' + str(shebang))
       return shebang
   app.debug('File \"' + item + '\": No shebang found')

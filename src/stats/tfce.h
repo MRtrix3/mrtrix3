@@ -19,7 +19,6 @@
 
 #include "thread_queue.h"
 #include "filter/connected_components.h"
-#include "math/stats/permutation.h"
 #include "math/stats/typedefs.h"
 
 #include "stats/enhance.h"
@@ -32,23 +31,25 @@ namespace MR
     {
 
 
+
       const App::OptionGroup Options (const default_type, const default_type, const default_type);
 
 
 
-
       using value_type = Math::Stats::value_type;
-      using vector_type = Math::Stats::vector_type;
+      using matrix_type = Math::Stats::matrix_type;
 
 
 
       class EnhancerBase : public Stats::EnhancerBase
       { MEMALIGN (EnhancerBase)
         public:
+          virtual ~EnhancerBase() { }
+        protected:
           // Alternative functor that also takes the threshold value;
           //   makes TFCE integration cleaner
-          virtual value_type operator() (const vector_type& /*input_statistics*/, const value_type /*threshold*/, vector_type& /*enhanced_statistics*/) const = 0;
-
+          virtual void operator() (in_column_type /*input_statistics*/, const value_type /*threshold*/, out_column_type /*enhanced_statistics*/) const = 0;
+          friend class Wrapper;
       };
 
 
@@ -69,11 +70,11 @@ namespace MR
             H = height;
           }
 
-          value_type operator() (const vector_type&, vector_type&) const override;
-
         private:
           std::shared_ptr<Stats::TFCE::EnhancerBase> enhancer;
           value_type dH, E, H;
+
+          void operator() (in_column_type, out_column_type) const override;
       };
 
 

@@ -1,8 +1,23 @@
+% Copyright (c) 2008-2019 the MRtrix3 contributors.
+%
+% This Source Code Form is subject to the terms of the Mozilla Public
+% License, v. 2.0. If a copy of the MPL was not distributed with this
+% file, You can obtain one at http://mozilla.org/MPL/2.0/.
+%
+% Covered Software is provided under this License on an "as is"
+% basis, without warranty of any kind, either expressed, implied, or
+% statutory, including, without limitation, warranties that the
+% Covered Software is free of defects, merchantable, fit for a
+% particular purpose or non-infringing.
+% See the Mozilla Public License v. 2.0 for more details.
+%
+% For more details, see http://www.mrtrix.org/.
+
 function write_mrtrix (image, filename)
 
 % function: write_mrtrix (image, filename)
 %
-% write the data contained in the structure 'image' in the MRtrix 
+% write the data contained in the structure 'image' in the MRtrix
 % format image 'filename' (i.e. files with the extension '.mif' or '.mih').
 %
 % 'image' is either a N-dimensional array (N <= 16), or a structure containing
@@ -27,7 +42,7 @@ end
 
 while prod(size(dim)) < 3
   dim(end+1) = 1;
-end 
+end
 
 fprintf (fid, '%d', dim(1));
 fprintf (fid, ',%d', dim(2:end));
@@ -35,7 +50,7 @@ fprintf (fid, ',%d', dim(2:end));
 fprintf (fid, '\nvox: ');
 if isstruct (image) && isfield (image, 'vox')
   fprintf (fid, '%.3f', image.vox(1));
-  fprintf (fid, ',%.3f', image.vox(2:end)); 
+  fprintf (fid, ',%.3f', image.vox(2:end));
 else
   fprintf(fid, '2');
   fprintf(fid, ',%d', 2*ones(1,size(dim,2)-1));
@@ -55,7 +70,7 @@ if isstruct (image) && isfield (image, 'datatype')
   elseif strcmp(byteorder, 'be')
     precision = datatype(1:end-2);
     byteorder = 'b';
-  else 
+  else
     if strcmp(datatype, 'bit')
       precision = 'bit1';
       byteorder = 'n';
@@ -66,15 +81,15 @@ if isstruct (image) && isfield (image, 'datatype')
         datatype(end+1:end+3) = 'le';
       else
         datatype(end+1:end+3) = 'be';
-      end 
+      end
     end
   end
 else
   if endian == 'L'
     datatype = 'float32le';
-  else 
+  else
     datatype = 'float32be';
-  end 
+  end
   precision = 'float32';
   byteorder = 'n';
 end
@@ -109,7 +124,7 @@ if isstruct (image)
   f(strcmp(f,'transform')) = [];
   f(strcmp(f,'dw_scheme')) = [];
   f(strcmp(f,'data')) = [];
-  
+
   % write out contents of the remainging fields:
   for n = 1:numel(f)
     val = getfield (image, f{n});
@@ -122,7 +137,7 @@ if isstruct (image)
     end
   end
 end
- 
+
 
 if strcmp(filename(end-3:end), '.mif')
   datafile = filename;
