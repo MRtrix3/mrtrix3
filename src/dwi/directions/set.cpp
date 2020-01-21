@@ -19,7 +19,7 @@
 #include <list>
 #include <set>
 
-#include "bitset.h"
+#include "misc/bitset.h"
 #include "math/rng.h"
 
 

@@ -41,7 +41,7 @@ const OptionGroup AssignmentOptions = OptionGroup ("Structural connectome stream
 
   + Option ("assignment_end_voxels", "use a simple voxel lookup value at each streamline endpoint")
 
-  + Option ("assignment_radial_search", "perform a radial search from each streamline endpoint to locate the nearest node.\n"
+  + Option ("assignment_radial_search", "perform a radial search from each streamline endpoint to locate the nearest node. "
                                         "Argument is the maximum radius in mm; if no node is found within this radius, the streamline endpoint is not assigned to any node. "
                                         "Default search distance is " + str(TCK2NODES_RADIAL_DEFAULT_DIST, 2) + "mm.")
     + Argument ("radius").type_float (0.0)

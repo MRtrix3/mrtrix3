@@ -100,6 +100,10 @@ namespace MR
       void push_back (const std::string& s) {
         description.push_back (s);
       }
+      void push_back (const Exception& e) {
+        for (auto s : e.description)
+          push_back (s);
+      }
 
       static void (*display_func) (const Exception& E, int log_level);
 

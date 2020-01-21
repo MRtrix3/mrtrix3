@@ -1,3 +1,24 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import os
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('gif', parents=[base_parser])
   parser.set_author('Matteo Mancini (m.mancini@ucl.ac.uk)')
@@ -7,12 +28,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output)
 
 
 def check_gif_input(image_path):
-  from mrtrix3 import image, MRtrixError
   dim = image.Header(image_path).size()
   if len(dim) < 4:
     raise MRtrixError('Image \'' + image_path + '\' does not look like GIF segmentation (less than 4 spatial dimensions)')
@@ -21,15 +40,11 @@ def check_gif_input(image_path):
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  from mrtrix3 import app, path, run
   check_gif_input(path.from_user(app.ARGS.input, False))
   run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'))
 
 
 def execute(): #pylint: disable=unused-variable
-  import os
-  from mrtrix3 import app, path, run
-
   # Generate the images related to each tissue
   run.command('mrconvert input.mif -coord 3 1 CSF.mif')
   run.command('mrconvert input.mif -coord 3 2 cGM.mif')
@@ -50,4 +65,4 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command('mrmath 5tt.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrgrid 5tt.mif crop result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)

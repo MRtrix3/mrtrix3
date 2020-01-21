@@ -118,8 +118,9 @@ namespace MR
       if (bvals.cols() != bvecs.cols())
         throw Exception ("bvecs and bvals files must have same number of diffusion directions (file \"" + bvecs_path + "\" has " + str(bvecs.cols()) + ", file \"" + bvals_path + "\" has " + str(bvals.cols()) + ")");
 
-      if (bvals.cols() != header.size (3))
-        throw Exception ("bvecs and bvals files must have same number of diffusion directions as DW-image (gradients: " + str(bvecs.cols()) + ", image: " + str(header.size(3)) + ")");
+      const size_t num_volumes = header.ndim() < 4 ? 1 : header.size(3);
+      if (size_t(bvals.cols()) != num_volumes)
+        throw Exception ("bvecs and bvals files must have same number of diffusion directions as DW-image (gradients: " + str(bvecs.cols()) + ", image: " + str(num_volumes) + ")");
 
       // bvecs format actually assumes a LHS coordinate system even if image is
       // stored using RHS - x axis is flipped to make linear 3x3 part of
@@ -206,7 +207,7 @@ namespace MR
         const auto opt_fsl = get_options ("fslgrad");
         if (opt_fsl.size()) {
           if (opt_mrtrix.size())
-            throw Exception ("Please provide diffusion gradient table using either -grad or -fslgrad option (not both)");
+            throw Exception ("Diffusion gradient table can be provided using either -grad or -fslgrad option, but NOT both");
           grad = load_bvecs_bvals (header, opt_fsl[0][0], opt_fsl[0][1]);
         }
         if (!opt_mrtrix.size() && !opt_fsl.size())

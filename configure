@@ -1,5 +1,20 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # pylint: disable=invalid-name
 
 usage_string = '''
@@ -52,6 +67,9 @@ OPTIONS
 
     -openmp      enable OpenMP compiler flags.
 
+    -conda       prevent stripping anaconda/miniconda from the PATH (only use if
+                 you intend building with the conda toolchain - not recommended)
+
 
 ENVIRONMENT VARIABLES
 
@@ -76,17 +94,17 @@ ENVIRONMENT VARIABLES
         The arguments expected by the compiler. The default is:
             "-c CFLAGS SRC -o OBJECT"
 
-    LD
+    LINK
         The linker command to use. The default is the same as CXX.
 
-    LD_ARGS
+    LINK_ARGS
         The arguments expected by the linker. The default is:
-            "LDFLAGS OBJECTS -o EXECUTABLE"
+            "LINKFLAGS OBJECTS -o EXECUTABLE"
 
-    LDLIB_ARGS
+    LINKLIB_ARGS
         The arguments expected by the linker for generating a shared library.
         The default is:
-             "-shared LDLIB_FLAGS OBJECTS -o LIB"
+             "-shared LINKLIB_FLAGS OBJECTS -o LIB"
 
     ARCH
         the specific CPU architecture to compile for. This variable will be
@@ -98,10 +116,10 @@ ENVIRONMENT VARIABLES
     CFLAGS
         Any additional flags to the compiler.
 
-    LDFLAGS
+    LINKFLAGS
         Any additional flags to the linker.
 
-    LDLIB_FLAGS
+    LINKLIB_FLAGS
         Any additional flags to the linker to generate a shared library.
 
     EIGEN_CFLAGS
@@ -113,19 +131,19 @@ ENVIRONMENT VARIABLES
     ZLIB_CFLAGS
         Any flags required to compile with the zlib compression library.
 
-    ZLIB_LDFLAGS
+    ZLIB_LINKFLAGS
         Any flags required to link with the zlib compression library.
 
     TIFF_CFLAGS
         Any flags required to compile with the TIFF library.
 
-    TIFF_LDFLAGS
+    TIFF_LINKFLAGS
         Any flags required to link with the TIFF library.
 
     FFTW_CFLAGS
         Any flags required to compile with the FFTW library.
 
-    FFTW_LDFLAGS
+    FFTW_LINKFLAGS
         Any flags required to link with the FFTW library.
 
     QMAKE
@@ -166,6 +184,7 @@ verbose = False
 R_module = False
 openmp = False
 dev = False
+conda = False
 
 optimlevel = 3
 
@@ -197,6 +216,8 @@ for arg in sys.argv[1:]:
     nogui = True
   elif '-openmp'.startswith (arg):
     openmp = True
+  elif '-conda'.startswith (arg):
+    conda = True
   else:
     sys.stdout.write (usage_string)
     sys.exit (1)
@@ -257,17 +278,22 @@ report ("""
 MRtrix build type requested: """ + build_type + '\n\n')
 
 
-# remove any mention of anaconda from PATH:
-path = os.environ['PATH']
-if path.endswith ('\\'):
-  path = path[:-1]
-oldpath = path.split(':')
-cleanpath = [ entry for entry in oldpath if 'anaconda' not in entry.lower() ]
-if not oldpath == cleanpath:
-  report ('WARNING: Anaconda removed from PATH to avoid conflicts\n\n')
-path = os.pathsep.join(cleanpath)
+# if not using conda, remove any mention of conda from PATH:
+issue_conda_warning = False
+if conda:
+  path = os.environ['PATH']
+else:
+  path = []
+  for entry in os.environ['PATH'].split(os.pathsep):
+    if 'conda' in entry:
+      report ('WARNING: anaconda/miniconda detected in PATH ("' + entry + '") - removed to avoid conflicts\n')
+      issue_conda_warning = True
+    else:
+      path += [ entry ]
+  path = os.pathsep.join(path)
+  os.environ['PATH'] = path
 
-os.environ['PATH'] = path
+log ('PATH set to: ' + path)
 
 
 
@@ -279,15 +305,15 @@ cxx = [ 'clang++', 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-std=c++11', '-DMRTRIX_BUILD_TYPE="'+build_type+'"' ]
 
-ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
+ld_args = 'OBJECTS LINKFLAGS -o EXECUTABLE'.split()
 ld_flags = []
 if system != 'darwin':
   ld_flags += [ '-Wl,--sort-common,--as-needed' ]
 
 if static:
-  ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ]
+  ld_flags += [ '-static', '-Wl,--whole-archive', '-lpthread', '-Wl,--no-whole-archive']
 
-ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
+ld_lib_args = 'OBJECTS LINKLIB_FLAGS -o LIB'.split()
 
 
 class TempFile(object):
@@ -506,7 +532,7 @@ def compile (source, compiler_flags, linker_flags): # pylint: disable=redefined-
 
       with DeleteAfter ('a.out') as out:
         execute (fillin (ld, {
-            'LDFLAGS': linker_flags,
+            'LINKFLAGS': linker_flags,
             'OBJECTS': objfile.name,
             'EXECUTABLE': out.name }), LinkError)
 
@@ -643,7 +669,6 @@ ld_lib_flags = []
 
 if system.startswith('mingw') or system.startswith('msys'):
   system = 'windows'
-report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
   cpp_flags += [ '-pthread', '-fPIC' ]
   lib_suffix = '.so'
@@ -682,6 +707,43 @@ elif system == 'darwin':
 
 
 
+
+# set CPP compiler:
+ld_cmdline = None
+if 'CXX' in os.environ.keys():
+  cxx_env = os.environ['CXX']
+  if not conda and 'conda' in cxx_env:
+    report ('WARNING: anaconda/miniconda compiler set by CXX environment variable - ignored to avoid conflicts\n')
+    issue_conda_warning = True
+  else:
+    cxx = shlex.split (cxx_env)
+if 'CXX_ARGS' in os.environ.keys():
+  cxx_args = shlex.split (os.environ['CXX_ARGS'])
+if 'LINK' in os.environ.keys():
+  ld_env = os.environ['LINK']
+  if not conda and 'conda' in ld_env:
+    report ('WARNING: anaconda/miniconda linker set by LINK environment variable - ignored to avoid conflicts\n')
+    issue_conda_warning = True
+  else:
+    ld_cmdline = shlex.split (ld_env)
+if 'LINK_ARGS' in os.environ.keys():
+  ld_args = shlex.split (os.environ['LINK_ARGS'])
+if 'LINKLIB_ARGS' in os.environ.keys():
+  ld_lib_args = shlex.split (os.environ['LINKLIB_ARGS'])
+
+
+
+
+if issue_conda_warning:
+  report ('\nNOTE: if you intend to build with anaconda/miniconda (not recommended), pass the -conda flag to ./configure\n\n')
+
+
+
+
+
+
+report ('Detecting OS: ' + system + '\n')
+
 if 'ARCH' in os.environ.keys():
   march = os.environ['ARCH']
   if march:
@@ -690,32 +752,15 @@ if 'ARCH' in os.environ.keys():
 
 
 
-
-# set CPP compiler:
-ld_cmdline = None
-if 'CXX' in os.environ.keys():
-  cxx = shlex.split (os.environ['CXX'])
-if 'CXX_ARGS' in os.environ.keys():
-  cxx_args = shlex.split (os.environ['CXX_ARGS'])
-if 'LD' in os.environ.keys():
-  ld_cmdline = shlex.split (os.environ['LD'])
-if 'LD_ARGS' in os.environ.keys():
-  ld_args = shlex.split (os.environ['LD_ARGS'])
-if 'LDLIB_ARGS' in os.environ.keys():
-  ld_lib_args = shlex.split (os.environ['LDLIB_ARGS'])
-
-
-
-
 # CPP flags:
 
 if 'CFLAGS' in os.environ.keys():
   cpp_flags += shlex.split (os.environ['CFLAGS'])
-if 'LDFLAGS' in os.environ.keys():
-  ld_flags += shlex.split (os.environ['LDFLAGS'])
+if 'LINKFLAGS' in os.environ.keys():
+  ld_flags += shlex.split (os.environ['LINKFLAGS'])
 ld_lib_flags += ld_flags
-if 'LDLIB_FLAGS' in os.environ.keys():
-  ld_lib_flags += shlex.split (os.environ['LDLIB_FLAGS'])
+if 'LINKLIB_FLAGS' in os.environ.keys():
+  ld_lib_flags += shlex.split (os.environ['LINKLIB_FLAGS'])
 
 for candidate in cxx:
   report ('Looking for compiler [' + candidate + ']: ')
@@ -781,13 +826,13 @@ if not noshared:
       with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
         try:
           execute (fillin (ld_lib, {
-              'LDLIB_FLAGS': ld_lib_flags,
+              'LINKLIB_FLAGS': ld_lib_flags,
               'OBJECTS': bogus_obj.name,
               'LIB': lib.name }), LinkError)
         except LinkError:
           error ('''linker not found!
 
-  MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LDLIB_FLAGS', '"-L/usr/local/lib"', 'LDLIB_ARGS', '"-shared LDLIB_FLAGS OBJECTS -o LIB"'))
+  MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LINKLIB_FLAGS', '"-L/usr/local/lib"', 'LINKLIB_ARGS', '"-shared LINKLIB_FLAGS OBJECTS -o LIB"'))
         except Exception as excp:
           error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
@@ -913,8 +958,30 @@ int main (int argc, char* argv[]) {
 }
 ''', 'EIGEN_CFLAGS', '"-isystem /usr/include/eigen3"')
 
+
 if not openmp:
   eigen_cflags += [ '-DEIGEN_DONT_PARALLELIZE' ]
+
+
+if compile_test ('Eigen3 Unsupported', cpp_flags + eigen_cflags, ld_flags, '''
+#include <iostream>
+#include <Eigen/Core>
+#include <unsupported/Eigen/SpecialFunctions>
+
+using array_type = Eigen::Array<double, 1, 1>;
+
+int main (int argc, char* argv[]) {
+  auto test = Eigen::betainc (array_type::Constant (10.0), array_type::Constant (0.5), array_type::Constant (1.0));
+  std::cout << "Present";
+  return (0);
+}
+''', on_failure='not found; custom functions to be used'):
+  cpp_flags += [ '-DMRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS' ]
+
+
+
+
+
 
 
 
@@ -925,7 +992,7 @@ if not openmp:
 # zlib:
 
 zlib_cflags = get_flags ([], 'ZLIB_CFLAGS', '--cflags zlib')
-zlib_ldflags = get_flags ([ '-lz' ], 'ZLIB_LDFLAGS', '--libs zlib')
+zlib_ldflags = get_flags ([ '-lz' ], 'ZLIB_LINKFLAGS', '--libs zlib')
 
 compile_check ('zlib compression library', 'zlib', cpp_flags + zlib_cflags, ld_flags + zlib_ldflags, '''
 #include <iostream>
@@ -935,7 +1002,7 @@ int main() {
   std::cout << zlibVersion();
   return (0);
 }
-''', 'ZLIB_CFLAGS', '"-isystem /usr/local/include"', 'ZLIB_LDFLAGS', '"-L/usr/local/lib -lz"')
+''', 'ZLIB_CFLAGS', '"-isystem /usr/local/include"', 'ZLIB_LINKFLAGS', '"-L/usr/local/lib -lz"')
 
 cpp_flags += zlib_cflags
 ld_flags += zlib_ldflags
@@ -968,7 +1035,7 @@ int main (int argc, char* argv[])
 # TIFF:
 
 tiff_cflags = get_flags ([], 'TIFF_CFLAGS', '--cflags libtiff-4')
-tiff_ldflags = get_flags ([ '-ltiff' ], 'TIFF_LDFLAGS', '--libs libtiff-4')
+tiff_ldflags = get_flags ([ '-ltiff' ], 'TIFF_LINKFLAGS', '--libs libtiff-4')
 
 if compile_test ('TIFF library', cpp_flags + tiff_cflags, ld_flags + tiff_ldflags, '''
 #include <iostream>
@@ -990,7 +1057,7 @@ int main() {
 # PNG:
 
 png_cflags = get_flags ([], 'PNG_CFLAGS', '--cflags libpng')
-png_ldflags = get_flags ([ '-lpng' ], 'PNG_LDFLAGS', '--libs libpng')
+png_ldflags = get_flags ([ '-lpng' ], 'PNG_LINKFLAGS', '--libs libpng')
 
 if compile_test ('PNG library', cpp_flags + png_cflags, ld_flags + png_ldflags, '''
 #include <iostream>
@@ -1014,7 +1081,7 @@ int main() {
 
 
 fftw_cflags = get_flags ([], 'FFTW_CFLAGS', '--cflags fftw3')
-fftw_ldflags = get_flags ([ '-lfftw3' ], 'FFTW_LDFLAGS', '--libs fftw3')
+fftw_ldflags = get_flags ([ '-lfftw3' ], 'FFTW_LINKFLAGS', '--libs fftw3')
 
 if compile_test ('FFTW library', cpp_flags + fftw_cflags, ld_flags + fftw_ldflags, '''
 #include <iostream>
@@ -1292,7 +1359,7 @@ int main() { Foo f; }
 if R_module:
 
   R_cflags = get_flags (default=[ '-isystem /usr/include/R' ], env='R_CFLAGS', pkg_config_flags='--cflags libR')
-  R_ldflags = get_flags (default=[ '-L/usr/lib/R/lib', '-lR' ], env='R_LDFLAGS', pkg_config_flags='--libs libR')
+  R_ldflags = get_flags (default=[ '-L/usr/lib/R/lib', '-lR' ], env='R_LINKFLAGS', pkg_config_flags='--libs libR')
 
   compile_check ('R library', 'R', cpp_flags + R_cflags, ld_flags + R_ldflags, '''
   #include <R.h>
@@ -1303,7 +1370,7 @@ if R_module:
     std::cout << R_MAJOR << "." << R_MINOR << " (r" << R_SVN_REVISION << ")\\n";
     return 0;
   }
-  ''', 'R_CFLAGS', '"-isystem /usr/local/include/R"', 'R_LDFLAGS', '"-L/usr/local/R/lib -lR"')
+  ''', 'R_CFLAGS', '"-isystem /usr/local/include/R"', 'R_LINKFLAGS', '"-L/usr/local/R/lib -lR"')
 
   cpp_flags += R_cflags + [ '-DMRTRIX_AS_R_LIBRARY' ]
   ld_lib_flags += R_ldflags

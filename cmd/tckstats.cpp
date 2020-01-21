@@ -121,7 +121,7 @@ void run ()
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);
 
-    step_size = get_step_size (properties);
+    step_size = properties.get_stepsize();
     if ((!std::isfinite (step_size) || !step_size) && get_options ("histogram").size()) {
       WARN ("Do not have streamline step size with which to bin histogram; histogram will be generated using 1mm bin widths");
     }

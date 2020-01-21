@@ -357,7 +357,7 @@ void run ()
       constraints.block (amp_transform.rows(), 0, deriv_transform.rows(), deriv_transform.cols()) = deriv_transform;
 
       // Initialise the problem solver
-      auto problem = Math::ICLS::Problem<default_type> (shared.M, constraints, 1e-10, 1e-10, 0, 0.0, true);
+      auto problem = Math::ICLS::Problem<default_type> (shared.M, constraints, Eigen::VectorXd(), 0, 1e-10, 1e-10, 0, 0.0, true);
       auto solver  = Math::ICLS::Solver <default_type> (problem);
 
       // Estimate the solution

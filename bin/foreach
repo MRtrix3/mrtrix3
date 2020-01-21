@@ -1,13 +1,32 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+
+import os, re, sys, threading
+
 
 
 # Since we're going to capture everything after the colon character and "hide" it from argparse,
 #   we need to store the contents from there in a global so as for it to be accessible from execute()
 CMDSPLIT = [ ]
 
+
+
 def usage(cmdline): #pylint: disable=unused-variable
-  import sys
   global CMDSPLIT
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   cmdline.set_synopsis('Perform some arbitrary processing step for each of a set of inputs')
@@ -64,7 +83,6 @@ def usage(cmdline): #pylint: disable=unused-variable
 # These need to be globals in order to be accessible from execute_parallel()
 class Shared(object):
   def __init__(self):
-    import threading
     self._job_index = 0
     self.lock = threading.Lock()
     self.stop = False
@@ -86,8 +104,8 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 
 
 def execute(): #pylint: disable=unused-variable
-  import os, re, sys, threading
-  from mrtrix3 import ANSI, app, MRtrixError, run #pylint: disable=no-name-in-module
+  from mrtrix3 import ANSI, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, run #pylint: disable=no-name-in-module, import-outside-toplevel
   global CMDSPLIT
 
   inputs = app.ARGS.inputs
@@ -143,7 +161,7 @@ def execute(): #pylint: disable=unused-variable
     def __init__(self, input_text):
       self.input_text = input_text
       self.sub_in = input_text
-      self.sub_name = os.path.basename(input_text)
+      self.sub_name = os.path.basename(input_text.rstrip('/'))
       self.sub_pre = os.path.splitext(self.sub_name.rstrip('.gz'))[0]
       if common_suffix:
         self.sub_uni = input_text[len(common_prefix):-len(common_suffix)]
