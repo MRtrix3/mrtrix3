@@ -21,9 +21,11 @@ echo "Checking syntax and memory alignment for Eigen 3.3 compatibility..." > $LO
 echo "" >> $LOG
 
 grep=grep
-if [[ "$OSTYPE" == darwin* ]]; then
+v=`grep --version`
+if [[ "$OSTYPE" == darwin* ]] && [[ $v == *"BSD"* ]]; then
   if ! hash ggrep 2>/dev/null; then
-    echo 'Note that this script requires gnu-grep which you can install for instance via "brew install grep"'
+    echo 'Aborting, this script requires gnu-grep which you can install for instance via "brew install grep"'
+    exit 1
   else
     grep=ggrep
   fi
@@ -62,7 +64,6 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | $grep -v '_m
 # remove quoted strings:
   cat .check_syntax2.tmp | perl -pe 's/(")(\\"|.)*?"//g' > .check_syntax.tmp
 
-
 # detect classes not declared MEMALIGN or NOMEMALIGN:
   res=$(
     cat .check_syntax.tmp | \
@@ -86,6 +87,7 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | $grep -v '_m
 # match for the parts we're interested in and output just the bits that match:
     $grep -Po '(?<!::)std::vector\b'
   )
+
 
 # detect any instances of std::make_shared:
   res="$res"$(
