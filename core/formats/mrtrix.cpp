@@ -42,7 +42,7 @@ namespace MR
       if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif"))
         return std::unique_ptr<ImageIO::Base>();
 
-      File::KeyValue kv (H.name(), "mrtrix image");
+      File::KeyValue::Reader kv (H.name(), "mrtrix image");
 
       read_mrtrix_header (H, kv);
 

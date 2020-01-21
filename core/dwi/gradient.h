@@ -17,17 +17,11 @@
 #ifndef __dwi_gradient_h__
 #define __dwi_gradient_h__
 
-// These lines are to silence deprecation warnings with Eigen & GCC v5
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#include <Eigen/SVD>
-#pragma GCC diagnostic pop
-
-
 #include "app.h"
 #include "file/path.h"
 #include "file/config.h"
 #include "header.h"
+#include "math/condition_number.h"
 #include "math/sphere.h"
 #include "math/SH.h"
 #include "dwi/shells.h"
@@ -51,6 +45,8 @@ namespace MR
       {
         if (!grad.rows())
           throw Exception ("no valid diffusion gradient table found");
+        if (grad.cols() < 4)
+          throw Exception ("unexpected diffusion gradient table matrix dimensions");
 
         if (header.ndim() == 4) {
           if (header.size (3) != (int) grad.rows())
@@ -112,8 +108,7 @@ namespace MR
       else // Cartesian to spherical:
         g = Math::Sphere::cartesian2spherical (dirs).leftCols(2);
 
-      auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (Math::SH::init_transform (g, lmax)).singularValues();
-      return v[0] / v[v.size()-1];
+      return Math::condition_number (Math::SH::init_transform (g, lmax));
     }
 
 
@@ -318,8 +313,7 @@ namespace MR
         Eigen::MatrixXd mapping;
         do {
           mapping = Math::SH::init_transform (directions, lmax);
-          auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (mapping).singularValues();
-          auto cond = v[0] / v[v.size()-1];
+          const default_type cond = Math::condition_number (mapping);
           if (cond < 10.0)
             break;
           WARN ("directions are poorly distributed for lmax = " + str(lmax) + " (condition number = " + str (cond) + ")");

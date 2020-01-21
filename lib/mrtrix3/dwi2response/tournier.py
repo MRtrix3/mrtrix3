@@ -27,8 +27,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input', help='The input DWI')
   parser.add_argument('output', help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')
-  options.add_argument('-iter_voxels', type=int, default=3000, help='Number of single-fibre voxels to select when preparing for the next iteration')
-  options.add_argument('-sf_voxels', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')
+  options.add_argument('-number', type=int, default=300, help='Number of single-fibre voxels to use when calculating response function')
+  options.add_argument('-iter_voxels', type=int, default=0, help='Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)')
   options.add_argument('-dilate', type=int, default=1, help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
   options.add_argument('-max_iters', type=int, default=10, help='Maximum number of iterations')
 
@@ -58,6 +58,12 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError('Number of iterations must be at least 2')
 
   progress = app.ProgressBar('Optimising')
+
+  iter_voxels = app.ARGS.iter_voxels
+  if iter_voxels == 0:
+    iter_voxels = 10*app.ARGS.number
+  elif iter_voxels < app.ARGS.number:
+    raise MRtrixError ('Number of selected voxels (-iter_voxels) must be greater than number of voxels desired (-number)')
 
   iteration = 0
   while iteration < app.ARGS.max_iters:
@@ -98,7 +104,7 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(prefix + 'second_peaks.mif')
     voxel_count = int(image.statistic(prefix + 'CF.mif', 'count'))
     # Select the top-ranked voxels
-    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(min([app.ARGS.sf_voxels, voxel_count])) + ' ' + prefix + 'SF.mif')
+    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(min([app.ARGS.number, voxel_count])) + ' ' + prefix + 'SF.mif')
     # Generate a new response function based on this selection
     run.command('amp2response dwi.mif ' + prefix + 'SF.mif ' + prefix + 'first_dir.mif ' + prefix + 'RF.txt' + iter_lmax_option)
     app.cleanup(prefix + 'first_dir.mif')
@@ -120,7 +126,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Select a greater number of top single-fibre voxels, and dilate (within bounds of initial mask);
     #   these are the voxels that will be re-tested in the next iteration
-    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(min([app.ARGS.iter_voxels, voxel_count])) + ' - | maskfilter - dilate - -npass ' + str(app.ARGS.dilate) + ' | mrcalc mask.mif - -mult ' + prefix + 'SF_dilated.mif')
+    run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(min([iter_voxels, voxel_count])) + ' - | maskfilter - dilate - -npass ' + str(app.ARGS.dilate) + ' | mrcalc mask.mif - -mult ' + prefix + 'SF_dilated.mif')
     app.cleanup(prefix + 'CF.mif')
 
     iteration += 1
@@ -137,4 +143,4 @@ def execute(): #pylint: disable=unused-variable
 
   run.function(shutil.copyfile, 'response.txt', path.from_user(app.ARGS.output, False))
   if app.ARGS.voxels:
-    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
+    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)

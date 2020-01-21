@@ -125,7 +125,7 @@ void run ()
 
   const std::unique_ptr<Resampling::Base> resampler (Resampling::get_resampler());
 
-  const float old_step_size = get_step_size (properties);
+  const float old_step_size = properties.get_stepsize();
   if (!std::isfinite (old_step_size)) {
     INFO ("Do not have step size information from input track file");
   }
@@ -154,4 +154,3 @@ void run ()
                      receiver);
 
 }
-

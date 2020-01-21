@@ -83,7 +83,6 @@ namespace MR
             QLineEdit *prefix_textbox;
             QPushButton *folder_button;
             int axis;
-            QDir* directory;
 
             bool is_playing;
 

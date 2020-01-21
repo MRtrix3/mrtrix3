@@ -46,7 +46,7 @@ namespace MR
       if (!Path::has_suffix (H.name(), ".msh") && !Path::has_suffix (H.name(), ".msf"))
         return std::unique_ptr<ImageIO::Base>();
 
-      File::KeyValue kv (H.name(), "mrtrix sparse image");
+      File::KeyValue::Reader kv (H.name(), "mrtrix sparse image");
 
       read_mrtrix_header (H, kv);
 

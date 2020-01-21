@@ -194,8 +194,46 @@ what you think it is, or the import of phase encoding information from DICOM is
 awry; either warrants further investigation).
 
 
-Using ``eddy``'s slice-to-volume correction capability
-------------------------------------------------------
+Configuring FSL commands ``topup`` and ``eddy``
+-----------------------------------------------
+
+The two principal FSL commands with which the *MRtrix3* ``dwifslpreproc`` script
+interfaces - ``topup`` and ``eddy`` - themselves have a wide range of
+command-line options that may be utilised to alter their behaviour.
+``dwifslpreproc`` does not provide any command-line options to these commands
+over and above those absolutely necessary to perform the processing operations;
+as such, the default parameters / behaviour of these commands as configured in
+FSL will be utilised. As such, any non-default parameters or behaviour of these
+commands desired by the user (e.g. ``eddy`` outlier replacement) must be specified
+*explicitly*. This is achieved by using the ``dwifslpreproc`` command-line options
+``-topup_options`` and ``-eddy_options``, which accept as input a string that will
+then be propagated down to the ``topup`` or ``eddy`` command invocation
+respectively.
+
+For information on the command-line options available within these FSL commands,
+consult the internal help page of the command installed on your system, and/or the
+online FSL documentation:
+
+-  ``topup``: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide
+
+-  ``eddy``: https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide
+
+.. note::
+    Due to a quirk in the Python library ``argparse`` that is utilised by
+    *MRtrix3* for command-line parsing, in some instances, some contents of a
+    string provided at the command-line encased in double-quotes may get lost
+    during parsing. To mitigate this, we suggest that whatever text data are
+    provided to ``topup`` or ``eddy`` via the ``-topup_options`` or
+    ``-eddy_options`` command-line options contain an additional space at the
+    beginning or end of the string, like thus::
+
+        dwifslpreproc ... -eddy_options " --repol" ...
+
+
+
+
+Using ``eddy``'s slice-to-volume motion correction capability
+-------------------------------------------------------------
 
 As of September 2017, FSL's ``eddy`` tool has the capability of not only
 estimating and correcting motion *between* DWI volumes, but also motion

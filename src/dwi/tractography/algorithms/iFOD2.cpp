@@ -28,23 +28,17 @@ namespace MR
 
         using namespace App;
 
-        const OptionGroup iFOD2Option = OptionGroup ("Options specific to the iFOD2 tracking algorithm")
+        const OptionGroup iFOD2Options = OptionGroup ("Options specific to the iFOD2 tracking algorithm")
 
         + Option ("samples",
-                  "set the number of FOD samples to take per step (Default: " + str(TCKGEN_DEFAULT_IFOD2_NSAMPLES) + ").")
-          + Argument ("number").type_integer (2, 100)
-
-        + Option ("power", "raise the FOD to the power specified (default is 1/nsamples).")
-          + Argument ("value").type_float (0.0);
+                  "set the number of FOD samples to take per step (Default: " + str(Tracking::Defaults::ifod2_nsamples) + ").")
+          + Argument ("number").type_integer (2, 100);
 
 
         void load_iFOD2_options (Tractography::Properties& properties)
         {
           auto opt = get_options ("samples");
           if (opt.size()) properties["samples_per_step"] = str<unsigned int> (opt[0][0]);
-
-          opt = get_options ("power");
-          if (opt.size()) properties["fod_power"] = str<float> (opt[0][0]);
         }
 
       }

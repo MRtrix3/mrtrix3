@@ -17,7 +17,7 @@
 
 
 
-import re
+import itertools, re
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
 
 
@@ -83,7 +83,8 @@ def transpose(data): #pylint: disable=unused-variable
 #   (can be a different number of entries in each row)
 def load_numeric(filename, **kwargs):
   dtype = kwargs.pop('dtype', float)
-  delimiter = kwargs.pop('delimiter', ' ')
+  # By default support the same set of delimiters at load as the MRtrix3 C++ code
+  delimiter = kwargs.pop('delimiter', ' ,;\t')
   comments = kwargs.pop('comments', '#')
   encoding = kwargs.pop('encoding', 'latin1')
   errors = kwargs.pop('errors', 'ignore')
@@ -106,7 +107,10 @@ def load_numeric(filename, **kwargs):
         line = regex_comments.split(line, maxsplit=1)[0]
       line = line.strip()
       if line:
-        data.append([dtype(a) for a in line.split(delimiter) if a])
+        if len(delimiter) == 1:
+          data.append([dtype(a) for a in line.split(delimiter) if a])
+        else:
+          data.append([dtype(a) for a in [''.join(g) for k, g in itertools.groupby(line, lambda c : c in delimiter) if not k ]])
 
   if not data:
     return None
