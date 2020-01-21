@@ -91,8 +91,7 @@ void run ()
 
   MR::Connectome::matrix_type connectome = load_matrix (argument[0]);
   
-  const MR::Connectome::node_t num_nodes = connectome.rows();
-  MR::Connectome::check(connectome, num_nodes);
+  MR::Connectome::check(connectome);
  
   INFO("Applying \'" + str(operations[op]) + "\' transformation to the input connectome.");
   
