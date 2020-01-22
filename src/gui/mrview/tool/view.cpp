@@ -270,9 +270,24 @@ namespace MR
           connect (max_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
           hlayout->addWidget (max_entry);
 
+          // ortho view options
+          ortho_box = new QGroupBox ("Ortho view options");
+          main_box->addWidget (ortho_box);
+          VBoxLayout* vlayout = new VBoxLayout;
+          ortho_box->setLayout (vlayout);
+
+          hlayout = new HBoxLayout;
+          vlayout->addLayout (hlayout);
+
+          ortho_view_in_row = new QCheckBox ("display images in a row");
+          ortho_view_in_row->setCheckable (true);
+          ortho_view_in_row->setChecked (MR::File::Config::get_int ("MRViewOrthoAsRow", 0));
+          hlayout->addWidget (ortho_view_in_row);
+
+          // volume render options
           transparency_box = new QGroupBox ("Transparency");
           main_box->addWidget (transparency_box);
-          VBoxLayout* vlayout = new VBoxLayout;
+          vlayout = new VBoxLayout;
           transparency_box->setLayout (vlayout);
 
           hlayout = new HBoxLayout;
@@ -675,6 +690,7 @@ namespace MR
           threshold_box->setVisible (mode->features & Mode::ShaderTransparency);
           clip_box->setVisible (mode->features & Mode::ShaderClipping);
           lightbox_box->setVisible (false);
+          ortho_box->setVisible (false);
           mode->request_update_mode_gui(*this);
         }
 
@@ -1049,7 +1065,13 @@ namespace MR
           light_box_volume_inc->setVisible (can_show_vol);
         }
 
-
+        // Called in respose to a request_update_mode_gui(ModeGuiVisitor& visitor) call
+        void View::update_ortho_mode_gui(const Mode::Ortho & mode)
+        {
+          ortho_box->setVisible(true);
+          TRACE;
+          // connect(ortho_view_in_row, SIGNAL (toggled(bool)), &mode, SLOT (set_show_as_row_slot(bool))); // TODO does not compile
+        }
 
 
         // Called in respose to a request_update_mode_gui(ModeGuiVisitor& visitor) call

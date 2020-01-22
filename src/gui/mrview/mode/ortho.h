@@ -45,11 +45,17 @@ namespace MR
             virtual void slice_move_event (float x);
             virtual void panthrough_event ();
             virtual const Projection* get_current_projection () const;
+            virtual void request_update_mode_gui (ModeGuiVisitor& visitor) const {
+                 visitor.update_ortho_mode_gui(*this); }
+            virtual void set_show_as_row (bool state);
+
+          public slots:
+            void set_show_as_row_slot (bool state) { set_show_as_row (state); }
 
           protected:
             vector<Projection> projections;
             int current_plane;
-            const bool show_as_row;
+            bool show_as_row;
             GL::VertexBuffer frame_VB;
             GL::VertexArrayObject frame_VAO;
             GL::Shader::Program frame_program;

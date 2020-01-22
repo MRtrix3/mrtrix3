@@ -57,6 +57,7 @@ namespace MR
             bool get_clipintersectionmodestate () const;
 
             void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
+            void update_ortho_mode_gui(const Mode::Ortho &mode) override;
 
           protected:
             virtual void showEvent (QShowEvent* event) override;
@@ -112,9 +113,9 @@ namespace MR
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
             AdjustButton *lower_threshold, *upper_threshold;
-            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box, *clip_highlight_check_box, *clip_intersectionmode_check_box;
+            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box, *clip_highlight_check_box, *clip_intersectionmode_check_box, *ortho_view_in_row;
             QComboBox *plane_combobox;
-            QGroupBox *volume_box, *transparency_box, *threshold_box, *clip_box, *lightbox_box;
+            QGroupBox *volume_box, *transparency_box, *threshold_box, *clip_box, *lightbox_box, *ortho_box;
             QSlider *opacity;
             QMenu *clip_planes_option_menu, *clip_planes_reset_submenu;
             QAction *clip_planes_new_axial_action, *clip_planes_new_sagittal_action, *clip_planes_new_coronal_action;
