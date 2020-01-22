@@ -20,8 +20,6 @@
 #include "file/json_utils.h"
 #include "file/nifti_utils.h"
 
-#include "formats/nifti_utils.h"
-
 #include "axes.h"
 #include "exception.h"
 #include "header.h"
@@ -290,7 +288,7 @@ namespace MR
         H_adj.name() = image_path;
         if (image_path.size())
           H_adj.keyval()["IntendedFor"] = image_path;
-        if (!Formats::is_nifti (image_path)) {
+        if (!Path::has_suffix (image_path, { ".nii", ".nii.gz", ".img" })) {
           write (H_adj.keyval(), json);
           return;
         }
@@ -335,4 +333,3 @@ namespace MR
     }
   }
 }
-
