@@ -457,6 +457,11 @@ namespace MR
           init_lightbox_gui (main_box);
 
           main_box->addStretch ();
+
+          transparency_box->setVisible (false);
+          threshold_box->setVisible (false);
+          clip_box->setVisible (false);
+          lightbox_box->setVisible (false);
         }
 
 
