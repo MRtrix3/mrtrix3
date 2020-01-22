@@ -184,6 +184,8 @@ def save_numeric(filename, data, **kwargs):
       header = dict((key, str(value)) for key, value in header.items())
     else:
       raise TypeError('Unrecognised input to matrix.save_numeric() using "header=" option')
+  else:
+    header = { }
 
   if add_to_command_history:
     if 'command_history' in header:
@@ -200,6 +202,8 @@ def save_numeric(filename, data, **kwargs):
       footer = dict((key, str(value)) for key, value in footer.items())
     else:
       raise TypeError('Unrecognised input to matrix.save_numeric() using "footer=" option')
+  else:
+    footer = { }
 
   with open(filename, 'wb') as outfile:
     for key, value in sorted(header.items()):
