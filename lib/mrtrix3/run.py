@@ -16,6 +16,7 @@
 import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading
 from distutils.spawn import find_executable
 from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
+from mrtrix3.utils import STRING_TYPES
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 
@@ -232,11 +233,11 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     cmdstring = ''
     cmdsplit = []
     for entry in cmd:
-      if isinstance(entry, str):
+      if isinstance(entry, STRING_TYPES):
         cmdstring += (' ' if cmdstring else '') + entry
         cmdsplit.append(entry)
       elif isinstance(entry, list):
-        assert all([ isinstance(item, str) for item in entry ])
+        assert all([ isinstance(item, STRING_TYPES) for item in entry ])
         if len(entry) > 1:
           common_prefix = os.path.commonprefix(entry)
           common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
@@ -465,7 +466,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   show = kwargs.pop('show', True)
 
   fnstring = fn_to_execute.__module__ + '.' + fn_to_execute.__name__ + \
-             '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + \
+             '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, STRING_TYPES) else str(a) for a in args]) + \
              (', ' if (args and kwargs) else '') + \
              ', '.join([key+'='+str(value) for key, value in kwargs.items()]) + ')'
 

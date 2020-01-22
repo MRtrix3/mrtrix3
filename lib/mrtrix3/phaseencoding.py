@@ -18,6 +18,7 @@
 
 
 from mrtrix3 import MRtrixError
+from mrtrix3.utils import STRING_TYPES
 
 
 
@@ -73,7 +74,7 @@ def direction(string): #pylint: disable=unused-variable
 def get_scheme(arg): #pylint: disable=unused-variable
   from mrtrix3 import app, image #pylint: disable=import-outside-toplevel
   if not isinstance(arg, image.Header):
-    if not isinstance(arg, str):
+    if not isinstance(arg, STRING_TYPES):
       raise MRtrixError('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
     arg = image.Header(arg)
   if 'pe_scheme' in arg.keyval():

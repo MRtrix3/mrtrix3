@@ -17,7 +17,18 @@
 
 
 
-import platform, re
+import platform, re, sys
+
+
+
+
+# For identifying function input arguments as strings on
+#   both Python 2 and 3
+if sys.version_info[0] == 2:
+  STRING_TYPES = (basestring,) #pylint: disable=undefined-variable
+else:
+  STRING_TYPES = (str,)
+
 
 
 
@@ -38,7 +49,7 @@ class RunList(object): #pylint: disable=unused-variable
       self.counter = 0
       self.valid = True
     elif isinstance(value, list):
-      assert all(isinstance(entry, str) for entry in value)
+      assert all(isinstance(entry, STRING_TYPES) for entry in value)
       self.progress = app.ProgressBar(message, len(value))
       for entry in value:
         run.command(entry)
