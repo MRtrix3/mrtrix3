@@ -40,22 +40,31 @@ namespace MR
           gl::DepthMask (gl::FALSE_);
           gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
-          GLint w = width()/2;
-          GLint h = height()/2;
+          const GLint w = show_as_row ? width()/3 : width()/2;
+          const GLint h = show_as_row ? height() : height()/2;
 
           // Depth test state may have been altered after drawing each plane
           // so need to guarantee depth test is off for subsequent plane.
           // Ideally, state should be restored by callee but this is safer
 
-          projections[0].set_viewport (window(), w, h, w, h);
+          if (show_as_row)
+            projections[0].set_viewport (window(), 0, 0, w, h);
+          else
+            projections[0].set_viewport (window(), w, h, w, h);
           draw_plane (0, slice_shader, projections[0]);
 
           gl::Disable (gl::DEPTH_TEST);
-          projections[1].set_viewport (window(), 0, h, w, h);
+          if (show_as_row)
+            projections[1].set_viewport (window(), w, 0, w, h);
+          else
+            projections[1].set_viewport (window(), 0, h, w, h);
           draw_plane (1, slice_shader, projections[1]);
 
           gl::Disable (gl::DEPTH_TEST);
-          projections[2].set_viewport (window(), 0, 0, w, h);
+          if (show_as_row)
+            projections[2].set_viewport (window(), 2*w, 0, w, h);
+          else
+            projections[2].set_viewport (window(), 0, 0, w, h);
           draw_plane (2, slice_shader, projections[2]);
 
           projection.set_viewport (window());
@@ -82,7 +91,14 @@ namespace MR
               0.0f, -1.0f,
               0.0f, 1.0f
             };
-            gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
+
+            GLfloat data_row [] = {
+              -1.0f/3.0f, -1.0f,
+              -1.0f/3.0f, 1.0f,
+              1.0f/3.0f, -1.0f,
+              1.0f/3.0f, 2.0f
+            };
+            gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), ( show_as_row ? data_row : data), gl::STATIC_DRAW);
           }
           else
             frame_VAO.bind();
@@ -126,16 +142,26 @@ namespace MR
 
         void Ortho::mouse_press_event ()
         {
-          if (window().mouse_position().x() < width()/2)
-            if (window().mouse_position().y() >= height()/2)
+          const int x = window().mouse_position().x();
+          const int y = window().mouse_position().y();
+
+          if (show_as_row) {
+            const GLint w = width()/3;
+            if (x < w)
+              current_plane = 0;
+            else if (x < 2*w)
               current_plane = 1;
             else
               current_plane = 2;
-          else
-            if (window().mouse_position().y() >= height()/2)
-              current_plane = 0;
+          }
+          else {
+            const GLint w = width()/2;
+            const GLint h = height()/2;
+            if (x < w)
+              current_plane = y < h ? 2 : 1;
             else
-              current_plane = -1;
+              current_plane = y < h ? -1 : 0;
+          }
         }
 
 

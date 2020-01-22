@@ -34,9 +34,10 @@ namespace MR
             Q_OBJECT
 
           public:
-              Ortho () : 
+              Ortho () :
                 projections (3, projection),
-                current_plane (0) { }
+                current_plane (0),
+                show_as_row (MR::File::Config::get_int ("MRViewOrthoAsRow", 0)) { }
 
             virtual void paint (Projection& projection);
 
@@ -48,6 +49,7 @@ namespace MR
           protected:
             vector<Projection> projections;
             int current_plane;
+            const bool show_as_row;
             GL::VertexBuffer frame_VB;
             GL::VertexArrayObject frame_VAO;
             GL::Shader::Program frame_program;
@@ -59,7 +61,6 @@ namespace MR
 }
 
 #endif
-
 
 
 
