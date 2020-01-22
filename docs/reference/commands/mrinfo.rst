@@ -84,6 +84,8 @@ DW gradient table export options
 
 -  **-shell_sizes** list the number of volumes in each shell
 
+-  **-shell_indices** list the image volumes attributed to each b-value shell
+
 Options for exporting phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
