@@ -188,7 +188,9 @@ namespace MR
           updateGL();
         }
 
-        void Ortho::set_show_as_row (bool state) {
+
+        void Ortho::set_show_as_row_slot (bool state)
+        {
           show_as_row = state;
           updateGL();
         }

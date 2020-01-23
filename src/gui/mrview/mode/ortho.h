@@ -47,10 +47,9 @@ namespace MR
             virtual const Projection* get_current_projection () const;
             virtual void request_update_mode_gui (ModeGuiVisitor& visitor) const {
                  visitor.update_ortho_mode_gui(*this); }
-            virtual void set_show_as_row (bool state);
 
           public slots:
-            void set_show_as_row_slot (bool state) { set_show_as_row (state); }
+            void set_show_as_row_slot (bool state);
 
           protected:
             vector<Projection> projections;
