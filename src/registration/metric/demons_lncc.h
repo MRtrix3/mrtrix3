@@ -579,7 +579,7 @@ namespace MR
             
             for (int i=0; i<nvols; i++) {
                 
-                default_type volume_weight = volume_weights[i];
+                default_type volume_weight = default_volume_weight; //volume_weights[i]; TODO: update for mc 
                 bool flag_combine_updates;
                 
                 if (i==0) {
