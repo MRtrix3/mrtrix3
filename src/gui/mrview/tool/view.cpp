@@ -21,6 +21,7 @@
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/volume.h"
 #include "gui/mrview/mode/lightbox_gui.h"
+#include "gui/mrview/mode/ortho.h"
 #include "gui/mrview/mode/lightbox.h"
 #include "gui/mrview/adjust_button.h"
 
@@ -270,6 +271,17 @@ namespace MR
           connect (max_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
           hlayout->addWidget (max_entry);
 
+
+          // ortho view options
+          ortho_view_in_row_check_box = new QCheckBox ("display images in a row");
+          ortho_view_in_row_check_box->setCheckable (true);
+          ortho_view_in_row_check_box->setChecked (false);
+          ortho_view_in_row_check_box->setToolTip (
+              "Display the 3 orthogonal views in a row, rather than a 2x2 montage.\n\n"
+              "To make this the default, set the \"MRViewOrthoAsRow\" option in your configuration file.");
+          main_box->addWidget (ortho_view_in_row_check_box);
+
+          // volume render options
           transparency_box = new QGroupBox ("Transparency");
           main_box->addWidget (transparency_box);
           VBoxLayout* vlayout = new VBoxLayout;
@@ -458,6 +470,7 @@ namespace MR
 
           main_box->addStretch ();
 
+          ortho_view_in_row_check_box->setVisible (false);
           transparency_box->setVisible (false);
           threshold_box->setVisible (false);
           clip_box->setVisible (false);
@@ -680,6 +693,7 @@ namespace MR
           threshold_box->setVisible (mode->features & Mode::ShaderTransparency);
           clip_box->setVisible (mode->features & Mode::ShaderClipping);
           lightbox_box->setVisible (false);
+          ortho_view_in_row_check_box->setVisible (false);
           mode->request_update_mode_gui(*this);
         }
 
@@ -1054,24 +1068,30 @@ namespace MR
           light_box_volume_inc->setVisible (can_show_vol);
         }
 
-
+        // Called in response to a request_update_mode_gui(ModeGuiVisitor& visitor) call
+        void View::update_ortho_mode_gui (const Mode::Ortho & mode)
+        {
+          ortho_view_in_row_check_box->setVisible (true);
+          ortho_view_in_row_check_box->setChecked (Mode::Ortho::show_as_row);
+          connect (ortho_view_in_row_check_box, SIGNAL (toggled(bool)), &mode, SLOT (set_show_as_row_slot(bool)));
+        }
 
 
         // Called in respose to a request_update_mode_gui(ModeGuiVisitor& visitor) call
-        void View::update_lightbox_mode_gui(const Mode::LightBox &mode)
+        void View::update_lightbox_mode_gui (const Mode::LightBox &mode)
         {
           lightbox_box->setVisible(true);
 
           connect(&mode, SIGNAL (slice_increment_reset()), this, SLOT (light_box_slice_inc_reset_slot()));
 
-          connect(light_box_rows, SIGNAL (valueChanged(int)), &mode, SLOT (nrows_slot(int)));
-          connect(light_box_cols, SIGNAL (valueChanged(int)), &mode, SLOT (ncolumns_slot(int)));
-          connect(light_box_slice_inc, SIGNAL (valueChanged(float)), &mode, SLOT (slice_inc_slot(float)));
-          connect(light_box_volume_inc, SIGNAL (valueChanged(int)), &mode, SLOT (volume_inc_slot(int)));
-          connect(light_box_show_grid, SIGNAL (toggled(bool)), &mode, SLOT (show_grid_slot(bool)));
-          connect(light_box_show_4d, SIGNAL (toggled(bool)), &mode, SLOT (show_volumes_slot(bool)));
-          connect(light_box_show_4d, SIGNAL (toggled(bool)), this, SLOT (light_box_toggle_volumes_slot(bool)));
-          connect(&window(), SIGNAL (volumeChanged()), &mode, SLOT (image_volume_changed_slot()));
+          connect (light_box_rows, SIGNAL (valueChanged(int)), &mode, SLOT (nrows_slot(int)));
+          connect (light_box_cols, SIGNAL (valueChanged(int)), &mode, SLOT (ncolumns_slot(int)));
+          connect (light_box_slice_inc, SIGNAL (valueChanged(float)), &mode, SLOT (slice_inc_slot(float)));
+          connect (light_box_volume_inc, SIGNAL (valueChanged(int)), &mode, SLOT (volume_inc_slot(int)));
+          connect (light_box_show_grid, SIGNAL (toggled(bool)), &mode, SLOT (show_grid_slot(bool)));
+          connect (light_box_show_4d, SIGNAL (toggled(bool)), &mode, SLOT (show_volumes_slot(bool)));
+          connect (light_box_show_4d, SIGNAL (toggled(bool)), this, SLOT (light_box_toggle_volumes_slot(bool)));
+          connect (&window(), SIGNAL (volumeChanged()), &mode, SLOT (image_volume_changed_slot()));
 
           reset_light_box_gui_controls();
         }
