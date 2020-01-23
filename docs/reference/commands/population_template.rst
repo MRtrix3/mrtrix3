@@ -15,7 +15,8 @@ Usage
 
     population_template input_dir template [ options ]
 
--  *input_dir template*: Pair of an input directory containing all images used to build the template and the output template image. For multi-contrast registration, provide multiple pairs. Example: wm_dir template_wm.mif gm_dir template_gm.mif
+-  *input_dir*: Input directory containing all images used to build the template
+-  *template*: Corresponding output template image. For multi-contrast registration, provide multiple paired input_dir and template arguments. Example: WM_dir WM_template.mif GM_dir GM_template.mif
 
 Description
 -----------
