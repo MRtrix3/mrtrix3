@@ -357,6 +357,13 @@ List of MRtrix3 configuration file options
 
      The factor by which the ODF overlay is scaled.
 
+.. option:: MRViewOrthoAsRow
+
+    *default: false*
+
+     Display the 3 orthogonal views of the Ortho mode in a row,
+     rather than as a 2x2 montage
+
 .. option:: MRViewRoiAlpha
 
     *default: 0.5*
