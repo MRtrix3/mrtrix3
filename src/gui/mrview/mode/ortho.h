@@ -37,7 +37,7 @@ namespace MR
               Ortho () :
                 projections (3, projection),
                 current_plane (0),
-                show_as_row (MR::File::Config::get_int ("MRViewOrthoAsRow", 0)) { }
+                show_as_row (MR::File::Config::get_bool ("MRViewOrthoAsRow", false)) { }
 
             virtual void paint (Projection& projection);
 

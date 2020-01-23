@@ -280,7 +280,7 @@ namespace MR
           // ortho view options
           ortho_view_in_row_check_box = new QCheckBox ("display images in a row");
           ortho_view_in_row_check_box->setCheckable (true);
-          ortho_view_in_row_check_box->setChecked (MR::File::Config::get_int ("MRViewOrthoAsRow", 0));
+          ortho_view_in_row_check_box->setChecked (MR::File::Config::get_bool ("MRViewOrthoAsRow", false));
           ortho_view_in_row_check_box->setToolTip (
               "Display the 3 orthogonal views in a row, rather than a 2x2 montage.\n\n"
               "To make this the default, set the \"MRViewOrthoAsRow\" option in your configuration file.");
@@ -1077,7 +1077,7 @@ namespace MR
         void View::update_ortho_mode_gui (const Mode::Ortho & mode)
         {
           ortho_view_in_row_check_box->setVisible (true);
-          connect (ortho_view_in_row_check_box, SIGNAL (toggled(bool)), &mode, SLOT (set_show_as_row_slot(bool))); // TODO does not compile
+          connect (ortho_view_in_row_check_box, SIGNAL (toggled(bool)), &mode, SLOT (set_show_as_row_slot(bool)));
         }
 
 

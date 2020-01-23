@@ -269,7 +269,7 @@ namespace MR
           //CONF default: 0 (false)
           //CONF Whether MRView tools should start docked in the main window, or
           //CONF floating (detached from the main window).
-          tools_floating = MR::File::Config::get_int ("MRViewDockFloating", 0);
+          tools_floating = MR::File::Config::get_bool ("MRViewDockFloating", false);
 
           // Main toolbar:
 
