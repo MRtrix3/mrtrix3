@@ -190,7 +190,7 @@ namespace MR
 
         void Ortho::set_show_as_row (bool state) {
           show_as_row = state;
-          TRACE;
+          updateGL();
         }
 
 
