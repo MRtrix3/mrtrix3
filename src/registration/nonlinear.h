@@ -160,16 +160,7 @@ namespace MR
               }
               auto im1_warped = Image<default_type>::scratch (warped_header);
               auto im2_warped = Image<default_type>::scratch (warped_header);
-//
-//              Image<default_type> im_cca, im_ccc, im_ccb, im_cc1, im_cc2;
-//              if (use_cc) {
-//                DEBUG ("Initialising CC images");
-//                im_cca = Image<default_type>::scratch(warped_header);
-//                im_ccb = Image<default_type>::scratch(warped_header);
-//                im_ccc = Image<default_type>::scratch(warped_header);
-//                im_cc1 = Image<default_type>::scratch(warped_header);
-//                im_cc2 = Image<default_type>::scratch(warped_header);
-//              }
+
 
               Header field_header (midway_image_header_resized);
               field_header.ndim() = 4;
@@ -266,23 +257,14 @@ namespace MR
                 DEBUG ("evaluating metric and computing update field");
                 default_type cost_new = 0.0;
                 size_t voxel_count = 0;
-
-//                if (use_cc) {
-//                  Metric::cc_precompute (im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, im_cca, im_ccb, im_ccc, im_cc1, im_cc2, cc_extent);
-//                  // display<Image<default_type>>(im_cca);
-//                  // display<Image<default_type>>(im_ccb);
-//                  // display<Image<default_type>>(im_ccc);
-//                  // display<Image<default_type>>(im_cc1);
-//                  // display<Image<default_type>>(im_cc2);
-//                }
+                  
 
                 if (im1_image.ndim() == 4) {
                   if (use_cc) {
                     ssize_t local_extent = cc_extent[1];
                     Metric::run_DemonsLNCC_4D (cost_new, voxel_count, local_extent, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, *im1_update_new, *im2_update_new, &stage_contrasts);
                   } else {
-                    Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
-                    cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, &stage_contrasts);
+                    Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, &stage_contrasts);
                     ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
                   }
                 } else {
@@ -529,15 +511,6 @@ namespace MR
             return midway_image_header;
           }
 
-//          void metric_cc (int radius) {
-//            if (radius < 1)
-//              throw Exception ("CC radius needs to be larger than 1");
-//            use_cc = true;
-//            INFO("Cross correlation radius: " + str(radius));
-//            cc_extent = vector<size_t>(3, radius * 2 + 1);
-//          }
-//
-        
           void set_metric_cc () {
             use_cc = true;
             cc_extent = vector<size_t>(3, 2);

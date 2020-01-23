@@ -116,10 +116,24 @@ namespace MR
                                 params.im1_image_interp->scanner (im1_scanner_pos_iter);
                                 params.im2_image_interp->scanner (im2_scanner_pos_iter);
                                 
-                                params.im1_mask_interp->scanner (im1_scanner_pos_iter);
-                                params.im2_mask_interp->scanner (im2_scanner_pos_iter);
                                 
-                                if (params.im1_mask_interp->value() > 0.5 && params.im2_mask_interp->value() > 0.5) {
+                                bool within_mask_flag = true;
+                                
+                                if (params.im1_mask_interp) {
+                                    
+                                    params.im1_mask_interp->scanner (im1_scanner_pos_iter);
+                                    if (params.im1_mask_interp->value() < 0.5)
+                                    within_mask_flag = false;
+                                    
+                                }
+                                
+                                if (params.im2_mask_interp) {
+                                    params.im2_mask_interp->scanner (im2_scanner_pos_iter);
+                                    if (params.im2_mask_interp->value() < 0.5)
+                                    within_mask_flag = false;
+                                }
+                                
+                                if (within_mask_flag) {
                                     
                                     Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad_iter;
                                     typename Params::Im1ValueType im1_value_iter;
@@ -316,37 +330,54 @@ namespace MR
                                 params.im1_image_interp->scanner (im1_scanner_pos_iter);
                                 params.im2_image_interp->scanner (im2_scanner_pos_iter);
                                 
-                                params.im1_mask_interp->scanner (im1_scanner_pos_iter);
-                                params.im2_mask_interp->scanner (im2_scanner_pos_iter);
-
-                                Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad_iter;
-                                Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values_iter;
-                                if (im1_values_iter.rows() != volumes) {
-                                    im1_values_iter.resize (volumes);
-                                    im1_grad_iter.resize (volumes, 3);
+                                
+                                bool within_mask_flag = true;
+                                
+                                if (params.im1_mask_interp) {
+                                    params.im1_mask_interp->scanner (im1_scanner_pos_iter);
+                                    if (params.im1_mask_interp->value() < 0.5)
+                                    within_mask_flag = false;
+                                    
                                 }
-                                params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values_iter, im1_grad_iter);
                                 
-                                Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 3> im2_grad_iter;
-                                Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 1> im2_values_iter;
-                                if (im2_values_iter.rows() != volumes) {
-                                    im2_values_iter.resize (volumes);
-                                    im2_grad_iter.resize (volumes, 3);
+                                if (params.im2_mask_interp) {
+                                    params.im2_mask_interp->scanner (im2_scanner_pos_iter);
+                                    if (params.im2_mask_interp->value() < 0.5)
+                                    within_mask_flag = false;
                                 }
-                                params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values_iter, im2_grad_iter);
                                 
-                                for (ssize_t i = 0; i < volumes; ++i) {
-                                
-                                    if (abs(im1_values_iter[i]) > 0 && abs(im1_values_iter[i]) == abs(im1_values_iter[i]) && abs(im2_values_iter[i]) > 0 && abs(im2_values_iter[i]) == im2_values_iter[i] ) {
-                                        
-                                        sf_values[i] = sf_values[i] + im1_values_iter[i];
-                                        sm_values[i] = sm_values[i] + im2_values_iter[i];
-                                        sff_values[i] = sff_values[i] + im1_values_iter[i] * im1_values_iter[i];
-                                        smm_values[i] = smm_values[i] + im2_values_iter[i] * im2_values_iter[i];
-                                        sfm_values[i] = sfm_values[i] + im1_values_iter[i] * im2_values_iter[i];
-                                        count_values[i] = count_values[i] + 1;
+                                if (within_mask_flag) {
 
+                                    Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad_iter;
+                                    Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values_iter;
+                                    if (im1_values_iter.rows() != volumes) {
+                                        im1_values_iter.resize (volumes);
+                                        im1_grad_iter.resize (volumes, 3);
                                     }
+                                    params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values_iter, im1_grad_iter);
+                                    
+                                    Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 3> im2_grad_iter;
+                                    Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 1> im2_values_iter;
+                                    if (im2_values_iter.rows() != volumes) {
+                                        im2_values_iter.resize (volumes);
+                                        im2_grad_iter.resize (volumes, 3);
+                                    }
+                                    params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values_iter, im2_grad_iter);
+                                    
+                                    for (ssize_t i = 0; i < volumes; ++i) {
+                                    
+                                        if (abs(im1_values_iter[i]) > 0 && abs(im1_values_iter[i]) == abs(im1_values_iter[i]) && abs(im2_values_iter[i]) > 0 && abs(im2_values_iter[i]) == im2_values_iter[i] ) {
+                                            
+                                            sf_values[i] = sf_values[i] + im1_values_iter[i];
+                                            sm_values[i] = sm_values[i] + im2_values_iter[i];
+                                            sff_values[i] = sff_values[i] + im1_values_iter[i] * im1_values_iter[i];
+                                            smm_values[i] = smm_values[i] + im2_values_iter[i] * im2_values_iter[i];
+                                            sfm_values[i] = sfm_values[i] + im1_values_iter[i] * im2_values_iter[i];
+                                            count_values[i] = count_values[i] + 1;
+
+                                        }
+                                    }
+                                    
                                 }
                                 
                             }
@@ -359,7 +390,7 @@ namespace MR
                         bool include_volume = true;
                         
                         if (this->weighted) {
-                            if (this->mc_weights(i) < 0.1) {
+                            if (this->mc_weights(i) < 0.05) {
                                 include_volume= false;
                             }
                         }
@@ -388,9 +419,9 @@ namespace MR
                                     Eigen::Vector3d g1 = (im1_values[i] - local_sf / local_count) * im2_grad.row(i);
                                     Eigen::Vector3d g2 = (im2_values[i] - local_sm / local_count) * (local_sfm / local_smm) * im2_grad.row(i);
                                     
-                                    default_type current_volume_weight = 1 / (weight_sum);
+                                    default_type current_volume_weight = 1 / ( (default_type) volumes );
                                     if (this->weighted)
-                                        current_volume_weight = this->mc_weights(i) / (weight_sum);
+                                        current_volume_weight = ((default_type) this->mc_weights(i)) / ((default_type) this->mc_weights.sum());
                                     
                                     const Eigen::Vector3d g = current_volume_weight * (g1 - g2) * (local_sfm * local_count / ((local_sff * local_smm)));
                                     
@@ -405,6 +436,7 @@ namespace MR
                                 }
                             }
                         }
+                        
                     }
                     
                     return computed_local_cost;

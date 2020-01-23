@@ -111,19 +111,16 @@ namespace MR
                     return;
                 }
                 
-                
                 if (im1_mask.valid()) {
                     if (im1_mask.value() < 0.1)
                         return;
                 }
-                
-                
+
                 if (im2_mask.valid()) {
                     if (im2_mask.value() < 0.1)
                         return;
                 }
-                
-                
+
                 typename Im1ImageType::value_type im1_value = im1_image.value();
                 typename Im2ImageType::value_type im2_value = im2_image.value();
                 
@@ -322,17 +319,14 @@ namespace MR
                         return;
                     }
                 }
-                
-                
+
                 if (im2_mask.valid()) {
                     im2_mask_value = im2_mask.value();
                     if (im2_mask_value < 0.1) {
                         return;
                     }
                 }
-                
-                
-                
+
                 typename Im1ImageType::value_type im1_value = im1_image.value();
                 typename Im2ImageType::value_type im2_value = im2_image.value();
                 
@@ -560,19 +554,22 @@ namespace MR
             
             default_type mc_sum = 0.0;
             
+            ssize_t gnvol = contrast_settings->size();
+            
             if (contrast_settings and contrast_settings->size() > 1) {
-                
+
                 for (const auto & mc : *contrast_settings) {
                     mc_sum = mc_sum + mc.weight;
                 }
                 for (const auto & mc : *contrast_settings) {
-                    volume_weights.segment(mc.start,mc.nvols).fill(mc.weight / mc_sum);
+                    volume_weights.segment(mc.start,mc.nvols).fill(mc.weight * (1 / ( (default_type) mc.nvols)) * (1 / ( (default_type) gnvol)));
                 }
-                
+
             } else {
                 volume_weights.fill(default_volume_weight);
                 mc_sum = default_type (nvols);
             }
+            
             
             default_type local_cost = 0;
             size_t local_count = 0;
@@ -602,7 +599,7 @@ namespace MR
                 
                     Metric::DemonsLNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (local_cost, local_count, local_extent, im1_image, im2_image, im1_mask, im2_mask, volume_weight, flag_combine_updates);
                     ThreadedLoop (im1_image, 0, 3).run (metric, im1_image, im2_image, im1_mask, im2_mask, im1_update, im2_update);
-                    
+
                 } else {
                     
                     Metric::DemonsGNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (local_cost, local_count, im1_image, im2_image, im1_mask, im2_mask, volume_weight, flag_combine_updates);
@@ -611,11 +608,10 @@ namespace MR
                     
                 }
                 
-                
                 cost_new = cost_new + local_cost;
                 voxel_count = voxel_count + local_count;
             }
-            
+
             im1_image.index(3) = 0;
             im2_image.index(3) = 0;
             

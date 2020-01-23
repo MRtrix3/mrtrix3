@@ -69,7 +69,7 @@ namespace MR
       
       + Option ("nl_metric", "valid choices are: "
                 "diff (intensity differences), "
-                "ncc (normalised local cross-correlation), "
+                "ncc (normalised cross-correlation), "
                 "Default: diff")
         + Argument ("type").type_choice (nonlinear_metric_choices)
       

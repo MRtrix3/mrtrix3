@@ -444,6 +444,13 @@ void run () {
     vector<int> lncc_radius = parse_ints (opt[0][0]);
     vector<size_t> extent(3, lncc_radius[0]);
     rigid_registration.set_extent (extent);
+      
+    if (lncc_radius[0] > 0) {
+      ssize_t spacing = lncc_radius[0]-1;               // TODO: automate selection / spacing for space lncc computation grid
+      if (spacing > 3)  spacing = 3;                    // (minimum spacing condition)
+      rigid_registration.set_grid_spacing (spacing);
+    }
+ 
   }
 
   opt = get_options ("rigid_metric.diff.estimator");
@@ -605,6 +612,13 @@ void run () {
     vector<int> lncc_radius = parse_ints (opt[0][0]);
     vector<size_t> extent(3, lncc_radius[0]);
     affine_registration.set_extent (extent);
+      
+    if (lncc_radius[0] > 0) {
+      ssize_t spacing = lncc_radius[0]-1;               // TODO: automate selection / spacing for space lncc computation grid
+      if (spacing > 3)  spacing = 3;                    // (minimum spacing condition)
+      affine_registration.set_grid_spacing (spacing);
+    }
+    
   }
 
   opt = get_options ("affine_metric.diff.estimator");
@@ -896,8 +910,6 @@ void run () {
       if (rigid_metric == Registration::NCC) {
         if (rigid_registration.get_lncc_extent_mode()) {
           Registration::Metric::LocalCrossCorrelation4D metric;
-          ssize_t spacing = 3;      // TODO: automate selection / spacing for space lncc computation grid
-          rigid_registration.set_grid_spacing (spacing);
           rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
         } else {
           Registration::Metric::GlobalCrossCorrelation4D metric;
@@ -926,8 +938,6 @@ void run () {
       if (rigid_metric == Registration::NCC){
         if (rigid_registration.get_lncc_extent_mode()) {
           Registration::Metric::LocalCrossCorrelation metric;
-          ssize_t spacing = 3;      // TODO: automate selection / spacing for space lncc computation grid
-          rigid_registration.set_grid_spacing (spacing);
           rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
         } else {
           Registration::Metric::GlobalCrossCorrelation metric;
@@ -980,8 +990,6 @@ void run () {
       if (affine_metric == Registration::NCC) {
         if (affine_registration.get_lncc_extent_mode()) {
           Registration::Metric::LocalCrossCorrelation4D metric;
-          ssize_t spacing = 3;      // TODO: automate selection / spacing for space lncc computation grid
-          affine_registration.set_grid_spacing (spacing);
           affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
         } else {
           Registration::Metric::GlobalCrossCorrelation4D metric;
@@ -1010,8 +1018,6 @@ void run () {
       if (affine_metric == Registration::NCC){
         if (affine_registration.get_lncc_extent_mode()) {
           Registration::Metric::LocalCrossCorrelation metric;
-          ssize_t spacing = 3;      // TODO: automate selection / spacing for space lncc computation grid
-          affine_registration.set_grid_spacing (spacing);
           affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
         } else {
           Registration::Metric::GlobalCrossCorrelation metric;
