@@ -28,7 +28,7 @@ namespace MR
 
         void Dock::closeEvent (QCloseEvent*) { assert (tool); tool->close_event(); }
 
-        Base::Base (Dock* parent) : 
+        Base::Base (Dock* parent) :
           QFrame (parent) {
             QFont f = font();
             //CONF option: MRViewToolFontSize
@@ -36,21 +36,13 @@ namespace MR
             //CONF The point size for the font to use in MRView tools.
             f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-2));
             setFont (f);
-            setFrameShadow (QFrame::Sunken); 
+            setFrameShadow (QFrame::Sunken);
             setFrameShape (QFrame::Panel);
             setAcceptDrops (true);
           }
 
-        void Base::adjustSize () 
-        {
-          layout()->update();
-          layout()->activate();
-          setMinimumSize (layout()->minimumSize());
-        }
 
-
-        QSize Base::sizeHint () const { return minimumSize(); }
-
+        QSize Base::sizeHint () const { return minimumSizeHint(); }
 
         void Base::draw (const Projection&, bool, int, int) { }
 
