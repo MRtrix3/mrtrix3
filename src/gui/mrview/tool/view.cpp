@@ -475,6 +475,7 @@ namespace MR
 
           main_box->addStretch ();
 
+          ortho_view_in_row_check_box->setVisible (false);
           transparency_box->setVisible (false);
           threshold_box->setVisible (false);
           clip_box->setVisible (false);
