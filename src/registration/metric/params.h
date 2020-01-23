@@ -113,11 +113,11 @@ namespace MR
             if ((mc_weights.array() == 1.0).all())
               mc_weights = Eigen::Matrix<default_type, Eigen::Dynamic, 1>();
           }
-          
+
           void set_grid_spacing (ssize_t spacing) {
             grid_spacing = spacing;
           }
-          
+
           ssize_t get_grid_spacing () {
             return grid_spacing;
           }

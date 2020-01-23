@@ -172,7 +172,7 @@ namespace MR
                 ++cnt;
                 cost_function(0) += metric (params, im1_point, im2_point, midway_point, gradient);
             }
-              
+
           }
 
 

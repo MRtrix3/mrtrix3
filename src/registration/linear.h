@@ -31,8 +31,6 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "registration/metric/params.h"
-// #include "registration/metric/local_cross_correlation.h"
-// #include "registration/metric/global_cross_correlation.h"
 #include "registration/metric/evaluate.h"
 #include "registration/transform/initialiser.h"
 #include "math/gradient_descent.h"
@@ -141,7 +139,7 @@ namespace MR
             stages[level].scale_factor = scalefactor[level];
           }
         }
-        
+
         void set_metric (const LinearMetricType& type) {
           for (size_t i = 0; i < stages.size (); ++i)
             stages[i].metric = type;
@@ -258,7 +256,7 @@ namespace MR
           }
           kernel_extent = extent;
         }
-        
+
         bool get_lncc_extent_mode () {
           // returns true when the kernel extent is greater than 0 (requirement for LNCC similarity)
           if (kernel_extent[1] > 0) {

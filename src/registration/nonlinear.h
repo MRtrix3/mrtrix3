@@ -257,7 +257,7 @@ namespace MR
                 DEBUG ("evaluating metric and computing update field");
                 default_type cost_new = 0.0;
                 size_t voxel_count = 0;
-                  
+
 
                 if (im1_image.ndim() == 4) {
                   if (use_cc) {
@@ -515,7 +515,7 @@ namespace MR
             use_cc = true;
             cc_extent = vector<size_t>(3, 2);
           }
-        
+
           void set_extent (const vector<size_t> extent) {
             for (size_t d = 0; d < extent.size(); ++d) {
                 if ((int) extent[d] < 0)
@@ -524,9 +524,9 @@ namespace MR
             use_cc = true;
             cc_extent = extent;
           }
-        
+
           bool get_lncc_extent_mode () {
-            
+
             // returns true when the kernel extent is greater than 0 (requirement for LNCC similarity)
             if (cc_extent[1] > 0) {
                 return true;
@@ -534,7 +534,7 @@ namespace MR
                 return false;
             }
           }
-        
+
 
           void set_diagnostics_image (const std::basic_string<char>& path) {
             diagnostics_image_prefix = path;
@@ -573,7 +573,7 @@ namespace MR
           vector<size_t> cc_extent;
 
           std::basic_string<char> diagnostics_image_prefix;
-        
+
           transform_type im1_to_mid_linear;
           transform_type im2_to_mid_linear;
           Header midway_image_header;
