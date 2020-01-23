@@ -34,11 +34,7 @@ namespace MR
             Q_OBJECT
 
           public:
-              Ortho () :
-                projections (3, projection),
-                current_plane (0),
-                show_as_row (MR::File::Config::get_bool ("MRViewOrthoAsRow", false)) { }
-
+            Ortho ();
             virtual void paint (Projection& projection);
 
             virtual void mouse_press_event ();
@@ -48,13 +44,14 @@ namespace MR
             virtual void request_update_mode_gui (ModeGuiVisitor& visitor) const {
                  visitor.update_ortho_mode_gui(*this); }
 
+            static bool show_as_row;
+
           public slots:
             void set_show_as_row_slot (bool state);
 
           protected:
             vector<Projection> projections;
             int current_plane;
-            bool show_as_row;
             GL::VertexBuffer frame_VB;
             GL::VertexArrayObject frame_VAO;
             GL::Shader::Program frame_program;

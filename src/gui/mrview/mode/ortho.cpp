@@ -28,7 +28,21 @@ namespace MR
       namespace Mode
       {
 
+        bool Ortho::show_as_row = false;
 
+        //CONF option: MRViewOrthoAsRow
+        //CONF Display the 3 orthogonal views of the Ortho mode in a row,
+        //CONF rather than as a 2x2 montage
+        //CONF default: false
+
+        Ortho::Ortho () :
+          projections (3, projection),
+          current_plane (0) {
+            static bool conf_read = false;
+            if (!conf_read)
+              show_as_row = MR::File::Config::get_bool ("MRViewOrthoAsRow", false);
+            conf_read = true;
+          }
 
 
         void Ortho::paint (Projection& projection)
@@ -191,6 +205,7 @@ namespace MR
 
         void Ortho::set_show_as_row_slot (bool state)
         {
+          GL::Context::Grab context;
           show_as_row = state;
           frame_VB.clear();
           updateGL();
