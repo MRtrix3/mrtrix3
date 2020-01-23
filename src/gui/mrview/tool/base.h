@@ -48,8 +48,11 @@ namespace MR
         class Dock : public QDockWidget
         { NOMEMALIGN
           public:
-            Dock (const QString& name) :
-              QDockWidget (name, Window::main), tool (nullptr) { }
+            Dock (const QString& name, bool floating) :
+              QDockWidget (name, Window::main), tool (nullptr) {
+                Window::main->addDockWidget (Qt::RightDockWidgetArea, this);
+                setFloating (floating);
+              }
             ~Dock ();
 
             void closeEvent (QCloseEvent*) override;
@@ -130,7 +133,6 @@ namespace MR
                 }
             };
 
-            void adjustSize();
             virtual void draw (const Projection& transform, bool is_3D, int axis, int slice);
             virtual void draw_colourbars ();
             virtual size_t visible_number_colourbars () { return 0; }
@@ -191,12 +193,9 @@ namespace MR
         template <class T>
           Dock* create (const QString& text, bool floating)
           {
-            Dock* dock = new Dock (text);
-            Window::main->addDockWidget (Qt::RightDockWidgetArea, dock);
+            Dock* dock = new Dock (text, floating);
             dock->tool = new T (dock);
-            dock->tool->adjustSize();
             dock->setWidget (dock->tool);
-            dock->setFloating (floating);
             dock->show();
             return dock;
           }
