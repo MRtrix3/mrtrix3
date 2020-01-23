@@ -24,7 +24,7 @@ namespace MR
     using namespace App;
 
     const char* nonlinear_metric_choices[] = { "diff", "ncc", nullptr };
-      
+
     const OptionGroup nonlinear_options =
       OptionGroup ("Non-linear registration options")
 
@@ -66,16 +66,16 @@ namespace MR
       + Option ("nl_lmax", "explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD registration will "
                            "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
       + Argument ("num").type_sequence_int ()
-      
+
       + Option ("nl_metric", "valid choices are: "
                 "diff (intensity differences), "
                 "ncc (normalised cross-correlation), "
                 "Default: diff")
         + Argument ("type").type_choice (nonlinear_metric_choices)
-      
+
       + Option ("nl_extent", "the radius of lncc kernel (voxels). If 0 - global ncc will be used as similarity metric. (Default: 2)")
         + Argument ("num").type_sequence_int ()
-      
+
 
       + Option("diagnostics_image", "write intermediate images for diagnostics purposes")
       + Argument("path");

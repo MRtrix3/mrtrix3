@@ -244,7 +244,7 @@ namespace MR
                                  "ncc (normalised cross-correlation) "
                                  "Default: diff")
         + Argument ("type").type_choice (linear_metric_choices)
-      
+
       + Option ("rigid_extent", "the radius of lncc kernel (voxels). If 0 - global ncc will be used as similarity metric. Optimal kernel for local ncc - 4. (Default: 0)")
         + Argument ("num").type_sequence_int ()
 
@@ -322,7 +322,7 @@ namespace MR
                                   "lp (least powers: |x|^1.2), "
                                   "Default: l2")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
-      
+
       + Option ("affine_extent", "the radius of lncc kernel (voxels). If 0 - global ncc will be used as similarity metric. Optimal kernel for local ncc - 4. (Default: 0)")
         + Argument ("num").type_sequence_int ()
 

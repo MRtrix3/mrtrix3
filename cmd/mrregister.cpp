@@ -444,13 +444,13 @@ void run () {
     vector<int> lncc_radius = parse_ints (opt[0][0]);
     vector<size_t> extent(3, lncc_radius[0]);
     rigid_registration.set_extent (extent);
-      
+
     if (lncc_radius[0] > 0) {
       ssize_t spacing = lncc_radius[0]-1;               // TODO: automate selection / spacing for space lncc computation grid
       if (spacing > 3)  spacing = 3;                    // (minimum spacing condition)
       rigid_registration.set_grid_spacing (spacing);
     }
- 
+
   }
 
   opt = get_options ("rigid_metric.diff.estimator");
@@ -612,13 +612,13 @@ void run () {
     vector<int> lncc_radius = parse_ints (opt[0][0]);
     vector<size_t> extent(3, lncc_radius[0]);
     affine_registration.set_extent (extent);
-      
+
     if (lncc_radius[0] > 0) {
       ssize_t spacing = lncc_radius[0]-1;               // TODO: automate selection / spacing for space lncc computation grid
       if (spacing > 3)  spacing = 3;                    // (minimum spacing condition)
       affine_registration.set_grid_spacing (spacing);
     }
-    
+
   }
 
   opt = get_options ("affine_metric.diff.estimator");
@@ -821,7 +821,7 @@ void run () {
       nl_registration.set_metric_cc ();
     }
   }
-    
+
   opt = get_options ("nl_extent");
   if (opt.size ()) {
     if (!do_nonlinear)
