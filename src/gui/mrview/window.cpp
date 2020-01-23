@@ -53,6 +53,7 @@ namespace MR
 */
 
       Window* Window::main = nullptr;
+      bool Window::tools_floating = false;
 
       namespace {
 
@@ -263,6 +264,12 @@ namespace MR
           QToolButton* button;
 
           setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
+
+          //CONF option: MRViewDockFloating
+          //CONF default: 0 (false)
+          //CONF Whether MRView tools should start docked in the main window, or
+          //CONF floating (detached from the main window).
+          tools_floating = MR::File::Config::get_int ("MRViewDockFloating", 0);
 
           // Main toolbar:
 
@@ -991,16 +998,10 @@ namespace MR
         if (dynamic_cast<Tool::__Action__*>(action)->dock)
           return;
 
-        //CONF option: MRViewDockFloating
-        //CONF default: 0 (false)
-        //CONF Whether MRView tools should start docked in the main window, or
-        //CONF floating (detached from the main window).
-        bool floating = MR::File::Config::get_int ("MRViewDockFloating", 0);
-
-        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (floating);
+        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (tools_floating);
         connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
 
-        if (!floating) {
+        if (!tools_floating) {
 
           for (int i = 0; i < tool_group->actions().size(); ++i) {
             Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
