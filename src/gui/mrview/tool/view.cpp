@@ -271,10 +271,19 @@ namespace MR
           connect (max_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
           hlayout->addWidget (max_entry);
 
+
+          //CONF option: MRViewOrthoAsRow
+          //CONF Display the 3 orthogonal views of the Ortho mode in a row,
+          //CONF rather than as a 2x2 montage
+          //CONF default: false
+
           // ortho view options
           ortho_view_in_row_check_box = new QCheckBox ("display images in a row");
           ortho_view_in_row_check_box->setCheckable (true);
           ortho_view_in_row_check_box->setChecked (MR::File::Config::get_int ("MRViewOrthoAsRow", 0));
+          ortho_view_in_row_check_box->setToolTip (
+              "Display the 3 orthogonal views in a row, rather than a 2x2 montage.\n\n"
+              "To make this the default, set the \"MRViewOrthoAsRow\" option in your configuration file.");
           main_box->addWidget (ortho_view_in_row_check_box);
 
           // volume render options
