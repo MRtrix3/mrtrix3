@@ -85,7 +85,6 @@ MR::Connectome::matrix_type zero_diagonal (MR::Connectome::matrix_type c) {
 void run ()
 {
   const int op = argument[1];
-  const Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
 
   const std::string& output_path = argument[2];
 
