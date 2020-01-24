@@ -469,7 +469,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
   def __init__(self, msg, target=0):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     global EXEC_NAME, VERBOSITY
-    if not (isinstance(msg, str) or callable(msg)):
+    if not (isinstance(msg, utils.STRING_TYPES) or callable(msg)):
       raise TypeError('app.ProgressBar must be constructed using either a string or a function')
     self.counter = 0
     self.isatty = sys.stderr.isatty()
@@ -627,7 +627,7 @@ class Parser(argparse.ArgumentParser):
 
   # Mutually exclusive options need to be added before the command-line input is parsed
   def flag_mutually_exclusive_options(self, options, required=False): #pylint: disable=unused-variable
-    if not isinstance(options, list) or not isinstance(options[0], str):
+    if not isinstance(options, list) or not isinstance(options[0], utils.STRING_TYPES):
       raise Exception('Parser.flagMutuallyExclusiveOptions() only accepts a list of strings')
     self._mutually_exclusive_option_groups.append( (options, required) )
 

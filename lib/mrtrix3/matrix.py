@@ -19,7 +19,7 @@
 
 import itertools, re
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
-
+from mrtrix3.utils import STRING_TYPES
 
 
 _TRANSFORM_LAST_ROW = [ 0.0, 0.0, 0.0, 1.0 ]
@@ -176,7 +176,7 @@ def save_numeric(filename, data, **kwargs):
     encode_args['encoding'] = encoding
 
   if header:
-    if isinstance(header, str):
+    if isinstance(header, STRING_TYPES):
       header = { 'comments' : header }
     elif isinstance(header, list):
       header = { 'comments' : '\n'.join(str(entry) for entry in header) }
@@ -194,7 +194,7 @@ def save_numeric(filename, data, **kwargs):
       header['command_history'] = COMMAND_HISTORY_STRING
 
   if footer:
-    if isinstance(footer, str):
+    if isinstance(footer, STRING_TYPES):
       footer = { 'comments' : footer }
     elif isinstance(footer, list):
       footer = { 'comments' : '\n'.join(str(entry) for entry in footer) }
