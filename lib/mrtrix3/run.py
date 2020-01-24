@@ -214,6 +214,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   show = kwargs.pop('show', True)
   mrconvert_keyval = kwargs.pop('mrconvert_keyval', None)
   force = kwargs.pop('force', False)
+  env = kwargs.pop('env', shared.env)
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to run.command(): ' + str(kwargs))
 
@@ -225,7 +226,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     subprocess_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
   if shell:
     subprocess_kwargs['shell'] = True
-  subprocess_kwargs['env'] = shared.env
+  subprocess_kwargs['env'] = env
 
   if isinstance(cmd, list):
     if shell:
