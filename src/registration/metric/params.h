@@ -90,7 +90,7 @@ namespace MR
                       update_control_points();
           }
 
-          void set_extent (vector<size_t> extent_vector) { extent=std::move(extent_vector); }
+          void set_radius (vector<size_t> radius_vector) { radius=std::move(radius_vector); }
 
           void set_mc_settings (const vector<MultiContrastSetting>& mc_vector) {
             mc_settings = mc_vector;
@@ -152,7 +152,7 @@ namespace MR
             control_points.block<3,4>(0,0).colwise() += centre;
           }
 
-          const vector<size_t>& get_extent() const { return extent; }
+          const vector<size_t>& get_radius() const { return radius; }
 
           template <class OptimiserType>
             void optimiser_update (OptimiserType& optim, const ssize_t overlap_count) {
@@ -258,7 +258,7 @@ namespace MR
           MR::copy_ptr<Interp::Linear<Image<float>>> robust_estimate_score2_interp;
 
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
-          vector<size_t> extent;
+          vector<size_t> radius;
           vector<MultiContrastSetting> mc_settings;
 
           ProcImageType processed_image;

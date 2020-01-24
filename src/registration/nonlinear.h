@@ -58,7 +58,7 @@ namespace MR
           do_reorientation (false),
           fod_lmax (3),
           use_cc (false),
-          cc_extent (3, 2),
+          kernel_radius (3, 2),
           diagnostics_image_prefix ("") {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
@@ -261,22 +261,25 @@ namespace MR
 
                 if (im1_image.ndim() == 4) {
                   if (use_cc) {
-                    ssize_t local_extent = cc_extent[1];
+                    ssize_t local_extent = kernel_radius[1];  // TODO use 3D extent
                     Metric::run_DemonsLNCC_4D (cost_new, voxel_count, local_extent, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, *im1_update_new, *im2_update_new, &stage_contrasts);
                   } else {
-                    Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, &stage_contrasts);
+                    Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                      cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, &stage_contrasts);
                     ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
                   }
                 } else {
                   if (use_cc) {
-                    ssize_t local_extent = cc_extent[1];
+                    ssize_t local_extent = kernel_radius[1];  // TODO use 3D extent
                     default_type volume_weight_default = 1.0;
                     bool flag_combine_updates = false;
                     if (local_extent > 0) {
-                      Metric::DemonsLNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, local_extent, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, volume_weight_default, flag_combine_updates);
+                      Metric::DemonsLNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                        cost_new, voxel_count, local_extent, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, volume_weight_default, flag_combine_updates);
                       ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, *im1_update_new, *im2_update_new);
                     } else {
-                      Metric::DemonsGNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, volume_weight_default, flag_combine_updates);
+                      Metric::DemonsGNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                        cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, volume_weight_default, flag_combine_updates);
                           metric.precompute ();
                       ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, *im1_update_new, *im2_update_new);
                     }
@@ -513,26 +516,21 @@ namespace MR
 
           void set_metric_cc () {
             use_cc = true;
-            cc_extent = vector<size_t>(3, 2);
+            kernel_radius = vector<size_t>(3, 2);
           }
 
-          void set_extent (const vector<size_t> extent) {
-            for (size_t d = 0; d < extent.size(); ++d) {
-                if ((int) extent[d] < 0)
-                    throw Exception ("the neighborhood kernel extent must be at least 1 voxel for LNCC - or 0 for global NCC");
+          void set_radius (const vector<size_t>& radius) {
+            for (const auto & r : radius) {
+                if (r < 0)
+                  throw Exception ("the neighborhood kernel radius must be at least 1 voxel for LNCC - or 0 for global NCC");
             }
             use_cc = true;
-            cc_extent = extent;
+            kernel_radius = radius;
           }
 
-          bool get_lncc_extent_mode () {
-
+          bool get_lnkernel_radius_mode () {
             // returns true when the kernel extent is greater than 0 (requirement for LNCC similarity)
-            if (cc_extent[1] > 0) {
-                return true;
-            } else {
-                return false;
-            }
+            return *std::max_element(kernel_radius.begin(), kernel_radius.end()) > 0;
           }
 
 
@@ -570,7 +568,7 @@ namespace MR
           bool do_reorientation;
           vector<int> fod_lmax;
           bool use_cc;
-          vector<size_t> cc_extent;
+          vector<size_t> kernel_radius; // kernel_radius
 
           std::basic_string<char> diagnostics_image_prefix;
 

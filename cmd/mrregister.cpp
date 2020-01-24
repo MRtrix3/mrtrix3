@@ -435,22 +435,17 @@ void run () {
     rigid_registration.set_metric (rigid_metric);
   }
 
-  opt = get_options ("rigid_extent");
+  opt = get_options ("rigid_metric.radius");
   if (opt.size ()) {
     if (!do_rigid)
-      throw Exception ("the rigid lncc kernel extent have been input when no rigid registration is requested");
-    if (rigid_metric != Registration::NCC)
-      throw Exception ("rigid_extent set but cost function is not ncc");
-    vector<int> lncc_radius = parse_ints (opt[0][0]);
-    vector<size_t> extent(3, lncc_radius[0]);
-    rigid_registration.set_extent (extent);
+      throw Exception ("the rigid metric kernel radius has been input when no rigid registration is requested");
+    size_t lncc_radius = opt[0][0];
+    if (lncc_radius > 0 && rigid_metric != Registration::NCC)
+      throw Exception ("rigid_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");
+    rigid_registration.set_radius (vector<size_t> {3, lncc_radius});
 
-    if (lncc_radius[0] > 0) {
-      ssize_t spacing = lncc_radius[0]-1;               // TODO: automate selection / spacing for space lncc computation grid
-      if (spacing > 3)  spacing = 3;                    // (minimum spacing condition)
-      rigid_registration.set_grid_spacing (spacing);
-    }
-
+    if (lncc_radius > 0)
+      rigid_registration.set_grid_spacing (std::min(3ul, lncc_radius - 1)); // TODO make spacing an option
   }
 
   opt = get_options ("rigid_metric.diff.estimator");
@@ -573,19 +568,12 @@ void run () {
     affine_registration.set_scale_factor (parse_floats (opt[0][0]));
   }
 
-  // opt = get_options ("affine_stage.iterations");
+  // opt = get_options ("affine_loop_density");
   // if (opt.size ()) {
   //   if (!do_affine)
-  //     throw Exception ("the affine repetition factors were input when no affine registration is requested");
-  //   affine_registration.set_stage_iterations (parse_ints (opt[0][0]));
+  //     throw Exception ("the affine sparsity factor was input when no affine registration is requested");
+  //   affine_registration.set_loop_density (parse_floats (opt[0][0]));
   // }
-
-  opt = get_options ("affine_loop_density");
-  if (opt.size ()) {
-    if (!do_affine)
-      throw Exception ("the affine sparsity factor was input when no affine registration is requested");
-    affine_registration.set_loop_density (parse_floats (opt[0][0]));
-  }
 
   opt = get_options ("affine_metric");
   Registration::LinearMetricType affine_metric = Registration::Diff;
@@ -603,21 +591,17 @@ void run () {
     affine_registration.set_metric (affine_metric);
   }
 
-  opt = get_options ("affine_extent");
+  opt = get_options ("affine_metric.radius");
   if (opt.size ()) {
     if (!do_affine)
-      throw Exception ("the affine lncc kernel extent have been input when no affine registration is requested");
-    if (affine_metric != Registration::NCC)
-      throw Exception ("affine_extent set but cost function is not ncc");
-    vector<int> lncc_radius = parse_ints (opt[0][0]);
-    vector<size_t> extent(3, lncc_radius[0]);
-    affine_registration.set_extent (extent);
+      throw Exception ("the affine metric kernel radius has been input when no affine registration is requested");
+    size_t lncc_radius = opt[0][0];
+    if (lncc_radius > 0 && affine_metric != Registration::NCC)
+      throw Exception ("affine_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");
+    affine_registration.set_radius (vector<size_t> {3, lncc_radius});
 
-    if (lncc_radius[0] > 0) {
-      ssize_t spacing = lncc_radius[0]-1;               // TODO: automate selection / spacing for space lncc computation grid
-      if (spacing > 3)  spacing = 3;                    // (minimum spacing condition)
-      affine_registration.set_grid_spacing (spacing);
-    }
+    if (lncc_radius > 0)
+      affine_registration.set_grid_spacing (std::min(3ul, lncc_radius - 1)); // TODO make spacing an option?
 
   }
 
@@ -822,15 +806,14 @@ void run () {
     }
   }
 
-  opt = get_options ("nl_extent");
+  opt = get_options ("nl_metric.radius");
   if (opt.size ()) {
     if (!do_nonlinear)
-        throw Exception ("the nonlinear lncc kernel extent have been input when no nonlinear registration is requested");
-      if (nl_metric != Registration::NL_NCC)
-        throw Exception ("nl_extent set but cost function is not ncc");
-      vector<int> lncc_radius = parse_ints (opt[0][0]);
-      vector<size_t> extent(3, lncc_radius[0]);
-      nl_registration.set_extent (extent);
+        throw Exception ("the nonlinear lncc kernel radius has been input when no nonlinear registration is requested");
+      size_t lncc_radius = opt[0][0];
+      if (lncc_radius > 0 && nl_metric != Registration::NL_NCC)
+        throw Exception ("nl_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");
+      nl_registration.set_radius (vector<size_t> {3, lncc_radius});
   }
 
   // ******  MC options  *******

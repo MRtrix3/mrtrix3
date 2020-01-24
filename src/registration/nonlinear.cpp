@@ -73,7 +73,7 @@ namespace MR
                 "Default: diff")
         + Argument ("type").type_choice (nonlinear_metric_choices)
 
-      + Option ("nl_extent", "the radius of lncc kernel (voxels). If 0 - global ncc will be used as similarity metric. (Default: 2)")
+      + Option ("nl_metric.radius", "the radius of the local metric kernel (local normalised cross correlation) in voxels. If 0, global ncc will be used. (Default: 2)")
         + Argument ("num").type_sequence_int ()
 
 

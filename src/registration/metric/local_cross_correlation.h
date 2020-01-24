@@ -44,7 +44,7 @@ namespace MR
 
                 LocalCrossCorrelation ( ) : weighted (false), min_value_threshold (1.e-5) { }
 
-                void set_weights (Eigen::VectorXd weights) {
+                void set_weights (const Eigen::VectorXd & weights) {
                     mc_weights = weights;
                     weighted = mc_weights.rows() > 0;
                 }
@@ -77,8 +77,7 @@ namespace MR
                      if (abs(im1_value) < min_value_threshold || abs(im2_value) < min_value_threshold)
                          return 0.0;
 
-                    vector<size_t> extent = params.get_extent();
-                    int local_extent = extent[1];
+                    const vector<size_t> kernel_radius = params.get_radius();
 
                     default_type local_sf, local_sm, local_sff, local_smm, local_sfm;
                     local_sf = 0; local_sm = 0; local_sff = 0; local_smm = 0; local_sfm = 0;
@@ -95,9 +94,9 @@ namespace MR
 
                     default_type mi_j1, mi_j2, mi_j3;
 
-                    for (ssize_t e_i1 = -local_extent; e_i1 <= local_extent; e_i1++) {
-                        for (ssize_t e_i2 = -local_extent; e_i2 <= local_extent; e_i2++) {
-                            for (ssize_t e_i3 = -local_extent; e_i3 <= local_extent; e_i3++) {
+                    for (ssize_t e_i1 = -kernel_radius[0]; e_i1 <= kernel_radius[0]; e_i1++) {
+                        for (ssize_t e_i2 = -kernel_radius[1]; e_i2 <= kernel_radius[1]; e_i2++) {
+                            for (ssize_t e_i3 = -kernel_radius[2]; e_i3 <= kernel_radius[2]; e_i3++) {
 
                                 mi_j1 = mi_i1 + e_i1;
                                 mi_j2 = mi_i2 + e_i2;
@@ -117,44 +116,37 @@ namespace MR
                                 params.im2_image_interp->scanner (im2_scanner_pos_iter);
 
 
-                                bool within_mask_flag = true;
-
                                 if (params.im1_mask_interp) {
-
                                     params.im1_mask_interp->scanner (im1_scanner_pos_iter);
                                     if (params.im1_mask_interp->value() < 0.5)
-                                    within_mask_flag = false;
-
+                                        continue;
                                 }
 
                                 if (params.im2_mask_interp) {
                                     params.im2_mask_interp->scanner (im2_scanner_pos_iter);
                                     if (params.im2_mask_interp->value() < 0.5)
-                                    within_mask_flag = false;
+                                        continue;
                                 }
 
-                                if (within_mask_flag) {
+                                Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad_iter;
+                                typename Params::Im1ValueType im1_value_iter;
+                                params.im1_image_interp->value_and_gradient_wrt_scanner (im1_value_iter, im1_grad_iter);
 
-                                    Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad_iter;
-                                    typename Params::Im1ValueType im1_value_iter;
-                                    params.im1_image_interp->value_and_gradient_wrt_scanner (im1_value_iter, im1_grad_iter);
-
-                                    Eigen::Matrix<typename Params::Im2ValueType, 1, 3> im2_grad_iter;
-                                    typename Params::Im2ValueType im2_value_iter;
-                                    params.im2_image_interp->value_and_gradient_wrt_scanner (im2_value_iter, im2_grad_iter);
+                                Eigen::Matrix<typename Params::Im2ValueType, 1, 3> im2_grad_iter;
+                                typename Params::Im2ValueType im2_value_iter;
+                                params.im2_image_interp->value_and_gradient_wrt_scanner (im2_value_iter, im2_grad_iter);
 
 
-                                    if (abs(im1_value_iter) > min_value_threshold && abs(im1_value_iter) == abs(im1_value_iter) && abs(im2_value_iter) > min_value_threshold && abs(im2_value_iter) == abs(im2_value_iter) ) {
+                                if (abs(im1_value_iter) > min_value_threshold && abs(im1_value_iter) == abs(im1_value_iter) &&
+                                    abs(im2_value_iter) > min_value_threshold && abs(im2_value_iter) == abs(im2_value_iter) ) {
+                                    local_sf = local_sf + im1_value_iter;
+                                    local_sm = local_sm + im2_value_iter;
+                                    local_sff = local_sff + im1_value_iter * im1_value_iter;
+                                    local_smm = local_smm + im2_value_iter * im2_value_iter;
+                                    local_sfm = local_sfm + im1_value_iter * im2_value_iter;
 
-                                        local_sf = local_sf + im1_value_iter;
-                                        local_sm = local_sm + im2_value_iter;
-                                        local_sff = local_sff + im1_value_iter * im1_value_iter;
-                                        local_smm = local_smm + im2_value_iter * im2_value_iter;
-                                        local_sfm = local_sfm + im1_value_iter * im2_value_iter;
+                                    local_count++;
 
-                                        local_count = local_count + 1;
-
-                                    }
                                 }
                             }
                         }
@@ -162,7 +154,6 @@ namespace MR
 
 
                     if (local_count > 0) {
-
                         local_sff = local_sff - local_sf * local_sf / local_count;
                         local_smm = local_smm - local_sm * local_sm / local_count;
                         local_sfm = local_sfm - local_sf * local_sm / local_count;
@@ -186,9 +177,7 @@ namespace MR
 
                         return computed_local_cost;
 
-
                     } else {
-
                         return 0.0;
                     }
 
@@ -212,15 +201,12 @@ namespace MR
 
                 LocalCrossCorrelation4D ( ) : weighted (false), min_value_threshold (1.e-5), weight_sum (0.0) { }
 
-                void set_weights (Eigen::VectorXd weights) {
+                void set_weights (const Eigen::VectorXd & weights) {
                     mc_weights = weights;
                     weighted = mc_weights.rows() > 0;
 
                     if (mc_weights.rows() > 0) {
-                        weight_sum = 0.0;
-                        for (int i=0; mc_weights.rows(); i++) {
-                            weight_sum = weight_sum + mc_weights(i);
-                        }
+                        weight_sum = mc_weights.sum();
                     }
                 }
 
@@ -254,8 +240,7 @@ namespace MR
                     Eigen::VectorXd smm_values;
                     Eigen::VectorXd count_values;
 
-                    vector<size_t> extent = params.get_extent();
-                    int local_extent = extent[1];
+                    const vector<size_t> kernel_radius = params.get_radius();
 
                     Header im1_header (params.im1_image);
                     transform_type im1_v2s = MR::Transform (im1_header).voxel2scanner;
@@ -300,18 +285,16 @@ namespace MR
 
                     default_type mi_j1, mi_j2, mi_j3;
 
-                    for (ssize_t i = 0; i < volumes; ++i) {
-                        sf_values[i] = 0;
-                        sm_values[i] = 0;
-                        sff_values[i] = 0;
-                        smm_values[i] = 0;
-                        sfm_values[i] = 0;
-                        count_values[i] = 0;
-                    }
+                    sf_values.setZero();
+                    sm_values.setZero();
+                    sff_values.setZero();
+                    smm_values.setZero();
+                    sfm_values.setZero();
+                    count_values.setZero();
 
-                    for (ssize_t e_i1 = -local_extent; e_i1 <= local_extent; e_i1++) {
-                        for (ssize_t e_i2 = -local_extent; e_i2 <= local_extent; e_i2++) {
-                            for (ssize_t e_i3 = -local_extent; e_i3 <= local_extent; e_i3++) {
+                    for (ssize_t e_i1 = -kernel_radius[0]; e_i1 <= kernel_radius[0]; e_i1++) {
+                        for (ssize_t e_i2 = -kernel_radius[1]; e_i2 <= kernel_radius[1]; e_i2++) {
+                            for (ssize_t e_i3 = -kernel_radius[2]; e_i3 <= kernel_radius[2]; e_i3++) {
 
                                 mi_j1 = mi_i1 + e_i1;
                                 mi_j2 = mi_i2 + e_i2;
@@ -331,55 +314,44 @@ namespace MR
                                 params.im2_image_interp->scanner (im2_scanner_pos_iter);
 
 
-                                bool within_mask_flag = true;
-
                                 if (params.im1_mask_interp) {
                                     params.im1_mask_interp->scanner (im1_scanner_pos_iter);
                                     if (params.im1_mask_interp->value() < 0.5)
-                                    within_mask_flag = false;
-
+                                        continue;
                                 }
 
                                 if (params.im2_mask_interp) {
                                     params.im2_mask_interp->scanner (im2_scanner_pos_iter);
                                     if (params.im2_mask_interp->value() < 0.5)
-                                    within_mask_flag = false;
+                                        continue;
                                 }
 
-                                if (within_mask_flag) {
-
-                                    Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad_iter;
-                                    Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values_iter;
-                                    if (im1_values_iter.rows() != volumes) {
-                                        im1_values_iter.resize (volumes);
-                                        im1_grad_iter.resize (volumes, 3);
-                                    }
-                                    params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values_iter, im1_grad_iter);
-
-                                    Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 3> im2_grad_iter;
-                                    Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 1> im2_values_iter;
-                                    if (im2_values_iter.rows() != volumes) {
-                                        im2_values_iter.resize (volumes);
-                                        im2_grad_iter.resize (volumes, 3);
-                                    }
-                                    params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values_iter, im2_grad_iter);
-
-                                    for (ssize_t i = 0; i < volumes; ++i) {
-
-                                        if (abs(im1_values_iter[i]) > 0 && abs(im1_values_iter[i]) == abs(im1_values_iter[i]) && abs(im2_values_iter[i]) > 0 && abs(im2_values_iter[i]) == im2_values_iter[i] ) {
-
-                                            sf_values[i] = sf_values[i] + im1_values_iter[i];
-                                            sm_values[i] = sm_values[i] + im2_values_iter[i];
-                                            sff_values[i] = sff_values[i] + im1_values_iter[i] * im1_values_iter[i];
-                                            smm_values[i] = smm_values[i] + im2_values_iter[i] * im2_values_iter[i];
-                                            sfm_values[i] = sfm_values[i] + im1_values_iter[i] * im2_values_iter[i];
-                                            count_values[i] = count_values[i] + 1;
-
-                                        }
-                                    }
-
+                                Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad_iter;
+                                Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values_iter;
+                                if (im1_values_iter.rows() != volumes) {
+                                    im1_values_iter.resize (volumes);
+                                    im1_grad_iter.resize (volumes, 3);
                                 }
+                                params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values_iter, im1_grad_iter);
 
+                                Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 3> im2_grad_iter;
+                                Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 1> im2_values_iter;
+                                if (im2_values_iter.rows() != volumes) {
+                                    im2_values_iter.resize (volumes);
+                                    im2_grad_iter.resize (volumes, 3);
+                                }
+                                params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values_iter, im2_grad_iter);
+
+                                for (ssize_t i = 0; i < volumes; ++i) {
+                                    if (abs(im1_values_iter[i]) > 0 && !std::isnan(im1_values_iter[i]) && abs(im2_values_iter[i]) > 0 && !std::isnan(im2_values_iter[i])) {
+                                        sf_values[i] = sf_values[i] + im1_values_iter[i];
+                                        sm_values[i] = sm_values[i] + im2_values_iter[i];
+                                        sff_values[i] = sff_values[i] + im1_values_iter[i] * im1_values_iter[i];
+                                        smm_values[i] = smm_values[i] + im2_values_iter[i] * im2_values_iter[i];
+                                        sfm_values[i] = sfm_values[i] + im1_values_iter[i] * im2_values_iter[i];
+                                        count_values[i]++;
+                                    }
+                                }
                             }
                         }
                     }
@@ -390,7 +362,7 @@ namespace MR
                         bool include_volume = true;
 
                         if (this->weighted) {
-                            if (this->mc_weights(i) < 0.05) {
+                            if (this->mc_weights(i) < 0.05) {  // TODO: why is this needed, can we get rid of the include_volume check?
                                 include_volume= false;
                             }
                         }
@@ -436,7 +408,6 @@ namespace MR
                                 }
                             }
                         }
-
                     }
 
                     return computed_local_cost;

@@ -108,7 +108,7 @@ namespace MR
 
         Linear () :
           stages (3),
-          kernel_extent (3, 0),
+          kernel_radius (3, 0),
           grid_spacing (1),
           grad_tolerance (1.0e-6),
           step_tolerance (1.0e-10),
@@ -249,21 +249,16 @@ namespace MR
           }
         }
 
-        void set_extent (const vector<size_t> extent) {
-          for (size_t d = 0; d < extent.size(); ++d) {
-            if ((int) extent[d] < 0)
-              throw Exception ("the neighborhood kernel extent must be at least 1 voxel for LNCC - or 0 for global NCC");
+        void set_radius (const vector<size_t> radius) {
+          for (const auto& e : radius) {
+            if (e < 0) throw Exception ("the neighborhood kernel radius must be at least 1 voxel for LNCC - or 0 for global NCC");
           }
-          kernel_extent = extent;
+          kernel_radius = radius;
         }
 
         bool get_lncc_extent_mode () {
-          // returns true when the kernel extent is greater than 0 (requirement for LNCC similarity)
-          if (kernel_extent[1] > 0) {
-            return true;
-          } else {
-            return false;
-          }
+          // returns true when the kernel radius is greater than 0 (requirement for LNCC similarity)
+          return *std::max_element(kernel_radius.begin(), kernel_radius.end()) > 0;
         }
 
         void set_init_translation_type (Transform::Init::InitType type) {
@@ -458,8 +453,10 @@ namespace MR
               parameters.loop_density = stage.loop_density;
               if (contrasts.size())
                 parameters.set_mc_settings (stage_contrasts);
-              if (grid_spacing > 1)
+              if (grid_spacing > 1) {
                 parameters.set_grid_spacing (grid_spacing);
+                DEBUG ("neighbourhood kernel spacing: " + str(grid_spacing));
+              }
 
 
               // if (robust_estimate)
@@ -475,8 +472,8 @@ namespace MR
                   ext(i) *= midway_image_header.size(i) - 0.5;
                 parameters.set_control_points_extent(ext);
               }
-              DEBUG ("neighbourhood kernel extent: " + str(kernel_extent));
-              parameters.set_extent (kernel_extent);
+              DEBUG ("neighbourhood kernel radius: " + str(kernel_radius));
+              parameters.set_radius (kernel_radius);
               Eigen::Vector3d spacing (
                 midway_image_header.spacing(0),
                 midway_image_header.spacing(1),
@@ -602,8 +599,8 @@ namespace MR
       protected:
         vector<StageSetting> stages;
         vector<MultiContrastSetting> contrasts, stage_contrasts;
-        vector<size_t> kernel_extent;
-        ssize_t grid_spacing;
+        vector<size_t> kernel_radius;
+        ssize_t grid_spacing;  // TODO rename to grid_stride?
         default_type grad_tolerance;
         default_type step_tolerance;
         std::streambuf* log_stream;

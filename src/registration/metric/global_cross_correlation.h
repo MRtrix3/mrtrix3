@@ -55,7 +55,8 @@ namespace MR
 
             public:
 
-                GNCCPrecomputeFunctorMasked_Naive (const ParamType& parameters, default_type& output_count, default_type& output_sf, default_type& output_sm, default_type& output_sff, default_type& output_smm, default_type& output_sfm, default_type &output_gncc) :
+                GNCCPrecomputeFunctorMasked_Naive (const ParamType& parameters, default_type& output_count, default_type& output_sf, default_type& output_sm,
+                    default_type& output_sff, default_type& output_smm, default_type& output_sfm, default_type &output_gncc) :
                 mutex (new std::mutex),
                 params (parameters),
                 global_count (output_count),
@@ -88,7 +89,7 @@ namespace MR
 
                     std::lock_guard<std::mutex> lock (*mutex);
 
-                    if (local_count > 0 && local_count == local_count) {
+                    if (local_count > 0) {
                         global_count += local_count;
                         global_sf += local_sf;
                         global_sm += local_sm;
@@ -97,7 +98,7 @@ namespace MR
                         global_sfm += local_sfm;
                     }
 
-                    if (global_count > 0 && global_count == global_count) {
+                    if (global_count > 0) {
                         default_type sff = global_sff - (global_sf * global_sf / global_count);
                         default_type smm = global_smm - (global_sm * global_sm / global_count);
                         default_type sfm = global_sfm - (global_sf * global_sm / global_count);
@@ -166,7 +167,7 @@ namespace MR
                     local_smm += im2_value * im2_value;
                     local_sfm += im1_value * im2_value;
 
-                    local_count += 1;
+                    local_count++;
 
                     return;
                 }
@@ -334,7 +335,8 @@ namespace MR
 
             public:
 
-                GNCCPrecomputeFunctorMasked4D_Naive (const ParamType& parameters, Eigen::VectorXd& output_count, Eigen::VectorXd& output_sf, Eigen::VectorXd& output_sm, Eigen::VectorXd& output_sff, Eigen::VectorXd& output_smm, Eigen::VectorXd& output_sfm, Eigen::VectorXd &output_gncc) :
+                GNCCPrecomputeFunctorMasked4D_Naive (const ParamType& parameters, Eigen::VectorXd& output_count, Eigen::VectorXd& output_sf, Eigen::VectorXd& output_sm,
+                    Eigen::VectorXd& output_sff, Eigen::VectorXd& output_smm, Eigen::VectorXd& output_sfm, Eigen::VectorXd &output_gncc) :
                 mutex (new std::mutex),
                 params (parameters),
                 volumes(parameters.im1_image.size(3)),
@@ -347,22 +349,12 @@ namespace MR
                 global_sfm (output_sfm),
                 global_gncc(output_gncc) {
 
-                    local_sf.resize (volumes);
-                    local_sm.resize (volumes);
-                    local_sff.resize (volumes);
-                    local_smm.resize (volumes);
-                    local_sfm.resize (volumes);
-                    local_count.resize (volumes);
-
-                    for (ssize_t i = 0; i < volumes; ++i) {
-                        local_sf[i] = 0;
-                        local_sm[i] = 0;
-                        local_count[i] = 0;
-                        local_sff[i] = 0;
-                        local_smm[i] = 0;
-                        local_sfm[i] = 0;
-                    }
-
+                    local_sf.setZero (volumes);
+                    local_sm.setZero (volumes);
+                    local_sff.setZero (volumes);
+                    local_smm.setZero (volumes);
+                    local_sfm.setZero (volumes);
+                    local_count.setZero (volumes);
 
                     if (params.robust_estimate_subset) {
                         assert (params.robust_estimate_subset_from.size() == 3);
@@ -451,7 +443,7 @@ namespace MR
 
                         if (abs((default_type) im1_values[i]) > 0.0 && abs((default_type) im2_values[i]) > 0.0) {
 
-                            local_count[i] = local_count[i] + 1;
+                            local_count[i]++;
                             local_sf[i] = local_sf[i] + im1_values[i];
                             local_sm[i] = local_sm[i] + im2_values[i];
                             local_sff[i] = local_sff[i] + im1_values[i] * im1_values[i];
