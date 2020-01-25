@@ -32,10 +32,12 @@ class MRtrixError(MRtrixBaseError): #pylint: disable=unused-variable
 
 
 # Contains the command currently being executed, appended with the version of the MRtrix3 Python library
-COMMAND_HISTORY_STRING = sys.argv[0]
-for arg in sys.argv[1:]:
-  COMMAND_HISTORY_STRING += ' ' + quote(arg) # Use quotation marks only if required
-COMMAND_HISTORY_STRING += '  (version=' + __version__ + ')"'
+COMMAND_HISTORY_STRING = None
+if sys.argv:
+  COMMAND_HISTORY_STRING = sys.argv[0]
+  for arg in sys.argv[1:]:
+    COMMAND_HISTORY_STRING += ' ' + quote(arg) # Use quotation marks only if required
+  COMMAND_HISTORY_STRING += '  (version=' + __version__ + ')'
 
 
 # Location of binaries that belong to the same MRtrix3 installation as the Python library being invoked
