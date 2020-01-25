@@ -442,7 +442,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
   import_dwi_pe_table_option = ''
   if dwi_manual_pe_scheme:
-    matrix.save_matrix('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
+    phaseencoding.save('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
     import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
 
 
@@ -681,7 +681,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required when setting up the topup call
   se_epi_manual_pe_table_option = ''
   if se_epi_manual_pe_scheme:
-    matrix.save_matrix('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
+    phaseencoding.save('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
     se_epi_manual_pe_table_option = ' -import_pe_table se_epi_manual_pe_scheme.txt'
 
 
