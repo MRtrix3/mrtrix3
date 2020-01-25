@@ -160,7 +160,7 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
 
 # Save numeric data to a text file
 def save_numeric(filename, data, **kwargs):
-  fmt = kwargs.pop('fmt', '%6f')
+  fmt = kwargs.pop('fmt', '%.15g')
   delimiter = kwargs.pop('delimiter', ' ')
   newline = kwargs.pop('newline', '\n')
   add_to_command_history = bool(kwargs.pop('add_to_command_history', True))
@@ -237,6 +237,7 @@ def save_matrix(filename, data, **kwargs): #pylint: disable=unused-variable
   for line in data[1:]:
     if len(line) != columns:
       raise TypeError('Input to matrix.save_matrix() must be a 2D matrix')
+  kwargs['fmt'] = kwargs['fmt'] if 'fmt' in kwargs else '%18.15f'
   save_numeric(filename, data, **kwargs)
 
 
@@ -248,15 +249,14 @@ def save_transform(filename, data, **kwargs): #pylint: disable=unused-variable
   for line in data:
     if len(line) != 4:
       raise TypeError('Input to matrix.save_transform() must be a 3x4 or 4x4 matrix')
-  kwargs['fmt'] = kwargs['fmt'] if 'fmt' in kwargs else '%18.15f'
   if len(data) == 4:
     if any(a!=b for a, b in zip(data[3], _TRANSFORM_LAST_ROW)):
       raise TypeError('Input to matrix.save_transform() is not a valid affine matrix (fourth line contains values other than "0,0,0,1")')
-    save_numeric(filename, data, **kwargs)
+    save_matrix(filename, data, **kwargs)
   elif len(data) == 3:
     padded_data = data[:]
     padded_data.append(_TRANSFORM_LAST_ROW)
-    save_numeric(filename, data, **kwargs)
+    save_matrix(filename, data, **kwargs)
   else:
     raise TypeError('Input to matrix.save_matrix() must be a 3x4 or 4x4 matrix')
 
