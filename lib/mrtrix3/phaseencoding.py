@@ -131,4 +131,4 @@ def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
       for line in value.splitlines():
         outfile.write('# ' + key + ': ' + line + '\n')
     for line in scheme:
-      outfile.write('{:d} {:d} {:d} {:.15g}\n'.format(*line))
+      outfile.write('{:.0f} {:.0f} {:.0f} {:.15g}\n'.format(*line))
