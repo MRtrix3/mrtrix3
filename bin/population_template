@@ -17,7 +17,7 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import collections, math, os, sys, shutil, re
+import collections, json, math, os, re, shutil, sys
 
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
@@ -1401,10 +1401,15 @@ def execute(): #pylint: disable=unused-variable
     os.makedirs(warp_path)
     progress = app.ProgressBar('Copying non-linear warps to output directory "' + warp_path + '"')
     for inp in ins:
+      keyval = image.Header(os.path.join('warps', inp.uid + '.mif')).keyval()
+      keyval.pop('command_history', None)
+      json_path = os.path.join('warps', inp.uid + '.json')
+      with open(json_path, 'w') as json_file:
+        json.dump(keyval, json_file)
       run.command('mrconvert ' + os.path.join('warps', inp.uid + '.mif') + ' ' +
                   path.quote(os.path.join(warp_path, xcontrast_xsubject_pre_postfix[0] +
                                           inp.uid + xcontrast_xsubject_pre_postfix[1] + '.mif')),
-                  mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
+                  mrconvert_keyval=json_path, force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
 
@@ -1414,9 +1419,11 @@ def execute(): #pylint: disable=unused-variable
       run.function(shutil.rmtree, linear_transformations_path)
     os.makedirs(linear_transformations_path)
     for inp in ins:
-      run.function(copy, os.path.join('linear_transforms', inp.uid + '.txt'),
-                   os.path.join(linear_transformations_path, xcontrast_xsubject_pre_postfix[0] +
-                                inp.uid + xcontrast_xsubject_pre_postfix[1] + '.txt'))
+      trafo = matrix.load_transform(os.path.join('linear_transforms', inp.uid + '.txt'))
+      matrix.save_transform(os.path.join(linear_transformations_path,
+                                         xcontrast_xsubject_pre_postfix[0] + inp.uid
+                                         + xcontrast_xsubject_pre_postfix[1] + '.txt'),
+                            trafo)
 
   if app.ARGS.transformed_dir:
     for cid, trdir in enumerate(app.ARGS.transformed_dir):
