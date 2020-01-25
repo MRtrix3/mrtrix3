@@ -1142,9 +1142,12 @@ def execute(): #pylint: disable=unused-variable
       run.function(copy, os.path.join('linear_transforms_initial', inp.uid+'.txt'),
                    os.path.join('linear_transforms', inp.uid+'.txt'))
   else:
+    level = 0
+    regtype = linear_type[0]
+    def linear_msg():
+      return 'Optimising template with linear registration (stage {0} of {1}; {2})'.format(level, len(linear_scales), regtype)
+    progress = app.ProgressBar(linear_msg, (3 if use_masks else 2) * len(linear_scales) * len(ins))
     for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
-      msg = 'Optimising template with {2} registration (linear stage {0} of {1})'.format(level + 1, len(linear_scales), linear_type[level])
-      progress = app.ProgressBar(msg, len(ins) * n_contrasts)
       for inp in ins:
         initialise_option = ''
         if use_masks:
@@ -1215,7 +1218,7 @@ def execute(): #pylint: disable=unused-variable
           for im_temp in tmpl:
             run.function(os.remove, im_temp)
         progress.increment()
-      progress.done()
+
       # Here we ensure the template doesn't drift or scale
       # TODO matrix avarage might produce a large FOV for large rotations  # pylint: disable=fixme
       run.command('transformcalc ' + ' '.join(path.all_in_dir('linear_transforms_%02i' % level)) +
@@ -1230,7 +1233,6 @@ def execute(): #pylint: disable=unused-variable
           transform = matrix.dot(matrix.load_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt')), average_inv)
           matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform)
 
-      progress = app.ProgressBar('Transforming all subjects to revised template', len(ins) * n_contrasts)
       for cid in range(n_contrasts):
         for inp in ins:
           run.command('mrtransform ' + c_mrtransform_reorientation[cid] + inp.ims_path[cid] +
@@ -1241,10 +1243,8 @@ def execute(): #pylint: disable=unused-variable
                       datatype_option,
                       force=True)
           progress.increment()
-      progress.done()
 
       if use_masks:
-        progress = app.ProgressBar('Transforming all masks to revised template', len(ins) * n_contrasts)
         for cid in range(n_contrasts):
           for inp in ins:
             run.command('mrtransform ' + inp.msk_path +
@@ -1254,7 +1254,6 @@ def execute(): #pylint: disable=unused-variable
                         ' ' + inp.msk_transformed,
                         force=True)
             progress.increment()
-        progress.done()
 
       if nanmask_input:
         inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],
@@ -1273,6 +1272,7 @@ def execute(): #pylint: disable=unused-variable
 
     for entry in os.listdir('linear_transforms_%02i' % level):
       run.function(copy, os.path.join('linear_transforms_%02i' % level, entry), os.path.join('linear_transforms', entry))
+    progress.done()
 
   # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
   if use_masks and (dononlinear or app.ARGS.template_mask):
@@ -1281,11 +1281,12 @@ def execute(): #pylint: disable=unused-variable
     current_template_mask = 'init_nl_template_mask.mif'
 
   if dononlinear:
-    app.console('Optimising template with non-linear registration')
     path.make_dir('warps')
+    level = 0
+    def nonlinear_msg():
+      return 'Optimising template with non-linear registration (stage {0} of {1})'.format(level + 1, len(nl_scales))
+    progress = app.ProgressBar(nonlinear_msg, len(nl_scales) * len(ins))
     for level, (scale, niter, lmax) in enumerate(zip(nl_scales, nl_niter, nl_lmax)):
-      msg = 'Optimising template with non-linear registration (stage {0} of {1})'.format(level + 1, len(nl_scales))
-      progress = app.ProgressBar(msg, len(ins))
       for inp in ins:
         if level > 0:
           initialise_option = ' -nl_init ' + os.path.join('warps_%02i' % (level - 1), inp.uid + '.mif')
@@ -1355,8 +1356,7 @@ def execute(): #pylint: disable=unused-variable
         if level > 0:
           run.function(os.remove, os.path.join('warps_%02i' % (level - 1), inp.uid + '.mif'))
 
-        progress.increment()
-      progress.done()
+        progress.increment(nonlinear_msg())
 
       if nanmask_input:
         inplace_nan_mask([_inp.ims_transformed[cid] for _inp in ins for cid in range(n_contrasts)],
@@ -1389,6 +1389,7 @@ def execute(): #pylint: disable=unused-variable
       else:
         for inp in ins:
           run.function(shutil.move, os.path.join('warps_%02i' % level, inp.uid + '.mif'), 'warps')
+    progress.done()
 
   for cid in range(n_contrasts):
     run.command('mrconvert ' + cns.templates[cid] + ' ' + cns.templates_out[cid],
