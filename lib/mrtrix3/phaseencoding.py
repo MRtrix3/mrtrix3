@@ -17,7 +17,7 @@
 
 
 
-from mrtrix3 import MRtrixError
+from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
 from mrtrix3.utils import STRING_TYPES
 
 
@@ -75,7 +75,7 @@ def get_scheme(arg): #pylint: disable=unused-variable
   from mrtrix3 import app, image #pylint: disable=import-outside-toplevel
   if not isinstance(arg, image.Header):
     if not isinstance(arg, STRING_TYPES):
-      raise MRtrixError('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
+      raise TypeError('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
     arg = image.Header(arg)
   if 'pe_scheme' in arg.keyval():
     app.debug(str(arg.keyval()['pe_scheme']))
@@ -89,3 +89,46 @@ def get_scheme(arg): #pylint: disable=unused-variable
   num_volumes = 1 if len(arg.size()) < 4 else arg.size()[3]
   app.debug(str(line) + ' x ' + str(num_volumes) + ' rows')
   return [ line ] * num_volumes
+
+
+
+# Save a phase-encoding scheme to file
+def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
+  from mrtrix3 import matrix
+  add_to_command_history = bool(kwargs.pop('add_to_command_history', True))
+  header = kwargs.pop('header', { })
+  if kwargs:
+    raise TypeError('Unsupported keyword arguments passed to phaseencoding.save(): ' + str(kwargs))
+
+  if not scheme:
+    raise MRtrixError('phaseencoding.save() cannot be run on an empty scheme')
+  if not matrix.is_2d_matrix(scheme):
+    raise TypeError('Input to phaseencoding.save() must be a 2D matrix')
+  if len(scheme[0]) != 4:
+    raise MRtrixError('Input to phaseencoding.save() not a valid scheme '
+                      '(contains ' + str(len(scheme[0])) + ' columns rather than 4)')
+
+  if header:
+    if isinstance(header, STRING_TYPES):
+      header = { 'comments' : header }
+    elif isinstance(header, list):
+      header = { 'comments' : '\n'.join(str(entry) for entry in header) }
+    elif isinstance(header, dict):
+      header = dict((key, str(value)) for key, value in header.items())
+    else:
+      raise TypeError('Unrecognised input to matrix.save_numeric() using "header=" option')
+  else:
+    header = { }
+
+  if add_to_command_history:
+    if 'command_history' in header:
+      header['command_history'] += '\n' + COMMAND_HISTORY_STRING
+    else:
+      header['command_history'] = COMMAND_HISTORY_STRING
+
+  with open(filename, 'w') as outfile:
+    for key, value in sorted(header.items()):
+      for line in value.splitlines():
+        outfile.write('# ' + key + ': ' + line + '\n')
+    for line in scheme:
+      outfile.write('{:.0f} {:.0f} {:.0f} {:.15g}\n'.format(*line))
