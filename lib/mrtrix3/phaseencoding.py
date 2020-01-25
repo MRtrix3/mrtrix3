@@ -93,9 +93,8 @@ def get_scheme(arg): #pylint: disable=unused-variable
 
 
 # Save a phase-encoding scheme to file
-def save(filename, scheme, **kwargs):
+def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
   from mrtrix3 import matrix
-  from mrtrix3.utils import STRING_TYPES
   add_to_command_history = bool(kwargs.pop('add_to_command_history', True))
   header = kwargs.pop('header', { })
   if kwargs:
