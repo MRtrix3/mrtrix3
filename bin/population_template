@@ -1400,7 +1400,7 @@ def execute(): #pylint: disable=unused-variable
     if os.path.exists(warp_path):
       run.function(shutil.rmtree, warp_path)
     os.makedirs(warp_path)
-    progress = app.ProgressBar('Copying non-linear warps to output directory "' + warp_path + '"')
+    progress = app.ProgressBar('Copying non-linear warps to output directory "' + warp_path + '"', len(ins))
     for inp in ins:
       run.command('mrconvert ' + os.path.join('warps', inp.uid + '.mif') + ' ' +
                   path.quote(os.path.join(warp_path, xcontrast_xsubject_pre_postfix[0] +
@@ -1425,7 +1425,7 @@ def execute(): #pylint: disable=unused-variable
       if os.path.exists(transformed_path):
         run.function(shutil.rmtree, transformed_path)
       os.makedirs(transformed_path)
-      progress = app.ProgressBar('Copying transformed images to output directory "' + transformed_path + '"')
+      progress = app.ProgressBar('Copying transformed images to output directory "' + transformed_path + '"', len(ins))
       for inp in ins:
         run.command(['mrconvert', inp.ims_transformed[cid], os.path.join(transformed_path, inp.ims_filenames[cid])],
                     mrconvert_keyval=inp.get_ims_path(False)[cid], force=app.FORCE_OVERWRITE)
