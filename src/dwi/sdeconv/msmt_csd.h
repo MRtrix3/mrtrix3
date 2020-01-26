@@ -29,6 +29,7 @@
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 
+#define DEFAULT_MSMTCSD_LMAX 8
 #define DEFAULT_MSMTCSD_NORM_LAMBDA 1.0e-10
 #define DEFAULT_MSMTCSD_NEG_LAMBDA 1.0e-10
 
@@ -101,7 +102,7 @@ namespace MR
                 if (lmax.empty()) {
                   lmax = lmax_response;
                   for (size_t t = 0; t != num_tissues(); ++t) {
-                    lmax[t] = std::min (8, lmax[t]);
+                    lmax[t] = std::min (DEFAULT_MSMTCSD_LMAX, lmax[t]);
                   }
                 } else {
                   if (lmax.size() != num_tissues())

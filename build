@@ -1334,7 +1334,7 @@ def update_user_docs ():
 ###########################################################################
 
 with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
-  vfile.write('__version__ = "'+ mrtrix_version() +'"\n')
+  vfile.write('__version__ = "'+ mrtrix_version() +'" #pylint: disable=unused-variable\n')
 
 
 ###########################################################################
