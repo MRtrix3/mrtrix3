@@ -102,14 +102,11 @@ namespace MR
 
       float Properties::get_stepsize() const
       {
-        for (size_t index = 0; index != 2; ++index) {
-          const std::string key (index ? "step_size" : "output_step_size");
-          auto it = KeyValues::find (key);
-          if (it != KeyValues::end()) {
-            try {
-              return to<float> (it->second);
-            } catch (...) { }
-          }
+        auto it = KeyValues::find ("step_size");
+        if (it != KeyValues::end()) {
+          try {
+            return to<float> (it->second);
+          } catch (...) { }
         }
         return NaN;
       }
