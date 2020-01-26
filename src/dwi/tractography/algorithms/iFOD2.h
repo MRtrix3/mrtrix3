@@ -90,10 +90,9 @@ namespace MR
 
                   // iFOD2 by default downsamples after track propagation back to the desired 'step size'
                   //   i.e. the sub-step detail is removed from the output
-                  size_t downsample_ratio = num_samples;
-                  properties.set (downsample_ratio, "downsample_factor");
-                  downsampler.set_ratio (downsample_ratio);
-                  properties["output_step_size"] = str (step_size * downsample_ratio / float(num_samples));
+                  size_t downsample_factor = num_samples;
+                  properties.set (downsample_factor, "downsample_factor");
+                  downsampler.set_ratio (downsample_factor);
 
                   // For iFOD2, "step_size" represents the length of the chord represented
                   //   using "num_samples" vertices rather than just one; the following two
@@ -102,7 +101,7 @@ namespace MR
                   //     (prior to downsampling)
                   const float angle_minradius_preds = 2.0 * std::asin (step_size / (2.0 * min_radius)) / float(num_samples);
                   //   - The maximal possible distance between vertices after downsampling
-                  const float max_step_postds = downsampler.get_ratio() * step_size / float(num_samples);
+                  const float max_step_postds = downsample_factor * step_size / float(num_samples);
                   set_num_points (angle_minradius_preds, max_step_postds);
                 }
 
