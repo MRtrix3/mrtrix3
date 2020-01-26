@@ -42,7 +42,7 @@ namespace MR
 
 
     FORCE_INLINE default_type bvalue_epsilon () {
-      static const default_type value = File::Config::get_float ("BValueEpsilon", DWI_SHELLS_BZERO_THREHSOLD);
+      static const default_type value = File::Config::get_float ("BValueEpsilon", DWI_SHELLS_EPSILON);
       return value;
     }
 
