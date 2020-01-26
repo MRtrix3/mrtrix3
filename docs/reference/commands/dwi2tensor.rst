@@ -27,7 +27,14 @@ By default, the diffusion tensor (and optionally its kurtosis) is fitted to the 
 
 * The -iter option controls the number of iterations of the IWLS prodedure. If this is set to zero, then the output model parameters will be those resulting from the first fitting step only: either WLS by default, or OLS if the -ols option is used in conjunction with -iter 0.
 
-The tensor coefficients are stored in the output image as follows: volumes 0-5: D11, D22, D33, D12, D13, D23 ; If diffusion kurtosis is estimated using the -dkt option, these are stored as follows: volumes 0-2: W1111, W2222, W3333 ; volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333 ; volumes 9-11: W1122, W1133, W2233 ; volumes 12-14: W1123, W1223, W1233 ;
+The tensor coefficients are stored in the output image as follows: |br|
+volumes 0-5: D11, D22, D33, D12, D13, D23
+
+If diffusion kurtosis is estimated using the -dkt option, these are stored as follows: |br|
+volumes 0-2: W1111, W2222, W3333 |br|
+volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333 |br|
+volumes 9-11: W1122, W1133, W2233 |br|
+volumes 12-14: W1123, W1223, W1233
 
 Options
 -------
@@ -66,7 +73,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -77,9 +84,13 @@ References
 
 References based on fitting algorithm used:
 
-* OLS, WLS:Basser, P.J.; Mattiello, J.; LeBihan, D.Estimation of the effective self-diffusion tensor from the NMR spin echo.J Magn Reson B., 1994, 103, 247–254.
+* OLS, WLS: |br|
+  Basser, P.J.; Mattiello, J.; LeBihan, D.Estimation of the effective self-diffusion tensor from the NMR spin echo.J Magn Reson B., 1994, 103, 247–254.
 
-* IWLS:Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
+* IWLS: |br|
+  Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

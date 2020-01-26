@@ -74,6 +74,9 @@ def execute(): #pylint: disable=unused-variable
 
   fsl_suffix = fsl.suffix()
 
+  if not app.ARGS.mask and not app.ARGS.premasked and not find_executable('dc'):
+    app.warn('Unix command "dc" not found; FSL script "standard_space_roi" may fail')
+
   sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
   if app.ARGS.sgm_amyg_hipp:
     sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
@@ -93,7 +96,7 @@ def execute(): #pylint: disable=unused-variable
   fast_t2_input = ''
 
   # Decide whether or not we're going to do any brain masking
-  if os.path.exists('mask.mif'):
+  if app.ARGS.mask:
 
     fast_t1_input = 'T1_masked' + fsl_suffix
 
@@ -229,4 +232,4 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrgrid combined_precrop.mif crop result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)

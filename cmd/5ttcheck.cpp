@@ -81,8 +81,11 @@ void run ()
       size_t voxel_error_sum = 0;
       for (auto outer = Loop(in, 0, 3) (in); outer; ++outer) {
         default_type sum = 0.0;
-        for (auto inner = Loop(3) (in); inner; ++inner)
+        for (auto inner = Loop(3) (in); inner; ++inner) {
           sum += in.value();
+          if (in.value() < 0.0f || in.value() > 1.0f)
+            throw Exception ("Partial volume values must lie between 0.0 and 1.0 inclusive");
+        }
         if (!sum) continue;
         if (abs (sum-1.0) > MAX_ERROR) {
           ++voxel_error_sum;

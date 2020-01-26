@@ -62,7 +62,8 @@ Options to control when SIFT terminates filtering
 
 -  **-term_number value** number of streamlines - continue filtering until this number of streamlines remain
 
--  **-term_ratio value** termination ratio - defined as the ratio between reduction in cost function, and reduction in density of streamlines.Smaller values result in more streamlines being filtered out.
+-  **-term_ratio value** termination ratio - defined as the ratio between reduction in cost function, and reduction in density of streamlines. |br|
+   Smaller values result in more streamlines being filtered out.
 
 -  **-term_mu value** terminate filtering once the SIFT proportionality coefficient reaches a given value
 
@@ -79,7 +80,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -89,6 +90,8 @@ References
 ^^^^^^^^^^
 
 Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. SIFT: Spherical-deconvolution informed filtering of tractograms. NeuroImage, 2013, 67, 298-312
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

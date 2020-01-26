@@ -26,7 +26,7 @@ namespace MR
 
       const char* encoding_description =
         "The spherical harmonic coefficients are stored according the conventions "
-        "described the main documentation, which can be found at the following link: \n\n"
+        "described the main documentation, which can be found at the following link: \n"
         "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/spherical_harmonics.html";
 
     }

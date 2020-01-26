@@ -18,13 +18,18 @@ from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, image, path, run
 
 
+WM_ALGOS = [ 'fa', 'tax', 'tournier' ]
+
+
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('dhollander', parents=[base_parser])
   parser.set_author('Thijs Dhollander (thijs.dhollander@gmail.com)')
-  parser.set_synopsis('An improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions; does not require a T1 image (or segmentation thereof). This implementation includes the Dhollander et al. (2019) improvements for single-fibre WM response function estimation.')
+  parser.set_synopsis('Unsupervised estimation of WM, GM and CSF response functions that does not require a T1 image (or segmentation thereof)')
+  parser.add_description('This is an improved version of the Dhollander et al. (2016) algorithm for unsupervised estimation of WM, GM and CSF response functions, which includes the Dhollander et al. (2019) improvements for single-fibre WM response function estimation (prior to this update, the "dwi2response tournier" algorithm had been utilised specifically for the single-fibre WM response function estimation step).')
   parser.add_citation('Dhollander, T.; Raffelt, D. & Connelly, A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5')
-  parser.add_citation('Dhollander, T.; Mito, R.; Raffelt, D. & Connelly, A. Improved white matter response function estimation for 3-tissue constrained spherical deconvolution. Proc Intl Soc Mag Reson Med, 2019, 555')
+  parser.add_citation('Dhollander, T.; Mito, R.; Raffelt, D. & Connelly, A. Improved white matter response function estimation for 3-tissue constrained spherical deconvolution. Proc Intl Soc Mag Reson Med, 2019, 555',
+                      condition='If -wm_algo option is not used')
   parser.add_argument('input', help='Input DWI dataset')
   parser.add_argument('out_sfwm', help='Output single-fibre WM response function text file')
   parser.add_argument('out_gm', help='Output GM response function text file')
@@ -35,6 +40,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-sfwm', type=float, default=0.5, help='Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)')
   options.add_argument('-gm', type=float, default=2.0, help='Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)')
   options.add_argument('-csf', type=float, default=10.0, help='Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)')
+  options.add_argument('-wm_algo', metavar='algorithm', choices=WM_ALGOS, help='Use external dwi2response algorithm for WM single-fibre voxel selection (options: ' + ', '.join(WM_ALGOS) + ') (default: built-in Dhollander 2019)')
 
 
 
@@ -219,29 +225,47 @@ def execute(): #pylint: disable=unused-variable
   run.command('amp2response dwi.mif voxels_gm.mif safe_vecs.mif response_gm.txt' + bvalues_option + ' -isotropic', show=False)
 
   # Get final voxels for single-fibre WM response function estimation from refined WM.
-  app.console('* single-fibre WM:')
-  app.console(' * Selecting final voxels (' + str(app.ARGS.sfwm) + '% of refined WM)...')
+  app.console('* Single-fibre WM:')
+  app.console(' * Selecting final voxels'
+              + ('' if app.ARGS.wm_algo == 'tax' else (' ('+ str(app.ARGS.sfwm) + '% of refined WM)'))
+              + '...')
   voxsfwmcount = int(round(statrefwmcount * app.ARGS.sfwm / 100.0))
-  run.command('mrmath dwi.mif mean mean_sig.mif -axis 3', show=False)
-  refwmcoef = image.statistic('mean_sig.mif', 'median', '-mask refined_wm.mif') * math.sqrt(4.0 * math.pi)
-  if sfwm_lmax:
-    isiso = [ lm == 0 for lm in sfwm_lmax ]
+
+  if app.ARGS.wm_algo:
+    recursive_cleanup_option=''
+    if not app.DO_CLEANUP:
+      recursive_cleanup_option = ' -nocleanup'
+    app.console('   Selecting WM single-fibre voxels using \'' + app.ARGS.wm_algo + '\' algorithm')
+    if app.ARGS.wm_algo == 'tax' and app.ARGS.sfwm != 0.5:
+      app.warn('Single-fibre WM response function selection algorithm "tax" will not honour requested WM voxel percentage')
+    run.command('dwi2response ' + app.ARGS.wm_algo + ' dwi.mif _respsfwmss.txt -mask refined_wm.mif -voxels voxels_sfwm.mif'
+                + ('' if app.ARGS.wm_algo == 'tax' else (' -number ' + str(voxsfwmcount)))
+                + ' -scratch ' + path.quote(app.SCRATCH_DIR)
+                + recursive_cleanup_option,
+                show=False)
   else:
-    isiso = [ bv < bzero_threshold for bv in bvalues ]
-  with open('ewmrf.txt', 'w') as ewr:
-    for iis in isiso:
-      if iis:
-        ewr.write("%s 0 0 0\n" % refwmcoef)
-      else:
-        ewr.write("%s -%s %s -%s\n" % (refwmcoef, refwmcoef, refwmcoef, refwmcoef))
-  run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0' + bvalues_option, show=False)
-  run.command('mrconvert abs_ewm2.mif - -coord 3 0 | mrcalc - abs_csf2.mif -add abs_sum2.mif', show=False)
-  run.command('sh2peaks abs_ewm2.mif - -num 1 -mask refined_wm.mif | peaks2amp - - | mrcalc - abs_sum2.mif -divide - | mrconvert - metric_sfwm2.mif -coord 3 0 -axes 0,1,2', show=False)
-  run.command('mrcalc refined_wm.mif metric_sfwm2.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount * 2) + ' -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - refined_sfwm.mif -axes 0,1,2', show=False)
-  run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm6.mif response_csf.txt abs_csf6.mif -mask refined_sfwm.mif -lmax 6,0' + bvalues_option, show=False)
-  run.command('mrconvert abs_ewm6.mif - -coord 3 0 | mrcalc - abs_csf6.mif -add abs_sum6.mif', show=False)
-  run.command('sh2peaks abs_ewm6.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum6.mif -divide - | mrconvert - metric_sfwm6.mif -coord 3 0 -axes 0,1,2', show=False)
-  run.command('mrcalc refined_sfwm.mif metric_sfwm6.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2', show=False)
+    app.console('   Selecting WM single-fibre voxels using built-in (Dhollander et al., 2019) algorithm')
+    run.command('mrmath dwi.mif mean mean_sig.mif -axis 3', show=False)
+    refwmcoef = image.statistic('mean_sig.mif', 'median', '-mask refined_wm.mif') * math.sqrt(4.0 * math.pi)
+    if sfwm_lmax:
+      isiso = [ lm == 0 for lm in sfwm_lmax ]
+    else:
+      isiso = [ bv < bzero_threshold for bv in bvalues ]
+    with open('ewmrf.txt', 'w') as ewr:
+      for iis in isiso:
+        if iis:
+          ewr.write("%s 0 0 0\n" % refwmcoef)
+        else:
+          ewr.write("%s -%s %s -%s\n" % (refwmcoef, refwmcoef, refwmcoef, refwmcoef))
+    run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0' + bvalues_option, show=False)
+    run.command('mrconvert abs_ewm2.mif - -coord 3 0 | mrcalc - abs_csf2.mif -add abs_sum2.mif', show=False)
+    run.command('sh2peaks abs_ewm2.mif - -num 1 -mask refined_wm.mif | peaks2amp - - | mrcalc - abs_sum2.mif -divide - | mrconvert - metric_sfwm2.mif -coord 3 0 -axes 0,1,2', show=False)
+    run.command('mrcalc refined_wm.mif metric_sfwm2.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount * 2) + ' -ignorezero | mrcalc refined_wm.mif - 0 -if - -datatype bit | mrconvert - refined_sfwm.mif -axes 0,1,2', show=False)
+    run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm6.mif response_csf.txt abs_csf6.mif -mask refined_sfwm.mif -lmax 6,0' + bvalues_option, show=False)
+    run.command('mrconvert abs_ewm6.mif - -coord 3 0 | mrcalc - abs_csf6.mif -add abs_sum6.mif', show=False)
+    run.command('sh2peaks abs_ewm6.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum6.mif -divide - | mrconvert - metric_sfwm6.mif -coord 3 0 -axes 0,1,2', show=False)
+    run.command('mrcalc refined_sfwm.mif metric_sfwm6.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2', show=False)
+
   statvoxsfwmcount = image.statistic('voxels_sfwm.mif', 'count', '-mask voxels_sfwm.mif')
   app.console('   [ WM: ' + str(statrefwmcount) + ' -> ' + str(statvoxsfwmcount) + ' (single-fibre) ]')
   # Estimate SF WM response function
@@ -263,5 +287,5 @@ def execute(): #pylint: disable=unused-variable
   run.function(shutil.copyfile, 'response_gm.txt', path.from_user(app.ARGS.out_gm, False), show=False)
   run.function(shutil.copyfile, 'response_csf.txt', path.from_user(app.ARGS.out_csf, False), show=False)
   if app.ARGS.voxels:
-    run.command('mrconvert check_voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE, show=False)
+    run.command('mrconvert check_voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE, show=False)
   app.console('-------')

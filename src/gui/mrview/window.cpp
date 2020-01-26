@@ -53,6 +53,7 @@ namespace MR
 */
 
       Window* Window::main = nullptr;
+      bool Window::tools_floating = false;
 
       namespace {
 
@@ -233,8 +234,8 @@ namespace MR
         orient (),
         field_of_view (100.0),
         anatomical_plane (2),
-        colourbar_position (ColourMap::Position::BottomRight),
-        tools_colourbar_position (ColourMap::Position::TopRight),
+        colourbar_position (ColourBars::Position::BottomRight),
+        tools_colourbar_position (ColourBars::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
         tool_has_focus (nullptr),
         best_FPS (NAN),
@@ -263,6 +264,12 @@ namespace MR
           QToolButton* button;
 
           setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
+
+          //CONF option: MRViewDockFloating
+          //CONF default: 0 (false)
+          //CONF Whether MRView tools should start docked in the main window, or
+          //CONF floating (detached from the main window).
+          tools_floating = MR::File::Config::get_bool ("MRViewDockFloating", false);
 
           // Main toolbar:
 
@@ -735,7 +742,7 @@ namespace MR
       void Window::parse_arguments ()
       {
         if (MR::App::get_options ("norealign").size())
-          Header::do_not_realign_transform = true;
+          Header::do_realign_transform = false;
 
         if (MR::App::argument.size()) {
           if (MR::App::option.size())  {
@@ -774,18 +781,18 @@ namespace MR
 
 
 
-      ColourMap::Position Window::parse_colourmap_position_str (const std::string& position_str) {
+      ColourBars::Position Window::parse_colourmap_position_str (const std::string& position_str) {
 
-        ColourMap::Position pos(ColourMap::Position::None);
+        ColourBars::Position pos(ColourBars::Position::None);
 
         if(position_str == "bottomleft")
-          pos = ColourMap::Position::BottomLeft;
+          pos = ColourBars::Position::BottomLeft;
         else if(position_str == "bottomright")
-          pos = ColourMap::Position::BottomRight;
+          pos = ColourBars::Position::BottomRight;
         else if(position_str == "topleft")
-          pos = ColourMap::Position::TopLeft;
+          pos = ColourBars::Position::TopLeft;
         else if(position_str == "topright")
-          pos = ColourMap::Position::TopRight;
+          pos = ColourBars::Position::TopRight;
 
         return pos;
       }
@@ -812,7 +819,7 @@ namespace MR
 
       void Window::image_open_slot ()
       {
-        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
+        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open", &current_folder);
         if (image_list.empty())
           return;
 
@@ -832,7 +839,7 @@ namespace MR
 
       void Window::image_import_DICOM_slot ()
       {
-        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import");
+        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import", &current_folder);
         if (folder.empty())
           return;
 
@@ -897,7 +904,7 @@ namespace MR
 
       void Window::image_save_slot ()
       {
-        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination");
+        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination", "", &current_folder);
         if (image_name.empty())
           return;
 
@@ -991,16 +998,10 @@ namespace MR
         if (dynamic_cast<Tool::__Action__*>(action)->dock)
           return;
 
-        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create();
+        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (tools_floating);
         connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
 
-        //CONF option: MRViewDockFloating
-        //CONF default: 0 (false)
-        //CONF Whether MRView tools should start docked in the main window, or
-        //CONF floating (detached from the main window).
-        bool floating = MR::File::Config::get_int ("MRViewDockFloating", 0);
-
-        if (!floating) {
+        if (!tools_floating) {
 
           for (int i = 0; i < tool_group->actions().size(); ++i) {
             Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
@@ -1016,7 +1017,6 @@ namespace MR
 
         }
 
-        tool->setFloating (floating);
         if (show) {
           tool->show();
           tool->raise();
@@ -2195,11 +2195,7 @@ namespace MR
           + OptionGroup ("Debugging options")
 
           + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
-              "The maximum over the last 3 seconds is also displayed.")
-
-          + OptionGroup ("Other options")
-
-          + NoRealignOption;
+              "The maximum over the last 3 seconds is also displayed.");
 
       }
 

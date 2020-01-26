@@ -59,6 +59,7 @@ List of MRtrix3 commands
     commands/label2mesh
     commands/labelconvert
     commands/labelsgmfix
+    commands/labelstats
     commands/maskdump
     commands/maskfilter
     commands/mesh2voxel
@@ -67,6 +68,7 @@ List of MRtrix3 commands
     commands/mraverageheader
     commands/mrcalc
     commands/mrcat
+    commands/mrcentroid
     commands/mrcheckerboardmask
     commands/mrclusterstats
     commands/mrcolour
@@ -85,6 +87,7 @@ List of MRtrix3 commands
     commands/mrstats
     commands/mrthreshold
     commands/mrtransform
+    commands/mrtrix_cleanup
     commands/mrview
     commands/mtnormalise
     commands/peaks2amp
@@ -183,6 +186,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`label2mesh`, "Generate meshes from a label image"
     |cpp.png|, :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
     |python.png|, :ref:`labelsgmfix`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
+    |cpp.png|, :ref:`labelstats`, "Compute statistics of parcels within a label image"
     |cpp.png|, :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     |cpp.png|, :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
     |cpp.png|, :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"
@@ -191,6 +195,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
     |cpp.png|, :ref:`mrcalc`, "Apply generic voxel-wise mathematical operations to images"
     |cpp.png|, :ref:`mrcat`, "Concatenate several images into one"
+    |cpp.png|, :ref:`mrcentroid`, "Determine the centre of mass / centre of gravity of an image"
     |cpp.png|, :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
     |cpp.png|, :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     |cpp.png|, :ref:`mrcolour`, "Apply a colour map to an image"
@@ -209,6 +214,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrstats`, "Compute images statistics"
     |cpp.png|, :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     |cpp.png|, :ref:`mrtransform`, "Apply spatial transformations to an image"
+    |python.png|, :ref:`mrtrix_cleanup`, "Clean up residual temporary files & scratch directories from MRtrix3 commands"
     |cpp.png|, :ref:`mrview`, "The MRtrix image viewer"
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
@@ -219,7 +225,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
     |cpp.png|, :ref:`sh2response`, "Generate an appropriate response function from the image data for spherical deconvolution"
     |cpp.png|, :ref:`shbasis`, "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used"
-    |cpp.png|, :ref:`shconv`, "Perform a spherical convolution"
+    |cpp.png|, :ref:`shconv`, "Perform spherical convolution"
     |cpp.png|, :ref:`shview`, "View spherical harmonics surface plots"
     |cpp.png|, :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     |cpp.png|, :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
