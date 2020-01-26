@@ -317,7 +317,9 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       if cmdstack[-1][0] != 'mrconvert':
         raise TypeError('Argument "mrconvert_keyval=" can only be used if the mrconvert command is being invoked')
       assert not (mrconvert_keyval[0] in [ '\'', '"' ] or mrconvert_keyval[-1] in [ '\'', '"' ])
-      cmdstack[-1].extend([ '-copy_properties', mrconvert_keyval, '-append_property', 'command_history', COMMAND_HISTORY_STRING ])
+      cmdstack[-1].extend([ '-copy_properties', mrconvert_keyval ])
+      if COMMAND_HISTORY_STRING:
+        cmdstack[-1].extend([ '-append_property', 'command_history', COMMAND_HISTORY_STRING ])
 
     for line in cmdstack:
       is_mrtrix_exe = line[0] in EXE_LIST

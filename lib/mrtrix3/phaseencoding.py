@@ -120,7 +120,7 @@ def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
   else:
     header = { }
 
-  if add_to_command_history:
+  if add_to_command_history and COMMAND_HISTORY_STRING:
     if 'command_history' in header:
       header['command_history'] += '\n' + COMMAND_HISTORY_STRING
     else:
