@@ -186,6 +186,7 @@ IndexType index_mask_voxels (size_t& num_voxels)
 {
   auto opt = get_options ("mask");
   auto mask = MaskType::open (opt[0][0]);
+  check_effective_dimensionality (mask, 3);
 
   if (voxel_count (mask, 0, 3) >= std::numeric_limits<uint32_t>::max()-1)
     throw Exception ("mask size exceeds maximum supported using 32-bit integer");
