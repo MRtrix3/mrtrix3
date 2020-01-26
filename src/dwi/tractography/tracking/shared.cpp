@@ -185,9 +185,6 @@ namespace MR
           properties.set (step_size, "step_size");
           INFO ("step size = " + str (step_size) + " mm");
 
-          if (downsampler.get_ratio() > 1)
-            properties["output_step_size"] = str (step_size * downsampler.get_ratio());
-
           max_dist = Defaults::maxlength_voxels * vox();
           properties.set (max_dist, "max_dist");
 
