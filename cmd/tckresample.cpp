@@ -125,26 +125,6 @@ void run ()
 
   const std::unique_ptr<Resampling::Base> resampler (Resampling::get_resampler());
 
-  const float old_step_size = properties.get_stepsize();
-  if (!std::isfinite (old_step_size)) {
-    INFO ("Do not have step size information from input track file");
-  }
-
-  float new_step_size = NaN;
-  if (dynamic_cast<Resampling::FixedStepSize*>(resampler.get())) {
-    new_step_size = dynamic_cast<Resampling::FixedStepSize*> (resampler.get())->get_step_size();
-  } else if (std::isfinite (old_step_size)) {
-    if (dynamic_cast<Resampling::Downsampler*>(resampler.get()))
-      new_step_size = old_step_size * dynamic_cast<Resampling::Downsampler*> (resampler.get())->get_ratio();
-    if (dynamic_cast<Resampling::Upsampler*>(resampler.get()))
-      new_step_size = old_step_size / dynamic_cast<Resampling::Upsampler*> (resampler.get())->get_ratio();
-  }
-  properties["output_step_size"] = std::isfinite (new_step_size) ? str(new_step_size) : "variable";
-
-  auto downsample = properties.find ("downsample_factor");
-  if (downsample != properties.end())
-    properties.erase (downsample);
-
   Worker worker (resampler);
   Receiver receiver (argument[1], properties);
   Thread::run_queue (read,
