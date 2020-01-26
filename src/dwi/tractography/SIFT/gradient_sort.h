@@ -100,12 +100,14 @@ namespace MR
           bool operator() (const VecItType& in)
           {
             candidates.insert (in);
+            initial_candidates.insert (in);
             return true;
           }
 
 
         private:
-          SetType candidates;
+          SetType candidates, initial_candidates;
+          VecItType end;
 
 
           class BlockSender

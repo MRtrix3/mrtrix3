@@ -57,7 +57,7 @@ def execute(): #pylint: disable=unused-variable
     files.append(filename)
   # concatenate to output file
   run.command('mrcat -axis 3 ' + ' '.join(files) + ' out.mif')
-  run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
+  run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
 
 
 # Execute the script

@@ -128,7 +128,7 @@ OPTIONS
             "the streamline trajectory until a valid timeseries is found")
 
   + Option ("upsample",
-      "upsample the tracks by some ratio using Hermite interpolation before mappipng \n"
+      "upsample the tracks by some ratio using Hermite interpolation before mapping "
       "(if omitted, an appropriate ratio will be determined automatically)")
     + Argument ("factor").type_integer (1);
 

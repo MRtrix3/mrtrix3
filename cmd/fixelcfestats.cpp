@@ -62,6 +62,12 @@ void usage ()
   SYNOPSIS = "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing";
 
   DESCRIPTION
+  + "Unlike previous versions of this command, where a whole-brain tractogram file would be provided as input "
+    "in order to generate the fixel-fixel connectivity matrix and smooth fixel data, this version expects to be "
+    "provided with the directory path to a pre-calculated fixel-fixel connectivity matrix (likely generated using "
+    "the MRtrix3 command fixelconnectivity), and for the input fixel data to have already been smoothed (likely "
+    "using the MRtrix3 command fixelfilter)."
+
   + "Note that if the -mask option is used, the output fixel directory will still contain the same set of fixels as that "
     "present in the input fixel template, in order to retain fixel correspondence. However a consequence of this is that "
     "all fixels in the template will be initialy visible when the output fixel directory is loaded in mrview. Those fixels "
@@ -72,8 +78,8 @@ void usage ()
 
   REFERENCES
   + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A." // Internal
-    "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres. \n"
-    "Neuroimage, 2015, 15(117):40-55\n"
+    "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres."
+    "Neuroimage, 2015, 15(117):40-55"
 
   + "* If not using the -cfe_legacy option: \n"
     "Smith, RE.; Dimond, D; Vaughan, D.; Parker, D.; Dhollander, T.; Jackson, G.; Connelly, A. \n"
@@ -81,9 +87,9 @@ void usage ()
     "In Proc OHBM 2019 M789\n"
 
   + "* If using the -nonstationary option: \n"
-    "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. \n"
-    "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
-    "NeuroImage, 2011, 54(3), 2006-19\n" ;
+    "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. "
+    "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. "
+    "NeuroImage, 2011, 54(3), 2006-19" ;
 
   ARGUMENTS
   + Argument ("in_fixel_directory", "the fixel directory containing the data files for each subject (after obtaining fixel correspondence").type_directory_in()
@@ -95,7 +101,9 @@ void usage ()
 
   + Argument ("contrast", "the contrast matrix, specified as rows of weights").type_file_in ()
 
-  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_directory_in ()
+  // .type_various() rather than .type_directory_in() to catch people trying to
+  //   pass a track file, and give a more informative error message
+  + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_various ()
 
   + Argument ("out_fixel_directory", "the output directory where results will be saved. Will be created if it does not exist").type_text();
 
@@ -229,6 +237,11 @@ std::string SubjectFixelImport::fixel_directory;
 
 void run()
 {
+  if (Path::has_suffix (argument[4], ".tck"))
+    throw Exception ("This version of fixelcfestats requires as input not a track file, but a "
+                     "pre-calculated fixel-fixel connectivity matrix; in addition, input fixel "
+                     "data must be pre-smoothed. Please check command / pipeline documentation "
+                     "specific to this software version.");
 
   const value_type cfe_dh = get_option_value ("cfe_dh", DEFAULT_CFE_DH);
   const value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);

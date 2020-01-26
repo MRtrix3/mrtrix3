@@ -36,6 +36,12 @@ namespace MR
     {
 
 
+
+      void check_timestamps (const Properties&, const Properties&, const std::string&);
+      void check_counts (const Properties&, const Properties&, const std::string&, bool abort_on_fail);
+
+
+
       class Properties : public KeyValues { MEMALIGN(Properties)
         public:
 
@@ -43,25 +49,22 @@ namespace MR
             set_timestamp();
           }
 
-          void set_timestamp () {
-            (*this)["timestamp"] = str (Timer::current_time(), TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION);
+          void set_timestamp();
+          void set_version_info();
+          void update_command_history();
+          void clear();
+
+          template <typename T> void set (T& variable, const std::string& name) {
+            if ((*this)[name].empty()) (*this)[name] = str (variable);
+            else variable = to<T> ((*this)[name]);
           }
 
-          void set_version_info () {
-            (*this)["mrtrix_version"] = App::mrtrix_version;
-            if (App::project_version)
-              (*this)["project_version"] = App::project_version;
-          }
-
-          void update_command_history () {
-            // Make sure the current command is not concatenated more than once
-            const auto command_history = split_lines ((*this)["command_history"]);
-            if (!(command_history.size() && command_history.back() == App::command_history_string))
-              add_line ((*this)["command_history"], App::command_history_string);
-          }
+          float get_stepsize() const;
+          void compare_stepsize_rois() const;
 
           // In use at time of execution
-          ROISet include, exclude, mask;
+          ROIUnorderedSet include, exclude, mask;
+          ROIOrderedSet ordered_include;
           Seeding::List seeds;
 
           // As stored within the header of an existing .tck file
@@ -69,87 +72,8 @@ namespace MR
 
           vector<std::string> comments;
 
-
-          void clear () {
-            KeyValues::clear();
-            seeds.clear();
-            include.clear();
-            exclude.clear();
-            mask.clear();
-            prior_rois.clear();
-            comments.clear();
-          }
-
-          template <typename T> void set (T& variable, const std::string& name) {
-            if ((*this)[name].empty()) (*this)[name] = str (variable);
-            else variable = to<T> ((*this)[name]);
-          }
-
+          friend std::ostream& operator<< (std::ostream& stream, const Properties& P);
       };
-
-
-      inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type)
-      {
-        Properties::const_iterator stamp_a = a.find ("timestamp");
-        Properties::const_iterator stamp_b = b.find ("timestamp");
-        if (stamp_a == a.end() || stamp_b == b.end())
-          throw Exception ("unable to verify " + type + " pair: missing timestamp");
-        if (stamp_a->second != stamp_b->second)
-          throw Exception ("invalid " + type + " combination - timestamps do not match");
-      }
-
-
-
-
-      inline void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail)
-      {
-        Properties::const_iterator count_a = a.find ("count");
-        Properties::const_iterator count_b = b.find ("count");
-        if ((count_a == a.end()) || (count_b == b.end())) {
-          std::string mesg = "unable to validate " + type + " pair: missing count field";
-          if (abort_on_fail) throw Exception (mesg);
-          else WARN (mesg);
-        }
-        if (to<size_t>(count_a->second) != to<size_t>(count_b->second)) {
-          std::string mesg = type + " files do not contain same number of elements";
-          if (abort_on_fail) throw Exception (mesg);
-          else WARN (mesg);
-        }
-      }
-
-
-
-
-      inline float get_step_size (const Properties& p)
-      {
-        for (size_t index = 0; index != 2; ++index) {
-          const std::string key (index ? "step_size" : "output_step_size");
-          auto it = p.find (key);
-          if (it != p.end()) {
-            try {
-              return to<float> (it->second);
-            } catch (...) { }
-          }
-        }
-        return NaN;
-      }
-
-
-
-
-
-      inline std::ostream& operator<< (std::ostream& stream, const Properties& P)
-      {
-        stream << "seeds: " << P.seeds;
-        stream << "include: " << P.include << ", exclude: " << P.exclude << ", mask: " << P.mask << ", dict: ";
-        for (KeyValues::const_iterator i = P.begin(); i != P.end(); ++i)
-          stream << "[ " << i->first << ": " << i->second << " ], ";
-        stream << "comments: ";
-        for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
-          stream << "\"" << *i << "\", ";
-        return (stream);
-      }
-
 
 
 
@@ -158,4 +82,3 @@ namespace MR
 }
 
 #endif
-

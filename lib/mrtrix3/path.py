@@ -26,6 +26,7 @@ try:
 except ImportError:
   from pipes import quote
 from mrtrix3 import CONFIG
+from mrtrix3.utils import STRING_TYPES
 
 
 
@@ -115,7 +116,7 @@ def name_temporary(suffix): #pylint: disable=unused-variable
   full_path = dir_path
   suffix = suffix.lstrip('.')
   while os.path.exists(full_path):
-    random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
+    random_string = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for x in range(6))
     full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
   app.debug(full_path)
   return full_path
@@ -229,12 +230,12 @@ def wait_for(paths): #pylint: disable=unused-variable
 
   # Make sure the data we're dealing with is a list of strings;
   #   or make it a list of strings if it's just a single entry
-  if isinstance(paths, str):
+  if isinstance(paths, STRING_TYPES):
     paths = [ paths ]
   else:
     assert isinstance(paths, list)
     for entry in paths:
-      assert isinstance(entry, str)
+      assert isinstance(entry, STRING_TYPES)
 
   app.debug(str(paths))
 

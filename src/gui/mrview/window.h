@@ -24,7 +24,7 @@
 #include "gui/gui.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/opengl/font.h"
-#include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourbars.h"
 #include "gui/mrview/colourmap_button.h"
 
 
@@ -149,10 +149,11 @@ namespace MR
 
           GL::Area* glwidget () const { return glarea; }
           GL::Lighting& lighting () { return *lighting_; }
-          ColourMap::Renderer colourbar_renderer;
+          ColourBars colourbar_renderer;
 
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
+          static bool tools_floating;
 
         signals:
           void focusChanged ();
@@ -242,8 +243,9 @@ namespace MR
           Math::Versorf orient;
           float field_of_view;
           int anatomical_plane, annotations;
-          ColourMap::Position colourbar_position, tools_colourbar_position;
+          ColourBars::Position colourbar_position, tools_colourbar_position;
           bool snap_to_image_axes_and_voxel;
+          std::string current_folder;
 
           float background_colour[3];
 
@@ -298,7 +300,7 @@ namespace MR
                   *about_action,
                   *aboutQt_action;
 
-          static ColourMap::Position parse_colourmap_position_str (const std::string& position_str);
+          static ColourBars::Position parse_colourmap_position_str (const std::string& position_str);
 
           void paintGL ();
           void initGL ();

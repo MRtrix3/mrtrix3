@@ -16,6 +16,7 @@
 import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading
 from distutils.spawn import find_executable
 from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
+from mrtrix3.utils import STRING_TYPES
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 
@@ -213,6 +214,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   show = kwargs.pop('show', True)
   mrconvert_keyval = kwargs.pop('mrconvert_keyval', None)
   force = kwargs.pop('force', False)
+  env = kwargs.pop('env', shared.env)
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to run.command(): ' + str(kwargs))
 
@@ -224,7 +226,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     subprocess_kwargs['creationflags'] = subprocess.CREATE_NEW_PROCESS_GROUP
   if shell:
     subprocess_kwargs['shell'] = True
-  subprocess_kwargs['env'] = shared.env
+  subprocess_kwargs['env'] = env
 
   if isinstance(cmd, list):
     if shell:
@@ -232,11 +234,11 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     cmdstring = ''
     cmdsplit = []
     for entry in cmd:
-      if isinstance(entry, str):
+      if isinstance(entry, STRING_TYPES):
         cmdstring += (' ' if cmdstring else '') + entry
         cmdsplit.append(entry)
       elif isinstance(entry, list):
-        assert all([ isinstance(item, str) for item in entry ])
+        assert all([ isinstance(item, STRING_TYPES) for item in entry ])
         if len(entry) > 1:
           common_prefix = os.path.commonprefix(entry)
           common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
@@ -249,13 +251,15 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         cmdsplit.extend(entry)
       else:
         raise TypeError('When run.command() is provided with a list as input, entries in the list must be either strings or lists of strings')
-  else:
+  elif isinstance(cmd, STRING_TYPES):
     cmdstring = cmd
     # Split the command string by spaces, preserving anything encased within quotation marks
     if os.sep == '/': # Cheap POSIX compliance check
       cmdsplit = shlex.split(cmd)
     else: # Native Windows Python
       cmdsplit = [ entry.strip('\"') for entry in shlex.split(cmd, posix=False) ]
+  else:
+    raise TypeError('run.command() function only operates on strings, or lists of strings')
 
   if shared.get_continue():
     if shared.trigger_continue(cmdsplit):
@@ -312,7 +316,10 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     if mrconvert_keyval:
       if cmdstack[-1][0] != 'mrconvert':
         raise TypeError('Argument "mrconvert_keyval=" can only be used if the mrconvert command is being invoked')
-      cmdstack[-1].extend([ '-copy_properties', mrconvert_keyval.strip('"'), '-append_property', 'command_history', COMMAND_HISTORY_STRING ])
+      assert not (mrconvert_keyval[0] in [ '\'', '"' ] or mrconvert_keyval[-1] in [ '\'', '"' ])
+      cmdstack[-1].extend([ '-copy_properties', mrconvert_keyval ])
+      if COMMAND_HISTORY_STRING:
+        cmdstack[-1].extend([ '-append_property', 'command_history', COMMAND_HISTORY_STRING ])
 
     for line in cmdstack:
       is_mrtrix_exe = line[0] in EXE_LIST
@@ -464,7 +471,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   show = kwargs.pop('show', True)
 
   fnstring = fn_to_execute.__module__ + '.' + fn_to_execute.__name__ + \
-             '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + \
+             '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, STRING_TYPES) else str(a) for a in args]) + \
              (', ' if (args and kwargs) else '') + \
              ', '.join([key+'='+str(value) for key, value in kwargs.items()]) + ')'
 

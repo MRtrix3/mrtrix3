@@ -21,6 +21,7 @@
 
 import json, math, os, shlex, subprocess
 from mrtrix3 import MRtrixError
+from mrtrix3.utils import STRING_TYPES
 
 
 
@@ -85,6 +86,12 @@ class Header(object):
     return self._transform
   def keyval(self):
     return self._keyval
+  def is_sh(self):
+    """ is 4D image, with more than one volume, matching the number of coefficients of SH series """
+    from mrtrix3 import sh  #pylint: disable=import-outside-toplevel
+    if len(self._size) != 4 or self._size[3] == 1:
+      return False
+    return sh.n_for_l(sh.l_for_n(self._size[3])) == self._size[3]
 
 
 
@@ -120,7 +127,7 @@ def axis2dir(string): #pylint: disable=unused-variable
 def check_3d_nonunity(image_in): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not isinstance(image_in, Header):
-    if not isinstance(image_in, str):
+    if not isinstance(image_in, STRING_TYPES):
       raise MRtrixError('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
     image_in = Header(image_in)
   if len(image_in.size()) < 3:
@@ -161,11 +168,11 @@ def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to image.match(): ' + str(kwargs))
   if not isinstance(image_one, Header):
-    if not isinstance(image_one, str):
+    if not isinstance(image_one, STRING_TYPES):
       raise MRtrixError('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
     image_one = Header(image_one)
   if not isinstance(image_two, Header):
-    if not isinstance(image_two, str):
+    if not isinstance(image_two, STRING_TYPES):
       raise MRtrixError('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
     image_two = Header(image_two)
   debug_prefix = '\'' + image_one.name() + '\' \'' + image_two.name() + '\''

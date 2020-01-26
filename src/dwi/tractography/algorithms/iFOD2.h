@@ -29,10 +29,6 @@
 #include "dwi/tractography/algorithms/calibrator.h"
 
 
-#define TCKGEN_DEFAULT_IFOD2_NSAMPLES 4
-
-
-
 namespace MR
 {
   namespace DWI
@@ -42,7 +38,7 @@ namespace MR
       namespace Algorithms
       {
 
-        extern const App::OptionGroup iFOD2Option;
+        extern const App::OptionGroup iFOD2Options;
         void load_iFOD2_options (Tractography::Properties&);
 
         using namespace MR::DWI::Tractography::Tracking;
@@ -55,8 +51,8 @@ namespace MR
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                     SharedBase (diff_path, property_set),
                     lmax (Math::SH::LforN (source.size(3))),
-                    num_samples (TCKGEN_DEFAULT_IFOD2_NSAMPLES),
-                    max_trials (TCKGEN_DEFAULT_MAX_TRIALS_PER_STEP),
+                    num_samples (Defaults::ifod2_nsamples),
+                    max_trials (Defaults::max_trials_per_step),
                     sin_max_angle_ho (NaN),
                     mean_samples (0.0),
                     mean_truncations (0.0),
@@ -73,13 +69,15 @@ namespace MR
                   if (rk4)
                     throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
-                  set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
+                  set_step_and_angle (Defaults::stepsize_voxels_ifod2, Defaults::angle_ifod2, true);
+                  sin_max_angle_ho = std::sin (max_angle_ho);
+                  set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
                   properties["method"] = "iFOD2";
                   properties.set (lmax, "lmax");
                   properties.set (num_samples, "samples_per_step");
                   properties.set (max_trials, "max_trials");
-                  fod_power = 1.0f/num_samples;
+                  fod_power = 1.0/num_samples;
                   properties.set (fod_power, "fod_power");
                   bool precomputed = true;
                   properties.set (precomputed, "sh_precomputed");
@@ -88,9 +86,7 @@ namespace MR
 
                   // num_samples is number of samples excluding first point
                   --num_samples;
-                  set_step_size (0.5f, true);
-                  sin_max_angle_ho = std::sin (max_angle_ho);
-                  INFO ("iFOD2 using " + str(num_samples) + " vertices per " + str(step_size) + "mm step");
+                  INFO ("iFOD2 generating " + str(num_samples) + " vertices per " + str (step_size) + " mm step");
 
                   // iFOD2 by default downsamples after track propagation back to the desired 'step size'
                   //   i.e. the sub-step detail is removed from the output

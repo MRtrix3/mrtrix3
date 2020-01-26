@@ -410,7 +410,7 @@ namespace MR
           else
             assert (0);
           json_path += ".json";
-          File::JSON::save (H, json_path);
+          File::JSON::save (H, json_path, H.name());
         }
       }
 
