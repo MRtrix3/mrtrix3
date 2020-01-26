@@ -81,7 +81,7 @@ void run ()
       index_header = Fixel::find_index_header (argument[0]);
       directions_header = Fixel::find_directions_header (argument[0]);
     } catch (Exception& e_asdir) {
-      Exception e ("Could not locate fixel data based on input string");
+      Exception e ("Could not locate fixel data based on input string \"" + argument[0] + "\"");
       e.push_back ("Error when interpreting as image: ");
       for (size_t i = 0; i != e_asimage.num(); ++i)
         e.push_back ("  " + e_asimage[i]);
