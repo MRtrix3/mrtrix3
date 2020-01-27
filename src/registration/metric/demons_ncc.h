@@ -14,12 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __registration_metric_demons_lncc_h__
-#define __registration_metric_demons_lncc_h__
+#ifndef __registration_metric_demons_ncc_h__
+#define __registration_metric_demons_ncc_h__
 
 #include <mutex>
 #include "image_helpers.h"
 
+#define LEARNING_RATE 3.0/2.0
 
 namespace MR
 {
@@ -35,7 +36,7 @@ namespace MR
 
                 default_type& global_cost;
                 size_t& global_voxel_count;
-                ssize_t local_extent;
+                ssize_t kernel_radius;
 
                 Im1ImageType im1_proc;
                 Im2ImageType im2_proc;
@@ -58,10 +59,11 @@ namespace MR
 
                 public:
 
-                DemonsLNCC (default_type& global_energy, size_t& global_voxel_count, ssize_t& extent, const Im1ImageType im1_image, const Im2ImageType im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask, default_type& volume_weight, bool flag_combine_updates) :
+                DemonsLNCC (default_type& global_energy, size_t& global_voxel_count, ssize_t& radius, const Im1ImageType im1_image, const Im2ImageType im2_image,
+                    const Im1MaskType im1_mask, const Im2MaskType im2_mask, default_type& volume_weight, bool flag_combine_updates) :
                 global_cost (global_energy),
                 global_voxel_count (global_voxel_count),
-                local_extent (extent),
+                kernel_radius (radius),
                 im1_proc (im1_image),
                 im2_proc (im2_image),
                 im1_gradient (im1_image, true),
@@ -76,8 +78,7 @@ namespace MR
                 current_dim (0),
                 flag_combine_updates(flag_combine_updates) {
                     if (im1_image.buffer->ndim() > 3)
-                    current_dim = im1_image.index(3);
-
+                        current_dim = im1_image.index(3);
                 }
 
                 ~DemonsLNCC () {
@@ -91,7 +92,6 @@ namespace MR
                                  const Im1MaskType& im1_mask, const Im2MaskType& im2_mask,
                                  Image<default_type>& im1_update, Image<default_type>& im2_update)
                 {
-
                     if (!flag_combine_updates) {
                         im1_update.row(3) = 0.0;
                         im2_update.row(3) = 0.0;
@@ -111,15 +111,11 @@ namespace MR
                         return;
                     }
 
-                    if (im1_mask.valid()) {
-                        if (im1_mask.value() < 0.1)
+                    if (im1_mask.valid() && im1_mask.value() < 0.5)
                         return;
-                    }
 
-                    if (im2_mask.valid()) {
-                        if (im2_mask.value() < 0.1)
+                    if (im2_mask.valid() && im2_mask.value() < 0.5)
                         return;
-                    }
 
                     typename Im1ImageType::value_type im1_value = im1_image.value();
                     typename Im2ImageType::value_type im2_value = im2_image.value();
@@ -128,12 +124,12 @@ namespace MR
                         return;
                     }
 
-                    ssize_t im1_i1 = (ssize_t) im1_image.index(0);
-                    ssize_t im1_i2 = (ssize_t) im1_image.index(1);
-                    ssize_t im1_i3 = (ssize_t) im1_image.index(2);
-                    ssize_t im2_i1 = (ssize_t) im2_image.index(0);
-                    ssize_t im2_i2 = (ssize_t) im2_image.index(1);
-                    ssize_t im2_i3 = (ssize_t) im2_image.index(2);
+                    const ssize_t im1_i1 = im1_image.index(0);
+                    const ssize_t im1_i2 = im1_image.index(1);
+                    const ssize_t im1_i3 = im1_image.index(2);
+                    const ssize_t im2_i1 = im2_image.index(0);
+                    const ssize_t im2_i2 = im2_image.index(1);
+                    const ssize_t im2_i3 = im2_image.index(2);
 
                     default_type local_sf, local_sm, local_sff, local_smm, local_sfm;
                     local_sf = 0; local_sm = 0; local_sff = 0; local_smm = 0; local_sfm = 0;
@@ -142,12 +138,9 @@ namespace MR
                     ssize_t im1_j1, im1_j2, im1_j3;
                     ssize_t im2_j1, im2_j2, im2_j3;
 
-                    im1_j1 = 0; im1_j2 = 0; im1_j3 = 0;
-                    im2_j1 = 0; im2_j2 = 0; im2_j3 = 0;
-
-                    for (ssize_t e_ind1 = -local_extent; e_ind1 <= local_extent; e_ind1++) {
-                        for (ssize_t e_ind2 = -local_extent; e_ind2 <= local_extent; e_ind2++) {
-                            for (ssize_t e_ind3 = -local_extent; e_ind3 <= local_extent; e_ind3++) {
+                    for (ssize_t e_ind1 = -kernel_radius; e_ind1 <= kernel_radius; e_ind1++) {
+                        for (ssize_t e_ind2 = -kernel_radius; e_ind2 <= kernel_radius; e_ind2++) {
+                            for (ssize_t e_ind3 = -kernel_radius; e_ind3 <= kernel_radius; e_ind3++) {
 
                                 im1_j1 = im1_i1 + e_ind1; im1_j2 = im1_i2 + e_ind2; im1_j3 = im1_i3 + e_ind3;
                                 im2_j1 = im2_i1 + e_ind1; im2_j2 = im2_i2 + e_ind2; im2_j3 = im2_i3 + e_ind3;
@@ -155,65 +148,50 @@ namespace MR
                                 im1_proc.index(0) = im1_j1; im1_proc.index(1) = im1_j2; im1_proc.index(2) = im1_j3;
                                 im2_proc.index(0) = im2_j1; im2_proc.index(1) = im2_j2; im2_proc.index(2) = im2_j3;
 
-                                typename Im1ImageType::value_type im1_value_iter = im1_proc.value();
-                                typename Im2ImageType::value_type im2_value_iter = im2_proc.value();
+                                const typename Im1ImageType::value_type im1_value_iter = im1_proc.value();
+                                const typename Im2ImageType::value_type im2_value_iter = im2_proc.value();
 
-                                if (abs(im1_value_iter) > min_value_threshold && abs(im2_value_iter) > min_value_threshold && abs(im1_value_iter) == abs(im1_value_iter) && abs(im2_value_iter) == abs(im2_value_iter) ) {
-
+                                if (abs(im1_value_iter) > min_value_threshold && abs(im2_value_iter) > min_value_threshold && !std::isnan(im1_value_iter) && !std::isnan(im2_value_iter)) {
                                     local_sf += im1_value_iter;
                                     local_sm += im2_value_iter;
                                     local_sff += im1_value_iter*im1_value_iter;
                                     local_smm += im2_value_iter*im2_value_iter;
                                     local_sfm += im1_value_iter*im2_value_iter;
                                     local_count += 1;
-
                                 }
-
                             }
                         }
                     }
 
                     if (local_count > 0) {
-
                         local_sff -= local_sf * local_sf / local_count;
                         local_smm -= local_sm * local_sm / local_count;
                         local_sfm -= local_sf * local_sm / local_count;
 
-                        default_type denom = 1.0 * sqrt(local_sff * local_smm);
+                        const default_type denom = sqrt(local_sff * local_smm);
 
-                        if (denom < min_value_threshold || local_smm < min_value_threshold || local_sff < min_value_threshold || std::isnan(denom)) {
+                        if (denom < min_value_threshold || local_smm < min_value_threshold || local_sff < min_value_threshold || std::isnan(denom))
                             return;
 
-                        } else {
+                        assign_pos_of (im1_image, 0, 3).to (im1_gradient, im2_gradient);
 
-                            assign_pos_of (im1_image, 0, 3).to (im1_gradient, im2_gradient);
+                        Eigen::Matrix<default_type, 3, 1> grad_im1 = im1_gradient.value();
+                        Eigen::Matrix<default_type, 3, 1> grad_im2 = im2_gradient.value();
 
-                            Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad_im1 = im1_gradient.value().array();
-                            Eigen::Matrix<typename Im2ImageType::value_type, 3, 1> grad_im2 = im2_gradient.value().array();
+                        Eigen::Matrix<default_type, 3, 1>  dfm_im1;
+                        Eigen::Matrix<default_type, 3, 1>  dfm_im2;
 
-                            Eigen::Matrix<typename Im1ImageType::value_type, 3, 1>  dfm_im1;
-                            Eigen::Matrix<typename Im1ImageType::value_type, 3, 1>  dfm_im2;
+                        dfm_im1 = volume_weight * 2.0 * (local_sfm * local_count / (local_sff * local_smm)) *
+                            ((im2_value - local_sm / local_count) - (im1_value - local_sf / local_count) * (local_sfm / local_sff)) * grad_im1;
+                        dfm_im2 = volume_weight * 2.0 * (local_sfm * local_count / (local_sff * local_smm)) *
+                            ((im1_value - local_sf / local_count) - (im2_value - local_sm / local_count) * (local_sfm / local_smm)) * grad_im2;
 
-                            dfm_im1 = volume_weight * 3.0 * (local_sfm * local_count/ ((local_sff * local_smm))) * ((im2_value - local_sm/local_count) - (im1_value - local_sf/local_count) * (local_sfm/local_sff)) * grad_im1;
-                            dfm_im2 = volume_weight * 3.0 * (local_sfm * local_count/ ((local_sff * local_smm))) * ((im1_value - local_sf/local_count) - (im2_value - local_sm/local_count) * (local_sfm/local_smm)) * grad_im2;
+                        im1_update.row(3) += LEARNING_RATE * dfm_im1; // TODO parameterise learning rate (weight by number of contrasts if necessary)
+                        im2_update.row(3) += LEARNING_RATE * dfm_im2;
 
-                            im1_update.row(3) += Eigen::Vector3 (dfm_im1.array());
-                            im2_update.row(3) += Eigen::Vector3 (dfm_im2.array());
-
-                            default_type computed_local_cost = local_sfm / sqrt(local_sff * local_smm);
-
-                            thread_cost -= computed_local_cost;
-                            thread_voxel_count++;
-
-                        }
-
-                    } else {
-
-                        return;
+                        thread_cost -= local_sfm / denom;
+                        thread_voxel_count++;
                     }
-
-                    return;
-
                 }
 
             };
@@ -285,23 +263,20 @@ namespace MR
                         global_sfm += local_sfm;
                     }
 
-                    if (global_count > 0 && global_count == global_count) {
+                    if (global_count > 0) {
                         default_type sff = global_sff - (global_sf * global_sf / global_count);
                         default_type smm = global_smm - (global_sm * global_sm / global_count);
                         default_type sfm = global_sfm - (global_sf * global_sm / global_count);
                         if (sqrt(sff * smm) > 0) {
                             global_gncc = 1.0 * sfm / sqrt(sff * smm);
                         }
-
                     }
-
                 }
 
                 void operator() (const Im1ImageType& im1_image,
                                  const Im2ImageType& im2_image,
                                  const Im1MaskType& im1_mask,
                                  const Im2MaskType& im2_mask) {
-
 
                     if (im1_image.index(0) == 0 || im1_image.index(0) == im1_image.size(0) - 1 ||
                         im1_image.index(1) == 0 || im1_image.index(1) == im1_image.size(1) - 1 ||
@@ -315,16 +290,14 @@ namespace MR
 
                     if (im1_mask.valid()) {
                         im1_mask_value = im1_mask.value();
-                        if (im1_mask_value < 0.1) {
+                        if (im1_mask_value < 0.5)
                             return;
-                        }
                     }
 
                     if (im2_mask.valid()) {
                         im2_mask_value = im2_mask.value();
-                        if (im2_mask_value < 0.1) {
+                        if (im2_mask_value < 0.5)
                             return;
-                        }
                     }
 
                     typename Im1ImageType::value_type im1_value = im1_image.value();
@@ -342,9 +315,7 @@ namespace MR
                     local_sfm += im1_value * im2_value;
 
                     local_count += 1;
-
                 }
-
             };
 
 
@@ -389,7 +360,8 @@ namespace MR
 
                 public:
 
-                DemonsGNCC (default_type& global_energy, size_t& global_voxel_count, const Im1ImageType im1_image, const Im2ImageType im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask, default_type& volume_weight, bool flag_combine_updates) :
+                DemonsGNCC (default_type& global_energy, size_t& global_voxel_count, const Im1ImageType im1_image, const Im2ImageType im2_image,
+                    const Im1MaskType im1_mask, const Im2MaskType im2_mask, default_type& volume_weight, bool flag_combine_updates) :
                 global_cost (global_energy),
                 global_voxel_count (global_voxel_count),
                 im1_proc (im1_image),
@@ -479,16 +451,11 @@ namespace MR
                         return;
                     }
 
-                    if (im1_mask.valid()) {
-                        if (im1_mask.value() < 0.1)
+                    if (im1_mask.valid() && im1_mask.value() < 0.5)
                         return;
-                    }
 
-                    if (im2_mask.valid()) {
-                        if (im2_mask.value() < 0.1)
+                    if (im2_mask.valid() && im2_mask.value() < 0.5)
                         return;
-                    }
-
 
                     typename Im1ImageType::value_type im1_value = im1_image.value();
                     typename Im2ImageType::value_type im2_value = im2_image.value();
@@ -497,76 +464,57 @@ namespace MR
                         return;
                     }
 
-                    if (computed_total_count > 0) {
-
-
-                        if (computed_smm < min_value_threshold || computed_sff < min_value_threshold) {
-                            return;
-
-                        } else {
-
-                            assign_pos_of (im1_image, 0, 3).to (im1_gradient, im2_gradient);
-
-                            Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad_im1 = im1_gradient.value().array();
-                            Eigen::Matrix<typename Im2ImageType::value_type, 3, 1> grad_im2 = im2_gradient.value().array();
-
-                            Eigen::Matrix<typename Im1ImageType::value_type, 3, 1>  dfm_im1;
-                            Eigen::Matrix<typename Im1ImageType::value_type, 3, 1>  dfm_im2;
-
-
-                            dfm_im1 = volume_weight * 2.0 * (computed_sfm * computed_total_count / ((computed_sff * computed_smm))) * ((im2_value - computed_sm / computed_total_count) - (im1_value - computed_sf / computed_total_count) * (computed_sfm / computed_sff)) * grad_im1;
-
-                            dfm_im2 = volume_weight * 2.0 * (computed_sfm * computed_total_count / ((computed_sff * computed_smm))) * ((im1_value - computed_sf / computed_total_count) - (im2_value - computed_sm / computed_total_count) * (computed_sfm / computed_smm)) * grad_im2;
-
-                            im1_update.row(3) += Eigen::Vector3 (dfm_im1.array());
-                            im2_update.row(3) += Eigen::Vector3 (dfm_im2.array());
-
-                            thread_cost -= computed_global_cost;
-                            thread_voxel_count++;
-
-                        }
-
-                    } else {
-
+                    if (computed_total_count == 0 || computed_smm < min_value_threshold || computed_sff < min_value_threshold)
                         return;
-                    }
 
+                    assign_pos_of (im1_image, 0, 3).to (im1_gradient, im2_gradient);
 
+                    const Eigen::Matrix<default_type, 3, 1> grad_im1 = im1_gradient.value();
+                    const Eigen::Matrix<default_type, 3, 1> grad_im2 = im2_gradient.value();
+
+                    Eigen::Matrix<default_type, 3, 1>  dfm_im1;
+                    Eigen::Matrix<default_type, 3, 1>  dfm_im2;
+
+                    dfm_im1 = volume_weight * 2.0 * (computed_sfm * computed_total_count / ((computed_sff * computed_smm))) *
+                        ((im2_value - computed_sm / computed_total_count) - (im1_value - computed_sf / computed_total_count) * (computed_sfm / computed_sff)) * grad_im1;
+                    dfm_im2 = volume_weight * 2.0 * (computed_sfm * computed_total_count / ((computed_sff * computed_smm))) *
+                        ((im1_value - computed_sf / computed_total_count) - (im2_value - computed_sm / computed_total_count) * (computed_sfm / computed_smm)) * grad_im2;
+
+                    im1_update.row(3) += dfm_im1; // TODO multiply by LEARNING_RATE?
+                    im2_update.row(3) += dfm_im2;
+
+                    thread_cost -= computed_global_cost;
+                    thread_voxel_count++;
                 }
-
             };
 
 
 
             template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
-            void run_DemonsLNCC_4D (default_type& cost_new, size_t& voxel_count, ssize_t local_extent,
+            void run_DemonsLNCC_4D (default_type& cost_new, size_t& voxel_count, ssize_t kernel_radius,
                                     Im1ImageType& im1_image, Im2ImageType& im2_image,
                                     Im1MaskType& im1_mask, Im2MaskType& im2_mask,
                                     Image<default_type>& im1_update, Image<default_type>& im2_update,
                                     const vector<MultiContrastSetting>* contrast_settings = nullptr)
             {
-
                 ssize_t nvols = im1_image.size(3);
-                default_type default_volume_weight = 1.0 / default_type (nvols);
 
                 Eigen::VectorXd volume_weights;
                 volume_weights.resize (nvols);
 
                 default_type mc_sum = 0.0;
 
-                ssize_t gnvol = contrast_settings->size();
-
                 if (contrast_settings and contrast_settings->size() > 1) {
-
                     for (const auto & mc : *contrast_settings) {
-                        mc_sum = mc_sum + mc.weight;
+                        mc_sum += mc.weight;
                     }
                     for (const auto & mc : *contrast_settings) {
-                        volume_weights.segment(mc.start,mc.nvols).fill(mc.weight * (1 / ( (default_type) mc.nvols)) * (1 / ( (default_type) gnvol)));
+                        volume_weights.segment(mc.start, mc.nvols).fill(mc.weight / mc.nvols);
+                        // TODO changed from mc.weight / (mc.nvols * contrast_settings->size()) to mc.weight to as
+                        // TODO intended use of mc.weight is the weight for that specific contrast. @Alena unify with demons4D.h and don't normalise by nvols?
                     }
-
                 } else {
-                    volume_weights.fill(default_volume_weight);
+                    volume_weights.fill(1.0 / default_type (nvols));  // TODO unify with demons4D.h and don't normalise by nvols?
                     mc_sum = default_type (nvols);
                 }
 
@@ -577,8 +525,7 @@ namespace MR
                 bool flag_combine_updates;
                 flag_combine_updates = true;
 
-                for (int i=0; i<nvols; i++) {
-
+                for (int i=0; i<nvols; i++) {  // ENH: speedup possible for vectorised metric instead of loop over volumes?
                     default_type volume_weight = volume_weights[i];
                     bool flag_combine_updates;
 
@@ -595,17 +542,15 @@ namespace MR
                     local_cost = 0;
                     local_count = 0;
 
-                    if (local_extent > 0) {
-
-                        Metric::DemonsLNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (local_cost, local_count, local_extent, im1_image, im2_image, im1_mask, im2_mask, volume_weight, flag_combine_updates);
+                    if (kernel_radius > 0) {
+                        Metric::DemonsLNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (local_cost, local_count, kernel_radius, im1_image, im2_image,
+                            im1_mask, im2_mask, volume_weight, flag_combine_updates);
                         ThreadedLoop (im1_image, 0, 3).run (metric, im1_image, im2_image, im1_mask, im2_mask, im1_update, im2_update);
-
                     } else {
-
-                        Metric::DemonsGNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (local_cost, local_count, im1_image, im2_image, im1_mask, im2_mask, volume_weight, flag_combine_updates);
+                        Metric::DemonsGNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (local_cost, local_count, im1_image, im2_image,
+                            im1_mask, im2_mask, volume_weight, flag_combine_updates);
                         metric.precompute ();
                         ThreadedLoop (im1_image, 0, 3).run (metric, im1_image, im2_image, im1_mask, im2_mask, im1_update, im2_update);
-
                     }
 
                     cost_new = cost_new + local_cost;
@@ -616,7 +561,6 @@ namespace MR
                 im2_image.index(3) = 0;
 
                 return;
-
             }
 
 
