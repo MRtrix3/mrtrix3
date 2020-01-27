@@ -86,7 +86,7 @@ void run ()
         bool abs_error = false;
         for (auto inner = Loop(3) (in); inner; ++inner) {
           sum += in.value();
-          if (in.value() < 0.0f || in.value() > 1.0f + std::numeric_limits<float>::epsilon()) {
+          if (in.value() < 0.0f || in.value() > 1.0f) {
             VAR (float(in.value()));
             abs_error = true;
           }
