@@ -86,10 +86,8 @@ void run ()
         bool abs_error = false;
         for (auto inner = Loop(3) (in); inner; ++inner) {
           sum += in.value();
-          if (in.value() < 0.0f || in.value() > 1.0f) {
-            VAR (float(in.value()));
+          if (in.value() < 0.0f || in.value() > 1.0f)
             abs_error = true;
-          }
         }
         if (!sum) continue;
         if (abs (sum-1.0) > MAX_ERROR) {
