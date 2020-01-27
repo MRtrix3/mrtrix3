@@ -1402,7 +1402,7 @@ def execute(): #pylint: disable=unused-variable
     progress = app.ProgressBar('Copying non-linear warps to output directory "' + warp_path + '"')
     for inp in ins:
       keyval = image.Header(os.path.join('warps', inp.uid + '.mif')).keyval()
-      keyval.pop('command_history', None)
+      keyval = dict((k, keyval[k]) for k in ('linear1', 'linear2'))
       json_path = os.path.join('warps', inp.uid + '.json')
       with open(json_path, 'w') as json_file:
         json.dump(keyval, json_file)
