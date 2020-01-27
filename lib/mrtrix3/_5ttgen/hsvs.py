@@ -811,7 +811,7 @@ def execute(): #pylint: disable=unused-variable
     new_tissue_images = [ 'tissue0_fast.mif', 'tissue1_fast.mif', 'tissue2_fast.mif', 'tissue3_fast.mif', 'tissue4_fast.mif' ]
     new_tissue_sum_image = 'tissuesum_01234_fast.mif'
     cerebellum_multiplier_image = 'Cerebellar_multiplier.mif'
-    run.command('mrcalc ' + cerebellum_volume_image + ' 0.0 -gt 1.0 ' + tissue_sum_image + ' -sub ' + cerebellum_volume_image + ' -div ' + cerebellum_volume_image + ' -min 0.0 -if  ' + cerebellum_multiplier_image)
+    run.command('mrcalc ' + cerebellum_volume_image + ' ' + tissue_sum_image + ' -add 0.5 -gt 1.0 ' + tissue_sum_image + ' -sub 0.0 -if  ' + cerebellum_multiplier_image)
     app.cleanup(cerebellum_volume_image)
     progress.increment()
     run.command('mrconvert ' + tissue_images[0] + ' ' + new_tissue_images[0])
