@@ -48,58 +48,22 @@ void usage ()
 }
 
 
-MR::Connectome::matrix_type to_symmetric (MR::Connectome::matrix_type c) {
-  MR::Connectome::to_symmetric (c);
-  return c;
-}
-
-
-MR::Connectome::matrix_type upper_triangular (MR::Connectome::matrix_type c) {
-  MR::Connectome::to_upper(c);
-  return c;
-}
-
-
-MR::Connectome::matrix_type lower_triangular (MR::Connectome::matrix_type c) {
-  MR::Connectome::matrix_type t = c.transpose();
-  MR::Connectome::to_upper(t);
-  c = t.transpose();
-  return c;
-}
-
-
-MR::Connectome::matrix_type transpose (MR::Connectome::matrix_type c) {
-  return c.transpose();
-}
-
-
-MR::Connectome::matrix_type zero_diagonal (MR::Connectome::matrix_type c) {
-  MR::Connectome::value_type zero = 0;
-  for (node_t row = 0; row != c.rows(); ++row) {
-    c (row, row) = zero;
-  }
-  return c;
-}
-
 
 void run ()
 {
+  MR::Connectome::matrix_type connectome = load_matrix (argument[0]);
+  MR::Connectome::check(connectome);
   const int op = argument[1];
-
   const std::string& output_path = argument[2];
 
-  MR::Connectome::matrix_type connectome = load_matrix (argument[0]);
-  
-  MR::Connectome::check(connectome);
- 
   INFO("Applying \'" + str(operations[op]) + "\' transformation to the input connectome.");
-  
+
   switch (op) {
-      case 0: connectome = to_symmetric (connectome); break;
-      case 1: connectome = upper_triangular (connectome); break;
-      case 2: connectome = lower_triangular (connectome); break;
-      case 3: connectome = transpose (connectome); break;
-      case 4: connectome = zero_diagonal (connectome); break;
+      case 0: MR::Connectome::to_symmetric (connectome); break;
+      case 1: MR::Connectome::to_upper (connectome); break;
+      case 2: MR::Connectome::to_upper (connectome); connectome.transposeInPlace(); break;
+      case 3: connectome.transposeInPlace(); break;
+      case 4: connectome.matrix().diagonal().setZero(); break;
       default: assert (0);
     }
 
