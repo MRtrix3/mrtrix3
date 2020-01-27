@@ -532,7 +532,7 @@ def execute(): #pylint: disable=unused-variable
       if hipp_subfield_has_amyg:
         from_first = { key: value for key, value in from_first.items() if 'Amygdala' not in value }
     elif hippocampi_method == 'aseg':
-      from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value }
+      from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value and 'Amygdala' not in value }
     if thalami_method != 'first':
       from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
     run.command(first_cmd + ' -s ' + ','.join(from_first.keys()) + ' -i T1.nii -b -o first')
