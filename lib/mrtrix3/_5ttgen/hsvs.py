@@ -299,7 +299,7 @@ def execute(): #pylint: disable=unused-variable
 
   if app.ARGS.sgm_amyg_hipp:
     app.warn('Option -sgm_amyg_hipp ignored '
-             + '(hsvs algorithm always assigns hippocampi & ampygdalae as sub-cortical grey matter)')
+             '(hsvs algorithm always assigns hippocampi & ampygdalae as sub-cortical grey matter)')
 
 
   # Similar logic for thalami
@@ -571,6 +571,7 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(acpcdetect_input_image)
     with open(acpcdetect_output_path, 'r') as f:
       acpcdetect_output_data = f.read().splitlines()
+    app.cleanup(glob.glob(os.path.splitext(acpcdetect_input_image)[0] + "*"))
     # Need to scan through the contents of this file,
     #   isolating the AC and PC locations
     ac_voxel = pc_voxel = None
@@ -672,24 +673,24 @@ def execute(): #pylint: disable=unused-variable
   tissue_images = [ 'tissue0.mif', 'tissue1.mif', 'tissue2.mif', 'tissue3.mif', 'tissue4.mif' ]
   run.function(os.rename, 'tissue4_init.mif', 'tissue4.mif')
   progress.increment()
-  run.command('mrcalc tissue3_init.mif tissue3_init.mif ' + tissue_images[4] + ' -add 1.0 -sub 0.0 -max -sub ' + tissue_images[3])
+  run.command('mrcalc tissue3_init.mif tissue3_init.mif ' + tissue_images[4] + ' -add 1.0 -sub 0.0 -max -sub 0.0 -max ' + tissue_images[3])
   app.cleanup('tissue3_init.mif')
   progress.increment()
   run.command('mrmath ' + ' '.join(tissue_images[3:5]) + ' sum tissuesum_34.mif')
   progress.increment()
-  run.command('mrcalc tissue1_init.mif tissue1_init.mif tissuesum_34.mif -add 1.0 -sub 0.0 -max -sub ' + tissue_images[1])
+  run.command('mrcalc tissue1_init.mif tissue1_init.mif tissuesum_34.mif -add 1.0 -sub 0.0 -max -sub 0.0 -max ' + tissue_images[1])
   app.cleanup('tissue1_init.mif')
   app.cleanup('tissuesum_34.mif')
   progress.increment()
   run.command('mrmath ' + tissue_images[1] + ' ' + ' '.join(tissue_images[3:5]) + ' sum tissuesum_134.mif')
   progress.increment()
-  run.command('mrcalc tissue2_init.mif tissue2_init.mif tissuesum_134.mif -add 1.0 -sub 0.0 -max -sub ' + tissue_images[2])
+  run.command('mrcalc tissue2_init.mif tissue2_init.mif tissuesum_134.mif -add 1.0 -sub 0.0 -max -sub 0.0 -max ' + tissue_images[2])
   app.cleanup('tissue2_init.mif')
   app.cleanup('tissuesum_134.mif')
   progress.increment()
   run.command('mrmath ' + ' '.join(tissue_images[1:5]) + ' sum tissuesum_1234.mif')
   progress.increment()
-  run.command('mrcalc tissue0_init.mif tissue0_init.mif tissuesum_1234.mif -add 1.0 -sub 0.0 -max -sub ' + tissue_images[0])
+  run.command('mrcalc tissue0_init.mif tissue0_init.mif tissuesum_1234.mif -add 1.0 -sub 0.0 -max -sub 0.0 -max ' + tissue_images[0])
   app.cleanup('tissue0_init.mif')
   app.cleanup('tissuesum_1234.mif')
   progress.increment()
@@ -869,7 +870,7 @@ def execute(): #pylint: disable=unused-variable
                         os.path.splitext(tissue_images[3])[0] + '_filled.mif',
                         tissue_images[4] ]
   csf_fill_image = 'csf_fill.mif'
-  run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub ' + tissue_sum_image + ' 0.0 -gt ' + mask_image + ' -add 1.0 -min -mult ' + csf_fill_image)
+  run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub ' + tissue_sum_image + ' 0.0 -gt ' + mask_image + ' -add 1.0 -min -mult 0.0 -max ' + csf_fill_image)
   app.cleanup(tissue_sum_image)
   # If no template is specified, this file is part of the FreeSurfer output; hence don't modify
   if app.ARGS.template:
