@@ -204,25 +204,18 @@ def aggregate(inputs, output, contrast_idx, mode, force=True):
     raise MRtrixError("aggregation mode %s not understood" % mode)
 
 
-def inplace_nan_mask(images, masks, progress=True):
-  from mrtrix3 import app, run  # pylint: disable=no-name-in-module, import-outside-toplevel
+def inplace_nan_mask(images, masks):
+  from mrtrix3 import run  # pylint: disable=no-name-in-module, import-outside-toplevel
   assert len(images) == len(masks), (len(images), len(masks))
-  if progress:
-    pbar = app.ProgressBar('NaN masking', len(images))
   for image, mask in zip(images, masks):
     target_dir = os.path.split(image)[0]
     masked = os.path.join(target_dir, '__' + os.path.split(image)[1])
     run.command("mrcalc " + mask + " " + image + " nan -if " + masked, force=True)
     run.function(shutil.move, masked, image)
-    if progress:
-      pbar.increment()
-  if progress:
-    pbar.done()
 
 
 def calculate_isfinite(inputs, contrasts):
-  from mrtrix3 import app, run, path  # pylint: disable=no-name-in-module, import-outside-toplevel
-  progress = app.ProgressBar('Preparations for leave one out registration', len(inputs) * contrasts.n_contrasts + 1)
+  from mrtrix3 import run, path  # pylint: disable=no-name-in-module, import-outside-toplevel
   agg_weights = [float(inp.aggregation_weight) for inp in inputs if inp.aggregation_weight is not None]
   for cid in range(contrasts.n_contrasts):
     for inp in inputs:
@@ -234,14 +227,12 @@ def calculate_isfinite(inputs, contrasts):
         cmd += ' %s -mult ' % inp.aggregation_weight
       cmd += ' isfinite%s/%s.mif' % (contrasts.suff[cid], inp.uid)
       run.command(cmd, force=True)
-      progress.increment()
   for cid in range(contrasts.n_contrasts):
     cmd = ['mrmath', path.all_in_dir('isfinite%s' % contrasts.suff[cid]), 'sum']
     if agg_weights:
       agg_weight_norm = str(float(len(agg_weights)) / sum(agg_weights))
       cmd += ['-', '|', 'mrcalc', '-', agg_weight_norm, '-mult']
     run.command(cmd + [contrasts.isfinite_count[cid]], force=True)
-  progress.done()
 
 
 def get_common_postfix(file_list):
@@ -1257,7 +1248,7 @@ def execute(): #pylint: disable=unused-variable
 
       if nanmask_input:
         inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],
-                         [inp.msk_transformed for inp in ins for cid in range(n_contrasts)], progress=False)
+                         [inp.msk_transformed for inp in ins for cid in range(n_contrasts)])
 
       if leave_one_out:
         calculate_isfinite(ins, cns)
@@ -1360,7 +1351,7 @@ def execute(): #pylint: disable=unused-variable
 
       if nanmask_input:
         inplace_nan_mask([_inp.ims_transformed[cid] for _inp in ins for cid in range(n_contrasts)],
-                         [_inp.msk_transformed for _inp in ins for cid in range(n_contrasts)], progress=True)
+                         [_inp.msk_transformed for _inp in ins for cid in range(n_contrasts)])
 
       if leave_one_out:
         calculate_isfinite(ins, cns)
