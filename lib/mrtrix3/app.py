@@ -491,11 +491,11 @@ class ProgressBar(object): #pylint: disable=unused-variable
       sys.stderr.write(EXEC_NAME + ': ' + self._get_message() + '... [' + self.newline)
     sys.stderr.flush()
 
-  def increment(self, msg=''):
+  def increment(self, msg=None):
     assert not self.iscomplete
     self.counter += 1
     force_update = False
-    if msg:
+    if msg is not None:
       self.message = msg
       force_update = True
     if self.multiplier:
@@ -514,10 +514,12 @@ class ProgressBar(object): #pylint: disable=unused-variable
         self.next_time = current_time + ProgressBar.INTERVAL
         self._update()
 
-  def done(self):
+  def done(self, msg=None):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     global EXEC_NAME, VERBOSITY
     self.iscomplete = True
+    if msg is not None:
+      self.message = msg
     if self.multiplier:
       self.value = 100
     if self.isatty:
