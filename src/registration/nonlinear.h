@@ -184,9 +184,6 @@ namespace MR
               default_type cost = std::numeric_limits<default_type>::max();
               bool converged = false;
 
-              Image<default_type> im1_deform_field = Image<default_type>::scratch (field_header);
-              Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
-
               while (!converged) {
                 if (iteration > 1) {
                   DEBUG ("smoothing update fields");
@@ -195,6 +192,9 @@ namespace MR
                   smooth_filter (*im1_update);
                   smooth_filter (*im2_update);
                 }
+
+                Image<default_type> im1_deform_field = Image<default_type>::scratch (field_header);
+                Image<default_type> im2_deform_field = Image<default_type>::scratch (field_header);
 
                 if (iteration > 1) {
                   DEBUG ("updating displacement field");
@@ -265,6 +265,15 @@ namespace MR
                   }
                   std::swap (im1_update_new, im1_update);
                   std::swap (im2_update_new, im2_update);
+
+                  DEBUG ("inverting displacement field");
+                  {
+                    LogLevelLatch level (0);
+                    Warp::invert_displacement (*im1_to_mid, *mid_to_im1);
+                    Warp::invert_displacement (*im2_to_mid, *mid_to_im2);
+                  }
+
+
                 } else {
                   converged = true;
                 }
@@ -275,12 +284,6 @@ namespace MR
                 if (++iteration > max_iter[level])
                   converged = true;
               }
-            }
-            DEBUG ("inverting displacement field");
-            {
-              LogLevelLatch level (0);
-              Warp::invert_displacement (*im1_to_mid, *mid_to_im1);
-              Warp::invert_displacement (*im2_to_mid, *mid_to_im2);
             }
             // Convert all warps to deformation field format for output
             Registration::Warp::displacement2deformation (*im1_to_mid, *im1_to_mid);
