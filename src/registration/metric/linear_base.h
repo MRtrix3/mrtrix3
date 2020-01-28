@@ -33,7 +33,7 @@ namespace MR
           evaluate loops over processed_image instead of midway_image
         */
         template <class ParamType>
-          default_type precompute (ParamType& parameters) { assert (0 && "FIXME: requires_precompute defined but precompute not implemented for this metric."); return 0.; }
+          default_type precompute (ParamType& parameters) {  return 0.; }
 
         /** requires_initialisation:
           using requires_initialisation = int;

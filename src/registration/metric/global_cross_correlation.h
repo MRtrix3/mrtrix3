@@ -129,18 +129,12 @@ namespace MR
 
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                    }
-
-                    if (params.im1_mask_interp) {
-                        params.im1_mask_interp->scanner (im1_point);
-                    }
-
-                    if (params.im2_mask_interp) {
                         if (params.im2_mask_interp->value() < 0.5)
                             return;
                     }
 
                     if (params.im1_mask_interp) {
+                        params.im1_mask_interp->scanner (im1_point);
                         if (params.im1_mask_interp->value() < 0.5)
                             return;
                     }
@@ -170,6 +164,7 @@ namespace MR
                     local_count++;
 
                     return;
+                    
                 }
 
 
@@ -266,25 +261,17 @@ namespace MR
                     if (std::isnan (default_type (computed_global_cost)))
                         return 0.0;
 
-
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                    }
-
-                    if (params.im1_mask_interp) {
-                        params.im1_mask_interp->scanner (im1_point);
-                    }
-
-                    if (params.im2_mask_interp) {
                         if (params.im2_mask_interp->value() < 0.5)
                             return 0.0;
                     }
 
                     if (params.im1_mask_interp) {
+                        params.im1_mask_interp->scanner (im1_point);
                         if (params.im1_mask_interp->value() < 0.5)
                             return 0.0;
                     }
-
 
                     const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
 
@@ -301,7 +288,6 @@ namespace MR
                     gradient.segment<4>(8) += g(2) * jacobian_vec;
 
                     return computed_global_cost;
-
 
                 }
 
@@ -378,7 +364,6 @@ namespace MR
                     global_smm += local_smm;
                     global_sfm += local_sfm;
 
-
                 }
 
                 void operator() (const Iterator& iter) {
@@ -392,7 +377,6 @@ namespace MR
                     Eigen::Vector3 im2_point;
                     params.transformation.transform_half_inverse (im2_point, midway_point);
 
-
                     params.im1_image_interp->scanner (im1_point);
                     if (!(*params.im1_image_interp))
                         return;
@@ -400,7 +384,6 @@ namespace MR
                     params.im2_image_interp->scanner (im2_point);
                     if (!(*params.im2_image_interp))
                         return;
-
 
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
@@ -413,8 +396,6 @@ namespace MR
                         if (params.im1_mask_interp->value() < 0.5)
                         return;
                     }
-
-
 
                     Eigen::Matrix<typename ParamType::Im1ValueType, Eigen::Dynamic, 3> im1_grad;
                     Eigen::Matrix<typename ParamType::Im1ValueType, Eigen::Dynamic, 1> im1_values;
@@ -486,7 +467,6 @@ namespace MR
 
                 void set_weights (Eigen::VectorXd weights) {
 
-
                     if (mc_weights.rows() != weights.rows()) {
                         mc_weights.resize (weights.rows());
                     }
@@ -498,9 +478,6 @@ namespace MR
                     if (mc_weights.rows() > 0) {
                         weight_sum = mc_weights.sum();
                     }
-
-                    std::cout << weights.rows() << " ? " << mc_weights.rows() << " - " << mc_weights.sum() << std::endl;
-
 
                 }
 
@@ -558,7 +535,6 @@ namespace MR
                         }
                     }
 
-
                     return 0.0;
 
                 }
@@ -574,25 +550,17 @@ namespace MR
                     if (computed_total_count < 1)
                         return 0.0;
 
-
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                    }
-
-                    if (params.im1_mask_interp) {
-                        params.im1_mask_interp->scanner (im1_point);
-                    }
-
-                    if (params.im2_mask_interp) {
                         if (params.im2_mask_interp->value() < 0.5)
                             return 0.0;
                     }
 
                     if (params.im1_mask_interp) {
+                        params.im1_mask_interp->scanner (im1_point);
                         if (params.im1_mask_interp->value() < 0.5)
                             return 0.0;
                     }
-
 
                     Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad;
                     Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values;
@@ -622,11 +590,11 @@ namespace MR
 
                     const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
 
-                    for (ssize_t i = 0; i < 1; ++i) {
+                    for (ssize_t i = 0; i < volumes; ++i) {
 
                         if (abs((default_type) im1_values[i]) > min_value_threshold || abs((default_type) im2_values[i]) > min_value_threshold) {
 
-                            if ( computed_count[i] > 1 && abs(computed_smm[i]*computed_sff[i]) > min_value_threshold) {
+                            if ( computed_count[i] > 1 && (computed_smm[i]*computed_sff[i]) > min_value_threshold) {
 
                                 Eigen::Vector3d g1 = (im1_values[i] - computed_sf[i] / computed_count[i]) * im2_grad.row(i);
                                 Eigen::Vector3d g2 = (im2_values[i] - computed_sm[i] / computed_count[i]) * (computed_sfm[i] / computed_smm[i]) * im2_grad.row(i);
@@ -645,7 +613,7 @@ namespace MR
                         }
                     }
 
-                    return (computed_global_cost / ( (default_type) volumes ));
+                    return (computed_global_cost / ((default_type) volumes));
 
                 }
 

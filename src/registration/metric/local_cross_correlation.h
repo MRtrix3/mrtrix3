@@ -359,16 +359,6 @@ namespace MR
 
                     for (ssize_t i = 0; i < volumes; ++i) {
 
-                        bool include_volume = true;
-
-                        if (this->weighted) {
-                            if (this->mc_weights(i) < 0.05) {  // TODO: why is this needed, can we get rid of the include_volume check?
-                                include_volume= false;
-                            }
-                        }
-
-                        if (include_volume) {
-
                             default_type local_sf, local_sm, local_sff, local_smm, local_sfm;
                             local_sf = 0; local_sm = 0; local_sff = 0; local_smm = 0; local_sfm = 0;
                             default_type local_count = 0;
@@ -407,7 +397,6 @@ namespace MR
 
                                 }
                             }
-                        }
                     }
 
                     return computed_local_cost;
