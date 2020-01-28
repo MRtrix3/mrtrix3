@@ -31,6 +31,8 @@ Options
 
 -  **-all** print all properties, rather than the first and last 2 of each.
 
+-  **-name** print the file system path of the image
+
 -  **-format** image file format
 
 -  **-ndim** number of image dimensions
@@ -47,14 +49,12 @@ Options
 
 -  **-multiplier** image intensity multiplier
 
--  **-transform** the voxel to image transformation
-
--  **-norealign** do not realign transform to near-default RAS coordinate system (the default behaviour on image load). This is useful to inspect the image and/or header contents as they are actually stored in the header, rather than as MRtrix interprets them.
+-  **-transform** the transformation from image coordinates [mm] to scanner / real world coordinates [mm]
 
 Options for exporting image header fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-property key**  *(multiple uses permitted)* any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
+-  **-property key** *(multiple uses permitted)* any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
 
 -  **-json_keyval file** export header key/value entries to a JSON file
 
@@ -84,6 +84,8 @@ DW gradient table export options
 
 -  **-shell_sizes** list the number of volumes in each shell
 
+-  **-shell_indices** list the image volumes attributed to each b-value shell
+
 Options for exporting phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -106,11 +108,16 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

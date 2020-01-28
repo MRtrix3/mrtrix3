@@ -1,4 +1,26 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # Various utility functions related to vector and matrix data
+
+
+
+import itertools, re
+from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
+from mrtrix3.utils import STRING_TYPES
+
 
 _TRANSFORM_LAST_ROW = [ 0.0, 0.0, 0.0, 1.0 ]
 
@@ -6,7 +28,6 @@ _TRANSFORM_LAST_ROW = [ 0.0, 0.0, 0.0, 1.0 ]
 
 # Dot product between two vectors / matrices
 def dot(input_a, input_b): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   if not input_a:
     if input_b:
       raise MRtrixError('Dimension mismatch (0 vs. ' + str(len(input_b)) + ')')
@@ -61,10 +82,9 @@ def transpose(data): #pylint: disable=unused-variable
 # Load a text file containing numeric data
 #   (can be a different number of entries in each row)
 def load_numeric(filename, **kwargs):
-  import re
-
   dtype = kwargs.pop('dtype', float)
-  delimiter = kwargs.pop('delimiter', ' ')
+  # By default support the same set of delimiters at load as the MRtrix3 C++ code
+  delimiter = kwargs.pop('delimiter', ' ,;\t')
   comments = kwargs.pop('comments', '#')
   encoding = kwargs.pop('encoding', 'latin1')
   errors = kwargs.pop('errors', 'ignore')
@@ -87,7 +107,10 @@ def load_numeric(filename, **kwargs):
         line = regex_comments.split(line, maxsplit=1)[0]
       line = line.strip()
       if line:
-        data.append([dtype(a) for a in line.split(delimiter) if a])
+        if len(delimiter) == 1:
+          data.append([dtype(a) for a in line.split(delimiter) if a])
+        else:
+          data.append([dtype(a) for a in [''.join(g) for k, g in itertools.groupby(line, lambda c : c in delimiter) if not k ]])
 
   if not data:
     return None
@@ -98,7 +121,6 @@ def load_numeric(filename, **kwargs):
 
 # Load a text file containing specifically matrix data
 def load_matrix(filename, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   data = load_numeric(filename, **kwargs)
   columns = len(data[0])
   for line in data[1:]:
@@ -110,7 +132,6 @@ def load_matrix(filename, **kwargs): #pylint: disable=unused-variable
 
 # Load a text file containing specifically affine spatial transformation data
 def load_transform(filename, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   data = load_matrix(filename, **kwargs)
   if len(data) == 4:
     if any(a!=b for a, b in zip(data[3], _TRANSFORM_LAST_ROW)):
@@ -127,7 +148,6 @@ def load_transform(filename, **kwargs): #pylint: disable=unused-variable
 
 # Load a text file containing specifically vector data
 def load_vector(filename, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError
   data = load_matrix(filename, **kwargs)
   if len(data) == 1:
     return data[0]
@@ -140,14 +160,12 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
 
 # Save numeric data to a text file
 def save_numeric(filename, data, **kwargs):
-  from mrtrix3 import COMMAND_HISTORY_STRING
-
-  fmt = kwargs.pop('fmt', '%.14e')
+  fmt = kwargs.pop('fmt', '%.15g')
   delimiter = kwargs.pop('delimiter', ' ')
   newline = kwargs.pop('newline', '\n')
   add_to_command_history = bool(kwargs.pop('add_to_command_history', True))
   header = kwargs.pop('header', { })
-  footer = kwargs.pop('footer', '')
+  footer = kwargs.pop('footer', { })
   comments = kwargs.pop('comments', '# ')
   encoding = kwargs.pop('encoding', None)
   if kwargs:
@@ -157,33 +175,40 @@ def save_numeric(filename, data, **kwargs):
   if encoding:
     encode_args['encoding'] = encoding
 
-  if isinstance(header, str):
-    header = { 'comments' : header }
-  elif isinstance(header, list):
-    header = { 'comments' : '\n'.join(str(entry) for entry in header) }
-  elif isinstance(header, dict):
-    header = dict((key, str(value)) for key, value in header.items())
+  if header:
+    if isinstance(header, STRING_TYPES):
+      header = { 'comments' : header }
+    elif isinstance(header, list):
+      header = { 'comments' : '\n'.join(str(entry) for entry in header) }
+    elif isinstance(header, dict):
+      header = dict((key, str(value)) for key, value in header.items())
+    else:
+      raise TypeError('Unrecognised input to matrix.save_numeric() using "header=" option')
   else:
-    raise TypeError('Unrecognised input to matrix.save_numeric() using "header=" option')
+    header = { }
 
-  if add_to_command_history:
+  if add_to_command_history and COMMAND_HISTORY_STRING:
     if 'command_history' in header:
       header['command_history'] += '\n' + COMMAND_HISTORY_STRING
     else:
       header['command_history'] = COMMAND_HISTORY_STRING
 
-  if isinstance(footer, str):
-    footer = { 'comments' : footer }
-  elif isinstance(footer, list):
-    footer = { 'comments' : '\n'.join(str(entry) for entry in footer) }
-  elif isinstance(footer, dict):
-    footer = dict((key, str(value)) for key, value in footer.items())
+  if footer:
+    if isinstance(footer, STRING_TYPES):
+      footer = { 'comments' : footer }
+    elif isinstance(footer, list):
+      footer = { 'comments' : '\n'.join(str(entry) for entry in footer) }
+    elif isinstance(footer, dict):
+      footer = dict((key, str(value)) for key, value in footer.items())
+    else:
+      raise TypeError('Unrecognised input to matrix.save_numeric() using "footer=" option')
   else:
-    raise TypeError('Unrecognised input to matrix.save_numeric() using "footer=" option')
+    footer = { }
 
   with open(filename, 'wb') as outfile:
-    for key, value in header.items():
-      outfile.write((comments + key + ': ' + value + newline).encode(**encode_args))
+    for key, value in sorted(header.items()):
+      for line in value.splitlines():
+        outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
 
     if data:
       if isinstance(data[0], list):
@@ -197,8 +222,9 @@ def save_numeric(filename, data, **kwargs):
         fmt = delimiter.join([fmt, ] * len(data))
         outfile.write(((fmt % tuple(data) + newline).encode(**encode_args)))
 
-    for key, value in footer.items():
-      outfile.write((comments + key + ': ' + value + newline).encode(**encode_args))
+    for key, value in sorted(footer.items()):
+      for line in value.splitlines():
+        outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
 
 
 
@@ -211,6 +237,7 @@ def save_matrix(filename, data, **kwargs): #pylint: disable=unused-variable
   for line in data[1:]:
     if len(line) != columns:
       raise TypeError('Input to matrix.save_matrix() must be a 2D matrix')
+  kwargs['fmt'] = kwargs['fmt'] if 'fmt' in kwargs else '%18.15f'
   save_numeric(filename, data, **kwargs)
 
 
@@ -221,15 +248,15 @@ def save_transform(filename, data, **kwargs): #pylint: disable=unused-variable
     raise TypeError('Input to matrix.save_transform() must be a 3x4 or 4x4 matrix')
   for line in data:
     if len(line) != 4:
-      raise TypeError('Input to matrix.save_matrix() must be a 3x4 or 4x4 matrix')
+      raise TypeError('Input to matrix.save_transform() must be a 3x4 or 4x4 matrix')
   if len(data) == 4:
     if any(a!=b for a, b in zip(data[3], _TRANSFORM_LAST_ROW)):
       raise TypeError('Input to matrix.save_transform() is not a valid affine matrix (fourth line contains values other than "0,0,0,1")')
-    save_numeric(filename, data, **kwargs)
+    save_matrix(filename, data, **kwargs)
   elif len(data) == 3:
     padded_data = data[:]
     padded_data.append(_TRANSFORM_LAST_ROW)
-    save_numeric(filename, data, **kwargs)
+    save_matrix(filename, data, **kwargs)
   else:
     raise TypeError('Input to matrix.save_matrix() must be a 3x4 or 4x4 matrix')
 

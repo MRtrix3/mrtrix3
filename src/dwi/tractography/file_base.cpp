@@ -28,7 +28,7 @@ namespace MR {
         dtype = DataType::Undefined;
 
         const std::string firstline ("mrtrix " + type);
-        File::KeyValue kv (file, firstline.c_str());
+        File::KeyValue::Reader kv (file, firstline.c_str());
         std::string data_file;
 
         while (kv.next()) {

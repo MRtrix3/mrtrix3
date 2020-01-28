@@ -24,13 +24,14 @@
 #include "filter/normalise.h"
 #include "filter/median.h"
 #include "filter/smooth.h"
+#include "filter/zclean.h"
 
 
 using namespace MR;
 using namespace App;
 
 
-const char* filters[] = { "fft", "gradient", "median", "smooth", "normalise", nullptr };
+const char* filters[] = { "fft", "gradient", "median", "smooth", "normalise", "zclean", NULL };
 
 
 const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
@@ -101,6 +102,18 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
             "The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.")
   + Argument ("voxels").type_sequence_int();
 
+const OptionGroup ZcleanOption = OptionGroup ("Options for zclean filter")
++ Option ("zupper", "define high intensity outliers: default: 2.5")
+  + Argument ("num").type_float(0.1, std::numeric_limits<float>::infinity())
++ Option ("zlower", "define low intensity outliers: default: 2.5")
+  + Argument ("num").type_float(0.1, std::numeric_limits<float>::infinity())
++ Option ("bridge", "number of voxels to gap to fill holes in mask: default: 4")
+  + Argument ("num").type_integer(0)
++ Option ("maskin", "initial mask that defines the maximum spatial extent and the region from "
+          "which to smaple the intensity range.")
+  + Argument ("image").type_image_in()
++ Option ("maskout", "Output a refined mask based on a spatially coherent region with normal intensity range.")
+  + Argument ("image").type_image_out();
 
 
 void usage ()
@@ -110,7 +123,7 @@ void usage ()
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "The available filters are: fft, gradient, median, smooth, normalise."
+  + "The available filters are: fft, gradient, median, smooth, normalise, zclean."
   + "Each filter has its own unique set of optional parameters."
   + "For 4D images, each 3D volume is processed independently.";
 
@@ -125,6 +138,7 @@ void usage ()
   + MedianOption
   + NormaliseOption
   + SmoothOption
+  + ZcleanOption
   + Stride::Options;
 }
 
@@ -257,6 +271,37 @@ void run () {
       filter (input, output);
       break;
      }
+
+    // Zclean
+    case 5:
+    {
+      auto input = Image<float>::open (argument[0]);
+      Filter::ZClean filter (input);
+
+      auto opt = get_options ("maskin");
+      if (!opt.size())
+        throw Exception (std::string(argument[1]) + " filter requires initial mask");
+      Image<float> maskin = Image<float>::open (opt[0][0]);
+      check_dimensions (maskin, input, 0, 3);
+
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+      Stride::set_from_command_line (filter);
+
+      filter.set_voxels_to_bridge (get_option_value ("bridge", 4));
+      float zlower = get_option_value ("zlower", 2.5);
+      float zupper = get_option_value ("zupper", 2.5);
+      filter.set_zlim (zlower, zupper);
+
+      auto output = Image<float>::create (argument[2], filter);
+      filter (input, maskin, output);
+
+      opt = get_options ("maskout");
+      if (opt.size()) {
+        auto maskout = Image<bool>::create (opt[0][0], filter.mask);
+        threaded_copy (filter.mask, maskout);
+      }
+      break;
+    }
 
     default:
       assert (0);
