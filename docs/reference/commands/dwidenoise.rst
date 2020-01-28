@@ -38,7 +38,9 @@ Options
 
 -  **-datatype float32/float64** Datatype for the eigenvalue decomposition (single or double precision). For complex input data, this will select complex float32 or complex float64 datatypes.
 
--  **-estimator Exp1/Exp2** Select the noise level estimator (default = Exp2), either: * Exp1: the original estimator used in Veraart et al. (2016), or * Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).
+-  **-estimator Exp1/Exp2** Select the noise level estimator (default = Exp2), either:  |br|
+   * Exp1: the original estimator used in Veraart et al. (2016), or  |br|
+   * Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -53,7 +55,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -67,6 +69,8 @@ Veraart, J.; Novikov, D.S.; Christiaens, D.; Ades-aron, B.; Sijbers, J. & Fierem
 Veraart, J.; Fieremans, E. & Novikov, D.S. Diffusion MRI noise mapping using random matrix theory. Magn. Res. Med., 2016, 76(5), 1582-1593, doi: 10.1002/mrm.26059
 
 Cordero-Grande, L.; Christiaens, D.; Hutter, J.; Price, A.N.; Hajnal, J.V. Complex diffusion-weighted image estimation via matrix recovery under general noise models. NeuroImage, 2019, 200, 391-404, doi: 10.1016/j.neuroimage.2019.06.039
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

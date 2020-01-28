@@ -19,13 +19,28 @@
 #include "math/math.h"
 
 namespace MR {
-  namespace DWI { 
+  namespace DWI {
     namespace Directions {
 
-      Eigen::MatrixXd load_cartesian (const std::string& filename) 
+      Eigen::MatrixXd load_spherical (const std::string& filename)
       {
         auto directions = load_matrix<> (filename);
-        if (directions.cols() == 2) 
+        if (directions.cols() == 2)
+          return directions;
+        if (directions.cols() != 3)
+          throw Exception ("unexpected number of columns for directions file \"" + filename + "\"");
+
+        return Math::Sphere::cartesian2spherical (directions);
+      }
+
+
+
+
+
+      Eigen::MatrixXd load_cartesian (const std::string& filename)
+      {
+        auto directions = load_matrix<> (filename);
+        if (directions.cols() == 2)
           directions = Math::Sphere::spherical2cartesian (directions);
         else {
           if (directions.cols() != 3)

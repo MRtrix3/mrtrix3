@@ -171,6 +171,9 @@ void run ()
     std::string line;
     ProgressBar progress ("reading streamline assignments file");
     while (std::getline (stream, line)) {
+      line = strip (line.substr (0, line.find_first_of ('#')));
+      if (line.empty())
+        continue;
       std::stringstream line_stream (line);
       vector<node_t> nodes;
       while (1) {
@@ -276,7 +279,7 @@ void run ()
       if (volumes[index])
         COMs[index] = (transform.voxel2scanner * (COMs[index] * (1.0f / float(volumes[index]))).cast<default_type>()).cast<float>();
       else
-        COMs[index][0] = COMs[index][1] = COMs[index][2] = NAN;
+        COMs[index][0] = COMs[index][1] = COMs[index][2] = NaN;
     }
 
     // If user specifies a subset of nodes, only a subset of exemplars need to be calculated

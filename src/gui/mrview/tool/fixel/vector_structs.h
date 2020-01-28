@@ -37,6 +37,13 @@ namespace MR
           vector<float> buffer_store;
 
 
+          void clear () {
+            buffer_store.clear();
+            loaded = false;
+            current_min = value_min = std::numeric_limits<float>::max ();
+            current_max = value_max = std::numeric_limits<float>::min ();
+          }
+
           void add_value (float value) {
             buffer_store.push_back (value);
             value_min = std::min (value_min, value);

@@ -20,6 +20,7 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#include <thread>
 
 #ifdef None
 # undef None
@@ -49,6 +50,7 @@ namespace MR
     extern void (*check_overwrite_files_func) (const std::string& name);
     extern bool fail_on_warn;
     extern bool terminal_use_colour;
+    extern const std::thread::id main_thread_ID;
 
     extern int argc;
     extern const char* const* argv;
@@ -75,6 +77,12 @@ namespace MR
       public:
         Description& operator+ (const char* text) {
           push_back (text);
+          return *this;
+        }
+
+        Description& operator+ (const char* const text[]) {
+          for (const char* const* p = text; *p; ++p)
+            push_back (*p);
           return *this;
         }
 

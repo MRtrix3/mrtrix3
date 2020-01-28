@@ -49,7 +49,7 @@ namespace MR {
 
 
             bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid () const override { return (M.rows()); }
+            bool valid () const override { return true; }
 
             void set_ratio (const size_t);
             size_t get_ratio() const { return (M.rows() ? (M.rows() + 1) : 1); }

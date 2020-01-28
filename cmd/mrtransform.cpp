@@ -192,6 +192,8 @@ void usage ()
 
     + DWI::GradImportOptions()
 
+    + DWI::GradExportOptions()
+
     + DataType::options ()
 
     + Stride::Options
@@ -555,13 +557,11 @@ void run ()
 
     if (get_options ("midway_space").size()) {
       INFO("regridding to midway space");
-      vector<Header> headers;
-      headers.push_back(input_header);
-      headers.push_back(template_header);
-      vector<Eigen::Transform<default_type, 3, Eigen::Projective>> void_trafo;
-      auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
-      int subsampling = 1;
-      auto midway_header = compute_minimum_average_header (headers, subsampling, padding, void_trafo);
+      if (!half)
+        WARN ("regridding to midway_space assumes the linear transformation to be a transformation from input to midway space. Use -half if the input transformation is a full transformation.");
+      transform_type linear_transform_inverse;
+      linear_transform_inverse.matrix() = linear_transform.inverse().matrix();
+      auto midway_header = compute_minimum_average_header (input_header, template_header, linear_transform_inverse, linear_transform);
       for (size_t i = 0; i < 3; ++i) {
         output_header.size(i) = midway_header.size(i);
         output_header.spacing(i) = midway_header.spacing(i);
@@ -645,6 +645,8 @@ void run ()
           output, warp, directions_cartesian.transpose(), modulate_fod);
     }
 
+    DWI::export_grad_commandline (output);
+
   // No reslicing required, so just modify the header and do a straight copy of the data
   } else {
 
@@ -675,6 +677,8 @@ void run ()
       if (modulate_jac)
         apply_linear_jacobian (output, transform);
     }
+
+    DWI::export_grad_commandline (output);
   }
 }
 

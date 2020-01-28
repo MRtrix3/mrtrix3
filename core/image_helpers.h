@@ -254,6 +254,19 @@ namespace MR
         throw Exception ("Image \"" + in.name() + "\" does not represent spatial data (has axis with size 1)");
     }
 
+  //! error if the image has dimensionality of at least \a N, allowing for higher singleton dimensions.
+  //! For example, [ x y z ], [ x y z 1 1 ] can both be considered 3D,
+  //! but [ x y z 1 n ] will throw an exception.
+  template <class HeaderType>
+    FORCE_INLINE void check_effective_dimensionality (const HeaderType& in, size_t N)
+    {
+      if (in.ndim() < N)
+        throw Exception ("Image \"" + in.name() + "\" does not represent " + str(N) + "D data (too few dimensions)");
+      for (size_t i = N; i < in.ndim(); ++i)
+        if (in.size(i) != 1)
+          throw Exception ("Image \"" + in.name() + "\" does not represent " + str(N) + "D data (axis " + str(i) + " has size " + str(in.size(i)) + ")");
+    }
+
   //! returns the number of voxel in the data set, or a relevant subvolume
   template <class HeaderType>
     inline size_t voxel_count (const HeaderType& in, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
@@ -386,25 +399,40 @@ namespace MR
       return true;
     }
 
+  namespace
+  {
+    template <class HeaderType>
+    std::string dim2str (const HeaderType& in)
+    {
+      std::string msg = str(in.size(0));
+      for (size_t axis = 1; axis != in.ndim(); ++axis)
+        msg += "," + str(in.size(axis));
+      return msg;
+    }
+  }
+
   template <class HeaderType1, class HeaderType2>
     inline void check_dimensions (const HeaderType1& in1, const HeaderType2& in2)
     {
       if (!dimensions_match (in1, in2))
-        throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\"");
+        throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\"" +
+            " (" + dim2str(in1) + " vs. " + dim2str(in2) + ")");
     }
 
   template <class HeaderType1, class HeaderType2>
     inline void check_dimensions (const HeaderType1& in1, const HeaderType2& in2, size_t from_axis, size_t to_axis)
     {
       if (!dimensions_match (in1, in2, from_axis, to_axis))
-        throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\"");
+        throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\" between axes " + str(from_axis) + " and " + str(to_axis-1) +
+            " (" + dim2str(in1) + " vs. " + dim2str(in2) + ")");
     }
 
   template <class HeaderType1, class HeaderType2>
     inline void check_dimensions (const HeaderType1& in1, const HeaderType2& in2, const vector<size_t>& axes)
     {
       if (!dimensions_match (in1, in2, axes))
-        throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\"");
+        throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\" for axes [" + join(axes, ",") + "]" +
+            " (" + dim2str(in1) + " vs. " + dim2str(in2) + ")");
     }
 
   template <class HeaderType1, class HeaderType2>

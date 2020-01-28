@@ -24,7 +24,6 @@
 #include "algo/threaded_loop.h"
 #include "file/path.h"
 #include "gui/dialog/file.h"
-#include "gui/mrview/colourmap.h"
 #include "math/math.h"
 #include "math/rng.h"
 
@@ -52,7 +51,7 @@ namespace MR
             mat2vec (nullptr),
             lighting (this),
             lighting_dock (nullptr),
-            node_list (new Tool::Dock ("Connectome node list")),
+            node_list (new Tool::Dock ("Connectome node list", Window::tools_floating)),
             is_3D (true),
             crop_to_slab (false),
             slab_thickness (0.0f),
@@ -723,8 +722,8 @@ namespace MR
           edge_colour_fixedcolour_button       ->setFixedHeight (height);
           edge_colour_colourmap_button         ->setFixedHeight (height);
 
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           cube.generate();
           cube_VAO.gen();
@@ -760,7 +759,7 @@ namespace MR
           GL_CHECK_ERROR;
 
           enable_all (false);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -769,7 +768,7 @@ namespace MR
 
         void Connectome::draw (const Projection& projection, bool /*is_3D*/, int /*axis*/, int /*slice*/)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (hide_all_button->isChecked()) return;
 
           // If using transparency, only want to draw the close surface;
@@ -796,13 +795,13 @@ namespace MR
             gl::Disable (gl::CULL_FACE);
           else
             gl::Enable (gl::CULL_FACE);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void Connectome::draw_colourbars()
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (!buffer) return;
           if (hide_all_button->isChecked()) return;
           if (((node_colour == node_colour_t::CONNECTOME && matrix_list_model->rowCount()) || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
@@ -815,7 +814,7 @@ namespace MR
                                                 edge_colour_lower_button->value(), edge_colour_upper_button->value(),
                                                 edge_colour_lower_button->value(), edge_colour_upper_button->value() - edge_colour_lower_button->value(),
                                                 edge_fixed_colour);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -866,7 +865,7 @@ namespace MR
 
         void Connectome::image_open_slot()
         {
-          const std::string path = Dialog::File::get_image (this, "Select connectome parcellation image");
+          const std::string path = Dialog::File::get_image (this, "Select connectome parcellation image", &current_folder);
           if (path.empty())
             return;
 
@@ -897,7 +896,7 @@ namespace MR
 
         void Connectome::matrix_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open");
+          vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open", "", &current_folder);
           if (list.empty())
             return;
           add_matrices (list);
@@ -2381,7 +2380,7 @@ namespace MR
 
         void Connectome::draw_nodes (const Projection& projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (node_visibility != node_visibility_t::NONE) {
 
             if (node_geometry == node_geometry_t::OVERLAY) {
@@ -2545,12 +2544,12 @@ namespace MR
 
           }
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         void Connectome::draw_edges (const Projection& projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (edge_visibility != edge_visibility_t::NONE) {
 
             edge_shader.start (*this);
@@ -2634,6 +2633,7 @@ namespace MR
                   gl::Uniform1f (edge_alpha_ID, edge_alpha_given_selection (edge) * edge_fixed_alpha);
                 switch (edge_geometry) {
                   case edge_geometry_t::LINE:
+                    // TODO: in OpenGL >3, this has no effect:
                     gl::LineWidth (calc_line_width (edge_size_given_selection (edge) * edge_size_scale_factor, edge_geometry_line_smooth_checkbox->isChecked()));
                     edge.render_line();
                     break;
@@ -2683,7 +2683,7 @@ namespace MR
 
             edge_shader.stop();
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -2693,7 +2693,7 @@ namespace MR
 
         bool Connectome::import_vector_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv)");
+          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv)", &current_folder);
           if (path.empty())
             return false;
           try {
@@ -2717,7 +2717,7 @@ namespace MR
 
         bool Connectome::import_matrix_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)");
+          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)", &current_folder);
           if (path.empty())
             return false;
           MR::Connectome::matrix_type temp;
@@ -3782,14 +3782,14 @@ namespace MR
         void Connectome::get_meshes()
         {
           // Request exemplar track file path from user
-          const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)");
+          const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)", &current_folder);
           if (!path.size()) return;
           Surface::MeshMulti meshes;
           meshes.load (path);
           if (meshes.size() != nodes.size())
             throw Exception ("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));
           have_meshes = false;
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           for (node_t i = 1; i <= num_nodes(); ++i)
             nodes[i].assign_mesh (meshes[i]);
           have_meshes = true;
@@ -3800,7 +3800,7 @@ namespace MR
         void Connectome::get_exemplars()
         {
           // Request exemplar track file path from user
-          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars", "Track files (*.tck)");
+          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars", "Track files (*.tck)", &current_folder);
           if (!path.size()) return;
           MR::DWI::Tractography::Properties properties;
           MR::DWI::Tractography::Reader<float> reader (path, properties);

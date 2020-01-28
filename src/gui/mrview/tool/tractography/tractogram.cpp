@@ -230,7 +230,7 @@ namespace MR
             source += using_geom ? "in vec3 g_tangent;\n" : "in vec3 v_tangent;\n";
 
           if (threshold_type != TrackThresholdType::None)
-            source += using_geom ? "in float g_amp;\n" : "in vec3 v_amp;\n";
+            source += using_geom ? "in float g_amp;\n" : "in float v_amp;\n";
 
           if (use_lighting && (using_geom || using_points)) {
             source +=
@@ -387,7 +387,7 @@ namespace MR
 
         Tractogram::~Tractogram ()
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (vertex_buffers.size())
             gl::DeleteBuffers (vertex_buffers.size(), &vertex_buffers[0]);
           if (vertex_array_objects.size())
@@ -398,7 +398,7 @@ namespace MR
             gl::DeleteBuffers (intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
           if (threshold_scalar_buffers.size())
             gl::DeleteBuffers (threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -406,7 +406,7 @@ namespace MR
 
         void Tractogram::render (const Projection& transform)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (tractography_tool.do_crop_to_slab && tractography_tool.slab_thickness <= 0.0)
             return;
 
@@ -499,7 +499,7 @@ namespace MR
           }
 
           stop (track_shader);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -507,7 +507,7 @@ namespace MR
 
         inline void Tractogram::render_streamlines ()
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           for (size_t buf = 0, N = vertex_buffers.size(); buf < N; ++buf) {
             gl::BindVertexArray (vertex_array_objects[buf]);
 
@@ -569,7 +569,7 @@ namespace MR
           }
 
           vao_dirty = false;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -577,7 +577,9 @@ namespace MR
 
         inline void Tractogram::update_stride ()
         {
-          const float step_size = DWI::Tractography::get_step_size (properties);
+          // Note: If streamlines have been resampled at all,
+          //   strides will be incorrect
+          const float step_size = properties.get_stepsize();
           GLint new_stride = 1;
 
           if (geometry_type == TrackGeometryType::Pseudotubes && std::isfinite (step_size)) {
@@ -604,8 +606,8 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           DWI::Tractography::Reader<float> file (filename, properties);
           DWI::Tractography::Streamline<float> tck;
@@ -647,7 +649,7 @@ namespace MR
           if (buffer.size())
             load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
           file.close();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -661,8 +663,8 @@ namespace MR
 
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           erase_colour_data();
           size_t total_tck_counter = 0;
@@ -686,7 +688,7 @@ namespace MR
           assert (colour_buffers.size() == vertex_buffers.size());
           // Don't need this now that we've initialised the GPU buffers
           endpoint_tangents.clear();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -697,8 +699,8 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           erase_intensity_scalar_data ();
           value_min = std::numeric_limits<float>::infinity();
@@ -783,7 +785,7 @@ namespace MR
             greaterthan = value_max;
           if (!std::isfinite (lessthan))
             lessthan = value_min;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -792,8 +794,8 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           erase_threshold_scalar_data ();
           threshold_min = std::numeric_limits<float>::infinity();
@@ -876,20 +878,20 @@ namespace MR
           greaterthan = threshold_max;
           lessthan = threshold_min;
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
 
         void Tractogram::erase_colour_data()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           if (colour_buffers.size()) {
             gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
             colour_buffers.clear();
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -897,14 +899,14 @@ namespace MR
 
         void Tractogram::erase_intensity_scalar_data ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           if (intensity_scalar_buffers.size()) {
             gl::DeleteBuffers (intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
             intensity_scalar_buffers.clear();
           }
           intensity_scalar_filename.clear();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -912,8 +914,8 @@ namespace MR
 
         void Tractogram::erase_threshold_scalar_data ()
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           if (threshold_scalar_buffers.size()) {
             gl::DeleteBuffers (threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
             threshold_scalar_buffers.clear();
@@ -922,7 +924,7 @@ namespace MR
           threshold_min = threshold_max = NaN;
           set_use_discard_lower (false);
           set_use_discard_upper (false);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -964,7 +966,7 @@ namespace MR
             vector<GLint>& sizes,
             size_t& tck_count)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
 
           GLuint vertex_array_object;
           gl::GenVertexArrays (1, &vertex_array_object);
@@ -987,12 +989,12 @@ namespace MR
           starts.clear();
           sizes.clear();
           tck_count = 0;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         void Tractogram::load_end_colours_onto_GPU (vector<Eigen::Vector3f>& buffer)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
 
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
@@ -1003,7 +1005,7 @@ namespace MR
 
           colour_buffers.push_back (vertexbuffer);
           buffer.clear();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -1012,7 +1014,7 @@ namespace MR
 
         void Tractogram::load_intensity_scalars_onto_GPU (vector<float>& buffer, size_t& tck_count)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
 
           assert (num_tracks_per_buffer[intensity_scalar_buffers.size()] == tck_count);
 
@@ -1027,7 +1029,7 @@ namespace MR
           buffer.clear();
           tck_count = 0;
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -1035,7 +1037,7 @@ namespace MR
 
         void Tractogram::load_threshold_scalars_onto_GPU (vector<float>& buffer, size_t& tck_count)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
 
           assert (num_tracks_per_buffer[threshold_scalar_buffers.size()] == tck_count);
 
@@ -1050,7 +1052,7 @@ namespace MR
           buffer.clear();
           tck_count = 0;
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -1058,5 +1060,3 @@ namespace MR
     }
   }
 }
-
-

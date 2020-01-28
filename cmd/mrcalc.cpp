@@ -365,20 +365,23 @@ class StackEntry { NOMEMALIGN
           image.reset (new Image<complex_type> (header.get_image<complex_type>()));
           image_list.insert (std::make_pair (arg, LoadedImage (image, image_is_complex)));
         }
-        catch (Exception&) {
+        catch (Exception& e_image) {
           try {
             std::string a = lowercase (arg);
             if      (a == "pi")    { value = Math::pi; }
             else if (a == "e")     { value = Math::e; }
-            else if (a ==  "nan")  { value =  std::numeric_limits<real_type>::quiet_NaN(); }
-            else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
-            else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
-            else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
             else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gaussian = false; }
             else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gaussian = true; }
             else                   { value =  to<complex_type> (arg); }
-          } catch (Exception&) {
-            throw Exception (std::string ("Could not interpret string \"") + arg + "\" as either an image path or a numerical value");
+          } catch (Exception& e_number) {
+            Exception e (std::string ("Could not interpret string \"") + arg + "\" as either an image path or a numerical value");
+            e.push_back ("As image: ");
+            for (size_t i = 0; i != e_image.num(); ++i)
+              e.push_back (e_image[i]);
+            e.push_back ("As numerical value: ");
+            for (size_t i = 0; i != e_number.num(); ++i)
+              e.push_back (e_number[i]);
+            throw e;
           }
         }
       }

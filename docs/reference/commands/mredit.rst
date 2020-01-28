@@ -26,11 +26,11 @@ A range of options are provided to enable direct editing of voxel intensities ba
 Options
 -------
 
--  **-plane axis coord value**  *(multiple uses permitted)* fill one or more planes on a particular image axis
+-  **-plane axis coord value** *(multiple uses permitted)* fill one or more planes on a particular image axis
 
--  **-sphere position radius value**  *(multiple uses permitted)* draw a sphere with radius in mm
+-  **-sphere position radius value** *(multiple uses permitted)* draw a sphere with radius in mm
 
--  **-voxel position value**  *(multiple uses permitted)* change the image value within a single voxel
+-  **-voxel position value** *(multiple uses permitted)* change the image value within a single voxel
 
 -  **-scanner** indicate that coordinates are specified in scanner space, rather than as voxel coordinates
 
@@ -47,11 +47,16 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

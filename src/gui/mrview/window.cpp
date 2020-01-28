@@ -53,6 +53,7 @@ namespace MR
 */
 
       Window* Window::main = nullptr;
+      bool Window::tools_floating = false;
 
       namespace {
 
@@ -233,15 +234,15 @@ namespace MR
         orient (),
         field_of_view (100.0),
         anatomical_plane (2),
-        colourbar_position (ColourMap::Position::BottomRight),
-        tools_colourbar_position (ColourMap::Position::TopRight),
+        colourbar_position (ColourBars::Position::BottomRight),
+        tools_colourbar_position (ColourBars::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
         tool_has_focus (nullptr),
         best_FPS (NAN),
         show_FPS (false),
         current_option (0) {
           main = this;
-          GUI::App::set_main_window (this);
+          GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
 
           setDockOptions (AllowTabbedDocks | VerticalTabs);
@@ -263,6 +264,12 @@ namespace MR
           QToolButton* button;
 
           setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
+
+          //CONF option: MRViewDockFloating
+          //CONF default: 0 (false)
+          //CONF Whether MRView tools should start docked in the main window, or
+          //CONF floating (detached from the main window).
+          tools_floating = MR::File::Config::get_bool ("MRViewDockFloating", false);
 
           // Main toolbar:
 
@@ -354,6 +361,19 @@ namespace MR
           prev_slice_action->setShortcut (tr ("Down"));
           addAction (prev_slice_action);
 
+          image_menu->addSeparator();
+
+          //CONF option: MRViewWrapVolumes
+          //CONF default: false
+          //CONF Wrap volumes around when cycling through
+          wrap_volumes_action = image_menu->addAction (tr ("Wrap volumes"), this, SLOT (wrap_volumes_slot()));
+          wrap_volumes_action->setShortcut (tr ("w"));
+          wrap_volumes_action->setCheckable (true);
+          wrap_volumes_action->setChecked (File::Config::get_bool("MRViewWrapVolumes",false));
+          addAction (wrap_volumes_action);
+
+          image_menu->addSeparator();
+
           next_image_volume_action = image_menu->addAction (tr ("Next volume"), this, SLOT (image_next_volume_slot()));
           next_image_volume_action->setShortcut (tr ("Right"));
           addAction (next_image_volume_action);
@@ -365,6 +385,8 @@ namespace MR
           goto_image_volume_action = image_menu->addAction (tr ("Go to volume..."), this, SLOT (image_goto_volume_slot()));
           goto_image_volume_action->setShortcut (tr ("g"));
           addAction (goto_image_volume_action);
+
+          image_menu->addSeparator();
 
           next_image_volume_group_action = image_menu->addAction (tr ("Next volume group"), this, SLOT (image_next_volume_group_slot()));
           next_image_volume_group_action->setShortcut (tr ("Shift+Right"));
@@ -720,7 +742,7 @@ namespace MR
       void Window::parse_arguments ()
       {
         if (MR::App::get_options ("norealign").size())
-          Header::do_not_realign_transform = true;
+          Header::do_realign_transform = false;
 
         if (MR::App::argument.size()) {
           if (MR::App::option.size())  {
@@ -759,18 +781,18 @@ namespace MR
 
 
 
-      ColourMap::Position Window::parse_colourmap_position_str (const std::string& position_str) {
+      ColourBars::Position Window::parse_colourmap_position_str (const std::string& position_str) {
 
-        ColourMap::Position pos(ColourMap::Position::None);
+        ColourBars::Position pos(ColourBars::Position::None);
 
         if(position_str == "bottomleft")
-          pos = ColourMap::Position::BottomLeft;
+          pos = ColourBars::Position::BottomLeft;
         else if(position_str == "bottomright")
-          pos = ColourMap::Position::BottomRight;
+          pos = ColourBars::Position::BottomRight;
         else if(position_str == "topleft")
-          pos = ColourMap::Position::TopLeft;
+          pos = ColourBars::Position::TopLeft;
         else if(position_str == "topright")
-          pos = ColourMap::Position::TopRight;
+          pos = ColourBars::Position::TopRight;
 
         return pos;
       }
@@ -797,7 +819,7 @@ namespace MR
 
       void Window::image_open_slot ()
       {
-        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
+        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open", &current_folder);
         if (image_list.empty())
           return;
 
@@ -817,7 +839,7 @@ namespace MR
 
       void Window::image_import_DICOM_slot ()
       {
-        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import");
+        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import", &current_folder);
         if (folder.empty())
           return;
 
@@ -837,6 +859,10 @@ namespace MR
 
       void Window::add_images (vector<std::unique_ptr<MR::Header>>& list)
       {
+        if (list.empty())
+          return;
+
+        QList<QAction*> new_actions;
         for (size_t i = 0; i < list.size(); ++i) {
           const std::string name = list[i]->name(); // Gets move-constructed out
           QAction* action = new Image (std::move (*list[i]));
@@ -845,12 +871,32 @@ namespace MR
           action->setCheckable (true);
           action->setToolTip (name.c_str());
           action->setStatusTip (name.c_str());
-          image_group->addAction (action);
-          image_menu->addAction (action);
           connect (action, SIGNAL(scalingChanged()), this, SLOT(on_scaling_changed()));
-
-          if (!i) image_select_slot (action);
+          new_actions.push_back (action);
         }
+
+        QList<QAction*> previous_actions = image_group->actions();
+        previous_actions.push_back (nullptr);
+        QAction* selected = image_group->checkedAction();
+        for (auto* action : image_group->actions()) {
+          image_group->removeAction (action);
+          image_menu->removeAction (action);
+        }
+
+        for (auto* action : previous_actions) {
+          if (action) {
+            image_group->addAction (action);
+            image_menu->addAction (action);
+          }
+          if (action == selected) {
+            for (auto* added : new_actions) {
+              image_group->addAction (added);
+              image_menu->addAction (added);
+            }
+          }
+        }
+
+        image_select_slot (new_actions[0]);
         set_image_menu();
       }
 
@@ -858,7 +904,7 @@ namespace MR
 
       void Window::image_save_slot ()
       {
-        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination");
+        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination", "", &current_folder);
         if (image_name.empty())
           return;
 
@@ -952,16 +998,10 @@ namespace MR
         if (dynamic_cast<Tool::__Action__*>(action)->dock)
           return;
 
-        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create();
+        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (tools_floating);
         connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
 
-        //CONF option: MRViewDockFloating
-        //CONF default: 0 (false)
-        //CONF Whether MRView tools should start docked in the main window, or
-        //CONF floating (detached from the main window).
-        bool floating = MR::File::Config::get_int ("MRViewDockFloating", 0);
-
-        if (!floating) {
+        if (!tools_floating) {
 
           for (int i = 0; i < tool_group->actions().size(); ++i) {
             Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
@@ -977,7 +1017,6 @@ namespace MR
 
         }
 
-        tool->setFloating (floating);
         if (show) {
           tool->show();
           tool->raise();
@@ -1037,6 +1076,15 @@ namespace MR
       void Window::on_scaling_changed ()
       {
         emit scalingChanged();
+      }
+
+
+
+
+
+      void Window::wrap_volumes_slot ()
+      {
+        set_image_navigation_menu();
       }
 
 
@@ -1141,12 +1189,15 @@ namespace MR
       {
         assert (image());
         assert (axis < image()->image.ndim());
-        if (image()->image.index (axis) != index) {
-          image()->image.index (axis) = index;
-          set_image_navigation_menu();
+        if (index < 0)
+          index = wrap_volumes_action->isChecked() ? index+image()->image.size(axis) : 0;
+        else if (index >= image()->image.size(axis))
+          index = wrap_volumes_action->isChecked() ? index-image()->image.size(axis) : image()->image.size(axis)-1;
+        image()->image.index (axis) = index;
+        set_image_navigation_menu();
+        if (axis >= 3)
           emit volumeChanged ();
-          updateGL();
-        }
+        updateGL();
       }
 
 
@@ -1207,7 +1258,7 @@ namespace MR
 
       void Window::image_next_volume_slot ()
       {
-        size_t vol = image()->image.index(3)+1;
+        ssize_t vol = image()->image.index(3)+1;
         set_image_volume (3, vol);
       }
 
@@ -1216,7 +1267,7 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        size_t vol = image()->image.index(3)-1;
+        ssize_t vol = image()->image.index(3)-1;
         set_image_volume (3, vol);
       }
 
@@ -1226,7 +1277,7 @@ namespace MR
         size_t maxvol = image()->image.size(3) - 1;
         auto label = std::string ("volume (0...") + str(maxvol) + std::string (")");
         bool ok;
-        size_t vol = QInputDialog::getInt (this, tr("Go to..."),
+        ssize_t vol = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(3), 0, maxvol, 1, &ok);
         if (ok)
           set_image_volume (3, vol);
@@ -1237,7 +1288,7 @@ namespace MR
         size_t maxvolgroup = image()->image.size(4) - 1;
         auto label = std::string ("volume group (0...") + str(maxvolgroup) + std::string (")");
         bool ok;
-        size_t grp = QInputDialog::getInt (this, tr("Go to..."),
+        ssize_t grp = QInputDialog::getInt (this, tr("Go to..."),
           label.c_str(), image()->image.index(4), 0, maxvolgroup, 1, &ok);
         if (ok)
           set_image_volume (4, grp);
@@ -1246,7 +1297,7 @@ namespace MR
 
       void Window::image_next_volume_group_slot ()
       {
-        size_t vol = image()->image.index(4)+1;
+        ssize_t vol = image()->image.index(4)+1;
         set_image_volume (4, vol);
       }
 
@@ -1255,7 +1306,7 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        size_t vol = image()->image.index(4)-1;
+        ssize_t vol = image()->image.index(4)-1;
         set_image_volume (4, vol);
       }
 
@@ -1401,18 +1452,28 @@ namespace MR
           if (imagep->image.ndim() > 3) {
             if (imagep->image.size(3) > 1)
               show_goto_volume = true;
-            if (imagep->image.index(3) > 0)
-              show_prev_volume = true;
-            if (imagep->image.index(3) < imagep->image.size(3)-1)
-              show_next_volume = true;
+            if (wrap_volumes_action->isChecked()) {
+              show_prev_volume = show_next_volume = true;
+            }
+            else {
+              if (imagep->image.index(3) > 0)
+                show_prev_volume = true;
+              if (imagep->image.index(3) < imagep->image.size(3)-1)
+                show_next_volume = true;
+            }
 
             if (imagep->image.ndim() > 4) {
               if (imagep->image.size(4) > 1)
                 show_goto_volume_group = true;
-              if (imagep->image.index(4) > 0)
-                show_prev_volume_group = true;
-              if (imagep->image.index(4) < imagep->image.size(4)-1)
-                show_next_volume_group = true;
+              if (wrap_volumes_action->isChecked()) {
+                show_prev_volume_group = show_next_volume_group = true;
+              }
+              else {
+                if (imagep->image.index(4) > 0)
+                  show_prev_volume_group = true;
+                if (imagep->image.index(4) < imagep->image.size(4)-1)
+                  show_next_volume_group = true;
+              }
             }
           }
         }
@@ -1465,7 +1526,7 @@ namespace MR
 
       void Window::paintGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
@@ -1474,9 +1535,9 @@ namespace MR
 
         GL_CHECK_ERROR;
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         mode->paintGL();
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL_CHECK_ERROR;
 
         if (show_FPS) {
@@ -1517,13 +1578,13 @@ namespace MR
         glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 
       void Window::initGL ()
       {
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
         GL::init ();
 
         font.initGL();
@@ -1536,7 +1597,7 @@ namespace MR
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
 
-        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        GL::assert_context_is_current();
       }
 
 
@@ -2134,11 +2195,7 @@ namespace MR
           + OptionGroup ("Debugging options")
 
           + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
-              "The maximum over the last 3 seconds is also displayed.")
-
-          + OptionGroup ("Other options")
-
-          + NoRealignOption;
+              "The maximum over the last 3 seconds is also displayed.");
 
       }
 

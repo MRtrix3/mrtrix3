@@ -1,5 +1,20 @@
 #!/bin/bash
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 #
 # Generate .rst documentation for commands/scripts listing
 # Based off of the update_doc script originally used to update the MRtrix wiki
@@ -7,7 +22,9 @@
 # Author: Rami Tabbara
 #
 
-
+function prepend {
+  echo -e "$1" | cat - "$2" > "$2".tmp && mv "$2".tmp "$2"
+}
 
 
 # Generating documentation for all commands
@@ -15,6 +32,7 @@
 mrtrix_root=$( cd "$(dirname "${BASH_SOURCE}")"/../ ; pwd -P )
 export PATH=$mrtrix_root/bin:"$PATH"
 dirpath=${mrtrix_root}'/docs/reference/commands'
+export LC_ALL=C
 
 
 # Erase legacy files
@@ -69,7 +87,7 @@ for n in `echo "$cmdlist" | sort`; do
   esac
   $cmdpath __print_usage_rst__ > $dirpath/$cmdname.rst
   case $n in *.cpp)
-    sed -ie "1i.. _$cmdname:\n\n$cmdname\n===================\n" $dirpath/$cmdname.rst
+    prepend ".. _${cmdname}:\n\n${cmdname}\n===================\n" $dirpath/$cmdname.rst
   esac
   echo '    commands/'"$cmdname" >> $toctree_file
   echo '    |'"$logopath"'|, :ref:`'"$cmdname"'`, "'`$cmdpath __print_synopsis__`'"' >> $table_file
