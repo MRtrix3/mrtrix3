@@ -116,9 +116,9 @@ def execute(): #pylint: disable=unused-variable
     run.command('dwi2response fa dwi.mif wm_ss_response.txt -mask wm_mask.mif -threshold ' + str(app.ARGS.sfwm_fa_threshold) + ' -voxels wm_sf_mask.mif -scratch ' + path.quote(app.SCRATCH_DIR) + recursive_cleanup_option)
 
   # Check for empty masks
-  wm_voxels  = image.statistic('wm_sf_mask.mif', 'count', '-mask wm_sf_mask.mif')
-  gm_voxels  = image.statistic('gm_mask.mif',    'count', '-mask gm_mask.mif')
-  csf_voxels = image.statistic('csf_mask.mif',   'count', '-mask csf_mask.mif')
+  wm_voxels  = image.statistics('wm_sf_mask.mif', mask='wm_sf_mask.mif').count
+  gm_voxels  = image.statistics('gm_mask.mif',    mask='gm_mask.mif').count
+  csf_voxels = image.statistics('csf_mask.mif',   mask='csf_mask.mif').count
   empty_masks = [ ]
   if not wm_voxels:
     empty_masks.append('WM')
