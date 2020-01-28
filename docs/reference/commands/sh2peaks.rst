@@ -23,14 +23,15 @@ Description
 
 Peaks of the spherical harmonic function in each voxel are located by commencing a Newton search along each of a set of pre-specified directions
 
-The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link: https://mrtrix.readthedocs.io/en/3.0_RC4/concepts/spherical_harmonics.html
+The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0_RC4/concepts/spherical_harmonics.html
 
 Options
 -------
 
 -  **-num peaks** the number of peaks to extract (default: 3).
 
--  **-direction phi theta**  *(multiple uses permitted)* the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option.
+-  **-direction phi theta** *(multiple uses permitted)* the direction of a peak to estimate. The algorithm will attempt to find the same number of peaks as have been specified using this option.
 
 -  **-peaks image** the program will try to find the peaks that most closely match those in the image provided.
 
@@ -55,7 +56,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 

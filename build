@@ -266,7 +266,9 @@ def get_real_name (path):
 
 
 def _get_expected_bin_filenames (exe_suffix, cmd_directory=cmd_dir):
-  binary_apps = { 'mrtrix.dll' } if exe_suffix else set()
+  binary_apps = { 'mrtrix3.pyc' }
+  if exe_suffix:
+    binary_apps.add('mrtrix.dll')
   for entry in os.listdir(cmd_directory):
     if entry.endswith(cpp_suffix):
       binary_apps.add (entry[:-len(cpp_suffix)] + exe_suffix)
@@ -1334,7 +1336,7 @@ def update_user_docs ():
 ###########################################################################
 
 with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
-  vfile.write('__version__ = "'+ mrtrix_version() +'"\n')
+  vfile.write('__version__ = "'+ mrtrix_version() +'" #pylint: disable=unused-variable\n')
 
 
 ###########################################################################

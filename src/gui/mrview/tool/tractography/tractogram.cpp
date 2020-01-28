@@ -577,7 +577,9 @@ namespace MR
 
         inline void Tractogram::update_stride ()
         {
-          const float step_size = DWI::Tractography::get_step_size (properties);
+          // Note: If streamlines have been resampled at all,
+          //   strides will be incorrect
+          const float step_size = properties.get_stepsize();
           GLint new_stride = 1;
 
           if (geometry_type == TrackGeometryType::Pseudotubes && std::isfinite (step_size)) {
@@ -1058,5 +1060,3 @@ namespace MR
     }
   }
 }
-
-

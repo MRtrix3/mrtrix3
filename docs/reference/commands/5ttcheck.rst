@@ -20,7 +20,7 @@ Usage
 Options
 -------
 
--  **-masks prefix** output mask images highlighting voxels where the input does not conform to 5TT requirements
+-  **-voxels prefix** output mask images highlighting voxels where the input does not conform to 5TT requirements
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -35,7 +35,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 

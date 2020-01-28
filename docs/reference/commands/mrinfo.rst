@@ -54,7 +54,7 @@ Options
 Options for exporting image header fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-property key**  *(multiple uses permitted)* any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
+-  **-property key** *(multiple uses permitted)* any text properties embedded in the image header under the specified key (use 'all' to list all keys found)
 
 -  **-json_keyval file** export header key/value entries to a JSON file
 
@@ -84,6 +84,8 @@ DW gradient table export options
 
 -  **-shell_sizes** list the number of volumes in each shell
 
+-  **-shell_indices** list the image volumes attributed to each b-value shell
+
 Options for exporting phase-encode tables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -106,7 +108,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 

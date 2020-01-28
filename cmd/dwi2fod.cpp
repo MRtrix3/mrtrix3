@@ -48,8 +48,9 @@ OptionGroup CommonOptions = OptionGroup ("Options common to more than one algori
               "provided as a comma-separated list of integers, one for "
               "each output image; for single-output algorithms, only "
               "a single integer should be provided. If omitted, the "
-              "command will use the highest possible lmax given the "
-              "diffusion gradient table, up to a maximum of 8.")
+              "command will use the lmax of the corresponding response "
+              "function (i.e based on its number of coefficients), "
+              "up to a maximum of 8.")
       + Argument ("order").type_sequence_int()
 
     + Option ("mask",
