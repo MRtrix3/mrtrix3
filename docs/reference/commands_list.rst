@@ -55,7 +55,7 @@ List of MRtrix3 commands
     commands/fixelreorient
     commands/fod2dec
     commands/fod2fixel
-    commands/foreach
+    commands/for_each
     commands/label2colour
     commands/label2mesh
     commands/labelconvert
@@ -183,7 +183,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`fixelreorient`, "Reorient fixel directions"
     |cpp.png|, :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
     |cpp.png|, :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
-    |python.png|, :ref:`foreach`, "Perform some arbitrary processing step for each of a set of inputs"
+    |python.png|, :ref:`for_each`, "Perform some arbitrary processing step for each of a set of inputs"
     |cpp.png|, :ref:`label2colour`, "Convert a parcellated image (where values are node indices) into a colour image"
     |cpp.png|, :ref:`label2mesh`, "Generate meshes from a label image"
     |cpp.png|, :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"

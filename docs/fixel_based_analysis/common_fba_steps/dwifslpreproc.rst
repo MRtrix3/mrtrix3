@@ -2,7 +2,7 @@ The :ref:`dwifslpreproc` command handles motion and distortion correction for DW
 
 The simplest scenario is to (only) correct for motion and eddy current-induced distortions::
 
-    foreach * : dwifslpreproc IN/dwi_denoised_unringed.mif IN/dwi_denoised_unringed_preproc.mif -rpe_none -pe_dir AP
+    for_each * : dwifslpreproc IN/dwi_denoised_unringed.mif IN/dwi_denoised_unringed_preproc.mif -rpe_none -pe_dir AP
 
 .. WARNING:: The :code:`-pe_dir` option to :ref:`dwifslpreproc` is used to specify the phase encoding direction of the acquisition. The :code:`-pe_dir AP` in the example above refers to an *anterior-posterior* phase encoding direction, which is relatively commonly used for acquiring human data. For typical human data, change this to :code:`-pe_dir LR` for a *left-right* phase encoding direction or :code:`-pe_dir SI` for a *superior-inferior* phase encoding direction.
 
