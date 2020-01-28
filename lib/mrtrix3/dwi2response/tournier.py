@@ -102,7 +102,7 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrcalc ' + prefix + 'first_peaks.mif -sqrt 1 ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div -sub 2 -pow -mult '+ prefix + 'CF.mif')
     app.cleanup(prefix + 'first_peaks.mif')
     app.cleanup(prefix + 'second_peaks.mif')
-    voxel_count = int(image.statistic(prefix + 'CF.mif', 'count'))
+    voxel_count = image.statistics(prefix + 'CF.mif').count
     # Select the top-ranked voxels
     run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(min([app.ARGS.number, voxel_count])) + ' ' + prefix + 'SF.mif')
     # Generate a new response function based on this selection
@@ -116,7 +116,7 @@ def execute(): #pylint: disable=unused-variable
     if iteration > 0:
       run.command('mrcalc ' + prefix + 'SF.mif iter' + str(iteration-1) + '_SF.mif -sub ' + prefix + 'SF_diff.mif')
       app.cleanup('iter' + str(iteration-1) + '_SF.mif')
-      max_diff = image.statistic(prefix + 'SF_diff.mif', 'max')
+      max_diff = image.statistics(prefix + 'SF_diff.mif').max
       app.cleanup(prefix + 'SF_diff.mif')
       if not max_diff:
         app.cleanup(prefix + 'CF.mif')
