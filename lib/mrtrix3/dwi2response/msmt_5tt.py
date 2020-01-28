@@ -66,10 +66,14 @@ def execute(): #pylint: disable=unused-variable
   # May need to commit 5ttregrid...
 
   # Verify input 5tt image
-  stderr_5ttcheck = run.command('5ttcheck 5tt.mif').stderr
-  if '[WARNING]' in stderr_5ttcheck:
-    app.warn('Command 5ttcheck indicates minor problems with provided input 5TT image \'' + app.ARGS.in_5tt + '\':')
-    for line in stderr_5ttcheck.splitlines():
+  verification_text = ''
+  try:
+    verification_text = run.command('5ttcheck 5tt.mif').stderr
+  except run.MRtrixCmdError as except_5ttcheck:
+    verification_text = except_5ttcheck.stderr
+  if 'WARNING' in verification_text or 'ERROR' in verification_text:
+    app.warn('Command 5ttcheck indicates problems with provided input 5TT image \'' + app.ARGS.in_5tt + '\':')
+    for line in verification_text.splitlines():
       app.warn(line)
     app.warn('These may or may not interfere with the dwi2response msmt_5tt script')
 
