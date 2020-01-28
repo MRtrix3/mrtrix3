@@ -154,7 +154,7 @@ def execute(): #pylint: disable=unused-variable
   progress = app.ProgressBar('Replacing SGM parcellations', len(structure_map))
   for struct in structure_map:
     image_path = struct + '_mask.mif'
-    index = int(image.statistic('sgm_new_labels.mif', 'median', '-mask ' + image_path))
+    index = int(image.statistics('sgm_new_labels.mif', mask=image_path).median)
     run.command('mrcalc parc.mif ' + str(index) + ' -eq 0 parc.mif -if parc_removed.mif')
     run.function(os.remove, 'parc.mif')
     run.function(os.rename, 'parc_removed.mif', 'parc.mif')
