@@ -77,7 +77,7 @@ class Header(object):
   def format(self):
     return self._format
   def datatype(self):
-    return self.datatype
+    return self._datatype
   def intensity_offset(self):
     return self._intensity_offset
   def intensity_scale(self):
