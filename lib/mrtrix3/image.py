@@ -241,11 +241,15 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
 
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result = proc.communicate()[0]
+  stdout = proc.communicate()[0]
   if proc.returncode:
-    raise MRtrixError('Error trying to calculate statistic \'' + stat + '\' from image \'' + image_path + '\'')
-  result = [ line.strip() for line in result.decode('cp437').splitlines() ]
-  result = [ ImageStatistics(*[float(value) for value in line.split()[:6]], int(line.split()[6])) for line in result ]
+    raise MRtrixError('Error trying to calculate statistics from image \'' + image_path + '\'')
+  stdout_lines = [ line.strip() for line in stdout.decode('cp437').splitlines() ]
+  result = [ ]
+  for line in stdout_lines:
+    line = line.split()
+    assert len(line) == len(IMAGE_STATISTICS)
+    result.append(ImageStatistics(float(line[0]), float(line[1]), float(line[2]), float(line[3]), float(line[4]), float(line[5]), int(line[6])))
   if len(result) == 1:
     result = result[0]
   if app.VERBOSITY > 1:
