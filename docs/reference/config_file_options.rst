@@ -18,6 +18,13 @@ List of MRtrix3 configuration file options
      should be assumed to be in LAS orientation (default) or RAS
      (when this is option is turned on).
 
+.. option:: BValueEpsilon
+
+    *default: 80.0*
+
+     Specifies the difference between b-values necessary for image
+     volumes to be classified as belonging to different shells.
+
 .. option:: BValueScaling
 
     *default: 1 (true)*
@@ -356,6 +363,13 @@ List of MRtrix3 configuration file options
     *default: 1.0*
 
      The factor by which the ODF overlay is scaled.
+
+.. option:: MRViewOrthoAsRow
+
+    *default: false*
+
+     Display the 3 orthogonal views of the Ortho mode in a row,
+     rather than as a 2x2 montage
 
 .. option:: MRViewRoiAlpha
 

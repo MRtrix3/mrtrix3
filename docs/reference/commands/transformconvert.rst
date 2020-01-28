@@ -16,7 +16,8 @@ Usage
     transformconvert [ options ]  input [ input ... ] operation output
 
 -  *input*: the input(s) for the specified operation
--  *operation*: the operation to perform, one of:flirt_import, itk_import
+-  *operation*: the operation to perform, one of: |br|
+   flirt_import, itk_import
 -  *output*: the output transformation matrix.
 
 Description
@@ -53,7 +54,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 

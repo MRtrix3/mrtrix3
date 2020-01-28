@@ -153,6 +153,7 @@ namespace MR
 
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
+          static bool tools_floating;
 
         signals:
           void focusChanged ();

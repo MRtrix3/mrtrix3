@@ -51,7 +51,7 @@ namespace MR
             mat2vec (nullptr),
             lighting (this),
             lighting_dock (nullptr),
-            node_list (new Tool::Dock ("Connectome node list")),
+            node_list (new Tool::Dock ("Connectome node list", Window::tools_floating)),
             is_3D (true),
             crop_to_slab (false),
             slab_thickness (0.0f),

@@ -133,7 +133,7 @@ namespace MR {
           min_length (0.0f),
           max_weight (std::numeric_limits<float>::infinity()),
           min_weight (0.0f),
-          step_size (get_step_size (properties))
+          step_size (properties.get_stepsize())
         {
           if (properties.find ("max_dist") != properties.end()) {
             try {
@@ -194,4 +194,3 @@ namespace MR {
     }
   }
 }
-
