@@ -91,8 +91,10 @@ namespace MR
               out << "mrtrix " + type + "\nEND\n";
 
               for (const auto& i : properties) {
-                if ((i.first != "count") && (i.first != "total_count"))
-                  out << i.first << ": " << i.second << "\n";
+                if ((i.first != "count") && (i.first != "total_count")) {
+                  for (const auto line : split_lines (i.second))
+                    out << i.first << ": " << i.second << "\n";
+                }
               }
 
               for (const auto& i : properties.comments)
