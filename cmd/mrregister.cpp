@@ -810,7 +810,8 @@ void run () {
   if (opt.size ()) {
     if (!do_nonlinear)
         throw Exception ("the nonlinear lncc kernel radius has been input when no nonlinear registration is requested");
-      size_t lncc_radius = opt[0][0];
+      vector<int> input_radii = parse_ints (opt[0][0]);
+      size_t lncc_radius = input_radii[0];
       if (lncc_radius > 0 && nl_metric != Registration::NL_NCC)
         throw Exception ("nl_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");
       nl_registration.set_radius (vector<size_t>(3, lncc_radius));
