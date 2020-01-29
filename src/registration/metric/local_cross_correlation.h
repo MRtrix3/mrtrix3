@@ -114,40 +114,47 @@ namespace MR
 
                                 params.im1_image_interp->scanner (im1_scanner_pos_iter);
                                 params.im2_image_interp->scanner (im2_scanner_pos_iter);
-
-
-//                                if (params.im1_mask_interp) {
-//                                    params.im1_mask_interp->scanner (im1_scanner_pos_iter);
-//                                    if (params.im1_mask_interp->value() < 0.5)
-//                                        continue;
-//                                }
-//
-//                                if (params.im2_mask_interp) {
-//                                    params.im2_mask_interp->scanner (im2_scanner_pos_iter);
-//                                    if (params.im2_mask_interp->value() < 0.5)
-//                                        continue;
-//                                }
-
-                                Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad_iter;
-                                typename Params::Im1ValueType im1_value_iter;
-                                params.im1_image_interp->value_and_gradient_wrt_scanner (im1_value_iter, im1_grad_iter);
-
-                                Eigen::Matrix<typename Params::Im2ValueType, 1, 3> im2_grad_iter;
-                                typename Params::Im2ValueType im2_value_iter;
-                                params.im2_image_interp->value_and_gradient_wrt_scanner (im2_value_iter, im2_grad_iter);
-
-
-                                if (abs(im1_value_iter) > min_value_threshold && abs(im1_value_iter) == abs(im1_value_iter) &&
-                                    abs(im2_value_iter) > min_value_threshold && abs(im2_value_iter) == abs(im2_value_iter) ) {
-                                    local_sf = local_sf + im1_value_iter;
-                                    local_sm = local_sm + im2_value_iter;
-                                    local_sff = local_sff + im1_value_iter * im1_value_iter;
-                                    local_smm = local_smm + im2_value_iter * im2_value_iter;
-                                    local_sfm = local_sfm + im1_value_iter * im2_value_iter;
-
-                                    local_count++;
-
+                                
+                                
+                                bool within_mask = true;
+                                
+                                if (params.im1_mask_interp) {
+                                    params.im1_mask_interp->scanner (im1_scanner_pos_iter);
+                                    if (params.im1_mask_interp->value() < 0.5)
+                                    within_mask = false;
                                 }
+                                
+                                if (params.im2_mask_interp) {
+                                    params.im2_mask_interp->scanner (im2_scanner_pos_iter);
+                                    if (params.im2_mask_interp->value() < 0.5)
+                                    within_mask = false;
+                                }
+                                
+                                if (within_mask) {
+                                    
+                                    Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad_iter;
+                                    typename Params::Im1ValueType im1_value_iter;
+                                    params.im1_image_interp->value_and_gradient_wrt_scanner (im1_value_iter, im1_grad_iter);
+
+                                    Eigen::Matrix<typename Params::Im2ValueType, 1, 3> im2_grad_iter;
+                                    typename Params::Im2ValueType im2_value_iter;
+                                    params.im2_image_interp->value_and_gradient_wrt_scanner (im2_value_iter, im2_grad_iter);
+
+
+                                    if (abs(im1_value_iter) > min_value_threshold && abs(im1_value_iter) == abs(im1_value_iter) &&
+                                        abs(im2_value_iter) > min_value_threshold && abs(im2_value_iter) == abs(im2_value_iter) ) {
+                                        local_sf = local_sf + im1_value_iter;
+                                        local_sm = local_sm + im2_value_iter;
+                                        local_sff = local_sff + im1_value_iter * im1_value_iter;
+                                        local_smm = local_smm + im2_value_iter * im2_value_iter;
+                                        local_sfm = local_sfm + im1_value_iter * im2_value_iter;
+
+                                        local_count++;
+
+                                    }
+                                }
+                                    
+                                    
                             }
                         }
                     }
@@ -313,44 +320,49 @@ namespace MR
                                 params.im1_image_interp->scanner (im1_scanner_pos_iter);
                                 params.im2_image_interp->scanner (im2_scanner_pos_iter);
 
-
-//                                if (params.im1_mask_interp) {
-//                                    params.im1_mask_interp->scanner (im1_scanner_pos_iter);
-//                                    if (params.im1_mask_interp->value() < 0.5)
-//                                        continue;
-//                                }
-//
-//                                if (params.im2_mask_interp) {
-//                                    params.im2_mask_interp->scanner (im2_scanner_pos_iter);
-//                                    if (params.im2_mask_interp->value() < 0.5)
-//                                        continue;
-//                                }
-
-                                Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad_iter;
-                                Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values_iter;
-                                if (im1_values_iter.rows() != volumes) {
-                                    im1_values_iter.resize (volumes);
-                                    im1_grad_iter.resize (volumes, 3);
+                                bool within_mask = true;
+                                
+                                if (params.im1_mask_interp) {
+                                    params.im1_mask_interp->scanner (im1_scanner_pos_iter);
+                                    if (params.im1_mask_interp->value() < 0.5)
+                                    within_mask = false;
                                 }
-                                params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values_iter, im1_grad_iter);
-
-                                Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 3> im2_grad_iter;
-                                Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 1> im2_values_iter;
-                                if (im2_values_iter.rows() != volumes) {
-                                    im2_values_iter.resize (volumes);
-                                    im2_grad_iter.resize (volumes, 3);
+                                
+                                if (params.im2_mask_interp) {
+                                    params.im2_mask_interp->scanner (im2_scanner_pos_iter);
+                                    if (params.im2_mask_interp->value() < 0.5)
+                                    within_mask = false;
                                 }
-                                params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values_iter, im2_grad_iter);
+                                
+                                if (within_mask) {
 
-                                for (ssize_t i = 0; i < volumes; ++i) {
-                                    if (abs(im1_values_iter[i]) > 0 && !std::isnan(im1_values_iter[i]) && abs(im2_values_iter[i]) > 0 && !std::isnan(im2_values_iter[i])) {
-                                        sf_values[i] = sf_values[i] + im1_values_iter[i];
-                                        sm_values[i] = sm_values[i] + im2_values_iter[i];
-                                        sff_values[i] = sff_values[i] + im1_values_iter[i] * im1_values_iter[i];
-                                        smm_values[i] = smm_values[i] + im2_values_iter[i] * im2_values_iter[i];
-                                        sfm_values[i] = sfm_values[i] + im1_values_iter[i] * im2_values_iter[i];
-                                        count_values[i]++;
+                                    Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad_iter;
+                                    Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values_iter;
+                                    if (im1_values_iter.rows() != volumes) {
+                                        im1_values_iter.resize (volumes);
+                                        im1_grad_iter.resize (volumes, 3);
                                     }
+                                    params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values_iter, im1_grad_iter);
+
+                                    Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 3> im2_grad_iter;
+                                    Eigen::Matrix<typename Params::Im2ValueType, Eigen::Dynamic, 1> im2_values_iter;
+                                    if (im2_values_iter.rows() != volumes) {
+                                        im2_values_iter.resize (volumes);
+                                        im2_grad_iter.resize (volumes, 3);
+                                    }
+                                    params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values_iter, im2_grad_iter);
+
+                                    for (ssize_t i = 0; i < volumes; ++i) {
+                                        if (abs(im1_values_iter[i]) > 0 && !std::isnan(im1_values_iter[i]) && abs(im2_values_iter[i]) > 0 && !std::isnan(im2_values_iter[i])) {
+                                            sf_values[i] = sf_values[i] + im1_values_iter[i];
+                                            sm_values[i] = sm_values[i] + im2_values_iter[i];
+                                            sff_values[i] = sff_values[i] + im1_values_iter[i] * im1_values_iter[i];
+                                            smm_values[i] = smm_values[i] + im2_values_iter[i] * im2_values_iter[i];
+                                            sfm_values[i] = sfm_values[i] + im1_values_iter[i] * im2_values_iter[i];
+                                            count_values[i]++;
+                                        }
+                                    }
+                                    
                                 }
                             }
                         }
