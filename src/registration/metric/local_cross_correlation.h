@@ -81,7 +81,7 @@ namespace MR
 
                     default_type local_sf, local_sm, local_sff, local_smm, local_sfm;
                     local_sf = 0; local_sm = 0; local_sff = 0; local_smm = 0; local_sfm = 0;
-                    default_type local_count = 0;
+                    int local_count = 0;
 
 
                     transform_type mi_v2s = MR::Transform (params.midway_image).voxel2scanner;
@@ -94,9 +94,9 @@ namespace MR
 
                     default_type mi_j1, mi_j2, mi_j3;
 
-                    for (ssize_t e_i1 = -kernel_radius[0]; e_i1 <= kernel_radius[0]; e_i1++) {
-                        for (ssize_t e_i2 = -kernel_radius[1]; e_i2 <= kernel_radius[1]; e_i2++) {
-                            for (ssize_t e_i3 = -kernel_radius[2]; e_i3 <= kernel_radius[2]; e_i3++) {
+                    for (ssize_t e_i1 = -((ssize_t) kernel_radius[0]); e_i1 <= ((ssize_t) kernel_radius[0]); e_i1++) {
+                        for (ssize_t e_i2 = -((ssize_t) kernel_radius[1]); e_i2 <= ((ssize_t) kernel_radius[1]); e_i2++) {
+                            for (ssize_t e_i3 = -((ssize_t) kernel_radius[2]); e_i3 <= ((ssize_t) kernel_radius[2]); e_i3++) {
 
                                 mi_j1 = mi_i1 + e_i1;
                                 mi_j2 = mi_i2 + e_i2;
@@ -116,17 +116,17 @@ namespace MR
                                 params.im2_image_interp->scanner (im2_scanner_pos_iter);
 
 
-                                if (params.im1_mask_interp) {
-                                    params.im1_mask_interp->scanner (im1_scanner_pos_iter);
-                                    if (params.im1_mask_interp->value() < 0.5)
-                                        continue;
-                                }
-
-                                if (params.im2_mask_interp) {
-                                    params.im2_mask_interp->scanner (im2_scanner_pos_iter);
-                                    if (params.im2_mask_interp->value() < 0.5)
-                                        continue;
-                                }
+//                                if (params.im1_mask_interp) {
+//                                    params.im1_mask_interp->scanner (im1_scanner_pos_iter);
+//                                    if (params.im1_mask_interp->value() < 0.5)
+//                                        continue;
+//                                }
+//
+//                                if (params.im2_mask_interp) {
+//                                    params.im2_mask_interp->scanner (im2_scanner_pos_iter);
+//                                    if (params.im2_mask_interp->value() < 0.5)
+//                                        continue;
+//                                }
 
                                 Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad_iter;
                                 typename Params::Im1ValueType im1_value_iter;
@@ -292,9 +292,9 @@ namespace MR
                     sfm_values.setZero();
                     count_values.setZero();
 
-                    for (ssize_t e_i1 = -kernel_radius[0]; e_i1 <= kernel_radius[0]; e_i1++) {
-                        for (ssize_t e_i2 = -kernel_radius[1]; e_i2 <= kernel_radius[1]; e_i2++) {
-                            for (ssize_t e_i3 = -kernel_radius[2]; e_i3 <= kernel_radius[2]; e_i3++) {
+                    for (ssize_t e_i1 = -((ssize_t) kernel_radius[0]); e_i1 <= ((ssize_t) kernel_radius[0]); e_i1++) {
+                        for (ssize_t e_i2 = -((ssize_t) kernel_radius[1]); e_i2 <= ((ssize_t) kernel_radius[1]); e_i2++) {
+                            for (ssize_t e_i3 = -((ssize_t) kernel_radius[2]); e_i3 <= ((ssize_t) kernel_radius[2]); e_i3++) {
 
                                 mi_j1 = mi_i1 + e_i1;
                                 mi_j2 = mi_i2 + e_i2;
@@ -314,17 +314,17 @@ namespace MR
                                 params.im2_image_interp->scanner (im2_scanner_pos_iter);
 
 
-                                if (params.im1_mask_interp) {
-                                    params.im1_mask_interp->scanner (im1_scanner_pos_iter);
-                                    if (params.im1_mask_interp->value() < 0.5)
-                                        continue;
-                                }
-
-                                if (params.im2_mask_interp) {
-                                    params.im2_mask_interp->scanner (im2_scanner_pos_iter);
-                                    if (params.im2_mask_interp->value() < 0.5)
-                                        continue;
-                                }
+//                                if (params.im1_mask_interp) {
+//                                    params.im1_mask_interp->scanner (im1_scanner_pos_iter);
+//                                    if (params.im1_mask_interp->value() < 0.5)
+//                                        continue;
+//                                }
+//
+//                                if (params.im2_mask_interp) {
+//                                    params.im2_mask_interp->scanner (im2_scanner_pos_iter);
+//                                    if (params.im2_mask_interp->value() < 0.5)
+//                                        continue;
+//                                }
 
                                 Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad_iter;
                                 Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 1> im1_values_iter;
@@ -361,7 +361,7 @@ namespace MR
 
                             default_type local_sf, local_sm, local_sff, local_smm, local_sfm;
                             local_sf = 0; local_sm = 0; local_sff = 0; local_smm = 0; local_sfm = 0;
-                            default_type local_count = 0;
+                            int local_count = 0;
 
                             local_sf = sf_values[i];
                             local_sm = sm_values[i];

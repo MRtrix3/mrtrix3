@@ -258,7 +258,7 @@ namespace MR
 
         bool get_lncc_extent_mode () {
           // returns true when the kernel radius is greater than 0 (requirement for LNCC similarity)
-          return kernel_radius[1] > 0;
+          return *std::max_element(kernel_radius.begin(), kernel_radius.end()) > 0;
         }
 
         void set_init_translation_type (Transform::Init::InitType type) {

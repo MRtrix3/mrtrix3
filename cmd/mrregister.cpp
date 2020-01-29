@@ -442,7 +442,7 @@ void run () {
     size_t lncc_radius = opt[0][0];
     if (lncc_radius > 0 && rigid_metric != Registration::NCC)
       throw Exception ("rigid_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");
-    rigid_registration.set_radius (vector<size_t> {3, lncc_radius});
+    rigid_registration.set_radius (vector<size_t>(3, lncc_radius));
 
     if (lncc_radius > 0)
       rigid_registration.set_grid_spacing (std::min(3ul, lncc_radius - 1)); // TODO make spacing an option
@@ -598,7 +598,7 @@ void run () {
     size_t lncc_radius = opt[0][0];
     if (lncc_radius > 0 && affine_metric != Registration::NCC)
       throw Exception ("affine_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");
-    affine_registration.set_radius (vector<size_t> {3, lncc_radius});
+    affine_registration.set_radius (vector<size_t>(3, lncc_radius));
 
     if (lncc_radius > 0)
       affine_registration.set_grid_spacing (std::min(3ul, lncc_radius - 1)); // TODO make spacing an option?
@@ -813,7 +813,7 @@ void run () {
       size_t lncc_radius = opt[0][0];
       if (lncc_radius > 0 && nl_metric != Registration::NL_NCC)
         throw Exception ("nl_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");
-      nl_registration.set_radius (vector<size_t> {3, lncc_radius});
+      nl_registration.set_radius (vector<size_t>(3, lncc_radius));
   }
 
   // ******  MC options  *******
