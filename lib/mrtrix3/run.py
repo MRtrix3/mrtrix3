@@ -267,7 +267,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     if shared.verbosity:
       sys.stderr.write(ANSI.execute + 'Skipping command:' + ANSI.clear + ' ' + cmdstring + '\n')
       sys.stderr.flush()
-    return CommandReturn(None, '', '')
+    return CommandReturn('', '')
 
 
   # If operating in shell=True mode, handling of command execution is significantly different:
