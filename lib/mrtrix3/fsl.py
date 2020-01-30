@@ -99,6 +99,7 @@ def exe_name(name): #pylint: disable=unused-variable
     output = name
   elif find_executable('fsl5.0-' + name):
     output = 'fsl5.0-' + name
+    app.warn('Using FSL binary \"' + output + '\" rather than \"' + name + '\"; suggest checking FSL installation')
   else:
     raise MRtrixError('Could not find FSL program \"' + name + '\"; please verify FSL install')
   app.debug(output)
