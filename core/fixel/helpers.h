@@ -19,6 +19,7 @@
 
 #include "image.h"
 #include "image_diff.h"
+#include "image_helpers.h"
 #include "algo/loop.h"
 #include "fixel/keys.h"
 #include "fixel/types.h"
@@ -41,8 +42,11 @@ namespace MR
     {
       if (!in.datatype().is_floating_point())
         throw Exception ("Image \"" + in.name() + "\" is not a valid peaks image: Does not contain floating-point data");
-      if (in.ndim() != 4)
-        throw Exception ("Image \"" + in.name() + "\" is not a valid peaks image: Expect 4 dimensions");
+      try {
+        check_effective_dimensionality (in, 4);
+      } catch (Exception& e) {
+        throw Exception (e, "Image \"" + in.name() + "\" is not a valid peaks image: Expect 4 dimensions");
+      }
       if (in.size(3) % 3)
         throw Exception ("Image \"" + in.name() + "\" is not a valid peaks image: Number of volumes must be a multiple of 3");
     }
@@ -402,4 +406,3 @@ namespace MR
 }
 
 #endif
-
