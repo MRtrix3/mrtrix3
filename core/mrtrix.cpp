@@ -88,12 +88,13 @@ namespace MR
         }
         else num[i] = to<int> (spec.substr (start, end-start));
 
+        end = spec.find_first_not_of (" \t", end);
         char last_char = end < spec.size() ? spec[end] : '\0';
         if (last_char == ':') {
-          i++;
+          ++i;
+          ++end;
           if (i > 2) throw Exception ("invalid number range in number sequence \"" + spec + "\"");
-        }
-        else {
+        } else {
           if (i) {
             int inc, last;
             if (i == 2) {
@@ -111,7 +112,9 @@ namespace MR
           i = 0;
         }
 
-        start = end+1;
+        start = end;
+        if (last_char == ',')
+          ++start;
       }
       while (end < spec.size());
     }
