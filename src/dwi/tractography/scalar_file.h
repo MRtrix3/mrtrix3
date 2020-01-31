@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_scalar_file_h__
 #define __dwi_tractography_scalar_file_h__
@@ -187,6 +189,7 @@ namespace MR
 
             // Do NOT set Properties timestamp here! (Must match corresponding .tck file)
             const_cast<Properties&> (properties).set_version_info();
+            const_cast<Properties&> (properties).update_command_history();
             create (out, properties, "track scalars");
             open_success = true;
             current_offset = out.tellp();
@@ -199,15 +202,15 @@ namespace MR
 
           bool operator() (const vector<value_type>& tck_scalar)
           {
-            if (tck_scalar.size()) {
-              if (buffer_size + tck_scalar.size() > buffer_capacity)
-                commit();
+            if (buffer_size + tck_scalar.size() > buffer_capacity)
+              commit();
 
-              for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
-                add_scalar (*i);
-              add_scalar (delimiter());
-              ++count;
+            for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
+              assert (std::isfinite (*i));
+              add_scalar (*i);
             }
+            add_scalar (delimiter());
+            ++count;
             ++total_count;
             return true;
           }
@@ -216,15 +219,15 @@ namespace MR
           template <typename matrix_type>
           bool operator() (const Eigen::Matrix<matrix_type, Eigen::Dynamic, 1>& data)
           {
-            if (data.size()) {
-              if (buffer_size + data.size() > buffer_capacity)
-                commit();
+            assert (data.allFinite());
 
-              for (int i = 0; i != data.size(); ++i)
-                add_scalar (value_type(data[i]));
-              add_scalar (delimiter());
-              ++count;
-            }
+            if (buffer_size + data.size() > buffer_capacity)
+              commit();
+
+            for (int i = 0; i != data.size(); ++i)
+              add_scalar (value_type(data[i]));
+            add_scalar (delimiter());
+            ++count;
             ++total_count;
             return true;
           }
@@ -247,10 +250,10 @@ namespace MR
           void format_scalar (const value_type& s, value_type& destination)
           {
             using namespace ByteOrder;
-            if (dtype.is_little_endian()) 
-              destination = LE(s); 
-            else  
-              destination = BE(s); 
+            if (dtype.is_little_endian())
+              destination = LE(s);
+            else
+              destination = BE(s);
           }
 
           void commit ()

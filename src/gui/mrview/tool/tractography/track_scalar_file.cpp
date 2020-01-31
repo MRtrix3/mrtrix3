@@ -1,20 +1,23 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
+
 #include "gui/dialog/file.h"
-#include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourmap_menu.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 
 
@@ -27,8 +30,9 @@ namespace MR
       namespace Tool
       {
 
-        TrackScalarFileOptions::TrackScalarFileOptions (QWidget* parent) :
+        TrackScalarFileOptions::TrackScalarFileOptions (Tractography* parent) :
             QGroupBox ("Scalar file options", parent),
+            tool (parent),
             tractogram (nullptr)
         {
           main_box = new Tool::Base::VBoxLayout (this);
@@ -51,7 +55,7 @@ namespace MR
           // Colourmap menu:
           colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
 
-          ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
+          MRView::create_colourmap_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
           connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
           colourmap_actions[1]->setChecked (true);
 
@@ -201,13 +205,16 @@ namespace MR
 
             assert (tractogram->intensity_scalar_filename.length());
             intensity_file_button->setText (shorten (Path::basename (tractogram->intensity_scalar_filename), 35, 0).c_str());
+            intensity_file_button->setToolTip (tractogram->intensity_scalar_filename.c_str());
 
           } else {
             colour_groupbox->setVisible (false);
+            intensity_file_button->setToolTip (tr ("Open (track) scalar file for colouring streamlines"));
           }
 
           threshold_file_combobox->removeItem (3);
           threshold_file_combobox->blockSignals (true);
+          threshold_file_combobox->setToolTip (QString());
           switch (tractogram->get_threshold_type()) {
             case TrackThresholdType::None:
               threshold_file_combobox->setCurrentIndex (0);
@@ -218,6 +225,7 @@ namespace MR
             case TrackThresholdType::SeparateFile:
               assert (tractogram->threshold_scalar_filename.length());
               threshold_file_combobox->addItem (shorten (Path::basename (tractogram->threshold_scalar_filename), 35, 0).c_str());
+              threshold_file_combobox->setToolTip (tractogram->threshold_scalar_filename.c_str());
               threshold_file_combobox->setCurrentIndex (3);
               break;
           }
@@ -245,7 +253,7 @@ namespace MR
 
         bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot ()
         {
-          std::string scalar_file = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
+          std::string scalar_file = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "", &tool->current_folder);
           return open_intensity_track_scalar_file_slot(scalar_file);
         }
 
@@ -361,7 +369,7 @@ namespace MR
               }
               break;
             case 2:
-              file_path = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
+              file_path = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "", &tool->current_folder);
               if (!file_path.empty()) {
                 try {
                   tractogram->load_threshold_track_scalars (file_path);

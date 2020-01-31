@@ -1,23 +1,21 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #ifndef __math_SH_h__
 #define __math_SH_h__
-
-#ifdef USE_NON_ORTHONORMAL_SH_BASIS
-# warning using non-orthonormal SH basis
-#endif
 
 #include "math/legendre.h"
 #include "math/least_squares.h"
@@ -90,26 +88,57 @@ namespace MR
           Matrix<value_type,Dynamic,Dynamic> SHT (dirs.rows(), NforL (lmax));
           Matrix<value_type,Dynamic,1,0,64> AL (lmax+1);
           for (ssize_t i = 0; i < dirs.rows(); i++) {
-            const value_type x = std::cos (dirs (i,1));
-            Legendre::Plm_sph (AL, lmax, 0, x);
+            const value_type z = std::cos (dirs (i,1));
+            Legendre::Plm_sph (AL, lmax, 0, z);
             for (int l = 0; l <= lmax; l+=2)
               SHT (i,index (l,0)) = AL[l];
             for (int m = 1; m <= lmax; m++) {
-              Legendre::Plm_sph (AL, lmax, m, x);
+              Legendre::Plm_sph (AL, lmax, m, z);
               for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
                 SHT(i, index(l, m)) = Math::sqrt2 * AL[l]*std::cos (m*dirs (i,0));
                 SHT(i, index(l,-m)) = Math::sqrt2 * AL[l]*std::sin (m*dirs (i,0));
-#else
-                SHT(i, index(l, m)) = AL[l]*std::cos (m*dirs (i,0));
-                SHT(i, index(l,-m)) = AL[l]*std::sin (m*dirs (i,0));
-#endif
               }
             }
           }
           return SHT;
         }
 
+      //! form the SH->amplitudes matrix
+      /*! This computes the matrix \a SHT mapping spherical harmonic
+       * coefficients up to maximum harmonic degree \a lmax onto directions \a
+       * dirs (in cartesian coordinates, with columns [ x y z ] ans normalised). */
+      template <class MatrixType>
+        Eigen::Matrix<typename MatrixType::Scalar,Eigen::Dynamic, Eigen::Dynamic> init_transform_cart (const MatrixType& dirs, const int lmax)
+        {
+          using namespace Eigen;
+          using value_type = typename MatrixType::Scalar;
+          if (dirs.cols() != 3)
+            throw Exception ("direction matrix should have 3 columns: [ x y z ]");
+          Matrix<value_type,Dynamic,Dynamic> SHT (dirs.rows(), NforL (lmax));
+          Matrix<value_type,Dynamic,1,0,64> AL (lmax+1);
+          for (ssize_t i = 0; i < dirs.rows(); i++) {
+            value_type z = dirs (i,2);
+            value_type rxy = std::hypot(dirs(i,0), dirs(i,1));
+            value_type cp = (rxy) ? dirs(i,0)/rxy : 1.0;
+            value_type sp = (rxy) ? dirs(i,1)/rxy : 0.0;
+            Legendre::Plm_sph (AL, lmax, 0, z);
+            for (int l = 0; l <= lmax; l+=2)
+              SHT (i,index (l,0)) = AL[l];
+            value_type c0 (1.0), s0 (0.0);
+            for (int m = 1; m <= lmax; m++) {
+              Legendre::Plm_sph (AL, lmax, m, z);
+              value_type c = c0 * cp - s0 * sp;
+              value_type s = s0 * cp + c0 * sp;
+              for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
+                SHT(i, index(l, m)) = Math::sqrt2 * AL[l] * c;
+                SHT(i, index(l,-m)) = Math::sqrt2 * AL[l] * s;
+              }
+              c0 = c;
+              s0 = s;
+            }
+          }
+          return SHT;
+        }
 
 
 
@@ -218,13 +247,8 @@ namespace MR
             Legendre::Plm_sph (AL, lmax, m, cos_elevation);
             value_type c = c0 * cos_azimuth - s0 * sin_azimuth;  // std::cos(m*azimuth)
             value_type s = s0 * cos_azimuth + c0 * sin_azimuth;  // std::sin(m*azimuth)
-            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
+            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
               amplitude += AL[l] * Math::sqrt2 * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
-#else
-              amplitude += AL[l] * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
-#endif
-            }
             c0 = c;
             s0 = s;
           }
@@ -269,13 +293,8 @@ namespace MR
             value_type c = c0 * cp - s0 * sp;
             value_type s = s0 * cp + c0 * sp;
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
               delta_vec[index (l,m)]  = AL[l] * Math::sqrt2 * c;
               delta_vec[index (l,-m)] = AL[l] * Math::sqrt2 * s;
-#else
-              delta_vec[index (l,m)]  = AL[l] * 2.0 * c;
-              delta_vec[index (l,-m)] = AL[l] * 2.0 * s;
-#endif
             }
             c0 = c;
             s0 = s;
@@ -340,6 +359,23 @@ namespace MR
         }
 
 
+      //! perform spherical convolution, in place
+      /*! perform spherical convolution of SH coefficients, stored in rows
+       * in matrix \a sh with response function \a RH, storing the results
+       * in place in matrix \a sh. */
+      template <class MatrixType1, class VectorType2>
+        inline MatrixType1& sconv_mat (MatrixType1& sh, const VectorType2& RH)
+        {
+          assert (sh.cols() >= ssize_t (NforL (2* (RH.size()-1))));
+          for (ssize_t i = 0; i < RH.size(); ++i) {
+            int l = 2*i;
+            for (int m = -l; m <= l; ++m)
+              sh.col(index (l,m)) *= RH[i];
+          }
+          return sh;
+        }
+
+
       namespace {
         template <typename> struct __dummy { NOMEMALIGN using type = int; };
       }
@@ -358,11 +394,6 @@ namespace MR
           typename vector<ValueType>::const_iterator p1, p2;
       };
 
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
-#define SH_NON_M0_SCALE_FACTOR (m ? Math::sqrt2 : 1.0)*
-#else
-#define SH_NON_M0_SCALE_FACTOR
-#endif
 
       //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
       template <typename ValueType> class PrecomputedAL
@@ -396,7 +427,7 @@ namespace MR
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
                 for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
-                  p[index_mpos (l,m)] = SH_NON_M0_SCALE_FACTOR buf[l];
+                  p[index_mpos (l,m)] = buf[l];
               }
             }
           }
@@ -456,7 +487,7 @@ namespace MR
                 ValueType c = c0 * cp - s0 * sp;
                 ValueType s = s0 * cp + c0 * sp;
                 for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
-                  v += get (f,l,m) * (c * val[index (l,m)] + s * val[index (l,-m)]);
+                  v += get (f,l,m) * Math::sqrt2 * (c * val[index (l,m)] + s * val[index (l,-m)]);
                 c0 = c;
                 s0 = s;
               }
@@ -496,8 +527,12 @@ namespace MR
             derivatives (sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
 
             value_type del = sqrt (dSH_del*dSH_del + dSH_daz*dSH_daz);
-            value_type daz = dSH_daz/del;
-            del = dSH_del/del;
+            value_type daz = 0.0;
+            if (del != 0.0) {
+              daz = dSH_daz/del;
+              del = dSH_del/del;
+            }
+
 
             value_type dSH_dt = daz*dSH_daz + del*dSH_del;
             value_type d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
@@ -575,13 +610,8 @@ namespace MR
           }
 
           for (int m = 1; m <= lmax; m++) {
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
             value_type caz = Math::sqrt2 * std::cos (m*azimuth);
             value_type saz = Math::sqrt2 * std::sin (m*azimuth);
-#else
-            value_type caz = std::cos (m*azimuth);
-            value_type saz = std::sin (m*azimuth);
-#endif
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
               const value_type& vp (sh[index (l,m)]);
               const value_type& vm (sh[index (l,-m)]);
@@ -702,7 +732,6 @@ namespace MR
           }
 
           inline const Eigen::Matrix<ValueType,Eigen::Dynamic,1>& RH_coefs() const { return RH; }
-
 
         private:
           const size_t lmax;

@@ -35,11 +35,11 @@ namespace MR
           public:
             Transform (Dock* parent);
 
-            bool slice_move_event (float inc) override;
-            bool pan_event () override;
-            bool panthrough_event () override;
-            bool tilt_event () override;
-            bool rotate_event () override;
+            bool slice_move_event (const ModelViewProjection& projection, float inc) override;
+            bool pan_event (const ModelViewProjection& projection) override;
+            bool panthrough_event (const ModelViewProjection& projection) override;
+            bool tilt_event (const ModelViewProjection& projection) override;
+            bool rotate_event (const ModelViewProjection& projection) override;
 
           protected:
             QPushButton *activate_button;

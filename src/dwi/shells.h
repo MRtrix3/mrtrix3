@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_shells_h__
 #define __dwi_shells_h__
@@ -20,22 +22,24 @@
 #include <limits>
 
 #include "app.h"
-#include "bitset.h"
 #include "types.h"
 
 #include "file/config.h"
+#include "misc/bitset.h"
 
 
 // Don't expect these values to change depending on the particular command that is initialising the Shells class;
 //   method should be robust to all incoming data
 
 // Maximum absolute difference in b-value for two volumes to be considered to be in the same shell
-#define DWI_SHELLS_EPSILON 100
+#define DWI_SHELLS_EPSILON 80
 // Minimum number of volumes within DWI_SHELL_EPSILON necessary to continue expansion of the cluster selection
 #define DWI_SHELLS_MIN_LINKAGE 3
 // Default number of volumes necessary for a shell to be retained
 //   (note: only applies if function reject_small_shells() is called explicitly)
 #define DWI_SHELLS_MIN_DIRECTIONS 6
+// Default b-value threshold for a shell to be classified as "b=0"
+#define DWI_SHELLS_BZERO_THREHSOLD 10.0
 
 
 
@@ -43,6 +47,11 @@
 //CONF default: 10.0
 //CONF Specifies the b-value threshold for determining those image
 //CONF volumes that correspond to b=0.
+
+//CONF option: BValueEpsilon
+//CONF default: 80.0
+//CONF Specifies the difference between b-values necessary for image
+//CONF volumes to be classified as belonging to different shells.
 
 
 
@@ -57,7 +66,7 @@ namespace MR
     extern const App::OptionGroup ShellsOption;
 
     FORCE_INLINE default_type bzero_threshold () {
-      static const default_type value = File::Config::get_float ("BZeroThreshold", 10.0);
+      static const default_type value = File::Config::get_float ("BZeroThreshold", DWI_SHELLS_BZERO_THREHSOLD);
       return value;
     }
 

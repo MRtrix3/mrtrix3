@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -29,6 +31,7 @@
 #include <sys/mman.h>
 #endif
 
+#include "app.h"
 #include "file/ofstream.h"
 #include "file/path.h"
 #include "file/mmap.h"
@@ -183,7 +186,7 @@ namespace MR
 
 
 
-    MMap::~MMap() noexcept (false)
+    MMap::~MMap()
     {
       if (!first) return;
       if (addr) {
@@ -199,11 +202,18 @@ namespace MR
       else {
         if (readwrite) {
           INFO ("writing back contents of mapped file \"" + Entry::name + "\"...");
-          File::OFStream out (Entry::name, std::ios::in | std::ios::out | std::ios::binary);
-          out.seekp (start, out.beg);
-          out.write ((char*) first, msize);
-          if (!out.good())
-            throw Exception ("error writing back contents of file \"" + Entry::name + "\": " + strerror(errno));
+          try {
+            File::OFStream out (Entry::name, std::ios::in | std::ios::out | std::ios::binary);
+            out.seekp (start, out.beg);
+            out.write ((char*) first, msize);
+            if (!out.good())
+              throw 1;
+          }
+          catch (...) {
+            FAIL ("error writing back contents of file \"" + Entry::name + "\": " + strerror(errno));
+            App::exit_error_code = 1;
+          }
+
         }
         delete [] first;
       }

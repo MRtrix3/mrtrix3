@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -76,17 +78,29 @@ void run () {
   dwi_brain_mask_filter (input, temp_mask);
 
   Header H_out (temp_mask);
-  DWI::stash_DW_scheme (H_out, grad);
-  PhaseEncoding::clear_scheme (H_out);
   auto output = Image<bool>::create (argument[1], H_out);
 
-  unsigned int scale = get_option_value ("clean_scale", DEFAULT_CLEAN_SCALE);
+  unsigned int scale = get_option_value<unsigned int> ("clean_scale", DEFAULT_CLEAN_SCALE);
 
   if (scale > 0) {
     try {
       Filter::MaskClean clean_filter (temp_mask, std::string("applying mask cleaning filter"));
       clean_filter.set_scale (scale);
-      clean_filter (temp_mask, output);
+      clean_filter (temp_mask, temp_mask);
+      for (auto l = Loop (0,3) (input, temp_mask, output); l; ++l) {
+        if (temp_mask.value()) {
+          bool all_zero = true;
+          for (auto vl = Loop (3) (input); vl; ++vl) {
+            if (std::isfinite (float(input.value())) && input.value()) {
+              all_zero = false;
+              break;
+            }
+          }
+          output.value() = !all_zero;
+        } else {
+          output.value() = false;
+        }
+      }
     } catch (...) {
       WARN("Unable to run mask cleaning filter (image is not truly 3D); skipping");
       for (auto l = Loop (0,3) (temp_mask, output); l; ++l)

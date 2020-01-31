@@ -1,0 +1,4 @@
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval tmp-sub-01_dwi.mif -export_grad_mrtrix tmp-sub-01_dwi.b -strides 0,0,0,1 && dwigradcheck tmp-sub-01_dwi.mif
+mkdir -p ../tmp/dwigradcheck && dwigradcheck BIDS/sub-01/dwi/sub-01_dwi.nii.gz -fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval -export_grad_fsl ../tmp/dwigradcheck/fsl.bvec ../tmp/dwigradcheck/fsl.bval -force && testing_diff_matrix ../tmp/dwigradcheck/fsl.bvec dwigradcheck/fsl.bvec -abs 1e-3
+dwigradcheck BIDS/sub-01/dwi/sub-01_dwi.nii.gz -grad tmp-sub-01_dwi.b -export_grad_mrtrix ../tmp/dwigradcheck/grad.b -force && testing_diff_matrix ../tmp/dwigradcheck/grad.b dwigradcheck/grad.b -abs 1e-3
+dwigradcheck tmp-sub-01_dwi.mif -mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz

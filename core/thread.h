@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __mrtrix_thread_h__
 #define __mrtrix_thread_h__
@@ -76,6 +78,8 @@ namespace MR
           }
         }
 
+        static bool valid() { return backend; }
+
         static void thread_print_func (const std::string& msg);
         static void thread_report_to_user_func (const std::string& msg, int type);
 
@@ -116,6 +120,11 @@ namespace MR
             }
           __single_thread (const __single_thread&) = delete;
           __single_thread (__single_thread&&) = default;
+
+          bool finished () const
+          {
+            return thread.wait_for(std::chrono::microseconds(0)) == std::future_status::ready;
+          }
 
           void wait () noexcept (false) {
             DEBUG ("waiting for completion of thread \"" + name + "\"...");
@@ -166,6 +175,13 @@ namespace MR
               if (exception_thrown)
                 throw Exception ("exception thrown from one or more threads \"" + name + "\"");
               DEBUG ("threads \"" + name + "\" completed OK");
+            }
+
+            bool finished () const {
+              for (auto& t : threads)
+                if (t.wait_for (std::chrono::microseconds(0)) != std::future_status::ready)
+                  return false;
+              return true;
             }
 
             bool any_valid () const {
@@ -236,7 +252,7 @@ namespace MR
      *
      * @{ */
 
-    /*! the number of cores to use for multi-threading, as specified in the
+    /*! the number of cores available for multi-threading, as specified in the
      * variable NumberOfThreads in the MRtrix configuration file, or set using
      * the -nthreads command-line option */
     size_t number_of_threads ();
@@ -248,18 +264,25 @@ namespace MR
     enum class nthreads_t { UNINITIALISED, EXPLICIT, IMPLICIT };
     nthreads_t type_nthreads ();
 
+    /*! the number of threads to execute for a particular task
+     * if some higher-level process has already executed multiple threads,
+     * do not want the lower-level process querying this function to also
+     * generate a large number of threads; instead the lower-level function
+     * should run explicitly single-threaded. */
+    size_t threads_to_execute ();
+
 
 
     //! used to request multiple threads of the corresponding functor
     /*! This function is used in combination with Thread::run or
      * Thread::run_queue to request that the functor \a object be run in
      * parallel using \a number threads of execution (defaults to
-     * Thread::number_of_threads()).
+     * Thread::threads_to_execute()).
      * \sa Thread::run()
      * \sa Thread::run_queue() */
     template <class Functor>
       inline __Multi<typename std::remove_reference<Functor>::type>
-      multi (Functor&& functor, size_t nthreads = number_of_threads())
+      multi (Functor&& functor, size_t nthreads = threads_to_execute())
       {
         return { functor, nthreads };
       }
@@ -298,7 +321,10 @@ namespace MR
      *   ...
      *   // do something else while my_thread is running
      *   ...
-     * } // my_thread goes out of scope: current thread will halt until my_thread has completed
+     *   // wait for my_thread to complete - this is necessary to catch
+     *   // exceptions - see below
+     *   my_thread.wait();
+     * }
      * \endcode
      *
      * It is also possible to launch an array of threads in parallel, by
@@ -306,6 +332,8 @@ namespace MR
      * \code
      * ...
      * auto my_threads = Thread::run (Thread::multi (func), "my function");
+     * ...
+     * my_thread.wait();
      * ...
      * \endcode
      *
@@ -325,7 +353,7 @@ namespace MR
      * was originally thrown if a single thread was run). This means the
      * application will continue processing if any of the remaining threads
      * remain active, and it may be a while before the application itself is
-     * allowed to handle the error appropriately. If this is behaviour is not
+     * allowed to handle the error appropriately. If this behaviour is not
      * appropriate, and you expect exceptions to be thrown occasionally, you
      * should take steps to handle these yourself (e.g. by setting / checking
      * some flag within your threads, etc.).
@@ -337,7 +365,7 @@ namespace MR
      * within the same scope, each of which might throw. In these cases, it is
      * best to explicitly call wait() for each of the objects returned by
      * Thread::run(), rather than relying on the destructor alone (note
-     * Thread::Queue already does this).
+     * Thread::Queue ThreadedLoop already do this).
      *
      * \sa Thread::multi()
      */

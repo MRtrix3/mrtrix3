@@ -1,28 +1,39 @@
 #!/bin/bash
 
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 LOGFILE=pylint.log
 echo logging to \""$LOGFILE"\"
 
-cat > $LOGFILE <<EOD
--------------------------------------------
-  Testing MRtrix3 Python scripts
--------------------------------------------
-
-EOD
-
 # generate list of tests to run:
+tests="build configure"
 if [ $# == 0 ]; then
   for lib_path in lib/mrtrix3/*; do
     if [[ -d ${lib_path} && ! ( ${lib_path} == *"__pycache__"* ) ]]; then
       for src_file in ${lib_path}/*.py; do
-        tests="$tests $src_file"
+        if [[ -f ${src_file} ]]; then
+          tests="$tests $src_file"
+        fi
       done
-    elif [[ ${lib_path} == *.py && ! ( ${lib_path} == *"_"* ) ]]; then
+    elif [[ ${lib_path} == *.py ]]; then
       tests="$tests $lib_path"
     fi
   done
   for bin_path in bin/*; do
-    if head ${bin_path} -n1 | grep -q "#!/usr/bin/env python"; then
+    if [ -f ${bin_path} ] && $(head -n1 ${bin_path} | grep -q "#!/usr/bin/env python"); then
       tests="$tests $bin_path"
     fi
   done
@@ -39,6 +50,26 @@ else
   echo "Using pylint for "${PYTHON}" (from PYTHON environment variable)"
   forcepyversion="$PYTHON -m "
 fi
+
+
+
+cat > $LOGFILE <<EOD
+-------------------------------------------
+  Version information
+-------------------------------------------
+
+EOD
+
+eval ${forcepyversion} pylint --version >> $LOGFILE
+
+cat >> $LOGFILE <<EOD
+
+-------------------------------------------
+  Testing MRtrix3 Python scripts
+-------------------------------------------
+
+EOD
+
 
 export PYTHONPATH="$(pwd)/lib:$PYTHONPATH"
 for file in $tests; do

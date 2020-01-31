@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_mrview_mode_base_h__
 #define __gui_mrview_mode_base_h__
@@ -90,6 +92,7 @@ namespace MR
             virtual void rotate_event ();
             virtual void image_changed_event () {}
             virtual const Projection* get_current_projection() const;
+            virtual void reset_windowing ();
 
             virtual void request_update_mode_gui(ModeGuiVisitor& visitor) const {
               visitor.update_base_mode_gui(*this); }
@@ -117,7 +120,7 @@ namespace MR
 
             Image* image () { return window().image(); }
 
-            void move_target_to_focus_plane (const Projection& projection) {
+            void move_target_to_focus_plane (const ModelViewProjection& projection) {
               Eigen::Vector3f in_plane_target = projection.model_to_screen (target());
               in_plane_target[2] = projection.depth_of (focus());
               set_target (projection.screen_to_model (in_plane_target));
@@ -139,14 +142,14 @@ namespace MR
               return reinterpret_cast <GL::Area*> (window().glarea);
             }
 
-            Eigen::Vector3f get_through_plane_translation (float distance, const Projection& projection) const {
+            Eigen::Vector3f get_through_plane_translation (float distance, const ModelViewProjection& projection) const {
               Eigen::Vector3f move (projection.screen_normal());
               move.normalize();
               move *= distance;
               return move;
             }
 
-            Eigen::Vector3f get_through_plane_translation_FOV (int increment, const Projection& projection) {
+            Eigen::Vector3f get_through_plane_translation_FOV (int increment, const ModelViewProjection& projection) {
               return get_through_plane_translation (MOVE_IN_OUT_FOV_MULTIPLIER * increment * FOV(), projection);
             }
 
@@ -155,19 +158,19 @@ namespace MR
               for (int i = 0; i < tools.size(); ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
                 if (dock) {
-                  ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+                  GL::assert_context_is_current();
                   dock->tool->draw (projection, is_3D, axis, slice);
-                  ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+                  GL::assert_context_is_current();
                 }
               }
             }
 
-            void setup_projection (const int, Projection&) const;
-            void setup_projection (const Eigen::Quaternionf&, Projection&) const;
-            void setup_projection (const GL::mat4&, Projection&) const;
+            void setup_projection (const int, ModelViewProjection&) const;
+            void setup_projection (const Eigen::Quaternionf&, ModelViewProjection&) const;
+            void setup_projection (const GL::mat4&, ModelViewProjection&) const;
 
-            Eigen::Quaternionf get_tilt_rotation () const;
-            Eigen::Quaternionf get_rotate_rotation () const;
+            Eigen::Quaternionf get_tilt_rotation (const ModelViewProjection& proj) const;
+            Eigen::Quaternionf get_rotate_rotation (const ModelViewProjection& proj) const;
 
             Eigen::Vector3f voxel_at (const Eigen::Vector3f& pos) const {
               if (!image()) return Eigen::Vector3f { NAN, NAN, NAN };
@@ -191,6 +194,12 @@ namespace MR
             void updateGL () { window().updateGL(); }
 
           protected:
+            void slice_move_event (const ModelViewProjection& proj, float x);
+            void set_focus_event (const ModelViewProjection& proj);
+            void pan_event (const ModelViewProjection& proj);
+            void panthrough_event (const ModelViewProjection& proj);
+            void tilt_event (const ModelViewProjection& proj);
+            void rotate_event (const ModelViewProjection& proj);
 
             GL::mat4 adjust_projection_matrix (const GL::mat4& Q, int proj) const;
             GL::mat4 adjust_projection_matrix (const GL::mat4& Q) const {

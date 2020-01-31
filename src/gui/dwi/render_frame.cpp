@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <fstream>
 
@@ -69,7 +71,7 @@ namespace MR
 
       RenderFrame::~RenderFrame()
       {
-        Context::Grab context (this);
+        GL::Context::Grab context (this);
         axes_VB.clear();
         axes_VAO.clear();
       }
@@ -95,6 +97,7 @@ namespace MR
 
       void RenderFrame::initializeGL ()
       {
+        GL::Context::Grab context (this);
         GL::init();
         glfont.initGL (false);
         renderer.initGL();
@@ -149,6 +152,7 @@ namespace MR
 
       void RenderFrame::resizeGL (int w, int h)
       {
+        GL::Context::Grab context (this);
         projection.set_viewport (*this, 0, 0, w, h);
       }
 
@@ -156,6 +160,7 @@ namespace MR
 
       void RenderFrame::paintGL ()
       {
+        GL::Context::Grab context (this);
         gl::ColorMask (true, true, true, true);
         gl::ClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
         gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
@@ -349,7 +354,7 @@ namespace MR
 
       void RenderFrame::snapshot ()
       {
-        makeCurrent();
+        GL::Context::Grab context (this);
         gl::PixelStorei (gl::PACK_ALIGNMENT, 1);
         gl::ReadPixels (0, 0, projection.width(), projection.height(), gl::RGB, gl::UNSIGNED_BYTE, framebuffer.get());
 
