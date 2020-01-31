@@ -26,20 +26,20 @@ Metric values for fixel-based sparse output images
 
 -  **-afd image** output the total Apparent Fibre Density per fixel (integral of FOD lobe)
 
--  **-peak image** output the peak FOD amplitude per fixel
+-  **-maximum image** output the maximum FOD amplitude per fixel
 
--  **-disp image** output a measure of dispersion per fixel as the ratio between FOD lobe integral and peak amplitude
+-  **-disp image** output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximum amplitude
 
 FOD FMLS segmenter options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-fmls_integral value** threshold absolute numerical integral of positive FOD lobes. Any lobe for which the integral is smaller than this threshold will be discarded. Default: 0.
 
--  **-fmls_peak_value value** threshold the raw peak amplitude of positive FOD lobes. Any lobe for which the peak amplitude is smaller than this threshold will be discarded. Default: 0.1.
+-  **-fmls_max_value value** threshold the raw maximal amplitude of positive FOD lobes. Any lobe for which the maximal amplitude is smaller than this threshold will be discarded. Default: 0.1.
 
 -  **-fmls_no_thresholds** disable all FOD lobe thresholding; every lobe with a positive FOD amplitude will be retained.
 
--  **-fmls_peak_ratio_to_merge value** specify the amplitude ratio between a sample and the smallest peak amplitude of the adjoining lobes, above which the lobes will be merged. This is the relative amplitude between the smallest of two adjoining lobes, and the 'bridge' between the two lobes. A value of 1.0 will never merge two peaks into a single lobe; a value of 0.0 will always merge lobes unless they are bisected by a zero crossing. Default: 1.
+-  **-fmls_max_ratio_to_merge value** Specify the ratio between a given FOD amplitude sample between two lobes, and the smallest maximal amplitude of the adjacent lobes, above which those lobes will be merged. This is the relative amplitude between the smallest of two adjoining lobes, and the 'bridge' between the two lobes. A value of 1.0 will never merge two lobes into one; a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing. Default: 1.
 
 Other options for fod2fixel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -50,7 +50,7 @@ Other options for fod2fixel
 
 -  **-nii** output the directions and index file in nii format (instead of the default mif)
 
--  **-dirpeak** define the fixel direction as the peak lobe direction as opposed to the lobe mean
+-  **-dirpeak** define the fixel direction as that of the lobe's maximal peak as opposed to its weighted mean direction (the default)
 
 Standard options
 ^^^^^^^^^^^^^^^^
