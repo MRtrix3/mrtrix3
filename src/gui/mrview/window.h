@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
@@ -21,7 +23,7 @@
 #include "gui/gui.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/opengl/font.h"
-#include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourbars.h"
 #include "gui/mrview/colourmap_button.h"
 
 
@@ -129,13 +131,7 @@ namespace MR
               static_cast<Image*> (list[n])->set_windowing (min, max);
           }
 
-          void set_image_volume (size_t axis, ssize_t index)
-          {
-            assert (image());
-            image()->image.index (axis) = index;
-            set_image_navigation_menu();
-            updateGL();
-          }
+          void set_image_volume (size_t axis, ssize_t index);
 
           bool get_image_visibility () const { return ! image_hide_action->isChecked(); }
           void set_image_visibility (bool flag);
@@ -153,13 +149,14 @@ namespace MR
 
           GL::Area* glwidget () const { return glarea; }
           GL::Lighting& lighting () { return *lighting_; }
-          ColourMap::Renderer colourbar_renderer;
+          ColourBars colourbar_renderer;
 
           void register_camera_interactor (Tool::CameraInteractor* agent = nullptr);
           Tool::CameraInteractor* active_camera_interactor () { return camera_interactor; }
 
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
+          static bool tools_floating;
 
         signals:
           void focusChanged ();
@@ -172,8 +169,7 @@ namespace MR
           void imageChanged ();
           void imageVisibilityChanged (bool);
           void scalingChanged ();
-          void volumeChanged (size_t);
-          void volumeGroupChanged (size_t);
+          void volumeChanged ();
 
         public slots:
           void on_scaling_changed ();
@@ -197,6 +193,7 @@ namespace MR
           void full_screen_slot ();
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
+          void wrap_volumes_slot ();
 
           void hide_image_slot ();
           void slice_next_slot ();
@@ -249,8 +246,9 @@ namespace MR
           Eigen::Quaternionf orient;
           float field_of_view;
           int anatomical_plane, annotations;
-          ColourMap::Position colourbar_position, tools_colourbar_position;
+          ColourBars::Position colourbar_position, tools_colourbar_position;
           bool snap_to_image_axes_and_voxel;
+          std::string current_folder;
 
           float background_colour[3];
 
@@ -286,6 +284,7 @@ namespace MR
                   *next_image_volume_group_action,
                   *prev_image_volume_group_action,
                   *goto_image_volume_group_action,
+                  *wrap_volumes_action,
                   *image_list_area,
 
                   *reset_windowing_action,
@@ -306,7 +305,7 @@ namespace MR
                   *about_action,
                   *aboutQt_action;
 
-          static ColourMap::Position parse_colourmap_position_str (const std::string& position_str);
+          static ColourBars::Position parse_colourmap_position_str (const std::string& position_str);
 
           void paintGL ();
           void initGL ();
@@ -346,19 +345,6 @@ namespace MR
           friend class Window::GLArea;
           friend class GrabContext;
       };
-
-
-      class GrabContext : private Context::Grab { NOMEMALIGN
-        public:
-          GrabContext () : Context::Grab (Window::main->glarea) { }
-      };
-
-
-#ifndef NDEBUG
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
-#else
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
-#endif
 
 
     }

@@ -88,17 +88,13 @@ namespace MR
 
 
 
-        bool Transform::slice_move_event (float x)
+        bool Transform::slice_move_event (const ModelViewProjection& projection, float x)
         {
-          const Projection* proj = window().get_current_mode()->get_current_projection();
-          if (!proj)
-            return true;
-
           const auto &header = window().image()->header();
           float increment = window().snap_to_image() ?
             x * header.spacing (window().plane()) :
             x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0f/3.0f);
-          auto move = window().get_current_mode()->get_through_plane_translation (increment, *proj);
+          auto move = window().get_current_mode()->get_through_plane_translation (increment, projection);
 
           transform_type M = header.transform();
           M.translate (-move.cast<double>());
@@ -112,13 +108,9 @@ namespace MR
 
 
 
-        bool Transform::pan_event ()
+        bool Transform::pan_event (const ModelViewProjection& projection)
         {
-          const Projection* proj = window().get_current_mode()->get_current_projection();
-          if (!proj)
-            return true;
-
-          auto move = proj->screen_to_model_direction (window().mouse_displacement(), window().target());
+          auto move = projection.screen_to_model_direction (window().mouse_displacement(), window().target());
 
           transform_type M = window().image()->header().transform();
           M.pretranslate (move.cast<double>());
@@ -132,13 +124,9 @@ namespace MR
 
 
 
-        bool Transform::panthrough_event ()
+        bool Transform::panthrough_event (const ModelViewProjection& projection)
         {
-          const Projection* proj = window().get_current_mode()->get_current_projection();
-          if (!proj)
-            return true;
-
-          auto move = window().get_current_mode()->get_through_plane_translation_FOV (window().mouse_displacement().y(), *proj);
+          auto move = window().get_current_mode()->get_through_plane_translation_FOV (window().mouse_displacement().y(), projection);
 
           transform_type M = window().image()->header().transform();
           M.pretranslate (-move.cast<double>());
@@ -154,12 +142,12 @@ namespace MR
 
 
 
-        bool Transform::tilt_event ()
+        bool Transform::tilt_event (const ModelViewProjection& projection)
         {
           if (window().snap_to_image())
             window().set_snap_to_image (false);
 
-          const auto rot = window().get_current_mode()->get_tilt_rotation().cast<double>();
+          const auto rot = window().get_current_mode()->get_tilt_rotation (projection).cast<double>();
           if (!rot.coeffs().allFinite())
             return true;
 
@@ -177,12 +165,12 @@ namespace MR
 
 
 
-        bool Transform::rotate_event ()
+        bool Transform::rotate_event (const ModelViewProjection& projection)
         {
           if (window().snap_to_image())
             window().set_snap_to_image (false);
 
-          const auto rot = window().get_current_mode()->get_rotate_rotation().cast<double>();
+          const auto rot = window().get_current_mode()->get_rotate_rotation (projection).cast<double>();
           if (!rot.coeffs().allFinite())
             return true;
 

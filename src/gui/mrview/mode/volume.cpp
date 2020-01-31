@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "file/config.h"
 #include "gui/opengl/lighting.h"
@@ -276,7 +278,7 @@ namespace MR
             GL::vec4 normal = T2S * GL::vec4 (plane[0], plane[1], plane[2], 0.0);
             GL::vec4 on_plane = S2T * GL::vec4 (plane[3]*plane[0], plane[3]*plane[1], plane[3]*plane[2], 1.0);
             normal[3] = on_plane[0]*normal[0] + on_plane[1]*normal[1] + on_plane[2]*normal[2];
-            float off_axis_thickness = std::abs (ray[0]*plane[0] + ray[1]*plane[1] + ray[2]*plane[2]);
+            float off_axis_thickness = abs (ray[0]*plane[0] + ray[1]*plane[1] + ray[2]*plane[2]);
             normal[0] /= off_axis_thickness;
             normal[1] /= off_axis_thickness;
             normal[2] /= off_axis_thickness;
@@ -339,7 +341,7 @@ namespace MR
 
         void Volume::paint (Projection& projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           GL_CHECK_ERROR;
           setup_projection (orientation(), projection);
           GL_CHECK_ERROR;
@@ -384,7 +386,7 @@ namespace MR
             volume_VI.bind (gl::ELEMENT_ARRAY_BUFFER);
 
             gl::EnableVertexAttribArray (0);
-            gl::VertexAttribPointer (0, 3, gl::BYTE, gl::FALSE_, 4*sizeof(GLbyte), GL::offset<GLbyte>(0));
+            gl::VertexAttribPointer (0, 3, gl::BYTE, gl::FALSE_, 4*sizeof(GLbyte), (void*)0);
 
             GLbyte vertices[] = {
               0, 0, 0, 0,
@@ -519,7 +521,9 @@ namespace MR
           gl::ActiveTexture (gl::TEXTURE0);
 
           const GLsizei counts[] = { 4, 4, 4 };
-          const GLvoid* starts[] = { GL::offset<GLubyte>(0), GL::offset<GLubyte>(4), GL::offset<GLubyte>(8) };
+          const GLvoid* starts[] = { reinterpret_cast<void*>(0),
+                                     reinterpret_cast<void*>(4),
+                                     reinterpret_cast<void*>(8) };
 
           GL_CHECK_ERROR;
           gl::MultiDrawElements (gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);
@@ -531,7 +535,7 @@ namespace MR
           GL_CHECK_ERROR;
           draw_orientation_labels (projection);
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         inline Tool::View* Volume::get_view_tool () const

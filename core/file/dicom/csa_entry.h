@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __file_dicom_csa_entry_h__
 #define __file_dicom_csa_entry_h__
@@ -87,7 +89,8 @@ namespace MR {
 
             const char* key () const { return name; }
 
-            uint32_t size () const { return num; }
+            uint32_t num_items() const { return nitems; }
+            uint32_t size() const { return num; }
 
             int get_int () const {
               const uint8_t* p = start + 84;
@@ -121,7 +124,7 @@ namespace MR {
                   v[m] = length ? to<default_type> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4))) : NaN;
                   p += 16 + 4*((length+3)/4);
                 }
-                for (uint32_t m = nitems; m < v.size(); ++m) 
+                for (uint32_t m = nitems; m < v.size(); ++m)
                   v[m] = NaN;
               }
 

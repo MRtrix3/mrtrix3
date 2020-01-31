@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/tool/overlay.h"
 
@@ -101,6 +103,8 @@ namespace MR
 
             image_list_view = new QListView (this);
             image_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
+            image_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+            image_list_view->setTextElideMode (Qt::ElideLeft);
             image_list_view->setDragEnabled (true);
             image_list_view->setDragDropMode (QAbstractItemView::InternalMove);
             image_list_view->setAcceptDrops (true);
@@ -116,20 +120,12 @@ namespace MR
 
             main_box->addWidget (image_list_view, 1);
 
-            layout = new HBoxLayout;
-            volume_label = new QLabel ("Volume: ");
-            volume_label->setEnabled (false);
-            layout->addWidget (volume_label);
-            volume_selecter = new SpinBox (this);
-            volume_selecter->setMinimum (0);
-            volume_selecter->setMaximum (0);
-            volume_selecter->setValue (0);
-            volume_selecter->setEnabled (false);
-            volume_selecter->setToolTip ("For 4D overlay images, select the 3D volume index");
-            connect (volume_selecter, SIGNAL (valueChanged(int)), this, SLOT(volume_changed(int)));
-            layout->addWidget (volume_selecter);
+            // Volume selecter
+            volume_box = new QGroupBox ("Volume indices (dimension: index)");
+            main_box->addWidget (volume_box);
+            volume_index_layout = new GridLayout;
+            volume_box->setLayout (volume_index_layout);
 
-            main_box->addLayout (layout, 0);
 
             QGroupBox* group_box = new QGroupBox (tr("Colour map and scaling"));
             main_box->addWidget (group_box);
@@ -196,7 +192,7 @@ namespace MR
 
         void Overlay::image_open_slot ()
         {
-          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
+          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open", &current_folder);
           if (overlay_names.empty())
             return;
           vector<std::unique_ptr<MR::Header>> list;
@@ -217,7 +213,7 @@ namespace MR
 
           QModelIndex first = image_list_model->index (previous_size, 0, QModelIndex());
           QModelIndex last = image_list_model->index (image_list_model->rowCount()-1, 0, QModelIndex());
-          image_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
+          image_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::ClearAndSelect);
         }
 
 
@@ -250,10 +246,16 @@ namespace MR
         void Overlay::image_close_slot ()
         {
           QModelIndexList indexes = image_list_view->selectionModel()->selectedIndexes();
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           while (indexes.size()) {
+          GL::assert_context_is_current();
             image_list_model->remove_item (indexes.first());
+          GL::assert_context_is_current();
             indexes = image_list_view->selectionModel()->selectedIndexes();
+          GL::assert_context_is_current();
           }
+          GL::assert_context_is_current();
           updateGL();
         }
 
@@ -266,7 +268,7 @@ namespace MR
 
         void Overlay::draw (const Projection& projection, bool is_3D, int, int)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (!is_3D) {
             // set up OpenGL environment:
             gl::Enable (gl::BLEND);
@@ -299,7 +301,7 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -340,13 +342,19 @@ namespace MR
 
             Image* image = dynamic_cast<Image*>(image_list_model->items[i].get());
             if (image && image->show) {
-              std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
-              cfloat value = image->interpolate() ?
-                image->trilinear_value(window().focus()) :
-                image->nearest_neighbour_value(window().focus());
-              if(std::isnan(std::abs(value)))
+              std::string value_str = Path::basename(image->get_filename()) + " ";
+              cfloat value;
+              if (image->interpolate()) {
+                value_str += "interp value: ";
+                value = image->trilinear_value (window().focus());
+              } else {
+                value_str += "voxel value: ";
+                value = image->nearest_neighbour_value (window().focus());
+              }
+              if (std::isnan(abs(value)))
                 value_str += "?";
-              else value_str += str(value);
+              else
+                value_str += str(value);
               transform.render_text (value_str, position, start_line_num + num_of_new_lines);
               num_of_new_lines += 1;
             }
@@ -451,13 +459,20 @@ namespace MR
         }
 
 
-        void Overlay::volume_changed (int)
+        void Overlay::onSetVolumeIndex ()
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) return;
           Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
           if (overlay->header().ndim() < 4) return;
-          overlay->image.index(3) = volume_selecter->value();
+          assert (overlay->header().ndim() == size_t(volume_index_layout->count()+3));
+
+          for (int i = 0; i < volume_index_layout->count(); ++i) {
+            auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
+            if (overlay->header().ndim() <= size_t(i+3))
+              break;
+            overlay->image.index(i+3) = box->value();
+          }
           if (overlay->show)
             updateGL();
         }
@@ -577,8 +592,8 @@ namespace MR
         void Overlay::update_selection ()
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-          volume_label->setEnabled (false);
-          volume_selecter->setEnabled (false);
+          while (volume_index_layout->count())
+            delete volume_index_layout->takeAt (volume_index_layout->count()-1)->widget();
           colourmap_button->setEnabled (indices.size());
           max_value->setEnabled (indices.size());
           min_value->setEnabled (indices.size());
@@ -637,15 +652,24 @@ namespace MR
 
           if (indices.size() == 1) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
-            if (overlay->header().ndim() == 4 && overlay->header().size(3) > 1) {
-              volume_label->setEnabled (true);
-              volume_selecter->setMaximum (overlay->header().size(3)-1);
-              volume_selecter->setValue (overlay->image.index(3));
-              volume_selecter->setEnabled (true);
-            } else {
-              volume_selecter->setMaximum (0);
-              volume_selecter->setValue (0);
+
+            // volume_box->setVisible(overlay->header().ndim() > 3); // causes shift in FOV due to resizing of tool pane
+            for (size_t d = 3; d < overlay->image.ndim(); ++d) {
+              SpinBox* vol_index = new SpinBox (this);
+              vol_index->setMinimum (0);
+              vol_index->setPrefix (tr((str(d+1) + ": ").c_str()));;
+              vol_index->setValue (overlay->image.index(d));
+              vol_index->setMaximum (overlay->image.size(d) - 1);
+              vol_index->setEnabled (overlay->image.size(d) > 1);
+              volume_index_layout->addWidget (vol_index, volume_index_layout->count()/3, volume_index_layout->count()%3);
+              connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
             }
+          }
+          if (volume_index_layout->count() == 0) {
+            if (indices.size() != 1)
+              volume_index_layout->addWidget (new QLabel ("Requires single image selected"));
+            else
+              volume_index_layout->addWidget (new QLabel ("No volumes to select"));
           }
 
           colourmap_button->set_colourmap_index(colourmap_index);
@@ -694,12 +718,26 @@ namespace MR
             + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].").allow_multiple()
             +   Argument ("value").type_float (0.0, 1.0)
 
-            + Option ("overlay.interpolation_on", "Enables overlay image interpolation.").allow_multiple()
-
-            + Option ("overlay.interpolation_off", "Disables overlay image interpolation.").allow_multiple()
-
             + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.").allow_multiple()
-            +   Argument ("index").type_integer();
+            +   Argument ("index").type_integer()
+
+            + Option ("overlay.colour", "Specify a manual colour for the overlay, as three comma-separated values").allow_multiple()
+            +   Argument ("R,G,B").type_sequence_float()
+
+            + Option ("overlay.intensity", "Set the intensity windowing of the overlay").allow_multiple()
+            +   Argument ("Min,Max").type_sequence_float()
+
+            + Option ("overlay.threshold_min", "Set the lower threshold value of the overlay").allow_multiple()
+            +   Argument ("value").type_float()
+
+            + Option ("overlay.threshold_max", "Set the upper threshold value of the overlay").allow_multiple()
+            +   Argument ("value").type_float()
+
+            + Option ("overlay.no_threshold_min", "Disable the lower threshold for the overlay").allow_multiple()
+            + Option ("overlay.no_threshold_max", "Disable the upper threshold for the overlay").allow_multiple()
+
+            + Option ("overlay.interpolation", "Enable or disable overlay image interpolation.").allow_multiple()
+            +   Argument ("value").type_bool();
 
         }
 
@@ -722,16 +760,6 @@ namespace MR
             return true;
           }
 
-          if (opt.opt->is ("overlay.interpolation_on")) {
-            interpolate_check_box->setCheckState (Qt::Checked);
-            interpolate_changed();
-          }
-
-          if (opt.opt->is ("overlay.interpolation_off")) {
-            interpolate_check_box->setCheckState (Qt::Unchecked);
-            interpolate_changed();
-          }
-
           if (opt.opt->is ("overlay.colourmap")) {
             try {
               int n = opt[0];
@@ -743,6 +771,71 @@ namespace MR
             return true;
           }
 
+          if (opt.opt->is ("overlay.colour")) {
+            try {
+              auto values = parse_floats (opt[0]);
+              if (values.size() != 3)
+                throw Exception ("must provide exactly three comma-separated values to the -overlay.colour option");
+              const float max_value = std::max ({ values[0], values[1], values[2] });
+              if (std::min ({ values[0], values[1], values[2] }) < 0.0 || max_value > 255)
+                throw Exception ("values provided to -overlay.colour must be either between 0.0 and 1.0, or between 0 and 255");
+              const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
+              QColor colour (int(values[0] * multiplier), int(values[1]*multiplier), int(values[2]*multiplier));
+              selected_custom_colour (colour, *colourmap_button);
+              colourmap_button->set_fixed_colour();
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.intensity")) {
+            try {
+              auto values = parse_floats (opt[0]);
+              if (values.size() != 2)
+                throw Exception ("must provide exactly two comma-separated values to the -overlay.intensity option");
+              min_value->setValue (values[0]);
+              max_value->setValue (values[1]);
+              values_changed();
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.threshold_min")) {
+            try {
+              float value = opt[0];
+              lower_threshold->setValue (value);
+              lower_threshold_check_box->setChecked (true);
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.threshold_max")) {
+            try {
+              float value = opt[0];
+              upper_threshold->setValue (value);
+              upper_threshold_check_box->setChecked (true);
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.no_threshold_min")) {
+            lower_threshold_check_box->setChecked (false);
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.no_threshold_max")) {
+            upper_threshold_check_box->setChecked (false);
+            return true;
+          }
+
+          if (opt.opt->is ("overlay.interpolation")) {
+            interpolate_check_box->setCheckState (bool(opt[0]) ? Qt::Checked : Qt::Unchecked);
+            interpolate_changed();
+            return true;
+          }
 
           return false;
         }

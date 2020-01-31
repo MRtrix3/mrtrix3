@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "math/SH.h"
@@ -31,7 +33,14 @@ void usage ()
 {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions";
+  SYNOPSIS = "Extract the peaks of a spherical harmonic function in each voxel";
+
+  DESCRIPTION
+  + "Peaks of the spherical harmonic function in each voxel are located by "
+    "commencing a Newton search along each of a set of pre-specified directions";
+
+  DESCRIPTION
+  + Math::SH::encoding_description;
 
   ARGUMENTS
   + Argument ("SH", "the input image of SH coefficients.")
@@ -69,7 +78,15 @@ void usage ()
 
   + Option ("mask",
             "only perform computation within the specified binary brain mask image.")
-  + Argument ("image").type_image_in();
+  + Argument ("image").type_image_in()
+
+  + Option ("fast",
+            "use lookup table to compute associated Legendre polynomials (faster, but approximate).");
+
+  REFERENCES
+   + "Jeurissen, B.; Leemans, A.; Tournier, J.-D.; Jones, D.K.; Sijbers, J. "
+     "Investigating the prevalence of complex fiber configurations in white matter tissue with diffusion magnetic resonance imaging. "
+     "Human Brain Mapping, 2013, 34(11), 2747-2766";
 }
 
 
@@ -79,7 +96,7 @@ using value_type = float;
 
 class Direction { MEMALIGN(Direction)
   public:
-    Direction () : a (NAN) { }
+    Direction () : a (NaN) { }
     Direction (const Direction& d) : a (d.a), v (d.v) { }
     Direction (value_type phi, value_type theta) : a (1.0), v (std::cos (phi) *std::sin (theta), std::sin (phi) *std::sin (theta), std::cos (theta)) { }
     value_type a;
@@ -120,7 +137,7 @@ class DataLoader { MEMALIGN(DataLoader)
           assign_pos_of(sh).to(*mask);
           if (!mask->value()) {
             for (auto l = Loop(3) (sh); l; ++l)
-              item.data[sh.index(3)] = NAN;
+              item.data[sh.index(3)] = NaN;
           }
         } else {
           // iterates over SH coefficients
@@ -152,7 +169,8 @@ class Processor { MEMALIGN(Processor)
                int npeaks,
                vector<Direction> true_peaks,
                value_type threshold,
-               Image<value_type>* ipeaks_data) :
+               Image<value_type>* ipeaks_data,
+               bool use_precomputer) :
       dirs_vox (dirs_data),
       dirs (directions),
       lmax (lmax),
@@ -160,7 +178,8 @@ class Processor { MEMALIGN(Processor)
       true_peaks (true_peaks),
       threshold (threshold),
       peaks_out (npeaks),
-      ipeaks_vox (ipeaks_data) { }
+      ipeaks_vox (ipeaks_data),
+      precomputer (use_precomputer ? new Math::SH::PrecomputedAL<value_type> (lmax) :  nullptr) { }
 
     bool operator() (const Item& item) {
 
@@ -170,7 +189,7 @@ class Processor { MEMALIGN(Processor)
 
       if (check_input (item)) {
         for (auto l = Loop(3) (dirs_vox); l; ++l)
-          dirs_vox.value() = NAN;
+          dirs_vox.value() = NaN;
         return true;
       }
 
@@ -178,16 +197,16 @@ class Processor { MEMALIGN(Processor)
 
       for (size_t i = 0; i < size_t(dirs.rows()); i++) {
         Direction p (dirs (i,0), dirs (i,1));
-        p.a = Math::SH::get_peak (item.data, lmax, p.v);
+        p.a = Math::SH::get_peak (item.data, lmax, p.v, precomputer);
         if (std::isfinite (p.a)) {
           for (size_t j = 0; j < all_peaks.size(); j++) {
-            if (std::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
+            if (abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
               p.a = NAN;
               break;
             }
           }
         }
-        if (std::isfinite (p.a) && p.a >= threshold) 
+        if (std::isfinite (p.a) && p.a >= threshold)
           all_peaks.push_back (p);
       }
 
@@ -207,7 +226,7 @@ class Processor { MEMALIGN(Processor)
 
           value_type mdot = 0.0;
           for (size_t n = 0; n < all_peaks.size(); n++) {
-            value_type f = std::abs (p.dot (all_peaks[n].v));
+            value_type f = abs (p.dot (all_peaks[n].v));
             if (f > mdot) {
               mdot = f;
               peaks_out[i] = all_peaks[n];
@@ -219,7 +238,7 @@ class Processor { MEMALIGN(Processor)
         for (int i = 0; i < npeaks; i++) {
           value_type mdot = 0.0;
           for (size_t n = 0; n < all_peaks.size(); n++) {
-            value_type f = std::abs (all_peaks[n].v.dot (true_peaks[i].v));
+            value_type f = abs (all_peaks[n].v.dot (true_peaks[i].v));
             if (f > mdot) {
               mdot = f;
               peaks_out[i] = all_peaks[n];
@@ -239,7 +258,7 @@ class Processor { MEMALIGN(Processor)
         dirs_vox.value() = peaks_out[n].a*peaks_out[n].v[2];
         dirs_vox.index(3)++;
       }
-      for (; dirs_vox.index(3) < 3*npeaks; dirs_vox.index(3)++) dirs_vox.value() = NAN;
+      for (; dirs_vox.index(3) < 3*npeaks; dirs_vox.index(3)++) dirs_vox.value() = NaN;
 
       return true;
     }
@@ -252,6 +271,7 @@ class Processor { MEMALIGN(Processor)
     value_type threshold;
     vector<Direction> peaks_out;
     copy_ptr<Image<value_type> > ipeaks_vox;
+    Math::SH::PrecomputedAL<value_type>* precomputer;
 
     bool check_input (const Item& item) {
       if (ipeaks_vox) {
@@ -268,7 +288,7 @@ class Processor { MEMALIGN(Processor)
         if (std::isnan (item.data[i]))
           return true;
         if (no_peaks)
-          if (i && item.data[i] != 0.0) 
+          if (i && item.data[i] != 0.0)
             no_peaks = false;
       }
 
@@ -310,7 +330,7 @@ void run ()
     Direction p (Math::pi*to<float> (opt[n][0]) /180.0, Math::pi*float (opt[n][1]) /180.0);
     true_peaks.push_back (p);
   }
-  if (true_peaks.size()) 
+  if (true_peaks.size())
     npeaks = true_peaks.size();
 
   value_type threshold = get_option_value("threshold", -INFINITY);
@@ -334,7 +354,7 @@ void run ()
 
   DataLoader loader (SH_data, mask_data.get());
   Processor processor (peaks, dirs, Math::SH::LforN (SH_data.size (3)),
-      npeaks, true_peaks, threshold, ipeaks_data.get());
+      npeaks, true_peaks, threshold, ipeaks_data.get(), get_options("fast").size());
 
   Thread::run_queue (loader, Thread::batch (Item()), Thread::multi (processor));
 }

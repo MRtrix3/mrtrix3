@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_mrview_tool_list_model_base_h__
 #define __gui_mrview_tool_list_model_base_h__
@@ -40,8 +42,8 @@ namespace MR
               if (role == Qt::CheckStateRole) {
                 return items[index.row()] && items[index.row()]->show ? Qt::Checked : Qt::Unchecked;
               }
-              if (role != Qt::DisplayRole) return QVariant();
-              return items[index.row()] ? shorten (items[index.row()]->get_filename(), 35, 0).c_str() : "";
+              if (role != Qt::DisplayRole && role != Qt::ToolTipRole) return QVariant();
+              return items[index.row()] ? items[index.row()]->get_filename().c_str() : "";
             }
 
             bool setData (const QModelIndex& idx, const QVariant& value, int role) override {

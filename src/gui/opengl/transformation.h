@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_opengl_transformation_h__
 #define __gui_opengl_transformation_h__
@@ -76,17 +78,19 @@ namespace MR
             (*this)(3,3) = 1.0f;
           }
           template <class M>
-          mat4 (const M& m)
+          mat4 (const M& a)
           {
-            for (size_t i = 0; i != size_t(m.rows()); ++i) {
+            for (size_t i = 0; i != size_t(a.rows()); ++i) {
               for (size_t j = 0; j != 4; ++j)
-                (*this)(i,j) = m(i,j);
+                (*this)(i,j) = a(i,j);
             }
-            if (m.rows() == 3) {
+            if (a.rows() == 3) {
               (*this)(3,0) = (*this)(3,1) = (*this)(3,2) = 0.0f;
               (*this)(3,3) = 1.0f;
             }
           }
+
+          mat4& operator= (const mat4& a) { memcpy (m, a.m, sizeof(m)); return *this; }
 
           void zero () {
             memset (m, 0, sizeof (m));

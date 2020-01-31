@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "file/path.h"
 #include "file/dicom/element.h"
@@ -43,6 +45,21 @@ namespace MR {
           stream << str(item.fraction, 6).substr(1);
         return stream;
       }
+
+
+
+
+
+      const char* Element::type_as_str[] = { "invalid",
+                                             "integer",
+                                             "unsigned integer",
+                                             "floating-point",
+                                             "date",
+                                             "time",
+                                             "string",
+                                             "sequence",
+                                             "other",
+                                             nullptr };
 
 
 
@@ -298,7 +315,7 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (int16_t))
             V.push_back (Raw::fetch_<int16_t> (p, is_BE));
         else if (VR == VR_IS) {
-          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++)
             V[n] = to<int32_t> (strings[n]);
@@ -322,9 +339,10 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (uint16_t))
             V.push_back (Raw::fetch_<uint16_t> (p, is_BE));
         else if (VR == VR_IS) {
-          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
-          for (size_t n = 0; n < V.size(); n++) V[n] = to<uint32_t> (strings[n]);
+          for (size_t n = 0; n < V.size(); n++)
+            V[n] = to<uint32_t> (strings[n]);
         }
         else
           report_unknown_tag_with_implicit_syntax();
@@ -343,7 +361,7 @@ namespace MR {
           for (const uint8_t* p = data; p < data + size; p += sizeof (float32))
             V.push_back (Raw::fetch_<float32> (p, is_BE));
         else if (VR == VR_DS || VR == VR_IS) {
-          vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
+          auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++)
             V[n] = to<default_type> (strings[n]);
@@ -377,19 +395,68 @@ namespace MR {
 
       vector<std::string> Element::get_string () const
       {
-        if (VR == VR_AT) {
-          vector<std::string> strings;
-          strings.push_back (printf ("%04X %04X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)));
-          return strings;
-        }
+        if (VR == VR_AT)
+          return { printf ("%04X %04X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)) };
 
-        vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
-        for (vector<std::string>::iterator i = strings.begin(); i != strings.end(); ++i) {
-          *i = strip (*i);
-          replace (*i, '^', ' ');
+        auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
+        for (auto& entry: strings) {
+          entry = strip (entry);
+          replace (entry, '^', ' ');
         }
         return strings;
       }
+
+
+
+
+      std::string Element::as_string () const
+      {
+        std::ostringstream out;
+        try {
+          switch (type()) {
+            case Element::INT:
+              for (const auto& x : get_int())
+                out << x << " ";
+              return out.str();
+            case Element::UINT:
+              for (const auto& x : get_uint())
+                out << x << " ";
+              return out.str();
+            case Element::FLOAT:
+              for (const auto& x : get_float())
+                out << x << " ";
+              return out.str();
+            case Element::DATE:
+              return str(get_date());
+            case Element::TIME:
+              return str(get_time());
+            case Element::STRING:
+              if (group == GROUP_DATA && element == ELEMENT_DATA) {
+                return "(data)";
+              }
+              else {
+                for (const auto& x : get_string())
+                  out << x << " ";
+                return out.str();
+              }
+            case Element::SEQ:
+              return "";
+            default:
+              if (group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM)
+                return "unknown data type";
+          }
+        }
+        catch (Exception& e) {
+          DEBUG ("Error converting data at offset " + str(offset(start)) + " to " + type_as_str[type()] + " type: ");
+          for (auto& s : e.description)
+            DEBUG (s);
+          return "invalid entry";
+        }
+        return "";
+      }
+
+
+
 
 
 
@@ -397,8 +464,8 @@ namespace MR {
         template <class T>
           inline void print_vec (const vector<T>& V)
           {
-            for (size_t n = 0; n < V.size(); n++)
-              fprintf (stdout, "%s ", str (V[n]).c_str());
+            for (const auto& entry: V)
+              fprintf (stdout, "%s ", str(entry).c_str());
           }
       }
 
@@ -449,41 +516,11 @@ namespace MR {
           tmp += "  ";
         tmp += ( name.size() ? name.substr(2) : "unknown" );
         tmp.resize (40, ' ');
-        stream << tmp + ' ';
-
-        switch (item.type()) {
-          case Element::INT:
-            stream << item.get_int();
-            break;
-          case Element::UINT:
-            stream << item.get_uint();
-            break;
-          case Element::FLOAT:
-            stream << item.get_float();
-            break;
-          case Element::DATE:
-            stream << "[ " << item.get_date() << " ]";
-            break;
-          case Element::TIME:
-            stream << "[ " << item.get_time() << " ]";
-            break;
-          case Element::STRING:
-            if (item.group == GROUP_DATA && item.element == ELEMENT_DATA)
-              stream << "(data)";
-            else
-              stream << item.get_string();
-            break;
-          case Element::SEQ:
-            break;
-          default:
-            if (item.group != GROUP_SEQUENCE || item.element != ELEMENT_SEQUENCE_ITEM)
-              stream << "unknown data type";
-        }
-
-        stream << "\n";
+        stream << tmp << " " << item.as_string() << "\n";
 
         return stream;
       }
+
 
 
     }

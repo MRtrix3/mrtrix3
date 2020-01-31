@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_resampling_arc_h__
 #define __dwi_tractography_resampling_arc_h__
@@ -31,6 +33,8 @@ namespace MR {
 
             using value_type = float;
             using point_type = Eigen::Vector3f;
+
+            enum class state_t { BEFORE_START, AFTER_START, BEFORE_END, AFTER_END };
 
           private:
             class Plane { MEMALIGN(Plane)
@@ -64,12 +68,12 @@ namespace MR {
             Arc (const size_t n, const point_type& s, const point_type& w, const point_type& e) :
                 nsamples (n),
                 start (s),
-                mid (0.5*(s+e)),
+                mid (w),
                 end (e),
                 idx_start (0),
                 idx_end (0)
             {
-              init_arc (w);
+              init_arc();
             }
 
             bool operator() (const Streamline<>&, Streamline<>&) const override;
@@ -83,10 +87,10 @@ namespace MR {
             mutable point_type start_dir, mid_dir, end_dir;
 
             void init_line();
-            void init_arc (const point_type&);
+            void init_arc();
 
 
-            int state (const point_type&) const;
+            state_t state (const point_type&) const;
 
         };
 

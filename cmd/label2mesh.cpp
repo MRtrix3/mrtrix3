@@ -1,16 +1,18 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <mutex>
 
@@ -67,7 +69,6 @@ void run ()
   using voxel_corner_t = Eigen::Array<int, 3, 1>;
 
   vector<voxel_corner_t> lower_corners, upper_corners;
-
   {
     for (auto i = Loop ("Importing label image", labels) (labels); i; ++i) {
       const uint32_t index = labels.value();
@@ -91,6 +92,17 @@ void run ()
   meshes[0].set_name ("none");
   const bool blocky = get_options ("blocky").size();
 
+  vector<uint32_t> missing_nodes;
+  for (uint32_t i = 1; i != upper_corners.size(); ++i) {
+    if (upper_corners[i][0] < 0)
+      missing_nodes.push_back (i);
+  }
+  if (missing_nodes.size()) {
+    WARN ("The following labels are absent from the parcellation image "
+          "and so will have an empty mesh in the output file: "
+          + join(missing_nodes, ", "));
+  }
+
   {
     std::mutex mutex;
     ProgressBar progress ("Generating meshes from labels", lower_corners.size() - 1);
@@ -98,11 +110,15 @@ void run ()
 
     auto worker = [&] (const size_t& in)
     {
+      meshes[in].set_name (str(in));
       vector<int> from, dimensions;
       for (size_t axis = 0; axis != 3; ++axis) {
         from.push_back (lower_corners[in][axis]);
         dimensions.push_back (upper_corners[in][axis] - lower_corners[in][axis] + 1);
+        if (dimensions.back() < 1)
+          return true;
       }
+
       Adapter::Subset<Image<uint32_t>> subset (labels, from, dimensions);
 
       auto scratch = Image<bool>::scratch (subset, "Node " + str(in) + " mask");
@@ -113,7 +129,6 @@ void run ()
         MR::Surface::Algo::image2mesh_blocky (scratch, meshes[in]);
       else
         MR::Surface::Algo::image2mesh_mc (scratch, meshes[in], 0.5);
-      meshes[in].set_name (str(in));
       std::lock_guard<std::mutex> lock (mutex);
       ++progress;
       return true;
