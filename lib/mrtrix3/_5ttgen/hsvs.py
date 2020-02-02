@@ -22,17 +22,6 @@ from mrtrix3 import app, fsl, image, path, run
 
 
 
-# Potential future improvements:
-# - Automatic segmentation of anterior commissure (potentially even posterior commissure...)
-# - Accept T1-weighted image as input; run all FreeSurfer steps
-# - Operate on HCP data
-# - Rather than hard-coding structure indices, read file FreeSurferColorLUT.txt from the FreeSurfer installation, find structures by name, then extract the integer index
-# - Option to utilise output of FreeSurfer thalamic nuclei segmentation module; provide explicit command-line control of segmentation mechanism similar to how hippocampi are handled
-# - Improve logic w.r.t. tissue combination, in order to reduce prevalence of "gaps" between structures caused by independent voxel2mesh | meshfilter smooth operations on adjacent structures
-
-
-
-
 HIPPOCAMPI_CHOICES = [ 'subfields', 'first', 'aseg' ]
 THALAMI_CHOICES = [ 'nuclei', 'first', 'aseg' ]
 
@@ -246,7 +235,6 @@ def execute(): #pylint: disable=unused-variable
   thal_nuclei_all_images = sorted(list(filter(thal_nuclei_regex.match, os.listdir(mri_dir))))
   thal_nuclei_all_images = [ item for item in thal_nuclei_all_images if 'FSvoxelSpace' not in item ]
   if thal_nuclei_all_images:
-    have_thalamic_nuclei = True
     if len(thal_nuclei_all_images) == 1:
       thal_nuclei_image = thal_nuclei_all_images[0]
     else:
@@ -340,9 +328,6 @@ def execute(): #pylint: disable=unused-variable
                     [] ]
 
   # Get the main cerebrum segments; these are already smooth
-  # FIXME There may be some minor mismatch between the WM and pial segments within the medial section
-  #   where no optimisation is performed, but vertices are simply defined in order to guarantee
-  #   closed surfaces. Ideally these should be removed from the CGM tissue.
   progress = app.ProgressBar('Mapping FreeSurfer cortical reconstruction to partial volume images', 8)
   for hemi in [ 'lh', 'rh' ]:
     for basename in [ hemi+'.white', hemi+'.pial' ]:
@@ -359,7 +344,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Get other structures that need to be converted from the aseg voxel image
-  from_aseg = ASEG_STRUCTURES.copy()
+  from_aseg = list(ASEG_STRUCTURES)
   if hippocampi_method == 'subfields':
     if not hipp_subfield_has_amyg and not have_first:
       from_aseg.extend(AMYG_ASEG)
@@ -406,7 +391,7 @@ def execute(): #pylint: disable=unused-variable
   cc_init_mesh_path = 'combined_corpus_callosum_init.vtk'
   cc_smoothed_mesh_path = 'combined_corpus_callosum.vtk'
   run.command('mrmath ' + ' '.join([ name + '.mif' for (index, name) in CORPUS_CALLOSUM_ASEG ]) + ' sum - | voxel2mesh - -threshold 0.5 ' + cc_init_mesh_path)
-  for name in [ n for i, n in CORPUS_CALLOSUM_ASEG ]:
+  for name in [ n for _, n in CORPUS_CALLOSUM_ASEG ]:
     app.cleanup(name + '.mif')
   progress.increment()
   run.command('meshfilter ' + cc_init_mesh_path + ' smooth ' + cc_smoothed_mesh_path)
@@ -569,8 +554,8 @@ def execute(): #pylint: disable=unused-variable
     acpcdetect_input_header = image.Header(acpcdetect_input_image)
     acpcdetect_output_path = os.path.splitext(acpcdetect_input_image)[0] + '_ACPC.txt'
     app.cleanup(acpcdetect_input_image)
-    with open(acpcdetect_output_path, 'r') as f:
-      acpcdetect_output_data = f.read().splitlines()
+    with open(acpcdetect_output_path, 'r') as acpc_file:
+      acpcdetect_output_data = acpc_file.read().splitlines()
     app.cleanup(glob.glob(os.path.splitext(acpcdetect_input_image)[0] + "*"))
     # Need to scan through the contents of this file,
     #   isolating the AC and PC locations
@@ -594,10 +579,6 @@ def execute(): #pylint: disable=unused-variable
     pc_scanner = voxel2scanner(pc_voxel, acpcdetect_input_header)
 
     # Generate the mask image within which FAST will be run
-    # TODO Should FAST be run on a larger image, and then only the window within the sphere mask used?
-    # Alternatively, should FAST be run on a whole-brain image, and then only the
-    #   segments corresponding to cerebellum / AC / PC extracted?
-    # Latter is not ideal in the scenario where a high-resolution template image is used
     acpc_prefix = 'ACPC' if ATTEMPT_PC else 'AC'
     acpc_mask_image = acpc_prefix + '_FAST_mask.mif'
     run.command('mrcalc ' + template_image + ' nan -eq - | '
@@ -665,9 +646,6 @@ def execute(): #pylint: disable=unused-variable
   # This can hopefully be done with a connected-component analysis: Take just the WM image, and
   #   fill in any gaps (i.e. select the inverse, select the largest connected component, invert again)
   # Make sure that floating-point values are handled appropriately
-  # TODO Idea: Dilate voxelised brain stem 2 steps, add only intersection with voxelised WM,
-  #   then run through voxel2mesh
-
   # Combine these images together using the appropriate logic in order to form the 5TT image
   progress = app.ProgressBar('Modulating segmentation images based on other tissues', 9)
   tissue_images = [ 'tissue0.mif', 'tissue1.mif', 'tissue2.mif', 'tissue3.mif', 'tissue4.mif' ]
@@ -842,20 +820,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # For all voxels within FreeSurfer's brain mask, add to the CSF image in order to make the sum 1.0
-  # TESTME Rather than doing this blindly, look for holes in the brain, and assign the remainder to WM;
-  #   only within the mask but outside the brain should the CSF fraction be filled
-  # TODO Can definitely do better than just an erosion step here; still some hyper-intensities at GM-WW interface
-
   progress = app.ProgressBar('Performing fill operations to preserve unity tissue volume', 2)
-  # TODO Connected-component analysis at high template image resolution is taking up huge amounts of memory
-  # Crop beforehand? It's because it's filling everything outside the brain...
-  # TODO Consider performing CSF fill before WM fill? Does this solve any problems?
-  #   Well, it might mean I can use connected-components to select the CSF fill, rather than using an erosion
-  #   This may also reduce the RAM usage of the connected-components analysis, since it'd be within
-  #   the brain mask rather than using the whole image FoV.
-  # Also: Potentially use mask cleaning filter
-  # FIXME Appears we can't rely on a connected-component filter: Still some bits e.g. between cortex & cerebellum
-  # Maybe need to look into techniques for specifically filling in between structure pairs
 
   # Some voxels may get a non-zero cortical GM fraction due to native use of the surface representation, yet
   #   these voxels are actually outside FreeSurfer's own provided brain mask. So what we need to do here is
