@@ -178,7 +178,7 @@ namespace MR
 
           } } }
 
-          if (total_count > Math::pow3 (os_ratio) / 2) {
+          if (total_count > Math::pow3<size_t> (os_ratio) / 2) {
             return ACT::Tissues (cgm_count  / float(total_count),
                                  sgm_count  / float(total_count),
                                  wm_count   / float(total_count),
