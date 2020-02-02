@@ -103,8 +103,8 @@ def execute(): #pylint: disable=unused-variable
   else:
     app.console('Not eroding brain mask.')
     run.command('mrconvert mask.mif eroded_mask.mif -datatype bit', show=False)
-  statmaskcount = image.statistic('mask.mif', 'count', '-mask mask.mif')
-  statemaskcount = image.statistic('eroded_mask.mif', 'count', '-mask eroded_mask.mif')
+  statmaskcount = image.statistics('mask.mif', mask='mask.mif').count
+  statemaskcount = image.statistics('eroded_mask.mif', mask='eroded_mask.mif').count
   app.console('  [ mask: ' + str(statmaskcount) + ' -> ' + str(statemaskcount) + ' ]')
 
   # Get volumes, compute mean signal and SDM per b-value; compute overall SDM; get rid of erroneous values.
@@ -135,7 +135,7 @@ def execute(): #pylint: disable=unused-variable
   errcmd += ' err_sdm.mif -add 0 eroded_mask.mif -if safe_mask.mif -datatype bit'
   run.command(errcmd, show=False)
   run.command('mrcalc safe_mask.mif full_sdm.mif 0 -if 10 -min safe_sdm.mif', show=False)
-  statsmaskcount = image.statistic('safe_mask.mif', 'count', '-mask safe_mask.mif')
+  statsmaskcount = image.statistics('safe_mask.mif', mask='safe_mask.mif').count
   app.console('  [ mask: ' + str(statemaskcount) + ' -> ' + str(statsmaskcount) + ' ]')
 
 
@@ -148,17 +148,17 @@ def execute(): #pylint: disable=unused-variable
   run.command('dwi2tensor dwi.mif - -mask safe_mask.mif | tensor2metric - -fa safe_fa.mif -vector safe_vecs.mif -modulate none -mask safe_mask.mif', show=False)
   run.command('mrcalc safe_mask.mif safe_fa.mif 0 -if ' + str(app.ARGS.fa) + ' -gt crude_wm.mif -datatype bit', show=False)
   run.command('mrcalc crude_wm.mif 0 safe_mask.mif -if _crudenonwm.mif -datatype bit', show=False)
-  statcrudewmcount = image.statistic('crude_wm.mif', 'count', '-mask crude_wm.mif')
-  statcrudenonwmcount = image.statistic('_crudenonwm.mif', 'count', '-mask _crudenonwm.mif')
+  statcrudewmcount = image.statistics('crude_wm.mif', mask='crude_wm.mif').count
+  statcrudenonwmcount = image.statistics('_crudenonwm.mif', mask='_crudenonwm.mif').count
   app.console('  [ ' + str(statsmaskcount) + ' -> ' + str(statcrudewmcount) + ' (WM) & ' + str(statcrudenonwmcount) + ' (GM-CSF) ]')
 
   # Crude GM versus CSF separation based on SDM.
   app.console('* Crude GM versus CSF separation...')
-  crudenonwmmedian = image.statistic('safe_sdm.mif', 'median', '-mask _crudenonwm.mif')
+  crudenonwmmedian = image.statistics('safe_sdm.mif', mask='_crudenonwm.mif').median
   run.command('mrcalc _crudenonwm.mif safe_sdm.mif ' + str(crudenonwmmedian) + ' -subtract 0 -if - | mrthreshold - - -mask _crudenonwm.mif | mrcalc _crudenonwm.mif - 0 -if crude_csf.mif -datatype bit', show=False)
   run.command('mrcalc crude_csf.mif 0 _crudenonwm.mif -if crude_gm.mif -datatype bit', show=False)
-  statcrudegmcount = image.statistic('crude_gm.mif', 'count', '-mask crude_gm.mif')
-  statcrudecsfcount = image.statistic('crude_csf.mif', 'count', '-mask crude_csf.mif')
+  statcrudegmcount = image.statistics('crude_gm.mif', mask='crude_gm.mif').count
+  statcrudecsfcount = image.statistics('crude_csf.mif', mask='crude_csf.mif').count
   app.console('  [ ' + str(statcrudenonwmcount) + ' -> ' + str(statcrudegmcount) + ' (GM) & ' + str(statcrudecsfcount) + ' (CSF) ]')
 
 
@@ -168,32 +168,32 @@ def execute(): #pylint: disable=unused-variable
 
   # Refine WM: remove high SDM outliers.
   app.console('* Refining WM...')
-  crudewmmedian = image.statistic('safe_sdm.mif', 'median', '-mask crude_wm.mif')
+  crudewmmedian = image.statistics('safe_sdm.mif', mask='crude_wm.mif').median
   run.command('mrcalc crude_wm.mif safe_sdm.mif ' + str(crudewmmedian) + ' -subtract -abs 0 -if _crudewm_sdmad.mif', show=False)
-  crudewmmad = image.statistic('_crudewm_sdmad.mif', 'median', '-mask crude_wm.mif')
+  crudewmmad = image.statistics('_crudewm_sdmad.mif', mask='crude_wm.mif').median
   crudewmoutlthresh = crudewmmedian + (1.4826 * crudewmmad * 2.0)
   run.command('mrcalc crude_wm.mif safe_sdm.mif 0 -if ' + str(crudewmoutlthresh) + ' -gt _crudewmoutliers.mif -datatype bit', show=False)
   run.command('mrcalc _crudewmoutliers.mif 0 crude_wm.mif -if refined_wm.mif -datatype bit', show=False)
-  statrefwmcount = image.statistic('refined_wm.mif', 'count', '-mask refined_wm.mif')
+  statrefwmcount = image.statistics('refined_wm.mif', mask='refined_wm.mif').count
   app.console('  [ WM: ' + str(statcrudewmcount) + ' -> ' + str(statrefwmcount) + ' ]')
 
   # Refine GM: separate safer GM from partial volumed voxels.
   app.console('* Refining GM...')
-  crudegmmedian = image.statistic('safe_sdm.mif', 'median', '-mask crude_gm.mif')
+  crudegmmedian = image.statistics('safe_sdm.mif', mask='crude_gm.mif').median
   run.command('mrcalc crude_gm.mif safe_sdm.mif 0 -if ' + str(crudegmmedian) + ' -gt _crudegmhigh.mif -datatype bit', show=False)
   run.command('mrcalc _crudegmhigh.mif 0 crude_gm.mif -if _crudegmlow.mif -datatype bit', show=False)
   run.command('mrcalc _crudegmhigh.mif safe_sdm.mif ' + str(crudegmmedian) + ' -subtract 0 -if - | mrthreshold - - -mask _crudegmhigh.mif -invert | mrcalc _crudegmhigh.mif - 0 -if _crudegmhighselect.mif -datatype bit', show=False)
   run.command('mrcalc _crudegmlow.mif safe_sdm.mif ' + str(crudegmmedian) + ' -subtract -neg 0 -if - | mrthreshold - - -mask _crudegmlow.mif -invert | mrcalc _crudegmlow.mif - 0 -if _crudegmlowselect.mif -datatype bit', show=False)
   run.command('mrcalc _crudegmhighselect.mif 1 _crudegmlowselect.mif -if refined_gm.mif -datatype bit', show=False)
-  statrefgmcount = image.statistic('refined_gm.mif', 'count', '-mask refined_gm.mif')
+  statrefgmcount = image.statistics('refined_gm.mif', mask='refined_gm.mif').count
   app.console('  [ GM: ' + str(statcrudegmcount) + ' -> ' + str(statrefgmcount) + ' ]')
 
   # Refine CSF: recover lost CSF from crude WM SDM outliers, separate safer CSF from partial volumed voxels.
   app.console('* Refining CSF...')
-  crudecsfmin = image.statistic('safe_sdm.mif', 'min', '-mask crude_csf.mif')
+  crudecsfmin = image.statistics('safe_sdm.mif', mask='crude_csf.mif').min
   run.command('mrcalc _crudewmoutliers.mif safe_sdm.mif 0 -if ' + str(crudecsfmin) + ' -gt 1 crude_csf.mif -if _crudecsfextra.mif -datatype bit', show=False)
   run.command('mrcalc _crudecsfextra.mif safe_sdm.mif ' + str(crudecsfmin) + ' -subtract 0 -if - | mrthreshold - - -mask _crudecsfextra.mif | mrcalc _crudecsfextra.mif - 0 -if refined_csf.mif -datatype bit', show=False)
-  statrefcsfcount = image.statistic('refined_csf.mif', 'count', '-mask refined_csf.mif')
+  statrefcsfcount = image.statistics('refined_csf.mif', mask='refined_csf.mif').count
   app.console('  [ CSF: ' + str(statcrudecsfcount) + ' -> ' + str(statrefcsfcount) + ' ]')
 
 
@@ -206,7 +206,7 @@ def execute(): #pylint: disable=unused-variable
   app.console(' * Selecting final voxels (' + str(app.ARGS.csf) + '% of refined CSF)...')
   voxcsfcount = int(round(statrefcsfcount * app.ARGS.csf / 100.0))
   run.command('mrcalc refined_csf.mif safe_sdm.mif 0 -if - | mrthreshold - - -top ' + str(voxcsfcount) + ' -ignorezero | mrcalc refined_csf.mif - 0 -if - -datatype bit | mrconvert - voxels_csf.mif -axes 0,1,2', show=False)
-  statvoxcsfcount = image.statistic('voxels_csf.mif', 'count', '-mask voxels_csf.mif')
+  statvoxcsfcount = image.statistics('voxels_csf.mif', mask='voxels_csf.mif').count
   app.console('   [ CSF: ' + str(statrefcsfcount) + ' -> ' + str(statvoxcsfcount) + ' ]')
   # Estimate CSF response function
   app.console(' * Estimating response function...')
@@ -216,9 +216,9 @@ def execute(): #pylint: disable=unused-variable
   app.console('* GM:')
   app.console(' * Selecting final voxels (' + str(app.ARGS.gm) + '% of refined GM)...')
   voxgmcount = int(round(statrefgmcount * app.ARGS.gm / 100.0))
-  refgmmedian = image.statistic('safe_sdm.mif', 'median', '-mask refined_gm.mif')
+  refgmmedian = image.statistics('safe_sdm.mif', mask='refined_gm.mif').median
   run.command('mrcalc refined_gm.mif safe_sdm.mif ' + str(refgmmedian) + ' -subtract -abs 1 -add 0 -if - | mrthreshold - - -bottom ' + str(voxgmcount) + ' -ignorezero | mrcalc refined_gm.mif - 0 -if - -datatype bit | mrconvert - voxels_gm.mif -axes 0,1,2', show=False)
-  statvoxgmcount = image.statistic('voxels_gm.mif', 'count', '-mask voxels_gm.mif')
+  statvoxgmcount = image.statistics('voxels_gm.mif', mask='voxels_gm.mif').count
   app.console('   [ GM: ' + str(statrefgmcount) + ' -> ' + str(statvoxgmcount) + ' ]')
   # Estimate GM response function
   app.console(' * Estimating response function...')
@@ -246,7 +246,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     app.console('   Selecting WM single-fibre voxels using built-in (Dhollander et al., 2019) algorithm')
     run.command('mrmath dwi.mif mean mean_sig.mif -axis 3', show=False)
-    refwmcoef = image.statistic('mean_sig.mif', 'median', '-mask refined_wm.mif') * math.sqrt(4.0 * math.pi)
+    refwmcoef = image.statistics('mean_sig.mif', mask='refined_wm.mif').median * math.sqrt(4.0 * math.pi)
     if sfwm_lmax:
       isiso = [ lm == 0 for lm in sfwm_lmax ]
     else:
@@ -266,7 +266,7 @@ def execute(): #pylint: disable=unused-variable
     run.command('sh2peaks abs_ewm6.mif - -num 1 -mask refined_sfwm.mif | peaks2amp - - | mrcalc - abs_sum6.mif -divide - | mrconvert - metric_sfwm6.mif -coord 3 0 -axes 0,1,2', show=False)
     run.command('mrcalc refined_sfwm.mif metric_sfwm6.mif 0 -if - | mrthreshold - - -top ' + str(voxsfwmcount) + ' -ignorezero | mrcalc refined_sfwm.mif - 0 -if - -datatype bit | mrconvert - voxels_sfwm.mif -axes 0,1,2', show=False)
 
-  statvoxsfwmcount = image.statistic('voxels_sfwm.mif', 'count', '-mask voxels_sfwm.mif')
+  statvoxsfwmcount = image.statistics('voxels_sfwm.mif', mask='voxels_sfwm.mif').count
   app.console('   [ WM: ' + str(statrefwmcount) + ' -> ' + str(statvoxsfwmcount) + ' (single-fibre) ]')
   # Estimate SF WM response function
   app.console(' * Estimating response function...')

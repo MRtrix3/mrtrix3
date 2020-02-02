@@ -1,26 +1,27 @@
-.. _5ttcheck:
+.. _peaks2fixel:
 
-5ttcheck
+peaks2fixel
 ===================
 
 Synopsis
 --------
 
-Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format
+Convert peak directions image to a fixel directory
 
 Usage
 --------
 
 ::
 
-    5ttcheck [ options ]  input [ input ... ]
+    peaks2fixel [ options ]  directions fixels
 
--  *input*: the 5TT image(s) to be tested
+-  *directions*: the input directions image; each volume corresponds to the x, y & z component of each direction vector in turn.
+-  *fixels*: the output fixel directory.
 
 Options
 -------
 
--  **-voxels prefix** output mask images highlighting voxels where the input does not conform to 5TT requirements
+-  **-dataname path** the name of the output fixel data file encoding peak amplitudes
 
 Standard options
 ^^^^^^^^^^^^^^^^

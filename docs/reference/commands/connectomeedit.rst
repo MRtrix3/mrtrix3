@@ -1,26 +1,26 @@
-.. _5ttcheck:
+.. _connectomeedit:
 
-5ttcheck
+connectomeedit
 ===================
 
 Synopsis
 --------
 
-Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format
+Perform basic operations on a connectome
 
 Usage
 --------
 
 ::
 
-    5ttcheck [ options ]  input [ input ... ]
+    connectomeedit [ options ]  input operation output
 
--  *input*: the 5TT image(s) to be tested
+-  *input*: the input connectome.
+-  *operation*: the operation to apply, one of: to_symmetric, upper_triangular, lower_triangular, transpose, zero_diagonal.
+-  *output*: the output connectome.
 
 Options
 -------
-
--  **-voxels prefix** output mask images highlighting voxels where the input does not conform to 5TT requirements
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -50,7 +50,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Matteo Frigo (matteo.frigo@inria.fr)
 
 **Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 

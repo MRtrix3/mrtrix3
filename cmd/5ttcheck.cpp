@@ -46,7 +46,7 @@ void usage ()
   + Argument ("input", "the 5TT image(s) to be tested").type_image_in().allow_multiple();
 
   OPTIONS
-  + Option ("masks", "output mask images highlighting voxels where the input does not conform to 5TT requirements")
+  + Option ("voxels", "output mask images highlighting voxels where the input does not conform to 5TT requirements")
     + Argument ("prefix").type_text();
 }
 
@@ -54,7 +54,7 @@ void usage ()
 
 void run ()
 {
-  const std::string mask_prefix = get_option_value<std::string> ("masks", "");
+  const std::string voxels_prefix = get_option_value<std::string> ("voxels", "");
 
   size_t major_error_count = 0, minor_error_count = 0;
   for (size_t i = 0; i != argument.size(); ++i) {
@@ -65,7 +65,7 @@ void run ()
     Header H_out (in);
     H_out.ndim() = 3;
     H_out.datatype() = DataType::Bit;
-    if (mask_prefix.size())
+    if (voxels_prefix.size())
       voxels = Image<bool>::scratch (H_out, "Scratch image for " + argument[i]);
 
     try {
@@ -78,17 +78,27 @@ void run ()
 
       // Manually loop through all voxels, make sure that for every voxel the
       //   sum of tissue partial volumes is either 0 or 1 (or close enough)
-      size_t voxel_error_sum = 0;
+      // Also make sure that individual partial volume fractions do not lie
+      //   outside the range [0.0, 1.0]
+      size_t voxel_error_sum = 0, voxel_error_abs = 0;
       for (auto outer = Loop(in, 0, 3) (in); outer; ++outer) {
         default_type sum = 0.0;
+        bool abs_error = false;
         for (auto inner = Loop(3) (in); inner; ++inner) {
           sum += in.value();
           if (in.value() < 0.0f || in.value() > 1.0f)
-            throw Exception ("Partial volume values must lie between 0.0 and 1.0 inclusive");
+            abs_error = true;
         }
         if (!sum) continue;
         if (abs (sum-1.0) > MAX_ERROR) {
           ++voxel_error_sum;
+          if (voxels.valid()) {
+            assign_pos_of (in, 0, 3).to (voxels);
+            voxels.value() = true;
+          }
+        }
+        if (abs_error) {
+          ++voxel_error_abs;
           if (voxels.valid()) {
             assign_pos_of (in, 0, 3).to (voxels);
             voxels.value() = true;
@@ -100,28 +110,33 @@ void run ()
         INFO ("Image \"" + argument[i] + "\" contains just one isolated voxel with non-unity sum of partial volume fractions");
       } else if (voxel_error_sum) {
         WARN ("Image \"" + argument[i] + "\" contains " + str(voxel_error_sum) + " brain voxels with non-unity sum of partial volume fractions");
-        ++minor_error_count;
-        if (voxels.valid()) {
-          std::string path = mask_prefix;
-          if (argument.size() > 1) {
-            path += Path::basename (argument[i]);
-          } else {
-            bool has_extension = false;
-            for (auto p = MR::Formats::known_extensions; *p; ++p) {
-              if (Path::has_suffix (path, std::string (*p))) {
-                has_extension = true;
-                break;
-              }
-            }
-            if (!has_extension)
-              path += ".mif";
-          }
-          auto out = Image<bool>::create (path, H_out);
-          copy (voxels, out);
-        }
-      } else {
+        if (!voxel_error_abs)
+          ++minor_error_count;
+      } else if (!voxel_error_abs) {
         INFO ("Image \"" + argument[i] + "\" conforms to 5TT format");
       }
+
+      if ((voxel_error_sum || voxel_error_abs) && voxels.valid()) {
+        std::string path = voxels_prefix;
+        if (argument.size() > 1) {
+          path += Path::basename (argument[i]);
+        } else {
+          bool has_extension = false;
+          for (auto p = MR::Formats::known_extensions; *p; ++p) {
+            if (Path::has_suffix (path, std::string (*p))) {
+              has_extension = true;
+              break;
+            }
+          }
+          if (!has_extension)
+            path += ".mif";
+        }
+        auto out = Image<bool>::create (path, H_out);
+        copy (voxels, out);
+      }
+
+      if (voxel_error_abs)
+        throw Exception ("Image \"" + argument[i] + "\" contains " + str(voxel_error_abs) + " brain voxels with a non-physical partial volume fraction");
 
     } catch (Exception& e) {
       e.display();

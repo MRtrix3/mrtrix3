@@ -19,6 +19,7 @@
 
 #include "image.h"
 #include "image_diff.h"
+#include "image_helpers.h"
 #include "algo/loop.h"
 #include "fixel/keys.h"
 #include "fixel/types.h"
@@ -34,6 +35,22 @@ namespace MR
       InvalidFixelDirectoryException (const Exception& previous_exception, const std::string& msg)
         : Exception(previous_exception, msg) {}
   };
+
+  namespace Peaks
+  {
+    FORCE_INLINE void check (const Header& in)
+    {
+      if (!in.datatype().is_floating_point())
+        throw Exception ("Image \"" + in.name() + "\" is not a valid peaks image: Does not contain floating-point data");
+      try {
+        check_effective_dimensionality (in, 4);
+      } catch (Exception& e) {
+        throw Exception (e, "Image \"" + in.name() + "\" is not a valid peaks image: Expect 4 dimensions");
+      }
+      if (in.size(3) % 3)
+        throw Exception ("Image \"" + in.name() + "\" is not a valid peaks image: Number of volumes must be a multiple of 3");
+    }
+  }
 
   namespace Fixel
   {
@@ -389,4 +406,3 @@ namespace MR
 }
 
 #endif
-
