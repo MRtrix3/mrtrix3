@@ -524,7 +524,7 @@ namespace MR
 
         std::string comment;
         std::getline (in, comment);
-        const off64_t first_newline_offset = in.tellg();
+        const auto first_newline_offset = in.tellg();
 
         // Some FreeSurfer files will have a second comment line; others will not
         // Need to make honest attempt at both possible scenarios
