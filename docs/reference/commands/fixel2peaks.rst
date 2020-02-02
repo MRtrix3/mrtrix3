@@ -1,26 +1,32 @@
-.. _5ttcheck:
+.. _fixel2peaks:
 
-5ttcheck
+fixel2peaks
 ===================
 
 Synopsis
 --------
 
-Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format
+Convert data in the fixel directory format into a 4D image of 3-vectors
 
 Usage
 --------
 
 ::
 
-    5ttcheck [ options ]  input [ input ... ]
+    fixel2peaks [ options ]  in out
 
--  *input*: the 5TT image(s) to be tested
+-  *in*: the input fixel information
+-  *out*: the output peaks image
+
+Description
+-----------
+
+If a fixel data file is provided as input, then the 3-vectors in the output image will be scaled based on the data in that file. If the input is instead the fixel directory, or the index or directions file, then all output 3-vectors will possess unit norm.
 
 Options
 -------
 
--  **-voxels prefix** output mask images highlighting voxels where the input does not conform to 5TT requirements
+-  **-nan** fill excess peak data with NaNs rather than zeroes
 
 Standard options
 ^^^^^^^^^^^^^^^^

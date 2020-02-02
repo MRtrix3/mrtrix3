@@ -6,7 +6,7 @@ Introduction
 
 This tutorial explains how to perform fixel-based analysis of fibre density and cross-section [Raffelt2017]_ with fibre orientation distributions (FODs) computed using multi-tissue (3-tissue) CSD variants [Jeurissen2014]_ [Dhollander2016a]_. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of apparent fibre density (AFD) being related to the intra-axonal space. See [Raffelt2012]_ for some details about AFD; though note that the interpretation can be altered for multi-tissue (3-tissue) CSD, depending on the context and tissues in the model.
 
-All steps in this tutorial are written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying each subject, and all files within identifying the image type (i.e. processing step outcome). For example::
+All steps in this tutorial are written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`for_each script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying each subject, and all files within identifying the image type (i.e. processing step outcome). For example::
 
     study/subjects/001_control/dwi.mif
     study/subjects/002_control/dwi.mif
@@ -40,7 +40,7 @@ The multi-tissue FBA pipeline corrects for bias fields (and jointly performs glo
 
 If or when performing DWI bias field correction at this stage, it is achieved by first estimating the bias field from the DWI b=0 data, then applying the field to correct all DW volumes, which is done in a single step using the :code:`ants` algorithm within the :ref:`dwibiascorrect` script in *MRtrix3*. The script uses a bias field correction algorithm available in `ANTs <http://stnava.github.io/ANTs/>`_ (the N4 algorithm). *Don't* use the :code:`fsl` algorithm with this script in this fixel-based analysis pipeline. To perform bias field correction on DW images, run::
 
-    foreach * : dwibiascorrect ants IN/dwi_denoised_unringed_preproc.mif IN/dwi_denoised_unringed_preproc_unbiased.mif
+    for_each * : dwibiascorrect ants IN/dwi_denoised_unringed_preproc.mif IN/dwi_denoised_unringed_preproc_unbiased.mif
 
 
 Fixel-based analysis steps
@@ -50,7 +50,7 @@ Fixel-based analysis steps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 A robust and fully automated unsupervised method to obtain 3-tissue response functions representing single-fibre white matter, grey matter and CSF from the data itself, is the approach proposed in [Dhollander2016b]_ with the improvements of [Dhollander2019]_, which can be run by::
 
-    foreach * : dwi2response dhollander IN/dwi_denoised_unringed_preproc_unbiased.mif IN/response_wm.txt IN/response_gm.txt IN/response_csf.txt
+    for_each * : dwi2response dhollander IN/dwi_denoised_unringed_preproc_unbiased.mif IN/response_wm.txt IN/response_gm.txt IN/response_csf.txt
 
 It is crucial for fixel-based analysis to only use a single *unique* set of the (three) response functions to perform (3-tissue) spherical deconvolution of all subjects: as the (3-tissue) spherical deconvolution results will be expressed in function of this set of response functions, they can (in an abstract way) be seen as the units of both the final apparent fibre density metric and the other compartments estimated in the model. One possible way to obtain a unique set of response functions, is to average the response functions obtained from all subjects for each tissue type::
 
@@ -64,14 +64,14 @@ There is however no strict requirement for the final set of response functions t
 ^^^^^^^^^^^^^^^^^^^^^^^
 Upsampling DWI data *before* computing FODs increases anatomical contrast and improves downstream template building, registration, tractography and statistics. We recommend upsampling to an isotropic voxel size of 1.25 mm for human brains (if your original resolution is already higher, you can skip this step)::
 
-    foreach * : mrresize IN/dwi_denoised_unringed_preproc_unbiased.mif -vox 1.25 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
+    for_each * : mrresize IN/dwi_denoised_unringed_preproc_unbiased.mif -vox 1.25 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
 
 
 6. Compute upsampled brain mask images
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Compute a whole brain mask from the upsampled DW images::
 
-    foreach * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif IN/dwi_mask_upsampled.mif
+    for_each * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif IN/dwi_mask_upsampled.mif
 
 .. WARNING:: It is absolutely **crucial** to check at this stage that *all* individual subject masks include *all* regions of the brain that are intended to be analysed. Fibre orientation distributions will *only* be computed within these masks; and at a later step (in template space) the analysis mask will be restricted to the *intersection* of all masks, so *any* individual subject mask which excludes a certain region, will result in this region being excluded from the entire analysis. Masks appearing too generous or otherwise including non-brain regions should generally not cause any concerns at this stage. Hence, if in doubt, it is advised to always err on the side of *inclusion* (of regions) at this stage.
 
@@ -81,7 +81,7 @@ Compute a whole brain mask from the upsampled DW images::
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When performing fixel-based analysis, multi-tissue constrained spherical deconvolution should be performed using the unique set of (average) tissue response functions obtained before::
 
-    foreach * : dwi2fod msmt_csd IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif ../group_average_response_wm.txt IN/wmfod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
+    for_each * : dwi2fod msmt_csd IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif ../group_average_response_wm.txt IN/wmfod.mif ../group_average_response_gm.txt IN/gm.mif  ../group_average_response_csf.txt IN/csf.mif -mask IN/dwi_mask_upsampled.mif
 
 
 8. Joint bias field correction and intensity normalisation
@@ -89,7 +89,7 @@ When performing fixel-based analysis, multi-tissue constrained spherical deconvo
 
 To perform joint bias field correction and global intensity normalisation of the multi-tissue compartment parameters (in the log-domain), use :ref:`mtnormalise`::
 
-    foreach * : mtnormalise IN/wmfod.mif IN/wmfod_norm.mif IN/gm.mif IN/gm_norm.mif IN/csf.mif IN/csf_norm.mif -mask IN/dwi_mask_upsampled.mif
+    for_each * : mtnormalise IN/wmfod.mif IN/wmfod_norm.mif IN/gm.mif IN/gm_norm.mif IN/csf.mif IN/csf_norm.mif -mask IN/dwi_mask_upsampled.mif
 
 If multi-tissue CSD was performed with the same single set of (three) tissue response functions for all subjects, then the resulting output of :ref:`mtnormalise` makes the absolute amplitudes comparable between those subjects as well. Note that this step is **crucial** in the FBA pipeline, even if bias field correction was applied earlier using :ref:`dwibiascorrect`, since :ref:`dwibiascorrect` does *not* correct for *global* intensity differences between subjects. The performance of :ref:`mtnormalise` is not significantly impacted by either having run :ref:`dwibiascorrect` before or not. In case prior bias field correction was run in the pipeline, :ref:`mtnormalise` will further correct for residual intensity inhomogeneities.
 
@@ -101,13 +101,13 @@ If multi-tissue CSD was performed with the same single set of (three) tissue res
 
 Symbolic link all FOD images (and masks) into a single input folder. To use the entire population to build the template::
 
-    foreach * : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif
-    foreach * : ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    for_each * : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif
+    for_each * : ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
 If you opt to create the template from a limited subset of (e.g. 30-40) subjects and your study has multiple groups, then you can aim for a similar number of subjects from each group to make the template more representative of the population as a whole. Assuming the subject directory labels can be used to identify members of each group, you could use::
 
-    foreach `ls -d *patient | sort -R | tail -20` : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
-    foreach `ls -d *control | sort -R | tail -20` : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    for_each `ls -d *patient | sort -R | tail -20` : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    for_each `ls -d *control | sort -R | tail -20` : ln -sr IN/wmfod_norm.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
 .. include:: common_fba_steps/population_template2.rst
 
@@ -117,7 +117,7 @@ If you opt to create the template from a limited subset of (e.g. 30-40) subjects
 
 Register the FOD image from each subject to the FOD template::
 
-    foreach * : mrregister IN/wmfod_norm.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
+    for_each * : mrregister IN/wmfod_norm.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
 
 
 11. Compute the template mask (intersection of all subject masks in template space)
@@ -142,7 +142,7 @@ In this step, we segment fixels from the FOD template. The result is the *fixel 
 
 Note that here we warp FOD images into template space *without* FOD reorientation, as reorientation will be performed in a separate subsequent step (after fixel segmentation)::
 
-    foreach * : mrtransform IN/wmfod_norm.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space_NOT_REORIENTED.mif
+    for_each * : mrtransform IN/wmfod_norm.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space_NOT_REORIENTED.mif
 
 
 14. Segment FOD images to estimate fixels and their apparent fibre density (FD)
