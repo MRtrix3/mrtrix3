@@ -434,6 +434,12 @@ List of MRtrix3 configuration file options
 
      Wrap volumes around when cycling through
 
+.. option:: MRViewSyncFocus
+
+    *default: false*
+
+     Whether to sync the focus in mrview between other mrview processes.
+
 .. option:: MSAA
 
     *default: 0 (false)*

@@ -572,6 +572,14 @@ namespace MR
           image_hide_action->setChecked (false);
           addAction (image_hide_action);
 
+		  menu->addSeparator();
+		  //CONF option: MRViewSyncFocus
+          //CONF default: false
+          //CONF Whether to sync the focus in mrview between other mrview processes.
+          sync_focus_action = menu->addAction (tr ("Sync focus with other windows"), this, SLOT (sync_slot()));
+          sync_focus_action->setCheckable (true);
+          sync_focus_action->setChecked (File::Config::get_bool("MRViewSyncFocus",false));
+          addAction (sync_focus_action);
           menu->addSeparator();
 
           full_screen_action = menu->addAction (tr ("Full screen"), this, SLOT (full_screen_slot()));
@@ -814,7 +822,10 @@ namespace MR
 
 
 
-
+      void Window::sync_slot()
+      {
+        emit syncChanged();
+      }
 
 
       void Window::image_open_slot ()
@@ -2100,6 +2111,13 @@ namespace MR
             return;
           }
 
+
+          if (opt.opt->is ("sync.focus")) {
+            sync_focus_action->setChecked (true);
+            sync_slot();
+            return;
+          }
+
           assert (opt.opt->is ("info") or opt.opt->is ("debug") or ("shouldn't reach here!" && false));
         }
         catch (Exception& E) {
@@ -2191,6 +2209,10 @@ namespace MR
           + Option ("fullscreen", "Start fullscreen.")
 
           + Option ("exit", "Quit MRView.")
+
+          + OptionGroup ("Sync Options")
+
+          + Option ("sync.focus", "Sync the focus with other MRViw windows that also have this turned on.")
 
           + OptionGroup ("Debugging options")
 
