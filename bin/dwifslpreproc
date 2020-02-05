@@ -226,10 +226,11 @@ def execute(): #pylint: disable=unused-variable
           try:
             slice_timing = matrix.load_numeric(slspec_file_path, dtype=float)
             app.debug('Slice timing: ' + str(slice_timing))
-            app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
+            app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; '
+                     'nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
             if len(slice_timing) != dwi_num_slices:
               raise MRtrixError('Cannot use slice timing information from file \"' + slspec_file_path + '\" for slice-to-volume correction: ' + \
-                                'Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+                                'Number of entries (' + str(len(slice_timing)) + ') does not match number of slices (' + str(dwi_header.size()[2]) + ')')
           except ValueError:
             raise MRtrixError('Error parsing \"slspec\" file (this should contain integer values indicating slice groups, not slice timing; please see FSL eddy help page)')
         # Remove this entry from eddy_manual_options; it'll be inserted later, with the
@@ -243,7 +244,8 @@ def execute(): #pylint: disable=unused-variable
       slice_timing = dwi_header.keyval()['SliceTiming'][0]
       app.debug('Slice timing from header: ' + str(slice_timing))
       if len(slice_timing) != dwi_num_slices:
-        raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+        raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
+                          'Number of entries (' + str(len(slice_timing)) + ') does not match number of slices (' + str(dwi_header.size()[2]) + ')')
 
   # Use new features of dirstat to query the quality of the diffusion acquisition scheme
   # Need to know the mean b-value in each shell, and the asymmetry value of each shell
