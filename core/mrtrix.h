@@ -195,6 +195,7 @@ namespace MR
 */
 
 
+  bool match (const std::string& pattern, const std::string& text, bool ignore_case = false);
 
 
 
