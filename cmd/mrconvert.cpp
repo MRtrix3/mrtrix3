@@ -338,6 +338,7 @@ inline vector<int> set_header (Header& header, const ImageType& input)
 
 
 
+
 template <typename T, class InputType>
 void copy_permute (const InputType& in, Header& header_out, const std::string& output_filename)
 {
@@ -547,6 +548,6 @@ void run ()
 
   opt = get_options ("json_export");
   if (opt.size())
-    File::JSON::save (header_out, opt[0][0]);
+    File::JSON::save (header_out, opt[0][0], argument[1]);
 }
 

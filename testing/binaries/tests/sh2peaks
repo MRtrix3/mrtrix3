@@ -1,0 +1,2 @@
+sh2peaks fod.mif - | testing_diff_peaks - peaks.mif 1e-6
+sh2peaks fod.mif -fast - | testing_diff_peaks - peaks.mif 1e-3

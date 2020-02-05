@@ -57,8 +57,11 @@ namespace MR
             void toggle_invert_colourmap (bool, const ColourMapButton&) override;
             void reset_colourmap (const ColourMapButton&) override;
 
+            bool is_locked_to_grid () const { return lock_to_grid->isChecked(); }
+            bool is_cropped_to_slab () const { return crop_to_slice->isChecked(); }
+            bool is_bidirectional () const { return bidirectional->isChecked(); }
+
             QPushButton* hide_all_button;
-            bool do_lock_to_grid, do_crop_to_slice;
             bool not_3D;
             float line_opacity;
             Model* fixel_list_model;
@@ -70,8 +73,7 @@ namespace MR
             void fixel_close_slot ();
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void hide_all_slot ();
-            void on_lock_to_grid_slot (bool is_checked);
-            void on_crop_to_slice_slot (bool is_checked);
+            void on_checkbox_slot (bool is_checked);
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
             void length_multiplier_slot ();
@@ -80,6 +82,7 @@ namespace MR
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void colour_changed_slot (int);
             void on_set_scaling_slot ();
+            void on_set_tracking_slot (bool is_checked);
             void threshold_lower_changed (int unused);
             void threshold_upper_changed (int unused);
             void threshold_lower_value_changed ();
@@ -95,6 +98,7 @@ namespace MR
             AdjustButton *min_value, *max_value;
             AdjustButton *threshold_lower, *threshold_upper;
             QCheckBox *threshold_upper_box, *threshold_lower_box;
+            QCheckBox *lock_to_grid, *crop_to_slice, *bidirectional, *track_main_volume;
 
             ComboBoxWithErrorMsg *length_combobox;
             ComboBoxWithErrorMsg *threshold_combobox;
@@ -103,7 +107,6 @@ namespace MR
             QSlider *line_thickness_slider;
             QSlider *opacity_slider;
 
-            QGroupBox *lock_to_grid, *crop_to_slice;
 
             void add_images (vector<std::string>& list);
             void dropEvent (QDropEvent* event) override;
@@ -113,6 +116,7 @@ namespace MR
             void update_gui_scaling_controls (bool reload_scaling_types = true);
             void update_gui_colour_controls (bool reload_colour_types = true);
             void update_gui_threshold_controls (bool reload_threshold_types = true);
+            void update_gui_tracking_controls ();
         };
       }
     }

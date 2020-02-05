@@ -255,7 +255,7 @@ namespace MR
 
         void ODF::draw (const Projection& projection, bool is_3D, int, int)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (is_3D)
             return;
 
@@ -369,7 +369,7 @@ namespace MR
             gl::Disable (gl::DEPTH_TEST);
             gl::DepthMask (gl::FALSE_);
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
 
           update_preview();
         }
@@ -498,7 +498,7 @@ namespace MR
 
         void ODF::sh_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_images (&window(), "Select SH-based ODF images to open");
+          vector<std::string> list = Dialog::File::get_images (&window(), "Select SH-based ODF images to open", &current_folder);
           if (list.empty())
             return;
 
@@ -507,7 +507,7 @@ namespace MR
 
         void ODF::tensor_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_images (&window(), "Select tensor images to open");
+          vector<std::string> list = Dialog::File::get_images (&window(), "Select tensor images to open", &current_folder);
           if (list.empty())
             return;
 
@@ -516,7 +516,7 @@ namespace MR
 
         void ODF::dixel_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_images (&window(), "Select dixel-based ODF images to open");
+          vector<std::string> list = Dialog::File::get_images (&window(), "Select dixel-based ODF images to open", &current_folder);
           if (list.empty())
             return;
 
@@ -667,7 +667,7 @@ namespace MR
                   preview->render_frame->clear_dixels();
                 break;
               case 4: // From file
-                const std::string path = Dialog::File::get_file (this, "Select directions file", "Text files (*.txt)");
+                const std::string path = Dialog::File::get_file (this, "Select directions file", "Text files (*.txt)", &current_folder);
                 if (!path.size()) {
                   dirs_selector->setCurrentIndex (settings->dixel->dir_type);
                   return;

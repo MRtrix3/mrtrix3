@@ -357,7 +357,7 @@ void run ()
       constraints.block (amp_transform.rows(), 0, deriv_transform.rows(), deriv_transform.cols()) = deriv_transform;
 
       // Initialise the problem solver
-      auto problem = Math::ICLS::Problem<default_type> (shared.M, constraints, 1e-10, 1e-10, 0, 0.0, true);
+      auto problem = Math::ICLS::Problem<default_type> (shared.M, constraints, Eigen::VectorXd(), 0, 1e-10, 1e-10, 0, 0.0, true);
       auto solver  = Math::ICLS::Solver <default_type> (problem);
 
       // Estimate the solution
@@ -372,5 +372,12 @@ void run ()
     responses.row(shell_index) = rf;
   }
 
-  save_matrix (responses, argument[3]);
+  KeyValues keyvals;
+  if (shells) {
+    std::string line = str<int>((*shells)[0].get_mean());
+    for (size_t i = 1; i != (*shells).count(); ++i)
+      line += "," + str<int>((*shells)[i].get_mean());
+    keyvals["Shells"] = line;
+  }
+  save_matrix (responses, argument[3], keyvals);
 }

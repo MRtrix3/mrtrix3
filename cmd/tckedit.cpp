@@ -194,6 +194,7 @@ void run ()
   DEBUG ("estimated number of input tracks: " + str(count));
 
   load_rois (properties);
+  properties.compare_stepsize_rois();
 
   // Some properties from tracking may be overwritten by this editing process
   // Due to the potential use of masking, we have no choice but to clear the
@@ -215,9 +216,6 @@ void run ()
 
   Loader loader (input_file_list);
   Worker worker (properties, inverse, ends_only);
-  // This needs to be run AFTER creation of the Worker class
-  // (worker needs to be able to set max & min number of points based on step size in input file,
-  //  receiver needs "output_step_size" field to have been updated before file creation)
   Receiver receiver (output_path, properties, number, skip);
 
   Thread::run_queue (

@@ -86,12 +86,15 @@ namespace MR
               }
             }
 
-            void create (File::OFStream& out, const Properties& properties, const std::string& type) {
+            void create (File::OFStream& out, const Properties& properties, const std::string& type)
+            {
               out << "mrtrix " + type + "\nEND\n";
 
               for (const auto& i : properties) {
-                if ((i.first != "count") && (i.first != "total_count"))
-                  out << i.first << ": " << i.second << "\n";
+                if ((i.first != "count") && (i.first != "total_count")) {
+                  for (const auto line : split_lines (i.second))
+                    out << i.first << ": " << line << "\n";
+                }
               }
 
               for (const auto& i : properties.comments)
@@ -155,4 +158,3 @@ namespace MR
 
 
 #endif
-

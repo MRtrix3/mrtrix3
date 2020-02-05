@@ -17,6 +17,8 @@
 #ifndef __image_check__h__
 #define __image_check__h__
 
+#include <set>
+
 #include "image_helpers.h"
 #include "algo/loop.h"
 
@@ -31,8 +33,8 @@ namespace MR
       for (size_t i = 0; i < in1.ndim(); ++i) {
         if (std::isfinite (in1.spacing(i)))
           if (abs ((in1.spacing(i) - in2.spacing(i)) / (in1.spacing(i) + in2.spacing(i))) > 1e-4)
-            throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching voxel spacings " +
-                str(in1.spacing(i)) + " vs " + str(in2.spacing(i)));
+            throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching voxel spacings on axis " + str(i) +
+                " (" + str(in1.spacing(i)) + " vs " + str(in2.spacing(i)) + ")");
       }
       for (size_t i  = 0; i < 3; ++i) {
         for (size_t j  = 0; j < 4; ++j) {
@@ -104,6 +106,39 @@ namespace MR
       };
 
       ThreadedLoop (in1, 0, 3).run (func, in1, in2);
+    }
+
+  //! check headers contain the same key-value entries
+  template <class HeaderType1, class HeaderType2>
+    inline void check_keyvals (const HeaderType1& in1, const HeaderType2& in2)
+    {
+      std::map<std::string, std::string>::const_iterator it1 = in1.keyval().begin(), it2 = in2.keyval().begin();
+      const static std::set<std::string> reserved { "command_history", "mrtrix_version", "project_version" };
+      while (it1 != in1.keyval().end()) {
+        if (reserved.find (it1->first) != reserved.end()) {
+          ++it1;
+          continue;
+        }
+        if (it2 != in2.keyval().end() && reserved.find (it2->first) != reserved.end()) {
+          ++it2;
+          continue;
+        }
+        if (it2 == in2.keyval().end())
+          throw Exception ("Key \"" + it1->first + "\" in image \"" + in1.name() + "\" not present in \"" + in2.name() + "\"");
+        if (it1->first != it2->first) {
+          if (in2.keyval().find (it1->first) == in2.keyval().end())
+            throw Exception ("Key \"" + it1->first + "\" in image \"" + in1.name() + "\" not present in \"" + in2.name() + "\"");
+          else
+            throw Exception ("Key \"" + it2->first + "\" in image \"" + in2.name() + "\" not present in \"" + in1.name() + "\"");
+        }
+        if (it1->second != it2->second)
+          throw Exception ("Key \"" + it1->first + "\" has different values between images");
+        ++it1; ++it2;
+      }
+      while (it2 != in2.keyval().end() && reserved.find (it2->first) != reserved.end())
+        ++it2;
+      if (it2 != in2.keyval().end())
+        throw Exception ("Key \"" + it2->first + "\" in image \"" + in2.name() + "\" not present in \"" + in1.name() + "\"");
     }
 
     //! check image headers are the same (dimensions, spacing & transform)

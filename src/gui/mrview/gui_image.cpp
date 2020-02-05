@@ -41,7 +41,7 @@ namespace MR
 
       ImageBase::~ImageBase()
       {
-        MRView::GrabContext context;
+        GL::Context::Grab context;
         for (size_t axis = 0; axis != 3; ++axis) {
           if (texture2D[axis])
             texture2D[axis].clear();
@@ -129,7 +129,7 @@ namespace MR
           slice_max { { NaN, NaN, NaN } }
       {
         set_colourmap (guess_colourmap());
-        const std::map<std::string, std::string>::const_iterator i = header().keyval().find ("comments");
+        const KeyValues::const_iterator i = header().keyval().find ("comments");
         if (i != header().keyval().end())
           _comments = split_lines (i->second);
       }

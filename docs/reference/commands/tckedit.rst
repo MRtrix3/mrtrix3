@@ -58,11 +58,13 @@ Options
 Region Of Interest processing options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-include spec** specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
+-  **-include spec** *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion regions to be accepted.
 
--  **-exclude spec** specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
+-  **-include_ordered image** *(multiple uses permitted)* specify an inclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines must traverse ALL inclusion_ordered regions in the order they are specified in order to be accepted.
 
--  **-mask spec** specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
+-  **-exclude spec** *(multiple uses permitted)* specify an exclusion region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines that enter ANY exclude region will be discarded.
+
+-  **-mask spec** *(multiple uses permitted)* specify a masking region of interest, as either a binary mask image, or as a sphere using 4 comma-separared values (x,y,z,radius). If defined, streamlines exiting the mask will be truncated.
 
 Streamline length threshold options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -104,17 +106,24 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

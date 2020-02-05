@@ -22,7 +22,7 @@ Usage
 Description
 -----------
 
-The available filters are: fft, gradient, median, smooth, normalise.
+The available filters are: fft, gradient, median, smooth, normalise, zclean.
 
 Each filter has its own unique set of optional parameters.
 
@@ -70,6 +70,19 @@ Options for smooth filter
 
 -  **-extent voxels** specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.
 
+Options for zclean filter
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-zupper num** define high intensity outliers: default: 2.5
+
+-  **-zlower num** define low intensity outliers: default: 2.5
+
+-  **-bridge num** number of voxels to gap to fill holes in mask: default: 4
+
+-  **-maskin image** initial mask that defines the maximum spatial extent and the region from which to smaple the intensity range.
+
+-  **-maskout image** Output a refined mask based on a spatially coherent region with normal intensity range.
+
 Stride options
 ^^^^^^^^^^^^^^
 
@@ -80,17 +93,24 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
 -  **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

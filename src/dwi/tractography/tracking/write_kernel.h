@@ -64,6 +64,7 @@ namespace MR
             const auto p = properties.find ("seed_output");
             if (p != properties.end()) {
               output_seeds.reset (new File::OFStream (p->second, std::ios_base::out | std::ios_base::trunc));
+              (*output_seeds) << "# " << App::command_history_string << "\n";
               (*output_seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
             }
           }

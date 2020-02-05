@@ -26,8 +26,9 @@
 #include <cerrno>
 #include <unistd.h>
 
-#include "types.h"
 #include "exception.h"
+#include "mrtrix.h"
+#include "types.h"
 
 #define HOME_ENV "HOME"
 
@@ -86,7 +87,13 @@ namespace MR
     inline bool exists (const std::string& path)
     {
       struct stat buf;
-      if (!stat (path.c_str(), &buf)) return true;
+#ifdef MRTRIX_WINDOWS
+      const std::string stripped (strip (path, PATH_SEPARATORS, false, true));
+      if (!stat (stripped.c_str(), &buf))
+#else
+      if (!stat (path.c_str(), &buf))
+#endif
+        return true;
       if (errno == ENOENT) return false;
       throw Exception (strerror (errno));
       return false;
@@ -96,7 +103,13 @@ namespace MR
     inline bool is_dir (const std::string& path)
     {
       struct stat buf;
-      if (!stat (path.c_str(), &buf)) return S_ISDIR (buf.st_mode);
+#ifdef MRTRIX_WINDOWS
+      const std::string stripped (strip (path, PATH_SEPARATORS, false, true));
+      if (!stat (stripped.c_str(), &buf))
+#else
+      if (!stat (path.c_str(), &buf))
+#endif
+        return S_ISDIR (buf.st_mode);
       if (errno == ENOENT) return false;
       throw Exception (strerror (errno));
       return false;
@@ -182,6 +195,19 @@ namespace MR
       protected:
         DIR* p;
     };
+
+
+
+    inline char delimiter (const std::string& filename)
+    {
+      if (Path::has_suffix (filename, ".tsv"))
+        return '\t';
+      else if (Path::has_suffix (filename, ".csv"))
+        return ',';
+      else
+        return ' ';
+    }
+
 
   }
 }
