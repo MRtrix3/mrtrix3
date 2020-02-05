@@ -382,12 +382,14 @@ void run () {
   opt = get_options ("rigid_init_translation");
   if (opt.size()) {
     if (init_rigid_matrix_set)
-      throw Exception ("options -rigid_init_matrix and -rigid_init_translation are mutually exclusive");
+      WARN ("-rigid_init_translation (partially) potentially overwrites -rigid_init_matrix option");
     Registration::set_init_translation_model_from_option (rigid_registration, (int)opt[0][0]);
   }
 
   opt = get_options ("rigid_init_rotation");
   if (opt.size()) {
+    if (init_rigid_matrix_set)
+      WARN ("-rigid_init_rotation potentially (partially) overwrites -rigid_init_matrix option");
     Registration::set_init_rotation_model_from_option (rigid_registration, (int)opt[0][0]);
   }
 
@@ -550,14 +552,14 @@ void run () {
   opt = get_options ("affine_init_translation");
   if (opt.size()) {
     if (init_affine_matrix_set)
-      throw Exception ("options -affine_init_matrix and -affine_init_translation are mutually exclusive");
+      WARN ("-affine_init_translation potentially (partially) overwrites -affine_init_matrix option");
     Registration::set_init_translation_model_from_option (affine_registration, (int)opt[0][0]);
   }
 
   opt = get_options ("affine_init_rotation");
   if (opt.size()) {
     if (init_affine_matrix_set)
-      throw Exception ("options -affine_init_matrix and -affine_init_rotation are mutually exclusive");
+      WARN ("-affine_init_rotation potentially (partially) overwrites -affine_init_matrix option");
     Registration::set_init_rotation_model_from_option (affine_registration, (int)opt[0][0]);
   }
 

@@ -228,7 +228,7 @@ namespace MR
 
       + Option ("rigid_init_matrix", "initialise either the rigid, affine, or syn registration with "
                                 "the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). "
-                                "Note that this overrides rigid_init_translation and rigid_init_rotation initialisation ") // TODO definition of centre
+                                "Note that this overrides the defaults of rigid_init_translation and rigid_init_rotation initialisation ")
         + Argument ("file").type_file_in ()
 
       + Option ("rigid_scale", "use a multi-resolution scheme by defining a scale factor for each level "
@@ -299,7 +299,7 @@ namespace MR
 
       + Option ("affine_init_matrix", "initialise either the affine, or syn registration with "
                                 "the supplied affine transformation (as a 4x4 matrix in scanner coordinates). "
-                                "Note that this overrides affine_init_translation and affine_init_rotation initialisation ") // TODO definition of centre
+                                "Note that this overrides the defaults of affine_init_translation and affine_init_rotation initialisation ")
         + Argument ("file").type_file_in ()
 
       + Option ("affine_scale", "use a multi-resolution scheme by defining a scale factor for each level "
