@@ -89,6 +89,11 @@ Window management options
 
 -  **-exit** Quit MRView.
 
+Sync Options
+^^^^^^^^^^^^
+
+-  **-sync.focus** Sync the focus with other MRViw windows that also have this turned on.
+
 Debugging options
 ^^^^^^^^^^^^^^^^^
 
