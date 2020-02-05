@@ -1,0 +1,11 @@
+mrconvert dwi.mif tmp-[].mif && testing_diff_image tmp-[].mif dwi.mif
+mrcat tmp-??.mif - | testing_diff_image - dwi.mif
+mrcat tmp-[0:4].mif tmp-[5:20].mif tmp-[21:67] - | testing_diff_image - dwi.mif
+mrcat tmp-[0:4].mif tmp-[5:20].mif tmp-21.mif tmp-[22:67] - | testing_diff_image - dwi.mif
+mrcat tmp-[0:16].mif tmp-[17:33].mif tmp-[34:50].mif tmp-[51:67].mif -axis 4 - | testing_diff_image - mrcat/out.mif
+mrcat tmp-00.mif tmp-02.mif tmp-04.mif - -axis 3 | testing_diff_image - tmp-[0:2:4].mif
+mrcat tmp-00.mif tmp-02.mif tmp-04.mif tmp-06.mif tmp-08.mif tmp-10.mif tmp-12.mif tmp-14.mif tmp-16.mif tmp-18.mif tmp-20.mif tmp-22.mif tmp-24.mif tmp-26.mif tmp-28.mif tmp-30.mif tmp-32.mif tmp-34.mif tmp-36.mif tmp-38.mif tmp-40.mif tmp-42.mif tmp-44.mif tmp-46.mif tmp-48.mif tmp-50.mif tmp-52.mif tmp-54.mif tmp-56.mif tmp-58.mif tmp-60.mif tmp-62.mif tmp-64.mif tmp-66.mif tmp1.mif -axis 3 -force && mrconvert dwi.mif tmp2.mif -coord 3 0:2:end -force && testing_diff_header -keyval tmp1.mif tmp2.mif && testing_diff_image tmp1.mif tmp2.mif
+mrcat mrcat/voxel*.mih - | testing_diff_header -keyval - mrcat/all_axis3.mif
+mrcat mrcat/voxel*.mih - -axis 0 | testing_diff_header -keyval - mrcat/all_axis0.mif
+mrcat mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih - | testing_diff_header -keyval - mrcat/one_axis3.mif
+mrcat mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih mrcat/voxel1.mih - -axis 0 | testing_diff_header -keyval - mrcat/one_axis0.mif

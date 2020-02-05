@@ -32,7 +32,9 @@ void usage ()
   DESCRIPTION
     + "This command computes the sum of squared SH coefficients, "
       "which equals the mean-squared amplitude "
-      "of the spherical function it represents.";
+      "of the spherical function it represents."
+
+    + Math::SH::encoding_description;
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()

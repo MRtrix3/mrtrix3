@@ -48,8 +48,9 @@ OptionGroup CommonOptions = OptionGroup ("Options common to more than one algori
               "provided as a comma-separated list of integers, one for "
               "each output image; for single-output algorithms, only "
               "a single integer should be provided. If omitted, the "
-              "command will use the highest possible lmax given the "
-              "diffusion gradient table, up to a maximum of 8.")
+              "command will use the lmax of the corresponding response "
+              "function (i.e based on its number of coefficients), "
+              "up to a maximum of 8.")
       + Argument ("order").type_sequence_int()
 
     + Option ("mask",
@@ -90,12 +91,12 @@ void usage ()
 
     + "* If using msmt_csd algorithm:\n"
     "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. " // Internal
-    "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data "
+    "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. "
     "NeuroImage, 2014, 103, 411-426"
 
     + "Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. " // Internal
     "Direct estimation of the fiber orientation density function from "
-    "diffusion-weighted MRI data using spherical deconvolution."
+    "diffusion-weighted MRI data using spherical deconvolution. "
     "NeuroImage, 2004, 23, 1176-1185";
 
   ARGUMENTS
@@ -267,9 +268,10 @@ void run ()
 
     shared.init();
 
-    header_out.size(3) = shared.nSH();
     DWI::stash_DW_scheme (header_out, shared.grad);
     PhaseEncoding::clear_scheme (header_out);
+
+    header_out.size(3) = shared.nSH();
     auto fod = Image<float>::create (argument[3], header_out);
 
     CSD_Processor processor (shared, mask);

@@ -40,7 +40,8 @@ namespace MR
 
 
 
-        LightBox::LightBox ()
+        LightBox::LightBox () :
+            frames_dirty (true)
         {
           Image* img = image();
 
@@ -58,8 +59,7 @@ namespace MR
         void LightBox::set_rows (size_t rows)
         {
           n_rows = rows;
-          frame_VB.clear();
-          frame_VAO.clear();
+          frames_dirty = true;
           updateGL();
         }
 
@@ -69,8 +69,7 @@ namespace MR
         void LightBox::set_cols (size_t cols)
         {
           n_cols = cols;
-          frame_VB.clear();
-          frame_VAO.clear();
+          frames_dirty = true;
           updateGL();
         }
 
@@ -130,7 +129,7 @@ namespace MR
 
         void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           // Setup OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -141,7 +140,7 @@ namespace MR
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
 
           render_tools (with_projection, false, axis, slice (axis));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -151,7 +150,7 @@ namespace MR
 
         void LightBox::paint (Projection&)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           GLint x = projection.x_position(), y = projection.y_position();
           GLint w = projection.width(), h = projection.height();
           GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
@@ -231,7 +230,7 @@ namespace MR
           }
 
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -241,7 +240,7 @@ namespace MR
 
         void LightBox::draw_grid()
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if(n_cols < 1 && n_rows < 1)
             return;
 
@@ -251,7 +250,7 @@ namespace MR
           GL::mat4 P = GL::ortho (0, width(), 0, height(), -1.0, 1.0);
           projection.set (MV, P);
 
-          if (!frame_VB || !frame_VAO) {
+          if (frames_dirty) {
             frame_VB.gen();
             frame_VAO.gen();
 
@@ -287,6 +286,8 @@ namespace MR
             }
 
             gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
+
+            frames_dirty = false;
           }
           else
             frame_VAO.bind();
@@ -310,7 +311,7 @@ namespace MR
           frame_program.start();
           gl::DrawArrays (gl::LINES, 0, num_points / 2);
           frame_program.stop();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 

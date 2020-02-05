@@ -26,11 +26,11 @@ namespace MR
     namespace GL
     {
 
-      class Font { MEMALIGN(Font)
+      class Font { NOMEMALIGN
         public:
           Font (const QFont font) :
             metric (font),
-            font (font) { } 
+            font (font) { }
 
           void initGL (bool with_shadow = true);
 

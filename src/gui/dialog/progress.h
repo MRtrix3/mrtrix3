@@ -29,8 +29,8 @@ namespace MR
       namespace ProgressBar
       {
 
-        void display (ProgressInfo& p);
-        void done (ProgressInfo& p);
+        void display (const ::MR::ProgressBar& p);
+        void done (const ::MR::ProgressBar& p);
 
 
       }

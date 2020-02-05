@@ -14,11 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "bitset.h"
 #include "header.h"
 #include "image.h"
 
 #include "math/math.h"
+#include "misc/bitset.h"
 
 #include "fixel/legacy/fixel_metric.h"
 #include "fixel/legacy/image.h"

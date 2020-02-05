@@ -32,20 +32,20 @@ namespace MR
         extern const std::string image_filter_string;
         void check_overwrite_files_func (const std::string& name);
 
-        std::string get_folder (QWidget* parent, const std::string& caption, const std::string& folder = std::string());
-        std::string get_file (QWidget* parent, const std::string& caption, const std::string& filter = std::string(), const std::string& folder = std::string());
-        vector<std::string> get_files (QWidget* parent, const std::string& caption, const std::string& filter = std::string(), const std::string& folder = std::string()); 
-        std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& suggested_name = std::string(), const std::string& filter = std::string(), const std::string& folder = std::string());
+        std::string get_folder (QWidget* parent, const std::string& caption, std::string* folder = nullptr);
+        std::string get_file (QWidget* parent, const std::string& caption, const std::string& filter = std::string(), std::string* folder = nullptr);
+        vector<std::string> get_files (QWidget* parent, const std::string& caption, const std::string& filter = std::string(), std::string* folder = nullptr);
+        std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& suggested_name = std::string(), const std::string& filter = std::string(), std::string* folder = nullptr);
 
-        inline std::string get_image (QWidget* parent, const std::string& caption, const std::string& folder = std::string()) {
+        inline std::string get_image (QWidget* parent, const std::string& caption, std::string* folder = nullptr) {
           return get_file (parent, caption, image_filter_string, folder);
         }
 
-        inline vector<std::string> get_images (QWidget* parent, const std::string& caption, const std::string& folder = std::string()) {
+        inline vector<std::string> get_images (QWidget* parent, const std::string& caption, std::string* folder = nullptr) {
           return get_files (parent, caption, image_filter_string, folder);
         }
 
-        inline std::string get_save_image_name (QWidget* parent, const std::string& caption, const std::string& suggested_name = std::string(), const std::string& folder = std::string()) {
+        inline std::string get_save_image_name (QWidget* parent, const std::string& caption, const std::string& suggested_name = std::string(), std::string* folder = nullptr) {
           return get_save_name (parent, caption, suggested_name, image_filter_string, folder);
         }
 

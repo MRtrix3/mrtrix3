@@ -49,7 +49,7 @@ void usage ()
     + Argument ("mask_out", "the output mask image")                  .type_image_out();
 
   OPTIONS
-    + Option("mask_in", "Filter an input mask image according to those voxels that lie upon the grey matter - white matter boundary. \n"
+    + Option("mask_in", "Filter an input mask image according to those voxels that lie upon the grey matter - white matter boundary. "
                         "If no input mask is provided, the output will be a whole-brain mask image calculated using the anatomical image only.")
       + Argument ("image", "the input mask image").type_image_in();
 

@@ -55,7 +55,10 @@ void run ()
     for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
       std::string S (i->first + ':');
       S.resize (22, ' ');
-      std::cout << "    " << S << i->second << "\n";
+      const auto lines = split_lines (i->second);
+      std::cout << "    " << S << lines[0] << "\n";
+      for (size_t i = 1; i != lines.size(); ++i)
+        std::cout << "                          " << lines[i] << "\n";
     }
 
     if (properties.comments.size()) {
