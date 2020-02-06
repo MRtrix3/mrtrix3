@@ -14,6 +14,8 @@
 #include <QApplication>
 #include <QtNetwork>
 
+#include <thread>
+
 #include "exception.h"
 #include "gui/mrview/sync/interprocesscommunicator.h"
 #include "gui/mrview/sync/enums.h"
