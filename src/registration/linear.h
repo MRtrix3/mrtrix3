@@ -346,6 +346,9 @@ namespace MR
                 if (s.fod_lmax < 0)
                   throw Exception ("the lmax needs to be defined for each registration stage");
 
+            INFO ("Transformation before initialisation:");
+            DEBUG (transform.info());
+
             if (init_translation_type == Transform::Init::mass)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
             else if (init_translation_type == Transform::Init::geometric)
