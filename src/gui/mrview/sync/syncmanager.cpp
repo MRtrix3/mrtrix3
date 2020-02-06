@@ -11,12 +11,9 @@
 *
 * For more details, see http://www.mrtrix.org/
 */
-#include "gui/mrview/sync/syncmanager.h"
+
 #include "gui/mrview/window.h"
-#include <iostream>
-#include <vector>
-#include <memory> //shared_ptr
-#include "gui/mrview/sync/enums.h"
+#include "gui/mrview/sync/syncmanager.h"
 
 namespace MR
 {
@@ -31,13 +28,15 @@ namespace MR
           try
           {
             ips = new InterprocessCommunicator();//will throw exception if it fails to set up a server
-            connect(ips, SIGNAL(SyncDataReceived(std::vector<std::shared_ptr<QByteArray>>)), this, SLOT(OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>>)));
+            connect (ips, SIGNAL(SyncDataReceived(vector<std::shared_ptr<QByteArray>>)),
+                     this, SLOT(OnIPSDataReceived(vector<std::shared_ptr<QByteArray>>)));
           }
           catch (...)
           {
             ips = 0;
             WARN("Sync set up failed.");
           }
+          connect (Window::main, SIGNAL(focusChanged()), this, SLOT(OnWindowFocusChanged()));
         }
 
         /**
@@ -49,26 +48,13 @@ namespace MR
         }
 
         /**
-        * Sets the window to connect to. Code currently assumes this only occurs once. Also check GetInErrorState() before calling
-        */
-        void SyncManager::SetWindow(MR::GUI::MRView::Window* wind)
-        {
-          if (GetInErrorState())
-          {
-            throw Exception("Attempt to set window while in an error state");
-          }
-          win = wind;
-          connect(win, SIGNAL(focusChanged()), this, SLOT(OnWindowFocusChanged()));
-        }
-
-        /**
         * Receives a signal from window that the focus has changed
         */
         void SyncManager::OnWindowFocusChanged()
         {
-          if (win->sync_focus_on())
+          if (Window::main->sync_focus_on())
           {
-            Eigen::Vector3f foc = win->focus();
+            Eigen::Vector3f foc = Window::main->focus();
             SendData(DataKey::WindowFocus, ToQByteArray(foc));
           }
         }
@@ -90,12 +76,14 @@ namespace MR
         /**
         * Receives a signal from another process that a value to sync has changed
         */
-        void SyncManager::OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all_messages)
+        void SyncManager::OnIPSDataReceived(vector<std::shared_ptr<QByteArray>> all_messages)
         {
           //WARNING This code assumes that the order of syncing operations does not matter
 
-          //We have a list of messages found
-          //Categorise these. Only keep the last value sent for each message type, or we will change to an old value and then update other processes to this old value
+          // We have a list of messages found
+          // Categorise these. Only keep the last value sent for each message
+          // type, or we will change to an old value and then update other
+          // processes to this old value
           std::shared_ptr<QByteArray> winFocus = 0;
 
           for (size_t i = 0; i < all_messages.size(); i++)
@@ -127,12 +115,12 @@ namespace MR
           }
 
 
-          if (winFocus && win->sync_focus_on())
+          if (winFocus && Window::main->sync_focus_on())
           {
             //We received 1+ signals to change our window focus
 
             unsigned int offset = 4;//we have already read 4 bytes, above
-            //Read three single point floats 
+            //Read three single point floats
             if (winFocus->size() != (int)(offset + 12)) //cast to int to avoid compiler warning
             {
               DEBUG("Bad data received to sync manager: wrong length (window focus)");
@@ -141,19 +129,21 @@ namespace MR
             {
               Eigen::Vector3f vec = FromQByteArray(*winFocus, offset);
 
-              //Check if already set to this value - Basic OOP: don't trust window to check things are changed before emitting a signal that the value has changed!
-              Eigen::Vector3f win_vec = win->focus();
+              // Check if already set to this value - Basic OOP:
+              // don't trust window to check things are changed before emitting
+              // a signal that the value has changed!
+              Eigen::Vector3f win_vec = Window::main->focus();
               if (win_vec[0] != vec[0] || win_vec[1] != vec[1] || win_vec[2] != vec[2])
               {
                 //Send to window
-                win->set_focus(vec);
+                  Window::main->set_focus(vec);
               }
             }
           }
 
 
-          //Redraw the window. 
-          win->updateGL();
+          //Redraw the window.
+          Window::main->updateGL();
         }
 
         /**
@@ -162,7 +152,7 @@ namespace MR
         QByteArray SyncManager::ToQByteArray(Eigen::Vector3f data)
         {
           char a[12];
-          memcpy(a, &data, 12);
+          memcpy(a, data.data(), 12);
           QByteArray q;
           q.insert(0, a, 12); //don't use the constructor; it ignores any data after hitting a \0
           return q;
@@ -173,7 +163,7 @@ namespace MR
         Eigen::Vector3f SyncManager::FromQByteArray(QByteArray data, unsigned int offset)
         {
           Eigen::Vector3f read;
-          memcpy(&read, data.data() + offset, 12);
+          memcpy(read.data(), data.data() + offset, 12);
           return read;
         }
 

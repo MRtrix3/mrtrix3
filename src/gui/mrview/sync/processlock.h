@@ -18,9 +18,10 @@
 #ifndef __sync_processlock_h__
 #define __sync_processlock_h__
 
-#include <QObject>
 #include <QSharedMemory>
 #include <QSystemSemaphore>
+
+#include "types.h"
 
 namespace MR
 {
@@ -31,11 +32,13 @@ namespace MR
       namespace Sync
       {
         /**
-        * Can be used to prevent multiple processes accessing a resource at the same time. QLockFile is another option but not available in Qt 4.8
-        * Use TryToRun(), check the returned value on whether to continue or not, then call Release when done.
+        * Can be used to prevent multiple processes accessing a resource at the
+        * same time. QLockFile is another option but not available in Qt 4.8
+        * Use TryToRun(), check the returned value on whether to continue or
+        * not, then call Release when done.
         */
         class ProcessLock
-        {
+        { NOMEMALIGN
 
         public:
           ProcessLock(const QString& key);
@@ -60,4 +63,5 @@ namespace MR
     }
   }
 }
+
 #endif // __sync_processlock_h__

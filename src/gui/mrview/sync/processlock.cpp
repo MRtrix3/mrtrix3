@@ -10,14 +10,15 @@
 * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 *
 * For more details, see http://www.mrtrix.org/
-* 
+*
 *
 * NOTE: this code has been based on a code snippet from  https://stackoverflow.com/questions/5006547/qt-best-practice-for-a-single-instance-app-protection
 *
 */
-#include "gui/mrview/sync/processlock.h"
 
 #include <QCryptographicHash>
+#include "gui/mrview/sync/processlock.h"
+
 
 namespace MR
 {

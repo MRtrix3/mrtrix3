@@ -2212,7 +2212,7 @@ namespace MR
 
           + OptionGroup ("Sync Options")
 
-          + Option ("sync.focus", "Sync the focus with other MRViw windows that also have this turned on.")
+          + Option ("sync.focus", "Sync the focus with other MRView windows that also have this turned on.")
 
           + OptionGroup ("Debugging options")
 

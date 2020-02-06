@@ -11,14 +11,10 @@
 *
 * For more details, see http://www.mrtrix.org/
 */
-#include <QtNetwork>
 
+#include "exception.h"
 #include "gui/mrview/sync/localsocketreader.h"
 
-
-#include "exception.h" 
-#include <vector>
-#include <memory> //shared_ptr
 namespace MR
 {
   namespace GUI
@@ -38,7 +34,7 @@ namespace MR
         */
         void LocalSocketReader::OnDataReceived()
         {
-          std::vector<std::shared_ptr<QByteArray>> messagesReceived;
+          vector<std::shared_ptr<QByteArray>> messagesReceived;
           while (socket->bytesAvailable() > 0)
           {
             //First byte must always by an unsigned int32 stating how much data to read
