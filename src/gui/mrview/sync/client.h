@@ -15,6 +15,7 @@
 #define __sync_client_h__
 
 #include <qlocalsocket.h>
+#include "types.h"
 
 class QLocalSocket;
 
@@ -31,7 +32,7 @@ namespace MR
         Sends data to another process
         */
         class Client
-        {
+        { NOMEMALIGN
 
         public:
           Client();

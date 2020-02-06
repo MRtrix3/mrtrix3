@@ -14,14 +14,15 @@
 #ifndef __sync_interprocesscommunicator_h__
 #define __sync_interprocesscommunicator_h__
 
-#include "gui/mrview/sync/localsocketreader.h"
 #include <qlocalsocket.h>
+
+#include "gui/mrview/sync/localsocketreader.h"
 #include "gui/mrview/sync/client.h"
-#include <vector>
-#include <memory> //shared_ptr
 
 
-#define MAX_NO_ALLOWED 32 //maximum number of interprocess syncers that are allowed
+// maximum number of inter process syncers that are allowed. This can be
+// raised, but may reduce performance when new IPS are created.
+#define MAX_NO_ALLOWED 32
 
 namespace MR
 {
@@ -36,7 +37,7 @@ namespace MR
         * Sends and receives information from other MRView processes
         */
         class InterprocessCommunicator : public QObject
-        {
+        { NOMEMALIGN
           Q_OBJECT
 
         public:
@@ -47,14 +48,14 @@ namespace MR
 
         private slots:
           void OnNewIncomingConnection();
-          void OnDataReceived(std::vector<std::shared_ptr<QByteArray>> dat);
+          void OnDataReceived(vector<std::shared_ptr<QByteArray>> dat);
 
         signals:
-          void SyncDataReceived(std::vector<std::shared_ptr<QByteArray>> data); //fires when data is received which is for syncing. It is up to listeners to validate and store this value
+          void SyncDataReceived(vector<std::shared_ptr<QByteArray>> data); //fires when data is received which is for syncing. It is up to listeners to validate and store this value
 
         private:
           int id;//id which is unique between mrview processes
-          std::vector<std::shared_ptr<GUI::MRView::Sync::Client>> senders;//send information
+          vector<std::shared_ptr<GUI::MRView::Sync::Client>> senders;//send information
           QLocalServer *receiver;//listens for information
           void TryConnectTo(int connectToId);//tries to connect with another interprocesscommunicator
 

@@ -14,19 +14,9 @@
 #ifndef __sync_syncmanager_h__
 #define __sync_syncmanager_h__
 
-
 #include "gui/mrview/sync/enums.h"
 #include "gui/mrview/sync/interprocesscommunicator.h"
-#include "gui/mrview/window.h"
 
-#include "progressbar.h"
-#include "memory.h"
-#include "gui/mrview/icons.h"
-#include "gui/mrview/window.h"
-#include "gui/mrview/mode/list.h"
-#include "gui/mrview/tool/list.h"
-#include <vector>
-#include <memory> //shared_ptr
 namespace MR
 {
   namespace GUI
@@ -44,21 +34,19 @@ namespace MR
         *
         * IPC=InterprocessCommunicator
         */
-        class SyncManager :public QObject
-        {
+        class SyncManager : public QObject
+        { MEMALIGN(SyncManager)
           Q_OBJECT
 
         public:
           SyncManager();
-          void SetWindow(MR::GUI::MRView::Window* wind);
           bool GetInErrorState();
 
         private slots:
           void OnWindowFocusChanged();
-          void OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all_messages);
+          void OnIPSDataReceived(vector<std::shared_ptr<QByteArray>> all_messages);
 
         private:
-          MR::GUI::MRView::Window* win;//window we sync with
           InterprocessCommunicator* ips;//used to communicate with other processes
           QByteArray ToQByteArray(Eigen::Vector3f data);//conversion utility
           Eigen::Vector3f FromQByteArray(QByteArray vec, unsigned int offset);//conversion utility

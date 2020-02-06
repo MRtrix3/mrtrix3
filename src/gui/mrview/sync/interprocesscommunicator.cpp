@@ -14,17 +14,11 @@
 #include <QApplication>
 #include <QtNetwork>
 
-#include "gui/mrview/sync/localsocketreader.h"
+#include "exception.h"
 #include "gui/mrview/sync/interprocesscommunicator.h"
 #include "gui/mrview/sync/enums.h"
 #include "gui/mrview/sync/processlock.h"
-#include <iostream> //temp
-#include <memory> //shared_ptr
-#include <string> 
-#include <thread> 
-#include <chrono> 
-#include "exception.h" 
-#define MAX_NO_ALLOWED 32 //maximum number of inter process syncers that are allowed. This can be raised, but may reduce performance when new IPS are created.
+
 namespace MR
 {
   namespace GUI
@@ -35,7 +29,7 @@ namespace MR
       {
         InterprocessCommunicator::InterprocessCommunicator() : QObject(0)
         {
-          
+
 
           //***Set up a socket which listens for incoming messages***
           bool listenerSetUp = false;
@@ -44,8 +38,8 @@ namespace MR
           ProcessLock lock("Mrtrix InterprocessCommunicator");
           for (int i_attempt = 0; i_attempt < 100; i_attempt++)
           {
-            //Don't let two processes enter this code block at the same 
-            //time. While Qt is supposed to prevent QLocalSockets having 
+            //Don't let two processes enter this code block at the same
+            //time. While Qt is supposed to prevent QLocalSockets having
             //identical ids, it often fails to do so on windows if processes
             //start at the same time
             if (!lock.TryToRun())
@@ -113,7 +107,7 @@ namespace MR
         void InterprocessCommunicator::OnNewIncomingConnection()
         {
           LocalSocketReader* lsr = new LocalSocketReader(receiver->nextPendingConnection());
-          connect(lsr, SIGNAL(DataReceived(std::vector<std::shared_ptr<QByteArray>>)), this, SLOT(OnDataReceived(std::vector<std::shared_ptr<QByteArray>>)));
+          connect(lsr, SIGNAL(DataReceived(vector<std::shared_ptr<QByteArray>>)), this, SLOT(OnDataReceived(vector<std::shared_ptr<QByteArray>>)));
         }
 
         /**
@@ -158,11 +152,11 @@ namespace MR
         }
 
         /**
-        * Fires when 1+ messages are received from another process. 
+        * Fires when 1+ messages are received from another process.
         */
-        void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteArray>> allMessages)
+        void InterprocessCommunicator::OnDataReceived(vector<std::shared_ptr<QByteArray>> allMessages)
         {
-          std::vector<std::shared_ptr<QByteArray>> toSync;
+          vector<std::shared_ptr<QByteArray>> toSync;
 
           for (size_t i = 0; i < allMessages.size(); i++)
           {
@@ -217,10 +211,10 @@ namespace MR
         */
         bool InterprocessCommunicator::SendData(QByteArray dat)
         {
-          //We only send sync data if we are the active application of the OS. This is to avoid 
-          //infinite loops, which are easy to induce on slow systems otherwise. There are other 
+          //We only send sync data if we are the active application of the OS. This is to avoid
+          //infinite loops, which are easy to induce on slow systems otherwise. There are other
           //ways to avoid these loops (like locking files in linux), but they tend to be awkward,
-          //not cross-platform, probably poor performance, and/or require much more programming 
+          //not cross-platform, probably poor performance, and/or require much more programming
           //than below.
 
           if (QApplication::activeWindow() != 0 && QApplication::focusWidget() != 0)
@@ -246,7 +240,7 @@ namespace MR
               {
                 DEBUG("Send Error");
                 allOk = false;
-                //sending error. 
+                //sending error.
                 //TODO: send again or disconnect this item
               }
             }
