@@ -92,7 +92,7 @@ Window management options
 Sync Options
 ^^^^^^^^^^^^
 
--  **-sync.focus** Sync the focus with other MRViw windows that also have this turned on.
+-  **-sync.focus** Sync the focus with other MRView windows that also have this turned on.
 
 Debugging options
 ^^^^^^^^^^^^^^^^^
