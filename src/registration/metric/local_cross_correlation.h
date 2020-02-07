@@ -110,27 +110,23 @@ namespace MR
                                 Eigen::Vector3 im2_scanner_pos_iter;
 
                                 params.transformation.transform_half (im1_scanner_pos_iter, mi_scanner_pos_iter1);
-                                params.transformation.transform_half_inverse (im2_scanner_pos_iter, mi_scanner_pos_iter2);
-
                                 params.im1_image_interp->scanner (im1_scanner_pos_iter);
-                                params.im2_image_interp->scanner (im2_scanner_pos_iter);
-                                
-                                
-                                bool within_mask = true;
                                 
                                 if (params.im1_mask_interp) {
                                     params.im1_mask_interp->scanner (im1_scanner_pos_iter);
                                     if (params.im1_mask_interp->value() < 0.5)
-                                    within_mask = false;
+                                      continue;
                                 }
+
+                                params.transformation.transform_half_inverse (im2_scanner_pos_iter, mi_scanner_pos_iter2);
+                                params.im2_image_interp->scanner (im2_scanner_pos_iter);
                                 
                                 if (params.im2_mask_interp) {
                                     params.im2_mask_interp->scanner (im2_scanner_pos_iter);
                                     if (params.im2_mask_interp->value() < 0.5)
-                                    within_mask = false;
+                                      continue;
                                 }
                                 
-                                if (within_mask) {
                                     
                                     Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad_iter;
                                     typename Params::Im1ValueType im1_value_iter;
@@ -150,10 +146,7 @@ namespace MR
                                         local_sfm = local_sfm + im1_value_iter * im2_value_iter;
 
                                         local_count++;
-
                                     }
-                                }
-                                    
                                     
                             }
                         }

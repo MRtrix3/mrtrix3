@@ -520,10 +520,6 @@ namespace MR
           }
 
           void set_radius (const vector<size_t>& radius) {
-            for (const auto & r : radius) {
-                if (r < 0)
-                  throw Exception ("the neighborhood kernel radius must be at least 1 voxel for LNCC - or 0 for global NCC");
-            }
             use_cc = true;
             kernel_radius = radius;
           }
