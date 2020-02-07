@@ -12,10 +12,10 @@ work of our developers:
 * Processing was performed using the MRtrix3 package (`Tournier et al., 2019
   <https://doi.org/10.1016/j.neuroimage.2019.116137>`__).
 
-  *Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.;
-     Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A.<br>
-     MRtrix3: A fast, flexible and open software framework for medical image
-     processing and visualisation. NeuroImage, 2019, 202, 116137*
+  J.-D. Tournier, R. E. Smith, D. Raffelt, R. Tabbara, T. Dhollander, M.
+  Pietsch, D. Christiaens, B. Jeurissen, C.-H. Yeh, and A. Connelly.
+  *MRtrix3*: A fast, flexible and open software framework for medical image
+  processing and visualisation. NeuroImage, 202 (2019), pp. 116–37.
 
 .. NOTE::
 
