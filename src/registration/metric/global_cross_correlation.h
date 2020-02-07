@@ -153,6 +153,9 @@ namespace MR
 
                     if (std::isnan (default_type (im2_value)))
                         return;
+                    
+                    if (abs(im1_value) < 1.e-7 || abs(im2_value) < 1.e-7)
+                        return;
 
                     local_sf += im1_value;
                     local_sm += im2_value;
@@ -275,13 +278,16 @@ namespace MR
 
                     const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
 
-                    if (computed_total_count < 1 || computed_smm < min_value_threshold || computed_sff < min_value_threshold)
+                    if (computed_total_count < 1 || (computed_smm * computed_sff) < min_value_threshold)
+                        return 0.0;
+                    
+                    if (abs(im1_value) < min_value_threshold || abs(im2_value) < min_value_threshold)
                         return 0.0;
 
                     Eigen::Vector3d g1 = (im1_value - computed_sf / computed_total_count) * im2_grad;
                     Eigen::Vector3d g2 = (im2_value - computed_sm / computed_total_count) * (computed_sfm / computed_smm) * im2_grad;
 
-                    const Eigen::Vector3d g = (g1 - g2) * (computed_sfm * computed_total_count / ((computed_sff * computed_smm)));
+                    const Eigen::Vector3d g = (g1 - g2) * (1.0 / ((computed_sff * computed_smm)));
 
                     gradient.segment<4>(0) += g(0) * jacobian_vec;
                     gradient.segment<4>(4) += g(1) * jacobian_vec;

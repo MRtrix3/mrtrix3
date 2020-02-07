@@ -447,7 +447,18 @@ void run () {
     rigid_registration.set_radius (vector<size_t>(3, lncc_radius));
 
     if (lncc_radius > 0)
-      rigid_registration.set_grid_spacing (std::min(3ul, lncc_radius - 1)); // TODO make spacing an option
+      rigid_registration.set_grid_spacing (2);  // TODO run more tests to identify the optimal value
+  }
+
+  opt = get_options ("rigid_metric.grid_spacing");
+  if (opt.size ()) {
+    if (!do_rigid)
+      throw Exception ("the rigid metric grid spacing has been input when no rigid registration is requested");
+    size_t grid_spacing = opt[0][0];
+    if (grid_spacing > 0 && rigid_metric != Registration::NCC)
+      throw Exception ("rigid_metric.grid_spacing set to " + str(grid_spacing) + " but metric does not support grid sampling");
+    if (grid_spacing > 0)
+      rigid_registration.set_grid_spacing (grid_spacing);
   }
 
   opt = get_options ("rigid_metric.diff.estimator");
@@ -603,8 +614,19 @@ void run () {
     affine_registration.set_radius (vector<size_t>(3, lncc_radius));
 
     if (lncc_radius > 0)
-      affine_registration.set_grid_spacing (std::min(3ul, lncc_radius - 1)); // TODO make spacing an option?
+      affine_registration.set_grid_spacing (2); // TODO run more tests to identify the optimal value
+  }
 
+  opt = get_options ("affine_metric.grid_spacing");
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine metric grid spacing has been input when no affine registration is requested");
+    size_t grid_spacing = opt[0][0];
+    if (grid_spacing > 0 && affine_metric != Registration::NCC)
+      throw Exception ("affine_metric.grid_spacing set to " + str(grid_spacing) + " but metric does not support grid sampling");
+
+    if (grid_spacing > 0)
+      affine_registration.set_grid_spacing (grid_spacing);
   }
 
   opt = get_options ("affine_metric.diff.estimator");
