@@ -27,3 +27,13 @@ which will be invisible to the end-user. Specifically, *MRtrix3* features:
 -  a consistent :ref:`image_coord_system` with most
    operations performed in scanner/world coordinates where possible.
 
+.. TIP:: 
+
+  Some proficiency with the Unix command-line is required to make the best use
+  of this software. There are many resources online to help you get
+  started if you are not already familiar with it. We also recommend our own
+  `Introduction to the Unix command-line
+  <https://command-line-tutorial.readthedocs.io/>`__, which was written with a
+  particular focus on the types of use that are common when using *MRtrix3*.
+
+
