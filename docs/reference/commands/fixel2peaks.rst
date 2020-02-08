@@ -26,6 +26,8 @@ If a fixel data file is provided as input, then the 3-vectors in the output imag
 Options
 -------
 
+-  **-number value** maximum number of fixels in each voxel (default: based on input data)
+
 -  **-nan** fill excess peak data with NaNs rather than zeroes
 
 Standard options
