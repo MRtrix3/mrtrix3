@@ -50,6 +50,8 @@ void usage ()
   + Argument ("out", "the output peaks image").type_image_out ();
 
   OPTIONS
+  + Option ("number", "maximum number of fixels in each voxel (default: based on input data)")
+    + Argument ("value").type_integer(1)
   + Option ("nan", "fill excess peak data with NaNs rather than zeroes");
 
 }
@@ -98,10 +100,15 @@ void run ()
   if (data_header.valid())
     data_image = data_header.get_image<float>();
 
+  auto opt = get_options ("number");
   index_type max_fixel_count = 0;
-  for (auto l = Loop (index_image, 0, 3) (index_image); l; ++l)
-    max_fixel_count = std::max (max_fixel_count, index_type (index_image.value()));
-  INFO ("Maximum number of fixels in any given voxel: " + str(max_fixel_count));
+  if (opt.size()) {
+    max_fixel_count = opt[0][0];
+  } else {
+    for (auto l = Loop (index_image, 0, 3) (index_image); l; ++l)
+      max_fixel_count = std::max (max_fixel_count, index_type (index_image.value()));
+    INFO ("Maximum number of fixels in any given voxel: " + str(max_fixel_count));
+  }
 
   Header out_header (index_header);
   out_header.datatype() = DataType::Float32;
@@ -115,7 +122,7 @@ void run ()
   if (data_image.valid()) {
     for (auto l = Loop ("converting fixel data file to peaks image", index_image, 0, 3) (index_image, out_image); l; ++l) {
       out_image.index (3) = 0;
-      for (auto f = Fixel::Loop (index_image) (directions_image, data_image); f; ++f) {
+      for (auto f = Fixel::Loop (index_image) (directions_image, data_image); f && out_image.index(3) < out_image.size(3); ++f) {
         for (size_t axis = 0; axis != 3; ++axis) {
           directions_image.index(1) = axis;
           out_image.value() = data_image.value() * directions_image.value();
@@ -128,7 +135,7 @@ void run ()
   } else {
     for (auto l = Loop ("converting fixels to peaks image", index_image, 0, 3) (index_image, out_image); l; ++l) {
       out_image.index (3) = 0;
-      for (auto f = Fixel::Loop (index_image) (directions_image); f; ++f) {
+      for (auto f = Fixel::Loop (index_image) (directions_image); f && out_image.index(3) < out_image.size(3); ++f) {
         for (directions_image.index(1) = 0; directions_image.index(1) != 3; ++directions_image.index(1)) {
           out_image.value() = directions_image.value();
           ++out_image.index(3);

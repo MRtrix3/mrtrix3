@@ -91,14 +91,12 @@ def execute(): #pylint: disable=unused-variable
     # Get amplitudes of two largest peaks, and directions of largest
     run.command('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
     app.cleanup(prefix + 'FOD.mif')
-    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif')
+    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif none ' + prefix + 'amps.mif')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     app.cleanup(prefix + 'amps.mif')
-    run.command('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif')
+    run.command('fixel2peaks ' + prefix + 'fixel/directions.mif ' + prefix + 'first_dir.mif -number 1')
     app.cleanup(prefix + 'fixel')
-    run.command('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
-    app.cleanup(prefix + 'all_dirs.mif')
     # Revise single-fibre voxel selection based on ratio of tallest to second-tallest peak
     run.command('mrcalc ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div ' + prefix + 'peak_ratio.mif')
     app.cleanup(prefix + 'first_peaks.mif')

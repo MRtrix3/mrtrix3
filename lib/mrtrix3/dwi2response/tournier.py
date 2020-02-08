@@ -88,14 +88,12 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(prefix + 'FOD.mif')
     if iteration:
       app.cleanup(mask_in_path)
-    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif -number 2')
+    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif none ' + prefix + 'amps.mif -number 2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     app.cleanup(prefix + 'amps.mif')
-    run.command('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif -number 1')
+    run.command('fixel2peaks ' + prefix + 'fixel/directions.mif ' + prefix + 'first_dir.mif -number 1')
     app.cleanup(prefix + 'fixel')
-    run.command('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
-    app.cleanup(prefix + 'all_dirs.mif')
     # Calculate the 'cost function' Donald derived for selecting single-fibre voxels
     # https://github.com/MRtrix3/mrtrix3/pull/426
     #  sqrt(|peak1|) * (1 - |peak2| / |peak1|)^2
