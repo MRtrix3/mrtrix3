@@ -42,7 +42,7 @@ namespace MR
 
             public:
 
-                LocalCrossCorrelation ( ) : weighted (false), min_value_threshold (1.e-5) { }
+                LocalCrossCorrelation ( ) : weighted (false), min_value_threshold (1.e-7) { }
 
                 void set_weights (const Eigen::VectorXd & weights) {
                     mc_weights = weights;
@@ -114,7 +114,7 @@ namespace MR
                                 
                                 if (params.im1_mask_interp) {
                                     params.im1_mask_interp->scanner (im1_scanner_pos_iter);
-                                    if (params.im1_mask_interp->value() < 0.5)
+                                    if (params.im1_mask_interp->value() < 0.9)
                                       continue;
                                 }
 
@@ -123,7 +123,7 @@ namespace MR
                                 
                                 if (params.im2_mask_interp) {
                                     params.im2_mask_interp->scanner (im2_scanner_pos_iter);
-                                    if (params.im2_mask_interp->value() < 0.5)
+                                    if (params.im2_mask_interp->value() < 0.9)
                                       continue;
                                 }
                                 
@@ -199,7 +199,7 @@ namespace MR
 
             public:
 
-                LocalCrossCorrelation4D ( ) : weighted (false), min_value_threshold (1.e-5), weight_sum (0.0) { }
+                LocalCrossCorrelation4D ( ) : weighted (false), min_value_threshold (1.e-7), weight_sum (0.0) { }
 
                 void set_weights (const Eigen::VectorXd & weights) {
                     mc_weights = weights;
@@ -317,13 +317,13 @@ namespace MR
                                 
                                 if (params.im1_mask_interp) {
                                     params.im1_mask_interp->scanner (im1_scanner_pos_iter);
-                                    if (params.im1_mask_interp->value() < 0.5)
+                                    if (params.im1_mask_interp->value() < 0.9)
                                     within_mask = false;
                                 }
                                 
                                 if (params.im2_mask_interp) {
                                     params.im2_mask_interp->scanner (im2_scanner_pos_iter);
-                                    if (params.im2_mask_interp->value() < 0.5)
+                                    if (params.im2_mask_interp->value() < 0.9)
                                     within_mask = false;
                                 }
                                 

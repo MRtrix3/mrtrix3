@@ -129,13 +129,13 @@ namespace MR
 
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                        if (params.im2_mask_interp->value() < 0.5)
+                        if (params.im2_mask_interp->value() < 1.0)
                             return;
                     }
 
                     if (params.im1_mask_interp) {
                         params.im1_mask_interp->scanner (im1_point);
-                        if (params.im1_mask_interp->value() < 0.5)
+                        if (params.im1_mask_interp->value() < 1.0)
                             return;
                     }
 
@@ -266,13 +266,13 @@ namespace MR
 
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                        if (params.im2_mask_interp->value() < 0.5)
+                        if (params.im2_mask_interp->value() < 0.9)
                             return 0.0;
                     }
 
                     if (params.im1_mask_interp) {
                         params.im1_mask_interp->scanner (im1_point);
-                        if (params.im1_mask_interp->value() < 0.5)
+                        if (params.im1_mask_interp->value() < 0.9)
                             return 0.0;
                     }
 
@@ -393,13 +393,13 @@ namespace MR
 
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                        if (params.im2_mask_interp->value() < 0.5)
+                        if (params.im2_mask_interp->value() < 1.0)
                         return;
                     }
 
                     if (params.im1_mask_interp) {
                         params.im1_mask_interp->scanner (im1_point);
-                        if (params.im1_mask_interp->value() < 0.5)
+                        if (params.im1_mask_interp->value() < 1.0)
                         return;
                     }
 
@@ -469,7 +469,7 @@ namespace MR
 
             public:
 
-                GlobalCrossCorrelation4D ( ) : weighted (false), weight_sum (0.0), min_value_threshold (1.e-5) { }
+                GlobalCrossCorrelation4D ( ) : weighted (false), weight_sum (0.0), min_value_threshold (1.e-7) { }
 
                 void set_weights (Eigen::VectorXd weights) {
 
@@ -558,13 +558,13 @@ namespace MR
 
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                        if (params.im2_mask_interp->value() < 0.5)
+                        if (params.im2_mask_interp->value() < 0.9)
                             return 0.0;
                     }
 
                     if (params.im1_mask_interp) {
                         params.im1_mask_interp->scanner (im1_point);
-                        if (params.im1_mask_interp->value() < 0.5)
+                        if (params.im1_mask_interp->value() < 0.9)
                             return 0.0;
                     }
 
