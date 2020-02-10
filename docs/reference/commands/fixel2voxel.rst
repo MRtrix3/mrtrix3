@@ -41,7 +41,7 @@ Options
 
 -  **-number N** use only the largest N fixels in calculation of the voxel-wise statistic; in the case of operation "none", output only the largest N fixels in each voxel.
 
--  **-fill value** for "none" operation, specify the value to fill when number of fixels is fewer than the maximum (default: NaN)
+-  **-fill value** for "none" operation, specify the value to fill when number of fixels is fewer than the maximum (default: 0.0)
 
 -  **-weighted fixel_in** weight the contribution of each fixel to the per-voxel result according to its volume.
 
