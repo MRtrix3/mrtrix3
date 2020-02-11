@@ -1,0 +1,17 @@
+<svg height="48" version="1.1" width="48" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <linearGradient id="a" gradientUnits="userSpaceOnUse" x1="8.2996338" x2="16.9066668" y1="41.606684" y2="23.305891">
+    <stop offset="0" stop-color="#bab600"/>
+    <stop offset="1" stop-color="#ffff6f"/>
+  </linearGradient>
+  <radialGradient id="b" cx="11.375" cy="14" gradientTransform="matrix(1.4833695 .000000018821 0 .36693169 -9.6868072 25.291347)" gradientUnits="userSpaceOnUse" r="10.0986">
+    <stop offset="0" stop-color="#fff"/>
+    <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient>
+  <g fill="none" stroke-linecap="round" stroke-width="2" transform="translate(0 -1004.3622)">
+    <path d="m 30 1042.3622 l -20 0" stroke="#f00"/>
+    <path d="m 10 1042.3622 l 0 -20" stroke="#0f0"/>
+    <path d="m 10 1042.3622 l -5 6" stroke="#00f"/>
+  </g>
+  <ellipse cx="7.159905" cy="32.956253" fill="url(#a)" rx="24.75" ry="7.25" stroke="#000" stroke-linecap="round" transform="matrix(.83177195 -.55511749 .55511749 .83177195 0 0)"/>
+  <ellipse cx="7.1865206" cy="30.428389" fill="url(#b)" rx="14.979953" ry="3.7054963" transform="matrix(.86820242 -.49621019 .74903388 .66253169 0 0)"/>
+</svg>

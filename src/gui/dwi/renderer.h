@@ -1,34 +1,30 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-
-    24-07-2008 J-Donald Tournier <d.tournier@brain.org.au>
-    * added support of overlay of orientation plot on main window
-
-*/
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #ifndef __gui_dwi_renderer_h__
 #define __gui_dwi_renderer_h__
 
+#include <QGLWidget>
+#include <Eigen/Eigenvalues>
+
+#include "gui/gui.h"
+#include "dwi/directions/set.h"
+#include "gui/shapes/halfsphere.h"
+#include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
-#include "math/matrix.h"
 #include "math/SH.h"
 
 namespace MR
@@ -38,7 +34,7 @@ namespace MR
 
     class Projection;
 
-    namespace GL 
+    namespace GL
     {
       class Lighting;
     }
@@ -47,77 +43,194 @@ namespace MR
     {
 
       class Renderer
-      {
+      { MEMALIGN(Renderer)
+
+          using matrix_t = Eigen::MatrixXf;
+          using vector_t = Eigen::VectorXf;
+          using tensor_t = Eigen::Matrix3f;
+
         public:
-          Renderer () : num_indices (0) { }
 
-          bool ready () const { return shader_program; }
-          void initGL ();
-          void update_mesh (int LOD, int lmax);
+          enum class mode_t { SH, TENSOR, DIXEL };
 
-          void compute_r_del_daz (Math::Matrix<float>& r_del_daz, const Math::Matrix<float>& SH) const {
-            if (!SH.rows() || !SH.columns()) return;
-            Math::mult (r_del_daz, 1.0f, CblasNoTrans, SH, CblasTrans, transform);
+          Renderer (QGLWidget*);
+
+          bool ready () const { return shader; }
+
+          void initGL () {
+            sh.initGL();
+            tensor.initGL();
+            dixel.initGL();
           }
 
-          void compute_r_del_daz (Math::Vector<float>& r_del_daz, const Math::Vector<float>& SH) const {
-            if (!SH.size()) return;
-            Math::mult (r_del_daz, transform, SH);
+          void set_mode (const mode_t i) {
+            mode = i;
           }
 
+          void start (const Projection& projection, const GL::Lighting& lighting, float scale,
+              bool use_lighting, bool color_by_direction, bool hide_neg_lobes, bool orthographic = false);
 
-          void start (const Projection& projection, const GL::Lighting& lighting, float scale, 
-              bool use_lighting, bool color_by_direction, bool hide_neg_lobes, bool orthographic = false) const;
-
-          void set_data (const Math::Vector<float>& r_del_daz, int buffer_ID = 0) const {
+          void draw (const Eigen::Vector3f& origin, int buffer_ID = 0) const {
             (void) buffer_ID; // to silence unused-parameter warnings
-            assert (r_del_daz.stride() == 1);
-            surface_buffer.bind (gl::ARRAY_BUFFER);
-            gl::BufferData (gl::ARRAY_BUFFER, r_del_daz.size()*sizeof(float), &r_del_daz[0], gl::STREAM_DRAW);
-            gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
-          }
-
-          void draw (const float* origin, int buffer_ID = 0) const {
-            (void) buffer_ID; // to silence unused-parameter warnings
-            gl::Uniform3fv (origin_ID, 1, origin);
+            gl::Uniform3fv (origin_ID, 1, origin.data());
             gl::Uniform1i (reverse_ID, 0);
-            gl::DrawElements (gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void*)0);
+            half_draw();
             gl::Uniform1i (reverse_ID, 1);
-            gl::DrawElements (gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void*)0);
+            half_draw();
           }
+
           void stop () const {
-            shader_program.stop();
+            shader.stop();
           }
+
+          QColor get_colour() const {
+            return QColor(object_color[0]*255.0f, object_color[1]*255.0f, object_color[2]*255.0f);
+          }
+
+          void set_colour (const QColor& c) {
+            object_color[0] = c.red()  /255.0f;
+            object_color[1] = c.green()/255.0f;
+            object_color[2] = c.blue() /255.0f;
+          }
+
 
         protected:
+          mode_t mode;
+          float object_color[3];
+          mutable GLuint reverse_ID, origin_ID;
 
-          class Vertex {
+          class Shader : public GL::Shader::Program { NOMEMALIGN
             public:
-              Vertex () { }
-              Vertex (const float x[3]) { p[0] = x[0]; p[1] = x[1]; p[2] = x[2]; }
-              Vertex (const std::vector<Vertex>& vertices, size_t i1, size_t i2) {
-                p[0] = vertices[i1][0] + vertices[i2][0];
-                p[1] = vertices[i1][1] + vertices[i2][1];
-                p[2] = vertices[i1][2] + vertices[i2][2];
-                Math::normalise (p); 
-              }
+              Shader () : mode_ (mode_t::SH), use_lighting_ (true), colour_by_direction_ (true), hide_neg_values_ (true), orthographic_ (false) { }
+              void start (mode_t mode, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic);
+            protected:
+              mode_t mode_;
+              bool use_lighting_, colour_by_direction_, hide_neg_values_, orthographic_;
+              std::string vertex_shader_source() const;
+              std::string geometry_shader_source() const;
+              std::string fragment_shader_source() const;
+          } shader;
 
-              float& operator[] (int n) { return p[n]; }
-              float operator[] (int n) const { return p[n]; }
+          void half_draw() const
+          {
+            const GLuint num_indices = (mode == mode_t::SH ? sh.num_indices() : (mode == mode_t::TENSOR ? tensor.num_indices() : dixel.num_indices()));
+            gl::DrawElements (gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void*)0);
+          }
 
-            private:
-              float p[3];
+        private:
+          class ModeBase
+          { NOMEMALIGN
+            public:
+              ModeBase (Renderer& parent) : parent (parent) { }
+              virtual ~ModeBase() { }
+
+              virtual void initGL() = 0;
+              virtual void bind() = 0;
+              virtual void set_data (const vector_t&, int buffer_ID = 0) const = 0;
+              virtual GLuint num_indices() const = 0;
+
+            protected:
+              Renderer& parent;
           };
 
-          void update_transform (const std::vector<Vertex>& vertices, int lmax);
+        public:
+          class SH : public ModeBase
+          { MEMALIGN(SH)
+            public:
+              SH (Renderer& parent) : ModeBase (parent), LOD (0) { }
+              ~SH();
 
-          Math::Matrix<float> transform;
+              void initGL() override;
+              void bind() override;
+              void set_data (const vector_t& r_del_daz, int buffer_ID = 0) const override;
+              GLuint num_indices() const override { return half_sphere.num_indices; }
 
-          size_t num_indices;
-          GL::Shader::Program shader_program;
-          GL::VertexBuffer vertex_buffer, surface_buffer, index_buffer;
-          GL::VertexArrayObject vertex_array_object;
-          mutable GLuint reverse_ID, origin_ID;
+              void update_mesh (const size_t, const int);
+
+              void compute_r_del_daz (matrix_t& r_del_daz, const matrix_t& SH) const {
+                if (!SH.rows() || !SH.cols()) return;
+                assert (transform.rows());
+                r_del_daz.noalias() = SH * transform.transpose();
+              }
+
+              void compute_r_del_daz (vector_t& r_del_daz, const vector_t& SH) const {
+                if (!SH.size()) return;
+                assert (transform.rows());
+                r_del_daz.noalias() = transform * SH;
+              }
+
+              int get_LOD() const { return LOD; }
+
+            private:
+              int LOD;
+              matrix_t transform;
+              Shapes::HalfSphere half_sphere;
+              GL::VertexBuffer surface_buffer;
+              GL::VertexArrayObject VAO;
+
+              void update_transform (const vector<Shapes::HalfSphere::Vertex>&, int);
+
+          } sh;
+
+
+          class Tensor : public ModeBase
+          { MEMALIGN(Tensor)
+            public:
+              Tensor (Renderer& parent) : ModeBase (parent), LOD (0) { }
+              ~Tensor();
+
+              void initGL() override;
+              void bind() override;
+              void set_data (const vector_t& data, int buffer_ID = 0) const override;
+              GLuint num_indices() const override { return half_sphere.num_indices; }
+
+              void update_mesh (const size_t);
+
+              int get_LOD() const { return LOD; }
+
+            private:
+              int LOD;
+              Shapes::HalfSphere half_sphere;
+              GL::VertexArrayObject VAO;
+
+              mutable Eigen::SelfAdjointEigenSolver<tensor_t> eig;
+
+          } tensor;
+
+
+          class Dixel : public ModeBase
+          { MEMALIGN (Dixel)
+
+              using dir_t = MR::DWI::Directions::index_type;
+
+            public:
+              Dixel (Renderer& parent) :
+                  ModeBase (parent),
+                  vertex_count (0),
+                  index_count (0) { }
+              ~Dixel();
+
+              void initGL() override;
+              void bind() override;
+              void set_data (const vector_t&, int buffer_ID = 0) const override;
+              GLuint num_indices() const override { return index_count; }
+
+              void update_mesh (const MR::DWI::Directions::Set&);
+
+            private:
+              GL::VertexBuffer vertex_buffer, value_buffer;
+              GL::IndexBuffer index_buffer;
+              GL::VertexArrayObject VAO;
+              GLuint vertex_count, index_count;
+
+              void update_dixels (const MR::DWI::Directions::Set&);
+
+          } dixel;
+
+        private:
+          QGLWidget* context_;
+
+
       };
 
 

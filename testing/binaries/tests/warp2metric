@@ -1,0 +1,3 @@
+warp2metric fod_warp.mif -jdet - | testing_diff_image - warp2metric/jdet.mif -frac 0.001
+warp2metric fod_warp.mif -jmat - | testing_diff_image - warp2metric/jmat.mif -frac 0.001
+warp2metric fod_warp.mif -fc fixel_image warp2metric_tmp fc.mif -force && testing_diff_fixel warp2metric_tmp warp2metric/fc -frac 0.001 && rm -rf warp2metric_tmp

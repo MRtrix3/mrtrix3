@@ -1,25 +1,18 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #include "gui/dialog/list.h"
 #include "gui/dialog/opengl.h"
@@ -32,7 +25,7 @@ namespace MR
     namespace Dialog
     {
 
-      OpenGL::OpenGL (QWidget* parent, const QGLFormat& format) : QDialog (parent)
+      OpenGL::OpenGL (QWidget* parent, const GL::Format& format) : QDialog (parent)
       {
         TreeModel* model = new TreeModel (this);
 
@@ -59,12 +52,20 @@ namespace MR
         bit_depths->appendChild (new TreeItem ("depth", str (format.depthBufferSize()), bit_depths));
         bit_depths->appendChild (new TreeItem ("stencil", str (format.stencilBufferSize()), bit_depths));
 
-        root->appendChild (new TreeItem ("Double buffering", format.doubleBuffer() ? "on" : "off", root));
+#if QT_VERSION >= 0x050400
+        root->appendChild (new TreeItem ("Buffering", format.swapBehavior() == QSurfaceFormat::SingleBuffer ? "single" :
+               ( format.swapBehavior() == QSurfaceFormat::DoubleBuffer ? "double" : "triple" ), root));
+#else
+        root->appendChild (new TreeItem ("Buffering", format.doubleBuffer() ? "double" : "single", root));
+#endif
         root->appendChild (new TreeItem ("VSync", format.swapInterval() ? "on" : "off", root));
-        root->appendChild (new TreeItem ("Multisample anti-aliasing", format.sampleBuffers() ? str(format.samples()).c_str() : "off", root));
+        root->appendChild (new TreeItem ("Multisample anti-aliasing", format.samples() ? str(format.samples()).c_str() : "off", root));
 
         gl::GetIntegerv (gl::MAX_TEXTURE_SIZE, &i);
-        root->appendChild (new TreeItem ("Maximum texture size", str (i), root));
+        root->appendChild (new TreeItem ("Maximum 2D texture size", str (i), root));
+
+        gl::GetIntegerv (gl::MAX_3D_TEXTURE_SIZE, &i);
+        root->appendChild (new TreeItem ("Maximum 3D texture size", str (i), root));
 
         QTreeView* view = new QTreeView;
         view->setModel (model);

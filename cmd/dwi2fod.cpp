@@ -1,92 +1,135 @@
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
+
 #include "command.h"
-#include "ptr.h"
-#include "progressbar.h"
-#include "image/threaded_loop.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
+#include "header.h"
+#include "image.h"
+#include "phase_encoding.h"
+#include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "dwi/sdeconv/constrained.h"
+#include "dwi/sdeconv/csd.h"
+#include "dwi/sdeconv/msmt_csd.h"
+#include "math/SH.h"
+
 
 using namespace MR;
 using namespace App;
 
 
+const char* const algorithms[] = { "csd", "msmt_csd", NULL };
+
+
+
+OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
+
+    + Option ("directions",
+              "specify the directions over which to apply the non-negativity constraint "
+              "(by default, the built-in 300 direction set is used). These should be "
+              "supplied as a text file containing [ az el ] pairs for the directions.")
+      + Argument ("file").type_file_in()
+
+    + Option ("lmax",
+              "the maximum spherical harmonic order for the output FOD(s)."
+              "For algorithms with multiple outputs, this should be "
+              "provided as a comma-separated list of integers, one for "
+              "each output image; for single-output algorithms, only "
+              "a single integer should be provided. If omitted, the "
+              "command will use the lmax of the corresponding response "
+              "function (i.e based on its number of coefficients), "
+              "up to a maximum of 8.")
+      + Argument ("order").type_sequence_int()
+
+    + Option ("mask",
+              "only perform computation within the specified binary brain mask image.")
+      + Argument ("image").type_image_in();
+
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
+
+  SYNOPSIS = "Estimate fibre orientation distributions from diffusion data using spherical deconvolution";
+
   DESCRIPTION
-    + "perform non-negativity constrained spherical deconvolution."
-
-    + "Note that this program makes use of implied symmetries in the diffusion "
-    "profile. First, the fact the signal attenuation profile is real implies "
-    "that it has conjugate symmetry, i.e. Y(l,-m) = Y(l,m)* (where * denotes "
-    "the complex conjugate). Second, the diffusion profile should be "
-    "antipodally symmetric (i.e. S(x) = S(-x)), implying that all odd l "
-    "components should be zero. Therefore, this program only computes the even "
-    "elements."
-
-    + "Note that the spherical harmonics equations used here differ slightly "
-    "from those conventionally used, in that the (-1)^m factor has been "
-    "omitted. This should be taken into account in all subsequent calculations."
-
     + Math::SH::encoding_description;
 
-  REFERENCES 
-   + "Tournier, J.-D.; Calamante, F. & Connelly, A. "
-   "Robust determination of the fibre orientation distribution in diffusion MRI: "
-   "Non-negativity constrained super-resolved spherical deconvolution. "
-   "NeuroImage, 2007, 35, 1459-1472";
+  EXAMPLES
+    + Example ("Perform single-shell single-tissue CSD",
+               "dwi2fod csd dwi.mif response_wm.txt wmfod.mif",
+               "This algorithm is designed for single-shell data and only uses a single "
+               "b-value. The response function text file provided should only contain a "
+               "a single row, corresponding to the b-value used for CSD.")
+
+    + Example ("Perform multi-shell multi-tissue CSD",
+               "dwi2fod msmt_csd dwi.mif response_wm.txt wmfod.mif response_gm.txt gm.mif response_csf.txt csf.mif",
+               "This example is the most common use case of multi-tissue CSD, estimating "
+               "a white matter FOD, and grey matter and CSF compartments. This algorithm "
+               "requires at least three unique b-values to estimate three tissue compartments. "
+               "Each response function text file should have a number of rows equal to the "
+               "number of b-values used. If only two unique b-values are available, it's also "
+               "possible to estimate only two tissue compartments, e.g., white matter and CSF.");
+
+  REFERENCES
+    + "* If using csd algorithm:\n"
+    "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+    "Robust determination of the fibre orientation distribution in diffusion MRI: "
+    "Non-negativity constrained super-resolved spherical deconvolution. "
+    "NeuroImage, 2007, 35, 1459-1472"
+
+    + "* If using msmt_csd algorithm:\n"
+    "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. " // Internal
+    "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. "
+    "NeuroImage, 2014, 103, 411-426"
+
+    + "Tournier, J.-D.; Calamante, F., Gadian, D.G. & Connelly, A. " // Internal
+    "Direct estimation of the fiber orientation density function from "
+    "diffusion-weighted MRI data using spherical deconvolution. "
+    "NeuroImage, 2004, 23, 1176-1185";
 
   ARGUMENTS
-    + Argument ("dwi",
-        "the input diffusion-weighted image.").type_image_in()
-    + Argument ("response",
-        "a text file containing the diffusion-weighted signal response function "
-        "coefficients for a single fibre population, ").type_file_in()
-    + Argument ("SH",
-        "the output spherical harmonics coefficients image.").type_image_out();
+    + Argument ("algorithm", "the algorithm to use for FOD estimation. "
+                             "(options are: " + join(algorithms, ",") + ")").type_choice (algorithms)
+    + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
+    + Argument ("response odf", "pairs of input tissue response and output ODF images").allow_multiple();
 
   OPTIONS
-    + DWI::GradOption
-    + DWI::ShellOption
-    + DWI::CSD_options
-    + Image::Stride::StrideOption;
+    + DWI::GradImportOptions()
+    + DWI::ShellsOption
+    + CommonOptions
+    + DWI::SDeconv::CSD_options
+    + DWI::SDeconv::MSMT_CSD_options
+    + Stride::Options;
 }
 
 
 
-typedef float value_type;
-typedef double cost_value_type;
-typedef Image::BufferPreload<value_type> InputBufferType;
-typedef Image::Buffer<value_type> OutputBufferType;
-typedef Image::Buffer<bool> MaskBufferType;
-
-
-
-
-
-class Processor
-{
+class CSD_Processor { MEMALIGN(CSD_Processor)
   public:
-    Processor (InputBufferType::voxel_type& DWI_vox,
-        OutputBufferType::voxel_type& FOD_vox,
-        Ptr<MaskBufferType::voxel_type>& mask_vox,
-        const DWI::CSDeconv<value_type>::Shared& shared) :
-      dwi (DWI_vox),
-      fod (FOD_vox),
-      mask (mask_vox),
+    CSD_Processor (const DWI::SDeconv::CSD::Shared& shared, Image<bool>& mask) :
       sdeconv (shared),
-      data (shared.dwis.size()) {
-        if (mask)
-          Image::check_dimensions (*mask, dwi, 0, 3);
-      }
+      data (shared.dwis.size()),
+      mask (mask) { }
 
 
-
-    void operator () (const Image::Iterator& pos) {
-      if (!load_data (pos))
+    void operator () (Image<float>& dwi, Image<float>& fod) {
+      if (!load_data (dwi)) {
+        for (auto l = Loop (3) (fod); l; ++l)
+          fod.value() = 0.0;
         return;
+      }
 
       sdeconv.set (data);
 
@@ -95,35 +138,29 @@ class Processor
         if (sdeconv.iterate())
           break;
 
-      if (n >= sdeconv.shared.niter)
-        INFO ("voxel [ " + str (pos[0]) + " " + str (pos[1]) + " " + str (pos[2]) +
+      if (sdeconv.shared.niter && n >= sdeconv.shared.niter)
+        INFO ("voxel [ " + str (dwi.index(0)) + " " + str (dwi.index(1)) + " " + str (dwi.index(2)) +
             " ] did not reach full convergence");
 
-      write_back (pos);
+      fod.row(3) = sdeconv.FOD();
     }
 
 
-
   private:
-    InputBufferType::voxel_type dwi;
-    OutputBufferType::voxel_type fod;
-    Ptr<MaskBufferType::voxel_type> mask;
-    DWI::CSDeconv<value_type> sdeconv;
-    Math::Vector<value_type> data;
+    DWI::SDeconv::CSD sdeconv;
+    Eigen::VectorXd data;
+    Image<bool> mask;
 
 
-
-    bool load_data (const Image::Iterator& pos) {
-      if (mask) {
-        Image::voxel_assign (*mask, pos);
-        if (!mask->value())
+    bool load_data (Image<float>& dwi) {
+      if (mask.valid()) {
+        assign_pos_of (dwi, 0, 3).to (mask);
+        if (!mask.value())
           return false;
       }
 
-      Image::voxel_assign (dwi, pos);
-
       for (size_t n = 0; n < sdeconv.shared.dwis.size(); n++) {
-        dwi[3] = sdeconv.shared.dwis[n];
+        dwi.index(3) = sdeconv.shared.dwis[n];
         data[n] = dwi.value();
         if (!std::isfinite (data[n]))
           return false;
@@ -135,13 +172,61 @@ class Processor
     }
 
 
+};
 
-    void write_back (const Image::Iterator& pos) {
-      Image::voxel_assign (fod, pos);
-      for (fod[3] = 0; fod[3] < fod.dim (3); ++fod[3])
-        fod.value() = sdeconv.FOD() [fod[3]];
+
+
+
+class MSMT_Processor { MEMALIGN (MSMT_Processor)
+  public:
+    MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image,
+      vector< Image<float> > odf_images, Image<float> dwi_modelled = Image<float>()) :
+        sdeconv (shared),
+        mask_image (mask_image),
+        odf_images (odf_images),
+        modelled_image (dwi_modelled),
+        dwi_data (shared.grad.rows()),
+        output_data (shared.problem.H.cols()) { }
+
+
+    void operator() (Image<float>& dwi_image)
+    {
+      if (mask_image.valid()) {
+        assign_pos_of (dwi_image, 0, 3).to (mask_image);
+        if (!mask_image.value())
+          return;
+      }
+
+      dwi_data = dwi_image.row(3);
+
+      sdeconv (dwi_data, output_data);
+      if (sdeconv.niter >= sdeconv.shared.problem.max_niter) {
+        INFO ("voxel [ " + str (dwi_image.index(0)) + " " + str (dwi_image.index(1)) + " " + str (dwi_image.index(2)) +
+            " ] did not reach full convergence");
+      }
+
+      size_t j = 0;
+      for (size_t i = 0; i < odf_images.size(); ++i) {
+        assign_pos_of (dwi_image, 0, 3).to (odf_images[i]);
+        for (auto l = Loop(3)(odf_images[i]); l; ++l)
+          odf_images[i].value() = output_data[j++];
+      }
+
+      if (modelled_image.valid()) {
+        assign_pos_of (dwi_image, 0, 3).to (modelled_image);
+        dwi_data = sdeconv.shared.problem.H * output_data;
+        modelled_image.row(3) = dwi_data;
+      }
     }
 
+
+  private:
+    DWI::SDeconv::MSMT_CSD sdeconv;
+    Image<bool> mask_image;
+    vector< Image<float> > odf_images;
+    Image<float> modelled_image;
+    Eigen::VectorXd dwi_data;
+    Eigen::VectorXd output_data;
 };
 
 
@@ -152,33 +237,93 @@ class Processor
 
 void run ()
 {
-  InputBufferType dwi_buffer (argument[0], Image::Stride::contiguous_along_axis(3));
 
-  Ptr<MaskBufferType> mask_data;
-  Ptr<MaskBufferType::voxel_type> mask_vox;
-  Options opt = get_options ("mask");
+  auto header_in = Header::open (argument[1]);
+  Header header_out (header_in);
+  header_out.ndim() = 4;
+  header_out.datatype() = DataType::Float32;
+  header_out.datatype().set_byte_order_native();
+  Stride::set_from_command_line (header_out, Stride::contiguous_along_axis (3, header_in));
+
+  auto mask = Image<bool>();
+  auto opt = get_options ("mask");
   if (opt.size()) {
-    mask_data = new MaskBufferType (opt[0][0]);
-    mask_vox = new MaskBufferType::voxel_type (*mask_data);
+    mask = Header::open (opt[0][0]).get_image<bool>();
+    check_dimensions (header_in, mask, 0, 3);
   }
 
-  DWI::CSDeconv<value_type>::Shared shared (dwi_buffer);
-  shared.parse_cmdline_options();
-  shared.set_response (argument[1]);
-  shared.init();
+  int algorithm = argument[0];
+  if (algorithm == 0) {
 
+    if (argument.size() != 4)
+      throw Exception ("CSD algorithm expects a single input response function and single output FOD image");
 
-  Image::Header header (dwi_buffer);
-  header.dim(3) = shared.nSH();
-  header.datatype() = DataType::Float32;
-  Image::Stride::set_from_command_line (header);
-  OutputBufferType FOD_buffer (argument[2], header);
+    DWI::SDeconv::CSD::Shared shared (header_in);
+    shared.parse_cmdline_options();
+    try {
+      shared.set_response (argument[2]);
+    } catch (Exception& e) {
+      throw Exception (e, "CSD algorithm expects second argument to be the input response function file");
+    }
 
-  auto dwi_vox = dwi_buffer.voxel();
-  auto FOD_vox = FOD_buffer.voxel();
+    shared.init();
 
-  Processor processor (dwi_vox, FOD_vox, mask_vox, shared);
-  Image::ThreadedLoop loop ("performing constrained spherical deconvolution...", dwi_vox, 0, 3);
-  loop.run (processor);
+    DWI::stash_DW_scheme (header_out, shared.grad);
+    PhaseEncoding::clear_scheme (header_out);
+
+    header_out.size(3) = shared.nSH();
+    auto fod = Image<float>::create (argument[3], header_out);
+
+    CSD_Processor processor (shared, mask);
+    auto dwi = header_in.get_image<float>().with_direct_io (3);
+    ThreadedLoop ("performing constrained spherical deconvolution", dwi, 0, 3)
+        .run (processor, dwi, fod);
+
+  } else if (algorithm == 1) {
+
+    if (argument.size() % 2)
+      throw Exception ("MSMT_CSD algorithm expects pairs of (input response function & output FOD image) to be provided");
+
+    DWI::SDeconv::MSMT_CSD::Shared shared (header_in);
+    shared.parse_cmdline_options();
+
+    const size_t num_tissues = (argument.size()-2)/2;
+    vector<std::string> response_paths;
+    vector<std::string> odf_paths;
+    for (size_t i = 0; i < num_tissues; ++i) {
+      response_paths.push_back (argument[i*2+2]);
+      odf_paths.push_back (argument[i*2+3]);
+    }
+
+    try {
+      shared.set_responses (response_paths);
+    } catch (Exception& e) {
+      throw Exception (e, "MSMT_CSD algorithm expects the first file in each argument pair to be an input response function file");
+    }
+
+    shared.init();
+
+    DWI::stash_DW_scheme (header_out, shared.grad);
+
+    vector< Image<float> > odfs;
+    for (size_t i = 0; i < num_tissues; ++i) {
+      header_out.size (3) = Math::SH::NforL (shared.lmax[i]);
+      odfs.push_back (Image<float> (Image<float>::create (odf_paths[i], header_out)));
+    }
+
+    Image<float> dwi_modelled;
+    auto opt = get_options ("predicted_signal");
+    if (opt.size())
+      dwi_modelled = Image<float>::create (opt[0][0], header_in);
+
+    MSMT_Processor processor (shared, mask, odfs, dwi_modelled);
+    auto dwi = header_in.get_image<float>().with_direct_io (3);
+    ThreadedLoop ("performing multi-shell, multi-tissue CSD", dwi, 0, 3)
+        .run (processor, dwi);
+
+  } else {
+    assert (0);
+  }
+
 }
 

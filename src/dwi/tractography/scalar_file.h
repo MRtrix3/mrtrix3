@@ -1,24 +1,18 @@
-/*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-    Written by David Raffelt, 29/01/13.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #ifndef __dwi_tractography_scalar_file_h__
 #define __dwi_tractography_scalar_file_h__
@@ -26,7 +20,6 @@
 #include <map>
 
 #include "types.h"
-#include "point.h"
 #include "file/config.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
@@ -73,15 +66,15 @@ namespace MR
 
 
       template <typename T = float> class ScalarReader : public __ReaderBase__
-      {
+      { NOMEMALIGN
         public:
-          typedef T value_type;
+          using value_type = T;
 
           ScalarReader (const std::string& file, Properties& properties) {
             open (file, "track scalars", properties);
           }
 
-          bool operator() (std::vector<value_type>& tck_scalar)
+          bool operator() (vector<value_type>& tck_scalar)
           {
             tck_scalar.clear();
 
@@ -168,9 +161,9 @@ namespace MR
        * */
       template <typename T = float>
       class ScalarWriter : public __WriterBase__<T>
-      {
+      { NOMEMALIGN
         public:
-          typedef T value_type;
+          using value_type = T;
           using __WriterBase__<T>::count;
           using __WriterBase__<T>::count_offset;
           using __WriterBase__<T>::total_count;
@@ -179,6 +172,7 @@ namespace MR
           using __WriterBase__<T>::create;
           using __WriterBase__<T>::update_counts;
           using __WriterBase__<T>::verify_stream;
+          using __WriterBase__<T>::open_success;
 
           ScalarWriter (const std::string& file, const Properties& properties) :
             __WriterBase__<T> (file),
@@ -186,9 +180,18 @@ namespace MR
             buffer (new value_type [buffer_capacity+1]),
             buffer_size (0)
           {
-            File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
+            File::OFStream out;
+            try {
+              out.open (name, std::ios::out | std::ios::binary | std::ios::trunc);
+            } catch (Exception& e) {
+              throw Exception (e, "Unable to create output track scalar file");
+            }
+
             // Do NOT set Properties timestamp here! (Must match corresponding .tck file)
+            const_cast<Properties&> (properties).set_version_info();
+            const_cast<Properties&> (properties).update_command_history();
             create (out, properties, "track scalars");
+            open_success = true;
             current_offset = out.tellp();
           }
 
@@ -197,17 +200,34 @@ namespace MR
           }
 
 
-          bool operator() (const std::vector<value_type>& tck_scalar)
+          bool operator() (const vector<value_type>& tck_scalar)
           {
-            if (tck_scalar.size()) {
-              if (buffer_size + tck_scalar.size() > buffer_capacity)
-                commit();
+            if (buffer_size + tck_scalar.size() > buffer_capacity)
+              commit();
 
-              for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
-                add_scalar (*i);
-              add_scalar (delimiter());
-              ++count;
+            for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
+              assert (std::isfinite (*i));
+              add_scalar (*i);
             }
+            add_scalar (delimiter());
+            ++count;
+            ++total_count;
+            return true;
+          }
+
+
+          template <typename matrix_type>
+          bool operator() (const Eigen::Matrix<matrix_type, Eigen::Dynamic, 1>& data)
+          {
+            assert (data.allFinite());
+
+            if (buffer_size + data.size() > buffer_capacity)
+              commit();
+
+            for (int i = 0; i != data.size(); ++i)
+              add_scalar (value_type(data[i]));
+            add_scalar (delimiter());
+            ++count;
             ++total_count;
             return true;
           }
@@ -217,7 +237,7 @@ namespace MR
         protected:
 
           const size_t buffer_capacity;
-          Ptr<value_type, true> buffer;
+          std::unique_ptr<value_type[]> buffer;
           size_t buffer_size;
           int64_t current_offset;
 
@@ -230,19 +250,19 @@ namespace MR
           void format_scalar (const value_type& s, value_type& destination)
           {
             using namespace ByteOrder;
-            if (dtype.is_little_endian()) 
-              destination = LE(s); 
-            else  
-              destination = BE(s); 
+            if (dtype.is_little_endian())
+              destination = LE(s);
+            else
+              destination = BE(s);
           }
 
           void commit ()
           {
-            if (buffer_size == 0)
+            if (buffer_size == 0 || !open_success)
               return;
             File::OFStream out (name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
             out.seekp (current_offset, out.beg);
-            out.write (reinterpret_cast<char*> (&(buffer[0])), sizeof (value_type)*(buffer_size));
+            out.write (reinterpret_cast<char*> (buffer.get()), sizeof(value_type)*buffer_size);
             current_offset = int64_t (out.tellp());
             verify_stream (out);
             update_counts (out);

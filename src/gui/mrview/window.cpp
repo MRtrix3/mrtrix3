@@ -1,19 +1,36 @@
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
+
 #include "app.h"
-#include "version.h"
 #include "timer.h"
 #include "file/config.h"
-#include "image/header.h"
-#include "image/voxel.h"
-#include "image/copy.h"
+#include "header.h"
+#include "algo/copy.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
+#include "gui/dialog/dialog.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/opengl.h"
+#include "gui/dialog/progress.h"
 #include "gui/dialog/image_properties.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/mode/list.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/list.h"
+
 
 namespace MR
 {
@@ -35,12 +52,14 @@ namespace MR
 #undef MODE_OPTION
 */
 
-      
+      Window* Window::main = nullptr;
+      bool Window::tools_floating = false;
+
       namespace {
 
         Qt::KeyboardModifiers get_modifier (const char* key, Qt::KeyboardModifiers default_key) {
           std::string value = lowercase (MR::File::Config::get (key));
-          if (value.empty()) 
+          if (value.empty())
             return default_key;
 
           if (value == "shift") return Qt::ShiftModifier;
@@ -51,7 +70,7 @@ namespace MR
 #else
           if (value == "ctrl") return Qt::ControlModifier;
           if (value == "meta" || value == "win") return Qt::MetaModifier;
-#endif 
+#endif
 
           throw Exception ("no such modifier \"" + value + "\" (parsed from config file)");
           return Qt::NoModifier;
@@ -81,25 +100,34 @@ namespace MR
 
 
       // GLArea definitions:
-      
+
       Window::GLArea::GLArea (Window& parent) :
-        QGLWidget (GL::core_format(), &parent),
-        main (parent) {
+        GL::Area (&parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
           setAcceptDrops (true);
+          setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
+          grabGesture (Qt::PinchGesture);
+          grabGesture (Qt::PanGesture);
           QFont font_ = font();
+          //CONF option: FontSize
+          //CONF The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
+          //CONF default: 10
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
           setFont (font_);
+          QSizePolicy policy (QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+          policy.setHorizontalStretch (255);
+          policy.setVerticalStretch (255);
+          setSizePolicy (policy);
         }
 
-      QSize Window::GLArea::minimumSizeHint () const {
-        return QSize (256, 256);
-      }
       QSize Window::GLArea::sizeHint () const {
+        //CONF option: MRViewInitWindowSize
+        //CONF Initial window size of MRView in pixels.
+        //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
-        std::vector<int> init_window_size;
+        vector<int> init_window_size;
         if (init_size_string.length())
           init_window_size = parse_ints(init_size_string);
         if (init_window_size.size() == 2)
@@ -119,38 +147,44 @@ namespace MR
       void Window::GLArea::dropEvent (QDropEvent* event) {
         const QMimeData* mimeData = event->mimeData();
         if (mimeData->hasUrls()) {
-          VecPtr<MR::Image::Header> list;
+          vector<std::unique_ptr<MR::Header>> list;
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (new MR::Image::Header (urlList.at (i).path().toUtf8().constData()));
+              list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
             }
             catch (Exception& e) {
               e.display();
             }
           }
           if (list.size())
-            main.add_images (list);
+            main->add_images (list);
         }
       }
 
       void Window::GLArea::initializeGL () {
-        main.initGL();
+        main->initGL();
       }
       void Window::GLArea::paintGL () {
-        main.paintGL();
+        main->paintGL();
       }
       void Window::GLArea::mousePressEvent (QMouseEvent* event) {
-        main.mousePressEventGL (event);
+        main->mousePressEventGL (event);
       }
       void Window::GLArea::mouseMoveEvent (QMouseEvent* event) {
-        main.mouseMoveEventGL (event);
+        main->mouseMoveEventGL (event);
       }
       void Window::GLArea::mouseReleaseEvent (QMouseEvent* event) {
-        main.mouseReleaseEventGL (event);
+        main->mouseReleaseEventGL (event);
       }
       void Window::GLArea::wheelEvent (QWheelEvent* event) {
-        main.wheelEventGL (event);
+        main->wheelEventGL (event);
+      }
+
+      bool Window::GLArea::event (QEvent* event) {
+        if (event->type() == QEvent::Gesture)
+          return main->gestureEventGL (static_cast<QGestureEvent*>(event));
+        return QWidget::event(event);
       }
 
 
@@ -162,21 +196,21 @@ namespace MR
 
 
 
-      //CONF option: MRViewFocusModifierKey 
-      //CONF default: alt (cmd on MacOSX) 
-      //CONF modifier key to select focus mode in MRView. Valid
+      //CONF option: MRViewFocusModifierKey
+      //CONF default: meta (cmd on MacOSX)
+      //CONF Modifier key to select focus mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
-      
-      //CONF option: MRViewMoveModifierKey 
+
+      //CONF option: MRViewMoveModifierKey
       //CONF default: shift
-      //CONF modifier key to select move mode in MRView. Valid
+      //CONF Modifier key to select move mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
-      
+
       //CONF option: MRViewRotateModifierKey
       //CONF default: ctrl
-      //CONF modifier key to select rotate mode in MRView. Valid
+      //CONF Modifier key to select rotate mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).
 
@@ -185,7 +219,6 @@ namespace MR
 
       Window::Window() :
         glarea (new GLArea (*this)),
-        glrefresh_timer (new QTimer (this)),
         mode (nullptr),
         font (glarea->font()),
 #ifdef MRTRIX_MACOSX
@@ -196,469 +229,615 @@ namespace MR
         MoveModifier (get_modifier ("MRViewMoveModifierKey", Qt::ShiftModifier)),
         RotateModifier (get_modifier ("MRViewRotateModifierKey", Qt::ControlModifier)),
         mouse_action (NoAction),
-        orient (NAN, NAN, NAN, NAN),
+        focal_point { NAN, NAN, NAN },
+        camera_target { NAN, NAN, NAN },
+        orient (),
         field_of_view (100.0),
         anatomical_plane (2),
-        colourbar_position_index (2),
+        colourbar_position (ColourBars::Position::BottomRight),
+        tools_colourbar_position (ColourBars::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
-        tool_has_focus (nullptr)
-      {
+        tool_has_focus (nullptr),
+        best_FPS (NAN),
+        show_FPS (false),
+        current_option (0) {
+          main = this;
+          GUI::App::set_main_window (this, glarea);
+          GUI::Dialog::init();
 
-        setDockOptions (AllowTabbedDocks);
-        setDocumentMode (true);
+          setDockOptions (AllowTabbedDocks | VerticalTabs);
+          setDocumentMode (true);
 
-        Options opt = get_options ("batch");
-        for (size_t n = 0; n < opt.size(); ++n) {
-          std::ifstream batch_file (opt[n][0].c_str());
-          if (!batch_file) 
-            throw Exception ("error opening batch file \"" + opt[n][0] + "\": " + strerror (errno));
-          std::string command;
-          while (getline (batch_file, command)) 
-            batch_commands.push_back (command);
-        }
-
-        opt = get_options ("run");
-        for (size_t n = 0; n < opt.size(); ++n) 
-          batch_commands.push_back (opt[n][0]);
-
-
-        setWindowTitle (tr ("MRView"));
-        setWindowIcon (QPixmap (":/mrtrix.png"));
-        { 
-          int iconsize = MR::File::Config::get_int ("IconSize", 24);
-          setIconSize (QSize (iconsize, iconsize));
-        }
-        setCentralWidget (glarea);
-        QToolBar* toolbar;
-        QAction* action;
-        QMenu* menu;
-        QToolButton* button;
-
-        setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::North);
-
-        // Main toolbar:
-
-        Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
-        {
-          std::string toolbar_pos_spec = lowercase (MR::File::Config::get ("InitialToolBarPosition"));
-          if (toolbar_pos_spec.size()) {
-            if (toolbar_pos_spec == "bottom") toolbar_position = Qt::BottomToolBarArea;
-            else if (toolbar_pos_spec == "left") toolbar_position = Qt::LeftToolBarArea;
-            else if (toolbar_pos_spec == "right") toolbar_position = Qt::RightToolBarArea;
-            else if (toolbar_pos_spec != "top")
-              WARN ("invalid value for configuration entry \"InitialToolBarPosition\"");
+          //CONF option: IconSize
+          //CONF default: 30
+          //CONF The size of the icons in the main MRView toolbar.
+          setWindowTitle (tr ("MRView"));
+          setWindowIcon (QPixmap (":/mrtrix.png"));
+          {
+            int iconsize = MR::File::Config::get_int ("IconSize", 30);
+            setIconSize (QSize (iconsize, iconsize));
           }
-        }
+          setCentralWidget (glarea);
+          QToolBar* toolbar;
+          QAction* action;
+          QMenu* menu;
+          QToolButton* button;
 
-        Qt::ToolButtonStyle button_style = static_cast<Qt::ToolButtonStyle> (MR::File::Config::get_int ("ToolbarStyle", 2));
+          setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
 
-        toolbar = new QToolBar ("Main toolbar", this);
-        addToolBar (toolbar_position, toolbar);
-        action = toolbar->toggleViewAction ();
-        action->setShortcut (tr ("Ctrl+M"));
-        addAction (action);
+          //CONF option: MRViewDockFloating
+          //CONF default: 0 (false)
+          //CONF Whether MRView tools should start docked in the main window, or
+          //CONF floating (detached from the main window).
+          tools_floating = MR::File::Config::get_bool ("MRViewDockFloating", false);
 
-        // File menu:
+          // Main toolbar:
 
-        menu = new QMenu (tr ("File menu"), this);
+          //CONF option: InitialToolBarPosition
+          //CONF default: top
+          //CONF The starting position of the MRView toolbar. Valid values are:
+          //CONF top, bottom, left, right.
+          Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
+          {
+            std::string toolbar_pos_spec = lowercase (MR::File::Config::get ("InitialToolBarPosition"));
+            if (toolbar_pos_spec.size()) {
+              if (toolbar_pos_spec == "bottom") toolbar_position = Qt::BottomToolBarArea;
+              else if (toolbar_pos_spec == "left") toolbar_position = Qt::LeftToolBarArea;
+              else if (toolbar_pos_spec == "right") toolbar_position = Qt::RightToolBarArea;
+              else if (toolbar_pos_spec != "top")
+                WARN ("invalid value for configuration entry \"InitialToolBarPosition\"");
+            }
+          }
 
-        action = menu->addAction (tr ("Open..."), this, SLOT (image_open_slot()));
-        action->setShortcut (tr ("Ctrl+O"));
-        addAction (action);
+          //CONF option: ToolbarStyle
+          //CONF default: 2
+          //CONF The style of the main toolbar buttons in MRView. See Qt's
+          //CONF documentation for Qt::ToolButtonStyle.
+          Qt::ToolButtonStyle button_style = static_cast<Qt::ToolButtonStyle> (MR::File::Config::get_int ("ToolbarStyle", 2));
 
-        save_action = menu->addAction (tr ("Save..."), this, SLOT (image_save_slot()));
-        save_action->setShortcut (tr ("Ctrl+S"));
-        addAction (save_action);
-
-        close_action = menu->addAction (tr ("Close"), this, SLOT (image_close_slot()));
-        close_action->setShortcut (tr ("Ctrl+W"));
-        addAction (close_action);
-
-        menu->addSeparator();
-
-        action = menu->addAction (tr ("DICOM import..."), this, SLOT (image_import_DICOM_slot()));
-        action->setShortcut (tr ("Ctrl+D"));
-        addAction (action);
-
-        menu->addSeparator();
-
-        action = menu->addAction (tr ("Quit"), this, SLOT (close()));
-        action->setShortcut (tr ("Ctrl+Q"));
-        addAction (action);
-
-
-        button = new QToolButton (this);
-        button->setText ("File");
-        button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("File menu"));
-        button->setIcon (QIcon (":/start.svg"));
-        button->setPopupMode (QToolButton::InstantPopup);
-        button->setMenu (menu);
-        toolbar->addWidget (button);
+          toolbar = new QToolBar ("Main toolbar", this);
+          addToolBar (toolbar_position, toolbar);
+          action = toolbar->toggleViewAction ();
+          action->setShortcut (tr ("Ctrl+M"));
+          addAction (action);
 
 
-        // Image menu:
+          // File menu:
+          menu = new QMenu (tr ("File menu"), this);
 
-        image_menu = new QMenu (tr ("Image menu"), this);
+          action = menu->addAction (tr ("Open..."), this, SLOT (image_open_slot()));
+          action->setShortcut (tr ("Ctrl+O"));
+          addAction (action);
 
-        image_group = new QActionGroup (this);
-        image_group->setExclusive (true);
-        connect (image_group, SIGNAL (triggered (QAction*)), this, SLOT (image_select_slot (QAction*)));
+          save_action = menu->addAction (tr ("Save..."), this, SLOT (image_save_slot()));
+          save_action->setShortcut (tr ("Ctrl+S"));
+          addAction (save_action);
 
-        properties_action = image_menu->addAction (tr ("Properties..."), this, SLOT (image_properties_slot()));
-        properties_action->setToolTip (tr ("Display the properties of the current image\n\nShortcut: Ctrl+P"));
-        addAction (properties_action);
+          close_action = menu->addAction (tr ("Close"), this, SLOT (image_close_slot()));
+          close_action->setShortcut (tr ("Ctrl+W"));
+          addAction (close_action);
 
-        image_menu->addSeparator();
+          menu->addSeparator();
 
-        next_slice_action = image_menu->addAction (tr ("Next slice"), this, SLOT (slice_next_slot()));
-        next_slice_action->setShortcut (tr ("Up"));
-        addAction (next_slice_action);
+          action = menu->addAction (tr ("DICOM import..."), this, SLOT (image_import_DICOM_slot()));
+          action->setShortcut (tr ("Ctrl+D"));
+          addAction (action);
 
-        prev_slice_action = image_menu->addAction (tr ("Previous slice"), this, SLOT (slice_previous_slot()));
-        prev_slice_action->setShortcut (tr ("Down"));
-        addAction (prev_slice_action);
+          menu->addSeparator();
 
-        next_image_volume_action = image_menu->addAction (tr ("Next volume"), this, SLOT (image_next_volume_slot()));
-        next_image_volume_action->setShortcut (tr ("Right"));
-        addAction (next_image_volume_action);
-
-        prev_image_volume_action = image_menu->addAction (tr ("Previous volume"), this, SLOT (image_previous_volume_slot()));
-        prev_image_volume_action->setShortcut (tr ("Left"));
-        addAction (prev_image_volume_action);
-
-        next_image_volume_group_action = image_menu->addAction (tr ("Next volume group"), this, SLOT (image_next_volume_group_slot()));
-        next_image_volume_group_action->setShortcut (tr ("Shift+Right"));
-        addAction (next_image_volume_group_action);
-
-        prev_image_volume_group_action = image_menu->addAction (tr("Previous volume group"), this, SLOT (image_previous_volume_group_slot()));
-        prev_image_volume_group_action->setShortcut (tr ("Shift+Left"));
-        addAction (prev_image_volume_group_action);
-
-        image_menu->addSeparator();
-
-        next_image_action = image_menu->addAction (tr ("Next image"), this, SLOT (image_next_slot()));
-        next_image_action->setShortcut (tr ("PgDown"));
-        addAction (next_image_action);
-
-        prev_image_action = image_menu->addAction (tr ("Previous image"), this, SLOT (image_previous_slot()));
-        prev_image_action->setShortcut (tr ("PgUp"));
-        addAction (prev_image_action);
-
-        image_list_area = image_menu->addSeparator();
-
-        button = new QToolButton (this);
-        button->setText ("Image");
-        button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("Image menu"));
-        button->setIcon (QIcon (":/image.svg"));
-        button->setPopupMode (QToolButton::InstantPopup);
-        button->setMenu (image_menu);
-        toolbar->addWidget (button);
+          action = menu->addAction (tr ("Quit"), this, SLOT (close()));
+          action->setShortcut (tr ("Ctrl+Q"));
+          addAction (action);
 
 
-        // Colourmap menu:
-
-        colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
-
-        ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, true);
-        connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
-
-        colourmap_menu->addSeparator();
-
-        invert_scale_action = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_scaling_slot()));
-        invert_scale_action->setCheckable (true);
-        invert_scale_action->setShortcut (tr("U"));
-        addAction (invert_scale_action);
-
-        colourmap_menu->addSeparator();
-
-        reset_windowing_action = colourmap_menu->addAction (tr ("Reset brightness/contrast"), this, SLOT (image_reset_slot()));
-        reset_windowing_action->setShortcut (tr ("Esc"));
-        addAction (reset_windowing_action);
-
-        image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
-        image_interpolate_action->setShortcut (tr ("I"));
-        image_interpolate_action->setCheckable (true);
-        image_interpolate_action->setChecked (true);
-        addAction (image_interpolate_action);
-
-        button = new QToolButton (this);
-        button->setText ("Colourmap");
-        button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("Colourmap menu"));
-        button->setIcon (QIcon (":/colourmap.svg"));
-        button->setPopupMode (QToolButton::InstantPopup);
-        button->setMenu (colourmap_menu);
-        toolbar->addWidget (button);
+          button = new QToolButton (this);
+          button->setText ("File");
+          button->setToolButtonStyle (button_style);
+          button->setToolTip (tr ("Load and save images"));
+          button->setIcon (QIcon (":/file.svg"));
+          button->setPopupMode (QToolButton::InstantPopup);
+          button->setMenu (menu);
+          toolbar->addWidget (button);
 
 
+          // Image menu:
+          image_menu = new QMenu (tr ("Image menu"), this);
+
+          image_group = new QActionGroup (this);
+          image_group->setExclusive (true);
+          connect (image_group, SIGNAL (triggered (QAction*)), this, SLOT (image_select_slot (QAction*)));
+
+          properties_action = image_menu->addAction (tr ("Properties..."), this, SLOT (image_properties_slot()));
+          properties_action->setToolTip (tr ("Display the properties of the current image\n\nShortcut: Ctrl+P"));
+          addAction (properties_action);
+
+          image_menu->addSeparator();
+
+          next_slice_action = image_menu->addAction (tr ("Next slice"), this, SLOT (slice_next_slot()));
+          next_slice_action->setShortcut (tr ("Up"));
+          addAction (next_slice_action);
+
+          prev_slice_action = image_menu->addAction (tr ("Previous slice"), this, SLOT (slice_previous_slot()));
+          prev_slice_action->setShortcut (tr ("Down"));
+          addAction (prev_slice_action);
+
+          image_menu->addSeparator();
+
+          //CONF option: MRViewWrapVolumes
+          //CONF default: false
+          //CONF Wrap volumes around when cycling through
+          wrap_volumes_action = image_menu->addAction (tr ("Wrap volumes"), this, SLOT (wrap_volumes_slot()));
+          wrap_volumes_action->setShortcut (tr ("w"));
+          wrap_volumes_action->setCheckable (true);
+          wrap_volumes_action->setChecked (File::Config::get_bool("MRViewWrapVolumes",false));
+          addAction (wrap_volumes_action);
+
+          image_menu->addSeparator();
+
+          next_image_volume_action = image_menu->addAction (tr ("Next volume"), this, SLOT (image_next_volume_slot()));
+          next_image_volume_action->setShortcut (tr ("Right"));
+          addAction (next_image_volume_action);
+
+          prev_image_volume_action = image_menu->addAction (tr ("Previous volume"), this, SLOT (image_previous_volume_slot()));
+          prev_image_volume_action->setShortcut (tr ("Left"));
+          addAction (prev_image_volume_action);
+
+          goto_image_volume_action = image_menu->addAction (tr ("Go to volume..."), this, SLOT (image_goto_volume_slot()));
+          goto_image_volume_action->setShortcut (tr ("g"));
+          addAction (goto_image_volume_action);
+
+          image_menu->addSeparator();
+
+          next_image_volume_group_action = image_menu->addAction (tr ("Next volume group"), this, SLOT (image_next_volume_group_slot()));
+          next_image_volume_group_action->setShortcut (tr ("Shift+Right"));
+          addAction (next_image_volume_group_action);
+
+          prev_image_volume_group_action = image_menu->addAction (tr("Previous volume group"), this, SLOT (image_previous_volume_group_slot()));
+          prev_image_volume_group_action->setShortcut (tr ("Shift+Left"));
+          addAction (prev_image_volume_group_action);
+
+          goto_image_volume_group_action = image_menu->addAction (tr ("Go to volume group..."), this, SLOT (image_goto_volume_group_slot()));
+          goto_image_volume_group_action->setShortcut (tr ("Shift+g"));
+          addAction (goto_image_volume_group_action);
+
+          image_menu->addSeparator();
+
+          next_image_action = image_menu->addAction (tr ("Next image"), this, SLOT (image_next_slot()));
+          next_image_action->setShortcut (tr ("PgDown"));
+          addAction (next_image_action);
+
+          prev_image_action = image_menu->addAction (tr ("Previous image"), this, SLOT (image_previous_slot()));
+          prev_image_action->setShortcut (tr ("PgUp"));
+          addAction (prev_image_action);
+
+          image_list_area = image_menu->addSeparator();
+
+          button = new QToolButton (this);
+          button->setText ("Image");
+          button->setToolButtonStyle (button_style);
+          button->setToolTip (tr ("Navigate the image"));
+          button->setIcon (QIcon (":/image.svg"));
+          button->setPopupMode (QToolButton::InstantPopup);
+          button->setMenu (image_menu);
+          toolbar->addWidget (button);
 
 
-        // Mode menu:
-        mode_group = new QActionGroup (this);
-        mode_group->setExclusive (true);
-        connect (mode_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mode_slot (QAction*)));
+          // Colourmap menu:
+          colourmap_button = new ColourMapButton (this, *this, true, true, false);
+          colourmap_button->setText ("Colourmap");
+          colourmap_button->setToolButtonStyle (button_style);
+          colourmap_button->setToolTip (tr ("Change the colourmap"));
+          colourmap_button->setPopupMode (QToolButton::InstantPopup);
 
-        menu = new QMenu ("Display mode", this);
+          QMenu* colourmap_menu = colourmap_button->menu();
+
+          invert_scale_action = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_scaling_slot()));
+          invert_scale_action->setCheckable (true);
+          invert_scale_action->setShortcut (tr("U"));
+          addAction (invert_scale_action);
+
+          colourmap_menu->addSeparator();
+
+          reset_windowing_action = colourmap_menu->addAction (tr ("Reset brightness/contrast"), this, SLOT (image_reset_slot()));
+          reset_windowing_action->setShortcut (tr ("Esc"));
+          addAction (reset_windowing_action);
+
+          //CONF option: ImageInterpolation
+          //CONF default: true
+          //CONF Interpolation switched on in the main image.
+          image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
+          image_interpolate_action->setShortcut (tr ("I"));
+          image_interpolate_action->setCheckable (true);
+          image_interpolate_action->setChecked (File::Config::get_bool("ImageInterpolation", true));
+          addAction (image_interpolate_action);
+
+          toolbar->addWidget (colourmap_button);
+
+
+          // Mode menu:
+          mode_group = new QActionGroup (this);
+          mode_group->setExclusive (true);
+          connect (mode_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mode_slot (QAction*)));
+
+          menu = new QMenu ("Display mode", this);
 #define MODE(classname, specifier, name, description) \
-        menu->addAction (new Mode::Action<Mode::classname> (mode_group, #name, #description, n++));
+          menu->addAction (new Mode::Action<Mode::classname> (mode_group, #name, #description, n++));
 #define MODE_OPTION(classname, specifier, name, description) MODE(classname, specifier, name, description)
-        {
-          size_t n = 1;
+          {
+            size_t n = 1;
 #include "gui/mrview/mode/list.h"
-        }
+          }
 #undef MODE
 #undef MODE_OPTION
-        mode_group->actions()[0]->setChecked (true);
-        for (int n = 0; n < mode_group->actions().size(); ++n)
-          addAction (mode_group->actions()[n]);
+          mode_group->actions()[0]->setChecked (true);
+          for (int n = 0; n < mode_group->actions().size(); ++n)
+            addAction (mode_group->actions()[n]);
 
 
-        menu->addSeparator();
+          menu->addSeparator();
 
-        plane_group = new QActionGroup (this);
-        plane_group->setExclusive (true);
-        connect (plane_group, SIGNAL (triggered (QAction*)), this, SLOT (select_plane_slot (QAction*)));
+          plane_group = new QActionGroup (this);
+          plane_group->setExclusive (true);
+          connect (plane_group, SIGNAL (triggered (QAction*)), this, SLOT (select_plane_slot (QAction*)));
 
-        axial_action = menu->addAction (tr ("Axial"));
-        axial_action->setShortcut (tr ("A"));
-        axial_action->setCheckable (true);
-        plane_group->addAction (axial_action);
-        addAction (axial_action);
+          axial_action = menu->addAction (tr ("Axial"));
+          axial_action->setShortcut (tr ("A"));
+          axial_action->setCheckable (true);
+          plane_group->addAction (axial_action);
+          addAction (axial_action);
 
-        sagittal_action = menu->addAction (tr ("Sagittal"));
-        sagittal_action->setShortcut (tr ("S"));
-        sagittal_action->setCheckable (true);
-        plane_group->addAction (sagittal_action);
-        addAction (sagittal_action);
+          sagittal_action = menu->addAction (tr ("Sagittal"));
+          sagittal_action->setShortcut (tr ("S"));
+          sagittal_action->setCheckable (true);
+          plane_group->addAction (sagittal_action);
+          addAction (sagittal_action);
 
-        coronal_action = menu->addAction (tr ("Coronal"));
-        coronal_action->setShortcut (tr ("C"));
-        coronal_action->setCheckable (true);
-        plane_group->addAction (coronal_action);
-        addAction (coronal_action);
+          coronal_action = menu->addAction (tr ("Coronal"));
+          coronal_action->setShortcut (tr ("C"));
+          coronal_action->setCheckable (true);
+          plane_group->addAction (coronal_action);
+          addAction (coronal_action);
 
-        menu->addSeparator();
+          menu->addSeparator();
 
-        action = menu->addAction (tr ("Toggle all annotations"), this, SLOT (toggle_annotations_slot()));
-        action->setShortcut (tr("Space"));
-        addAction (action);
+          action = menu->addAction (tr ("Zoom in"), this, SLOT (zoom_in_slot()));
+          action->setShortcut (tr("Ctrl++"));
+          addAction (action);
 
-        show_crosshairs_action = menu->addAction (tr ("Show focus"), this, SLOT (updateGL()));
-        show_crosshairs_action->setShortcut (tr("F"));
-        show_crosshairs_action->setCheckable (true);
-        show_crosshairs_action->setChecked (true);
-        addAction (show_crosshairs_action);
+          action = menu->addAction (tr ("Zoom out"), this, SLOT (zoom_out_slot()));
+          action->setShortcut (tr("Ctrl+-"));
+          addAction (action);
 
-        show_comments_action = menu->addAction (tr ("Show comments"), this, SLOT (updateGL()));
-        show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
-        show_comments_action->setShortcut (tr("H"));
-        show_comments_action->setCheckable (true);
-        show_comments_action->setChecked (true);
-        addAction (show_comments_action);
+          menu->addSeparator();
 
-        show_voxel_info_action = menu->addAction (tr ("Show voxel information"), this, SLOT (updateGL()));
-        show_voxel_info_action->setShortcut (tr("V"));
-        show_voxel_info_action->setCheckable (true);
-        show_voxel_info_action->setChecked (true);
-        addAction (show_voxel_info_action);
+          action = menu->addAction (tr ("Toggle all annotations"), this, SLOT (toggle_annotations_slot()));
+          action->setShortcut (tr("Space"));
+          addAction (action);
 
-        show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), this, SLOT (updateGL()));
-        show_orientation_labels_action->setShortcut (tr("O"));
-        show_orientation_labels_action->setCheckable (true);
-        show_orientation_labels_action->setChecked (true);
-        addAction (show_orientation_labels_action);
+          //CONF option: MRViewShowFocus
+          //CONF default: true
+          //CONF Focus cross hair shown in main image.
+          show_crosshairs_action = menu->addAction (tr ("Show focus"), glarea, SLOT (update()));
+          show_crosshairs_action->setShortcut (tr("F"));
+          show_crosshairs_action->setCheckable (true);
+          show_crosshairs_action->setChecked (File::Config::get_bool("MRViewShowFocus",true));
+          addAction (show_crosshairs_action);
 
-        show_colourbar_action = menu->addAction (tr ("Show colour bar"), this, SLOT (updateGL()));
-        show_colourbar_action->setShortcut (tr("B"));
-        show_colourbar_action->setCheckable (true);
-        show_colourbar_action->setChecked (true);
-        addAction (show_colourbar_action);
+          //CONF option: MRViewShowComments
+          //CONF default: true
+          //CONF Comments shown in main image overlay.
+          show_comments_action = menu->addAction (tr ("Show comments"), glarea, SLOT (update()));
+          show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
+          show_comments_action->setShortcut (tr("H"));
+          show_comments_action->setCheckable (true);
+          show_comments_action->setChecked (File::Config::get_bool("MRViewShowComments",true));
+          addAction (show_comments_action);
 
-        menu->addSeparator();
+          //CONF option: MRViewShowVoxelInformation
+          //CONF default: true
+          //CONF Voxel information shown in main image overlay.
+          show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (update()));
+          show_voxel_info_action->setShortcut (tr("V"));
+          show_voxel_info_action->setCheckable (true);
+          show_voxel_info_action->setChecked (File::Config::get_bool("MRViewShowVoxelInformation",true));
+          addAction (show_voxel_info_action);
 
-        full_screen_action = menu->addAction (tr ("Full screen"), this, SLOT (full_screen_slot()));
-        full_screen_action->setShortcut (tr ("F11"));
-        full_screen_action->setCheckable (true);
-        full_screen_action->setChecked (false);
-        addAction (full_screen_action);
+          //CONF option: MRViewShowOrientationLabel
+          //CONF default: true
+          //CONF Anatomical orientation information shown in main image overlay.
+          show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (update()));
+          show_orientation_labels_action->setShortcut (tr("O"));
+          show_orientation_labels_action->setCheckable (true);
+          show_orientation_labels_action->setChecked (File::Config::get_bool("MRViewShowOrientationLabel",true));
+          addAction (show_orientation_labels_action);
 
-        action = menu->addAction (tr ("Reset view"), this, SLOT(reset_view_slot()));
-        action->setShortcut (tr ("R"));
-        addAction (action);
+          //CONF option: MRViewShowColourbar
+          //CONF default: true
+          //CONF Colourbar shown in main image overlay.
+          show_colourbar_action = menu->addAction (tr ("Show colour bar"), glarea, SLOT (update()));
+          show_colourbar_action->setShortcut (tr("B"));
+          show_colourbar_action->setCheckable (true);
+          show_colourbar_action->setChecked (File::Config::get_bool("MRViewShowColourbar",true));
+          addAction (show_colourbar_action);
 
-        button = new QToolButton (this);
-        button->setText ("View");
-        button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("Display"));
-        button->setIcon (QIcon (":/mode.svg"));
-        button->setMenu (menu);
-        button->setPopupMode (QToolButton::InstantPopup);
-        toolbar->addWidget (button);
+          menu->addSeparator();
+
+          action = menu->addAction (tr ("Background colour..."), this, SLOT (background_colour_slot()));
+          action->setCheckable (false);
+          addAction (action);
+
+          image_hide_action = menu->addAction (tr ("Hide main image"), this, SLOT (hide_image_slot()));
+          image_hide_action->setShortcut (tr ("M"));
+          image_hide_action->setCheckable (true);
+          image_hide_action->setChecked (false);
+          addAction (image_hide_action);
+
+		  menu->addSeparator();
+		  //CONF option: MRViewSyncFocus
+          //CONF default: false
+          //CONF Whether to sync the focus in mrview between other mrview processes.
+          sync_focus_action = menu->addAction (tr ("Sync focus with other windows"), this, SLOT (sync_slot()));
+          sync_focus_action->setCheckable (true);
+          sync_focus_action->setChecked (File::Config::get_bool("MRViewSyncFocus",false));
+          addAction (sync_focus_action);
+          menu->addSeparator();
+
+          full_screen_action = menu->addAction (tr ("Full screen"), this, SLOT (full_screen_slot()));
+          full_screen_action->setShortcut (tr ("F11"));
+          full_screen_action->setCheckable (true);
+          full_screen_action->setChecked (false);
+          addAction (full_screen_action);
+
+          action = menu->addAction (tr ("Reset view"), this, SLOT(reset_view_slot()));
+          action->setShortcut (tr ("R"));
+          addAction (action);
+
+          button = new QToolButton (this);
+          button->setText ("View");
+          button->setToolButtonStyle (button_style);
+          button->setToolTip (tr ("View modes and options"));
+          button->setIcon (QIcon (":/view.svg"));
+          button->setMenu (menu);
+          button->setPopupMode (QToolButton::InstantPopup);
+          toolbar->addWidget (button);
+
+          toolbar->addSeparator();
 
 
+          // Mouse mode actions:
+          mode_action_group = new QActionGroup (this);
+          mode_action_group->setExclusive (true);
+          connect (mode_action_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mouse_mode_slot (QAction*)));
 
+          std::string modifier;
+          action = toolbar->addAction (QIcon (":/select_contrast.svg"), tr ("Change focus / contrast"));
+          action->setToolTip (tr ((
+                  "Left-click: set focus\n"
+                  "Right-click: change brightness/constrast\n\n"
+                  "Shortcut: 1\n\n"
+                  "Hold down " + get_modifier (FocusModifier) + " key to use this mode\n"
+                  "regardless of currently selected mode").c_str()));
+          action->setShortcut (tr("1"));
+          action->setCheckable (true);
+          action->setChecked (true);
+          mode_action_group->addAction (action);
 
-        // Tool menu:
-        tool_group = new QActionGroup (this);
-        tool_group->setExclusive (false);
-        connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
+          action = toolbar->addAction (QIcon (":/move.svg"), tr ("Move viewport"));
+          action->setToolTip (tr ((
+                  "Left-click: move in-plane\n"
+                  "Right-click: move through-plane\n\n"
+                  "Shortcut: 2\n\n"
+                  "Hold down " + get_modifier (MoveModifier) + " key to use this mode\n"
+                  "regardless of currently selected mode").c_str()));
+          action->setShortcut (tr("2"));
+          action->setCheckable (true);
+          mode_action_group->addAction (action);
 
-        menu = new QMenu (tr ("Tools"), this);
-#undef TOOL
-#define TOOL(classname, name, description) \
-        menu->addAction (new Action<Tool::classname> (tool_group, #name, #description, n++));
-#define TOOL_OPTION(classname, name, description) TOOL(classname, name, description)
-        {
-          using namespace Tool;
-          size_t n = 1;
-#include "gui/mrview/tool/list.h"
-        }
-        for (int n = 0; n < tool_group->actions().size(); ++n)
-          addAction (tool_group->actions()[n]);
+          action = toolbar->addAction (QIcon (":/rotate.svg"), tr ("Move camera"));
+          action->setToolTip (tr ((
+                  "Left-click: move camera in-plane\n"
+                  "Right-click: rotate camera about view axis\n\n"
+                  "Shortcut: 3\n\n"
+                  "Hold down " + get_modifier (RotateModifier) + " key to use this mode\n"
+                  "regardless of currently selected mode").c_str()));
+          action->setShortcut (tr("3"));
+          action->setCheckable (true);
+          mode_action_group->addAction (action);
 
-        button = new QToolButton (this);
-        button->setText ("Tool");
-        button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("Select additional tools..."));
-        button->setIcon (QIcon (":/tools.svg"));
-        button->setMenu (menu);
-        button->setPopupMode (QToolButton::InstantPopup);
-        toolbar->addWidget (button);
+          for (int n = 0; n < mode_action_group->actions().size(); ++n)
+            addAction (mode_action_group->actions()[n]);
 
+          toolbar->addSeparator();
 
-
-
-        toolbar->addSeparator();
-
-
-
-        // Mouse mode actions:
-
-
-        mode_action_group = new QActionGroup (this);
-        mode_action_group->setExclusive (true);
-        connect (mode_action_group, SIGNAL (triggered (QAction*)), this, SLOT (select_mouse_mode_slot (QAction*)));
-
-        std::string modifier;
-        action = toolbar->addAction (QIcon (":/select_contrast.svg"), tr ("Change focus / contrast"));
-        action->setToolTip (tr ((
-                "Left-click: set focus\n"
-                "Right-click: change brightness/constrast\n\n"
-                "Shortcut: 1\n\n"
-                "Hold down " + get_modifier (FocusModifier) + " key to use this mode\n"
-                "regardless of currently selected mode").c_str()));
-        action->setShortcut (tr("1"));
-        action->setCheckable (true);
-        action->setChecked (true);
-        mode_action_group->addAction (action);
-
-        action = toolbar->addAction (QIcon (":/move.svg"), tr ("Move viewport"));
-        action->setToolTip (tr ((
-                "Left-click: move in-plane\n"
-                "Right-click: move through-plane\n\n"
-                "Shortcut: 2\n\n"
-                "Hold down " + get_modifier (MoveModifier) + " key to use this mode\n"
-                "regardless of currently selected mode").c_str()));
-        action->setShortcut (tr("2"));
-        action->setCheckable (true);
-        mode_action_group->addAction (action);
-
-        action = toolbar->addAction (QIcon (":/rotate.svg"), tr ("Move camera"));
-        action->setToolTip (tr ((
-                "Left-click: move camera in-plane\n"
-                "Right-click: rotate camera about view axis\n\n"
-                "Shortcut: 3\n\n"
-                "Hold down " + get_modifier (RotateModifier) + " key to use this mode\n"
-                "regardless of currently selected mode").c_str()));
-        action->setShortcut (tr("3"));
-        action->setCheckable (true);
-        mode_action_group->addAction (action);
-
-        for (int n = 0; n < mode_action_group->actions().size(); ++n)
-          addAction (mode_action_group->actions()[n]);
-
-        toolbar->addSeparator();
-
-        snap_to_image_action = toolbar->addAction (QIcon (":/lock.svg"), 
-            tr ("Snap to image"), this, SLOT (snap_to_image_slot()));
-        snap_to_image_action->setToolTip (tr (
+          snap_to_image_action = toolbar->addAction (QIcon (":/lock.svg"),
+              tr ("Snap to image"), this, SLOT (snap_to_image_slot()));
+          snap_to_image_action->setToolTip (tr (
                 "Snap focus and view orientation to\n"
                 "image voxel grid and axes respectively\n\n"
                 "Shortcut: L"));
-        snap_to_image_action->setShortcut (tr("L"));
-        snap_to_image_action->setCheckable (true);
-        snap_to_image_action->setChecked (snap_to_image_axes_and_voxel);
-        addAction (snap_to_image_action);
+          snap_to_image_action->setShortcut (tr("L"));
+          snap_to_image_action->setCheckable (true);
+          snap_to_image_action->setChecked (snap_to_image_axes_and_voxel);
+          addAction (snap_to_image_action);
 
-        toolbar->addSeparator();
-
-        // Help menu:
-
-        menu = new QMenu (tr ("Help"), this);
-
-        menu->addAction (tr("OpenGL"), this, SLOT (OpenGL_slot()));
-        menu->addAction (tr ("About"), this, SLOT (about_slot()));
-        menu->addAction (tr ("about Qt"), this, SLOT (aboutQt_slot()));
-
-        button = new QToolButton (this);
-        button->setText ("Help");
-        button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("Help"));
-        button->setIcon (QIcon (":/help.svg"));
-        button->setPopupMode (QToolButton::InstantPopup);
-        button->setMenu (menu);
-        toolbar->addWidget (button);
+          toolbar->addSeparator();
 
 
+          // Dynamic spacer:
+          QWidget* spacer = new QWidget();
+          spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+          toolbar->addWidget (spacer);
 
-        lighting_ = new GL::Lighting (this);
-        connect (lighting_, SIGNAL (changed()), this, SLOT (updateGL()));
 
-        set_image_menu ();
+          // Tool menu:
+          tool_group = new QActionGroup (this);
+          tool_group->setExclusive (false);
+          connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
 
-        std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition"));
-        if (cbar_pos.size()) {
-          if (cbar_pos == "bottomleft") colourbar_position_index = 1;
-          else if (cbar_pos == "bottomright") colourbar_position_index = 2;
-          else if (cbar_pos == "topleft") colourbar_position_index = 3;
-          else if (cbar_pos == "topright") colourbar_position_index = 4;
-          else 
+          menu = new QMenu (tr ("Tools"), this);
+#undef TOOL
+#define TOOL(classname, name, description) \
+          menu->addAction (new Action<Tool::classname> (tool_group, #name, #description, n++));
+          {
+            using namespace Tool;
+            size_t n = 1;
+#include "gui/mrview/tool/list.h"
+          }
+          for (int n = 0; n < tool_group->actions().size(); ++n)
+            addAction (tool_group->actions()[n]);
+
+          button = new QToolButton (this);
+          button->setText ("Tool");
+          button->setToolButtonStyle (button_style);
+          button->setToolTip (tr ("Open different tools"));
+          button->setIcon (QIcon (":/tools.svg"));
+          button->setMenu (menu);
+          button->setPopupMode (QToolButton::InstantPopup);
+          toolbar->addWidget (button);
+
+          toolbar->addSeparator();
+
+
+          // Information menu:
+
+          menu = new QMenu (tr ("Info"), this);
+
+          menu->addAction (tr ("About MRView"), this, SLOT (about_slot()));
+          menu->addAction (tr ("About Qt"), this, SLOT (aboutQt_slot()));
+          menu->addAction (tr ("OpenGL information"), this, SLOT (OpenGL_slot()));
+
+
+          button = new QToolButton (this);
+          button->setToolButtonStyle (button_style);
+          button->setToolTip (tr ("Information"));
+          button->setIcon (QIcon (":/info.svg"));
+          button->setPopupMode (QToolButton::InstantPopup);
+          button->setMenu (menu);
+          toolbar->addWidget (button);
+
+
+
+          lighting_ = new GL::Lighting (this);
+          connect (lighting_, SIGNAL (changed()), glarea, SLOT (update()));
+
+          set_image_menu ();
+
+          //CONF option: MRViewColourBarPosition
+          //CONF default: bottomright
+          //CONF The position of the colourbar within the main window in MRView.
+          //CONF Valid values are: bottomleft, bottomright, topleft, topright.
+          std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition", "bottomright"));
+          colourbar_position = parse_colourmap_position_str(cbar_pos);
+          if(!colourbar_position)
             WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
+
+          //CONF option: MRViewToolsColourBarPosition
+          //CONF default: topright
+          //CONF The position of all visible tool colourbars within the main window in MRView.
+          //CONF Valid values are: bottomleft, bottomright, topleft, topright.
+          cbar_pos = lowercase (MR::File::Config::get ("MRViewToolsColourBarPosition", "topright"));
+          tools_colourbar_position = parse_colourmap_position_str(cbar_pos);
+          if(!tools_colourbar_position)
+            WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewToolsColourBarPosition\"");
+
+
         }
 
-        glrefresh_timer->setSingleShot (true);
-        connect (glrefresh_timer, SIGNAL (timeout()), glarea, SLOT (updateGL()));
+
+
+
+
+      void Window::parse_arguments ()
+      {
+        if (MR::App::get_options ("norealign").size())
+          Header::do_realign_transform = false;
+
+        if (MR::App::argument.size()) {
+          if (MR::App::option.size())  {
+            // check that first non-standard option appears after last argument:
+            size_t last_arg_pos = 1;
+            for (; MR::App::argv[last_arg_pos] != MR::App::argument.back().c_str(); ++last_arg_pos)
+              if (MR::App::argv[last_arg_pos] == nullptr)
+                throw Exception ("FIXME: error determining position of last argument!");
+
+            // identify first non-standard option:
+            size_t first_option = 0;
+            for (; first_option < MR::App::option.size(); ++first_option) {
+              if (size_t (MR::App::option[first_option].opt - &MR::App::__standard_options[0]) >= MR::App::__standard_options.size())
+                break;
+            }
+            if (MR::App::option.size() > first_option) {
+              first_option = MR::App::option[first_option].args - MR::App::argv;
+              if (first_option < last_arg_pos)
+                throw Exception ("options must appear after the last argument - see help page for details");
+            }
+          }
+
+          vector<std::unique_ptr<MR::Header>> list;
+          for (size_t n = 0; n < MR::App::argument.size(); ++n) {
+            try { list.push_back (make_unique<MR::Header> (MR::Header::open (MR::App::argument[n]))); }
+            catch (Exception& e) { e.display(); }
+          }
+          add_images (list);
+        }
+
+        QTimer::singleShot (10, this, SLOT(process_commandline_option_slot()));
       }
 
+
+
+
+
+
+      ColourBars::Position Window::parse_colourmap_position_str (const std::string& position_str) {
+
+        ColourBars::Position pos(ColourBars::Position::None);
+
+        if(position_str == "bottomleft")
+          pos = ColourBars::Position::BottomLeft;
+        else if(position_str == "bottomright")
+          pos = ColourBars::Position::BottomRight;
+        else if(position_str == "topleft")
+          pos = ColourBars::Position::TopLeft;
+        else if(position_str == "topright")
+          pos = ColourBars::Position::TopRight;
+
+        return pos;
+      }
 
 
 
       Window::~Window ()
       {
-        mode = nullptr;
-        delete glarea;
-        delete glrefresh_timer;
-        delete [] colourmap_actions;
+        glarea->makeCurrent();
+        QList<QAction*> tools = tool_group->actions();
+        for (QAction* action : tools)
+          delete action;
+        mode.reset();
+        QList<QAction*> images = image_group->actions();
+        for (QAction* action : images)
+          delete action;
       }
 
 
 
 
-
+      void Window::sync_slot()
+      {
+        emit syncChanged();
+      }
 
 
       void Window::image_open_slot ()
       {
-        std::vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
+        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open", &current_folder);
         if (image_list.empty())
           return;
 
-        VecPtr<MR::Image::Header> list;
+        vector<std::unique_ptr<MR::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
-            list.push_back (new MR::Image::Header (image_list[n]));
+            list.push_back (make_unique<MR::Header> (MR::Header::open (image_list[n])));
           }
           catch (Exception& E) {
             E.display();
@@ -671,14 +850,14 @@ namespace MR
 
       void Window::image_import_DICOM_slot ()
       {
-        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import");
+        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import", &current_folder);
         if (folder.empty())
           return;
 
 
         try {
-          VecPtr<MR::Image::Header> list;
-          list.push_back (new MR::Image::Header (folder));
+          vector<std::unique_ptr<MR::Header>> list;
+          list.push_back (make_unique<MR::Header> (MR::Header::open (folder)));
           add_images (list);
         }
         catch (Exception& E) {
@@ -689,13 +868,46 @@ namespace MR
 
 
 
-      void Window::add_images (VecPtr<MR::Image::Header>& list)
+      void Window::add_images (vector<std::unique_ptr<MR::Header>>& list)
       {
+        if (list.empty())
+          return;
+
+        QList<QAction*> new_actions;
         for (size_t i = 0; i < list.size(); ++i) {
-          QAction* action = new Image (*this, *list[i]);
-          image_group->addAction (action);
-          if (!i) image_select_slot (action);
+          const std::string name = list[i]->name(); // Gets move-constructed out
+          QAction* action = new Image (std::move (*list[i]));
+          action->setText (shorten (name, 20, 0).c_str());
+          action->setParent (Window::main);
+          action->setCheckable (true);
+          action->setToolTip (name.c_str());
+          action->setStatusTip (name.c_str());
+          connect (action, SIGNAL(scalingChanged()), this, SLOT(on_scaling_changed()));
+          new_actions.push_back (action);
         }
+
+        QList<QAction*> previous_actions = image_group->actions();
+        previous_actions.push_back (nullptr);
+        QAction* selected = image_group->checkedAction();
+        for (auto* action : image_group->actions()) {
+          image_group->removeAction (action);
+          image_menu->removeAction (action);
+        }
+
+        for (auto* action : previous_actions) {
+          if (action) {
+            image_group->addAction (action);
+            image_menu->addAction (action);
+          }
+          if (action == selected) {
+            for (auto* added : new_actions) {
+              image_group->addAction (added);
+              image_menu->addAction (added);
+            }
+          }
+        }
+
+        image_select_slot (new_actions[0]);
         set_image_menu();
       }
 
@@ -703,14 +915,13 @@ namespace MR
 
       void Window::image_save_slot ()
       {
-        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination");
+        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination", "", &current_folder);
         if (image_name.empty())
           return;
 
         try {
-          MR::Image::Buffer<cfloat> dest (image_name, image()->header());
-          auto src (image()->voxel());
-          MR::Image::copy_with_progress (src, dest.voxel());
+          auto dest = MR::Image<cfloat>::create (image_name, image()->header());
+          MR::copy_with_progress (image()->image, dest);
         }
         catch (Exception& E) {
           E.display();
@@ -752,17 +963,19 @@ namespace MR
 
       void Window::select_mode_slot (QAction* action)
       {
-        mode = dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this);
+        glarea->makeCurrent();
+        mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create());
+        mode->set_visible(! image_hide_action->isChecked());
         set_mode_features();
         emit modeChanged();
-        updateGL();
+        glarea->update();
       }
 
 
       void Window::select_mouse_mode_slot (QAction* action)
       {
         bool rotate_button_checked = mode_action_group->actions().indexOf (action) == 2;
-        if (rotate_button_checked) 
+        if (rotate_button_checked)
           set_snap_to_image (false);
         snap_to_image_action->setEnabled (!rotate_button_checked);
         set_cursor();
@@ -774,22 +987,10 @@ namespace MR
       {
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->dock;
         if (!tool) {
-          tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
-          connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
-          for (int i = 0; i < tool_group->actions().size(); ++i) {
-            Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
-            if (other_tool && other_tool != tool) {
-              QList<QDockWidget* > list = QMainWindow::tabifiedDockWidgets (other_tool);
-              if (list.size())
-                QMainWindow::tabifyDockWidget (list.last(), tool);
-              else
-                QMainWindow::tabifyDockWidget (other_tool, tool);
-              tool->show();
-              tool->raise();
-              return;
-            }
-          }
+          create_tool (action, true);
+          return;
         }
+
         if (action->isChecked()) {
           if (!tool->isVisible())
             tool->show();
@@ -797,22 +998,64 @@ namespace MR
         } else {
           tool->close();
         }
-        updateGL();
       }
 
 
 
 
-      void Window::select_colourmap_slot ()
+
+      void Window::create_tool (QAction* action, bool show)
+      {
+        if (dynamic_cast<Tool::__Action__*>(action)->dock)
+          return;
+
+        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (tools_floating);
+        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+
+        if (!tools_floating) {
+
+          for (int i = 0; i < tool_group->actions().size(); ++i) {
+            Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
+            if (other_tool && other_tool != tool) {
+              QList<QDockWidget*> list = QMainWindow::tabifiedDockWidgets (other_tool);
+              if (list.size())
+                QMainWindow::tabifyDockWidget (list.last(), tool);
+              else
+                QMainWindow::tabifyDockWidget (other_tool, tool);
+              break;
+            }
+          }
+
+        }
+
+        if (show) {
+          tool->show();
+          tool->raise();
+        }
+        else {
+          tool->close();
+        }
+      }
+
+
+      void Window::selected_colourmap (size_t colourmap, const ColourMapButton&)
       {
         Image* imagep = image();
         if (imagep) {
-          QAction* action = colourmap_group->checkedAction();
-          size_t n = 0;
-          while (action != colourmap_actions[n])
-            ++n;
-          imagep->set_colourmap (n);
-          updateGL();
+          imagep->set_colourmap (colourmap);
+          glarea->update();
+        }
+      }
+
+
+
+      void Window::selected_custom_colour (const QColor& colour, const ColourMapButton&)
+      {
+        Image* imagep = image();
+        if (imagep) {
+          std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+          imagep->set_colour(c_colour);
+          glarea->update();
         }
       }
 
@@ -822,7 +1065,7 @@ namespace MR
       {
         if (image()) {
           image()->set_invert_scale (invert_scale_action->isChecked());
-          updateGL();
+          glarea->update();
         }
       }
 
@@ -832,16 +1075,16 @@ namespace MR
       {
         if (image()) {
           snap_to_image_axes_and_voxel = snap_to_image_action->isChecked();
-          if (snap_to_image_axes_and_voxel) 
+          if (snap_to_image_axes_and_voxel)
             mode->reset_orientation();
-          updateGL();
+          glarea->update();
         }
       }
 
 
 
 
-      void Window::on_scaling_changed () 
+      void Window::on_scaling_changed ()
       {
         emit scalingChanged();
       }
@@ -849,24 +1092,31 @@ namespace MR
 
 
 
-      void Window::updateGL () 
-      { 
-        if (glrefresh_timer->isActive())
-          return;
 
-        glrefresh_timer->start();
+      void Window::wrap_volumes_slot ()
+      {
+        set_image_navigation_menu();
+      }
+
+
+
+
+      void Window::updateGL ()
+      {
+        glarea->update();
+      }
+
+      void Window::drawGL ()
+      {
+        glarea->repaint();
       }
 
 
 
       void Window::image_reset_slot ()
       {
-        Image* imagep = image();
-        if (imagep) {
-          imagep->reset_windowing();
-          on_scaling_changed();
-          updateGL();
-        }
+        if (image())
+          mode->reset_windowing ();
       }
 
 
@@ -876,7 +1126,7 @@ namespace MR
         Image* imagep = image();
         if (imagep) {
           imagep->set_interpolate (image_interpolate_action->isChecked());
-          updateGL();
+          glarea->update();
         }
       }
 
@@ -895,25 +1145,103 @@ namespace MR
         else if (action == sagittal_action) set_plane (0);
         else if (action == coronal_action) set_plane (1);
         else assert (0);
-        updateGL();
+        glarea->update();
       }
+
+
+
+
+
+      void Window::zoom_in_slot ()
+      {
+        set_FOV (FOV() * std::exp (-0.1));
+        glarea->update();
+      }
+
+      void Window::zoom_out_slot ()
+      {
+        set_FOV (FOV() * std::exp (0.1));
+        glarea->update();
+      }
+
+
 
 
       void Window::reset_view_slot ()
       {
-        if (image())
+        if (image()) {
           mode->reset_event();
+          QList<QAction*> tools = tool_group->actions();
+          for (QAction* action : tools) {
+            Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(action)->dock;
+            if (dock)
+              dock->tool->reset_event();
+          }
+        }
       }
 
 
-      void Window::slice_next_slot () 
+
+      void Window::background_colour_slot ()
       {
-        mode->slice_move_event (1);
+        QColor colour = QColorDialog::getColor(Qt::black, this, "Select background colour", QColorDialog::DontUseNativeDialog);
+
+        if (colour.isValid()) {
+          background_colour[0] = GLubyte(colour.red()) / 255.0f;
+          background_colour[1] = GLubyte(colour.green()) / 255.0f;
+          background_colour[2] = GLubyte(colour.blue()) / 255.0f;
+          glarea->update();
+        }
+
       }
 
-      void Window::slice_previous_slot () 
+
+      void Window::set_image_volume (size_t axis, ssize_t index)
       {
-        mode->slice_move_event (-1);
+        assert (image());
+        assert (axis < image()->image.ndim());
+        if (index < 0)
+          index = wrap_volumes_action->isChecked() ? index+image()->image.size(axis) : 0;
+        else if (index >= image()->image.size(axis))
+          index = wrap_volumes_action->isChecked() ? index-image()->image.size(axis) : image()->image.size(axis)-1;
+        image()->image.index (axis) = index;
+        set_image_navigation_menu();
+        if (axis >= 3)
+          emit volumeChanged ();
+        updateGL();
+      }
+
+
+
+
+      void Window::set_image_visibility (bool flag) {
+        image_hide_action->setChecked(! flag);
+        mode->set_visible(flag);
+      }
+
+
+
+      void Window::hide_image_slot ()
+      {
+        bool visible = ! image_hide_action->isChecked();
+        mode->set_visible(visible);
+        emit imageVisibilityChanged(visible);
+      }
+
+
+
+      void Window::slice_next_slot ()
+      {
+        assert (mode);
+        if (image())
+          mode->slice_move_event (1);
+      }
+
+      void Window::slice_previous_slot ()
+      {
+        assert (mode);
+        if (image())
+          mode->slice_move_event (-1);
       }
 
 
@@ -939,12 +1267,10 @@ namespace MR
 
 
 
-      void Window::image_next_volume_slot () 
+      void Window::image_next_volume_slot ()
       {
-        assert (image());
-        ++image()->interp[3];
-        set_image_navigation_menu();
-        updateGL();
+        ssize_t vol = image()->image.index(3)+1;
+        set_image_volume (3, vol);
       }
 
 
@@ -952,21 +1278,38 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        assert (image());
-        --image()->interp[3];
-        set_image_navigation_menu();
-        updateGL();
+        ssize_t vol = image()->image.index(3)-1;
+        set_image_volume (3, vol);
       }
 
 
-
-
-      void Window::image_next_volume_group_slot () 
+      void Window::image_goto_volume_slot ()
       {
-        assert (image());
-        ++image()->interp[4];
-        set_image_navigation_menu();
-        updateGL();
+        size_t maxvol = image()->image.size(3) - 1;
+        auto label = std::string ("volume (0...") + str(maxvol) + std::string (")");
+        bool ok;
+        ssize_t vol = QInputDialog::getInt (this, tr("Go to..."),
+          label.c_str(), image()->image.index(3), 0, maxvol, 1, &ok);
+        if (ok)
+          set_image_volume (3, vol);
+      }
+
+      void Window::image_goto_volume_group_slot ()
+      {
+        size_t maxvolgroup = image()->image.size(4) - 1;
+        auto label = std::string ("volume group (0...") + str(maxvolgroup) + std::string (")");
+        bool ok;
+        ssize_t grp = QInputDialog::getInt (this, tr("Go to..."),
+          label.c_str(), image()->image.index(4), 0, maxvolgroup, 1, &ok);
+        if (ok)
+          set_image_volume (4, grp);
+      }
+
+
+      void Window::image_next_volume_group_slot ()
+      {
+        ssize_t vol = image()->image.index(4)+1;
+        set_image_volume (4, vol);
       }
 
 
@@ -974,10 +1317,8 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        assert (image());
-        --image()->interp[4];
-        set_image_navigation_menu();
-        updateGL();
+        ssize_t vol = image()->image.index(4)-1;
+        set_image_volume (4, vol);
       }
 
 
@@ -988,16 +1329,17 @@ namespace MR
         action->setChecked (true);
         image_interpolate_action->setChecked (image()->interpolate());
         size_t cmap_index = image()->colourmap;
-        colourmap_group->actions()[cmap_index]->setChecked (true);
+        colourmap_button->colourmap_actions[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->scale_inverted());
-        setWindowTitle (image()->interp.name().c_str());
+        mode->image_changed_event();
+        setWindowTitle (image()->image.name().c_str());
         set_image_navigation_menu();
         image()->set_allowed_features (
             mode->features & Mode::ShaderThreshold,
             mode->features & Mode::ShaderTransparency,
             mode->features & Mode::ShaderLighting);
         emit imageChanged();
-        updateGL();
+        glarea->update();
       }
 
 
@@ -1019,7 +1361,7 @@ namespace MR
           show_colourbar_action->setChecked (false);
         }
         else {
-          if (!annotations) 
+          if (!annotations)
             annotations = 0xFFFFFFFF;
           show_crosshairs_action->setChecked (annotations & 0x00000001);
           show_comments_action->setChecked (annotations & 0x00000002);
@@ -1027,7 +1369,7 @@ namespace MR
           show_orientation_labels_action->setChecked (annotations & 0x00000008);
           show_colourbar_action->setChecked (annotations & 0x00000010);
         }
-        updateGL();
+        glarea->update();
       }
 
 
@@ -1037,18 +1379,18 @@ namespace MR
         next_image_action->setEnabled (N>1);
         prev_image_action->setEnabled (N>1);
         reset_windowing_action->setEnabled (N>0);
-        colourmap_menu->setEnabled (N>0);
+        colourmap_button->setEnabled (N>0);
         save_action->setEnabled (N>0);
         close_action->setEnabled (N>0);
         properties_action->setEnabled (N>0);
         set_image_navigation_menu();
-        updateGL();
+        glarea->update();
       }
 
       int Window::get_mouse_mode ()
       {
         if (mouse_action == NoAction && modifiers_ != Qt::NoModifier) {
-          if (modifiers_ == FocusModifier && ( mode->features & Mode::FocusContrast )) 
+          if (modifiers_ == FocusModifier && ( mode->features & Mode::FocusContrast ))
             return 1;
           else if (modifiers_ == MoveModifier && ( mode->features & Mode::MoveTarget ))
             return 2;
@@ -1056,7 +1398,7 @@ namespace MR
             return 3;
         }
 
-        if (mouse_action == NoAction) 
+        if (mouse_action == NoAction)
           return mode_action_group->actions().indexOf (mode_action_group->checkedAction()) + 1;
 
         return 0;
@@ -1104,7 +1446,7 @@ namespace MR
         mode_action_group->actions()[2]->setEnabled (mode->features & Mode::TiltRotate);
         if (!mode_action_group->checkedAction()->isEnabled())
           mode_action_group->actions()[0]->setChecked (true);
-        if (image()) 
+        if (image())
           image()->set_allowed_features (
               mode->features & Mode::ShaderThreshold,
               mode->features & Mode::ShaderTransparency,
@@ -1114,28 +1456,44 @@ namespace MR
 
       void Window::set_image_navigation_menu ()
       {
-        bool show_next_volume (false), show_prev_volume (false);
-        bool show_next_volume_group (false), show_prev_volume_group (false);
+        bool show_next_volume (false), show_goto_volume (false), show_prev_volume (false);
+        bool show_next_volume_group (false), show_goto_volume_group (false), show_prev_volume_group (false);
         Image* imagep = image();
         if (imagep) {
-          if (imagep->interp.ndim() > 3) {
-            if (imagep->interp[3] > 0) 
-              show_prev_volume = true;
-            if (imagep->interp[3] < imagep->interp.dim(3)-1) 
-              show_next_volume = true;
+          if (imagep->image.ndim() > 3) {
+            if (imagep->image.size(3) > 1)
+              show_goto_volume = true;
+            if (wrap_volumes_action->isChecked()) {
+              show_prev_volume = show_next_volume = true;
+            }
+            else {
+              if (imagep->image.index(3) > 0)
+                show_prev_volume = true;
+              if (imagep->image.index(3) < imagep->image.size(3)-1)
+                show_next_volume = true;
+            }
 
-            if (imagep->interp.ndim() > 4) {
-              if (imagep->interp[4] > 0) 
-                show_prev_volume_group = true;
-              if (imagep->interp[4] < imagep->interp.dim(4)-1) 
-                show_next_volume_group = true;
+            if (imagep->image.ndim() > 4) {
+              if (imagep->image.size(4) > 1)
+                show_goto_volume_group = true;
+              if (wrap_volumes_action->isChecked()) {
+                show_prev_volume_group = show_next_volume_group = true;
+              }
+              else {
+                if (imagep->image.index(4) > 0)
+                  show_prev_volume_group = true;
+                if (imagep->image.index(4) < imagep->image.size(4)-1)
+                  show_next_volume_group = true;
+              }
             }
           }
         }
         prev_image_volume_action->setEnabled (show_prev_volume);
         next_image_volume_action->setEnabled (show_next_volume);
+        goto_image_volume_action->setEnabled (show_goto_volume);
         prev_image_volume_group_action->setEnabled (show_prev_volume_group);
         next_image_volume_group_action->setEnabled (show_next_volume_group);
+        goto_image_volume_group_action->setEnabled (show_goto_volume_group);
       }
 
 
@@ -1144,8 +1502,8 @@ namespace MR
 
       void Window::OpenGL_slot ()
       {
-        Dialog::OpenGL gl (this, glarea->format());
-        gl.exec();
+        Dialog::OpenGL glinfo (this, glarea->format());
+        glinfo.exec();
       }
 
 
@@ -1153,17 +1511,17 @@ namespace MR
 
       void Window::about_slot ()
       {
-        std::string message = 
-          "<h1>MRView</h1>The MRtrix viewer, version " MRTRIX_GIT_VERSION "<br>"
-          "<em>" + str (8*sizeof (size_t)) + " bit " 
+        std::string message =
+          std::string ("<h1>MRView</h1>The MRtrix viewer, version ") + MR::App::mrtrix_version + "<br>"
+          "<em>" + str (8*sizeof (size_t)) + " bit "
 #ifdef NDEBUG
           "release"
 #else
           "debug"
 #endif
-          " version, built " + App::build_date +  "</em><p>"
-          "<h4>Authors:</h4>" + MR::join (MR::split (App::AUTHOR, ",;&\n", true), "<br>") + 
-          "<p><em>" + App::COPYRIGHT + "</em>";
+          " version, built " + MR::App::build_date +  "</em><p>"
+          "<h4>Authors:</h4>" + MR::join (MR::split (MR::App::AUTHOR, ",;&\n", true), "<br>") +
+          "<p><em>" + MR::App::COPYRIGHT + "</em>";
 
         QMessageBox::about (this, tr ("About MRView"), message.c_str());
       }
@@ -1179,29 +1537,78 @@ namespace MR
 
       void Window::paintGL ()
       {
-        gl::Enable (gl::MULTISAMPLE);
-        if (mode->in_paint())
-          return;
+        GL::assert_context_is_current();
+        GL_CHECK_ERROR;
+        gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
-        gl::DrawBuffer (gl::BACK);
+        if (glarea->format().samples() > 1)
+          gl::Enable (gl::MULTISAMPLE);
+
+        GL_CHECK_ERROR;
+
+        GL::assert_context_is_current();
         mode->paintGL();
+        GL::assert_context_is_current();
+        GL_CHECK_ERROR;
+
+        if (show_FPS) {
+          render_times.push_back (Timer::current_time());
+          while (render_times.size() > 10)
+            render_times.erase (render_times.begin());
+          double FPS = NAN;
+          std::string FPS_string = "-";
+          std::string FPS_best_string = "-";
+
+          if (render_times.back() - best_FPS_time > 3.0)
+            best_FPS = NAN;
+
+          if (render_times.size() == 10) {
+            FPS = (render_times.size()-1.0) / (render_times.back()-render_times.front());
+            FPS_string = str (FPS, 4);
+            if (!std::isfinite (best_FPS) || FPS > best_FPS) {
+              best_FPS = FPS;
+              best_FPS_time = render_times.back();
+            }
+          }
+          else
+            best_FPS = NAN;
+
+          if (std::isfinite (best_FPS))
+            FPS_best_string = str (best_FPS, 4);
+          mode->projection.setup_render_text (0.0, 1.0, 0.0);
+          mode->projection.render_text ("max FPS: " + FPS_best_string, RightEdge | TopEdge);
+          mode->projection.render_text ("FPS: " + FPS_string, RightEdge | TopEdge, 1);
+          mode->projection.done_render_text();
+        }
+
+        // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
+        // otherwise we get transparent windows...
+#if QT_VERSION >= 0x050400
+        gl::ColorMask (false, false, false, true);
+        gl::Clear (gl::COLOR_BUFFER_BIT);
+        glColorMask (true, true, true, true);
+#endif
+        GL_CHECK_ERROR;
+        GL::assert_context_is_current();
       }
 
 
       void Window::initGL ()
       {
+        GL::assert_context_is_current();
         GL::init ();
 
         font.initGL();
-
-        gl::ClearColor (0.0, 0.0, 0.0, 0.0);
         gl::Enable (gl::DEPTH_TEST);
-
-        mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
+        //CONF option: MRViewImageBackgroundColour
+        //CONF default: 0,0,0 (black)
+        //CONF The default image background colour in the main MRView window.
+        File::Config::get_RGB ("MRViewImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
+        gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
+        mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
 
-        if (batch_commands.size()) 
-          QTimer::singleShot (0, this, SLOT (process_batch_command()));
+        GL::assert_context_is_current();
       }
 
 
@@ -1224,7 +1631,7 @@ namespace MR
       }
 
 
-      void Window::keyPressEvent (QKeyEvent* event) 
+      void Window::keyPressEvent (QKeyEvent* event)
       {
         modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         set_cursor();
@@ -1243,7 +1650,7 @@ namespace MR
         assert (mode);
 
         grab_mouse_state (event);
-        if (image()) 
+        if (image())
           mode->mouse_press_event();
 
         if (tool_has_focus && modifiers_ == Qt::NoModifier) {
@@ -1256,7 +1663,7 @@ namespace MR
 
         int group = get_mouse_mode();
 
-        if (buttons_ == Qt::MidButton) 
+        if (buttons_ == Qt::MidButton)
           mouse_action = Pan;
         else if (group == 1) {
           if (buttons_ == Qt::LeftButton) {
@@ -1264,19 +1671,19 @@ namespace MR
             if (image())
               mode->set_focus_event();
           }
-          else if (buttons_ == Qt::RightButton) 
+          else if (buttons_ == Qt::RightButton)
             mouse_action = Contrast;
         }
         else if (group == 2) {
-          if (buttons_ == Qt::LeftButton) 
+          if (buttons_ == Qt::LeftButton)
             mouse_action = Pan;
-          else if (buttons_ == Qt::RightButton) 
+          else if (buttons_ == Qt::RightButton)
             mouse_action = PanThrough;
         }
         else if (group == 3) {
-          if (buttons_ == Qt::LeftButton) 
+          if (buttons_ == Qt::LeftButton)
             mouse_action = Tilt;
-          else if (buttons_ == Qt::RightButton) 
+          else if (buttons_ == Qt::RightButton)
             mouse_action = Rotate;
         }
 
@@ -1288,14 +1695,14 @@ namespace MR
       void Window::mouseMoveEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (!image()) 
+        if (!image())
           return;
 
         update_mouse_state (event);
 
         if (mouse_action == NoAction) {
-          if (tool_has_focus) 
-            if (tool_has_focus->mouse_move_event()) 
+          if (tool_has_focus)
+            if (tool_has_focus->mouse_move_event())
               event->accept();
           return;
         }
@@ -1311,6 +1718,7 @@ namespace MR
           default: return;
         }
         event->accept();
+        glarea->update();
       }
 
 
@@ -1319,8 +1727,8 @@ namespace MR
         assert (mode);
         mode->mouse_release_event();
 
-        if (tool_has_focus && mouse_action == NoAction) 
-          if (tool_has_focus->mouse_release_event()) 
+        if (tool_has_focus && mouse_action == NoAction)
+          if (tool_has_focus->mouse_release_event())
             return;
 
         mouse_action = NoAction;
@@ -1331,8 +1739,19 @@ namespace MR
       void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
+#if QT_VERSION >= 0x050500
+        QPoint delta;
+        if (event->source() == Qt::MouseEventNotSynthesized)
+          delta = event->angleDelta();
+        else
+          delta = 30 * event->pixelDelta();
+#else
+        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
+#endif
+        if (delta.isNull())
+          return;
 
-        if (event->orientation() == Qt::Vertical) {
+        if (delta.y()) {
 
           if (image()) {
             grab_mouse_state (event);
@@ -1341,47 +1760,21 @@ namespace MR
             if (buttons_ == Qt::NoButton) {
 
               if (modifiers_ == Qt::ControlModifier) {
-                set_FOV (FOV() * std::exp (-event->delta()/1200.0));
-                updateGL();
+                set_FOV (FOV() * std::exp (-delta.y()/1200.0));
+                glarea->update();
                 event->accept();
                 return;
               }
 
-              int delta = event->delta() / 120.0;
-              if (modifiers_ == Qt::ShiftModifier) delta *= 10.0;
-              else if (modifiers_ != Qt::NoModifier) 
+              float dx = delta.y()/120.0;
+              if (modifiers_ == Qt::ShiftModifier) dx *= 10.0;
+              else if (modifiers_ != Qt::NoModifier)
                 return;
 
-              mode->slice_move_event (delta);
+              mode->slice_move_event (dx);
               event->accept();
               return;
             }
-          }
-
-          if (buttons_ == Qt::LeftButton && modifiers_ == Qt::NoModifier) {
-            int current = 0, num = 0;
-            for (int i = 0; i < mode_action_group->actions().size(); ++i) {
-              if (mode_action_group->actions()[current] != mode_action_group->checkedAction())
-                current = num;
-              if (mode_action_group->actions()[i]->isEnabled())
-                ++num;
-            }
-
-            current = (current + num - int(event->delta()/120.0)) % num;
-
-            num = 0;
-            for (int i = 0; i < mode_action_group->actions().size(); ++i) {
-              if (mode_action_group->actions()[i]->isEnabled()) {
-                if (current == num) {
-                  mode_action_group->actions()[i]->setChecked (true);
-                  break;
-                }
-                ++num;
-              }
-            }
-            mouse_action = NoAction;
-            set_cursor();
-            return;
           }
 
           if (buttons_ == Qt::RightButton && modifiers_ == Qt::NoModifier) {
@@ -1389,7 +1782,7 @@ namespace MR
               QAction* action = image_group->checkedAction();
               int N = image_group->actions().size();
               int n = image_group->actions().indexOf (action);
-              image_select_slot (image_group->actions()[(n+N+int(event->delta()/120.0))%N]);
+              image_select_slot (image_group->actions()[(n+N+int(std::round(delta.y()/120.0)))%N]);
             }
           }
         }
@@ -1397,196 +1790,439 @@ namespace MR
       }
 
 
-      void Window::closeEvent (QCloseEvent* event) 
+
+
+      bool Window::gestureEventGL (QGestureEvent* event)
+      {
+        assert (mode);
+
+        if (QGesture* pan = event->gesture(Qt::PanGesture)) {
+          QPanGesture* e = static_cast<QPanGesture*> (pan);
+          mouse_displacement_ = QPoint (e->delta().x(), -e->delta().y());
+          mode->pan_event();
+        }
+
+        if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
+          QPinchGesture* e = static_cast<QPinchGesture*> (pinch);
+          QPinchGesture::ChangeFlags changeFlags = e->changeFlags();
+          if (changeFlags & QPinchGesture::RotationAngleChanged) {
+            // TODO
+          }
+          if (changeFlags & QPinchGesture::ScaleFactorChanged) {
+            set_FOV (FOV() / e->scaleFactor());
+            glarea->update();
+          }
+        }
+        return true;
+      }
+
+
+
+      void Window::closeEvent (QCloseEvent* event)
       {
         qApp->quit();
         event->accept();
       }
 
 
-      void Window::process_batch_command ()
+      void Window::process_commandline_option_slot ()
       {
-        assert (batch_commands.size());
+        if (current_option >= MR::App::option.size())
+          return;
+
+        process_commandline_option();
+        ++current_option;
+
+        QTimer::singleShot (10, this, SLOT(process_commandline_option_slot()));
+        glarea->update();
+      }
+
+
+
+
+
+      void Window::process_commandline_option ()
+      {
+        auto& opt (MR::App::option[current_option]);
+
+#undef TOOL
+#define TOOL(classname, name, description) \
+        stub = lowercase (#classname "."); \
+        if (stub.compare (0, stub.size(), std::string (opt.opt->id), 0, stub.size()) == 0) { \
+          create_tool (tool_group->actions()[tool_id], false); \
+          if (dynamic_cast<Tool::__Action__*>(tool_group->actions()[tool_id])->dock->tool->process_commandline_option (opt)) \
+          return; \
+        } \
+        ++tool_id;
+
         try {
-          std::string line;
-          do {
-            if (batch_commands.empty())
-              return;
-            line = batch_commands[0];
-            batch_commands.erase (batch_commands.begin(), batch_commands.begin()+1);
-            line = strip (line.substr (0, line.find_first_of ('#')));
-          } while (line.empty());
 
-          std::string cmd = line.substr (0, line.find_first_of (" :\t"));
-          std::string args;
-          if (line.size() > cmd.size()+1)
-            args = strip (line.substr (cmd.size()+1));
+          // see whether option is claimed by any tools:
+          size_t tool_id = 0;
+          std::string stub;
+#include "gui/mrview/tool/list.h"
 
-          // starts of commands proper:
-          
-          // BATCH_COMMAND view.mode index # Switch to view mode specified by the integer index. as per the view menu.
-          if (cmd == "view.mode") { 
-            int n = to<int> (args) - 1;
+
+          // process general options:
+          if (opt.opt->is ("mode")) {
+            int n = int(opt[0]) - 1;
             if (n < 0 || n >= mode_group->actions().size())
-              throw Exception ("invalid mode index \"" + args + "\" in batch command");
+              throw Exception ("invalid mode index \"" + str(n) + "\" in batch command");
             select_mode_slot (mode_group->actions()[n]);
+            return;
           }
 
-          // BATCH_COMMAND view.size width,height # Set the size of the view area, in pixel units.
-          else if (cmd == "view.size") { 
-            std::vector<int> glsize = parse_ints (args);
+          if (opt.opt->is ("size")) {
+            vector<int> glsize = parse_ints (opt[0]);
             if (glsize.size() != 2)
-              throw Exception ("invalid argument \"" + args + "\" to view.size batch command");
+              throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
+            if (glsize[0] < 1 || glsize[1] < 1)
+              throw Exception ("values provided to -size option must be positive");
             QSize oldsize = glarea->size();
             QSize winsize = size();
             resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
+            return;
           }
 
-          // BATCH_COMMAND view.reset # Reset the view according to current image. This resets the FOV, projection, and focus.
-          else if (cmd == "view.reset") 
+          if (opt.opt->is ("reset")) {
             reset_view_slot();
+            return;
+          }
 
-          // BATCH_COMMAND view.fov num # Set the field of view, in mm.
-          else if (cmd == "view.fov") { 
-            float fov = to<float> (args);
+          if (opt.opt->is ("fov")) {
+            float fov = opt[0];
             set_FOV (fov);
-            updateGL();
+            glarea->update();
+            return;
           }
-          
-          // BATCH_COMMAND view.focus x,y,z # Set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values. 
-          else if (cmd == "view.focus") { 
-            std::vector<float> pos = parse_floats (args);
-            if (pos.size() != 3) 
-              throw Exception ("batch command \"" + cmd + "\" expects a comma-separated list of 3 floating-point values");
-            set_focus (Point<> (pos[0], pos[1], pos[2]));
-            updateGL();
-          }
-          
-          // BATCH_COMMAND view.voxel x,y,z # Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values. 
-          else if (cmd == "view.voxel") { 
-            if (image()) {
-              std::vector<float> pos = parse_floats (args);
-              if (pos.size() != 3) 
-                throw Exception ("batch command \"" + cmd + "\" expects a comma-separated list of 3 floating-point values");
-              set_focus (image()->interp.voxel2scanner (Point<> (pos[0], pos[1], pos[2])));
-              updateGL();
+
+          if (opt.opt->is ("focus")) {
+            try {
+              auto pos = parse_floats (opt[0]);
+              if (pos.size() != 3)
+                throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
+              set_focus (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
             }
+            catch (Exception& E) {
+              try {
+                show_crosshairs_action->setChecked (to<bool> (opt[0]));
+              }
+              catch (Exception& E2) {
+                throw Exception ("-focus option expects a boolean or a comma-separated list of 3 floating-point values");
+              }
+            }
+            glarea->update();
+            return;
           }
 
-          // BATCH_COMMAND view.fov num # Set the field of view, in mm.
-          else if (cmd == "view.fov") { 
-            float fov = to<float> (args);
+          if (opt.opt->is ("target")) {
+            if (image()) {
+              vector<default_type> pos = parse_floats (opt[0]);
+              if (pos.size() != 3)
+                throw Exception ("-target option expects a comma-separated list of 3 floating-point values");
+              set_target (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              glarea->update();
+            }
+            return;
+          }
+
+          if (opt.opt->is ("voxel")) {
+            if (image()) {
+              vector<default_type> pos = parse_floats (opt[0]);
+              if (pos.size() != 3)
+                throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
+              set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              glarea->update();
+            }
+            return;
+          }
+
+          if (opt.opt->is ("volume")) {
+            if (image()) {
+              auto pos = parse_ints (opt[0]);
+              for (size_t n = 0; n < std::min (pos.size(), image()->image.ndim()); ++n) {
+                if (pos[n] < 0 || pos[n] >= image()->image.size(n+3))
+                  throw Exception ("volume index outside of image dimensions");
+                set_image_volume (n+3, pos[n]);
+                set_image_navigation_menu();
+              }
+              glarea->update();
+            }
+            return;
+          }
+
+          if (opt.opt->is ("fov")) {
+            float fov = opt[0];
             set_FOV (fov);
-            updateGL();
-          }
-          
-          // BATCH_COMMAND view.plane num # Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.
-          else if (cmd == "view.plane") { 
-            int n = to<int> (args);
-            set_plane (n);
-            updateGL();
+            glarea->update();
+            return;
           }
 
-          // BATCH_COMMAND view.lock # Set whether view is locked to image axes (0: no, 1: yes).
-          else if (cmd == "view.lock") { 
-            bool n = to<bool> (args);
+          if (opt.opt->is ("plane")) {
+            int n = opt[0];
+            set_plane (n);
+            glarea->update();
+            return;
+          }
+
+          if (opt.opt->is ("lock")) {
+            bool n = opt[0];
             snap_to_image_action->setChecked (n);
             snap_to_image_slot();
+            return;
           }
 
-          // BATCH_COMMAND image.select index # Switch to image number specified, with reference to the list of currently loaded images.
-          else if (cmd == "image.select") {
-            int n = to<int> (args) - 1;
+          if (opt.opt->is ("select_image")) {
+            int n = int(opt[0]) - 1;
             if (n < 0 || n >= image_group->actions().size())
-              throw Exception ("invalid image index requested in batch command");
+              throw Exception ("invalid image index requested for option -select_image");
             image_select_slot (image_group->actions()[n]);
+            return;
           }
 
-          // BATCH_COMMAND image.load path # Load image specified and make it current.
-          else if (cmd == "image.load") { 
-            VecPtr<MR::Image::Header> list; 
-            try { list.push_back (new MR::Image::Header (args)); }
+          if (opt.opt->is ("load")) {
+            vector<std::unique_ptr<MR::Header>> list;
+            try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             add_images (list);
+            return;
           }
 
-          // BATCH_COMMAND image.reset # Reset the image scaling.
-          else if (cmd == "image.reset") 
+          if (opt.opt->is ("autoscale")) {
             image_reset_slot();
-
-          // BATCH_COMMAND image.colourmap index # Switch the image colourmap to that specified, as per the colourmap menu.
-          else if (cmd == "image.colourmap") { 
-            int n = to<int> (args) - 1;
-            if (n < 0 || n >= colourmap_group->actions().size())
-              throw Exception ("invalid image colourmap index \"" + args + "\" requested in batch command");
-            colourmap_group->actions()[n]->setChecked (true);
-            select_colourmap_slot ();
+            return;
           }
 
-          // BATCH_COMMAND image.range min max # Set the image intensity range to that specified
-          else if (cmd == "image.range") { 
+          if (opt.opt->is ("colourmap")) {
+            int n = int(opt[0]) - 1;
+            if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
+              throw Exception ("invalid image colourmap index \"" + str(n+1) + "\" requested in batch command");
+            colourmap_button->set_colourmap_index(n);
+            return;
+          }
+
+          if (opt.opt->is ("interpolation")) {
+            try {
+              image_interpolate_action->setChecked (to<bool> (opt[0]));
+            }
+            catch (Exception& E) {
+              throw Exception ("-interpolation option expects a boolean");
+            }
+            image_interpolate_slot();
+            return;
+          }
+
+          if (opt.opt->is ("intensity_range")) {
             if (image()) {
-              std::vector<std::string> param = split (args);
-              if (param.size() != 2) 
-                throw Exception ("batch command image.range expects two arguments");
-              image()->set_windowing (to<float> (param[0]), to<float> (param[1]));
-              updateGL();
+              vector<default_type> param = parse_floats (opt[0]);
+              if (param.size() != 2)
+                throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
+              image()->set_windowing (param[0], param[1]);
+              glarea->update();
             }
+            return;
           }
 
-          // BATCH_COMMAND tool.open index # Start the tool specified, indexed as per the tool menu
-          else if (cmd == "tool.open") {
-            int n = to<int> (args) - 1;
-            if (n < 0 || n >= tool_group->actions().size())
-              throw Exception ("invalid tool index \"" + args + "\" requested in batch command");
-            tool_group->actions()[n]->setChecked (true);
-            select_tool_slot (tool_group->actions()[n]);
-          }
-
-          // BATCH_COMMAND window.position x,y # Set the position of the main window, in pixel units.
-          else if (cmd == "window.position") { 
-            std::vector<int> pos = parse_ints (args);
+          if (opt.opt->is ("position")) {
+            vector<int> pos = opt[0];
             if (pos.size() != 2)
-              throw Exception ("invalid argument \"" + args + "\" to view.position batch command");
+              throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
             move (pos[0], pos[1]);
+            return;
           }
 
-          // BATCH_COMMAND window.fullscreen # Show fullscreen or windowed (0: windowed, 1: fullscreen).
-          else if (cmd == "window.fullscreen") { 
-            bool n = to<bool> (args);
-            full_screen_action->setChecked (n);
+          if (opt.opt->is ("fullscreen")) {
+            full_screen_action->setChecked (true);
             full_screen_slot();
+            return;
           }
 
-          // BATCH_COMMAND exit # quit MRView.
-          else if (cmd == "exit") 
-            qApp->quit();
+          if (opt.opt->is ("noannotations")) {
+            toggle_annotations_slot ();
+            return;
+          }
 
-          else { // process by tool
-            int n = 0; 
-            while (n < tools()->actions().size()) {
-              Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools()->actions()[n])->dock;
-              if (dock)
-                if (dock->tool->process_batch_command (cmd, args)) 
-                  break;
-              ++n;
+          if (opt.opt->is ("comments")) {
+            try {
+              show_comments_action->setChecked (to<bool> (opt[0]));
             }
-            if (n >= tools()->actions().size())
-              WARN ("batch command \"" + cmd + "\" unclaimed by main window or any active tool - ignored");
+            catch (Exception& E) {
+              throw Exception ("-comments option expects a boolean");
+            }
+            glarea->update();
+            return;
+          }
+
+          if (opt.opt->is ("voxelinfo")) {
+            try {
+              show_voxel_info_action->setChecked (to<bool> (opt[0]));
+            }
+            catch (Exception& E) {
+              throw Exception ("-voxelinfo option expects a boolean");
+            }
+            glarea->update();
+            return;
+          }
+
+          if (opt.opt->is ("orientationlabel")) {
+            try {
+              show_orientation_labels_action->setChecked (to<bool> (opt[0]));
+            }
+            catch (Exception& E) {
+              throw Exception ("-orientationlabel option expects a boolean");
+            }
+            glarea->update();
+            return;
+          }
+
+          if (opt.opt->is ("colourbar")) {
+            try {
+              show_colourbar_action->setChecked (to<bool> (opt[0]));
+            }
+            catch (Exception& E) {
+              throw Exception ("-colourbar option expects a boolean");
+            }
+            glarea->update();
+            return;
+          }
+
+          if (opt.opt->is ("imagevisible")) {
+            bool visible;
+            try {
+              visible = to<bool> (opt[0]);
+            }
+            catch (Exception& E) {
+              throw Exception ("-imagevisible option expects a boolean");
+            }
+            if (image_hide_action->isChecked() == visible)
+              set_image_visibility (visible);
+            return;
           }
 
 
-          // end of commands
-        }
+          if (opt.opt->is ("fps")) {
+            show_FPS = true;
+            return;
+          }
 
+          if (opt.opt->is ("exit")) {
+            qApp->processEvents();
+            qApp->quit();
+            return;
+          }
+
+
+          if (opt.opt->is ("sync.focus")) {
+            sync_focus_action->setChecked (true);
+            sync_slot();
+            return;
+          }
+
+          assert (opt.opt->is ("info") or opt.opt->is ("debug") or ("shouldn't reach here!" && false));
+        }
         catch (Exception& E) {
           E.display();
           qApp->quit();
         }
-
-        if (batch_commands.size())
-          QTimer::singleShot (0, this, SLOT (process_batch_command()));
       }
+
+
+      void Window::add_commandline_options (MR::App::OptionList& options)
+      {
+        options
+          + OptionGroup ("View options")
+
+          + Option ("mode", "Switch to view mode specified by the integer index, as per the view menu.").allow_multiple()
+          +   Argument ("index").type_integer()
+
+          + Option ("load", "Load image specified and make it current.").allow_multiple()
+          +   Argument ("image").type_image_in()
+
+          + Option ("reset", "Reset the view according to current image. This resets the FOV, projection and focus.").allow_multiple()
+
+          + Option ("fov", "Set the field of view, in mm.").allow_multiple()
+          +   Argument ("value").type_float()
+
+          + Option ("focus", "Either set the position of the crosshairs in scanner coordinates, "
+              "with the new position supplied as a comma-separated list of floating-point values or "
+              "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
+          +   Argument ("x,y,z or boolean")
+
+          + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
+              "that will appear at the centre of the viewing window")
+          +   Argument ("x,y,z").type_sequence_float()
+
+          + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
+              "relative the image currently displayed. The new position should be supplied "
+              "as a comma-separated list of floating-point values.").allow_multiple()
+          +   Argument ("x,y,z").type_sequence_float()
+
+          + Option ("volume", "Set the volume index for the image displayed, "
+              "as a comma-separated list of integers.").allow_multiple()
+          +   Argument ("idx").type_sequence_int()
+
+          + Option ("plane", "Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.").allow_multiple()
+          +   Argument ("index").type_integer (0,2)
+
+          + Option ("lock", "Set whether view is locked to image axes (0: no, 1: yes).").allow_multiple()
+          +   Argument ("yesno").type_bool()
+
+          + Option ("select_image", "Switch to image number specified, with reference to the list of currently loaded images.").allow_multiple()
+          +   Argument ("index").type_integer (0)
+
+          + Option ("autoscale", "Reset the image scaling to automatically determined range.").allow_multiple()
+
+          + Option ("interpolation", "Enable or disable image interpolation in main image.").allow_multiple()
+          +   Argument ("boolean").type_bool ()
+
+          + Option ("colourmap", "Switch the image colourmap to that specified, as per the colourmap menu.").allow_multiple()
+          +   Argument ("index").type_integer (0)
+
+          + Option ("noannotations", "Hide all image annotation overlays").allow_multiple()
+
+          + Option ("comments", "Show or hide image comments overlay.").allow_multiple()
+          +   Argument ("boolean").type_bool ()
+
+          + Option ("voxelinfo", "Show or hide voxel information overlay.").allow_multiple()
+          +   Argument ("boolean").type_bool ()
+
+          + Option ("orientationlabel", "Show or hide orientation label overlay.").allow_multiple()
+          +   Argument ("boolean").type_bool ()
+
+          + Option ("colourbar", "Show or hide colourbar overlay.").allow_multiple()
+          +   Argument ("boolean").type_bool ()
+
+          + Option ("imagevisible", "Show or hide the main image.").allow_multiple()
+          +   Argument ("boolean").type_bool ()
+
+          + Option ("intensity_range", "Set the image intensity range to that specified.").allow_multiple()
+          +   Argument ("min,max").type_sequence_float()
+
+          + OptionGroup ("Window management options")
+
+          + Option ("size", "Set the size of the view area, in pixel units.").allow_multiple()
+          +   Argument ("width,height").type_sequence_int()
+
+          + Option ("position", "Set the position of the main window, in pixel units.").allow_multiple()
+          +   Argument ("x,y").type_sequence_int()
+
+          + Option ("fullscreen", "Start fullscreen.")
+
+          + Option ("exit", "Quit MRView.")
+
+          + OptionGroup ("Sync Options")
+
+          + Option ("sync.focus", "Sync the focus with other MRView windows that also have this turned on.")
+
+          + OptionGroup ("Debugging options")
+
+          + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
+              "The maximum over the last 3 seconds is also displayed.");
+
+      }
+
+
+
 
     }
   }

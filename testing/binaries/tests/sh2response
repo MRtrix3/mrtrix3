@@ -1,0 +1,1 @@
+amp2sh dwi.mif - | sh2response - sh2response/sf.mif sh2response/ev.mif tmp_sh2response.txt && testing_diff_matrix tmp_sh2response.txt sh2response/out.txt -frac 1e-5

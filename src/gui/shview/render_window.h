@@ -1,51 +1,54 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 22/01/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #ifndef __gui_dwi_render_window_h__
 #define __gui_dwi_render_window_h__
 
+#include "gui/dwi/render_frame.h"
 #include "gui/opengl/gl.h"
-#include "file/path.h"
-#include "math/SH.h"
 
 namespace MR
 {
   namespace GUI
   {
-    namespace Dialog
-    {
-      class Lighting;
-    }
+    class LightingDock;
+
     namespace DWI
     {
 
-      class RenderFrame;
-
-      class Window : public QMainWindow
-      {
+      class Window : public QMainWindow 
+      { MEMALIGN(Window)
           Q_OBJECT
+
+          class RenderFrame : public DWI::RenderFrame
+          { MEMALIGN(RenderFrame)
+            public:
+              using DWI::RenderFrame::RenderFrame;
+              void set_colour (const QColor& c) {
+                renderer.set_colour (c);
+                update();
+              }
+              QColor get_colour() const {
+                return renderer.get_colour();
+              }
+          };
 
         public:
           Window (bool is_response_coefs);
+          ~Window();
           void set_values (const std::string& filename);
 
         protected slots:
@@ -55,7 +58,8 @@ namespace MR
           void show_axes_slot (bool is_checked);
           void hide_negative_lobes_slot (bool is_checked);
           void colour_by_direction_slot (bool is_checked);
-          void normalise_slot (bool is_checked);
+          void reset_scale_slot ();
+          void reset_view_slot ();
           void response_slot (bool is_checked);
           void previous_slot ();
           void next_slot ();
@@ -66,18 +70,19 @@ namespace MR
           void screenshot_slot ();
           void lmax_inc_slot ();
           void lmax_dec_slot ();
+          void manual_colour_slot ();
           void advanced_lighting_slot ();
 
         protected:
           RenderFrame* render_frame;
-          Dialog::Lighting* lighting_dialog;
+          QDialog* lighting_dialog;
           QActionGroup* lod_group, *lmax_group, *screenshot_OS_group;
-          QAction* response_action;
+          QAction *colour_by_direction_action, *response_action;
 
           std::string name;
           int current;
-          Math::Matrix<float> values;
-          bool  is_response;
+          Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> values;
+          bool is_response;
 
           void set_values (int row);
       };

@@ -1,0 +1,1 @@
+5tt2vis SIFT_phantom/5tt.mif - | testing_diff_image - 5tt2vis/out.mif -abs 1e-3

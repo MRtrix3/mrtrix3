@@ -1,0 +1,1 @@
+dwi2adc dwi2adc/in.mif - | testing_diff_image - dwi2adc/out.mif -frac 1e-5

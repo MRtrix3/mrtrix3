@@ -1,0 +1,7 @@
+<svg height="35mm" version="1.1" viewBox="0 0 124.01575 124.01575" width="35mm" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <linearGradient id="a" gradientUnits="userSpaceOnUse" x1="-935.962731661243" x2="-919.010232545388" y1="-809.929310629597" y2="-794.297068835563">
+    <stop offset="0" stop-color="#600000"/>
+    <stop offset="1" stop-color="#ff4c4c"/>
+  </linearGradient>
+  <circle cx="-926.82068" cy="-801.16693" r="9.1421947" style="fill-rule:evenodd;stroke:#610000;stroke-width:.47833468;stroke-linecap:round;stroke-linejoin:round;fill:url(#a)" transform="matrix(-6.2717593 0 0 -6.2717593 -5750.7882 -4962.71846)"/>
+</svg>

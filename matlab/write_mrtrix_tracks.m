@@ -1,3 +1,18 @@
+% Copyright (c) 2008-2019 the MRtrix3 contributors.
+%
+% This Source Code Form is subject to the terms of the Mozilla Public
+% License, v. 2.0. If a copy of the MPL was not distributed with this
+% file, You can obtain one at http://mozilla.org/MPL/2.0/.
+%
+% Covered Software is provided under this License on an "as is"
+% basis, without warranty of any kind, either expressed, implied, or
+% statutory, including, without limitation, warranties that the
+% Covered Software is free of defects, merchantable, fit for a
+% particular purpose or non-infringing.
+% See the Mozilla Public License v. 2.0 for more details.
+%
+% For more details, see http://www.mrtrix.org/.
+
 function write_mrtrix_tracks (tracks, filename)
 
 % function: write_mrtrix_tracks (tracks, filename)
@@ -7,21 +22,14 @@ function write_mrtrix_tracks (tracks, filename)
 % of the tracks variable will be written as text entries in the header, and are
 % expected to supplied as character arrays.
 
-if ~isfield (tracks, 'data')
-  disp ('ERROR: input tracks variable does not contain required ''data'' field');
-  return;
-end
+assert(isfield(tracks, 'data'), ...
+  'input tracks variable does not contain required ''data'' field');
 
-if ~iscell (tracks.data)
-  disp ('ERROR: input tracks.data variable should be a cell array');
-  return;
-end
+assert(iscell(tracks.data), ...
+  'input tracks.data variable should be a cell array');
 
 f = fopen (filename, 'w', 'ieee-le');
-if (f<1) 
-  disp (['error opening ' filename ]);
-  return;
-end
+assert(f ~= -1, 'error opening %s', filename);
 
 fprintf (f, 'mrtrix tracks\ndatatype: Float32LE\ncount: %d\n', prod(size(tracks.data)));
 names = fieldnames(tracks);

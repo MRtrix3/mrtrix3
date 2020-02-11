@@ -1,0 +1,4 @@
+mrconvert dwi2fod/out.mif tmp.mif -force && shbasis tmp.mif -convert new && testing_diff_image tmp.mif dwi2fod/out.mif -frac 1e-5
+mrconvert dwi2fod/out.mif tmp.mif -force && shbasis tmp.mif -convert old && testing_diff_image tmp.mif shbasis/old.mif -frac 1e-5
+mrconvert shbasis/old.mif tmp.mif -force && shbasis tmp.mif -convert new && testing_diff_image tmp.mif dwi2fod/out.mif -frac 1e-5
+mrconvert shbasis/old.mif tmp.mif -force && shbasis tmp.mif -convert old && testing_diff_image tmp.mif shbasis/old.mif -frac 1e-5

@@ -1,39 +1,32 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/11/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#include "command.h"
-#include "progressbar.h"
-#include "ptr.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
-#include "image/iterator.h"
-#include "image/threaded_loop.h"
-#include "image/utils.h"
-#include "image/voxel.h"
-#include "math/math.h"
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #include <limits>
-#include <vector>
+
+#include "command.h"
+#include "image.h"
+#include "memory.h"
+#include "phase_encoding.h"
+#include "progressbar.h"
+#include "algo/threaded_loop.h"
+#include "math/math.h"
+#include "math/median.h"
+#include "dwi/gradient.h"
+
+#include <limits>
 
 
 using namespace MR;
@@ -41,9 +34,11 @@ using namespace App;
 
 const char* operations[] = {
   "mean",
+  "median",
   "sum",
   "product",
   "rms",
+  "norm",
   "var",
   "std",
   "min",
@@ -55,77 +50,105 @@ const char* operations[] = {
 
 void usage ()
 {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
+
+  SYNOPSIS = "Compute summary statistic on image intensities either across images, "
+             "or along a specified axis of a single image";
+
   DESCRIPTION
-    + "compute summary statistic on image intensities either across images, "
-    "or along a specified axis for a single image. Supported operations are:"
+    + "Supported operations are:"
 
-    + "mean, sum, product, rms (root-mean-square value), var (unbiased variance), "
-    "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
-    "magmax (value with maximum absolute value, preserving its sign)."
+    + "mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), "
+      "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
+      "magmax (value with maximum absolute value, preserving its sign)."
 
-    + "See also 'mrcalc' to compute per-voxel operations.";
+    + "This command is used to traverse either along an image axis, or across a "
+      "set of input images, calculating some statistic from the values along each "
+      "traversal. If you are seeking to instead perform mathematical calculations "
+      "that are done independently for each voxel, pleaase see the 'mrcalc' command.";
+
+  EXAMPLES
+  + Example ("Calculate a 3D volume representing the mean intensity across a 4D image series",
+             "mrmath 4D.mif mean 3D_mean.mif -axis 3",
+             "This is a common operation for calculating e.g. the mean value within a "
+             "specific DWI b-value. Note that axis indices start from 0; thus, axes 0, 1 & 2 "
+             "are the three spatial axes, and axis 3 operates across volumes.")
+
+  + Example ("Generate a Maximum Intensity Projection (MIP) along the inferior-superior direction",
+             "mrmath input.mif max MIP.mif -axis 2",
+             "Since a MIP is literally the maximal value along a specific projection direction, "
+             "axis-aligned MIPs can be generated easily using mrmath with the \'max\' operation.");
 
   ARGUMENTS
-  + Argument ("input", "the input image.").type_image_in ().allow_multiple()
+  + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
   + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice (operations)
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
   + Option ("axis", "perform operation along a specified axis of a single input image")
-    + Argument ("index").type_integer();
+    + Argument ("index").type_integer (0)
 
+  + Option ("keep_unary_axes", "Keep unary axes in input images prior to calculating the stats. "
+    "The default is to wipe axes with single elements.")
+
+  + DataType::options();
 }
 
 
-typedef float value_type;
-
-typedef Image::BufferPreload<value_type> PreloadBufferType;
-typedef PreloadBufferType::voxel_type PreloadVoxelType;
-
-typedef Image::Buffer<value_type> BufferType;
-typedef BufferType::voxel_type VoxelType;
+using value_type = float;
 
 
-
-class Mean {
+class Mean { NOMEMALIGN
   public:
     Mean () : sum (0.0), count (0) { }
-    void operator() (value_type val) { 
+    void operator() (value_type val) {
       if (std::isfinite (val)) {
         sum += val;
         ++count;
       }
     }
-    value_type result () const { 
+    value_type result () const {
       if (!count)
         return NAN;
-      return sum / count; 
+      return sum / count;
     }
     double sum;
     size_t count;
 };
 
+class Median { NOMEMALIGN
+  public:
+    Median () { }
+    void operator() (value_type val) {
+      if (!std::isnan (val))
+        values.push_back(val);
+    }
+    value_type result () {
+      return Math::median(values);
+    }
+    vector<value_type> values;
+};
 
-class Sum {
+class Sum { NOMEMALIGN
   public:
     Sum () : sum (0.0) { }
-    void operator() (value_type val) { 
-      if (std::isfinite (val)) 
+    void operator() (value_type val) {
+      if (std::isfinite (val))
         sum += val;
     }
-    value_type result () const { 
-      return sum; 
+    value_type result () const {
+      return sum;
     }
     double sum;
 };
 
 
-class Product {
+class Product { NOMEMALIGN
   public:
-    Product () : product (0.0) { }
+    Product () : product (NAN) { }
     void operator() (value_type val) {
       if (std::isfinite (val))
-        product += val;
+        product = std::isfinite (product) ? product * val : val;
     }
     value_type result () const {
       return product;
@@ -134,7 +157,7 @@ class Product {
 };
 
 
-class RMS {
+class RMS { NOMEMALIGN
   public:
     RMS() : sum (0.0), count (0) { }
     void operator() (value_type val) {
@@ -152,39 +175,60 @@ class RMS {
     size_t count;
 };
 
-
-class Var {
+class NORM2 { NOMEMALIGN
   public:
-    Var () : sum (0.0), sum_sqr (0.0), count (0) { }
-    void operator() (value_type val) { 
+    NORM2() : sum (0.0), count (0) { }
+    void operator() (value_type val) {
       if (std::isfinite (val)) {
-        sum += val;
-        sum_sqr += Math::pow2 (val);
+        sum += Math::pow2 (val);
         ++count;
       }
     }
-    value_type result () const { 
-      if (count < 2) 
+    value_type result() const {
+      if (!count)
         return NAN;
-      return  (sum_sqr - Math::pow2 (sum) / static_cast<double> (count)) / (static_cast<double> (count) - 1.0);
+      return std::sqrt(sum);
     }
-    double sum, sum_sqr;
+    double sum;
     size_t count;
 };
 
 
-class Std : public Var {
+// Welford's algorithm to avoid catastrophic cancellation
+class Var { NOMEMALIGN
+  public:
+    Var () : delta (0.0), delta2 (0.0), mean (0.0), m2 (0.0), count (0) { }
+    void operator() (value_type val) {
+      if (std::isfinite (val)) {
+        ++count;
+        delta = val - mean;
+        mean += delta / count;
+        delta2 = val - mean;
+        m2 += delta * delta2;
+      }
+    }
+    value_type result () const {
+      if (count < 2)
+        return NAN;
+      return m2 / (static_cast<double> (count) - 1.0);
+    }
+    double delta, delta2, mean, m2;
+    size_t count;
+};
+
+
+class Std : public Var { NOMEMALIGN
   public:
     Std() : Var() { }
     value_type result () const { return std::sqrt (Var::result()); }
 };
 
 
-class Min {
+class Min { NOMEMALIGN
   public:
     Min () : min (std::numeric_limits<value_type>::infinity()) { }
-    void operator() (value_type val) { 
-      if (std::isfinite (val) && val < min) 
+    void operator() (value_type val) {
+      if (std::isfinite (val) && val < min)
         min = val;
     }
     value_type result () const { return std::isfinite (min) ? min : NAN; }
@@ -192,11 +236,11 @@ class Min {
 };
 
 
-class Max {
+class Max { NOMEMALIGN
   public:
     Max () : max (-std::numeric_limits<value_type>::infinity()) { }
-    void operator() (value_type val) { 
-      if (std::isfinite (val) && val > max) 
+    void operator() (value_type val) {
+      if (std::isfinite (val) && val > max)
         max = val;
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
@@ -204,23 +248,23 @@ class Max {
 };
 
 
-class AbsMax {
+class AbsMax { NOMEMALIGN
   public:
     AbsMax () : max (-std::numeric_limits<value_type>::infinity()) { }
-    void operator() (value_type val) { 
-      if (std::isfinite (val) && std::abs(val) > max) 
-        max = std::abs(val);
+    void operator() (value_type val) {
+      if (std::isfinite (val) && abs(val) > max)
+        max = abs(val);
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
     value_type max;
 };
 
-class MagMax {
+class MagMax { NOMEMALIGN
   public:
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
-    void operator() (value_type val) { 
-      if (std::isfinite (val) && (!std::isfinite (max) || std::abs(val) > std::abs (max)))
+    void operator() (value_type val) {
+      if (std::isfinite (val) && (!std::isfinite (max) || abs(val) > abs (max)))
         max = val;
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
@@ -232,14 +276,14 @@ class MagMax {
 
 
 template <class Operation>
-class AxisKernel {
+class AxisKernel { NOMEMALIGN
   public:
     AxisKernel (size_t axis) : axis (axis) { }
 
-    template <class InputVoxelType, class OutputVoxelType>
-      void operator() (InputVoxelType& in, OutputVoxelType& out) {
+    template <class InputImageType, class OutputImageType>
+      void operator() (InputImageType& in, OutputImageType& out) {
         Operation op;
-        for (in[axis] = 0; in[axis] < in.dim(axis); ++in[axis])
+        for (auto l = Loop (axis) (in); l; ++l)
           op (in.value());
         out.value() = op.result();
       }
@@ -251,68 +295,60 @@ class AxisKernel {
 
 
 
-class ImageKernelBase {
+class ImageKernelBase { NOMEMALIGN
   public:
-    ImageKernelBase (const std::string& path) :
-      output_path (path) { }
-    virtual ~ImageKernelBase() { }
-    virtual void process (const Image::Header& image_in) = 0;
-  protected:
-    const std::string output_path;
+    virtual ~ImageKernelBase () { }
+    virtual void process (Header& image_in) = 0;
+    virtual void write_back (Image<value_type>& out) = 0;
 };
 
 
 
 template <class Operation>
-class ImageKernel : public ImageKernelBase {
+class ImageKernel : public ImageKernelBase { NOMEMALIGN
   protected:
-    class InitFunctor { 
-      public: 
-        template <class VoxelType> 
-          void operator() (VoxelType& out) const { out.value() = Operation(); } 
+    class InitFunctor { NOMEMALIGN
+      public:
+        template <class ImageType>
+          void operator() (ImageType& out) const { out.value() = Operation(); }
     };
-    class ProcessFunctor { 
-      public: 
-        template <class VoxelType1, class VoxelType2>
-          void operator() (VoxelType1& out, VoxelType2& in) const { 
-            Operation op = out.value(); 
-            op (in.value()); 
+    class ProcessFunctor { NOMEMALIGN
+      public:
+        template <class ImageType1, class ImageType2>
+          void operator() (ImageType1& out, ImageType2& in) const {
+            Operation op = out.value();
+            op (in.value());
             out.value() = op;
-          } 
+          }
     };
-    class ResultFunctor {
-      public: 
-        template <class VoxelType1, class VoxelType2>
-          void operator() (VoxelType1& out, VoxelType2& in) const {
-            Operation op = in.value(); 
-            out.value() = op.result(); 
-          } 
+    class ResultFunctor { NOMEMALIGN
+      public:
+        template <class ImageType1, class ImageType2>
+          void operator() (ImageType1& out, ImageType2& in) const {
+            Operation op = in.value();
+            out.value() = op.result();
+          }
     };
 
   public:
-    ImageKernel (const Image::Header& header, const std::string& path) :
-      ImageKernelBase (path),
-      header (header),
-      buffer (header) {
-        Image::ThreadedLoop (buffer).run (InitFunctor(), buffer.voxel());
+    ImageKernel (const Header& header) :
+      image (Header::scratch (header).get_image<Operation>()) {
+        ThreadedLoop (image).run (InitFunctor(), image);
       }
 
-    ~ImageKernel()
+    void write_back (Image<value_type>& out)
     {
-      Image::Buffer<value_type> out (output_path, header);
-      Image::ThreadedLoop (buffer).run (ResultFunctor(), out.voxel(), buffer.voxel());
+      ThreadedLoop (image).run (ResultFunctor(), out, image);
     }
 
-    void process (const Image::Header& image_in)
+    void process (Header& header_in)
     {
-      Image::Buffer<value_type> in (image_in);
-      Image::ThreadedLoop (buffer).run (ProcessFunctor(), buffer.voxel(), in.voxel());
+      auto in = header_in.get_image<value_type>();
+      ThreadedLoop (image).run (ProcessFunctor(), image, in);
     }
 
   protected:
-    const Image::Header& header;
-    Image::BufferScratch<Operation> buffer;
-
+    Image<Operation> image;
 };
 
 
@@ -324,7 +360,7 @@ void run ()
   const int op = argument[num_inputs];
   const std::string& output_path = argument.back();
 
-  Options opt = get_options ("axis");
+  auto opt = get_options ("axis");
   if (opt.size()) {
 
     if (num_inputs != 1)
@@ -332,35 +368,43 @@ void run ()
 
     const size_t axis = opt[0][0];
 
-    PreloadBufferType buffer_in (argument[0], Image::Stride::contiguous_along_axis (axis));
+    auto image_in = Header::open (argument[0]).get_image<value_type>().with_direct_io (axis);
 
-    if (axis >= buffer_in.ndim())
-      throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(buffer_in.ndim()) + " axes");
+    if (axis >= image_in.ndim())
+      throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(image_in.ndim()) + " axes");
 
-    Image::Header header_out (buffer_in);
-    header_out.datatype() = DataType::Float32;
-    header_out.dim(axis) = 1;
-    Image::squeeze_dim (header_out);
+    Header header_out (image_in);
 
-    BufferType buffer_out (output_path, header_out);
+    if (axis == 3) {
+      try {
+        const auto DW_scheme = DWI::parse_DW_scheme (header_out);
+        DWI::stash_DW_scheme (header_out, DW_scheme);
+      } catch (...) { }
+      DWI::clear_DW_scheme (header_out);
+      PhaseEncoding::clear_scheme (header_out);
+    }
 
-    auto vox_in = buffer_in.voxel();
-    auto vox_out = buffer_out.voxel();
+    header_out.datatype() = DataType::from_command_line (DataType::Float32);
+    header_out.size(axis) = 1;
+    squeeze_dim (header_out);
 
+    auto image_out = Header::create (output_path, header_out).get_image<float>();
 
-    Image::ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", buffer_out);
+    auto loop = ThreadedLoop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", image_out);
 
     switch (op) {
-      case 0: loop.run (AxisKernel<Mean>   (axis), vox_in, vox_out); return;
-      case 1: loop.run (AxisKernel<Sum>    (axis), vox_in, vox_out); return;
-      case 2: loop.run (AxisKernel<Product>(axis), vox_in, vox_out); return;
-      case 3: loop.run (AxisKernel<RMS>    (axis), vox_in, vox_out); return;
-      case 4: loop.run (AxisKernel<Var>    (axis), vox_in, vox_out); return;
-      case 5: loop.run (AxisKernel<Std>    (axis), vox_in, vox_out); return;
-      case 6: loop.run (AxisKernel<Min>    (axis), vox_in, vox_out); return;
-      case 7: loop.run (AxisKernel<Max>    (axis), vox_in, vox_out); return;
-      case 8: loop.run (AxisKernel<AbsMax> (axis), vox_in, vox_out); return;
-      case 9: loop.run (AxisKernel<MagMax> (axis), vox_in, vox_out); return;
+      case 0: loop.run  (AxisKernel<Mean>   (axis), image_in, image_out); return;
+      case 1: loop.run  (AxisKernel<Median> (axis), image_in, image_out); return;
+      case 2: loop.run  (AxisKernel<Sum>    (axis), image_in, image_out); return;
+      case 3: loop.run  (AxisKernel<Product>(axis), image_in, image_out); return;
+      case 4: loop.run  (AxisKernel<RMS>    (axis), image_in, image_out); return;
+      case 5: loop.run  (AxisKernel<NORM2>  (axis), image_in, image_out); return;
+      case 6: loop.run  (AxisKernel<Var>    (axis), image_in, image_out); return;
+      case 7: loop.run  (AxisKernel<Std>    (axis), image_in, image_out); return;
+      case 8: loop.run  (AxisKernel<Min>    (axis), image_in, image_out); return;
+      case 9: loop.run  (AxisKernel<Max>    (axis), image_in, image_out); return;
+      case 10: loop.run  (AxisKernel<AbsMax> (axis), image_in, image_out); return;
+      case 11: loop.run (AxisKernel<MagMax> (axis), image_in, image_out); return;
       default: assert (0);
     }
 
@@ -370,61 +414,70 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    VecPtr<Image::Header> headers_in;
+    vector<Header> headers_in (num_inputs);
 
     // Header of first input image is the template to which all other input images are compared
-    headers_in.push_back (new Image::Header (argument[0]));
-    Image::Header header (*headers_in[0]);
+    headers_in[0] = Header::open (argument[0]);
+    Header header (headers_in[0]);
+    header.datatype() = DataType::from_command_line (DataType::Float32);
 
     // Wipe any excess unary-dimensional axes
-    while (header.dim (header.ndim() - 1) == 1)
-      header.set_ndim (header.ndim() - 1);
+    if ( ! get_options ("keep_unary_axes").size() ) {
+      while (header.size (header.ndim() - 1) == 1)
+        header.ndim() = header.ndim() - 1;
+    }
 
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
       const std::string path = argument[i];
-      headers_in.push_back (new Image::Header (path));
-      const Image::Header& temp (*headers_in[i]);
+      // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (path))));
+      headers_in[i] = Header::open (path);
+      const Header& temp (headers_in[i]);
       if (temp.ndim() < header.ndim())
         throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
-        if (temp.dim(axis) != header.dim(axis))
+        if (temp.size(axis) != header.size(axis))
           throw Exception ("Dimensions of image " + path + " do not match those of first input image " + header.name());
       }
       for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
-        if (temp.dim(axis) != 1)
+        if (temp.size(axis) != 1)
           throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
       }
+      header.merge_keyval (temp);
     }
 
     // Instantiate a kernel depending on the operation requested
-    Ptr<ImageKernelBase> kernel;
+    std::unique_ptr<ImageKernelBase> kernel;
     switch (op) {
-      case 0: kernel = new ImageKernel<Mean>    (header, output_path); break;
-      case 1: kernel = new ImageKernel<Sum>     (header, output_path); break;
-      case 2: kernel = new ImageKernel<Product> (header, output_path); break;
-      case 3: kernel = new ImageKernel<RMS>     (header, output_path); break;
-      case 4: kernel = new ImageKernel<Var>     (header, output_path); break;
-      case 5: kernel = new ImageKernel<Std>     (header, output_path); break;
-      case 6: kernel = new ImageKernel<Min>     (header, output_path); break;
-      case 7: kernel = new ImageKernel<Max>     (header, output_path); break;
-      case 8: kernel = new ImageKernel<AbsMax>  (header, output_path); break;
-      case 9: kernel = new ImageKernel<MagMax>  (header, output_path); break;
+      case 0:  kernel.reset (new ImageKernel<Mean>    (header)); break;
+      case 1:  kernel.reset (new ImageKernel<Median>  (header)); break;
+      case 2:  kernel.reset (new ImageKernel<Sum>     (header)); break;
+      case 3:  kernel.reset (new ImageKernel<Product> (header)); break;
+      case 4:  kernel.reset (new ImageKernel<RMS>     (header)); break;
+      case 5:  kernel.reset (new ImageKernel<NORM2>   (header)); break;
+      case 6:  kernel.reset (new ImageKernel<Var>     (header)); break;
+      case 7:  kernel.reset (new ImageKernel<Std>     (header)); break;
+      case 8:  kernel.reset (new ImageKernel<Min>     (header)); break;
+      case 9:  kernel.reset (new ImageKernel<Max>     (header)); break;
+      case 10:  kernel.reset (new ImageKernel<AbsMax>  (header)); break;
+      case 11: kernel.reset (new ImageKernel<MagMax>  (header)); break;
       default: assert (0);
     }
 
     // Feed the input images to the kernel one at a time
     {
-      ProgressBar progress (std::string("computing ") + operations[op] + " across " 
-          + str(headers_in.size()) + " images...", num_inputs);
+      ProgressBar progress (std::string("computing ") + operations[op] + " across "
+          + str(headers_in.size()) + " images", num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
-        kernel->process (*headers_in[i]);
+        assert (headers_in[i].valid());
+        assert (headers_in[i].is_file_backed());
+        kernel->process (headers_in[i]);
         ++progress;
       }
     }
 
-    // Image output is handled by the kernel destructor
-
+    auto out = Header::create (output_path, header).get_image<value_type>();
+    kernel->write_back (out);
   }
 
 }

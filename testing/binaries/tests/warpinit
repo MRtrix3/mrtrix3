@@ -1,0 +1,1 @@
+warpinit dwi.mif - | testing_diff_image - warpinit/out.mif -frac 1e-5

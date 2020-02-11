@@ -1,31 +1,28 @@
-/*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+#include "gui/mrview/tool/view.h"
 
 #include "mrtrix.h"
 #include "math/math.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/mode/base.h"
 #include "gui/mrview/mode/volume.h"
-#include "gui/mrview/tool/view.h"
+#include "gui/mrview/mode/lightbox_gui.h"
+#include "gui/mrview/mode/ortho.h"
+#include "gui/mrview/mode/lightbox.h"
 #include "gui/mrview/adjust_button.h"
 
 #define FOV_RATE_MULTIPLIER 0.01f
@@ -59,7 +56,7 @@ namespace MR
 
 
         class View::ClipPlaneModel : public QAbstractItemModel
-        {
+        { MEMALIGN(View::ClipPlaneModel)
           public:
 
             ClipPlaneModel (QObject* parent) :
@@ -88,22 +85,22 @@ namespace MR
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
             }
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const 
-            { 
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const
+            {
               (void) parent; // to suppress warnings about unused parameters
-              return createIndex (row, column); 
+              return createIndex (row, column);
             }
 
             QModelIndex parent (const QModelIndex&) const { return QModelIndex(); }
 
-            int rowCount (const QModelIndex& parent = QModelIndex()) const 
+            int rowCount (const QModelIndex& parent = QModelIndex()) const
             {
               (void) parent; // to suppress warnings about unused parameters
               return planes.size();
             }
 
-            int columnCount (const QModelIndex& parent = QModelIndex()) const 
-            { 
+            int columnCount (const QModelIndex& parent = QModelIndex()) const
+            {
               (void) parent; // to suppress warnings about unused parameters
               return 1;
             }
@@ -120,22 +117,22 @@ namespace MR
                 p.plane[n] = -p.plane[n];
               if (p.name[0] == '-')
                 p.name = p.name.substr (1);
-              else 
+              else
                 p.name = "-" + p.name;
               emit dataChanged (index, index);
             }
 
-            void reset (QModelIndex& index, const Image::InterpVoxelType& image, int proj) {
+            void reset (QModelIndex& index, const Image& image, int proj) {
               reset (planes[index.row()], image, proj);
             }
 
-            void reset (ClipPlane& p, const Image::InterpVoxelType& image, int proj) {
-              const Math::Matrix<float> M (image.transform());
+            void reset (ClipPlane& p, const Image& image, int proj) {
+              const transform_type& M (image.header().transform());
               p.plane[0] = M (proj, 0);
               p.plane[1] = M (proj, 1);
               p.plane[2] = M (proj, 2);
 
-              Point<> centre = image.voxel2scanner (Point<> (image.dim(0)/2.0f, image.dim(1)/2.0f, image.dim(2)/2.0f));
+              const Eigen::Vector3f centre = image.transform().voxel2scanner.cast<float>() * Eigen::Vector3f { image.header().size(0)/2.0f, image.header().size(1)/2.0f, image.header().size(2)/2.0f };
               p.plane[3] = centre[0]*p.plane[0] + centre[1]*p.plane[1] + centre[2]*p.plane[2];
               p.active = true;
 
@@ -148,7 +145,7 @@ namespace MR
               endRemoveRows();
             }
 
-            void add (const Image::InterpVoxelType& image, int proj) {
+            void add (const Image& image, int proj) {
               ClipPlane p;
               reset (p, image, proj);
               beginInsertRows (QModelIndex(), planes.size(), planes.size() + 1);
@@ -156,20 +153,35 @@ namespace MR
               endInsertRows();
             }
 
-            std::vector<ClipPlane> planes;
+            vector<ClipPlane> planes;
         };
 
 
 
 
-        View::View (Window& main_window, Dock* parent) : 
-          Base (main_window, parent)
+        View::View (Dock* parent) :
+          Base (parent)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
+          HBoxLayout* hlayout  = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+
+          hide_button = new QPushButton ("Hide main image",this);
+          hide_button->setToolTip (tr ("Hide all main images"));
+          hide_button->setIcon (QIcon (":/hide.svg"));
+          hide_button->setCheckable (true);
+          hide_button->setChecked (!window().get_image_visibility());
+          connect (hide_button, SIGNAL (clicked(bool)), this, SLOT (hide_image_slot (bool)));
+          hlayout->addWidget (hide_button, 1);
+
+          main_box->addLayout (hlayout, 0);
+
+          // FoV
           QGroupBox* group_box = new QGroupBox ("FOV");
           main_box->addWidget (group_box);
-          HBoxLayout* hlayout = new HBoxLayout;
+          hlayout = new HBoxLayout;
           group_box->setLayout (hlayout);
 
           fov = new AdjustButton (this);
@@ -183,23 +195,69 @@ namespace MR
           connect (plane_combobox, SIGNAL (activated(int)), this, SLOT (onSetPlane(int)));
           hlayout->addWidget (plane_combobox);
 
+          // Focus
           group_box = new QGroupBox ("Focus");
           main_box->addWidget (group_box);
-          hlayout = new HBoxLayout;
-          group_box->setLayout (hlayout);
+          GridLayout* layout = new GridLayout;
+          group_box->setLayout (layout);
+
+          const int focus_button_width = 80;
+
+          layout->addWidget (new QLabel (tr("Voxel: ")), 0, 0);
+
+          voxel_x = new AdjustButton (this);
+          voxel_x->setMinimumWidth(focus_button_width);
+          connect (voxel_x, SIGNAL (valueChanged()), this, SLOT (onSetVoxel()));
+          layout->addWidget (voxel_x, 0, 1);
+
+          voxel_y = new AdjustButton (this);
+          voxel_y->setMinimumWidth(focus_button_width);
+          connect (voxel_y, SIGNAL (valueChanged()), this, SLOT (onSetVoxel()));
+          layout->addWidget (voxel_y, 0, 2);
+
+          voxel_z = new AdjustButton (this);
+          voxel_z->setMinimumWidth(focus_button_width);
+          connect (voxel_z, SIGNAL (valueChanged()), this, SLOT (onSetVoxel()));
+          layout->addWidget (voxel_z, 0, 3);
+
+          copy_voxel_button = new QPushButton ("copy",this);
+          copy_voxel_button->setMinimumWidth(30);
+          copy_voxel_button->setToolTip (tr ("copy voxel to clipboard"));
+          copy_voxel_button->setCheckable (false);
+          connect (copy_voxel_button, SIGNAL (clicked()), this, SLOT (copy_voxel_slot ()));
+          layout->addWidget (copy_voxel_button, 0, 4);
+
+          layout->addWidget (new QLabel (tr("Position: ")), 1, 0);
 
           focus_x = new AdjustButton (this);
+          focus_x->setMinimumWidth(focus_button_width);
           connect (focus_x, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-          hlayout->addWidget (focus_x);
+          layout->addWidget (focus_x, 1, 1);
 
           focus_y = new AdjustButton (this);
+          focus_y->setMinimumWidth(focus_button_width);
           connect (focus_y, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-          hlayout->addWidget (focus_y);
+          layout->addWidget (focus_y, 1, 2);
 
           focus_z = new AdjustButton (this);
+          focus_z->setMinimumWidth(focus_button_width);
           connect (focus_z, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-          hlayout->addWidget (focus_z);
+          layout->addWidget (focus_z, 1, 3);
 
+          copy_focus_button = new QPushButton ("copy",this);
+          copy_focus_button->setMinimumWidth(30);
+          copy_focus_button->setToolTip (tr ("copy position to clipboard"));
+          copy_focus_button->setCheckable (false);
+          connect (copy_focus_button, SIGNAL (clicked()), this, SLOT (copy_focus_slot ()));
+          layout->addWidget (copy_focus_button, 1, 4);
+
+          // Volume
+          volume_box = new QGroupBox ("Volume indices (dimension: index)");
+          main_box->addWidget (volume_box);
+          volume_index_layout = new GridLayout;
+          volume_box->setLayout (volume_index_layout);
+
+          // Intensity
           group_box = new QGroupBox ("Intensity scaling");
           main_box->addWidget (group_box);
           hlayout = new HBoxLayout;
@@ -214,12 +272,16 @@ namespace MR
           hlayout->addWidget (max_entry);
 
 
-          GridLayout* layout;
-          layout = new GridLayout;
-          main_box->addLayout (layout);
+          // ortho view options
+          ortho_view_in_row_check_box = new QCheckBox ("display images in a row");
+          ortho_view_in_row_check_box->setCheckable (true);
+          ortho_view_in_row_check_box->setChecked (false);
+          ortho_view_in_row_check_box->setToolTip (
+              "Display the 3 orthogonal views in a row, rather than a 2x2 montage.\n\n"
+              "To make this the default, set the \"MRViewOrthoAsRow\" option in your configuration file.");
+          main_box->addWidget (ortho_view_in_row_check_box);
 
-
-
+          // volume render options
           transparency_box = new QGroupBox ("Transparency");
           main_box->addWidget (transparency_box);
           VBoxLayout* vlayout = new VBoxLayout;
@@ -255,7 +317,7 @@ namespace MR
           lower_threshold_check_box = new QCheckBox (this);
           hlayout->addWidget (lower_threshold_check_box);
           lower_threshold = new AdjustButton (this);
-          lower_threshold->setValue (window.image() ? window.image()->intensity_min() : 0.0);
+          lower_threshold->setValue (window().image() ? window().image()->intensity_min() : 0.0);
           connect (lower_threshold_check_box, SIGNAL (clicked(bool)), this, SLOT (onCheckThreshold(bool)));
           connect (lower_threshold, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
           hlayout->addWidget (lower_threshold);
@@ -263,7 +325,7 @@ namespace MR
           upper_threshold_check_box = new QCheckBox (this);
           hlayout->addWidget (upper_threshold_check_box);
           upper_threshold = new AdjustButton (this);
-          upper_threshold->setValue (window.image() ? window.image()->intensity_max() : 1.0);
+          upper_threshold->setValue (window().image() ? window().image()->intensity_max() : 1.0);
           connect (upper_threshold_check_box, SIGNAL (clicked(bool)), this, SLOT (onCheckThreshold(bool)));
           connect (upper_threshold, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
           hlayout->addWidget (upper_threshold);
@@ -274,8 +336,11 @@ namespace MR
           clip_box->setCheckable (true);
           connect (clip_box, SIGNAL (toggled(bool)), this, SLOT(clip_planes_toggle_shown_slot()));
           main_box->addWidget (clip_box);
+          vlayout = new VBoxLayout;
+          clip_box->setLayout (vlayout);
           hlayout = new HBoxLayout;
-          clip_box->setLayout (hlayout);
+          vlayout->addLayout (hlayout);
+
 
           clip_planes_model = new ClipPlaneModel (this);
           connect (clip_planes_model, SIGNAL (dataChanged (const QModelIndex&, const QModelIndex&)),
@@ -292,7 +357,7 @@ namespace MR
           clip_planes_list_view->setToolTip ("Right-click for more options");
           connect (clip_planes_list_view, SIGNAL (customContextMenuRequested (const QPoint&)),
               this, SLOT (clip_planes_right_click_menu_slot (const QPoint&)));
-          connect (clip_planes_list_view->selectionModel(), 
+          connect (clip_planes_list_view->selectionModel(),
               SIGNAL (selectionChanged (const QItemSelection, const QItemSelection)),
               this, SLOT (clip_planes_selection_changed_slot()));
           hlayout->addWidget (clip_planes_list_view, 1);
@@ -304,6 +369,20 @@ namespace MR
           toolbar->setIconSize (QSize (16, 16));
           hlayout->addWidget (toolbar);
 
+          clip_highlight_check_box = new QCheckBox ("Highlight selected clip planes");
+          clip_highlight_check_box->setToolTip ("Helps to identify selected clip planes that can be interacted with.");
+          clip_highlight_check_box->setChecked (true);
+          connect (clip_highlight_check_box, SIGNAL (toggled(bool)), this, SLOT(clip_planes_toggle_highlight_slot()));
+          vlayout->addWidget (clip_highlight_check_box);
+
+          clip_intersectionmode_check_box = new QCheckBox ("Intersection mode");
+          clip_intersectionmode_check_box->setToolTip ("Generated volume is the intersection of individual clipped volumes, rather than the union.");
+          clip_intersectionmode_check_box->setChecked (false);
+          connect (clip_intersectionmode_check_box, SIGNAL (toggled(bool)), this, SLOT(clip_planes_toggle_intersectionmode_slot()));
+          vlayout->addWidget (clip_intersectionmode_check_box);
+
+
+
           // clip planes handling:
 
           clip_planes_option_menu = new QMenu ();
@@ -312,7 +391,7 @@ namespace MR
           QToolButton* button = new QToolButton (this);
           button->setMenu (submenu);
           button->setPopupMode (QToolButton::InstantPopup);
-          button->setToolTip ("add new clip planes");
+          button->setToolTip ("Add new clip planes");
           button->setIcon (QIcon (":/new.svg"));
           toolbar->addWidget (button);
 
@@ -335,7 +414,7 @@ namespace MR
           button = new QToolButton (this);
           button->setMenu (submenu);
           button->setPopupMode (QToolButton::InstantPopup);
-          button->setToolTip ("reset selected clip planes");
+          button->setToolTip ("Reset selected clip planes");
           button->setIcon (QIcon (":/reset.svg"));
           toolbar->addWidget (button);
 
@@ -353,7 +432,7 @@ namespace MR
 
 
           clip_planes_invert_action = new QAction("&Invert", this);
-          clip_planes_invert_action->setToolTip ("invert selected clip planes");
+          clip_planes_invert_action->setToolTip ("Invert selected clip planes");
           clip_planes_invert_action->setIcon (QIcon (":/invert.svg"));
           connect (clip_planes_invert_action, SIGNAL (triggered()), this, SLOT (clip_planes_invert_slot()));
           clip_planes_option_menu->addAction (clip_planes_invert_action);
@@ -363,7 +442,7 @@ namespace MR
           toolbar->addWidget (button);
 
           clip_planes_remove_action = new QAction("R&emove", this);
-          clip_planes_remove_action->setToolTip ("remove selected clip planes");
+          clip_planes_remove_action->setToolTip ("Remove selected clip planes");
           clip_planes_remove_action->setIcon (QIcon (":/close.svg"));
           connect (clip_planes_remove_action, SIGNAL (triggered()), this, SLOT (clip_planes_remove_slot()));
           clip_planes_option_menu->addAction (clip_planes_remove_action);
@@ -375,7 +454,7 @@ namespace MR
           clip_planes_option_menu->addSeparator();
 
           clip_planes_clear_action = new QAction("&Clear", this);
-          clip_planes_clear_action->setToolTip ("clear all clip planes");
+          clip_planes_clear_action->setToolTip ("Clear all clip planes");
           clip_planes_clear_action->setIcon (QIcon (":/clear.svg"));
           connect (clip_planes_clear_action, SIGNAL (triggered()), this, SLOT (clip_planes_clear_slot()));
           clip_planes_option_menu->addAction (clip_planes_clear_action);
@@ -386,21 +465,30 @@ namespace MR
 
           clip_planes_option_menu->addSeparator();
 
+          // Light box view options
+          init_lightbox_gui (main_box);
+
           main_box->addStretch ();
+
+          ortho_view_in_row_check_box->setVisible (false);
+          transparency_box->setVisible (false);
+          threshold_box->setVisible (false);
+          clip_box->setVisible (false);
+          lightbox_box->setVisible (false);
         }
 
 
 
-
-
-        void View::showEvent (QShowEvent*) 
+        void View::showEvent (QShowEvent*)
         {
-          connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
-          connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
-          connect (&window, SIGNAL (planeChanged()), this, SLOT (onPlaneChanged()));
-          connect (&window, SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
-          connect (&window, SIGNAL (modeChanged()), this, SLOT (onModeChanged()));
-          connect (&window, SIGNAL (fieldOfViewChanged()), this, SLOT (onFOVChanged()));
+          connect (&window(), SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
+          connect (&window(), SIGNAL (imageVisibilityChanged(bool)), this, SLOT (onImageVisibilityChanged(bool)));
+          connect (&window(), SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
+          connect (&window(), SIGNAL (planeChanged()), this, SLOT (onPlaneChanged()));
+          connect (&window(), SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
+          connect (&window(), SIGNAL (modeChanged()), this, SLOT (onModeChanged()));
+          connect (&window(), SIGNAL (fieldOfViewChanged()), this, SLOT (onFOVChanged()));
+          connect (&window(), SIGNAL (volumeChanged()), this, SLOT (onVolumeIndexChanged()));
           onPlaneChanged();
           onFocusChanged();
           onScalingChanged();
@@ -413,48 +501,137 @@ namespace MR
 
 
 
-
-        void View::closeEvent (QCloseEvent*) 
+        void View::onVolumeIndexChanged()
         {
-          window.disconnect (this);
+          assert (window().image());
+          const auto& image (window().image()->image);
+          assert (image.ndim() == size_t(volume_index_layout->count() + 3));
+
+          for (int i = 0; i < volume_index_layout->count(); ++i) {
+            auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
+            box->setValue (image.ndim() > size_t(i + 3) ? image.index(i + 3) : 0);
+          }
         }
 
 
 
-        void View::onImageChanged () 
-        {
-          setEnabled (window.image());
 
-          if (!window.image()) 
+        void View::closeEvent (QCloseEvent*)
+        {
+          window().disconnect (this);
+        }
+
+
+
+        void View::onImageChanged ()
+        {
+          const auto image = window().image();
+
+          setEnabled (image);
+
+          reset_light_box_gui_controls();
+
+          if (!image)
             return;
 
           onScalingChanged();
 
-          float rate = window.image()->focus_rate();
+          onImageVisibilityChanged(window().get_image_visibility());
+
+          float rate = image->focus_rate();
           focus_x->setRate (rate);
           focus_y->setRate (rate);
           focus_z->setRate (rate);
 
-          lower_threshold_check_box->setChecked (window.image()->use_discard_lower());
-          upper_threshold_check_box->setChecked (window.image()->use_discard_upper());
+          const int dim = image->image.ndim();
+          volume_box->setVisible(dim > 3);
+
+          while (volume_index_layout->count())
+            delete volume_index_layout->takeAt (volume_index_layout->count()-1)->widget();
+
+          for (size_t d = 3; d < image->image.ndim(); ++d) {
+            SpinBox* vol_index = new SpinBox (this);
+            vol_index->setMinimum (0);
+            vol_index->setPrefix (tr((str(d+1) + ": ").c_str()));
+            vol_index->setValue (image->image.index(d));
+            vol_index->setMaximum (image->image.size(d) - 1);
+            vol_index->setEnabled (image->image.size(d) > 1);
+            volume_index_layout->addWidget (vol_index, volume_index_layout->count()/3, volume_index_layout->count()%3);
+            connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
+          }
+
+          lower_threshold_check_box->setChecked (image->use_discard_lower());
+          upper_threshold_check_box->setChecked (image->use_discard_upper());
         }
 
 
 
-
-
-        void View::onFocusChanged () 
+        void View::onImageVisibilityChanged (bool visible)
         {
-          focus_x->setValue (window.focus()[0]);
-          focus_y->setValue (window.focus()[1]);
-          focus_z->setValue (window.focus()[2]);
+          hide_button->setChecked (!visible);
         }
 
 
 
-        void View::onFOVChanged () 
+        void View::hide_image_slot (bool flag)
         {
-          fov->setValue (window.FOV());
+          if(!window().image())
+            return;
+
+          window().set_image_visibility(!flag);
+        }
+
+        void View::copy_focus_slot ()
+        {
+          if(!window().image())
+            return;
+
+          Eigen::VectorXf focus (window().focus());
+          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+          std::cout << focus.transpose().format(fmt) << "\n";
+
+          QClipboard *clip = QApplication::clipboard();
+          QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
+          clip->setText(input);
+        }
+
+        void View::copy_voxel_slot ()
+        {
+          if(!window().image())
+            return;
+
+          Eigen::VectorXf focus = window().image()->transform().scanner2voxel.cast<float>() * window().focus();
+          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+          std::cout << focus.transpose().format(fmt) << "\n";
+
+          QClipboard *clip = QApplication::clipboard();
+          QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
+          clip->setText(input);
+        }
+
+
+
+        void View::onFocusChanged ()
+        {
+          if(!window().image())
+            return;
+
+          auto focus (window().focus());
+          focus_x->setValue (focus[0]);
+          focus_y->setValue (focus[1]);
+          focus_z->setValue (focus[2]);
+
+          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
+          voxel_x->setValue (focus[0]);
+          voxel_y->setValue (focus[1]);
+          voxel_z->setValue (focus[2]);
+        }
+
+
+
+        void View::onFOVChanged ()
+        {
+          fov->setValue (window().FOV());
           fov->setRate (FOV_RATE_MULTIPLIER * fov->value());
         }
 
@@ -462,11 +639,11 @@ namespace MR
 
 
 
-        void View::onSetFocus () 
+        void View::onSetFocus ()
         {
           try {
-            window.set_focus (Point<> (focus_x->value(), focus_y->value(), focus_z->value()));
-            window.updateGL();
+            window().set_focus (Eigen::Vector3f { focus_x->value(), focus_y->value(), focus_z->value() } );
+            window().updateGL();
           }
           catch (Exception) { }
         }
@@ -474,58 +651,97 @@ namespace MR
 
 
 
-
-        void View::onModeChanged () 
+        void View::onSetVoxel ()
         {
-          transparency_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
-          threshold_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
-          clip_box->setEnabled (window.get_current_mode()->features & Mode::ShaderClipping);
+          try {
+            Eigen::Vector3f focus { voxel_x->value(), voxel_y->value(), voxel_z->value() };
+            focus = window().image()->transform().voxel2scanner.cast<float>() * focus;
+            window().set_focus (focus);
+            window().updateGL();
+          }
+          catch (Exception) { }
+        }
+
+
+
+
+        void View::onSetVolumeIndex ()
+        {
+          if (window().image()) {
+            const auto& image (window().image()->image);
+            assert (image.ndim() == size_t(volume_index_layout->count()+3));
+
+            for (int i = 0; i < volume_index_layout->count(); ++i) {
+              auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
+              if (image.ndim() <= size_t(i+3))
+                break;
+              window().set_image_volume (i+3, box->value());
+            }
+          }
         }
 
 
 
 
 
-        void View::onSetTransparency () 
+
+
+        void View::onModeChanged ()
         {
-          assert (window.image()); 
-          window.image()->transparent_intensity = transparent_intensity->value();
-          window.image()->opaque_intensity = opaque_intensity->value();
-          window.image()->alpha = get_alpha_from_slider (opacity->value());
-          window.image()->lessthan = lower_threshold->value(); 
-          window.image()->greaterthan = upper_threshold->value(); 
-          window.updateGL();
+          const Mode::Base* mode = window().get_current_mode();
+          transparency_box->setVisible (mode->features & Mode::ShaderTransparency);
+          threshold_box->setVisible (mode->features & Mode::ShaderTransparency);
+          clip_box->setVisible (mode->features & Mode::ShaderClipping);
+          lightbox_box->setVisible (false);
+          ortho_view_in_row_check_box->setVisible (false);
+          mode->request_update_mode_gui(*this);
         }
 
 
 
 
 
-        void View::onPlaneChanged () 
+
+        void View::onSetTransparency ()
         {
-          plane_combobox->setCurrentIndex (window.plane());
+          assert (window().image());
+          window().image()->transparent_intensity = transparent_intensity->value();
+          window().image()->opaque_intensity = opaque_intensity->value();
+          window().image()->alpha = get_alpha_from_slider (opacity->value());
+          window().image()->lessthan = lower_threshold->value();
+          window().image()->greaterthan = upper_threshold->value();
+          window().updateGL();
         }
 
 
 
 
 
-        void View::onSetPlane (int index) 
+        void View::onPlaneChanged ()
         {
-          window.set_plane (index);
-          window.updateGL();
+          plane_combobox->setCurrentIndex (window().plane());
         }
 
 
 
 
-        void View::onCheckThreshold (bool) 
+
+        void View::onSetPlane (int index)
         {
-          assert (window.image());
+          window().set_plane (index);
+          window().updateGL();
+        }
+
+
+
+
+        void View::onCheckThreshold (bool)
+        {
+          assert (window().image());
           assert (threshold_box->isEnabled());
-          window.image()->set_use_discard_lower (lower_threshold_check_box->isChecked());
-          window.image()->set_use_discard_upper (upper_threshold_check_box->isChecked());
-          window.updateGL();
+          window().image()->set_use_discard_lower (lower_threshold_check_box->isChecked());
+          window().image()->set_use_discard_upper (upper_threshold_check_box->isChecked());
+          window().updateGL();
         }
 
 
@@ -534,44 +750,44 @@ namespace MR
 
 
 
-        void View::set_transparency_from_image () 
+        void View::set_transparency_from_image ()
         {
-          if (!std::isfinite (window.image()->transparent_intensity) ||
-              !std::isfinite (window.image()->opaque_intensity) ||
-              !std::isfinite (window.image()->alpha) ||
-              !std::isfinite (window.image()->lessthan) ||
-              !std::isfinite (window.image()->greaterthan)) { // reset:
-            if (!std::isfinite (window.image()->intensity_min()) || 
-                !std::isfinite (window.image()->intensity_max()))
+          if (!std::isfinite (window().image()->transparent_intensity) ||
+              !std::isfinite (window().image()->opaque_intensity) ||
+              !std::isfinite (window().image()->alpha) ||
+              !std::isfinite (window().image()->lessthan) ||
+              !std::isfinite (window().image()->greaterthan)) { // reset:
+            if (!std::isfinite (window().image()->intensity_min()) ||
+                !std::isfinite (window().image()->intensity_max()))
               return;
 
-            if (!std::isfinite (window.image()->transparent_intensity))
-              window.image()->transparent_intensity = window.image()->intensity_min();
-            if (!std::isfinite (window.image()->opaque_intensity))
-              window.image()->opaque_intensity = window.image()->intensity_max();
-            if (!std::isfinite (window.image()->alpha))
-              window.image()->alpha = get_alpha_from_slider (opacity->value());
-            if (!std::isfinite (window.image()->lessthan))
-              window.image()->lessthan = window.image()->intensity_min();
-            if (!std::isfinite (window.image()->greaterthan))
-              window.image()->greaterthan = window.image()->intensity_max();
+            if (!std::isfinite (window().image()->transparent_intensity))
+              window().image()->transparent_intensity = window().image()->intensity_min();
+            if (!std::isfinite (window().image()->opaque_intensity))
+              window().image()->opaque_intensity = window().image()->intensity_max();
+            if (!std::isfinite (window().image()->alpha))
+              window().image()->alpha = get_alpha_from_slider (opacity->value());
+            if (!std::isfinite (window().image()->lessthan))
+              window().image()->lessthan = window().image()->intensity_min();
+            if (!std::isfinite (window().image()->greaterthan))
+              window().image()->greaterthan = window().image()->intensity_max();
           }
 
-          assert (std::isfinite (window.image()->transparent_intensity));
-          assert (std::isfinite (window.image()->opaque_intensity));
-          assert (std::isfinite (window.image()->alpha));
-          assert (std::isfinite (window.image()->lessthan));
-          assert (std::isfinite (window.image()->greaterthan));
+          assert (std::isfinite (window().image()->transparent_intensity));
+          assert (std::isfinite (window().image()->opaque_intensity));
+          assert (std::isfinite (window().image()->alpha));
+          assert (std::isfinite (window().image()->lessthan));
+          assert (std::isfinite (window().image()->greaterthan));
 
-          transparent_intensity->setValue (window.image()->transparent_intensity);
-          opaque_intensity->setValue (window.image()->opaque_intensity);
-          opacity->setValue (get_slider_value_from_alpha (window.image()->alpha)); 
-          lower_threshold->setValue (window.image()->lessthan);
-          upper_threshold->setValue (window.image()->greaterthan);
-          lower_threshold_check_box->setChecked (window.image()->use_discard_lower());
-          upper_threshold_check_box->setChecked (window.image()->use_discard_upper());
+          transparent_intensity->setValue (window().image()->transparent_intensity);
+          opaque_intensity->setValue (window().image()->opaque_intensity);
+          opacity->setValue (get_slider_value_from_alpha (window().image()->alpha));
+          lower_threshold->setValue (window().image()->lessthan);
+          upper_threshold->setValue (window().image()->greaterthan);
+          lower_threshold_check_box->setChecked (window().image()->use_discard_lower());
+          upper_threshold_check_box->setChecked (window().image()->use_discard_upper());
 
-          float rate = window.image() ? window.image()->scaling_rate() : 0.0;
+          float rate = window().image() ? window().image()->scaling_rate() : 0.0;
           transparent_intensity->setRate (rate);
           opaque_intensity->setRate (rate);
           lower_threshold->setRate (rate);
@@ -583,9 +799,9 @@ namespace MR
 
         void View::onSetScaling ()
         {
-          if (window.image()) {
-            window.image()->set_windowing (min_entry->value(), max_entry->value());
-            window.updateGL();
+          if (window().image()) {
+            window().image()->set_windowing (min_entry->value(), max_entry->value());
+            window().updateGL();
           }
         }
 
@@ -594,10 +810,10 @@ namespace MR
 
         void View::onSetFOV ()
         {
-          if (window.image()) {
-            window.set_FOV (fov->value());
+          if (window().image()) {
+            window().set_FOV (fov->value());
             fov->setRate (FOV_RATE_MULTIPLIER * fov->value());
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -605,10 +821,10 @@ namespace MR
 
         void View::onScalingChanged ()
         {
-          if (window.image()) {
-            min_entry->setValue (window.image()->scaling_min());
-            max_entry->setValue (window.image()->scaling_max());
-            float rate = window.image()->scaling_rate();
+          if (window().image()) {
+            min_entry->setValue (window().image()->scaling_min());
+            max_entry->setValue (window().image()->scaling_max());
+            float rate = window().image()->scaling_rate();
             min_entry->setRate (rate);
             max_entry->setRate (rate);
 
@@ -629,61 +845,61 @@ namespace MR
 
 
 
-        void View::clip_planes_add_axial_slot () 
+        void View::clip_planes_add_axial_slot ()
         {
-          clip_planes_model->add (window.image()->interp, 2);
-          window.updateGL();
+          clip_planes_model->add (*(window().image()), 2);
+          window().updateGL();
         }
 
-        void View::clip_planes_add_sagittal_slot () 
+        void View::clip_planes_add_sagittal_slot ()
         {
-          clip_planes_model->add (window.image()->interp, 0);
-          window.updateGL();
+          clip_planes_model->add (*(window().image()), 0);
+          window().updateGL();
         }
 
-        void View::clip_planes_add_coronal_slot () 
+        void View::clip_planes_add_coronal_slot ()
         {
-          clip_planes_model->add (window.image()->interp, 1);
-          window.updateGL();
+          clip_planes_model->add (*(window().image()), 1);
+          window().updateGL();
         }
 
 
 
-        void View::clip_planes_reset_axial_slot () 
+        void View::clip_planes_reset_axial_slot ()
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) 
-            clip_planes_model->reset (indices[i], window.image()->interp, 2);
-          window.updateGL();
+          for (int i = 0; i < indices.size(); ++i)
+            clip_planes_model->reset (indices[i], *(window().image()), 2);
+          window().updateGL();
         }
 
 
         void View::clip_planes_reset_sagittal_slot ()
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) 
-            clip_planes_model->reset (indices[i], window.image()->interp, 0);
-          window.updateGL();
+          for (int i = 0; i < indices.size(); ++i)
+            clip_planes_model->reset (indices[i], *(window().image()), 0);
+          window().updateGL();
         }
 
 
         void View::clip_planes_reset_coronal_slot ()
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) 
-            clip_planes_model->reset (indices[i], window.image()->interp, 1);
-          window.updateGL();
+          for (int i = 0; i < indices.size(); ++i)
+            clip_planes_model->reset (indices[i], *(window().image()), 1);
+          window().updateGL();
         }
 
 
 
 
-        void View::clip_planes_invert_slot () 
+        void View::clip_planes_invert_slot ()
         {
           QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) 
+          for (int i = 0; i < indices.size(); ++i)
             clip_planes_model->invert (indices[i]);
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -694,14 +910,14 @@ namespace MR
             clip_planes_model->remove (indices.first());
             indices = clip_planes_list_view->selectionModel()->selectedIndexes();
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
-        void View::clip_planes_clear_slot () 
+        void View::clip_planes_clear_slot ()
         {
           clip_planes_model->clear();
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -709,16 +925,16 @@ namespace MR
 
 
 
-        std::vector< std::pair<GL::vec4,bool> > View::get_active_clip_planes () const
+        vector< std::pair<GL::vec4,bool> > View::get_active_clip_planes () const
         {
-          std::vector< std::pair<GL::vec4,bool> > ret;
+          vector< std::pair<GL::vec4,bool> > ret;
           QItemSelectionModel* selection = clip_planes_list_view->selectionModel();
           if (clip_box->isChecked()) {
             for (int i = 0; i < clip_planes_model->rowCount(); ++i) {
               if (clip_planes_model->planes[i].active) {
                 std::pair<GL::vec4,bool> item;
                 item.first = clip_planes_model->planes[i].plane;
-                item.second = selection->isSelected (clip_planes_model->index (i,0)); 
+                item.second = selection->isSelected (clip_planes_model->index (i,0));
                 ret.push_back (item);
               }
             }
@@ -727,32 +943,157 @@ namespace MR
           return ret;
         }
 
-        std::vector<GL::vec4*> View::get_clip_planes_to_be_edited () const
+        vector<GL::vec4*> View::get_clip_planes_to_be_edited () const
         {
-          std::vector<GL::vec4*> ret;
+          vector<GL::vec4*> ret;
           if (clip_box->isChecked()) {
             QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-            for (int i = 0; i < indices.size(); ++i) 
+            for (int i = 0; i < indices.size(); ++i)
               if (clip_planes_model->planes[indices[i].row()].active)
                 ret.push_back (&clip_planes_model->planes[indices[i].row()].plane);
           }
           return ret;
         }
 
-        void View::clip_planes_selection_changed_slot () 
+        bool View::get_cliphighlightstate () const
+        {
+          return clip_highlight_check_box->isChecked();
+        }
+
+        bool View::get_clipintersectionmodestate () const
+        {
+          return clip_intersectionmode_check_box->isChecked();
+        }
+
+        void View::clip_planes_selection_changed_slot ()
         {
           bool selected = clip_planes_list_view->selectionModel()->selectedIndexes().size();
           clip_planes_reset_submenu->setEnabled (selected);
           clip_planes_invert_action->setEnabled (selected);
           clip_planes_remove_action->setEnabled (selected);
           clip_planes_clear_action->setEnabled (clip_planes_model->rowCount());
-          window.updateGL();
+          window().updateGL();
         }
 
 
         void View::clip_planes_toggle_shown_slot ()
         {
-          window.updateGL();
+          window().updateGL();
+        }
+
+        void View::clip_planes_toggle_highlight_slot ()
+        {
+          window().updateGL();
+        }
+
+        void View::clip_planes_toggle_intersectionmode_slot ()
+        {
+          window().updateGL();
+        }
+
+        // Light box related functions
+
+        void View::light_box_slice_inc_reset_slot()
+        {
+          reset_light_box_gui_controls();
+        }
+
+        void View::light_box_toggle_volumes_slot(bool)
+        {
+          reset_light_box_gui_controls();
+        }
+
+
+
+        void View::init_lightbox_gui (QLayout* parent)
+        {
+          using LightBoxEditButton = MRView::Mode::LightBoxViewControls::LightBoxEditButton;
+
+          light_box_slice_inc = new AdjustButton(this);
+          light_box_volume_inc = new LightBoxEditButton(this);
+          light_box_rows = new LightBoxEditButton(this);
+          light_box_cols = new LightBoxEditButton(this);
+
+          light_box_slice_inc->setMinimumWidth(100);
+
+          lightbox_box = new QGroupBox ("Light box");
+          parent->addWidget (lightbox_box);
+          GridLayout* grid_layout = new GridLayout;
+          lightbox_box->setLayout(grid_layout);
+
+          light_box_slice_inc_label = new QLabel (tr("Slice increment (mm):"));
+          grid_layout->addWidget(light_box_slice_inc_label, 1, 0);
+          grid_layout->addWidget(light_box_slice_inc, 1, 2);
+
+          light_box_volume_inc_label = new QLabel (tr("Volume increment:"));
+          grid_layout->addWidget(light_box_volume_inc_label, 1, 0);
+          grid_layout->addWidget(light_box_volume_inc, 1, 2);
+
+          grid_layout->addWidget(new QLabel (tr("Rows:")), 2, 0);
+          grid_layout->addWidget(light_box_rows, 2, 2);
+
+          grid_layout->addWidget (new QLabel (tr("Columns:")), 3, 0);
+          grid_layout->addWidget(light_box_cols, 3, 2);
+
+          light_box_show_4d = new QCheckBox(tr("Cycle through volumes"), this);
+          grid_layout->addWidget(light_box_show_4d, 4, 0, 1, 2);
+
+          light_box_show_grid = new QCheckBox(tr("Show grid"), this);
+          grid_layout->addWidget(light_box_show_grid, 5, 0, 1, 2);
+        }
+
+
+
+        void View::reset_light_box_gui_controls()
+        {
+          if (!lightbox_box)
+            return;
+
+          bool img_4d = window ().image() && window ().image()->image.ndim() == 4;
+          bool show_volumes = Mode::LightBox::get_show_volumes ();
+          bool can_show_vol = img_4d && show_volumes;
+
+          light_box_rows->setValue (static_cast<int>(Mode::LightBox::get_rows ()));
+          light_box_cols->setValue (static_cast<int>(Mode::LightBox::get_cols ()));
+          light_box_slice_inc->setValue (Mode::LightBox::get_slice_increment ());
+          light_box_slice_inc->setRate (Mode::LightBox::get_slice_inc_adjust_rate ());
+          light_box_volume_inc->setValue (Mode::LightBox::get_volume_increment ());
+          light_box_show_grid->setChecked (Mode::LightBox::get_show_grid ());
+
+          light_box_show_4d->setEnabled (img_4d);
+          light_box_show_4d->setChecked (can_show_vol);
+          light_box_slice_inc_label->setVisible (!can_show_vol);
+          light_box_slice_inc->setVisible (!can_show_vol);
+          light_box_volume_inc_label->setVisible (can_show_vol);
+          light_box_volume_inc->setVisible (can_show_vol);
+        }
+
+        // Called in response to a request_update_mode_gui(ModeGuiVisitor& visitor) call
+        void View::update_ortho_mode_gui (const Mode::Ortho & mode)
+        {
+          ortho_view_in_row_check_box->setVisible (true);
+          ortho_view_in_row_check_box->setChecked (Mode::Ortho::show_as_row);
+          connect (ortho_view_in_row_check_box, SIGNAL (toggled(bool)), &mode, SLOT (set_show_as_row_slot(bool)));
+        }
+
+
+        // Called in respose to a request_update_mode_gui(ModeGuiVisitor& visitor) call
+        void View::update_lightbox_mode_gui (const Mode::LightBox &mode)
+        {
+          lightbox_box->setVisible(true);
+
+          connect(&mode, SIGNAL (slice_increment_reset()), this, SLOT (light_box_slice_inc_reset_slot()));
+
+          connect (light_box_rows, SIGNAL (valueChanged(int)), &mode, SLOT (nrows_slot(int)));
+          connect (light_box_cols, SIGNAL (valueChanged(int)), &mode, SLOT (ncolumns_slot(int)));
+          connect (light_box_slice_inc, SIGNAL (valueChanged(float)), &mode, SLOT (slice_inc_slot(float)));
+          connect (light_box_volume_inc, SIGNAL (valueChanged(int)), &mode, SLOT (volume_inc_slot(int)));
+          connect (light_box_show_grid, SIGNAL (toggled(bool)), &mode, SLOT (show_grid_slot(bool)));
+          connect (light_box_show_4d, SIGNAL (toggled(bool)), &mode, SLOT (show_volumes_slot(bool)));
+          connect (light_box_show_4d, SIGNAL (toggled(bool)), this, SLOT (light_box_toggle_volumes_slot(bool)));
+          connect (&window(), SIGNAL (volumeChanged()), &mode, SLOT (image_volume_changed_slot()));
+
+          reset_light_box_gui_controls();
         }
 
       }
