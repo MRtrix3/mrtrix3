@@ -1,26 +1,21 @@
-/*
-    Copyright 2010 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 28/03/2010.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #include <cassert>
+#include "gui/gui.h"
 #include "gui/dialog/progress.h"
 
 namespace MR
@@ -32,28 +27,52 @@ namespace MR
       namespace ProgressBar
       {
 
-        void display (ProgressInfo& p)
-        {
-          if (!p.data) {
-            INFO (App::NAME + ": " + p.text);
-            p.data = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0);
-            reinterpret_cast<QProgressDialog*> (p.data)->setWindowModality (Qt::WindowModal);
-          }
-          reinterpret_cast<QProgressDialog*> (p.data)->setValue (p.value);
+        namespace {
+          QProgressDialog* progress_dialog = nullptr;
         }
 
 
-        void done (ProgressInfo& p)
+
+        void display (const ::MR::ProgressBar& p)
         {
-          INFO (App::NAME + ": " + p.text + " [done]");
-          delete reinterpret_cast<QProgressDialog*> (p.data);
-          p.data = NULL;
+          if (!p.data) {
+            INFO (MR::App::NAME + ": " + p.text());
+            assert (GUI::App::main_window);
+            GUI::App::main_window->setUpdatesEnabled (false);
+            p.data = new Timer;
+          }
+          else if (reinterpret_cast<Timer*>(p.data)->elapsed() > 1.0) {
+            GL::Context::Grab context;
+            if (!progress_dialog) {
+              progress_dialog = new QProgressDialog ((p.text() + p.ellipsis()).c_str(), QString(), 0, p.show_percent() ? 100 : 0, GUI::App::main_window);
+              progress_dialog->setWindowModality (Qt::ApplicationModal);
+              progress_dialog->show();
+              qApp->processEvents();
+            }
+            progress_dialog->setValue (p.value());
+            qApp->processEvents();
+          }
+        }
+
+
+        void done (const ::MR::ProgressBar& p)
+        {
+          INFO (MR::App::NAME + ": " + p.text() + " [done]");
+          if (p.data) {
+            assert (GUI::App::main_window);
+            if (progress_dialog) {
+              GL::Context::Grab context;
+              delete progress_dialog;
+              progress_dialog = nullptr;
+            }
+
+            GUI::App::main_window->setUpdatesEnabled (true);
+          }
+          p.data = nullptr;
         }
 
       }
     }
   }
 }
-
-
 

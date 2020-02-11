@@ -1,25 +1,20 @@
-/*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
+#include "app.h"
 #include "gui/mrview/tool/base.h"
 
 namespace MR
@@ -31,38 +26,36 @@ namespace MR
       namespace Tool
       {
 
-        Base::Base (Window& main_window, Dock* parent) : 
-          QFrame (parent),
-          window (main_window) { 
-            QFont f = font();
-            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-1));
-            setFont (f);
+        void Dock::closeEvent (QCloseEvent*) { assert (tool); tool->close_event(); }
 
-            setFrameShadow (QFrame::Sunken); 
+        Base::Base (Dock* parent) :
+          QFrame (parent) {
+            QFont f = font();
+            //CONF option: MRViewToolFontSize
+            //CONF default: 2 points less than the standard system font
+            //CONF The point size for the font to use in MRView tools.
+            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-2));
+            setFont (f);
+            setFrameShadow (QFrame::Sunken);
             setFrameShape (QFrame::Panel);
+            setAcceptDrops (true);
           }
 
 
-
-        QSize Base::sizeHint () const
-        {
-          return minimumSizeHint();
-        }
-
+        QSize Base::sizeHint () const { return minimumSizeHint(); }
 
         void Base::draw (const Projection&, bool, int, int) { }
 
-        void Base::drawOverlays (const Projection&) { }
-
-        bool Base::process_batch_command (const std::string&, const std::string&) 
-        {
-          return false;
-        }
+        void Base::draw_colourbars () { }
 
         bool Base::mouse_press_event () { return false; }
         bool Base::mouse_move_event () { return false; }
         bool Base::mouse_release_event () { return false; }
         QCursor* Base::get_cursor () { return nullptr; }
+
+        bool Base::process_commandline_option (const MR::App::ParsedOption&) { return false; }
+        void Base::add_commandline_options (MR::App::OptionList&) { }
+
       }
     }
   }

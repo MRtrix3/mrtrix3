@@ -1,34 +1,23 @@
-/*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert E. Smith, 2012.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 #ifndef __dwi_tractography_seeding_basic_h__
 #define __dwi_tractography_seeding_basic_h__
 
-
-
-#include "ptr.h"
-
 #include "dwi/tractography/roi.h"
-
 #include "dwi/tractography/seeding/base.h"
 
 
@@ -51,143 +40,120 @@ namespace MR
 
 
         class Sphere : public Base
-        {
+        { MEMALIGN(Sphere)
 
           public:
-            Sphere (const std::string& in, const Math::RNG& rng) :
-              Base (in, rng, "sphere", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
-                std::vector<float> F (parse_floats (in));
+            Sphere (const std::string& in) :
+              Base (in, "sphere", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
+                auto F = parse_floats (in);
                 if (F.size() != 4)
                   throw Exception ("Could not parse seed \"" + in + "\" as a spherical seed point; needs to be 4 comma-separated values (XYZ position, then radius)");
-                pos.set (F[0], F[1], F[2]);
+                pos = { float(F[0]), float(F[1]), float(F[2]) };
                 rad = F[3];
                 volume = 4.0*Math::pi*Math::pow3(rad)/3.0;
               }
 
-            virtual bool get_seed (Point<float>& p);
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
 
           private:
-            Point<float> pos;
+            Eigen::Vector3f pos;
             float rad;
 
         };
 
 
         class SeedMask : public Base
-        {
+        { MEMALIGN(SeedMask)
 
           public:
-            SeedMask (const std::string& in, const Math::RNG& rng) :
-              Base (in, rng, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
-                mask = Tractography::get_mask (in);
-                volume = get_count (*mask) * mask->vox(0) * mask->vox(1) * mask->vox(2);
+            SeedMask (const std::string& in) :
+              Base (in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM),
+              mask (in) {
+                volume = get_count (mask) * mask.spacing(0) * mask.spacing(1) * mask.spacing(2);
               }
 
-            virtual ~SeedMask();
-            virtual bool get_seed (Point<float>& p);
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
 
           private:
-            Mask* mask;
+            Mask mask;
 
         };
 
 
 
         class Random_per_voxel : public Base
-        {
+        { MEMALIGN(Random_per_voxel)
 
           public:
-            Random_per_voxel (const std::string& in, const Math::RNG& rng, const size_t num_per_voxel) :
-              Base (in, rng, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+            Random_per_voxel (const std::string& in, const size_t num_per_voxel) :
+              Base (in, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+              mask (in),
               num (num_per_voxel),
-              vox (0, 0, -1),
               inc (0),
               expired (false) {
-                mask = Tractography::get_mask (in);
-                count = get_count (*mask) * num_per_voxel;
+                count = get_count (mask) * num_per_voxel;
+                mask.index(0) = 0; mask.index(1) = 0; mask.index(2) = -1;
               }
 
-            virtual ~Random_per_voxel();
-            virtual bool get_seed (Point<float>& p);
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
+            virtual ~Random_per_voxel() { }
 
           private:
-            Mask* mask;
+            mutable Mask mask;
             const size_t num;
-            Point<int> vox;
-            uint32_t inc;
-            bool expired;
 
+            mutable uint32_t inc;
+            mutable bool expired;
         };
 
 
 
         class Grid_per_voxel : public Base
-        {
+        { MEMALIGN(Grid_per_voxel)
 
           public:
-            Grid_per_voxel (const std::string& in, const Math::RNG& rng, const size_t os_factor) :
-              Base (in, rng, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+            Grid_per_voxel (const std::string& in, const size_t os_factor) :
+              Base (in, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+              mask (in),
               os (os_factor),
-              vox (0, 0, -1),
               pos (os, os, os),
               offset (-0.5 + (1.0 / (2*os))),
               step (1.0 / os),
               expired (false) {
-                mask = Tractography::get_mask (in);
-                count = get_count (*mask) * Math::pow3 (os_factor);
+                count = get_count (mask) * Math::pow3 (os_factor);
               }
 
-            virtual ~Grid_per_voxel();
-            virtual bool get_seed (Point<float>& p);
+            virtual ~Grid_per_voxel() { }
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
+
 
           private:
-            Mask* mask;
+            mutable Mask mask;
             const int os;
-            Point<int> vox, pos;
+            mutable Eigen::Vector3i pos;
             const float offset, step;
-            bool expired;
+            mutable bool expired;
 
         };
 
 
 
         class Rejection : public Base
-        {
-
-          private:
-            class FloatImage : public Image::BufferScratch<float> {
-              public:
-                typedef Image::Interp::Linear<Image::BufferScratch<float>::voxel_type> interp_type;
-                template <class InputVoxelType>
-                FloatImage (InputVoxelType& D, const Image::Info& info, const std::string& description) :
-                    Image::BufferScratch<float> (info, description),
-#ifdef REJECTION_SAMPLING_USE_INTERPOLATION
-                    voxel (*this),
-                    interp (voxel)
-#else
-                    transform (this->info())
-#endif
-                {
-                  Image::BufferScratch<float>::voxel_type this_vox (*this);
-                  Image::copy (D, this_vox);
-                }
-
-#ifdef REJECTION_SAMPLING_USE_INTERPOLATION
-                const Image::BufferScratch<float>::voxel_type voxel;
-                const interp_type interp;
-#else
-                Image::Transform transform;
-#endif
-            };
-
-
+        { MEMALIGN(Rejection)
           public:
-            Rejection (const std::string&, const Math::RNG&);
+            using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
+            Rejection (const std::string&);
 
-            virtual bool get_seed (Point<float>& p);
+
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
 
           private:
-            RefPtr<FloatImage> image;
+#ifdef REJECTION_SAMPLING_USE_INTERPOLATION
+            Interp::Linear<Image<float>> interp;
+#else
+            Image<float> image;
+            transform_type voxel2scanner;
+#endif
             float max;
 
         };

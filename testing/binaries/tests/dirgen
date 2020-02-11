@@ -1,0 +1,4 @@
+dirgen 20 tmp.txt -force && dirstat tmp.txt | grep 'nearest-neighbour angles:' | head -n 1 | awk '{ print $5$8 "," $10 }' | tr ',' ' ' > tmp_stats.txt && testing_diff_matrix tmp_stats.txt dirgen/stats_20.txt -abs 0.1
+dirgen 45 tmp.txt -unipolar -force && dirstat tmp.txt | grep 'nearest-neighbour angles:' | tail -n 1 | awk '{ print $5$8 "," $10 }' | tr ',' ' ' > tmp_stats.txt && testing_diff_matrix tmp_stats.txt dirgen/stats_45_uni.txt -abs 1.0
+dirgen 60 tmp.txt -cartesian -force && dirstat tmp.txt | grep 'nearest-neighbour angles:' | head -n 1 | awk '{ print $5$8 "," $10 }' | tr ',' ' ' > tmp_stats.txt && testing_diff_matrix tmp_stats.txt dirgen/stats_60_cartesian.txt -abs 1.0
+dirgen 30 tmp.txt -power 16 -force && dirstat tmp.txt | grep 'nearest-neighbour angles:' | head -n 1 | awk '{ print $5$8 "," $10 }' | tr ',' ' ' > tmp_stats.txt && testing_diff_matrix tmp_stats.txt dirgen/stats_30_pow16.txt -abs 2.0

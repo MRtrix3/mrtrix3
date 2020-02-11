@@ -1,0 +1,4 @@
+sh2amp amp2sh/out.mif sh2amp/dir20.txt - | testing_diff_image - sh2amp/out.mif -voxel 1e-5
+sh2amp amp2sh/out.mif sh2amp/grad.txt - | testing_diff_image - sh2amp/out_grad.mif -voxel 1e-5
+sh2amp amp2sh/out.mif sh2amp/dir20.txt -nonnegative - | testing_diff_image - sh2amp/out_nonneg.mif -voxel 1e-5
+sh2amp shconv/out_msmt.mif dwi2fod/msmt/dwi.mif - | testing_diff_image - sh2amp/out_msmt.mif -voxel 1e-5

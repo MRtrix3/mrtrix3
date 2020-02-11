@@ -1,23 +1,17 @@
-/*
-   Copyright 2011 Brain Research Institute, Melbourne, Australia
-
-   Written by Robert E. Smith, 2014.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
  */
 
 #ifndef __dwi_tractography_editing_receiver_h__
@@ -25,8 +19,9 @@
 
 
 #include <string>
+#include <cinttypes>
 
-#include "timer.h"
+#include "progressbar.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -42,42 +37,42 @@ namespace MR {
 
 
         class Receiver
-        {
+        { MEMALIGN(Receiver)
 
           public:
 
-            Receiver (const std::string& path, const Tractography::Properties& properties, const size_t c, const size_t n, const size_t s) :
+            Receiver (const std::string& path, const Properties& properties, const size_t n, const size_t s) :
               writer (path, properties),
-              in_count (c),
               number (n),
               skip (s),
               // Need to use local counts instead of writer class members due to track cropping
               count (0),
-              total_count (0) { }
+              total_count (0),
+              crop (properties.mask.size()),
+              segments (0),
+              progress (std::string("       0 read,        0 written") + (crop ? ",        0 segments" : "")) { }
 
             ~Receiver()
             {
-              print();
-              if (App::log_level > 0)
-                fprintf (stderr, "\n");
+              // Use set_text() rather than update() here to force update of the text before progress goes out of scope
+              progress.set_text (std::string(printf ("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count)) + (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
               if (number && (count != number))
                 WARN ("User requested " + str(number) + " streamlines, but only " + str(count) + " were written to file");
             }
 
 
-            bool operator() (const Tractography::Streamline<>&);
+            bool operator() (const Streamline<>&);
 
 
           private:
 
-            Tractography::Writer<> writer;
-            const size_t in_count, number;
-            size_t skip;
-            size_t count, total_count;
-            IntervalTimer timer;
-
-            void update_cmdline();
-            void print();
+            Writer<> writer;
+            const uint64_t number;
+            uint64_t skip;
+            uint64_t count, total_count;
+            bool crop;
+            uint64_t segments;
+            ProgressBar progress;
 
         };
 

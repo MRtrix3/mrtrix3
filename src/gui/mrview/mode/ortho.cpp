@@ -1,28 +1,22 @@
-/*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+#include "gui/mrview/mode/ortho.h"
 
 #include "mrtrix.h"
-#include "math/vector.h"
-#include "gui/mrview/mode/ortho.h"
 #include "gui/cursor.h"
 
 namespace MR
@@ -34,35 +28,66 @@ namespace MR
       namespace Mode
       {
 
+        bool Ortho::show_as_row = false;
 
+        //CONF option: MRViewOrthoAsRow
+        //CONF Display the 3 orthogonal views of the Ortho mode in a row,
+        //CONF rather than as a 2x2 montage
+        //CONF default: false
+
+        Ortho::Ortho () :
+          projections (3, projection),
+          current_plane (0) {
+            static bool conf_read = false;
+            if (!conf_read)
+              show_as_row = MR::File::Config::get_bool ("MRViewOrthoAsRow", false);
+            conf_read = true;
+          }
 
 
         void Ortho::paint (Projection& projection)
         {
+          GL::assert_context_is_current();
           // set up OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
           gl::DepthMask (gl::FALSE_);
           gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
-          GLint w = width()/2;
-          GLint h = height()/2;
+          const GLint w = show_as_row ? width()/3 : width()/2;
+          const GLint h = show_as_row ? height() : height()/2;
 
-          projections[0].set_viewport (window, w, h, w, h); 
+          // Depth test state may have been altered after drawing each plane
+          // so need to guarantee depth test is off for subsequent plane.
+          // Ideally, state should be restored by callee but this is safer
+
+          if (show_as_row)
+            projections[0].set_viewport (window(), 0, 0, w, h);
+          else
+            projections[0].set_viewport (window(), w, h, w, h);
           draw_plane (0, slice_shader, projections[0]);
-          projections[1].set_viewport (window, 0, h, w, h); 
+
+          gl::Disable (gl::DEPTH_TEST);
+          if (show_as_row)
+            projections[1].set_viewport (window(), w, 0, w, h);
+          else
+            projections[1].set_viewport (window(), 0, h, w, h);
           draw_plane (1, slice_shader, projections[1]);
-          projections[2].set_viewport (window, 0, 0, w, h); 
+
+          gl::Disable (gl::DEPTH_TEST);
+          if (show_as_row)
+            projections[2].set_viewport (window(), 2*w, 0, w, h);
+          else
+            projections[2].set_viewport (window(), 0, 0, w, h);
           draw_plane (2, slice_shader, projections[2]);
 
-          projection.set_viewport (window);
+          projection.set_viewport (window());
 
           GL::mat4 MV = GL::identity();
           GL::mat4 P = GL::ortho (0, width(), 0, height(), -1.0, 1.0);
           projection.set (MV, P);
 
           gl::Disable (gl::DEPTH_TEST);
-          gl::LineWidth (2.0);
 
           if (!frame_VB || !frame_VAO) {
             frame_VB.gen();
@@ -80,9 +105,16 @@ namespace MR
               0.0f, -1.0f,
               0.0f, 1.0f
             };
-            gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
+
+            GLfloat data_row [] = {
+              -1.0f/3.0f, -1.0f,
+              -1.0f/3.0f, 1.0f,
+              1.0f/3.0f, -1.0f,
+              1.0f/3.0f, 2.0f
+            };
+            gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), ( show_as_row ? data_row : data), gl::STATIC_DRAW);
           }
-          else 
+          else
             frame_VAO.bind();
 
           if (!frame_program) {
@@ -106,13 +138,14 @@ namespace MR
           frame_program.stop();
 
           gl::Enable (gl::DEPTH_TEST);
+          GL::assert_context_is_current();
         }
 
 
 
 
 
-        const Projection* Ortho::get_current_projection () const  
+        const Projection* Ortho::get_current_projection () const
         {
           if (current_plane < 0 || current_plane > 2)
             return NULL;
@@ -123,26 +156,40 @@ namespace MR
 
         void Ortho::mouse_press_event ()
         {
-          if (window.mouse_position().x() < width()/2) 
-            if (window.mouse_position().y() >= height()/2) 
-              current_plane = 1;
-            else 
-              current_plane = 2;
-          else 
-            if (window.mouse_position().y() >= height()/2)
+          const int x = window().mouse_position().x();
+          const int y = window().mouse_position().y();
+
+          if (show_as_row) {
+            const GLint w = width()/3;
+            if (x < w)
               current_plane = 0;
-            else 
-              current_plane = -1;
+            else if (x < 2*w)
+              current_plane = 1;
+            else
+              current_plane = 2;
+          }
+          else {
+            const GLint w = width()/2;
+            const GLint h = height()/2;
+            if (x < w)
+              current_plane = y < h ? 2 : 1;
+            else
+              current_plane = y < h ? -1 : 0;
+          }
         }
 
 
 
 
-        void Ortho::slice_move_event (int x) 
+        void Ortho::slice_move_event (float x)
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)), *proj);
+          const auto &header = image()->header();
+          float increment = snap_to_image() ?
+            x * header.spacing (current_plane) :
+            x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);
+          move_in_out (increment, *proj);
           updateGL();
         }
 
@@ -151,7 +198,16 @@ namespace MR
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out_FOV (window.mouse_displacement().y(), *proj);
+          move_in_out_FOV (window().mouse_displacement().y(), *proj);
+          updateGL();
+        }
+
+
+        void Ortho::set_show_as_row_slot (bool state)
+        {
+          GL::Context::Grab context;
+          show_as_row = state;
+          frame_VB.clear();
           updateGL();
         }
 

@@ -1,33 +1,26 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by David Raffelt, 06/07/11.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #include "command.h"
-#include "ptr.h"
+#include "memory.h"
 #include "progressbar.h"
-#include "image/threaded_loop.h"
-#include "image/voxel.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
+#include "algo/threaded_loop.h"
+#include "image.h"
 #include "math/SH.h"
+#include "math/ZSH.h"
 
 using namespace MR;
 using namespace App;
@@ -35,92 +28,117 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
+
+  SYNOPSIS = "Perform spherical convolution";
 
   DESCRIPTION
-    + "perform a spherical convolution";
+    + "Provided with matching pairs of response function and ODF images "
+      "(containing SH coefficients), perform spherical convolution to provide the "
+      "corresponding SH coefficients of the signal."
+    + "If multiple pairs of inputs are provided, their contributions will be "
+       "summed into a single output."
+    +  "If the responses are multi-shell (with one line of coefficients per "
+       "shell), the output will be a 5-dimensional image, with the SH "
+       "coefficients of the signal in each shell stored at different indices "
+       "along the 5th dimension."
+    + Math::SH::encoding_description;
+
+  DESCRIPTION
+  + Math::SH::encoding_description;
 
   ARGUMENTS
-    + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()
-    + Argument ("response", "the convolution kernel (response function)").type_file_in ()
-    + Argument ("SH", "the output spherical harmonics coefficients image.").type_image_out ();
+    + Argument ("odf response", "pairs of input ODF image and corresponding responses").allow_multiple()
+    + Argument ("SH_out", "the output spherical harmonics coefficients image.").type_image_out ();
 
   OPTIONS
-    + Option ("mask", "only perform computation within the specified binary brain mask image.")
-    + Argument ("image", "the mask image to use.").type_image_in ()
-
-    + Image::Stride::StrideOption;
+    + DataType::options()
+    + Stride::Options;
 }
 
 
 
-typedef float value_type;
+using value_type = float;
 
 
-class SDeconvFunctor {
+class SConvFunctor { MEMALIGN(SConvFunctor)
   public:
-  SDeconvFunctor (Image::BufferPreload<value_type>& in,
-                  Image::Buffer<value_type>& out,
-                  Ptr<Image::Buffer<bool> >& mask,
-                  const Math::Vector<value_type>& response) :
-                    input_vox (in),
-                    output_vox (out),
-                    response (response) {
-                      if (mask)
-                        mask_vox_ptr = new Image::Buffer<bool>::voxel_type (*mask);
-    }
+  SConvFunctor (const vector<Eigen::MatrixXd>& responses, vector<Image<value_type>>& inputs) :
+    responses (responses),
+    inputs (inputs) { }
 
-    void operator() (const Image::Iterator& pos) {
-      if (mask_vox_ptr) {
-        Image::voxel_assign (*mask_vox_ptr, pos);
-        if (!mask_vox_ptr->value()) {
-          for (output_vox[3] = 0; output_vox[3] < output_vox.dim(3); ++output_vox[3])
-            output_vox.value() = 0.0;
-          return;
+    void operator() (Image<value_type>& output)
+    {
+      for (size_t n = 0; n < inputs.size(); ++n) {
+        assign_pos_of (output, 0, 3).to (inputs[n]);
+        in = inputs[n].row (3);
+        for (ssize_t s = 0; s < responses[n].rows(); ++s) {
+          Math::SH::sconv (out, responses[n].row(s), in);
+          if (output.ndim() > 4)
+            output.index(4) = s;
+          for (ssize_t k = 0; k < out.size(); ++k) {
+            output.index(3) = k;
+            output.value() += out[k];
+          }
         }
       }
-      Image::voxel_assign (input_vox, pos);
-      input_vox[3] = 0;
-      Math::Vector<value_type> input (input_vox.address(), input_vox.dim(3));
-      Math::Vector<value_type> output (output_vox.dim(3));
-      Math::SH::sconv (output, response, input);
-      Image::voxel_assign (output_vox, pos);
-      for (output_vox[3] = 0; output_vox[3] < output_vox.dim(3); ++output_vox[3])
-        output_vox.value() = output[output_vox[3]];
-
     }
 
   protected:
-    Image::BufferPreload<value_type>::voxel_type input_vox;
-    Image::Buffer<value_type>::voxel_type output_vox;
-    Ptr<Image::Buffer<bool>::voxel_type> mask_vox_ptr;
-    Math::Vector<value_type> response;
+    const vector<Eigen::MatrixXd>& responses;
+    vector<Image<value_type>> inputs;
+    Eigen::VectorXd in, out;
+
 };
 
 
-void run() {
 
-  Image::Header input_SH_header (argument[0]);
-  Math::SH::check (input_SH_header);
-  Image::BufferPreload<value_type> input_buf (input_SH_header, Image::Stride::contiguous_along_axis (3));
 
-  Math::Vector<value_type> responseSH;
-  responseSH.load (argument[1]);
-  Math::Vector<value_type> responseRH;
-  Math::SH::SH2RH (responseRH, responseSH);
 
-  Ptr<Image::Buffer<bool> > mask_buf;
-  Options opt = get_options ("mask");
-  if (opt.size()) {
-    mask_buf = new Image::Buffer<bool> (opt[0][0]);
-    Image::check_dimensions (*mask_buf, input_buf, 0, 3);
+
+void run()
+{
+  if (!(argument.size() & size_t(1U)))
+    throw Exception ("unexpected number of arguments");
+
+  vector<Image<value_type>> inputs ((argument.size() - 1) / 2);
+  vector<Eigen::MatrixXd> responses (inputs.size());
+
+  size_t lmax = 0;
+  for (size_t n = 0; n < inputs.size(); ++n) {
+    inputs[n] = Image<value_type>::open (argument[2*n]);
+    Math::SH::check (inputs[n]);
+    if (inputs[n].ndim() > 4 && inputs[n].size(4) > 1)
+      throw Exception ("input ODF contains more than 4 dimensions");
+
+    responses[n] = load_matrix (argument[2*n+1]);
+    responses[n].conservativeResizeLike (Eigen::MatrixXd::Zero (responses[n].rows(), Math::ZSH::NforL (Math::SH::LforN (inputs[n].size (3)))));
+    lmax = std::max (Math::ZSH::LforN (responses[n].cols()), lmax);
+
+    for (ssize_t k = 0; k < responses[n].rows(); ++k)
+      responses[n].row(k) = Math::ZSH::ZSH2RH (responses[n].row(k));
+
+    if (n) {
+      if (responses[n].rows() != responses[0].rows())
+        throw Exception ("number of shells differs between response files");
+      check_dimensions (inputs[n], inputs[0], 0, 3);
+    }
   }
 
-  Image::Header output_SH_header (input_SH_header);
-  Image::Stride::set_from_command_line (output_SH_header, Image::Stride::contiguous_along_axis (3));
-  Image::Buffer<value_type> output_SH_buf (argument[2], output_SH_header);
 
-  SDeconvFunctor sconv (input_buf, output_SH_buf, mask_buf, responseRH);
-  Image::ThreadedLoop loop ("performing convolution...", input_buf, 0, 3, 2);
-  loop.run (sconv);
+  Header header (inputs[0]);
+  if (responses[0].rows() > 1) {
+    header.ndim() = 5;
+    header.size(4) = responses[0].rows();
+  }
+  else
+    header.ndim() = 4;
+  header.size(3) = Math::SH::NforL (lmax);
+  Stride::set_from_command_line (header, Stride::contiguous_along_axis (3, header));
+  header.datatype() = DataType::from_command_line (DataType::Float32);
+
+  auto output = Image<value_type>::create (argument[argument.size()-1], header);
+
+  SConvFunctor sconv (responses, inputs);
+  ThreadedLoop ("performing spherical convolution", inputs[0], 0, 3).run (sconv, output);
 }

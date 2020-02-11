@@ -1,10 +1,26 @@
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #include "dwi/tractography/SIFT/sifter.h"
 
-#include "point.h"
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 #include "timer.h"
+
+#include "algo/loop.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -15,17 +31,11 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
 
-#include "math/rng.h"
-
-#include "image/buffer.h"
-#include "image/buffer_sparse.h"
-#include "image/loop.h"
-
 #include "file/ofstream.h"
 
+#include "math/rng.h"
 
-
-
+#include "fixel/legacy/image.h"
 
 
 
@@ -47,7 +57,7 @@ namespace MR
 
         // For streamlines that do not contribute to the map, remove an equivalent proportion of length to those that do contribute
         double sum_contributing_length = 0.0, sum_noncontributing_length = 0.0;
-        std::vector<track_t> noncontributing_indices;
+        vector<track_t> noncontributing_indices;
         for (track_t i = 0; i != contributions.size(); ++i) {
           if (contributions[i]) {
             if (contributions[i]->get_total_contribution()) {
@@ -62,8 +72,13 @@ namespace MR
         // Randomise the order or removal here; faster than trying to select at random later
         std::random_shuffle (noncontributing_indices.begin(), noncontributing_indices.end());
 
-        std::vector<Cost_fn_gradient_sort> gradient_vector;
-        gradient_vector.assign (num_tracks(), Cost_fn_gradient_sort (num_tracks(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
+        vector<Cost_fn_gradient_sort> gradient_vector;
+        try {
+          gradient_vector.assign (num_tracks(), Cost_fn_gradient_sort (num_tracks(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
+        } catch (...) {
+          throw Exception ("Error assigning memory for SIFT gradient vector");
+        }
+
         unsigned int tracks_remaining = num_tracks();
 
         if (tracks_remaining < term_number)
@@ -71,17 +86,19 @@ namespace MR
 
         const double init_cf = calc_cost_function();
         unsigned int iteration = 0;
+        double cf_end_iteration = init_cf;
+        unsigned int removed_this_iteration = 0;
 
         if (!csv_path.empty()) {
           File::OFStream csv_out (csv_path, std::ios_base::out | std::ios_base::trunc);
-          csv_out << "Iteration,Removed this iteration,Total removed,Remaining,Cost,TD,Mu,Recalculation,\n";
+          csv_out << "# " << App::command_history_string << "\n";
+          csv_out << "#Iteration,Removed this iteration,Total removed,Remaining,Cost,TD,Mu,Recalculation,\n";
           csv_out << "0,0,0," << str (tracks_remaining) << "," << str (init_cf) << "," << str (TD_sum) << "," << str (mu()) << ",Start,\n";
         }
 
-        if (App::log_level) {
-          fprintf (stderr, "%s:   Iteration    Tracks removed     Tracks remaining     Cost function %%\n", App::NAME.c_str());
-          fprintf (stderr, "%s:    %6u           %7u            %9u              %.2f%%  ", App::NAME.c_str(), iteration, 0, tracks_remaining, 100.0);
-        }
+        auto display_func = [&](){ return printf(" %6u      %7u     %9u       %.2f%%", iteration, removed_this_iteration, tracks_remaining, 100.0 * cf_end_iteration / init_cf); };
+        CONSOLE ("       Iteration     Removed     Remaining     Cost fn");
+        ProgressBar progress ("");
 
         bool another_iteration = true;
         recalc_reason recalculate (UNDEFINED);
@@ -114,11 +131,11 @@ namespace MR
           // Trying a heuristic for now; go for a sort size of 1000 following initial sort, assuming half of all
           //   remaining streamlines have a negative gradient
 
-          const track_t sort_size = std::min (num_tracks() / double(Thread::number_of_threads()), std::round (2000.0 * double(num_tracks()) / double(tracks_remaining)));
+          const track_t sort_size = std::min (std::ceil(num_tracks() / double(Thread::number_of_threads())), std::round (2000.0 * double(num_tracks()) / double(tracks_remaining)));
           MT_gradient_vector_sorter sorter (gradient_vector, sort_size);
 
           // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed
-          unsigned int removed_this_iteration = 0;
+          removed_this_iteration = 0;
           recalculate = UNDEFINED;
           do {
 
@@ -155,16 +172,21 @@ namespace MR
               // Remove this streamline, and adjust all of the relevant quantities
               noncontributing_length_removed += contributions[to_remove]->get_total_length();
               delete contributions[to_remove];
-              contributions[to_remove] = NULL;
+              contributions[to_remove] = nullptr;
               ++removed_this_iteration;
               --tracks_remaining;
 
             } else { // Proceed as normal
 
-              const std::vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
+              const vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
+              if (candidate == gradient_vector.end()) {
+                recalculate = POS_GRADIENT;
+                if (!removed_this_iteration)
+                  another_iteration = false;
+                goto end_iteration;
+              }
 
               const track_t candidate_index = candidate->get_tck_index();
-
               if (candidate->get_cost_gradient() >= 0.0) {
                 recalculate = POS_GRADIENT;
                 if (!removed_this_iteration)
@@ -201,7 +223,7 @@ namespace MR
               const double required_cf_change_quantisation = enforce_quantisation ? (-0.5 * quantisation) : 0.0;
               const double this_nonlinearity = (candidate->get_cost_gradient() - this_actual_cf_change);
 
-              if (this_actual_cf_change < minvalue (required_cf_change_ratio, required_cf_change_quantisation, this_nonlinearity)) {
+              if (this_actual_cf_change < std::min ( {required_cf_change_ratio, required_cf_change_quantisation, this_nonlinearity })) {
 
                 // Candidate streamline removal meets all criteria; remove from reconstruction
                 for (size_t f = 0; f != candidate_contribution.dim(); ++f) {
@@ -211,7 +233,7 @@ namespace MR
                 TD_sum -= candidate_contribution.get_total_contribution();
                 contributing_length_removed += candidate_contribution.get_total_length();
                 delete contributions[candidate_index];
-                contributions[candidate_index] = NULL;
+                contributions[candidate_index] = nullptr;
                 ++removed_this_iteration;
                 --tracks_remaining;
 
@@ -250,10 +272,9 @@ namespace MR
 
           end_iteration:
 
-          const float cf_end_iteration = calc_cost_function();
+          cf_end_iteration = calc_cost_function();
 
-          if (App::log_level)
-            fprintf (stderr, "\33[2K\r%s:   %6u           %6u            %9u              %.2f%%  ", App::NAME.c_str(), iteration, removed_this_iteration, tracks_remaining, 100.0 * cf_end_iteration / init_cf);
+          progress.update (display_func);
 
           if (!csv_path.empty()) {
             File::OFStream csv_out (csv_path, std::ios_base::out | std::ios_base::app | std::ios_base::ate);
@@ -272,8 +293,7 @@ namespace MR
 
         } while (another_iteration);
 
-        if (App::log_level)
-          fprintf (stderr, "\n");
+        progress.done();
 
         switch (recalculate) {
           case UNDEFINED:    throw Exception ("Encountered undefined recalculation at end of iteration!");
@@ -301,18 +321,16 @@ namespace MR
       {
         Tractography::Properties p;
         Tractography::Reader<float> reader (input_path, p);
-        // "count" and "total_count" should be dealt with by the writer
         p["SIFT_mu"] = str (mu());
         Tractography::Writer<float> writer (output_path, p);
         track_t tck_counter = 0;
-        Tractography::Streamline<float> tck;
-        ProgressBar progress ("Writing filtered tracks output file...", contributions.size());
-        std::vector< Point<float> > empty_tck;
+        Tractography::Streamline<> tck;
+        ProgressBar progress ("Writing filtered tracks output file", contributions.size());
         while (reader (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter++])
             writer (tck);
           else
-            writer (empty_tck);
+            writer.skip();
           ++progress;
         }
         reader.close();
@@ -341,9 +359,9 @@ namespace MR
 
 
 
-      void SIFTer::set_regular_outputs (const std::vector<int>& in, const bool b)
+      void SIFTer::set_regular_outputs (const vector<int>& in, const bool b)
       {
-        for (std::vector<int>::const_iterator i = in.begin(); i != in.end(); ++i) {
+        for (vector<int>::const_iterator i = in.begin(); i != in.end(); ++i) {
           if (*i > 0 && *i <= (int)contributions.size())
             output_at_counts.push_back (*i);
         }
@@ -357,26 +375,26 @@ namespace MR
       void SIFTer::test_sorting_block_size (const size_t num_tracks) const
       {
 
-        Math::RNG rng;
+        Math::RNG::Normal<float> rng;
 
-        std::vector<Cost_fn_gradient_sort> gradient_vector;
+        vector<Cost_fn_gradient_sort> gradient_vector;
         gradient_vector.assign (num_tracks, Cost_fn_gradient_sort (num_tracks, 0.0, 0.0));
         // Fill the gradient vector with random Gaussian data
         for (track_t index = 0; index != num_tracks; ++index) {
-          const float value = rng.normal();
+          const float value = rng();
           gradient_vector[index].set (index, value, value);
         }
 
-        std::vector<size_t> block_sizes;
+        vector<size_t> block_sizes;
         for (size_t i = 16; i < num_tracks; i *= 2)
           block_sizes.push_back (i);
         block_sizes.push_back (num_tracks);
 
-        for (std::vector<size_t>::const_iterator i = block_sizes.begin(); i != block_sizes.end(); ++i) {
+        for (vector<size_t>::const_iterator i = block_sizes.begin(); i != block_sizes.end(); ++i) {
           const size_t block_size = *i;
 
           // Make a copy of the gradient vector, so the same data is sorted each time
-          std::vector<Cost_fn_gradient_sort> temp_gv (gradient_vector);
+          vector<Cost_fn_gradient_sort> temp_gv (gradient_vector);
 
           Timer timer;
           // Simulate sorting and filtering
@@ -406,7 +424,7 @@ namespace MR
       {
         const double current_mu = mu();
         double roc_cost = 0.0;
-        std::vector<Fixel>::const_iterator i = fixels.begin();
+        vector<Fixel>::const_iterator i = fixels.begin();
         for (++i; i != fixels.end(); ++i)
           roc_cost += i->get_d_cost_d_mu (current_mu);
         return roc_cost;

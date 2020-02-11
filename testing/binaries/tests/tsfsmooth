@@ -1,0 +1,1 @@
+tsfsmooth afd.tsf -stdev 2 tmp.tsf -force && testing_diff_tsf tmp.tsf tsfsmooth/out.tsf -frac 1e-5

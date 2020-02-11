@@ -1,26 +1,35 @@
+% Copyright (c) 2008-2019 the MRtrix3 contributors.
+%
+% This Source Code Form is subject to the terms of the Mozilla Public
+% License, v. 2.0. If a copy of the MPL was not distributed with this
+% file, You can obtain one at http://mozilla.org/MPL/2.0/.
+%
+% Covered Software is provided under this License on an "as is"
+% basis, without warranty of any kind, either expressed, implied, or
+% statutory, including, without limitation, warranties that the
+% Covered Software is free of defects, merchantable, fit for a
+% particular purpose or non-infringing.
+% See the Mozilla Public License v. 2.0 for more details.
+%
+% For more details, see http://www.mrtrix.org/.
+
 function image = read_mrtrix (filename)
 
 % function: image = read_mrtrix (filename)
 %
-% returns a structure containing the header information and data for the MRtrix 
+% returns a structure containing the header information and data for the MRtrix
 % format image 'filename' (i.e. files with the extension '.mif' or '.mih').
 
-image.comments = {};
-
 f = fopen (filename, 'r');
-if (f<1) 
-  disp (['error opening ' filename ]);
-  return
-end
+assert(f ~= -1, 'error opening %s', filename);
 L = fgetl(f);
 if ~strncmp(L, 'mrtrix image', 12)
   fclose(f);
-  disp ([filename ' is not in MRtrix format']);
-  return
+  error('%s is not in MRtrix format', filename);
 end
 
 transform = [];
-DW_scheme = [];
+dw_scheme = [];
 
 while 1
   L = fgetl(f);
@@ -41,20 +50,14 @@ while 1
       image.layout = value;
     elseif strcmp(key, 'datatype')
       image.datatype = value;
-    elseif strcmp(key, 'labels')
-      image.labels = split_strings (value, '\');
-    elseif strcmp(key, 'units')
-      image.units = split_strings (value, '\');
     elseif strcmp(key, 'transform')
       transform(end+1,:) = str2num(char(split_strings (value, ',')))';
-    elseif strcmp(key, 'comments')
-      image.comments{end+1} = value;
     elseif strcmp(key, 'file')
       file = value;
     elseif strcmp(key, 'dw_scheme')
-      DW_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
-    else 
-      disp (['unknown key ''' key ''' - ignored']);
+      dw_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
+    else
+      image = add_field (image, key, value);
     end
   end
 end
@@ -66,14 +69,13 @@ if ~isempty(transform)
   image.transform(4,:) = [ 0 0 0 1 ];
 end
 
-if ~isempty(DW_scheme)
-  image.DW_scheme = DW_scheme;
+if ~isempty(dw_scheme)
+  image.dw_scheme = dw_scheme;
 end
 
 if ~isfield (image, 'dim') || ~exist ('file') || ...
   ~isfield (image, 'layout') || ~isfield (image, 'datatype')
-  disp ('critical entries missing in header - not reading data')
-  return
+  error('critical entries missing in header - not reading data');
 end
 
 layout = split_strings(image.layout, ',');
@@ -93,19 +95,16 @@ if strcmp(byteorder, 'le')
 elseif strcmp(byteorder, 'be')
   f = fopen (file, 'r', 'b');
   datatype = datatype(1:end-2);
-else 
+else
   if strcmp(datatype, 'bit')
     datatype = 'bit1';
-    f = fopen(file, 'r', 'b'); 
+    f = fopen(file, 'r', 'b');
   else
-    f = fopen(file, 'r'); 
+    f = fopen(file, 'r');
   end
 end
 
-if (f<1) 
-  disp (['error opening ' filename ]);
-  return
-end
+assert(f ~= -1, 'error opening %s', filename);
 
 fseek (f, offset, -1);
 image.data = fread (f, inf, datatype);
@@ -130,3 +129,17 @@ function S = split_strings (V, delim)
     S{end+1} = R;
   end
 
+
+
+
+function image = add_field (image, key, value)
+  if isfield (image, key)
+    previous = getfield (image, key);
+    if iscell (previous)
+      image = setfield (image, key, [ previous {value} ]);
+    else
+      image = setfield (image, key, { previous, value });
+    end
+  else
+    image = setfield (image, key, value);
+  end

@@ -1,8 +1,29 @@
-#include "gui/app.h"
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
+
+#include "gui/gui.h"
+#include "command.h"
 #include "progressbar.h"
+#include "memory.h"
 #include "gui/mrview/icons.h"
 #include "gui/mrview/window.h"
+#include "gui/mrview/file_open.h"
 #include "gui/mrview/mode/list.h"
+#include "gui/mrview/tool/list.h"
+#include "gui/mrview/sync/syncmanager.h"
 
 
 using namespace MR;
@@ -10,64 +31,54 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) & Dave Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR =
+    "J-Donald Tournier (jdtournier@gmail.com), "
+    "Dave Raffelt (david.raffelt@florey.edu.au), "
+    "Robert E. Smith (robert.smith@florey.edu.au), "
+    "Rami Tabbara (rami.tabbara@florey.edu.au), "
+    "Max Pietsch (maximilian.pietsch@kcl.ac.uk), "
+    "Thijs Dhollander (thijs.dhollander@gmail.com)";
+
+  SYNOPSIS = "The MRtrix image viewer";
 
   DESCRIPTION
-  + "the MRtrix image viewer."
+  + "Any images listed as arguments will be loaded and available through the "
+    "image menu, with the first listed displayed initially. Any subsequent "
+    "command-line options will be processed as if the corresponding action had "
+    "been performed through the GUI."
 
-  + "Basic scripting can be performed at startup, using the -run or -batch options. "
-  "Each command consists of a single line of text, with the first word interpreted "
-  "as the command. Valid commands are:"
+  + "Note that because images loaded as arguments (i.e. simply listed on the "
+    "command-line) are opened before the GUI is shown, subsequent actions to be "
+    "performed via the various command-line options must appear after the last "
+    "argument. This is to avoid confusion about which option will apply to which "
+    "image. If you need fine control over this, please use the -load or -select_image "
+    "options. For example:"
 
+  + "$ mrview -load image1.mif -interpolation 0 -load image2.mif -interpolation 0"
 
-  // use this command to re-generate the command documentation:
-  // grep -rh BATCH_COMMAND src/gui/mrview/window.cpp src/gui/mrview/tool/ | sed -n -e 's/^.*BATCH_COMMAND \(.*\) # \(.*$\)/+ "\1\\n  \2"/p'
+  + "or"
 
-  + "view.mode index\n  Switch to view mode specified by the integer index. as per the view menu."
-  + "view.size width,height\n  Set the size of the view area, in pixel units."
-  + "view.reset\n  Reset the view according to current image. This resets the FOV, projection, and focus."
-  + "view.fov num\n  Set the field of view, in mm."
-  + "view.focus x,y,z\n  Set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values. "
-  + "view.voxel x,y,z\n  Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values. "
-  + "view.fov num\n  Set the field of view, in mm."
-  + "view.plane num\n  Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial."
-  + "view.lock\n  Set whether view is locked to image axes (0: no, 1: yes)."
-  + "image.select index\n  Switch to image number specified, with reference to the list of currently loaded images."
-  + "image.load path\n  Load image specified and make it current."
-  + "image.reset\n  Reset the image scaling."
-  + "image.colourmap index\n  Switch the image colourmap to that specified, as per the colourmap menu."
-  + "image.range min max\n  Set the image intensity range to that specified"
-  + "tool.open index\n  Start the tool specified, indexed as per the tool menu"
-  + "window.position x,y\n  Set the position of the main window, in pixel units."
-  + "window.fullscreen\n  Show fullscreen or windowed (0: windowed, 1: fullscreen)."
-  + "exit\n  quit MRView."
-  + "overlay.load path\n  Loads the specified image on the overlay tool."
-  + "overlay.opacity value\n  Sets the overlay opacity to floating value [0-1]."
-  + "overlay.colourmap index\n  Sets the colourmap of the overlay as indexed in the colourmap dropdown menu."
-  + "tractography.load path\n  Load the specified tracks file into the tractography tool"
-  + "capture.folder path\n  Set the output folder for the screen capture tool"
-  + "capture.prefix path\n  Set the output file prefix for the screen capture tool"
-  + "capture.grab\n  Start the screen capture process"
-  + "fixel.load path\n  Load the specified MRtrix sparse image file (.msf) into the fixel tool"
-  ;
+  + "$ mrview image1.mif image2.mif -interpolation 0 -select_image 2 -interpolation 0";
 
-  REFERENCES 
-    + "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+  REFERENCES
+    + "Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "MRtrix: Diffusion tractography in crossing fiber regions. "
     "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";
 
   ARGUMENTS
-    + Argument ("image", "an image to be loaded.")
+    + Argument ("image", "An image to be loaded.")
     .optional()
     .allow_multiple()
     .type_image_in ();
 
-  OPTIONS
-    + Option ("run", "run command specified in string at start time").allow_multiple()
-    +   Argument("command").type_text()
+  GUI::MRView::Window::add_commandline_options (OPTIONS);
 
-    + Option ("batch", "run commands in batch script at start time").allow_multiple()
-    +   Argument("file").type_file_in();
+#define TOOL(classname, name, description) \
+  MR::GUI::MRView::Tool::classname::add_commandline_options (OPTIONS);
+  {
+    using namespace MR::GUI::MRView::Tool;
+#include "gui/mrview/tool/list.h"
+  }
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 
@@ -79,22 +90,14 @@ void usage ()
 void run ()
 {
   GUI::MRView::Window window;
+  MR::GUI::MRView::Sync::SyncManager sync;//sync allows syncing between mrview windows in different processes
   window.show();
-
-  if (argument.size()) {
-    VecPtr<MR::Image::Header> list;
-
-    for (size_t n = 0; n < argument.size(); ++n) {
-      try {
-        list.push_back (new Image::Header (argument[n]));
-      }
-      catch (Exception& e) {
-        e.display();
-      }
-    }
-
-    if (list.size())
-      window.add_images (list);
+  try {
+    window.parse_arguments();
+  }
+  catch (Exception& e) {
+    e.display();
+    return;
   }
 
   if (qApp->exec())

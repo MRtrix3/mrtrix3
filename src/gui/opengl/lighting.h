@@ -1,24 +1,18 @@
-/*
-   Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier, 27/06/08.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #ifndef __gui_opengl_lighting_h__
 #define __gui_opengl_lighting_h__
@@ -33,22 +27,19 @@ namespace MR
     {
 
       class Lighting : public QObject
-      {
-          Q_OBJECT
+      { MEMALIGN(Lighting)
+        Q_OBJECT
 
         public:
-          Lighting (QObject* parent) : 
+
+          Lighting (QObject* parent) :
             QObject (parent), 
-            ambient (0.4), 
-            diffuse (0.7), 
-            specular (0.3), 
-            shine (5.0), 
             set_background (false) {
-            load_defaults();
-          }
+              load_defaults();
+            }
 
           float ambient, diffuse, specular, shine;
-          float light_color[3], object_color[3], lightpos[3], background_color[3];
+          float light_color[3], lightpos[3], background_color[3];
           bool set_background;
 
           void  set () const;

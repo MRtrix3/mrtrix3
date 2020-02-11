@@ -1,265 +1,489 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/11/09.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#include <map>
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #include "command.h"
-#include "progressbar.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/loop.h"
-#include "image/histogram.h"
-#include "image/filter/optimal_threshold.h"
+#include "exception.h"
+#include "image.h"
+#include "image_helpers.h"
+
+#include "adapter/replicate.h"
+#include "adapter/subset.h"
+#include "algo/loop.h"
+#include "filter/optimal_threshold.h"
 
 
 using namespace MR;
 using namespace App;
 
+
+enum class operator_type { LT, LE, GE, GT, UNDEFINED };
+const char* const operator_list[] = { "lt", "le", "ge", "gt", nullptr };
+
+
 void usage ()
 {
-  DESCRIPTION
-  + "create bitwise image by thresholding image intensity. By default, an "
-    "optimal threshold is determined using a parameter-free method. "
-    "Alternatively the threshold can be defined manually by the user "
-    "or using a histogram-based analysis to cut out the background.";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
-  REFERENCES 
-    + "If not using the -abs option:\n"
+  SYNOPSIS = "Create bitwise image by thresholding image intensity";
+
+  DESCRIPTION
+  + "The threshold value to be applied can be determined in one of a number of ways:"
+
+  + "- If no relevant command-line option is used, the command will automatically "
+      "determine an optimal threshold;"
+
+  + "- The -abs option provides the threshold value explicitly;"
+
+  + "- The -percentile, -top and -bottom options enable more fine-grained control "
+      "over how the threshold value is determined."
+
+  + "The -mask option only influences those image values that contribute "
+    "toward the determination of the threshold value; once the threshold is determined, "
+    "it is applied to the entire image, irrespective of use of the -mask option. If you "
+    "wish for the voxels outside of the specified mask to additionally be excluded from "
+    "the output mask, this can be achieved by providing the -out_masked option."
+
+  + "The four operators available through the \"-comparison\" option (\"lt\", \"le\", \"ge\" and \"gt\") "
+    "correspond to \"less-than\" (<), \"less-than-or-equal\" (<=), \"greater-than-or-equal\" (>=) "
+    "and \"greater-than\" (>). This offers fine-grained control over how the thresholding "
+    "operation will behave in the presence of values equivalent to the threshold. "
+    "By default, the command will select voxels with values greater than or equal to the "
+    "determined threshold (\"ge\"); unless the -bottom option is used, in which case "
+    "after a threshold is determined from the relevant lowest-valued image voxels, those "
+    "voxels with values less than or equal to that threshold (\"le\") are selected. "
+    "This provides more fine-grained control than the -invert option; the latter "
+    "is provided for backwards compatibility, but is equivalent to selection of the "
+    "opposite comparison within this selection."
+
+  + "If no output image path is specified, the command will instead write to "
+    "standard output the determined threshold value.";
+
+  REFERENCES
+    + "* If not using any explicit thresholding mechanism: \n"
     "Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. "
     "Issues with threshold masking in voxel-based morphometry of atrophied brains. "
     "NeuroImage, 2009, 44, 99-111";
 
   ARGUMENTS
-  + Argument ("input", "the input image to be thresholded.").type_image_in ()
-  + Argument ("output", "the output binary image mask.").type_image_out ();
+  + Argument ("input", "the input image to be thresholded").type_image_in()
+  + Argument ("output", "the (optional) output binary image mask").optional().type_image_out();
 
 
   OPTIONS
-  + Option ("abs", "specify threshold value as absolute intensity.")
-  + Argument ("value").type_float()
 
-  + Option ("histogram", "define the threshold by a histogram analysis to cut out the background. "
-                         "Note that only the first study is used for thresholding.")
+  + OptionGroup ("Threshold determination mechanisms")
 
-  + Option ("percentile", "threshold the image at the ith percentile.")
-  + Argument ("value").type_float (0.0, 95.0, 100.0)
+  + Option ("abs", "specify threshold value as absolute intensity")
+    + Argument ("value").type_float()
 
-  + Option ("top", "provide a mask of the N top-valued voxels")
-  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
+  + Option ("percentile", "determine threshold based on some percentile of the image intensity distribution")
+    + Argument ("value").type_float (0.0, 100.0)
 
-  + Option ("bottom", "provide a mask of the N bottom-valued voxels")
-  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
+  + Option ("top", "determine threshold that will result in selection of some number of top-valued voxels")
+    + Argument ("count").type_integer (1)
 
-  + Option ("invert", "invert output binary mask.")
+  + Option ("bottom", "determine & apply threshold resulting in selection of some number of bottom-valued voxels "
+                      "(note: implies threshold application operator of \"le\" unless otherwise specified)")
+    + Argument ("count").type_integer (1)
 
-  + Option ("toppercent", "provide a mask of the N%% top-valued voxels")
-  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
 
-  + Option ("bottompercent", "provide a mask of the N%% bottom-valued voxels")
-  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
 
-  + Option ("nan", "use NaN as the output zero value.")
+  + OptionGroup ("Threshold determination modifiers")
 
-  + Option ("ignorezero", "ignore zero-values input voxels.")
+  + Option ("allvolumes", "compute a single threshold for all image volumes, rather than an individual threshold per volume")
 
-  + Option ("mask",
-            "compute the optimal threshold based on voxels within a mask.")
-  + Argument ("image").type_image_in ();
+  + Option ("ignorezero", "ignore zero-valued input values during threshold determination")
+
+  + Option ("mask", "compute the threshold based only on values within an input mask image")
+    + Argument ("image").type_image_in ()
+
+
+
+  + OptionGroup ("Threshold application modifiers")
+
+  + Option ("comparison", "comparison operator to use when applying the threshold; "
+                        "options are: " + join(operator_list, ",") + " (default = \"le\" for -bottom; \"ge\" otherwise)")
+    + Argument ("choice").type_choice (operator_list)
+
+  + Option ("invert", "invert the output binary mask "
+                      "(equivalent to flipping the operator; provided for backwards compatibility)")
+
+  + Option ("out_masked", "mask the output image based on the provided input mask image")
+
+  + Option ("nan", "set voxels that fail the threshold to NaN rather than zero "
+                   "(output image will be floating-point rather than binary)");
+
 }
+
+
+using value_type = float;
+
+
+
+bool issue_degeneracy_warning = false;
+
+
+
+Image<bool> get_mask (const Image<value_type>& in)
+{
+  Image<bool> mask;
+  auto opt = get_options ("mask");
+  if (opt.size()) {
+    mask = Image<bool>::open (opt[0][0]);
+    check_dimensions (in, mask, 0, 3);
+    for (size_t axis = 3; axis != mask.ndim(); ++axis) {
+      if (mask.size (axis) > 1 && axis < in.ndim() && mask.size (axis) != in.size (axis))
+        throw Exception ("Dimensions of mask image do not match those of main image");
+    }
+  }
+  return mask;
+}
+
+
+vector<value_type> get_data (Image<value_type>& in,
+                             Image<bool>& mask,
+                             const size_t max_axis,
+                             const bool ignore_zero)
+{
+  vector<value_type> data;
+  data.reserve (voxel_count (in, 0, max_axis));
+  if (mask.valid()) {
+    Adapter::Replicate<Image<bool>> mask_replicate (mask, in);
+    if (ignore_zero) {
+      for (auto l = Loop(in, 0, max_axis) (in, mask_replicate); l; ++l) {
+        if (mask_replicate.value() && !std::isnan (static_cast<value_type>(in.value())) && in.value() != 0.0f)
+          data.push_back (in.value());
+      }
+    } else {
+      for (auto l = Loop(in, 0, max_axis) (in, mask_replicate); l; ++l) {
+        if (mask_replicate.value() && !std::isnan (static_cast<value_type>(in.value())))
+          data.push_back (in.value());
+      }
+    }
+  } else {
+    if (ignore_zero) {
+      for (auto l = Loop(in, 0, max_axis) (in); l; ++l) {
+        if (!std::isnan (static_cast<value_type>(in.value())) && in.value() != 0.0f)
+          data.push_back (in.value());
+      }
+    } else {
+      for (auto l = Loop(in, 0, max_axis) (in); l; ++l) {
+          if (!std::isnan (static_cast<value_type>(in.value())))
+        data.push_back (in.value());
+      }
+    }
+  }
+  if (!data.size())
+    throw Exception ("No valid input data found; unable to determine threshold");
+  return data;
+}
+
+
+
+default_type calculate (Image<value_type>& in,
+                        Image<bool>& mask,
+                        const size_t max_axis,
+                        const default_type abs,
+                        const default_type percentile,
+                        const ssize_t bottom,
+                        const ssize_t top,
+                        const bool ignore_zero,
+                        const bool to_cout)
+{
+  if (std::isfinite (abs)) {
+
+    return abs;
+
+  } else if (std::isfinite (percentile)) {
+
+    auto data = get_data (in, mask, max_axis, ignore_zero);
+    if (percentile == 100.0) {
+      return default_type(*std::max_element (data.begin(), data.end()));
+    } else if (percentile == 0.0) {
+      return default_type(*std::min_element (data.begin(), data.end()));
+    } else {
+      const default_type interp_index = 0.01 * percentile * (data.size()-1);
+      const size_t lower_index = size_t(std::floor (interp_index));
+      const default_type mu = interp_index - default_type(lower_index);
+      std::nth_element (data.begin(), data.begin() + lower_index, data.end());
+      const default_type lower_value = default_type(data[lower_index]);
+      std::nth_element (data.begin(), data.begin() + lower_index + 1, data.end());
+      const default_type upper_value = default_type(data[lower_index + 1]);
+      return (1.0-mu)*lower_value + mu*upper_value;
+    }
+
+  } else if (std::max (bottom, top) >= 0) {
+
+    auto data = get_data (in, mask, max_axis, ignore_zero);
+    const ssize_t index (bottom >= 0 ?
+                         size_t(bottom) - 1 :
+                         (ssize_t(data.size()) - ssize_t(top)));
+    if (index < 0 || index >= ssize_t(data.size()))
+      throw Exception ("Number of valid input image values (" + str(data.size()) + ") less than number of voxels requested via -" + (bottom >= 0 ? "bottom" : "top") + " option (" + str(bottom >= 0 ? bottom : top) + ")");
+    std::nth_element (data.begin(), data.begin() + index, data.end());
+    const value_type threshold_float = data[index];
+    if (index) {
+      std::nth_element (data.begin(), data.begin() + index - 1, data.end());
+      if (data[index-1] == threshold_float)
+        issue_degeneracy_warning = true;
+    }
+    if (index < ssize_t(data.size()) - 1) {
+      std::nth_element (data.begin(), data.begin() + index + 1, data.end());
+      if (data[index+1] == threshold_float)
+        issue_degeneracy_warning = true;
+    }
+    return default_type(threshold_float);
+
+  } else { // No explicit mechanism option: do automatic thresholding
+
+    std::unique_ptr<LogLevelLatch> latch;
+    if (to_cout)
+      latch.reset (new LogLevelLatch (App::log_level - 1));
+    if (max_axis < in.ndim()) {
+
+      // Need to extract just the current 3D volume
+      vector<size_t> in_from (in.ndim()), in_size (in.ndim());
+      size_t axis;
+      for (axis = 0; axis != 3; ++axis) {
+        in_from[axis] = 0;
+        in_size[axis] = in.size (axis);
+      }
+      for (; axis != in.ndim(); ++axis) {
+        in_from[axis] = in.index (axis);
+        in_size[axis] = 1;
+      }
+      Adapter::Subset<Image<value_type>> in_subset (in, in_from, in_size);
+      if (mask.valid()) {
+        vector<size_t> mask_from (mask.ndim()), mask_size (mask.ndim());
+        for (axis = 0; axis != 3; ++axis) {
+          mask_from[axis] = 0;
+          mask_size[axis] = mask.size (axis);
+        }
+        for (; axis != mask.ndim(); ++axis) {
+          mask_from[axis] = mask.index (axis);
+          mask_size[axis] = 1;
+        }
+        Adapter::Subset<Image<bool>> mask_subset (mask, mask_from, mask_size);
+        Adapter::Replicate<decltype(mask_subset)> mask_replicate (mask_subset, in_subset);
+        return Filter::estimate_optimal_threshold (in_subset, mask_replicate);
+      } else {
+        return Filter::estimate_optimal_threshold (in_subset);
+      }
+
+    } else if (mask.valid()) {
+      Adapter::Replicate<Image<bool>> mask_replicate (mask, in);
+      return Filter::estimate_optimal_threshold (in, mask_replicate);
+    } else {
+      return Filter::estimate_optimal_threshold (in);
+    }
+
+  }
+}
+
+
+
+template <typename T>
+void apply (Image<value_type>& in,
+            Image<bool>& mask,
+            Image<T>& out,
+            const size_t max_axis,
+            const value_type threshold,
+            const operator_type comp,
+            const bool mask_out,
+            const bool to_cout)
+{
+  if (to_cout) {
+    std::cout << threshold;
+    return;
+  }
+
+  const T true_value = std::is_floating_point<T>::value ? 1.0 : true;
+  const T false_value = std::is_floating_point<T>::value ? NaN : false;
+
+  std::function<bool(value_type, value_type)> func;
+  switch (comp) {
+    case operator_type::LT: func = [] (const value_type in, const value_type ref) { return in <  ref; }; break;
+    case operator_type::LE: func = [] (const value_type in, const value_type ref) { return in <= ref; }; break;
+    case operator_type::GE: func = [] (const value_type in, const value_type ref) { return in >= ref; }; break;
+    case operator_type::GT: func = [] (const value_type in, const value_type ref) { return in >  ref; }; break;
+    case operator_type::UNDEFINED: assert (0);
+  }
+
+  if (mask_out) {
+    assert (mask.valid());
+    for (auto l = Loop(in, 0, max_axis) (in, mask, out); l; ++l)
+      out.value() = !std::isnan (static_cast<value_type>(in.value())) && mask.value() && func (in.value(), threshold) ? true_value : false_value;
+  } else {
+    for (auto l = Loop(in, 0, max_axis) (in, out); l; ++l)
+      out.value() = !std::isnan (static_cast<value_type>(in.value())) && func (in.value(), threshold) ? true_value : false_value;
+  }
+}
+
+
+
+
+
+template <typename T>
+void execute (Image<value_type>& in,
+              Image<bool>& mask,
+              const std::string& out_path,
+              const default_type abs,
+              const default_type percentile,
+              const ssize_t bottom,
+              const ssize_t top,
+              const bool ignore_zero,
+              const bool all_volumes,
+              const operator_type op,
+              const bool mask_out)
+{
+  const bool to_cout = out_path.empty();
+  Image<T> out;
+  if (!to_cout) {
+    Header header_out (in);
+    header_out.datatype() = DataType::from<T>();
+    header_out.datatype().set_byte_order_native();
+    out = Image<T>::create (out_path, header_out);
+  }
+
+  // Branch based on whether or not we need to process each image volume individually
+  if (in.ndim() > 3 && !all_volumes) {
+
+    // Do one volume at a time
+    // If writing to cout, also add a newline between each volume
+    bool is_first_loop = true;
+    for (auto l = Loop("Determining and applying per-volume thresholds", 3, in.ndim()) (in); l; ++l) {
+      if (to_cout) {
+        if (is_first_loop)
+          is_first_loop = false;
+        else
+          std::cout << "\n";
+      }
+      LogLevelLatch latch (App::log_level - 1);
+      const default_type threshold = calculate (in, mask, 3, abs, percentile, bottom, top, ignore_zero, to_cout);
+      if (out.valid())
+        assign_pos_of (in, 3).to (out);
+      apply (in, mask, out, 3, value_type(threshold), op, mask_out, to_cout);
+    }
+
+    return;
+
+  } else if (in.ndim() <= 3 && all_volumes) {
+    WARN ("Option -allvolumes ignored; input image is less than 4D");
+  }
+
+  // Process whole input image as a single block
+  const default_type threshold = calculate (in, mask, in.ndim(), abs, percentile, bottom, top, ignore_zero, to_cout);
+  apply (in, mask, out, in.ndim(), value_type(threshold), op, mask_out, to_cout);
+
+}
+
+
+
 
 
 void run ()
 {
-  float threshold_value (NAN), percentile (NAN), bottomNpercent (NAN), topNpercent (NAN);
-  bool use_histogram = false;
-  size_t topN (0), bottomN (0), nopt (0);
+  const default_type abs = get_option_value ("abs", NaN);
+  const default_type percentile = get_option_value ("percentile", NaN);
+  const ssize_t bottom = get_option_value ("bottom", -1);
+  const ssize_t top = get_option_value ("top", -1);
+  const size_t num_explicit_mechanisms = (std::isfinite (abs) ? 1 : 0) +
+                                         (std::isfinite (percentile) ? 1 : 0) +
+                                         (bottom >= 0 ? 1 : 0) +
+                                         (top >= 0 ? 1 : 0);
+  if (num_explicit_mechanisms > 1)
+    throw Exception ("Cannot specify more than one mechanism for threshold selection");
 
-  Options opt = get_options ("abs");
-  if (opt.size()) {
-    threshold_value = opt[0][0];
-    ++nopt;
-  }
+  auto header_in = Header::open (argument[0]);
+  if (header_in.datatype().is_complex())
+    throw Exception ("Cannot perform thresholding directly on complex image data");
+  auto in = header_in.get_image<value_type>();
 
-  opt = get_options ("histogram");
-  if (opt.size()) {
-    use_histogram = true;
-    ++nopt;
-  }
+  const bool to_cout = argument.size() == 1;
+  const std::string output_path = to_cout ? std::string("") : argument[1];
+  const bool all_volumes = get_options("allvolumes").size();
+  const bool ignore_zero = get_options("ignorezero").size();
+  const bool use_nan = get_options ("nan").size();
+  const bool invert = get_options ("invert").size();
 
-  opt = get_options ("percentile");
-  if (opt.size()) {
-    percentile = opt[0][0];
-    ++nopt;
-  }
+  bool mask_out = get_options ("out_masked").size();
 
-  opt = get_options ("top");
-  if (opt.size()) {
-    topN = opt[0][0];
-    ++nopt;
-  }
-
-  opt = get_options ("bottom");
-  if (opt.size()) {
-    bottomN = opt[0][0];
-    ++nopt;
-  }
-
-  opt = get_options ("toppercent");
-  if (opt.size()) {
-    topNpercent = opt[0][0];
-    ++nopt;
-  }
-
-  opt = get_options ("bottompercent");
-  if (opt.size()) {
-    bottomNpercent = opt[0][0];
-    ++nopt;
-  }
-
-  if (nopt > 1)
-    throw Exception ("too many conflicting options");
-
-
-  bool invert = get_options ("invert").size();
-  bool use_NaN = get_options ("nan").size();
-  bool ignore_zeroes = get_options ("ignorezero").size();
-
-  Image::Buffer<float> data_in (argument[0]);
-  assert (!data_in.datatype().is_complex());
-
-  if (Image::voxel_count (data_in) < topN || Image::voxel_count (data_in) < bottomN)
-    throw Exception ("number of voxels at which to threshold exceeds number of voxels in image");
-
-  if (std::isfinite (percentile)) {
-    percentile /= 100.0;
-    if (percentile < 0.5) {
-      bottomN = std::round (Image::voxel_count (data_in) * percentile);
-      invert = !invert;
+  auto opt = get_options ("comparison");
+  operator_type comp = opt.size() ?
+                       operator_type(int(opt[0][0])) :
+                       (bottom >= 0 ? operator_type::LE : operator_type::GE);
+  if (invert) {
+    switch (comp) {
+      case operator_type::LT: comp = operator_type::GE; break;
+      case operator_type::LE: comp = operator_type::GT; break;
+      case operator_type::GE: comp = operator_type::LT; break;
+      case operator_type::GT: comp = operator_type::LE; break;
+      case operator_type::UNDEFINED: assert (0);
     }
-    else topN = std::round (Image::voxel_count (data_in) * (1.0 - percentile));
   }
 
-  Image::Header header_out (data_in);
-  header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
-
-  auto in = data_in.voxel();
-
-  Image::Buffer<float> data_out (argument[1], header_out);
-  auto out = data_out.voxel();
-
-  float zero = use_NaN ? NAN : 0.0;
-  float one  = 1.0;
-  if (invert) std::swap (zero, one);
-
-  if (std::isfinite (topNpercent) || std::isfinite (bottomNpercent)) {
-    Image::LoopInOrder loop (in, "computing voxel count...");
-    size_t count = 0;
-    for (auto l = loop (in); l; ++l) {
-      float val = in.value();
-      if (ignore_zeroes && val == 0.0) continue;
-      ++count;
+  if (to_cout) {
+    if (use_nan) {
+      WARN ("Option -nan ignored: has no influence when no output image is specified");
     }
-
-    if (std::isfinite (topNpercent))
-      topN = std::round (0.01 * topNpercent * count);
-    else
-      bottomN = std::round (0.01 * bottomNpercent * count);
+    if (opt.size()) {
+      WARN ("Option -comparison ignored: has no influence when no output image is specified");
+      comp = operator_type::UNDEFINED;
+    }
+    if (invert) {
+      WARN ("Option -invert ignored: has no influence when no output image is specified");
+    }
+    if (mask_out) {
+      WARN ("Option -out_masked ignored: has no influence when no output image is specified");
+    }
   }
 
-
-
-  if (topN || bottomN) {
-    std::multimap<float,std::vector<ssize_t> > list;
-
-    {
-      Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at " + (
-                            std::isnan (percentile) ?
-                            (str (topN ? topN : bottomN) + "th " + (topN ? "top" : "bottom") + " voxel") :
-                              (str (percentile*100.0) + "\% percentile")
-                            ) + "...");
-
-      if (topN) {
-        for (auto l = loop (in); l; ++l) {
-          const float val = in.value();
-          if (!std::isfinite (val)) continue;
-          if (ignore_zeroes && val == 0.0) continue;
-          if (list.size() == topN) {
-            if (val < list.begin()->first) continue;
-            list.erase (list.begin());
-          }
-          std::vector<ssize_t> pos (in.ndim());
-          for (size_t n = 0; n < in.ndim(); ++n)
-            pos[n] = in[n];
-          list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
-        }
+  Image<bool> mask;
+  if (std::isfinite (abs)) {
+    if (ignore_zero) {
+      WARN ("-ignorezero option has no effect if combined with -abs option");
+    }
+    if (get_options ("mask").size() && !mask_out) {
+      WARN ("-mask option has no effect if combined with -abs option and -out_masked is not used");
+    }
+  } else {
+    mask = get_mask (in);
+    if (!mask.valid() && mask_out) {
+      WARN ("-out_masked option ignored; no mask image provided via -mask");
+      mask_out = false;
+    }
+    if (!num_explicit_mechanisms) {
+      if (ignore_zero) {
+        WARN ("Option -ignorezero ignored by automatic threshold calculation");
       }
-      else {
-        for (auto l = loop (in); l; ++l) {
-          const float val = in.value();
-          if (!std::isfinite (val)) continue;
-          if (ignore_zeroes && val == 0.0) continue;
-          if (list.size() == bottomN) {
-            std::multimap<float,std::vector<ssize_t> >::iterator i = list.end();
-            --i;
-            if (val > i->first) continue;
-            list.erase (i);
-          }
-          std::vector<ssize_t> pos (in.ndim());
-          for (size_t n = 0; n < in.ndim(); ++n)
-            pos[n] = in[n];
-          list.insert (std::pair<float,std::vector<ssize_t> > (val, pos));
-        }
+      try {
+        check_3D_nonunity (in);
+      } catch (Exception& e) {
+        throw Exception (e, "Automatic thresholding can only be performed for voxel data");
       }
     }
-
-    for (auto l = Image::Loop() (out); l; ++l) 
-      out.value() = zero;
-
-    for (std::multimap<float,std::vector<ssize_t> >::const_iterator i = list.begin(); i != list.end(); ++i) {
-      for (size_t n = 0; n < out.ndim(); ++n)
-        out[n] = i->second[n];
-      out.value() = one;
-    }
   }
-  else {
-    if (use_histogram) {
-      Image::Histogram<decltype(in)> hist (in);
-      threshold_value = hist.first_min();
-    }
-    else if (std::isnan (threshold_value)) {
-      Ptr<Image::Buffer<bool> > mask_data;
-      Ptr<Image::Buffer<bool>::voxel_type > mask_voxel;
-      opt = get_options ("mask");
-      if (opt.size()) {
-        mask_data = new Image::Buffer<bool> (opt[0][0]);
-        mask_voxel = new Image::Buffer<bool>::voxel_type (*mask_data);
-      }
-      threshold_value = Image::Filter::estimate_optimal_threshold (in, (Image::Buffer<bool>::voxel_type*) mask_voxel);
-    }
 
-    Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value) + "...");
-    for (auto l = Image::Loop() (out, in); l; ++l) {
-      float val = in.value();
-      out.value() = ( !std::isfinite (val) || val < threshold_value ) ? zero : one;
-    }
+  if (use_nan)
+    execute<value_type> (in, mask, output_path, abs, percentile, bottom, top, ignore_zero, all_volumes, comp, mask_out);
+  else
+    execute<bool>       (in, mask, output_path, abs, percentile, bottom, top, ignore_zero, all_volumes, comp, mask_out);
+
+  if (issue_degeneracy_warning) {
+    WARN ("Duplicate image values surrounding threshold; "
+          "exact number of voxels influenced by numerical threshold may not match requested number");
   }
 }

@@ -1,3 +1,19 @@
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
+
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/properties.h"
 
@@ -15,7 +31,7 @@ namespace MR
 
         const OptionGroup ACTOption = OptionGroup ("Anatomically-Constrained Tractography options")
 
-          + Option ("act", "use the Anatomically-Constrained Tractography framework during tracking;\n"
+          + Option ("act", "use the Anatomically-Constrained Tractography framework during tracking; "
                            "provided image must be in the 5TT (five-tissue-type) format")
             + Argument ("image").type_image_in()
 
@@ -27,10 +43,7 @@ namespace MR
 
         void load_act_properties (Properties& properties)
         {
-
-          using namespace MR::App;
-
-          Options opt = get_options ("act");
+          auto opt = App::get_options ("act");
           if (opt.size()) {
 
             properties["act"] = std::string (opt[0][0]);
@@ -55,10 +68,10 @@ namespace MR
 
 
 
-        void verify_5TT_image (const Image::Header& H)
+        void verify_5TT_image (const Header& H)
         {
-          if (!H.datatype().is_floating_point() || H.ndim() != 4 || H.dim(3) != 5)
-            throw Exception ("Image " + H.name() + " is not a valid ACT 5TT image");
+          if (!H.datatype().is_floating_point() || H.ndim() != 4 || H.size(3) != 5)
+            throw Exception ("Image " + H.name() + " is not a valid ACT 5TT image (expecting 4D image with 5 volumes and floating-point datatype)");
         }
 
 

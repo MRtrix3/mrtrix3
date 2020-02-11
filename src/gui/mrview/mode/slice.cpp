@@ -1,27 +1,22 @@
-/*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
-   Written by J-Donald Tournier, 13/11/09.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
-
-#include "math/vector.h"
 #include "gui/mrview/mode/slice.h"
+
+#include "gui/opengl/transformation.h"
 
 namespace MR
 {
@@ -33,7 +28,7 @@ namespace MR
       {
 
 
-        std::string Slice::Shader::vertex_shader_source (const Displayable&) 
+        std::string Slice::Shader::vertex_shader_source (const Displayable&)
         {
           return
             "layout(location = 0) in vec3 vertpos;\n"
@@ -81,7 +76,7 @@ namespace MR
             source += " scale * (amplitude - offset), 0.0, 1.0);\n  ";
           }
 
-          source += ColourMap::maps[object.colourmap].mapping;
+          source += ColourMap::maps[object.colourmap].glsl_mapping;
 
           source += "}\n";
 
@@ -100,6 +95,7 @@ namespace MR
 
         void Slice::paint (Projection& with_projection)
         {
+          GL::assert_context_is_current();
           // set up OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -107,34 +103,34 @@ namespace MR
           gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
           draw_plane (plane(), slice_shader, with_projection);
+          GL::assert_context_is_current();
+        }
+
+        // Draw without setting up matrices/no crosshairs/no orientation labels
+        void Slice::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
+        {
+          GL::assert_context_is_current();
+          // render image:
+          if (visible) {
+            if (snap_to_image())
+              image()->render2D (shader_program, with_projection, axis, slice (axis));
+            else
+              image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
+          }
+
+          render_tools (with_projection, false, axis, slice (axis));
+          GL::assert_context_is_current();
         }
 
 
         void Slice::draw_plane (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
-          // info for projection:
-          float fov = FOV() / (float) (with_projection.width()+with_projection.height());
-          float depth = std::max (std::max (image()->header().dim(0), image()->header().dim(1)), image()->header().dim(2));
-
-          // set up projection & modelview matrices:
-          GL::mat4 P = GL::ortho (
-              -with_projection.width()*fov, with_projection.width()*fov,
-              -with_projection.height()*fov, with_projection.height()*fov,
-              -depth, depth);
-          GL::mat4 M = snap_to_image() ? GL::mat4 (image()->interp.image2scanner_matrix()) : GL::mat4 (orientation());
-          GL::mat4 MV = adjust_projection_matrix (M, axis) * GL::translate (-target());
-          with_projection.set (MV, P);
-
-          // render image:
-          if (snap_to_image())
-            image()->render2D (shader_program, with_projection, axis, slice (axis));
-          else
-            image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
-
-          render_tools (with_projection, false, axis, slice (axis));
-
+          GL::assert_context_is_current();
+          setup_projection (axis, with_projection);
+          draw_plane_primitive (axis, shader_program, with_projection);
           draw_crosshairs (with_projection);
           draw_orientation_labels (with_projection);
+          GL::assert_context_is_current();
         }
 
 

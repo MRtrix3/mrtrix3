@@ -1,24 +1,18 @@
-/*
-   Copyright 2009 Brain Research Institute, Melbourne, Australia
-
-   Written by J-Donald Tournier & David Raffelt, 17/12/12.
-
-   This file is part of MRtrix.
-
-   MRtrix is free software: you can redistribute it and/or modify
-   it under the terms of the GNU General Public License as published by
-   the Free Software Foundation, either version 3 of the License, or
-   (at your option) any later version.
-
-   MRtrix is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-   GNU General Public License for more details.
-
-   You should have received a copy of the GNU General Public License
-   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #ifndef __gui_mrview_tool_tractogram_h__
 #define __gui_mrview_tool_tractogram_h__
@@ -26,12 +20,10 @@
 #include "gui/mrview/displayable.h"
 #include "dwi/tractography/properties.h"
 #include "gui/mrview/tool/tractography/tractography.h"
-#include "gui/mrview/colourmap.h"
 
 
 namespace MR
 {
-  class ProgressBar;
 
   namespace GUI
   {
@@ -43,54 +35,85 @@ namespace MR
 
       namespace Tool
       {
-
-        enum TrackColourType { Direction, Ends, Manual, ScalarFile };
-
         class Tractogram : public Displayable
-        {
+        { MEMALIGN(Tractogram)
           Q_OBJECT
 
           public:
-            Tractogram (Window& parent, Tractography& tool, const std::string& filename);
+            Tractogram (Tractography& tool, const std::string& file_path);
 
             ~Tractogram ();
 
+            Window& window () const { return *Window::main; }
+
             void render (const Projection& transform);
 
-            void renderColourBar (const Projection& transform) {
-              if (color_type == ScalarFile && show_colour_bar)
-                colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
+            void request_render_colourbar (DisplayableVisitor& visitor) override {
+              if (color_type == TrackColourType::ScalarFile && show_colour_bar)
+                visitor.render_tractogram_colourbar(*this);
             }
 
             void load_tracks();
 
             void load_end_colours();
-            void load_track_scalars (const std::string&);
-            void erase_nontrack_data();
+            void load_intensity_track_scalars (const std::string&);
+            void load_threshold_track_scalars (const std::string&);
+            void erase_colour_data();
+            void erase_intensity_scalar_data ();
+            void erase_threshold_scalar_data ();
 
-            void set_colour (float c[3])
-            {
-              colour[0] = c[0];
-              colour[1] = c[1];
-              colour[2] = c[2];
+            void set_color_type (const TrackColourType);
+            void set_threshold_type (const TrackThresholdType);
+            void set_geometry_type (const TrackGeometryType);
+            TrackColourType get_color_type() const { return color_type; }
+            TrackThresholdType get_threshold_type() const { return threshold_type; }
+            TrackGeometryType get_geometry_type() const { return geometry_type; }
+
+            void set_colour (float c[3]) { colour = { c[0], c[1], c[2] }; }
+
+            float get_threshold_rate() const {
+              switch (threshold_type) {
+                case TrackThresholdType::None: return NaN;
+                case TrackThresholdType::UseColourFile: return scaling_rate();
+                case TrackThresholdType::SeparateFile: return (1e-3 * (threshold_max - threshold_min));
+              }
+              assert (0);
+              return NaN;
             }
+            float get_threshold_min()  const { return threshold_min; }
+            float get_threshold_max()  const { return threshold_max; }
+
+            static TrackGeometryType default_tract_geom;
+            static constexpr float default_line_thickness = 2e-3f;
+            static constexpr float default_point_size = 4e-3f;
 
             bool scalarfile_by_direction;
             bool show_colour_bar;
-            TrackColourType color_type;
-            float colour[3];
-            std::string scalar_filename;
+            bool should_update_stride;
+            Eigen::Array3f colour;
+            float original_fov;
+            float line_thickness;
+            std::string intensity_scalar_filename;
+            std::string threshold_scalar_filename;
 
-            class Shader : public Displayable::Shader {
+            class Shader : public Displayable::Shader { MEMALIGN(Shader)
               public:
-                Shader () : do_crop_to_slab (false), scalarfile_by_direction (false), use_lighting (false), color_type (Direction) { }
-                virtual std::string vertex_shader_source (const Displayable& tractogram);
-                virtual std::string fragment_shader_source (const Displayable& tractogram);
-                virtual bool need_update (const Displayable& object) const;
-                virtual void update (const Displayable& object);
+                Shader () :
+                    do_crop_to_slab (false),
+                    use_lighting (false),
+                    color_type (TrackColourType::Direction),
+                    threshold_type (TrackThresholdType::None),
+                    geometry_type (Tractogram::default_tract_geom) { }
+                std::string vertex_shader_source (const Displayable&) override;
+                std::string fragment_shader_source (const Displayable&) override;
+                std::string geometry_shader_source (const Displayable&) override;
+                virtual bool need_update (const Displayable&) const override;
+                virtual void update (const Displayable&) override;
               protected:
-                bool do_crop_to_slab, scalarfile_by_direction, use_lighting;
+                bool do_crop_to_slab, use_lighting;
                 TrackColourType color_type;
+                TrackThresholdType threshold_type;
+                TrackGeometryType geometry_type;
 
             } track_shader;
 
@@ -98,30 +121,58 @@ namespace MR
             void scalingChanged ();
 
           private:
-            Window& window;
+            static const int track_padding = 6;
             Tractography& tractography_tool;
-            std::string filename;
-            std::vector<GLuint> vertex_buffers;
-            std::vector<GLuint> vertex_array_objects;
-            std::vector<GLuint> colour_buffers;
-            std::vector<GLuint> scalar_buffers;
+
+            const std::string filename;
+
+            TrackColourType color_type;
+            TrackThresholdType threshold_type;
+            TrackGeometryType geometry_type;
+
+            // Instead of tracking the file path, pre-calculate the
+            //   streamline tangents and store them; then, if colour by
+            //   endpoint is requested, generate the buffer based on these
+            //   and the known track sizes
+            vector<Eigen::Vector3f> endpoint_tangents;
+
+            vector<GLuint> vertex_buffers;
+            vector<GLuint> vertex_array_objects;
+            vector<GLuint> colour_buffers;
+            vector<GLuint> intensity_scalar_buffers;
+            vector<GLuint> threshold_scalar_buffers;
             DWI::Tractography::Properties properties;
-            std::vector<std::vector<GLint> > track_starts;
-            std::vector<std::vector<GLint> > track_sizes;
-            std::vector<size_t> num_tracks_per_buffer;
-            ColourMap::Renderer colourbar_renderer;
-            int colourbar_position_index;
+            vector<vector<GLint> > track_starts;
+            vector<vector<GLint> > track_sizes;
+            vector<vector<GLint> > original_track_sizes;
+            vector<vector<GLint> > original_track_starts;
+            vector<size_t> num_tracks_per_buffer;
+            GLint sample_stride;
+            bool vao_dirty;
+
+            // Extra members now required since different scalar files
+            //   may be used for streamline colouring and thresholding
+            float threshold_min, threshold_max;
 
 
-            void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
-                                       std::vector<GLint>& starts,
-                                       std::vector<GLint>& sizes,
+            void load_tracks_onto_GPU (vector<Eigen::Vector3f>& buffer,
+                                       vector<GLint>& starts,
+                                       vector<GLint>& sizes,
                                        size_t& tck_count);
-                                              
-            void load_end_colours_onto_GPU (std::vector<Point<float> >& buffer);
 
-            void load_scalars_onto_GPU (std::vector<float>& buffer);
+            void load_end_colours_onto_GPU (vector<Eigen::Vector3f>&);
 
+            void load_intensity_scalars_onto_GPU (vector<float>& buffer, size_t& tck_count);
+            void load_threshold_scalars_onto_GPU (vector<float>& buffer, size_t& tck_count);
+
+            void render_streamlines ();
+
+            void update_stride ();
+
+          private slots:
+            void on_FOV_changed() {
+              should_update_stride = true;
+            }
         };
       }
     }

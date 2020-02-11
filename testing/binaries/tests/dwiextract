@@ -1,0 +1,2 @@
+dwiextract dwi.mif - | testing_diff_image - dwiextract/out1.mif
+dwiextract dwi.mif -bzero - | testing_diff_image - dwiextract/out2.mif

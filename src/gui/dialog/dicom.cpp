@@ -1,28 +1,23 @@
-/*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
-
-    Written by J-Donald Tournier, 27/06/08.
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #include "file/dicom/tree.h"
 #include "gui/dialog/list.h"
 #include "gui/dialog/dicom.h"
+#include "gui/gui.h"
 
 namespace MR
 {
@@ -35,24 +30,24 @@ namespace MR
       {
 
         class Item
-        {
+        { NOMEMALIGN
           public:
             Item () : parentItem (NULL) { }
-            Item (Item* parent, const RefPtr<Patient>& p) :
+            Item (Item* parent, const std::shared_ptr<Patient>& p) :
               parentItem (parent) {
               itemData = (p->name + " " + format_ID (p->ID) + " " + format_date (p->DOB)).c_str();
             }
-            Item (Item* parent, const RefPtr<Study>& p) :
+            Item (Item* parent, const std::shared_ptr<Study>& p) :
               parentItem (parent) {
               itemData = ( (p->name.size() ? p->name : std::string ("unnamed")) + " " +
                            format_ID (p->ID) + " " + format_date (p->date) + " " + format_time (p->time)).c_str();
             }
-            Item (Item* parent, const RefPtr<Series>& p) :
+            Item (Item* parent, const std::shared_ptr<Series>& p) :
               parentItem (parent), dicom_series (p) {
               itemData = (str (p->size()) + " " + (p->modality.size() ? p->modality : std::string()) + " images " +
                           format_time (p->time) + " " + (p->name.size() ? p->name : std::string ("unnamed")) + " (" +
                           ( (*p) [0]->sequence_name.size() ? (*p) [0]->sequence_name : std::string ("?")) +
-                          ") [" + str (p->number) + "]").c_str();
+                          ") [" + str (p->number) + "] " + p->image_type).c_str();
             }
             ~Item() {
               qDeleteAll (childItems);
@@ -76,7 +71,7 @@ namespace MR
             Item* parent ()  {
               return (parentItem);
             }
-            const RefPtr<Series>& series () const {
+            const std::shared_ptr<Series>& series () const {
               return (dicom_series);
             }
 
@@ -84,12 +79,12 @@ namespace MR
             QList<Item*> childItems;
             QVariant itemData;
             Item* parentItem;
-            RefPtr<Series> dicom_series;
+            std::shared_ptr<Series> dicom_series;
         };
 
 
         class Model : public QAbstractItemModel
-        {
+        { NOMEMALIGN
           public:
             Model (QObject* parent) : QAbstractItemModel (parent) {
               QList<QVariant> rootData;
@@ -155,9 +150,9 @@ namespace MR
 
 
         class DicomSelector : public QDialog
-        {
+        { NOMEMALIGN
           public:
-            DicomSelector (const Tree& tree) : QDialog (NULL) {
+            DicomSelector (const Tree& tree) : QDialog (GUI::App::main_window) {
               Model* model = new Model (this);
 
               Item* root = model->rootItem;
@@ -199,9 +194,9 @@ namespace MR
 
 
 
-      std::vector< RefPtr<Series> > select_dicom (const Tree& tree)
+      vector<std::shared_ptr<Series>> select_dicom (const Tree& tree)
       {
-        std::vector<RefPtr<Series> > ret;
+        vector<std::shared_ptr<Series> > ret;
         if (tree.size() == 1) {
           if (tree[0]->size() == 1) {
             if ((*tree[0])[0]->size() == 1) {

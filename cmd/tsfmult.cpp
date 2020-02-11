@@ -1,24 +1,18 @@
-/*
-    Copyright 2013 Brain Research Institute, Melbourne, Australia
-
-    Written by David Raffelt, 31/01/2013
-
-    This file is part of MRtrix.
-
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
-*/
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
 
 #include "command.h"
 #include "dwi/tractography/properties.h"
@@ -30,10 +24,9 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
-  DESCRIPTION
-  + "an application to multiply corresponding values in track scalar files";
+  SYNOPSIS = "Multiply corresponding values in track scalar files";
 
   ARGUMENTS
   + Argument ("input",  "the input track scalar file.").type_file_in()
@@ -41,7 +34,7 @@ void usage ()
   + Argument ("output", "the output track scalar file").type_file_out();
 }
 
-typedef float value_type;
+using value_type = float;
 
 
 void run ()
@@ -54,15 +47,15 @@ void run ()
 
   DWI::Tractography::check_properties_match (properties1, properties2, "scalar", false);
 
-  std::vector<value_type> tck_scalar1;
-  std::vector<value_type> tck_scalar2;
+  vector<value_type> tck_scalar1;
+  vector<value_type> tck_scalar2;
   while (reader1 (tck_scalar1)) {
     if (!reader2 (tck_scalar2))
       break;
     if (tck_scalar1.size() != tck_scalar2.size())
       throw Exception ("track scalar length mismatch");
 
-    std::vector<value_type> tck_scalar_output (tck_scalar1.size());
+    vector<value_type> tck_scalar_output (tck_scalar1.size());
     for (size_t i = 0; i < tck_scalar1.size(); ++i) {
       tck_scalar_output[i] = tck_scalar1[i] * tck_scalar2[i];
     }

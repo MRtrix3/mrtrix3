@@ -1,0 +1,2 @@
+mkdir -p ../tmp/responsemean && responsemean BIDS/sub-02/dwi/sub-02_tissue-WM_response.txt BIDS/sub-03/dwi/sub-03_tissue-WM_response.txt ../tmp/responsemean/out.txt -force && testing_diff_matrix ../tmp/responsemean/out.txt responsemean/out.txt -abs 0.001
+responsemean BIDS/sub-02/dwi/sub-02_tissue-WM_response.txt BIDS/sub-03/dwi/sub-03_tissue-WM_response.txt ../tmp/responsemean/legacy.txt -legacy -force && testing_diff_matrix ../tmp/responsemean/legacy.txt responsemean/legacy.txt -abs 0.001

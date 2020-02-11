@@ -1,0 +1,5 @@
+tckresample tracks.tck tmp.tck -upsample 2 -force && testing_diff_tck tmp.tck tckresample/upsample.tck 1e-5
+tckresample tracks.tck tmp.tck -downsample 2 -force && testing_diff_tck tmp.tck tckresample/downsample.tck 1e-5
+tckresample tracks.tck tmp.tck -step_size 0.9 -force && testing_diff_tck tmp.tck tckresample/stepsize.tck 1e-3
+tckresample tracks.tck tmp.tck -num_points 10 -force && testing_diff_tck tmp.tck tckresample/numpoints.tck 1e-5
+tckresample tracks.tck tmp.tck -endpoints -force && testing_diff_tck tmp.tck tckresample/endpoints.tck 1e-5
