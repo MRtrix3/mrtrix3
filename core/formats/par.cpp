@@ -144,6 +144,9 @@ namespace MR
       if (!Path::has_suffix (H.name(), ".PAR") && !Path::has_suffix (H.name(), ".par"))
         return std::unique_ptr<ImageIO::Base>();
 
+      WARN ("PAR/REC import is currently experimental - please verify the integrity of your data");
+      WARN ("  If your data does not import correctly, please report it to the MRtrix3 team");
+
       std::string rec_file = H.name().substr(0,H.name().size()-4)+".REC";
 
       std::ifstream in (H.name(), std::ios::binary);
@@ -280,7 +283,7 @@ namespace MR
 		* Eigen::AngleAxis<double> (Math::pi/2.0, Eigen::Vector3d (0.0, 1.0, 0.0));
 	}
 	else if (slices[0].seq == 3) { // coronal
-	//TODO
+          throw Exception ("Images detected in coronal orientation - not yet supported. Please contact MRtrix3 team for support");
 	}
 
         Eigen::Vector3d p (-slices[0].pos[2], -slices[0].pos[0], slices[0].pos[1]);
