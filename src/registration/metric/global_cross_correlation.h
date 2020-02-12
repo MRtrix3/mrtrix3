@@ -266,13 +266,13 @@ namespace MR
 
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                        if (params.im2_mask_interp->value() < 0.9)
+                        if (params.im2_mask_interp->value() < 0.5)
                             return 0.0;
                     }
 
                     if (params.im1_mask_interp) {
                         params.im1_mask_interp->scanner (im1_point);
-                        if (params.im1_mask_interp->value() < 0.9)
+                        if (params.im1_mask_interp->value() < 0.5)
                             return 0.0;
                     }
 
@@ -558,13 +558,13 @@ namespace MR
 
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                        if (params.im2_mask_interp->value() < 0.9)
+                        if (params.im2_mask_interp->value() < 0.5)
                             return 0.0;
                     }
 
                     if (params.im1_mask_interp) {
                         params.im1_mask_interp->scanner (im1_point);
-                        if (params.im1_mask_interp->value() < 0.9)
+                        if (params.im1_mask_interp->value() < 0.5)
                             return 0.0;
                     }
 
