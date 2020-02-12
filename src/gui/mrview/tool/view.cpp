@@ -68,7 +68,7 @@ namespace MR
                 return planes[index.row()].active ? Qt::Checked : Qt::Unchecked;
               }
               if (role != Qt::DisplayRole) return QVariant();
-              return planes[index.row()].name.c_str();
+              return qstr (planes[index.row()].name);
             }
 
             bool setData (const QModelIndex& idx, const QVariant& value, int role) {
@@ -552,7 +552,7 @@ namespace MR
           for (size_t d = 3; d < image->image.ndim(); ++d) {
             SpinBox* vol_index = new SpinBox (this);
             vol_index->setMinimum (0);
-            vol_index->setPrefix (tr((str(d+1) + ": ").c_str()));
+            vol_index->setPrefix (qstr (str(d+1) + ": "));
             vol_index->setValue (image->image.index(d));
             vol_index->setMaximum (image->image.size(d) - 1);
             vol_index->setEnabled (image->image.size(d) > 1);
