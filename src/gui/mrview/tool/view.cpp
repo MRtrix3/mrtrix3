@@ -587,7 +587,7 @@ namespace MR
             return;
 
           Eigen::VectorXf focus (window().focus());
-          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
           std::cout << focus.transpose().format(fmt) << "\n";
 
           QClipboard *clip = QApplication::clipboard();
@@ -601,7 +601,7 @@ namespace MR
             return;
 
           Eigen::VectorXf focus = window().image()->transform().scanner2voxel.cast<float>() * window().focus();
-          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+          Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
           std::cout << focus.transpose().format(fmt) << "\n";
 
           QClipboard *clip = QApplication::clipboard();
