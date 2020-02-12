@@ -125,9 +125,9 @@ namespace MR
         data.pos[2] = to<float> (token[cols.pos+2]);
       }
       if (cols.grad >= 0) {
-        data.grad[0] = to<float> (token[cols.grad]);
-        data.grad[1] = to<float> (token[cols.grad+1]);
-        data.grad[2] = to<float> (token[cols.grad+2]);
+        data.grad[1] = to<float> (token[cols.grad]);
+        data.grad[2] = -to<float> (token[cols.grad+1]);
+        data.grad[0] = to<float> (token[cols.grad+2]);
       }
 
       data.pix = cols.pix >= 0 ? to<int> (token[cols.pix]) : 0;
@@ -198,6 +198,9 @@ namespace MR
       int nslices = 0;
       int nvols = 0;
       for (const auto& slice : slices) {
+        if (slice.seq != slices[0].seq)
+          throw Exception ("non-matching orientations in PAR/REC file \"" + H.name() + "\"");
+
         if (slice.pix != slices[0].pix)
           throw Exception ("non-matching bit depths in PAR/REC file \"" + H.name() + "\"");
 
@@ -253,6 +256,11 @@ namespace MR
       H.stride(1) = -2;
       H.stride(2) = 3;
 
+      if (nvols > 1 && slices[0].sl == slices[1].sl) {
+        H.stride(2) = 4;
+        H.stride(3) = 3;
+      }
+
       H.datatype() = slices[0].pix == 16 ? DataType::UInt16LE : DataType::UInt8;
 
       H.set_intensity_scaling (1.0/slices[0].ss, slices[0].ri/(slices[0].rs*slices[0].ss));
@@ -265,6 +273,15 @@ namespace MR
           Eigen::AngleAxis<double> (D2R*slices[0].ang[2], Eigen::Vector3d (-1.0, 0.0, 0.0)) *
           Eigen::AngleAxis<double> (D2R*slices[0].ang[1], Eigen::Vector3d (0.0, 0.0, 1.0)) *
           Eigen::AngleAxis<double> (D2R*slices[0].ang[0], Eigen::Vector3d (0.0, -1.0, 0.0));
+
+
+	if (slices[0].seq == 2) { // sagittal
+          M = M * Eigen::AngleAxis<double> (Math::pi/2.0, Eigen::Vector3d (1.0, 0.0, 0.0))
+		* Eigen::AngleAxis<double> (Math::pi/2.0, Eigen::Vector3d (0.0, 1.0, 0.0));
+	}
+	else if (slices[0].seq == 3) { // coronal
+	//TODO
+	}
 
         Eigen::Vector3d p (-slices[0].pos[2], -slices[0].pos[0], slices[0].pos[1]);
         p -= M * Eigen::Vector3d (((H.size(0)-1)*H.spacing(0))/2.0, ((H.size(1)-1)*H.spacing(1))/2.0, 0.0);
