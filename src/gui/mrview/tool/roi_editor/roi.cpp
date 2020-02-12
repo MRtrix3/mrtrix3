@@ -266,7 +266,9 @@ namespace MR
             QModelIndex index = list_model->index (i, 0);
             ROI_Item* roi = list_model->get (index);
             if (!roi->saved) {
-              if (QMessageBox::question (&window(), tr("ROI not saved"), tr (("Image " + roi->get_filename() + " has been modified. Do you want to save it?").c_str()), QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
+              if (QMessageBox::question (&window(), tr("ROI not saved"),
+                    qstr ("Image " + roi->get_filename() + " has been modified. Do you want to save it?"),
+                    QMessageBox::Yes|QMessageBox::No) == QMessageBox::Yes)
                 save (roi);
             }
           }
@@ -417,8 +419,8 @@ namespace MR
           assert (indices.size() == 1);
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
           if (!roi->saved) {
-            std::basic_string<char> text = "ROI " + roi->get_filename() + " has been modified. Do you want to save it?";
-            size_t ret = QMessageBox::warning(this, tr("ROI not saved"), tr(text.c_str()),
+            size_t ret = QMessageBox::warning (this, tr("ROI not saved"),
+                qstr("ROI " + roi->get_filename() + " has been modified. Do you want to save it?"),
                 QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel, QMessageBox::Save);
             if (ret == QMessageBox::Cancel)
               return;
