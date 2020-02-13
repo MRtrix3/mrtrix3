@@ -142,6 +142,8 @@ namespace MR
           bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); }
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
+          bool sync_focus_on ()  const { return sync_focus_action->isChecked(); }
+
           void captureGL (std::string filename) {
             QImage image (glarea->grabFramebuffer());
             image.save (filename.c_str());
@@ -153,6 +155,7 @@ namespace MR
 
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
+          static bool tools_floating;
 
         signals:
           void focusChanged ();
@@ -166,6 +169,7 @@ namespace MR
           void imageVisibilityChanged (bool);
           void scalingChanged ();
           void volumeChanged ();
+          void syncChanged();
 
         public slots:
           void on_scaling_changed ();
@@ -190,6 +194,8 @@ namespace MR
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
           void wrap_volumes_slot ();
+
+          void sync_slot();
 
           void hide_image_slot ();
           void slice_next_slot ();
@@ -244,6 +250,7 @@ namespace MR
           int anatomical_plane, annotations;
           ColourBars::Position colourbar_position, tools_colourbar_position;
           bool snap_to_image_axes_and_voxel;
+          std::string current_folder;
 
           float background_colour[3];
 
@@ -293,6 +300,8 @@ namespace MR
                   *show_colourbar_action,
                   *image_interpolate_action,
                   *full_screen_action,
+
+                  *sync_focus_action,
 
                   *OpenGL_action,
                   *about_action,

@@ -88,12 +88,12 @@ namespace MR
           Matrix<value_type,Dynamic,Dynamic> SHT (dirs.rows(), NforL (lmax));
           Matrix<value_type,Dynamic,1,0,64> AL (lmax+1);
           for (ssize_t i = 0; i < dirs.rows(); i++) {
-            const value_type x = std::cos (dirs (i,1));
-            Legendre::Plm_sph (AL, lmax, 0, x);
+            const value_type z = std::cos (dirs (i,1));
+            Legendre::Plm_sph (AL, lmax, 0, z);
             for (int l = 0; l <= lmax; l+=2)
               SHT (i,index (l,0)) = AL[l];
             for (int m = 1; m <= lmax; m++) {
-              Legendre::Plm_sph (AL, lmax, m, x);
+              Legendre::Plm_sph (AL, lmax, m, z);
               for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
                 SHT(i, index(l, m)) = Math::sqrt2 * AL[l]*std::cos (m*dirs (i,0));
                 SHT(i, index(l,-m)) = Math::sqrt2 * AL[l]*std::sin (m*dirs (i,0));
@@ -103,6 +103,42 @@ namespace MR
           return SHT;
         }
 
+      //! form the SH->amplitudes matrix
+      /*! This computes the matrix \a SHT mapping spherical harmonic
+       * coefficients up to maximum harmonic degree \a lmax onto directions \a
+       * dirs (in cartesian coordinates, with columns [ x y z ] ans normalised). */
+      template <class MatrixType>
+        Eigen::Matrix<typename MatrixType::Scalar,Eigen::Dynamic, Eigen::Dynamic> init_transform_cart (const MatrixType& dirs, const int lmax)
+        {
+          using namespace Eigen;
+          using value_type = typename MatrixType::Scalar;
+          if (dirs.cols() != 3)
+            throw Exception ("direction matrix should have 3 columns: [ x y z ]");
+          Matrix<value_type,Dynamic,Dynamic> SHT (dirs.rows(), NforL (lmax));
+          Matrix<value_type,Dynamic,1,0,64> AL (lmax+1);
+          for (ssize_t i = 0; i < dirs.rows(); i++) {
+            value_type z = dirs (i,2);
+            value_type rxy = std::hypot(dirs(i,0), dirs(i,1));
+            value_type cp = (rxy) ? dirs(i,0)/rxy : 1.0;
+            value_type sp = (rxy) ? dirs(i,1)/rxy : 0.0;
+            Legendre::Plm_sph (AL, lmax, 0, z);
+            for (int l = 0; l <= lmax; l+=2)
+              SHT (i,index (l,0)) = AL[l];
+            value_type c0 (1.0), s0 (0.0);
+            for (int m = 1; m <= lmax; m++) {
+              Legendre::Plm_sph (AL, lmax, m, z);
+              value_type c = c0 * cp - s0 * sp;
+              value_type s = s0 * cp + c0 * sp;
+              for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
+                SHT(i, index(l, m)) = Math::sqrt2 * AL[l] * c;
+                SHT(i, index(l,-m)) = Math::sqrt2 * AL[l] * s;
+              }
+              c0 = c;
+              s0 = s;
+            }
+          }
+          return SHT;
+        }
 
 
 
@@ -320,6 +356,23 @@ namespace MR
               C[index (l,m)] = RH[i] * sh[index (l,m)];
           }
           return C;
+        }
+
+
+      //! perform spherical convolution, in place
+      /*! perform spherical convolution of SH coefficients, stored in rows
+       * in matrix \a sh with response function \a RH, storing the results
+       * in place in matrix \a sh. */
+      template <class MatrixType1, class VectorType2>
+        inline MatrixType1& sconv_mat (MatrixType1& sh, const VectorType2& RH)
+        {
+          assert (sh.cols() >= ssize_t (NforL (2* (RH.size()-1))));
+          for (ssize_t i = 0; i < RH.size(); ++i) {
+            int l = 2*i;
+            for (int m = -l; m <= l; ++m)
+              sh.col(index (l,m)) *= RH[i];
+          }
+          return sh;
         }
 
 
@@ -679,7 +732,6 @@ namespace MR
           }
 
           inline const Eigen::Matrix<ValueType,Eigen::Dynamic,1>& RH_coefs() const { return RH; }
-
 
         private:
           const size_t lmax;

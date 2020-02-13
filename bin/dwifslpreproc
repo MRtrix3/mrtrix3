@@ -29,6 +29,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Perform diffusion image pre-processing using FSL\'s eddy tool; including inhomogeneity distortion correction using FSL\'s topup tool if possible')
   cmdline.add_description('This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.')
+  cmdline.add_description('The "-topup_options" and "-eddy_options" command-line options allow the user to pass desired command-line options directly to the FSL commands topup and eddy. The available options for those commands may vary between versions of FSL; users can interrogate such by querying the help pages of the installed software, and/or the FSL online documentation: (topup) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide ; (eddy) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide')
   cmdline.add_description('The script will attempt to run the CUDA version of eddy; if this does not succeed for any reason, or is not present on the system, the CPU version will be attempted instead. By default, the CUDA eddy binary found that indicates compilation against the most recent version of CUDA will be attempted; this can be over-ridden by providing a soft-link "eddy_cuda" within your path that links to the binary you wish to be executed.')
   cmdline.add_description('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to eddy is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).')
   cmdline.add_example_usage('A basic DWI acquisition, where all image volumes are acquired in a single protocol with fixed phase encoding',
@@ -225,10 +226,11 @@ def execute(): #pylint: disable=unused-variable
           try:
             slice_timing = matrix.load_numeric(slspec_file_path, dtype=float)
             app.debug('Slice timing: ' + str(slice_timing))
-            app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
+            app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; '
+                     'nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
             if len(slice_timing) != dwi_num_slices:
               raise MRtrixError('Cannot use slice timing information from file \"' + slspec_file_path + '\" for slice-to-volume correction: ' + \
-                                'Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+                                'Number of entries (' + str(len(slice_timing)) + ') does not match number of slices (' + str(dwi_header.size()[2]) + ')')
           except ValueError:
             raise MRtrixError('Error parsing \"slspec\" file (this should contain integer values indicating slice groups, not slice timing; please see FSL eddy help page)')
         # Remove this entry from eddy_manual_options; it'll be inserted later, with the
@@ -242,7 +244,8 @@ def execute(): #pylint: disable=unused-variable
       slice_timing = dwi_header.keyval()['SliceTiming'][0]
       app.debug('Slice timing from header: ' + str(slice_timing))
       if len(slice_timing) != dwi_num_slices:
-        raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+        raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
+                          'Number of entries (' + str(len(slice_timing)) + ') does not match number of slices (' + str(dwi_header.size()[2]) + ')')
 
   # Use new features of dirstat to query the quality of the diffusion acquisition scheme
   # Need to know the mean b-value in each shell, and the asymmetry value of each shell
@@ -275,25 +278,33 @@ def execute(): #pylint: disable=unused-variable
   app.debug('Manual readout time: ' + str(manual_trt))
 
 
-  do_topup = (not pe_design == 'None')
+  # Utilise the b-value clustering algorithm in src/dwi/shells.*
+  shell_indices = [ [ int(i) for i in entry.split(',') ] for entry in image.mrinfo('dwi.mif', 'shell_indices').split(' ') ]
+  # For each volume index, store the index of the shell to which it is attributed
+  #   (this will make it much faster to determine whether or not two volumes belong to the same shell)
+  vol2shell = [ -1 ] * dwi_num_volumes
+  for index, volumes in enumerate(shell_indices):
+    for volume in volumes:
+      vol2shell[volume] = index
+  assert all(index >= 0 for index in vol2shell)
 
 
   def grads_match(one, two):
+    # Are the two volumes assigned to the same b-value shell?
+    if vol2shell[one] != vol2shell[two]:
+      return False
     # Dot product between gradient directions
     # First, need to check for zero-norm vectors:
     # - If both are zero, skip this check
     # - If one is zero and the other is not, volumes don't match
     # - If neither is zero, test the dot product
-    if any(one[0:3]):
-      if not any(two[0:3]):
+    if any(grad[one][0:3]):
+      if not any(grad[two][0:3]):
         return False
-      dot_product = one[0]*two[0] + one[1]*two[1] + one[2]*two[2]
+      dot_product = grad[one][0]*grad[two][0] + grad[one][1]*grad[two][1] + grad[one][2]*grad[two][2]
       if abs(dot_product) < 0.999:
         return False
-    elif any(two[0:3]):
-      return False
-    # b-value
-    if abs(one[3]-two[3]) > 10.0:
+    elif any(grad[two][0:3]):
       return False
     return True
 
@@ -355,7 +366,7 @@ def execute(): #pylint: disable=unused-variable
         if grads_matched[index1] == dwi_num_volumes: # As yet unpaired
           for index2 in range(int(dwi_num_volumes/2), dwi_num_volumes):
             if grads_matched[index2] == dwi_num_volumes: # Also as yet unpaired
-              if grads_match(grad[index1], grad[index2]):
+              if grads_match(index1, index2):
                 grads_matched[index1] = index2
                 grads_matched[index2] = index1
                 grad_pairs.append([index1, index2])
@@ -433,7 +444,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required by -rpe_all for extracting b=0 volumes while retaining phase-encoding information
   import_dwi_pe_table_option = ''
   if dwi_manual_pe_scheme:
-    matrix.save_matrix('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
+    phaseencoding.save('dwi_manual_pe_scheme.txt', dwi_manual_pe_scheme)
     import_dwi_pe_table_option = ' -import_pe_table dwi_manual_pe_scheme.txt'
 
 
@@ -451,6 +462,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Deal with the phase-encoding of the images to be fed to topup (if applicable)
+  do_topup = (not pe_design == 'None')
   overwrite_se_epi_pe_scheme = False
   se_epi_path = 'se_epi.mif'
   dwi_permvols_preeddy_option = ''
@@ -671,7 +683,7 @@ def execute(): #pylint: disable=unused-variable
   # This may be required when setting up the topup call
   se_epi_manual_pe_table_option = ''
   if se_epi_manual_pe_scheme:
-    matrix.save_matrix('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
+    phaseencoding.save('se_epi_manual_pe_scheme.txt', se_epi_manual_pe_scheme)
     se_epi_manual_pe_table_option = ' -import_pe_table se_epi_manual_pe_scheme.txt'
 
 
@@ -768,7 +780,7 @@ def execute(): #pylint: disable=unused-variable
       json_path = prefix + '.json'
       temp_path = prefix + '_applytopup.nii'
       output_path = prefix + '_applytopup.mif'
-      run.command('dwiextract ' + dwi_path + import_dwi_pe_table_option + ' -pe ' + ','.join(str(value) for value in line) + ' - | mrconvert - ' + input_path + ' -json_export ' + json_path)
+      run.command('dwiextract ' + dwi_path + import_dwi_pe_table_option + ' -pe ' + ','.join(str(value) for value in line) + ' - | mrconvert - ' + input_path + ' -strides -1,+2,+3,+4 -json_export ' + json_path)
       run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
       app.cleanup(input_path)
       temp_path = fsl.find_image(temp_path)
@@ -822,7 +834,7 @@ def execute(): #pylint: disable=unused-variable
       app.debug('New: ' + str(new_slice_groups))
       slice_groups = new_slice_groups
 
-    matrix.save_numeric('slspec.txt', slice_groups, header='', fmt='%d')
+    matrix.save_numeric('slspec.txt', slice_groups, add_to_command_history=False, fmt='%d')
     eddy_manual_options.append('--slspec=slspec.txt')
 
 
@@ -928,7 +940,7 @@ def execute(): #pylint: disable=unused-variable
       for index2 in range(index1+1, dwi_num_volumes):
         if volume_matchings[index2] == dwi_num_volumes: # Also as yet unpaired
           # Here, need to check both gradient matching and reversed phase-encode direction
-          if not any(dwi_pe_scheme[index1][i] + dwi_pe_scheme[index2][i] for i in range(0,3)) and grads_match(grad[index1], grad[index2]):
+          if not any(dwi_pe_scheme[index1][i] + dwi_pe_scheme[index2][i] for i in range(0,3)) and grads_match(index1, index2):
             volume_matchings[index1] = index2
             volume_matchings[index2] = index1
             volume_pairs.append([index1, index2])
@@ -988,8 +1000,8 @@ def execute(): #pylint: disable=unused-variable
       bvals_combined.append(0.5 * (grad[pair[0]][3] + grad[pair[1]][3]))
 
     bvecs_combined = matrix.transpose(bvecs_combined_transpose)
-    matrix.save_matrix('bvecs_combined', bvecs_combined, header='')
-    matrix.save_vector('bvals_combined', bvals_combined, delimiter=' ', header='')
+    matrix.save_matrix('bvecs_combined', bvecs_combined, add_to_command_history=False)
+    matrix.save_vector('bvals_combined', bvals_combined, add_to_command_history=False)
 
     # Prior to 5.0.8, a bug resulted in the output field map image from topup having an identity transform,
     #   regardless of the transform of the input image

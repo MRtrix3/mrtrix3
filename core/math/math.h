@@ -26,6 +26,7 @@
 #include "types.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
+#include "file/path.h"
 
 namespace MR
 {
@@ -137,8 +138,8 @@ namespace MR
       DEBUG ("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to file \"" + filename + "\"...");
       File::OFStream out (filename);
       File::KeyValue::write (out, keyvals, "# ", add_to_command_history);
-      Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
-      out << M.format(fmt);
+      Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, std::string (1, Path::delimiter (filename)), "\n", "", "", "", "");
+      out << M.format (fmt);
       out << "\n";
     }
 
@@ -246,13 +247,18 @@ namespace MR
         M(i,j) = V[i][j];
 
     if (centre.size() == 3) {
-      std::string key = "centre ";
+      const std::string key = " centre: ";
+      const std::string key_legacy = "centre ";
       centre[0] = NaN;
       centre[1] = NaN;
       centre[2] = NaN;
+      vector<std::string> elements;
       for (auto & line : comments) {
-        if (strncmp(line.c_str(), key.c_str(), key.size()) == 0) {
-          const auto elements = split (strip (line.substr (key.size())), " ,;\t", true);
+        if (strncmp(line.c_str(), key.c_str(), key.size()) == 0)
+          elements = split (strip (line.substr (key.size())), " ,;\t", true);
+        else if (strncmp(line.c_str(), key_legacy.c_str(), key_legacy.size()) == 0)
+          elements = split (strip (line.substr (key_legacy.size())), " ,;\t", true);
+        if (elements.size()) {
           if (elements.size() != 3)
             throw Exception ("could not parse centre in transformation file " + filename + ": " + strip (line.substr (key.size())));
           try {
@@ -260,7 +266,7 @@ namespace MR
             centre[1] = to<default_type> (elements[1]);
             centre[2] = to<default_type> (elements[2]);
           } catch (...) {
-            throw Exception ("File \"" + filename + "\" contains non-numerical data in centre" + ": " + strip (line.substr (key.size())));
+            throw Exception ("File \"" + filename + "\" contains non-numerical data in centre: " + strip (line.substr (key.size())));
           }
           break;
         }
@@ -282,23 +288,23 @@ namespace MR
     DEBUG ("saving transform to file \"" + filename + "\"...");
     File::OFStream out (filename);
     File::KeyValue::write (out, keyvals, "# ", add_to_command_history);
-    Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
-    out << M.matrix().format(fmt);
-    out << "\n0 0 0 1\n";
+    const char d (Path::delimiter (filename));
+    Eigen::IOFormat fmt (Eigen::FullPrecision, Eigen::DontAlignCols, std::string (1, d), "\n", "", "", "", "");
+    out << M.matrix().format (fmt);
+    out << "\n0" << d << "0" << d << "0" << d << "1\n";
   }
 
   template <class Derived>
-  inline void save_transform (const Eigen::MatrixBase<Derived>& centre, const transform_type& M, const std::string& filename)
+  inline void save_transform (const transform_type& M, const Eigen::MatrixBase<Derived>& centre, const std::string& filename, const KeyValues& keyvals = KeyValues(), const bool add_to_command_history = true)
   {
-    DEBUG ("saving transform to file \"" + filename + "\"...");
     if (centre.rows() != 3 or centre.cols() != 1)
-      throw Exception ("save transform requires 3x1 vector as centre");
-    File::OFStream out (filename);
-    Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
-    Eigen::IOFormat centrefmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "#centre ", "", "", "");
-    out << centre.transpose().format(centrefmt) << "\n";
-    out << M.matrix().format(fmt);
-    out << "\n0 0 0 1\n";
+      throw Exception ("save_transform() requires 3x1 vector as centre");
+    KeyValues local_keyvals = keyvals;
+    Eigen::IOFormat centrefmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
+    std::ostringstream os;
+    os<<centre.transpose().format(centrefmt);
+    local_keyvals.insert(std::pair<std::string, std::string>("centre",  os.str()));
+    save_transform(M, filename, local_keyvals, add_to_command_history);
   }
 
   //! write the vector \a V to file
@@ -308,8 +314,9 @@ namespace MR
       DEBUG ("saving vector of size " + str(V.size()) + " to file \"" + filename + "\"...");
       File::OFStream out (filename);
       File::KeyValue::write (out, keyvals, "# ", add_to_command_history);
+      const char d (Path::delimiter (filename));
       for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
-        out << str(V[i], 10) << " ";
+        out << str(V[i], 10) << d;
       out << str(V[V.size() - 1], 10) << "\n";
     }
 
@@ -329,6 +336,3 @@ namespace MR
 }
 
 #endif
-
-
-

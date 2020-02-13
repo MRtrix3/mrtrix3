@@ -138,6 +138,20 @@ namespace MR
   }
 
 
+  //! Remove quotation marks only if surrounding entire string
+  inline std::string unquote (const std::string& string)
+  {
+    if (string.size() <= 2)
+      return string;
+    if (!(string.front() == '\"' && string.back() == '\"'))
+      return string;
+    const std::string substring = string.substr(1, string.size()-2);
+    if (std::none_of (substring.begin(), substring.end(), [] (const char& c) { return c == '\"'; }))
+      return substring;
+    return string;
+  }
+
+
 
   inline void replace (std::string& string, char orig, char final)
   {
@@ -181,6 +195,7 @@ namespace MR
 */
 
 
+  bool match (const std::string& pattern, const std::string& text, bool ignore_case = false);
 
 
 

@@ -23,6 +23,7 @@
 #include "gui/mrview/file_open.h"
 #include "gui/mrview/mode/list.h"
 #include "gui/mrview/tool/list.h"
+#include "gui/mrview/sync/syncmanager.h"
 
 
 using namespace MR;
@@ -89,6 +90,7 @@ void usage ()
 void run ()
 {
   GUI::MRView::Window window;
+  MR::GUI::MRView::Sync::SyncManager sync;//sync allows syncing between mrview windows in different processes
   window.show();
   try {
     window.parse_arguments();

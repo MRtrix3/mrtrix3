@@ -17,7 +17,7 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import collections, math, os, sys, shutil, re
+import collections, json, math, os, re, shutil, sys
 
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
@@ -204,25 +204,18 @@ def aggregate(inputs, output, contrast_idx, mode, force=True):
     raise MRtrixError("aggregation mode %s not understood" % mode)
 
 
-def inplace_nan_mask(images, masks, progress=True):
-  from mrtrix3 import app, run  # pylint: disable=no-name-in-module, import-outside-toplevel
+def inplace_nan_mask(images, masks):
+  from mrtrix3 import run  # pylint: disable=no-name-in-module, import-outside-toplevel
   assert len(images) == len(masks), (len(images), len(masks))
-  if progress:
-    pbar = app.ProgressBar('NaN masking', len(images))
   for image, mask in zip(images, masks):
     target_dir = os.path.split(image)[0]
     masked = os.path.join(target_dir, '__' + os.path.split(image)[1])
     run.command("mrcalc " + mask + " " + image + " nan -if " + masked, force=True)
     run.function(shutil.move, masked, image)
-    if progress:
-      pbar.increment()
-  if progress:
-    pbar.done()
 
 
 def calculate_isfinite(inputs, contrasts):
-  from mrtrix3 import app, run, path  # pylint: disable=no-name-in-module, import-outside-toplevel
-  progress = app.ProgressBar('Preparations for leave one out registration', len(inputs) * contrasts.n_contrasts + 1)
+  from mrtrix3 import run, path  # pylint: disable=no-name-in-module, import-outside-toplevel
   agg_weights = [float(inp.aggregation_weight) for inp in inputs if inp.aggregation_weight is not None]
   for cid in range(contrasts.n_contrasts):
     for inp in inputs:
@@ -234,14 +227,12 @@ def calculate_isfinite(inputs, contrasts):
         cmd += ' %s -mult ' % inp.aggregation_weight
       cmd += ' isfinite%s/%s.mif' % (contrasts.suff[cid], inp.uid)
       run.command(cmd, force=True)
-      progress.increment()
   for cid in range(contrasts.n_contrasts):
     cmd = ['mrmath', path.all_in_dir('isfinite%s' % contrasts.suff[cid]), 'sum']
     if agg_weights:
       agg_weight_norm = str(float(len(agg_weights)) / sum(agg_weights))
       cmd += ['-', '|', 'mrcalc', '-', agg_weight_norm, '-mult']
     run.command(cmd + [contrasts.isfinite_count[cid]], force=True)
-  progress.done()
 
 
 def get_common_postfix(file_list):
@@ -250,10 +241,6 @@ def get_common_postfix(file_list):
 
 def get_common_prefix(file_list):
   return os.path.commonprefix(file_list)
-
-
-def str2filename(string, include_list=('.', '_')):
-  return "".join(c for c in string if c.isalnum() or c in include_list).rstrip()
 
 
 class Contrasts(object):
@@ -495,7 +482,6 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
     mask_common_prefix = get_common_prefix([os.path.split(m)[1] for m in mask_files])
     for mfile in mask_files:
       mask_uids.append(os.path.split(mfile)[1].rstrip(re.escape(mask_common_postfix)).lstrip(re.escape(mask_common_prefix)))
-    mask_uids = [str2filename(uid) for uid in mask_uids]
     if len(mask_uids) != len(set(mask_uids)):
       non_unique = [uid for uid, count in collections.Counter(mask_uids).items() if count > 1]
       MRtrixError("mask identifiers not unique:\n" + '""\n'.join(non_unique))
@@ -507,8 +493,8 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
   common_prefix = [get_common_prefix(files) for files in in_files]
   # xcontrast_xsubject_pre_postfix: prefix and postfix of the common part across contrasts and subjects,
   # without image extensions and leading or trailing '_' or '-'
-  xcontrast_xsubject_pre_postfix = [str2filename(get_common_postfix(common_prefix)).lstrip('_-'),
-                                    str2filename(get_common_prefix([re.sub('.('+'|'.join(IMAGEEXT)+')(.gz)?$', '', pfix).rstrip('_-') for pfix in common_postfix]))]
+  xcontrast_xsubject_pre_postfix = [get_common_postfix(common_prefix).lstrip('_-'),
+                                    get_common_prefix([re.sub('.('+'|'.join(IMAGEEXT)+')(.gz)?$', '', pfix).rstrip('_-') for pfix in common_postfix])]
   if app.VERBOSITY > 1:
     app.console("common_postfix: " + str(common_postfix))
     app.console("common_prefix: " + str(common_prefix))
@@ -519,8 +505,8 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
 
   c_uids = []
   for cid, files in enumerate(in_files):
-    c_uids.append([str2filename(re.sub(re.escape(common_postfix[cid])+'$', '',
-                                       re.sub('^'+re.escape(common_prefix[cid]), '', fname))) for fname in files])
+    c_uids.append([re.sub(re.escape(common_postfix[cid])+'$', '',
+                          re.sub('^'+re.escape(common_prefix[cid]), '', fname)) for fname in files])
     if not all([len(_uid) for _uid in c_uids[-1]]):
       MRtrixError("No uniquely identifiable part of filename found in file :\n" + '""\n'.join(non_unique))
 
@@ -611,7 +597,7 @@ def execute(): #pylint: disable=unused-variable
     if not os.path.isdir(inargs[0]):
       raise MRtrixError('input directory %s not found' % inargs[0])
     app.ARGS.input_dir.append(relpath(inargs[0]))
-    app.ARGS.template.append(path.from_user(inargs[1], True))
+    app.ARGS.template.append(relpath(inargs[1]))
 
   cns = Contrasts()
   app.debug(str(cns))
@@ -1142,9 +1128,12 @@ def execute(): #pylint: disable=unused-variable
       run.function(copy, os.path.join('linear_transforms_initial', inp.uid+'.txt'),
                    os.path.join('linear_transforms', inp.uid+'.txt'))
   else:
+    level = 0
+    regtype = linear_type[0]
+    def linear_msg():
+      return 'Optimising template with linear registration (stage {0} of {1}; {2})'.format(level, len(linear_scales), regtype)
+    progress = app.ProgressBar(linear_msg, (3 if use_masks else 2) * len(linear_scales) * len(ins))
     for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
-      msg = 'Optimising template with {2} registration (linear stage {0} of {1})'.format(level + 1, len(linear_scales), linear_type[level])
-      progress = app.ProgressBar(msg, len(ins) * n_contrasts)
       for inp in ins:
         initialise_option = ''
         if use_masks:
@@ -1215,7 +1204,7 @@ def execute(): #pylint: disable=unused-variable
           for im_temp in tmpl:
             run.function(os.remove, im_temp)
         progress.increment()
-      progress.done()
+
       # Here we ensure the template doesn't drift or scale
       # TODO matrix avarage might produce a large FOV for large rotations  # pylint: disable=fixme
       run.command('transformcalc ' + ' '.join(path.all_in_dir('linear_transforms_%02i' % level)) +
@@ -1230,7 +1219,6 @@ def execute(): #pylint: disable=unused-variable
           transform = matrix.dot(matrix.load_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt')), average_inv)
           matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform)
 
-      progress = app.ProgressBar('Transforming all subjects to revised template', len(ins) * n_contrasts)
       for cid in range(n_contrasts):
         for inp in ins:
           run.command('mrtransform ' + c_mrtransform_reorientation[cid] + inp.ims_path[cid] +
@@ -1241,10 +1229,8 @@ def execute(): #pylint: disable=unused-variable
                       datatype_option,
                       force=True)
           progress.increment()
-      progress.done()
 
       if use_masks:
-        progress = app.ProgressBar('Transforming all masks to revised template', len(ins) * n_contrasts)
         for cid in range(n_contrasts):
           for inp in ins:
             run.command('mrtransform ' + inp.msk_path +
@@ -1254,11 +1240,10 @@ def execute(): #pylint: disable=unused-variable
                         ' ' + inp.msk_transformed,
                         force=True)
             progress.increment()
-        progress.done()
 
       if nanmask_input:
         inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],
-                         [inp.msk_transformed for inp in ins for cid in range(n_contrasts)], progress=False)
+                         [inp.msk_transformed for inp in ins for cid in range(n_contrasts)])
 
       if leave_one_out:
         calculate_isfinite(ins, cns)
@@ -1273,6 +1258,7 @@ def execute(): #pylint: disable=unused-variable
 
     for entry in os.listdir('linear_transforms_%02i' % level):
       run.function(copy, os.path.join('linear_transforms_%02i' % level, entry), os.path.join('linear_transforms', entry))
+    progress.done()
 
   # Create a template mask for nl registration by taking the intersection of all transformed input masks and dilating
   if use_masks and (dononlinear or app.ARGS.template_mask):
@@ -1281,11 +1267,12 @@ def execute(): #pylint: disable=unused-variable
     current_template_mask = 'init_nl_template_mask.mif'
 
   if dononlinear:
-    app.console('Optimising template with non-linear registration')
     path.make_dir('warps')
+    level = 0
+    def nonlinear_msg():
+      return 'Optimising template with non-linear registration (stage {0} of {1})'.format(level + 1, len(nl_scales))
+    progress = app.ProgressBar(nonlinear_msg, len(nl_scales) * len(ins))
     for level, (scale, niter, lmax) in enumerate(zip(nl_scales, nl_niter, nl_lmax)):
-      msg = 'Optimising template with non-linear registration (stage {0} of {1})'.format(level + 1, len(nl_scales))
-      progress = app.ProgressBar(msg, len(ins))
       for inp in ins:
         if level > 0:
           initialise_option = ' -nl_init ' + os.path.join('warps_%02i' % (level - 1), inp.uid + '.mif')
@@ -1355,12 +1342,11 @@ def execute(): #pylint: disable=unused-variable
         if level > 0:
           run.function(os.remove, os.path.join('warps_%02i' % (level - 1), inp.uid + '.mif'))
 
-        progress.increment()
-      progress.done()
+        progress.increment(nonlinear_msg())
 
       if nanmask_input:
         inplace_nan_mask([_inp.ims_transformed[cid] for _inp in ins for cid in range(n_contrasts)],
-                         [_inp.msk_transformed for _inp in ins for cid in range(n_contrasts)], progress=True)
+                         [_inp.msk_transformed for _inp in ins for cid in range(n_contrasts)])
 
       if leave_one_out:
         calculate_isfinite(ins, cns)
@@ -1389,6 +1375,7 @@ def execute(): #pylint: disable=unused-variable
       else:
         for inp in ins:
           run.function(shutil.move, os.path.join('warps_%02i' % level, inp.uid + '.mif'), 'warps')
+    progress.done()
 
   for cid in range(n_contrasts):
     run.command('mrconvert ' + cns.templates[cid] + ' ' + cns.templates_out[cid],
@@ -1399,12 +1386,17 @@ def execute(): #pylint: disable=unused-variable
     if os.path.exists(warp_path):
       run.function(shutil.rmtree, warp_path)
     os.makedirs(warp_path)
-    progress = app.ProgressBar('Copying non-linear warps to output directory "' + warp_path + '"')
+    progress = app.ProgressBar('Copying non-linear warps to output directory "' + warp_path + '"', len(ins))
     for inp in ins:
+      keyval = image.Header(os.path.join('warps', inp.uid + '.mif')).keyval()
+      keyval = dict((k, keyval[k]) for k in ('linear1', 'linear2'))
+      json_path = os.path.join('warps', inp.uid + '.json')
+      with open(json_path, 'w') as json_file:
+        json.dump(keyval, json_file)
       run.command('mrconvert ' + os.path.join('warps', inp.uid + '.mif') + ' ' +
                   path.quote(os.path.join(warp_path, xcontrast_xsubject_pre_postfix[0] +
                                           inp.uid + xcontrast_xsubject_pre_postfix[1] + '.mif')),
-                  mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
+                  mrconvert_keyval=json_path, force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
 
@@ -1414,9 +1406,11 @@ def execute(): #pylint: disable=unused-variable
       run.function(shutil.rmtree, linear_transformations_path)
     os.makedirs(linear_transformations_path)
     for inp in ins:
-      run.function(copy, os.path.join('linear_transforms', inp.uid + '.txt'),
-                   os.path.join(linear_transformations_path, xcontrast_xsubject_pre_postfix[0] +
-                                inp.uid + xcontrast_xsubject_pre_postfix[1] + '.txt'))
+      trafo = matrix.load_transform(os.path.join('linear_transforms', inp.uid + '.txt'))
+      matrix.save_transform(os.path.join(linear_transformations_path,
+                                         xcontrast_xsubject_pre_postfix[0] + inp.uid
+                                         + xcontrast_xsubject_pre_postfix[1] + '.txt'),
+                            trafo)
 
   if app.ARGS.transformed_dir:
     for cid, trdir in enumerate(app.ARGS.transformed_dir):
@@ -1424,7 +1418,7 @@ def execute(): #pylint: disable=unused-variable
       if os.path.exists(transformed_path):
         run.function(shutil.rmtree, transformed_path)
       os.makedirs(transformed_path)
-      progress = app.ProgressBar('Copying transformed images to output directory "' + transformed_path + '"')
+      progress = app.ProgressBar('Copying transformed images to output directory "' + transformed_path + '"', len(ins))
       for inp in ins:
         run.command(['mrconvert', inp.ims_transformed[cid], os.path.join(transformed_path, inp.ims_filenames[cid])],
                     mrconvert_keyval=inp.get_ims_path(False)[cid], force=app.FORCE_OVERWRITE)

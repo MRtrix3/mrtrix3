@@ -80,6 +80,12 @@ namespace MR
           return *this;
         }
 
+        Description& operator+ (const char* const text[]) {
+          for (const char* const* p = text; *p; ++p)
+            push_back (*p);
+          return *this;
+        }
+
         std::string syntax (int format) const;
     };
 

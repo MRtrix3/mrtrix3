@@ -19,8 +19,10 @@
 #   in Python.
 
 
-import json, math, os, shlex, subprocess
+import json, math, os, subprocess
+from collections import namedtuple
 from mrtrix3 import MRtrixError
+from mrtrix3.utils import STRING_TYPES
 
 
 
@@ -76,7 +78,7 @@ class Header(object):
   def format(self):
     return self._format
   def datatype(self):
-    return self.datatype
+    return self._datatype
   def intensity_offset(self):
     return self._intensity_offset
   def intensity_scale(self):
@@ -85,6 +87,7 @@ class Header(object):
     return self._transform
   def keyval(self):
     return self._keyval
+
   def is_sh(self):
     """ is 4D image, with more than one volume, matching the number of coefficients of SH series """
     from mrtrix3 import sh  #pylint: disable=import-outside-toplevel
@@ -126,7 +129,7 @@ def axis2dir(string): #pylint: disable=unused-variable
 def check_3d_nonunity(image_in): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not isinstance(image_in, Header):
-    if not isinstance(image_in, str):
+    if not isinstance(image_in, STRING_TYPES):
       raise MRtrixError('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
     image_in = Header(image_in)
   if len(image_in.size()) < 3:
@@ -167,11 +170,11 @@ def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to image.match(): ' + str(kwargs))
   if not isinstance(image_one, Header):
-    if not isinstance(image_one, str):
+    if not isinstance(image_one, STRING_TYPES):
       raise MRtrixError('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
     image_one = Header(image_one)
   if not isinstance(image_two, Header):
-    if not isinstance(image_two, str):
+    if not isinstance(image_two, STRING_TYPES):
       raise MRtrixError('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
     image_two = Header(image_two)
   debug_prefix = '\'' + image_one.name() + '\' \'' + image_two.name() + '\''
@@ -212,28 +215,43 @@ def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too
 
 
 # Computes image statistics using mrstats.
-# Return values will be:
-# - A list if there is more than one volume and -allvolumes is not provided as an option;
-#     a single scalar value otherwise
-# - Integer(s) if statistic is 'count';
-#     floating-point otherwise
-def statistic(image_path, stat, options=''): #pylint: disable=unused-variable
+# Return will be a list of ImageStatistics instances if there is more than one volume
+#   and allvolumes=True is not set; a single ImageStatistics instance otherwise
+ImageStatistics = namedtuple('ImageStatistics', 'mean median std std_rv min max count')
+IMAGE_STATISTICS = [ 'mean', 'median', 'std', 'std_rv', 'min', 'max', 'count' ]
+
+def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
-  command = [ run.exe_name(run.version_match('mrstats')), image_path, '-output', stat ]
-  if options:
-    command.extend(shlex.split(options))
+  mask = kwargs.pop('mask', None)
+  allvolumes = kwargs.pop('allvolumes', False)
+  ignorezero = kwargs.pop('ignorezero', False)
+  if kwargs:
+    raise TypeError('Unsupported keyword arguments passed to image.statistics(): ' + str(kwargs))
+
+  command = [ run.exe_name(run.version_match('mrstats')), image_path ]
+  for stat in IMAGE_STATISTICS:
+    command.extend([ '-output', stat ])
+  if mask:
+    command.extend([ '-mask', mask ])
+  if allvolumes:
+    command.append('-allvolumes')
+  if ignorezero:
+    command.append('-ignorezero')
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
+
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result = [ line.strip() for line in proc.communicate()[0].decode('cp437').splitlines() ]
-  if stat == 'count':
-    result = [ int(i) for i in result ]
-  else:
-    result = [ float(f) for f in result ]
+  stdout = proc.communicate()[0]
+  if proc.returncode:
+    raise MRtrixError('Error trying to calculate statistics from image \'' + image_path + '\'')
+  stdout_lines = [ line.strip() for line in stdout.decode('cp437').splitlines() ]
+  result = [ ]
+  for line in stdout_lines:
+    line = line.split()
+    assert len(line) == len(IMAGE_STATISTICS)
+    result.append(ImageStatistics(float(line[0]), float(line[1]), float(line[2]), float(line[3]), float(line[4]), float(line[5]), int(line[6])))
   if len(result) == 1:
     result = result[0]
   if app.VERBOSITY > 1:
     app.console('Result: ' + str(result))
-  if proc.returncode:
-    raise MRtrixError('Error trying to calculate statistic \'' + stat + '\' from image \'' + image_path + '\'')
   return result

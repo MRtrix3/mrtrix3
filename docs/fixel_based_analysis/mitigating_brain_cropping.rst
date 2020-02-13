@@ -69,7 +69,7 @@ as intended.
    It may however instead be useful to know, for each voxel in template space, how
    many subjects possess valid image data in that location::
 
-      foreach * : mrconvert IN/fod_in_template_space_NOT_REORIENTED.mif -coord 3 0 -axes 0,1,2 - "|" mrcalc - -finite IN/valid_data_template_space_mask.mif -datatype bit
+      for_each * : mrconvert IN/fod_in_template_space_NOT_REORIENTED.mif -coord 3 0 -axes 0,1,2 - "|" mrcalc - -finite IN/valid_data_template_space_mask.mif -datatype bit
       mrmath */valid_data_template_space_mask.mif sum ../template/valid_data_num_subjects.mif
 
    It may then be useful to apply a threshold to this image (:ref:`mrthreshold`)
@@ -86,11 +86,11 @@ as intended.
    accordingly::
 
       mkdir ../template/valid_data_masks/
-      foreach * : voxel2fixel IN/valid_data_template_space_mask.mif ../template/fd/ ../template/valid_data_masks/ PRE.mif
+      for_each * : voxel2fixel IN/valid_data_template_space_mask.mif ../template/fd/ ../template/valid_data_masks/ PRE.mif
 
       mkdir ../template/fd_nan/
       cp ../template/fd/index.mif ../template/fd/directions.mif ../template/fd_nan/
-      foreach * : mrcalc ../template/fd/PRE.mif ../template/valid_data_masks/PRE.mif -div ../template/fd_nan/PRE.mif
+      for_each * : mrcalc ../template/fd/PRE.mif ../template/valid_data_masks/PRE.mif -div ../template/fd_nan/PRE.mif
 
    This is performed *after* the :ref:`fixelcorrespondence` step, and must be
    performed independently for each fixel metric of interest.

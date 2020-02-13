@@ -32,9 +32,9 @@ Options
 
 -  **-type choice** the registration type. Valid choices are: rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)
 
--  **-transformed image**  *(multiple uses permitted)* image1 after registration transformed and regridded to the space of image2. Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.
+-  **-transformed image** *(multiple uses permitted)* image1 after registration transformed and regridded to the space of image2. Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.
 
--  **-transformed_midway image1_transformed image2_transformed**  *(multiple uses permitted)* image1 and image2 after registration transformed and regridded to the midway space. Note that -transformed_midway needs to be repeated for each contrast if multi-contrast registration is used.
+-  **-transformed_midway image1_transformed image2_transformed** *(multiple uses permitted)* image1 and image2 after registration transformed and regridded to the midway space. Note that -transformed_midway needs to be repeated for each contrast if multi-contrast registration is used.
 
 -  **-mask1 filename** a mask to define the region of image1 to use for optimisation.
 
@@ -51,9 +51,15 @@ Rigid registration options
 
 -  **-rigid_2tomidway file** the output text file containing the rigid transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
 
--  **-rigid_init_translation type** initialise the translation and centre of rotation Valid choices are: mass (aligns the centers of mass of both images, default), geometric (aligns geometric image centres) and none.
+-  **-rigid_init_translation type** initialise the translation and centre of rotation  |br|
+   Valid choices are:  |br|
+   mass (aligns the centers of mass of both images, default),  |br|
+   geometric (aligns geometric image centres) and none.
 
--  **-rigid_init_rotation type** initialise the rotation Valid choices are: search (search for the best rotation using mean squared residuals), moments (rotation based on directions of intensity variance with respect to centre of mass), none (default).
+-  **-rigid_init_rotation type** initialise the rotation Valid choices are:  |br|
+   search (search for the best rotation using mean squared residuals),  |br|
+   moments (rotation based on directions of intensity variance with respect to centre of mass),  |br|
+   none (default).
 
 -  **-rigid_init_matrix file** initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides rigid_init_translation and rigid_init_rotation initialisation 
 
@@ -78,9 +84,15 @@ Affine registration options
 
 -  **-affine_2tomidway file** the output text file containing the affine transformation that aligns image2 to image1 in their common midway space as a 4x4 matrix
 
--  **-affine_init_translation type** initialise the translation and centre of rotation Valid choices are: mass (aligns the centers of mass of both images), geometric (aligns geometric image centres) and none. (Default: mass)
+-  **-affine_init_translation type** initialise the translation and centre of rotation  |br|
+   Valid choices are:  |br|
+   mass (aligns the centers of mass of both images),  |br|
+   geometric (aligns geometric image centres) and none. (Default: mass)
 
--  **-affine_init_rotation type** initialise the rotation Valid choices are: search (search for the best rotation using mean squared residuals), moments (rotation based on directions of intensity variance with respect to centre of mass), none (Default: none).
+-  **-affine_init_rotation type** initialise the rotation Valid choices are:  |br|
+   search (search for the best rotation using mean squared residuals),  |br|
+   moments (rotation based on directions of intensity variance with respect to centre of mass),  |br|
+   none (Default: none).
 
 -  **-affine_init_matrix file** initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides affine_init_translation and affine_init_rotation initialisation 
 
@@ -183,7 +195,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -192,9 +204,12 @@ Standard options
 References
 ^^^^^^^^^^
 
-* If FOD registration is being performed:Raffelt, D.; Tournier, J.-D.; Fripp, J; Crozier, S.; Connelly, A. & Salvado, O. Symmetric diffeomorphic registration of fibre orientation distributions. NeuroImage, 2011, 56(3), 1171-1180
+* If FOD registration is being performed: |br|
+  Raffelt, D.; Tournier, J.-D.; Fripp, J; Crozier, S.; Connelly, A. & Salvado, O. Symmetric diffeomorphic registration of fibre orientation distributions. NeuroImage, 2011, 56(3), 1171-1180
 
 Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. Reorientation of fiber orientation distributions using apodized point spread functions. Magnetic Resonance in Medicine, 2012, 67, 844-855
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

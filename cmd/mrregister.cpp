@@ -973,13 +973,13 @@ void run () {
     }
 
     if (output_rigid_1tomid)
-      save_transform (rigid.get_centre(), rigid.get_transform_half(), rigid_1tomid_filename);
+      save_transform (rigid.get_transform_half(), rigid.get_centre(), rigid_1tomid_filename);
 
     if (output_rigid_2tomid)
-      save_transform (rigid.get_centre(), rigid.get_transform_half_inverse(), rigid_2tomid_filename);
+      save_transform (rigid.get_transform_half_inverse(), rigid.get_centre(), rigid_2tomid_filename);
 
     if (output_rigid)
-      save_transform (rigid.get_centre(), rigid.get_transform(), rigid_filename);
+      save_transform (rigid.get_transform(), rigid.get_centre(), rigid_filename);
   }
 
   // ****** RUN AFFINE REGISTRATION *******
@@ -1052,13 +1052,13 @@ void run () {
       } else throw Exception ("FIXME: metric selection");
     }
     if (output_affine_1tomid)
-      save_transform (affine.get_centre(), affine.get_transform_half(), affine_1tomid_filename);
+      save_transform (affine.get_transform_half(), affine.get_centre(), affine_1tomid_filename);
 
     if (output_affine_2tomid)
-      save_transform (affine.get_centre(), affine.get_transform_half_inverse(), affine_2tomid_filename);
+      save_transform (affine.get_transform_half_inverse(), affine.get_centre(), affine_2tomid_filename);
 
     if (output_affine)
-      save_transform (affine.get_centre(), affine.get_transform(), affine_filename);
+      save_transform (affine.get_transform(), affine.get_centre(), affine_filename);
   }
 
 

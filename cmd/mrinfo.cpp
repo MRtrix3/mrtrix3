@@ -85,12 +85,10 @@ void usage ()
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the transformation from image coordinates [mm] to scanner / real world coordinates [mm]")
 
-    + NoRealignOption
-
     + FieldExportOptions
 
     + GradImportOptions
-    + Option ("raw_dwgrad",
+    +   Option ("raw_dwgrad",
         "do not modify the gradient table from what was found in the image headers. This skips the "
         "validation steps normally performed within MRtrix applications (i.e. do not verify that "
         "the number of entries in the gradient table matches the number of volumes in the image, "
@@ -101,9 +99,10 @@ void usage ()
           "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
     +   Option ("shell_bvalues", "list the average b-value of each shell")
     +   Option ("shell_sizes", "list the number of volumes in each shell")
+    +   Option ("shell_indices", "list the image volumes attributed to each b-value shell")
 
     + PhaseEncoding::ExportOptions
-    + Option ("petable", "print the phase encoding table");
+    +   Option ("petable", "print the phase encoding table");
 
 }
 
@@ -145,7 +144,7 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_shells (const Header& header, const bool shell_bvalues, const bool shell_sizes)
+void print_shells (const Header& header, const bool shell_bvalues, const bool shell_sizes, const bool shell_indices)
 {
   DWI::Shells dwshells (DWI::parse_DW_scheme (header));
   if (shell_bvalues) {
@@ -156,6 +155,11 @@ void print_shells (const Header& header, const bool shell_bvalues, const bool sh
   if (shell_sizes) {
     for (size_t i = 0; i < dwshells.count(); i++)
       std::cout << dwshells[i].count() << " ";
+    std::cout << "\n";
+  }
+  if (shell_indices) {
+    for (size_t i = 0; i < dwshells.count(); i++)
+      std::cout << join(dwshells[i].get_volumes(), ",") + " ";
     std::cout << "\n";
   }
 }
@@ -218,7 +222,7 @@ void header2json (const Header& header, nlohmann::json& json)
                         { T(2,0), T(2,1), T(2,2), T(2,3) },
                         {    0.0,    0.0,    0.0,    1.0 } };
   // Load key-value entries into a nested keyval.* member
-  File::JSON::write (header, json["keyval"], false);
+  File::JSON::write (header, json["keyval"], header.name());
 }
 
 
@@ -245,7 +249,7 @@ void run ()
     throw Exception ("Cannot use -json_all option with multiple input images");
 
   if (get_options ("norealign").size())
-    Header::do_not_realign_transform = true;
+    Header::do_realign_transform = false;
 
   const bool name          = get_options("name")          .size();
   const bool format        = get_options("format")        .size();
@@ -261,19 +265,21 @@ void run ()
   const bool dwgrad        = get_options("dwgrad")        .size();
   const bool shell_bvalues = get_options("shell_bvalues") .size();
   const bool shell_sizes   = get_options("shell_sizes")   .size();
+  const bool shell_indices = get_options("shell_indices")   .size();
   const bool raw_dwgrad    = get_options("raw_dwgrad")    .size();
   const bool petable       = get_options("petable")       .size();
 
   const bool print_full_header = !(format || ndim || size || spacing || datatype || strides ||
       offset || multiplier || properties.size() || transform ||
-      dwgrad || export_grad || shell_bvalues || shell_sizes || export_pe || petable ||
+      dwgrad || export_grad || shell_bvalues || shell_sizes || shell_indices ||
+      export_pe || petable ||
       json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
     auto header = Header::open (argument[i]);
     if (raw_dwgrad)
       DWI::set_DW_scheme (header, DWI::get_DW_scheme (header));
-    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes)
+    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes || shell_indices)
       DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
     if (name)       std::cout << header.name() << "\n";
@@ -287,7 +293,7 @@ void run ()
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
     if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
-    if (shell_bvalues || shell_sizes) print_shells (header, shell_bvalues, shell_sizes);
+    if (shell_bvalues || shell_sizes || shell_indices) print_shells (header, shell_bvalues, shell_sizes, shell_indices);
     if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)
@@ -297,7 +303,7 @@ void run ()
     PhaseEncoding::export_commandline (header);
 
     if (json_keyval)
-      File::JSON::write (header, *json_keyval, false);
+      File::JSON::write (header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));
 
     if (json_all)
       header2json (header, *json_all);
@@ -321,4 +327,3 @@ void run ()
   }
 
 }
-

@@ -39,6 +39,7 @@ def check_first(prefix, structures): #pylint: disable=unused-variable
       app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
       path.wait_for(vtk_files)
     else:
+      app.DO_CLEANUP = False
       raise MRtrixError('FSL FIRST has failed; ' + ('only ' if existing_file_count else '') + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.to_scratch('first.logs', False) + ')')
 
 
@@ -98,6 +99,7 @@ def exe_name(name): #pylint: disable=unused-variable
     output = name
   elif find_executable('fsl5.0-' + name):
     output = 'fsl5.0-' + name
+    app.warn('Using FSL binary \"' + output + '\" rather than \"' + name + '\"; suggest checking FSL installation')
   else:
     raise MRtrixError('Could not find FSL program \"' + name + '\"; please verify FSL install')
   app.debug(output)

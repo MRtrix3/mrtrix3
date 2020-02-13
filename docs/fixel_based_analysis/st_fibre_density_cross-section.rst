@@ -6,7 +6,7 @@ Introduction
 
 This tutorial explains how to perform fixel-based analysis of fibre density and cross-section [Raffelt2017]_ using *single-tissue* spherical deconvolution. We note that high b-value (>2000s/mm2) data is recommended to aid the interpretation of apparent fibre density (AFD) being related to the intra-axonal space. See [Raffelt2012]_ for more details about *single-tissue* AFD.
 
-All steps in this tutorial are written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`foreach script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying each subject, and all files within identifying the image type (i.e. processing step outcome). For example::
+All steps in this tutorial are written as if the commands are being **run on a cohort of images**, and make extensive use of the :ref:`for_each script to simplify batch processing <batch_processing>`. This tutorial also assumes that the imaging dataset is organised with one directory identifying each subject, and all files within identifying the image type (i.e. processing step outcome). For example::
 
     study/subjects/001_control/dwi.mif
     study/subjects/002_control/dwi.mif
@@ -40,7 +40,7 @@ Pre-processsing steps
 
 Compute a brain mask::
 
-    foreach * : dwi2mask IN/dwi_denoised_preproc.mif IN/dwi_temp_mask.mif
+    for_each * : dwi2mask IN/dwi_denoised_preproc.mif IN/dwi_temp_mask.mif
 
 
 AFD-specific pre-processsing steps
@@ -54,7 +54,7 @@ To enable robust quantitative comparisons of AFD across subjects three additiona
 
 Because we recommend a :ref:`global intensity normalisation <global-intensity-normalisation>`, bias field correction is required as a pre-processing step to eliminate low frequency intensity inhomogeneities across the image. DWI bias field correction is perfomed by first estimating the bias field from the DWI b=0 data, then applying the field to correct all DW volumes. This can be done in a single step using the :code:`ants` algorithm within the :ref:`dwibiascorrect` script in *MRtrix3*. The script uses a bias field correction algorithm available in `ANTS <http://stnava.github.io/ANTs/>`_ (the N4 algorithm). *Don't* use the :code:`fsl` algorithm with this script in this fixel-based analysis pipeline. To perform bias field correction on DW images, run::
 
-    foreach * : dwibiascorrect ants IN/IN/dwi_denoised_unringed_preproc.mif IN/IN/dwi_denoised_unringed_preproc_unbiased.mif
+    for_each * : dwibiascorrect ants IN/IN/dwi_denoised_unringed_preproc.mif IN/IN/dwi_denoised_unringed_preproc_unbiased.mif
 
 
 5. Global intensity normalisation across subjects
@@ -67,8 +67,8 @@ As outlined :ref:`here <global-intensity-normalisation>`, a global intensity nor
 
 You could copy all files into this directory, however symbolic linking them will save space::
 
-    foreach * : ln -sr IN/dwi_denoised_unringed_preproc_unbiased.mif ../dwinormalise/dwi_input/IN.mif
-    foreach * : ln -sr IN/dwi_temp_mask.mif ../dwinormalise/mask_input/IN.mif
+    for_each * : ln -sr IN/dwi_denoised_unringed_preproc_unbiased.mif ../dwinormalise/dwi_input/IN.mif
+    for_each * : ln -sr IN/dwi_temp_mask.mif ../dwinormalise/mask_input/IN.mif
 
 Perform group DWI intensity normalisation::
 
@@ -76,7 +76,7 @@ Perform group DWI intensity normalisation::
 
 Link the output files back to the subject directories::
 
-    foreach ../dwinormalise/dwi_output/* : ln -sr IN PRE/dwi_denoised_unringed_preproc_unbiased_normalised.mif
+    for_each ../dwinormalise/dwi_output/* : ln -sr IN PRE/dwi_denoised_unringed_preproc_unbiased_normalised.mif
 
 The :code:`dwinormalise group` script also outputs the study-specific FA template and white matter mask. **It is recommended that you check that the white matter mask is appropriate** (i.e. does not contain CSF or voxels external to the brain. It needs to be a rough WM mask). If you feel the white matter mask needs to be larger or smaller you can re-run :code:`dwinormalise group` with a different :code:`-fa_threshold` option. Note that if your input brain masks include CSF then this can cause spurious high FA values outside the brain which are then included in the template white matter mask.
 
@@ -95,7 +95,7 @@ Fixel-based analysis steps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 A robust and fully automated (unsupervised) method to obtain single-shell response functions representing single-fibre white matter from your data, is the approach proposed in [Tournier2013]_, which can be run by::
 
-    foreach * : dwi2response tournier IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif IN/response.txt
+    for_each * : dwi2response tournier IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif IN/response.txt
 
 It is crucial for fixel-based analysis to only use a single *unique* response function to perform spherical deconvolution of all subjects: as all resulting fibre orientation distributions will be expressed in function of it, it can (in an abstract way) be seen as the unit of the final apparent fibre density metric. A possible way to obtain a unique response function, is to average the response functions obtained from all subjects::
 
@@ -107,13 +107,13 @@ There is however no strict requirement for the (one) final response function to 
 ^^^^^^^^^^^^^^^^^^^^^^^
 Upsampling DWI data *before* computing FODs can increase anatomical contrast and improve downstream template building, registration, tractography and statistics. We recommend upsampling to an isotropic voxel size of 1.25 mm for human brains (if your original resolution is already higher, you can skip this step)::
 
-    foreach * : mrresize IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif -vox 1.25 IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif
+    for_each * : mrresize IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif -vox 1.25 IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif
 
 8. Compute upsampled brain mask images
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Compute a whole brain mask from the upsampled DW images::
 
-    foreach * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif IN/dwi_mask_upsampled.mif
+    for_each * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif IN/dwi_mask_upsampled.mif
 
 .. WARNING:: It is absolutely **crucial** to check at this stage that *all* individual subject masks include *all* regions of the brain that are intended to be analysed. Fibre orientation distributions will *only* be computed within these masks; and at a later step (in template space) the analysis mask will be restricted to the *intersection* of all masks, so *any* individual subject mask which excludes a certain region, will result in this region being excluded from the entire analysis. Masks appearing too generous or otherwise including non-brain regions should generally not cause any concerns at this stage. Hence, if in doubt, it is advised to always err on the side of *inclusion* (of regions) at this stage. Manually correct the masks if necessary.
 
@@ -121,7 +121,7 @@ Compute a whole brain mask from the upsampled DW images::
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 When performing fixel-based analysis, constrained spherical deconvolution (CSD) should be performed using the unique (average) white matter response function obtained before. Note that :code:`dwi2fod csd` can be used, however here we use :code:`dwi2fod msmt_csd` (even with single shell data) to benefit from the hard non-negativity constraint, which has been observed to lead to more robust outcomes::
 
-    foreach * : dwiextract IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif - \| dwi2fod msmt_csd - ../group_average_response.txt IN/wmfod.mif -mask IN/dwi_mask_upsampled.mif
+    for_each * : dwiextract IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif - \| dwi2fod msmt_csd - ../group_average_response.txt IN/wmfod.mif -mask IN/dwi_mask_upsampled.mif
 
 10. Generate a study-specific unbiased FOD template
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -130,13 +130,13 @@ When performing fixel-based analysis, constrained spherical deconvolution (CSD) 
 
 Symbolic link all FOD images (and masks) into a single input folder. To use the entire population to build the template::
 
-    foreach * : ln -sr IN/wmfod.mif ../template/fod_input/PRE.mif
-    foreach * : ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    for_each * : ln -sr IN/wmfod.mif ../template/fod_input/PRE.mif
+    for_each * : ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
 If you opt to create the template from a limited subset of (e.g. 30-40) subjects and your study has multiple groups, then you can aim for a similar number of subjects from each group to make the template more representative of the population as a whole. Assuming the subject directory labels can be used to identify members of each group, you could use::
 
-    foreach `ls -d *patient | sort -R | tail -20` : ln -sr IN/wmfod.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
-    foreach `ls -d *control | sort -R | tail -20` : ln -sr IN/wmfod.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    for_each `ls -d *patient | sort -R | tail -20` : ln -sr IN/wmfod.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
+    for_each `ls -d *control | sort -R | tail -20` : ln -sr IN/wmfod.mif ../template/fod_input/PRE.mif ";" ln -sr IN/dwi_mask_upsampled.mif ../template/mask_input/PRE.mif
 
 .. include:: common_fba_steps/population_template2.rst
 
@@ -146,7 +146,7 @@ If you opt to create the template from a limited subset of (e.g. 30-40) subjects
 
 Register the FOD image from each subject to the FOD template::
 
-    foreach * : mrregister IN/wmfod.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
+    for_each * : mrregister IN/wmfod.mif -mask1 IN/dwi_mask_upsampled.mif ../template/wmfod_template.mif -nl_warp IN/subject2template_warp.mif IN/template2subject_warp.mif
 
 
 12. Compute the template mask (intersection of all subject masks in template space)
@@ -171,7 +171,7 @@ In this step, we segment fixels from the FOD template. The result is the *fixel 
 
 Note that here we warp FOD images into template space *without* FOD reorientation, as reorientation will be performed in a separate subsequent step (after fixel segmentation)::
 
-    foreach * : mrtransform IN/wmfod.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space_NOT_REORIENTED.mif
+    for_each * : mrtransform IN/wmfod.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space_NOT_REORIENTED.mif
 
 
 15. Segment FOD images to estimate fixels and their apparent fibre density (FD)
@@ -208,7 +208,7 @@ Statistical analysis using connectivity-based fixel enhancement (CFE) [Raffelt20
     cd ../template
     tckgen -angle 22.5 -maxlen 250 -minlen 10 -power 1.0 wmfod_template.mif -seed_image template_mask.mif -mask template_mask.mif -select 20000000 -cutoff 0.10 tracks_20_million.tck
 
-.. WARNING:: *The command line above assumes you're working with MRtrix3 RC3 or above*. An important bug in the tractography code was fixed in that version of the software. If you are not able to update your installation, and are still working with an older version of MRtrix3, you should remove the `-cutoff 0.10` option in the command line above, in line with the instructions for older versions of MRtrix3.
+.. WARNING:: The appropriate FOD amplitude cutoff for FOD template tractography can vary considerably between different datasets, as well as different versions of *MRtrix3* due to historical software bugs. While the value of 0.10 is suggested as a reasonable value for single-tissue data, it may be beneficial to first generate a smaller number of streamlines (e.g. 100,000) using this value, and visually confirm that the generated streamlines exhibit an appropriate extent of propagation at the ends of white matter pathways, before committing to generation of the dense tractogram.
 
 21. Reduce biases in tractogram densities
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

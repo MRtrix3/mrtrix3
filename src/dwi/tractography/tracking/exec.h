@@ -23,6 +23,7 @@
 #include "dwi/directions/set.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/rng.h"
+#include "dwi/tractography/roi.h"
 #include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -113,11 +114,10 @@ namespace MR
               S (shared),
               method (shared),
               track_excluded (false),
-              track_included (S.properties.include.size(), false) { }
+              include_visitation (S.properties.include, S.properties.ordered_include) { }
 
 
             bool operator() (GeneratedTrack& item) {
-              rng = &thread_local_RNG;
               if (!seed_track (item))
                 return false;
               if (track_excluded) {
@@ -142,10 +142,9 @@ namespace MR
           private:
 
             const typename Method::Shared& S;
-            Math::RNG thread_local_RNG;
             Method method;
             bool track_excluded;
-            vector<bool> track_included;
+            IncludeROIVisitation include_visitation;
 
 
             term_t iterate ()
@@ -170,9 +169,9 @@ namespace MR
               // If backtracking is not enabled, add streamline to include regions as it is generated
               // If it is enabled, this check can only be performed after the streamline is completed
               if (!(S.is_act() && S.act().backtrack()))
-                S.properties.include.contains (method.pos, track_included);
+                include_visitation (method.pos);
 
-              if (S.stop_on_all_include && traversed_all_include_regions())
+              if (S.stop_on_all_include && bool(include_visitation))
                 return TRAVERSE_ALL_INCLUDE;
 
               return CONTINUE;
@@ -184,7 +183,7 @@ namespace MR
             {
               tck.clear();
               track_excluded = false;
-              track_included.assign (track_included.size(), false);
+              include_visitation.reset();
               method.dir = { NaN, NaN, NaN };
 
               if (S.properties.seeds.is_finite()) {
@@ -222,7 +221,7 @@ namespace MR
               if (S.is_act() && !unidirectional)
                 unidirectional = method.act().seed_is_unidirectional (method.pos, method.dir);
 
-              S.properties.include.contains (method.pos, track_included);
+              include_visitation (method.pos);
 
               const Eigen::Vector3f seed_dir (method.dir);
               tck.push_back (method.pos);
@@ -406,12 +405,12 @@ namespace MR
 
                 if (S.act().backtrack()) {
                   for (const auto& i : tck)
-                    S.properties.include.contains (i, track_included);
+                    include_visitation (i);
                 }
 
               }
 
-              if (!traversed_all_include_regions()) {
+              if (!bool(include_visitation)) {
                 S.add_rejection (MISSED_INCLUDE_REGION);
                 return true;
               }
@@ -419,18 +418,6 @@ namespace MR
               return false;
 
             }
-
-
-
-            bool traversed_all_include_regions ()
-            {
-              for (size_t n = 0; n < track_included.size(); ++n)
-                if (!track_included[n])
-                  return false;
-              return true;
-            }
-
-
 
             bool satisfy_wm_requirement (const vector<Eigen::Vector3f>& tck)
             {

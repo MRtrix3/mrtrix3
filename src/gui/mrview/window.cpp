@@ -53,6 +53,7 @@ namespace MR
 */
 
       Window* Window::main = nullptr;
+      bool Window::tools_floating = false;
 
       namespace {
 
@@ -263,6 +264,12 @@ namespace MR
           QToolButton* button;
 
           setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
+
+          //CONF option: MRViewDockFloating
+          //CONF default: 0 (false)
+          //CONF Whether MRView tools should start docked in the main window, or
+          //CONF floating (detached from the main window).
+          tools_floating = MR::File::Config::get_bool ("MRViewDockFloating", false);
 
           // Main toolbar:
 
@@ -565,6 +572,14 @@ namespace MR
           image_hide_action->setChecked (false);
           addAction (image_hide_action);
 
+		  menu->addSeparator();
+		  //CONF option: MRViewSyncFocus
+          //CONF default: false
+          //CONF Whether to sync the focus in mrview between other mrview processes.
+          sync_focus_action = menu->addAction (tr ("Sync focus with other windows"), this, SLOT (sync_slot()));
+          sync_focus_action->setCheckable (true);
+          sync_focus_action->setChecked (File::Config::get_bool("MRViewSyncFocus",false));
+          addAction (sync_focus_action);
           menu->addSeparator();
 
           full_screen_action = menu->addAction (tr ("Full screen"), this, SLOT (full_screen_slot()));
@@ -735,7 +750,7 @@ namespace MR
       void Window::parse_arguments ()
       {
         if (MR::App::get_options ("norealign").size())
-          Header::do_not_realign_transform = true;
+          Header::do_realign_transform = false;
 
         if (MR::App::argument.size()) {
           if (MR::App::option.size())  {
@@ -807,12 +822,15 @@ namespace MR
 
 
 
-
+      void Window::sync_slot()
+      {
+        emit syncChanged();
+      }
 
 
       void Window::image_open_slot ()
       {
-        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open");
+        vector<std::string> image_list = Dialog::File::get_images (this, "Select images to open", &current_folder);
         if (image_list.empty())
           return;
 
@@ -832,7 +850,7 @@ namespace MR
 
       void Window::image_import_DICOM_slot ()
       {
-        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import");
+        std::string folder = Dialog::File::get_folder (this, "Select DICOM folder to import", &current_folder);
         if (folder.empty())
           return;
 
@@ -897,7 +915,7 @@ namespace MR
 
       void Window::image_save_slot ()
       {
-        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination");
+        std::string image_name = Dialog::File::get_save_image_name (this, "Select image destination", "", &current_folder);
         if (image_name.empty())
           return;
 
@@ -991,16 +1009,10 @@ namespace MR
         if (dynamic_cast<Tool::__Action__*>(action)->dock)
           return;
 
-        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create();
+        Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (tools_floating);
         connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
 
-        //CONF option: MRViewDockFloating
-        //CONF default: 0 (false)
-        //CONF Whether MRView tools should start docked in the main window, or
-        //CONF floating (detached from the main window).
-        bool floating = MR::File::Config::get_int ("MRViewDockFloating", 0);
-
-        if (!floating) {
+        if (!tools_floating) {
 
           for (int i = 0; i < tool_group->actions().size(); ++i) {
             Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
@@ -1016,7 +1028,6 @@ namespace MR
 
         }
 
-        tool->setFloating (floating);
         if (show) {
           tool->show();
           tool->raise();
@@ -2100,6 +2111,13 @@ namespace MR
             return;
           }
 
+
+          if (opt.opt->is ("sync.focus")) {
+            sync_focus_action->setChecked (true);
+            sync_slot();
+            return;
+          }
+
           assert (opt.opt->is ("info") or opt.opt->is ("debug") or ("shouldn't reach here!" && false));
         }
         catch (Exception& E) {
@@ -2192,14 +2210,14 @@ namespace MR
 
           + Option ("exit", "Quit MRView.")
 
+          + OptionGroup ("Sync Options")
+
+          + Option ("sync.focus", "Sync the focus with other MRView windows that also have this turned on.")
+
           + OptionGroup ("Debugging options")
 
           + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
-              "The maximum over the last 3 seconds is also displayed.")
-
-          + OptionGroup ("Other options")
-
-          + NoRealignOption;
+              "The maximum over the last 3 seconds is also displayed.");
 
       }
 

@@ -36,8 +36,8 @@ namespace MR
         public:
           AdjustButton (QWidget* parent, float change_rate = 1.0);
 
-          float value () const { 
-            if (text().isEmpty()) 
+          float value () const {
+            if (text().isEmpty())
               return NAN;
             try {
               return to<float> (text().toStdString());

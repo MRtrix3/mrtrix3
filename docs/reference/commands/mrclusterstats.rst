@@ -72,7 +72,7 @@ Options related to the General Linear Model (GLM)
 
 -  **-fonly** only assess F-tests; do not perform statistical inference on entries in the contrast matrix
 
--  **-column path**  *(multiple uses permitted)* add a column to the design matrix corresponding to subject voxel-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
+-  **-column path** *(multiple uses permitted)* add a column to the design matrix corresponding to subject voxel-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
 
 Additional options for mrclusterstats
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -94,7 +94,7 @@ Standard options
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -103,9 +103,13 @@ Standard options
 References
 ^^^^^^^^^^
 
-* If not using the -threshold command-line option:Smith, S. M. & Nichols, T. E. Threshold-free cluster enhancement: Addressing problems of smoothing, threshold dependence and localisation in cluster inference. NeuroImage, 2009, 44, 83-98
+* If not using the -threshold command-line option: |br|
+  Smith, S. M. & Nichols, T. E. Threshold-free cluster enhancement: Addressing problems of smoothing, threshold dependence and localisation in cluster inference. NeuroImage, 2009, 44, 83-98
 
-* If using the -nonstationary option:Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. Neuroimage, 2011, 54(3), 2006-19
+* If using the -nonstationary option: |br|
+  Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. Neuroimage, 2011, 54(3), 2006-19
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

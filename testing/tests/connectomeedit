@@ -1,0 +1,5 @@
+printf $"0.0 1.0 20.0\n0.0 10.0 0.0\n20.0 3.0 5.0\n" > tmp.txt; connectomeedit -force tmp.txt to_symmetric tmp1.txt; printf $"0.0 1.0 20.0\n1.0 10.0 3.0\n20.0 3.0 5.0\n" > tmp2.txt; testing_diff_matrix -abs 1e-4 tmp1.txt tmp2.txt;
+printf $"0.0 1.0 20.0\n0.0 10.0 0.0\n20.0 3.0 5.0\n" > tmp.txt; connectomeedit -force tmp.txt upper_triangular tmp1.txt; printf $"0.0 1.0 20.0\n0.0 10.0 3.0\n0.0 0.0 5.0\n" > tmp2.txt; testing_diff_matrix -abs 1e-4 tmp1.txt tmp2.txt;
+printf $"0.0 1.0 20.0\n0.0 10.0 0.0\n20.0 3.0 5.0\n" > tmp.txt; connectomeedit -force tmp.txt lower_triangular tmp1.txt; printf $"0.0 0.0 0.0\n1.0 10.0 0.0\n20.0 3.0 5.0\n" > tmp2.txt; testing_diff_matrix -abs 1e-4 tmp1.txt tmp2.txt;
+printf $"0.0 1.0 20.0\n0.0 10.0 0.0\n20.0 3.0 5.0\n" > tmp.txt; connectomeedit -force tmp.txt transpose tmp1.txt; printf $"0.0 0.0 20.0\n1.0 10.0 3.0\n20.0 0.0 5.0\n" > tmp2.txt; testing_diff_matrix -abs 1e-4 tmp1.txt tmp2.txt;
+printf $"0.0 1.0 20.0\n0.0 10.0 0.0\n20.0 3.0 5.0\n" > tmp.txt; connectomeedit -force tmp.txt zero_diagonal tmp1.txt; printf $"0.0 1.0 20.0\n0.0 0.0 0.0\n20.0 3.0 0.0\n" > tmp2.txt; testing_diff_matrix -abs 1e-4 tmp1.txt tmp2.txt;
