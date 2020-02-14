@@ -111,11 +111,15 @@ namespace MR
                         return;
                     }
 
-                    if (im1_mask.valid() && im1_mask.value() < 0.5)
+                    if (im1_mask.valid()) {
+                        if (im1_mask.value() < 0.5)
                         return;
-
-                    if (im2_mask.valid() && im2_mask.value() < 0.5)
+                    }
+                    
+                    if (im2_mask.valid()) {
+                        if (im2_mask.value() < 0.5)
                         return;
+                    }
 
                     typename Im1ImageType::value_type im1_value = im1_image.value();
                     typename Im2ImageType::value_type im2_value = im2_image.value();
@@ -451,11 +455,15 @@ namespace MR
                         return;
                     }
 
-                    if (im1_mask.valid() && im1_mask.value() < 0.5)
+                    if (im1_mask.valid()) {
+                        if (im1_mask.value() < 0.5)
                         return;
-
-                    if (im2_mask.valid() && im2_mask.value() < 0.5)
+                    }
+                    
+                    if (im2_mask.valid()) {
+                        if (im2_mask.value() < 0.5)
                         return;
+                    }
 
                     typename Im1ImageType::value_type im1_value = im1_image.value();
                     typename Im2ImageType::value_type im2_value = im2_image.value();
