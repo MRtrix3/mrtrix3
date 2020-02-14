@@ -89,7 +89,6 @@ namespace MR
 
 
                 void operator() (const Im1ImageType& im1_image, const Im2ImageType& im2_image,
-                                 const Im1MaskType& im1_mask, const Im2MaskType& im2_mask,
                                  Image<default_type>& im1_update, Image<default_type>& im2_update)
                 {
                     if (!flag_combine_updates) {
@@ -108,17 +107,19 @@ namespace MR
                     if (im1_image.index(0) == 0 || im1_image.index(0) == im1_image.size(0) - 1 ||
                         im1_image.index(1) == 0 || im1_image.index(1) == im1_image.size(1) - 1 ||
                         im1_image.index(2) == 0 || im1_image.index(2) == im1_image.size(2) - 1) {
-                        return;
+                            return;
                     }
 
                     if (im1_mask.valid()) {
+                        assign_pos_of (im1_image, 0, 3).to (im1_mask);
                         if (im1_mask.value() < 0.5)
-                        return;
+                            return;
                     }
                     
                     if (im2_mask.valid()) {
+                        assign_pos_of (im2_image, 0, 3).to (im2_mask);
                         if (im2_mask.value() < 0.5)
-                        return;
+                            return;
                     }
 
                     typename Im1ImageType::value_type im1_value = im1_image.value();
@@ -278,9 +279,7 @@ namespace MR
                 }
 
                 void operator() (const Im1ImageType& im1_image,
-                                 const Im2ImageType& im2_image,
-                                 const Im1MaskType& im1_mask,
-                                 const Im2MaskType& im2_mask) {
+                                 const Im2ImageType& im2_image) {
 
                     if (im1_image.index(0) == 0 || im1_image.index(0) == im1_image.size(0) - 1 ||
                         im1_image.index(1) == 0 || im1_image.index(1) == im1_image.size(1) - 1 ||
@@ -288,19 +287,16 @@ namespace MR
                         return;
                     }
 
-                    typename Im1MaskType::value_type im1_mask_value = 1.0;
-                    typename Im2MaskType::value_type im2_mask_value = 1.0;
 
-
-                    if (im1_mask.valid()) {
-                        im1_mask_value = im1_mask.value();
-                        if (im1_mask_value < 0.5)
+                    if (im1_mask_const.valid()) {
+                        assign_pos_of (im1_image, 0, 3).to (im1_mask_const);
+                        if (im1_mask_const.value() < 0.5)
                             return;
                     }
 
-                    if (im2_mask.valid()) {
-                        im2_mask_value = im2_mask.value();
-                        if (im2_mask_value < 0.5)
+                    if (im2_mask_const.valid()) {
+                        assign_pos_of (im2_image, 0, 3).to (im2_mask_const);
+                        if (im2_mask_const.value() < 0.5)
                             return;
                     }
 
@@ -397,7 +393,7 @@ namespace MR
                     default_type sfm = 0;
 
                     Metric::PrecomputeGNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> precompute (im1_proc, im2_proc, im1_mask, im2_mask, total_count, sf, sm, sff, smm, sfm, gncc);
-                    ThreadedLoop (im1_proc, 0, 3).run (precompute, im1_proc, im2_proc, im1_mask, im2_mask);
+                    ThreadedLoop (im1_proc, 0, 3).run (precompute, im1_proc, im2_proc);
 
                     if (total_count < 1) {
                         computed_sf = 0;
@@ -435,7 +431,6 @@ namespace MR
 
 
                 void operator () (const Im1ImageType& im1_image, const Im2ImageType& im2_image,
-                                  const Im1MaskType& im1_mask, const Im2MaskType& im2_mask,
                                   Image<default_type>& im1_update, Image<default_type>& im2_update)
                 {
 
@@ -455,15 +450,19 @@ namespace MR
                         return;
                     }
 
+                    
                     if (im1_mask.valid()) {
+                        assign_pos_of (im1_image, 0, 3).to (im1_mask);
                         if (im1_mask.value() < 0.5)
-                        return;
+                            return;
                     }
                     
                     if (im2_mask.valid()) {
+                        assign_pos_of (im2_image, 0, 3).to (im2_mask);
                         if (im2_mask.value() < 0.5)
-                        return;
+                            return;
                     }
+                    
 
                     typename Im1ImageType::value_type im1_value = im1_image.value();
                     typename Im2ImageType::value_type im2_value = im2_image.value();
@@ -553,12 +552,12 @@ namespace MR
                     if (kernel_radius > 0) {
                         Metric::DemonsLNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (local_cost, local_count, kernel_radius, im1_image, im2_image,
                             im1_mask, im2_mask, volume_weight, flag_combine_updates);
-                        ThreadedLoop (im1_image, 0, 3).run (metric, im1_image, im2_image, im1_mask, im2_mask, im1_update, im2_update);
+                        ThreadedLoop (im1_image, 0, 3).run (metric, im1_image, im2_image, im1_update, im2_update);
                     } else {
                         Metric::DemonsGNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (local_cost, local_count, im1_image, im2_image,
                             im1_mask, im2_mask, volume_weight, flag_combine_updates);
                         metric.precompute ();
-                        ThreadedLoop (im1_image, 0, 3).run (metric, im1_image, im2_image, im1_mask, im2_mask, im1_update, im2_update);
+                        ThreadedLoop (im1_image, 0, 3).run (metric, im1_image, im2_image, im1_update, im2_update);
                     }
 
                     cost_new = cost_new + local_cost;

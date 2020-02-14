@@ -276,12 +276,12 @@ namespace MR
                     if (local_extent > 0) {
                       Metric::DemonsLNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
                         cost_new, voxel_count, local_extent, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, volume_weight_default, flag_combine_updates);
-                      ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, *im1_update_new, *im2_update_new);
+                      ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
                     } else {
                       Metric::DemonsGNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
                         cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, volume_weight_default, flag_combine_updates);
                           metric.precompute ();
-                      ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, *im1_update_new, *im2_update_new);
+                      ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
                     }
                   } else {
                     Metric::Demons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
