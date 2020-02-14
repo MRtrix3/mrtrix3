@@ -110,16 +110,26 @@ namespace MR
                             return;
                     }
 
+                    typename Im1MaskType::value_type im1_mask_value = 1.0;
                     if (im1_mask.valid()) {
                         assign_pos_of (im1_image, 0, 3).to (im1_mask);
-                        if (im1_mask.value() < 0.5)
+                        im1_mask_value = im1_mask.value();
+                        if (im1_mask_value < 0.1) {
+                            im1_update.row(3) = 0.0;
+                            im2_update.row(3) = 0.0;
                             return;
+                        }
                     }
                     
+                    typename Im2MaskType::value_type im2_mask_value = 1.0;
                     if (im2_mask.valid()) {
                         assign_pos_of (im2_image, 0, 3).to (im2_mask);
-                        if (im2_mask.value() < 0.5)
+                        im2_mask_value = im2_mask.value();
+                        if (im2_mask_value < 0.1) {
+                            im1_update.row(3) = 0.0;
+                            im2_update.row(3) = 0.0;
                             return;
+                        }
                     }
 
                     typename Im1ImageType::value_type im1_value = im1_image.value();
@@ -288,15 +298,19 @@ namespace MR
                     }
 
 
+                    typename Im1MaskType::value_type im1_mask_value = 1.0;
                     if (im1_mask_const.valid()) {
                         assign_pos_of (im1_image, 0, 3).to (im1_mask_const);
-                        if (im1_mask_const.value() < 0.5)
+                        im1_mask_value = im1_mask_const.value();
+                        if (im1_mask_value < 0.1)
                             return;
                     }
 
+                    typename Im2MaskType::value_type im2_mask_value = 1.0;
                     if (im2_mask_const.valid()) {
                         assign_pos_of (im2_image, 0, 3).to (im2_mask_const);
-                        if (im2_mask_const.value() < 0.5)
+                        im2_mask_value = im2_mask_const.value();
+                        if (im2_mask_value < 0.1)
                             return;
                     }
 
@@ -450,17 +464,26 @@ namespace MR
                         return;
                     }
 
-                    
+                    typename Im1MaskType::value_type im1_mask_value = 1.0;
                     if (im1_mask.valid()) {
                         assign_pos_of (im1_image, 0, 3).to (im1_mask);
-                        if (im1_mask.value() < 0.5)
+                        im1_mask_value = im1_mask.value();
+                        if (im1_mask_value < 0.1) {
+                            im1_update.row(3) = 0.0;
+                            im2_update.row(3) = 0.0;
                             return;
+                        }
                     }
                     
+                    typename Im2MaskType::value_type im2_mask_value = 1.0;
                     if (im2_mask.valid()) {
                         assign_pos_of (im2_image, 0, 3).to (im2_mask);
-                        if (im2_mask.value() < 0.5)
+                        im2_mask_value = im2_mask.value();
+                        if (im2_mask_value < 0.1) {
+                            im1_update.row(3) = 0.0;
+                            im2_update.row(3) = 0.0;
                             return;
+                        }
                     }
                     
 
