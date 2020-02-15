@@ -91,6 +91,13 @@ namespace MR
                 void operator() (const Im1ImageType& im1_image, const Im2ImageType& im2_image,
                                  Image<default_type>& im1_update, Image<default_type>& im2_update)
                 {
+                    
+                    if (im1_image.index(0) < kernel_radius || im1_image.index(0) > im1_image.size(0) - kernel_radius ||
+                        im1_image.index(1) < kernel_radius || im1_image.index(1) > im1_image.size(1) - kernel_radius ||
+                        im1_image.index(2) < kernel_radius || im1_image.index(2) > im1_image.size(2) - kernel_radius) {
+                            return;
+                    }
+                    
                     if (!flag_combine_updates) {
                         im1_update.row(3) = 0.0;
                         im2_update.row(3) = 0.0;
@@ -102,12 +109,6 @@ namespace MR
                     if (im1_image.buffer->ndim() > 3) {
                         im1_proc.index(3) = current_dim;
                         im2_proc.index(3) = current_dim;
-                    }
-
-                    if (im1_image.index(0) == 0 || im1_image.index(0) == im1_image.size(0) - 1 ||
-                        im1_image.index(1) == 0 || im1_image.index(1) == im1_image.size(1) - 1 ||
-                        im1_image.index(2) == 0 || im1_image.index(2) == im1_image.size(2) - 1) {
-                            return;
                     }
 
                     typename Im1MaskType::value_type im1_mask_value = 1.0;
