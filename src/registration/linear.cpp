@@ -82,7 +82,7 @@ namespace MR
           registration.set_stage_optimiser_default (Registration::OptimiserAlgoType::gd);
           break;
         default:
-          assert (0 && "FIXME: linstage.optimiser.default not understood: " + str(opt[0][0]));
+          assert (0 && "FIXME: linstage.optimiser.default not understood");
           break;
         }
       }
@@ -97,7 +97,7 @@ namespace MR
           registration.set_stage_optimiser_first (Registration::OptimiserAlgoType::gd);
           break;
         default:
-          assert (0 && "FIXME: linstage.optimiser.first not understood: " + str(opt[0][0]));
+          assert (0 && "FIXME: linstage.optimiser.first not understood");
           break;
         }
       }
@@ -112,7 +112,7 @@ namespace MR
           registration.set_stage_optimiser_last (Registration::OptimiserAlgoType::gd);
           break;
         default:
-          assert (0 && "FIXME: linstage.optimiser.last not understood: " + str(opt[0][0]));
+          assert (0 && "FIXME: linstage.optimiser.last not understood");
           break;
         }
       }
