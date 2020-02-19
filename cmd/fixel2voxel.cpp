@@ -95,7 +95,7 @@ void usage ()
                       "in the case of operation \"none\", output only the largest N fixels in each voxel.")
       + Argument ("N").type_integer(1)
 
-  + Option ("fill", "for \"none\" operation, specify the value to fill when number of fixels is fewer than the maximum (default: NaN)")
+  + Option ("fill", "for \"none\" operation, specify the value to fill when number of fixels is fewer than the maximum (default: 0.0)")
       + Argument ("value").type_float()
 
   + Option ("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume.")
@@ -157,7 +157,7 @@ struct LoopFixelsInVoxelWithMax { NOMEMALIGN
 class Base
 { NOMEMALIGN
   public:
-    Base (FixelDataType& data, const index_type max_fixels, const bool pad = false, const float pad_value = NaN) :
+    Base (FixelDataType& data, const index_type max_fixels, const bool pad = false, const float pad_value = 0.0) :
         data (data),
         max_fixels (max_fixels),
         pad (pad),
@@ -547,7 +547,7 @@ void run ()
   }
 
   opt = get_options ("fill");
-  float fill_value = NaN;
+  float fill_value = 0.0;
   if (opt.size()) {
     if (op == 12) {
       fill_value = opt[0][0];
