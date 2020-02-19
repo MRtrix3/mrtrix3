@@ -20,7 +20,7 @@
 #include <mutex>
 #include "image_helpers.h"
 
-#define LEARNING_RATE 3.0/2.0
+#define LEARNING_RATE 2.0/2.0
 
 namespace MR
 {
