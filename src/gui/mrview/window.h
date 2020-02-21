@@ -146,7 +146,7 @@ namespace MR
 
           void captureGL (std::string filename) {
             QImage image (glarea->grabFramebuffer());
-            image.save (filename.c_str());
+            image.save (qstr (filename));
           }
 
           GL::Area* glwidget () const { return glarea; }

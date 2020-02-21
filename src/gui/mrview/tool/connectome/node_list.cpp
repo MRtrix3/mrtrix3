@@ -50,11 +50,11 @@ namespace MR
           }
         }
         if (index.column() == 0 && role == Qt::DisplayRole)
-          return str(index.row()).c_str();
+          return qstr (str(index.row()));
         else if (index.column() == 1 && role == Qt::DecorationRole)
           return connectome.nodes[index.row()].get_pixmap();
         else if (index.column() == 2 && role == Qt::DisplayRole)
-          return connectome.nodes[index.row()].get_name().c_str();
+          return qstr (connectome.nodes[index.row()].get_name());
         else
           return QVariant();
       }
