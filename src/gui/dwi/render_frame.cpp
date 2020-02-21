@@ -369,7 +369,7 @@ namespace MR
         }
 
         if (OS_x == OS-1 && OS_y == OS-1)
-          pix->save (screenshot_name.c_str(), "PNG");
+          pix->save (qstr (screenshot_name), "PNG");
 
         OS_x++;
         if (OS_x >= OS) {

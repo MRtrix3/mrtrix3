@@ -17,6 +17,7 @@
 #ifndef __gui_dialog_list_h__
 #define __gui_dialog_list_h__
 
+#include "gui/gui.h"
 #include "gui/opengl/gl.h"
 
 namespace MR
@@ -31,7 +32,7 @@ namespace MR
         public:
           TreeItem (const std::string& key, const std::string& value, TreeItem* parent = 0) {
             parentItem = parent;
-            itemData << key.c_str() << value.c_str();
+            itemData << qstr (key) << qstr (value);
           }
           ~TreeItem() {
             qDeleteAll (childItems);
@@ -52,7 +53,7 @@ namespace MR
             return itemData.value (column);
           }
           int row () const  {
-            if (parentItem) 
+            if (parentItem)
               return parentItem->childItems.indexOf (const_cast<TreeItem*> (this));
             return 0;
           }
