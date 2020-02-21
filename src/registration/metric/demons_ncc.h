@@ -20,8 +20,6 @@
 #include <mutex>
 #include "image_helpers.h"
 
-#define LEARNING_RATE 2.0/2.0
-
 namespace MR
 {
     namespace Registration
@@ -91,13 +89,13 @@ namespace MR
                 void operator() (const Im1ImageType& im1_image, const Im2ImageType& im2_image,
                                  Image<default_type>& im1_update, Image<default_type>& im2_update)
                 {
-                    
+
                     if (im1_image.index(0) < kernel_radius || im1_image.index(0) > im1_image.size(0) - kernel_radius ||
                         im1_image.index(1) < kernel_radius || im1_image.index(1) > im1_image.size(1) - kernel_radius ||
                         im1_image.index(2) < kernel_radius || im1_image.index(2) > im1_image.size(2) - kernel_radius) {
                             return;
                     }
-                    
+
                     if (!flag_combine_updates) {
                         im1_update.row(3) = 0.0;
                         im2_update.row(3) = 0.0;
@@ -121,7 +119,7 @@ namespace MR
                             return;
                         }
                     }
-                    
+
                     typename Im2MaskType::value_type im2_mask_value = 1.0;
                     if (im2_mask.valid()) {
                         assign_pos_of (im2_image, 0, 3).to (im2_mask);
@@ -202,8 +200,8 @@ namespace MR
                         dfm_im2 = volume_weight * 2.0 * (local_sfm * local_count / (local_sff * local_smm)) *
                             ((im1_value - local_sf / local_count) - (im2_value - local_sm / local_count) * (local_sfm / local_smm)) * grad_im2;
 
-                        im1_update.row(3) += LEARNING_RATE * dfm_im1; // TODO parameterise learning rate (weight by number of contrasts if necessary)
-                        im2_update.row(3) += LEARNING_RATE * dfm_im2;
+                        im1_update.row(3) += dfm_im1;
+                        im2_update.row(3) += dfm_im2;
 
                         thread_cost -= local_sfm / denom;
                         thread_voxel_count++;
@@ -475,7 +473,7 @@ namespace MR
                             return;
                         }
                     }
-                    
+
                     typename Im2MaskType::value_type im2_mask_value = 1.0;
                     if (im2_mask.valid()) {
                         assign_pos_of (im2_image, 0, 3).to (im2_mask);
@@ -486,7 +484,7 @@ namespace MR
                             return;
                         }
                     }
-                    
+
 
                     typename Im1ImageType::value_type im1_value = im1_image.value();
                     typename Im2ImageType::value_type im2_value = im2_image.value();
@@ -511,7 +509,7 @@ namespace MR
                     dfm_im2 = volume_weight * 2.0 * (computed_sfm * computed_total_count / ((computed_sff * computed_smm))) *
                         ((im1_value - computed_sf / computed_total_count) - (im2_value - computed_sm / computed_total_count) * (computed_sfm / computed_smm)) * grad_im2;
 
-                    im1_update.row(3) += dfm_im1; // TODO multiply by LEARNING_RATE?
+                    im1_update.row(3) += dfm_im1;
                     im2_update.row(3) += dfm_im2;
 
                     thread_cost -= computed_global_cost;
