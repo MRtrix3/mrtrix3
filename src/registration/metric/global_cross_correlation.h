@@ -194,6 +194,10 @@ namespace MR
 
             public:
 
+                /** requires_precompute:
+                type_trait to distinguish metric types that require a call to precompute before the operator() is called */
+                using requires_precompute = int;
+
                 GlobalCrossCorrelation ( ) : weighted (false), min_value_threshold (1.e-7) {}
 
                 void set_weights (Eigen::VectorXd weights) {
@@ -468,6 +472,10 @@ namespace MR
                 Eigen::VectorXd computed_count;
 
             public:
+
+                /** requires_precompute:
+                type_trait to distinguish metric types that require a call to precompute before the operator() is called */
+                using requires_precompute = int;
 
                 GlobalCrossCorrelation4D ( ) : weighted (false), weight_sum (0.0), min_value_threshold (1.e-7) { }
 
