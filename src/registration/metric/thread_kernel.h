@@ -53,7 +53,7 @@ namespace MR
         };
 
         template <class MetricType>
-        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> { NOMEMALIGN
+        struct use_processed_image<MetricType, typename Void<typename MetricType::iterate_over_processed>::type> { NOMEMALIGN
           using yes = int;
         };
 
