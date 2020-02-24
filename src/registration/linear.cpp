@@ -247,8 +247,8 @@ namespace MR
 
       + Option ("rigid_metric.radius", "the radius of the local metric kernel (local normalised cross correlation) in voxels. If 0, global ncc will be used. Recommended value for local ncc is 4. (Default: 0)")
         + Argument ("num").type_integer (0)
-      
-      + Option ("rigid_metric.grid_spacing", "the grid spacing for sampling of 3D volumes for estimation of cross correlation metric. (Default: 2 for lncc and 0 for gncc)")
+
+      + Option ("rigid_metric.grid_spacing", "spatial distance in voxels between samples. Only applies to the cross correlation metric. (Default: 2 for local ncc and 0 for global ncc)")
       + Argument ("num").type_integer (0)
 
       + Option ("rigid_metric.diff.estimator", "Valid choices are: "
@@ -328,8 +328,8 @@ namespace MR
 
       + Option ("affine_metric.radius", "the radius of the local metric kernel (local normalised cross correlation) in voxels. If 0, global ncc will be used. Recommended value for local ncc is 4. (Default: 0)")
         + Argument ("num").type_integer (0)
-      
-      + Option ("affine_metric.grid_spacing", "the grid spacing for sampling of 3D volumes for estimation of cross correlation metric. (Default: 2 for lncc and 0 for gncc)")
+
+      + Option ("affine_metric.grid_spacing", "sspatial distance in voxels between samples. Only applies to the cross correlation metric. (Default: 2 for local ncc and 0 for global ncc)")
       + Argument ("num").type_integer (0)
 
       // + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
