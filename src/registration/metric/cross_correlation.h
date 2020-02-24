@@ -34,6 +34,10 @@ namespace MR
           type_trait to distinguish metric types that require a call to precompute before the operator() is called */
           using requires_precompute = int;
 
+          /** iterate_over_processed:
+          type_trait to distinguish metrics that require iterating over the preprocessed image */
+          using iterate_over_processed = int;
+
           template <class Params>
             default_type operator() (Params& params,
                                      const Iterator& iter,
