@@ -81,6 +81,9 @@ namespace MR
         case 1:
           registration.set_stage_optimiser_default (Registration::OptimiserAlgoType::gd);
           break;
+        default:
+          assert (0 && "FIXME: linstage.optimiser.default not understood");
+          break;
         }
       }
 
@@ -92,6 +95,9 @@ namespace MR
           break;
         case 1:
           registration.set_stage_optimiser_first (Registration::OptimiserAlgoType::gd);
+          break;
+        default:
+          assert (0 && "FIXME: linstage.optimiser.first not understood");
           break;
         }
       }
@@ -105,6 +111,9 @@ namespace MR
         case 1:
           registration.set_stage_optimiser_last (Registration::OptimiserAlgoType::gd);
           break;
+        default:
+          assert (0 && "FIXME: linstage.optimiser.last not understood");
+          break;
         }
       }
 
@@ -112,6 +121,8 @@ namespace MR
       if (opt.size()) {
         vector<int> iterations = parse_ints (opt[0][0]);
         registration.set_stage_iterations (iterations);
+      } else {
+        registration.set_stage_iterations (vector<int> {1});
       }
 
       opt = get_options("linstage.diagnostics.prefix");

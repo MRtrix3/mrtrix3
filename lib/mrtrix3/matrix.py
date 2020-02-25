@@ -17,7 +17,7 @@
 
 
 
-import itertools, re
+import itertools, os, re
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
 from mrtrix3.utils import STRING_TYPES
 
@@ -160,6 +160,7 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
 
 # Save numeric data to a text file
 def save_numeric(filename, data, **kwargs):
+  from mrtrix3 import app # pylint: disable=import-outside-toplevel
   fmt = kwargs.pop('fmt', '%.15g')
   delimiter = kwargs.pop('delimiter', ' ')
   newline = kwargs.pop('newline', '\n')
@@ -170,6 +171,9 @@ def save_numeric(filename, data, **kwargs):
   encoding = kwargs.pop('encoding', None)
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to matrix.save_numeric(): ' + str(kwargs))
+
+  if not app.FORCE_OVERWRITE and os.path.exists(filename):
+    raise MRtrixError('output file "' + filename + '" already exists (use -force option to force overwrite)')
 
   encode_args = {'errors': 'ignore'}
   if encoding:
@@ -205,7 +209,10 @@ def save_numeric(filename, data, **kwargs):
   else:
     footer = { }
 
-  with open(filename, 'wb') as outfile:
+  open_mode = os.O_WRONLY | os.O_CREAT
+  if not app.FORCE_OVERWRITE:
+    open_mode = open_mode | os.O_EXCL
+  with os.open(filename, open_mode) as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
         outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
@@ -225,6 +232,7 @@ def save_numeric(filename, data, **kwargs):
     for key, value in sorted(footer.items()):
       for line in value.splitlines():
         outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
+
 
 
 

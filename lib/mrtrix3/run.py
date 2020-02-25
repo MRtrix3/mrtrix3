@@ -207,7 +207,7 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 
 def command(cmd, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
+  from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
   global shared #pylint: disable=invalid-name
 
   shell = kwargs.pop('shell', False)
@@ -235,7 +235,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     cmdsplit = []
     for entry in cmd:
       if isinstance(entry, STRING_TYPES):
-        cmdstring += (' ' if cmdstring else '') + entry
+        cmdstring += (' ' if cmdstring else '') + path.quote(entry)
         cmdsplit.append(entry)
       elif isinstance(entry, list):
         assert all([ isinstance(item, STRING_TYPES) for item in entry ])
@@ -247,7 +247,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
           else:
             cmdstring += (' ' if cmdstring else '') + '[' + common_prefix + '*' + common_suffix + ' (' + str(len(entry)) + ' items)]'
         else:
-          cmdstring += (' ' if cmdstring else '') + entry[0]
+          cmdstring += (' ' if cmdstring else '') + path.quote(entry[0])
         cmdsplit.extend(entry)
       else:
         raise TypeError('When run.command() is provided with a list as input, entries in the list must be either strings or lists of strings')

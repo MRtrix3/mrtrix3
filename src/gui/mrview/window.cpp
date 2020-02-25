@@ -611,35 +611,35 @@ namespace MR
 
           std::string modifier;
           action = toolbar->addAction (QIcon (":/select_contrast.svg"), tr ("Change focus / contrast"));
-          action->setToolTip (tr ((
+          action->setToolTip (qstr (
                   "Left-click: set focus\n"
                   "Right-click: change brightness/constrast\n\n"
                   "Shortcut: 1\n\n"
                   "Hold down " + get_modifier (FocusModifier) + " key to use this mode\n"
-                  "regardless of currently selected mode").c_str()));
+                  "regardless of currently selected mode"));
           action->setShortcut (tr("1"));
           action->setCheckable (true);
           action->setChecked (true);
           mode_action_group->addAction (action);
 
           action = toolbar->addAction (QIcon (":/move.svg"), tr ("Move viewport"));
-          action->setToolTip (tr ((
+          action->setToolTip (qstr (
                   "Left-click: move in-plane\n"
                   "Right-click: move through-plane\n\n"
                   "Shortcut: 2\n\n"
                   "Hold down " + get_modifier (MoveModifier) + " key to use this mode\n"
-                  "regardless of currently selected mode").c_str()));
+                  "regardless of currently selected mode"));
           action->setShortcut (tr("2"));
           action->setCheckable (true);
           mode_action_group->addAction (action);
 
           action = toolbar->addAction (QIcon (":/rotate.svg"), tr ("Move camera"));
-          action->setToolTip (tr ((
+          action->setToolTip (qstr (
                   "Left-click: move camera in-plane\n"
                   "Right-click: rotate camera about view axis\n\n"
                   "Shortcut: 3\n\n"
                   "Hold down " + get_modifier (RotateModifier) + " key to use this mode\n"
-                  "regardless of currently selected mode").c_str()));
+                  "regardless of currently selected mode"));
           action->setShortcut (tr("3"));
           action->setCheckable (true);
           mode_action_group->addAction (action);
@@ -877,11 +877,11 @@ namespace MR
         for (size_t i = 0; i < list.size(); ++i) {
           const std::string name = list[i]->name(); // Gets move-constructed out
           QAction* action = new Image (std::move (*list[i]));
-          action->setText (shorten (name, 20, 0).c_str());
+          action->setText (qstr (shorten (name, 20, 0)));
           action->setParent (Window::main);
           action->setCheckable (true);
-          action->setToolTip (name.c_str());
-          action->setStatusTip (name.c_str());
+          action->setToolTip (qstr(name));
+          action->setStatusTip (qstr(name));
           connect (action, SIGNAL(scalingChanged()), this, SLOT(on_scaling_changed()));
           new_actions.push_back (action);
         }
@@ -1289,7 +1289,7 @@ namespace MR
         auto label = std::string ("volume (0...") + str(maxvol) + std::string (")");
         bool ok;
         ssize_t vol = QInputDialog::getInt (this, tr("Go to..."),
-          label.c_str(), image()->image.index(3), 0, maxvol, 1, &ok);
+          qstr(label), image()->image.index(3), 0, maxvol, 1, &ok);
         if (ok)
           set_image_volume (3, vol);
       }
@@ -1300,7 +1300,7 @@ namespace MR
         auto label = std::string ("volume group (0...") + str(maxvolgroup) + std::string (")");
         bool ok;
         ssize_t grp = QInputDialog::getInt (this, tr("Go to..."),
-          label.c_str(), image()->image.index(4), 0, maxvolgroup, 1, &ok);
+          qstr(label), image()->image.index(4), 0, maxvolgroup, 1, &ok);
         if (ok)
           set_image_volume (4, grp);
       }
@@ -1332,7 +1332,7 @@ namespace MR
         colourmap_button->colourmap_actions[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->scale_inverted());
         mode->image_changed_event();
-        setWindowTitle (image()->image.name().c_str());
+        setWindowTitle (qstr(image()->image.name()));
         set_image_navigation_menu();
         image()->set_allowed_features (
             mode->features & Mode::ShaderThreshold,
@@ -1523,7 +1523,7 @@ namespace MR
           "<h4>Authors:</h4>" + MR::join (MR::split (MR::App::AUTHOR, ",;&\n", true), "<br>") +
           "<p><em>" + MR::App::COPYRIGHT + "</em>";
 
-        QMessageBox::about (this, tr ("About MRView"), message.c_str());
+        QMessageBox::about (this, tr ("About MRView"), qstr(message));
       }
 
 

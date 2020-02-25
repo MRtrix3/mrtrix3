@@ -400,13 +400,6 @@ void run () {
     rigid_registration.set_scale_factor (parse_floats (opt[0][0]));
   }
 
-  // opt = get_options ("rigid_stage.iterations");
-  // if (opt.size ()) {
-  //   if (!do_rigid)
-  //     throw Exception ("the rigid iterations were input when no rigid registration is requested");
-  //   rigid_registration.set_stage_iterations (parse_ints (opt[0][0]));
-  // }
-
   opt = get_options ("rigid_loop_density");
   if (opt.size ()) {
     if (!do_rigid)
@@ -581,12 +574,12 @@ void run () {
     affine_registration.set_scale_factor (parse_floats (opt[0][0]));
   }
 
-  // opt = get_options ("affine_loop_density");
-  // if (opt.size ()) {
-  //   if (!do_affine)
-  //     throw Exception ("the affine sparsity factor was input when no affine registration is requested");
-  //   affine_registration.set_loop_density (parse_floats (opt[0][0]));
-  // }
+  opt = get_options ("affine_loop_density");
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine sparsity factor was input when no affine registration is requested");
+    affine_registration.set_loop_density (parse_floats (opt[0][0]));
+  }
 
   opt = get_options ("affine_metric");
   Registration::LinearMetricType affine_metric = Registration::Diff;
