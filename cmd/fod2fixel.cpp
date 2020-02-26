@@ -50,7 +50,7 @@ const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sp
     + Argument ("image").type_image_out()
 
   + Option ("peak_amp",
-            "output the amplitude of the maximal FOD peak per fixel")
+            "output the amplitude of the FOD at the maximal peak per fixel")
     + Argument ("image").type_image_out()
 
   + Option ("disp",
@@ -128,9 +128,9 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
     struct Primitive_FOD_lobe { MEMALIGN (Primitive_FOD_lobe)
       Eigen::Vector3f dir;
       float integral;
-      float peak_value;
-      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float peak_value) :
-          dir (dir), integral (integral), peak_value (peak_value) {}
+      float max_peak_amp;
+      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float max_peak_amp) :
+          dir (dir), integral (integral), max_peak_amp (max_peak_amp) {}
     };
 
 
@@ -267,14 +267,14 @@ void Segmented_FOD_receiver::commit ()
     if (peak_amp_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
         peak_amp_image->index(0) = offset + i;
-        peak_amp_image->value() = vox_fixels[i].peak_value;
+        peak_amp_image->value() = vox_fixels[i].max_peak_amp;
       }
     }
 
     if (disp_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
         disp_image->index(0) = offset + i;
-        disp_image->value() = vox_fixels[i].integral / vox_fixels[i].peak_value;
+        disp_image->value() = vox_fixels[i].integral / vox_fixels[i].max_peak_amp;
       }
     }
 
