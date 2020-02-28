@@ -120,6 +120,8 @@ for f in $(find cmd core src -type f -name '*.h' -o -name '*.cpp' | $grep -v '_m
     $grep -Po '\w*print(?!.*?print).*?$'
   )
 
+# delete intermediate files
+rm -f .check_syntax.tmp .check_syntax2.tmp
 
 # if anything is left after that, show it:
   if [[ ! -z $res ]]; then

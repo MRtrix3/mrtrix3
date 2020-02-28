@@ -88,21 +88,19 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(prefix + 'FOD.mif')
     if iteration:
       app.cleanup(mask_in_path)
-    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif -number 2')
+    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif none ' + prefix + 'amps.mif -number 2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     app.cleanup(prefix + 'amps.mif')
-    run.command('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif -number 1')
+    run.command('fixel2peaks ' + prefix + 'fixel/directions.mif ' + prefix + 'first_dir.mif -number 1')
     app.cleanup(prefix + 'fixel')
-    run.command('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
-    app.cleanup(prefix + 'all_dirs.mif')
     # Calculate the 'cost function' Donald derived for selecting single-fibre voxels
     # https://github.com/MRtrix3/mrtrix3/pull/426
     #  sqrt(|peak1|) * (1 - |peak2| / |peak1|)^2
     run.command('mrcalc ' + prefix + 'first_peaks.mif -sqrt 1 ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div -sub 2 -pow -mult '+ prefix + 'CF.mif')
     app.cleanup(prefix + 'first_peaks.mif')
     app.cleanup(prefix + 'second_peaks.mif')
-    voxel_count = int(image.statistic(prefix + 'CF.mif', 'count'))
+    voxel_count = image.statistics(prefix + 'CF.mif').count
     # Select the top-ranked voxels
     run.command('mrthreshold ' + prefix + 'CF.mif -top ' + str(min([app.ARGS.number, voxel_count])) + ' ' + prefix + 'SF.mif')
     # Generate a new response function based on this selection
@@ -116,7 +114,7 @@ def execute(): #pylint: disable=unused-variable
     if iteration > 0:
       run.command('mrcalc ' + prefix + 'SF.mif iter' + str(iteration-1) + '_SF.mif -sub ' + prefix + 'SF_diff.mif')
       app.cleanup('iter' + str(iteration-1) + '_SF.mif')
-      max_diff = image.statistic(prefix + 'SF_diff.mif', 'max')
+      max_diff = image.statistics(prefix + 'SF_diff.mif').max
       app.cleanup(prefix + 'SF_diff.mif')
       if not max_diff:
         app.cleanup(prefix + 'CF.mif')

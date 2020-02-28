@@ -20,6 +20,7 @@ List of MRtrix3 commands
     commands/amp2response
     commands/amp2sh
     commands/connectome2tck
+    commands/connectomeedit
     commands/connectomestats
     commands/dcmedit
     commands/dcminfo
@@ -42,6 +43,7 @@ List of MRtrix3 commands
     commands/dwigradcheck
     commands/dwinormalise
     commands/dwishellmath
+    commands/fixel2peaks
     commands/fixel2sh
     commands/fixel2tsf
     commands/fixel2voxel
@@ -54,7 +56,7 @@ List of MRtrix3 commands
     commands/fixelreorient
     commands/fod2dec
     commands/fod2fixel
-    commands/foreach
+    commands/for_each
     commands/label2colour
     commands/label2mesh
     commands/labelconvert
@@ -91,6 +93,7 @@ List of MRtrix3 commands
     commands/mrview
     commands/mtnormalise
     commands/peaks2amp
+    commands/peaks2fixel
     commands/population_template
     commands/responsemean
     commands/sh2amp
@@ -147,6 +150,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`amp2response`, "Estimate response function coefficients based on the DWI signal in single-fibre voxels"
     |cpp.png|, :ref:`amp2sh`, "Convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation"
     |cpp.png|, :ref:`connectome2tck`, "Extract streamlines from a tractogram based on their assignment to parcellated nodes"
+    |cpp.png|, :ref:`connectomeedit`, "Perform basic operations on a connectome"
     |cpp.png|, :ref:`connectomestats`, "Connectome group-wise statistics at the edge level using non-parametric permutation testing"
     |cpp.png|, :ref:`dcmedit`, "Edit DICOM file in-place"
     |cpp.png|, :ref:`dcminfo`, "Output DICOM fields in human-readable format"
@@ -169,6 +173,7 @@ List of MRtrix3 commands
     |python.png|, :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
     |python.png|, :ref:`dwinormalise`, "Perform various forms of intensity normalisation of DWIs"
     |python.png|, :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
+    |cpp.png|, :ref:`fixel2peaks`, "Convert data in the fixel directory format into a 4D image of 3-vectors"
     |cpp.png|, :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
     |cpp.png|, :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
     |cpp.png|, :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
@@ -181,7 +186,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`fixelreorient`, "Reorient fixel directions"
     |cpp.png|, :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
     |cpp.png|, :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
-    |python.png|, :ref:`foreach`, "Perform some arbitrary processing step for each of a set of inputs"
+    |python.png|, :ref:`for_each`, "Perform some arbitrary processing step for each of a set of inputs"
     |cpp.png|, :ref:`label2colour`, "Convert a parcellated image (where values are node indices) into a colour image"
     |cpp.png|, :ref:`label2mesh`, "Generate meshes from a label image"
     |cpp.png|, :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
@@ -218,6 +223,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrview`, "The MRtrix image viewer"
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
+    |cpp.png|, :ref:`peaks2fixel`, "Convert peak directions image to a fixel directory"
     |python.png|, :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
     |python.png|, :ref:`responsemean`, "Calculate the mean response function from a set of text files"
     |cpp.png|, :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"

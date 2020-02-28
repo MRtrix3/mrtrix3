@@ -4,6 +4,26 @@
 List of MRtrix3 environment variables
 ##########################################
 
+.. envvar:: DICOM_ID
+
+     when reading DICOM data, match the PatientID entry against
+     the string provided
+
+.. envvar:: DICOM_PATIENT
+
+     when reading DICOM data, match the PatientName entry against
+     the string provided
+
+.. envvar:: DICOM_SERIES
+
+     when reading DICOM data, match the SeriesName entry against
+     the string provided
+
+.. envvar:: DICOM_STUDY
+
+     when reading DICOM data, match the StudyName entry against
+     the string provided
+
 .. envvar:: MRTRIX_CONFIGFILE
 
      This can be used to set the location of the system-wide

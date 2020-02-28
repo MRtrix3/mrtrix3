@@ -43,7 +43,7 @@ namespace MR
                 return items[index.row()] && items[index.row()]->show ? Qt::Checked : Qt::Unchecked;
               }
               if (role != Qt::DisplayRole && role != Qt::ToolTipRole) return QVariant();
-              return items[index.row()] ? items[index.row()]->get_filename().c_str() : "";
+              return items[index.row()] ? qstr (items[index.row()]->get_filename()) : QString();
             }
 
             bool setData (const QModelIndex& idx, const QVariant& value, int role) override {

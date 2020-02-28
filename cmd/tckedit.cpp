@@ -216,9 +216,6 @@ void run ()
 
   Loader loader (input_file_list);
   Worker worker (properties, inverse, ends_only);
-  // This needs to be run AFTER creation of the Worker class
-  // (worker needs to be able to set max & min number of points based on step size in input file,
-  //  receiver needs "output_step_size" field to have been updated before file creation)
   Receiver receiver (output_path, properties, number, skip);
 
   Thread::run_queue (

@@ -30,15 +30,14 @@ namespace MR
     namespace Transform
     {
 
+
       FORCE_INLINE Eigen::MatrixXd aPSF_weights_to_FOD_transform (const int num_SH, const Eigen::MatrixXd& directions)
       {
-        Eigen::MatrixXd aPSF_matrix (num_SH, directions.cols());
-        Math::SH::aPSF<default_type> aPSF_generator (Math::SH::LforN (num_SH));
-        Eigen::Matrix<default_type, Eigen::Dynamic,1> aPSF;
-        for (ssize_t i = 0; i < directions.cols(); ++i) {
-          aPSF_matrix.col(i) = aPSF_generator (aPSF, directions.col(i));
-        }
-        return aPSF_matrix;
+        const size_t lmax = Math::SH::LforN (num_SH);
+        Eigen::MatrixXd delta_matrix = Math::SH::init_transform_cart(directions.transpose(), lmax);
+        Math::SH::aPSF<default_type> aPSF (lmax);
+        Math::SH::sconv_mat(delta_matrix, aPSF.RH_coefs());
+        return delta_matrix.transpose();
       }
 
       FORCE_INLINE vector<vector<ssize_t>> multiContrastSetting2start_nvols (const vector<MultiContrastSetting>& mcsettings, size_t& max_n_SH)
