@@ -439,8 +439,8 @@ namespace MR
         {
           const std::string path = Dialog::File::get_folder (this, "Directory", &current_folder);
           if (!path.size()) return;
-          folder_button->setText (shorten (current_folder, 20, 0).c_str());
-          folder_button->setToolTip (current_folder.c_str());
+          folder_button->setText (qstr (shorten (current_folder, 20, 0)));
+          folder_button->setToolTip (qstr (current_folder));
           on_output_update ();
         }
 
@@ -479,15 +479,15 @@ namespace MR
         {
           if (opt.opt->is ("capture.folder")) {
             current_folder = std::string (opt[0]);
-            QString path (shorten(current_folder, 20, 0).c_str());
+            QString path (qstr (shorten(current_folder, 20, 0)));
             folder_button->setText (path);
-            folder_button->setToolTip (current_folder.c_str());
+            folder_button->setToolTip (qstr(current_folder));
             on_output_update ();
             return true;
           }
 
           if (opt.opt->is ("capture.prefix")) {
-            prefix_textbox->setText (std::string(opt[0]).c_str());
+            prefix_textbox->setText (qstr (opt[0]));
             on_output_update ();
             return true;
           }

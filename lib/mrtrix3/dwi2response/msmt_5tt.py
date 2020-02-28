@@ -66,10 +66,14 @@ def execute(): #pylint: disable=unused-variable
   # May need to commit 5ttregrid...
 
   # Verify input 5tt image
-  stderr_5ttcheck = run.command('5ttcheck 5tt.mif').stderr
-  if '[WARNING]' in stderr_5ttcheck:
-    app.warn('Command 5ttcheck indicates minor problems with provided input 5TT image \'' + app.ARGS.in_5tt + '\':')
-    for line in stderr_5ttcheck.splitlines():
+  verification_text = ''
+  try:
+    verification_text = run.command('5ttcheck 5tt.mif').stderr
+  except run.MRtrixCmdError as except_5ttcheck:
+    verification_text = except_5ttcheck.stderr
+  if 'WARNING' in verification_text or 'ERROR' in verification_text:
+    app.warn('Command 5ttcheck indicates problems with provided input 5TT image \'' + app.ARGS.in_5tt + '\':')
+    for line in verification_text.splitlines():
       app.warn(line)
     app.warn('These may or may not interfere with the dwi2response msmt_5tt script')
 
@@ -112,9 +116,9 @@ def execute(): #pylint: disable=unused-variable
     run.command('dwi2response fa dwi.mif wm_ss_response.txt -mask wm_mask.mif -threshold ' + str(app.ARGS.sfwm_fa_threshold) + ' -voxels wm_sf_mask.mif -scratch ' + path.quote(app.SCRATCH_DIR) + recursive_cleanup_option)
 
   # Check for empty masks
-  wm_voxels  = image.statistic('wm_sf_mask.mif', 'count', '-mask wm_sf_mask.mif')
-  gm_voxels  = image.statistic('gm_mask.mif',    'count', '-mask gm_mask.mif')
-  csf_voxels = image.statistic('csf_mask.mif',   'count', '-mask csf_mask.mif')
+  wm_voxels  = image.statistics('wm_sf_mask.mif', mask='wm_sf_mask.mif').count
+  gm_voxels  = image.statistics('gm_mask.mif',    mask='gm_mask.mif').count
+  csf_voxels = image.statistics('csf_mask.mif',   mask='csf_mask.mif').count
   empty_masks = [ ]
   if not wm_voxels:
     empty_masks.append('WM')

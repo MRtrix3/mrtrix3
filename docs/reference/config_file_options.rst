@@ -18,6 +18,13 @@ List of MRtrix3 configuration file options
      should be assumed to be in LAS orientation (default) or RAS
      (when this is option is turned on).
 
+.. option:: BValueEpsilon
+
+    *default: 80.0*
+
+     Specifies the difference between b-values necessary for image
+     volumes to be classified as belonging to different shells.
+
 .. option:: BValueScaling
 
     *default: 1 (true)*
@@ -407,6 +414,12 @@ List of MRtrix3 configuration file options
     *default: true*
 
      Voxel information shown in main image overlay.
+
+.. option:: MRViewSyncFocus
+
+    *default: false*
+
+     Whether to sync the focus in mrview between other mrview processes.
 
 .. option:: MRViewToolFontSize
 

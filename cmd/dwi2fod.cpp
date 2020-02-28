@@ -318,7 +318,10 @@ void run ()
 
     MSMT_Processor processor (shared, mask, odfs, dwi_modelled);
     auto dwi = header_in.get_image<float>().with_direct_io (3);
-    ThreadedLoop ("performing multi-shell, multi-tissue CSD", dwi, 0, 3)
+    ThreadedLoop ("performing MSMT CSD ("
+                  + str(shared.num_shells()) + " shell" + (shared.num_shells() > 1 ? "s" : "") + ", "
+                  + str(num_tissues) + " tissue" + (num_tissues > 1 ? "s" : "") + ")",
+                  dwi, 0, 3)
         .run (processor, dwi);
 
   } else {

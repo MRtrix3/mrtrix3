@@ -148,6 +148,8 @@ namespace MR
     vector<vector<ValueType>> load_matrix_2D_vector (const std::string& filename, vector<std::string>* comments = nullptr)
     {
       std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
+      if (!stream)
+        throw Exception ("Unable to open numerical data text file \"" + filename + "\": " + strerror(errno));
       vector<vector<ValueType>> V;
       std::string sbuf, cbuf;
       size_t hash;

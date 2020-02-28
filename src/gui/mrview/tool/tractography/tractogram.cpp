@@ -577,6 +577,8 @@ namespace MR
 
         inline void Tractogram::update_stride ()
         {
+          // Note: If streamlines have been resampled at all,
+          //   strides will be incorrect
           const float step_size = properties.get_stepsize();
           GLint new_stride = 1;
 

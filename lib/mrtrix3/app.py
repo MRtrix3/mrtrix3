@@ -469,7 +469,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
   def __init__(self, msg, target=0):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     global EXEC_NAME, VERBOSITY
-    if not (isinstance(msg, str) or callable(msg)):
+    if not (isinstance(msg, utils.STRING_TYPES) or callable(msg)):
       raise TypeError('app.ProgressBar must be constructed using either a string or a function')
     self.counter = 0
     self.isatty = sys.stderr.isatty()
@@ -486,16 +486,16 @@ class ProgressBar(object): #pylint: disable=unused-variable
     self.wrapon = '' if self.newline else ProgressBar.WRAPON
     VERBOSITY = run.shared.verbosity = VERBOSITY - 1 if VERBOSITY else 0
     if self.isatty:
-      sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapoff + self.newline)
+      sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
     else:
       sys.stderr.write(EXEC_NAME + ': ' + self._get_message() + '... [' + self.newline)
     sys.stderr.flush()
 
-  def increment(self, msg=''):
+  def increment(self, msg=None):
     assert not self.iscomplete
     self.counter += 1
     force_update = False
-    if msg:
+    if msg is not None:
       self.message = msg
       force_update = True
     if self.multiplier:
@@ -514,10 +514,12 @@ class ProgressBar(object): #pylint: disable=unused-variable
         self.next_time = current_time + ProgressBar.INTERVAL
         self._update()
 
-  def done(self):
+  def done(self, msg=None):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     global EXEC_NAME, VERBOSITY
     self.iscomplete = True
+    if msg is not None:
+      self.message = msg
     if self.multiplier:
       self.value = 100
     if self.isatty:
@@ -627,7 +629,7 @@ class Parser(argparse.ArgumentParser):
 
   # Mutually exclusive options need to be added before the command-line input is parsed
   def flag_mutually_exclusive_options(self, options, required=False): #pylint: disable=unused-variable
-    if not isinstance(options, list) or not isinstance(options[0], str):
+    if not isinstance(options, list) or not isinstance(options[0], utils.STRING_TYPES):
       raise Exception('Parser.flagMutuallyExclusiveOptions() only accepts a list of strings')
     self._mutually_exclusive_option_groups.append( (options, required) )
 
@@ -786,7 +788,7 @@ class Parser(argparse.ArgumentParser):
       text += '\n'
       for example in self._examples:
         for line in wrapper_other.fill(example[0] + ':').splitlines():
-          text += ' '*(len(line) - len(line.lstrip())) + underline(line.lstrip()) + '\n'
+          text += ' '*(len(line) - len(line.lstrip())) + underline(line.lstrip(), False) + '\n'
         text += ' '*7 + '$ ' + example[1] + '\n'
         if example[2]:
           text += wrapper_other.fill(example[2]) + '\n'
