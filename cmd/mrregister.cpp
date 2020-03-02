@@ -50,7 +50,7 @@ const OptionGroup multiContrastOptions =
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Alena Uus (alena.uus@kcl.ac.uk)";
 
   SYNOPSIS = "Register two images together using a symmetric rigid, affine or non-linear transformation model";
 
