@@ -50,7 +50,7 @@ namespace MR
             QVariant data (const QModelIndex& index, int role) const override {
               if (!index.isValid()) return QVariant();
               if (role != Qt::DisplayRole) return QVariant();
-              return shorten (items[index.row()].get_name().toStdString(), 35, 0).c_str();
+              return qstr (shorten (items[index.row()].get_name().toStdString(), 35, 0));
             }
 
             Qt::ItemFlags flags (const QModelIndex& index) const override {

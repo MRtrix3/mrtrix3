@@ -129,13 +129,13 @@ namespace MR
 
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                        if (params.im2_mask_interp->value() < 0.75)
+                        if (params.im2_mask_interp->value() < 0.5)
                             return;
                     }
 
                     if (params.im1_mask_interp) {
                         params.im1_mask_interp->scanner (im1_point);
-                        if (params.im1_mask_interp->value() < 0.75)
+                        if (params.im1_mask_interp->value() < 0.5)
                             return;
                     }
 
@@ -153,7 +153,7 @@ namespace MR
 
                     if (std::isnan (default_type (im2_value)))
                         return;
-                    
+
                     if (abs(im1_value) < 1.e-7 || abs(im2_value) < 1.e-7)
                         return;
 
@@ -167,7 +167,7 @@ namespace MR
                     local_count++;
 
                     return;
-                    
+
                 }
 
 
@@ -193,6 +193,10 @@ namespace MR
 
 
             public:
+
+                /** requires_precompute:
+                type_trait to distinguish metric types that require a call to precompute before the operator() is called */
+                using requires_precompute = int;
 
                 GlobalCrossCorrelation ( ) : weighted (false), min_value_threshold (1.e-7) {}
 
@@ -280,7 +284,7 @@ namespace MR
 
                     if (computed_total_count < 1 || (computed_smm * computed_sff) < min_value_threshold)
                         return 0.0;
-                    
+
                     if (abs(im1_value) < min_value_threshold || abs(im2_value) < min_value_threshold)
                         return 0.0;
 
@@ -393,13 +397,13 @@ namespace MR
 
                     if (params.im2_mask_interp) {
                         params.im2_mask_interp->scanner (im2_point);
-                        if (params.im2_mask_interp->value() < 0.75)
+                        if (params.im2_mask_interp->value() < 0.5)
                         return;
                     }
 
                     if (params.im1_mask_interp) {
                         params.im1_mask_interp->scanner (im1_point);
-                        if (params.im1_mask_interp->value() < 0.75)
+                        if (params.im1_mask_interp->value() < 0.5)
                         return;
                     }
 
@@ -468,6 +472,10 @@ namespace MR
                 Eigen::VectorXd computed_count;
 
             public:
+
+                /** requires_precompute:
+                type_trait to distinguish metric types that require a call to precompute before the operator() is called */
+                using requires_precompute = int;
 
                 GlobalCrossCorrelation4D ( ) : weighted (false), weight_sum (0.0), min_value_threshold (1.e-7) { }
 

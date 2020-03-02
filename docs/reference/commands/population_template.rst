@@ -60,6 +60,10 @@ Input, output and general options
 Options for the non-linear registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+- **-nl_metric** Specify the metric used for nonlinear registration. Valid choices are: diff (intensity differences), ncc (normalised cross-correlation) Default: diff
+
+- **-nl_metric_radius** Specify the metric kernel radius (for cross correlation only). 0: voxel-wise (global), >0: local cross-correlation (Default: 2)
+
 - **-nl_scale** Specify the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: 0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0). This implicitly defines the number of template levels
 
 - **-nl_lmax** Specify the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: 2,2,2,2,2,2,2,2,4,4,4,4,4,4,4,4). The list must be the same length as the nl_scale factor list
@@ -77,7 +81,11 @@ Options for the linear registration
 
 - **-linear_no_pause** Do not pause the script if a linear registration seems implausible
 
-- **-linear_estimator** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: None (no robust estimator used)
+- **-linear_metric** Specify the metric used for rigid and affine registration. Valid choices are: diff (intensity differences), ncc (normalised cross-correlation) Default: diff
+
+- **-linear_metric_radius** Specify the metric kernel radius (for cross correlation only). 0: voxel-wise (global), >0: local cross-correlation (Default: 0)
+
+- **-linear_metric_diff_estimator** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: None (no robust estimator used)
 
 - **-rigid_scale** Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly  define the number of template levels
 

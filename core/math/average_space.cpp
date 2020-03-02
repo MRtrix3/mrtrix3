@@ -180,6 +180,9 @@ namespace MR
 
       if (transform_header_with.size()) {
         assert (transform_header_with.size() == input_headers.size());
+        if (transform_header_with[iFile].matrix().hasNaN()) {
+          throw Exception ("compute_average_voxel2scanner: transformation to image header of image " + str(iFile) + " contains NaN");
+        }
         v2s_trafo = transform_header_with[iFile] * v2s_trafo;
       }
       transformation_matrices.push_back(v2s_trafo);

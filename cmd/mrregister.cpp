@@ -400,13 +400,6 @@ void run () {
     rigid_registration.set_scale_factor (parse_floats (opt[0][0]));
   }
 
-  // opt = get_options ("rigid_stage.iterations");
-  // if (opt.size ()) {
-  //   if (!do_rigid)
-  //     throw Exception ("the rigid iterations were input when no rigid registration is requested");
-  //   rigid_registration.set_stage_iterations (parse_ints (opt[0][0]));
-  // }
-
   opt = get_options ("rigid_loop_density");
   if (opt.size ()) {
     if (!do_rigid)
@@ -490,10 +483,10 @@ void run () {
       throw Exception ("-rigid_lmax option is not valid if no input image is FOD image");
     rigid_lmax = parse_ints (opt[0][0]);
     for (size_t i = 0; i < rigid_lmax.size (); ++i)
-       if (rigid_lmax[i] > max_mc_image_lmax) {
+      if (rigid_lmax[i] > max_mc_image_lmax) {
         WARN ("the requested -rigid_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
         rigid_lmax[i] = max_mc_image_lmax;
-       }
+      }
     rigid_registration.set_lmax (rigid_lmax);
   }
 
@@ -581,12 +574,12 @@ void run () {
     affine_registration.set_scale_factor (parse_floats (opt[0][0]));
   }
 
-  // opt = get_options ("affine_loop_density");
-  // if (opt.size ()) {
-  //   if (!do_affine)
-  //     throw Exception ("the affine sparsity factor was input when no affine registration is requested");
-  //   affine_registration.set_loop_density (parse_floats (opt[0][0]));
-  // }
+  opt = get_options ("affine_loop_density");
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine sparsity factor was input when no affine registration is requested");
+    affine_registration.set_loop_density (parse_floats (opt[0][0]));
+  }
 
   opt = get_options ("affine_metric");
   Registration::LinearMetricType affine_metric = Registration::Diff;
@@ -803,13 +796,16 @@ void run () {
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("the -nl_lmax option has been set when no non-linear registration is requested");
-    if (input1[0].ndim() < 4)
-      throw Exception ("-nl_lmax option is not valid with 3D images");
+    if (max_mc_image_lmax == 0)
+      throw Exception ("-nl_lmax option is not valid if no input image is FOD image");
     nl_lmax = parse_ints (opt[0][0]);
+    for (size_t i = 0; i < nl_lmax.size (); ++i) {
+      if ((nl_lmax)[i] > max_mc_image_lmax) {
+        WARN ("the requested -nl_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
+        nl_lmax[i] = max_mc_image_lmax;
+      }
+    }
     nl_registration.set_lmax (nl_lmax);
-    for (size_t i = 0; i < (nl_lmax).size (); ++i)
-      if ((nl_lmax)[i] > max_mc_image_lmax)
-        throw Exception ("the requested -nl_lmax exceeds the lmax of the input images");
   }
 
   opt = get_options ("nl_metric");
@@ -871,7 +867,7 @@ void run () {
       if (do_rigid) max_requested_lmax = std::max(max_requested_lmax, rigid_registration.get_lmax());
       if (do_affine) max_requested_lmax = std::max(max_requested_lmax, affine_registration.get_lmax());
       if (do_nonlinear) max_requested_lmax = std::max(max_requested_lmax, nl_registration.get_lmax());
-      INFO ("maximum used lmax: "+str(max_requested_lmax));
+      INFO ("maximum requested lmax: "+str(max_requested_lmax));
     }
 
     for (size_t idx = 0; idx < n_images; ++idx) {

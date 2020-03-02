@@ -17,6 +17,7 @@
 #ifndef __gui_projection_h__
 #define __gui_projection_h__
 
+#include "gui/gui.h"
 #include "gui/crosshair.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/font.h"
@@ -204,7 +205,7 @@ namespace MR
         }
 
         void render_text_align (int x, int y, const std::string& text, int halign = 0, int valign = 0) const {
-          QString s (text.c_str());
+          QString s (qstr(text));
           #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           int w = font.metric.width (s);
           #else
@@ -219,7 +220,7 @@ namespace MR
         }
 
         void render_text_inset (int x, int y, const std::string& text, int inset = -1) const {
-          QString s (text.c_str());
+          QString s (qstr(text));
           if (inset < 0)
             inset = font.metric.height() / 2;
           if (x < inset)
@@ -240,7 +241,7 @@ namespace MR
         }
 
         void render_text (const std::string& text, int position, int line = 0) const {
-          QString s (text.c_str());
+          QString s (qstr(text));
           int x, y;
 
           #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)

@@ -33,7 +33,7 @@ namespace MR
           evaluate loops over processed_image instead of midway_image
         */
         template <class ParamType>
-          default_type precompute (ParamType& parameters) {  return 0.; }
+          default_type precompute (ParamType& parameters) { assert (0 && "FIXME: requires_precompute defined but precompute not implemented for this metric."); return 0.; }
 
         /** requires_initialisation:
           using requires_initialisation = int;
@@ -44,6 +44,12 @@ namespace MR
         /** is_neighbourhood:
           using is_neighbourhood = int;
           type_trait to distinguish voxel-wise and neighbourhood based metric types (affects ThreadKernel) */
+
+
+        /** iterate_over_processed
+          using iterate_over_processed = int;
+          type_trait to distinguish metrics that require iterating over the preprocessed image */
+
 
         // set contrast weights for 4D metrics
         void set_weights (Eigen::VectorXd weights) {

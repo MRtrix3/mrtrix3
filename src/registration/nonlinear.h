@@ -428,11 +428,15 @@ namespace MR
             disp_smoothing = voxel_fwhm;
           }
 
-          void set_lmax (const vector<int>& lmax) {
+          void set_lmax (vector<int> lmax) {
             for (size_t i = 0; i < lmax.size (); ++i)
               if (lmax[i] < 0 || lmax[i] % 2)
                 throw Exception ("the input nonlinear lmax must be positive and even");
-            fod_lmax = lmax;
+            if (lmax.size() == 1) {
+              lmax.resize (scale_factor.size(), lmax[0]);
+            } else if (lmax.size() != scale_factor.size())
+                throw Exception ("the nonlinear lmax must be defined for each scale factor (1 or " + str(scale_factor.size())+" values)");
+            fod_lmax = std::move(lmax);
           }
 
           // needs to be set after set_lmax
