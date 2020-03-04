@@ -227,7 +227,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)
+**Author:** David Raffelt (david.raffelt@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Alena Uus (alena.uus@kcl.ac.uk)
 
 **Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
