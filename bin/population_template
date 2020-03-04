@@ -668,10 +668,10 @@ def execute(): #pylint: disable=unused-variable
     if linear_metric != 'ncc':
       raise MRtrixError('linear_metric_radius option requires ncc metric for linear registration')
     try:
-        if int(linear_metric_radius) < 0:
-          raise ValueError("negative radius")
+      if int(linear_metric_radius) < 0:
+        raise ValueError("negative radius")
     except ValueError:
-        raise MRtrixError('linear_metric_radius option requires non-negative number, received: ' + str(linear_metric_radius))
+      raise MRtrixError('linear_metric_radius option requires non-negative number, received: ' + str(linear_metric_radius))
   elif linear_metric == 'ncc':
     linear_metric_radius = '0'
   else:
@@ -681,7 +681,7 @@ def execute(): #pylint: disable=unused-variable
   if linear_metric_diff_estimator and not linear_metric_diff_estimator.lower() == 'none':
     if not dolinear:
       raise MRtrixError('linear_metric_diff_estimator specified when no linear registration is requested')
-    if not linear_metric != "diff":
+    if linear_metric != "diff":
       raise MRtrixError('linear_metric_diff_estimator specified but selected metric %s is not a difference metric' % linear_metric)
     if linear_metric_diff_estimator not in ["l1", "l2", "lp"]:
       raise MRtrixError('linear_metric_diff_estimator must be one of ' + " ".join(["l1", "l2", "lp"]) + " provided: " + str(linear_metric_diff_estimator))
@@ -700,10 +700,10 @@ def execute(): #pylint: disable=unused-variable
     if nl_metric != 'ncc':
       raise MRtrixError('nl_metric_radius option requires ncc metric for nonlinear registration')
     try:
-        if int(nl_metric_radius) < 0:
-          raise ValueError("negative radius")
+      if int(nl_metric_radius) < 0:
+        raise ValueError("negative radius")
     except ValueError:
-        raise MRtrixError('nl_metric_radius option requires non-negative number, received: ' + str(nl_metric_radius))
+      raise MRtrixError('nl_metric_radius option requires non-negative number, received: ' + str(nl_metric_radius))
   elif nl_metric == 'ncc':
     nl_metric_radius = '2'
   else:
