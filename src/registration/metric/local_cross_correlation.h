@@ -111,7 +111,7 @@ namespace MR
 
                                 params.transformation.transform_half (im1_scanner_pos_iter, mi_scanner_pos_iter1);
                                 params.im1_image_interp->scanner (im1_scanner_pos_iter);
-                                
+
                                 if (params.im1_mask_interp) {
                                     params.im1_mask_interp->scanner (im1_scanner_pos_iter);
                                     if (params.im1_mask_interp->value() < 0.5)
@@ -120,14 +120,14 @@ namespace MR
 
                                 params.transformation.transform_half_inverse (im2_scanner_pos_iter, mi_scanner_pos_iter2);
                                 params.im2_image_interp->scanner (im2_scanner_pos_iter);
-                                
+
                                 if (params.im2_mask_interp) {
                                     params.im2_mask_interp->scanner (im2_scanner_pos_iter);
                                     if (params.im2_mask_interp->value() < 0.5)
                                       continue;
                                 }
-                                
-                                    
+
+
                                     Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad_iter;
                                     typename Params::Im1ValueType im1_value_iter;
                                     params.im1_image_interp->value_and_gradient_wrt_scanner (im1_value_iter, im1_grad_iter);
@@ -147,7 +147,7 @@ namespace MR
 
                                         local_count++;
                                     }
-                                    
+
                             }
                         }
                     }
@@ -243,11 +243,7 @@ namespace MR
                     const vector<size_t> kernel_radius = params.get_radius();
 
                     Header im1_header (params.im1_image);
-                    transform_type im1_v2s = MR::Transform (im1_header).voxel2scanner;
-
                     Header im2_header (params.im2_image);
-                    transform_type im2_v2s = MR::Transform (im2_header).voxel2scanner;
-
 
                     ssize_t volumes = params.im1_image.size(3);
 
@@ -314,19 +310,19 @@ namespace MR
                                 params.im2_image_interp->scanner (im2_scanner_pos_iter);
 
                                 bool within_mask = true;
-                                
+
                                 if (params.im1_mask_interp) {
                                     params.im1_mask_interp->scanner (im1_scanner_pos_iter);
                                     if (params.im1_mask_interp->value() < 0.5)
                                     within_mask = false;
                                 }
-                                
+
                                 if (params.im2_mask_interp) {
                                     params.im2_mask_interp->scanner (im2_scanner_pos_iter);
                                     if (params.im2_mask_interp->value() < 0.5)
                                     within_mask = false;
                                 }
-                                
+
                                 if (within_mask) {
 
                                     Eigen::Matrix<typename Params::Im1ValueType, Eigen::Dynamic, 3> im1_grad_iter;
@@ -355,7 +351,7 @@ namespace MR
                                             count_values[i]++;
                                         }
                                     }
-                                    
+
                                 }
                             }
                         }

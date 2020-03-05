@@ -74,7 +74,7 @@ namespace MR
                 mutex (new std::mutex),
                 min_value_threshold (1.e-5),
                 current_dim (0),
-                flag_combine_updates(flag_combine_updates) {
+                flag_combine_updates (flag_combine_updates) {
                     if (im1_image.buffer->ndim() > 3)
                         current_dim = im1_image.index(3);
                 }
@@ -551,18 +551,12 @@ namespace MR
                 default_type local_cost = 0;
                 size_t local_count = 0;
 
-                bool flag_combine_updates;
-                flag_combine_updates = true;
+                bool flag_combine_updates = false;
 
                 for (int i=0; i<nvols; i++) {  // ENH: speedup possible for vectorised metric instead of loop over volumes?
                     default_type volume_weight = volume_weights[i];
-                    bool flag_combine_updates;
-
                     if (i==0) {
-                        flag_combine_updates = false;
                         cost_new = 0;
-                    } else {
-                        flag_combine_updates = true;
                     }
 
                     im1_image.index(3) = i;
@@ -584,6 +578,8 @@ namespace MR
 
                     cost_new = cost_new + local_cost;
                     voxel_count = voxel_count + local_count;
+
+                    flag_combine_updates = true;
                 }
 
                 im1_image.index(3) = 0;
