@@ -189,6 +189,7 @@ def execute(): #pylint: disable=unused-variable
 
 
     # Variable input file name
+    global inputfn
     inputfn = 'in.mif'
 
 
