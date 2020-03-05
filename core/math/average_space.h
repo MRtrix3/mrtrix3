@@ -46,8 +46,8 @@ namespace MR
     Header compute_minimum_average_header (
         const ImageType1& im1,
         const ImageType2& im2,
-        Eigen::Transform<default_type, 3, Eigen::Projective> transform_1 = Eigen::Transform<default_type, 3, Eigen::Projective>(),
-        Eigen::Transform<default_type, 3, Eigen::Projective> transform_2 = Eigen::Transform<default_type, 3, Eigen::Projective>(),
+        Eigen::Transform<default_type, 3, Eigen::Projective> transform_1 = Eigen::Transform<default_type, 3, Eigen::Projective>::Identity(),
+        Eigen::Transform<default_type, 3, Eigen::Projective> transform_2 = Eigen::Transform<default_type, 3, Eigen::Projective>::Identity(),
         Eigen::Matrix<default_type, 4, 1> padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0),
         int voxel_subsampling = 1) {
       vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms {transform_1, transform_2};
