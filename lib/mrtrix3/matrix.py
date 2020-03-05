@@ -212,7 +212,8 @@ def save_numeric(filename, data, **kwargs):
   open_mode = os.O_WRONLY | os.O_CREAT
   if not app.FORCE_OVERWRITE:
     open_mode = open_mode | os.O_EXCL
-  with os.open(filename, open_mode) as outfile:
+  file_descriptor = os.open(filename, open_mode)
+  with open(file_descriptor, 'wb') as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
         outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
