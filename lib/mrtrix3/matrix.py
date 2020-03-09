@@ -169,10 +169,11 @@ def save_numeric(filename, data, **kwargs):
   footer = kwargs.pop('footer', { })
   comments = kwargs.pop('comments', '# ')
   encoding = kwargs.pop('encoding', None)
+  force = kwargs.pop('force', app.FORCE_OVERWRITE)
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to matrix.save_numeric(): ' + str(kwargs))
 
-  if not app.FORCE_OVERWRITE and os.path.exists(filename):
+  if not force and os.path.exists(filename):
     raise MRtrixError('output file "' + filename + '" already exists (use -force option to force overwrite)')
 
   encode_args = {'errors': 'ignore'}
@@ -210,7 +211,7 @@ def save_numeric(filename, data, **kwargs):
     footer = { }
 
   open_mode = os.O_WRONLY | os.O_CREAT
-  if not app.FORCE_OVERWRITE:
+  if not force:
     open_mode = open_mode | os.O_EXCL
   file_descriptor = os.open(filename, open_mode)
   with open(file_descriptor, 'wb') as outfile:
