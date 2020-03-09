@@ -1411,7 +1411,8 @@ def execute(): #pylint: disable=unused-variable
       matrix.save_transform(os.path.join(linear_transformations_path,
                                          xcontrast_xsubject_pre_postfix[0] + inp.uid
                                          + xcontrast_xsubject_pre_postfix[1] + '.txt'),
-                            trafo)
+                            trafo,
+                            force=app.FORCE_OVERWRITE)
 
   if app.ARGS.transformed_dir:
     for cid, trdir in enumerate(app.ARGS.transformed_dir):

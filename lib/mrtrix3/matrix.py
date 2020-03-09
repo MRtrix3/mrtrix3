@@ -160,7 +160,6 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
 
 # Save numeric data to a text file
 def save_numeric(filename, data, **kwargs):
-  from mrtrix3 import app # pylint: disable=import-outside-toplevel
   fmt = kwargs.pop('fmt', '%.15g')
   delimiter = kwargs.pop('delimiter', ' ')
   newline = kwargs.pop('newline', '\n')
@@ -169,7 +168,7 @@ def save_numeric(filename, data, **kwargs):
   footer = kwargs.pop('footer', { })
   comments = kwargs.pop('comments', '# ')
   encoding = kwargs.pop('encoding', None)
-  force = kwargs.pop('force', app.FORCE_OVERWRITE)
+  force = kwargs.pop('force', False)
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to matrix.save_numeric(): ' + str(kwargs))
 
