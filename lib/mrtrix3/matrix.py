@@ -211,7 +211,9 @@ def save_numeric(filename, data, **kwargs):
     footer = { }
 
   open_mode = os.O_WRONLY | os.O_CREAT
-  if not force:
+  if force:
+    open_mode = open_mode | os.O_TRUNC
+  else:
     open_mode = open_mode | os.O_EXCL
   file_descriptor = os.open(filename, open_mode)
   with open(file_descriptor, 'wb') as outfile:
@@ -234,8 +236,6 @@ def save_numeric(filename, data, **kwargs):
     for key, value in sorted(footer.items()):
       for line in value.splitlines():
         outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
-
-
 
 
 
