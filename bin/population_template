@@ -1218,7 +1218,7 @@ def execute(): #pylint: disable=unused-variable
       if average_inv is not None:
         for inp in ins:
           transform = matrix.dot(matrix.load_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt')), average_inv)
-          matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform)
+          matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform, force=True)
 
       for cid in range(n_contrasts):
         for inp in ins:
