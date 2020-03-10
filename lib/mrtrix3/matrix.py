@@ -17,7 +17,7 @@
 
 
 
-import itertools, os, re
+import io, itertools, os, re
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
 from mrtrix3.utils import STRING_TYPES
 
@@ -215,7 +215,7 @@ def save_numeric(filename, data, **kwargs):
   else:
     open_mode = open_mode | os.O_EXCL
   file_descriptor = os.open(filename, open_mode)
-  with open(file_descriptor, 'wb') as outfile:
+  with io.open(file_descriptor, 'wb') as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
         outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
