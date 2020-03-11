@@ -1106,7 +1106,7 @@ def execute(): #pylint: disable=unused-variable
                     outofbounds_option +
                     datatype_option)
         run.function(os.remove, inp.ims_transformed[cid] + '_translated.mif')
-      progress.increment()
+        progress.increment()
     progress.done()
 
     if nanmask_input:
@@ -1132,7 +1132,7 @@ def execute(): #pylint: disable=unused-variable
     level = 0
     regtype = linear_type[0]
     def linear_msg():
-      return 'Optimising template with linear registration (stage {0} of {1}; {2})'.format(level, len(linear_scales), regtype)
+      return 'Optimising template with linear registration (stage {0} of {1}; {2})'.format(level + 1, len(linear_scales), regtype)
     progress = app.ProgressBar(linear_msg, (3 if use_masks else 2) * len(linear_scales) * len(ins))
     for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
       for inp in ins:
