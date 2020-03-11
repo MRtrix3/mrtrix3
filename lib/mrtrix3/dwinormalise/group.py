@@ -91,7 +91,17 @@ def execute(): #pylint: disable=unused-variable
   progress.done()
 
   app.console('Generating FA population template')
-  run.command('population_template fa -mask_dir ' + mask_dir + ' fa_template.mif -type rigid_affine_nonlinear -rigid_scale 0.25,0.5,0.8,1.0 -affine_scale 0.7,0.8,1.0,1.0 -nl_scale 0.5,0.75,1.0,1.0,1.0 -nl_niter 5,5,5,5,5 -warp_dir warps -linear_no_pause -nocleanup')
+  run.command('population_template fa fa_template.mif'
+              + ' -mask_dir ' + mask_dir
+              + ' -type rigid_affine_nonlinear'
+              + ' -rigid_scale 0.25,0.5,0.8,1.0'
+              + ' -affine_scale 0.7,0.8,1.0,1.0'
+              + ' -nl_scale 0.5,0.75,1.0,1.0,1.0'
+              + ' -nl_niter 5,5,5,5,5'
+              + ' -warp_dir warps'
+              + ' -linear_no_pause'
+              + ' -scratch population_template'
+              + ('' if app.DO_CLEANUP else ' -nocleanup'))
 
   app.console('Generating WM mask in template space')
   run.command('mrthreshold fa_template.mif -abs ' +  app.ARGS.fa_threshold + ' template_wm_mask.mif')
