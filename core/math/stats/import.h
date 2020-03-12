@@ -122,13 +122,14 @@ namespace MR
         // For each file, create an instance of SubjectDataImport
         //   (which must derive from SubjectDataImportBase)
 
-        // TODO Change how this is done:
         // - If a directory path is explicitly provided, first try to find
         //   all input files relative to that directory
         // - If that fails, try to find all files relative to
         //   directory in which subject list text file is stored
         // - If that fails, try to find all files relative to
         //   current working directory
+        // Only once a directory is selected that contains all inputs listed in the
+        //   text file is an attempt made to load all of those files
         vector<std::string> lines;
         {
           std::ifstream ifs (listpath.c_str());
