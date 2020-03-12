@@ -238,15 +238,24 @@ namespace MR {
         }
 
         // Slice timing may come from a few different potential sources
-        vector<float> slices_timing;
+        vector<std::string> slices_timing_str;
+        vector<float> slices_timing_float;
         if (image.images_in_mosaic) {
           if (image.mosaic_slices_timing.size() < image.images_in_mosaic) {
             WARN ("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) + ") is smaller than number of images in mosaic (" + str(image.images_in_mosaic) + "); omitting");
           } else {
             DEBUG ("Taking slice timing information from CSA mosaic info");
             // CSA mosaic defines these in ms; we want them in s
-            for (size_t n = 0; n < image.images_in_mosaic; ++n)
-              slices_timing.push_back (0.001 * image.mosaic_slices_timing[n]);
+            // We also want to avoid floating-point precision issues resulting from
+            //   base-10 scaling
+            for (size_t n = 0; n < image.images_in_mosaic; ++n) {
+              slices_timing_float.push_back (0.001 * image.mosaic_slices_timing[n]);
+              std::string temp = str(int(10.0 * image.mosaic_slices_timing[n]));
+              while (temp.size() < 5)
+                temp.insert (temp.begin(), '0');
+              temp.insert (temp.begin() + temp.size() - 4, '.');
+              slices_timing_str.push_back (temp);
+            }
           }
         } else if (std::isfinite (frame.time_after_start)) {
           DEBUG ("Taking slice timing information from CSA TimeAfterStart field");
@@ -254,19 +263,21 @@ namespace MR {
           for (size_t n = 0; n != dim[1]; ++n)
             min_time_after_start = std::min (min_time_after_start, frames[n]->time_after_start);
           for (size_t n = 0; n != dim[1]; ++n)
-            slices_timing.push_back (frames[n]->time_after_start - min_time_after_start);
+            slices_timing_float.push_back (frames[n]->time_after_start - min_time_after_start);
         } else if (std::isfinite (static_cast<default_type>(frame.acquisition_time))) {
           DEBUG ("Estimating slice timing from DICOM AcquisitionTime field");
           default_type min_acquisition_time = std::numeric_limits<default_type>::infinity();
           for (size_t n = 0; n != dim[1]; ++n)
             min_acquisition_time = std::min (min_acquisition_time, default_type(frames[n]->acquisition_time));
           for (size_t n = 0; n != dim[1]; ++n)
-            slices_timing.push_back (default_type(frames[n]->acquisition_time) - min_acquisition_time);
+            slices_timing_float.push_back (default_type(frames[n]->acquisition_time) - min_acquisition_time);
         }
-        if (slices_timing.size()) {
-          const size_t slices_acquired_at_zero = std::count (slices_timing.begin(), slices_timing.end(), 0.0f);
+        if (slices_timing_float.size()) {
+          const size_t slices_acquired_at_zero = std::count (slices_timing_float.begin(), slices_timing_float.end(), 0.0f);
           if (slices_acquired_at_zero < (image.images_in_mosaic ? image.images_in_mosaic : dim[1])) {
-            H.keyval()["SliceTiming"] = join (slices_timing, " ");
+            H.keyval()["SliceTiming"] = slices_timing_str.size() ?
+                                        join (slices_timing_str, ",") :
+                                        join (slices_timing_float, ",");
             H.keyval()["MultibandAccelerationFactor"] = str (slices_acquired_at_zero);
             H.keyval()["SliceEncodingDirection"] = "k";
           } else {
