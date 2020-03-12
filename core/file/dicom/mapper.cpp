@@ -251,9 +251,14 @@ namespace MR {
             for (size_t n = 0; n < image.images_in_mosaic; ++n) {
               slices_timing_float.push_back (0.001 * image.mosaic_slices_timing[n]);
               std::string temp = str(int(10.0 * image.mosaic_slices_timing[n]));
+              const bool neg = image.mosaic_slices_timing[n] < 0.0;
+              if (neg)
+                temp.erase (temp.begin());
               while (temp.size() < 5)
                 temp.insert (temp.begin(), '0');
               temp.insert (temp.begin() + temp.size() - 4, '.');
+              if (neg)
+                temp.insert (temp.begin(), '-');
               slices_timing_str.push_back (temp);
             }
           }
