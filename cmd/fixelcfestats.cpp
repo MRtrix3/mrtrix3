@@ -176,7 +176,7 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
   public:
     SubjectFixelImport (const std::string& path) :
         Math::Stats::SubjectDataImportBase (path),
-        H (Header::open (find_image (path))),
+        H (Header::open (path)),
         data (H.get_image<float>())
     {
       for (size_t axis = 1; axis < data.ndim(); ++axis) {
@@ -205,33 +205,13 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
     const Header& header() const { return H; }
 
 
-    static void set_fixel_directory (const std::string& s) { fixel_directory = s; }
-
 
   private:
     Header H;
     Image<float> data; // May be mapped input file, or scratch smoothed data
 
-    // Enable input image paths to be either absolute, relative to CWD, or
-    //   relative to input fixel template directory
-    std::string find_image (const std::string& path) const
-    {
-      const std::string cat_path = Path::join (fixel_directory, path);
-      if (Path::is_file (cat_path))
-        return cat_path;
-      if (Path::is_file (path))
-        return path;
-      throw Exception ("Unable to find subject image \"" + path +
-                       "\" either in input fixel diretory \"" + fixel_directory +
-                       "\" or in current working directory");
-      return "";
-    }
-
-    static std::string fixel_directory;
-
 };
 
-std::string SubjectFixelImport::fixel_directory;
 
 
 
@@ -253,7 +233,6 @@ void run()
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
   const std::string input_fixel_directory = argument[0];
-  SubjectFixelImport::set_fixel_directory (input_fixel_directory);
   Header index_header = Fixel::find_index_header (input_fixel_directory);
   auto index_image = index_header.get_image<index_type>();
 
@@ -283,8 +262,9 @@ void run()
   }
 
   // Read file names and check files exist
+  // Preference for finding files relative to input template fixel directory
   Math::Stats::CohortDataImport importer;
-  importer.initialise<SubjectFixelImport> (argument[1]);
+  importer.initialise<SubjectFixelImport> (argument[1], input_fixel_directory);
   for (size_t i = 0; i != importer.size(); ++i) {
     if (!Fixel::fixels_match (index_header, dynamic_cast<SubjectFixelImport*>(importer[i].get())->header()))
       throw Exception ("Fixel data file \"" + importer[i]->name() + "\" does not match template fixel image");
