@@ -243,6 +243,8 @@ def execute(): #pylint: disable=unused-variable
         raise MRtrixError('Cannot perform slice-to-volume correction in eddy: No slspec file provided, and no slice timing information present in header')
       slice_timing = dwi_header.keyval()['SliceTiming']
       app.debug('Initial slice timing contents from header: ' + str(slice_timing))
+      if slice_timing in ['invalid', 'variable']:
+        app.error('Cannot use slice timing information in image header for slice-to-volume correction: data flagged as "' + slice_timing + '"')
       # Fudges necessary to maniupulate nature of slice timing data in cases where
       #   bad JSON formatting has led to the data not being simply a list of floats
       #   (whether from MRtrix3 DICOM conversion or from anything else)
