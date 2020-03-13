@@ -91,7 +91,7 @@ namespace MR
           DEBUG ("Error converting slice timing vector to floating-point");
           return "invalid";
         }
-        const default_type diff = std::abs (f_two - f_one);
+        const default_type diff = abs (f_two - f_one);
         if (diff > 0.00375) {
           DEBUG ("Supra-threshold difference of " + str(diff) + "s in slice times");
           return "variable";

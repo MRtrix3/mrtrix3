@@ -162,7 +162,7 @@ jobs:
 
 
     - name: check syntax
-      run: ./check_syntax
+      run: ./check_syntax || { cat syntax.log; false; }
 
     - name: pylint (Python 2)
       run: |
