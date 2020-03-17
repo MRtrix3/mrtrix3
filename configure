@@ -1295,7 +1295,7 @@ int main() { Foo f; }
               qt_libs = shlex.split (line[line.find('=')+1:].strip())
             elif line.startswith ('LFLAGS'):
               qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
-          if len(qt_defines) or len(qt_cflags) or len(qt_includes) or len(qt_libs) or len(qt_ldflags):
+          if qt_defines or qt_cflags or qt_includes or qt_libs or qt_ldflags:
             log ('ok\n')
             log ('  qt_defines: ' + str(qt_defines) + '\n')
             log ('  qt_cflags: ' + str(qt_cflags) + '\n')
