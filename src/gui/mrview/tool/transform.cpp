@@ -50,6 +50,12 @@ namespace MR
         void Transform::setActive (bool onoff)
         {
           activate_button->setChecked (onoff);
+          if (isVisible()) {
+            if (onoff)
+              activate_button->setText (tr ("on"));
+            else
+              activate_button->setText (tr ("off"));
+          }
           window().register_camera_interactor ( (isVisible() && onoff) ? this : nullptr );
         }
 
