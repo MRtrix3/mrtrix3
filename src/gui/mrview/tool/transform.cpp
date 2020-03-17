@@ -153,7 +153,7 @@ namespace MR
           if (window().snap_to_image())
             window().set_snap_to_image (false);
 
-          const auto rot = window().get_current_mode()->get_tilt_rotation (projection).cast<double>();
+          const auto rot = window().get_current_mode()->get_tilt_rotation (projection).cast<double>().inverse();
           if (!rot.coeffs().allFinite())
             return true;
 
