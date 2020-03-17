@@ -443,9 +443,6 @@ namespace MR
           reset_windowing_action->setShortcut (tr ("Esc"));
           addAction (reset_windowing_action);
 
-          //CONF option: ImageInterpolation
-          //CONF default: true
-          //CONF Interpolation switched on in the main image.
           image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
           image_interpolate_action->setShortcut (tr ("I"));
           image_interpolate_action->setCheckable (true);
