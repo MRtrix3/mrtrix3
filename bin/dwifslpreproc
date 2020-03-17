@@ -226,10 +226,11 @@ def execute(): #pylint: disable=unused-variable
           try:
             slice_timing = matrix.load_numeric(slspec_file_path, dtype=float)
             app.debug('Slice timing: ' + str(slice_timing))
-            app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
+            app.warn('\"slspec\" file provided to FSL eddy should contain slice indices for slice groups, not slice timing; '
+                     'nevertheless, slice timing has been imported from file \"' + slspec_file_path + '\"')
             if len(slice_timing) != dwi_num_slices:
               raise MRtrixError('Cannot use slice timing information from file \"' + slspec_file_path + '\" for slice-to-volume correction: ' + \
-                                'Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+                                'Number of entries (' + str(len(slice_timing)) + ') does not match number of slices (' + str(dwi_header.size()[2]) + ')')
           except ValueError:
             raise MRtrixError('Error parsing \"slspec\" file (this should contain integer values indicating slice groups, not slice timing; please see FSL eddy help page)')
         # Remove this entry from eddy_manual_options; it'll be inserted later, with the
@@ -240,10 +241,32 @@ def execute(): #pylint: disable=unused-variable
     else:
       if 'SliceTiming' not in dwi_header.keyval():
         raise MRtrixError('Cannot perform slice-to-volume correction in eddy: No slspec file provided, and no slice timing information present in header')
-      slice_timing = dwi_header.keyval()['SliceTiming'][0]
-      app.debug('Slice timing from header: ' + str(slice_timing))
+      slice_timing = dwi_header.keyval()['SliceTiming']
+      app.debug('Initial slice timing contents from header: ' + str(slice_timing))
+      # Fudges necessary to maniupulate nature of slice timing data in cases where
+      #   bad JSON formatting has led to the data not being simply a list of floats
+      #   (whether from MRtrix3 DICOM conversion or from anything else)
+      if isinstance(slice_timing, utils.STRING_TYPES):
+        slice_timing = slice_timing.split()
+      if not isinstance(slice_timing, list):
+        app.error('Cannot use slice timing information in image header for slice-to-volume correction: Data is not a list')
+      if len(slice_timing) == 1:
+        slice_timing = slice_timing[0]
+        if not isinstance(slice_timing, list):
+          app.error('Cannot use slice timing information in image header for slice-to-volume correction: Unexpected data format')
+      if isinstance(slice_timing[0], list):
+        if not all( [ len(entry) == 1 for entry in slice_timing ] ):
+          app.error('Cannot use slice timing information in image header for slice-to-volume correction: Data do not appear to be 1D')
+        slice_timing = [ entry[0] for entry in slice_timing ]
+      if not all( [ isinstance(entry, float) for entry in slice_timing ] ):
+        try:
+          slice_timing = [ float(entry) for entry in slice_timing ]
+        except ValueError:
+          app.error('Cannot use slice timing information in image header for slice-to-volume correction: Data are not numeric')
+      app.debug('Re-formatted slice timing contents from header: ' + str(slice_timing))
       if len(slice_timing) != dwi_num_slices:
-        raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: Number of entries (' + len(slice_timing) + ') does not match number of slices (' + dwi_header.size()[2] + ')')
+        raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
+                          'Number of entries (' + str(len(slice_timing)) + ') does not match number of slices (' + str(dwi_header.size()[2]) + ')')
 
   # Use new features of dirstat to query the quality of the diffusion acquisition scheme
   # Need to know the mean b-value in each shell, and the asymmetry value of each shell

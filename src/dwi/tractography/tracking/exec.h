@@ -118,7 +118,6 @@ namespace MR
 
 
             bool operator() (GeneratedTrack& item) {
-              rng = &thread_local_RNG;
               if (!seed_track (item))
                 return false;
               if (track_excluded) {
@@ -143,7 +142,6 @@ namespace MR
           private:
 
             const typename Method::Shared& S;
-            Math::RNG thread_local_RNG;
             Method method;
             bool track_excluded;
             IncludeROIVisitation include_visitation;

@@ -207,8 +207,11 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 
 def command(cmd, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
+  from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
   global shared #pylint: disable=invalid-name
+
+  def quote_nonpipe(item):
+    return item if item == '|' else path.quote(item)
 
   shell = kwargs.pop('shell', False)
   show = kwargs.pop('show', True)
@@ -235,7 +238,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     cmdsplit = []
     for entry in cmd:
       if isinstance(entry, STRING_TYPES):
-        cmdstring += (' ' if cmdstring else '') + entry
+        cmdstring += (' ' if cmdstring else '') + quote_nonpipe(entry)
         cmdsplit.append(entry)
       elif isinstance(entry, list):
         assert all([ isinstance(item, STRING_TYPES) for item in entry ])
@@ -247,7 +250,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
           else:
             cmdstring += (' ' if cmdstring else '') + '[' + common_prefix + '*' + common_suffix + ' (' + str(len(entry)) + ' items)]'
         else:
-          cmdstring += (' ' if cmdstring else '') + entry[0]
+          cmdstring += (' ' if cmdstring else '') + quote_nonpipe(entry[0])
         cmdsplit.extend(entry)
       else:
         raise TypeError('When run.command() is provided with a list as input, entries in the list must be either strings or lists of strings')
@@ -267,7 +270,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     if shared.verbosity:
       sys.stderr.write(ANSI.execute + 'Skipping command:' + ANSI.clear + ' ' + cmdstring + '\n')
       sys.stderr.flush()
-    return CommandReturn(None, '', '')
+    return CommandReturn('', '')
 
 
   # If operating in shell=True mode, handling of command execution is significantly different:

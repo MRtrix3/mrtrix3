@@ -17,7 +17,7 @@
 
 
 
-import itertools, re
+import io, itertools, os, re
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
 from mrtrix3.utils import STRING_TYPES
 
@@ -168,8 +168,12 @@ def save_numeric(filename, data, **kwargs):
   footer = kwargs.pop('footer', { })
   comments = kwargs.pop('comments', '# ')
   encoding = kwargs.pop('encoding', None)
+  force = kwargs.pop('force', False)
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to matrix.save_numeric(): ' + str(kwargs))
+
+  if not force and os.path.exists(filename):
+    raise MRtrixError('output file "' + filename + '" already exists (use -force option to force overwrite)')
 
   encode_args = {'errors': 'ignore'}
   if encoding:
@@ -205,7 +209,13 @@ def save_numeric(filename, data, **kwargs):
   else:
     footer = { }
 
-  with open(filename, 'wb') as outfile:
+  open_mode = os.O_WRONLY | os.O_CREAT
+  if force:
+    open_mode = open_mode | os.O_TRUNC
+  else:
+    open_mode = open_mode | os.O_EXCL
+  file_descriptor = os.open(filename, open_mode)
+  with io.open(file_descriptor, 'wb') as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
         outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
@@ -225,7 +235,6 @@ def save_numeric(filename, data, **kwargs):
     for key, value in sorted(footer.items()):
       for line in value.splitlines():
         outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
-
 
 
 
