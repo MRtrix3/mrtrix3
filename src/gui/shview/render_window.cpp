@@ -409,7 +409,7 @@ namespace MR
         }
 
         render_frame->set (val);
-        setWindowTitle (QString (title.c_str()));
+        setWindowTitle (qstr (title));
       }
 
       void Window::screenshot_slot ()

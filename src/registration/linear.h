@@ -137,7 +137,7 @@ namespace MR
         }
 
         // needs to be set before set_stage_iterations is set
-        void set_stage_optimiser_default (const  OptimiserAlgoType& type) {
+        void set_stage_optimiser_default (const OptimiserAlgoType& type) {
           for (auto & stage : stages)
             stage.optimiser_default = type;
         }

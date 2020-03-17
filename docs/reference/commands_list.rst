@@ -43,6 +43,7 @@ List of MRtrix3 commands
     commands/dwigradcheck
     commands/dwinormalise
     commands/dwishellmath
+    commands/fixel2peaks
     commands/fixel2sh
     commands/fixel2tsf
     commands/fixel2voxel
@@ -92,6 +93,7 @@ List of MRtrix3 commands
     commands/mrview
     commands/mtnormalise
     commands/peaks2amp
+    commands/peaks2fixel
     commands/population_template
     commands/responsemean
     commands/sh2amp
@@ -171,6 +173,7 @@ List of MRtrix3 commands
     |python.png|, :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
     |python.png|, :ref:`dwinormalise`, "Perform various forms of intensity normalisation of DWIs"
     |python.png|, :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
+    |cpp.png|, :ref:`fixel2peaks`, "Convert data in the fixel directory format into a 4D image of 3-vectors"
     |cpp.png|, :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
     |cpp.png|, :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
     |cpp.png|, :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
@@ -220,6 +223,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrview`, "The MRtrix image viewer"
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
+    |cpp.png|, :ref:`peaks2fixel`, "Convert peak directions image to a fixel directory"
     |python.png|, :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
     |python.png|, :ref:`responsemean`, "Calculate the mean response function from a set of text files"
     |cpp.png|, :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
