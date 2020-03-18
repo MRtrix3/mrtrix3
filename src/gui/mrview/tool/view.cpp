@@ -132,7 +132,7 @@ namespace MR
               p.plane[1] = M (proj, 1);
               p.plane[2] = M (proj, 2);
 
-              const Eigen::Vector3f centre = image.transform().voxel2scanner.cast<float>() * Eigen::Vector3f { image.header().size(0)/2.0f, image.header().size(1)/2.0f, image.header().size(2)/2.0f };
+              const Eigen::Vector3f centre = image.voxel2scanner() * Eigen::Vector3f { image.header().size(0)/2.0f, image.header().size(1)/2.0f, image.header().size(2)/2.0f };
               p.plane[3] = centre[0]*p.plane[0] + centre[1]*p.plane[1] + centre[2]*p.plane[2];
               p.active = true;
 
@@ -600,7 +600,7 @@ namespace MR
           if(!window().image())
             return;
 
-          Eigen::VectorXf focus = window().image()->transform().scanner2voxel.cast<float>() * window().focus();
+          Eigen::VectorXf focus = window().image()->scanner2voxel() * window().focus();
           Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
           std::cout << focus.transpose().format(fmt) << "\n";
 
@@ -621,7 +621,7 @@ namespace MR
           focus_y->setValue (focus[1]);
           focus_z->setValue (focus[2]);
 
-          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
+          focus = window().image()->scanner2voxel() * focus;
           voxel_x->setValue (focus[0]);
           voxel_y->setValue (focus[1]);
           voxel_z->setValue (focus[2]);
@@ -655,7 +655,7 @@ namespace MR
         {
           try {
             Eigen::Vector3f focus { voxel_x->value(), voxel_y->value(), voxel_z->value() };
-            focus = window().image()->transform().voxel2scanner.cast<float>() * focus;
+            focus = window().image()->voxel2scanner() * focus;
             window().set_focus (focus);
             window().updateGL();
           }
@@ -692,6 +692,10 @@ namespace MR
           transparency_box->setVisible (mode->features & Mode::ShaderTransparency);
           threshold_box->setVisible (mode->features & Mode::ShaderTransparency);
           clip_box->setVisible (mode->features & Mode::ShaderClipping);
+          if (mode->features & Mode::ShaderClipping)
+            clip_planes_selection_changed_slot();
+          else
+            window().register_camera_interactor();
           lightbox_box->setVisible (false);
           ortho_view_in_row_check_box->setVisible (false);
           mode->request_update_mode_gui(*this);
@@ -972,6 +976,7 @@ namespace MR
           clip_planes_invert_action->setEnabled (selected);
           clip_planes_remove_action->setEnabled (selected);
           clip_planes_clear_action->setEnabled (clip_planes_model->rowCount());
+          window().register_camera_interactor (selected ? this : nullptr);
           window().updateGL();
         }
 
@@ -1094,6 +1099,99 @@ namespace MR
           connect (&window(), SIGNAL (volumeChanged()), &mode, SLOT (image_volume_changed_slot()));
 
           reset_light_box_gui_controls();
+        }
+
+        void View::move_clip_planes_in_out (const ModelViewProjection& projection, vector<GL::vec4*>& clip, float distance)
+        {
+          Eigen::Vector3f d = projection.screen_normal();
+          for (size_t n = 0; n < clip.size(); ++n) {
+            GL::vec4& p (*clip[n]);
+            p[3] += distance * (p[0]*d[0] + p[1]*d[1] + p[2]*d[2]);
+          }
+          window().updateGL();
+        }
+
+
+        void View::rotate_clip_planes (vector<GL::vec4*>& clip, const Eigen::Quaternionf& rot)
+        {
+          const auto& focus (window().focus());
+          for (size_t n = 0; n < clip.size(); ++n) {
+            GL::vec4& p (*clip[n]);
+            float distance_to_focus = p[0]*focus[0] + p[1]*focus[1] + p[2]*focus[2] - p[3];
+            const Eigen::Quaternionf norm (0.0f, p[0], p[1], p[2]);
+            const Eigen::Quaternionf rotated = norm * rot;
+            p[0] = rotated.x();
+            p[1] = rotated.y();
+            p[2] = rotated.z();
+            p[3] = p[0]*focus[0] + p[1]*focus[1] + p[2]*focus[2] - distance_to_focus;
+          }
+          window().updateGL();
+        }
+
+
+        void View::deactivate ()
+        {
+          clip_planes_list_view->selectionModel()->clear();
+        }
+
+
+        bool View::slice_move_event (const ModelViewProjection& projection, float x)
+        {
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (!clip.size()) return false;
+          const auto &header = window().image()->header();
+          float increment = x * std::pow (header.spacing (0) * header.spacing (1) * header.spacing (2), 1.0f/3.0f);
+          move_clip_planes_in_out (projection, clip, increment);
+          return true;
+        }
+
+
+
+        bool View::pan_event (const ModelViewProjection& projection)
+        {
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (!clip.size()) return false;
+          Eigen::Vector3f move = projection.screen_to_model_direction (window().mouse_displacement(), window().target());
+          for (size_t n = 0; n < clip.size(); ++n) {
+            GL::vec4& p (*clip[n]);
+            p[3] += (p[0]*move[0] + p[1]*move[1] + p[2]*move[2]);
+          }
+          window().updateGL();
+          return true;
+        }
+
+
+        bool View::panthrough_event (const ModelViewProjection& projection)
+        {
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (!clip.size()) return false;
+          move_clip_planes_in_out (projection, clip, MOVE_IN_OUT_FOV_MULTIPLIER * window().mouse_displacement().y() * window().FOV());
+          return true;
+        }
+
+
+
+        bool View::tilt_event (const ModelViewProjection& projection)
+        {
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (!clip.size()) return false;
+          const Eigen::Quaternionf rot = window().get_current_mode()->get_tilt_rotation (projection);
+          if (!rot.coeffs().allFinite())
+            return true;
+          rotate_clip_planes (clip, rot);
+          return true;
+        }
+
+
+
+        bool View::rotate_event (const ModelViewProjection& projection)
+        {
+          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
+          if (!clip.size()) return false;
+          const Eigen::Quaternionf rot = window().get_current_mode()->get_rotate_rotation (projection);
+          if (rot.coeffs().allFinite())
+            rotate_clip_planes (clip, rot);
+          return true;
         }
 
       }

@@ -348,10 +348,10 @@ namespace MR
               win.captureGL (Path::join (current_folder, prefix + printf ("%04d.png", i)));
 
             // Rotation
-            Math::Versorf orientation (win.orientation());
+            Eigen::Quaternionf orientation (win.orientation());
             Eigen::Vector3f axis { rotation_axis_x->value(), rotation_axis_y->value(), rotation_axis_z->value() };
             axis.normalize();
-            const Math::Versorf rotation (Eigen::AngleAxisf (radians, axis));
+            const Eigen::Quaternionf rotation (Eigen::AngleAxisf (radians, axis));
 
             switch (rotation_type) {
               case RotationType::World:
@@ -376,7 +376,7 @@ namespace MR
 
             switch (translation_type) {
               case TranslationType::Voxel:
-                trans_vec = img->transform().voxel2scanner.rotation().cast<float>() * trans_vec;
+                trans_vec = img->voxel2scanner().rotation() * trans_vec;
                 break;
               case TranslationType::Camera:
               {

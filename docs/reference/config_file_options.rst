@@ -254,7 +254,7 @@ List of MRtrix3 configuration file options
 
     *default: true*
 
-     Interpolation switched on in the main image.
+     Define default interplation setting for image and image overlay.
 
 .. option:: InitialToolBarPosition
 

@@ -20,8 +20,6 @@
 #include <iostream>
 
 #include "math/least_squares.h"
-#include "math/versor.h"
-
 #include "gui/opengl/gl.h"
 
 namespace MR
@@ -38,7 +36,7 @@ namespace MR
         public:
           vec4 () { }
           vec4 (float x, float y, float z, float w) { v[0] = x; v[1] = y; v[2] = z; v[3] = w; }
-          vec4 (const Math::Versorf& V) { v[0] = V.x(); v[1] = V.y(); v[2] = V.z(); v[3] = V.w(); }
+          vec4 (const Eigen::Quaternionf& V) { v[0] = V.x(); v[1] = V.y(); v[2] = V.z(); v[3] = V.w(); }
           template <class Cont>
           vec4 (const Cont& p, float w) { v[0] = p[0]; v[1] = p[1]; v[2] = p[2]; v[3] = w;  }
           vec4 (const float* p) { memcpy (v, p, sizeof(v)); }
@@ -69,9 +67,9 @@ namespace MR
           mat4 () { }
           mat4 (const mat4& a) { memcpy (m, a.m, sizeof(m)); }
           mat4 (const float* p) { memcpy (m, p, sizeof(m)); }
-          mat4 (const Math::Versorf& v)
+          mat4 (const Eigen::Quaternionf& v)
           {
-            const Math::Versorf::Matrix3 R = v.matrix();
+            const auto R = v.matrix();
             zero();
             for (size_t i = 0; i != 3; ++i) {
               for (size_t j = 0; j != 3; ++j)

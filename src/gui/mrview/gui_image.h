@@ -43,6 +43,10 @@ namespace MR
         class ODF;
       }
 
+
+
+
+
       class ImageBase : public Volume
       { MEMALIGN(ImageBase)
         public:
@@ -63,6 +67,11 @@ namespace MR
 
       };
 
+
+
+
+
+
       class Image : public ImageBase
       { MEMALIGN(Image)
         public:
@@ -79,15 +88,11 @@ namespace MR
           cfloat trilinear_value (const Eigen::Vector3f&) const;
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
-          const MR::Transform& transform() const { return linear_interp; }
           const vector<std::string>& comments() const { return _comments; }
 
           void reset_windowing (const int, const bool);
 
         protected:
-          mutable MR::Interp::Linear <MR::Image<cfloat>> linear_interp;
-          mutable MR::Interp::Nearest<MR::Image<cfloat>> nearest_interp;
-          friend class Tool::ODF;
 
           struct CachedTexture { MEMALIGN(CachedTexture)
             GL::Texture tex;
