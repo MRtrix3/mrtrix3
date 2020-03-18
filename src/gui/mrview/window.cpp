@@ -1793,6 +1793,8 @@ namespace MR
       bool Window::gestureEventGL (QGestureEvent* event)
       {
         assert (mode);
+        if (!image())
+          return true;
 
         if (QGesture* pan = event->gesture(Qt::PanGesture)) {
           QPanGesture* e = static_cast<QPanGesture*> (pan);
