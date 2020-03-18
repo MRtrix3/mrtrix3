@@ -231,12 +231,13 @@ namespace MR
         mouse_action (NoAction),
         focal_point { NAN, NAN, NAN },
         camera_target { NAN, NAN, NAN },
-        orient (),
+        orient (NaN, NaN, NaN, NaN),
         field_of_view (100.0),
         anatomical_plane (2),
         colourbar_position (ColourBars::Position::BottomRight),
         tools_colourbar_position (ColourBars::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
+        camera_interactor (nullptr),
         tool_has_focus (nullptr),
         best_FPS (NAN),
         show_FPS (false),
@@ -442,9 +443,6 @@ namespace MR
           reset_windowing_action->setShortcut (tr ("Esc"));
           addAction (reset_windowing_action);
 
-          //CONF option: ImageInterpolation
-          //CONF default: true
-          //CONF Interpolation switched on in the main image.
           image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
           image_interpolate_action->setShortcut (tr ("I"));
           image_interpolate_action->setCheckable (true);
@@ -1795,6 +1793,8 @@ namespace MR
       bool Window::gestureEventGL (QGestureEvent* event)
       {
         assert (mode);
+        if (!image())
+          return true;
 
         if (QGesture* pan = event->gesture(Qt::PanGesture)) {
           QPanGesture* e = static_cast<QPanGesture*> (pan);
@@ -1839,6 +1839,12 @@ namespace MR
 
 
 
+      void Window::register_camera_interactor (Tool::CameraInteractor* agent)
+      {
+        if (camera_interactor)
+          camera_interactor->deactivate();
+        camera_interactor = agent;
+      }
 
 
       void Window::process_commandline_option ()
@@ -1931,7 +1937,7 @@ namespace MR
               vector<default_type> pos = parse_floats (opt[0]);
               if (pos.size() != 3)
                 throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
-              set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              set_focus (image()->voxel2scanner() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
               glarea->update();
             }
             return;

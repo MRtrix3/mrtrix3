@@ -44,7 +44,7 @@ namespace MR
         constexpr float AngleMax = 90.0f;
 
 
-        const Math::Versorf DefaultOrientation = Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) *
+        const Eigen::Quaternionf DefaultOrientation = Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) *
                                                      Eigen::AngleAxisf (Math::pi/3.0f, Eigen::Vector3f (1.0f, 0.0f, 0.0f));
         QFont get_font (QWidget* parent) {
           QFont f = parent->font();
@@ -87,7 +87,7 @@ namespace MR
           for (size_t j = 0; j != 3; ++j)
             M(i,j) = rotation(j,i);
         }
-        orientation = Math::Versorf (M);
+        orientation = Eigen::Quaternionf (M);
         update();
       }
 
@@ -307,7 +307,7 @@ namespace MR
             const Eigen::Vector3f v = x.cross (z).normalized();
             float angle = RotationInc * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
             if (angle > Math::pi_2) angle = Math::pi_2;
-            const Math::Versorf rot (Eigen::AngleAxisf (angle, v));
+            const Eigen::Quaternionf rot (Eigen::AngleAxisf (angle, v));
             orientation = rot * orientation;
             update();
           }

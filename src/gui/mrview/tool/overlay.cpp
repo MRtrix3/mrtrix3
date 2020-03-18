@@ -837,7 +837,6 @@ namespace MR
             return true;
           }
 
-
           return false;
         }
 
