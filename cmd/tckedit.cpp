@@ -19,7 +19,7 @@
 #include "command.h"
 #include "exception.h"
 #include "mrtrix.h"
-#include "thread_queue.h"
+#include "ordered_thread_queue.h"
 #include "types.h"
 
 #include "dwi/tractography/file.h"
@@ -53,9 +53,7 @@ void usage ()
   DESCRIPTION
   + "This command can be used to perform various types of manipulations "
     "on track data. A range of such manipulations are demonstrated in the "
-    "examples provided below."
-
-  + DWI::Tractography::preserve_track_order_desc;
+    "examples provided below.";
 
   EXAMPLES
   + Example ("Concatenate data from multiple track files into one",
@@ -218,7 +216,7 @@ void run ()
   Worker worker (properties, inverse, ends_only);
   Receiver receiver (output_path, properties, number, skip);
 
-  Thread::run_queue (
+  Thread::run_ordered_queue (
       loader,
       Thread::batch (Streamline<>()),
       Thread::multi (worker),

@@ -38,13 +38,6 @@ namespace MR
     {
 
 
-      constexpr const char* preserve_track_order_desc
-          = "Note that if multi-threading is used in this command, the ordering of tracks in the "
-            "output file is unlikely to match the order of the incoming data. If your application "
-            "explicitly requires that the order of tracks not change, you should run this command "
-            "with the option -nthreads 0.";
-
-
       template <class ValueType>
       class ReaderInterface
       { NOMEMALIGN
