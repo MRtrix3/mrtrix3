@@ -14,7 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#ifdef MRTRIX_MACOSX
+#include <malloc/malloc.h>
+#else
 #include <malloc.h>
+#endif
 
 #include "command.h"
 #include "exception.h"
@@ -24,6 +28,13 @@
 
 using namespace MR;
 using namespace App;
+
+
+#ifdef MRTRIX_MACOSX
+#define MALLOC_SIZE(ptr) malloc_size(ptr)
+#else
+#define MALLOC_SIZE(ptr) malloc_usable_size(ptr)
+#endif
 
 
 #define START(msg) { Timer timer; CONSOLE(std::string("testing ") + msg + " queue..."); memory_usage = peak_memory_usage = num_items = 0
@@ -54,14 +65,14 @@ void * operator new(decltype(sizeof(0)) n)
 {
   std::lock_guard<std::mutex> lock (malloc_mutex);
   void * p = malloc (n);
-  memory_usage += malloc_usable_size (p);
+  memory_usage += MALLOC_SIZE(p);
   peak_memory_usage = std::max (memory_usage, peak_memory_usage);
   return p;
 }
 void operator delete(void * p) noexcept
 {
   std::lock_guard<std::mutex> lock (malloc_mutex);
-  memory_usage -= malloc_usable_size(p);
+  memory_usage -= MALLOC_SIZE(p);
   free (p);
 }
 
