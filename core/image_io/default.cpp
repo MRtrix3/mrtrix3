@@ -59,7 +59,7 @@ namespace MR
 
         if (writable) {
           for (size_t n = 0; n < files.size(); n++) {
-            File::OFStream out (files[n].name, std::ios::out | std::ios::binary);
+            File::OFStream out (files[n].name, std::ios::in | std::ios::out | std::ios::binary);
             out.seekp (files[n].start, out.beg);
             out.write ((char*) (addresses[0].get() + n*bytes_per_segment), bytes_per_segment);
             if (!out.good())

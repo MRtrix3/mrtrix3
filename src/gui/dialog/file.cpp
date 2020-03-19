@@ -17,12 +17,13 @@
 #include <QMessageBox>
 
 #include "app.h"
+#include "gui/gui.h"
 #include "gui/dialog/file.h"
 #include "formats/list.h"
 
 #ifdef MRTRIX_MACOSX
 # define FILE_DIALOG_OPTIONS QFileDialog::DontUseNativeDialog
-#else 
+#else
 # define FILE_DIALOG_OPTIONS static_cast<QFileDialog::Options> (0)
 #endif
 
@@ -32,51 +33,62 @@ namespace MR
   {
     namespace Dialog
     {
-      namespace File 
+      namespace File
       {
-      
+
         const std::string image_filter_string = "Medical Images (*" + join (MR::Formats::known_extensions, " *") + ")";
 
 
 
 
-        std::string get_folder (QWidget* parent, const std::string& caption, const std::string& folder) 
+        std::string get_folder (QWidget* parent, const std::string& caption, std::string* folder)
         {
-          QString qstring = QFileDialog::getExistingDirectory (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), QFileDialog::ShowDirsOnly | FILE_DIALOG_OPTIONS);
+          QString qstring = QFileDialog::getExistingDirectory (parent, qstr (caption),
+              folder ? qstr (*folder) : QString(), QFileDialog::ShowDirsOnly | FILE_DIALOG_OPTIONS);
+
+          std::string new_folder;
           if (qstring.size()) {
-            std::string folder = qstring.toUtf8().data();
-            QDir::setCurrent (Path::dirname (folder).c_str());
-            return folder;
+            new_folder = qstring.toUtf8().data();
+            if (folder)
+              *folder = new_folder;
           }
-          return std::string();
+          return new_folder;
         }
 
 
 
 
-        std::string get_file (QWidget* parent, const std::string& caption, const std::string& filter, const std::string& folder)
+        std::string get_file (QWidget* parent, const std::string& caption, const std::string& filter, std::string* folder)
         {
-          QString qstring = QFileDialog::getOpenFileName (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str(), 0, FILE_DIALOG_OPTIONS);
+          QString qstring = QFileDialog::getOpenFileName (parent, qstr (caption),
+              folder ? qstr(*folder) : QString(), qstr(filter), 0, FILE_DIALOG_OPTIONS);
+
+          std::string filename;
           if (qstring.size()) {
-            std::string name = qstring.toUtf8().data();
-            QDir::setCurrent (Path::dirname (name).c_str());
-            return name;
+            filename = qstring.toUtf8().data();
+            std::string new_folder = Path::dirname (filename);
+            if (folder)
+              *folder = new_folder;
           }
-          return std::string();
+          return filename;
         }
 
 
 
 
 
-        vector<std::string> get_files (QWidget* parent, const std::string& caption, const std::string& filter, const std::string& folder)
+        vector<std::string> get_files (QWidget* parent, const std::string& caption, const std::string& filter, std::string* folder)
         {
-          QStringList qlist = QFileDialog::getOpenFileNames (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str(), 0, FILE_DIALOG_OPTIONS);
+          QStringList qlist = QFileDialog::getOpenFileNames (parent, qstr(caption),
+              folder ? qstr(*folder) : QString(), qstr(filter), 0, FILE_DIALOG_OPTIONS);
+
           vector<std::string> list;
           if (qlist.size()) {
-            for (int n = 0; n < qlist.size(); ++n) 
+            for (int n = 0; n < qlist.size(); ++n)
               list.push_back (qlist[n].toUtf8().data());
-            QDir::setCurrent (Path::dirname (list[0]).c_str());
+            std::string new_folder = Path::dirname (list[0]);
+            if (folder)
+              *folder = new_folder;
           }
           return list;
         }
@@ -84,14 +96,15 @@ namespace MR
 
         bool overwrite_files = false;
 
-        void check_overwrite_files_func (const std::string& name) 
+        void check_overwrite_files_func (const std::string& name)
         {
           if (overwrite_files)
             return;
 
-          QMessageBox::StandardButton response = QMessageBox::warning (QApplication::activeWindow(), 
-              "confirm file overwrite", ("Action will overwrite file \"" + name + "\" - proceed?").c_str(), 
-                QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::Cancel, QMessageBox::Cancel);
+          QMessageBox::StandardButton response = QMessageBox::warning (QApplication::activeWindow(),
+              qstr ("confirm file overwrite"),
+              qstr ("Action will overwrite file \"" + name + "\" - proceed?"),
+              QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::Cancel, QMessageBox::Cancel);
           if (response == QMessageBox::Cancel)
             throw Exception ("File overwrite cancelled by user request");
           if (response == QMessageBox::YesToAll)
@@ -100,27 +113,31 @@ namespace MR
 
 
 
-        std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& suggested_name, const std::string& filter, const std::string& folder)
+        std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& suggested_name, const std::string& filter, std::string* folder)
         {
           overwrite_files = false;
 
           QString selection;
-          if (folder.size()) {
+          if (folder) {
             if (suggested_name.size())
-              selection = MR::Path::join (folder, suggested_name).c_str();
-            else 
-              selection = folder.c_str();
+              selection = qstr (MR::Path::join (*folder, suggested_name));
+            else
+              selection = qstr (*folder);
           }
           else if (suggested_name.size())
-            selection = suggested_name.c_str();
-          QString qstring = QFileDialog::getSaveFileName (parent, caption.c_str(), selection, 
-              filter.c_str(), 0, FILE_DIALOG_OPTIONS | QFileDialog::DontConfirmOverwrite);
-          std::string name;
+            selection = qstr (suggested_name);
+
+          QString qstring = QFileDialog::getSaveFileName (parent, qstr (caption), selection,
+              qstr (filter), 0, FILE_DIALOG_OPTIONS | QFileDialog::DontConfirmOverwrite);
+
+          std::string filename;
           if (qstring.size()) {
-            name = qstring.toUtf8().data();
-            QDir::setCurrent (Path::dirname (name).c_str());
+            filename = qstring.toUtf8().data();
+            std::string new_folder = Path::dirname (filename);
+            if (folder)
+              *folder = new_folder;
           }
-          return name;
+          return filename;
         }
 
       }

@@ -30,6 +30,7 @@ namespace MR
     MRtrix        mrtrix_handler;
     MRtrix_GZ     mrtrix_gz_handler;
     MRI           mri_handler;
+    PAR           par_handler;
     NIfTI1        nifti1_handler;
     NIfTI2        nifti2_handler;
     NIfTI1_GZ     nifti1_gz_handler;
@@ -40,6 +41,9 @@ namespace MR
     MGZ           mgz_handler;
 #ifdef MRTRIX_TIFF_SUPPORT
     TIFF          tiff_handler;
+#endif
+#ifdef MRTRIX_PNG_SUPPORT
+    PNG           png_handler;
 #endif
     MRtrix_sparse mrtrix_sparse_handler;
 
@@ -57,11 +61,15 @@ namespace MR
       &nifti1_gz_handler,
       &nifti2_gz_handler,
       &mri_handler,
+      &par_handler,
       &xds_handler,
       &mgh_handler,
       &mgz_handler,
 #ifdef MRTRIX_TIFF_SUPPORT
       &tiff_handler,
+#endif
+#ifdef MRTRIX_PNG_SUPPORT
+      &png_handler,
 #endif
       &mrtrix_sparse_handler,
       nullptr
@@ -79,16 +87,23 @@ namespace MR
       ".bfloat",
       ".bshort",
       ".mri",
+      ".par",
       ".mgh",
       ".mgz",
       ".mgh.gz",
       ".msf",
       ".msh",
       ".dcm",
+#ifdef MRTRIX_TIFF_SUPPORT
       ".tiff",
       ".tif",
       ".TIFF",
       ".TIF",
+#endif
+#ifdef MRTRIX_PNG_SUPPORT
+      ".png",
+      ".PNG",
+#endif
       nullptr
     };
 

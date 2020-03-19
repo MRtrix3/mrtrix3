@@ -49,14 +49,14 @@ namespace MR
 
               class Shader : public Displayable::Shader { MEMALIGN (Shader)
                 public:
-                  Shader () : do_crop_to_slice (false), color_type (Direction), scale_type (Value) { }
+                  Shader () : do_crop_to_slice (false), bidirectional (false), color_type (Direction), scale_type (Value) { }
                   std::string vertex_shader_source   (const Displayable&) override;
                   std::string geometry_shader_source (const Displayable&) override;
                   std::string fragment_shader_source (const Displayable&) override;
                   virtual bool need_update (const Displayable&) const override;
                   virtual void update (const Displayable&) override;
                 protected:
-                  bool do_crop_to_slice;
+                  bool do_crop_to_slice, bidirectional;
                   FixelColourType color_type;
                   FixelScaleType scale_type;
               } fixel_shader;
@@ -196,21 +196,21 @@ namespace MR
               void load_colourby_combobox_options (ComboBoxWithErrorMsg& combo_box) const {
                 combo_box.clear ();
                 for (size_t i = 0, N = colour_types.size (); i < N; ++i)
-                  combo_box.addItem (tr (colour_types[i].c_str ()));
+                  combo_box.addItem (qstr (colour_types[i]));
                 combo_box.setCurrentIndex (colour_type_index);
               }
 
               void load_scaleby_combobox_options (ComboBoxWithErrorMsg& combo_box) const {
                 combo_box.clear ();
                 for (const auto& value_name: value_types)
-                  combo_box.addItem (tr (value_name.c_str ()));
+                  combo_box.addItem (qstr (value_name));
                 combo_box.setCurrentIndex (scale_type_index);
               }
 
               void load_threshold_combobox_options (ComboBoxWithErrorMsg& combo_box) const {
                 combo_box.clear ();
                 for (size_t i = 1, N = value_types.size (); i < N; ++i)
-                  combo_box.addItem (tr (value_types[i].c_str ()));
+                  combo_box.addItem (qstr (value_types[i]));
                 combo_box.setCurrentIndex (threshold_type_index);
               }
 
@@ -227,7 +227,7 @@ namespace MR
                 }
               };
 
-              void update_image_buffers ();
+              virtual void update_image_buffers ();
               virtual void load_image_buffer() = 0;
               virtual void request_update_interp_image_buffer (const Projection&) = 0;
               void update_interp_image_buffer (const Projection&, const MR::Header&, const MR::Transform&);
@@ -282,6 +282,7 @@ namespace MR
               bool value_buffer_dirty;
               bool threshold_buffer_dirty;
               bool dir_buffer_dirty;
+
             private:
               Fixel& fixel_tool;
               GL::VertexBuffer vertex_buffer;

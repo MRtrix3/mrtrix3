@@ -20,8 +20,6 @@
 #include <iostream>
 
 #include "math/least_squares.h"
-#include "math/versor.h"
-
 #include "gui/opengl/gl.h"
 
 namespace MR
@@ -38,7 +36,7 @@ namespace MR
         public:
           vec4 () { }
           vec4 (float x, float y, float z, float w) { v[0] = x; v[1] = y; v[2] = z; v[3] = w; }
-          vec4 (const Math::Versorf& V) { v[0] = V.x(); v[1] = V.y(); v[2] = V.z(); v[3] = V.w(); }
+          vec4 (const Eigen::Quaternionf& V) { v[0] = V.x(); v[1] = V.y(); v[2] = V.z(); v[3] = V.w(); }
           template <class Cont>
           vec4 (const Cont& p, float w) { v[0] = p[0]; v[1] = p[1]; v[2] = p[2]; v[3] = w;  }
           vec4 (const float* p) { memcpy (v, p, sizeof(v)); }
@@ -51,7 +49,7 @@ namespace MR
           operator GLfloat* () { return v; }
 
           friend std::ostream& operator<< (std::ostream& stream, const vec4& v) {
-            for (size_t i = 0; i < 4; ++i) 
+            for (size_t i = 0; i < 4; ++i)
               stream << v[i] << " ";
             return stream;
           }
@@ -66,12 +64,12 @@ namespace MR
 
       class mat4 { MEMALIGN(mat4)
         public:
-          mat4 () { } 
+          mat4 () { }
           mat4 (const mat4& a) { memcpy (m, a.m, sizeof(m)); }
           mat4 (const float* p) { memcpy (m, p, sizeof(m)); }
-          mat4 (const Math::Versorf& v)
+          mat4 (const Eigen::Quaternionf& v)
           {
-            const Math::Versorf::Matrix3 R = v.matrix();
+            const auto R = v.matrix();
             zero();
             for (size_t i = 0; i != 3; ++i) {
               for (size_t j = 0; j != 3; ++j)
@@ -80,17 +78,19 @@ namespace MR
             (*this)(3,3) = 1.0f;
           }
           template <class M>
-          mat4 (const M& m)
+          mat4 (const M& a)
           {
-            for (size_t i = 0; i != size_t(m.rows()); ++i) {
+            for (size_t i = 0; i != size_t(a.rows()); ++i) {
               for (size_t j = 0; j != 4; ++j)
-                (*this)(i,j) = m(i,j);
+                (*this)(i,j) = a(i,j);
             }
-            if (m.rows() == 3) {
+            if (a.rows() == 3) {
               (*this)(3,0) = (*this)(3,1) = (*this)(3,2) = 0.0f;
               (*this)(3,3) = 1.0f;
             }
           }
+
+          mat4& operator= (const mat4& a) { memcpy (m, a.m, sizeof(m)); return *this; }
 
           void zero () {
             memset (m, 0, sizeof (m));
@@ -118,8 +118,8 @@ namespace MR
           vec4 operator* (const vec4& v) const {
             vec4 r;
             r.zero();
-            for (size_t j = 0; j < 4; ++j) 
-              for (size_t i = 0; i < 4; ++i) 
+            for (size_t j = 0; j < 4; ++j)
+              for (size_t i = 0; i < 4; ++i)
                 r[i] += (*this)(i,j) * v[j];
             return r;
           }
@@ -131,7 +131,7 @@ namespace MR
 
           friend std::ostream& operator<< (std::ostream& stream, const mat4& m) {
             for (size_t i = 0; i < 4; ++i) {
-              for (size_t j = 0; j < 4; ++j) 
+              for (size_t j = 0; j < 4; ++j)
                 stream << m(i,j) << " ";
               stream << "\n";
             }
@@ -155,7 +155,7 @@ namespace MR
 
 
 
-      inline mat4 transpose (const mat4& a) 
+      inline mat4 transpose (const mat4& a)
       {
         mat4 b;
         for (size_t j = 0; j < 4; ++j)
@@ -168,7 +168,7 @@ namespace MR
 
 
 
-      inline mat4 inv (const mat4& a) 
+      inline mat4 inv (const mat4& a)
       {
         Eigen::Matrix<float, 4, 4> A;
         for (size_t i = 0; i != 4; ++i) {
@@ -180,7 +180,7 @@ namespace MR
 
 
 
-      inline mat4 ortho (float L, float R, float B, float T, float N, float F) 
+      inline mat4 ortho (float L, float R, float B, float T, float N, float F)
       {
         mat4 m;
         m.zero();
@@ -198,7 +198,7 @@ namespace MR
 
 
 
-      inline mat4 frustum (float L, float R, float B, float T, float N, float F) 
+      inline mat4 frustum (float L, float R, float B, float T, float N, float F)
       {
         mat4 m;
         m.zero();
@@ -215,7 +215,7 @@ namespace MR
       }
 
 
-      inline mat4 translate (float x, float y, float z) 
+      inline mat4 translate (float x, float y, float z)
       {
         mat4 m = identity();
         m(0,3) = x;
@@ -232,7 +232,7 @@ namespace MR
       }
 
 
-      inline mat4 scale (float x, float y, float z) 
+      inline mat4 scale (float x, float y, float z)
       {
         mat4 m;
         m.zero();

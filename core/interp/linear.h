@@ -128,7 +128,7 @@ namespace MR
 
     template <class ImageType>
     class LinearInterp<ImageType, LinearInterpProcessingType::Value> :
-        public LinearInterpBase<ImageType, LinearInterpProcessingType::Value> 
+        public LinearInterpBase<ImageType, LinearInterpProcessingType::Value>
     { MEMALIGN(LinearInterp<ImageType,LinearInterpProcessingType::Value>)
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Value>;
@@ -429,6 +429,8 @@ namespace MR
           out_of_bounds_vec.fill(value_when_out_of_bounds);
           out_of_bounds_matrix.fill(value_when_out_of_bounds);
         }
+
+        value_type value () { assert( 0 && "do not call value() on ValueAndDerivative interpolator." ); }
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! See file interp/base.h for details. */

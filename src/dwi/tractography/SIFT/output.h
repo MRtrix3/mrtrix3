@@ -168,7 +168,7 @@ namespace MR
         H_sh.stride (3) = 0;
         auto out = Image<float>::create (path, H_sh);
         VoxelAccessor v (accessor());
-        for (auto l = Loop (out) (out, v); l; ++l) {
+        for (auto l = Loop (v) (out, v); l; ++l) {
           if (v.value()) {
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> sum = Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (N);
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
@@ -272,8 +272,9 @@ namespace MR
       void ModelBase<Fixel>::output_scatterplot (const std::string& path) const
       {
         File::OFStream out (path, std::ios_base::out | std::ios_base::trunc);
+        out << "# " << App::command_history_string << "\n";
         const default_type current_mu = mu();
-        out << "Fibre density,Track density (unscaled),Track density (scaled),Weight,\n";
+        out << "#Fibre density,Track density (unscaled),Track density (scaled),Weight,\n";
         for (typename vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
           out << str (i->get_FOD()) << "," << str (i->get_TD()) << "," << str (i->get_TD() * current_mu) << "," << str (i->get_weight()) << ",\n";
         out.close();

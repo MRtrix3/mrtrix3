@@ -14,10 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/color_button.h"
-#include "gui/lighting_dock.h"
 #include "file/config.h"
 #include "math/math.h"
+#include "gui/gui.h"
+#include "gui/color_button.h"
+#include "gui/lighting_dock.h"
 
 namespace MR
 {
@@ -27,7 +28,6 @@ namespace MR
       QFrame (parent),
       info (lighting)
     {
-      QColor C;
       QVBoxLayout* main_box = new QVBoxLayout;
       setLayout (main_box);
       QGridLayout* grid_layout = new QGridLayout;
@@ -125,7 +125,7 @@ namespace MR
     }
 
     LightingDock::LightingDock (const std::string& title, GL::Lighting& lighting) :
-      QDockWidget (QString (title.c_str())),
+      QDockWidget (qstr (title)),
       settings (new LightingSettings (this, lighting))
     {
       setWidget(settings);

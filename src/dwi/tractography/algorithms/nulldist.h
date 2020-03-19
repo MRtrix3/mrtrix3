@@ -43,12 +43,15 @@ namespace MR
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set)
         {
-          set_step_size (0.1f);
+          set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                              Defaults::angle_ifod1,
+                              rk4);
+          set_num_points();
           set_cutoff (0.0f);
-          sin_max_angle = std::sin (max_angle);
+          sin_max_angle_1o = std::sin (max_angle_1o);
           properties["method"] = "Nulldist1";
         }
-        float sin_max_angle;
+        float sin_max_angle_1o;
       };
 
       NullDist1 (const Shared& shared) :
@@ -73,14 +76,14 @@ namespace MR
         return CONTINUE;
       }
 
-      float get_metric() override { return uniform(*rng); }
+      float get_metric() override { return uniform(rng); }
 
 
       protected:
       const Shared& S;
       Interpolator<Image<float>>::type source;
 
-      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle_1o, S.sin_max_angle_1o)); }
 
     };
 
@@ -153,7 +156,7 @@ namespace MR
         sample_idx = S.num_samples;
       }
 
-      float get_metric() override { return uniform(*rng); }
+      float get_metric() override { return uniform(rng); }
 
 
       protected:

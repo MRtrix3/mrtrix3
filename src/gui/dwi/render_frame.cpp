@@ -44,7 +44,7 @@ namespace MR
         constexpr float AngleMax = 90.0f;
 
 
-        const Math::Versorf DefaultOrientation = Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) * 
+        const Eigen::Quaternionf DefaultOrientation = Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) *
                                                      Eigen::AngleAxisf (Math::pi/3.0f, Eigen::Vector3f (1.0f, 0.0f, 0.0f));
         QFont get_font (QWidget* parent) {
           QFont f = parent->font();
@@ -55,7 +55,7 @@ namespace MR
 
       RenderFrame::RenderFrame (QWidget* parent) :
         GL::Area (parent),
-        view_angle (AngleDefault), distance (DistDefault), scale (NaN), 
+        view_angle (AngleDefault), distance (DistDefault), scale (NaN),
         lmax_computed (0), lod_computed (0), mode (mode_t::SH), recompute_mesh (true), recompute_amplitudes (true),
         show_axes (true), hide_neg_values (true), color_by_dir (true), use_lighting (true),
         glfont (get_font (parent)), projection (this, glfont),
@@ -71,7 +71,7 @@ namespace MR
 
       RenderFrame::~RenderFrame()
       {
-        Context::Grab context (this);
+        GL::Context::Grab context (this);
         axes_VB.clear();
         axes_VAO.clear();
       }
@@ -87,7 +87,7 @@ namespace MR
           for (size_t j = 0; j != 3; ++j)
             M(i,j) = rotation(j,i);
         }
-        orientation = Math::Versorf (M);
+        orientation = Eigen::Quaternionf (M);
         update();
       }
 
@@ -97,6 +97,7 @@ namespace MR
 
       void RenderFrame::initializeGL ()
       {
+        GL::Context::Grab context (this);
         GL::init();
         glfont.initGL (false);
         renderer.initGL();
@@ -151,6 +152,7 @@ namespace MR
 
       void RenderFrame::resizeGL (int w, int h)
       {
+        GL::Context::Grab context (this);
         projection.set_viewport (*this, 0, 0, w, h);
       }
 
@@ -158,7 +160,8 @@ namespace MR
 
       void RenderFrame::paintGL ()
       {
-        gl::ColorMask (true, true, true, true); 
+        GL::Context::Grab context (this);
+        gl::ColorMask (true, true, true, true);
         gl::ClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
         gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
@@ -192,7 +195,7 @@ namespace MR
           if (std::isfinite (values[0])) {
             gl::Disable (gl::BLEND);
 
-            if (!std::isfinite (scale)) 
+            if (!std::isfinite (scale))
               scale = 2.0f / values.norm();
 
             renderer.set_mode (mode);
@@ -263,7 +266,7 @@ namespace MR
         // otherwise we get transparent windows...
 #if QT_VERSION >= 0x050400
         gl::ClearColor (0.0, 0.0, 0.0, 1.0);
-        gl::ColorMask (false, false, false, true); 
+        gl::ColorMask (false, false, false, true);
         gl::Clear (gl::COLOR_BUFFER_BIT);
 #endif
 
@@ -304,7 +307,7 @@ namespace MR
             const Eigen::Vector3f v = x.cross (z).normalized();
             float angle = RotationInc * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
             if (angle > Math::pi_2) angle = Math::pi_2;
-            const Math::Versorf rot (Eigen::AngleAxisf (angle, v));
+            const Eigen::Quaternionf rot (Eigen::AngleAxisf (angle, v));
             orientation = rot * orientation;
             update();
           }
@@ -351,7 +354,7 @@ namespace MR
 
       void RenderFrame::snapshot ()
       {
-        makeCurrent();
+        GL::Context::Grab context (this);
         gl::PixelStorei (gl::PACK_ALIGNMENT, 1);
         gl::ReadPixels (0, 0, projection.width(), projection.height(), gl::RGB, gl::UNSIGNED_BYTE, framebuffer.get());
 
@@ -366,7 +369,7 @@ namespace MR
         }
 
         if (OS_x == OS-1 && OS_y == OS-1)
-          pix->save (screenshot_name.c_str(), "PNG");
+          pix->save (qstr (screenshot_name), "PNG");
 
         OS_x++;
         if (OS_x >= OS) {

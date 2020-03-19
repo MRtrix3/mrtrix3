@@ -369,7 +369,7 @@ namespace MR
          * OPTIONS
          *   + Option ("roi",
          *       "the region of interest over which to perform the processing. "
-         *       "Mulitple such regions can be specified")
+         *       "Multiple such regions can be specified")
          *     .required()
          *     .allow_multiple()
          *     + Argument ("image").type_image_in();

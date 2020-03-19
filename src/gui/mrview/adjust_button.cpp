@@ -41,17 +41,19 @@ namespace MR
 
           connect (this, SIGNAL (editingFinished()), SLOT (onSetValue()));
           installEventFilter (this);
+          const QColor bg (QWidget::palette().color(QWidget::backgroundRole()));
+          const QColor fg (QWidget::palette().color(QWidget::foregroundRole()));
+          const float r (0.4);
+          const QColor hl (fg.red() * (1.0-r) + bg.red() * r, fg.green() * (1.0-r) + bg.green() * r, fg.blue() * (1.0-r) + bg.blue() * r, 255);
           setStyleSheet ((
               "QLineEdit { "
               "padding: 0.1em 20px 0.2em 0.3ex; "
-              "background: qlineargradient(x1:0, y1:0, x2:0, y2:0.2, stop:0 gray, stop:1 white) url(:/adjustbutton.svg); "
+              "background: url(:/adjustbutton.svg); "
               "background-position: right; "
               "background-repeat: no-repeat; "
               "font-size: " + str(font().pointSize()) + "pt; "
-              "border: 1px solid grey; "
-              "border-color: black lightgray white gray; "
+              "border: 1px solid rgb("+str(hl.red())+","+str(hl.green())+","+str(hl.blue())+"); "
               "border-radius: 0.3em }").c_str());
-
         }
 
 

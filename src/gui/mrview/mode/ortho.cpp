@@ -28,34 +28,57 @@ namespace MR
       namespace Mode
       {
 
+        bool Ortho::show_as_row = false;
 
+        //CONF option: MRViewOrthoAsRow
+        //CONF Display the 3 orthogonal views of the Ortho mode in a row,
+        //CONF rather than as a 2x2 montage
+        //CONF default: false
+
+        Ortho::Ortho () :
+          projections (3, projection),
+          current_plane (0) {
+            static bool conf_read = false;
+            if (!conf_read)
+              show_as_row = MR::File::Config::get_bool ("MRViewOrthoAsRow", false);
+            conf_read = true;
+          }
 
 
         void Ortho::paint (Projection& projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           // set up OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
           gl::DepthMask (gl::FALSE_);
           gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
-          GLint w = width()/2;
-          GLint h = height()/2;
+          const GLint w = show_as_row ? width()/3 : width()/2;
+          const GLint h = show_as_row ? height() : height()/2;
 
           // Depth test state may have been altered after drawing each plane
           // so need to guarantee depth test is off for subsequent plane.
           // Ideally, state should be restored by callee but this is safer
 
-          projections[0].set_viewport (window(), w, h, w, h); 
+          if (show_as_row)
+            projections[0].set_viewport (window(), 0, 0, w, h);
+          else
+            projections[0].set_viewport (window(), w, h, w, h);
           draw_plane (0, slice_shader, projections[0]);
 
           gl::Disable (gl::DEPTH_TEST);
-          projections[1].set_viewport (window(), 0, h, w, h); 
+          if (show_as_row)
+            projections[1].set_viewport (window(), w, 0, w, h);
+          else
+            projections[1].set_viewport (window(), 0, h, w, h);
           draw_plane (1, slice_shader, projections[1]);
 
           gl::Disable (gl::DEPTH_TEST);
-          projections[2].set_viewport (window(), 0, 0, w, h); 
+          if (show_as_row)
+            projections[2].set_viewport (window(), 2*w, 0, w, h);
+          else
+            projections[2].set_viewport (window(), 0, 0, w, h);
           draw_plane (2, slice_shader, projections[2]);
 
           projection.set_viewport (window());
@@ -82,9 +105,16 @@ namespace MR
               0.0f, -1.0f,
               0.0f, 1.0f
             };
-            gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
+
+            GLfloat data_row [] = {
+              -1.0f/3.0f, -1.0f,
+              -1.0f/3.0f, 1.0f,
+              1.0f/3.0f, -1.0f,
+              1.0f/3.0f, 2.0f
+            };
+            gl::BufferData (gl::ARRAY_BUFFER, sizeof(data), ( show_as_row ? data_row : data), gl::STATIC_DRAW);
           }
-          else 
+          else
             frame_VAO.bind();
 
           if (!frame_program) {
@@ -108,14 +138,14 @@ namespace MR
           frame_program.stop();
 
           gl::Enable (gl::DEPTH_TEST);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
 
 
 
-        const Projection* Ortho::get_current_projection () const  
+        const Projection* Ortho::get_current_projection () const
         {
           if (current_plane < 0 || current_plane > 2)
             return NULL;
@@ -126,30 +156,47 @@ namespace MR
 
         void Ortho::mouse_press_event ()
         {
-          if (window().mouse_position().x() < width()/2) 
-            if (window().mouse_position().y() >= height()/2) 
-              current_plane = 1;
-            else 
-              current_plane = 2;
-          else 
-            if (window().mouse_position().y() >= height()/2)
+          const int x = window().mouse_position().x();
+          const int y = window().mouse_position().y();
+
+          if (show_as_row) {
+            const GLint w = width()/3;
+            if (x < w)
               current_plane = 0;
-            else 
-              current_plane = -1;
+            else if (x < 2*w)
+              current_plane = 1;
+            else
+              current_plane = 2;
+          }
+          else {
+            const GLint w = width()/2;
+            const GLint h = height()/2;
+            if (x < w)
+              current_plane = y < h ? 2 : 1;
+            else
+              current_plane = y < h ? -1 : 0;
+          }
         }
 
 
 
 
-        void Ortho::slice_move_event (float x) 
+        void Ortho::slice_move_event (float x)
         {
           const Projection* proj = get_current_projection();
-          if (!proj) return;
+          if (!proj)
+            return;
+
+          if (window().active_camera_interactor() && window().active_camera_interactor()->slice_move_event(*proj, x))
+            return;
+
           const auto &header = image()->header();
           float increment = snap_to_image() ?
             x * header.spacing (current_plane) :
             x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);
-          move_in_out (increment, *proj);
+          auto move = get_through_plane_translation (increment, *proj);
+
+          set_focus (focus() + move);
           updateGL();
         }
 
@@ -157,8 +204,24 @@ namespace MR
         void Ortho::panthrough_event ()
         {
           const Projection* proj = get_current_projection();
-          if (!proj) return;
-          move_in_out_FOV (window().mouse_displacement().y(), *proj);
+          if (!proj)
+            return;
+
+          if (window().active_camera_interactor() && window().active_camera_interactor()->panthrough_event (*proj))
+            return;
+
+          auto move = get_through_plane_translation_FOV (window().mouse_displacement().y(), *proj);
+
+          set_focus (focus() + move);
+          updateGL();
+        }
+
+
+        void Ortho::set_show_as_row_slot (bool state)
+        {
+          GL::Context::Grab context;
+          show_as_row = state;
+          frame_VB.clear();
           updateGL();
         }
 

@@ -19,8 +19,6 @@
 
 #include <deque>
 
-#include "math/versor.h"
-
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/spin_box.h"
@@ -83,19 +81,18 @@ namespace MR
             QLineEdit *prefix_textbox;
             QPushButton *folder_button;
             int axis;
-            QDir* directory;
 
             bool is_playing;
 
             class CaptureState { MEMALIGN(CaptureState)
               public:
-                Math::Versorf orientation;
+                Eigen::Quaternionf orientation;
                 Eigen::Vector3f focus, target;
                 float fov;
                 size_t volume, volume_axis;
                 size_t frame_index;
                 int plane;
-                CaptureState(const Math::Versorf& orientation,
+                CaptureState(const Eigen::Quaternionf& orientation,
                   const Eigen::Vector3f& focus, const Eigen::Vector3f& target, float fov,
                   size_t volume, size_t volume_axis,
                   size_t frame_index, int plane)

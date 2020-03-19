@@ -1,9 +1,13 @@
-Welcome to the MRtrix user documentation!
-=========================================
+Welcome to the *MRtrix3* user documentation!
+============================================
 
-*MRtrix* provides a large suite of tools for image processing, analysis and visualisation, with a focus on the analysis of white matter using diffusion-weighted MRI. Features include the estimation of fibre orientation distributions using constrained spherical deconvolution ([Tournier2004]_; [Tournier2007]_; [Jeurissen2014]_), visualisation of these via directionally-encoded colour maps ([Dhollander2015a]_) and panchromatic sharpening ([Dhollander2015b]_), a probabilisitic streamlines algorithm for fibre tractography of white matter ([Tournier2012]_), fixel-based analysis of apparent fibre density and fibre cross-section ([Raffelt2012]_; [Raffelt2015]_; [Raffelt2017]_), quantitative structural connectivity analysis ([Smith2012]_; [Smith2013]_; [Smith2015]_; [Christiaens2015]_), and non-linear spatial registration of fibre orientation distribution images ([Raffelt2011]_).
+*MRtrix3* provides a large suite of tools for image processing, analysis and visualisation, with a focus on the analysis of white matter using diffusion-weighted MRI ([Tournier2019]_). Features include the estimation of fibre orientation distributions using constrained spherical deconvolution ([Tournier2004]_; [Tournier2007]_; [Jeurissen2014]_), visualisation of these via directionally-encoded colour maps ([Dhollander2015a]_) and panchromatic sharpening ([Dhollander2015b]_), a probabilisitic streamlines algorithm for fibre tractography of white matter ([Tournier2012]_), fixel-based analysis of apparent fibre density and fibre cross-section ([Raffelt2012]_; [Raffelt2015]_; [Raffelt2017]_), quantitative structural connectivity analysis ([Smith2012]_; [Smith2013]_; [Smith2015]_; [Christiaens2015]_), and non-linear spatial registration of fibre orientation distribution images ([Raffelt2011]_).
 
 These applications have been written from scratch in C++, using the functionality provided by `Eigen`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `Mozilla Public License`_.
+
+Use of the *MRtrix3* software package in published works should be accompanied by the following citation:
+
+    J.-D. Tournier, R. E. Smith, D. Raffelt, R. Tabbara, T. Dhollander, M. Pietsch, D. Christiaens, B. Jeurissen, C.-H. Yeh, and A. Connelly. *MRtrix3*: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 202 (2019), pp. 116–37.
 
 
 .. _Eigen: http://eigen.tuxfamily.org/
@@ -27,7 +31,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: Getting started
 
    getting_started/key_features
-   getting_started/commands_and_scripts
+   getting_started/commands
    getting_started/beginner_dwi_tutorial
    getting_started/image_data
    getting_started/command_line
@@ -38,7 +42,7 @@ These applications have been written from scratch in C++, using the functionalit
    :caption: DWI Pre-processing
 
    dwi_preprocessing/denoising
-   dwi_preprocessing/dwipreproc
+   dwi_preprocessing/dwifslpreproc
 
 .. toctree::
    :maxdepth: 1
@@ -54,6 +58,7 @@ These applications have been written from scratch in C++, using the functionalit
 
    fixel_based_analysis/st_fibre_density_cross-section
    fixel_based_analysis/mt_fibre_density_cross-section
+   fixel_based_analysis/mitigating_brain_cropping
    fixel_based_analysis/computing_effect_size_wrt_controls
    fixel_based_analysis/displaying_results_with_streamlines
 
@@ -71,20 +76,12 @@ These applications have been written from scratch in C++, using the functionalit
 
 .. toctree::
    :maxdepth: 1
-   :caption: Spatial Normalisation
-
-   spatial_normalisation/warping_images_with_warps_from_other_packages
-..   spatial_normalisation/warp_file_formats
-..   spatial_normalisation/transforming_streamlines
-
-.. toctree::
-   :maxdepth: 1
    :caption: Concepts
 
    concepts/dw_scheme
    concepts/pe_scheme
    concepts/global_intensity_normalisation
-   concepts/orthonormal_sh_basis
+   concepts/spherical_harmonics
    concepts/sh_basis_lmax
    concepts/fixels_dixels
    concepts/afd_connectivity
@@ -96,22 +93,13 @@ These applications have been written from scratch in C++, using the functionalit
    tips_and_tricks/dicom_handling
    tips_and_tricks/batch_processing_with_foreach
    tips_and_tricks/external_modules
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Troubleshooting
-
-   troubleshooting/performance_and_crashes
-   troubleshooting/display_issues
-   troubleshooting/FAQ
-   troubleshooting/advanced_debugging
+   tips_and_tricks/troubleshooting
 
 .. toctree::
    :maxdepth: 1
    :caption: Reference
 
    reference/commands_list
-   reference/scripts_list
    reference/config_file_options
    reference/environment_variables
    reference/mrtrix2_equivalent_commands

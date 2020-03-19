@@ -17,11 +17,9 @@
 #ifndef __gui_mrview_tool_tractogram_h__
 #define __gui_mrview_tool_tractogram_h__
 
-//#include "gui/mrview/tool/tractography/tractogram_enums.h"
 #include "gui/mrview/displayable.h"
 #include "dwi/tractography/properties.h"
 #include "gui/mrview/tool/tractography/tractography.h"
-#include "gui/mrview/colourmap.h"
 
 
 namespace MR
