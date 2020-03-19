@@ -136,7 +136,7 @@ namespace MR
                 assert (0);
                 break;
             }
-            return (value_type (NAN));
+            return (value_type (NaN));
           }
 
           ScalarReader (const ScalarReader&) = delete;
