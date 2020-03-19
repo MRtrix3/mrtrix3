@@ -657,7 +657,7 @@ namespace MR
             for (size_t d = 3; d < overlay->image.ndim(); ++d) {
               SpinBox* vol_index = new SpinBox (this);
               vol_index->setMinimum (0);
-              vol_index->setPrefix (tr((str(d+1) + ": ").c_str()));;
+              vol_index->setPrefix (qstr(str(d+1) + ": "));
               vol_index->setValue (overlay->image.index(d));
               vol_index->setMaximum (overlay->image.size(d) - 1);
               vol_index->setEnabled (overlay->image.size(d) > 1);
@@ -836,7 +836,6 @@ namespace MR
             interpolate_changed();
             return true;
           }
-
 
           return false;
         }

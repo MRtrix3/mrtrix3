@@ -254,7 +254,7 @@ List of MRtrix3 configuration file options
 
     *default: true*
 
-     Interpolation switched on in the main image.
+     Define default interplation setting for image and image overlay.
 
 .. option:: InitialToolBarPosition
 
@@ -414,6 +414,12 @@ List of MRtrix3 configuration file options
     *default: true*
 
      Voxel information shown in main image overlay.
+
+.. option:: MRViewSyncFocus
+
+    *default: false*
+
+     Whether to sync the focus in mrview between other mrview processes.
 
 .. option:: MRViewToolFontSize
 

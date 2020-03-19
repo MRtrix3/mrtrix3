@@ -196,21 +196,21 @@ namespace MR
               void load_colourby_combobox_options (ComboBoxWithErrorMsg& combo_box) const {
                 combo_box.clear ();
                 for (size_t i = 0, N = colour_types.size (); i < N; ++i)
-                  combo_box.addItem (tr (colour_types[i].c_str ()));
+                  combo_box.addItem (qstr (colour_types[i]));
                 combo_box.setCurrentIndex (colour_type_index);
               }
 
               void load_scaleby_combobox_options (ComboBoxWithErrorMsg& combo_box) const {
                 combo_box.clear ();
                 for (const auto& value_name: value_types)
-                  combo_box.addItem (tr (value_name.c_str ()));
+                  combo_box.addItem (qstr (value_name));
                 combo_box.setCurrentIndex (scale_type_index);
               }
 
               void load_threshold_combobox_options (ComboBoxWithErrorMsg& combo_box) const {
                 combo_box.clear ();
                 for (size_t i = 1, N = value_types.size (); i < N; ++i)
-                  combo_box.addItem (tr (value_types[i].c_str ()));
+                  combo_box.addItem (qstr (value_types[i]));
                 combo_box.setCurrentIndex (threshold_type_index);
               }
 

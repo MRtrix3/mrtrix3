@@ -1251,7 +1251,7 @@ int main() { Foo f; }
       filetext = 'CONFIG += c++11'
       if debug:
         filetext += ' debug'
-      filetext += '\nQT += core gui opengl svg\n'
+      filetext += '\nQT += core gui opengl svg network\n'
       filetext += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
       if system == "darwin":
         filetext += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = ' + macosx_version + '\n'
@@ -1280,21 +1280,35 @@ int main() { Foo f; }
       qt_cflags = []
       qt_libs = []
       qt_ldflags = []
-      qt_makefile = 'Makefile'
-      if system == 'windows':
-        qt_makefile = 'Makefile.Release'
-      for line in open (os.path.join (qt_dir.name, qt_makefile)):
-        line = line.strip()
-        if line.startswith ('DEFINES'):
-          qt_defines = shlex.split (line[line.find('=')+1:].strip())
-        elif line.startswith ('CXXFLAGS'):
-          qt_cflags = shlex.split (line[line.find('=')+1:].strip())
-        elif line.startswith ('INCPATH'):
-          qt_includes = shlex.split (line[line.find('=')+1:].strip())
-        elif line.startswith ('LIBS'):
-          qt_libs = shlex.split (line[line.find('=')+1:].strip())
-        elif line.startswith ('LFLAGS'):
-          qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
+      for qt_makefile in [ 'Makefile', 'Makefile.Release' ]:
+        try:
+          log ("reading Qt parameters from file '" + qt_makefile + "'... ")
+          for line in open (os.path.join (qt_dir.name, qt_makefile)):
+            line = line.strip()
+            if line.startswith ('DEFINES'):
+              qt_defines = shlex.split (line[line.find('=')+1:].strip())
+            elif line.startswith ('CXXFLAGS'):
+              qt_cflags = shlex.split (line[line.find('=')+1:].strip())
+            elif line.startswith ('INCPATH'):
+              qt_includes = shlex.split (line[line.find('=')+1:].strip())
+            elif line.startswith ('LIBS'):
+              qt_libs = shlex.split (line[line.find('=')+1:].strip())
+            elif line.startswith ('LFLAGS'):
+              qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
+          if qt_defines or qt_cflags or qt_includes or qt_libs or qt_ldflags:
+            log ('ok\n')
+            log ('  qt_defines: ' + str(qt_defines) + '\n')
+            log ('  qt_cflags: ' + str(qt_cflags) + '\n')
+            log ('  qt_includes: ' + str(qt_includes) + '\n')
+            log ('  qt_libs: ' + str(qt_libs) + '\n')
+            log ('  qt_ldflags: ' + str(qt_ldflags) + '\n\n')
+            break
+        except OSError:
+          log ('not found\n')
+          continue
+      else:
+        raise QMakeError
+
 
       for index, entry in enumerate(qt_includes):
         if entry[2:].startswith('..'):

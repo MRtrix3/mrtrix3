@@ -19,7 +19,7 @@
 
 #include <QString>
 
-#include "mrtrix.h"
+#include "gui/gui.h"
 
 namespace MR
 {
@@ -48,7 +48,7 @@ namespace MR
           FileDataVector& clear();
 
           const QString& get_name() const { return name; }
-          void set_name (const std::string& s) { name = s.c_str(); }
+          void set_name (const std::string& s) { name = qstr (s); }
 
           float get_min()  const { return min; }
           float get_mean() const { return mean; }
