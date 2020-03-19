@@ -42,7 +42,7 @@ class Exemplar : private Tractography::Streamline<float>
         node_COMs (COMs),
         is_finalized (false)
     {
-      index = exemplar_index;
+      set_index (exemplar_index);
       weight = 0.0f;
     }
 

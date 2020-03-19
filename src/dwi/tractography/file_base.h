@@ -153,28 +153,6 @@ namespace MR
 
 
 
-      // TODO A class for writing track / scalar data to file in the correct
-      //   order even if the data are provided out of order (e.g. due to
-      //   multi-threading)
-      template <class ClassType>
-      class WriterReorder
-      { NOMEMALIGN
-        public:
-          bool operator() (ClassType&&) const;
-
-        private:
-          mutable std::set<ClassType> buffer;
-          virtual void commit (const ClassType&) = 0;
-      };
-
-      template <class ClassType>
-      bool WriterReorder<ClassType>::operator() (ClassType&& in) const
-      {
-        return true;
-      }
-
-
-
       //! \endcond
 
 
