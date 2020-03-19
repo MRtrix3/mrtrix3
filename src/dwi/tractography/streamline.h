@@ -62,6 +62,11 @@ namespace MR
         public:
           using value_type = ValueType;
           using vector<ValueType>::vector;
+          TrackScalar (const TrackScalar&) = default;
+          TrackScalar (TrackScalar&& that) :
+              vector<value_type> (std::move (that)),
+              DataIndex (std::move (that)) { }
+          TrackScalar& operator= (const TrackScalar& that) = default;
           void clear() { vector<ValueType>::clear(); DataIndex::clear(); }
       };
 
