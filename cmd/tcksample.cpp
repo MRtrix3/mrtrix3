@@ -143,7 +143,7 @@ class SamplerNonPrecise
     bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
     {
       assert (statistic != stat_tck::NONE);
-      out.first = tck.index;
+      out.first = tck.get_index();
 
       std::pair<size_t, vector_type> values;
       (*this) (tck, values);
@@ -190,7 +190,7 @@ class SamplerNonPrecise
 
     bool operator() (const DWI::Tractography::Streamline<>& tck, std::pair<size_t, vector_type>& out)
     {
-      out.first = tck.index;
+      out.first = tck.get_index();
       out.second.resize (tck.size());
       for (size_t i = 0; i != tck.size(); ++i) {
         if (interp.scanner (tck[i]))
@@ -235,7 +235,7 @@ class SamplerPrecise
 
     bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
     {
-      out.first = tck.index;
+      out.first = tck.get_index();
       value_type sum_lengths = value_type(0);
 
       DWI::Tractography::Mapping::SetVoxel voxels;
