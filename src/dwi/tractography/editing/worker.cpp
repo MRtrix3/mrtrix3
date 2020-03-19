@@ -63,11 +63,8 @@ namespace MR {
             }
 
             // Make sure all of the include regions were visited
-            if (!include_visitation) {
-               if (inverse)
-                  in.swap(out);
-               return true;
-            }
+            if (!include_visitation)
+               exclude = true;
 
           } else if (inverse) {
 
