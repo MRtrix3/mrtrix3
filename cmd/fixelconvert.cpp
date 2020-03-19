@@ -55,8 +55,8 @@ void usage ()
              "(likely all of them) as an additional fixel data file.")
 
   + Example ("Convert multiple files from old to new format, preserving fixel correspondence",
-             "foreach *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
-             "In this example, the foreach script is used to execute the fixelconvert "
+             "for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
+             "In this example, the for_each script is used to execute the fixelconvert "
              "command once for each of a series of input files in the old fixel format, "
              "generating a new output fixel directory for each."
              "Importantly here though, the -template option is used to ensure that the "
