@@ -38,7 +38,7 @@ namespace MR {
             size_t index;
         };
 
-        struct CompareItems {
+        struct CompareItems { NOMEMALIGN
           template <class Item>
             bool operator() (const __Ordered<Item>* a, const __Ordered<Item>* b) const { return a->index < b->index; }
         };
