@@ -19,6 +19,8 @@ Many people like to organise their imaging datasets with one directory per subje
 
 The foreach script can be used to run the same command on each subject, for example::
 
+.. code-block:: console
+
   $ foreach study/* : dwidenoise IN/dwi.mif IN/dwi_denoised.mif
 
 The first part of the command above is the ``foreach`` script name, followed by the pattern matching string (``study/*``) to identify all the files (which in this case are directories) to be looped over. The colon is used to separate the invocation of ``foreach``, along with its inputs and any command-line options, from the command to be executed. In this example the ``dwidenoise`` command will be run multiple times, by substituting the keyword ``IN`` with each of the directories that match the pattern (``study/001_patient``, ``study/002_patient``, etc.).
