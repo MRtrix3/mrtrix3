@@ -29,8 +29,8 @@ namespace MR
     namespace JSON
     {
 
-      void load (Header&, const std::string&);
-      void save (const Header&, const std::string&, const std::string&);
+      void load (Header& H, const std::string& path);
+      void save (const Header& H, const std::string& json_path, const std::string& image_path);
 
       KeyValues read (const nlohmann::json& json,
                       const KeyValues& preexisting = KeyValues());
