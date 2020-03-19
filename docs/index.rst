@@ -10,6 +10,14 @@ Use of the *MRtrix3* software package in published works should be accompanied b
     J.-D. Tournier, R. E. Smith, D. Raffelt, R. Tabbara, T. Dhollander, M. Pietsch, D. Christiaens, B. Jeurissen, C.-H. Yeh, and A. Connelly. *MRtrix3*: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 202 (2019), pp. 116–37.
 
 
+.. TIP:: 
+
+  Make sure to use the version of this documentation that matches your version of this software. You can select the version on the lower left of this page.
+
+
+
+
+
 Key features
 ~~~~~~~~~~~~
 
