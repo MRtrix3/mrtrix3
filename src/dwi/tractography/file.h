@@ -64,13 +64,13 @@ namespace MR
         public:
 
           //! open the \c file for reading and load header into \c properties
-          Reader (const std::string& file, Properties& properties) :
-            current_index (0) {
-              open (file, "tracks", properties);
-              auto opt = App::get_options ("tck_weights_in");
-              if (opt.size())
-                weights = load_vector<ValueType> (opt[0][0]);
-            }
+          Reader (const std::string& file, Properties& properties)
+          {
+            open (file, "tracks", properties);
+            auto opt = App::get_options ("tck_weights_in");
+            if (opt.size())
+              weights = load_vector<ValueType> (opt[0][0]);
+          }
 
 
             //! fetch next track from file
@@ -127,8 +127,8 @@ namespace MR
         protected:
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
+          using __ReaderBase__::current_index;
 
-          uint64_t current_index;
           Eigen::Matrix<ValueType, Eigen::Dynamic, 1> weights;
 
           //! takes care of byte ordering issues

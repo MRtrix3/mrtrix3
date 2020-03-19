@@ -74,7 +74,7 @@ void run ()
   }
 
   Streamline<value_type> track;
-  vector<value_type> scalar;
+  TrackScalar<value_type> scalar;
   size_t tck_counter = 0, tsf_counter = 0, length_mismatch_count = 0;
 
   {
