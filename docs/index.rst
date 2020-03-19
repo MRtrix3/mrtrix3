@@ -11,7 +11,7 @@ Use of the *MRtrix3* software package in published works should be accompanied b
 
 
 Key features
-============
+~~~~~~~~~~~~
 
 While *MRtrix3* is primarily intended to be used for the analysis of
 diffusion MRI data, at its fundamental level it is designed as a
@@ -41,7 +41,7 @@ which will be invisible to the end-user. Specifically, *MRtrix3* features:
 
 
 Commands
-========
+~~~~~~~~
 
 The *MRtrix3* software package includes a suite of tools for image analysis and visualisation. With the exception of :ref:`mrview` and :ref:`shview`, all *MRtrix3* executables are designed to be run via a terminal using a consistent :ref:`command-line interface <command-line-interface>`. While many of the tools and features are discussed within tutorials found in this documentation, a comprehensive :ref:`list-of-mrtrix3-commands` can be found in the reference section. These lists provide links to the help page (manual) for each executable, which can also be accessed by typing the :code:`-help` option after the executable name on the terminal.
 
@@ -61,6 +61,10 @@ The *MRtrix3* software package includes a suite of tools for image analysis and 
 .. _Qt: http://qt-project.org/
 .. _Mozilla Public License: http://mozilla.org/MPL/2.0/
 
+
+
+Table of Contents
+=================
 
 .. toctree::
    :maxdepth: 1
