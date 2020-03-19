@@ -673,7 +673,7 @@ namespace MR
       NodeSelectionSettingsDialog::NodeSelectionSettingsDialog (QWidget*, const std::string& message, NodeSelectionSettings& settings) :
           frame (new NodeSelectionSettingsFrame (this, settings))
       {
-        setWindowTitle (QString (message.c_str()));
+        setWindowTitle (qstr (message));
         setModal (false);
         setSizeGripEnabled (true);
 

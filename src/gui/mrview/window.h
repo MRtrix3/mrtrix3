@@ -19,7 +19,6 @@
 
 #include "image.h"
 #include "memory.h"
-#include "math/versor.h"
 #include "gui/cursor.h"
 #include "gui/gui.h"
 #include "gui/mrview/gui_image.h"
@@ -48,6 +47,7 @@ namespace MR
       {
         class Base;
         class ODF;
+        class CameraInteractor;
       }
 
 
@@ -105,7 +105,7 @@ namespace MR
             if (!image())
               return -1;
             else
-              return std::round ((image()->transform().scanner2voxel.cast<float>() * focus())[anatomical_plane]);
+              return std::round ((image()->image.transform().inverse().cast<float>() * focus()) (anatomical_plane) / image()->image.spacing (anatomical_plane));
           }
 
           Mode::Base* get_current_mode () const { return mode.get(); }
@@ -113,7 +113,7 @@ namespace MR
           const Eigen::Vector3f& target () const { return camera_target; }
           float FOV () const { return field_of_view; }
           int plane () const { return anatomical_plane; }
-          const Math::Versorf& orientation () const { return orient; }
+          const Eigen::Quaternionf& orientation () const { return orient; }
           bool snap_to_image () const { return snap_to_image_axes_and_voxel; }
           Image* image () { return static_cast<Image*> (image_group->checkedAction()); }
 
@@ -121,7 +121,7 @@ namespace MR
           void set_target (const Eigen::Vector3f& p) { camera_target = p; emit targetChanged(); }
           void set_FOV (float value) { field_of_view = value; emit fieldOfViewChanged(); }
           void set_plane (int p) { anatomical_plane = p; emit planeChanged(); }
-          void set_orientation (const Math::Versorf& V) { orient = V; emit orientationChanged(); }
+          void set_orientation (const Eigen::Quaternionf& V) { orient = V; orient.normalize(); emit orientationChanged(); }
           void set_scaling (float min, float max) { if (!image()) return; image()->set_windowing (min, max); }
           void set_snap_to_image (bool onoff) { snap_to_image_axes_and_voxel = onoff; snap_to_image_action->setChecked(onoff);  emit focusChanged(); }
 
@@ -142,14 +142,19 @@ namespace MR
           bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); }
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
+          bool sync_focus_on ()  const { return sync_focus_action->isChecked(); }
+
           void captureGL (std::string filename) {
             QImage image (glarea->grabFramebuffer());
-            image.save (filename.c_str());
+            image.save (qstr (filename));
           }
 
           GL::Area* glwidget () const { return glarea; }
           GL::Lighting& lighting () { return *lighting_; }
           ColourBars colourbar_renderer;
+
+          void register_camera_interactor (Tool::CameraInteractor* agent = nullptr);
+          Tool::CameraInteractor* active_camera_interactor () { return camera_interactor; }
 
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
@@ -167,6 +172,7 @@ namespace MR
           void imageVisibilityChanged (bool);
           void scalingChanged ();
           void volumeChanged ();
+          void syncChanged();
 
         public slots:
           void on_scaling_changed ();
@@ -191,6 +197,8 @@ namespace MR
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
           void wrap_volumes_slot ();
+
+          void sync_slot();
 
           void hide_image_slot ();
           void slice_next_slot ();
@@ -240,7 +248,7 @@ namespace MR
           MouseAction mouse_action;
 
           Eigen::Vector3f focal_point, camera_target;
-          Math::Versorf orient;
+          Eigen::Quaternionf orient;
           float field_of_view;
           int anatomical_plane, annotations;
           ColourBars::Position colourbar_position, tools_colourbar_position;
@@ -248,6 +256,8 @@ namespace MR
           std::string current_folder;
 
           float background_colour[3];
+
+          Tool::CameraInteractor* camera_interactor;
 
           QMenu *image_menu;
 
@@ -295,6 +305,8 @@ namespace MR
                   *show_colourbar_action,
                   *image_interpolate_action,
                   *full_screen_action,
+
+                  *sync_focus_action,
 
                   *OpenGL_action,
                   *about_action,

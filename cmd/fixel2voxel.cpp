@@ -52,9 +52,8 @@ const char* operations[] = {
   "sf",
   "dec_unit",
   "dec_scaled",
-  "split_data",
-  "split_dir",
-  NULL
+  "none",
+  nullptr
 };
 
 
@@ -70,8 +69,7 @@ void usage ()
   + "- The number of fixels in each voxel: count"
   + "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')"
   + "- A 4D directionally-encoded colour image: dec_unit, dec_scaled"
-  + "- A 4D scalar image of fixel values with one 3D volume per fixel: split_data"
-  + "- A 4D image of fixel directions, stored as three 3D volumes per fixel direction: split_dir"
+  + "- A 4D image containing all fixel data values in each voxel unmodified: none"
 
   + "The -weighted option deals with the case where there is some per-fixel metric of interest "
     "that you wish to collapse into a single scalar measure per voxel, but each fixel possesses "
@@ -94,9 +92,11 @@ void usage ()
 
   OPTIONS
   + Option ("number", "use only the largest N fixels in calculation of the voxel-wise statistic; "
-                      "in the case of \"split_data\" and \"split_dir\", output only the largest N "
-                      "fixels, padding where necessary.")
+                      "in the case of operation \"none\", output only the largest N fixels in each voxel.")
       + Argument ("N").type_integer(1)
+
+  + Option ("fill", "for \"none\" operation, specify the value to fill when number of fixels is fewer than the maximum (default: 0.0)")
+      + Argument ("value").type_float()
 
   + Option ("weighted", "weight the contribution of each fixel to the per-voxel result according to its volume.")
       + Argument ("fixel_in").type_image_in ();
@@ -464,44 +464,17 @@ class DEC_scaled : protected Base
 };
 
 
-class SplitData : protected Base
-{ MEMALIGN (SplitData)
+class None : protected Base
+{ MEMALIGN (None)
   public:
-    SplitData (FixelDataType& data, const index_type max_fixels) :
-        Base (data, max_fixels, true) { }
+    None (FixelDataType& data, const index_type max_fixels, const float fill_value) :
+        Base (data, max_fixels, true, fill_value) { }
 
     void operator() (FixelIndexType& index, Image<float>& out)
     {
       for (auto f = Base::Loop (index) (data); f; ++f) {
         out.index(3) = f.fixel_index;
         out.value() = f.padding() ? pad_value : data.value();
-      }
-    }
-};
-
-
-class SplitDir : protected Base
-{ MEMALIGN (SplitDir)
-  public:
-    SplitDir (FixelDataType& dir, const index_type max_fixels) :
-        Base (dir, max_fixels, true, NAN) { }
-
-    void operator() (FixelIndexType& index, Image<float>& out)
-    {
-      out.index(3) = 0;
-      for (auto f = Base::Loop (index) (data); f; ++f) {
-        if (f.padding()) {
-          for (size_t axis = 0; axis < 3; ++axis) {
-            out.value() = pad_value;
-            ++out.index(3);
-          }
-        } else {
-          for (size_t axis = 0; axis < 3; ++axis) {
-            data.index(1) = axis;
-            out.value() = data.value();
-            ++out.index(3);
-          }
-        }
       }
     }
 };
@@ -539,11 +512,10 @@ void run ()
   } else if (op == 10 || op == 11) { // dec
     H_out.ndim() = 4;
     H_out.size (3) = 3;
-  } else if (op == 12 || op == 13) { // split_*
+  } else if (op == 12) { // none
     H_out.ndim() = 4;
     if (max_fixels) {
-      // 3 volumes per fixel if performing split_dir
-      H_out.size(3) = (op == 13) ? (3 * max_fixels) : max_fixels;
+      H_out.size(3) = max_fixels;
     } else {
       index_type max_count = 0;
       for (auto l = Loop ("determining largest fixel count", in_index_image, 0, 3) (in_index_image); l; ++l)
@@ -551,13 +523,13 @@ void run ()
       if (max_count == 0)
         throw Exception ("fixel image is empty");
       // 3 volumes per fixel if performing split_dir
-      H_out.size(3) = (op == 13) ? (3 * max_count) : max_count;
+      H_out.size(3) = max_count;
     }
   } else {
     H_out.ndim() = 3;
   }
 
-  if (op == 10 || op == 11 || op == 13)  // dec or split_dir
+  if (op == 10 || op == 11)  // dec
     in_directions = Fixel::find_directions_header (
                     Fixel::get_fixel_directory (in_data.name())).get_image<float>().with_direct_io();
 
@@ -569,9 +541,19 @@ void run ()
   }
 
   if (op == 2 || op == 3 || op == 4 || op == 5 || op == 6 ||
-      op == 7 || op == 8 || op == 9 || op == 12 || op == 13) {
+      op == 7 || op == 8 || op == 9 || op == 12) {
     if (in_vol.valid())
       WARN ("Option -weighted has no meaningful interpretation for the operation specified; ignoring");
+  }
+
+  opt = get_options ("fill");
+  float fill_value = 0.0;
+  if (opt.size()) {
+    if (op == 12) {
+      fill_value = opt[0][0];
+    } else {
+      WARN ("Option -fill ignored; only applicable to \"none\" operation");
+    }
   }
 
   auto out = Image<float>::create (argument[2], H_out);
@@ -593,9 +575,7 @@ void run ()
     case 9:  loop.run (SF         (in_data, max_fixels), in_index_image, out); break;
     case 10: loop.run (DEC_unit   (in_data, max_fixels, in_vol, in_directions), in_index_image, out); break;
     case 11: loop.run (DEC_scaled (in_data, max_fixels, in_vol, in_directions), in_index_image, out); break;
-    case 12: loop.run (SplitData  (in_data, max_fixels), in_index_image, out); break;
-    case 13: loop.run (SplitDir   (in_directions, max_fixels), in_index_image, out); break;
+    case 12: loop.run (::None     (in_data, max_fixels, fill_value), in_index_image, out); break;
   }
 
 }
-

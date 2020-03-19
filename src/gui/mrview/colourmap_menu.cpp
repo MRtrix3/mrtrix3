@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "gui/gui.h"
 #include "gui/mrview/colourmap_menu.h"
 
 namespace MR
@@ -50,7 +51,7 @@ namespace MR
           parent->addAction (action);
 
           if (create_shortcuts)
-            action->setShortcut (QObject::tr (std::string ("Ctrl+" + str (n+1)).c_str()));
+            action->setShortcut (qstr ("Ctrl+" + str (n+1)));
 
           actions[n] = action;
         }
