@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_adapter_gradient1D_h__
-#define __image_adapter_gradient1D_h__
+#ifndef __image_adapter_gradient_h__
+#define __image_adapter_gradient_h__
 
 #include "adapter/base.h"
 
@@ -25,39 +25,28 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gradient1D : 
-        public Base<Gradient1D<ImageType>, ImageType> 
+    class Gradient1D : public BaseFiniteDiff1D<Gradient1D<ImageType>, ImageType>
     { MEMALIGN (Gradient1D<ImageType>)
       public:
 
-        using base_type = Base<Gradient1D<ImageType>, ImageType>;
+        using base_type = BaseFiniteDiff1D<Gradient1D<ImageType>, ImageType>;
         using value_type = typename ImageType::value_type;
 
-        using base_type::name;
-        using base_type::size;
-        using base_type::spacing;
         using base_type::index;
+        using base_type::size;
+        using base_type::axis;
+        using base_type::axis_weights;
 
 
-        Gradient1D (const ImageType& parent,
-                    size_t axis = 0,
-                    bool wrt_spacing = false) :
-          base_type (parent),
-          axis (axis),
-          wrt_spacing (wrt_spacing),
-          derivative_weights (3, 1.0),
-          half_derivative_weights (3, 0.5)  {
-            if (wrt_spacing) {
-              for (size_t dim = 0; dim < 3; ++dim) {
-                derivative_weights[dim] /= spacing(dim);
-                half_derivative_weights[dim] /= spacing(dim);
-              }
-            }  
-          }
 
-        void set_axis (size_t val)
+        Gradient1D (const ImageType& parent, size_t axis = 0, bool wrt_spacing = false) :
+            base_type (parent, axis, wrt_spacing),
+            half_axisweights (3, value_type(0.5))
         {
-          axis = val;
+          if (wrt_spacing) {
+            for (size_t dim = 0; dim < 3; ++dim)
+              half_axisweights[dim] /= base_type::spacing (dim);
+          }
         }
 
         /**
@@ -67,21 +56,21 @@ namespace MR
         value_type value ()
         {
           const ssize_t pos = index (axis);
-          result = 0.0;
+          value_type result = value_type(0);
 
           if (pos == 0) {
             result = base_type::value();
             index (axis) = pos + 1;
-            result = derivative_weights[axis] * (base_type::value() - result);
+            result = axis_weights[axis] * (base_type::value() - result);
           } else if (pos == size(axis) - 1) {
             result = base_type::value();
             index (axis) = pos - 1;
-            result = derivative_weights[axis] * (result - base_type::value());
+            result = axis_weights[axis] * (result - base_type::value());
           } else {
             index (axis) = pos + 1;
             result = base_type::value();
             index (axis) = pos - 1;
-            result = half_derivative_weights[axis] * (result - base_type::value());
+            result = half_axisweights[axis] * (result - base_type::value());
           }
           index (axis) = pos;
 
@@ -90,12 +79,23 @@ namespace MR
 
 
       protected:
-        size_t axis;
-        value_type result;
-        const bool wrt_spacing;
-        vector<value_type> derivative_weights;
-        vector<value_type> half_derivative_weights;
-      };
+        vector<value_type> half_axisweights;
+    };
+
+
+
+    template <class ImageType>
+    class Gradient3D : public BaseFiniteDiff3D<Gradient1D<ImageType>, ImageType>
+    { MEMALIGN(Gradient3D<ImageType>)
+      public:
+        using base_type = BaseFiniteDiff3D<Gradient1D<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
+        using return_type = typename base_type::return_type;
+        using base_type::base_type;
+    };
+
+
+
   }
 }
 

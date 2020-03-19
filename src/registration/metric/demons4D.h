@@ -20,7 +20,7 @@
 #include <mutex>
 
 #include "image_helpers.h"
-#include "adapter/gradient3D.h"
+#include "adapter/gradient.h"
 #include "registration/multi_contrast.h"
 
 namespace MR

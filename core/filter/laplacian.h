@@ -14,15 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_filter_gradient_h__
-#define __image_filter_gradient_h__
+#ifndef __image_filter_laplacian_h__
+#define __image_filter_laplacian_h__
 
 #include "memory.h"
 #include "image.h"
 #include "transform.h"
 #include "algo/loop.h"
 #include "algo/threaded_copy.h"
-#include "adapter/gradient.h"
+#include "adapter/laplacian.h"
 #include "filter/base.h"
 #include "filter/smooth.h"
 
@@ -33,20 +33,20 @@ namespace MR
     /** \addtogroup Filters
     @{ */
 
-    /*! Compute the image gradients of a 3D or 4D image.
+    /*! Compute the image Laplacians (second derivatives) of a 3D or 4D image.
      *
      * Typical usage:
      * \code
      * auto input = Image<float>::open (argument[0]);
-     * Filter::Gradient gradient_filter (input);
-     * auto output = Image<float>::create (argument[1], gradient_filter);
-     * gradient_filter (input, output);
+     * Filter::Laplacian laplacian_filter (input);
+     * auto output = Image<float>::create (argument[1], laplacian_filter);
+     * laplacian_filter (input, output);
      * \endcode
      */
-    class Gradient : public Base { MEMALIGN(Gradient)
+    class Laplacian : public Base { MEMALIGN(Laplacian)
       public:
         template <class HeaderType>
-        Gradient (const HeaderType& in, const bool magnitude = false) :
+        Laplacian (const HeaderType& in, const bool magnitude = false) :
             Base (in),
             smoother (in),
             wrt_scanner (true),
@@ -77,7 +77,7 @@ namespace MR
             throw Exception("input image must be 3D or 4D");
           }
           datatype() = DataType::Float32;
-          DEBUG ("creating gradient filter");
+          DEBUG ("creating laplacian filter");
         }
 
         void compute_wrt_scanner (bool do_wrt_scanner) {
@@ -93,28 +93,28 @@ namespace MR
         void operator() (InputImageType& in, OutputImageType& out)
         {
           if (magnitude) {
-            Gradient full_gradient (in, false);
-            full_gradient.set_stdev (stdev);
-            full_gradient.compute_wrt_scanner (wrt_scanner);
-            full_gradient.set_message (message);
-            auto temp = Image<float>::scratch (full_gradient, "full 3D gradient image");
-            full_gradient (in, temp);
+            Laplacian full_laplacian (in, false);
+            full_laplacian.set_stdev (stdev);
+            full_laplacian.compute_wrt_scanner (wrt_scanner);
+            full_laplacian.set_message (message);
+            auto temp = Image<float>::scratch (full_laplacian, "full 3D Laplacian image");
+            full_laplacian (in, temp);
             for (auto l = Loop (out)(out, temp); l; ++l) {
               if (out.ndim() == 4) {
                 ssize_t tmp = out.index(3);
                 temp.index(4) = tmp;
               }
-              float grad_sq = 0.0;
+              float laplacian_sq = 0.0;
               for (temp.index(3) = 0; temp.index(3) != 3; ++temp.index(3))
-                grad_sq += Math::pow2<float> (temp.value());
-              out.value() = std::sqrt (grad_sq);
+                laplacian_sq += Math::pow2<float> (temp.value());
+              out.value() = std::sqrt (laplacian_sq);
             }
             return;
           }
           smoother.set_stdev (stdev);
           auto smoothed = Image<float>::scratch (smoother);
           if (message.size())
-            smoother.set_message ("applying smoothing prior to calculating gradient");
+            smoother.set_message ("applying smoothing prior to calculating Laplacian");
           threaded_copy (in, smoothed);
           smoother (smoothed);
 
@@ -128,17 +128,17 @@ namespace MR
               out.index(4) = vol;
             }
 
-            Adapter::Gradient1D<decltype(smoothed)> gradient1D (smoothed, 0, wrt_scanner);
+            Adapter::Laplacian1D<decltype(smoothed)> laplacian1D (smoothed, 0, wrt_scanner);
             out.index(3) = 0;
-            threaded_copy (gradient1D, out, 0, 3, 2);
+            threaded_copy (laplacian1D, out, 0, 3, 2);
             if (progress) ++(*progress);
             out.index(3) = 1;
-            gradient1D.set_axis (1);
-            threaded_copy (gradient1D, out, 0, 3, 2);
+            laplacian1D.set_axis (1);
+            threaded_copy (laplacian1D, out, 0, 3, 2);
             if (progress) ++(*progress);
             out.index(3) = 2;
-            gradient1D.set_axis (2);
-            threaded_copy (gradient1D, out, 0, 3, 2);
+            laplacian1D.set_axis (2);
+            threaded_copy (laplacian1D, out, 0, 3, 2);
             if (progress) ++(*progress);
 
             if (wrt_scanner) {

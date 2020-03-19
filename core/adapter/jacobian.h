@@ -18,7 +18,7 @@
 #define __image_adapter_jacobian_h__
 
 #include "adapter/base.h"
-#include "adapter/gradient1D.h"
+#include "adapter/gradient.h"
 #include "transform.h"
 
 namespace MR
@@ -27,8 +27,8 @@ namespace MR
   {
 
     template <class WarpType>
-      class Jacobian : 
-        public Base<Jacobian<WarpType>,WarpType> 
+      class Jacobian :
+        public Base<Jacobian<WarpType>,WarpType>
     { MEMALIGN (Jacobian<WarpType>)
         public:
 

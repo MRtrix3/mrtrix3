@@ -22,13 +22,13 @@
 
 namespace MR
 {
-    namespace Adapter 
+    namespace Adapter
     {
 
 
     template <class ImageType>
-        class Median : 
-          public Base<Median<ImageType>,ImageType> 
+        class Median :
+          public Base<Median<ImageType>,ImageType>
       { MEMALIGN(Median<ImageType>)
       public:
 
@@ -70,7 +70,7 @@ namespace MR
 
 
 
-          value_type value ()
+        value_type value ()
         {
           const ssize_t old_pos [3] = { index(0), index(1), index(2) };
           const ssize_t from[3] = {
@@ -95,7 +95,7 @@ namespace MR
           index(1) = old_pos[1];
           index(2) = old_pos[2];
 
-            return Math::median (values);
+          return Math::median (values);
         }
 
       protected:

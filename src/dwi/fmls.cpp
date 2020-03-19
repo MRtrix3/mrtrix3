@@ -303,6 +303,9 @@ namespace MR {
           }
         }
 
+        // Reorder from maximum to minimum integral
+        std::sort (out.begin(), out.end(), [] (const FOD_lobe& a, const FOD_lobe& b) { return a.get_integral() > b.get_integral(); });
+
         if (create_lookup_table) {
 
           out.lut.assign (dirs.size(), out.size());
