@@ -19,7 +19,7 @@
 #include "image_helpers.h"
 #include "memory.h"
 #include "thread.h"
-#include "thread_queue.h"
+#include "ordered_thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
@@ -420,16 +420,11 @@ void execute_nostat (DWI::Tractography::Reader<value_type>& reader,
 {
   SamplerNonPrecise<InterpType> sampler (image, stat_tck::NONE, Image<value_type>());
   Receiver_NoStatistic receiver (path, num_tracks, properties);
-  DWI::Tractography::Streamline<value_type> tck;
-  std::pair<size_t, vector_type> values;
-  size_t counter = 0;
-  while (reader (tck)) {
-    sampler (tck, values);
-    receiver (values);
-    ++counter;
-  }
-  if (counter != num_tracks)
-    WARN ("Expected " + str(num_tracks) + " tracks based on header; read " + str(counter));
+  Thread::run_ordered_queue (reader,
+                             Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                             Thread::multi (sampler),
+                             Thread::batch (std::pair<size_t, vector_type>()),
+                             receiver);
 }
 
 template <class SamplerType>
@@ -442,11 +437,11 @@ void execute (DWI::Tractography::Reader<value_type>& reader,
 {
   SamplerType sampler (image, statistic, tdi);
   Receiver_Statistic receiver (num_tracks);
-  Thread::run_queue (reader,
-                     Thread::batch (DWI::Tractography::Streamline<value_type>()),
-                     Thread::multi (sampler),
-                     Thread::batch (std::pair<size_t, value_type>()),
-                     receiver);
+  Thread::run_ordered_queue (reader,
+                             Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                             Thread::multi (sampler),
+                             Thread::batch (std::pair<size_t, value_type>()),
+                             receiver);
   receiver.save (path);
 }
 

@@ -15,10 +15,10 @@
  */
 
 #include "command.h"
-#include "progressbar.h"
 #include "image.h"
+#include "ordered_thread_queue.h"
+#include "progressbar.h"
 #include "interp/linear.h"
-#include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -127,7 +127,7 @@ void run ()
 
   Writer writer (argument[2], loader.properties);
 
-  Thread::run_queue (
+  Thread::run_ordered_queue (
       loader,
       Thread::batch (TrackType(), 1024),
       Thread::multi (warper),
