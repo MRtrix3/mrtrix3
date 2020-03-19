@@ -1,7 +1,7 @@
 .. _batch_processing:
 
 Batch processing with ``for_each``
-=================================
+==================================
 
 Image processing often involves executing the same command on many different subjects or time points within a study. *MRtrix3* includes a Python script called ``for_each`` to simplify this process. The main benefit of using ``for_each`` compared to a bash ``for`` loop is a simpler and less verbose syntax. However other benefits include multi-threaded job execution (to exploit modern multi-core CPUs when the command being run is not already multi-threaded), and automatic identification of path basenames and prefixes. To view the full help page run ``for_each`` on the command line with no arguments.
 
