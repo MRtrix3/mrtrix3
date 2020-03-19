@@ -33,9 +33,9 @@ namespace MR
 
         FileDataVector::FileDataVector () :
             base_t (),
-            min (NAN),
-            mean (NAN),
-            max (NAN) { }
+            min (NaN),
+            mean (NaN),
+            max (NaN) { }
 
         FileDataVector::FileDataVector (const FileDataVector& V) :
             base_t (V),
@@ -52,21 +52,21 @@ namespace MR
             max (V.max)
         {
           V.name.clear();
-          V.min = V.mean = V.max = NAN;
+          V.min = V.mean = V.max = NaN;
         }
 
         FileDataVector::FileDataVector (const size_t nelements) :
             base_t (nelements),
-            min (NAN),
-            mean (NAN),
-            max (NAN) { }
+            min (NaN),
+            mean (NaN),
+            max (NaN) { }
 
         FileDataVector::FileDataVector (const std::string& file) :
             base_t (),
-            name (Path::basename (file).c_str()),
-            min (NAN),
-            mean (NAN),
-            max (NAN)
+            name (qstr (Path::basename (file))),
+            min (NaN),
+            mean (NaN),
+            max (NaN)
         {
           base_t temp = MR::load_vector<float> (file);
           base_t::operator= (temp);
@@ -93,7 +93,7 @@ namespace MR
           mean = that.mean;
           max = that.max;
           that.name.clear();
-          that.min = that.mean = that.max = NAN;
+          that.min = that.mean = that.max = NaN;
           return *this;
         }
 
@@ -104,7 +104,7 @@ namespace MR
         {
           base_t temp = MR::load_vector<float> (filename);
           base_t::operator= (temp);
-          name = Path::basename (filename).c_str();
+          name = qstr (Path::basename (filename));
           calc_stats();
           return *this;
         }
@@ -113,7 +113,7 @@ namespace MR
         {
           base_t::resize (0);
           name.clear();
-          min = mean = max = NAN;
+          min = mean = max = NaN;
           return *this;
         }
 

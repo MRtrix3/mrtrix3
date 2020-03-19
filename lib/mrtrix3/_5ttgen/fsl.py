@@ -1,11 +1,33 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import math, os
+from distutils.spawn import find_executable
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, fsl, image, path, run, utils
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fsl', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use FSL commands to generate the 5TT image based on a T1-weighted image')
-  parser.add_citation('', 'Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155', True)
-  parser.add_citation('', 'Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', True)
-  parser.add_citation('', 'Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922', True)
-  parser.add_citation('', 'Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', True)
+  parser.add_citation('Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155', is_external=True)
+  parser.add_citation('Zhang, Y.; Brady, M. & Smith, S. Segmentation of brain MR images through a hidden Markov random field model and the expectation-maximization algorithm. IEEE Transactions on Medical Imaging, 2001, 20, 45-57', is_external=True)
+  parser.add_citation('Patenaude, B.; Smith, S. M.; Kennedy, D. N. & Jenkinson, M. A Bayesian model of shape and appearance for subcortical brain segmentation. NeuroImage, 2011, 56, 907-922', is_external=True)
+  parser.add_citation('Smith, S. M.; Jenkinson, M.; Woolrich, M. W.; Beckmann, C. F.; Behrens, T. E.; Johansen-Berg, H.; Bannister, P. R.; De Luca, M.; Drobnjak, I.; Flitney, D. E.; Niazy, R. K.; Saunders, J.; Vickers, J.; Zhang, Y.; De Stefano, N.; Brady, J. M. & Matthews, P. M. Advances in functional and structural MR image analysis and implementation as FSL. NeuroImage, 2004, 23, S208-S219', is_external=True)
   parser.add_argument('input',  help='The input T1-weighted image')
   parser.add_argument('output', help='The output 5TT image')
   options = parser.add_argument_group('Options specific to the \'fsl\' algorithm')
@@ -17,13 +39,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output)
 
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  from mrtrix3 import app, image, MRtrixError, path, run
   image.check_3d_nonunity(path.from_user(app.ARGS.input, False))
   run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'))
   if app.ARGS.mask:
@@ -35,13 +55,8 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 
-
 def execute(): #pylint: disable=unused-variable
-  import math, os
-  from distutils.spawn import find_executable
-  from mrtrix3 import app, fsl, image, is_windows, MRtrixError, path, run
-
-  if is_windows():
+  if utils.is_windows():
     raise MRtrixError('\'fsl\' algorithm of 5ttgen script cannot be run on Windows: FSL not available on Windows')
 
   fsl_path = os.environ.get('FSLDIR', '')
@@ -58,6 +73,9 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError('Atlases required for FSL\'s FIRST program not installed; please install fsl-first-data using your relevant package manager')
 
   fsl_suffix = fsl.suffix()
+
+  if not app.ARGS.mask and not app.ARGS.premasked and not find_executable('dc'):
+    app.warn('Unix command "dc" not found; FSL script "standard_space_roi" may fail')
 
   sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
   if app.ARGS.sgm_amyg_hipp:
@@ -78,7 +96,7 @@ def execute(): #pylint: disable=unused-variable
   fast_t2_input = ''
 
   # Decide whether or not we're going to do any brain masking
-  if os.path.exists('mask.mif'):
+  if app.ARGS.mask:
 
     fast_t1_input = 'T1_masked' + fsl_suffix
 
@@ -159,7 +177,7 @@ def execute(): #pylint: disable=unused-variable
   first_input = 'T1.nii'
   if upsample_for_first:
     app.warn('Generating 1mm isotropic T1 image for FIRST in hope of preventing failure, since input image is of lower resolution')
-    run.command('mrresize T1.nii T1_1mm.nii -voxel 1.0 -interp sinc')
+    run.command('mrgrid T1.nii regrid T1_1mm.nii -voxel 1.0 -interp sinc')
     first_input = 'T1_1mm.nii'
   first_brain_extracted_option = ''
   if app.ARGS.premasked:
@@ -208,10 +226,10 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc 0 wm.mif -min path.mif')
   run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -strides +2,+3,+4,+1')
 
-  # Use mrcrop to reduce file size (improves caching of image data during tracking)
+  # Crop to reduce file size (improves caching of image data during tracking)
   if app.ARGS.nocrop:
     run.function(os.rename, 'combined_precrop.mif', 'result.mif')
   else:
-    run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif result.mif -mask -')
+    run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrgrid combined_precrop.mif crop result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output, True) + app.mrconvert_output_option(path.from_user(app.ARGS.input, True)))
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)

@@ -101,8 +101,12 @@ namespace MR
     DECLARE_IMAGEFORMAT (XDS, "XDS");
     DECLARE_IMAGEFORMAT (MGH, "MGH");
     DECLARE_IMAGEFORMAT (MGZ, "MGZ (compressed MGH)");
+    DECLARE_IMAGEFORMAT (PAR, "Philips PAR/REG");
 #ifdef MRTRIX_TIFF_SUPPORT
     DECLARE_IMAGEFORMAT (TIFF, "TIFF");
+#endif
+#ifdef MRTRIX_PNG_SUPPORT
+    DECLARE_IMAGEFORMAT (PNG, "PNG");
 #endif
     DECLARE_IMAGEFORMAT (MRtrix_sparse, "MRtrix WIP sparse image data format");
 

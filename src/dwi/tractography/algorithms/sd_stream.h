@@ -20,6 +20,7 @@
 #include "math/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
+#include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 
 
@@ -48,16 +49,12 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
-          set_step_size (0.1f);
-          dot_threshold = std::cos (max_angle);
-
-          set_cutoff (TCKGEN_DEFAULT_CUTOFF_FOD);
-
-          if (rk4) {
-            INFO ("minimum radius of curvature = " + str(step_size / (max_angle / (0.5 * Math::pi))) + " mm");
-          } else {
-            INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
-          }
+          set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                              Defaults::angle_deterministic,
+                              rk4);
+          dot_threshold = std::cos (max_angle_1o);
+          set_num_points();
+          set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
           properties["method"] = "SDStream";
 
@@ -127,7 +124,7 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
       const Eigen::Vector3f prev_dir (dir);
 
       if (!find_peak())
-        return BAD_SIGNAL;
+        return MODEL;
 
       if (prev_dir.dot (dir) < S.dot_threshold)
         return HIGH_CURVATURE;

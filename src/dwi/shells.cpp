@@ -41,6 +41,13 @@ namespace MR
 
 
 
+    FORCE_INLINE default_type bvalue_epsilon () {
+      static const default_type value = File::Config::get_float ("BValueEpsilon", DWI_SHELLS_EPSILON);
+      return value;
+    }
+
+
+
 
 
     Shell::Shell (const Eigen::MatrixXd& grad, const vector<size_t>& indices) :
@@ -384,7 +391,7 @@ namespace MR
     void Shells::regionQuery (const BValueList& bvals, const default_type b, vector<size_t>& idx) const
     {
       for (ssize_t i = 0; i < bvals.size(); i++) {
-        if (abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
+        if (abs (b - bvals[i]) < bvalue_epsilon())
           idx.push_back (i);
       }
     }

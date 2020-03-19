@@ -36,6 +36,14 @@ namespace MR {
           .allow_multiple()
           + Argument ("spec").type_various()
 
+       + Option("include_ordered",
+          "specify an inclusion region of interest, as either a binary mask image, "
+          "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
+          "must traverse ALL inclusion_ordered regions in the order they are "
+          "specified in order to be accepted.")
+       .allow_multiple()
+       + Argument("image").type_text()
+
       + Option ("exclude",
             "specify an exclusion region of interest, as either a binary mask image, "
             "or as a sphere using 4 comma-separared values (x,y,z,radius). Streamlines "
@@ -58,6 +66,10 @@ namespace MR {
         for (size_t i = 0; i < opt.size(); ++i)
           properties.include.add (ROI (opt[i][0]));
 
+        opt = get_options("include_ordered");
+        for (size_t i = 0; i < opt.size(); ++i)
+           properties.ordered_include.add (ROI (opt[i][0]));
+
         opt = get_options ("exclude");
         for (size_t i = 0; i < opt.size(); ++i)
           properties.exclude.add (ROI (opt[i][0]));
@@ -75,7 +87,7 @@ namespace MR {
       Image<bool> Mask::__get_mask (const std::string& name)
       {
         auto data = Image<bool>::open (name);
-        vector<size_t> bottom (data.ndim(), 0), top (data.ndim(), 0);
+        vector<size_t> bottom (3, 0), top (3, 0);
         std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
 
         size_t sum = 0;

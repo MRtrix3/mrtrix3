@@ -1,7 +1,21 @@
 Beginner DWI tutorial
 =====================
 
-.. WARNING:: This tutorial is not intended to show the optimal or even recommended way of processing. It is merely a simplified example, intended to familiarise the user with the typical command line interface of certain basic processing steps.
+.. TIP::
+
+  Some proficiency with the Unix command-line is required to make the best use
+  of this software. There are many resources online to help you get
+  started if you are not already familiar with it. We also recommend our own
+  `Introduction to the Unix command-line
+  <https://command-line-tutorial.readthedocs.io/>`__, which was written with a
+  particular focus on the types of use that are common when using *MRtrix3*.
+
+.. WARNING::
+
+  This tutorial is not intended to show the optimal or even recommended way of
+  processing. It is merely a simplified example, intended to familiarise the
+  user with the typical command line interface of certain basic processing
+  steps.
 
 This tutorial will hopefully provide enough information for a novice
 user to get from the raw DW image data to performing some streamlines
@@ -24,9 +38,9 @@ current-induced distortions and inter-volume subject motion. Procedures
 for this correct are not yet implemented in *MRtrix3*, though we do provide
 a script for interfacing with the relevant FSL tools:
 
-``dwipreproc <Input DWI series> <Output corrected DWI series> [options]``
+``dwifslpreproc <Input DWI series> <Output corrected DWI series> [options]``
 
-For more details, see the :ref:`dwipreproc` help file. In
+For more details, see the :ref:`dwifslpreproc` help file. In
 particular, it is necessary to manually specify what type of reversed
 phase-encoding acquisition has taken place (if any), and potentially
 provide additional relevant input images or provide details of the
@@ -103,4 +117,8 @@ particularly when a very large number of streamlines is generated.
 
     $ tckmap <Input track file> <Output TDI> -vox <Voxel size in mm>
     $ mrview <Output TDI>
+
+
+
+
 
