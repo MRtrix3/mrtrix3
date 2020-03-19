@@ -193,12 +193,14 @@ namespace MR
           }
 
           // voxel sizes:
+          double pixdim[8];
           for (int i = 0; i < ndim; i++) {
-            H.spacing(i) = Raw::fetch_<float_type> (&NH.pixdim[i+1], is_BE);
-            if (H.spacing (i) < 0.0) {
+            pixdim[i] = Raw::fetch_<float_type> (&NH.pixdim[i+1], is_BE);
+            if (pixdim[i] < 0.0) {
               INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-              H.spacing(i) = abs (H.spacing (i));
+              pixdim[i] = abs (pixdim[i]);
             }
+            H.spacing(i) = pixdim[i];
           }
 
 
@@ -228,8 +230,15 @@ namespace MR
               add_line (H.keyval()["comments"], descrip);
           }
 
+          // used to rescale voxel sizes in case of mismatch between pixdim and
+          // length of cosine vectors in sform:
+          bool rescale_voxel_sizes = false;
+
+
           if (is_nifti) {
             bool sform_code = Raw::fetch_<code_type> (&NH.sform_code, is_BE);
+            bool qform_code = Raw::fetch_<code_type> (&NH.qform_code, is_BE);
+
             if (sform_code) {
               auto& M (H.transform().matrix());
 
@@ -250,22 +259,28 @@ namespace MR
 
               // check voxel sizes:
               for (size_t axis = 0; axis != 3; ++axis) {
-                if (size_t(H.ndim()) > axis)
-                  if (abs(H.spacing(axis) - M.col(axis).head<3>().norm()) > 1e-4) {
+                if (size_t(H.ndim()) > axis) {
+                  if (abs(pixdim[axis]/M.col(axis).head<3>().norm() - 1.0) > 1e-5) {
                     WARN ("voxel spacings inconsistent between NIFTI s-form and header field pixdim");
+                    rescale_voxel_sizes = true;
                     break;
                   }
+                }
               }
 
-              // normalize each transform axis:
+              // normalize each transform axis and rescale voxel sizes if
+              // needed:
               for (size_t axis = 0; axis != 3; ++axis) {
-                if (size_t(H.ndim()) > axis)
-                  M.col(axis).normalize();
+                if (size_t(H.ndim()) > axis) {
+                  auto length = M.col(axis).head<3>().norm();
+                  M.col(axis).head<3>() /= length;
+                  H.spacing(axis) = rescale_voxel_sizes ? length : pixdim[axis];
+                }
               }
 
             }
 
-            if (Raw::fetch_<code_type> (&NH.qform_code, is_BE)) {
+            if (qform_code) {
               transform_type M_qform;
 
               Eigen::Quaterniond Q (0.0,
@@ -288,25 +303,29 @@ namespace MR
               if (qfac < 0.0)
                 M_qform.matrix().col(2) *= qfac;
 
+              //CONF option: NIfTIUseSform
+              //CONF default: 1 (true)
+              //CONF A boolean value to control whether, in cases where both
+              //CONF the sform and qform transformations are defined in an
+              //CONF input NIfTI image, but those transformations differ, the
+              //CONF sform transformation should be used in preference to the
+              //CONF qform matrix.
+              const bool use_sform = File::Config::get_bool ("NIfTIUseSform", true);
+
               if (sform_code) {
                 Header header2 (H);
                 header2.transform() = M_qform;
-                if (!voxel_grids_match_in_scanner_space (H, header2, 0.1)) {
-                  //CONF option: NIfTIUseSform
-                  //CONF default: 1 (true)
-                  //CONF A boolean value to control whether, in cases where both
-                  //CONF the sform and qform transformations are defined in an
-                  //CONF input NIfTI image, but those transformations differ, the
-                  //CONF sform transformation should be used in preference to the
-                  //CONF qform matrix.
-                  const bool use_sform = File::Config::get_bool ("NIfTIUseSform", true);
-                  WARN ("qform and sform are inconsistent in NIfTI image \"" + H.name() + "\" - using " + (use_sform ? "sform" : "qform"));
-                  if (!use_sform)
-                    H.transform() = M_qform;
-                }
+                if (!voxel_grids_match_in_scanner_space (H, header2, 0.1))
+                  WARN ("qform and sform are inconsistent in NIfTI image \"" + H.name() +
+                      "\" - using " + (use_sform ? "sform" : "qform"));
               }
-              else
+
+              if (!sform_code || !use_sform) {
                 H.transform() = M_qform;
+                H.spacing(0) = pixdim[0];
+                H.spacing(1) = pixdim[1];
+                H.spacing(2) = pixdim[2];
+              }
             }
 
 

@@ -600,7 +600,7 @@ namespace MR
     // check that cosine vectors are unit length (to some precision):
     bool rescale_cosine_vectors = false;
     for (size_t i = 0; i < 3; ++i) {
-      auto length = transform().matrix().col(i).head(3).norm();
+      auto length = transform().matrix().col(i).head<3>().norm();
       if (std::abs (length-1.0) > 1.0e-6)
         rescale_cosine_vectors = true;
     }
