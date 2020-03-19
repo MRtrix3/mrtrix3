@@ -17,8 +17,9 @@
 #include <malloc.h>
 
 #include "command.h"
-#include "timer.h"
+#include "exception.h"
 #include "ordered_thread_queue.h"
+#include "timer.h"
 
 
 using namespace MR;
@@ -26,10 +27,16 @@ using namespace App;
 
 
 #define START(msg) { Timer timer; CONSOLE(std::string("testing ") + msg + " queue..."); memory_usage = peak_memory_usage = num_items = 0
-#define END CONSOLE("done in " + str(timer.elapsed(), 4) + " seconds"); \
-  if (sample_size_received != sample_size) FAIL("sample size mismatch"); \
-  if (out_of_order) WARN ("order mismatch"); } \
-  CONSOLE ("peak memory usage = " + str(peak_memory_usage/1024) + " kb (leaked: " + str(memory_usage/1024 ) + " kb)");\
+
+#define END(enforce) CONSOLE("done in " + str(timer.elapsed(), 4) + " seconds"); \
+  if (sample_size_received != sample_size) throw Exception("sample size mismatch"); \
+  if (out_of_order) { \
+    if (enforce) throw Exception ("order mismatch"); \
+    else CONSOLE ("order mismatch"); \
+  } else { \
+    CONSOLE ("order correct"); \
+  } } \
+  CONSOLE ("peak memory usage = " + str(peak_memory_usage/1024) + " kb (leaked: " + str(memory_usage/1024 ) + " kb)"); \
   CONSOLE ("allocated a total of " + str(num_items) + " items"); \
   std::cerr << "\n"
 
@@ -51,7 +58,7 @@ void * operator new(decltype(sizeof(0)) n)
   peak_memory_usage = std::max (memory_usage, peak_memory_usage);
   return p;
 }
-void operator delete(void * p)
+void operator delete(void * p) noexcept
 {
   std::lock_guard<std::mutex> lock (malloc_mutex);
   memory_usage -= malloc_usable_size(p);
@@ -122,14 +129,14 @@ void run ()
       SourceFunctor(),
       Item(),
       SinkFunctor());
-  END;
+  END(true);
 
   START ("batched 2-stage");
   run_queue (
       SourceFunctor(),
       batch (Item()),
       SinkFunctor());
-  END;
+  END(true);
 
 
   START ("regular 3-stage");
@@ -139,7 +146,7 @@ void run ()
       multi (PipeFunctor()),
       Item(),
       SinkFunctor());
-  END;
+  END(false);
 
   START ("batched-unbatched 3-stage");
   run_queue (
@@ -148,7 +155,7 @@ void run ()
       multi (PipeFunctor()),
       Item(),
       SinkFunctor());
-  END;
+  END(false);
 
   START ("unbatched-batched 3-stage");
   run_queue (
@@ -157,7 +164,7 @@ void run ()
       multi (PipeFunctor()),
       batch (Item()),
       SinkFunctor());
-  END;
+  END(false);
 
   START ("batched-batched regular 3-stage");
   run_queue (
@@ -166,7 +173,7 @@ void run ()
       multi (PipeFunctor()),
       batch (Item()),
       SinkFunctor());
-  END;
+  END(false);
 
 
   START ("regular 4-stage");
@@ -178,7 +185,7 @@ void run ()
       multi (PipeFunctor()),
       Item(),
       SinkFunctor());
-  END;
+  END(false);
 
   START ("batched-unbatched-unbatched 4-stage");
   run_queue (
@@ -189,7 +196,7 @@ void run ()
       multi (PipeFunctor()),
       Item(),
       SinkFunctor());
-  END;
+  END(false);
 
   START ("unbatched-batched-unbatched 4-stage");
   run_queue (
@@ -200,7 +207,7 @@ void run ()
       multi (PipeFunctor()),
       Item(),
       SinkFunctor());
-  END;
+  END(false);
 
   START ("unbatched-unbatched-batched regular 4-stage");
   run_queue (
@@ -211,7 +218,7 @@ void run ()
       multi (PipeFunctor()),
       batch (Item()),
       SinkFunctor());
-  END;
+  END(false);
 
 
 
@@ -222,7 +229,7 @@ void run ()
       multi (PipeFunctor()),
       Item(),
       SinkFunctor());
-  END;
+  END(true);
 
   START ("ordered batched-batched 3-stage");
   run_ordered_queue (
@@ -231,7 +238,7 @@ void run ()
       multi (PipeFunctor()),
       batch (Item()),
       SinkFunctor());
-  END;
+  END(true);
 
   START ("unbatched 4-stage");
   run_ordered_queue (
@@ -242,7 +249,7 @@ void run ()
       multi (PipeFunctor()),
       Item(),
       SinkFunctor());
-  END;
+  END(true);
 
 
   START ("ordered batched-batched-batched 4-stage");
@@ -254,6 +261,6 @@ void run ()
       multi (PipeFunctor()),
       batch (Item()),
       SinkFunctor());
-  END;
+  END(true);
 
 }
