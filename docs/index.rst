@@ -1,13 +1,60 @@
 Welcome to the *MRtrix3* user documentation!
 ============================================
 
-*MRtrix3* provides a large suite of tools for image processing, analysis and visualisation, with a focus on the analysis of white matter using diffusion-weighted MRI ([Tournier2019]_). Features include the estimation of fibre orientation distributions using constrained spherical deconvolution ([Tournier2004]_; [Tournier2007]_; [Jeurissen2014]_), visualisation of these via directionally-encoded colour maps ([Dhollander2015a]_) and panchromatic sharpening ([Dhollander2015b]_), a probabilisitic streamlines algorithm for fibre tractography of white matter ([Tournier2012]_), fixel-based analysis of apparent fibre density and fibre cross-section ([Raffelt2012]_; [Raffelt2015]_; [Raffelt2017]_), quantitative structural connectivity analysis ([Smith2012]_; [Smith2013]_; [Smith2015]_; [Christiaens2015]_), and non-linear spatial registration of fibre orientation distribution images ([Raffelt2011]_).
+*MRtrix3* provides a large suite of tools for image processing, analysis and visualisation, with a focus on the analysis of white matter using diffusion-weighted MRI ([Tournier2019]_). Features include the estimation of fibre orientation distributions using constrained spherical deconvolution ([Tournier2004]_; [Tournier2007]_; [Jeurissen2014]_), a probabilisitic streamlines algorithm for fibre tractography of white matter ([Tournier2012]_), fixel-based analysis of apparent fibre density and fibre cross-section ([Raffelt2012]_; [Raffelt2015]_; [Raffelt2017]_), quantitative structural connectivity analysis ([Smith2012]_; [Smith2013]_; [Smith2015]_; [Christiaens2015]_), and non-linear spatial registration of fibre orientation distribution images ([Raffelt2011]_). *MRtrix3* also offers comprehensive visualisation tools in :ref:`mrview`.
 
 These applications have been written from scratch in C++, using the functionality provided by `Eigen`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `Mozilla Public License`_.
 
 Use of the *MRtrix3* software package in published works should be accompanied by the following citation:
 
     J.-D. Tournier, R. E. Smith, D. Raffelt, R. Tabbara, T. Dhollander, M. Pietsch, D. Christiaens, B. Jeurissen, C.-H. Yeh, and A. Connelly. *MRtrix3*: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 202 (2019), pp. 116–37.
+
+
+Key features
+============
+
+While *MRtrix3* is primarily intended to be used for the analysis of
+diffusion MRI data, at its fundamental level it is designed as a
+general-purpose library for the analysis of *any* type of MRI data. As such,
+it provides a back-end to simplify a large number of operations, many of
+which will be invisible to the end-user. Specifically, *MRtrix3* features:
+
+-  a consistent :ref:`command-line interface <command-line-interface>`, with
+   inline documentation for each command
+
+-  universal import/export capabilities when 
+   :ref:`accessing image data <image_handling>` across all *MRtrix3* applications.
+
+-  :ref:`multi_file_image_file_formats` to load multiple images as a 
+   single multi-dimensional dataset
+
+-  efficient use of :ref:`unix_pipelines` for complex workflows
+
+-  high performance on modern multi-core systems, with multi-threading
+   used extensively throughout *MRtrix3*;
+
+-  available on all common modern operating systems (GNU/Linux,
+   MacOSX, Windows);
+
+-  a consistent :ref:`image_coord_system` with most
+   operations performed in scanner/world coordinates where possible.
+
+
+Commands
+========
+
+The *MRtrix3* software package includes a suite of tools for image analysis and visualisation. With the exception of :ref:`mrview` and :ref:`shview`, all *MRtrix3* executables are designed to be run via a terminal using a consistent :ref:`command-line interface <command-line-interface>`. While many of the tools and features are discussed within tutorials found in this documentation, a comprehensive :ref:`list-of-mrtrix3-commands` can be found in the reference section. These lists provide links to the help page (manual) for each executable, which can also be accessed by typing the :code:`-help` option after the executable name on the terminal.
+
+.. TIP:: 
+
+  Some proficiency with the Unix command-line is required to make the best use
+  of this software. There are many resources online to help you get
+  started if you are not already familiar with it. We also recommend our own
+  `Introduction to the Unix command-line
+  <https://command-line-tutorial.readthedocs.io/>`__, which was written with a
+  particular focus on the types of use that are common when using *MRtrix3*.
+
+
 
 
 .. _Eigen: http://eigen.tuxfamily.org/
@@ -30,8 +77,6 @@ Use of the *MRtrix3* software package in published works should be accompanied b
    :maxdepth: 1
    :caption: Getting started
 
-   getting_started/key_features
-   getting_started/commands
    getting_started/beginner_dwi_tutorial
    getting_started/image_data
    getting_started/command_line
