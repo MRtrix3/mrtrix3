@@ -63,7 +63,7 @@ Noise level estimation
 
 The noise level in each patch is experimentally estimated from the eigenvalue 
 spectrum of the local data matrix. Assuming :math:`M<N`, :math:`P` signal-carying 
-components (also estimated), and :maht:`M-P` noise components, the squared noise 
+components (also estimated), and :math:`M-P` noise components, the squared noise 
 level is estimated as:
 
 .. math::
