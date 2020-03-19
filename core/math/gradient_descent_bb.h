@@ -128,8 +128,11 @@ namespace MR
             dt = func.init (x1);
             f = evaluate_func (x1, g1, verbose);
             normg = g1.norm();
-            if (normg == 0.0)
+            if (normg == 0.0) {
+              x2 = x1;
+              g2 = g1;
               return;
+            }
             assert(std::isfinite(normg)); assert(!std::isnan(normg));
             dt /= normg;
             if (verbose) {

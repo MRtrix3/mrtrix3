@@ -204,8 +204,8 @@ namespace MR
             invert_scale->setChecked (tractogram->scale_inverted());
 
             assert (tractogram->intensity_scalar_filename.length());
-            intensity_file_button->setText (shorten (Path::basename (tractogram->intensity_scalar_filename), 35, 0).c_str());
-            intensity_file_button->setToolTip (tractogram->intensity_scalar_filename.c_str());
+            intensity_file_button->setText (qstr (shorten (Path::basename (tractogram->intensity_scalar_filename), 35, 0)));
+            intensity_file_button->setToolTip (qstr (tractogram->intensity_scalar_filename));
 
           } else {
             colour_groupbox->setVisible (false);
@@ -224,8 +224,8 @@ namespace MR
               break;
             case TrackThresholdType::SeparateFile:
               assert (tractogram->threshold_scalar_filename.length());
-              threshold_file_combobox->addItem (shorten (Path::basename (tractogram->threshold_scalar_filename), 35, 0).c_str());
-              threshold_file_combobox->setToolTip (tractogram->threshold_scalar_filename.c_str());
+              threshold_file_combobox->addItem (qstr (shorten (Path::basename (tractogram->threshold_scalar_filename), 35, 0)));
+              threshold_file_combobox->setToolTip (qstr (tractogram->threshold_scalar_filename));
               threshold_file_combobox->setCurrentIndex (3);
               break;
           }

@@ -481,7 +481,8 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
       raise MRtrixError('mask filenames do not have a common postfix')
     mask_common_prefix = get_common_prefix([os.path.split(m)[1] for m in mask_files])
     for mfile in mask_files:
-      mask_uids.append(os.path.split(mfile)[1].rstrip(re.escape(mask_common_postfix)).lstrip(re.escape(mask_common_prefix)))
+      mask_uids.append(re.sub(re.escape(mask_common_postfix)+'$', '',
+                              re.sub('^'+re.escape(mask_common_prefix), '', os.path.split(mfile)[1])))
     if len(mask_uids) != len(set(mask_uids)):
       non_unique = [uid for uid, count in collections.Counter(mask_uids).items() if count > 1]
       MRtrixError("mask identifiers not unique:\n" + '""\n'.join(non_unique))
@@ -1105,7 +1106,7 @@ def execute(): #pylint: disable=unused-variable
                     outofbounds_option +
                     datatype_option)
         run.function(os.remove, inp.ims_transformed[cid] + '_translated.mif')
-      progress.increment()
+        progress.increment()
     progress.done()
 
     if nanmask_input:
@@ -1131,7 +1132,7 @@ def execute(): #pylint: disable=unused-variable
     level = 0
     regtype = linear_type[0]
     def linear_msg():
-      return 'Optimising template with linear registration (stage {0} of {1}; {2})'.format(level, len(linear_scales), regtype)
+      return 'Optimising template with linear registration (stage {0} of {1}; {2})'.format(level + 1, len(linear_scales), regtype)
     progress = app.ProgressBar(linear_msg, (3 if use_masks else 2) * len(linear_scales) * len(ins))
     for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
       for inp in ins:
@@ -1217,7 +1218,7 @@ def execute(): #pylint: disable=unused-variable
       if average_inv is not None:
         for inp in ins:
           transform = matrix.dot(matrix.load_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt')), average_inv)
-          matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform)
+          matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform, force=True)
 
       for cid in range(n_contrasts):
         for inp in ins:
@@ -1410,7 +1411,8 @@ def execute(): #pylint: disable=unused-variable
       matrix.save_transform(os.path.join(linear_transformations_path,
                                          xcontrast_xsubject_pre_postfix[0] + inp.uid
                                          + xcontrast_xsubject_pre_postfix[1] + '.txt'),
-                            trafo)
+                            trafo,
+                            force=app.FORCE_OVERWRITE)
 
   if app.ARGS.transformed_dir:
     for cid, trdir in enumerate(app.ARGS.transformed_dir):

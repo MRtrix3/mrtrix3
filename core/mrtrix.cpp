@@ -76,7 +76,10 @@ namespace MR
     int i = 0;
     try {
       do {
-        end = spec.find_first_of (",:", start);
+        start = spec.find_first_not_of (" \t", start);
+        if (start == std::string::npos)
+          break;
+        end = spec.find_first_of (" \t,:", start);
         std::string token (strip (spec.substr (start, end-start)));
         if (lowercase (token) == "end") {
           if (last == std::numeric_limits<int>::max())
@@ -85,12 +88,13 @@ namespace MR
         }
         else num[i] = to<int> (spec.substr (start, end-start));
 
+        end = spec.find_first_not_of (" \t", end);
         char last_char = end < spec.size() ? spec[end] : '\0';
         if (last_char == ':') {
-          i++;
+          ++i;
+          ++end;
           if (i > 2) throw Exception ("invalid number range in number sequence \"" + spec + "\"");
-        }
-        else {
+        } else {
           if (i) {
             int inc, last;
             if (i == 2) {
@@ -108,7 +112,9 @@ namespace MR
           i = 0;
         }
 
-        start = end+1;
+        start = end;
+        if (last_char == ',')
+          ++start;
       }
       while (end < spec.size());
     }
