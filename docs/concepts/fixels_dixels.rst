@@ -144,7 +144,7 @@ Some observations / contexts in which the term 'dixel' may be useful:
 .. NOTE::
 
    During the development of many of the aforementioned methods,
-   `a presentation <http://dev.ismrm.org/2013/0841.html>`_ was made at
+   `a presentation <http://archive.ismrm.org/2013/0841.html>`_ was made at
    ISMRM demonstrating "Tractographic threshold-free cluster enhancement"
    (this is now referred to as "Connectivity-based Fixel Enhancement (CFE)").
    During the presentation itself, the term 'dixel' was used to refer to a
