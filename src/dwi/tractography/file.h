@@ -98,8 +98,8 @@ namespace MR
 
                   if (weights.size()) {
 
-                    if (tck.index < size_t(weights.size())) {
-                      tck.weight = weights[tck.index];
+                    if (tck.get_index() < size_t(weights.size())) {
+                      tck.weight = weights[tck.get_index()];
                     } else {
                       WARN ("Streamline weights file contains less entries (" + str(weights.size()) + ") than .tck file; "
                             "ceasing reading of streamline data");
