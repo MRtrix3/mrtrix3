@@ -207,7 +207,8 @@ namespace MR
             connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
             box_layout->addWidget (use_lighting_box, 5, 2, 1, 2);
 
-            colour_relative_to_projection_box = new QCheckBox ("colour by projection");
+            colour_relative_to_projection_box = new QCheckBox ("colour by camera");
+            colour_relative_to_projection_box->setToolTip (tr ("Colour ODFs according their direction relative to the camera,\nrather than the scanner coordinate system"));
             colour_relative_to_projection_box->setChecked (false);
             connect (colour_relative_to_projection_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
             box_layout->addWidget (colour_relative_to_projection_box, 6, 0, 1, 2);
