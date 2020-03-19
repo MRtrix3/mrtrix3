@@ -75,7 +75,7 @@ def execute(): #pylint: disable=unused-variable
     weighted_sum_coeffs = [ [ a + multiplier*b for a, b in zip(linea, lineb) ] for linea, lineb in zip(weighted_sum_coeffs, subject) ]
 
   mean_coeffs = [ [ f/len(data) for f in line ] for line in weighted_sum_coeffs ]
-  matrix.save_matrix(app.ARGS.output, mean_coeffs)
+  matrix.save_matrix(app.ARGS.output, mean_coeffs, force=app.FORCE_OVERWRITE)
 
 
 

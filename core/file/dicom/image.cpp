@@ -255,12 +255,6 @@ namespace MR {
                   }
                 }
                 return;
-              // Siemens bandwidth per pixel phase encode
-              // At least, it's what's reported here: http://lcni.uoregon.edu/kb-articles/kb-0003
-              // Doesn't appear to work; use CSA field "BandwidthPerPixelPhaseEncode" instead
-              //case 0x1028U:
-              //  bandwidth_per_pixel_phase_encode = item.get_float()[0];
-              //  return;
             }
             return;
           case 0x0029U: // Siemens CSA entry
@@ -561,16 +555,10 @@ namespace MR {
             DEBUG ("no phase-encoding information found in DICOM frames");
             return { };
           }
-          // Sign of phase-encoding direction needs to reflect fact that DICOM is in LPS but NIfTI/MRtrix are RAS
-          // Reverted; now handled by Header::realign_transform()
-          //int pe_sign = frame.pe_sign;
-          //if (frame.pe_axis == 0 || frame.pe_axis == 1)
-          //  pe_sign = -pe_sign;
-          //pe_scheme (n, frame.pe_axis) = pe_sign;
           pe_scheme (n, frame.pe_axis) = frame.pe_sign;
           if (std::isfinite (frame.bandwidth_per_pixel_phase_encode)) {
-            const default_type effective_echo_spacing = 1.0 / (frame.bandwidth_per_pixel_phase_encode * frame.dim[frame.pe_axis]);
-            pe_scheme(n, 3) = effective_echo_spacing * (frame.dim[frame.pe_axis] - 1);
+            const default_type effective_echo_spacing = 1.0 / (frame.bandwidth_per_pixel_phase_encode * frame.acq_dim[frame.pe_axis]);
+            pe_scheme(n, 3) = effective_echo_spacing * (frame.acq_dim[frame.pe_axis] - 1);
           }
         }
 

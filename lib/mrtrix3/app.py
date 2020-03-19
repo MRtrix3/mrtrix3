@@ -788,7 +788,7 @@ class Parser(argparse.ArgumentParser):
       text += '\n'
       for example in self._examples:
         for line in wrapper_other.fill(example[0] + ':').splitlines():
-          text += ' '*(len(line) - len(line.lstrip())) + underline(line.lstrip()) + '\n'
+          text += ' '*(len(line) - len(line.lstrip())) + underline(line.lstrip(), False) + '\n'
         text += ' '*7 + '$ ' + example[1] + '\n'
         if example[2]:
           text += wrapper_other.fill(example[2]) + '\n'

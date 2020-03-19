@@ -9,5 +9,4 @@ fixel2voxel fixel_image/afd.mif complexity - | testing_diff_image - fixel2voxel/
 fixel2voxel fixel_image/afd.mif sf - | testing_diff_image - fixel2voxel/sf.mif -frac 0.001
 fixel2voxel fixel_image/afd.mif dec_unit - | testing_diff_image - fixel2voxel/dec_unit.mif -frac 0.001
 fixel2voxel fixel_image/afd.mif dec_scaled - | testing_diff_image - fixel2voxel/dec_scaled.mif -frac 0.001
-fixel2voxel fixel_image/afd.mif split_data - | testing_diff_image - fixel2voxel/split_data.mif -frac 0.001
-fixel2voxel fixel_image/afd.mif split_dir - | testing_diff_image - fixel2voxel/split_dir.mif -frac 0.001
+fixel2voxel fixel_image/afd.mif none - | testing_diff_image - fixel2voxel/none.mif -frac 0.001

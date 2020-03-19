@@ -18,7 +18,6 @@
 #define __gui_mrview_mode_volume_h__
 
 #include "app.h"
-#include "math/versor.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/opengl/transformation.h"
 
@@ -40,15 +39,11 @@ namespace MR
           public:
             Volume () :
               Base (FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold | ShaderClipping),
-              volume_shader (*this) { 
+              volume_shader (*this) {
               }
 
             virtual void paint (Projection& projection);
-            virtual void slice_move_event (float x);
-            virtual void pan_event ();
-            virtual void panthrough_event ();
             virtual void tilt_event ();
-            virtual void rotate_event ();
 
           protected:
             GL::VertexBuffer volume_VB, volume_VI;
@@ -74,9 +69,6 @@ namespace MR
             vector<GL::vec4*> get_clip_planes_to_be_edited () const;
             bool get_cliphighlightstate () const;
             bool get_clipintersectionmodestate () const;
-
-            void move_clip_planes_in_out (vector<GL::vec4*>& clip, float distance);
-            void rotate_clip_planes (vector<GL::vec4*>& clip, const Math::Versorf& rot);
         };
 
       }
