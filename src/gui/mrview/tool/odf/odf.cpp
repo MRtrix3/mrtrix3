@@ -291,7 +291,7 @@ namespace MR
             const GL::mat4* rotation = nullptr;
             GL::mat4 rot;
             if (colour_relative_to_projection_box->isChecked()) {
-              rot = GL::inv (window().snap_to_image() ? GL::mat4 (image.transform().image2scanner.matrix()) : GL::mat4 (window().orientation()));
+              rot = GL::inv (window().snap_to_image() ? GL::mat4 (image.transform().matrix()) : GL::mat4 (window().orientation()));
               rotation = &rot;
             }
 
