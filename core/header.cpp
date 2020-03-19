@@ -596,6 +596,23 @@ namespace MR
       WARN ("transform matrix contains invalid entries - resetting to sane defaults");
       transform() = Transform::get_default (*this);
     }
+
+    // check that cosine vectors are unit length (to some precision):
+    bool rescale_cosine_vectors = false;
+    for (size_t i = 0; i < 3; ++i) {
+      auto length = transform().matrix().col(i).head(3).norm();
+      if (std::abs (length-1.0) > 1.0e-6)
+        rescale_cosine_vectors = true;
+    }
+
+    // if unit length, rescale and modify voxel sizes accordingly:
+    if (rescale_cosine_vectors) {
+      for (size_t i = 0; i < 3; ++i) {
+        auto length = transform().matrix().col(i).head(3).norm();
+        transform().matrix().col(i).head(3) /= length;
+        spacing(i) *= length;
+      }
+    }
   }
 
 
