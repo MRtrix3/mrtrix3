@@ -69,6 +69,40 @@ namespace MR
 
 
 
+  namespace {
+    std::string resolve_slice_timing (const std::string& one, const std::string& two)
+    {
+      if (one == "variable" || two == "variable")
+        return "variable";
+      vector<std::string> one_split = split (one, ",");
+      vector<std::string> two_split = split (two, ",");
+      if (one_split.size() != two_split.size()) {
+        DEBUG ("Slice timing vectors of inequal length");
+        return "invalid";
+      }
+      // Siemens CSA reports with 2.5ms precision = 0.0025s
+      // Allow slice times to vary by 1.5x this amount, but no more
+      for (size_t i = 0; i != one_split.size(); ++i) {
+        default_type f_one, f_two;
+        try {
+          f_one = to<default_type> (one_split[i]);
+          f_two = to<default_type> (two_split[i]);
+        } catch (Exception& e) {
+          DEBUG ("Error converting slice timing vector to floating-point");
+          return "invalid";
+        }
+        const default_type diff = abs (f_two - f_one);
+        if (diff > 0.00375) {
+          DEBUG ("Supra-threshold difference of " + str(diff) + "s in slice times");
+          return "variable";
+        }
+      }
+      return one;
+    }
+  }
+
+
+
   void Header::merge_keyval (const Header& H)
   {
     std::map<std::string, std::string> new_keyval;
@@ -96,6 +130,8 @@ namespace MR
         auto it = keyval().find (item.first);
         if (it == keyval().end() || it->second == item.second)
           new_keyval.insert (item);
+        else if (item.first == "SliceTiming")
+          new_keyval["SliceTiming"] = resolve_slice_timing (item.second, it->second);
         else
           new_keyval[item.first] = "variable";
       }
