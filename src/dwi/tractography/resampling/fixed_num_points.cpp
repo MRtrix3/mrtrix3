@@ -33,7 +33,7 @@ namespace MR {
           out.clear();
           if (!valid())
             return false;
-          out.index = in.index;
+          out.set_index (in.get_index());
           out.weight = in.weight;
           if (in.size() < 2)
             return true;

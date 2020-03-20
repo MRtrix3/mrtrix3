@@ -48,7 +48,7 @@ namespace MR {
                 progress.reset();
                 return false;
               }
-              if (tracks_to_load && out.index >= tracks_to_load) {
+              if (tracks_to_load && out.get_index() >= tracks_to_load) {
                 out.clear();
                 progress.reset();
                 return false;
