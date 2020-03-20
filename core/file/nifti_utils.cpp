@@ -393,14 +393,15 @@ namespace MR
           // magic number:
           Raw::store<int32_t> (sizeof(NH), &NH.sizeof_hdr, is_BE);
 
-          strncpy ( (char*) &NH.magic, single_file ? Type<NiftiHeader>::magic1() : Type<NiftiHeader>::magic2(), 4);
+          memcpy ( (char*) &NH.magic, single_file ? Type<NiftiHeader>::magic1() : Type<NiftiHeader>::magic2(), 4);
           if (Type<NiftiHeader>::is_version2)
-            strncpy ( (char*) &NH.magic+4, Type<NiftiHeader>::signature_extra(), 4);
+            memcpy ( (char*) &NH.magic+4, Type<NiftiHeader>::signature_extra(), 4);
 
           if (!Type<NiftiHeader>::is_version2) {
             const auto hit = H.keyval().find("comments");
             auto comments = split_lines (hit == H.keyval().end() ? std::string() : hit->second);
-            strncpy ( Type<NiftiHeader>::db_name (NH), comments.size() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
+            strncpy ( Type<NiftiHeader>::db_name (NH), comments.size() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 17);
+            Type<NiftiHeader>::db_name (NH)[17] = '\0';
             Raw::store<int32_t> (16384, Type<NiftiHeader>::extents (NH), is_BE);
             *Type<NiftiHeader>::regular(NH) = 'r';
           }
