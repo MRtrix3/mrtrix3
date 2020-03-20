@@ -140,12 +140,12 @@ class SamplerNonPrecise
         mapper->set_use_precise_mapping (false);
     }
 
-    bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
+    bool operator() (DWI::Tractography::Streamline<value_type>& tck, std::pair<size_t, value_type>& out)
     {
       assert (statistic != stat_tck::NONE);
-      out.first = tck.index;
+      out.first = tck.get_index();
 
-      std::pair<size_t, vector_type> values;
+      DWI::Tractography::TrackScalar<value_type> values;
       (*this) (tck, values);
 
       if (statistic == MEAN) {
@@ -159,7 +159,7 @@ class SamplerNonPrecise
           if (i < tck.size() - 1)
             length += (tck[i+1] - tck[i]).norm();
           length *= 0.5;
-          integral += values.second[i] * length;
+          integral += values[i] * length;
           sum_lengths += length;
         }
         out.second = sum_lengths ? (integral / sum_lengths) : 0.0;
@@ -167,16 +167,16 @@ class SamplerNonPrecise
         if (statistic == MEDIAN) {
           // Don't bother with a weighted median here
           vector<value_type> data;
-          data.assign (values.second.data(), values.second.data() + values.second.size());
+          data.assign (values.data(), values.data() + values.size());
           out.second = Math::median (data);
         } else if (statistic == MIN) {
           out.second = std::numeric_limits<value_type>::infinity();
           for (size_t i = 0; i != tck.size(); ++i)
-            out.second = std::min (out.second, values.second[i]);
+            out.second = std::min (out.second, values[i]);
         } else if (statistic == MAX) {
           out.second = -std::numeric_limits<value_type>::infinity();
           for (size_t i = 0; i != tck.size(); ++i)
-            out.second = std::max (out.second, values.second[i]);
+            out.second = std::max (out.second, values[i]);
         } else {
           assert (0);
         }
@@ -188,15 +188,15 @@ class SamplerNonPrecise
       return true;
     }
 
-    bool operator() (const DWI::Tractography::Streamline<>& tck, std::pair<size_t, vector_type>& out)
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck, DWI::Tractography::TrackScalar<value_type>& out)
     {
-      out.first = tck.index;
-      out.second.resize (tck.size());
+      out.set_index (tck.get_index());
+      out.resize (tck.size());
       for (size_t i = 0; i != tck.size(); ++i) {
         if (interp.scanner (tck[i]))
-          out.second[i] = interp.value();
+          out[i] = interp.value();
         else
-          out.second[i] = std::numeric_limits<value_type>::quiet_NaN();
+          out[i] = value_type(0);
       }
       return true;
     }
@@ -233,9 +233,9 @@ class SamplerPrecise
       mapper->set_use_precise_mapping (true);
     }
 
-    bool operator() (DWI::Tractography::Streamline<>& tck, std::pair<size_t, value_type>& out)
+    bool operator() (DWI::Tractography::Streamline<value_type>& tck, std::pair<size_t, value_type>& out)
     {
-      out.first = tck.index;
+      out.first = tck.get_index();
       value_type sum_lengths = value_type(0);
 
       DWI::Tractography::Mapping::SetVoxel voxels;
@@ -391,14 +391,21 @@ class Receiver_NoStatistic : private ReceiverBase { MEMALIGN(Receiver_NoStatisti
     }
     Receiver_NoStatistic (const Receiver_NoStatistic&) = delete;
 
-    bool operator() (std::pair<size_t, vector_type>& in)
+    bool operator() (const DWI::Tractography::TrackScalar<value_type>& in)
     {
       // Requires preservation of order
-      assert (in.first == ReceiverBase::received);
-      if (ascii)
-        (*ascii) << in.second.transpose() << "\n";
-      else
-        (*tsf) (in.second);
+      assert (in.get_index() == ReceiverBase::received);
+      if (ascii) {
+        if (in.size()) {
+          auto i = in.begin();
+          (*ascii) << *i;
+          for (++i; i != in.end(); ++i)
+            (*ascii) << " " << *i;
+        }
+        (*ascii) << "\n";
+      } else {
+        (*tsf) (in);
+      }
       ++(*this);
       return true;
     }
@@ -423,7 +430,7 @@ void execute_nostat (DWI::Tractography::Reader<value_type>& reader,
   Thread::run_ordered_queue (reader,
                              Thread::batch (DWI::Tractography::Streamline<value_type>()),
                              Thread::multi (sampler),
-                             Thread::batch (std::pair<size_t, vector_type>()),
+                             Thread::batch (DWI::Tractography::TrackScalar<value_type>()),
                              receiver);
 }
 
