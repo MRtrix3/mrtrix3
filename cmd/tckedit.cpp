@@ -103,8 +103,9 @@ void usage ()
   + WeightsOption
 
   + OptionGroup ("Other options specific to tckedit")
-  + Option ("inverse", "output the inverse selection of streamlines based on the criteria provided, "
-                       "i.e. only those streamlines that fail at least one criterion will be written to file.")
+  + Option ("inverse", "output the inverse selection of streamlines based on the criteria provided; "
+                       "i.e. only those streamlines that fail at least one selection criterion, "
+                       "and/or vertices that are outside masks if provided, will be written to file")
 
   + Option ("ends_only", "only test the ends of each streamline against the provided include/exclude ROIs")
 

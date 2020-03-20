@@ -57,7 +57,7 @@ namespace MR {
             out = in;
             return true;
           }
-          out.index = in.index;
+          out.set_index (in.get_index());
           out.weight = in.weight;
           out.push_back (in.front());
           const size_t midpoint = in.size()/2;
