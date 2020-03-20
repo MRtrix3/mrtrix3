@@ -14,8 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <malloc.h>
-
 #include "command.h"
 #include "exception.h"
 #include "ordered_thread_queue.h"
@@ -26,7 +24,9 @@ using namespace MR;
 using namespace App;
 
 
-#define START(msg) { Timer timer; CONSOLE(std::string("testing ") + msg + " queue..."); memory_usage = peak_memory_usage = num_items = 0
+size_t num_items;
+
+#define START(msg) { Timer timer; CONSOLE(std::string("testing ") + msg + " queue..."); num_items = 0
 
 #define END(enforce) CONSOLE("done in " + str(timer.elapsed(), 4) + " seconds"); \
   if (sample_size_received != sample_size) throw Exception("sample size mismatch"); \
@@ -36,34 +36,10 @@ using namespace App;
   } else { \
     CONSOLE ("order correct"); \
   } } \
-  CONSOLE ("peak memory usage = " + str(peak_memory_usage/1024) + " kb (leaked: " + str(memory_usage/1024 ) + " kb)"); \
   CONSOLE ("allocated a total of " + str(num_items) + " items"); \
   std::cerr << "\n"
 
 
-
-
-// to track memory usage:
-
-size_t memory_usage = 0;
-size_t peak_memory_usage = 0;
-size_t num_items;
-std::mutex malloc_mutex;
-
-void * operator new(decltype(sizeof(0)) n)
-{
-  std::lock_guard<std::mutex> lock (malloc_mutex);
-  void * p = malloc (n);
-  memory_usage += malloc_usable_size (p);
-  peak_memory_usage = std::max (memory_usage, peak_memory_usage);
-  return p;
-}
-void operator delete(void * p) noexcept
-{
-  std::lock_guard<std::mutex> lock (malloc_mutex);
-  memory_usage -= malloc_usable_size(p);
-  free (p);
-}
 
 
 
