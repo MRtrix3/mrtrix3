@@ -47,7 +47,7 @@ class Mapper
     bool operator() (const Tractography::Streamline<float>& in, Mapped_track_nodepair& out)
     {
       assert (tck2nodes.provides_pair());
-      out.set_track_index (in.index);
+      out.set_track_index (in.get_index());
       out.set_nodes (tck2nodes (in));
       out.set_factor (metric (in, out.get_nodes()));
       out.set_weight (in.weight);
@@ -57,7 +57,7 @@ class Mapper
     bool operator() (const Tractography::Streamline<float>& in, Mapped_track_nodelist& out)
     {
       assert (!tck2nodes.provides_pair());
-      out.set_track_index (in.index);
+      out.set_track_index (in.get_index());
       vector<node_t> nodes;
       tck2nodes (in, nodes);
       out.set_nodes (std::move (nodes));

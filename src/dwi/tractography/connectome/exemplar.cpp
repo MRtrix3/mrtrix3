@@ -82,7 +82,7 @@ void Exemplar::add (const Connectome::Streamline_nodelist& in)
   Tractography::Streamline<float> subtck;
   for (size_t i = first; i <= last; ++i)
     subtck.push_back (in[i]);
-  subtck.index  = in.index;
+  subtck.set_index (in.get_index());
   subtck.weight = in.weight;
   add (in, is_reversed);
 }
