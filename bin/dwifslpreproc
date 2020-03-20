@@ -244,27 +244,27 @@ def execute(): #pylint: disable=unused-variable
       slice_timing = dwi_header.keyval()['SliceTiming']
       app.debug('Initial slice timing contents from header: ' + str(slice_timing))
       if slice_timing in ['invalid', 'variable']:
-        app.error('Cannot use slice timing information in image header for slice-to-volume correction: data flagged as "' + slice_timing + '"')
+        raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: data flagged as "' + slice_timing + '"')
       # Fudges necessary to maniupulate nature of slice timing data in cases where
       #   bad JSON formatting has led to the data not being simply a list of floats
       #   (whether from MRtrix3 DICOM conversion or from anything else)
       if isinstance(slice_timing, utils.STRING_TYPES):
         slice_timing = slice_timing.split()
       if not isinstance(slice_timing, list):
-        app.error('Cannot use slice timing information in image header for slice-to-volume correction: Data is not a list')
+        raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: Data is not a list')
       if len(slice_timing) == 1:
         slice_timing = slice_timing[0]
         if not isinstance(slice_timing, list):
-          app.error('Cannot use slice timing information in image header for slice-to-volume correction: Unexpected data format')
+          raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: Unexpected data format')
       if isinstance(slice_timing[0], list):
         if not all( [ len(entry) == 1 for entry in slice_timing ] ):
-          app.error('Cannot use slice timing information in image header for slice-to-volume correction: Data do not appear to be 1D')
+          raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: Data do not appear to be 1D')
         slice_timing = [ entry[0] for entry in slice_timing ]
       if not all( [ isinstance(entry, float) for entry in slice_timing ] ):
         try:
           slice_timing = [ float(entry) for entry in slice_timing ]
         except ValueError:
-          app.error('Cannot use slice timing information in image header for slice-to-volume correction: Data are not numeric')
+          raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: Data are not numeric')
       app.debug('Re-formatted slice timing contents from header: ' + str(slice_timing))
       if len(slice_timing) != dwi_num_slices:
         raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
