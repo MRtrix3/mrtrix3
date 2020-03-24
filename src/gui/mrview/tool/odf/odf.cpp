@@ -207,11 +207,16 @@ namespace MR
             connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
             box_layout->addWidget (use_lighting_box, 5, 2, 1, 2);
 
+            colour_relative_to_projection_box = new QCheckBox ("colour by camera");
+            colour_relative_to_projection_box->setToolTip (tr ("Colour ODFs according their direction relative to the camera,\nrather than relative to the scanner coordinate system"));
+            colour_relative_to_projection_box->setChecked (false);
+            connect (colour_relative_to_projection_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
+            box_layout->addWidget (colour_relative_to_projection_box, 6, 0, 1, 2);
+
             QPushButton *lighting_settings_button = new QPushButton ("ODF lighting...", this);
             lighting_settings_button->setIcon (QIcon (":/light.svg"));
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
-            box_layout->addWidget (lighting_settings_button, 6, 0, 1, 4);
-
+            box_layout->addWidget (lighting_settings_button, 6, 2, 1, 2);
 
             connect (image_list_view->selectionModel(),
                 SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
@@ -282,8 +287,16 @@ namespace MR
 
             renderer->set_mode (settings->odf_type);
 
+
+            const GL::mat4* rotation = nullptr;
+            GL::mat4 rot;
+            if (colour_relative_to_projection_box->isChecked()) {
+              rot = GL::inv (window().snap_to_image() ? GL::mat4 (image.transform().matrix()) : GL::mat4 (window().orientation()));
+              rotation = &rot;
+            }
+
             renderer->start (projection, *lighting, settings->scale,
-                use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative, true);
+                use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative, true, rotation);
 
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
