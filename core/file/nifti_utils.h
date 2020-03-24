@@ -34,6 +34,7 @@ namespace MR
 
       void check (Header& H, const bool is_analyse);
       size_t version (Header& H);
+      std::string get_json_path (const std::string & nifti_path);
 
     }
   }

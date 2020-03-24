@@ -83,7 +83,7 @@ namespace MR
         Stride::symbolise (H);
 
         // if .img, reset all strides to defaults, since it can't be assumed
-        // that downstream software will be able to parse the NIfTI transform 
+        // that downstream software will be able to parse the NIfTI transform
         if (is_analyse) {
           for (size_t i = 0; i < H.ndim(); ++i)
             H.stride(i) = i+1;
@@ -106,7 +106,7 @@ namespace MR
         //CONF data is permitted (most 3rd party software packages don't
         //CONF support bitwise data). If false (the default), data will be
         //CONF stored using more widely supported unsigned 8-bit integers.
-        if (H.datatype() == DataType::Bit) 
+        if (H.datatype() == DataType::Bit)
           if (!File::Config::get_bool ("NIfTIAllowBitwise", false))
             H.datatype() = DataType::UInt8;
       }
@@ -140,6 +140,17 @@ namespace MR
         return 1;
       }
 
+
+      std::string get_json_path (const std::string & nifti_path) {
+        std::string json_path;
+        if (Path::has_suffix (nifti_path, ".nii.gz"))
+          json_path = nifti_path.substr (0, nifti_path.size()-7);
+        else if (Path::has_suffix (nifti_path, ".nii"))
+          json_path = nifti_path.substr (0, nifti_path.size()-4);
+        else
+          assert (0);
+        return json_path + ".json";
+      }
 
 
     }

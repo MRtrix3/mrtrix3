@@ -28,8 +28,6 @@ namespace MR
     namespace NIfTI1
     {
 
-
-
       size_t read (Header& H, const nifti_1_header& NH)
       {
         bool is_BE = false;
@@ -245,18 +243,10 @@ namespace MR
           //CONF A boolean value to indicate whether, when opening NIfTI images,
           //CONF any corresponding JSON file should be automatically loaded.
           if (File::Config::get_bool ("NIfTIAutoLoadJSON", false)) {
-            std::string json_path = H.name();
-            if (Path::has_suffix (json_path, ".nii.gz"))
-              json_path = json_path.substr (0, json_path.size()-7);
-            else if (Path::has_suffix (json_path, ".nii"))
-              json_path = json_path.substr (0, json_path.size()-4);
-            else
-              assert (0);
-            json_path += ".json";
+            std::string json_path (File::NIfTI::get_json_path(H.name()));
             if (Path::exists (json_path))
               File::JSON::load (H, json_path);
           }
-
         }
         else {
           H.transform()(0,0) = std::numeric_limits<default_type>::quiet_NaN();
@@ -454,14 +444,7 @@ namespace MR
         //CONF to save any header entries that cannot be stored in the NIfTI
         //CONF header.
         if (single_file && File::Config::get_bool ("NIfTIAutoSaveJSON", false)) {
-          std::string json_path = H.name();
-          if (Path::has_suffix (json_path, ".nii.gz"))
-            json_path = json_path.substr (0, json_path.size()-7);
-          else if (Path::has_suffix (json_path, ".nii"))
-            json_path = json_path.substr (0, json_path.size()-4);
-          else
-            assert (0);
-          json_path += ".json";
+          std::string json_path (File::NIfTI::get_json_path(H.name()));
           File::JSON::save (H, json_path, H.name());
         }
       }
