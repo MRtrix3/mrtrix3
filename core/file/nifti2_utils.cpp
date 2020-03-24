@@ -228,14 +228,7 @@ namespace MR
         }
 
         if (File::Config::get_bool ("NIfTIAutoLoadJSON", false)) {
-          std::string json_path = H.name();
-          if (Path::has_suffix (json_path, ".nii.gz"))
-            json_path = json_path.substr (0, json_path.size()-7);
-          else if (Path::has_suffix (json_path, ".nii"))
-            json_path = json_path.substr (0, json_path.size()-4);
-          else
-            assert (0);
-          json_path += ".json";
+          std::string json_path = File::NIfTI::get_json_path(H.name());
           if (Path::exists (json_path))
             File::JSON::load (H, json_path);
         }
@@ -401,16 +394,8 @@ namespace MR
         const int32_t* const xyzt_units_as_int_ptr = reinterpret_cast<const int32_t*>(xyzt_units);
         Raw::store<int32_t> (*xyzt_units_as_int_ptr, &NH.xyzt_units, is_BE);
 
-        if (File::Config::get_bool ("NIfTI.AutoSaveJSON", false)) {
-          std::string json_path = H.name();
-          if (Path::has_suffix (json_path, ".nii.gz"))
-            json_path = json_path.substr (0, json_path.size()-7);
-          else if (Path::has_suffix (json_path, ".nii"))
-            json_path = json_path.substr (0, json_path.size()-4);
-          else
-            assert (0);
-          json_path += ".json";
-          File::JSON::save (H, json_path, H.name());
+        if (File::Config::get_bool ("NIfTIAutoSaveJSON", false)) {
+          File::JSON::save (H, File::NIfTI::get_json_path(H.name()), H.name());
         }
       }
 
