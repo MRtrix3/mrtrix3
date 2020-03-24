@@ -667,6 +667,8 @@ void run () {
     if (!do_nonlinear)
       throw Exception ("Non-linear warp output requested when no non-linear registration is requested");
     warp_full_filename = std::string (opt[0][0]);
+    if (!Path::is_mrtrix_image (warp_full_filename))
+      throw Exception ("nl_warp_full output requires .mif/.mih file format, other file formats are not supported.");
   }
 
 
@@ -677,6 +679,10 @@ void run () {
 
     if (!do_nonlinear)
       throw Exception ("the non linear initialisation option -nl_init cannot be used when no non linear registration is requested");
+
+    if (!Path::is_mrtrix_image (opt[0][0]))
+      WARN ("nl_init input requires warp_full in original .mif/.mih file format. "
+            "Converting to other file formats may remove linear transformations stored in the image header.");
 
     Image<default_type> input_warps = Image<default_type>::open (opt[0][0]);
     if (input_warps.ndim() != 5)

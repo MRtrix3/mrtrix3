@@ -113,7 +113,9 @@ void run ()
 
    // warpfull2deformation & warpfull2displacement
   } else if (type == 2 || type == 3) {
-
+    if (!Path::is_mrtrix_image(argument[0]))
+      WARN ("warp_full image is not in original .mif/.mih file format. "
+            "Converting to other file formats may remove linear transformations stored in the image header.");
     auto warp = Image<default_type>::open (argument[0]).with_direct_io (3);
     Registration::Warp::check_warp_full (warp);
 

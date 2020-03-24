@@ -297,6 +297,9 @@ void run ()
   opt = get_options ("warp_full");
   Image<default_type> warp;
   if (opt.size()) {
+    if (!Path::is_mrtrix_image (opt[0][0]))
+      WARN ("warp_full image is not in original .mif/.mih file format. "
+            "Converting to other file formats may remove linear transformations stored in the image header.");
     warp = Image<default_type>::open (opt[0][0]).with_direct_io();
     Registration::Warp::check_warp_full (warp);
     if (linear)
