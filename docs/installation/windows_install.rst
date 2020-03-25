@@ -1,12 +1,15 @@
-Windows installation
-====================
+Windows installation from source
+================================
 
+.. NOTE::
 
-We outline the steps for installing *MRtrix3* for Windows using 
-`MSYS2 <https://github.com/msys2/msys2/wiki>`__. 
-Please consult the `MRtrix3 forum <http://community.mrtrix.org/>`__ if you
-encounter any issues with the configure, build or runtime operations of
-*MRtrix3*.
+   The simplest way to install *MRtrix3* is to use one of the pre-compiled
+   packages. For details, please refer `the main MRtrix website <https://www.mrtrix.org/download/>`__.
+
+The instructions below describe the process of compiling and installing
+*MRtrix3* from source on a MicroSoft Windows machine using 
+`MSYS2 <https://github.com/msys2/msys2/wiki>`__. Please consult the 
+`MRtrix3 forum <http://community.mrtrix.org/>`__ if you encounter any issues.
 
 .. WARNING::
     Some of the Python scripts provided with *MRtrix3* are dependent on

@@ -1,3 +1,6 @@
+.. _before_installing:
+
+
 Before you install
 ==================
 
