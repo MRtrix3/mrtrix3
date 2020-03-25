@@ -41,9 +41,10 @@ ARGUMENTS
       "the phase encode direction").type_file_out();
 
 OPTIONS
-  + Option ("unipolar_weight", 
+  + Option ("unipolar_weight",
       "set the weight given to the unipolar electrostatic repulsion model compared to the "
-      "bipolar model (default: 0.2).");
+      "bipolar model (default: 0.2).")
+    + Argument ("value").type_float(0.0, 1.0);
 }
 
 
@@ -65,7 +66,7 @@ inline std::ostream& operator<< (std::ostream& stream, const OutDir& d) {
 }
 
 
-void run () 
+void run ()
 {
   size_t num_subsets = argument[0];
   value_type unipolar_weight = App::get_option_value ("unipolar_weight", 0.2);
@@ -91,7 +92,7 @@ void run ()
         set.push_back (Direction (m(r,0), m(r,1), m(r,2)));
       d.push_back (set);
     }
-    INFO ("found b = " + str(bvalue[nb]) + ", " + 
+    INFO ("found b = " + str(bvalue[nb]) + ", " +
         str ([&]{ vector<size_t> s; for (auto& n : d) s.push_back (n.size()); return s; }()) + " volumes");
 
     dirs.push_back (d);
@@ -107,30 +108,31 @@ void run ()
   std::mt19937 rng (rd());
   size_t first = std::uniform_int_distribution<size_t> (0, dirs[0][0].size()-1)(rng);
 
-  
+
   vector<OutDir> merged;
 
-  auto push = [&](size_t b, size_t p, size_t n) 
-  { 
-    merged.push_back ({ Direction (dirs[b][p][n][0], dirs[b][p][n][1], dirs[b][p][n][2]), b, p }); 
-    dirs[b][p].erase (dirs[b][p].begin()+n); 
+  auto push = [&](size_t b, size_t p, size_t n)
+  {
+    merged.push_back ({ Direction (dirs[b][p][n][0], dirs[b][p][n][1], dirs[b][p][n][2]), b, p });
+    dirs[b][p].erase (dirs[b][p].begin()+n);
   };
 
-  auto energy_pair = [&](const Direction& a, const Direction& b) 
+  auto energy_pair = [&](const Direction& a, const Direction& b)
   {
-    // use combination of mono- and bi-polar electrostatic repulsion models 
-    // to ensure adequate coverage of eddy-current space as well as 
-    // orientation space. Use a moderate bias, favouring the bipolar model.
+    // use combination of mono- and bi-polar electrostatic repulsion models
+    // to ensure adequate coverage of eddy-current space as well as
+    // orientation space.
+    // By default, use a moderate bias, favouring the bipolar model.
 
     return (unipolar_weight+bipolar_weight) / (b-a).norm()
          + bipolar_weight / (b+a).norm();
   };
 
-  auto energy = [&](size_t b, size_t p, size_t n) 
-  { 
+  auto energy = [&](size_t b, size_t p, size_t n)
+  {
     value_type E = 0.0;
-    for (auto& d : merged) 
-      if (d.b == b) 
+    for (auto& d : merged)
+      if (d.b == b)
         E += energy_pair (d.d, dirs[b][p][n]);
     return E;
   };
@@ -175,7 +177,7 @@ void run ()
 
 
   size_t nPE = num_subsets > 1 ? 1 : 0;
-  while (merged.size() < total) { 
+  while (merged.size() < total) {
     // find shell with shortfall in numbers:
     size_t b = 0, n;
     value_type fraction_diff = std::numeric_limits<value_type>::max();
@@ -189,9 +191,9 @@ void run ()
 
     // find most distant direction for that shell & in the current PE direction:
     n = find_lowest_energy_direction (b, nPE);
-    if (dirs[b][nPE].size()) 
+    if (dirs[b][nPE].size())
       push (b, nPE, n);
-    else 
+    else
       WARN ("no directions remaining in b=" + str (bvalue[b]) + " shell for PE direction " + str(n) + " - PE directions will not cycle through perfectly");
 
     // update PE direction
@@ -205,11 +207,11 @@ void run ()
 
 
   // write-out:
-  
+
   File::OFStream out (argument[argument.size()-1]);
-  for (auto& d : merged) 
-    out << MR::printf ("%#10f %#10f %#10f %5d %3d\n", 
-        float (d.d[0]), float (d.d[1]), float (d.d[2]), 
+  for (auto& d : merged)
+    out << MR::printf ("%#20.15f %#20.15f %#20.15f %5d %3d\n",
+        d.d[0], d.d[1], d.d[2],
         int (bvalue[d.b]), int (d.pe+1));
 
 }
