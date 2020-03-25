@@ -1,11 +1,17 @@
 .. _linux_install:
 
-Linux installation
-==================
+Linux installation from source
+==============================
 
-We outline the steps for installing *MRtrix3* on a Linux machine. Please consult
-the `MRtrix3 forum <http://community.mrtrix.org/>`__ if you encounter any
-issues with the configure, build or runtime operations of *MRtrix3*.
+.. NOTE::
+
+   The simplest way to install *MRtrix3* is to use one of the pre-compiled
+   packages. For details, please refer `the main MRtrix website <https://www.mrtrix.org/download/>`__.
+
+
+The instructions below describe the process of compiling and installing
+*MRtrix3* from source on a Linux machine. Please consult the `MRtrix3 forum
+<http://community.mrtrix.org/>`__ if you encounter any issues.
 
 Check requirements
 ------------------

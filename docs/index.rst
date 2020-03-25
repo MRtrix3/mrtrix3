@@ -48,6 +48,20 @@ which will be invisible to the end-user. Specifically, *MRtrix3* features:
    operations performed in scanner/world coordinates where possible.
 
 
+Installation
+~~~~~~~~~~~~
+
+*MRtrix3* runs on GNU/Linux, macOS, Microsoft Windows platforms, and other Unix
+platforms. For most users, the simplest way to install *MRtrix3* is to use one
+of the pre-compiled packages. For details, please refer `the main MRtrix
+website <https://www.mrtrix.org/download/>`__.
+
+If the precompiled packages are not available, we provide specific instructions
+for building the software from source. This is normally a simple process, but
+the process does require more compute resources and expertise. See the :ref:`relevant
+pages <before_install>` for details. 
+
+
 Commands
 ~~~~~~~~
 
