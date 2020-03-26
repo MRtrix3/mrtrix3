@@ -38,4 +38,4 @@ fi
 echo "Removing installation in /usr/local/mrtrix3 ..."
 rm -rf "/usr/local/mrtrix3"
 
-echo "Unistallation complete!"
+echo "Uninstallation complete!"
