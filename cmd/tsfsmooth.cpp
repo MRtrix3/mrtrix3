@@ -18,6 +18,7 @@
 #include "math/median.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/streamline.h"
 
 
 #define DEFAULT_SMOOTHING 4.0
