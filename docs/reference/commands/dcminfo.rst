@@ -22,7 +22,7 @@ Options
 
 -  **-all** print all DICOM fields.
 
--  **-csa** print all Siemens CSA fields (excluding Phoenix)
+-  **-csa** print all Siemens CSA fields (excluding Phoenix unless requested)
 
 -  **-phoenix** print Siemens Phoenix protocol information
 
