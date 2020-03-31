@@ -88,6 +88,7 @@ namespace MR
           cfloat trilinear_value (const Eigen::Vector3f&) const;
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
+          const transform_type& transform() const { return image.transform(); }
           const vector<std::string>& comments() const { return _comments; }
 
           void reset_windowing (const int, const bool);
