@@ -395,6 +395,41 @@ List of MRtrix3 configuration file options
 
      Voxel information shown in main image overlay.
 
+.. option:: MRViewSphericalExcludeColour
+
+    *default: 1,0,0 (ref)*
+
+     The colour with which to draw tractography exclusion regions
+     that are defined using spherical coordinates.
+
+.. option:: MRViewSphericalIncludeColour
+
+    *default: 0,1,0 (green)*
+
+     The colour with which to draw tractography inclusion regions
+     that are defined using spherical coordinates.
+
+.. option:: MRViewSphericalMaskColour
+
+    *default: 1,1,0 (yellow)*
+
+     The colour with which to draw tractography masks that are
+     defined using spherical coordinates.
+
+.. option:: MRViewSphericalOpacity
+
+    *default: 0.5*
+
+     The opacity with which to draw tractography ROIs that are
+     defined using spherical coordinates.
+
+.. option:: MRViewSphericalSeedColour
+
+    *default: 0,1,1 (cyan)*
+
+     The colour with which to draw tractography seeds that are
+     defined using spherical coordinates.
+
 .. option:: MRViewToolFontSize
 
     *default: 2 points less than the standard system font*

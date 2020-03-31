@@ -17,10 +17,8 @@
 #ifndef __gui_mrview_tool_sphericalrois_h__
 #define __gui_mrview_tool_sphericalrois_h__
 
-#include <map>
-
 #include "dwi/tractography/properties.h"
-#include "gui/mrview/tool/tractography/tractography.h"
+#include "gui/mrview/displayable.h"
 #include "gui/opengl/gl.h"
 #include "gui/shapes/sphere.h"
 
@@ -38,19 +36,22 @@ namespace MR
 
       namespace Tool
       {
+
+        class Tractography;
+
         class SphericalROIs : public Displayable
         { MEMALIGN(SphericalROIs)
           Q_OBJECT
 
           public:
 
-            enum class type_t { UNDEFINED, SEED, INCLUDE, EXCLUDE, MASK };
+            enum type_t { UNDEFINED, SEED, INCLUDE, EXCLUDE, MASK };
 
             SphericalROIs (const std::string&, const GUI::MRView::Tool::Tractography&);
             ~SphericalROIs ();
 
             void clear();
-            void load (const DWI::Tractography::Properties&);
+            void load (const MR::DWI::Tractography::Properties&);
             void render (const Projection&);
 
             class Shader : public Displayable::Shader { MEMALIGN(Shader)
@@ -68,6 +69,15 @@ namespace MR
                 bool is_3D, use_lighting, use_transparency;
             } shader;
 
+            class Shared { MEMALIGN(Shared)
+              public:
+                Shared() { }
+                void initialise();
+                Shapes::Sphere sphere;
+                GL::VertexArrayObject vao;
+                vector<Eigen::Vector3f> type2colour;
+            };
+
           signals:
             void on_opacity_change();
 
@@ -81,22 +91,12 @@ namespace MR
                 float radius;
             };
 
-            class Shared { MEMALIGN(Shared)
-              public:
-                Shared() { }
-                void initialise();
-                Shapes::Sphere sphere;
-                GL::VertexArrayObject vao;
-                std::map<type_t, Eigen::Vector3f> type2colour;
-            };
-
             const GUI::MRView::Tool::Tractography& tractography_tool;
+            const Shared& shared;
             vector<SphereSpec> data;
             GL::VertexBuffer vertex_buffer, radii_buffer, colour_buffer;
             GL::VertexArrayObject vertex_array_object;
             bool vao_dirty;
-
-            static Shared shared;
 
         };
 

@@ -16,6 +16,7 @@
 
 #include "gui/mrview/tool/tractography/spherical_rois.h"
 
+#include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/opengl/lighting.h"
 
 
@@ -29,9 +30,6 @@ namespace MR
       {
 
 
-
-
-        SphericalROIs::Shared SphericalROIs::shared;
 
         void SphericalROIs::Shared::initialise()
         {
@@ -81,6 +79,7 @@ namespace MR
             }
           };
 
+          type2colour.resize(5);
           type2colour[type_t::SEED]    = get_colour ("MRViewSphericalSeedColour",    Eigen::Vector3f (0,1,1));
           type2colour[type_t::INCLUDE] = get_colour ("MRViewSphericalIncludeColour", Eigen::Vector3f (0,1,0));
           type2colour[type_t::EXCLUDE] = get_colour ("MRViewSphericalExcludeColour", Eigen::Vector3f (1,0,0));
@@ -356,10 +355,10 @@ namespace MR
                                       const GUI::MRView::Tool::Tractography& tool) :
             Displayable (filename),
             tractography_tool (tool),
+            shared (tool.spherical_roi_shared),
             vao_dirty (true)
         {
           set_allowed_features (false, true, true);
-          shared.initialise();
         }
 
 
@@ -372,7 +371,7 @@ namespace MR
 
 
 
-        void SphericalROIs::load (const DWI::Tractography::Properties& properties)
+        void SphericalROIs::load (const MR::DWI::Tractography::Properties& properties)
         {
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           clear();

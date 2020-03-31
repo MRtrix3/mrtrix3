@@ -89,6 +89,14 @@ namespace MR
         };
 
 
+
+          //CONF option: MRViewSphericalOpacity
+          //CONF default: 0.5
+          //CONF The opacity with which to draw tractography ROIs that are
+          //CONF defined using spherical coordinates.
+
+
+
         Tractography::Tractography (Dock* parent) :
           Base (parent),
           line_opacity (1.0),
@@ -96,7 +104,7 @@ namespace MR
           use_lighting (false),
           is_3D (false),
           show_spherical_rois (true),
-          spherical_roi_opacity (1.0),
+          spherical_roi_opacity (File::Config::get_float ("MRViewSphericalOpacity", 0.5)),
           scalar_file_options (nullptr),
           lighting_dock (nullptr) {
 
@@ -257,10 +265,11 @@ namespace MR
             connect (spherical_roi_checkbox, SIGNAL (clicked (bool)), this, SLOT (on_show_spherical_rois_slot (bool)));
             spherical_roi_slider = new QSlider (Qt::Horizontal);
             spherical_roi_slider->setRange (1, 1000);
-            spherical_roi_slider->setSliderPosition (1000);
+            spherical_roi_slider->setSliderPosition (500);
             connect (spherical_roi_slider, SIGNAL (valueChanged (int)), this, SLOT (spherical_rois_opacity_slot (int)));
             spherical_roi_layout->addWidget (spherical_roi_slider);
             general_opt_grid->addWidget (spherical_roi_groupbox, 2, 0, 1, 2);
+            spherical_roi_shared.initialise();
 
             lighting_groupbox = new QGroupBox (tr("lighting"));
             HBoxLayout* lighting_layout = new HBoxLayout;
@@ -325,7 +334,12 @@ namespace MR
         }
 
 
-        Tractography::~Tractography () {}
+        Tractography::~Tractography ()
+        {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          spherical_roi_shared.vao.clear();
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+        }
 
 
         void Tractography::draw (const Projection& transform, bool is3D, int, int)

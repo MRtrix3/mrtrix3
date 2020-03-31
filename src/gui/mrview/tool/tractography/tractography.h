@@ -22,6 +22,7 @@
 #include "gui/projection.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/combo_box_error.h"
+#include "gui/mrview/tool/tractography/spherical_rois.h"
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 
 namespace MR
@@ -74,6 +75,8 @@ namespace MR
             QListView* tractogram_list_view;
 
             GL::Lighting* lighting;
+
+            SphericalROIs::Shared spherical_roi_shared;
 
           private slots:
             void tractogram_open_slot ();
