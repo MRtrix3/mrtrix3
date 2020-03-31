@@ -451,11 +451,11 @@ void run()
   matrix_type empirical_cfe_statistic;
   if (do_nonstationarity_adjustment) {
     Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, empirical_skew, empirical_cfe_statistic);
-    output_header.keyval()["nonstationarity adjustment"] = str(true);
+    output_header.keyval()["nonstationarity_adjustment"] = str(true);
     for (size_t i = 0; i != num_hypotheses; ++i)
       write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.col(i), mask, output_header);
   } else {
-    output_header.keyval()["nonstationarity adjustment"] = str(false);
+    output_header.keyval()["nonstationarity_adjustment"] = str(false);
   }
 
   // Precompute default statistic and CFE statistic
