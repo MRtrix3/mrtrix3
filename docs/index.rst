@@ -59,7 +59,7 @@ website <https://www.mrtrix.org/download/>`__.
 If the precompiled packages are not available, we provide specific instructions
 for building the software from source. This is normally a simple process, but
 the process does require more compute resources and expertise. See the :ref:`relevant
-pages <before_install>` for details. 
+pages <before_installing>` for details.
 
 
 Commands
