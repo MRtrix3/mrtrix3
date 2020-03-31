@@ -55,11 +55,14 @@ namespace MR {
 
       class Time { NOMEMALIGN
         public:
-          Time (const std::string& entry) :
-              hour     (to<uint32_t> (entry.substr (0, 2))),
-              minute   (to<uint32_t> (entry.substr (2, 2))),
-              second   (to<uint32_t> (entry.substr (4, 2))),
-              fraction (entry.size() > 6 ? to<default_type> (entry.substr (6)) : 0.0) { }
+          Time (const std::string& entry) : Time() {
+            if (entry.size() < 6)
+              throw Exception ("field \"" + entry + "\" is too short to be interpreted as a time");
+            hour  = to<uint32_t> (entry.substr (0, 2));
+            minute = to<uint32_t> (entry.substr (2, 2));
+            second = to<uint32_t> (entry.substr (4, 2));
+            fraction = entry.size() > 6 ? to<default_type> (entry.substr (6)) : 0.0;
+          }
           Time (default_type i)
           {
             if (i < 0.0)
