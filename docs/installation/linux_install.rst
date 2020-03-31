@@ -6,7 +6,7 @@ Linux installation from source
 .. NOTE::
 
    The simplest way to install *MRtrix3* is to use one of the pre-compiled
-   packages. For details, please refer `the main MRtrix website <https://www.mrtrix.org/download/>`__.
+   packages. For details, please refer to `the main MRtrix website <https://www.mrtrix.org/download/>`__.
 
 
 The instructions below describe the process of compiling and installing
