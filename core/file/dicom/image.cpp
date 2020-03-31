@@ -312,8 +312,8 @@ namespace MR {
               parse_item (item);
             }
             catch (Exception& E) {
-              WARN (printf ("error reading tag (%04X,%04X):", item.group, item.element));
-              E.display(1);
+              DEBUG (printf ("error reading tag (%04X,%04X):", item.group, item.element));
+              E.display(3);
             }
           }
 
