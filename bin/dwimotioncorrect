@@ -196,7 +196,7 @@ def execute(): #pylint: disable=unused-variable
 
 
     # Variable input file name
-    global inputfn
+    global inputfn, voxweightsfn
     inputfn = 'in.mif'
     voxweightsfn = 'voxelweights.mif'
 
@@ -250,8 +250,7 @@ def execute(): #pylint: disable=unused-variable
 
 
     def fieldalignstep(k):
-        global inputfn
-        global voxweightsfn
+        global inputfn, voxweightsfn
         if app.ARGS.fieldmap:
             if k == 0:
                 run.command('mrfieldunwarp in.mif field.mif unwarped.mif')
