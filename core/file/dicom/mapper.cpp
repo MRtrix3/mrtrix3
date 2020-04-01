@@ -261,7 +261,12 @@ namespace MR {
             H.keyval()["dw_scheme"] = dw_scheme;
         }
 
-        PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
+        try {
+          PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
+        } catch (Exception& e) {
+          e.display (3);
+          WARN ("Malformed phase encoding information; ignored");
+        }
 
         bool inconsistent_scaling = false;
         for (size_t n = 1; n < frames.size(); ++n) { // check consistency of data scaling:
