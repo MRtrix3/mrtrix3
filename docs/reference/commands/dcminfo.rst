@@ -22,7 +22,9 @@ Options
 
 -  **-all** print all DICOM fields.
 
--  **-csa** print all Siemens CSA fields
+-  **-csa** print all Siemens CSA fields (excluding Phoenix unless requested)
+
+-  **-phoenix** print Siemens Phoenix protocol information
 
 -  **-tag group element** *(multiple uses permitted)* print field specified by the group & element tags supplied. Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing).
 
