@@ -244,6 +244,16 @@ List of MRtrix3 configuration file options
      The command to use to display each command's help page (leave
      empty to send directly to the terminal).
 
+.. option:: IMGOutputsAnalyze
+
+    *default: 0 (false)*
+
+     A boolean value to indicate whether newly-created images with a
+     `.img` suffix should be treated as Analyze format, or as NIfTI.
+     For reference: Analyze images produced by MRtrix3 are NIfTI-1
+     compliant, but use standard ordering (LAS or RAS depending on the
+     Analyse.LeftToRight configutation file option)
+
 .. option:: IconSize
 
     *default: 30*

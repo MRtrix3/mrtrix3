@@ -646,7 +646,7 @@ namespace MR
         if (is_analyse) {
           for (size_t i = 0; i < H.ndim(); ++i)
             H.stride(i) = i+1;
-          bool analyse_left_to_right = File::Config::get_bool ("Analyse.LeftToRight", false);
+          bool analyse_left_to_right = File::Config::get_bool ("AnalyseLeftToRight", false);
           if (analyse_left_to_right)
             H.stride(0) = -H.stride (0);
 
