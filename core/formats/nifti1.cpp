@@ -31,8 +31,9 @@ namespace MR
 
     bool NIfTI1::check (Header& H, size_t num_axes) const
     {
-      const char *suffix[] = { ".nii", ".img", nullptr };
-      return File::NIfTI::check (H, num_axes, false, suffix, 1, "NIfTI-1.1");
+      const vector<std::string> suffixes { ".nii", ".img" };
+      const bool is_analyze = Path::has_suffix (H.name(), ".nii");
+      return File::NIfTI::check (H, num_axes, is_analyze, suffixes, 1, is_analyze ? "Analyze" : "NIfTI-1.1");
     }
 
 

@@ -309,7 +309,8 @@ namespace MR
               //CONF the sform and qform transformations are defined in an
               //CONF input NIfTI image, but those transformations differ, the
               //CONF sform transformation should be used in preference to the
-              //CONF qform matrix.
+              //CONF qform matrix. The default is to use the sform matrix;
+              //CONF set to 0 / false to override and instead use the qform.
               const bool use_sform = File::Config::get_bool ("NIfTIUseSform", true);
 
               if (sform_code) {
@@ -611,18 +612,9 @@ namespace MR
 
 
 
-      inline bool check_suffix (const std::string& name, const char** suffix)
+      bool check (Header& H, const size_t num_axes, const bool is_analyse, const vector<std::string>& suffixes, const size_t nifti_version, const std::string& format)
       {
-        for (const char** p = suffix; *p; p++)
-          if (Path::has_suffix (name, *p))
-            return true;
-        return false;
-      }
-
-
-      bool check (Header& H, const size_t num_axes, const bool is_analyse, const char** suffix, const size_t nifti_version, const std::string& format)
-      {
-        if (!check_suffix (H.name(), suffix))
+        if (!Path::has_suffix (H.name(), suffixes))
           return false;
 
         if (version (H) != nifti_version)
