@@ -31,7 +31,7 @@ namespace MR
 
     bool NIfTI2::check (Header& H, size_t num_axes) const
     {
-      const vector<std::string> suffixes { ".nii" };
+      const vector<std::string> suffixes { ".nii", ".img" };
       return File::NIfTI::check (H, num_axes, false, suffixes, 2, "NIfTI-2");
     }
 
