@@ -43,7 +43,7 @@ void usage ()
     "directly (which may be useful to create images suitable for use in the "
     "registration program) using the following syntax:"
 
-  + "  $ warpinit template.mif warp-[].nii";
+  + "  $ warpinit template.mif warp-'[]'.nii";
 
   ARGUMENTS
   + Argument ("template", "the input template image.").type_image_in ()
