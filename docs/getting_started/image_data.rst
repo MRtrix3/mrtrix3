@@ -71,7 +71,7 @@ Multi-file numbered image support
 It is possible to access a numbered series of images as a single
 multi-dimensional dataset, using a syntax specific to MRtrix. For example::
 
-    $ mrinfo MRI-volume-[].nii.gz
+    $ mrinfo MRI-volume-'[]'.nii.gz
 
 will collate all images that match the pattern
 ``MRI-volume-<number>.nii.gz``, sort them in ascending numerical order,
@@ -82,7 +82,7 @@ that contained in the images. In other words, assuming there are 10
 
 Note that this isn't limited to one level of numbering::
 
-    $ mrconvert data-[]-[].nii combined.mif
+    $ mrconvert data-'[]'-'[]'.nii combined.mif
 
 will collate all images that match the ``data-number-number.nii``
 pattern and generate a single dataset with dimensionality two larger
@@ -92,7 +92,7 @@ Finally, it is also possible to explicitly request specific numbers,
 using :ref:`number_sequences`
 within the square brackets::
 
-    $ mrconvert data-[10:20].nii combined.mif
+    $ mrconvert data-'[10:20]'.nii combined.mif
 
 
 

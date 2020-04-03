@@ -46,7 +46,7 @@ void usage ()
     "where square brackets denote the position of the numbering for the files, "
     "for example:"
 
-   + "$ tckconvert input.tck output-[].txt"
+   + "$ tckconvert input.tck output-'[]'.txt"
 
    + "will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...";
 

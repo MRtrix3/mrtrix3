@@ -27,7 +27,7 @@ The image generated is a 4D image with the same spatial characteristics as the i
 
 Note that this command can be used to create 3 separate X,Y,Z images directly (which may be useful to create images suitable for use in the registration program) using the following syntax:
 
-  $ warpinit template.mif warp-[].nii
+  $ warpinit template.mif warp-'[]'.nii
 
 Options
 -------
