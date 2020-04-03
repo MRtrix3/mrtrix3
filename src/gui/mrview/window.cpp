@@ -774,6 +774,10 @@ namespace MR
           vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < MR::App::argument.size(); ++n) {
             try { list.push_back (make_unique<MR::Header> (MR::Header::open (MR::App::argument[n]))); }
+            catch (CancelException& e) {
+              for (const auto& msg : e.description)
+                CONSOLE (msg);
+            }
             catch (Exception& e) { e.display(); }
           }
           add_images (list);
@@ -857,6 +861,9 @@ namespace MR
           vector<std::unique_ptr<MR::Header>> list;
           list.push_back (make_unique<MR::Header> (MR::Header::open (folder)));
           add_images (list);
+        }
+        catch (CancelException& E) {
+          E.display (-1);
         }
         catch (Exception& E) {
           E.display();
