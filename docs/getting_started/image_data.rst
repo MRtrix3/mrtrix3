@@ -94,6 +94,10 @@ within the square brackets::
 
     $ mrconvert data-'[10:20]'.nii combined.mif
 
+Note that the single quotation marks surrounding the square brackets are required
+for shells that treat ``[`` within a string as a special character (such as zsh).
+See our `command-line tutorial <https://command-line-tutorial.readthedocs.io>`__
+for more information on special character escaping.
 
 
 .. _data_types:
