@@ -276,40 +276,46 @@ void run ()
       json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
-    auto header = Header::open (argument[i]);
-    if (raw_dwgrad)
-      DWI::set_DW_scheme (header, DWI::get_DW_scheme (header));
-    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes || shell_indices)
-      DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
+    try {
+      auto header = Header::open (argument[i]);
 
-    if (name)       std::cout << header.name() << "\n";
-    if (format)     std::cout << header.format() << "\n";
-    if (ndim)       std::cout << header.ndim() << "\n";
-    if (size)       print_dimensions (header);
-    if (spacing)    print_spacing (header);
-    if (datatype)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
-    if (strides)    print_strides (header);
-    if (offset)     std::cout << header.intensity_offset() << "\n";
-    if (multiplier) std::cout << header.intensity_scale() << "\n";
-    if (transform)  print_transform (header);
-    if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
-    if (shell_bvalues || shell_sizes || shell_indices) print_shells (header, shell_bvalues, shell_sizes, shell_indices);
-    if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
+      if (raw_dwgrad)
+        DWI::set_DW_scheme (header, DWI::get_DW_scheme (header));
+      else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes || shell_indices)
+        DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
 
-    for (size_t n = 0; n < properties.size(); ++n)
-      print_properties (header, properties[n][0]);
+      if (name)       std::cout << header.name() << "\n";
+      if (format)     std::cout << header.format() << "\n";
+      if (ndim)       std::cout << header.ndim() << "\n";
+      if (size)       print_dimensions (header);
+      if (spacing)    print_spacing (header);
+      if (datatype)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
+      if (strides)    print_strides (header);
+      if (offset)     std::cout << header.intensity_offset() << "\n";
+      if (multiplier) std::cout << header.intensity_scale() << "\n";
+      if (transform)  print_transform (header);
+      if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
+      if (shell_bvalues || shell_sizes || shell_indices) print_shells (header, shell_bvalues, shell_sizes, shell_indices);
+      if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
 
-    DWI::export_grad_commandline (header);
-    PhaseEncoding::export_commandline (header);
+      for (size_t n = 0; n < properties.size(); ++n)
+        print_properties (header, properties[n][0]);
 
-    if (json_keyval)
-      File::JSON::write (header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));
+      DWI::export_grad_commandline (header);
+      PhaseEncoding::export_commandline (header);
 
-    if (json_all)
-      header2json (header, *json_all);
+      if (json_keyval)
+        File::JSON::write (header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));
 
-    if (print_full_header)
-      std::cout << header.description (get_options ("all").size());
+      if (json_all)
+        header2json (header, *json_all);
+
+      if (print_full_header)
+        std::cout << header.description (get_options ("all").size());
+    }
+    catch (CancelException& e) {
+      e.display(-1);
+    }
   }
 
   if (json_keyval) {
