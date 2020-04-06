@@ -271,6 +271,7 @@ namespace MR
       if (do_realign_transform)
         H.realign_transform();
     }
+    catch (CancelException& e) { throw; }
     catch (Exception& E) {
       throw Exception (E, "error opening image \"" + image_name + "\"");
     }
