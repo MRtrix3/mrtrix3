@@ -25,7 +25,7 @@ namespace MR
     using namespace App;
     using namespace Eigen;
 
-    OptionGroup GradImportOptions (bool include_bvalue_scaling)
+    OptionGroup GradImportOptions ()
     {
       OptionGroup group ("DW gradient table import options");
 
@@ -45,16 +45,6 @@ namespace MR
             "input image header, the data provided with this option will be instead used.")
         +   Argument ("bvecs").type_file_in()
         +   Argument ("bvals").type_file_in();
-
-      if (include_bvalue_scaling)
-        group
-          + Option ("bvalue_scaling",
-              "specifies whether the b-values should be scaled by the square of "
-              "the corresponding DW gradient norm, as often required for "
-              "multi-shell or DSI DW acquisition schemes. The default action can "
-              "also be set in the MRtrix config file, under the BValueScaling entry. "
-              "Valid choices are yes/no, true/false, 0/1 (default: true).")
-          +   Argument ("mode").type_bool();
 
       return group;
     }
@@ -194,36 +184,27 @@ namespace MR
 
 
 
-    Eigen::MatrixXd get_DW_scheme (const Header& header)
+    Eigen::MatrixXd get_raw_DW_scheme (const Header& header)
     {
       DEBUG ("searching for suitable gradient encoding...");
       using namespace App;
       Eigen::MatrixXd grad;
 
-      try {
-        const auto opt_mrtrix = get_options ("grad");
+      // check whether the DW scheme has been provided via the command-line:
+      const auto opt_mrtrix = get_options ("grad");
+      if (opt_mrtrix.size())
+        grad = load_matrix<> (opt_mrtrix[0][0]);
+
+      const auto opt_fsl = get_options ("fslgrad");
+      if (opt_fsl.size()) {
         if (opt_mrtrix.size())
-          grad = load_matrix<> (opt_mrtrix[0][0]);
-        const auto opt_fsl = get_options ("fslgrad");
-        if (opt_fsl.size()) {
-          if (opt_mrtrix.size())
-            throw Exception ("Diffusion gradient table can be provided using either -grad or -fslgrad option, but NOT both");
-          grad = load_bvecs_bvals (header, opt_fsl[0][0], opt_fsl[0][1]);
-        }
-        if (!opt_mrtrix.size() && !opt_fsl.size())
-          grad = parse_DW_scheme (header);
-      }
-      catch (Exception& e) {
-        throw Exception (e, "error importing diffusion gradient table for image \"" + header.name() + "\"");
+          throw Exception ("Diffusion gradient table can be provided using either -grad or -fslgrad option, but NOT both");
+        grad = load_bvecs_bvals (header, opt_fsl[0][0], opt_fsl[0][1]);
       }
 
-      if (!grad.rows())
-        return grad;
-
-      if (grad.cols() < 4)
-        throw Exception ("unexpected diffusion gradient table matrix dimensions");
-
-      INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion gradient table");
+      // otherwise use the information from the header:
+      if (!opt_mrtrix.size() && !opt_fsl.size())
+        grad = parse_DW_scheme (header);
 
       return grad;
     }
@@ -232,36 +213,25 @@ namespace MR
 
 
 
-    void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail)
+
+    Eigen::MatrixXd get_DW_scheme (const Header& header, bool bvalue_scaling)
     {
-      if (grad.rows() == 0)
-        throw Exception ("no diffusion encoding information found in image \"" + header.name() + "\"");
-
-      //CONF option: BValueScaling
-      //CONF default: 1 (true)
-      //CONF Specifies whether the b-values should be scaled by the squared
-      //CONF norm of the gradient vectors when loading a DW gradient scheme.
-      //CONF This is commonly required to correctly interpret images acquired
-      //CONF on scanners that nominally only allow a single b-value, as the
-      //CONF common workaround is to scale the gradient vectors to modulate
-      //CONF the actual b-value.
-      bool scale_bvalues = true;
-      auto opt = App::get_options ("bvalue_scaling");
-      if (opt.size())
-        scale_bvalues = opt[0][0];
-      else
-        scale_bvalues = File::Config::get_bool ("BValueScaling", scale_bvalues);
-
-      if (scale_bvalues)
-        scale_bvalue_by_G_squared (grad);
-
       try {
+        auto grad = get_raw_DW_scheme (header);
         check_DW_scheme (header, grad);
+
+        if (bvalue_scaling)
+          scale_bvalue_by_G_squared (grad);
+
         normalise_grad (grad);
+        // write the scheme as interpreted back into the header:
+        set_DW_scheme (const_cast<Header&> (header), grad);
+
+        INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion gradient table");
+        return grad;
       }
       catch (Exception& e) {
-        if (!nofail)
-          throw Exception (e, "unable to get valid diffusion gradient table for image \"" + header.name() + "\"");
+        throw Exception (e, "error importing diffusion gradient table for image \"" + header.name() + "\"");
       }
     }
 
