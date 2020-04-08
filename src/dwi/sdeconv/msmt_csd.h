@@ -48,7 +48,7 @@ namespace MR
           class Shared { MEMALIGN(Shared)
             public:
               Shared (const Header& dwi_header) :
-                  grad (DWI::get_valid_DW_scheme (dwi_header)),
+                  grad (DWI::get_DW_scheme (dwi_header)),
                   shells (grad),
                   HR_dirs (DWI::Directions::electrostatic_repulsion_300()),
                   solution_min_norm_regularisation (DEFAULT_MSMTCSD_NORM_LAMBDA),
