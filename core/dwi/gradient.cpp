@@ -221,7 +221,7 @@ namespace MR
         check_DW_scheme (header, grad);
 
         if (bvalue_scaling)
-          scale_bvalue_by_G_squared (grad);
+          scale_bvalue_by_G_squared (grad, 1.0e-3);
 
         normalise_grad (grad);
         // write the scheme as interpreted back into the header:
