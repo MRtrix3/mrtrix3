@@ -82,12 +82,12 @@ namespace MR
         Stride::symbolise (H);
 
         // if .img, reset all strides to defaults, since it can't be assumed
-        // that downstream software will be able to parse the NIfTI transform 
+        // that downstream software will be able to parse the NIfTI transform
         if (is_analyse) {
           for (size_t i = 0; i < H.ndim(); ++i)
             H.stride(i) = i+1;
-          bool analyse_left_to_right = File::Config::get_bool ("Analyse.LeftToRight", false);
-          if (analyse_left_to_right)
+          bool analyse_left_to_right = File::Config::get_bool ("AnalyseLeftToRight", false);
+          if (!analyse_left_to_right)
             H.stride(0) = -H.stride (0);
 
           if (!right_left_warning_issued) {
@@ -105,7 +105,7 @@ namespace MR
         //CONF data is permitted (most 3rd party software packages don't
         //CONF support bitwise data). If false (the default), data will be
         //CONF stored using more widely supported unsigned 8-bit integers.
-        if (H.datatype() == DataType::Bit) 
+        if (H.datatype() == DataType::Bit)
           if (!File::Config::get_bool ("NIfTIAllowBitwise", false))
             H.datatype() = DataType::UInt8;
       }
