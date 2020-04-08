@@ -36,7 +36,7 @@ namespace MR
 
       transform_type adjust_transform (const Header& H, vector<size_t>& order);
 
-      bool check (Header& H, const size_t num_axes, const bool is_analyse, const vector<std::string>& suffixes, const size_t nifti_version, const std::string& format);
+      bool check (int VERSION, Header& H, const size_t num_axes, const vector<std::string>& suffixes);
 
       template <int VERSION> std::unique_ptr<ImageIO::Base> read (Header& H);
       template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz (Header& H);
