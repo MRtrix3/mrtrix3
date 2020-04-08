@@ -17,6 +17,8 @@
 #ifndef __image_filter_kernels_h__
 #define __image_filter_kernels_h__
 
+#include <array>
+
 #include "adapter/base.h"
 
 namespace MR
@@ -30,17 +32,12 @@ namespace MR
       using kernel_type = vector<default_type>;
 
       extern const kernel_type identity;
-      extern const kernel_type laplacian;
+      extern const kernel_type boxblur;
+      extern const kernel_type laplacian3d;
       extern const kernel_type sharpen;
 
-      extern const kernel_type sobel_x;
-      extern const kernel_type sobel_y;
-      extern const kernel_type sobel_z;
-
-      extern const kernel_type sobel_feldman_x;
-      extern const kernel_type sobel_feldman_y;
-      extern const kernel_type sobel_feldman_z;
-
+      extern const std::array<kernel_type, 3> sobel;
+      extern const std::array<kernel_type, 3> sobel_feldman;
 
 
     }

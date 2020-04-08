@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
 #include <complex>
 
 #include "command.h"
@@ -35,8 +36,16 @@
 using namespace MR;
 using namespace App;
 
+enum filter_t {            BOXBLUR,   FFT,   LAPLACIAN3D,   MEDIAN,   SHARPEN,   SOBEL,   SOBELFELDMAN,   ZCLEAN };
+const char* filters[] = { "boxblur", "fft", "laplacian3d", "median", "sharpen", "sobel", "sobelfeldman", "zclean", nullptr };
+// TODO Remaining: gradient, laplacian1d, smooth
 
-const char* filters[] = { "fft", "gradient", "identity", "laplacian1", "laplacian2", "median", "normalise", "sharpen", "smooth", "zclean", nullptr };
+//const char* filters[] = { "fft", "gradient", "laplacian1", "laplacian2", "median", "normalise", "sharpen", "smooth", "zclean", nullptr };
+
+
+// TODO Sharpen filter should have option to modulate the strength of the filter
+// TODO Should smoothing prior to filter operation be possible for filters other than gradient?
+// TODO Option to rotate sobel / sobel-feldman result to scanner space?
 
 
 const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
@@ -54,8 +63,8 @@ const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
             "appears in the centre of the image, rather than at the edges");
 
 
-
-const OptionGroup GradientLaplaceOption = OptionGroup ("Options for gradient & laplacian1 filters")
+/*
+const OptionGroup GradientLaplaceOption = OptionGroup ("Options for gradient & laplacian1d filters")
 
   + Option ("stdev", "the standard deviation of the Gaussian kernel used to "
             "smooth the input image (in mm). The image is smoothed to reduced large "
@@ -68,9 +77,9 @@ const OptionGroup GradientLaplaceOption = OptionGroup ("Options for gradient & l
   + Option ("magnitude", "output a magnitude image, rather "
             "than the default x,y,z components")
 
-  + Option ("scanner", "define the relative derivative with respect to the scanner coordinate "
+  + Option ("scanner", "define the relevant derivative with respect to the scanner coordinate "
             "frame of reference.");
-
+*/
 
 
 
@@ -82,16 +91,16 @@ const OptionGroup MedianOption = OptionGroup ("Options for median filter")
     + Argument ("size").type_sequence_int();
 
 
-
+/*
 const OptionGroup NormaliseOption = OptionGroup ("Options for normalisation filter")
 
   + Option ("extent", "specify extent of normalisation filtering neighbourhood in voxels. "
         "This can be specified either as a single value to be used for all 3 axes, "
         "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).")
     + Argument ("size").type_sequence_int();
+*/
 
-
-
+/*
 const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
 
   + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation. "
@@ -111,7 +120,7 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
             "or as a comma-separated list of the extent for each axis. "
             "The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.")
   + Argument ("voxels").type_sequence_int();
-
+*/
 
 
 const OptionGroup ZcleanOption = OptionGroup ("Options for zclean filter")
@@ -126,6 +135,9 @@ const OptionGroup ZcleanOption = OptionGroup ("Options for zclean filter")
   + Argument ("image").type_image_in()
 + Option ("maskout", "Output a refined mask based on a spatially coherent region with normal intensity range.")
   + Argument ("image").type_image_out();
+
+
+
 
 
 
@@ -147,16 +159,214 @@ void usage ()
 
   OPTIONS
   + FFTOption
-  + GradientLaplaceOption
+  //+ GradientLaplaceOption
   + MedianOption
-  + NormaliseOption
-  + SmoothOption
+  //+ NormaliseOption
+  //+ SmoothOption
   + ZcleanOption
   + Stride::Options;
 }
 
 
 
+
+
+
+vector<int> parse_extent()
+{
+  auto opt = get_options ("extent");
+  if (!opt.size())
+    return vector<int>();
+  auto extent = parse_ints (opt[0][0]);
+  switch (extent.size()) {
+    case 1:
+      if (!(extent[0] & int(1)))
+        throw Exception ("Kernel extent must be an odd number");
+      return { extent[0], extent[0], extent[0] };
+    case 3:
+      for (auto e : extent) {
+        if (!(e & int(1)))
+          throw Exception ("All kernel extents must be odd numbers");
+      }
+      return extent;
+    default:
+      throw Exception ("Kernel extent must be either a single scalar number, or three comma-separated values");
+  }
+}
+
+
+
+
+
+// TODO Completely re-write run() from scratch
+void run ()
+{
+
+  const size_t filter_index = argument[1];
+
+  switch (filter_index) {
+
+    case FFT:
+    {
+      // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
+      //   convert between cfloat and cdouble...
+      auto input = Image<cdouble>::open (argument[0]).with_direct_io();
+      Filter::FFT filter (input, get_options ("inverse").size());
+
+      auto opt = get_options ("axes");
+      if (opt.size())
+        filter.set_axes (opt[0][0]);
+      filter.set_centre_zero (get_options ("centre_zero").size());
+      Stride::set_from_command_line (filter);
+      filter.set_message (std::string("applying FFT filter to image " + std::string(argument[0])));
+
+      if (get_options ("magnitude").size()) {
+        auto temp = Image<cdouble>::scratch (filter, "complex FFT result");
+        filter (input, temp);
+        filter.datatype() = DataType::Float32;
+        auto output = Image<float>::create (argument[2], filter);
+        for (auto l = Loop (output) (temp, output); l; ++l)
+          output.value() = abs (cdouble(temp.value()));
+      } else {
+        auto output = Image<cdouble>::create (argument[2], filter);
+        filter (input, output);
+      }
+      break;
+    }
+
+    case BOXBLUR:
+    case LAPLACIAN3D:
+    case SHARPEN:
+    {
+      Image<float> input (Image<float>::open (argument[0]).with_direct_io());
+      Adapter::EdgeExtend<Image<float>> edge_adapter (input);
+      Filter::Kernels::kernel_type kernel;
+      switch (filter_index) {
+        case BOXBLUR:
+          {
+            auto extent = parse_extent();
+            if (extent.size() == 1) {
+              kernel.resize (Math::pow3 (extent[0]), 1.0);
+            } else if (extent.size() == 3) {
+              if (extent[1] != extent[0] || extent[2] != extent[0])
+                throw Exception ("Non-cubic boxblur kernels not yet supported");
+              kernel.resize (Math::pow3 (extent[0]), 1.0);
+            } else {
+              kernel = Filter::Kernels::boxblur;
+            }
+          }
+          break;
+        case LAPLACIAN3D: kernel = Filter::Kernels::laplacian3d; break;
+        case SHARPEN: kernel = Filter::Kernels::sharpen; break;
+        default: assert (0);
+      }
+      Adapter::Kernel::Single<decltype(edge_adapter)> kernel_adapter (edge_adapter, kernel);
+      Image<float> output (Image<float>::create (argument[2], kernel_adapter));
+      copy_with_progress_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]),
+                                  kernel_adapter, output);
+    }
+    break;
+
+    case MEDIAN:
+    {
+      auto input = Image<float>::open (argument[0]);
+      Filter::Median filter (input);
+
+      auto extent = parse_extent();
+      if (extent.size())
+        filter.set_extent (extent);
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]));
+      Stride::set_from_command_line (filter);
+
+      auto output = Image<float>::create (argument[2], filter);
+      filter (input, output);
+    }
+    break;
+
+    case SOBEL:
+    case SOBELFELDMAN:
+    {
+      Image<float> input (Image<float>::open (argument[0]).with_direct_io());
+      Adapter::EdgeExtend<Image<float>> edge_adapter (input);
+      std::array<Filter::Kernels::kernel_type, 3> kernels;
+      switch (filter_index) {
+        case SOBEL:        kernels = Filter::Kernels::sobel;         break;
+        case SOBELFELDMAN: kernels = Filter::Kernels::sobel_feldman; break;
+        default: assert (0);
+      }
+      if (get_options ("magnitude").size()) {
+        Adapter::Kernel::TripletNorm<decltype(edge_adapter)> kernel_adapter (edge_adapter, kernels);
+        Image<float> output (Image<float>::create (argument[2], kernel_adapter));
+        copy_with_progress_message (std::string("applying norm of ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]),
+                                    kernel_adapter, output);
+      } else {
+        Adapter::Kernel::Triplet<decltype(edge_adapter)> kernel_adapter (edge_adapter, kernels);
+        Image<float> output (Image<float>::create (argument[2], kernel_adapter));
+        copy_with_progress_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]),
+                                    kernel_adapter, output);
+      }
+    }
+    break;
+
+    case ZCLEAN:
+    {
+      auto input = Image<float>::open (argument[0]);
+      Filter::ZClean filter (input);
+
+      auto opt = get_options ("maskin");
+      if (!opt.size())
+        throw Exception (std::string(argument[1]) + " filter requires initial mask");
+      Image<float> maskin = Image<float>::open (opt[0][0]);
+      check_dimensions (maskin, input, 0, 3);
+
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+      Stride::set_from_command_line (filter);
+
+      filter.set_voxels_to_bridge (get_option_value ("bridge", 4));
+      filter.set_zlim (get_option_value ("zlower", 2.5), get_option_value ("zupper", 2.5));
+
+      auto output = Image<float>::create (argument[2], filter);
+      filter (input, maskin, output);
+
+      opt = get_options ("maskout");
+      if (opt.size()) {
+        auto maskout = Image<bool>::create (opt[0][0], filter.mask);
+        threaded_copy (filter.mask, maskout);
+      }
+    }
+    break;
+
+
+/*
+    // Gradient
+    case 1:
+    {
+      // TODO This is a 1D gradient being applied in 3 axes, with pre-smoothing
+
+      const bool wrt_scanner = get_options ("scanner").size();
+      const bool magnitude = get_options ("magnitude").size();
+
+      Adapter::EdgeExtend<Image<float>> edge_adapter (Image<float>::open (argument[0]).with_direct_io());
+      // TODO Need explicit pre-smoothing
+      Adapter::Gradient1D<decltype(edge_adapter)> gradient_1D (edge_adapter, 0, false);
+      Adapter::BaseFiniteDiff3D<decltype(gradient_1D)> gradient_3D (gradient_1D, wrt_scanner);
+      // TODO Major branch based on whether the magnitude is to be taken
+      if (magnitude) {
+        Filter::NormWrapper<decltype(gradient_3D)> norm_wrapper (gradient_3D);
+        auto output = Image<float>::create (argument[2], norm_wrapper);
+        norm_wrapper (gradient_3D, output);
+      } else {
+        // TODO Until Vector2Axis is removed and a template header is provided by the adapter,
+        //   just do it manually here
+      }
+    }
+*/
+  }
+}
+
+
+
+/*
 
 template <class FilterType>
 void process1D (Image<float>& input, const bool magnitude, const bool wrt_scanner,
@@ -382,3 +592,4 @@ void run () {
       break;
   }
 }
+*/

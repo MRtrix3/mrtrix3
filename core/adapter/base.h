@@ -143,6 +143,19 @@ namespace MR
             wrt_scanner (wrt_scanner),
             transform (parent) { }
 
+        // TODO Remove Vector2Axis; the adapter should be constructing a new template
+        //   with an extra dimension, and index() of that axis should go to set_axis of the
+        //   underlying finite difference calculator
+/*        ssize_t get_index (size_t axis) const
+        {
+          if (axis < 3)
+            return parent_.index (axis);
+          if (axis == 3)
+            return parent_.get_axis();
+          return parent_.index (axis-1);
+        }
+        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { parent_.index (axis) += increment; }
+*/
         return_type value ()
         {
           return_type result;
