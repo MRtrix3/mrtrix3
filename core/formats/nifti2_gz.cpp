@@ -32,8 +32,7 @@ namespace MR
 
     bool NIfTI2_GZ::check (Header& H, size_t num_axes) const
     {
-      const vector<std::string> suffixes { ".nii.gz" };
-      return File::NIfTI::check (H, num_axes, false, suffixes, 2, "NIfTI-2");
+      return File::NIfTI::check (2, H, num_axes, { ".nii.gz" });
     }
 
 

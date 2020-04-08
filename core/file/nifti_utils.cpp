@@ -65,6 +65,7 @@ namespace MR
           static char* regular (nifti_2_header& NH) { return nullptr; }
         };
 
+        const vector<std::string> suffixes { ".nii", ".img" };
       }
 
 
@@ -556,7 +557,13 @@ namespace MR
           else
             NH.xyzt_units = SPACE_TIME_TO_XYZT (NIFTI_UNITS_MM, NIFTI_UNITS_SEC);
 
-          if (single_file && File::Config::get_bool ("NIfTI.AutoSaveJSON", false)) {
+          //CONF option: NIfTIAutoSaveJSON
+          //CONF default: 0 (false)
+          //CONF A boolean value to indicate whether, when writing NIfTI images,
+          //CONF a corresponding JSON file should be automatically created in order
+          //CONF to save any header entries that cannot be stored in the NIfTI
+          //CONF header.
+          if (single_file && File::Config::get_bool ("NIfTIAutoSaveJSON", false)) {
             std::string json_path = H.name();
             if (Path::has_suffix (json_path, ".nii.gz"))
               json_path = json_path.substr (0, json_path.size()-7);
@@ -612,13 +619,15 @@ namespace MR
 
 
 
-      bool check (Header& H, const size_t num_axes, const bool is_analyse, const vector<std::string>& suffixes, const size_t nifti_version, const std::string& format)
+      bool check (int VERSION, Header& H, const size_t num_axes, const vector<std::string>& suffixes)
       {
         if (!Path::has_suffix (H.name(), suffixes))
           return false;
 
-        if (version (H) != nifti_version)
+        if (version (H) != VERSION)
           return false;
+
+        std::string format = VERSION == 1 ? Type<nifti_1_header>::version() : Type<nifti_2_header>::version();
 
         if (num_axes < 3)
           throw Exception ("cannot create " + format + " image with less than 3 dimensions");
@@ -640,21 +649,6 @@ namespace MR
         for (size_t n = 3; n < H.ndim(); ++n)
           H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
         Stride::symbolise (H);
-
-        // if .img, reset all strides to defaults, since it can't be assumed
-        // that downstream software will be able to parse the NIfTI transform
-        if (is_analyse) {
-          for (size_t i = 0; i < H.ndim(); ++i)
-            H.stride(i) = i+1;
-          bool analyse_left_to_right = File::Config::get_bool ("AnalyseLeftToRight", false);
-          if (analyse_left_to_right)
-            H.stride(0) = -H.stride (0);
-
-          if (!right_left_warning_issued) {
-            INFO ("assuming Analyse images are encoded " + std::string (analyse_left_to_right ? "left to right" : "right to left"));
-            right_left_warning_issued = true;
-          }
-        }
 
         // by default, prevent output of bitwise data in NIfTI, since most 3rd
         // party software package can't handle them
