@@ -166,7 +166,7 @@ void run ()
     }
     catch (Exception& E) {
       auto header = Header::open (argument[1]);
-      directions = DWI::get_valid_DW_scheme (header);
+      directions = DWI::get_DW_scheme (header);
     }
   }
 

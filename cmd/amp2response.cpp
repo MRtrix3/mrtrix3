@@ -235,7 +235,7 @@ void run ()
       dirs_azel.push_back (std::move (directions));
       volumes.push_back (all_volumes (dirs_azel.size()));
     } else {
-      auto grad = DWI::get_valid_DW_scheme (header);
+      auto grad = DWI::get_DW_scheme (header);
       shells.reset (new DWI::Shells (grad));
       shells->select_shells (false, false, false);
       for (size_t i = 0; i != shells->count(); ++i) {

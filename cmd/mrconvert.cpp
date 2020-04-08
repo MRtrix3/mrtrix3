@@ -217,11 +217,19 @@ void usage ()
 
   + DataType::options()
 
-  + DWI::GradImportOptions (false)
+  + DWI::GradImportOptions ()
+  + Option ("bvalue_scaling",
+            "specifies whether the b-values should be scaled by the square of "
+            "the corresponding DW gradient norm, as often required for "
+            "multi-shell or DSI DW acquisition schemes. The default action can "
+            "also be set in the MRtrix config file, under the BValueScaling entry. "
+            "Valid choices are yes/no, true/false, 0/1 (default: true).")
+  +   Argument ("mode").type_bool()
+
   + DWI::GradExportOptions()
 
-  + PhaseEncoding::ImportOptions
-  + PhaseEncoding::ExportOptions;
+    + PhaseEncoding::ImportOptions
+    + PhaseEncoding::ExportOptions;
 }
 
 

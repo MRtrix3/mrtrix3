@@ -229,7 +229,7 @@ void run ()
       header.keyval().erase (hit);
     }
     else {
-      auto grad = DWI::get_valid_DW_scheme (amp);
+      auto grad = DWI::get_DW_scheme (amp);
       DWI::Shells shells (grad);
       shells.select_shells (true, false, false);
       if (shells.smallest().is_bzero())
