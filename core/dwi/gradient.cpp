@@ -231,6 +231,7 @@ namespace MR
         return grad;
       }
       catch (Exception& e) {
+        clear_DW_scheme (const_cast<Header&> (header));
         throw Exception (e, "error importing diffusion gradient table for image \"" + header.name() + "\"");
       }
     }
