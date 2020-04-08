@@ -88,11 +88,6 @@ void usage ()
     + FieldExportOptions
 
     + GradImportOptions
-    +   Option ("raw_dwgrad",
-        "do not modify the gradient table from what was found in the image headers. This skips the "
-        "validation steps normally performed within MRtrix applications (i.e. do not verify that "
-        "the number of entries in the gradient table matches the number of volumes in the image, "
-        "do not scale b-values by gradient norms, do not normalise gradient vectors)")
 
     + GradExportOptions
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
@@ -144,9 +139,9 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_shells (const Header& header, const bool shell_bvalues, const bool shell_sizes, const bool shell_indices)
+void print_shells (const Eigen::MatrixXd& grad, const bool shell_bvalues, const bool shell_sizes, const bool shell_indices)
 {
-  DWI::Shells dwshells (DWI::parse_DW_scheme (header));
+  DWI::Shells dwshells (grad);
   if (shell_bvalues) {
     for (size_t i = 0; i < dwshells.count(); i++)
       std::cout << dwshells[i].get_mean() << " ";
@@ -266,7 +261,6 @@ void run ()
   const bool shell_bvalues = get_options("shell_bvalues") .size();
   const bool shell_sizes   = get_options("shell_sizes")   .size();
   const bool shell_indices = get_options("shell_indices")   .size();
-  const bool raw_dwgrad    = get_options("raw_dwgrad")    .size();
   const bool petable       = get_options("petable")       .size();
 
   const bool print_full_header = !(format || ndim || size || spacing || datatype || strides ||
@@ -277,10 +271,13 @@ void run ()
 
   for (size_t i = 0; i < argument.size(); ++i) {
     auto header = Header::open (argument[i]);
-    if (raw_dwgrad)
-      DWI::set_DW_scheme (header, DWI::get_DW_scheme (header));
-    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes || shell_indices)
-      DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
+    Eigen::MatrixXd grad;
+    try {
+      grad = DWI::get_DW_scheme (header);
+    }
+    catch (Exception& E) {
+      E.display (2);
+    }
 
     if (name)       std::cout << header.name() << "\n";
     if (format)     std::cout << header.format() << "\n";
@@ -292,8 +289,8 @@ void run ()
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
-    if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
-    if (shell_bvalues || shell_sizes || shell_indices) print_shells (header, shell_bvalues, shell_sizes, shell_indices);
+    if (dwgrad)     std::cout << grad << "\n";
+    if (shell_bvalues || shell_sizes || shell_indices) print_shells (grad, shell_bvalues, shell_sizes, shell_indices);
     if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)

@@ -59,6 +59,11 @@ void usage ()
     + Stride::Options;
 }
 
+
+
+
+
+
 void run()
 {
   auto input_image = Image<float>::open (argument[0]);
