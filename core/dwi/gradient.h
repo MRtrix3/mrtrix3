@@ -149,10 +149,13 @@ namespace MR
 
 
     //! scale b-values by square of gradient norm
-    /*! \note This is mostly for internal use. This function will be applied if
+    /*! This operation is only performed if any of the gradient vectors squared
+     * norms deviate from unity, within the stated tolerance.
+     *
+     * \note This is mostly for internal use. This function will be applied if
      * needed within DWI::get_DW_scheme() */
     template <class MatrixType>
-      void scale_bvalue_by_G_squared (MatrixType& G, default_type tolerance = 1.0e-4)
+      void scale_bvalue_by_G_squared (MatrixType& G, default_type tolerance)
       {
         // check whether input vectors differ significantly from unit length:
         bool need_scaling = false;
