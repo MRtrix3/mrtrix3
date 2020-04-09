@@ -429,7 +429,9 @@ void run ()
       add_to_command_history = false;
     auto entry = header_out.keyval().find (opt[n][0]);
     if (entry == header_out.keyval().end()) {
-      WARN ("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
+      if (std::string(opt[n][0]) != "command_history") {
+        WARN ("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
+      }
     } else {
       header_out.keyval().erase (entry);
     }
