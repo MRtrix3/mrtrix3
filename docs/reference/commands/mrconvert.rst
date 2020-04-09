@@ -33,6 +33,8 @@ By default, the intensity scaling parameters in the input image header are passe
 
 The -axes option specifies which axes from the input image will be used to form the output image. This allows the permutation, omission, or addition of axes into the output image. The axes should be supplied as a comma-separated list of axis indices. If an axis from the input image is to be omitted from the output image, it must either already have a size of 1, or a single coordinate along that axis must be selected by the user by using the -coord option. Examples are provided further below.
 
+The -no_bvalue_scaling option is reserved for use in importing malformed diffusion gradient tables. Typically, when the input diffusion-weighting directions are not of unit norm, they are rescaled to unit norm by MRtrix3, with corresponding scaling of the b-values by the squares of these vector norms (this is how multi-shell acquisitions are frequently achieved on scanner platforms). However in some rare instances, the b-values may be correct, despite the vectors not being of unit norm. In such cases, use of this option will result in the vectors still being normalised, but the corresponding b-value scaling not being applied.
+
 Example usages
 --------------
 
@@ -132,6 +134,8 @@ DW gradient table import options
 -  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+
+-  **-no_bvalue_scaling** disable scaling of diffusion b-values by the square of the corresponding DW gradient norm (see Desciption).
 
 DW gradient table export options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
