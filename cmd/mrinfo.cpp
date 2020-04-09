@@ -270,7 +270,7 @@ void run ()
       json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
-    auto header = Header::open (argument[i]);
+    const auto header = Header::open (argument[i]);
     Eigen::MatrixXd grad;
     try {
       grad = DWI::get_DW_scheme (header);
@@ -322,5 +322,4 @@ void run ()
     File::OFStream out (opt[0][0]);
     out << json_all->dump(4) << "\n";
   }
-
 }

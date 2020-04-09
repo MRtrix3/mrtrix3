@@ -117,6 +117,12 @@ namespace MR
         : Exception(previous_exception, msg) {}
   };
 
+
+  class CancelException : public Exception { NOMEMALIGN
+    public:
+      CancelException () : Exception ("operation cancelled by user") { }
+  };
+
   void display_exception_cmdline (const Exception& E, int log_level);
   void cmdline_print_func (const std::string& msg);
   void cmdline_report_to_user_func (const std::string& msg, int type);
