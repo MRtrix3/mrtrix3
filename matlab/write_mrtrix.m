@@ -129,7 +129,7 @@ if strcmp(filename(end-3:end), '.mif')
   dataoffset = ftell (fid) + 24;
   fprintf (fid, '\nfile: . %d\nEND\n                         ', dataoffset);
 elseif strcmp(filename(end-3:end), '.mih')
-  datafile = [ filename(end-3:end) '.dat' ];
+  datafile = [ filename(1:end-4) '.dat' ];
   dataoffset = 0;
   fprintf (fid, '\nfile: %s %d\nEND\n', datafile, dataoffset);
 else
@@ -139,7 +139,7 @@ end
 
 fclose(fid);
 
-fid = fopen (datafile, 'r+', byteorder);
+fid = fopen (datafile, 'w+', byteorder)
 fseek (fid, dataoffset, -1);
 
 if isstruct(image)
