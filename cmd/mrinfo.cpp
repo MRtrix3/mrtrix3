@@ -67,7 +67,17 @@ void usage ()
 
     + "The command can also write the diffusion gradient table from a single input image to file; "
       "either in the MRtrix or FSL format (bvecs/bvals file pair; includes appropriate diffusion "
-      "gradient vector reorientation)";
+      "gradient vector reorientation)"
+
+    + "The -no_bvalue_scaling option is reserved for use in importing malformed "
+      "diffusion gradient tables. Typically, when the input diffusion-weighting "
+      "directions are not of unit norm, they are rescaled to unit norm by MRtrix3, "
+      "with corresponding scaling of the b-values by the squares of these vector "
+      "norms (this is how multi-shell acquisitions are frequently achieved on "
+      "scanner platforms). However in some rare instances, the b-values may be "
+      "correct, despite the vectors not being of unit norm. In such cases, use of "
+      "this option will result in the vectors still being normalised, but the "
+      "corresponding b-value scaling not being applied.";
 
   ARGUMENTS
     + Argument ("image", "the input image(s).").allow_multiple().type_image_in();
@@ -88,6 +98,9 @@ void usage ()
     + FieldExportOptions
 
     + GradImportOptions
+    + Option ("no_bvalue_scaling",
+              "disable scaling of diffusion b-values by the square of the "
+              "corresponding DW gradient norm (see Desciption).")
 
     + GradExportOptions
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as interpreted by MRtrix3")
@@ -292,7 +305,7 @@ void run ()
     if (export_grad || check_option_group (GradImportOptions) || dwgrad ||
         raw_dwgrad || shell_bvalues || shell_sizes || shell_indices) {
       raw_grad = DWI::get_raw_DW_scheme (header);
-      grad = DWI::get_DW_scheme (header);
+      grad = DWI::get_DW_scheme (header, get_options ("no_bvalue_scaling").empty());
 
       if (dwgrad)     std::cout << grad << "\n";
       if (raw_dwgrad) std::cout << raw_grad << "\n";
