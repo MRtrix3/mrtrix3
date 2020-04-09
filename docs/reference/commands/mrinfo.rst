@@ -67,10 +67,6 @@ DW gradient table import options
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
--  **-bvalue_scaling mode** specifies whether the b-values should be scaled by the square of the corresponding DW gradient norm, as often required for multi-shell or DSI DW acquisition schemes. The default action can also be set in the MRtrix config file, under the BValueScaling entry. Valid choices are yes/no, true/false, 0/1 (default: true).
-
--  **-raw_dwgrad** do not modify the gradient table from what was found in the image headers. This skips the validation steps normally performed within MRtrix applications (i.e. do not verify that the number of entries in the gradient table matches the number of volumes in the image, do not scale b-values by gradient norms, do not normalise gradient vectors)
-
 DW gradient table export options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -78,7 +74,9 @@ DW gradient table export options
 
 -  **-export_grad_fsl bvecs_path bvals_path** export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
 
--  **-dwgrad** the diffusion-weighting gradient table, as stored in the header (i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)
+-  **-dwgrad** the diffusion-weighting gradient table, as interpreted by MRtrix3
+
+-  **-raw_dwgrad** the diffusion-weighting gradient table as stored in the header, without MRtrix3 processing
 
 -  **-shell_bvalues** list the average b-value of each shell
 

@@ -77,7 +77,17 @@ void usage ()
     "comma-separated list of axis indices. If an axis from the input image is "
     "to be omitted from the output image, it must either already have a size of "
     "1, or a single coordinate along that axis must be selected by the user by "
-    "using the -coord option. Examples are provided further below.";
+    "using the -coord option. Examples are provided further below."
+
+  + "The -no_bvalue_scaling option is reserved for use in importing malformed "
+    "diffusion gradient tables. Typically, when the input diffusion-weighting "
+    "directions are not of unit norm, they are rescaled to unit norm by MRtrix3, "
+    "with corresponding scaling of the b-values by the squares of these vector "
+    "norms (this is how multi-shell acquisitions are frequently achieved on "
+    "scanner platforms). However in some rare instances, the b-values may be "
+    "correct, despite the vectors not being of unit norm. In such cases, use of "
+    "this option will result in the vectors still being normalised, but the "
+    "corresponding b-value scaling not being applied.";
 
 
   EXAMPLES
@@ -218,13 +228,9 @@ void usage ()
   + DataType::options()
 
   + DWI::GradImportOptions ()
-  + Option ("bvalue_scaling",
-            "specifies whether the b-values should be scaled by the square of "
-            "the corresponding DW gradient norm, as often required for "
-            "multi-shell or DSI DW acquisition schemes. The default action can "
-            "also be set in the MRtrix config file, under the BValueScaling entry. "
-            "Valid choices are yes/no, true/false, 0/1 (default: true).")
-  +   Argument ("mode").type_bool()
+  + Option ("no_bvalue_scaling",
+            "disable scaling of diffusion b-values by the square of the "
+            "corresponding DW gradient norm (see Desciption).")
 
   + DWI::GradExportOptions()
 
@@ -235,9 +241,18 @@ void usage ()
 
 
 
+Eigen::MatrixXd scaled_DW_scheme (const Header& header)
+{
+  static const bool bvalue_scaling = !get_options ("no_bvalue_scaling").size();
+  return DWI::get_DW_scheme (header, bvalue_scaling);
+}
+
+
+
+
 void permute_DW_scheme (Header& H, const vector<int>& axes)
 {
-  auto in = DWI::get_DW_scheme (H);
+  auto in = scaled_DW_scheme (H);
   if (!in.rows())
     return;
 
@@ -394,8 +409,8 @@ void run ()
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
-  if (get_options ("grad").size() || get_options ("fslgrad").size())
-    DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
+  if (get_options ("grad").size() || get_options ("fslgrad").size() || get_options ("no_bvalue_scaling").size())
+    DWI::set_DW_scheme (header_out, scaled_DW_scheme (header_in));
 
   if (get_options ("import_pe_table").size() || get_options ("import_pe_eddy").size())
     PhaseEncoding::set_scheme (header_out, PhaseEncoding::get_scheme (header_in));
@@ -475,7 +490,7 @@ void run ()
 
       header_out.size (axis) = pos[axis].size();
       if (axis == 3) {
-        const auto grad = DWI::get_DW_scheme (header_in);
+        const auto grad = scaled_DW_scheme (header_in);
         if (grad.rows()) {
           if ((ssize_t)grad.rows() != header_in.size(3)) {
             WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");

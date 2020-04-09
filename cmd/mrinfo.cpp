@@ -90,8 +90,8 @@ void usage ()
     + GradImportOptions
 
     + GradExportOptions
-    +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
-          "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
+    +   Option ("dwgrad", "the diffusion-weighting gradient table, as interpreted by MRtrix3")
+    +   Option ("raw_dwgrad", "the diffusion-weighting gradient table as stored in the header, without MRtrix3 processing")
     +   Option ("shell_bvalues", "list the average b-value of each shell")
     +   Option ("shell_sizes", "list the number of volumes in each shell")
     +   Option ("shell_indices", "list the image volumes attributed to each b-value shell")
@@ -258,21 +258,23 @@ void run ()
   const auto properties    = get_options("property");
   const bool transform     = get_options("transform")     .size();
   const bool dwgrad        = get_options("dwgrad")        .size();
+  const bool raw_dwgrad    = get_options("raw_dwgrad")    .size();
   const bool shell_bvalues = get_options("shell_bvalues") .size();
   const bool shell_sizes   = get_options("shell_sizes")   .size();
-  const bool shell_indices = get_options("shell_indices")   .size();
+  const bool shell_indices = get_options("shell_indices") .size();
   const bool petable       = get_options("petable")       .size();
 
   const bool print_full_header = !(format || ndim || size || spacing || datatype || strides ||
       offset || multiplier || properties.size() || transform ||
-      dwgrad || export_grad || shell_bvalues || shell_sizes || shell_indices ||
+      dwgrad || raw_dwgrad || export_grad || shell_bvalues || shell_sizes || shell_indices ||
       export_pe || petable ||
       json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
     const auto header = Header::open (argument[i]);
-    Eigen::MatrixXd grad;
+    Eigen::MatrixXd grad, raw_grad;
     try {
+      raw_grad = DWI::get_raw_DW_scheme (header);
       grad = DWI::get_DW_scheme (header);
     }
     catch (Exception& E) {
@@ -290,6 +292,7 @@ void run ()
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
     if (dwgrad)     std::cout << grad << "\n";
+    if (raw_dwgrad) std::cout << raw_grad << "\n";
     if (shell_bvalues || shell_sizes || shell_indices) print_shells (grad, shell_bvalues, shell_sizes, shell_indices);
     if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
 

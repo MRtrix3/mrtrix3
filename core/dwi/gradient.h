@@ -34,7 +34,7 @@ namespace MR
   namespace DWI
   {
 
-    App::OptionGroup GradImportOptions ();
+    App::OptionGroup GradImportOptions();
     App::OptionGroup GradExportOptions();
 
 
