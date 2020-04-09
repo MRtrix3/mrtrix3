@@ -272,14 +272,6 @@ void run ()
 
   for (size_t i = 0; i < argument.size(); ++i) {
     const auto header = Header::open (argument[i]);
-    Eigen::MatrixXd grad, raw_grad;
-    try {
-      raw_grad = DWI::get_raw_DW_scheme (header);
-      grad = DWI::get_DW_scheme (header);
-    }
-    catch (Exception& E) {
-      E.display (2);
-    }
 
     if (name)       std::cout << header.name() << "\n";
     if (format)     std::cout << header.format() << "\n";
@@ -291,13 +283,21 @@ void run ()
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
     if (transform)  print_transform (header);
-    if (dwgrad)     std::cout << grad << "\n";
-    if (raw_dwgrad) std::cout << raw_grad << "\n";
-    if (shell_bvalues || shell_sizes || shell_indices) print_shells (grad, shell_bvalues, shell_sizes, shell_indices);
     if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)
       print_properties (header, properties[n][0]);
+
+    Eigen::MatrixXd grad, raw_grad;
+    if (export_grad || check_option_group (GradImportOptions) || dwgrad ||
+        raw_dwgrad || shell_bvalues || shell_sizes || shell_indices) {
+      raw_grad = DWI::get_raw_DW_scheme (header);
+      grad = DWI::get_DW_scheme (header);
+
+      if (dwgrad)     std::cout << grad << "\n";
+      if (raw_dwgrad) std::cout << raw_grad << "\n";
+      if (shell_bvalues || shell_sizes || shell_indices) print_shells (grad, shell_bvalues, shell_sizes, shell_indices);
+    }
 
     DWI::export_grad_commandline (header);
     PhaseEncoding::export_commandline (header);
