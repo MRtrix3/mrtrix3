@@ -104,7 +104,6 @@ void usage ()
 
     + GradExportOptions
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as interpreted by MRtrix3")
-    +   Option ("raw_dwgrad", "the diffusion-weighting gradient table as stored in the header, without MRtrix3 processing")
     +   Option ("shell_bvalues", "list the average b-value of each shell")
     +   Option ("shell_sizes", "list the number of volumes in each shell")
     +   Option ("shell_indices", "list the image volumes attributed to each b-value shell")
@@ -271,7 +270,6 @@ void run ()
   const auto properties    = get_options("property");
   const bool transform     = get_options("transform")     .size();
   const bool dwgrad        = get_options("dwgrad")        .size();
-  const bool raw_dwgrad    = get_options("raw_dwgrad")    .size();
   const bool shell_bvalues = get_options("shell_bvalues") .size();
   const bool shell_sizes   = get_options("shell_sizes")   .size();
   const bool shell_indices = get_options("shell_indices") .size();
@@ -279,7 +277,7 @@ void run ()
 
   const bool print_full_header = !(format || ndim || size || spacing || datatype || strides ||
       offset || multiplier || properties.size() || transform ||
-      dwgrad || raw_dwgrad || export_grad || shell_bvalues || shell_sizes || shell_indices ||
+      dwgrad || export_grad || shell_bvalues || shell_sizes || shell_indices ||
       export_pe || petable ||
       json_keyval || json_all);
 
@@ -301,14 +299,12 @@ void run ()
     for (size_t n = 0; n < properties.size(); ++n)
       print_properties (header, properties[n][0]);
 
-    Eigen::MatrixXd grad, raw_grad;
+    Eigen::MatrixXd grad;
     if (export_grad || check_option_group (GradImportOptions) || dwgrad ||
-        raw_dwgrad || shell_bvalues || shell_sizes || shell_indices) {
-      raw_grad = DWI::get_raw_DW_scheme (header);
+        shell_bvalues || shell_sizes || shell_indices) {
       grad = DWI::get_DW_scheme (header, get_options ("no_bvalue_scaling").empty());
 
       if (dwgrad)     std::cout << grad << "\n";
-      if (raw_dwgrad) std::cout << raw_grad << "\n";
       if (shell_bvalues || shell_sizes || shell_indices) print_shells (grad, shell_bvalues, shell_sizes, shell_indices);
     }
 
