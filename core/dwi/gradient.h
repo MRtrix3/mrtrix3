@@ -37,6 +37,9 @@ namespace MR
     App::OptionGroup GradImportOptions();
     App::OptionGroup GradExportOptions();
 
+    extern App::Option no_bvalue_scaling_option;
+    extern const char* const no_bvalue_scaling_description;
+
 
 
     //! check that the DW scheme matches the DWI data in \a header

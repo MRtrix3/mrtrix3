@@ -26,6 +26,8 @@ Alternatively, command-line options may be used to extract specific details from
 
 The command can also write the diffusion gradient table from a single input image to file; either in the MRtrix or FSL format (bvecs/bvals file pair; includes appropriate diffusion gradient vector reorientation)
 
+The -no_bvalue_scaling option is reserved for use in importing malformed diffusion gradient tables. Typically, when the input diffusion-weighting directions are not of unit norm, they are rescaled to unit norm by MRtrix3, with corresponding scaling of the b-values by the squares of these vector norms (this is how multi-shell acquisitions are frequently achieved on scanner platforms). However in some rare instances, the b-values may be correct, despite the vectors not being of unit norm. In such cases, use of this option will result in the vectors still being normalised, but the corresponding b-value scaling not being applied.
+
 Options
 -------
 
@@ -67,6 +69,8 @@ DW gradient table import options
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
+-  **-no_bvalue_scaling** disable scaling of diffusion b-values by the square of the corresponding DW gradient norm (see Desciption).
+
 DW gradient table export options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -75,8 +79,6 @@ DW gradient table export options
 -  **-export_grad_fsl bvecs_path bvals_path** export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
 
 -  **-dwgrad** the diffusion-weighting gradient table, as interpreted by MRtrix3
-
--  **-raw_dwgrad** the diffusion-weighting gradient table as stored in the header, without MRtrix3 processing
 
 -  **-shell_bvalues** list the average b-value of each shell
 
