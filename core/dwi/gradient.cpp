@@ -25,7 +25,7 @@ namespace MR
     using namespace App;
     using namespace Eigen;
 
-    OptionGroup GradImportOptions ()
+    OptionGroup GradImportOptions()
     {
       OptionGroup group ("DW gradient table import options");
 
@@ -61,6 +61,23 @@ namespace MR
         +   Argument ("bvecs_path").type_file_out()
         +   Argument ("bvals_path").type_file_out();
     }
+
+    Option no_bvalue_scaling_option
+    = Option ("no_bvalue_scaling",
+              "disable scaling of diffusion b-values by the square of the "
+              "corresponding DW gradient norm (see Desciption).");
+
+    const char* const no_bvalue_scaling_description (
+      "The -no_bvalue_scaling option is reserved for use in importing malformed "
+      "diffusion gradient tables. Typically, when the input diffusion-weighting "
+      "directions are not of unit norm, they are rescaled to unit norm by MRtrix3, "
+      "with corresponding scaling of the b-values by the squares of these vector "
+      "norms (this is how multi-shell acquisitions are frequently achieved on "
+      "scanner platforms). However in some rare instances, the b-values may be "
+      "correct, despite the vectors not being of unit norm. In such cases, use of "
+      "this option will result in the vectors still being normalised, but the "
+      "corresponding b-value scaling not being applied."
+    );
 
 
 

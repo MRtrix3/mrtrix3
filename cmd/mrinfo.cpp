@@ -69,15 +69,7 @@ void usage ()
       "either in the MRtrix or FSL format (bvecs/bvals file pair; includes appropriate diffusion "
       "gradient vector reorientation)"
 
-    + "The -no_bvalue_scaling option is reserved for use in importing malformed "
-      "diffusion gradient tables. Typically, when the input diffusion-weighting "
-      "directions are not of unit norm, they are rescaled to unit norm by MRtrix3, "
-      "with corresponding scaling of the b-values by the squares of these vector "
-      "norms (this is how multi-shell acquisitions are frequently achieved on "
-      "scanner platforms). However in some rare instances, the b-values may be "
-      "correct, despite the vectors not being of unit norm. In such cases, use of "
-      "this option will result in the vectors still being normalised, but the "
-      "corresponding b-value scaling not being applied.";
+    + DWI::no_bvalue_scaling_description;
 
   ARGUMENTS
     + Argument ("image", "the input image(s).").allow_multiple().type_image_in();
@@ -97,10 +89,8 @@ void usage ()
 
     + FieldExportOptions
 
-    + GradImportOptions
-    + Option ("no_bvalue_scaling",
-              "disable scaling of diffusion b-values by the square of the "
-              "corresponding DW gradient norm (see Desciption).")
+    + DWI::GradImportOptions()
+    + DWI::no_bvalue_scaling_option
 
     + GradExportOptions
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as interpreted by MRtrix3")
