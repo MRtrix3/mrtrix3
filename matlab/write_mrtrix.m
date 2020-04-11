@@ -139,7 +139,7 @@ end
 
 fclose(fid);
 
-fid = fopen (datafile, 'w+', byteorder)
+fid = fopen (datafile, 'w+', byteorder);
 fseek (fid, dataoffset, -1);
 
 if isstruct(image)
