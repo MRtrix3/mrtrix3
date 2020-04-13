@@ -122,25 +122,23 @@ if isstruct (image)
     end
   end
 end
- 
+
+fprintf (fid, '\nfile: ')
 
 if strcmp(filename(end-3:end), '.mif')
-  datafile = filename;
-  dataoffset = ftell (fid) + 24;
-  fprintf (fid, '\nfile: . %d\nEND\n                         ', dataoffset);
+  dataoffset = ftell (fid) + 18;
+  dataoffset += mod((4 - mod(dataoffset, 4)), 4);
+  fprintf (fid, '. %d\nEND\n              ', dataoffset);
+  fseek (fid, dataoffset);
 elseif strcmp(filename(end-3:end), '.mih')
-  datafile = [ filename(end-3:end) '.dat' ];
-  dataoffset = 0;
-  fprintf (fid, '\nfile: %s %d\nEND\n', datafile, dataoffset);
+  datafile = [ filename(1:end-4) '.dat' ];
+  fprintf (fid, '%s 0\nEND\n', datafile);
+  fclose(fid);
+  fid = fopen (datafile, 'w', byteorder);
 else
   fclose(fid);
   error('unknown file suffix - aborting');
 end
-
-fclose(fid);
-
-fid = fopen (datafile, 'r+', byteorder);
-fseek (fid, dataoffset, -1);
 
 if isstruct(image)
   fwrite (fid, image.data, precision);
