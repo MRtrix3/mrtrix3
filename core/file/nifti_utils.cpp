@@ -801,7 +801,7 @@ namespace MR
 
 
 
-      size_t version (Header& H)
+      int version (Header& H)
       {
         //CONF option: NIfTIAlwaysUseVer2
         //CONF default: 0 (false)

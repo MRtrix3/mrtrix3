@@ -44,7 +44,7 @@ namespace MR
       template <int VERSION> std::unique_ptr<ImageIO::Base> create (Header& H);
       template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz (Header& H);
 
-      size_t version (Header& H);
+      int version (Header& H);
 
     }
   }
