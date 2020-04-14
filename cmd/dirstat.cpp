@@ -17,8 +17,9 @@
 #include "command.h"
 #include "progressbar.h"
 #include "header.h"
-#include "dwi/directions/file.h"
 #include "dwi/gradient.h"
+#include "math/sphere.h"
+#include "dwi/directions/file.h"
 #include "dwi/shells.h"
 
 
@@ -197,7 +198,7 @@ Metrics compute (Eigen::MatrixXd& directions)
 {
   if (directions.cols() < 3)
     throw Exception ("unexpected matrix size for scheme \"" + str(argument[0]) + "\"");
-  DWI::normalise_grad (directions);
+  Math::Sphere::normalise_cartesian (directions);
 
   vector<double> NN_bipolar (directions.rows(), -1.0);
   vector<double> NN_unipolar (directions.rows(), -1.0);

@@ -68,28 +68,6 @@ namespace MR
 
 
 
-    //! ensure each non-b=0 gradient vector is normalised to unit amplitude
-    /*! \note This is mostly for internal use. If you have obtained the DW
-     * scheme using DWI::get_DW_scheme(), the gradient vectors should already
-     * have been unit normalised. */
-    template <class MatrixType>
-      MatrixType& normalise_grad (MatrixType& grad)
-      {
-        if (grad.cols() < 3)
-          throw Exception ("invalid diffusion gradient table dimensions (" + str(grad.rows()) + " x " + str(grad.cols()) + ")");
-        for (ssize_t i = 0; i < grad.rows(); i++) {
-          auto norm = grad.row(i).template head<3>().norm();
-          if (norm)
-            grad.row(i).template head<3>().array() /= norm;
-        }
-        return grad;
-      }
-
-
-
-
-
-
     /*! \brief convert the DW encoding matrix in \a grad into a
      * azimuth/elevation direction set, using only the DWI volumes as per \a
      * dwi */
@@ -148,35 +126,6 @@ namespace MR
      * with regards to the data strides in the image file.
      */
     void save_bvecs_bvals (const Header&, const std::string&, const std::string&);
-
-
-
-    //! scale b-values by square of gradient norm
-    /*! This operation is only performed if any of the gradient vectors squared
-     * norms deviate from unity, within the stated tolerance.
-     *
-     * \note This is mostly for internal use. This function will be applied if
-     * needed within DWI::get_DW_scheme() */
-    template <class MatrixType>
-      void scale_bvalue_by_G_squared (MatrixType& G, default_type tolerance)
-      {
-        // check whether input vectors differ significantly from unit length:
-        bool need_scaling = false;
-        for (ssize_t n = 0; n < G.rows(); ++n) {
-          if (G(n,3) && abs(G.row(n).template head<3>().squaredNorm()-1.0) > tolerance) {
-            need_scaling = true;
-            break;
-          }
-        }
-
-        // only apply b-value scaling if required:
-        if (need_scaling) {
-          INFO ("b-values will be scaled by the square of DW gradient norm");
-          for (ssize_t n = 0; n < G.rows(); ++n)
-            if (G(n,3))
-              G(n,3) *= G.row(n).template head<3>().squaredNorm();
-        }
-      }
 
 
 

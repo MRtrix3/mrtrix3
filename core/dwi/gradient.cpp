@@ -237,12 +237,34 @@ namespace MR
         auto grad = get_raw_DW_scheme (header);
         check_DW_scheme (header, grad);
 
-        if (bvalue_scaling)
-          scale_bvalue_by_G_squared (grad, 1.0e-3);
-
-        normalise_grad (grad);
-        // write the scheme as interpreted back into the header:
-        set_DW_scheme (const_cast<Header&> (header), grad);
+        Eigen::Array<default_type, Eigen::Dynamic, 1> squared_norms = grad.leftCols(3).rowwise().squaredNorm();
+        // ensure interpreted directions are always normalised
+        // also make sure that directions of [0, 0, 0] don't affect subsequent calculations
+        for (ssize_t row = 0; row != grad.rows(); ++row) {
+          if (squared_norms[row])
+            grad.row(row).template head<3>().array() /= std::sqrt(squared_norms[row]);
+          else
+            squared_norms[row] = 1.0;
+        }
+        // only update input header if the normalisation is significant
+        const default_type max_log_scaling_factor = squared_norms.log().abs().maxCoeff();
+        if (max_log_scaling_factor > 1e-14) {
+          const default_type max_scaling_factor = std::exp (max_log_scaling_factor);
+          if (bvalue_scaling) {
+            grad.col(3).array() *= squared_norms;
+            if (max_log_scaling_factor > 1e-5) {
+              CONSOLE ("b-values scaled by the square of DW gradient norm (maximum scaling factor " + str(max_scaling_factor, 6) + ")");
+            } else {
+              INFO ("b-values corrected for double-precision normalisation of DW vectors (maximum scaling factor " + str(max_scaling_factor, 6) + ")");
+            }
+          } else {
+            CONSOLE ("b-value scaling explicitly disabled by user; maximum scaling factor would have been " + str(max_scaling_factor, 6));
+          }
+          // write the scheme as interpreted back into the header
+          set_DW_scheme (const_cast<Header&> (header), grad);
+        } else if (bvalue_scaling) {
+          WARN ("Use of -no_bvalue_scaling had no effect; gradient vectors are all of unit norm");
+        }
 
         INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion gradient table");
         return grad;
