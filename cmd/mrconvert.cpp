@@ -234,7 +234,11 @@ void usage ()
 Eigen::MatrixXd scaled_DW_scheme (const Header& header)
 {
   static const bool bvalue_scaling = !get_options ("no_bvalue_scaling").size();
-  return DWI::get_DW_scheme (header, bvalue_scaling);
+  try {
+    return DWI::get_DW_scheme (header, bvalue_scaling);
+  } catch (Exception&) {
+    return Eigen::MatrixXd();
+  }
 }
 
 
