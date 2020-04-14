@@ -119,7 +119,7 @@ namespace MR
 
           value_type value()
           {
-            assert (kernel.size() == data.size());
+            assert (kernel.size() == base_type::data.size());
             base_type::load_data();
             return kernel.dot (base_type::data);
           }
