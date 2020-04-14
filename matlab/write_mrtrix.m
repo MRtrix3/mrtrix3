@@ -49,8 +49,8 @@ fprintf (fid, ',%d', dim(2:end));
 
 fprintf (fid, '\nvox: ');
 if isstruct (image) && isfield (image, 'vox')
-  fprintf (fid, '%.3f', image.vox(1));
-  fprintf (fid, ',%.3f', image.vox(2:end));
+  fprintf (fid, '%.15f', image.vox(1));
+  fprintf (fid, ',%.15f', image.vox(2:end));
 else
   fprintf(fid, '2');
   fprintf(fid, ',%d', 2*ones(1,size(dim,2)-1));
@@ -98,18 +98,18 @@ fprintf (fid, [ '\ndatatype: ' datatype ]);
 fprintf (fid, '\nmrtrix_version: %s', 'matlab');
 
 if isstruct (image) && isfield (image, 'transform')
-  fprintf (fid, '\ntransform: %.6f', image.transform(1,1));
-  fprintf (fid, ',%.6f', image.transform(1,2:4));
-  fprintf (fid, '\ntransform: %6f', image.transform(2,1));
-  fprintf (fid, ',%.6f', image.transform(2,2:4));
-  fprintf (fid, '\ntransform: %.6f', image.transform(3,1));
-  fprintf (fid, ',%.6f', image.transform(3,2:4));
+  fprintf (fid, '\ntransform: %.15f', image.transform(1,1));
+  fprintf (fid, ',%.15f', image.transform(1,2:4));
+  fprintf (fid, '\ntransform: %.15f', image.transform(2,1));
+  fprintf (fid, ',%.15f', image.transform(2,2:4));
+  fprintf (fid, '\ntransform: %.15f', image.transform(3,1));
+  fprintf (fid, ',%.15f', image.transform(3,2:4));
 end
 
 if isstruct (image) && isfield (image, 'dw_scheme')
   for i=1:size(image.dw_scheme,1)
-    fprintf (fid, '\ndw_scheme: %.6f', image.dw_scheme(i,1));
-    fprintf (fid, ',%.6f', image.dw_scheme(i,2:4));
+    fprintf (fid, '\ndw_scheme: %.15f', image.dw_scheme(i,1));
+    fprintf (fid, ',%.15f', image.dw_scheme(i,2:4));
    end
 end
 
