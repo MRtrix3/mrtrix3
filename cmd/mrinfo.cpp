@@ -69,6 +69,12 @@ void usage ()
       "either in the MRtrix or FSL format (bvecs/bvals file pair; includes appropriate diffusion "
       "gradient vector reorientation)"
 
+    + "The -dwgrad option exports the diffusion weighting gradient table after it has been "
+      "processed by the MRtrix3 back-end (vectors normalised, b-values scaled by the square "
+      "of the vector norm assuming the -no_bvalue_scaling option is not used). To see the "
+      "raw gradient table information as stored in the image header, i.e. without MRtrix3 "
+      "back-end processing, use \"-property dw_scheme\"."
+
     + DWI::no_bvalue_scaling_description;
 
   ARGUMENTS

@@ -26,6 +26,8 @@ Alternatively, command-line options may be used to extract specific details from
 
 The command can also write the diffusion gradient table from a single input image to file; either in the MRtrix or FSL format (bvecs/bvals file pair; includes appropriate diffusion gradient vector reorientation)
 
+The -dwgrad option exports the diffusion weighting gradient table after it has been processed by the MRtrix3 back-end (vectors normalised, b-values scaled by the square of the vector norm assuming the -no_bvalue_scaling option is not used). To see the raw gradient table information as stored in the image header, i.e. without MRtrix3 back-end processing, use "-property dw_scheme".
+
 The -no_bvalue_scaling option is reserved for use in importing malformed diffusion gradient tables. Typically, when the input diffusion-weighting directions are not of unit norm, they are rescaled to unit norm by MRtrix3, with corresponding scaling of the b-values by the squares of these vector norms (this is how multi-shell acquisitions are frequently achieved on scanner platforms). However in some rare instances, the b-values may be correct, despite the vectors not being of unit norm. In such cases, use of this option will result in the vectors still being normalised, but the corresponding b-value scaling not being applied.
 
 Options
