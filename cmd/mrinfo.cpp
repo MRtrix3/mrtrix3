@@ -300,7 +300,10 @@ void run ()
         shell_bvalues || shell_sizes || shell_indices) {
       grad = DWI::get_DW_scheme (header, get_options ("no_bvalue_scaling").empty());
 
-      if (dwgrad)     std::cout << grad << "\n";
+      if (dwgrad) {
+        Eigen::IOFormat fmt (Eigen::FullPrecision, 0, " ", "\n", "", "", "", "");
+        std::cout << grad.format(fmt) << "\n";
+      }
       if (shell_bvalues || shell_sizes || shell_indices) print_shells (grad, shell_bvalues, shell_sizes, shell_indices);
     }
 
