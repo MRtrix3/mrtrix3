@@ -361,7 +361,7 @@ void run()
   output_header.keyval()["cfe_c"] = str(cfe_c);
   output_header.keyval()["cfe_legacy"] = str(cfe_legacy);
 
-  matrix_type data = matrix_type::Zero (importer.size(), mask_fixels);
+  matrix_type data = matrix_type::Zero (importer.size(), num_fixels);
   {
     ProgressBar progress (std::string ("Loading fixel data (no smoothing)"), importer.size());
     for (size_t subject = 0; subject != importer.size(); subject++) {
