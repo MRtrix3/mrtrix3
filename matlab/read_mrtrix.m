@@ -115,7 +115,7 @@ image.data = reshape (image.data, image.dim(order));
 image.data = ipermute (image.data, order);
 for i=1:size(order,2)
   if layout{i}(1) == '-'
-    image.data = flipdim(image.data, i);
+    image.data = flip(image.data, i);
   end
 end
 
