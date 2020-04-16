@@ -62,24 +62,37 @@ namespace MR
         +   Argument ("bvals_path").type_file_out();
     }
 
-    Option no_bvalue_scaling_option
-    = Option ("no_bvalue_scaling",
-              "disable scaling of diffusion b-values by the square of the "
-              "corresponding DW gradient norm (see Desciption).");
+    Option bvalue_scaling_option = Option ("bvalue_scaling",
+        "enable or disable scaling of diffusion b-values by the square of the "
+        "corresponding DW gradient norm (see Desciption). "
+        "Valid choices are yes/no, true/false, 0/1 (default: automatic).")
+    +   Argument ("mode").type_bool();
 
-    const char* const no_bvalue_scaling_description (
-      "The -no_bvalue_scaling option is reserved for use in importing malformed "
-      "diffusion gradient tables. Typically, when the input diffusion-weighting "
-      "directions are not of unit norm, they are rescaled to unit norm by MRtrix3, "
-      "with corresponding scaling of the b-values by the squares of these vector "
-      "norms (this is how multi-shell acquisitions are frequently achieved on "
-      "scanner platforms). However in some rare instances, the b-values may be "
-      "correct, despite the vectors not being of unit norm. In such cases, use of "
-      "this option will result in the vectors still being normalised, but the "
-      "corresponding b-value scaling not being applied."
+
+    const char* const bvalue_scaling_description (
+      "The -bvalue_scaling option controls an aspect of the import of "
+      "diffusion gradient tables. When the input diffusion-weighting "
+      "direction vectors have norms that differ substantially from unity, "
+      "the b-values will be scaled by the square of their corresponding "
+      "vector norm (this is how multi-shell acquisitions are frequently "
+      "achieved on scanner platforms). However in some rare instances, the "
+      "b-values may be correct, despite the vectors not being of unit norm "
+      "(or conversely, the b-values may need to be rescaled even though the "
+      "vectors are close to unit norm). This option allows the user to "
+      "control this operation and override MRrtix3's automatic detection."
     );
 
 
+
+    BValueScalingBehaviour get_cmdline_bvalue_scaling_behaviour ()
+    {
+      auto opt = App::get_options ("bvalue_scaling");
+      if (opt.empty())
+        return BValueScalingBehaviour::Auto;
+      if (opt[0][0])
+        return BValueScalingBehaviour::UserOn;
+      return BValueScalingBehaviour::UserOff;
+    }
 
 
     Eigen::MatrixXd parse_DW_scheme (const Header& header)
@@ -231,7 +244,7 @@ namespace MR
 
 
 
-    Eigen::MatrixXd get_DW_scheme (const Header& header, bool bvalue_scaling)
+    Eigen::MatrixXd get_DW_scheme (const Header& header, BValueScalingBehaviour bvalue_scaling)
     {
       try {
         auto grad = get_raw_DW_scheme (header);
@@ -250,33 +263,32 @@ namespace MR
         // based on magnitude of effect of normalisation
         const default_type max_log_scaling_factor = squared_norms.log().abs().maxCoeff();
         const default_type max_scaling_factor = std::exp (max_log_scaling_factor);
-        const bool exceeds_double_precision = max_log_scaling_factor > 1e-14;
         const bool exceeds_single_precision = max_log_scaling_factor > 1e-5;
-        DEBUG ("b-value scaling: max scaling factor = exp(" + str(max_log_scaling_factor) + ") = " + str(max_scaling_factor) + " "
-               + (exceeds_double_precision ? (exceeds_single_precision ? "(requires b-value scaling)" : "(suggests vector direction imprecision)") : "(already at maximal precision)"));
-        if (exceeds_double_precision) {
-          if (bvalue_scaling) {
-            if (exceeds_single_precision) {
-              grad.col(3).array() *= squared_norms;
-              CONSOLE ("b-values scaled by the square of DW gradient norm "
-                       "(maximum scaling factor " + str(max_scaling_factor) + ")");
-            } else {
-              INFO ("b-values not corrected for normalisation of DW vectors as correction lies within limits of single-precision floating point "
-                    "(maximum scaling factor " + str(max_scaling_factor) + ")");
-            }
-          } else if (exceeds_single_precision) {
+        const bool requires_bvalue_scaling = max_log_scaling_factor > 0.01;
+
+        DEBUG ("b-value scaling: max scaling factor = exp("
+            + str(max_log_scaling_factor) + ") = " + str(max_scaling_factor));
+
+        if (( requires_bvalue_scaling && bvalue_scaling == BValueScalingBehaviour::Auto ) ||
+            bvalue_scaling == BValueScalingBehaviour::UserOn ) {
+          grad.col(3).array() *= squared_norms;
+          INFO ("b-values scaled by the square of DW gradient norm "
+              "(maximum scaling factor = " + str(max_scaling_factor) + ")");
+        }
+        else if (bvalue_scaling == BValueScalingBehaviour::UserOff ) {
+          if (requires_bvalue_scaling) {
             CONSOLE ("disabling b-value scaling during normalisation of DW vectors on user request "
-                     "(maximum scaling factor would have been " + str(max_scaling_factor) + ")");
+                "(maximum scaling factor would have been " + str(max_scaling_factor) + ")");
+          } else {
+            WARN ("use of -bvalue_scaling option had no effect: gradient vector norms are all within tolerance "
+                "(maximum scaling factor = " + str(max_scaling_factor) + ")");
           }
-          // write the scheme as interpreted back into the header if normalisation effect is large,
-          // regardless of whether or not b-value scaling was applied
-          if (exceeds_single_precision)
-            set_DW_scheme (const_cast<Header&> (header), grad);
         }
-        if (!bvalue_scaling && !exceeds_single_precision) {
-          WARN ("Use of -no_bvalue_scaling option had no effect: gradient vectors are all of unit norm"
-                + (exceeds_double_precision ? std::string(" (within permissible precision)") : std::string("")));
-        }
+
+        // write the scheme as interpreted back into the header if vector normalisation effect is large,
+        // regardless of whether or not b-value scaling was applied
+        if (exceeds_single_precision)
+          set_DW_scheme (const_cast<Header&> (header), grad);
 
         INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion gradient table");
         return grad;

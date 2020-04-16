@@ -69,13 +69,14 @@ void usage ()
       "either in the MRtrix or FSL format (bvecs/bvals file pair; includes appropriate diffusion "
       "gradient vector reorientation)"
 
-    + "The -dwgrad option exports the diffusion weighting gradient table after it has been "
-      "processed by the MRtrix3 back-end (vectors normalised, b-values scaled by the square "
-      "of the vector norm assuming the -no_bvalue_scaling option is not used). To see the "
-      "raw gradient table information as stored in the image header, i.e. without MRtrix3 "
-      "back-end processing, use \"-property dw_scheme\"."
+    + "The -dwgrad, -export_* and -shell_* options provide (information about) "
+       "the diffusion weighting gradient table after it has been processed by "
+       "the MRtrix3 back-end (vectors normalised, b-values scaled by the square "
+       "of the vector norm, depending on the -bvalue_scaling option). To see the "
+       "see the raw gradient table information as stored in the image header, "
+       "i.e. without MRtrix3 back-end processing, use \"-property dw_scheme\"."
 
-    + DWI::no_bvalue_scaling_description;
+    + DWI::bvalue_scaling_description;
 
   ARGUMENTS
     + Argument ("image", "the input image(s).").allow_multiple().type_image_in();
@@ -96,7 +97,7 @@ void usage ()
     + FieldExportOptions
 
     + DWI::GradImportOptions()
-    + DWI::no_bvalue_scaling_option
+    + DWI::bvalue_scaling_option
 
     + GradExportOptions
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as interpreted by MRtrix3")
@@ -298,7 +299,7 @@ void run ()
     Eigen::MatrixXd grad;
     if (export_grad || check_option_group (GradImportOptions) || dwgrad ||
         shell_bvalues || shell_sizes || shell_indices) {
-      grad = DWI::get_DW_scheme (header, get_options ("no_bvalue_scaling").empty());
+      grad = DWI::get_DW_scheme (header, DWI::get_cmdline_bvalue_scaling_behaviour());
 
       if (dwgrad) {
         Eigen::IOFormat fmt (Eigen::FullPrecision, 0, " ", "\n", "", "", "", "");

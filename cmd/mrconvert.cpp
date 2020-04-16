@@ -79,7 +79,7 @@ void usage ()
     "1, or a single coordinate along that axis must be selected by the user by "
     "using the -coord option. Examples are provided further below."
 
-  + DWI::no_bvalue_scaling_description;
+  + DWI::bvalue_scaling_description;
 
 
   EXAMPLES
@@ -220,7 +220,7 @@ void usage ()
   + DataType::options()
 
   + DWI::GradImportOptions ()
-  + DWI::no_bvalue_scaling_option
+  + DWI::bvalue_scaling_option
 
   + DWI::GradExportOptions()
 
@@ -233,7 +233,7 @@ void usage ()
 
 Eigen::MatrixXd scaled_DW_scheme (const Header& header)
 {
-  static const bool bvalue_scaling = !get_options ("no_bvalue_scaling").size();
+  static const auto bvalue_scaling = DWI::get_cmdline_bvalue_scaling_behaviour();
   try {
     return DWI::get_DW_scheme (header, bvalue_scaling);
   } catch (Exception&) {
