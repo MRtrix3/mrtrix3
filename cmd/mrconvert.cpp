@@ -231,22 +231,12 @@ void usage ()
 
 
 
-Eigen::MatrixXd scaled_DW_scheme (const Header& header)
-{
-  static const auto bvalue_scaling = DWI::get_cmdline_bvalue_scaling_behaviour();
-  try {
-    return DWI::get_DW_scheme (header, bvalue_scaling);
-  } catch (Exception&) {
-    return Eigen::MatrixXd();
-  }
-}
-
 
 
 
 void permute_DW_scheme (Header& H, const vector<int>& axes)
 {
-  auto in = scaled_DW_scheme (H);
+  auto in = DWI::parse_DW_scheme (H);
   if (!in.rows())
     return;
 
@@ -396,15 +386,21 @@ void extract (Header& header_in, Header& header_out, const vector<vector<int>>& 
 void run ()
 {
   Header header_in = Header::open (argument[0]);
+  Eigen::MatrixXd dw_scheme;
+  try {
+    dw_scheme = DWI::get_DW_scheme (header_in, DWI::get_cmdline_bvalue_scaling_behaviour());
+  }
+  catch (Exception& e) {
+    if (get_options ("grad").size() || get_options ("fslgrad").size() || get_options ("bvalue_scaling").size())
+      throw;
+    e.display (2);
+  }
 
   Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
 
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
-
-  if (get_options ("grad").size() || get_options ("fslgrad").size() || get_options ("no_bvalue_scaling").size())
-    DWI::set_DW_scheme (header_out, scaled_DW_scheme (header_in));
 
   if (get_options ("import_pe_table").size() || get_options ("import_pe_eddy").size())
     PhaseEncoding::set_scheme (header_out, PhaseEncoding::get_scheme (header_in));
@@ -484,11 +480,11 @@ void run ()
 
       header_out.size (axis) = pos[axis].size();
       if (axis == 3) {
-        const auto grad = scaled_DW_scheme (header_in);
+        const auto grad = DWI::parse_DW_scheme (header_out);
         if (grad.rows()) {
           if ((ssize_t)grad.rows() != header_in.size(3)) {
             WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
-            header_out.keyval().erase ("dw_scheme");
+            DWI::clear_DW_scheme (header_out);
           } else {
             Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
             for (size_t dir = 0; dir != pos[3].size(); ++dir)
