@@ -812,7 +812,7 @@ namespace MR
       // Concatenate 4D schemes if necessary
       if (axis_to_concat == 3) {
         try {
-          const auto extra_dw = DWI::get_DW_scheme (H);
+          const auto extra_dw = DWI::parse_DW_scheme (H);
           concat_scheme (dw_scheme, extra_dw);
         } catch (Exception&) {
           dw_scheme.resize (0, 0);
