@@ -236,7 +236,12 @@ void header2json (const Header& header, nlohmann::json& json)
 
 void run ()
 {
-  auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
+  auto check_option_group = [](const App::OptionGroup& g) {
+    for (auto o : g)
+      if (get_options (o.id).size())
+        return true;
+    return false;
+  };
 
   const bool export_grad = check_option_group (GradExportOptions);
   const bool export_pe   = check_option_group (PhaseEncoding::ExportOptions);
@@ -305,7 +310,8 @@ void run ()
         Eigen::IOFormat fmt (Eigen::FullPrecision, 0, " ", "\n", "", "", "", "");
         std::cout << grad.format(fmt) << "\n";
       }
-      if (shell_bvalues || shell_sizes || shell_indices) print_shells (grad, shell_bvalues, shell_sizes, shell_indices);
+      if (shell_bvalues || shell_sizes || shell_indices)
+        print_shells (grad, shell_bvalues, shell_sizes, shell_indices);
     }
 
     DWI::export_grad_commandline (header);
