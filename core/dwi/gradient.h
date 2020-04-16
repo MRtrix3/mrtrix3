@@ -37,8 +37,8 @@ namespace MR
     App::OptionGroup GradImportOptions();
     App::OptionGroup GradExportOptions();
 
-    extern App::Option no_bvalue_scaling_option;
-    extern const char* const no_bvalue_scaling_description;
+    extern App::Option bvalue_scaling_option;
+    extern const char* const bvalue_scaling_description;
 
 
 
@@ -220,6 +220,8 @@ namespace MR
 
 
 
+    enum class BValueScalingBehaviour { Auto, UserOn, UserOff };
+    BValueScalingBehaviour get_cmdline_bvalue_scaling_behaviour ();
 
     //! get the fully-interpreted DW gradient encoding matrix
     /*!  find and validate the DW gradient encoding matrix, using the following
@@ -235,7 +237,7 @@ namespace MR
      * - normalise the gradient vectors;
      * - update the header with this information
      */
-    Eigen::MatrixXd get_DW_scheme (const Header& header, bool bvalue_scaling = true);
+    Eigen::MatrixXd get_DW_scheme (const Header& header, BValueScalingBehaviour bvalue_scaling = BValueScalingBehaviour::Auto);
 
 
 
