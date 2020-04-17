@@ -372,11 +372,11 @@ void run()
   auto postfix = [&] (const size_t i) -> std::string { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
 
   {
-    matrix_type betas (num_factors, mask_fixels);
-    matrix_type abs_effect_size (mask_fixels, num_hypotheses);
-    matrix_type std_effect_size (mask_fixels, num_hypotheses);
-    matrix_type stdev (num_vgs, mask_fixels);
-    vector_type cond (mask_fixels);
+    matrix_type betas (num_factors, num_fixels);
+    matrix_type abs_effect_size (num_fixels, num_hypotheses);
+    matrix_type std_effect_size (num_fixels, num_hypotheses);
+    matrix_type stdev (num_vgs, num_fixels);
+    vector_type cond (num_fixels);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
