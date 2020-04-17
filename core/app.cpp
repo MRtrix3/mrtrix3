@@ -1142,10 +1142,10 @@ namespace MR
               count++;
 
           if (count < 1 && ! (OPTIONS[i][j].flags & Optional))
-            throw Exception (std::string ("mandatory option \"") + OPTIONS[i][j].id + "\" must be specified");
+            throw Exception (std::string ("mandatory option \"-") + OPTIONS[i][j].id + "\" must be specified");
 
           if (count > 1 && ! (OPTIONS[i][j].flags & AllowMultiple))
-            throw Exception (std::string ("multiple instances of option \"") +  OPTIONS[i][j].id + "\" are not allowed");
+            throw Exception (std::string ("multiple instances of option \"-") +  OPTIONS[i][j].id + "\" are not allowed");
         }
       }
 
