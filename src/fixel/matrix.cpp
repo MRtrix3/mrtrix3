@@ -157,14 +157,14 @@ namespace MR
               for (const auto& i : in) {
                 assign_pos_of (i).to (fixel_indexer);
                 fixel_indexer.index(3) = 0;
-                const index_type num_connections = fixel_indexer.value();
-                if (num_connections > 0) {
+                const index_type num_fixels = fixel_indexer.value();
+                if (num_fixels > 0) {
                   fixel_indexer.index(3) = 1;
                   const index_type first_index = fixel_indexer.value();
-                  const index_type last_index = first_index + num_connections;
+                  const index_type last_index = first_index + num_fixels;
                   // Note: Streamlines can still be assigned to a fixel that is outside the mask;
                   //   however this will not be permitted to contribute to the matrix
-                  index_type closest_fixel_index = num_connections;
+                  index_type closest_fixel_index = last_index;
                   default_type largest_dp = 0.0;
                   const direction_type dir (i.get_dir().normalized());
                   for (index_type j = first_index; j < last_index; ++j) {
@@ -177,7 +177,7 @@ namespace MR
                         closest_fixel_index = j;
                     }
                   }
-                  if (closest_fixel_index != num_connections && largest_dp > angular_threshold_dp)
+                  if (closest_fixel_index != last_index && largest_dp > angular_threshold_dp)
                     out.push_back (closest_fixel_index);
                 }
               }
