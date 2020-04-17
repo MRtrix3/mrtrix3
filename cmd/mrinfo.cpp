@@ -73,8 +73,8 @@ void usage ()
        "the diffusion weighting gradient table after it has been processed by "
        "the MRtrix3 back-end (vectors normalised, b-values scaled by the square "
        "of the vector norm, depending on the -bvalue_scaling option). To see the "
-       "see the raw gradient table information as stored in the image header, "
-       "i.e. without MRtrix3 back-end processing, use \"-property dw_scheme\"."
+       "raw gradient table information as stored in the image header, i.e. without "
+       "MRtrix3 back-end processing, use \"-property dw_scheme\"."
 
     + DWI::bvalue_scaling_description;
 
