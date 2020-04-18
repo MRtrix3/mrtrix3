@@ -475,13 +475,14 @@ List of MRtrix3 configuration file options
 
 .. option:: NIfTIUseSform
 
-    *default: 0 (false)*
+    *default: 1 (true)*
 
      A boolean value to control whether, in cases where both
      the sform and qform transformations are defined in an
      input NIfTI image, but those transformations differ, the
      sform transformation should be used in preference to the
-     qform matrix (the default behaviour).
+     qform matrix. The default is to use the sform matrix;
+     set to 0 / false to override and instead use the qform.
 
 .. option:: NeedOpenGLCoreProfile
 
