@@ -137,24 +137,6 @@ void usage ()
 
 
 
-
-// TODO Re-think how to manage use of a fixel mask & the reordering of fixel indices that arises from it
-// Options:
-// 1. Remove re-indexing mechanism altogether. Will any matrix operations fail?
-//    Some may be a little slower, but probably not the most expensive parts...
-//    Would need to find the most efficient way to detect and ignore voxels without any data
-// 2. Re-index data matrix in order to remove empty columns, perform GLM computations, then pad out
-//    data in preparation for statistical enhancement
-//    Could this end up being more expensive than just having some unused columns?
-// 3. Within enhancer, utilise index remapper to access, for each internal fixel index,
-//    the external fixel index, grab the relevant row of the connectivity matrix,
-//    convert all entries back to internal fixel index representation,
-//    also grab only the relevant Z-statistics and place them in a contiguous vector
-
-
-
-
-
 template <class VectorType>
 void write_fixel_output (const std::string& filename,
                          const VectorType& data,
@@ -361,7 +343,7 @@ void run()
   output_header.keyval()["cfe_c"] = str(cfe_c);
   output_header.keyval()["cfe_legacy"] = str(cfe_legacy);
 
-  matrix_type data = matrix_type::Zero (importer.size(), mask_fixels);
+  matrix_type data = matrix_type::Zero (importer.size(), num_fixels);
   {
     ProgressBar progress (std::string ("Loading fixel data (no smoothing)"), importer.size());
     for (size_t subject = 0; subject != importer.size(); subject++) {
@@ -390,11 +372,11 @@ void run()
   auto postfix = [&] (const size_t i) -> std::string { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
 
   {
-    matrix_type betas (num_factors, mask_fixels);
-    matrix_type abs_effect_size (mask_fixels, num_hypotheses);
-    matrix_type std_effect_size (mask_fixels, num_hypotheses);
-    matrix_type stdev (num_vgs, mask_fixels);
-    vector_type cond (mask_fixels);
+    matrix_type betas (num_factors, num_fixels);
+    matrix_type abs_effect_size (num_fixels, num_hypotheses);
+    matrix_type std_effect_size (num_fixels, num_hypotheses);
+    matrix_type stdev (num_vgs, num_fixels);
+    vector_type cond (num_fixels);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
