@@ -28,15 +28,15 @@ it provides a back-end to simplify a large number of operations, many of
 which will be invisible to the end-user. Specifically, *MRtrix3* features:
 
 -  a consistent :ref:`command-line interface <command-line-interface>`, with
-   inline documentation for each command
+   inline documentation for each command;
 
 -  universal import/export capabilities when 
-   :ref:`accessing image data <image_handling>` across all *MRtrix3* applications.
+   :ref:`accessing image data <image_handling>` across all *MRtrix3* applications;
 
 -  :ref:`multi_file_image_file_formats` to load multiple images as a 
-   single multi-dimensional dataset
+   single multi-dimensional dataset;
 
--  efficient use of :ref:`unix_pipelines` for complex workflows
+-  efficient use of :ref:`unix_pipelines` for complex workflows;
 
 -  high performance on modern multi-core systems, with multi-threading
    used extensively throughout *MRtrix3*;
