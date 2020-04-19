@@ -25,17 +25,6 @@ List of MRtrix3 configuration file options
      Specifies the difference between b-values necessary for image
      volumes to be classified as belonging to different shells.
 
-.. option:: BValueScaling
-
-    *default: 1 (true)*
-
-     Specifies whether the b-values should be scaled by the squared
-     norm of the gradient vectors when loading a DW gradient scheme.
-     This is commonly required to correctly interpret images acquired
-     on scanners that nominally only allow a single b-value, as the
-     common workaround is to scale the gradient vectors to modulate
-     the actual b-value.
-
 .. option:: BZeroThreshold
 
     *default: 10.0*
