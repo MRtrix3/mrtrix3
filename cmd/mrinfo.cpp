@@ -67,7 +67,16 @@ void usage ()
 
     + "The command can also write the diffusion gradient table from a single input image to file; "
       "either in the MRtrix or FSL format (bvecs/bvals file pair; includes appropriate diffusion "
-      "gradient vector reorientation)";
+      "gradient vector reorientation)"
+
+    + "The -dwgrad, -export_* and -shell_* options provide (information about) "
+       "the diffusion weighting gradient table after it has been processed by "
+       "the MRtrix3 back-end (vectors normalised, b-values scaled by the square "
+       "of the vector norm, depending on the -bvalue_scaling option). To see the "
+       "raw gradient table information as stored in the image header, i.e. without "
+       "MRtrix3 back-end processing, use \"-property dw_scheme\"."
+
+    + DWI::bvalue_scaling_description;
 
   ARGUMENTS
     + Argument ("image", "the input image(s).").allow_multiple().type_image_in();
@@ -87,16 +96,11 @@ void usage ()
 
     + FieldExportOptions
 
-    + GradImportOptions
-    +   Option ("raw_dwgrad",
-        "do not modify the gradient table from what was found in the image headers. This skips the "
-        "validation steps normally performed within MRtrix applications (i.e. do not verify that "
-        "the number of entries in the gradient table matches the number of volumes in the image, "
-        "do not scale b-values by gradient norms, do not normalise gradient vectors)")
+    + DWI::GradImportOptions()
+    + DWI::bvalue_scaling_option
 
     + GradExportOptions
-    +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
-          "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
+    +   Option ("dwgrad", "the diffusion-weighting gradient table, as interpreted by MRtrix3")
     +   Option ("shell_bvalues", "list the average b-value of each shell")
     +   Option ("shell_sizes", "list the number of volumes in each shell")
     +   Option ("shell_indices", "list the image volumes attributed to each b-value shell")
@@ -144,9 +148,9 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_shells (const Header& header, const bool shell_bvalues, const bool shell_sizes, const bool shell_indices)
+void print_shells (const Eigen::MatrixXd& grad, const bool shell_bvalues, const bool shell_sizes, const bool shell_indices)
 {
-  DWI::Shells dwshells (DWI::parse_DW_scheme (header));
+  DWI::Shells dwshells (grad);
   if (shell_bvalues) {
     for (size_t i = 0; i < dwshells.count(); i++)
       std::cout << dwshells[i].get_mean() << " ";
@@ -232,7 +236,12 @@ void header2json (const Header& header, nlohmann::json& json)
 
 void run ()
 {
-  auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
+  auto check_option_group = [](const App::OptionGroup& g) {
+    for (auto o : g)
+      if (get_options (o.id).size())
+        return true;
+    return false;
+  };
 
   const bool export_grad = check_option_group (GradExportOptions);
   const bool export_pe   = check_option_group (PhaseEncoding::ExportOptions);
@@ -265,8 +274,7 @@ void run ()
   const bool dwgrad        = get_options("dwgrad")        .size();
   const bool shell_bvalues = get_options("shell_bvalues") .size();
   const bool shell_sizes   = get_options("shell_sizes")   .size();
-  const bool shell_indices = get_options("shell_indices")   .size();
-  const bool raw_dwgrad    = get_options("raw_dwgrad")    .size();
+  const bool shell_indices = get_options("shell_indices") .size();
   const bool petable       = get_options("petable")       .size();
 
   const bool print_full_header = !(format || ndim || size || spacing || datatype || strides ||
@@ -276,46 +284,47 @@ void run ()
       json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
-    try {
-      auto header = Header::open (argument[i]);
+    const auto header = Header::open (argument[i]);
 
-      if (raw_dwgrad)
-        DWI::set_DW_scheme (header, DWI::get_DW_scheme (header));
-      else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shell_bvalues || shell_sizes || shell_indices)
-        DWI::set_DW_scheme (header, DWI::get_valid_DW_scheme (header, true));
+    if (name)       std::cout << header.name() << "\n";
+    if (format)     std::cout << header.format() << "\n";
+    if (ndim)       std::cout << header.ndim() << "\n";
+    if (size)       print_dimensions (header);
+    if (spacing)    print_spacing (header);
+    if (datatype)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
+    if (strides)    print_strides (header);
+    if (offset)     std::cout << header.intensity_offset() << "\n";
+    if (multiplier) std::cout << header.intensity_scale() << "\n";
+    if (transform)  print_transform (header);
+    if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
 
-      if (name)       std::cout << header.name() << "\n";
-      if (format)     std::cout << header.format() << "\n";
-      if (ndim)       std::cout << header.ndim() << "\n";
-      if (size)       print_dimensions (header);
-      if (spacing)    print_spacing (header);
-      if (datatype)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
-      if (strides)    print_strides (header);
-      if (offset)     std::cout << header.intensity_offset() << "\n";
-      if (multiplier) std::cout << header.intensity_scale() << "\n";
-      if (transform)  print_transform (header);
-      if (dwgrad)     std::cout << DWI::get_DW_scheme (header) << "\n";
-      if (shell_bvalues || shell_sizes || shell_indices) print_shells (header, shell_bvalues, shell_sizes, shell_indices);
-      if (petable)    std::cout << PhaseEncoding::get_scheme (header) << "\n";
+    for (size_t n = 0; n < properties.size(); ++n)
+      print_properties (header, properties[n][0]);
 
-      for (size_t n = 0; n < properties.size(); ++n)
-        print_properties (header, properties[n][0]);
+    Eigen::MatrixXd grad;
+    if (export_grad || check_option_group (GradImportOptions) || dwgrad ||
+        shell_bvalues || shell_sizes || shell_indices) {
+      grad = DWI::get_DW_scheme (header, DWI::get_cmdline_bvalue_scaling_behaviour());
 
-      DWI::export_grad_commandline (header);
-      PhaseEncoding::export_commandline (header);
-
-      if (json_keyval)
-        File::JSON::write (header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));
-
-      if (json_all)
-        header2json (header, *json_all);
-
-      if (print_full_header)
-        std::cout << header.description (get_options ("all").size());
+      if (dwgrad) {
+        Eigen::IOFormat fmt (Eigen::FullPrecision, 0, " ", "\n", "", "", "", "");
+        std::cout << grad.format(fmt) << "\n";
+      }
+      if (shell_bvalues || shell_sizes || shell_indices)
+        print_shells (grad, shell_bvalues, shell_sizes, shell_indices);
     }
-    catch (CancelException& e) {
-      e.display(-1);
-    }
+
+    DWI::export_grad_commandline (header);
+    PhaseEncoding::export_commandline (header);
+
+    if (json_keyval)
+      File::JSON::write (header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));
+
+    if (json_all)
+      header2json (header, *json_all);
+
+    if (print_full_header)
+      std::cout << header.description (get_options ("all").size());
   }
 
   if (json_keyval) {
@@ -331,5 +340,4 @@ void run ()
     File::OFStream out (opt[0][0]);
     out << json_all->dump(4) << "\n";
   }
-
 }

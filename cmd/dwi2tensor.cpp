@@ -204,7 +204,7 @@ inline Processor<MASKType, B0Type, DKTType, PredictType> processor (const Eigen:
 void run ()
 {
   auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_valid_DW_scheme (dwi);
+  auto grad = DWI::get_DW_scheme (dwi);
 
   Image<bool>* mask = nullptr;
   auto opt = get_options ("mask");
