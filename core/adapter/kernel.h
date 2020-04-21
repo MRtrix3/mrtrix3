@@ -19,9 +19,10 @@
 
 #include <array>
 
-#include "math/math.h"
 #include "types.h"
 #include "adapter/base.h"
+#include "filter/kernels.h"
+#include "math/math.h"
 
 namespace MR
 {
@@ -35,7 +36,9 @@ namespace MR
       // TODO More advanced kernel class?
       // Kernel extent may be different for different axes
 
-      using kernel_type = vector<default_type>;
+      //using kernel_type = vector<default_type>;
+      //using kernel_type = MR::Filter::Kernels::kernel_type;
+      //using kernel_triplet = MR::Filter::Kernels::kernel_triplet;
 
 
       template <class AdapterType, class ImageType>
@@ -49,11 +52,10 @@ namespace MR
           Base (const ImageType& parent) :
               base_type (parent) { }
 
-          template <class Cont>
-          Base (const ImageType& parent, const Cont& kernel_sizes) :
+          Base (const ImageType& parent, const size_t kernel_size) :
               base_type (parent)
           {
-            configure_kernel (kernel_sizes);
+            configure_kernel (kernel_size);
           }
 
 
@@ -83,7 +85,7 @@ namespace MR
             assert (kernel_sizes.size() == 3);
             for (size_t axis = 0; axis != 3; ++axis) {
               assert (kernel_sizes[axis] % 2);
-              kernel_halfwidths[axis] = kernel_sizes[axis]-1 / 2;
+              kernel_halfwidths[axis] = (kernel_sizes[axis]-1) / 2;
             }
             data = data_type::Zero (kernel_sizes[0] * kernel_sizes[1] * kernel_sizes[2]);
           }
@@ -91,7 +93,9 @@ namespace MR
           template <>
           void configure_kernel (const size_t kernel_size)
           {
-            std::array<size_t, 3> kernel_sizes { kernel_size, kernel_size, kernel_size };
+            // FIXME Move kernel axis sizes to kernel class
+            const size_t axis_size = round (std::cbrt (kernel_size));
+            std::array<size_t, 3> kernel_sizes { axis_size, axis_size, axis_size };
             configure_kernel (kernel_sizes);
           }
 
@@ -109,13 +113,9 @@ namespace MR
           Single (const ImageType& parent) :
               base_type (parent) { }
 
-          Single (const ImageType& parent, const kernel_type& k) :
-              base_type (parent, k.size()),
-              kernel (data_type::Zero (k.size()))
-          {
-            for (size_t i = 0; i != k.size(); ++i)
-              kernel[i] = static_cast<value_type>(k[i]);
-          }
+          Single (const ImageType& parent, const Filter::Kernels::kernel_type& k) :
+              base_type (parent, size_t(k.size())),
+              kernel (k.cast<value_type> ()) { }
 
           value_type value()
           {
@@ -124,18 +124,16 @@ namespace MR
             return kernel.dot (base_type::data);
           }
 
-          void set_kernel (const kernel_type& k)
+          void set_kernel (const Filter::Kernels::kernel_type& k)
           {
             // No resizing permitted within this version of the function
             assert (k.size() == base_type::data.size());
             base_type::configure_kernel (k.size());
-            kernel = data_type::Zero (k.size());
-            for (size_t i = 0; i != k.size(); ++i)
-              kernel[i] = static_cast<value_type>(k[i]);
+            kernel = k.cast<value_type> ();
           }
 
           template <class Cont>
-          void set_kernel (const kernel_type& k, const Cont& kernel_sizes)
+          void set_kernel (const Filter::Kernels::kernel_type& k, const Cont& kernel_sizes)
           {
             base_type::configure_kernel (kernel_sizes);
             set_kernel (k);
@@ -160,22 +158,17 @@ namespace MR
           using value_type = typename base_type::value_type;
           using data_type = typename base_type::data_type;
 
-          Triplet (const ImageType& parent, const std::array<kernel_type, 3>& k) :
-              base_type (parent, k[0].size()),
-              kernels ({ data_type::Zero (k[0].size()),
-                         data_type::Zero (k[1].size()),
-                         data_type::Zero (k[2].size()) }),
+          Triplet (const ImageType& parent, const Filter::Kernels::kernel_triplet& k) :
+              base_type (parent, size_t(k[0].size())),
+              kernels ({ k[0].cast<value_type> (),
+                         k[1].cast<value_type> (),
+                         k[2].cast<value_type> () }),
               kernel_index (0),
               dirty (true)
           {
             const size_t kernel_size = k[0].size();
             assert (k[1].size() == kernel_size);
             assert (k[2].size() == kernel_size);
-            for (size_t i = 0; i != kernel_size; ++i) {
-              kernels[0][i] = static_cast<value_type>(k[0][i]);
-              kernels[1][i] = static_cast<value_type>(k[1][i]);
-              kernels[2][i] = static_cast<value_type>(k[2][i]);
-            }
           }
 
           FORCE_INLINE size_t ndim () const { return parent_.ndim() + 1; }
@@ -232,20 +225,15 @@ namespace MR
           using value_type = typename base_type::value_type;
           using data_type = typename base_type::data_type;
 
-          TripletNorm (const ImageType& parent, const std::array<kernel_type, 3>& k) :
-              base_type (parent, k[0].size()),
-              kernels ({ data_type::Zero (k[0].size()),
-                         data_type::Zero (k[1].size()),
-                         data_type::Zero (k[2].size()) })
+          TripletNorm (const ImageType& parent, const Filter::Kernels::kernel_triplet& k) :
+              base_type (parent, size_t(k[0].size())),
+              kernels ({ k[0].cast<value_type> (),
+                         k[1].cast<value_type> (),
+                         k[2].cast<value_type> () })
           {
             const size_t kernel_size = k[0].size();
             assert (k[1].size() == kernel_size);
             assert (k[2].size() == kernel_size);
-            for (size_t i = 0; i != kernel_size; ++i) {
-              kernels[0][i] = static_cast<value_type>(k[0][i]);
-              kernels[1][i] = static_cast<value_type>(k[1][i]);
-              kernels[2][i] = static_cast<value_type>(k[2][i]);
-            }
           }
 
           value_type value()

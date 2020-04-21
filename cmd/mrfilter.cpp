@@ -36,8 +36,8 @@
 using namespace MR;
 using namespace App;
 
-enum filter_t {            BOXBLUR,   FFT,   LAPLACIAN3D,   MEDIAN,   SHARPEN,   SOBEL,   SOBELFELDMAN,   ZCLEAN };
-const char* filters[] = { "boxblur", "fft", "laplacian3d", "median", "sharpen", "sobel", "sobelfeldman", "zclean", nullptr };
+enum filter_t {            BOXBLUR,   FFT,   LAPLACIAN3D,   MEDIAN,   UNSHARPMASK,   SOBEL,   SOBELFELDMAN,   ZCLEAN };
+const char* filters[] = { "boxblur", "fft", "laplacian3d", "median", "unsharpmask", "sobel", "sobelfeldman", "zclean", nullptr };
 // TODO Remaining: gradient, laplacian1d, smooth
 
 //const char* filters[] = { "fft", "gradient", "laplacian1", "laplacian2", "median", "normalise", "sharpen", "smooth", "zclean", nullptr };
@@ -236,7 +236,7 @@ void run ()
 
     case BOXBLUR:
     case LAPLACIAN3D:
-    case SHARPEN:
+    case UNSHARPMASK:
     {
       Image<float> input (Image<float>::open (argument[0]).with_direct_io());
       Adapter::EdgeExtend<Image<float>> edge_adapter (input);
@@ -246,18 +246,18 @@ void run ()
           {
             auto extent = parse_extent();
             if (extent.size() == 1) {
-              kernel.resize (Math::pow3 (extent[0]), 1.0);
+              kernel = Filter::Kernels::kernel_type::Constant (Math::pow3 (extent[0]), 1.0 / default_type (Math::pow3 (extent[0])));
             } else if (extent.size() == 3) {
               if (extent[1] != extent[0] || extent[2] != extent[0])
                 throw Exception ("Non-cubic boxblur kernels not yet supported");
-              kernel.resize (Math::pow3 (extent[0]), 1.0);
+              kernel = Filter::Kernels::kernel_type::Constant (Math::pow3 (extent[0]), 1.0 / default_type (Math::pow3 (extent[0])));
             } else {
-              kernel = Filter::Kernels::boxblur;
+              kernel = Filter::Kernels::boxblur (3);
             }
           }
           break;
-        case LAPLACIAN3D: kernel = Filter::Kernels::laplacian3d; break;
-        case SHARPEN: kernel = Filter::Kernels::sharpen; break;
+        case LAPLACIAN3D: kernel = Filter::Kernels::laplacian3d(); break;
+        case UNSHARPMASK: kernel = Filter::Kernels::unsharp_mask(1.0); break;
         default: assert (0);
       }
       Adapter::Kernel::Single<decltype(edge_adapter)> kernel_adapter (edge_adapter, kernel);
@@ -290,8 +290,8 @@ void run ()
       Adapter::EdgeExtend<Image<float>> edge_adapter (input);
       std::array<Filter::Kernels::kernel_type, 3> kernels;
       switch (filter_index) {
-        case SOBEL:        kernels = Filter::Kernels::sobel;         break;
-        case SOBELFELDMAN: kernels = Filter::Kernels::sobel_feldman; break;
+        case SOBEL:        kernels = Filter::Kernels::sobel();         break;
+        case SOBELFELDMAN: kernels = Filter::Kernels::sobel_feldman(); break;
         default: assert (0);
       }
       if (get_options ("magnitude").size()) {

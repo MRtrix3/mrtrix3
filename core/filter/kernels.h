@@ -29,15 +29,25 @@ namespace MR
     {
 
 
-      using kernel_type = vector<default_type>;
+      // TODO More advanced kernel class that internally stores kernel half-widths
+      using kernel_type = Eigen::Matrix<default_type, Eigen::Dynamic, 1>;
+      using kernel_triplet = std::array<kernel_type, 3>;
 
-      extern const kernel_type identity;
-      extern const kernel_type boxblur;
-      extern const kernel_type laplacian3d;
-      extern const kernel_type sharpen;
+      kernel_type identity (const size_t size);
 
-      extern const std::array<kernel_type, 3> sobel;
-      extern const std::array<kernel_type, 3> sobel_feldman;
+      kernel_type boxblur (const size_t size);
+      kernel_type boxblur (const vector<int>& size);
+
+      kernel_type laplacian3d();
+      kernel_type unsharp_mask (const default_type force);
+
+      kernel_triplet sobel();
+      kernel_triplet sobel_feldman();
+
+      kernel_triplet farid (const size_t order, const size_t size);
+
+      extern const kernel_triplet farid_1st_3x3x3;
+      extern const kernel_triplet farid_1st_5x5x5;
 
 
     }

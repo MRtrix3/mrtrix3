@@ -25,125 +25,181 @@ namespace MR
 
 
 
-       const kernel_type boxblur { 1.0/27.0, 1.0/27.0, 1.0/27.0,
-                                   1.0/27.0, 1.0/27.0, 1.0/27.0,
-                                   1.0/27.0, 1.0/27.0, 1.0/27.0,
-
-                                   1.0/27.0, 1.0/27.0, 1.0/27.0,
-                                   1.0/27.0, 1.0/27.0, 1.0/27.0,
-                                   1.0/27.0, 1.0/27.0, 1.0/27.0,
-
-                                   1.0/27.0, 1.0/27.0, 1.0/27.0,
-                                   1.0/27.0, 1.0/27.0, 1.0/27.0,
-                                   1.0/27.0, 1.0/27.0, 1.0/27.0 };
+      kernel_type identity (const size_t size)
+      {
+        assert (size % 2);
+        const size_t numel = Math::pow3 (size);
+        kernel_type result (kernel_type::Zero (numel));
+        result[(numel-1) / 2] = 1;
+        return result;
+      }
 
 
 
-       const kernel_type laplacian3d { 2.0/26.0,   3.0/26.0, 2.0/26.0,
-                                       3.0/26.0,   6.0/26.0, 3.0/26.0,
-                                       2.0/26.0,   3.0/26.0, 2.0/26.0,
-
-                                       3.0/26.0,   6.0/26.0, 3.0/26.0,
-                                       6.0/26.0, -88.0/26.0, 6.0/26.0,
-                                       3.0/26.0,   6.0/26.0, 3.0/26.0,
-
-                                       2.0/26.0,   3.0/26.0, 2.0/26.0,
-                                       3.0/26.0,   6.0/26.0, 3.0/26.0,
-                                       2.0/26.0,   3.0/26.0, 2.0/26.0 };
-
-
-
-       const kernel_type sharpen {  0,  0,  0,
-                                    0, -1,  0,
-                                    0,  0,  0,
-
-                                    0, -1,  0,
-                                   -1,  7, -1,
-                                    0, -1,  0,
-
-                                    0,  0,  0,
-                                    0, -1,  0,
-                                    0,  0,  0 };
+      kernel_type boxblur (const size_t size)
+      {
+        assert (size % 2);
+        return boxblur ({int(size), int(size), int(size)});
+      }
+      kernel_type boxblur (const vector<int>& sizes)
+      {
+        assert (sizes.size() == 3);
+        for (auto i : sizes)
+          assert (i % 2);
+        const size_t numel = sizes[0] * sizes[1] * sizes[2];
+        const default_type value = 1.0 / default_type(numel);
+        return kernel_type::Constant (numel, value);
+      }
 
 
 
-       const std::array<kernel_type, 3> sobel {{
+      kernel_type laplacian3d()
+      {
+        const default_type m = 1.0/26.0;
+        kernel_type result (27);
+        result << 2.0*m,   3.0*m, 2.0*m,
+                  3.0*m,   6.0*m, 3.0*m,
+                  2.0*m,   3.0*m, 2.0*m,
 
-              { -1.0/16.0,       0.0,  1.0/16.0,
-                -2.0/16.0,       0.0,  2.0/16.0,
-                -1.0/16.0,       0.0,  1.0/16.0,
+                  3.0*m,   6.0*m, 3.0*m,
+                  6.0*m, -88.0*m, 6.0*m,
+                  3.0*m,   6.0*m, 3.0*m,
 
-                -2.0/16.0,       0.0,  2.0/16.0,
-                -4.0/16.0,       0.0,  4.0/16.0,
-                -2.0/16.0,       0.0,  2.0/16.0,
-
-                -1.0/16.0,       0.0,  1.0/16.0,
-                -2.0/16.0,       0.0,  2.0/16.0,
-                -1.0/16.0,       0.0,  1.0/16.0 },
-
-              { -1.0/16.0, -2.0/16.0, -1.0/16.0,
-                      0.0,       0.0,       0.0,
-                 1.0/16.0,  2.0/16.0,  1.0/16.0,
-
-                -2.0/16.0, -4.0/16.0, -2.0/16.0,
-                      0.0,       0.0,       0.0,
-                 2.0/16.0,  4.0/16.0,  2.0/16.0,
-
-                -1.0/16.0, -2.0/16.0, -1.0/16.0,
-                      0.0,       0.0,       0.0,
-                 1.0/16.0,  2.0/16.0,  1.0/16.0 },
-
-              { -1.0/16.0, -2.0/16.0, -1.0/16.0,
-                -2.0/16.0, -4.0/16.0, -2.0/16.0,
-                -1.0/16.0, -2.0/16.0, -1.0/16.0,
-
-                      0.0,       0.0,       0.0,
-                      0.0,       0.0,       0.0,
-                      0.0,       0.0,       0.0,
-
-                 1.0/16.0,  2.0/16.0,  1.0/16.0,
-                 2.0/16.0,  4.0/16.0,  2.0/16.0,
-                 1.0/16.0,  2.0/16.0,  1.0/16.0 } }};
+                  2.0*m,   3.0*m, 2.0*m,
+                  3.0*m,   6.0*m, 3.0*m,
+                  2.0*m,   3.0*m, 2.0*m;
+        return result;
+      }
 
 
 
-       const std::array<kernel_type, 3> sobel_feldman {{
+      kernel_type unsharp_mask (const default_type force)
+      {
+        kernel_type result (kernel_type::Zero (27));
+        result[13] = 1.0 + (4.0 * force);
+        result[4] = result[10] = result[12] = result[14] = result[16] = result[22] = -1.0 * force;
+        return result;
+      }
 
-              { -3.0/64.0,        0.0,  3.0/64.0,
-               -10.0/64.0,        0.0, 10.0/64.0,
-                -3.0/64.0,        0.0,  3.0/64.0,
 
-                -6.0/64.0,        0.0,  6.0/64.0,
-               -20.0/64.0,        0.0, 20.0/64.0,
-                -6.0/64.0,        0.0,  6.0/64.0,
 
-                -3.0/64.0,        0.0,  3.0/64.0,
-               -10.0/64.0,        0.0, 10.0/64.0,
-                -3.0/64.0,        0.0,  3.0/64.0 },
 
-              { -3.0/64.0, -10.0/64.0, -3.0/64.0,
-                      0.0,        0.0,       0.0,
-                 3.0/64.0,  10.0/64.0,  3.0/64.0,
+      namespace
+      {
+        kernel_type aTb (const kernel_type& a, const kernel_type& b)
+        {
+          kernel_type result (a.size() * b.size());
+          ssize_t counter = 0;
+          for (ssize_t ib = 0; ib != b.size(); ++ib) {
+            for (ssize_t ia = 0; ia != a.size(); ++ia)
+              result[counter++] = a[ia] * b[ib];
+          }
+          return result;
+        }
 
-                -6.0/64.0, -20.0/64.0, -6.0/64.0,
-                      0.0,        0.0,       0.0,
-                 6.0/64.0,  20.0/64.0,  6.0/64.0,
+        kernel_triplet make_triplet (const kernel_type& prefilter, const kernel_type derivative)
+        {
+          return { aTb (aTb (derivative, prefilter), prefilter),
+                   aTb (aTb (prefilter, derivative), prefilter),
+                   aTb (aTb (prefilter, prefilter), derivative) };
+        }
+      }
 
-                -3.0/64.0, -10.0/64.0, -3.0/64.0,
-                      0.0,        0.0,       0.0,
-                 3.0/64.0,  10.0/64.0,  3.0/64.0 },
 
-              { -3.0/64.0, -10.0/64.0, -3.0/64.0,
-                -6.0/64.0, -20.0/64.0, -6.0/64.0,
-                -3.0/64.0, -10.0/64.0, -3.0/64.0,
 
-                      0.0,        0.0,       0.0,
-                      0.0,        0.0,       0.0,
-                      0.0,        0.0,       0.0,
 
-                 3.0/64.0,  10.0/64.0,  3.0/64.0,
-                 6.0/64.0,  20.0/64.0,  6.0/64.0,
-                 3.0/64.0,  10.0/64.0,  3.0/64.0 } }};
+      kernel_triplet sobel()
+      {
+        kernel_type triangle (3);
+        triangle << 0.25, 0.50, 0.25;
+        kernel_type edge (3);
+        edge << -1.00, 0.00, 1.00;
+
+        return make_triplet (triangle, edge);
+      }
+
+
+
+      kernel_triplet sobel_feldman()
+      {
+        kernel_type triangle (3);
+        triangle << 3.0/16.0, 10.0/16.0, 3.0/16.0;
+        kernel_type edge (3);
+        edge << -1.00, 0.00, 1.00;
+
+        return make_triplet (triangle, edge);
+      }
+
+
+
+      kernel_triplet farid (const size_t order, const size_t size)
+      {
+        assert (order > 0);
+
+        assert (size%2);
+        if (order <= (size-1) / 2)
+          throw Exception ("Farid derivative order " + str(order) + " not possible with kernel size " + str(size));
+        if (order > 3)
+          throw Exception ("Farid derivatives not available for orders greater than 3");
+
+        kernel_type prefilter (size), derivative (size);
+        switch (size) {
+          case 3:
+            prefilter  <<  0.229789,  0.540242,  0.229789;
+            derivative << -0.425287,  0.000000,  0.425287;
+            break;
+          case 5:
+            switch (order) {
+              case 1:
+                prefilter  <<  0.037659,  0.249153,  0.426375,  0.249153,  0.037659;
+                derivative << -0.109604, -0.276691,  0.000000,  0.276691,  0.109604;
+                break;
+              case 2:
+                prefilter  <<  0.030320,  0.249724,  0.439911,  0.249724,  0.030320;
+                derivative <<  0.232905,  0.002668, -0.471147,  0.002668,  0.232905;
+                break;
+            }
+            break;
+          case 7:
+            if (order <= 2)
+              prefilter << 0.004711, 0.069321, 0.245410, 0.361117, 0.245410, 0.069321, 0.004711;
+            else
+              prefilter << 0.003992, 0.067088, 0.246217, 0.365406, 0.246217, 0.067088, 0.003992;
+            switch (order) {
+              case 1:
+                derivative << -0.018708, -0.125376, -0.193091,  0.000000,  0.193091,  0.125376,  0.018708;
+                break;
+              case 2:
+                derivative <<  0.055336,  0.137778, -0.056554, -0.273118, -0.056554,  0.137778,  0.055336;
+                break;
+              case 3:
+                derivative << -0.111680,  0.012759,  0.336539,  0.000000, -0.336539, -0.012759,  0.111680;
+                break;
+              default: assert (0);
+            }
+            break;
+          case 9:
+            prefilter << 0.000721, 0.015486, 0.090341, 0.234494, 0.317916, 0.234494, 0.090341, 0.015486, 0.000721;
+            switch (order) {
+              case 1:
+                derivative << -0.003059, -0.035187, -0.118739, -0.143928,  0.000000,  0.143928,  0.118739,  0.035187,  0.003059;
+                break;
+              case 2:
+                derivative <<  0.010257,  0.061793,  0.085598, -0.061661, -0.191974, -0.061661,  0.085598,  0.061793,  0.010257;
+                break;
+              case 3:
+                derivative << -0.027205, -0.065929,  0.053614,  0.203718,  0.000000, -0.203718, -0.053614,  0.065929, -0.027205;
+                break;
+              default:
+                assert (0);
+            }
+            break;
+          default:
+            throw Exception ("Farid kernel only supported up to kernel size 9");
+        }
+
+        return make_triplet (prefilter, derivative);
+      }
 
 
 
