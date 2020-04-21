@@ -37,25 +37,7 @@ and optionally:
     - an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant
       graphics card and corresponding software driver - thankfully OpenGL 3.3
       is supported across the entire macOS range with OS versions >= 10.9.
-    
-.. NOTE:: 
 
-    If you currently do not plan to contribute to the *MRtrix3* code, the most
-    convenient way to install MRtrix3 from source on macOS is to install it via homebrew. 
- 
-    - If you do not have homebrew installed, you can install it via::
-
-        /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-    
-    - You need to add the MRtrix3 tap to homebrew: ``brew tap MRtrix3/mrtrix3``
-    
-    - You can now install the latest version of MRtrix3 with: ``brew install mrtrix3``
-    
-    This should be all you need to do. For all installation options type ``brew
-    info mrtrix3``. MRtrix3 will get upgraded when you upgrade all homebrew
-    packages ``brew update && brew upgrade``. If you want to avoid upgrading
-    MRtrix3 the next time you upgrade homebrew you can do so with ``brew pin
-    mrtrix3``.
 
 Install Dependencies
 --------------------
