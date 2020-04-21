@@ -18,13 +18,13 @@
 #define __dwi_gradient_h__
 
 #include "app.h"
-#include "file/path.h"
-#include "file/config.h"
 #include "header.h"
+#include "dwi/shells.h"
+#include "file/config.h"
+#include "file/path.h"
 #include "math/condition_number.h"
 #include "math/sphere.h"
 #include "math/SH.h"
-#include "dwi/shells.h"
 
 
 namespace MR
