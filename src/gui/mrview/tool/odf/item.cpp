@@ -18,7 +18,6 @@
 
 #include "header.h"
 #include "dwi/gradient.h"
-#include "dwi/shells.h"
 #include "math/SH.h"
 
 namespace MR

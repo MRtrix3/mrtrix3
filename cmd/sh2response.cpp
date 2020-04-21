@@ -16,18 +16,16 @@
 
 #include "command.h"
 #include "exception.h"
+#include "image.h"
 #include "mrtrix.h"
 #include "progressbar.h"
-
-#include "image.h"
 #include "algo/loop.h"
-
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "math/math.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 
-#include "dwi/gradient.h"
-#include "dwi/shells.h"
 
 
 

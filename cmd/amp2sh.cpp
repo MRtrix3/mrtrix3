@@ -18,10 +18,10 @@
 #include "image.h"
 #include "phase_encoding.h"
 #include "progressbar.h"
-#include "math/SH.h"
+#include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "algo/threaded_loop.h"
+#include "math/SH.h"
 
 
 using namespace MR;
