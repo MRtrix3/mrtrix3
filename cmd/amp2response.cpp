@@ -21,15 +21,14 @@
 #include "image.h"
 #include "image_helpers.h"
 #include "types.h"
-
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "math/constrained_least_squares.h"
 #include "math/rng.h"
 #include "math/sphere.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 
-#include "dwi/gradient.h"
-#include "dwi/shells.h"
 
 
 

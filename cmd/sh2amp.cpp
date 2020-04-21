@@ -17,11 +17,12 @@
 #include <sstream>
 
 #include "command.h"
-#include "math/SH.h"
 #include "image.h"
-#include "math/sphere.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "math/sphere.h"
+#include "math/SH.h"
+
 #include "dwi/directions/file.h"
 
 

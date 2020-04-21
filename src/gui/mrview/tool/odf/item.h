@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "dwi/shells.h"
+
 #include "dwi/directions/set.h"
 #include "gui/dwi/renderer.h"
 #include "gui/mrview/gui_image.h"

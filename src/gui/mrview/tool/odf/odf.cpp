@@ -17,16 +17,17 @@
 #include "mrtrix.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+
+#include "gui/lighting_dock.h"
 #include "dwi/directions/set.h"
 #include "gui/dialog/file.h"
-#include "gui/lighting_dock.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
+#include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/odf/item.h"
 #include "gui/mrview/tool/odf/model.h"
 #include "gui/mrview/tool/odf/odf.h"
 #include "gui/mrview/tool/odf/preview.h"
-#include "gui/mrview/mode/base.h"
 
 namespace MR
 {

@@ -18,9 +18,10 @@
 #include "progressbar.h"
 #include "header.h"
 #include "dwi/gradient.h"
-#include "math/sphere.h"
-#include "dwi/directions/file.h"
 #include "dwi/shells.h"
+#include "math/sphere.h"
+
+#include "dwi/directions/file.h"
 
 
 
