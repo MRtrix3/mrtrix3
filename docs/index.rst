@@ -1,18 +1,61 @@
 Welcome to the *MRtrix3* user documentation!
 ============================================
 
-*MRtrix3* provides a large suite of tools for image processing, analysis and visualisation, with a focus on the analysis of white matter using diffusion-weighted MRI ([Tournier2019]_). Features include the estimation of fibre orientation distributions using constrained spherical deconvolution ([Tournier2004]_; [Tournier2007]_; [Jeurissen2014]_), a probabilisitic streamlines algorithm for fibre tractography of white matter ([Tournier2012]_), fixel-based analysis of apparent fibre density and fibre cross-section ([Raffelt2012]_; [Raffelt2015]_; [Raffelt2017]_), quantitative structural connectivity analysis ([Smith2012]_; [Smith2013]_; [Smith2015]_; [Christiaens2015]_), and non-linear spatial registration of fibre orientation distribution images ([Raffelt2011]_). *MRtrix3* also offers comprehensive visualisation tools in :ref:`mrview`.
+*MRtrix3* provides a large suite of tools for image processing, analysis and
+visualisation, with a focus on the analysis of white matter using
+diffusion-weighted MRI ([Tournier2019]_). Features include the estimation of
+fibre orientation distributions using constrained spherical deconvolution
+([Tournier2004]_; [Tournier2007]_; [Jeurissen2014]_), a probabilisitic
+streamlines algorithm for fibre tractography of white matter ([Tournier2012]_),
+fixel-based analysis of apparent fibre density and fibre cross-section
+([Raffelt2012]_; [Raffelt2015]_; [Raffelt2017]_), quantitative structural
+connectivity analysis ([Smith2012]_; [Smith2013]_; [Smith2015]_;
+[Christiaens2015]_), and non-linear spatial registration of fibre orientation
+distribution images ([Raffelt2011]_). *MRtrix3* also offers comprehensive
+visualisation tools in :ref:`mrview`.
 
-These applications have been written from scratch in C++, using the functionality provided by `Eigen`_, and `Qt`_. The software is currently capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others. The source code is distributed under the `Mozilla Public License`_.
+These applications have been written from scratch in C++, using the
+functionality provided by `Eigen`_, and `Qt`_. The software is currently
+capable of handling DICOM, NIfTI and AnalyseAVW image formats, amongst others.
+The source code is distributed under the `Mozilla Public License`_.
 
-Use of the *MRtrix3* software package in published works should be accompanied by the following citation:
+Use of the *MRtrix3* software package in published works should be accompanied
+by the following citation:
 
-    J.-D. Tournier, R. E. Smith, D. Raffelt, R. Tabbara, T. Dhollander, M. Pietsch, D. Christiaens, B. Jeurissen, C.-H. Yeh, and A. Connelly. *MRtrix3*: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 202 (2019), pp. 116–37.
+    J.-D. Tournier, R. E. Smith, D. Raffelt, R. Tabbara, T. Dhollander, M.
+    Pietsch, D. Christiaens, B. Jeurissen, C.-H. Yeh, and A. Connelly.
+    *MRtrix3*: A fast, flexible and open software framework for medical image
+    processing and visualisation. NeuroImage, 202 (2019), pp. 116–37.
 
 
 .. TIP:: 
 
-  Make sure to use the version of this documentation that matches your version of this software. You can select the version on the lower left of this page.
+  Make sure to use the version of this documentation that matches your version
+  of this software. You can select the version on the lower left of this page.
+
+
+
+Getting help
+~~~~~~~~~~~~
+
+There are a variety of sources of help and information to bring you up to speed
+with *MRtrix3*. These include:
+
+- the `main MRtrix3 documentation <https://mrtrix.readthedocs.org/>` (these
+  pages);
+
+- our `Introduction to the Unix command-line <https://command-line-tutorial.readthedocs.io/>` 
+  if you're unfamiliar with the terminal (though you'll readily find plenty of
+  excellent tutorials online);
+
+- our `Community Forum <http://community.mrtrix.org/>` for support and general
+  discussion about the use of *MRtrix3* -- you can address all
+  *MRtrix3*-related queries there, using your GitHub or Google login to post
+  questions.
+
+- our `Frequently Asked Questions <http://community.mrtrix.org/c/wiki>`, hosted
+  as a user-editable ``wiki`` category within our forum.
+
 
 
 
@@ -58,14 +101,22 @@ website <https://www.mrtrix.org/download/>`__.
 
 If the precompiled packages are not available, we provide specific instructions
 for building the software from source. This is normally a simple process, but
-the process does require more compute resources and expertise. See the :ref:`relevant
-pages <before_installing>` for details.
+does require more compute resources and expertise. See the :ref:`relevant pages
+<before_installing>` for details.
 
 
 Commands
 ~~~~~~~~
 
-The *MRtrix3* software package includes a suite of tools for image analysis and visualisation. With the exception of :ref:`mrview` and :ref:`shview`, all *MRtrix3* executables are designed to be run via a terminal using a consistent :ref:`command-line interface <command-line-interface>`. While many of the tools and features are discussed within tutorials found in this documentation, a comprehensive :ref:`list-of-mrtrix3-commands` can be found in the reference section. These lists provide links to the help page (manual) for each executable, which can also be accessed by typing the :code:`-help` option after the executable name on the terminal.
+The *MRtrix3* software package includes a suite of tools for image analysis and
+visualisation. With the exception of :ref:`mrview` and :ref:`shview`, all
+*MRtrix3* executables are designed to be run via a terminal using a consistent
+:ref:`command-line interface <command-line-interface>`. While many of the tools
+and features are discussed within tutorials found in this documentation, a
+comprehensive :ref:`list-of-mrtrix3-commands` can be found in the reference
+section. These lists provide links to the help page (manual) for each
+executable, which can also be accessed by typing the :code:`-help` option after
+the executable name on the terminal.
 
 .. TIP:: 
 
@@ -82,7 +133,6 @@ The *MRtrix3* software package includes a suite of tools for image analysis and 
 .. _Eigen: http://eigen.tuxfamily.org/
 .. _Qt: http://qt-project.org/
 .. _Mozilla Public License: http://mozilla.org/MPL/2.0/
-
 
 
 Table of Contents
