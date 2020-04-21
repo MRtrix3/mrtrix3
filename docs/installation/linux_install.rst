@@ -42,8 +42,8 @@ and optionally:
     Note that this implies you *cannot run the GUI components over a remote
     X11 connection*, since it can't support OpenGL 3.3+ rendering. The
     most up-to-date recommendations in this context can be found in the
-    [relevant Wiki entry](http://community.mrtrix.org/t/remote-display-issues/2547)
-    on the [*MRtrix3* community forum](http://community.mrtrix.org).
+    `relevant Wiki entry <http://community.mrtrix.org/t/remote-display-issues/2547>`__
+    on the `*MRtrix3* community forum <http://community.mrtrix.org>`__.
 
 Install Dependencies
 --------------------

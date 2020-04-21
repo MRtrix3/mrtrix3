@@ -97,8 +97,8 @@ Install *MRtrix3* dependencies
 
    Firstly, if the offending existing target is something trivial that can
    be deleted, this is all that should be required. Otherwise, it is possible
-   that MSYS2 may mistake a _file_ existing on the filesystem as a
-   pre-existing _directory_; a good example is that quoted above, where
+   that MSYS2 may mistake a *file* existing on the filesystem as a
+   pre-existing *directory*; a good example is that quoted above, where
    ``pacman`` claims that directory ``/mingw64`` exists, but it is in fact the
    two files ``/mingw64.exe`` and ``/mingw64.ini`` that cause the issue.
    Temporarily renaming these two files, then changing their names back after
