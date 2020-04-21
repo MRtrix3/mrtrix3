@@ -14,10 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "debug.h"
+#include "dwi/shells.h"
 
 #include "math/math.h"
-#include "dwi/shells.h"
 
 
 
