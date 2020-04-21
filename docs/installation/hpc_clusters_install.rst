@@ -22,7 +22,7 @@ installed (certainly not without a huge amount of effort on the part of
 your sysadmin). In such cases, one can instead attempt a :ref:`linux_standalone`.
 Alternatively, if you (and your sysadmin) are comfortable with installation
 of dependencies from source within your home directory, you can try the
-`instructions suggested on the wiki section of the *MRtrix3* community forum
+`instructions suggested on the wiki section of the MRtrix3 community forum
 <https://community.mrtrix.org/t/installation-of-mrtrix3-and-all-its-dependencies-from-source/3547>`__.
 
 
@@ -33,7 +33,7 @@ Most people would expect to be able to run ``mrview`` on the server using
 X11 forwarding. Unfortunately, this will not work without some effort.
 The most up-to-date details on attempts to use ``mrview`` in this way
 can be found in the `relevant Wiki entry <http://community.mrtrix.org/t/remote-display-issues/2547>`__
-of the `*MRtrix3* community forum <http://community.mrtrix.org>`__.
+of the `MRtrix3 community forum <http://community.mrtrix.org>`__.
 
 Configuration
 -------------
