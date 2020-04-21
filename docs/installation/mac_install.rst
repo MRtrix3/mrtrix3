@@ -41,7 +41,7 @@ and optionally:
 .. NOTE:: 
 
     If you currently do not plan to contribute to the *MRtrix3* code, the most
-    convenient way to install Mrtrix3 on macOS is to install it via homebrew. 
+    convenient way to install MRtrix3 from source on macOS is to install it via homebrew. 
  
     - If you do not have homebrew installed, you can install it via::
 

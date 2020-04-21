@@ -41,19 +41,19 @@ Getting help
 There are a variety of sources of help and information to bring you up to speed
 with *MRtrix3*. These include:
 
-- the `main MRtrix3 documentation <https://mrtrix.readthedocs.org/>` (these
+- the `main MRtrix3 documentation <https://mrtrix.readthedocs.org/>`__ (these
   pages);
 
-- our `Introduction to the Unix command-line <https://command-line-tutorial.readthedocs.io/>` 
+- our `Introduction to the Unix command-line <https://command-line-tutorial.readthedocs.io/>`__
   if you're unfamiliar with the terminal (though you'll readily find plenty of
   excellent tutorials online);
 
-- our `Community Forum <http://community.mrtrix.org/>` for support and general
+- our `Community Forum <http://community.mrtrix.org/>`__ for support and general
   discussion about the use of *MRtrix3* -- you can address all
   *MRtrix3*-related queries there, using your GitHub or Google login to post
   questions.
 
-- our `Frequently Asked Questions <http://community.mrtrix.org/c/wiki>`, hosted
+- our `Frequently Asked Questions <http://community.mrtrix.org/c/wiki>`__, hosted
   as a user-editable ``wiki`` category within our forum.
 
 
