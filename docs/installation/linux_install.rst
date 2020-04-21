@@ -327,9 +327,9 @@ Limitations
 
 -  **Installation on remote systems:** bear in mind that running the GUI
    components over a remote X11 connection is not possible, since the
-   GLX protocol does not support OpenGL 3 and above (see
-   [relevant Wiki entry](http://community.mrtrix.org/t/remote-display-issues/2547)
-   of the [*MRtrix3* community forum](http://community.mrtrix.org)
+   GLX protocol does not support OpenGL 3 and above (see the
+   `relevant Wiki entry <http://community.mrtrix.org/t/remote-display-issues/2547>`__
+   of the `MRtrix3 community forum <http://community.mrtrix.org>`__
    for details). You may be able to use an OpenGL-capable VNC connection, but
    if that is not possible, there is little point in installing the GUI
    components on the remote server. The recommendation would be to configure
