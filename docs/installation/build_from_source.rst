@@ -264,6 +264,8 @@ environment as per the `Git instructions page
 <https://help.github.com/articles/set-up-git/#setting-up-git>`__
 
 
+.. _build_mrtrix3:
+
 Build *MRtrix3*
 ---------------
 

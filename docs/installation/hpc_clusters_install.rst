@@ -9,9 +9,9 @@ Installing *MRtrix3*
 --------------------
 
 Most HPC clusters will run some flavour of GNU/Linux and hence
-a cluster administrator should be able to follow the steps outlined for a :ref:`linux_install`.
+a cluster administrator should be able to follow the steps outlined to :ref:`build_from_source`.
 In particular, if your sysadmin is able to install the required dependencies (the
-preferred option), you should be able to subsequently :ref:`linux_build`.
+preferred option), you should be able to subsequently :ref:`build_mrtrix3`.
 
 However, it is not uncommon for HPC systems to run stable, and hence
 relatively old distributions, with outdated dependencies. This is
@@ -19,7 +19,8 @@ particularly problematic since *MRtrix3* relies on recent technologies
 (C++11, OpenGL 3.3), which are only available on recent distributions.
 There is therefore a good chance these dependencies simply cannot be
 installed (certainly not without a huge amount of effort on the part of
-your sysadmin). In such cases, one can instead attempt a :ref:`linux_standalone`.
+your sysadmin). In such cases, one can instead attempt a `standalone installation
+<https://community.mrtrix.org/t/standalone-installation-on-linux/3549>`.
 Alternatively, if you (and your sysadmin) are comfortable with installation
 of dependencies from source within your home directory, you can try the
 `instructions suggested on the wiki section of the MRtrix3 community forum
