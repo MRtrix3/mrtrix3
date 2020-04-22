@@ -5,7 +5,7 @@ mrconvert mrconvert/in.mif -strides 3,1,2 tmp.mif  && testing_diff_image tmp.mif
 mrconvert mrconvert/in.mif -strides 1,-3,2 -datatype float32be tmp.mih  && testing_diff_image tmp.mih mrconvert/in.mif
 mrconvert mrconvert/in.mif -datatype float32 tmp.mif.gz  && testing_diff_image tmp.mif.gz mrconvert/in.mif
 mrconvert mrconvert/in.mif tmp.nii  && testing_diff_image tmp.nii mrconvert/in.mif
-mrconvert mrconvert/in.mif -datatype float32 tmp.nii.gz  && testing_diff_image tmp.nii.gz mrconvert/in.mif
+mrconvert mrconvert/in.mif -datatype float32 tmp.nii.gz -force && testing_diff_image tmp.nii.gz mrconvert/in.mif
 mrconvert mrconvert/in.mif -strides 3,2,1 tmp.mgh  && testing_diff_image tmp.mgh mrconvert/in.mif
 mrconvert mrconvert/in.mif -strides 1,3,2 -datatype int16 tmp.mgz  && testing_diff_image tmp.mgz mrconvert/in.mif
 mrconvert mrconvert/in.mif tmp-[].png  && echo -e "1 0 0 0\n0 1 0 0\n0 0 1 0\n" > tmp.txt  && testing_diff_image tmp-[].png $(mrcalc mrconvert/in.mif 0 -max - | mrtransform - -replace tmp.txt -)
