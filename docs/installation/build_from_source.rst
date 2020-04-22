@@ -7,6 +7,14 @@ The instructions below describe the process of compiling and installing
 *MRtrix3* from source. Please consult the `MRtrix3 forum
 <http://community.mrtrix.org/>`__ if you encounter any issues.
 
+.. WARNING::
+
+  These instructions are for more advanced users who wish to install very
+  specific versions of *MRtrix3*, or make their own modifications. Most
+  users will find it much easier to install one of the [pre-compiled packages
+  available for their platform from the main MRtrix website](https://www.mrtrix.org/download/).
+
+
 Install Dependencies
 --------------------
 
