@@ -257,9 +257,6 @@ void run ()
   if (json_all && argument.size() > 1)
     throw Exception ("Cannot use -json_all option with multiple input images");
 
-  if (get_options ("norealign").size())
-    Header::do_realign_transform = false;
-
   const bool name          = get_options("name")          .size();
   const bool format        = get_options("format")        .size();
   const bool ndim          = get_options("ndim")          .size();
