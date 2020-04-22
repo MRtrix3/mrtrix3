@@ -363,9 +363,9 @@ details). Importantly, these compressed formats are not mandatory: a compliant
 DICOM implementation does not need to support these features. This makes it
 entirely possible (and indeed, quite common) for a fully DICOM-compliant
 implementation to produce data that cannot be understood by another fully
-DICOM-compliant implementation - a less than ideal situation... 
+DICOM-compliant implementation -- a less than ideal situation... 
 
-*MRtrix3* does not currently support non-default transfer syntaxes - only those
+*MRtrix3* does not currently support non-default transfer syntaxes -- only those
 that the standard defines as mandatory, and variants thereof. For reference,
 these are:
 
