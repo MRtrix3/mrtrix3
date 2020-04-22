@@ -83,7 +83,7 @@ References
 References based on fitting algorithm used:
 
 * OLS, WLS: |br|
-  Basser, P.J.; Mattiello, J.; LeBihan, D.Estimation of the effective self-diffusion tensor from the NMR spin echo.J Magn Reson B., 1994, 103, 247–254.
+  Basser, P.J.; Mattiello, J.; LeBihan, D. Estimation of the effective self-diffusion tensor from the NMR spin echo. J Magn Reson B., 1994, 103, 247–254.
 
 * IWLS: |br|
   Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. NeuroImage, 2013, 81, 335-346
