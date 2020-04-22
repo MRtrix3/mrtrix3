@@ -271,6 +271,7 @@ namespace MR
       if (do_realign_transform)
         H.realign_transform();
     }
+    catch (CancelException& e) { throw; }
     catch (Exception& E) {
       throw Exception (E, "error opening image \"" + image_name + "\"");
     }
@@ -632,6 +633,24 @@ namespace MR
       WARN ("transform matrix contains invalid entries - resetting to sane defaults");
       transform() = Transform::get_default (*this);
     }
+
+    // check that cosine vectors are unit length (to some precision):
+    bool rescale_cosine_vectors = false;
+    for (size_t i = 0; i < 3; ++i) {
+      auto length = transform().matrix().col(i).head<3>().norm();
+      if (abs (length-1.0) > 1.0e-6)
+        rescale_cosine_vectors = true;
+    }
+
+    // if unit length, rescale and modify voxel sizes accordingly:
+    if (rescale_cosine_vectors) {
+      INFO ("non unit cosine vectors detected - normalising and rescaling voxel sizes to match");
+      for (size_t i = 0; i < 3; ++i) {
+        auto length = transform().matrix().col(i).head(3).norm();
+        transform().matrix().col(i).head(3) /= length;
+        spacing(i) *= length;
+      }
+    }
   }
 
 
@@ -811,7 +830,7 @@ namespace MR
       // Concatenate 4D schemes if necessary
       if (axis_to_concat == 3) {
         try {
-          const auto extra_dw = DWI::get_DW_scheme (H);
+          const auto extra_dw = DWI::parse_DW_scheme (H);
           concat_scheme (dw_scheme, extra_dw);
         } catch (Exception&) {
           dw_scheme.resize (0, 0);

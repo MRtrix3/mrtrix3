@@ -1,0 +1,3 @@
+fixelconnectivity SIFT_phantom/fixels/ SIFT_phantom/tracks.tck tmp/ -force && testing_diff_image tmp/index.mif SIFT_phantom/matrix/index.mif && testing_diff_image tmp/fixels.mif SIFT_phantom/matrix/fixels.mif && testing_diff_image tmp/values.mif SIFT_phantom/matrix/values.mif
+fixelconnectivity SIFT_phantom/fixels/ SIFT_phantom/tracks.tck tmp/ -mask SIFT_phantom/fixels/upper.mif -force && testing_diff_image tmp/index.mif fixelconnectivity/masked/index.mif && testing_diff_image tmp/fixels.mif fixelconnectivity/masked/fixels.mif && testing_diff_image tmp/values.mif fixelconnectivity/masked/values.mif
+

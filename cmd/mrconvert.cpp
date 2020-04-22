@@ -77,7 +77,9 @@ void usage ()
     "comma-separated list of axis indices. If an axis from the input image is "
     "to be omitted from the output image, it must either already have a size of "
     "1, or a single coordinate along that axis must be selected by the user by "
-    "using the -coord option. Examples are provided further below.";
+    "using the -coord option. Examples are provided further below."
+
+  + DWI::bvalue_scaling_description;
 
 
   EXAMPLES
@@ -217,19 +219,24 @@ void usage ()
 
   + DataType::options()
 
-  + DWI::GradImportOptions (false)
+  + DWI::GradImportOptions ()
+  + DWI::bvalue_scaling_option
+
   + DWI::GradExportOptions()
 
-  + PhaseEncoding::ImportOptions
-  + PhaseEncoding::ExportOptions;
+    + PhaseEncoding::ImportOptions
+    + PhaseEncoding::ExportOptions;
 }
+
+
+
 
 
 
 
 void permute_DW_scheme (Header& H, const vector<int>& axes)
 {
-  auto in = DWI::get_DW_scheme (H);
+  auto in = DWI::parse_DW_scheme (H);
   if (!in.rows())
     return;
 
@@ -379,15 +386,21 @@ void extract (Header& header_in, Header& header_out, const vector<vector<int>>& 
 void run ()
 {
   Header header_in = Header::open (argument[0]);
+  Eigen::MatrixXd dw_scheme;
+  try {
+    dw_scheme = DWI::get_DW_scheme (header_in, DWI::get_cmdline_bvalue_scaling_behaviour());
+  }
+  catch (Exception& e) {
+    if (get_options ("grad").size() || get_options ("fslgrad").size() || get_options ("bvalue_scaling").size())
+      throw;
+    e.display (2);
+  }
 
   Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
 
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
-
-  if (get_options ("grad").size() || get_options ("fslgrad").size())
-    DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
 
   if (get_options ("import_pe_table").size() || get_options ("import_pe_eddy").size())
     PhaseEncoding::set_scheme (header_out, PhaseEncoding::get_scheme (header_in));
@@ -421,7 +434,9 @@ void run ()
       add_to_command_history = false;
     auto entry = header_out.keyval().find (opt[n][0]);
     if (entry == header_out.keyval().end()) {
-      WARN ("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
+      if (std::string(opt[n][0]) != "command_history") {
+        WARN ("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
+      }
     } else {
       header_out.keyval().erase (entry);
     }
@@ -465,11 +480,11 @@ void run ()
 
       header_out.size (axis) = pos[axis].size();
       if (axis == 3) {
-        const auto grad = DWI::get_DW_scheme (header_in);
+        const auto grad = DWI::parse_DW_scheme (header_out);
         if (grad.rows()) {
           if ((ssize_t)grad.rows() != header_in.size(3)) {
             WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
-            header_out.keyval().erase ("dw_scheme");
+            DWI::clear_DW_scheme (header_out);
           } else {
             Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
             for (size_t dir = 0; dir != pos[3].size(); ++dir)

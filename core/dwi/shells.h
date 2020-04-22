@@ -23,7 +23,6 @@
 
 #include "app.h"
 #include "types.h"
-
 #include "file/config.h"
 #include "misc/bitset.h"
 

@@ -83,6 +83,9 @@ namespace MR {
                 case 0x0081U:
                   echo_time = item.get_float (0, echo_time);
                   return;
+                case 0x0082U:
+                  inversion_time = item.get_float (0, inversion_time);
+                  return;
                 case 0x0088U:
                   slice_spacing = item.get_float (0, slice_spacing);
                   return;
@@ -312,8 +315,8 @@ namespace MR {
               parse_item (item);
             }
             catch (Exception& E) {
-              WARN (printf ("error reading tag (%04X,%04X):", item.group, item.element));
-              E.display(1);
+              DEBUG (printf ("error reading tag (%04X,%04X):", item.group, item.element));
+              E.display(3);
             }
           }
 
@@ -333,7 +336,25 @@ namespace MR {
 
 
 
-
+      namespace {
+        template <typename T, class Functor>
+        void phoenix_scalar (const KeyValues& keyval, const std::string& key, const Functor& functor, T& field) {
+          const auto it = keyval.find (key);
+          if (it == keyval.end())
+            return;
+          field = functor (it->second);
+        }
+        template <typename T>
+        void phoenix_vector (const KeyValues& keyval, const std::string& key, vector<T>& data) {
+          data.clear();
+          for (size_t index = 0; ; ++index) {
+            const auto it = keyval.find (key + "[" + str(index) + "]");
+            if (it == keyval.end())
+              return;
+            data.push_back (to<T> (it->second));
+          }
+        }
+      }
 
 
       void Image::decode_csa (const uint8_t* start, const uint8_t* end)
@@ -343,28 +364,10 @@ namespace MR {
         while (entry.parse()) {
           if (strcmp ("B_value", entry.key()) == 0)
             bvalue = entry.get_float();
-          else if (strcmp ("DiffusionGradientDirection", entry.key()) == 0)
-            entry.get_float (G);
-          else if (strcmp ("NumberOfImagesInMosaic", entry.key()) == 0)
-            images_in_mosaic = entry.get_int();
-          else if (strcmp ("SliceNormalVector", entry.key()) == 0)
-            entry.get_float (orientation_z);
-          else if (strcmp ("PhaseEncodingDirectionPositive", entry.key()) == 0)
-            pe_sign = (entry.get_int() > 0) ? 1 : -1;
           else if (strcmp ("BandwidthPerPixelPhaseEncode", entry.key()) == 0)
             bandwidth_per_pixel_phase_encode = entry.get_float();
-          else if (strcmp ("MosaicRefAcqTimes", entry.key()) == 0) {
-            mosaic_slices_timing.resize (entry.num_items());
-            entry.get_float (mosaic_slices_timing);
-          }
-          else if (strcmp ("TimeAfterStart", entry.key()) == 0)
-            time_after_start = entry.get_float();
-          else if (strcmp ("ImagePositionPatient", entry.key()) == 0) {
-            Eigen::Matrix<default_type,3,1> v;
-            entry.get_float (v);
-            if (v.allFinite())
-              position_vector = v;
-          }
+          else if (strcmp ("DiffusionGradientDirection", entry.key()) == 0)
+            entry.get_float (G);
           else if (strcmp ("ImageOrientationPatient", entry.key()) == 0) {
             Eigen::Matrix<default_type,6,1> v;
             entry.get_float (v);
@@ -375,11 +378,95 @@ namespace MR {
               orientation_y.normalize();
             }
           }
+          else if (strcmp ("ImagePositionPatient", entry.key()) == 0) {
+            Eigen::Matrix<default_type,3,1> v;
+            entry.get_float (v);
+            if (v.allFinite())
+              position_vector = v;
+          }
+          else if (strcmp ("MosaicRefAcqTimes", entry.key()) == 0) {
+            mosaic_slices_timing.resize (entry.num_items());
+            entry.get_float (mosaic_slices_timing);
+          }
+          else if (strcmp ("MrPhoenixProtocol", entry.key()) == 0) {
+            const vector<std::string> phoenix = entry.get_string();
+            const auto keyval = read_csa_ascii (phoenix);
+            phoenix_scalar (keyval,
+                            "sDiffusion.dsScheme",
+                            [] (const std::string& value) -> size_t { return to<size_t> (value); },
+                            bipolar_flag);
+            phoenix_scalar (keyval,
+                            "sKSpace.ucPhasePartialFourier",
+                            [] (const std::string& value) -> default_type
+                            {
+                              switch (to<size_t> (value)) {
+                                case 1: return 0.5;
+                                case 2: return 0.675;
+                                case 4: return 0.75;
+                                case 8: return 0.875;
+                                default: return NaN;
+                              }
+                            },
+                            partial_fourier);
+            phoenix_scalar (keyval,
+                            "ucReadOutMode",
+                            [] (const std::string& value) -> size_t { return to<size_t> (value); },
+                            readoutmode_flag);
+            phoenix_vector (keyval,
+                            "adFlipAngleDegree",
+                            flip_angles);
+
+          }
+          else if (strcmp ("NumberOfImagesInMosaic", entry.key()) == 0)
+            images_in_mosaic = entry.get_int();
+          else if (strcmp ("PhaseEncodingDirectionPositive", entry.key()) == 0)
+            pe_sign = (entry.get_int() > 0) ? 1 : -1;
+          else if (strcmp ("SliceNormalVector", entry.key()) == 0)
+            entry.get_float (orientation_z);
+          else if (strcmp ("TimeAfterStart", entry.key()) == 0)
+            time_after_start = entry.get_float();
         }
 
         if (G[0] && bvalue)
           if (fabs(G[0]) > 1.0 && fabs(G[1]) > 1.0 && fabs(G[2]) > 1.0)
             bvalue = G[0] = G[1] = G[2] = 0.0;
+      }
+
+
+
+      KeyValues Image::read_csa_ascii (const vector<std::string>& data)
+      {
+
+        auto split_keyval = [] (const std::string& s) -> std::pair<std::string, std::string> {
+          const size_t delimiter = s.find_first_of ("=");
+          if (delimiter == std::string::npos)
+            return std::make_pair (std::string(), std::string());
+          return std::make_pair (strip (s.substr(0, delimiter)), strip (s.substr(delimiter+1)) );
+        };
+
+        KeyValues result;
+        for (const auto& item : data) {
+          const auto lines = split_lines (item);
+          bool do_read = false;
+          for (const auto& line : lines) {
+            if (line.substr(0, 17) == "### ASCCONV BEGIN") {
+              do_read = true;
+              continue;
+            }
+            if (line.substr(0, 15) == "### ASCCONV END") {
+              do_read = false;
+              continue;
+            }
+            if (do_read) {
+              const auto keyval = split_keyval (line);
+              result[keyval.first] = keyval.second;
+            }
+          }
+          if (do_read) {
+            WARN("Siemens CSA ASCII section malformed (not appropriately ended)");
+          }
+        }
+        return result;
       }
 
 
@@ -562,7 +649,9 @@ namespace MR {
           }
         }
 
-        return pe_scheme;
+        if (pe_scheme.col(3).sum())
+          return pe_scheme;
+        return pe_scheme.leftCols(3);
       }
 
 

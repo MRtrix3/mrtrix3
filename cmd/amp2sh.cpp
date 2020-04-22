@@ -18,10 +18,10 @@
 #include "image.h"
 #include "phase_encoding.h"
 #include "progressbar.h"
-#include "math/SH.h"
+#include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "algo/threaded_loop.h"
+#include "math/SH.h"
 
 
 using namespace MR;
@@ -229,7 +229,7 @@ void run ()
       header.keyval().erase (hit);
     }
     else {
-      auto grad = DWI::get_valid_DW_scheme (amp);
+      auto grad = DWI::get_DW_scheme (amp);
       DWI::Shells shells (grad);
       shells.select_shells (true, false, false);
       if (shells.smallest().is_bzero())

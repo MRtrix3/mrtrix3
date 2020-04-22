@@ -399,10 +399,8 @@ namespace MR {
           return { printf ("%04X %04X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)) };
 
         auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
-        for (auto& entry: strings) {
+        for (auto& entry: strings)
           entry = strip (entry);
-          replace (entry, '^', ' ');
-        }
         return strings;
       }
 
