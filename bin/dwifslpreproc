@@ -831,7 +831,7 @@ def execute(): #pylint: disable=unused-variable
     if not app.ARGS.eddy_mask:
       run.command('dwi2mask ' + dwi_path + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
 
-  
+
   # Use user suplied mask for eddy instead of one derived from the images using dwi2mask
   if app.ARGS.eddy_mask:
     run.command('mrconvert ' +  path.from_user(app.ARGS.eddy_mask) + ' eddy_mask.nii -datatype float32 -stride -1,+2,+3')
