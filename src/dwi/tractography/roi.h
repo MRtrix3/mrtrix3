@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_roi_h__
 #define __dwi_tractography_roi_h__
@@ -21,6 +22,7 @@
 #include "image.h"
 #include "interp/linear.h"
 #include "math/rng.h"
+#include "misc/bitset.h"
 
 
 namespace MR
@@ -64,7 +66,7 @@ namespace MR
           {
             try {
               auto F = parse_floats (spec);
-              if (F.size() != 4) 
+              if (F.size() != 4)
                 throw 1;
               pos[0] = F[0];
               pos[1] = F[1];
@@ -72,21 +74,38 @@ namespace MR
               radius = F[3];
               radius2 = Math::pow2 (radius);
             }
-            catch (...) { 
-              DEBUG ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
-              mask.reset (new Mask (spec));
+            catch (Exception& e_assphere) {
+              try {
+                mask.reset (new Mask (spec));
+              } catch (Exception& e_asimage) {
+                Exception e ("Unable to parse text \"" + spec + "\" as a ROI");
+                e.push_back ("If interpreted as sphere:");
+                for (size_t i = 0; i != e_assphere.num(); ++i)
+                  e.push_back ("  " + e_assphere[i]);
+                e.push_back ("If interpreted as image:");
+                for (size_t i = 0; i != e_asimage.num(); ++i)
+                  e.push_back ("  " + e_asimage[i]);
+                throw e;
+              }
             }
           }
 
           std::string shape () const { return (mask ? "image" : "sphere"); }
 
           std::string parameters () const {
-            return mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
+            return mask ?
+                   mask->name() :
+                   str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
+          }
+
+          float min_featurelength() const {
+            return mask ?
+                   std::min ({ mask->spacing(0), mask->spacing(1), mask->spacing(2) }) :
+                   radius;
           }
 
           bool contains (const Eigen::Vector3f& p) const
           {
-
             if (mask) {
               Eigen::Vector3f v = *(mask->scanner2voxel) * p;
               Mask temp (*mask); // Required for thread-safety
@@ -97,9 +116,7 @@ namespace MR
                 return false;
               return temp.value();
             }
-
             return (pos-p).squaredNorm() <= radius2;
-
           }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const ROI& roi)
@@ -120,39 +137,142 @@ namespace MR
 
 
 
-
-      class ROISet { MEMALIGN(ROISet)
+      class ROISetBase
+      { MEMALIGN(ROISetBase)
         public:
-          ROISet () { }
+          ROISetBase () { }
 
           void clear () { R.clear(); }
           size_t size () const { return (R.size()); }
           const ROI& operator[] (size_t i) const { return (R[i]); }
           void add (const ROI& roi) { R.push_back (roi); }
 
-          bool contains (const Eigen::Vector3f& p) const {
-            for (size_t n = 0; n < R.size(); ++n)
-              if (R[n].contains (p)) return (true);
-            return false;
-          }
-
-          void contains (const Eigen::Vector3f& p, vector<bool>& retval) const {
-            for (size_t n = 0; n < R.size(); ++n)
-              if (R[n].contains (p)) retval[n] = true;
-          }
-
-          friend inline std::ostream& operator<< (std::ostream& stream, const ROISet& R) {
+          friend inline std::ostream& operator<< (std::ostream& stream, const ROISetBase& R) {
             if (R.R.empty()) return (stream);
             vector<ROI>::const_iterator i = R.R.begin();
             stream << *i;
             ++i;
             for (; i != R.R.end(); ++i) stream << ", " << *i;
-            return stream; 
+            return stream;
           }
 
-        private:
+        protected:
           vector<ROI> R;
       };
+
+
+
+
+      class ROIUnorderedSet : public ROISetBase
+      { MEMALIGN(ROIUnorderedSet)
+        public:
+          ROIUnorderedSet () { }
+          bool contains (const Eigen::Vector3f& p) const {
+            for (size_t n = 0; n < R.size(); ++n)
+              if (R[n].contains (p)) return (true);
+            return false;
+          }
+          void contains (const Eigen::Vector3f& p, BitSet& retval) const {
+            for (size_t n = 0; n < R.size(); ++n)
+              if (R[n].contains (p)) retval[n] = true;
+          }
+      };
+
+
+
+
+
+      class ROIOrderedSet : public ROISetBase
+      { MEMALIGN(ROIOrderedSet)
+        public:
+
+          class LoopState
+          { NOMEMALIGN
+            public:
+              LoopState (const ROIOrderedSet& master) :
+                  size (master.size()),
+                  valid (true),
+                  next_index (0) { }
+              LoopState (const size_t num_rois) :
+                  size (num_rois),
+                  valid (true),
+                  next_index (0) { }
+
+              void reset() { valid = true; next_index = 0; }
+              operator bool () const { return valid; }
+
+              void operator() (const size_t roi_index)
+              {
+                assert (roi_index < size);
+                if (roi_index == next_index)
+                  ++next_index;
+                else if (roi_index != next_index - 1)
+                  valid = false;
+              }
+
+              bool all_entered() const { return (valid && (next_index == size)); }
+
+            private:
+              const size_t size;
+              bool valid; // true if the order at which ROIs have been entered thus far is legal
+              size_t next_index;
+          };
+
+          ROIOrderedSet () { }
+
+          void contains (const Eigen::Vector3f& p, LoopState& loop_state) const
+          {
+            // do nothing if the series of coordinates have already performed something illegal
+            if (!loop_state)
+              return;
+            for (size_t n = 0; n < R.size(); ++n) {
+              if (R[n].contains(p)) {
+                loop_state (n);
+                break;
+              }
+            }
+          }
+
+      };
+
+
+
+
+      class IncludeROIVisitation
+      { MEMALIGN(IncludeROIVisitation)
+        public:
+
+          IncludeROIVisitation (const ROIUnorderedSet& unordered,
+                                const ROIOrderedSet& ordered) :
+              unordered (unordered),
+              ordered (ordered),
+              visited (unordered.size()),
+              state (ordered.size()) { }
+
+          IncludeROIVisitation (const IncludeROIVisitation&) = default;
+          IncludeROIVisitation& operator= (const IncludeROIVisitation&) = delete;
+
+          void reset() { visited.clear(); state.reset(); }
+          size_t size() const { return unordered.size() + ordered.size(); }
+
+          void operator() (const Eigen::Vector3f& p)
+          {
+            unordered.contains (p, visited);
+            ordered.contains (p, state);
+          }
+
+          operator bool () const { return (visited.full() && state.all_entered()); }
+          bool operator! () const { return (!visited.full() || !state.all_entered()); }
+
+
+      protected:
+        const ROIUnorderedSet& unordered;
+        const ROIOrderedSet& ordered;
+        BitSet visited;
+        ROIOrderedSet::LoopState state;
+    };
+
+
 
 
 
@@ -161,5 +281,3 @@ namespace MR
 }
 
 #endif
-
-

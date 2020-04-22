@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __registration_nonlinear_h__
 #define __registration_nonlinear_h__
@@ -28,9 +29,12 @@
 #include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
 #include "registration/metric/demons.h"
+#include "registration/metric/demons_cc.h"
+#include "registration/metric/cc_helper.h"
 #include "registration/metric/demons4D.h"
 #include "registration/multi_resolution_lmax.h"
 #include "math/average_space.h"
+#include "registration/multi_contrast.h"
 
 namespace MR
 {
@@ -53,7 +57,9 @@ namespace MR
           disp_smoothing (1.0),
           gradient_step (0.5),
           do_reorientation (false),
-          fod_lmax (3) {
+          fod_lmax (3),
+          use_cc (false),
+          diagnostics_image_prefix ("") {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
             scale_factor[2] = 1.0;
@@ -77,18 +83,7 @@ namespace MR
               INFO ("Estimating halfway space");
               vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
               // define transfomations that will be applied to the image header when the common space is calculated
-              {
-                Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = linear_transform.get_transform_half();
-                Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = linear_transform.get_transform_half_inverse();
-                init_transforms.push_back (init_trafo_2);
-                init_transforms.push_back (init_trafo_1);
-              }
-
-              auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
-              vector<Header> headers;
-              headers.push_back (Header (im2_image));
-              headers.push_back (Header (im1_image));
-              midway_image_header = compute_minimum_average_header(headers, 1, padding, init_transforms);
+              midway_image_header = compute_minimum_average_header (im1_image, im2_image, linear_transform.get_transform_half_inverse(), linear_transform.get_transform_half());
             } else {
               // if initialising only perform optimisation at the full resolution level
               scale_factor.resize (1);
@@ -137,8 +132,25 @@ namespace MR
                                                                 + midway_image_header_resized.spacing(1)
                                                                 + midway_image_header_resized.spacing(2)) / 3.0);
 
-              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, fod_lmax[level]);
-              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, fod_lmax[level]);
+
+              // define or adjust tissue contrast lmax, nvols for this stage
+              stage_contrasts = contrasts;
+              if (stage_contrasts.size()) {
+                for (auto & mc : stage_contrasts)
+                  mc.lower_lmax (fod_lmax[level]);
+              } else {
+                MultiContrastSetting mc (im1_image.ndim()<4? 1:im1_image.size(3), do_reorientation, fod_lmax[level]);
+                stage_contrasts.push_back(mc);
+              }
+
+              for (const auto & mc : stage_contrasts)
+                DEBUG (str(mc));
+
+              auto im1_smoothed = Registration::multi_resolution_lmax (im1_image, scale_factor[level], do_reorientation, stage_contrasts);
+              auto im2_smoothed = Registration::multi_resolution_lmax (im2_image, scale_factor[level], do_reorientation, stage_contrasts, &stage_contrasts);
+
+              for (const auto & mc : stage_contrasts)
+                INFO (str(mc));
 
               DEBUG ("Initialising scratch images");
               Header warped_header (midway_image_header_resized);
@@ -148,6 +160,16 @@ namespace MR
               }
               auto im1_warped = Image<default_type>::scratch (warped_header);
               auto im2_warped = Image<default_type>::scratch (warped_header);
+
+              Image<default_type> im_cca, im_ccc, im_ccb, im_cc1, im_cc2;
+              if (use_cc) {
+                DEBUG ("Initialising CC images");
+                im_cca = Image<default_type>::scratch(warped_header);
+                im_ccb = Image<default_type>::scratch(warped_header);
+                im_ccc = Image<default_type>::scratch(warped_header);
+                im_cc1 = Image<default_type>::scratch(warped_header);
+                im_cc2 = Image<default_type>::scratch(warped_header);
+              }
 
               Header field_header (midway_image_header_resized);
               field_header.ndim() = 4;
@@ -223,8 +245,8 @@ namespace MR
 
                 if (do_reorientation && fod_lmax[level]) {
                   DEBUG ("Reorienting FODs");
-                  Registration::Transform::reorient_warp (im1_warped, im1_deform_field, aPSF_directions);
-                  Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions);
+                  Registration::Transform::reorient_warp (im1_warped, im1_deform_field, aPSF_directions, false, stage_contrasts);
+                  Registration::Transform::reorient_warp (im2_warped, im2_deform_field, aPSF_directions, false, stage_contrasts);
                 }
 
                 DEBUG ("warping mask images");
@@ -245,13 +267,34 @@ namespace MR
                 default_type cost_new = 0.0;
                 size_t voxel_count = 0;
 
+                if (use_cc) {
+                  Metric::cc_precompute (im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, im_cca, im_ccb, im_ccc, im_cc1, im_cc2, cc_extent);
+                  // display<Image<default_type>>(im_cca);
+                  // display<Image<default_type>>(im_ccb);
+                  // display<Image<default_type>>(im_ccc);
+                  // display<Image<default_type>>(im_cc1);
+                  // display<Image<default_type>>(im_cc2);
+                }
+
                 if (im1_image.ndim() == 4) {
-                  Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                  assert (!use_cc && "TODO");
+                  Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                    cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, &stage_contrasts);
                   ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
                 } else {
-                  Metric::Demons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
-                  ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
+                  if (use_cc) {
+                    Metric::DemonsCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                      cost_new, voxel_count, im_cc1, im_cc2, im1_mask_warped, im2_mask_warped);
+                    ThreadedLoop (im_cc1, 0, 3).run (metric, im_cc1, im_cc2, im_cca, im_ccb, im_ccc, *im1_update_new, *im2_update_new);
+                  } else {
+                    Metric::Demons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                      cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
+                    ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
+                  }
                 }
+
+                if (App::log_level >= 3)
+                  display<Image<default_type>>(*im1_update_new);
 
                 cost_new /= static_cast<default_type>(voxel_count);
 
@@ -275,6 +318,7 @@ namespace MR
 
                 } else {
                   converged = true;
+                  INFO ("  converged. cost: " + str(cost) + " voxel count: " + str(voxel_count));
                 }
 
                 if (!converged)
@@ -282,6 +326,25 @@ namespace MR
 
                 if (++iteration > max_iter[level])
                   converged = true;
+
+                // write debug image
+                if (converged && diagnostics_image_prefix.size()) {
+                  std::ostringstream oss;
+                  oss << diagnostics_image_prefix << "_stage-" << level + 1 << ".mif";
+                  // if (Path::exists(oss.str()) && !App::overwrite_files)
+                  //   throw Exception ("diagnostics image file \"" + oss.str() + "\" already exists (use -force option to force overwrite)");
+                  Header hc (warped_header);
+                  hc.ndim() = 4;
+                  hc.size(3) = 3;
+                  INFO("writing debug image: "+oss.str());
+                  auto check = Image<default_type>::create (oss.str(), hc);
+                  for (auto i = Loop(check, 0, 3) (check, im1_warped, im2_warped ); i; ++i) {
+                    check.value() = im1_warped.value();
+                    check.index(3) = 1;
+                    check.value() = im2_warped.value();
+                    check.index(3) = 0;
+                  }
+                }
               }
             }
             // Convert all warps to deformation field format for output
@@ -331,7 +394,6 @@ namespace MR
             is_initialised = true;
           }
 
-
           void set_max_iter (const vector<int>& maxiter) {
             for (size_t i = 0; i < maxiter.size (); ++i)
               if (maxiter[i] < 0)
@@ -374,6 +436,15 @@ namespace MR
               if (lmax[i] < 0 || lmax[i] % 2)
                 throw Exception ("the input nonlinear lmax must be positive and even");
             fod_lmax = lmax;
+          }
+
+          // needs to be set after set_lmax
+          void set_mc_parameters (const vector<MultiContrastSetting>& mcs) {
+            contrasts = mcs;
+          }
+
+          ssize_t get_lmax () {
+            return (ssize_t) *std::max_element(fod_lmax.begin(), fod_lmax.end());
           }
 
           std::shared_ptr<Image<default_type> > get_im1_to_mid() {
@@ -446,6 +517,17 @@ namespace MR
             return midway_image_header;
           }
 
+          void metric_cc (int radius) {
+            if (radius < 1)
+              throw Exception ("CC radius needs to be larger than 1");
+            use_cc = true;
+            INFO("Cross correlation radius: " + str(radius));
+            cc_extent = vector<size_t>(3, radius * 2 + 1);
+          }
+
+          void set_diagnostics_image (const std::basic_string<char>& path) {
+            diagnostics_image_prefix = path;
+          }
 
 
         protected:
@@ -476,10 +558,16 @@ namespace MR
           Eigen::MatrixXd aPSF_directions;
           bool do_reorientation;
           vector<int> fod_lmax;
+          bool use_cc;
+          std::basic_string<char> diagnostics_image_prefix;
+
+          vector<size_t> cc_extent;
 
           transform_type im1_to_mid_linear;
           transform_type im2_to_mid_linear;
           Header midway_image_header;
+
+          vector<MultiContrastSetting> contrasts, stage_contrasts;
 
           // Internally the warp is stored as a displacement field to enable easy smoothing near the boundaries
           std::shared_ptr<Image<default_type> > im1_to_mid_new;

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_scalar_file_h__
 #define __dwi_tractography_scalar_file_h__
@@ -22,8 +23,9 @@
 #include "file/config.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
-#include "dwi/tractography/properties.h"
 #include "dwi/tractography/file_base.h"
+#include "dwi/tractography/properties.h"
+#include "dwi/tractography/streamline.h"
 
 
 namespace MR
@@ -73,7 +75,7 @@ namespace MR
             open (file, "track scalars", properties);
           }
 
-          bool operator() (vector<value_type>& tck_scalar)
+          bool operator() (TrackScalar<T>& tck_scalar)
           {
             tck_scalar.clear();
 
@@ -90,8 +92,10 @@ namespace MR
                 return false;
               }
 
-              if (std::isnan (val))
+              if (std::isnan (val)) {
+                tck_scalar.set_index (current_index++);
                 return true;
+              }
               tck_scalar.push_back (val);
             } while (in.good());
 
@@ -102,6 +106,7 @@ namespace MR
         protected:
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
+          using __ReaderBase__::current_index;
 
           value_type get_next_scalar ()
           {
@@ -135,7 +140,7 @@ namespace MR
                 assert (0);
                 break;
             }
-            return (value_type (NAN));
+            return (value_type (NaN));
           }
 
           ScalarReader (const ScalarReader&) = delete;
@@ -188,6 +193,7 @@ namespace MR
 
             // Do NOT set Properties timestamp here! (Must match corresponding .tck file)
             const_cast<Properties&> (properties).set_version_info();
+            const_cast<Properties&> (properties).update_command_history();
             create (out, properties, "track scalars");
             open_success = true;
             current_offset = out.tellp();
@@ -198,7 +204,7 @@ namespace MR
           }
 
 
-          bool operator() (const vector<value_type>& tck_scalar)
+          bool operator() (const TrackScalar<T>& tck_scalar)
           {
             if (buffer_size + tck_scalar.size() > buffer_capacity)
               commit();
@@ -212,24 +218,6 @@ namespace MR
             ++total_count;
             return true;
           }
-
-
-          template <typename matrix_type>
-          bool operator() (const Eigen::Matrix<matrix_type, Eigen::Dynamic, 1>& data)
-          {
-            assert (data.allFinite());
-
-            if (buffer_size + data.size() > buffer_capacity)
-              commit();
-
-            for (int i = 0; i != data.size(); ++i)
-              add_scalar (value_type(data[i]));
-            add_scalar (delimiter());
-            ++count;
-            ++total_count;
-            return true;
-          }
-
 
 
         protected:

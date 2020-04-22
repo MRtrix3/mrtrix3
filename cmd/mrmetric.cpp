@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -333,14 +334,8 @@ void run ()
       using ImageTypeM = Header;
 
       n_voxels = 0;
-      vector<Header> headers;
       Registration::Transform::Rigid transform;
-      vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
-      Eigen::Matrix<default_type, 4, 1> padding (0.0, 0.0, 0.0, 0.0);
-      headers.push_back (Header (input1));
-      headers.push_back (Header (input2));
-
-      Header midway_image_header = compute_minimum_average_header (headers, 1, padding, init_transforms);
+      Header midway_image_header = compute_minimum_average_header (input1, input2);
 
       using LinearInterpolatorType1 = Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Value>;
       using LinearInterpolatorType2 = Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::Value>;

@@ -1,22 +1,24 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __algo_adapter_base_h__
 #define __algo_adapter_base_h__
 
 #include "image_helpers.h"
+#include "types.h"
 
 namespace MR
 {
@@ -54,7 +56,7 @@ namespace MR
         FORCE_INLINE default_type spacing (size_t axis) const { return parent_.spacing (axis); }
         FORCE_INLINE ssize_t stride (size_t axis) const { return parent_.stride (axis); }
         FORCE_INLINE const transform_type& transform () const { return parent_.transform(); }
-        FORCE_INLINE const std::map<std::string, std::string>& keyval () const { return parent_.keyval(); }
+        FORCE_INLINE const KeyValues& keyval () const { return parent_.keyval(); }
 
         FORCE_INLINE ssize_t get_index (size_t axis) const { return parent_.index (axis); }
         FORCE_INLINE void move_index (size_t axis, ssize_t increment) { parent_.index (axis) += increment; }

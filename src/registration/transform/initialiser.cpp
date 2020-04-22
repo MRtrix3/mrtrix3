@@ -1,20 +1,22 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "registration/transform/initialiser.h"
 #include "registration/transform/initialiser_helpers.h"
+#include "registration/multi_contrast.h"
 
 namespace MR
 {
@@ -30,7 +32,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init) {
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings) {
 
           CONSOLE ("initialising centre of rotation using centre of mass");
           Eigen::Vector3 im1_centre_mass, im2_centre_mass;
@@ -38,10 +41,8 @@ namespace MR
 
           Image<default_type> bogus_mask;
 
-          // TODO: add option to use mask instead of image intensities
-
-          get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_mass);
-          get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_mass);
+          get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_mass, contrast_settings);
+          get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_mass, contrast_settings);
 
           transform.transform_half_inverse (im1_centre_mass_transformed, im1_centre_mass);
           transform.transform_half (im2_centre_mass_transformed, im2_centre_mass);
@@ -99,17 +100,11 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init) {
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings) {
 
           Image<default_type> bogus_mask;
-          bool use_mask_values_instead = false; // TODO add to options
-          if (use_mask_values_instead) {
-            if (!(mask1.valid() or mask2.valid()))
-              throw Exception ("cannot run image moments initialisation using mask values without a valid mask");
-            CONSOLE ("initialising using image moments using mask values instead of image values");
-          }
-          else
-            CONSOLE ("initialising using image moments");
+          CONSOLE ("initialising using image moments");
 
           auto moments_init = Transform::Init::MomentsInitialiser (
             im1,
@@ -117,10 +112,9 @@ namespace MR
             init.init_rotation.unmasked1 ? bogus_mask : mask1,
             init.init_rotation.unmasked2 ? bogus_mask : mask2,
             transform,
-            use_mask_values_instead);
+            contrast_settings);
           moments_init.run();
         }
-
 
         void initialise_using_FOD (
           Image<default_type>& im1,
@@ -150,7 +144,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
 
         void initialise_using_image_mass (
           Image<default_type>& im1,
@@ -158,7 +153,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
       }
     }
   }

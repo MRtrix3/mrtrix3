@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/SIFT/proc_mask.h"
 
@@ -30,7 +31,7 @@ namespace MR
       namespace SIFT
       {
 
-        
+
 
         const App::OptionGroup SIFTModelProcMaskOption = App::OptionGroup ("Options for setting the processing mask for the SIFT fixel-streamlines comparison model")
 
@@ -72,7 +73,7 @@ namespace MR
                 INFO ("5TT image dimensions match fixel image - importing directly");
                 copy (in_5tt, out_5tt);
               } else {
-                auto threaded_loop  = ThreadedLoop ("resampling ACT 5TT image to fixel image space", in_dwi, 0, 3);
+                auto threaded_loop = ThreadedLoop ("resampling ACT 5TT image to fixel image space", in_dwi, 0, 3);
                 ResampleFunctor functor (in_dwi, in_5tt, out_5tt);
                 threaded_loop.run (functor);
               }
@@ -110,19 +111,13 @@ namespace MR
             dwi (dwi),
             voxel2scanner (new transform_type (Transform(dwi).voxel2scanner.cast<float>())),
             interp_anat (anat),
-            out (out)
-        {
-          dwi.index(3) = 0;
-        }
+            out (out) { }
 
         ResampleFunctor::ResampleFunctor (const ResampleFunctor& that) :
             dwi (that.dwi),
             voxel2scanner (that.voxel2scanner),
             interp_anat (that.interp_anat),
-            out (that.out)
-        {
-          dwi.index(3) = 0;
-        }
+            out (that.out) { }
 
 
 
@@ -164,8 +159,8 @@ namespace MR
                 const auto p_scanner (*voxel2scanner * subvoxel_pos_dwi);
                 if (interp_anat.scanner (p_scanner)) {
                   const Tractography::ACT::Tissues tissues (interp_anat);
-                  ++total_count;
                   if (tissues.valid()) {
+                    ++total_count;
                     if (tissues.is_cgm())
                       ++cgm_count;
                     else if (tissues.is_sgm())
@@ -177,13 +172,13 @@ namespace MR
                     else if (tissues.is_path())
                       ++path_count;
                     else
-                      --total_count; // Should ideally never happen...
+                      --total_count;
                   }
                 }
 
           } } }
 
-          if (total_count) {
+          if (total_count > Math::pow3<size_t> (os_ratio) / 2) {
             return ACT::Tissues (cgm_count  / float(total_count),
                                  sgm_count  / float(total_count),
                                  wm_count   / float(total_count),

@@ -23,7 +23,7 @@ Description
 
 This application attempts to remove Gibbs ringing artefacts from MRI images using the method of local subvoxel-shifts proposed by Kellner et al. (see reference below for details).
 
-This command is designed to run on data directly after it has been reconstructed by the scanner, before any interpolation of any kind has taken place. You should not run this command after any form of motion correction (e.g. not after dwipreproc). Similarly, if you intend running dwidenoise, you should run this command afterwards, since it has the potential to alter the noise structure, which would impact on dwidenoise's performance.
+This command is designed to run on data directly after it has been reconstructed by the scanner, before any interpolation of any kind has taken place. You should not run this command after any form of motion correction (e.g. not after dwifslpreproc). Similarly, if you intend running dwidenoise, you should run denoising before this command to not alter the noise structure, which would impact on dwidenoise's performance.
 
 Note that this method is designed to work on images acquired with full k-space coverage. Running this method on partial Fourier ('half-scan') data may lead to suboptimal and/or biased results, as noted in the original reference below. There is currently no means of dealing with this; users should exercise caution when using this method on partial Fourier data, and inspect its output for any obvious artefacts. 
 
@@ -48,13 +48,15 @@ Standard options
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -65,22 +67,27 @@ References
 
 Kellner, E; Dhital, B; Kiselev, V.G & Reisert, M. Gibbs-ringing artifact removal based on local subvoxel-shifts. Magnetic Resonance in Medicine, 2016, 76, 1574–1581.
 
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
 --------------
 
 
 
 **Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be) & J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2018 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, you can obtain one at http://mozilla.org/MPL/2.0/
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-MRtrix3 is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty
-of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
 
-For more details, see http://www.mrtrix.org/
+For more details, see http://www.mrtrix.org/.
 
 

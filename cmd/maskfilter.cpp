@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -105,7 +106,7 @@ void run () {
   auto input_image = Image<value_type>::open (argument[0]);
 
   int filter_index = argument[1];
-  
+
   if (filter_index == 0) { // Mask clean
     Filter::MaskClean filter (input_image, std::string("applying mask cleaning filter to image ") + Path::basename (argument[0]));
     filter.set_scale(get_option_value ("scale", DEFAULT_CLEAN_SCALE));
@@ -121,16 +122,9 @@ void run () {
   if (filter_index == 1) { // Connected components
     Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("axes");
-    vector<int> axes;
     if (opt.size()) {
-      axes = opt[0][0];
-      for (size_t d = 0; d < input_image.ndim(); d++)
-        filter.set_ignore_dim (d, true);
-      for (size_t i = 0; i < axes.size(); i++) {
-        if (axes[i] >= static_cast<int> (input_image.ndim()) || axes[i] < 0)
-          throw Exception ("axis supplied to option -ignore is out of bounds");
-        filter.set_ignore_dim (axes[i], false);
-      }
+      const vector<int> axes = opt[0][0];
+      filter.set_axes (axes);
     }
     bool largest_only = false;
     opt = get_options ("largest");

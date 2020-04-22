@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __registration_transform_initialiser_h__
 #define __registration_transform_initialiser_h__
@@ -47,6 +48,7 @@ namespace MR
               default_type scale;
               size_t directions;
               bool run_global;
+              double translation_extent;
               struct global_search { MEMALIGN(global_search)
                 size_t iterations;
                 global_search () :
@@ -57,7 +59,8 @@ namespace MR
                 angles (5),
                 scale (0.15),
                 directions (250),
-                run_global (false) {
+                run_global (false),
+                translation_extent (0.05) {
                   angles[0] =  2.0 / 180.0 * Math::pi;
                   angles[1] =  5.0 / 180.0 * Math::pi;
                   angles[2] = 10.0 / 180.0 * Math::pi;
@@ -80,7 +83,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
 
         extern void set_centre_via_image_centres (
           const Image<default_type>& im1,
@@ -104,7 +108,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
 
         extern void initialise_using_FOD (
           Image<default_type>& im1,
@@ -121,7 +126,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
 
         extern void initialise_using_image_mass (
           Image<default_type>& im1,
@@ -129,7 +135,8 @@ namespace MR
           Image<default_type>& mask1,
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
-          Registration::Transform::Init::LinearInitialisationParams& init);
+          Registration::Transform::Init::LinearInitialisationParams& init,
+          const vector<MultiContrastSetting>& contrast_settings);
       }
     }
   }

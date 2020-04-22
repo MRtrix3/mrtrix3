@@ -1,0 +1,2 @@
+shconv dwi2fod/out.mif response.txt - | testing_diff_image - shconv/out.mif -abs 1e-4
+shconv dwi2fod/msmt/wm.mif dwi2fod/msmt/wm.txt dwi2fod/msmt/gm.mif dwi2fod/msmt/gm.txt dwi2fod/msmt/csf.mif dwi2fod/msmt/csf.txt - | testing_diff_image - shconv/out_msmt.mif -abs 1e-4
