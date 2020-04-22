@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import sys
+
+varlist =  [ ]
+
+for line in sys.stdin:
+  line = line.split ('//ENVVAR')[1][1:]
+  if line.startswith ('name:'):
+    varlist += [ [ line[6:].strip(), '', '' ] ]
+  else:
+    varlist[-1][1] += line.rstrip() + '\n'
+
+varlist.sort()
+
+string = '.. _environment_variables:\n'
+string += '\n'
+string += '##########################################\n'
+string += 'List of MRtrix3 environment variables\n'
+string += '##########################################\n\n'
+
+for entry in varlist:
+  string += '.. envvar:: ' + entry[0] + '\n\n'
+  for line in entry[1].splitlines():
+    string += '     ' + line + '\n'
+  string += '\n'
+
+sys.stdout.write(string)

@@ -1,29 +1,29 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
 
 #include "image.h"
 #include "memory.h"
-#include "math/versor.h"
 #include "gui/cursor.h"
 #include "gui/gui.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/opengl/font.h"
-#include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourbars.h"
 #include "gui/mrview/colourmap_button.h"
 
 
@@ -47,6 +47,7 @@ namespace MR
       {
         class Base;
         class ODF;
+        class CameraInteractor;
       }
 
 
@@ -104,7 +105,7 @@ namespace MR
             if (!image())
               return -1;
             else
-              return std::round ((image()->transform().scanner2voxel.cast<float>() * focus())[anatomical_plane]);
+              return std::round ((image()->image.transform().inverse().cast<float>() * focus()) (anatomical_plane) / image()->image.spacing (anatomical_plane));
           }
 
           Mode::Base* get_current_mode () const { return mode.get(); }
@@ -112,7 +113,7 @@ namespace MR
           const Eigen::Vector3f& target () const { return camera_target; }
           float FOV () const { return field_of_view; }
           int plane () const { return anatomical_plane; }
-          const Math::Versorf& orientation () const { return orient; }
+          const Eigen::Quaternionf& orientation () const { return orient; }
           bool snap_to_image () const { return snap_to_image_axes_and_voxel; }
           Image* image () { return static_cast<Image*> (image_group->checkedAction()); }
 
@@ -120,7 +121,7 @@ namespace MR
           void set_target (const Eigen::Vector3f& p) { camera_target = p; emit targetChanged(); }
           void set_FOV (float value) { field_of_view = value; emit fieldOfViewChanged(); }
           void set_plane (int p) { anatomical_plane = p; emit planeChanged(); }
-          void set_orientation (const Math::Versorf& V) { orient = V; emit orientationChanged(); }
+          void set_orientation (const Eigen::Quaternionf& V) { orient = V; orient.normalize(); emit orientationChanged(); }
           void set_scaling (float min, float max) { if (!image()) return; image()->set_windowing (min, max); }
           void set_snap_to_image (bool onoff) { snap_to_image_axes_and_voxel = onoff; snap_to_image_action->setChecked(onoff);  emit focusChanged(); }
 
@@ -141,17 +142,23 @@ namespace MR
           bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); }
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
+          bool sync_focus_on ()  const { return sync_focus_action->isChecked(); }
+
           void captureGL (std::string filename) {
             QImage image (glarea->grabFramebuffer());
-            image.save (filename.c_str());
+            image.save (qstr (filename));
           }
 
           GL::Area* glwidget () const { return glarea; }
           GL::Lighting& lighting () { return *lighting_; }
-          ColourMap::Renderer colourbar_renderer;
+          ColourBars colourbar_renderer;
+
+          void register_camera_interactor (Tool::CameraInteractor* agent = nullptr);
+          Tool::CameraInteractor* active_camera_interactor () { return camera_interactor; }
 
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
+          static bool tools_floating;
 
         signals:
           void focusChanged ();
@@ -164,8 +171,8 @@ namespace MR
           void imageChanged ();
           void imageVisibilityChanged (bool);
           void scalingChanged ();
-          void volumeChanged (size_t);
-          void volumeGroupChanged (size_t);
+          void volumeChanged ();
+          void syncChanged();
 
         public slots:
           void on_scaling_changed ();
@@ -189,6 +196,9 @@ namespace MR
           void full_screen_slot ();
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
+          void wrap_volumes_slot ();
+
+          void sync_slot();
 
           void hide_image_slot ();
           void slice_next_slot ();
@@ -238,13 +248,16 @@ namespace MR
           MouseAction mouse_action;
 
           Eigen::Vector3f focal_point, camera_target;
-          Math::Versorf orient;
+          Eigen::Quaternionf orient;
           float field_of_view;
           int anatomical_plane, annotations;
-          ColourMap::Position colourbar_position, tools_colourbar_position;
+          ColourBars::Position colourbar_position, tools_colourbar_position;
           bool snap_to_image_axes_and_voxel;
+          std::string current_folder;
 
           float background_colour[3];
+
+          Tool::CameraInteractor* camera_interactor;
 
           QMenu *image_menu;
 
@@ -276,6 +289,7 @@ namespace MR
                   *next_image_volume_group_action,
                   *prev_image_volume_group_action,
                   *goto_image_volume_group_action,
+                  *wrap_volumes_action,
                   *image_list_area,
 
                   *reset_windowing_action,
@@ -292,11 +306,13 @@ namespace MR
                   *image_interpolate_action,
                   *full_screen_action,
 
+                  *sync_focus_action,
+
                   *OpenGL_action,
                   *about_action,
                   *aboutQt_action;
 
-          static ColourMap::Position parse_colourmap_position_str (const std::string& position_str);
+          static ColourBars::Position parse_colourmap_position_str (const std::string& position_str);
 
           void paintGL ();
           void initGL ();
@@ -336,19 +352,6 @@ namespace MR
           friend class Window::GLArea;
           friend class GrabContext;
       };
-
-
-      class GrabContext : private Context::Grab { NOMEMALIGN
-        public:
-          GrabContext () : Context::Grab (Window::main->glarea) { }
-      };
-
-
-#ifndef NDEBUG
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
-#else
-# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
-#endif
 
 
     }

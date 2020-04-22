@@ -1,22 +1,22 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
-
 #include "command.h"
-#include "progressbar.h"
-#include "datatype.h"
 #include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/streamline.h"
 
 using namespace MR;
 using namespace App;
@@ -30,11 +30,11 @@ void usage ()
   ARGUMENTS
   + Argument ("tsf1", "a track scalar file.").type_file_in()
   + Argument ("tsf2", "another track scalar file.").type_file_in();
-  
+
   OPTIONS
-  + Option ("abs", "specify an absolute tolerance") 
+  + Option ("abs", "specify an absolute tolerance")
     + Argument ("tolerance").type_float (0.0)
-  + Option ("frac", "specify a fractional tolerance") 
+  + Option ("frac", "specify a fractional tolerance")
     + Argument ("tolerance").type_float (0.0);
 }
 
@@ -48,14 +48,14 @@ void run ()
 
   DWI::Tractography::check_properties_match (properties1, properties2, "scalar", false);
 
-  vector<value_type> tck_scalar1;
-  vector<value_type> tck_scalar2;
-  
+  DWI::Tractography::TrackScalar<value_type> tck_scalar1;
+  DWI::Tractography::TrackScalar<value_type> tck_scalar2;
+
   auto opt = get_options ("frac");
   if (opt.size()) {
-  
+
     const double tol = opt[0][0];
-  
+
     while (reader1 (tck_scalar1)) {
       if (!reader2 (tck_scalar2))
         throw Exception ("readable number of tracks mismatch - test FAILED");
@@ -68,14 +68,14 @@ void run ()
                            + " (" + str(cdouble (tck_scalar1[i])) + " vs " + str(cdouble (tck_scalar2[i])) + ")");
       }
     }
-    
+
   } else {
-  
+
     double tol = 0.0;
     opt = get_options ("abs");
     if (opt.size())
       tol = opt[0][0];
-  
+
     while (reader1 (tck_scalar1)) {
       if (!reader2 (tck_scalar2))
         throw Exception ("readable number of tracks mismatch - test FAILED");
@@ -88,10 +88,10 @@ void run ()
                            + " (" + str(cdouble (tck_scalar1[i])) + " vs " + str(cdouble (tck_scalar2[i])) + ")");
       }
     }
-  
+
   }
-  
-  
+
+
   CONSOLE ("track scalar files checked OK");
 }
 

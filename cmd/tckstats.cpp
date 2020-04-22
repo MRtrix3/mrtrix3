@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "memory.h"
@@ -47,7 +48,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Calculate statistics on streamlines length";
+  SYNOPSIS = "Calculate statistics on streamlines lengths";
 
   ARGUMENTS
   + Argument ("tracks_in", "the input track file").type_tracks_in();
@@ -64,9 +65,6 @@ void usage ()
 
   + Option ("dump", "dump the streamlines lengths to a text file")
     + Argument ("path").type_file_out()
-
-  + Option ("explicit", "explicitly calculate the length of each streamline, "
-                        "ignoring any step size information present in the header")
 
   + Option ("ignorezero", "do not generate a warning if the track file contains streamlines with zero length")
 
@@ -110,8 +108,9 @@ void run ()
   size_t count = 0, header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
   float max_length = -std::numeric_limits<float>::infinity();
-  double sum_lengths = 0.0, sum_weights = 0.0;
-  vector<double> histogram;
+  size_t empty_streamlines = 0, zero_length_streamlines = 0;
+  default_type sum_lengths = 0.0, sum_weights = 0.0;
+  vector<default_type> histogram;
   vector<LW> all_lengths;
   all_lengths.reserve (header_count);
 
@@ -122,14 +121,9 @@ void run ()
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);
 
-    if (!get_options ("explicit").size()) {
-      step_size = get_step_size (properties);
-      if (!std::isfinite (step_size) || !step_size) {
-        INFO ("Streamline step size undefined in header; lengths will be calculated manually");
-        if (get_options ("histogram").size()) {
-          WARN ("Do not have streamline step size with which to construct histogram; histogram will be generated using 1mm bin widths");
-        }
-      }
+    step_size = properties.get_stepsize();
+    if ((!std::isfinite (step_size) || !step_size) && get_options ("histogram").size()) {
+      WARN ("Do not have streamline step size with which to bin histogram; histogram will be generated using 1mm bin widths");
     }
 
     std::unique_ptr<File::OFStream> dump;
@@ -141,7 +135,7 @@ void run ()
     Streamline<> tck;
     while (reader (tck)) {
       ++count;
-      const float length = std::isfinite (step_size) ? tck.calc_length (step_size) : tck.calc_length();
+      const float length = Tractography::length (tck);
       if (std::isfinite (length)) {
         min_length = std::min (min_length, length);
         max_length = std::max (max_length, length);
@@ -152,6 +146,10 @@ void run ()
         while (histogram.size() <= index)
           histogram.push_back (0.0);
         histogram[index] += tck.weight;
+        if (!length)
+          ++zero_length_streamlines;
+      } else {
+        ++empty_streamlines;
       }
       if (dump)
         (*dump) << length << "\n";
@@ -159,8 +157,17 @@ void run ()
     }
   }
 
-  if (histogram.size() && histogram.front() && !get_options ("ignorezero").size())
-    WARN ("read " + str(histogram.front()) + " zero-length tracks");
+  if (!get_options ("ignorezero").size() && (empty_streamlines || zero_length_streamlines)) {
+    std::string s ("read");
+    if (empty_streamlines) {
+      s += " " + str(empty_streamlines) + " empty streamlines";
+      if (zero_length_streamlines)
+        s += " and";
+    }
+    if (zero_length_streamlines)
+      s += " " + str(zero_length_streamlines) + " streamlines with zero length (one vertex only)";
+    WARN (s);
+  }
   if (count != header_count)
     WARN ("expected " + str(header_count) + " tracks according to header; read " + str(count));
   if (!std::isfinite (min_length))
@@ -176,7 +183,7 @@ void run ()
       // Perform a weighted median calculation
       std::sort (all_lengths.begin(), all_lengths.end());
       size_t median_index = 0;
-      double sum = sum_weights - all_lengths[0].get_weight();
+      default_type sum = sum_weights - all_lengths[0].get_weight();
       while (sum > 0.5 * sum_weights) { sum -= all_lengths[++median_index].get_weight(); }
       median_length = all_lengths[median_index].get_length();
     } else {
@@ -186,10 +193,10 @@ void run ()
     median_length = NaN;
   }
 
-  double stdev = 0.0;
+  default_type ssd = 0.0;
   for (vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
-    stdev += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
-  stdev = sum_weights ? (std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights))) : NaN;
+    ssd += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
+  const float stdev = sum_weights ? (std::sqrt (ssd / (((count - 1) / default_type(count)) * sum_weights))) : NaN;
 
   vector<std::string> fields;
   auto opt = get_options ("output");
@@ -231,6 +238,7 @@ void run ()
   opt = get_options ("histogram");
   if (opt.size()) {
     File::OFStream out (opt[0][0], std::ios_base::out | std::ios_base::trunc);
+    out << "# " << App::command_history_string << "\n";
     if (!std::isfinite (step_size))
       step_size = 1.0f;
     if (weights_provided) {

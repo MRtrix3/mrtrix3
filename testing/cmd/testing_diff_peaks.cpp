@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -19,7 +20,7 @@
 
 #include "image.h"
 #include "algo/threaded_loop.h"
- 
+
 
 using namespace MR;
 using namespace App;
@@ -45,7 +46,7 @@ void run ()
   if (in1.ndim() != 4)
     throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" are not 4D");
   if (in1.size(3) % 3)
-    throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not contain XYZ peak directions");    
+    throw Exception ("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not contain XYZ peak directions");
   for (size_t i = 0; i < in1.ndim(); ++i) {
     if (std::isfinite (in1.size(i)))
       if (in1.size(i) != in2.size(i))
@@ -76,11 +77,10 @@ void run ()
       const double norma = veca.norm(), normb = vecb.norm();
       veca.normalize(); vecb.normalize();
       const double dp = abs (veca.dot (vecb));
-      if (1.0 - dp > tol || abs (norma - normb) > tol)
+      if (norma && normb && (1.0 - dp > tol))
         throw Exception ("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within specified precision of " + str(tol) + " ( [" + str(veca.transpose().cast<float>()) + "] vs [" + str(vecb.transpose().cast<float>()) + "], norms [" + str(norma) + " " + str(normb) + "], dot product = " + str(dp) + ")");
     }
   }, in1, in2);
 
   CONSOLE ("data checked OK");
 }
-

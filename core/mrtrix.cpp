@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "mrtrix.h"
 
@@ -75,7 +76,10 @@ namespace MR
     int i = 0;
     try {
       do {
-        end = spec.find_first_of (",:", start);
+        start = spec.find_first_not_of (" \t", start);
+        if (start == std::string::npos)
+          break;
+        end = spec.find_first_of (" \t,:", start);
         std::string token (strip (spec.substr (start, end-start)));
         if (lowercase (token) == "end") {
           if (last == std::numeric_limits<int>::max())
@@ -84,12 +88,13 @@ namespace MR
         }
         else num[i] = to<int> (spec.substr (start, end-start));
 
+        end = spec.find_first_not_of (" \t", end);
         char last_char = end < spec.size() ? spec[end] : '\0';
         if (last_char == ':') {
-          i++;
+          ++i;
+          ++end;
           if (i > 2) throw Exception ("invalid number range in number sequence \"" + spec + "\"");
-        }
-        else {
+        } else {
           if (i) {
             int inc, last;
             if (i == 2) {
@@ -107,7 +112,9 @@ namespace MR
           i = 0;
         }
 
-        start = end+1;
+        start = end;
+        if (last_char == ',')
+          ++start;
       }
       while (end < spec.size());
     }
@@ -149,6 +156,51 @@ namespace MR
       throw Exception ("can't split string \"" + string + "\"");
     }
     return V;
+  }
+
+
+
+
+
+  namespace {
+
+    // from https://www.geeksforgeeks.org/wildcard-character-matching/
+
+    inline bool __match (const char* first, const char* second)
+    {
+      // If we reach at the end of both strings, we are done
+      if (*first == '\0' && *second == '\0')
+        return true;
+
+      // Make sure that the characters after '*' are present
+      // in second string. This function assumes that the first
+      // string will not contain two consecutive '*'
+      if (*first == '*' && *(first+1) != '\0' && *second == '\0')
+        return false;
+
+      // If the first string contains '?', or current characters
+      // of both strings match
+      if (*first == '?' || *first == *second)
+        return match(first+1, second+1);
+
+      // If there is *, then there are two possibilities
+      // a) We consider current character of second string
+      // b) We ignore current character of second string.
+      if (*first == '*')
+        return match(first+1, second) || match(first, second+1);
+
+      return false;
+    }
+  }
+
+
+
+  bool match (const std::string& pattern, const std::string& text, bool ignore_case)
+  {
+    if (ignore_case)
+      return __match (lowercase(pattern).c_str(), lowercase (text).c_str());
+    else
+      return __match (pattern.c_str(), text.c_str());
   }
 
 

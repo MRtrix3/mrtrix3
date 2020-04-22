@@ -1,23 +1,24 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
-
-#include "bitset.h"
 #include "header.h"
 #include "image.h"
 
 #include "math/math.h"
+#include "misc/bitset.h"
 
 #include "fixel/legacy/fixel_metric.h"
 #include "fixel/legacy/image.h"
@@ -143,24 +144,48 @@ namespace MR {
       void TckFactor::calc_afcsa()
       {
 
-        VAR (calc_cost_function());
+        CONSOLE ("Cost function before linear optimisation is " + str(calc_cost_function()) + ")");
 
-        coefficients.resize (num_tracks(), 0.0);
+        try {
+          coefficients = decltype(coefficients)::Zero (num_tracks());
+        } catch (...) {
+          throw Exception ("Error assigning memory for streamline weights vector");
+        }
 
-        const double fixed_mu = mu();
-
-        // Just do single-threaded for now
-        for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-          const SIFT::TrackContribution& tckcont = *contributions[i];
-          double sum_afd = 0.0;
-          for (size_t f = 0; f != tckcont.dim(); ++f) {
-            const size_t fixel_index = tckcont[f].get_fixel_index();
-            const Fixel& fixel = fixels[fixel_index];
-            const float length = tckcont[f].get_length();
-            sum_afd += fixel.get_weight() * fixel.get_FOD() * (length / fixel.get_orig_TD());
-          }
-          const double afcsa = sum_afd / tckcont.get_total_contribution();
-          coefficients[i] = std::log (afcsa / fixed_mu);
+        class Functor
+        { NOMEMALIGN
+          public:
+            Functor (TckFactor& master) :
+                master (master),
+                fixed_mu (master.mu()) { }
+            Functor (const Functor&) = default;
+            bool operator() (const SIFT::TrackIndexRange& range) const {
+              for (SIFT::track_t track_index = range.first; track_index != range.second; ++track_index) {
+                const SIFT::TrackContribution& tckcont = *master.contributions[track_index];
+                double sum_afd = 0.0;
+                for (size_t f = 0; f != tckcont.dim(); ++f) {
+                  const size_t fixel_index = tckcont[f].get_fixel_index();
+                  const Fixel& fixel = master.fixels[fixel_index];
+                  const float length = tckcont[f].get_length();
+                  sum_afd += fixel.get_weight() * fixel.get_FOD() * (length / fixel.get_orig_TD());
+                }
+                if (sum_afd && tckcont.get_total_contribution()) {
+                  const double afcsa = sum_afd / tckcont.get_total_contribution();
+                  master.coefficients[track_index] = std::max (master.min_coeff, std::log (afcsa / fixed_mu));
+                } else {
+                  master.coefficients[track_index] = master.min_coeff;
+                }
+              }
+              return true;
+            }
+          private:
+            TckFactor& master;
+            const double fixed_mu;
+        };
+        {
+          SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+          Functor functor (*this);
+          Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (functor));
         }
 
         for (vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
@@ -173,7 +198,7 @@ namespace MR {
           Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
         }
 
-        VAR (calc_cost_function());
+        CONSOLE ("Cost function after linear optimisation is " + str(calc_cost_function()) + ")");
 
       }
 
@@ -203,7 +228,7 @@ namespace MR {
         }
 
         unsigned int iter = 0;
-        
+
         auto display_func = [&](){ return printf("    %5u        %3.3f%%         %2.3f%%        %u", iter, 100.0 * cf_data / init_cf, 100.0 * cf_reg / init_cf, nonzero_streamlines); };
         CONSOLE ("  Iteration     CF (data)      CF (reg)     Streamlines");
         ProgressBar progress ("");
@@ -308,7 +333,7 @@ namespace MR {
           }
 
           progress.update (display_func);
-          
+
           // Leaving out testing the fixel exclusion mask criterion; doesn't converge, and results in CF increase
         } while (((new_cf - prev_cf < required_cf_change) || (iter < min_iters) /* || !fixels_to_exclude.empty() */ ) && (iter < max_iters));
 
@@ -325,7 +350,9 @@ namespace MR {
         try {
           decltype(coefficients) weights (coefficients.size());
           for (SIFT::track_t i = 0; i != num_tracks(); ++i)
-            weights[i] = std::exp (coefficients[i]);
+            weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
+                         0.0 :
+                         std::exp (coefficients[i]);
           save_vector (weights, path);
         } catch (...) {
           WARN ("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");

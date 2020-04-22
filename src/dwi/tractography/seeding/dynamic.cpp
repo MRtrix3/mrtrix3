@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/seeding/dynamic.h"
 
@@ -167,7 +168,7 @@ namespace MR
 
       bool Dynamic::get_seed (Eigen::Vector3f&) const { return false; }
 
-      bool Dynamic::get_seed (Eigen::Vector3f& p, Eigen::Vector3f& d) 
+      bool Dynamic::get_seed (Eigen::Vector3f& p, Eigen::Vector3f& d)
       {
 
         uint64_t this_attempts = 0;
@@ -177,7 +178,7 @@ namespace MR
         while (1) {
 
           ++this_attempts;
-          const size_t fixel_index = 1 + uniform_int (*rng);
+          const size_t fixel_index = 1 + uniform_int (rng);
           Fixel& fixel = fixels[fixel_index];
           float seed_prob;
           if (fixel.can_update()) {
@@ -213,10 +214,10 @@ namespace MR
             seed_prob = fixel.get_old_prob();
           }
 
-          if (seed_prob > uniform_float (*rng)) {
+          if (seed_prob > uniform_float (rng)) {
 
             const Eigen::Vector3i& v (fixel.get_voxel());
-            const Eigen::Vector3f vp (v[0]+uniform_float(*rng)-0.5, v[1]+uniform_float(*rng)-0.5, v[2]+uniform_float(*rng)-0.5);
+            const Eigen::Vector3f vp (v[0]+uniform_float(rng)-0.5, v[1]+uniform_float(rng)-0.5, v[2]+uniform_float(rng)-0.5);
             p = transform.voxel2scanner.cast<float>() * vp;
 
             bool good_seed = !act;
@@ -366,12 +367,12 @@ namespace MR
 
         bool WriteKernelDynamic::operator() (const Tracking::GeneratedTrack& in, Tractography::Streamline<>& out)
         {
-          out.index = writer.count;
-          out.weight = 1.0;
+          out.set_index (writer.count);
+          out.weight = 1.0f;
           if (!WriteKernel::operator() (in)) {
             out.clear();
             // Flag to indicate that tracking has completed, and threads should therefore terminate
-            out.weight = 0.0;
+            out.weight = 0.0f;
             // Actually need to pass this down the queue so that the seeder thread receives it and knows to terminate
             return true;
           }

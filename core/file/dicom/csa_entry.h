@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __file_dicom_csa_entry_h__
 #define __file_dicom_csa_entry_h__
@@ -126,6 +127,18 @@ namespace MR {
                 for (uint32_t m = nitems; m < v.size(); ++m)
                   v[m] = NaN;
               }
+
+            vector<std::string> get_string () const {
+              vector<std::string> result;
+              const uint8_t* p = start + 84;
+              for (uint32_t m = 0; m < nitems; m++) {
+                const uint32_t length = Raw::fetch_LE<uint32_t> (p);
+                std::string s (reinterpret_cast<const char*> (p)+16, length);
+                result.push_back (std::move (s));
+                p += 16 + 4*((length+3)/4);
+              }
+              return result;
+            }
 
             friend std::ostream& operator<< (std::ostream& stream, const CSAEntry& item) {
               stream << "[CSA] " << item.name << " (" + str(item.nitems) + " items):";

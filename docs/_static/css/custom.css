@@ -3729,14 +3729,17 @@ h3 {
 
 h4 {
   font-size: 115%;
+  font-weight: 500;
 }
 
 h5 {
   font-size: 110%;
+  font-weight: 500;
 }
 
 h6 {
   font-size: 100%;
+  font-weight: 500;
 }
 
 hr {
