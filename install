@@ -25,7 +25,8 @@ if [ "$1" != "-f" ]; then
   done
 fi
 
-url=$(curl -s https://api.github.com/repos/MRtrix3/mrtrix3/releases/latest | sed -En 's|.*browser_download_url.*(https://github.com/.*/mrtrix3-macos-.*.tar.gz).*|\1|p')
+tag=$(basename $(curl -Ls -o /dev/null -w %{url_effective} https://github.com/MRtrix3/mrtrix3/releases/latest))
+url=https://github.com/MRtrix3/mrtrix3/releases/download/${tag}/mrtrix3-macos-${tag}.tar.gz
 
 if [ -z "${url}" ]; then
   echo "ERROR: Could not find tarball of latest release ..."
