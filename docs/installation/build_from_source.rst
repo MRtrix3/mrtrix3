@@ -11,8 +11,8 @@ The instructions below describe the process of compiling and installing
 
   These instructions are for more advanced users who wish to install very
   specific versions of *MRtrix3*, or make their own modifications. Most
-  users will find it much easier to install one of the [pre-compiled packages
-  available for their platform from the main MRtrix website](https://www.mrtrix.org/download/).
+  users will find it much easier to install one of the `pre-compiled packages
+  available for their platform from the main MRtrix website` <https://www.mrtrix.org/download/>`__.
 
 
 Install Dependencies
