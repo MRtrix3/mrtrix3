@@ -132,7 +132,7 @@ cp -R ${PREFIX}-src/lib    ${PREFIX}
 cp -R ${PREFIX}-src/share  ${PREFIX}
 cp -R ${PREFIX}-src/matlab ${PREFIX}
 rm -rf ${PREFIX}-src
-cp -a ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Svg,Widgets}${QT_POSTFIX}.*.dylib ${PREFIX}/lib
+cp -a ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Network,Svg,Widgets}${QT_POSTFIX}.*.dylib ${PREFIX}/lib
 mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats}
 cp -a ${PREFIX}_dep/plugins/platforms/libqcocoa${QT_POSTFIX}.dylib  ${PREFIX}/bin/plugins/platforms
 cp -a ${PREFIX}_dep/plugins/imageformats/libqsvg${QT_POSTFIX}.dylib ${PREFIX}/bin/plugins/imageformats
