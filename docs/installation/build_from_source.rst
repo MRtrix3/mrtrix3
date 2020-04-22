@@ -10,7 +10,13 @@ The instructions below describe the process of compiling and installing
 Install Dependencies
 --------------------
 
-To install *MRtrix3*, you will need the following:
+To install *MRtrix3*, you will need to have a number of dependencies
+available on your system -- these are listed below. These can be installed in a
+number of ways, depending on your specific platform. We provide specific
+instructions for doing so for GNU/Linux, macOS and Microsoft Windows in the
+subsequent sections.
+
+Required dependencies:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (GCC version >= 4.9, clang)
