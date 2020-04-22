@@ -99,7 +99,7 @@ else
 
   # QT5 SVG
   SECONDS=0
-  DNAME=qtsvg-opensource-src-${QT_VERSION}
+  DNAME=qtsvg-everywhere-src-${QT_VERSION}
   FNAME=${DNAME}.tar.xz
   curl -s -O http://ftp1.nluug.nl/languages/qt/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/${FNAME}
   tar xf ${FNAME}
