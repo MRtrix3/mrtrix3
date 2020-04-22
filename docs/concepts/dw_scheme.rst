@@ -238,11 +238,13 @@ the DW gradient table in the image header, the ``-export_grad_mrtrix`` or
 ready for use with third-party applications, or directly within *MRtrix3* if
 users prefer to keep their data organised in this way.
 
-However, any *MRtrix3* applications that manipulates the DW gradient table in
+However, any *MRtrix3* application that manipulates the DW gradient table in
 any way (for example, using the ``-grad`` or ``-fslgrad`` option) will perform
 a number of sanity checks and modifications to the information in the DW
 gradient table, depending on the nature of the operation, and its original
-format. 
+format. This includes applications such as :ref:`mrconvert`, :ref:`mrinfo`,
+:ref:`mrcat`, and other most obvious DW-specific applications such as
+:ref:`dwi2tensor` and :ref:`dwi2fod`.
 
 The specific steps performed by *MRtrix3* include:
 
@@ -307,7 +309,7 @@ other than those expected.
 
 If this scaling becomes a problem (e.g. for third-party applications), this
 feature can be explicitly enabled or disabled using the ``-bvalue_scaling``
-option in :ref:`mrconvert`
+option in :ref:`mrconvert` when initially importing or converting the raw data.
 
 
 
@@ -344,6 +346,7 @@ with the data), as the *MRtrix3* image loading backend will try to provide the
 image transform in a near-axial orientation (by inverting / exchanging columns
 of the transform, and adjusting the :ref:`strides` to match - see
 :ref:`transform` for details). To find out the actual transform that
-was stored in the NIfTI header, use :ref:`mrinfo` with the ``-norealign`` option.
+was stored in the NIfTI header, use :ref:`mrinfo` with the ``-config
+RealignTransform false`` option.
 
 
