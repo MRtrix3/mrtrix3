@@ -1,6 +1,12 @@
 #!/bin/bash -e
+tag=$(basename $(curl -Ls -o /dev/null -w %{url_effective} https://github.com/MRtrix3/mrtrix3/releases/latest))
+if [ -z "${tag}" ]; then
+  echo "ERROR: could not find tag name for latest release ..."
+  exit
+fi 
+
 if [ "$1" != "-f" ]; then
-  echo "This installer will download the latest MRtrix3 release and install it to /usr/local/mrtrix3."
+  echo "This installer will download MRtrix ${tag} and install it to /usr/local/mrtrix3."
   echo "In addition it will:"
   echo "* create symbolic links in /usr/local/bin to the binaries in /usr/local/mrtrix3/bin"
   echo "* create symbolic links in /Applications to the app bundles in /usr/local/mrtrix3/bin"
@@ -25,7 +31,6 @@ if [ "$1" != "-f" ]; then
   done
 fi
 
-tag=$(basename $(curl -Ls -o /dev/null -w %{url_effective} https://github.com/MRtrix3/mrtrix3/releases/latest))
 url=https://github.com/MRtrix3/mrtrix3/releases/download/${tag}/mrtrix3-macos-${tag}.tar.gz
 
 if [ -z "${url}" ]; then
