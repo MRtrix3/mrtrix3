@@ -16,6 +16,8 @@
 
 #include "filter/kernels.h"
 
+#include "header.h"
+
 namespace MR
 {
   namespace Filter
@@ -25,18 +27,18 @@ namespace MR
 
 
 
-      kernel_type identity (const size_t size)
+      kernel_type identity (const ssize_t size)
       {
         assert (size % 2);
+        kernel_type result (size);
         const size_t numel = Math::pow3 (size);
-        kernel_type result (kernel_type::Zero (numel));
         result[(numel-1) / 2] = 1;
         return result;
       }
 
 
 
-      kernel_type boxblur (const size_t size)
+      kernel_type boxblur (const ssize_t size)
       {
         assert (size % 2);
         return boxblur ({int(size), int(size), int(size)});
@@ -46,9 +48,40 @@ namespace MR
         assert (sizes.size() == 3);
         for (auto i : sizes)
           assert (i % 2);
-        const size_t numel = sizes[0] * sizes[1] * sizes[2];
-        const default_type value = 1.0 / default_type(numel);
-        return kernel_type::Constant (numel, value);
+        kernel_type result (sizes);
+        const default_type value = 1.0 / default_type(result.size());
+        result.fill (value);
+        return result;
+      }
+
+
+
+      kernel_type radialblur (const Header& header, const float radius)
+      {
+        const vector<int> half_extents ({
+            int(std::floor (radius / header.spacing(0))),
+            int(std::floor (radius / header.spacing(1))),
+            int(std::floor (radius / header.spacing(2))) });
+        const vector<int> extents ({
+            1 + (2*half_extents[0]),
+            1 + (2*half_extents[1]),
+            1 + (2*half_extents[2]) });
+        const float sqradius = Math::pow2 (radius);
+        kernel_type result (extents);
+        size_t voxel_count = 0;
+        size_t index = 0;
+        for (int z = -half_extents[2]; z <= half_extents[2]; ++z) {
+          for (int y = -half_extents[1]; y <= half_extents[1]; ++y) {
+            for (int x = -half_extents[0]; x <= half_extents[0]; ++x, ++index) {
+              const bool inside = Math::pow2 (x) + Math::pow2 (y) + Math::pow2 (z) <= sqradius;
+              result[index] = inside ? 1.0 : 0.0;
+              if (inside)
+                ++voxel_count;
+            }
+          }
+        }
+        result *= 1.0 / default_type (voxel_count);
+        return result;
       }
 
 
@@ -56,7 +89,7 @@ namespace MR
       kernel_type laplacian3d()
       {
         const default_type m = 1.0/26.0;
-        kernel_type result (27);
+        kernel_type result (3);
         result << 2.0*m,   3.0*m, 2.0*m,
                   3.0*m,   6.0*m, 3.0*m,
                   2.0*m,   3.0*m, 2.0*m,
@@ -75,7 +108,8 @@ namespace MR
 
       kernel_type unsharp_mask (const default_type force)
       {
-        kernel_type result (kernel_type::Zero (27));
+        kernel_type result (3);
+        result.fill (0.0);
         result[13] = 1.0 + (4.0 * force);
         result[4] = result[10] = result[12] = result[14] = result[16] = result[22] = -1.0 * force;
         return result;
@@ -86,9 +120,9 @@ namespace MR
 
       namespace
       {
-        kernel_type aTb (const kernel_type& a, const kernel_type& b)
+        kernel_type::base_type aTb (const kernel_type::base_type& a, const kernel_type::base_type& b)
         {
-          kernel_type result (a.size() * b.size());
+          kernel_type::base_type result (a.size() * b.size());
           ssize_t counter = 0;
           for (ssize_t ib = 0; ib != b.size(); ++ib) {
             for (ssize_t ia = 0; ia != a.size(); ++ia)
@@ -97,8 +131,9 @@ namespace MR
           return result;
         }
 
-        kernel_triplet make_triplet (const kernel_type& prefilter, const kernel_type derivative)
+        kernel_triplet make_triplet (const kernel_type::base_type& prefilter, const kernel_type::base_type derivative)
         {
+          assert (prefilter.size() == derivative.size());
           return { aTb (aTb (derivative, prefilter), prefilter),
                    aTb (aTb (prefilter, derivative), prefilter),
                    aTb (aTb (prefilter, prefilter), derivative) };
@@ -110,9 +145,9 @@ namespace MR
 
       kernel_triplet sobel()
       {
-        kernel_type triangle (3);
+        kernel_type::base_type triangle (3);
         triangle << 0.25, 0.50, 0.25;
-        kernel_type edge (3);
+        kernel_type::base_type edge (3);
         edge << -1.00, 0.00, 1.00;
 
         return make_triplet (triangle, edge);
@@ -122,9 +157,9 @@ namespace MR
 
       kernel_triplet sobel_feldman()
       {
-        kernel_type triangle (3);
+        kernel_type::base_type triangle (3);
         triangle << 3.0/16.0, 10.0/16.0, 3.0/16.0;
-        kernel_type edge (3);
+        kernel_type::base_type edge (3);
         edge << -1.00, 0.00, 1.00;
 
         return make_triplet (triangle, edge);
@@ -142,7 +177,7 @@ namespace MR
         if (order > 3)
           throw Exception ("Farid derivatives not available for orders greater than 3");
 
-        kernel_type prefilter (size), derivative (size);
+        kernel_type::base_type prefilter (size), derivative (size);
         switch (size) {
           case 3:
             prefilter  <<  0.229789,  0.540242,  0.229789;

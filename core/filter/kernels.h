@@ -23,20 +23,73 @@
 
 namespace MR
 {
+
+  class Header;
+
   namespace Filter
   {
     namespace Kernels
     {
 
 
-      // TODO More advanced kernel class that internally stores kernel half-widths
-      using kernel_type = Eigen::Matrix<default_type, Eigen::Dynamic, 1>;
+      class kernel_type : public Eigen::Matrix<default_type, Eigen::Dynamic, 1>
+      { MEMALIGN(kernel_type)
+        public:
+          using base_type = Eigen::Matrix<default_type, Eigen::Dynamic, 1>;
+
+          kernel_type() :
+              fullwidths ({0, 0, 0}),
+              halfwidths ({0, 0, 0}) { }
+
+          kernel_type (const size_t size) :
+              base_type (Math::pow3 (size))
+          {
+            assert (size%2);
+            fullwidths[0] = fullwidths[1] = fullwidths[2] = size;
+            halfwidths[0] = halfwidths[1] = halfwidths[2] = (size-1) / 2;
+          }
+
+          kernel_type (const vector<int>& sizes) :
+              base_type (sizes[0] * sizes[1] * sizes[2])
+          {
+            assert (sizes.size() == 3);
+            for (ssize_t axis = 0; axis != 3; ++axis) {
+              assert (sizes[axis] % 2);
+              fullwidths[axis] = sizes[axis];
+              halfwidths[axis] = (sizes[axis]-1) / 2;
+            }
+          }
+
+          kernel_type (const base_type& data) :
+              base_type (data)
+          {
+            const ssize_t size = ssize_t (round (std::cbrt (data.size())));
+            assert (Math::pow3 (size) == data.size());
+            fullwidths[0] = fullwidths[1] = fullwidths[2] = size;
+            halfwidths[0] = halfwidths[1] = halfwidths[2] = (size-1) / 2;
+          }
+
+          void resize (const ssize_t) = delete;
+          using base_type::size;
+          ssize_t size (const ssize_t axis) const { assert (axis >= 0 && axis < 3); return fullwidths[axis]; }
+          const std::array<ssize_t, 3> sizes() const { return fullwidths; }
+          ssize_t halfsize (const ssize_t axis) const { assert (axis >= 0 && axis < 3); return halfwidths[axis]; }
+
+        private:
+          std::array<ssize_t, 3> fullwidths, halfwidths;
+      };
+
+
+
+      //using kernel_type = Eigen::Matrix<default_type, Eigen::Dynamic, 1>;
       using kernel_triplet = std::array<kernel_type, 3>;
 
-      kernel_type identity (const size_t size);
+      kernel_type identity (const ssize_t size);
 
-      kernel_type boxblur (const size_t size);
+      kernel_type boxblur (const ssize_t size);
       kernel_type boxblur (const vector<int>& size);
+
+      kernel_type radialblur (const Header& header, const float radius);
 
       kernel_type laplacian3d();
       kernel_type unsharp_mask (const default_type force);
@@ -46,8 +99,6 @@ namespace MR
 
       kernel_triplet farid (const size_t order, const size_t size);
 
-      extern const kernel_triplet farid_1st_3x3x3;
-      extern const kernel_triplet farid_1st_5x5x5;
 
 
     }

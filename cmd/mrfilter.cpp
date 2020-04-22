@@ -36,16 +36,22 @@
 using namespace MR;
 using namespace App;
 
-enum filter_t {            BOXBLUR,   FFT,   LAPLACIAN3D,   MEDIAN,   UNSHARPMASK,   SOBEL,   SOBELFELDMAN,   ZCLEAN };
-const char* filters[] = { "boxblur", "fft", "laplacian3d", "median", "unsharpmask", "sobel", "sobelfeldman", "zclean", nullptr };
+enum filter_t {            BOXBLUR,   FFT,   LAPLACIAN3D,   MEDIAN,   RADIALBLUR,   SOBEL,   SOBELFELDMAN,   UNSHARPMASK, ZCLEAN };
+const char* filters[] = { "boxblur", "fft", "laplacian3d", "median", "radialblur", "sobel", "sobelfeldman", "unsharpmask", "zclean", nullptr };
 // TODO Remaining: gradient, laplacian1d, smooth
 
-//const char* filters[] = { "fft", "gradient", "laplacian1", "laplacian2", "median", "normalise", "sharpen", "smooth", "zclean", nullptr };
 
-
-// TODO Sharpen filter should have option to modulate the strength of the filter
 // TODO Should smoothing prior to filter operation be possible for filters other than gradient?
 // TODO Option to rotate sobel / sobel-feldman result to scanner space?
+
+
+const OptionGroup BoxblurOption = OptionGroup ("Options for boxblur filter")
+
+  + Option ("extent", "specify extent of boxblur filtering kernel in voxels. "
+        "This can be specified either as a single value to be used for all 3 axes, "
+        "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).")
+    + Argument ("size").type_sequence_int();
+
 
 
 const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
@@ -91,14 +97,13 @@ const OptionGroup MedianOption = OptionGroup ("Options for median filter")
     + Argument ("size").type_sequence_int();
 
 
-/*
-const OptionGroup NormaliseOption = OptionGroup ("Options for normalisation filter")
 
-  + Option ("extent", "specify extent of normalisation filtering neighbourhood in voxels. "
-        "This can be specified either as a single value to be used for all 3 axes, "
-        "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).")
-    + Argument ("size").type_sequence_int();
-*/
+const OptionGroup RadialblurOption = OptionGroup ("Options for radialblur filter")
+
+  + Option ("radius", "specify radius of blurring kernel in mm. "
+        "This option is compulsory when the radial blurring filter is used.")
+    + Argument ("value").type_float(0.0);
+
 
 /*
 const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
@@ -121,6 +126,15 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
             "The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.")
   + Argument ("voxels").type_sequence_int();
 */
+
+
+
+const OptionGroup UnsharpmaskOption = OptionGroup ("Options for unsharpmask filter")
+
+  + Option ("force", "specify the force of the unsharp masking kernel. ")
+    + Argument ("value").type_float(0.0);
+
+
 
 
 const OptionGroup ZcleanOption = OptionGroup ("Options for zclean filter")
@@ -158,10 +172,11 @@ void usage ()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
+  + BoxblurOption
   + FFTOption
   //+ GradientLaplaceOption
   + MedianOption
-  //+ NormaliseOption
+  + RadialblurOption
   //+ SmoothOption
   + ZcleanOption
   + Stride::Options;
@@ -199,9 +214,10 @@ vector<int> parse_extent()
 
 
 // TODO Completely re-write run() from scratch
+// TODO Some are not multi-threaded
 void run ()
 {
-
+  Header input_header (Header::open (argument[0]));
   const size_t filter_index = argument[1];
 
   switch (filter_index) {
@@ -210,7 +226,7 @@ void run ()
     {
       // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
       //   convert between cfloat and cdouble...
-      auto input = Image<cdouble>::open (argument[0]).with_direct_io();
+      auto input = input_header.get_image<cdouble>().with_direct_io();
       Filter::FFT filter (input, get_options ("inverse").size());
 
       auto opt = get_options ("axes");
@@ -236,9 +252,10 @@ void run ()
 
     case BOXBLUR:
     case LAPLACIAN3D:
+    case RADIALBLUR:
     case UNSHARPMASK:
     {
-      Image<float> input (Image<float>::open (argument[0]).with_direct_io());
+      Image<float> input = input_header.get_image<float>().with_direct_io();
       Adapter::EdgeExtend<Image<float>> edge_adapter (input);
       Filter::Kernels::kernel_type kernel;
       switch (filter_index) {
@@ -246,18 +263,24 @@ void run ()
           {
             auto extent = parse_extent();
             if (extent.size() == 1) {
-              kernel = Filter::Kernels::kernel_type::Constant (Math::pow3 (extent[0]), 1.0 / default_type (Math::pow3 (extent[0])));
+              kernel = Filter::Kernels::boxblur (extent[0]);
             } else if (extent.size() == 3) {
-              if (extent[1] != extent[0] || extent[2] != extent[0])
-                throw Exception ("Non-cubic boxblur kernels not yet supported");
-              kernel = Filter::Kernels::kernel_type::Constant (Math::pow3 (extent[0]), 1.0 / default_type (Math::pow3 (extent[0])));
+              kernel = Filter::Kernels::boxblur (extent);
             } else {
               kernel = Filter::Kernels::boxblur (3);
             }
           }
           break;
         case LAPLACIAN3D: kernel = Filter::Kernels::laplacian3d(); break;
-        case UNSHARPMASK: kernel = Filter::Kernels::unsharp_mask(1.0); break;
+        case RADIALBLUR:
+        {
+          auto opt = get_options ("radius");
+          if (!opt.size())
+            throw Exception ("Option \"-radius\" is compusory with use of the radial blur filter");
+          kernel = Filter::Kernels::radialblur (input_header, opt[0][0]);
+        }
+        break;
+        case UNSHARPMASK: kernel = Filter::Kernels::unsharp_mask (get_option_value ("force", 1.0)); break;
         default: assert (0);
       }
       Adapter::Kernel::Single<decltype(edge_adapter)> kernel_adapter (edge_adapter, kernel);
@@ -269,7 +292,7 @@ void run ()
 
     case MEDIAN:
     {
-      auto input = Image<float>::open (argument[0]);
+      auto input = input_header.get_image<float>();
       Filter::Median filter (input);
 
       auto extent = parse_extent();
@@ -286,7 +309,7 @@ void run ()
     case SOBEL:
     case SOBELFELDMAN:
     {
-      Image<float> input (Image<float>::open (argument[0]).with_direct_io());
+      Image<float> input = input_header.get_image<float>().with_direct_io();
       Adapter::EdgeExtend<Image<float>> edge_adapter (input);
       std::array<Filter::Kernels::kernel_type, 3> kernels;
       switch (filter_index) {
@@ -310,7 +333,7 @@ void run ()
 
     case ZCLEAN:
     {
-      auto input = Image<float>::open (argument[0]);
+      auto input = input_header.get_image<float>();
       Filter::ZClean filter (input);
 
       auto opt = get_options ("maskin");

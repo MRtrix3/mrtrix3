@@ -52,10 +52,10 @@ namespace MR
           Base (const ImageType& parent) :
               base_type (parent) { }
 
-          Base (const ImageType& parent, const size_t kernel_size) :
+          Base (const ImageType& parent, const Filter::Kernels::kernel_type& kernel) :
               base_type (parent)
           {
-            configure_kernel (kernel_size);
+            configure_kernel (kernel);
           }
 
 
@@ -64,6 +64,11 @@ namespace MR
           data_type data;
           std::array<size_t, 3> kernel_halfwidths;
 
+
+          // TODO Ideally would like to set the kernel up such that the
+          //   looping over the three spatial axes is done in the same order
+          //   as the relative image strides, and the data vector can still be
+          //   filled in a linear fashion
           void load_data()
           {
             assert (data.size());
@@ -79,24 +84,11 @@ namespace MR
               parent_.index(i) = pos[i];
           }
 
-          template <class Cont>
-          void configure_kernel (const Cont kernel_sizes)
+          void configure_kernel (const Filter::Kernels::kernel_type& k)
           {
-            assert (kernel_sizes.size() == 3);
-            for (size_t axis = 0; axis != 3; ++axis) {
-              assert (kernel_sizes[axis] % 2);
-              kernel_halfwidths[axis] = (kernel_sizes[axis]-1) / 2;
-            }
-            data = data_type::Zero (kernel_sizes[0] * kernel_sizes[1] * kernel_sizes[2]);
-          }
-
-          template <>
-          void configure_kernel (const size_t kernel_size)
-          {
-            // FIXME Move kernel axis sizes to kernel class
-            const size_t axis_size = round (std::cbrt (kernel_size));
-            std::array<size_t, 3> kernel_sizes { axis_size, axis_size, axis_size };
-            configure_kernel (kernel_sizes);
+            for (size_t axis = 0; axis != 3; ++axis)
+              kernel_halfwidths[axis] = k.halfsize (axis);
+            data = data_type::Zero (k.size());
           }
 
       };
@@ -114,7 +106,7 @@ namespace MR
               base_type (parent) { }
 
           Single (const ImageType& parent, const Filter::Kernels::kernel_type& k) :
-              base_type (parent, size_t(k.size())),
+              base_type (parent, k),
               kernel (k.cast<value_type> ()) { }
 
           value_type value()
@@ -126,17 +118,8 @@ namespace MR
 
           void set_kernel (const Filter::Kernels::kernel_type& k)
           {
-            // No resizing permitted within this version of the function
-            assert (k.size() == base_type::data.size());
-            base_type::configure_kernel (k.size());
+            base_type::configure_kernel (k);
             kernel = k.cast<value_type> ();
-          }
-
-          template <class Cont>
-          void set_kernel (const Filter::Kernels::kernel_type& k, const Cont& kernel_sizes)
-          {
-            base_type::configure_kernel (kernel_sizes);
-            set_kernel (k);
           }
 
         private:
@@ -159,16 +142,15 @@ namespace MR
           using data_type = typename base_type::data_type;
 
           Triplet (const ImageType& parent, const Filter::Kernels::kernel_triplet& k) :
-              base_type (parent, size_t(k[0].size())),
+              base_type (parent, k[0]),
               kernels ({ k[0].cast<value_type> (),
                          k[1].cast<value_type> (),
                          k[2].cast<value_type> () }),
               kernel_index (0),
               dirty (true)
           {
-            const size_t kernel_size = k[0].size();
-            assert (k[1].size() == kernel_size);
-            assert (k[2].size() == kernel_size);
+            assert (k[1].size() == k[0].size());
+            assert (k[2].size() == k[0].size());
           }
 
           FORCE_INLINE size_t ndim () const { return parent_.ndim() + 1; }
@@ -226,14 +208,13 @@ namespace MR
           using data_type = typename base_type::data_type;
 
           TripletNorm (const ImageType& parent, const Filter::Kernels::kernel_triplet& k) :
-              base_type (parent, size_t(k[0].size())),
+              base_type (parent, k[0]),
               kernels ({ k[0].cast<value_type> (),
                          k[1].cast<value_type> (),
                          k[2].cast<value_type> () })
           {
-            const size_t kernel_size = k[0].size();
-            assert (k[1].size() == kernel_size);
-            assert (k[2].size() == kernel_size);
+            assert (k[1].size() == k[0].size());
+            assert (k[2].size() == k[0].size());
           }
 
           value_type value()
