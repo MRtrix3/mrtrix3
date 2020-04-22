@@ -116,6 +116,20 @@ namespace MR
 
 
 
+      //! normalise a set of Cartesian coordinates
+      template <class MatrixType>
+      inline void normalise_cartesian (MatrixType& cartesian)
+      {
+        assert (cartesian.cols() == 3);
+        for (ssize_t i = 0; i < cartesian.rows(); i++) {
+          auto norm = cartesian.row(i).norm();
+          if (norm)
+            cartesian.row(i).array() /= norm;
+        }
+      }
+
+
+
     }
   }
 }

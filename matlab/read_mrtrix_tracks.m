@@ -93,18 +93,3 @@ for n = 1:(prod(size(k))-1)
   tracks.data{end+1} = data(pk:(k(n)-1),:);
   pk = k(n)+1;
 end
-
-
-
-
-function image = add_field (image, key, value)
-  if isfield (image, key)
-    previous = getfield (image, key);
-    if iscell (previous)
-      image = setfield (image, key, [ previous {value} ]);
-    else
-      image = setfield (image, key, { previous, value });
-    end
-  else
-    image = setfield (image, key, value);
-  end

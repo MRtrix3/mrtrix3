@@ -221,6 +221,8 @@ namespace MR
             }
           }
         }
+        else
+          throw CancelException();
         return ret;
       }
 

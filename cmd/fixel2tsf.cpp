@@ -25,9 +25,11 @@
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/streamline.h"
 
-#include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
+#include "dwi/tractography/mapping/mapper.h"
+
 
 
 using namespace MR;
@@ -96,14 +98,17 @@ void run ()
 
   ProgressBar progress ("mapping fixel values to streamline points", num_tracks);
   DWI::Tractography::Streamline<float> tck;
+  DWI::Tractography::TrackScalar<float> scalars;
 
-  Transform transform (in_index_image);
+  const Transform transform (in_index_image);
   Eigen::Vector3 voxel_pos;
 
   while (reader (tck)) {
     SetVoxelDir dixels;
     mapper (tck, dixels);
-    vector<float> scalars (tck.size(), 0.0f);
+    scalars.clear();
+    scalars.set_index (tck.get_index());
+    scalars.resize (tck.size(), 0.0f);
     for (size_t p = 0; p < tck.size(); ++p) {
       voxel_pos = transform.scanner2voxel * tck[p].cast<default_type> ();
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {

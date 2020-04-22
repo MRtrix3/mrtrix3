@@ -21,15 +21,14 @@
 #include "image.h"
 #include "image_helpers.h"
 #include "types.h"
-
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "math/constrained_least_squares.h"
 #include "math/rng.h"
 #include "math/sphere.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 
-#include "dwi/gradient.h"
-#include "dwi/shells.h"
 
 
 
@@ -235,7 +234,7 @@ void run ()
       dirs_azel.push_back (std::move (directions));
       volumes.push_back (all_volumes (dirs_azel.size()));
     } else {
-      auto grad = DWI::get_valid_DW_scheme (header);
+      auto grad = DWI::get_DW_scheme (header);
       shells.reset (new DWI::Shells (grad));
       shells->select_shells (false, false, false);
       for (size_t i = 0; i != shells->count(); ++i) {

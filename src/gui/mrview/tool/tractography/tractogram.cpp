@@ -706,7 +706,7 @@ namespace MR
           value_min = std::numeric_limits<float>::infinity();
           value_max = -std::numeric_limits<float>::infinity();
           vector<float> buffer;
-          vector<float> tck_scalar;
+          DWI::Tractography::TrackScalar<float> tck_scalar;
 
           if (Path::has_suffix (filename, ".tsf")) {
             DWI::Tractography::Properties scalar_properties;
@@ -801,7 +801,7 @@ namespace MR
           threshold_min = std::numeric_limits<float>::infinity();
           threshold_max = -std::numeric_limits<float>::infinity();
           vector<float> buffer;
-          vector<float> tck_scalar;
+          DWI::Tractography::TrackScalar<float> tck_scalar;
 
           if (Path::has_suffix (filename, ".tsf")) {
             DWI::Tractography::Properties scalar_properties;

@@ -68,7 +68,7 @@ namespace MR {
               bool operator() (Streamline<>& in, Cont& out) const
               {
                 out.clear();
-                out.index = in.index;
+                out.index = in.get_index();
                 out.weight = in.weight;
                 if (in.empty())
                   return true;
