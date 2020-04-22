@@ -52,7 +52,7 @@ namespace MR {
         vector<Frame*> frames;
 
         // loop over series list:
-        for (const auto series_it : series) {
+        for (const auto& series_it : series) {
           try {
             series_it->read();
           }

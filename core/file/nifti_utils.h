@@ -45,6 +45,7 @@ namespace MR
       template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz (Header& H);
 
       int version (Header& H);
+      std::string get_json_path (const std::string & nifti_path);
 
     }
   }
