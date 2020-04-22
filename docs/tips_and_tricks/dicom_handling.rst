@@ -240,8 +240,9 @@ desired pattern. It is simplest in practice to set it directly before the
 command, on the same line -- this ensures that the environment variable does not
 apply to other commands than that intended. The matching pattern can include
 the ``*`` and/or ``?`` wildcard characters, and you can use several selectors at
-the same time. If you set any selector, you won't be prompted for input, but
-the command will abort if there is no match or if there are too many matches.
+the same time. Note that matching is *not* case-sensitive. If you set any
+selector, you won't be prompted for input, but the command will abort if there
+is no match or if there are too many matches.
 
 Example usage:
 
