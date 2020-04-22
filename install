@@ -39,7 +39,7 @@ if [ -z "${url}" ]; then
 fi
 
 echo "Downloading "${url}" ..."
-curl -sLf "${url}" -O
+curl -sL "${url}" -O
 
 tarball=$(basename "${url}")
 if [ ! -f "${tarball}" ]; then
