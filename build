@@ -18,6 +18,7 @@ else
 
   TIFF_VERSION=$(git ls-remote --tags https://gitlab.com/libtiff/libtiff.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
   TIFF_VERSION=${TIFF_VERSION#*/*/v}
+  TIFF_VERSION=4.0.9
   echo "Using tiff ${TIFF_VERSION}"
 
   PNG_VERSION=$(git ls-remote --tags https://github.com/glennrp/libpng.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
@@ -51,7 +52,7 @@ else
   curl -s -O -L http://download.osgeo.org/libtiff/${FNAME}
   tar xf ${FNAME}
   cd ${DNAME}
-  ./configure -q -prefix ${PREFIX} --enable-shared=NO --without-x
+  ./configure -q -prefix ${PREFIX} --enable-shared=NO --without-x --disable-jpeg --disable-old-jpeg --disable-lzma --disable-zstd --disable-webp
   make install > /dev/null
   cd ..
   rm -r ${FNAME} ${DNAME}
