@@ -143,9 +143,8 @@ Table of Contents
    :caption: Install
 
    installation/before_install
-   installation/linux_install
-   installation/mac_install
-   installation/windows_install
+   installation/package_install
+   installation/build_from_source
    installation/deployment
    installation/hpc_clusters_install
 
