@@ -19,7 +19,6 @@
 #include "header.h"
 #include "file/ofstream.h"
 #include "file/mgh.h"
-#include "file/nifti1_utils.h"
 
 namespace MR
 {

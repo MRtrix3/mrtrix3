@@ -35,7 +35,6 @@ namespace MR
     NIfTI2        nifti2_handler;
     NIfTI1_GZ     nifti1_gz_handler;
     NIfTI2_GZ     nifti2_gz_handler;
-    Analyse       analyse_handler;
     XDS           xds_handler;
     DICOM         dicom_handler;
     MGH           mgh_handler;
@@ -61,7 +60,6 @@ namespace MR
       &nifti2_handler,
       &nifti1_gz_handler,
       &nifti2_gz_handler,
-      &analyse_handler,
       &mri_handler,
       &par_handler,
       &xds_handler,

@@ -38,13 +38,6 @@ namespace MR
     {
 
 
-      constexpr const char* preserve_track_order_desc
-          = "Note that if multi-threading is used in this command, the ordering of tracks in the "
-            "output file is unlikely to match the order of the incoming data. If your application "
-            "explicitly requires that the order of tracks not change, you should run this command "
-            "with the option -nthreads 0.";
-
-
       template <class ValueType>
       class ReaderInterface
       { NOMEMALIGN
@@ -71,13 +64,13 @@ namespace MR
         public:
 
           //! open the \c file for reading and load header into \c properties
-          Reader (const std::string& file, Properties& properties) :
-            current_index (0) {
-              open (file, "tracks", properties);
-              auto opt = App::get_options ("tck_weights_in");
-              if (opt.size())
-                weights = load_vector<ValueType> (opt[0][0]);
-            }
+          Reader (const std::string& file, Properties& properties)
+          {
+            open (file, "tracks", properties);
+            auto opt = App::get_options ("tck_weights_in");
+            if (opt.size())
+              weights = load_vector<ValueType> (opt[0][0]);
+          }
 
 
             //! fetch next track from file
@@ -101,12 +94,12 @@ namespace MR
                 }
 
                 if (std::isnan (p[0])) {
-                  tck.index = current_index++;
+                  tck.set_index (current_index++);
 
                   if (weights.size()) {
 
-                    if (tck.index < size_t(weights.size())) {
-                      tck.weight = weights[tck.index];
+                    if (tck.get_index() < size_t(weights.size())) {
+                      tck.weight = weights[tck.get_index()];
                     } else {
                       WARN ("Streamline weights file contains less entries (" + str(weights.size()) + ") than .tck file; "
                             "ceasing reading of streamline data");
@@ -134,8 +127,8 @@ namespace MR
         protected:
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
+          using __ReaderBase__::current_index;
 
-          uint64_t current_index;
           Eigen::Matrix<ValueType, Eigen::Dynamic, 1> weights;
 
           //! takes care of byte ordering issues

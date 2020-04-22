@@ -309,8 +309,7 @@ perform additional sanity checks and modifications of these data, including:
   it is generally helpful to view the information as it would be interpreted by
   other *MRtrix3* applications. If you need to display the raw DW gradient
   table before any modification, use :ref:`mrinfo` with the ``-property
-  dw_scheme`` option to
-
+  dw_scheme`` option.
 
 *b*-value scaling
 -----------------

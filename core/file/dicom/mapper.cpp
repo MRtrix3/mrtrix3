@@ -144,9 +144,47 @@ namespace MR {
         import_parameter ("FlipAngle",
                           [] (Frame* f) -> default_type { return f->flip_angle; },
                           1.0);
+        import_parameter ("InversionTime",
+                          [] (Frame* f) -> default_type { return f->inversion_time; },
+                          0.001);
+        import_parameter ("PartialFourier",
+                          [] (Frame* f) -> default_type { return f->partial_fourier; },
+                          1.0);
+        import_parameter ("PixelBandwidth",
+                          [] (Frame* f) -> default_type { return f->pixel_bandwidth; },
+                          1.0);
         import_parameter ("RepetitionTime",
                           [] (Frame* f) -> default_type { return f->repetition_time; },
                           0.001);
+
+        if (std::isfinite (frame.bvalue)) {
+          if (frame.bipolar_flag) {
+            switch (frame.bipolar_flag) {
+              case 1: H.keyval()["DiffusionScheme"] = "Bipolar"; break;
+              case 2: H.keyval()["DiffusionScheme"] = "Monopolar"; break;
+              default: WARN("Unsupported DWI polarity scheme flag (" + str(frame.bipolar_flag) + ")");
+            }
+          } else if (frame.readoutmode_flag) {
+            switch (frame.readoutmode_flag) {
+              case 1: H.keyval()["DiffusionScheme"] = "Monopolar"; break;
+              case 2: H.keyval()["DiffusionScheme"] = "Bipolar"; break;
+              default: WARN("Unsupported DWI readout mode flag (" + str(frame.readoutmode_flag) + ")");
+            }
+          }
+        }
+
+        if (frame.flip_angles.size() > 1) {
+          // Are all entries in the vector the same?
+          bool all_equal = true;
+          for (size_t index = 1; index != frame.flip_angles.size(); ++index) {
+            if (frame.flip_angles[index] != frame.flip_angles[0]) {
+              all_equal = false;
+              break;
+            }
+          }
+          if (!all_equal)
+            H.keyval()["FlipAngle"] = join (frame.flip_angles, ",");
+        }
 
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
         if (nchannels > 1)
@@ -223,7 +261,12 @@ namespace MR {
             H.keyval()["dw_scheme"] = dw_scheme;
         }
 
-        PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
+        try {
+          PhaseEncoding::set_scheme (H, Frame::get_PE_scheme (frames, dim[1]));
+        } catch (Exception& e) {
+          e.display (3);
+          WARN ("Malformed phase encoding information; ignored");
+        }
 
         bool inconsistent_scaling = false;
         for (size_t n = 1; n < frames.size(); ++n) { // check consistency of data scaling:

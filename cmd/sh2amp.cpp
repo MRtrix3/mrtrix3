@@ -17,11 +17,12 @@
 #include <sstream>
 
 #include "command.h"
-#include "math/SH.h"
 #include "image.h"
-#include "math/sphere.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "math/sphere.h"
+#include "math/SH.h"
+
 #include "dwi/directions/file.h"
 
 
@@ -166,7 +167,7 @@ void run ()
     }
     catch (Exception& E) {
       auto header = Header::open (argument[1]);
-      directions = DWI::get_valid_DW_scheme (header);
+      directions = DWI::get_DW_scheme (header);
     }
   }
 

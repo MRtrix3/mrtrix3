@@ -23,8 +23,6 @@ Description
 
 This command can be used to perform various types of manipulations on track data. A range of such manipulations are demonstrated in the examples provided below.
 
-Note that if multi-threading is used in this command, the ordering of tracks in the output file is unlikely to match the order of the incoming data. If your application explicitly requires that the order of tracks not change, you should run this command with the option -nthreads 0.
-
 Example usages
 --------------
 
@@ -90,7 +88,7 @@ Thresholds pertaining to per-streamline weighting
 Other options specific to tckedit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-inverse** output the inverse selection of streamlines based on the criteria provided, i.e. only those streamlines that fail at least one criterion will be written to file.
+-  **-inverse** output the inverse selection of streamlines based on the criteria provided; i.e. only those streamlines that fail at least one selection criterion, and/or vertices that are outside masks if provided, will be written to file
 
 -  **-ends_only** only test the ends of each streamline against the provided include/exclude ROIs
 

@@ -59,14 +59,15 @@ void usage ()
     + Stride::Options;
 }
 
+
+
+
+
+
 void run()
 {
-  auto input_header = Header::open (argument[0]);
-  auto input_image = input_header.get_image<float>();
-
-  Eigen::MatrixXd grad_unprocessed = DWI::get_DW_scheme (input_image);
-  Eigen::MatrixXd grad = grad_unprocessed;
-  DWI::validate_DW_scheme (grad, input_image);
+  auto input_image = Image<float>::open (argument[0]);
+  auto grad = DWI::get_DW_scheme (input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
@@ -98,7 +99,7 @@ void run()
   }
 
   auto opt = get_options ("pe");
-  const auto pe_scheme = PhaseEncoding::get_scheme (input_header);
+  const auto pe_scheme = PhaseEncoding::get_scheme (input_image);
   if (opt.size()) {
     if (!pe_scheme.rows())
       throw Exception ("Cannot filter volumes by phase-encoding: No such information present");
@@ -137,7 +138,7 @@ void run()
 
   Eigen::MatrixXd new_grad (volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
-    new_grad.row (i) = grad_unprocessed.row (volumes[i]);
+    new_grad.row (i) = grad.row (volumes[i]);
   DWI::set_DW_scheme (header, new_grad);
 
   if (pe_scheme.rows()) {

@@ -115,7 +115,7 @@ image.data = reshape (image.data, image.dim(order));
 image.data = ipermute (image.data, order);
 for i=1:size(order,2)
   if layout{i}(1) == '-'
-    image.data = flipdim(image.data, i);
+    image.data = flip(image.data, i);
   end
 end
 
@@ -131,15 +131,3 @@ function S = split_strings (V, delim)
 
 
 
-
-function image = add_field (image, key, value)
-  if isfield (image, key)
-    previous = getfield (image, key);
-    if iscell (previous)
-      image = setfield (image, key, [ previous {value} ]);
-    else
-      image = setfield (image, key, { previous, value });
-    end
-  else
-    image = setfield (image, key, value);
-  end
