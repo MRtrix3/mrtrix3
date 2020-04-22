@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __algo_histogram_h__
 #define __algo_histogram_h__
@@ -20,6 +21,7 @@
 
 #include "image_helpers.h"
 #include "types.h"
+#include "adapter/replicate.h"
 #include "algo/loop.h"
 
 namespace MR
@@ -157,10 +159,11 @@ namespace MR
           calibrate (result, image);
           return;
         }
-        if (!dimensions_match (image, mask))
-          throw Exception ("Image and mask for histogram generation do not match");
-        for (auto l = Loop(image) (image, mask); l; ++l) {
-          if (mask.value())
+        if (!dimensions_match (image, mask, 0, 3))
+          throw Exception ("Image and mask for histogram calibration do not match");
+        Adapter::Replicate<MaskType> mask_replicate (mask, image);
+        for (auto l = Loop(image) (image, mask_replicate); l; ++l) {
+          if (mask_replicate.value())
             result (image.value());
         }
         result.finalize (image.ndim() > 3 ? image.size(3) : 1, std::is_integral<typename ImageType::value_type>::value);
@@ -196,9 +199,12 @@ namespace MR
       {
         if (!mask.valid())
           return generate (calibrator, image);
+        if (!dimensions_match (image, mask, 0, 3))
+          throw Exception ("Image and mask for histogram generation do not match");
         Data result (calibrator);
-        for (auto l = Loop(image) (image, mask); l; ++l) {
-          if (mask.value())
+        Adapter::Replicate<MaskType> mask_replicate (mask, image);
+        for (auto l = Loop(image) (image, mask_replicate); l; ++l) {
+          if (mask_replicate.value())
             result (typename ImageType::value_type (image.value()));
         }
         return result;

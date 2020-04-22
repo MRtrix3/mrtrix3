@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/tracking/method.h"
 
@@ -72,9 +73,9 @@ namespace MR
         {
           Eigen::Vector3f d;
           do {
-            d[0] = 2.0 * uniform(*rng) - 1.0;
-            d[1] = 2.0 * uniform(*rng) - 1.0;
-            d[2] = 2.0 * uniform(*rng) - 1.0;
+            d[0] = 2.0 * uniform(rng) - 1.0;
+            d[1] = 2.0 * uniform(rng) - 1.0;
+            d[2] = 2.0 * uniform(rng) - 1.0;
           } while (d.squaredNorm() > 1.0);
           d.normalize();
           return d;
@@ -84,11 +85,11 @@ namespace MR
 
         Eigen::Vector3f MethodBase::random_direction (const float max_angle, const float sin_max_angle)
         {
-          float phi = 2.0 * Math::pi * uniform(*rng);
+          float phi = 2.0 * Math::pi * uniform(rng);
           float theta;
           do {
-            theta = max_angle * uniform(*rng);
-          } while (sin_max_angle * uniform(*rng) > sin (theta));
+            theta = max_angle * uniform(rng);
+          } while (sin_max_angle * uniform(rng) > sin (theta));
           return Eigen::Vector3f (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
         }
 

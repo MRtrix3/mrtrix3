@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <limits>
 
@@ -30,12 +31,12 @@ namespace MR
 
 
         std::unique_ptr<ROI_UndoEntry::Shared> ROI_UndoEntry::shared;
-            
+
 
         ROI_UndoEntry::Shared::Shared() :
             count (1)
         {
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           GL::Shader::Vertex vertex_shader (
               "layout(location = 0) in ivec3 vertpos;\n"
               "void main() {\n"
@@ -80,7 +81,7 @@ namespace MR
         ROI_UndoEntry::Shared::~Shared()
         {
           assert (!count);
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           program.clear();
           vertex_buffer.clear();
           vertex_array_object.clear();
@@ -113,8 +114,8 @@ namespace MR
           else { slice_axes[0] = 0; slice_axes[1] = 1; }
           tex_size = { { size[slice_axes[0]], size[slice_axes[1]] } };
 
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           if (!shared)
             shared.reset (new Shared());
@@ -161,7 +162,7 @@ namespace MR
           gl::GetTexImage (gl::TEXTURE_2D, 0, gl::RED, gl::UNSIGNED_BYTE, (void*)(&before[0]));
           after = before;
           GL_CHECK_ERROR;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -206,8 +207,8 @@ namespace MR
         void ROI_UndoEntry::draw_line (ROI_Item& roi, const Eigen::Vector3f& prev_pos, const Eigen::Vector3f& pos, const bool insert_mode_value)
         {
           const GLubyte value = insert_mode_value ? 1 : 0;
-          Eigen::Vector3f p = roi.transform().scanner2voxel.cast<float>() * prev_pos;
-          const Eigen::Vector3f final_pos = roi.transform().scanner2voxel.cast<float>() * pos;
+          Eigen::Vector3f p = roi.scanner2voxel() * prev_pos;
+          const Eigen::Vector3f final_pos = roi.scanner2voxel() * pos;
           const Eigen::Vector3f dir ((final_pos - p).normalized());
           Eigen::Array3i v (int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])));
           const Eigen::Array3i final_vox (int(std::round (final_pos[0])), int(std::round (final_pos[1])), int(std::round (final_pos[2])));
@@ -234,11 +235,11 @@ namespace MR
             }
           } while ((v - final_vox).abs().maxCoeff());
 
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -250,8 +251,8 @@ namespace MR
           const float radius = 0.5f * diameter;
           const float radius_sq = Math::pow2 (radius);
           const GLubyte value = insert_mode_value ? 1 : 0;
-          const Eigen::Vector3f start = roi.transform().scanner2voxel.cast<float>() * prev_pos;
-          const Eigen::Vector3f end = roi.transform().scanner2voxel.cast<float>() * pos;
+          const Eigen::Vector3f start = roi.scanner2voxel() * prev_pos;
+          const Eigen::Vector3f end = roi.scanner2voxel() * pos;
           const Eigen::Vector3f offset (end - start);
           const float offset_norm (offset.norm());
           const Eigen::Vector3f dir (Eigen::Vector3f(offset).normalized());
@@ -280,11 +281,11 @@ namespace MR
 
           } } }
 
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -292,7 +293,7 @@ namespace MR
 
         void ROI_UndoEntry::draw_circle (ROI_Item& roi, const Eigen::Vector3f& pos, const bool insert_mode_value, const float diameter)
         {
-          Eigen::Vector3f vox = roi.transform().scanner2voxel.cast<float>() * pos;
+          Eigen::Vector3f vox = roi.scanner2voxel() * pos;
           roi.brush_size = diameter;
           const float radius = 0.5f * diameter;
           const float radius_sq = Math::pow2 (radius);
@@ -315,11 +316,11 @@ namespace MR
                     Math::pow2 (roi.header().spacing(2) * (vox[2]-k)) < radius_sq)
                   after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -327,10 +328,10 @@ namespace MR
 
         void ROI_UndoEntry::draw_rectangle (ROI_Item& roi, const Eigen::Vector3f& from_pos, const Eigen::Vector3f& to_pos, const bool insert_mode_value)
         {
-          Eigen::Vector3f vox = roi.transform().scanner2voxel.cast<float>() * from_pos;
+          Eigen::Vector3f vox = roi.scanner2voxel() * from_pos;
           const GLubyte value = insert_mode_value ? 1 : 0;
           std::array<int,3> a = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
-          vox = roi.transform().scanner2voxel.cast<float>() * to_pos;
+          vox = roi.scanner2voxel() * to_pos;
           std::array<int,3> b = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
 
           if (a[0] > b[0]) std::swap (a[0], b[0]);
@@ -348,18 +349,18 @@ namespace MR
               for (int i = a[0]; i <= b[0]; ++i)
                 after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
 
         void ROI_UndoEntry::draw_fill (ROI_Item& roi, const Eigen::Vector3f& pos, const bool insert_mode_value)
         {
-          const Eigen::Vector3f vox = roi.transform().scanner2voxel.cast<float>() * pos;
+          const Eigen::Vector3f vox = roi.scanner2voxel() * pos;
           const std::array<int,3> seed_voxel = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
           for (size_t axis = 0; axis != 3; ++axis) {
             if (seed_voxel[axis] < 0) return;
@@ -392,43 +393,43 @@ namespace MR
               }
             }
           }
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
 
 
 
-        void ROI_UndoEntry::undo (ROI_Item& roi) 
+        void ROI_UndoEntry::undo (ROI_Item& roi)
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&before[0]));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
-        void ROI_UndoEntry::redo (ROI_Item& roi) 
+        void ROI_UndoEntry::redo (ROI_Item& roi)
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
-        void ROI_UndoEntry::copy (ROI_Item& roi, ROI_UndoEntry& source) 
+        void ROI_UndoEntry::copy (ROI_Item& roi, ROI_UndoEntry& source)
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           after = source.before;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 

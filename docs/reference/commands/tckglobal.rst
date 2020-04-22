@@ -26,7 +26,8 @@ This command will reconstruct the global white matter fibre tractogram that best
 
 Example use: 
 
- $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif    -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck 
+ $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif  |br|
+   -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck 
 
 in which dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is saved to tracks.tck. Optional output images fod.mif and fiso.mif contain the predicted WM fODF and isotropic tissue fractions of CSF and GM respectively, estimated as part of the global optimization and thus affected by spatial regularization.
 
@@ -40,7 +41,7 @@ Input options
 
 -  **-mask image** only reconstruct the tractogram within the specified brain mask image.
 
--  **-riso response** set one or more isotropic response functions. (multiple allowed)
+-  **-riso response** *(multiple uses permitted)* set one or more isotropic response functions. (multiple allowed)
 
 Parameters
 ^^^^^^^^^^
@@ -64,7 +65,8 @@ Parameters
 Output options
 ^^^^^^^^^^^^^^
 
--  **-fod odf** Predicted fibre orientation distribution function (fODF).This fODF is estimated as part of the global track optimization, and therefore incorporates the spatial regularization that it imposes. Internally, the fODF is represented as a discrete sum of apodized point spread functions (aPSF) oriented along the directions of all particles in the voxel, used to predict the DWI signal from the particle configuration.
+-  **-fod odf** Predicted fibre orientation distribution function (fODF). |br|
+   This fODF is estimated as part of the global track optimization, and therefore incorporates the spatial regularization that it imposes. Internally, the fODF is represented as a discrete sum of apodized point spread functions (aPSF) oriented along the directions of all particles in the voxel, used to predict the DWI signal from the particle configuration.
 
 -  **-noapo** disable spherical convolution of fODF with apodized PSF, to output a sum of delta functions rather than a sum of aPSFs.
 
@@ -77,28 +79,33 @@ Output options
 Advanced parameters, if you really know what you're doing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-balance b** balance internal and external energy. (default = 0)Negative values give more weight to the internal energy, positive to the external energy.
+-  **-balance b** balance internal and external energy. (default = 0) |br|
+   Negative values give more weight to the internal energy, positive to the external energy.
 
 -  **-density lambda** set the desired density of the free Poisson process. (default = 1)
 
 -  **-prob prob** set the probabilities of generating birth, death, randshift, optshift and connect proposals respectively. (default = 0.25,0.05,0.25,0.1,0.35)
 
--  **-beta b** set the width of the Hanning interpolation window. (in [0, 1], default = 0)If used, a mask is required, and this mask must keep at least one voxel distance to the image bounding box.
+-  **-beta b** set the width of the Hanning interpolation window. (in [0, 1], default = 0) |br|
+   If used, a mask is required, and this mask must keep at least one voxel distance to the image bounding box.
 
--  **-lambda lam** set the weight of the internal energy directly. (default = 1)If provided, any value of -balance will be ignored.
+-  **-lambda lam** set the weight of the internal energy directly. (default = 1) |br|
+   If provided, any value of -balance will be ignored.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
 -  **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+-  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
 -  **-debug** display debugging messages.
 
--  **-force** force overwrite of output files. Caution: Using the same file as input and output might cause unexpected behaviour.
+-  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
 -  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+-  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
 -  **-help** display this information page and exit.
 
@@ -108,6 +115,8 @@ References
 ^^^^^^^^^^
 
 Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F. Global tractography of multi-shell diffusion-weighted imaging data using a multi-tissue model. NeuroImage, 2015, 123, 89-101
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 

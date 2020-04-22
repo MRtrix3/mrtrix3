@@ -1,23 +1,25 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
 #include "file/ofstream.h"
-#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/streamline.h"
 
 using namespace MR;
 using namespace MR::DWI;
@@ -72,13 +74,13 @@ void run ()
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
     }
 
-    for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
+    for (std::multimap<std::string,std::string>::const_iterator i = properties.prior_rois.begin(); i != properties.prior_rois.end(); ++i)
       std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
 
 
 
     if (actual_count) {
-      vector<float > tck;
+      DWI::Tractography::TrackScalar<> tck;
       size_t count = 0;
       {
         ProgressBar progress ("counting tracks in file");
@@ -92,12 +94,11 @@ void run ()
 
     if (opt.size()) {
       ProgressBar progress ("writing track scalar data to ascii files");
-      vector<float> tck;
-      size_t count = 0;
+      DWI::Tractography::TrackScalar<> tck;
       while (file (tck)) {
         std::string filename (opt[0][0]);
         filename += "-000000.txt";
-        std::string num (str (count));
+        std::string num (str (tck.get_index()));
         filename.replace (filename.size()-4-num.size(), num.size(), num);
 
         File::OFStream out (filename);
@@ -105,7 +106,6 @@ void run ()
           out << (*i) << "\n";
         out.close();
 
-        count++;
         ++progress;
       }
     }

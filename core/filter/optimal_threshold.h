@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __filter_optimal_threshold_h__
 #define __filter_optimal_threshold_h__
@@ -80,7 +81,7 @@ namespace MR
 
           class CorrelationFunctor { NOMEMALIGN
             public:
-              CorrelationFunctor (double threshold, double& overall_sum, double& overall_mean_xy) : 
+              CorrelationFunctor (double threshold, double& overall_sum, double& overall_mean_xy) :
                 threshold (threshold), overall_sum (overall_sum), overall_mean_xy (overall_mean_xy),
                 sum (0), mean_xy (0.0) { }
 
@@ -187,13 +188,16 @@ namespace MR
           using input_value_type = typename ImageType::value_type;
 
           input_value_type min, max;
-          min_max (input, min, max);
+          if (mask.valid())
+            min_max (input, mask, min, max);
+          else
+            min_max (input, min, max);
 
           input_value_type optimal_threshold = 0.0;
           {
             ImageCorrelationCostFunction<ImageType, MaskType> cost_function (input, mask);
             optimal_threshold = Math::golden_section_search (cost_function, "optimising threshold",
-                min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
+                min + 0.001*(max-min), 0.5*(min+max), max-0.001*(max-min));
           }
 
           return optimal_threshold;
@@ -243,7 +247,7 @@ namespace MR
           template <class InputImageType, class OutputImageType>
             void operator() (InputImageType& input, OutputImageType& output)
             {
-              auto mask = Image<bool>();
+              Image<bool> mask;
               operator() (input, output, mask);
             }
 
@@ -251,7 +255,6 @@ namespace MR
           template <class InputImageType, class OutputImageType, class MaskType>
             void operator() (InputImageType& input, OutputImageType& output, MaskType& mask)
             {
-              axes_.resize (4);
               using input_value_type = typename InputImageType::value_type;
 
               input_value_type optimal_threshold = estimate_optimal_threshold (input, mask);
