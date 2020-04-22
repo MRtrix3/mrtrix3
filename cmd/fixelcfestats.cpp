@@ -77,19 +77,19 @@ void usage ()
   + Math::Stats::GLM::column_ones_description;
 
   REFERENCES
-  + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A." // Internal
+  + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A. " // Internal
     "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres."
     "Neuroimage, 2015, 15(117):40-55"
 
   + "* If not using the -cfe_legacy option: \n"
-    "Smith, RE.; Dimond, D; Vaughan, D.; Parker, D.; Dhollander, T.; Jackson, G.; Connelly, A. \n"
-    "Intrinsic non-stationarity correction for Fixel-Based Analysis. \n"
-    "In Proc OHBM 2019 M789\n"
+    "Smith, RE.; Dimond, D; Vaughan, D.; Parker, D.; Dhollander, T.; Jackson, G.; Connelly, A. "
+    "Intrinsic non-stationarity correction for Fixel-Based Analysis. "
+    "In Proc OHBM 2019 M789"
 
   + "* If using the -nonstationary option: \n"
     "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. "
     "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. "
-    "NeuroImage, 2011, 54(3), 2006-19" ;
+    "NeuroImage, 2011, 54(3), 2006-19";
 
   ARGUMENTS
   + Argument ("in_fixel_directory", "the fixel directory containing the data files for each subject (after obtaining fixel correspondence").type_directory_in()

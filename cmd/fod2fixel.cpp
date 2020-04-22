@@ -76,7 +76,7 @@ void usage ()
     + "* Reference for Apparent Fibre Density (AFD):\n"
     "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. " // Internal
     "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
-    "Neuroimage, 2012, 15;59(4), 3976-94.";
+    "Neuroimage, 2012, 15;59(4), 3976-94";
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ()
