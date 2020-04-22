@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include <limits>
 
@@ -58,10 +59,25 @@ void usage ()
     + "Supported operations are:"
 
     + "mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), "
-    "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
-    "magmax (value with maximum absolute value, preserving its sign)."
+      "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
+      "magmax (value with maximum absolute value, preserving its sign)."
 
-    + "See also 'mrcalc' to compute per-voxel operations.";
+    + "This command is used to traverse either along an image axis, or across a "
+      "set of input images, calculating some statistic from the values along each "
+      "traversal. If you are seeking to instead perform mathematical calculations "
+      "that are done independently for each voxel, pleaase see the 'mrcalc' command.";
+
+  EXAMPLES
+  + Example ("Calculate a 3D volume representing the mean intensity across a 4D image series",
+             "mrmath 4D.mif mean 3D_mean.mif -axis 3",
+             "This is a common operation for calculating e.g. the mean value within a "
+             "specific DWI b-value. Note that axis indices start from 0; thus, axes 0, 1 & 2 "
+             "are the three spatial axes, and axis 3 operates across volumes.")
+
+  + Example ("Generate a Maximum Intensity Projection (MIP) along the inferior-superior direction",
+             "mrmath input.mif max MIP.mif -axis 2",
+             "Since a MIP is literally the maximal value along a specific projection direction, "
+             "axis-aligned MIPs can be generated easily using mrmath with the \'max\' operation.");
 
   ARGUMENTS
   + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
@@ -71,6 +87,9 @@ void usage ()
   OPTIONS
   + Option ("axis", "perform operation along a specified axis of a single input image")
     + Argument ("index").type_integer (0)
+
+  + Option ("keep_unary_axes", "Keep unary axes in input images prior to calculating the stats. "
+    "The default is to wipe axes with single elements.")
 
   + DataType::options();
 }
@@ -175,22 +194,25 @@ class NORM2 { NOMEMALIGN
 };
 
 
+// Welford's algorithm to avoid catastrophic cancellation
 class Var { NOMEMALIGN
   public:
-    Var () : sum (0.0), sum_sqr (0.0), count (0) { }
+    Var () : delta (0.0), delta2 (0.0), mean (0.0), m2 (0.0), count (0) { }
     void operator() (value_type val) {
       if (std::isfinite (val)) {
-        sum += val;
-        sum_sqr += Math::pow2 (val);
         ++count;
+        delta = val - mean;
+        mean += delta / count;
+        delta2 = val - mean;
+        m2 += delta * delta2;
       }
     }
     value_type result () const {
       if (count < 2)
         return NAN;
-      return  (sum_sqr - Math::pow2 (sum) / static_cast<double> (count)) / (static_cast<double> (count) - 1.0);
+      return m2 / (static_cast<double> (count) - 1.0);
     }
-    double sum, sum_sqr;
+    double delta, delta2, mean, m2;
     size_t count;
 };
 
@@ -400,8 +422,10 @@ void run ()
     header.datatype() = DataType::from_command_line (DataType::Float32);
 
     // Wipe any excess unary-dimensional axes
-    while (header.size (header.ndim() - 1) == 1)
-      header.ndim() = header.ndim() - 1;
+    if ( ! get_options ("keep_unary_axes").size() ) {
+      while (header.size (header.ndim() - 1) == 1)
+        header.ndim() = header.ndim() - 1;
+    }
 
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
@@ -419,12 +443,8 @@ void run ()
         if (temp.size(axis) != 1)
           throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
       }
+      header.merge_keyval (temp);
     }
-
-    // Wipe any header information that can't be guaranteed to still be accurate
-    //   after applying an operator across multiple images
-    header.keyval().erase ("dw_scheme");
-    PhaseEncoding::clear_scheme (header);
 
     // Instantiate a kernel depending on the operation requested
     std::unique_ptr<ImageKernelBase> kernel;

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -19,6 +20,7 @@
 #include "registration/warp/compose.h"
 #include "registration/warp/convert.h"
 #include "adapter/extract.h"
+#include "file/nifti_utils.h"
 
 
 using namespace MR;
@@ -112,7 +114,11 @@ void run ()
 
    // warpfull2deformation & warpfull2displacement
   } else if (type == 2 || type == 3) {
-
+    if (!Path::is_mrtrix_image (argument[0]) && !(Path::has_suffix (argument[0], {".nii", ".nii.gz"}) &&
+                                                  File::Config::get_bool ("NIfTIAutoLoadJSON", false) &&
+                                                  Path::exists(File::NIfTI::get_json_path(opt[0][0]))))
+      WARN ("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
+            "Converting to other file formats may remove linear transformations stored in the image header.");
     auto warp = Image<default_type>::open (argument[0]).with_direct_io (3);
     Registration::Warp::check_warp_full (warp);
 

@@ -1,22 +1,22 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/tool/overlay.h"
 
 #include "mrtrix.h"
-#include "gui/mrview/colourmap.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
@@ -103,6 +103,8 @@ namespace MR
 
             image_list_view = new QListView (this);
             image_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
+            image_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+            image_list_view->setTextElideMode (Qt::ElideLeft);
             image_list_view->setDragEnabled (true);
             image_list_view->setDragDropMode (QAbstractItemView::InternalMove);
             image_list_view->setAcceptDrops (true);
@@ -118,20 +120,12 @@ namespace MR
 
             main_box->addWidget (image_list_view, 1);
 
-            layout = new HBoxLayout;
-            volume_label = new QLabel ("Volume: ");
-            volume_label->setEnabled (false);
-            layout->addWidget (volume_label);
-            volume_selecter = new SpinBox (this);
-            volume_selecter->setMinimum (0);
-            volume_selecter->setMaximum (0);
-            volume_selecter->setValue (0);
-            volume_selecter->setEnabled (false);
-            volume_selecter->setToolTip ("For 4D overlay images, select the 3D volume index");
-            connect (volume_selecter, SIGNAL (valueChanged(int)), this, SLOT(volume_changed(int)));
-            layout->addWidget (volume_selecter);
+            // Volume selecter
+            volume_box = new QGroupBox ("Volume indices (dimension: index)");
+            main_box->addWidget (volume_box);
+            volume_index_layout = new GridLayout;
+            volume_box->setLayout (volume_index_layout);
 
-            main_box->addLayout (layout, 0);
 
             QGroupBox* group_box = new QGroupBox (tr("Colour map and scaling"));
             main_box->addWidget (group_box);
@@ -198,7 +192,7 @@ namespace MR
 
         void Overlay::image_open_slot ()
         {
-          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
+          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open", &current_folder);
           if (overlay_names.empty())
             return;
           vector<std::unique_ptr<MR::Header>> list;
@@ -252,10 +246,16 @@ namespace MR
         void Overlay::image_close_slot ()
         {
           QModelIndexList indexes = image_list_view->selectionModel()->selectedIndexes();
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
           while (indexes.size()) {
+          GL::assert_context_is_current();
             image_list_model->remove_item (indexes.first());
+          GL::assert_context_is_current();
             indexes = image_list_view->selectionModel()->selectedIndexes();
+          GL::assert_context_is_current();
           }
+          GL::assert_context_is_current();
           updateGL();
         }
 
@@ -268,7 +268,7 @@ namespace MR
 
         void Overlay::draw (const Projection& projection, bool is_3D, int, int)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (!is_3D) {
             // set up OpenGL environment:
             gl::Enable (gl::BLEND);
@@ -301,7 +301,7 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -342,13 +342,19 @@ namespace MR
 
             Image* image = dynamic_cast<Image*>(image_list_model->items[i].get());
             if (image && image->show) {
-              std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
-              cfloat value = image->interpolate() ?
-                image->trilinear_value(window().focus()) :
-                image->nearest_neighbour_value(window().focus());
-              if(std::isnan(abs(value)))
+              std::string value_str = Path::basename(image->get_filename()) + " ";
+              cfloat value;
+              if (image->interpolate()) {
+                value_str += "interp value: ";
+                value = image->trilinear_value (window().focus());
+              } else {
+                value_str += "voxel value: ";
+                value = image->nearest_neighbour_value (window().focus());
+              }
+              if (std::isnan(abs(value)))
                 value_str += "?";
-              else value_str += str(value);
+              else
+                value_str += str(value);
               transform.render_text (value_str, position, start_line_num + num_of_new_lines);
               num_of_new_lines += 1;
             }
@@ -453,13 +459,20 @@ namespace MR
         }
 
 
-        void Overlay::volume_changed (int)
+        void Overlay::onSetVolumeIndex ()
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) return;
           Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
           if (overlay->header().ndim() < 4) return;
-          overlay->image.index(3) = volume_selecter->value();
+          assert (overlay->header().ndim() == size_t(volume_index_layout->count()+3));
+
+          for (int i = 0; i < volume_index_layout->count(); ++i) {
+            auto* box = dynamic_cast<SpinBox*> (volume_index_layout->itemAt(i)->widget());
+            if (overlay->header().ndim() <= size_t(i+3))
+              break;
+            overlay->image.index(i+3) = box->value();
+          }
           if (overlay->show)
             updateGL();
         }
@@ -579,8 +592,8 @@ namespace MR
         void Overlay::update_selection ()
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-          volume_label->setEnabled (false);
-          volume_selecter->setEnabled (false);
+          while (volume_index_layout->count())
+            delete volume_index_layout->takeAt (volume_index_layout->count()-1)->widget();
           colourmap_button->setEnabled (indices.size());
           max_value->setEnabled (indices.size());
           min_value->setEnabled (indices.size());
@@ -639,15 +652,24 @@ namespace MR
 
           if (indices.size() == 1) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
-            if (overlay->header().ndim() == 4 && overlay->header().size(3) > 1) {
-              volume_label->setEnabled (true);
-              volume_selecter->setMaximum (overlay->header().size(3)-1);
-              volume_selecter->setValue (overlay->image.index(3));
-              volume_selecter->setEnabled (true);
-            } else {
-              volume_selecter->setMaximum (0);
-              volume_selecter->setValue (0);
+
+            // volume_box->setVisible(overlay->header().ndim() > 3); // causes shift in FOV due to resizing of tool pane
+            for (size_t d = 3; d < overlay->image.ndim(); ++d) {
+              SpinBox* vol_index = new SpinBox (this);
+              vol_index->setMinimum (0);
+              vol_index->setPrefix (qstr(str(d+1) + ": "));
+              vol_index->setValue (overlay->image.index(d));
+              vol_index->setMaximum (overlay->image.size(d) - 1);
+              vol_index->setEnabled (overlay->image.size(d) > 1);
+              volume_index_layout->addWidget (vol_index, volume_index_layout->count()/3, volume_index_layout->count()%3);
+              connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
             }
+          }
+          if (volume_index_layout->count() == 0) {
+            if (indices.size() != 1)
+              volume_index_layout->addWidget (new QLabel ("Requires single image selected"));
+            else
+              volume_index_layout->addWidget (new QLabel ("No volumes to select"));
           }
 
           colourmap_button->set_colourmap_index(colourmap_index);
@@ -814,7 +836,6 @@ namespace MR
             interpolate_changed();
             return true;
           }
-
 
           return false;
         }

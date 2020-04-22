@@ -1,0 +1,3 @@
+fixelfilter fixelfilter/smooth/in/ smooth -matrix SIFT_phantom/matrix tmp/ -force && testing_diff_image tmp/sub01.mif fixelfilter/smooth/out/sub01.mif -frac 1e-5
+fixelfilter fixelfilter/smooth/in/sub01.mif smooth -matrix SIFT_phantom/matrix tmp.mif -force && testing_diff_image tmp.mif fixelfilter/smooth/out/sub01.mif -frac 1e-5
+

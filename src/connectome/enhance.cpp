@@ -1,24 +1,25 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "connectome/enhance.h"
 #include "connectome/mat2vec.h"
 
-#include <set>
-
 #include "progressbar.h"
+
+#include "misc/bitset.h"
 
 
 namespace MR {
@@ -27,18 +28,16 @@ namespace MR {
 
 
 
-      value_type PassThrough::operator() (const vector_type& in, vector_type& out) const
+      void PassThrough::operator() (in_column_type in, out_column_type out) const
       {
         out = in;
-        return out.maxCoeff();
       }
 
 
 
-      value_type NBS::operator() (const vector_type& in, const value_type T, vector_type& out) const
+      void NBS::operator() (in_column_type in, const value_type T, out_column_type out) const
       {
-        out = vector_type::Zero (in.size());
-        value_type max_value = value_type(0);
+        out.setZero();
 
         for (ssize_t seed = 0; seed != in.size(); ++seed) {
           if (std::isfinite (in[seed]) && in[seed] >= T && !out[seed]) {
@@ -63,14 +62,11 @@ namespace MR {
 
             }
 
-            max_value = std::max (max_value, value_type(cluster_size));
             for (ssize_t i = 0; i != in.size(); ++i)
               out[i] += (visited[i] ? 1.0 : 0.0) * cluster_size;
 
           }
         }
-
-        return max_value;
       }
 
 

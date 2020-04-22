@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_opengl_gl_h__
 #define __gui_opengl_gl_h__
@@ -68,22 +69,7 @@ namespace MR
 
       using Area = QOpenGLWidget;
       using Format = QSurfaceFormat;
-      struct CheckContext { NOMEMALIGN
-# ifndef NDEBUG
-        CheckContext () : __context (nullptr) { }
-        void grab_context () {
-          __context = QOpenGLContext::currentContext();
-        }
-        void check_context () const {
-          assert (QOpenGLContext::currentContext());
-          assert (__context == QOpenGLContext::currentContext());
-        }
-        QOpenGLContext* __context;
-# else
-        void grab_context () { }
-        void check_context () const { }
-# endif
-      };
+
 #else
       class Area : public QGLWidget { NOMEMALIGN
         public:
@@ -92,10 +78,6 @@ namespace MR
       };
 
       using Format = QGLFormat;
-      struct CheckContext { NOMEMALIGN
-        void grab_context () { }
-        void check_context () const { }
-      };
 #endif
 
       void init ();
@@ -112,7 +94,75 @@ namespace MR
       }
 
 
-      class Texture : CheckContext { NOMEMALIGN
+
+#ifndef NDEBUG
+      void __assert_context_is_current (QWidget* glarea);
+      inline void assert_context_is_current(QWidget* glarea = nullptr) { __assert_context_is_current (glarea); }
+#else
+      inline void assert_context_is_current(QWidget* = nullptr) { }
+#endif
+
+      extern Area* glwidget;
+
+
+      namespace Context
+      {
+#if QT_VERSION >= 0x050400
+        inline std::pair<QOpenGLContext*,QSurface*> current() {
+          QOpenGLContext* context = QOpenGLContext::currentContext();
+          QSurface* surface = context ? context->surface() : nullptr;
+          return { context, surface };
+        }
+
+        inline std::pair<QOpenGLContext*,QSurface*> get (QWidget* window) {
+          QOpenGLContext* context = reinterpret_cast<QOpenGLWidget*> (window)->context();
+          QSurface* surface = context ? context->surface() : nullptr;
+          return { context, surface };
+        }
+
+        inline std::pair<QOpenGLContext*,QSurface*> makeCurrent (QWidget* window) {
+          auto previous_context = current();
+          if (window)
+            reinterpret_cast<QOpenGLWidget*> (window)->makeCurrent();
+          return previous_context;
+        }
+
+        inline void restore (std::pair<QOpenGLContext*,QSurface*> previous_context) {
+          if (previous_context.first)
+            previous_context.first->makeCurrent (previous_context.second);
+        }
+#else
+        inline std::pair<int,int> current() { return { 0, 0 }; }
+        inline std::pair<int,int> get (QWidget*) { return { 0, 0 }; }
+        inline std::pair<int,int> makeCurrent (QWidget*) { return { 0, 0 }; }
+        inline void restore (std::pair<int,int>) { }
+#endif
+
+        struct Grab { NOMEMALIGN
+          decltype (current()) previous_context;
+          Grab (QWidget* window = nullptr) : previous_context (makeCurrent (window ? window : GL::glwidget)) {
+            assert_context_is_current (window);
+          }
+          ~Grab () { restore (previous_context); }
+        };
+
+#ifndef NDEBUG
+        struct Checker { NOMEMALIGN
+          decltype (current()) original_context;
+          void set () { original_context = current(); }
+          void operator() () const { assert (current() == original_context); }
+        };
+#else
+        struct Checker { NOMEMALIGN
+          void set () { }
+          void operator() () const { }
+        };
+#endif
+      }
+
+
+
+      class Texture { NOMEMALIGN
         public:
           Texture () : id (0), tex_type (0) { }
           ~Texture () { clear(); }
@@ -123,7 +173,7 @@ namespace MR
           operator GLuint () const { return id; }
           void gen (GLenum target, GLint interp_type = gl::LINEAR) {
             if (!id) {
-              grab_context();
+              check_context.set();
               tex_type = target;
               gl::GenTextures (1, &id);
               GL_DEBUG ("created OpenGL texture ID " + str(id));
@@ -161,12 +211,13 @@ namespace MR
           }
           void set_interp_on (bool interpolate) const { set_interp (interpolate ? gl::LINEAR : gl::NEAREST); }
         protected:
+          Context::Checker check_context;
           GLuint id;
           GLenum tex_type;
       };
 
 
-      class VertexBuffer : CheckContext { NOMEMALIGN
+      class VertexBuffer { NOMEMALIGN
         public:
           VertexBuffer () : id (0) { }
           ~VertexBuffer () { clear(); }
@@ -176,7 +227,7 @@ namespace MR
           operator GLuint () const { return id; }
           void gen () {
             if (!id) {
-              grab_context();
+              check_context.set();
               gl::GenBuffers (1, &id);
               GL_DEBUG ("created OpenGL vertex buffer ID " + str(id));
             }
@@ -196,11 +247,12 @@ namespace MR
             gl::BindBuffer (target, id);
           }
         protected:
+          Context::Checker check_context;
           GLuint id;
       };
 
 
-      class VertexArrayObject : CheckContext { NOMEMALIGN
+      class VertexArrayObject { NOMEMALIGN
         public:
           VertexArrayObject () : id (0) { }
           ~VertexArrayObject () { clear(); }
@@ -210,7 +262,7 @@ namespace MR
           operator GLuint () const { return id; }
           void gen () {
             if (!id) {
-              grab_context();
+              check_context.set();
               gl::GenVertexArrays (1, &id);
               GL_DEBUG ("created OpenGL vertex array ID " + str(id));
             }
@@ -229,11 +281,12 @@ namespace MR
             gl::BindVertexArray (id);
           }
         protected:
+          Context::Checker check_context;
           GLuint id;
       };
 
 
-      class IndexBuffer : CheckContext { NOMEMALIGN
+      class IndexBuffer { NOMEMALIGN
         public:
           IndexBuffer () : id (0) { }
           ~IndexBuffer () { clear(); }
@@ -243,7 +296,7 @@ namespace MR
           operator GLuint () const { return id; }
           void gen () {
             if (!id) {
-              grab_context();
+              check_context.set();
               gl::GenBuffers (1, &id);
               GL_DEBUG ("created OpenGL index buffer ID " + str(id));
             }
@@ -263,12 +316,13 @@ namespace MR
             gl::BindBuffer (gl::ELEMENT_ARRAY_BUFFER, id);
           }
         protected:
+          Context::Checker check_context;
           GLuint id;
       };
 
 
 
-      class FrameBuffer : CheckContext { NOMEMALIGN
+      class FrameBuffer { NOMEMALIGN
         public:
           FrameBuffer () : id (0) { }
           ~FrameBuffer () { clear(); }
@@ -278,7 +332,7 @@ namespace MR
           operator GLuint () const { return id; }
           void gen () {
             if (!id) {
-              grab_context();
+              check_context.set();
               gl::GenFramebuffers (1, &id);
               GL_DEBUG ("created OpenGL framebuffer ID " + str(id));
             }
@@ -310,26 +364,29 @@ namespace MR
 
 
           void attach_color (Texture& tex, size_t attachment) const {
-            assert (id);
             assert (tex);
             bind();
             GL_DEBUG ("texture ID " + str (tex) + " attached to framebuffer ID " + str(id) + " at color attachement " + str(attachment));
             gl::FramebufferTexture (gl::FRAMEBUFFER, GLenum (size_t (gl::COLOR_ATTACHMENT0) + attachment), tex, 0);
           }
           void draw_buffers (size_t first) const {
+            check_context();
             GLenum list[1] = { GLenum (size_t (gl::COLOR_ATTACHMENT0) + first) };
             gl::DrawBuffers (1 , list);
           }
           void draw_buffers (size_t first, size_t second) const {
+            check_context();
             GLenum list[2] = { GLenum (size_t(gl::COLOR_ATTACHMENT0) + first), GLenum (size_t (gl::COLOR_ATTACHMENT0) + second) };
             gl::DrawBuffers (2 , list);
           }
 
           void check() const {
+            check_context();
             if (gl::CheckFramebufferStatus (gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE)
               throw Exception ("FIXME: framebuffer is not complete");
           }
         protected:
+          Context::Checker check_context;
           GLuint id;
       };
 

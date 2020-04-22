@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_mrview_tool_odf_odf_h__
 #define __gui_mrview_tool_odf_odf_h__
@@ -93,7 +94,7 @@ namespace MR
              QLabel *dirs_label, *shell_label;
              QComboBox *dirs_selector, *shell_selector;
              QCheckBox *use_lighting_box, *hide_negative_values_box, *lock_to_grid_box, *main_grid_box;
-             QCheckBox *colour_by_direction_box, *interpolation_box;
+             QCheckBox *colour_by_direction_box, *interpolation_box, *colour_relative_to_projection_box;
              QColorButton *colour_button;
 
              AdjustButton *scale;
@@ -102,7 +103,7 @@ namespace MR
              GL::Lighting* lighting;
 
              int lmax;
-             
+
              void add_images (vector<std::string>& list, const odf_type_t mode);
 
              virtual void closeEvent (QCloseEvent* event) override;

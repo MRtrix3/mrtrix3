@@ -1,23 +1,24 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
-
 #include "command.h"
-#include "progressbar.h"
 #include "image.h"
+#include "ordered_thread_queue.h"
+#include "progressbar.h"
 #include "interp/linear.h"
-#include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -67,7 +68,7 @@ class Warper { MEMALIGN(Warper)
 
     bool operator () (const TrackType& in, TrackType& out) {
       out.clear();
-      out.index = in.index;
+      out.set_index (in.get_index());
       out.weight = in.weight;
       for (size_t n = 0; n < in.size(); ++n) {
         auto vertex = pos(in[n]);
@@ -126,7 +127,7 @@ void run ()
 
   Writer writer (argument[2], loader.properties);
 
-  Thread::run_queue (
+  Thread::run_ordered_queue (
       loader,
       Thread::batch (TrackType(), 1024),
       Thread::multi (warper),

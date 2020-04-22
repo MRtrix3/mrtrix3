@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -21,6 +22,7 @@
 #include "fixel/helpers.h"
 #include "fixel/keys.h"
 #include "fixel/loop.h"
+#include "fixel/types.h"
 
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
@@ -29,6 +31,8 @@
 
 using namespace MR;
 using namespace App;
+
+using Fixel::index_type;
 
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 
@@ -39,7 +43,7 @@ class TrackProcessor { MEMALIGN (TrackProcessor)
 
    using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
-   TrackProcessor (Image<uint32_t>& fixel_indexer,
+   TrackProcessor (Image<index_type>& fixel_indexer,
                    const vector<Eigen::Vector3>& fixel_directions,
                    vector<uint16_t>& fixel_TDI,
                    const float angular_threshold):
@@ -55,15 +59,15 @@ class TrackProcessor { MEMALIGN (TrackProcessor)
      for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
        assign_pos_of (*i).to (fixel_indexer);
        fixel_indexer.index(3) = 0;
-       uint32_t num_fibres = fixel_indexer.value();
+       index_type num_fibres = fixel_indexer.value();
        if (num_fibres > 0) {
          fixel_indexer.index(3) = 1;
-         uint32_t first_index = fixel_indexer.value();
-         uint32_t last_index = first_index + num_fibres;
-         uint32_t closest_fixel_index = 0;
+         index_type first_index = fixel_indexer.value();
+         index_type last_index = first_index + num_fibres;
+         index_type closest_fixel_index = 0;
          float largest_dp = 0.0;
          const Eigen::Vector3 dir (i->get_dir().normalized());
-         for (uint32_t j = first_index; j < last_index; ++j) {
+         for (index_type j = first_index; j < last_index; ++j) {
            const float dp = abs (dir.dot (fixel_directions[j]));
            if (dp > largest_dp) {
              largest_dp = dp;
@@ -81,7 +85,7 @@ class TrackProcessor { MEMALIGN (TrackProcessor)
 
 
  private:
-   Image<uint32_t> fixel_indexer;
+   Image<index_type> fixel_indexer;
    const vector<Eigen::Vector3>& fixel_directions;
    vector<uint16_t>& fixel_TDI;
    const float angular_threshold_dp;
@@ -113,7 +117,7 @@ void write_fixel_output (const std::string& filename,
                          const Header& header)
 {
   auto output = Image<float>::create (filename, header);
-  for (uint32_t i = 0; i < data.size(); ++i) {
+  for (size_t i = 0; i < data.size(); ++i) {
     output.index(0) = i;
     output.value() = data[i];
   }
@@ -125,9 +129,9 @@ void run ()
 {
   const std::string input_fixel_folder = argument[1];
   Header index_header = Fixel::find_index_header (input_fixel_folder);
-  auto index_image = index_header.get_image<uint32_t>();
+  auto index_image = index_header.get_image<index_type>();
 
-  const uint32_t num_fixels = Fixel::get_number_of_fixels (index_header);
+  const index_type num_fixels = Fixel::get_number_of_fixels (index_header);
 
   const float angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
 
@@ -144,8 +148,8 @@ void run ()
     for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
       const Eigen::Vector3 vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
       index_image.index(3) = 1;
-      uint32_t offset = index_image.value();
-      size_t fixel_index = 0;
+      index_type offset = index_image.value();
+      index_type fixel_index = 0;
       for (auto f = Fixel::Loop (index_image) (directions_data); f; ++f, ++fixel_index) {
         directions[offset + fixel_index] = directions_data.row(1);
         positions[offset + fixel_index] = image_transform.voxel2scanner * vox;

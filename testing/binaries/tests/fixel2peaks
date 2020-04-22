@@ -1,0 +1,4 @@
+fixel2peaks fixel_image/ - | testing_diff_peaks - fixel2peaks/nodata.mif 1e-6
+fixel2peaks fixel_image/index.mif - | testing_diff_peaks - fixel2peaks/nodata.mif 1e-6
+fixel2peaks fixel_image/directions.mif - | testing_diff_peaks - fixel2peaks/nodata.mif 1e-6
+fixel2peaks fixel_image/afd.mif - | testing_diff_peaks - fixel2peaks/withdata.mif 1e-6

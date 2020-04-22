@@ -142,10 +142,15 @@ It is good practice to write scripts to perform the full analysis from the raw
 data, so that the analysis can be performed afresh if required, and so that the
 exact steps taken at every stage of the analysis are recorded. However, access
 to DICOM data requires user interaction to select the right series for each
-subject. Thankfully, it is simple to record these selections and use them in
-scripts once the correct choices are known. For example, assuming we have a
-data folder containing lots of data, and we are interested in Donald's T1
-scan:
+subject. There are two ways this can be done within *MRtrix3*: 
+
+1. Piping known selections to the command
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The first time the data are inspected, the relevant selections can be recorded
+and piped as input to the commands, allowing their use in scripts. For example,
+assuming we have a data folder containing lots of data, and we are interested
+in Donald's T1 scan:
 
 .. code-block:: console
 
@@ -196,7 +201,7 @@ can be scripted using the ``echo`` command to *pipe* these numbers directly to t
 relevant command, with no further user interaction required, for example:
 
 .. code-block:: console
-    
+
     $ echo "2 1" | mrconvert DICOM_folder/ T1_anat.nii
     mrconvert: [done] scanning DICOM folder "DICOM_folder/"
     Select patient (q to abort):
@@ -217,7 +222,34 @@ relevant command, with no further user interaction required, for example:
       10 -   54 MR images 16:16:51 diff60_b3000_2.3_iPat2+ADC_FA (*ep_b0_3000) [11]
     mrconvert: [100%] reading DICOM series "t1_mpr_1mm iso qk"
     mrconvert: [100%] copying from "TOURNIER D...BRI) [MR] t1_mpr_1mm iso qk" to "T1_anat.nii"
-    
+
+
+2. Using environment variables
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is also possible to select datasets by string matching on specific DICOM
+fields. There are currently four selectors available: 
+
+- ``DICOM_PATIENT`` to match ``PatientName``
+- ``DICOM_ID``      to match ``PatientID``
+- ``DICOM_STUDY``   to match ``StudyName``
+- ``DICOM_SERIES``  to match ``SeriesName``
+
+To use a selector, simply set the corresponding environment variable to the
+desired pattern. It is simplest in practice to set it directly before the
+command, on the same line -- this ensures that the environment variable does not
+apply to other commands than that intended. The matching pattern can include
+the ``*`` and/or ``?`` wildcard characters, and you can use several selectors at
+the same time. Note that matching is *not* case-sensitive. If you set any
+selector, you won't be prompted for input, but the command will abort if there
+is no match or if there are too many matches.
+
+Example usage:
+
+.. code-block:: console
+
+    $ DICOM_SERIES='diff*iPat2' DICOM_PATIENT='*donald*' mrinfo dicom/
+
 
 
 When the DICOM import goes wrong
@@ -331,9 +363,9 @@ details). Importantly, these compressed formats are not mandatory: a compliant
 DICOM implementation does not need to support these features. This makes it
 entirely possible (and indeed, quite common) for a fully DICOM-compliant
 implementation to produce data that cannot be understood by another fully
-DICOM-compliant implementation - a less than ideal situation... 
+DICOM-compliant implementation -- a less than ideal situation... 
 
-*MRtrix3* does not currently support non-default transfer syntaxes - only those
+*MRtrix3* does not currently support non-default transfer syntaxes -- only those
 that the standard defines as mandatory, and variants thereof. For reference,
 these are:
 
