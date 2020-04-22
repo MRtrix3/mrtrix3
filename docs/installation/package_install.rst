@@ -10,7 +10,7 @@ Packages of various types are available for the three main platforms
 to `the main MRtrix website <https://www.mrtrix.org/download/>`__.
 
 
-.. image:: https://www.mrtrix.org/images/frontpage/Cross-platform.jpg
-     :width: 400
+.. image:: download_mrtrix.png
      :target: https://www.mrtrix.org/download/
      :alt: Download precompiled packages that run natively on Linux, macOS and Windows.
+     :align: center
