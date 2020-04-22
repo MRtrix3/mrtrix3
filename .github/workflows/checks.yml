@@ -2,10 +2,12 @@ name: checks
 
 on:
   pull_request:
-    types: [opened, synchronize, edited]
+    types: [opened, synchronize]
     branches:
       - master
       - dev
+
+
 
 jobs:
   linux-clang-build:
