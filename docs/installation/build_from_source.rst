@@ -73,9 +73,6 @@ for hints on how to proceed in this case.
 
        sudo pacman -Syu git python gcc zlib eigen qt5-svg fftw libtiff libpng
 
-If this doesn't work
-""""""""""""""""""""
-
 You may find that your package installer is unable to find the packages
 listed, or that the subsequent steps fail due to missing dependencies
 (particularly the ``./configure`` command). In this case, you will need
@@ -102,28 +99,27 @@ packages:
    one of the other packages).
 
 .. WARNING::
-
-    The compiler included in Ubuntu 12.04 and other older distributions is no
-    longer capable of compiling *MRtrix3*, as it now requires C++11 support.
-    The solution is to use a newer compiler as provided by the `Ubuntu
-    toolchain PPA
-    <https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test>`__ -
-    follow the link for instructions on how to add the PPA. Once the PPA has
-    been added, you'll need to issue a ``sudo apt-get update``, followed by
-    ``sudo apt-get install g++-4.9``. You will probably also need to tell
-    ``./configure`` to use this compiler (see ``./configure -help`` for further
-    options)::
+   The compiler included in Ubuntu 12.04 and other older distributions is no
+   longer capable of compiling *MRtrix3*, as it now requires C++11 support.
+   The solution is to use a newer compiler as provided by the `Ubuntu
+   toolchain PPA
+   <https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test>`__ -
+   follow the link for instructions on how to add the PPA. Once the PPA has
+   been added, you'll need to issue a ``sudo apt-get update``, followed by
+   ``sudo apt-get install g++-4.9``. You will probably also need to tell
+   ``./configure`` to use this compiler (see ``./configure -help`` for further
+   options)::
 
         CXX=g++-4.9 ./configure
 
 
 .. SEEALSO::
+   If for whatever reasons you need to install *MRtrix3* on a system with
+   older dependencies, and you are unable to update the software (e.g. you
+   want to run *MRtrix3* on a centrally-managed HPC cluster), you can as a
+   last resort use the `procedures described on this post
+   <https://community.mrtrix.org/t/standalone-installation-on-linux/3549>`__. 
 
-  If for whatever reasons you need to install *MRtrix3* on a system with
-  older dependencies, and you are unable to update the software (e.g. you
-  want to run *MRtrix3* on a centrally-managed HPC cluster), you can as a
-  last resort use the `procedures described on this post
-  <https://community.mrtrix.org/t/standalone-installation-on-linux/3549>`__. 
 
 
 macOS
