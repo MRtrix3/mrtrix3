@@ -87,7 +87,7 @@ void usage ()
     + "* If FOD modulation is being performed:\n"
     "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.; " // Internal
     "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images. "
-    "NeuroImage, 2012, 15;59(4), 3976-94.";
+    "NeuroImage, 2012, 15;59(4), 3976-94";
 
   ARGUMENTS
   + Argument ("input", "input image to be transformed.").type_image_in ()
