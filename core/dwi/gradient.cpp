@@ -285,9 +285,10 @@ namespace MR
           }
         }
 
-        // write the scheme as interpreted back into the header if vector normalisation effect is large,
-        // regardless of whether or not b-value scaling was applied
-        if (exceeds_single_precision)
+        // write the scheme as interpreted back into the header if:
+        // - vector normalisation effect is large, regardless of whether or not b-value scaling was applied
+        // - gradient information was pulled from file
+        if (exceeds_single_precision || get_options ("grad").size() || get_options ("fslgrad").size())
           set_DW_scheme (const_cast<Header&> (header), grad);
 
         INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion gradient table");
