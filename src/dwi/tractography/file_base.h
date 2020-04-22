@@ -94,7 +94,7 @@ namespace MR
 
               for (const auto& i : properties) {
                 if ((i.first != "count") && (i.first != "total_count")) {
-                  for (const auto line : split_lines (i.second))
+                  for (const auto& line : split_lines (i.second))
                     out << i.first << ": " << line << "\n";
                 }
               }
