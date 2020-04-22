@@ -11,4 +11,6 @@ to `the main MRtrix website <https://www.mrtrix.org/download/>`__.
 
 
 .. image:: https://www.mrtrix.org/images/frontpage/Cross-platform.jpg
-     :alt: Runs natively on Linux, MacOSX and Windows.
+     :width: 400
+     :target: https://www.mrtrix.org/download/
+     :alt: Download precompiled packages that run natively on Linux, macOS and Windows.
