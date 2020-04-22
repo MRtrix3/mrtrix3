@@ -235,8 +235,8 @@ def execute(): #pylint: disable=unused-variable
         try:
           slice_timing = matrix.load_numeric(path.from_user(app.ARGS.eddy_slspec, False), dtype=float)
           app.debug('Slice timing: ' + str(slice_timing))
-          app.warn('\"slspec\" file provided to FSL eddy are supposed to contain slice indices for slice groups; '
-                   'contents of file \"' + app.ARGS.eddy_slspec + '\" appear to be slice timings; '
+          app.warn('\"slspec\" file provided to FSL eddy is supposed to contain slice indices for slice groups; '
+                   'contents of file \"' + app.ARGS.eddy_slspec + '\" appears to instead be slice timings; '
                    'these data have been imported and will be converted to the appropriate format')
           if len(slice_timing) != dwi_num_slices:
             raise MRtrixError('Cannot use slice timing information from file \"' + app.ARGS.eddy_slspec + '\" for slice-to-volume correction: ' + \
