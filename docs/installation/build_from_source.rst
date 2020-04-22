@@ -117,7 +117,7 @@ packages:
         CXX=g++-4.9 ./configure
 
 
-.. TOPIC:: What to do if dependencies can't be installed
+.. SEEALSO::
 
   If for whatever reasons you need to install *MRtrix3* on a system with
   older dependencies, and you are unable to update the software (e.g. you
