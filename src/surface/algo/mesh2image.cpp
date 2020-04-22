@@ -321,7 +321,7 @@ namespace MR
                   throw e;
                 }
               }
-              for (auto& voxel : to_fill) {
+              for (const auto& voxel : to_fill) {
                 assign_pos_of (voxel).to (init_seg);
                 init_seg.value() = fill_value;
               }
