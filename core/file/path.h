@@ -25,6 +25,7 @@
 #include <cstring>
 #include <cerrno>
 #include <unistd.h>
+#include <algorithm>
 
 #include "exception.h"
 #include "mrtrix.h"
@@ -125,24 +126,31 @@ namespace MR
       return false;
     }
 
+
     inline bool has_suffix (const std::string& name, const std::string& suffix)
     {
       return name.size() >= suffix.size() &&
         name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
     }
 
-    inline bool has_suffix (const std::string&name, const std::initializer_list<const std::string> &suffix_list)
+    inline bool has_suffix (const std::string &name, const std::initializer_list<const std::string> &suffix_list)
     {
-      bool flag(false);
+      return std::any_of (suffix_list.begin(),
+                          suffix_list.end(),
+                          [&] (const std::string& suffix) { return has_suffix (name, suffix); });
+    }
 
-      for(const auto& suffix : suffix_list) { flag = flag || has_suffix (name, suffix); }
-
-      return flag;
+    inline bool has_suffix (const std::string &name, const vector<std::string> &suffix_list)
+    {
+      return std::any_of (suffix_list.begin(),
+                          suffix_list.end(),
+                          [&] (const std::string& suffix) { return has_suffix (name, suffix); });
     }
 
     inline bool is_mrtrix_image (const std::string& name)
     {
-      return strcmp(name.c_str(), std::string("-").c_str()) == 0 || Path::has_suffix (name, {".mif", ".mih", ".mif.gz"});
+      return strcmp(name.c_str(), std::string("-").c_str()) == 0 ||
+        Path::has_suffix (name, {".mif", ".mih", ".mif.gz"});
     }
 
     inline std::string cwd ()

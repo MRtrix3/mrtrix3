@@ -26,7 +26,7 @@ namespace MR
   namespace DWI
   {
 
-    template <typename T, class MatrixType> 
+    template <typename T, class MatrixType>
       inline Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> grad2bmatrix (const MatrixType& grad, bool dki = false)
     {
       std::unique_ptr<DWI::Shells> shells;

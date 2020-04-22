@@ -21,9 +21,10 @@
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "math/SH.h"
+
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
-#include "math/SH.h"
 
 
 using namespace MR;

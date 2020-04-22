@@ -173,8 +173,8 @@ namespace MR
         if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)
           out << "\nscaling: " << H.intensity_offset() << "," << H.intensity_scale();
 
-        for (const auto i : H.keyval())
-          for (const auto line : split_lines (i.second))
+        for (const auto& i : H.keyval())
+          for (const auto& line : split_lines (i.second))
             out << "\n" << i.first << ": " << line;
 
 

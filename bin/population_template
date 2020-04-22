@@ -1133,7 +1133,7 @@ def execute(): #pylint: disable=unused-variable
     regtype = linear_type[0]
     def linear_msg():
       return 'Optimising template with linear registration (stage {0} of {1}; {2})'.format(level + 1, len(linear_scales), regtype)
-    progress = app.ProgressBar(linear_msg, (3 if use_masks else 2) * len(linear_scales) * len(ins))
+    progress = app.ProgressBar(linear_msg, len(linear_scales) * len(ins) * (1 + n_contrasts + int(use_masks)))
     for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
       for inp in ins:
         initialise_option = ''
@@ -1232,15 +1232,14 @@ def execute(): #pylint: disable=unused-variable
           progress.increment()
 
       if use_masks:
-        for cid in range(n_contrasts):
-          for inp in ins:
-            run.command('mrtransform ' + inp.msk_path +
-                        ' -template ' + cns.templates[cid] +
-                        ' -interp nearest' +
-                        ' -linear ' + os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt') +
-                        ' ' + inp.msk_transformed,
-                        force=True)
-            progress.increment()
+        for inp in ins:
+          run.command('mrtransform ' + inp.msk_path +
+                      ' -template ' + cns.templates[0] +
+                      ' -interp nearest' +
+                      ' -linear ' + os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt') +
+                      ' ' + inp.msk_transformed,
+                      force=True)
+          progress.increment()
 
       if nanmask_input:
         inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],

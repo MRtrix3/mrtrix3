@@ -19,15 +19,14 @@
 
 #include "header.h"
 #include "types.h"
-
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "math/constrained_least_squares.h"
 #include "math/math.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 
 #include "dwi/directions/predefined.h"
-#include "dwi/gradient.h"
-#include "dwi/shells.h"
 
 #define DEFAULT_MSMTCSD_LMAX 8
 #define DEFAULT_MSMTCSD_NORM_LAMBDA 1.0e-10
@@ -48,7 +47,7 @@ namespace MR
           class Shared { MEMALIGN(Shared)
             public:
               Shared (const Header& dwi_header) :
-                  grad (DWI::get_valid_DW_scheme (dwi_header)),
+                  grad (DWI::get_DW_scheme (dwi_header)),
                   shells (grad),
                   HR_dirs (DWI::Directions::electrostatic_repulsion_300()),
                   solution_min_norm_regularisation (DEFAULT_MSMTCSD_NORM_LAMBDA),

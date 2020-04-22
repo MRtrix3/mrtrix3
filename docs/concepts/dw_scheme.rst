@@ -308,9 +308,9 @@ These include:
   :ref:`mrinfo` will also perform most of these checks. While there is no
   technical reason for it to interpret the DW gradient information, in practice
   it is generally helpful to view the information as it would be interpreted by
-  other *MRtrix3* applications. If this is not desired, you can add the
-  ``-raw_dwgrad`` option to :ref:`mrinfo` to disable these modifications when
-  querying the DW gradient table.
+  other *MRtrix3* applications. If this is not desired, you can instead use
+  ``mrinfo -property dw_scheme`` to query the contents of the gradient table
+  prior to *MRtrix3* performing any processing of such.
 
 *b*-value scaling
 -----------------

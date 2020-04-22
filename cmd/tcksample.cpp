@@ -110,7 +110,7 @@ class TDI { MEMALIGN(TDI)
 
     bool operator() (const DWI::Tractography::Mapping::SetVoxel& in)
     {
-      for (const auto v : in) {
+      for (const auto& v : in) {
         assign_pos_of (v, 0, 3).to (image);
         image.value() += v.get_length();
       }
@@ -243,7 +243,7 @@ class SamplerPrecise
 
       if (statistic == MEAN) {
         value_type integral = value_type(0.0);
-        for (const auto v : voxels) {
+        for (const auto& v : voxels) {
           assign_pos_of (v).to (image);
           integral += v.get_length() * (image.value() * get_tdi_multiplier (v));
           sum_lengths += v.get_length();
@@ -261,7 +261,7 @@ class SamplerPrecise
             value_type value, length;
         };
         vector<WeightSort> data;
-        for (const auto v : voxels) {
+        for (const auto& v : voxels) {
           assign_pos_of (v).to (image);
           data.push_back (WeightSort (v, (image.value() * get_tdi_multiplier (v))));
           sum_lengths += v.get_length();
@@ -270,7 +270,7 @@ class SamplerPrecise
         const value_type target_length = 0.5 * sum_lengths;
         sum_lengths = value_type(0.0);
         value_type prev_value = data.front().value;
-        for (const auto d : data) {
+        for (const auto& d : data) {
           if ((sum_lengths += d.length) > target_length) {
             out.second = prev_value;
             break;
@@ -279,14 +279,14 @@ class SamplerPrecise
         }
       } else if (statistic == MIN) {
         out.second = std::numeric_limits<value_type>::infinity();
-        for (const auto v : voxels) {
+        for (const auto& v : voxels) {
           assign_pos_of (v).to (image);
           out.second = std::min (out.second, value_type (image.value() * get_tdi_multiplier (v)));
           sum_lengths += v.get_length();
         }
       } else if (statistic == MAX) {
         out.second = -std::numeric_limits<value_type>::infinity();
-        for (const auto v : voxels) {
+        for (const auto& v : voxels) {
           assign_pos_of (v).to (image);
           out.second = std::max (out.second, value_type (image.value() * get_tdi_multiplier (v)));
           sum_lengths += v.get_length();
