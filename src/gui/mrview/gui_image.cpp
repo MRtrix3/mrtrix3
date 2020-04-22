@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/gui_image.h"
 
@@ -40,7 +41,7 @@ namespace MR
 
       ImageBase::~ImageBase()
       {
-        MRView::GrabContext context;
+        GL::Context::Grab context;
         for (size_t axis = 0; axis != 3; ++axis) {
           if (texture2D[axis])
             texture2D[axis].clear();
@@ -54,6 +55,8 @@ namespace MR
       {
         update_texture2D (plane, slice);
 
+        auto V2S = voxel2scanner();
+
         int x, y;
         get_axes (plane, x, y);
         float xsize = header().size(x)-0.5, ysize = header().size(y)-0.5;
@@ -63,22 +66,22 @@ namespace MR
 
         p[x] = -0.5;
         p[y] = -0.5;
-        vertices[0].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[0].noalias() = V2S * p;
         vertices[1] = { 0.0f, 0.0f, 0.0f };
 
         p[x] = -0.5;
         p[y] = ysize;
-        vertices[2].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[2].noalias() = V2S * p;
         vertices[3] = { 0.0f, 1.0f, 0.0f };
 
         p[x] = xsize;
         p[y] = ysize;
-        vertices[4].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[4].noalias() = V2S * p;
         vertices[5] = { 1.0f, 1.0f, 0.0f };
 
         p[x] = xsize;
         p[y] = -0.5;
-        vertices[6].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[6].noalias() = V2S * p;
         vertices[7] = { 1.0f, 0.0f, 0.0f };
 
         start (shader_program);
@@ -122,13 +125,11 @@ namespace MR
       Image::Image (MR::Header&& image_header) :
           ImageBase (std::move (image_header)),
           image (header().get_image<cfloat>()),
-          linear_interp (image),
-          nearest_interp (image),
           slice_min { { NaN, NaN, NaN } },
           slice_max { { NaN, NaN, NaN } }
       {
         set_colourmap (guess_colourmap());
-        const std::map<std::string, std::string>::const_iterator i = header().keyval().find ("comments");
+        const KeyValues::const_iterator i = header().keyval().find ("comments");
         if (i != header().keyval().end())
           _comments = split_lines (i->second);
       }
@@ -610,19 +611,24 @@ namespace MR
 
 
 
-      cfloat Image::trilinear_value (const Eigen::Vector3f& scanner_point) const {
-        if (!linear_interp.scanner (scanner_point))
+      cfloat Image::trilinear_value (const Eigen::Vector3f& scanner_point) const
+      {
+        auto interp = Interp::make_linear (image);
+        if (!interp.scanner (scanner_point))
           return cfloat(NAN, NAN);
         for (size_t n = 3; n < image.ndim(); ++n)
-          linear_interp.index (n) = image.index (n);
-        return linear_interp.value();
+          interp.index (n) = image.index (n);
+        return interp.value();
       }
-      cfloat Image::nearest_neighbour_value (const Eigen::Vector3f& scanner_point) const {
-        if (!nearest_interp.scanner (scanner_point))
+
+      cfloat Image::nearest_neighbour_value (const Eigen::Vector3f& scanner_point) const
+      {
+        auto interp = Interp::make_nearest (image);
+        if (!interp.scanner (scanner_point))
           return cfloat(NAN, NAN);
         for (size_t n = 3; n < image.ndim(); ++n)
-          nearest_interp.index (n) = image.index (n);
-        return nearest_interp.value();
+          interp.index (n) = image.index (n);
+        return interp.value();
       }
 
 
@@ -668,6 +674,8 @@ namespace MR
 
         return true;
       }
+
+
 
 
     }

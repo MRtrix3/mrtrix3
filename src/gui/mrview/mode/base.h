@@ -1,22 +1,21 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_mrview_mode_base_h__
 #define __gui_mrview_mode_base_h__
-
-#include "math/versor.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/transformation.h"
@@ -105,12 +104,12 @@ namespace MR
             const Eigen::Vector3f& target () const { return window().target(); }
             float FOV () const { return window().FOV(); }
             int plane () const { return window().plane(); }
-            Math::Versorf orientation () const {
+            Eigen::Quaternionf orientation () const {
               if (snap_to_image()) {
                 if (image())
-                  return Math::Versorf (image()->header().transform().rotation().cast<float>());
+                  return Eigen::Quaternionf (image()->header().transform().rotation().cast<float>());
                 else
-                  return Math::Versorf::unit();
+                  return Eigen::Quaternionf::Identity();
               }
               return window().orientation();
             }
@@ -131,33 +130,27 @@ namespace MR
             void set_target (const Eigen::Vector3f& p) { window().set_target (p); }
             void set_FOV (float value) { window().set_FOV (value); }
             void set_plane (int p) { window().set_plane (p); }
-            void set_orientation (const Math::Versorf& V) { window().set_orientation (V); }
+            void set_orientation (const Eigen::Quaternionf& V) { window().set_orientation (V); }
             void reset_orientation () {
-              Math::Versorf orient (Math::Versorf::unit());
               if (image())
-                orient = Math::Versorf (image()->header().transform().rotation().cast<float>());
-              set_orientation (orient);
+                set_orientation (Eigen::Quaternionf (image()->header().transform().rotation().cast<float>()));
+              else
+                set_orientation (Eigen::Quaternionf::Identity());
             }
 
             GL::Area* glarea () const {
               return reinterpret_cast <GL::Area*> (window().glarea);
             }
 
-            Eigen::Vector3f move_in_out_displacement (float distance, const ModelViewProjection& projection) const {
+            Eigen::Vector3f get_through_plane_translation (float distance, const ModelViewProjection& projection) const {
               Eigen::Vector3f move (projection.screen_normal());
               move.normalize();
               move *= distance;
               return move;
             }
 
-            void move_in_out (float distance, const ModelViewProjection& projection) {
-              if (!image()) return;
-              Eigen::Vector3f move = move_in_out_displacement (distance, projection);
-              set_focus (focus() + move);
-            }
-
-            void move_in_out_FOV (int increment, const ModelViewProjection& projection) {
-              move_in_out (MOVE_IN_OUT_FOV_MULTIPLIER * increment * FOV(), projection);
+            Eigen::Vector3f get_through_plane_translation_FOV (int increment, const ModelViewProjection& projection) {
+              return get_through_plane_translation (MOVE_IN_OUT_FOV_MULTIPLIER * increment * FOV(), projection);
             }
 
             void render_tools (const Projection& projection, bool is_3D = false, int axis = 0, int slice = 0) {
@@ -165,23 +158,23 @@ namespace MR
               for (int i = 0; i < tools.size(); ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
                 if (dock) {
-                  ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+                  GL::assert_context_is_current();
                   dock->tool->draw (projection, is_3D, axis, slice);
-                  ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+                  GL::assert_context_is_current();
                 }
               }
             }
 
             void setup_projection (const int, ModelViewProjection&) const;
-            void setup_projection (const Math::Versorf&, ModelViewProjection&) const;
+            void setup_projection (const Eigen::Quaternionf&, ModelViewProjection&) const;
             void setup_projection (const GL::mat4&, ModelViewProjection&) const;
 
-            Math::Versorf get_tilt_rotation (const ModelViewProjection& proj) const;
-            Math::Versorf get_rotate_rotation (const ModelViewProjection& proj) const;
+            Eigen::Quaternionf get_tilt_rotation (const ModelViewProjection& proj) const;
+            Eigen::Quaternionf get_rotate_rotation (const ModelViewProjection& proj) const;
 
             Eigen::Vector3f voxel_at (const Eigen::Vector3f& pos) const {
               if (!image()) return Eigen::Vector3f { NAN, NAN, NAN };
-              const Eigen::Vector3f result = image()->transform().scanner2voxel.cast<float>() * pos;
+              const Eigen::Vector3f result = image()->scanner2voxel().cast<float>() * pos;
               return result;
             }
 

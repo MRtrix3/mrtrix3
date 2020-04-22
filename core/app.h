@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __app_h__
 #define __app_h__
@@ -19,6 +20,7 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#include <thread>
 
 #ifdef None
 # undef None
@@ -43,10 +45,12 @@ namespace MR
     extern int log_level;
     extern int exit_error_code;
     extern std::string NAME;
+    extern std::string command_history_string;
     extern bool overwrite_files;
     extern void (*check_overwrite_files_func) (const std::string& name);
     extern bool fail_on_warn;
     extern bool terminal_use_colour;
+    extern const std::thread::id main_thread_ID;
 
     extern int argc;
     extern const char* const* argv;
@@ -73,6 +77,40 @@ namespace MR
       public:
         Description& operator+ (const char* text) {
           push_back (text);
+          return *this;
+        }
+
+        Description& operator+ (const char* const text[]) {
+          for (const char* const* p = text; *p; ++p)
+            push_back (*p);
+          return *this;
+        }
+
+        std::string syntax (int format) const;
+    };
+
+
+
+    //! object for storing a single example command usage
+    class Example { NOMEMALIGN
+      public:
+        Example (const std::string& title,
+                 const std::string& code,
+                 const std::string& description) :
+            title (title),
+            code (code),
+            description (description) { }
+        const std::string title, code, description;
+
+        operator std::string () const;
+        std::string syntax (int format) const;
+    };
+
+    //! a class to hold the list of Example's
+    class ExampleList : public vector<Example> { NOMEMALIGN
+      public:
+        ExampleList& operator+ (const Example& example) {
+          push_back (example);
           return *this;
         }
 
@@ -293,6 +331,24 @@ namespace MR
      */
     extern Description DESCRIPTION;
 
+    //! example usages of the command
+    /*! This is designed to be used within each command's usage() function. Add
+     * various examples in order to demonstrate the different syntaxes and/or
+     * capabilities of the command, e.g.:
+     * \code
+     * void usage() {
+     *   ...
+     *
+     *   EXAMPLES
+     *   + Example ("Perform the command's default functionality",
+     *              "input2output input.mif output.mif",
+     *              "The default usage of this command is as trivial as "
+     *              "providing the name of the command, then the input image, "
+     *              "then the output image.");
+     * }
+     * \endcode
+     */
+    extern ExampleList EXAMPLES;
 
     //! the arguments expected by the command
     /*! This is designed to be used within each command's usage() function. Add
@@ -329,6 +385,7 @@ namespace MR
      * \endcode
      */
     extern OptionList OPTIONS;
+
 
     //! set to false if command can operate with no arguments
     /*! By default, the help page is shown command is invoked without

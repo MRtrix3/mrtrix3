@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __dwi_tractography_file_h__
 #define __dwi_tractography_file_h__
@@ -35,13 +36,6 @@ namespace MR
   {
     namespace Tractography
     {
-
-
-      constexpr const char* preserve_track_order_desc
-          = "Note that if multi-threading is used in this command, the ordering of tracks in the "
-            "output file is unlikely to match the order of the incoming data. If your application "
-            "explicitly requires that the order of tracks not change, you should run this command "
-            "with the option -nthreads 0.";
 
 
       template <class ValueType>
@@ -70,16 +64,13 @@ namespace MR
         public:
 
           //! open the \c file for reading and load header into \c properties
-          Reader (const std::string& file, Properties& properties) :
-            current_index (0) {
-              open (file, "tracks", properties);
-              auto opt = App::get_options ("tck_weights_in");
-              if (opt.size()) {
-                weights_file.reset (new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in));
-                if (!weights_file->good())
-                  throw Exception ("Unable to open streamlines weights file " + str(opt[0][0]));
-              }
-            }
+          Reader (const std::string& file, Properties& properties)
+          {
+            open (file, "tracks", properties);
+            auto opt = App::get_options ("tck_weights_in");
+            if (opt.size())
+              weights = load_vector<ValueType> (opt[0][0]);
+          }
 
 
             //! fetch next track from file
@@ -103,13 +94,15 @@ namespace MR
                 }
 
                 if (std::isnan (p[0])) {
-                  tck.index = current_index++;
+                  tck.set_index (current_index++);
 
-                  if (weights_file) {
+                  if (weights.size()) {
 
-                    (*weights_file) >> tck.weight;
-                    if (weights_file->fail()) {
-                      WARN ("Streamline weights file contains less entries than .tck file; only read " + str(current_index-1) + " streamlines");
+                    if (tck.get_index() < size_t(weights.size())) {
+                      tck.weight = weights[tck.get_index()];
+                    } else {
+                      WARN ("Streamline weights file contains less entries (" + str(weights.size()) + ") than .tck file; "
+                            "ceasing reading of streamline data");
                       in.close();
                       tck.clear();
                       return false;
@@ -134,9 +127,9 @@ namespace MR
         protected:
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
+          using __ReaderBase__::current_index;
 
-          uint64_t current_index;
-          std::unique_ptr<std::ifstream> weights_file;
+          Eigen::Matrix<ValueType, Eigen::Dynamic, 1> weights;
 
           //! takes care of byte ordering issues
 
@@ -178,12 +171,11 @@ namespace MR
           //! Check that the weights file does not contain excess entries
           void check_excess_weights()
           {
-            if (!weights_file)
+            if (!weights.size())
               return;
-            float temp;
-            (*weights_file) >> temp;
-            if (!weights_file->fail())
-              WARN ("Streamline weights file contains more entries than .tck file");
+            if (size_t(weights.size()) > current_index) {
+              WARN ("Streamline weights file contains more entries (" + str(weights.size()) + ") than .tck file (" + str(current_index) + ")");
+            }
           }
 
           Reader (const Reader&) = delete;
@@ -239,6 +231,7 @@ namespace MR
 
             const_cast<Properties&> (properties).set_timestamp();
             const_cast<Properties&> (properties).set_version_info();
+            const_cast<Properties&> (properties).update_command_history();
 
             create (out, properties, "tracks");
             barrier_addr = out.tellp();

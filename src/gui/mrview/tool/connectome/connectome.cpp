@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
@@ -23,7 +24,6 @@
 #include "algo/threaded_loop.h"
 #include "file/path.h"
 #include "gui/dialog/file.h"
-#include "gui/mrview/colourmap.h"
 #include "math/math.h"
 #include "math/rng.h"
 
@@ -51,7 +51,7 @@ namespace MR
             mat2vec (nullptr),
             lighting (this),
             lighting_dock (nullptr),
-            node_list (new Tool::Dock ("Connectome node list")),
+            node_list (new Tool::Dock ("Connectome node list", Window::tools_floating)),
             is_3D (true),
             crop_to_slab (false),
             slab_thickness (0.0f),
@@ -370,10 +370,10 @@ namespace MR
           node_size_range_controls->setVisible (false);
           gridlayout->addWidget (node_size_range_controls, 6, 1, 1, 4);
 
-          label = new QLabel ("Transparency: ");
+          label = new QLabel ("Opacity: ");
           gridlayout->addWidget (label, 7, 0, 1, 2);
           node_alpha_combobox = new QComboBox (this);
-          node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
+          node_alpha_combobox->setToolTip (tr ("Set how node opacity is determined"));
           node_alpha_combobox->addItem ("Fixed");
           node_alpha_combobox->addItem ("Connectome");
           node_alpha_combobox->addItem ("LUT");
@@ -385,10 +385,10 @@ namespace MR
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
           node_alpha_matrix_operator_combobox = new QComboBox (this);
-          node_alpha_matrix_operator_combobox->setToolTip (tr ("If node transparency is determined from a matrix file, and multiple\n"
-                                                                "nodes are selected, this operator defines how the entries from\n"
-                                                                "the corresponding rows of the matrix are combined to produce an\n"
-                                                                "alpha value for each node."));
+          node_alpha_matrix_operator_combobox->setToolTip (tr ("If node opacity is determined from a matrix file, and multiple\n"
+                                                               "nodes are selected, this operator defines how the entries from\n"
+                                                               "the corresponding rows of the matrix are combined to produce an\n"
+                                                               "alpha value for each node."));
           node_alpha_matrix_operator_combobox->addItem ("Min");
           node_alpha_matrix_operator_combobox->addItem ("Mean");
           node_alpha_matrix_operator_combobox->addItem ("Sum");
@@ -475,7 +475,7 @@ namespace MR
           gridlayout->addWidget (edge_visibility_threshold_controls, 1, 1, 1, 4);
 
           edge_visibility_by_nodes_checkbox = new QCheckBox("Hide edges to invisible nodes");
-          edge_visibility_by_nodes_checkbox->setToolTip (tr ("Toggle whether or not an edge that connects to an invisible node (whether hidden through \"visibility\" or \"transparency\" features) should also be made invisible"));
+          edge_visibility_by_nodes_checkbox->setToolTip (tr ("Toggle whether or not an edge that connects to an invisible node (whether hidden through \"visibility\" or \"opacity\" features) should also be made invisible"));
           edge_visibility_by_nodes_checkbox->setTristate (false);
           edge_visibility_by_nodes_checkbox->setChecked (true);
           connect (edge_visibility_by_nodes_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_visibility_parameter_slot()));
@@ -603,10 +603,10 @@ namespace MR
           edge_size_range_controls->setVisible (false);
           gridlayout->addWidget (edge_size_range_controls, 7, 1, 1, 4);
 
-          label = new QLabel ("Transparency: ");
+          label = new QLabel ("Opacity: ");
           gridlayout->addWidget (label, 8, 0, 1, 2);
           edge_alpha_combobox = new QComboBox (this);
-          edge_alpha_combobox->setToolTip (tr ("Set how edge transparency is determined"));
+          edge_alpha_combobox->setToolTip (tr ("Set how edge opacity is determined"));
           edge_alpha_combobox->addItem ("Fixed");
           edge_alpha_combobox->addItem ("Connectome");
           edge_alpha_combobox->addItem ("Matrix file");
@@ -722,8 +722,8 @@ namespace MR
           edge_colour_fixedcolour_button       ->setFixedHeight (height);
           edge_colour_colourmap_button         ->setFixedHeight (height);
 
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           cube.generate();
           cube_VAO.gen();
@@ -759,7 +759,7 @@ namespace MR
           GL_CHECK_ERROR;
 
           enable_all (false);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -768,7 +768,7 @@ namespace MR
 
         void Connectome::draw (const Projection& projection, bool /*is_3D*/, int /*axis*/, int /*slice*/)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (hide_all_button->isChecked()) return;
 
           // If using transparency, only want to draw the close surface;
@@ -795,13 +795,13 @@ namespace MR
             gl::Disable (gl::CULL_FACE);
           else
             gl::Enable (gl::CULL_FACE);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void Connectome::draw_colourbars()
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (!buffer) return;
           if (hide_all_button->isChecked()) return;
           if (((node_colour == node_colour_t::CONNECTOME && matrix_list_model->rowCount()) || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
@@ -814,7 +814,7 @@ namespace MR
                                                 edge_colour_lower_button->value(), edge_colour_upper_button->value(),
                                                 edge_colour_lower_button->value(), edge_colour_upper_button->value() - edge_colour_lower_button->value(),
                                                 edge_fixed_colour);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -865,7 +865,7 @@ namespace MR
 
         void Connectome::image_open_slot()
         {
-          const std::string path = Dialog::File::get_image (this, "Select connectome parcellation image");
+          const std::string path = Dialog::File::get_image (this, "Select connectome parcellation image", &current_folder);
           if (path.empty())
             return;
 
@@ -896,7 +896,7 @@ namespace MR
 
         void Connectome::matrix_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open");
+          vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open", "", &current_folder);
           if (list.empty())
             return;
           add_matrices (list);
@@ -1474,7 +1474,7 @@ namespace MR
               node_alpha_range_controls->setVisible (false);
               break;
             case 3:
-              if (!import_vector_file (node_values_from_file_alpha, "node transparency")) {
+              if (!import_vector_file (node_values_from_file_alpha, "node opacity")) {
                 switch (node_alpha) {
                   case node_alpha_t::FIXED:       node_alpha_combobox->setCurrentIndex (0); return;
                   case node_alpha_t::CONNECTOME:  node_alpha_combobox->setCurrentIndex (1); return;
@@ -1495,7 +1495,7 @@ namespace MR
               node_alpha_invert_checkbox->setChecked (false);
               break;
             case 4:
-              if (!import_matrix_file (node_values_from_file_alpha, "node transparency")) {
+              if (!import_matrix_file (node_values_from_file_alpha, "node opacity")) {
                 switch (node_alpha) {
                   case node_alpha_t::FIXED:       node_alpha_combobox->setCurrentIndex (0); return;
                   case node_alpha_t::CONNECTOME:  node_alpha_combobox->setCurrentIndex (1); return;
@@ -1929,7 +1929,7 @@ namespace MR
               }
               break;
             case 2:
-              if (!import_matrix_file (edge_values_from_file_alpha, "edge transparency")) {
+              if (!import_matrix_file (edge_values_from_file_alpha, "edge opacity")) {
                 switch (edge_alpha) {
                   case edge_alpha_t::FIXED:       edge_alpha_combobox->setCurrentIndex (0); return;
                   case edge_alpha_t::CONNECTOME:  edge_alpha_combobox->setCurrentIndex (1); return;
@@ -2380,7 +2380,7 @@ namespace MR
 
         void Connectome::draw_nodes (const Projection& projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (node_visibility != node_visibility_t::NONE) {
 
             if (node_geometry == node_geometry_t::OVERLAY) {
@@ -2544,12 +2544,12 @@ namespace MR
 
           }
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         void Connectome::draw_edges (const Projection& projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if (edge_visibility != edge_visibility_t::NONE) {
 
             edge_shader.start (*this);
@@ -2633,6 +2633,7 @@ namespace MR
                   gl::Uniform1f (edge_alpha_ID, edge_alpha_given_selection (edge) * edge_fixed_alpha);
                 switch (edge_geometry) {
                   case edge_geometry_t::LINE:
+                    // TODO: in OpenGL >3, this has no effect:
                     gl::LineWidth (calc_line_width (edge_size_given_selection (edge) * edge_size_scale_factor, edge_geometry_line_smooth_checkbox->isChecked()));
                     edge.render_line();
                     break;
@@ -2682,7 +2683,7 @@ namespace MR
 
             edge_shader.stop();
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -2692,7 +2693,7 @@ namespace MR
 
         bool Connectome::import_vector_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv)");
+          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv)", &current_folder);
           if (path.empty())
             return false;
           try {
@@ -2716,7 +2717,7 @@ namespace MR
 
         bool Connectome::import_matrix_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)");
+          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)", &current_folder);
           if (path.empty())
             return false;
           MR::Connectome::matrix_type temp;
@@ -3781,14 +3782,14 @@ namespace MR
         void Connectome::get_meshes()
         {
           // Request exemplar track file path from user
-          const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)");
+          const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)", &current_folder);
           if (!path.size()) return;
           Surface::MeshMulti meshes;
           meshes.load (path);
           if (meshes.size() != nodes.size())
             throw Exception ("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));
           have_meshes = false;
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           for (node_t i = 1; i <= num_nodes(); ++i)
             nodes[i].assign_mesh (meshes[i]);
           have_meshes = true;
@@ -3799,7 +3800,7 @@ namespace MR
         void Connectome::get_exemplars()
         {
           // Request exemplar track file path from user
-          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars", "Track files (*.tck)");
+          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars", "Track files (*.tck)", &current_folder);
           if (!path.size()) return;
           MR::DWI::Tractography::Properties properties;
           MR::DWI::Tractography::Reader<float> reader (path, properties);
@@ -3809,8 +3810,8 @@ namespace MR
           ProgressBar progress ("Importing connection exemplars", num_edges());
           MR::DWI::Tractography::Streamline<float> tck;
           while (reader (tck)) {
-            edges[tck.index].load_exemplar (tck);
-            edges[tck.index].create_streamline();
+            edges[tck.get_index()].load_exemplar (tck);
+            edges[tck.get_index()].create_streamline();
             ++progress;
           }
           have_exemplars = true;

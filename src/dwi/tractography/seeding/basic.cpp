@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/seeding/basic.h"
 #include "dwi/tractography/rng.h"
@@ -32,7 +33,7 @@ namespace MR
         {
           std::uniform_real_distribution<float> uniform;
           do {
-            p = { 2.0f*uniform(*rng)-1.0f, 2.0f*uniform(*rng)-1.0f, 2.0f*uniform(*rng)-1.0f };
+            p = { 2.0f*uniform(rng)-1.0f, 2.0f*uniform(rng)-1.0f, 2.0f*uniform(rng)-1.0f };
           } while (p.squaredNorm() > 1.0f);
           p = pos + rad*p;
           return true;
@@ -44,14 +45,14 @@ namespace MR
 
         bool SeedMask::get_seed (Eigen::Vector3f& p) const
         {
-          auto seed = mask;
+         auto seed = mask;
           do {
-            seed.index(0) = std::uniform_int_distribution<int>(0, mask.size(0)-1)(*rng);
-            seed.index(1) = std::uniform_int_distribution<int>(0, mask.size(1)-1)(*rng);
-            seed.index(2) = std::uniform_int_distribution<int>(0, mask.size(2)-1)(*rng);
+            seed.index(0) = std::uniform_int_distribution<int>(0, mask.size(0)-1)(rng);
+            seed.index(1) = std::uniform_int_distribution<int>(0, mask.size(1)-1)(rng);
+            seed.index(2) = std::uniform_int_distribution<int>(0, mask.size(2)-1)(rng);
           } while (!seed.value());
           std::uniform_real_distribution<float> uniform;
-          p = { seed.index(0)+uniform(*rng)-0.5f, seed.index(1)+uniform(*rng)-0.5f, seed.index(2)+uniform(*rng)-0.5f };
+          p = { seed.index(0)+uniform(rng)-0.5f, seed.index(1)+uniform(rng)-0.5f, seed.index(2)+uniform(rng)-0.5f };
           p = (*mask.voxel2scanner) * p;
           return true;
         }
@@ -89,7 +90,7 @@ namespace MR
           }
 
           std::uniform_real_distribution<float> uniform;
-          p = { mask.index(0)+uniform(*rng)-0.5f, mask.index(1)+uniform(*rng)-0.5f, mask.index(2)+uniform(*rng)-0.5f };
+          p = { mask.index(0)+uniform(rng)-0.5f, mask.index(1)+uniform(rng)-0.5f, mask.index(2)+uniform(rng)-0.5f };
           p = (*mask.voxel2scanner) * p;
           return true;
         }
@@ -207,9 +208,9 @@ namespace MR
           Eigen::Vector3f pos;
           do {
             pos = {
-              uniform (*rng) * (interp.size(0)-1), 
-              uniform (*rng) * (interp.size(1)-1), 
-              uniform (*rng) * (interp.size(2)-1) 
+              uniform (rng) * (interp.size(0)-1),
+              uniform (rng) * (interp.size(1)-1),
+              uniform (rng) * (interp.size(2)-1)
             };
             seed.voxel (pos);
             selector = rng->Uniform() * max;
@@ -219,12 +220,12 @@ namespace MR
           auto seed = image;
           float selector;
           do {
-            seed.index(0) = std::uniform_int_distribution<int> (0, image.size(0)-1) (*rng);
-            seed.index(1) = std::uniform_int_distribution<int> (0, image.size(1)-1) (*rng);
-            seed.index(2) = std::uniform_int_distribution<int> (0, image.size(2)-1) (*rng);
-            selector = uniform (*rng) * max;
+            seed.index(0) = std::uniform_int_distribution<int> (0, image.size(0)-1) (rng);
+            seed.index(1) = std::uniform_int_distribution<int> (0, image.size(1)-1) (rng);
+            seed.index(2) = std::uniform_int_distribution<int> (0, image.size(2)-1) (rng);
+            selector = uniform (rng) * max;
           } while (seed.value() < selector);
-          p = { seed.index(0)+uniform(*rng)-0.5f, seed.index(1)+uniform(*rng)-0.5f, seed.index(2)+uniform(*rng)-0.5f };
+          p = { seed.index(0)+uniform(rng)-0.5f, seed.index(1)+uniform(rng)-0.5f, seed.index(2)+uniform(rng)-0.5f };
           p = voxel2scanner * p;
 #endif
           return true;

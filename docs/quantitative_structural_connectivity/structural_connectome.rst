@@ -54,7 +54,7 @@ influence on the resulting connectomes. This is one aspect where
 white matter interface, within sub-cortical grey matter, or at the
 inferior edge of the image, this assignment becomes relatively trivial.
 The default assignment mechanism is a radial search outwards from the
-streamline termination point, out to a maximum radius of 2mm; and the
+streamline termination point, out to a maximum radius of 4mm; and the
 streamline endpoint is only assigned to the first non-zero node index.
 If you do not have the image data necessary to use the ACT framework,
 see the 'No DWI distortion correction available' section below.

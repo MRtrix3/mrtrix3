@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "dwi/tractography/seeding/list.h"
 #include "dwi/tractography/rng.h"
@@ -34,8 +35,8 @@ namespace MR
           if (seeders.size() && !(in->is_finite() == is_finite()))
             throw Exception ("Cannot use a combination of seed types where some are number-limited and some are not!");
 
-          if (!App::get_options ("max_seed_attempts").size()) 
-            for (auto& i : seeders) 
+          if (!App::get_options ("max_seed_attempts").size())
+            for (auto& i : seeders)
               if (i->get_max_attempts() != in->get_max_attempts())
                 throw Exception ("Cannot use a combination of seed types where the default maximum number "
                     "of sampling attempts per seed is unequal, unless you use the -max_seed_attempts option.");
@@ -76,7 +77,7 @@ namespace MR
 
             do {
               float incrementer = 0.0;
-              const float sample = uniform (*rng) * total_volume;
+              const float sample = uniform (rng) * total_volume;
               for (auto& i : seeders)
                 if ((incrementer += i->vol()) > sample)
                   return i->get_seed (p, d);

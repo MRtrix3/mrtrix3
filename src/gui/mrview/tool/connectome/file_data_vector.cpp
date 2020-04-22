@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/tool/connectome/file_data_vector.h"
 
@@ -32,9 +33,9 @@ namespace MR
 
         FileDataVector::FileDataVector () :
             base_t (),
-            min (NAN),
-            mean (NAN),
-            max (NAN) { }
+            min (NaN),
+            mean (NaN),
+            max (NaN) { }
 
         FileDataVector::FileDataVector (const FileDataVector& V) :
             base_t (V),
@@ -51,21 +52,21 @@ namespace MR
             max (V.max)
         {
           V.name.clear();
-          V.min = V.mean = V.max = NAN;
+          V.min = V.mean = V.max = NaN;
         }
 
         FileDataVector::FileDataVector (const size_t nelements) :
             base_t (nelements),
-            min (NAN),
-            mean (NAN),
-            max (NAN) { }
+            min (NaN),
+            mean (NaN),
+            max (NaN) { }
 
         FileDataVector::FileDataVector (const std::string& file) :
             base_t (),
-            name (Path::basename (file).c_str()),
-            min (NAN),
-            mean (NAN),
-            max (NAN)
+            name (qstr (Path::basename (file))),
+            min (NaN),
+            mean (NaN),
+            max (NaN)
         {
           base_t temp = MR::load_vector<float> (file);
           base_t::operator= (temp);
@@ -92,7 +93,7 @@ namespace MR
           mean = that.mean;
           max = that.max;
           that.name.clear();
-          that.min = that.mean = that.max = NAN;
+          that.min = that.mean = that.max = NaN;
           return *this;
         }
 
@@ -103,7 +104,7 @@ namespace MR
         {
           base_t temp = MR::load_vector<float> (filename);
           base_t::operator= (temp);
-          name = Path::basename (filename).c_str();
+          name = qstr (Path::basename (filename));
           calc_stats();
           return *this;
         }
@@ -112,7 +113,7 @@ namespace MR
         {
           base_t::resize (0);
           name.clear();
-          min = mean = max = NAN;
+          min = mean = max = NaN;
           return *this;
         }
 

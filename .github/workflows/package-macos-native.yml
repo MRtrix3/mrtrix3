@@ -1,0 +1,27 @@
+name: package-macos-native
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  package:
+
+    runs-on: macos-latest
+
+    steps:
+
+    - name: fetch recipe
+      run: git clone https://github.com/MRtrix3/macos-installer.git
+
+    - name: build packages
+      run: ./build ${GITHUB_REF#refs/*/}
+      working-directory: ./macos-installer
+
+    - name: Upload package to GitHub Release
+      uses: AButler/upload-release-assets@v2.0
+      with:
+        files: 'macos-installer/mrtrix3-macos-*.tar.gz'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+

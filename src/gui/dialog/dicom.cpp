@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "file/dicom/tree.h"
 #include "gui/dialog/list.h"
@@ -34,19 +35,19 @@ namespace MR
             Item () : parentItem (NULL) { }
             Item (Item* parent, const std::shared_ptr<Patient>& p) :
               parentItem (parent) {
-              itemData = (p->name + " " + format_ID (p->ID) + " " + format_date (p->DOB)).c_str();
+              itemData = qstr (p->name + " " + format_ID (p->ID) + " " + format_date (p->DOB));
             }
             Item (Item* parent, const std::shared_ptr<Study>& p) :
               parentItem (parent) {
-              itemData = ( (p->name.size() ? p->name : std::string ("unnamed")) + " " +
-                           format_ID (p->ID) + " " + format_date (p->date) + " " + format_time (p->time)).c_str();
+              itemData = qstr ( (p->name.size() ? p->name : std::string ("unnamed")) + " " +
+                           format_ID (p->ID) + " " + format_date (p->date) + " " + format_time (p->time) );
             }
             Item (Item* parent, const std::shared_ptr<Series>& p) :
               parentItem (parent), dicom_series (p) {
-              itemData = (str (p->size()) + " " + (p->modality.size() ? p->modality : std::string()) + " images " +
+              itemData = qstr (str (p->size()) + " " + (p->modality.size() ? p->modality : std::string()) + " images " +
                           format_time (p->time) + " " + (p->name.size() ? p->name : std::string ("unnamed")) + " (" +
                           ( (*p) [0]->sequence_name.size() ? (*p) [0]->sequence_name : std::string ("?")) +
-                          ") [" + str (p->number) + "] " + p->image_type).c_str();
+                          ") [" + str (p->number) + "] " + p->image_type);
             }
             ~Item() {
               qDeleteAll (childItems);
@@ -55,13 +56,13 @@ namespace MR
               childItems.append (child);
             }
             Item* child (int row)  {
-              return (childItems.value (row));
+              return childItems.value (row);
             }
             int childCount () const  {
-              return (childItems.count());
+              return childItems.count();
             }
             QVariant data () const  {
-              return (itemData);
+              return itemData;
             }
             int row () const  {
               if (parentItem) return (parentItem->childItems.indexOf (const_cast<Item*> (this)));
@@ -98,7 +99,7 @@ namespace MR
               if (!index.isValid()) return (QVariant());
               if (role != Qt::DisplayRole) return (QVariant());
               if (index.column() != 0) return (QVariant());
-              return (static_cast<Item*> (index.internalPointer())->data());
+              return static_cast<Item*> (index.internalPointer())->data();
             }
 
             Qt::ItemFlags flags (const QModelIndex& index) const {
@@ -109,38 +110,41 @@ namespace MR
             QVariant headerData (int, Qt::Orientation orientation, int role = Qt::DisplayRole) const {
               if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
                 return ("Name");
-              return (QVariant());
+              return QVariant();
             }
 
             QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const {
-              if (!hasIndex (row, column, parent)) return (QModelIndex());
+              if (!hasIndex (row, column, parent))
+                return QModelIndex();
               Item* parentItem;
               if (!parent.isValid()) parentItem = rootItem;
               else parentItem = static_cast<Item*> (parent.internalPointer());
               Item* childItem = parentItem->child (row);
-              if (childItem) return (createIndex (row, column, childItem));
-              else return (QModelIndex());
+              if (childItem) return createIndex (row, column, childItem);
+              else return QModelIndex();
             }
 
             QModelIndex parent (const QModelIndex& index) const {
-              if (!index.isValid()) return (QModelIndex());
+              if (!index.isValid())
+                return QModelIndex();
               Item* childItem = static_cast<Item*> (index.internalPointer());
               Item* parentItem = childItem->parent();
-              if (parentItem == rootItem) return (QModelIndex());
-              return (createIndex (parentItem->row(), 0, parentItem));
+              if (parentItem == rootItem) return QModelIndex();
+              return createIndex (parentItem->row(), 0, parentItem);
             }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const {
-              if (parent.column() > 0) return (0);
+              if (parent.column() > 0)
+                return 0;
               Item* parentItem;
               if (!parent.isValid()) parentItem = rootItem;
               else parentItem = static_cast<Item*> (parent.internalPointer());
-              return (parentItem->childCount());
+              return parentItem->childCount();
             }
 
             int columnCount (const QModelIndex& parent = QModelIndex()) const {
               (void) parent; // to suppress warnings about unused parameters
-              return (1);
+              return 1;
             }
             Item* rootItem;
         };
@@ -204,7 +208,7 @@ namespace MR
             }
           }
         }
-            
+
         DicomSelector selector (tree);
         if (selector.exec()) {
           QModelIndexList indexes = selector.view->selectionModel()->selectedIndexes();
@@ -212,11 +216,13 @@ namespace MR
             QModelIndex index;
             Q_FOREACH (index, indexes) {
               Item* item = static_cast<Item*> (index.internalPointer());
-              if (item->series()) 
+              if (item->series())
                 ret.push_back (item->series());
             }
           }
         }
+        else
+          throw CancelException();
         return ret;
       }
 

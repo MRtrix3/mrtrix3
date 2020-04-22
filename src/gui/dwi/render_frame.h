@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_dwi_render_frame_h__
 #define __gui_dwi_render_frame_h__
@@ -19,7 +20,6 @@
 #include "memory.h"
 #include "types.h"
 #include "dwi/directions/set.h"
-#include "math/versor.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dwi/renderer.h"
 #include "gui/projection.h"
@@ -89,14 +89,14 @@ namespace MR
           void reset_view ();
           void set_lmax (int lmax) {
             assert (mode == mode_t::SH);
-            if (lmax != lmax_computed) 
+            if (lmax != lmax_computed)
               recompute_mesh = recompute_amplitudes = true;
             lmax_computed = lmax;
             update();
           }
           void set_LOD (int lod) {
             assert (mode == mode_t::SH || mode == mode_t::TENSOR);
-            if (lod != lod_computed) 
+            if (lod != lod_computed)
               recompute_mesh = recompute_amplitudes = true;
             lod_computed = lod;
             update();
@@ -143,7 +143,7 @@ namespace MR
           QPoint last_pos;
           GL::Font glfont;
           Projection projection;
-          Math::Versorf orientation;
+          Eigen::Quaternionf orientation;
           Eigen::Vector3f focus;
 
           std::string screenshot_name;

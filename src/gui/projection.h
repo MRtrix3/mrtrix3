@@ -1,21 +1,23 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __gui_projection_h__
 #define __gui_projection_h__
 
+#include "gui/gui.h"
 #include "gui/crosshair.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/font.h"
@@ -203,7 +205,7 @@ namespace MR
         }
 
         void render_text_align (int x, int y, const std::string& text, int halign = 0, int valign = 0) const {
-          QString s (text.c_str());
+          QString s (qstr(text));
           #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           int w = font.metric.width (s);
           #else
@@ -218,7 +220,7 @@ namespace MR
         }
 
         void render_text_inset (int x, int y, const std::string& text, int inset = -1) const {
-          QString s (text.c_str());
+          QString s (qstr(text));
           if (inset < 0)
             inset = font.metric.height() / 2;
           if (x < inset)
@@ -239,7 +241,7 @@ namespace MR
         }
 
         void render_text (const std::string& text, int position, int line = 0) const {
-          QString s (text.c_str());
+          QString s (qstr(text));
           int x, y;
 
           #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)

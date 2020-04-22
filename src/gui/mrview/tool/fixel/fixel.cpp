@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/tool/fixel/fixel.h"
 
@@ -89,8 +90,6 @@ namespace MR
 
         Fixel::Fixel (Dock* parent) :
           Base (parent),
-          do_lock_to_grid (true),
-          do_crop_to_slice (true),
           not_3D (true),
           line_opacity (1.0) {
 
@@ -123,6 +122,8 @@ namespace MR
             fixel_list_view = new QListView (this);
             fixel_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
             fixel_list_view->setDragEnabled (true);
+            fixel_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+            fixel_list_view->setTextElideMode (Qt::ElideLeft);
             fixel_list_view->viewport()->setAcceptDrops (true);
             fixel_list_view->setDropIndicatorShown (true);
 
@@ -215,8 +216,8 @@ namespace MR
             main_box->addLayout (hlayout);
             hlayout->addWidget (new QLabel ("length multiplier"));
             length_multiplier = new AdjustButton (this, 0.01);
-            length_multiplier->setMin (0.1);
-            length_multiplier->setValue (1.0);
+            length_multiplier->setMin (0.001);
+            length_multiplier->setValue (10.0);
             connect (length_multiplier, SIGNAL (valueChanged()), this, SLOT (length_multiplier_slot()));
             hlayout->addWidget (length_multiplier);
 
@@ -235,17 +236,35 @@ namespace MR
             default_opt_grid->addWidget (new QLabel ("opacity"), 1, 0);
             default_opt_grid->addWidget (opacity_slider, 1, 1);
 
-            lock_to_grid = new QGroupBox (tr("lock to grid"));
+            lock_to_grid = new QCheckBox (tr("lock to grid"));
             lock_to_grid->setCheckable (true);
             lock_to_grid->setChecked (true);
-            connect (lock_to_grid, SIGNAL (clicked (bool)), this, SLOT (on_lock_to_grid_slot (bool)));
+            connect (lock_to_grid, SIGNAL (clicked (bool)), this, SLOT (on_checkbox_slot (bool)));
             default_opt_grid->addWidget (lock_to_grid, 2, 0, 1, 2);
 
-            crop_to_slice = new QGroupBox (tr("crop to slice"));
+            crop_to_slice = new QCheckBox (tr("crop to slice"));
             crop_to_slice->setCheckable (true);
             crop_to_slice->setChecked (true);
-            connect (crop_to_slice, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slice_slot (bool)));
+            connect (crop_to_slice, SIGNAL (clicked (bool)), this, SLOT (on_checkbox_slot (bool)));
             default_opt_grid->addWidget (crop_to_slice, 3, 0, 1, 2);
+
+            bidirectional = new QCheckBox (tr("bi-directional"));
+            bidirectional->setCheckable (true);
+            bidirectional->setChecked (true);
+            connect (bidirectional, SIGNAL (clicked (bool)), this, SLOT (on_checkbox_slot (bool)));
+            default_opt_grid->addWidget (bidirectional, 4, 0, 1, 2);
+
+            track_main_volume = new QCheckBox (tr("cine mode"));
+            track_main_volume->setCheckable (true);
+            track_main_volume->setChecked (false);
+            track_main_volume->setToolTip (
+                tr("When activated, the vector field displayed will be\n"
+                   "taken from the volume group (5th axis) at the same index\n"
+                   "as the volume displayed in the main image.\n\n"
+                   "This allows the vector field to follow the time course of the\n"
+                   "the main image"));
+            connect (track_main_volume, SIGNAL (clicked (bool)), this, SLOT (on_set_tracking_slot (bool)));
+            default_opt_grid->addWidget (track_main_volume, 5, 0, 1, 2);
 
             main_box->addLayout (default_opt_grid, 0);
 
@@ -258,13 +277,13 @@ namespace MR
 
         void Fixel::draw (const Projection& transform, bool is_3D, int, int)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           not_3D = !is_3D;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
               dynamic_cast<BaseFixel*>(fixel_list_model->items[i].get())->render (transform);
           }
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -297,7 +316,7 @@ namespace MR
 
         void Fixel::render_fixel_colourbar (const Tool::BaseFixel& fixel)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           float min_value = fixel.use_discard_lower() ?
                       fixel.scaling_min_thresholded() :
                       fixel.scaling_min();
@@ -310,15 +329,14 @@ namespace MR
                                               min_value, max_value,
                                               fixel.scaling_min(), fixel.display_range,
                                               Eigen::Array3f { fixel.colour[0] / 255.0f, fixel.colour[1] / 255.0f, fixel.colour[2] / 255.0f });
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
         void Fixel::fixel_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_files (this,
-                                                                   "Select fixel images to open",
-                                                                   GUI::Dialog::File::image_filter_string);
+          vector<std::string> list = Dialog::File::get_files (this, "Select fixel images to open",
+              GUI::Dialog::File::image_filter_string, &current_folder);
           add_images (list);
         }
 
@@ -402,6 +420,7 @@ namespace MR
           update_gui_scaling_controls ();
           update_gui_threshold_controls ();
           update_gui_colour_controls ();
+          update_gui_tracking_controls ();
         }
 
 
@@ -442,8 +461,8 @@ namespace MR
           // how many menu elements were actually created by ColourMap::create_menu()
           static size_t colourmap_count = 0;
           if (!colourmap_count) {
-            for (size_t i = 0; MR::GUI::MRView::ColourMap::maps[i].name; ++i) {
-              if (!MR::GUI::MRView::ColourMap::maps[i].special)
+            for (size_t i = 0; ColourMap::maps[i].name; ++i) {
+              if (!ColourMap::maps[i].special)
                 ++colourmap_count;
             }
           }
@@ -558,6 +577,42 @@ namespace MR
         }
 
 
+
+
+
+        void Fixel::update_gui_tracking_controls ()
+        {
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          size_t n_images (indices.size ());
+
+          if (!n_images) {
+            track_main_volume->setEnabled (false);
+            return;
+          }
+
+          size_t num_checked = 0;
+          for (size_t i = 0; i < n_images; ++i) {
+            Image4D* fixel = dynamic_cast<Image4D*> (fixel_list_model->get_fixel_image (indices[i]));
+            if (!fixel) {
+              track_main_volume->setEnabled (false);
+              return;
+            }
+            if (!fixel->trackable()) {
+              track_main_volume->setEnabled (false);
+              return;
+            }
+            if (fixel->tracking)
+              ++num_checked;
+          }
+
+          track_main_volume->setEnabled (true);
+          track_main_volume->setCheckState ( num_checked ? ( num_checked == n_images ? Qt::Checked : Qt::PartiallyChecked ) : Qt::Unchecked );
+        }
+
+
+
+
+
         void Fixel::opacity_slot (int opacity)
         {
           line_opacity = Math::pow2 (static_cast<float>(opacity)) / 1.0e6f;
@@ -619,20 +674,11 @@ namespace MR
         }
 
 
-        void Fixel::on_lock_to_grid_slot(bool is_checked)
+        void Fixel::on_checkbox_slot(bool)
         {
-          do_lock_to_grid = is_checked;
           window().updateGL();
         }
 
-
-        void Fixel::on_crop_to_slice_slot (bool is_checked)
-        {
-          do_crop_to_slice = is_checked;         
-          lock_to_grid->setEnabled(do_crop_to_slice);
-
-          window().updateGL();
-        }
 
 
         void Fixel::toggle_show_colour_bar (bool visible, const ColourMapButton&)
@@ -696,8 +742,23 @@ namespace MR
           }
 
           window().updateGL();
-
         }
+
+
+
+        void Fixel::on_set_tracking_slot (bool is_checked)
+        {
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            Image4D* fixel = dynamic_cast<Image4D*> (fixel_list_model->get_fixel_image (indices[i]));
+            assert (fixel != nullptr);
+            if (fixel)
+              fixel->tracking = is_checked;
+          }
+          window().updateGL();
+        }
+
+
 
 
         void Fixel::on_set_scaling_slot ()
@@ -770,7 +831,7 @@ namespace MR
 
 
         void Fixel::add_commandline_options (MR::App::OptionList& options)
-        { 
+        {
           using namespace MR::App;
           options
             + OptionGroup ("Fixel plot tool options")

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/mode/lightbox.h"
 
@@ -115,7 +116,6 @@ namespace MR
 
 
 
-
         inline bool LightBox::render_volumes()
         {
           return show_volumes && image () && image()->image.ndim() == 4;
@@ -128,7 +128,7 @@ namespace MR
 
         void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           // Setup OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -139,7 +139,7 @@ namespace MR
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
 
           render_tools (with_projection, false, axis, slice (axis));
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -149,7 +149,7 @@ namespace MR
 
         void LightBox::paint (Projection&)
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           GLint x = projection.x_position(), y = projection.y_position();
           GLint w = projection.width(), h = projection.height();
           GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
@@ -180,7 +180,7 @@ namespace MR
               projection.set_viewport (window(), x + dw * col, y + h - (dh * (row+1)), dw, dh);
 
               // We need to setup the modelview/proj matrices before we set the new focus
-              // because move_in_out_displacement is reliant on MVP
+              // because get_through_plane_translation is reliant on MVP
               setup_projection (plane(), projection);
 
               if (render_volumes()) {
@@ -192,8 +192,8 @@ namespace MR
               }
               else {
                 float focus_delta = slice_focus_increment * (slice_idx - current_slice_index);
-                Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, projection);
-                set_focus (orig_focus + slice_focus);
+                auto move = get_through_plane_translation (focus_delta, projection);
+                set_focus (orig_focus + move);
               }
               if (render_plane)
                 draw_plane_primitive (plane(), slice_shader, projection);
@@ -229,7 +229,7 @@ namespace MR
           }
 
 
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -239,7 +239,7 @@ namespace MR
 
         void LightBox::draw_grid()
         {
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           if(n_cols < 1 && n_rows < 1)
             return;
 
@@ -310,7 +310,7 @@ namespace MR
           frame_program.start();
           gl::DrawArrays (gl::LINES, 0, num_points / 2);
           frame_program.stop();
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 
@@ -354,7 +354,7 @@ namespace MR
           }
           else {
             float focus_delta = slice_focus_increment * (new_slice_index - current_slice_index);
-            slice_focus += move_in_out_displacement(focus_delta, proj);
+            slice_focus += get_through_plane_translation (focus_delta, proj);
           }
           set_focus (proj.screen_to_model (mouse_pos, slice_focus));
 
