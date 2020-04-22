@@ -121,7 +121,7 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
       current_index += tck.size();
       track_list.push_back (std::pair<size_t,size_t> (start_index, current_index));
 
-      for (auto pos : tck) {
+      for (const auto& pos : tck) {
         VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
       }
       return true;
@@ -131,7 +131,7 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
       try {
         // write out list of tracks:
         VTKout << "LINES " << track_list.size() << " " << track_list.size() + current_index << "\n";
-        for (const auto track : track_list) {
+        for (const auto& track : track_list) {
           VTKout << track.second - track.first << " " << track.first;
           for (size_t i = track.first + 1; i < track.second; ++i)
             VTKout << " " << i;
