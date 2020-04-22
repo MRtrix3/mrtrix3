@@ -227,71 +227,24 @@ in the DICOM data with the table stored in the `MRtrix format`_ file ``encoding.
 Operations performed by *MRtrix3* when handling DW gradient tables
 ------------------------------------------------------------------
 
-*MRtrix3* applications will perform a number of sanity checks and modifications
-to the information in the DW gradient table, depending on the nature of the
-operation, and its original format.
-
-
-When using the FSL format
-.........................
-
-In this format, the gradient vectors are provided relative to the image axes
-(as detailed in the `FSL wiki
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/FAQ#What_conventions_do_the_bvecs_use.3F>`_).
-To convert them to the internal representation used in *MRtrix3* (and in the
-`MRtrix format`_ gradient table), these vectors need to be transformed into the
-real / scanner coordinate system. To do this requires knowledge of the DWI
-dataset these vectors correspond to, in particular the image transform. In
-essence, this consists of rotating the gradient vectors according to the
-rotation part of the transform (i.e. the top-left 3×3 part of the matrix). This
-will introduce differences between the components of the gradient vectors when
-stored in `MRtrix format`_ compared to the `FSL format`_, particularly for images
-not acquired in a pure axial orientation (i.e. images where the rotation part of
-the image transform is identity). Indeed, as mentioned earlier, there is an
-additional confound related to the handed-ness of the coordinate system; see the
-`FSL wiki
-<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/FAQ#What_conventions_do_the_bvecs_use.3F>`_
-for details.
-
-.. warning:: **Never** perform a manual conversion between MRtrix and FSL
-   gradient table formats using a text editor or basic shell script. This
-   poses a risk of introducing an unwanted rotation / reflection of the
-   gradient directions, with concomitant errors in later processing.
-
-Note that in this operation, what matters is the transform as stored in the
-NIfTI headers (i.e. the ``sform`` / ``qform``); the transform as reported by
-:ref:`mrinfo` can differ substantially from this (while still being consistent
-with the data), as the *MRtrix3* image loading backend will try to provide the
-image transform in a near-axial orientation (by inverting / exchanging columns
-of the transform, and adjusting the :ref:`strides` to match - see
-:ref:`transform` for details). To find out the actual transform that
-was stored in the NIfTI header, use :ref:`mrinfo` with the ``-norealign`` option.
-
-
-When copying or converting
-..........................
-
 Most *MRtrix3* applications that don't actually need to interpret the DW
 gradient table will typically simply pass the information through to the output
-unmodified. If the DW gradient table was found in the input image header, it
-will be written to the output image header if the image format supports it
-(i.e. if the output is in :ref:`mrtrix_image_formats` - DICOM is not supported
-for writing). However, any applications that manipulates the DW gradient table
-in any way (for example, using the ``-grad`` or ``-fslgrad`` option) will
-modify the information if necessary to ensure it is valid (see next section).
-If the output image format does not allow storing the DW gradient table in the
-image header, the ``-export_grad_mrtrix`` or ``-export_grad_fsl`` options can
-be used to write it out to separate files, ready for use with third-party
-applications, or directly within *MRtrix3* if users prefer to keep their data
-organised in this way.
+unmodified. Any information found in the input image header -- including the DW gradient
+table -- is simply written to the output image header if the image format
+supports it (i.e. if the output is in :ref:`mrtrix_image_formats` -- DICOM is
+not supported for writing). If the output image format does not allow storing
+the DW gradient table in the image header, the ``-export_grad_mrtrix`` or
+``-export_grad_fsl`` options can be used to write it out to separate files,
+ready for use with third-party applications, or directly within *MRtrix3* if
+users prefer to keep their data organised in this way.
 
+However, any *MRtrix3* applications that manipulates the DW gradient table in
+any way (for example, using the ``-grad`` or ``-fslgrad`` option) will perform
+a number of sanity checks and modifications to the information in the DW
+gradient table, depending on the nature of the operation, and its original
+format. 
 
-When using the information for processing
-.........................................
-
-Applications that actually need to interpret the DW gradient information in any
-way (e.g. ``mrconvert``, ``dwi2tensor``, ``dwi2fod``, ``dwiextract``, ...) will
-perform additional sanity checks and modifications of these data, including:
+The specific steps performed by *MRtrix3* include:
 
 - verifying that the number of volumes in the DWI dataset matches the number of
   entries in the DW gradient table;
@@ -337,13 +290,13 @@ vectors file, now nominally containing only *b* = 0 and *b* = 2800 s/mm²:
   0.5  0    0 2800
   1    0    0 2800
 
-By default, *MRtrix3* applications will **automatically** scale the *b*-values
-by the squared amplitude of the gradient vectors  (so that the stored gradient
-table is equivalent to the first example), in order to more sensibly reflect
-the nature of the image data. Note that this is only applied if the DW gradient
-table looks like it corresponds to a multi-shell scheme, which is detected
-heuristically based on whether the gradient vector norms deviate from unity by
-more than 1%.
+By default, *MRtrix3* applications will detect this and **automatically** scale
+the *b*-values by the squared amplitude of the gradient vectors if required (so
+that the stored gradient table is equivalent to the first example), in order to
+more sensibly reflect the nature of the image data. Note that this is only
+applied if the DW gradient table looks like it corresponds to a multi-shell
+scheme, which is detected heuristically based on whether the gradient vector
+norms deviate from unity by more than 1%.
 
 While this scaling allows such datasets to be processed seamlessly, it may
 introduce unexpected variations in the *b*-values for other datasets. 
@@ -354,4 +307,43 @@ other than those expected.
 
 If this scaling becomes a problem (e.g. for third-party applications), this
 feature can be explicitly enabled or disabled using the ``-bvalue_scaling``
-option for those applications that support it.
+option in :ref:`mrconvert`
+
+
+
+When using the FSL format
+.........................
+
+In this format, the gradient vectors are provided relative to the image axes
+(as detailed in the `FSL wiki
+<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/FAQ#What_conventions_do_the_bvecs_use.3F>`_).
+To convert them to the internal representation used in *MRtrix3* (and in the
+`MRtrix format`_ gradient table), these vectors need to be transformed into the
+real / scanner coordinate system. To do this requires knowledge of the DWI
+dataset these vectors correspond to, in particular the image transform. In
+essence, this consists of rotating the gradient vectors according to the
+rotation part of the transform (i.e. the top-left 3×3 part of the matrix). This
+will introduce differences between the components of the gradient vectors when
+stored in `MRtrix format`_ compared to the `FSL format`_, particularly for images
+not acquired in a pure axial orientation (i.e. images where the rotation part of
+the image transform is identity). Indeed, as mentioned earlier, there is an
+additional confound related to the handed-ness of the coordinate system; see the
+`FSL wiki
+<https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/FDT/FAQ#What_conventions_do_the_bvecs_use.3F>`_
+for details.
+
+.. warning:: **Never** perform a manual conversion between MRtrix and FSL
+   gradient table formats using a text editor or basic shell script. This
+   poses a risk of introducing an unwanted rotation / reflection of the
+   gradient directions, with concomitant errors in later processing.
+
+Note that in this operation, what matters is the transform as stored in the
+NIfTI headers (i.e. the ``sform`` / ``qform``); the transform as reported by
+:ref:`mrinfo` can differ substantially from this (while still being consistent
+with the data), as the *MRtrix3* image loading backend will try to provide the
+image transform in a near-axial orientation (by inverting / exchanging columns
+of the transform, and adjusting the :ref:`strides` to match - see
+:ref:`transform` for details). To find out the actual transform that
+was stored in the NIfTI header, use :ref:`mrinfo` with the ``-norealign`` option.
+
+
