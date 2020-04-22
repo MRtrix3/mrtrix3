@@ -151,18 +151,6 @@
         <string>mrview_doc.icns</string>
       </dict>
 
-      <dict>
-        <key>CFBundleTypeExtensions</key>
-        <array>
-          <string>tck</string>
-        </array>
-        <key>CFBundleTypeName</key>
-        <string>MRtrix streamlines file</string>
-        <key>CFBundleTypeRole</key>
-        <string>Viewer</string>
-        <key>CFBundleTypeIconFile</key>
-        <string>mrview_doc.icns</string>
-      </dict>
     </array>
   </dict>
 </plist>
