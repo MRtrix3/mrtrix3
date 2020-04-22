@@ -46,8 +46,10 @@ namespace MR
       kernel_type boxblur (const vector<int>& sizes)
       {
         assert (sizes.size() == 3);
+#ifndef NDEBUG
         for (auto i : sizes)
           assert (i % 2);
+#endif
         kernel_type result (sizes);
         const default_type value = 1.0 / default_type(result.size());
         result.fill (value);
@@ -171,8 +173,9 @@ namespace MR
       {
         assert (order > 0);
 
-        assert (size%2);
-        if (order <= (size-1) / 2)
+        if (!(size % 2))
+          throw Exception ("Farid derivative kernel extent must be odd");
+        if (order > (size-1) / 2)
           throw Exception ("Farid derivative order " + str(order) + " not possible with kernel size " + str(size));
         if (order > 3)
           throw Exception ("Farid derivatives not available for orders greater than 3");
@@ -223,7 +226,7 @@ namespace MR
                 derivative <<  0.010257,  0.061793,  0.085598, -0.061661, -0.191974, -0.061661,  0.085598,  0.061793,  0.010257;
                 break;
               case 3:
-                derivative << -0.027205, -0.065929,  0.053614,  0.203718,  0.000000, -0.203718, -0.053614,  0.065929, -0.027205;
+                derivative << -0.027205, -0.065929,  0.053614,  0.203718,  0.000000, -0.203718, -0.053614,  0.065929,  0.027205;
                 break;
               default:
                 assert (0);

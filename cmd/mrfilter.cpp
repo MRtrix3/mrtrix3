@@ -36,8 +36,8 @@
 using namespace MR;
 using namespace App;
 
-enum filter_t {            BOXBLUR,   FFT,   LAPLACIAN3D,   MEDIAN,   RADIALBLUR,   SOBEL,   SOBELFELDMAN,   UNSHARPMASK, ZCLEAN };
-const char* filters[] = { "boxblur", "fft", "laplacian3d", "median", "radialblur", "sobel", "sobelfeldman", "unsharpmask", "zclean", nullptr };
+enum filter_t {            BOXBLUR,   FARID,   FFT,   LAPLACIAN3D,   MEDIAN,   RADIALBLUR,   SOBEL,   SOBELFELDMAN,   UNSHARPMASK, ZCLEAN };
+const char* filters[] = { "boxblur", "farid", "fft", "laplacian3d", "median", "radialblur", "sobel", "sobelfeldman", "unsharpmask", "zclean", nullptr };
 // TODO Remaining: gradient, laplacian1d, smooth
 
 
@@ -51,6 +51,15 @@ const OptionGroup BoxblurOption = OptionGroup ("Options for boxblur filter")
         "This can be specified either as a single value to be used for all 3 axes, "
         "or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).")
     + Argument ("size").type_sequence_int();
+
+
+const OptionGroup FaridOption = OptionGroup ("Options for farid filter")
+
+  + Option ("order", "specify order of derivative (default: 1st order i.e. gradient)")
+    + Argument ("value").type_integer (1, 3)
+  + Option ("extent", "specify width of filter kernel (default: 1 + (2 x order)) (must be odd)")
+    + Argument ("value").type_sequence_int()
+  + Option ("magnitude", "output norm magnitude of filter result rather than 3 spatial components");
 
 
 
@@ -103,6 +112,11 @@ const OptionGroup RadialblurOption = OptionGroup ("Options for radialblur filter
   + Option ("radius", "specify radius of blurring kernel in mm. "
         "This option is compulsory when the radial blurring filter is used.")
     + Argument ("value").type_float(0.0);
+
+
+
+const OptionGroup SobelOption = OptionGroup ("Options for sobel and sobelfeldman filters")
+  + Option ("magnitude", "output norm magnitude of filter result rather than 3 spatial components");
 
 
 /*
@@ -173,11 +187,13 @@ void usage ()
 
   OPTIONS
   + BoxblurOption
+  + FaridOption
   + FFTOption
   //+ GradientLaplaceOption
   + MedianOption
   + RadialblurOption
   //+ SmoothOption
+  + SobelOption
   + ZcleanOption
   + Stride::Options;
 }
@@ -306,6 +322,7 @@ void run ()
     }
     break;
 
+    case FARID:
     case SOBEL:
     case SOBELFELDMAN:
     {
@@ -313,6 +330,21 @@ void run ()
       Adapter::EdgeExtend<Image<float>> edge_adapter (input);
       std::array<Filter::Kernels::kernel_type, 3> kernels;
       switch (filter_index) {
+        case FARID:
+        {
+          const size_t order = get_option_value ("order", 1);
+          auto opt = get_options ("extent");
+          size_t extent;
+          if (opt.size()) {
+            auto extents = parse_ints (opt[0][0]);
+            if (extents.size() != 1)
+              throw Exception ("Farid filter requires a single extent value for all axes");
+            extent = extents[0];
+          } else {
+            extent = 1 + (2 * order);
+          }
+          kernels = Filter::Kernels::farid (order, extent); break;
+        }
         case SOBEL:        kernels = Filter::Kernels::sobel();         break;
         case SOBELFELDMAN: kernels = Filter::Kernels::sobel_feldman(); break;
         default: assert (0);
