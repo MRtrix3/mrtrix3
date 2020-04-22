@@ -95,12 +95,11 @@ void usage ()
    + "References based on fitting algorithm used:"
 
    + "* OLS, WLS:\n"
-     "Basser, P.J.; Mattiello, J.; LeBihan, D."
-     "Estimation of the effective self-diffusion tensor from the NMR spin echo."
+     "Basser, P.J.; Mattiello, J.; LeBihan, D. "
+     "Estimation of the effective self-diffusion tensor from the NMR spin echo. "
      "J Magn Reson B., 1994, 103, 247–254."
 
-
-  +  "* IWLS:\n"
+   + "* IWLS:\n"
      "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. " // Internal
      "Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. "
      "NeuroImage, 2013, 81, 335-346";
