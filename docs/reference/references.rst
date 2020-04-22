@@ -18,16 +18,6 @@ References
    NeuroImage, 94 (2014), pp. 312–336.
    [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811913012676>`__\ ]
 
-.. [Dhollander2015a] T. Dhollander, R.E. Smith, J.-D. Tournier, B. Jeurissen, and A. Connelly.
-   *Time to move on: an FOD-based DEC map to replace DTI's trademark DEC FA.*
-   Proceedings of the 23th annual meeting of the International Society of Magnetic Resonance in Medicine (2015), pp. 1027.
-   [`full text link <https://www.researchgate.net/publication/276412466_Time_to_move_on_an_FOD-based_DEC_map_to_replace_DTI's_trademark_DEC_FA>`__\ ]
-
-.. [Dhollander2015b] T. Dhollander, D. Raffelt, R.E. Smith, and A. Connelly.
-   *Panchromatic sharpening of FOD-based DEC maps by structural T1 information.*
-   Proceedings of the 23th annual meeting of the International Society of Magnetic Resonance in Medicine (2015), pp. 566.
-   [`full text link <https://www.researchgate.net/publication/276412176_Panchromatic_sharpening_of_FOD-based_DEC_maps_by_structural_T1_information>`__\ ]
-
 .. [Dhollander2016a] T. Dhollander, D. Raffelt, and A. Connelly.
    *A novel iterative approach to reap the benefits of multi-tissue CSD from just single-shell (+b=0) diffusion MRI data.*
    Proceedings of the 24th annual meeting of the International Society of Magnetic Resonance in Medicine (2016), pp. 3010.
