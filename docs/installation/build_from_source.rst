@@ -113,12 +113,13 @@ packages:
         CXX=g++-4.9 ./configure
 
 
-.. NOTE::
+.. SEEALSO::
    If for whatever reasons you need to install *MRtrix3* on a system with
    older dependencies, and you are unable to update the software (e.g. you
    want to run *MRtrix3* on a centrally-managed HPC cluster), you can as a
    last resort use the `procedures described on this post
    <https://community.mrtrix.org/t/standalone-installation-on-linux/3549>`__. 
+
 
 
 macOS
