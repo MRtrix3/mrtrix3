@@ -263,7 +263,6 @@ If you intend to contribute to the development of *MRtrix3*, set up your git
 environment as per the `Git instructions page
 <https://help.github.com/articles/set-up-git/#setting-up-git>`__
 
-.. _linux_build:
 
 Build *MRtrix3*
 ---------------
