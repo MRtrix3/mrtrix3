@@ -147,6 +147,11 @@ namespace MR
                           [&] (const std::string& suffix) { return has_suffix (name, suffix); });
     }
 
+    inline bool is_mrtrix_image (const std::string& name)
+    {
+      return strcmp(name.c_str(), std::string("-").c_str()) == 0 ||
+        Path::has_suffix (name, {".mif", ".mih", ".mif.gz"});
+    }
 
     inline std::string cwd ()
     {

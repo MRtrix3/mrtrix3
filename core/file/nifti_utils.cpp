@@ -650,6 +650,7 @@ namespace MR
           H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
         Stride::symbolise (H);
 
+
         // by default, prevent output of bitwise data in NIfTI, since most 3rd
         // party software package can't handle them
 
@@ -825,6 +826,17 @@ namespace MR
         return 1;
       }
 
+
+      std::string get_json_path (const std::string & nifti_path) {
+        std::string json_path;
+        if (Path::has_suffix (nifti_path, ".nii.gz"))
+          json_path = nifti_path.substr (0, nifti_path.size()-7);
+        else if (Path::has_suffix (nifti_path, ".nii"))
+          json_path = nifti_path.substr (0, nifti_path.size()-4);
+        else
+          assert (0);
+        return json_path + ".json";
+      }
 
 
     }
