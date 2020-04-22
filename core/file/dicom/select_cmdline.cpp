@@ -72,7 +72,7 @@ namespace MR {
               study.push_back ((*patient[0])[i]);
           }
           if (study.empty())
-            throw ("no matching studies in DICOM dataset \"" + tree.description + "\"");
+            throw Exception ("no matching studies in DICOM dataset \"" + tree.description + "\"");
           if (study.size() > 1)
             throw Exception ("too many matching studies in DICOM dataset \"" + tree.description + "\"");
 
