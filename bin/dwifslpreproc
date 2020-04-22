@@ -849,7 +849,7 @@ def execute(): #pylint: disable=unused-variable
 
   # Use user supplied mask for eddy instead of one derived from the images using dwi2mask
   if app.ARGS.eddy_mask:
-    if image.match('eddy_mask.mif', dwi_path, 0, 3):
+    if image.match('eddy_mask.mif', dwi_path, up_to_dim=3):
       run.command('mrconvert eddy_mask.mif eddy_mask.nii -datatype float32 -stride -1,+2,+3')
     else:
       app.warn('User-provided processing mask for eddy does not match DWI voxel grid; resampling')
