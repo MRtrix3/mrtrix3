@@ -10,7 +10,13 @@ The instructions below describe the process of compiling and installing
 Install Dependencies
 --------------------
 
-To install *MRtrix3*, you will need the following:
+To install *MRtrix3*, you will need to have a number of dependencies
+available on your system -- these are listed below. These can be installed in a
+number of ways, depending on your specific platform. We provide specific
+instructions for doing so for GNU/Linux, macOS and Microsoft Windows in the
+subsequent sections.
+
+Required dependencies:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (GCC version >= 4.9, clang)
@@ -195,13 +201,18 @@ Windows
 
 All of these dependencies are installed below by the MSYS2 package manager.
 
-Install and update MSYS2
-""""""""""""""""""""""""
-
 .. WARNING:: 
 
     When following the instructions below, use the **'MinGW-w64 Win64 shell'**;
     'MSYS2 shell' and 'MinGW-w64 Win32 shell' should be avoided.
+
+.. WARNING::
+    At time of writing, this MSYS2 system update will give a number of
+    instructions, including: terminating the terminal when the update is
+    completed, and modifying the shortcuts for executing the shell(s). Although
+    these instructions are not as prominent as they could be, it is *vital*
+    that they are followed correctly!
+
 
 1. Download and install the most recent 64-bit MSYS2 installer from
    http://msys2.github.io/ (msys2-x86\_64-\*.exe), and following the
@@ -217,17 +228,7 @@ Install and update MSYS2
    Close the terminal, start a new **'MinGW-w64 Win64 Shell'**, and repeat as
    necessary until no further packages are updated. 
 
-.. WARNING::
-    At time of writing, this MSYS2 system update will give a number of
-    instructions, including: terminating the terminal when the update is
-    completed, and modifying the shortcuts for executing the shell(s). Although
-    these instructions are not as prominent as they could be, it is *vital*
-    that they are followed correctly!
-
-Install *MRtrix3* dependencies
-""""""""""""""""""""""""""""""
-
-1. From the **'MinGW-w64 Win64 Shell'** run::
+4. From the **'MinGW-w64 Win64 Shell'** run::
 
         pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-libpng
     
