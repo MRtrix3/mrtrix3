@@ -85,7 +85,7 @@ else
 
   # QT5 BASE
   SECONDS=0
-  DNAME=qtbase-opensource-src-${QT_VERSION}
+  DNAME=qtbase-everywhere-src-${QT_VERSION}
   FNAME=${DNAME}.tar.xz
   curl -s -O http://ftp1.nluug.nl/languages/qt/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/${FNAME}
   tar xf ${FNAME}
