@@ -1,9 +1,9 @@
 Installing *MRtrix3*
 ====================
 
-The simplest way to install *MRtrix3* is to use one of the pre-compiled 
-packages. These allow you to get started straight away, with all dependencies 
-included. 
+By far the quickest and simplest way to install *MRtrix3* is to use one of the 
+pre-compiled packages. These allow you to get started straight away, with all 
+dependencies included. 
 
 Packages of various types are available for the three main platforms
 (GNU/Linux, macOS, Microsoft Windows). For the latest information, please refer
