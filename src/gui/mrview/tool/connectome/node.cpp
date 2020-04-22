@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/connectome/node.h"
@@ -71,8 +72,8 @@ namespace MR
         Node::Mesh::Mesh (MR::Surface::Mesh& in) :
             count (3 * in.num_triangles())
         {
-          MRView::GrabContext context;
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::Context::Grab context;
+          GL::assert_context_is_current();
 
           vector<float> vertices;
           vertices.reserve (3 * in.num_vertices());
@@ -117,7 +118,7 @@ namespace MR
           index_buffer.bind();
           if (indices.size())
             gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof (unsigned int), &indices[0], gl::STATIC_DRAW);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
         Node::Mesh::Mesh (Mesh&& that) :
@@ -132,7 +133,7 @@ namespace MR
 
         Node::Mesh::~Mesh()
         {
-          MRView::GrabContext context;
+          GL::Context::Grab context;
           vertex_buffer.clear();
           normal_buffer.clear();
           vertex_array_object.clear();
@@ -152,13 +153,13 @@ namespace MR
         void Node::Mesh::render() const
         {
           assert (count);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           normal_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           index_buffer.bind();
           gl::DrawElements (gl::TRIANGLES, count, gl::UNSIGNED_INT, (void*)0);
-          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          GL::assert_context_is_current();
         }
 
 

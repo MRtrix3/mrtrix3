@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "memory.h"
@@ -27,19 +28,31 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
-  SYNOPSIS = "Perform a spherical convolution";
+  SYNOPSIS = "Perform spherical convolution";
+
+  DESCRIPTION
+    + "Provided with matching pairs of response function and ODF images "
+      "(containing SH coefficients), perform spherical convolution to provide the "
+      "corresponding SH coefficients of the signal."
+    + "If multiple pairs of inputs are provided, their contributions will be "
+       "summed into a single output."
+    +  "If the responses are multi-shell (with one line of coefficients per "
+       "shell), the output will be a 5-dimensional image, with the SH "
+       "coefficients of the signal in each shell stored at different indices "
+       "along the 5th dimension."
+    + Math::SH::encoding_description;
+
+  DESCRIPTION
+  + Math::SH::encoding_description;
 
   ARGUMENTS
-    + Argument ("SH_in", "the input spherical harmonics coefficients image.").type_image_in ()
-    + Argument ("response", "the convolution kernel (response function)").type_file_in ()
+    + Argument ("odf response", "pairs of input ODF image and corresponding responses").allow_multiple()
     + Argument ("SH_out", "the output spherical harmonics coefficients image.").type_image_out ();
 
   OPTIONS
-    + Option ("mask", "only perform computation within the specified binary brain mask image.")
-    + Argument ("image", "the mask image to use.").type_image_in ()
-
+    + DataType::options()
     + Stride::Options;
 }
 
@@ -50,53 +63,82 @@ using value_type = float;
 
 class SConvFunctor { MEMALIGN(SConvFunctor)
   public:
-  SConvFunctor (const size_t n, Image<bool>& mask, 
-                const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& response) :
-                    image_mask (mask),
-                    response (response),
-                    SH_in (n),
-                    SH_out (n) { }
+  SConvFunctor (const vector<Eigen::MatrixXd>& responses, vector<Image<value_type>>& inputs) :
+    responses (responses),
+    inputs (inputs) { }
 
-    void operator() (Image<value_type>& in, Image<value_type>& out) {
-      if (image_mask.valid()) {
-        assign_pos_of(in).to(image_mask);
-        if (!image_mask.value()) {
-          out.row(3) = 0.0;
-          return;
+    void operator() (Image<value_type>& output)
+    {
+      for (size_t n = 0; n < inputs.size(); ++n) {
+        assign_pos_of (output, 0, 3).to (inputs[n]);
+        in = inputs[n].row (3);
+        for (ssize_t s = 0; s < responses[n].rows(); ++s) {
+          Math::SH::sconv (out, responses[n].row(s), in);
+          if (output.ndim() > 4)
+            output.index(4) = s;
+          for (ssize_t k = 0; k < out.size(); ++k) {
+            output.index(3) = k;
+            output.value() += out[k];
+          }
         }
       }
-      SH_in = in.row(3);
-      out.row(3) = Math::SH::sconv (SH_out, response, SH_in);
     }
 
   protected:
-    Image<bool> image_mask;
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> response;
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> SH_in, SH_out;
+    const vector<Eigen::MatrixXd>& responses;
+    vector<Image<value_type>> inputs;
+    Eigen::VectorXd in, out;
 
 };
 
 
-void run() {
 
-  auto image_in = Image<value_type>::open (argument[0]).with_direct_io (3);
-  Math::SH::check (image_in);
 
-  auto responseZSH = load_vector<value_type>(argument[1]);
-  Eigen::Matrix<value_type, Eigen::Dynamic, 1> responseRH;
-  Math::ZSH::ZSH2RH (responseRH, responseZSH);
 
-  auto mask = Image<bool>();
-  auto opt = get_options ("mask");
-  if (opt.size()) {
-    mask = Header::open (opt[0][0]).get_image<bool>();
-    check_dimensions (image_in, mask, 0, 3);
+
+void run()
+{
+  if (!(argument.size() & size_t(1U)))
+    throw Exception ("unexpected number of arguments");
+
+  vector<Image<value_type>> inputs ((argument.size() - 1) / 2);
+  vector<Eigen::MatrixXd> responses (inputs.size());
+
+  size_t lmax = 0;
+  for (size_t n = 0; n < inputs.size(); ++n) {
+    inputs[n] = Image<value_type>::open (argument[2*n]);
+    Math::SH::check (inputs[n]);
+    if (inputs[n].ndim() > 4 && inputs[n].size(4) > 1)
+      throw Exception ("input ODF contains more than 4 dimensions");
+
+    responses[n] = load_matrix (argument[2*n+1]);
+    responses[n].conservativeResizeLike (Eigen::MatrixXd::Zero (responses[n].rows(), Math::ZSH::NforL (Math::SH::LforN (inputs[n].size (3)))));
+    lmax = std::max (Math::ZSH::LforN (responses[n].cols()), lmax);
+
+    for (ssize_t k = 0; k < responses[n].rows(); ++k)
+      responses[n].row(k) = Math::ZSH::ZSH2RH (responses[n].row(k));
+
+    if (n) {
+      if (responses[n].rows() != responses[0].rows())
+        throw Exception ("number of shells differs between response files");
+      check_dimensions (inputs[n], inputs[0], 0, 3);
+    }
   }
 
-  auto header = Header(image_in);
-  Stride::set_from_command_line (header);
-  auto image_out = Image<value_type>::create (argument[2], header);
-  
-  SConvFunctor sconv (image_in.size(3), mask, responseRH);
-  ThreadedLoop ("performing convolution", image_in, 0, 3, 2).run (sconv, image_in, image_out);
+
+  Header header (inputs[0]);
+  if (responses[0].rows() > 1) {
+    header.ndim() = 5;
+    header.size(4) = responses[0].rows();
+  }
+  else
+    header.ndim() = 4;
+  header.size(3) = Math::SH::NforL (lmax);
+  Stride::set_from_command_line (header, Stride::contiguous_along_axis (3, header));
+  header.datatype() = DataType::from_command_line (DataType::Float32);
+
+  auto output = Image<value_type>::create (argument[argument.size()-1], header);
+
+  SConvFunctor sconv (responses, inputs);
+  ThreadedLoop ("performing spherical convolution", inputs[0], 0, 3).run (sconv, output);
 }

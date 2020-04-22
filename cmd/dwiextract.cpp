@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "image.h"
@@ -34,6 +35,14 @@ void usage ()
 
   SYNOPSIS = "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset";
 
+  EXAMPLES
+    + Example ("Calculate the mean b=0 image from a 4D DWI series",
+               "dwiextract dwi.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3",
+               "The dwiextract command extracts all volumes for which the b-value is "
+               "(approximately) zero; the resulting 4D image can then be provided to "
+               "the mrmath command to calculate the mean intensity across volumes "
+               "for each voxel.");
+
   ARGUMENTS
     + Argument ("input", "the input DW image.").type_image_in ()
     + Argument ("output", "the output image (diffusion-weighted volumes by default).").type_image_out ();
@@ -50,14 +59,15 @@ void usage ()
     + Stride::Options;
 }
 
+
+
+
+
+
 void run()
 {
-  auto input_header = Header::open (argument[0]);
-  auto input_image = input_header.get_image<float>();
-
-  Eigen::MatrixXd grad_unprocessed = DWI::get_DW_scheme (input_image);
-  Eigen::MatrixXd grad = grad_unprocessed;
-  DWI::validate_DW_scheme (grad, input_image);
+  auto input_image = Image<float>::open (argument[0]);
+  auto grad = DWI::get_DW_scheme (input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
@@ -89,7 +99,7 @@ void run()
   }
 
   auto opt = get_options ("pe");
-  const auto pe_scheme = PhaseEncoding::get_scheme (input_header);
+  const auto pe_scheme = PhaseEncoding::get_scheme (input_image);
   if (opt.size()) {
     if (!pe_scheme.rows())
       throw Exception ("Cannot filter volumes by phase-encoding: No such information present");
@@ -128,7 +138,7 @@ void run()
 
   Eigen::MatrixXd new_grad (volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
-    new_grad.row (i) = grad_unprocessed.row (volumes[i]);
+    new_grad.row (i) = grad.row (volumes[i]);
   DWI::set_DW_scheme (header, new_grad);
 
   if (pe_scheme.rows()) {

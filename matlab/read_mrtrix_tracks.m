@@ -1,9 +1,24 @@
+% Copyright (c) 2008-2019 the MRtrix3 contributors.
+%
+% This Source Code Form is subject to the terms of the Mozilla Public
+% License, v. 2.0. If a copy of the MPL was not distributed with this
+% file, You can obtain one at http://mozilla.org/MPL/2.0/.
+%
+% Covered Software is provided under this License on an "as is"
+% basis, without warranty of any kind, either expressed, implied, or
+% statutory, including, without limitation, warranties that the
+% Covered Software is free of defects, merchantable, fit for a
+% particular purpose or non-infringing.
+% See the Mozilla Public License v. 2.0 for more details.
+%
+% For more details, see http://www.mrtrix.org/.
+
 function tracks = read_mrtrix_tracks (filename)
 
 % function: tracks = read_mrtrix_tracks (filename)
 %
-% returns a structure containing the header information and data for the MRtrix 
-% format track file 'filename' (i.e. files with the extension '.tck'). 
+% returns a structure containing the header information and data for the MRtrix
+% format track file 'filename' (i.e. files with the extension '.tck').
 % The track data will be stored as a cell array in the 'data' field of the
 % return variable.
 
@@ -32,7 +47,7 @@ while 1
       file = value;
     elseif strcmp(key, 'datatype')
       tracks.datatype = value;
-    else 
+    else
       tracks = add_field (tracks, key, value);
     end
   end
@@ -78,18 +93,3 @@ for n = 1:(prod(size(k))-1)
   tracks.data{end+1} = data(pk:(k(n)-1),:);
   pk = k(n)+1;
 end
-
-
-
-
-function image = add_field (image, key, value)
-  if isfield (image, key)
-    previous = getfield (image, key);
-    if iscell (previous)
-      image = setfield (image, key, [ previous {value} ]);
-    else
-      image = setfield (image, key, { previous, value });
-    end
-  else
-    image = setfield (image, key, value);
-  end

@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #ifndef __header_h__
 #define __header_h__
@@ -32,8 +33,6 @@
 
 namespace MR
 {
-
-  extern const App::Option NoRealignOption;
 
   /*! \defgroup ImageAPI Image access
    * \brief Classes and functions providing access to image data.
@@ -62,8 +61,9 @@ namespace MR
         transform_ (Eigen::Matrix<default_type,3,4>::Constant (NaN)),
         format_ (nullptr),
         offset_ (0.0),
-        scale_ (1.0) {
-        }
+        scale_ (1.0),
+        realign_perm_ {{0, 1, 2}},
+        realign_flip_ {{false, false, false}} {}
 
       explicit Header (Header&& H) noexcept :
         axes_ (std::move (H.axes_)),
@@ -74,7 +74,9 @@ namespace MR
         io (std::move (H.io)),
         datatype_ (std::move (H.datatype_)),
         offset_ (H.offset_),
-        scale_ (H.scale_) {}
+        scale_ (H.scale_),
+        realign_perm_ {{0, 1, 2}},
+        realign_flip_ {{false, false, false}} {}
 
       Header& operator= (Header&& H) noexcept {
         axes_ = std::move (H.axes_);
@@ -86,6 +88,8 @@ namespace MR
         datatype_ = std::move (H.datatype_);
         offset_ = H.offset_;
         scale_ = H.scale_;
+        realign_perm_ = H.realign_perm_;
+        realign_flip_ = H.realign_flip_;
         return *this;
       }
 
@@ -100,7 +104,9 @@ namespace MR
         format_ (H.format_),
         datatype_ (H.datatype_),
         offset_ (datatype().is_integer() ? H.offset_ : 0.0),
-        scale_ (datatype().is_integer() ? H.scale_ : 1.0) { }
+        scale_ (datatype().is_integer() ? H.scale_ : 1.0),
+        realign_perm_ (H.realign_perm_),
+        realign_flip_ (H.realign_flip_) { }
 
       //! copy constructor from type of class derived from Header
       /*! This invokes the standard Header(const Header&) copy-constructor. */
@@ -118,7 +124,9 @@ namespace MR
           format_ (nullptr),
           datatype_ (DataType::from<typename HeaderType::value_type>()),
           offset_ (0.0),
-          scale_ (1.0) {
+          scale_ (1.0),
+          realign_perm_ {{0, 1, 2}},
+          realign_flip_ {{false, false, false}} {
             axes_.resize (original.ndim());
             for (size_t n = 0; n < original.ndim(); ++n) {
               size(n) = original.size(n);
@@ -140,6 +148,8 @@ namespace MR
         datatype_ = H.datatype_;
         offset_ = datatype().is_integer() ? H.offset_ : 0.0;
         scale_ = datatype().is_integer() ? H.scale_ : 1.0;
+        realign_perm_ = H.realign_perm_;
+        realign_flip_ = H.realign_flip_;
         io.reset();
         return *this;
       }
@@ -168,6 +178,8 @@ namespace MR
           datatype_ = DataType::from<typename HeaderType::value_type>();
           offset_ = 0.0;
           scale_ = 1.0;
+          realign_perm_ = {{0, 1, 2}};
+          realign_flip_ = {{false, false, false}};
           io.reset();
           return *this;
         }
@@ -196,6 +208,9 @@ namespace MR
       const transform_type& transform () const { return transform_; }
       //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
       transform_type& transform () { return transform_; }
+
+      //! get information on how the transform was modified on image load
+      void realignment (std::array<size_t, 3>& perm, std::array<bool, 3>& flip) const { perm = realign_perm_; flip = realign_flip_; }
 
       class NDimProxy { NOMEMALIGN
         public:
@@ -323,17 +338,19 @@ namespace MR
         Image<ValueType> get_image (bool read_write_if_existing = false);
 
       //! get generic key/value text attributes
-      const std::map<std::string, std::string>& keyval () const { return keyval_; }
+      const KeyValues& keyval () const { return keyval_; }
       //! get/set generic key/value text attributes
-      std::map<std::string, std::string>& keyval () { return keyval_; }
+      KeyValues& keyval () { return keyval_; }
+      //! merge key/value entries from another header
+      void merge_keyval (const Header& H);
 
       static Header open (const std::string& image_name);
-      static Header create (const std::string& image_name, const Header& template_header);
+      static Header create (const std::string& image_name, const Header& template_header, bool add_to_command_history = true);
       static Header scratch (const Header& template_header, const std::string& label = "scratch image");
 
       /*! use to prevent automatic realignment of transform matrix into
        * near-standard (RAS) coordinate system. */
-      static bool do_not_realign_transform;
+      static bool do_realign_transform;
 
       //! return a string with the full description of the header
       std::string description (bool print_all = false) const;
@@ -344,7 +361,7 @@ namespace MR
       vector<Axis> axes_;
       transform_type transform_;
       std::string name_;
-      std::map<std::string, std::string> keyval_;
+      KeyValues keyval_;
       const char* format_;
 
       //! additional information relevant for images stored on file
@@ -356,10 +373,14 @@ namespace MR
 
 
       void acquire_io (Header& H) { io = std::move (H.io); }
-      void merge (const Header& H);
+      void check (const Header& H) const;
 
       //! realign transform to match RAS coordinate system as closely as possible
       void realign_transform ();
+      /*! store information about how image was
+       * realigned via realign_transform(). */
+      std::array<size_t, 3> realign_perm_;
+      std::array<bool, 3> realign_flip_;
 
       void sanitise_voxel_sizes ();
       void sanitise_transform ();
@@ -374,8 +395,8 @@ namespace MR
 
 
 
-
-
+  // Can't be a static member function due to memory alignment requirements of vector<>
+  Header concatenate (const vector<Header>& headers, const size_t axis, const bool permit_datatype_mismatch);
 
 
 

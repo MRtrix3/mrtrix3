@@ -59,15 +59,15 @@ can then be copied to other systems and extracted in the desired folder:
 
    .. code-block:: console
 
-        # mkdir /usr/local/mrtrix3
-        # cp mrtrix3.tgz /usr/local/mrtrix3/
+        $ mkdir /usr/local/mrtrix3
+        $ cp mrtrix3.tgz /usr/local/mrtrix3/
 
 4. Extract the archive in this location (as root):
 
    .. code-block:: console
 
-        # cd /usr/local/mrtrix3/
-        # tar xvfz mrtrix3.tgz
+        $ cd /usr/local/mrtrix3/
+        $ tar xvfz mrtrix3.tgz
 
    Assuming no errors were generated, you can safely remove the ``mrtrix3.tgz``
    file at this point.

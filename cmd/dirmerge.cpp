@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -30,11 +31,10 @@ void usage ()
 {
 AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
-SYNOPSIS = "Splice or merge sets of directions over multiple shells into a single set, "
-           "in such a way as to maintain near-optimality upon truncation";
+SYNOPSIS = "Splice / merge multiple sets of directions in such a way as to maintain near-optimality upon truncation";
 
 ARGUMENTS
-  + Argument ("subsets", "the number of subsets (phase-encode directions) per b-value").type_integer(1,10000)
+  + Argument ("subsets", "the number of subsets (eg. phase encoding directions) per b-value").type_integer(1,10000)
   + Argument ("bvalue files", "the b-value and sets of corresponding files, in order").type_text().allow_multiple()
   + Argument ("out", "the output directions file, with each row listing "
       "the X Y Z gradient directions, the b-value, and an index representing "

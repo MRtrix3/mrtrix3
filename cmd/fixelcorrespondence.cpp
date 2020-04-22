@@ -1,17 +1,18 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2019 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
-
 
 #include "command.h"
 #include "progressbar.h"
@@ -19,9 +20,12 @@
 #include "image.h"
 #include "fixel/helpers.h"
 #include "fixel/keys.h"
+#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
+
+using Fixel::index_type;
 
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 
@@ -56,7 +60,7 @@ void run ()
   if (Path::is_dir (input_file))
     throw Exception ("please input the specific fixel data file to be converted (not the fixel directory)");
 
-  auto subject_index = Fixel::find_index_header (Fixel::get_fixel_directory (input_file)).get_image<uint32_t>();
+  auto subject_index = Fixel::find_index_header (Fixel::get_fixel_directory (input_file)).get_image<index_type>();
   auto subject_directions = Fixel::find_directions_header (Fixel::get_fixel_directory (input_file)).get_image<float>().with_direct_io();
 
   if (input_file == subject_directions.name())
@@ -65,7 +69,7 @@ void run ()
   auto subject_data = Image<float>::open (input_file);
   Fixel::check_fixel_size (subject_index, subject_data);
 
-  auto template_index = Fixel::find_index_header (argument[1]).get_image<uint32_t>();
+  auto template_index = Fixel::find_index_header (argument[1]).get_image<index_type>();
   auto template_directions = Fixel::find_directions_header (argument[1]).get_image<float>().with_direct_io();
 
   check_dimensions (subject_index, template_index);
@@ -78,22 +82,22 @@ void run ()
 
   for (auto i = Loop ("mapping subject fixel data to template fixels", template_index, 0, 3)(template_index, subject_index); i; ++i) {
     template_index.index(3) = 0;
-    uint32_t nfixels_template = template_index.value();
+    index_type nfixels_template = template_index.value();
     template_index.index(3) = 1;
-    uint32_t template_offset = template_index.value();
+    index_type template_offset = template_index.value();
 
-    for (size_t t = 0; t < nfixels_template; ++t) {
+    for (index_type t = 0; t < nfixels_template; ++t) {
 
       float largest_dp = 0.0;
       int index_of_closest_fixel = -1;
 
       subject_index.index(3) = 0;
-      uint32_t nfixels_subject = subject_index.value();
+      index_type nfixels_subject = subject_index.value();
       subject_index.index(3) = 1;
-      uint32_t subject_offset = subject_index.value();
+      index_type subject_offset = subject_index.value();
 
       template_directions.index(0) = template_offset + t;
-      for (size_t s = 0; s < nfixels_subject; ++s) {
+      for (index_type s = 0; s < nfixels_subject; ++s) {
         subject_directions.index(0) = subject_offset + s;
 
         Eigen::Vector3f templatedir = template_directions.row(1);
