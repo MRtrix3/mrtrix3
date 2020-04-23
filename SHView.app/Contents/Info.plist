@@ -13,7 +13,7 @@
     <key>CFBundleShortVersionString</key>     <string>3.0</string>
     <key>CFBundleVersion</key>                <string>3.0</string>
     <key>NSHumanReadableCopyright</key>       <string>Copyright (c) 2008-2020 the MRtrix3 contributors</string>
-    <key>LSMinimumSystemVersion</key>         <string>10.7.5</string>
+    <key>LSMinimumSystemVersion</key>         <string>10.13.0</string>
     <key>LSBackgroundOnly</key>               <string>0</string>
     <key>NSHighResolutionCapable</key>        <true/>
   </dict>

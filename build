@@ -21,7 +21,6 @@ else
 
   TIFF_VERSION=$(git ls-remote --tags https://gitlab.com/libtiff/libtiff.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
   TIFF_VERSION=${TIFF_VERSION#*/*/v}
-  TIFF_VERSION=4.0.9
   echo "Using tiff ${TIFF_VERSION}"
 
   PNG_VERSION=$(git ls-remote --tags https://github.com/glennrp/libpng.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
