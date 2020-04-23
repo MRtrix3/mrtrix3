@@ -22,11 +22,11 @@ if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
 fi
 
 if [ "$1" != "-f" ]; then
-  echo "Are you sure you want to continue the installation?"
-  select yn in "Yes" "No"; do
+  while true; do
+    read -p "Are you sure you want to continue the installation? [Y/n] " yn
     case $yn in
-      Yes ) break;;
-      No ) exit;;
+      [Yy]* ) break;;
+      [Nn]* ) exit;;
     esac
   done
 fi
