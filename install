@@ -23,7 +23,7 @@ fi
 
 if [ "$1" != "-f" ]; then
   while true; do
-    read -p "Are you sure you want to continue? [yes/no] " yn
+    read -p "Are you sure you want to continue? [y/n] " yn
     case $yn in
       [Yy]* ) break;;
       [Nn]* ) exit;;
