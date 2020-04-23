@@ -17,11 +17,11 @@ if [ ! -d "/usr/local/mrtrix3" ] ; then
 fi
 
 if [ "$1" != "-f" ]; then
-  echo "Are you sure you want to continue the uninstallation?"
-  select yn in "Yes" "No"; do
+  while true; do
+    read -p "Are you sure you want to continue? [yes/no] " yn
     case $yn in
-      Yes ) break;;
-      No ) exit;;
+      [Yy]* ) break;;
+      [Nn]* ) exit;;
     esac
   done
 fi
