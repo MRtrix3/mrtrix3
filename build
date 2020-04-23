@@ -3,6 +3,7 @@
 TAGNAME="$1"
 
 export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+export MACOSX_DEPLOYMENT_TARGET=10.13
 PLD=$(pwd)
 THREADS=$(sysctl -n hw.ncpu)
 PREFIX=${PLD}/mrtrix3
