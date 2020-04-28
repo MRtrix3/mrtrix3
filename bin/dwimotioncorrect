@@ -50,6 +50,7 @@ def usage(cmdline): #pylint: disable=unused-variable
     options.add_argument('-priorweights', help='Import prior slice weights')
     options.add_argument('-fixedweights', help='Import fixed slice weights')
     options.add_argyment('-fixedmotion', help='Import fixed motion traces')
+    options.add_argument('-voxelweights', help='Import fixed voxel weights')    
     options.add_argument('-export_motion', help='Export rigid motion parameters')
     options.add_argument('-export_weights', help='Export slice weights')
     app.add_dwgrad_import_options(cmdline)
@@ -175,6 +176,12 @@ def execute(): #pylint: disable=unused-variable
     if app.ARGS.fixedmotion:
         run.command('cp ' + path.from_user(app.ARGS.fixedmotion, True) + ' motion.txt')
 
+    # Import voxel weights
+    if app.ARGS.voxelweights:
+        # mrcalc "hack" to check image dimensions & copy PE table
+        run.command('mrcalc in.mif 0 -mult ' + path.from_user(app.ARGS.voxelweights, True) + ' -add voxelweights.mif')
+
+
     # Configuration
     class Config:
         def __init__(self, svr=False, recit=5, regit=10, scale=1.):
@@ -193,8 +200,10 @@ def execute(): #pylint: disable=unused-variable
 
 
     # Variable input file name
-    global inputfn
+    global inputfn, voxweightsfn
     inputfn = 'in.mif'
+    voxweightsfn = 'voxelweights.mif'
+
 
 
     #   __________ Function definitions __________
@@ -207,6 +216,8 @@ def execute(): #pylint: disable=unused-variable
             rcmd += ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif'
         elif app.ARGS.priorweights:
             rcmd += ' -weights priorweights.txt'
+        if app.ARGS.voxelweights:
+            rcmd += ' -voxweights ' + voxweightsfn
         rcmd += ' -force' + nthr
         run.command(rcmd)
 
@@ -244,14 +255,19 @@ def execute(): #pylint: disable=unused-variable
 
 
     def fieldalignstep(k):
-        global inputfn
+        global inputfn, voxweightsfn
         if app.ARGS.fieldmap:
             if k == 0:
                 run.command('mrfieldunwarp in.mif field.mif unwarped.mif')
+                if app.ARGS.voxelweights:
+                    run.command('mrfieldunwarp -nomodulation voxelweights.mif field.mif voxelweights-unwarped.mif')
             else:
                 fidx = '-fidx ' + ('0' if not app.ARGS.fieldidx else app.ARGS.fieldidx)
                 run.command('mrfieldunwarp in.mif field.mif -motion motion.txt ' + fidx + ' unwarped.mif -force')
+                if app.ARGS.voxelweights:
+                    run.command('mrfieldunwarp -nomodulation -motion motion.txt voxelweights.mif field.mif voxelweights-unwarped.mif -force')
             inputfn = 'unwarped.mif'
+            voxweightsfn = 'voxelweights-unwarped.mif'
 
 
     #   __________ Motion correction __________

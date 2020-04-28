@@ -97,7 +97,7 @@ class FieldUnwarp {
     }
 
   private:
-    Interp::Cubic<Image<value_type>> dinterp;
+    Interp::Linear<Image<value_type>> dinterp;
     Interp::LinearInterp<Image<value_type>, Interp::LinearInterpProcessingType::ValueAndDerivative> finterp;
     Eigen::Matrix<double, Eigen::Dynamic, 3> PE;
     Eigen::Matrix<double, Eigen::Dynamic, 6> motion;

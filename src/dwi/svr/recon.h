@@ -137,6 +137,7 @@ namespace MR
         size_t nz = map.yheader().size(2);
         size_t nv = map.yheader().size(3);
         W.resize(nz,nv); W.setOnes();
+        Wvox.resize(voxel_count(map.yheader())); Wvox.setOnes();
         float scale = std::sqrt(1.0f * nv);
         init_laplacian(scale*reg);
         init_zreg(scale*zreg);
@@ -147,6 +148,8 @@ namespace MR
       const Eigen::MatrixXf& getWeights() const        { return W; }
       void setWeights (const Eigen::MatrixXf& weights) { W = weights; }
 
+      void setVoxelWeights(const Eigen::VectorXf& weights) { Wvox = weights; }
+
       template <typename VectorType1, typename VectorType2>
       void project(VectorType1& dst, const VectorType2& rhs, bool useweights = true) const
       {
@@ -156,8 +159,9 @@ namespace MR
         ImageView<float> source (map.yheader(), dst.data());
         map.x2y(recon, source);
         if (useweights) {
-          for (auto l = Loop() (source); l; l++)
-            source.value() *= std::sqrt(W(source.index(2), source.index(3)));
+          size_t j = 0;
+          for (auto l = Loop() (source); l; l++, j++)
+            source.value() *= std::sqrt(W(source.index(2), source.index(3)) * Wvox[j]);
         }
         INFO("Forward projection - regularisers");
         size_t nxyz = recon.size(0)*recon.size(1)*recon.size(2);
@@ -175,6 +179,7 @@ namespace MR
     private:
       const ReconMapping& map;
       Eigen::MatrixXf W;
+      Eigen::VectorXf Wvox;
       SparseMat L, Z;
 
       void init_laplacian(const float lambda)
@@ -291,8 +296,9 @@ namespace MR
         Eigen::VectorXf copy = rhs;  // temporary for weighted input
         ImageView<float> source (map.yheader(), copy.data());
         if (useweights) {
-          for (auto l = Loop() (source); l; l++)
-            source.value() *= std::sqrt(recmat.W(source.index(2), source.index(3)));
+          size_t j = 0;
+          for (auto l = Loop() (source); l; l++, j++)
+            source.value() *= std::sqrt(recmat.W(source.index(2), source.index(3)) * recmat.Wvox[j]);
         }
         map.y2x(recon, source);
         INFO("Transpose projection - regularisers");
