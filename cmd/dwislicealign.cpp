@@ -66,7 +66,7 @@ void run ()
 {
   // input data
   auto data = Image<value_type>::open(argument[0]);
-  auto grad = DWI::get_valid_DW_scheme (data);
+  auto grad = DWI::get_DW_scheme (data);
 
   // input template
   auto mssh = Image<value_type>::open(argument[1]);

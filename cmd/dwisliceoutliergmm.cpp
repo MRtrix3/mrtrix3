@@ -251,7 +251,7 @@ void run ()
   if (data.size(2) % mb)
     throw Exception ("Multiband factor incompatible with image dimensions.");
 
-  auto grad = DWI::get_valid_DW_scheme (data);
+  auto grad = DWI::get_DW_scheme (data);
   DWI::Shells shells (grad);
 
   // Compute RMSE of each slice

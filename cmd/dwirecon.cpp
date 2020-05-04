@@ -140,7 +140,7 @@ void run ()
 
 
   // Select shells
-  auto grad = DWI::get_valid_DW_scheme (dwi);
+  auto grad = DWI::get_DW_scheme (dwi);
   DWI::Shells shells (grad);
   shells.select_shells (false, false, false);
 
