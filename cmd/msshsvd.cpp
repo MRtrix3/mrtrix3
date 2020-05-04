@@ -156,12 +156,14 @@ void run ()
     Eigen::MatrixXf Sl (nshells, nvox*(2*l+1)); Sl.setZero();
     auto loop = Loop(0,3);
     size_t i = 0;
-    for (auto v = loop(in, mask); v; v++) {
-      if (!mask.valid() || mask.value()) {
-        for (size_t j = Math::SH::NforL(l-2); j < Math::SH::NforL(l); j++, i++) {
-          in.index(4) = j;
-          Sl.col(i) = lbfilt.asDiagonal() * Eigen::VectorXf(in.row(3));
-        }
+    for (auto v = loop(in); v; v++) {
+      if (mask.valid()) {
+        assign_pos_of(in).to(mask);
+        if (!mask.value()) continue;
+      }
+      for (size_t j = Math::SH::NforL(l-2); j < Math::SH::NforL(l); j++, i++) {
+        in.index(4) = j;
+        Sl.col(i) = lbfilt.asDiagonal() * Eigen::VectorXf(in.row(3));
       }
     }
     // low-rank SVD
