@@ -191,12 +191,12 @@ def execute(): #pylint: disable=unused-variable
             self.scale = scale
 
 
-    iters = [Config(False, 5, 100, 3.0),
-             Config(False, 5, 100, 2.4),
-             Config(slm,  10, 100, 1.9),
-             Config(slm,  10, 100, 1.5),
-             Config(slm,  10, 100, 1.2),
-             Config(slm,  60,  -1, 1.0)]
+    iters = [Config(False, 3, 10, 3.0),
+             Config(False, 3, 10, 2.4),
+             Config(slm,   3, 10, 1.9),
+             Config(slm,   3, 10, 1.5),
+             Config(slm,   3, 10, 1.2),
+             Config(slm,  10, -1, 1.0)]
 
 
     # Variable input file name
