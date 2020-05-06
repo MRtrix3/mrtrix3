@@ -141,7 +141,7 @@ namespace MR
       std::string image_path, sparse_path;
       if (single_file) {
 
-        image_offset = out.tellp() + int64_t(54);
+        image_offset = int64_t(out.tellp()) + int64_t(54);
         image_offset += ((4 - (image_offset % 4)) % 4);
         sparse_offset = image_offset + footprint(H);
 
