@@ -94,7 +94,7 @@ namespace MR
       int64_t offset = 0;
       out << "file: ";
       if (single_file) {
-        offset = out.tellp() + int64_t(18);
+        offset = int64_t(out.tellp()) + int64_t(18);
         offset += ((4 - (offset % 4)) % 4);
         out << ". " << offset << "\nEND\n";
       }
