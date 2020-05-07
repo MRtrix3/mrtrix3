@@ -32,9 +32,9 @@ Required dependencies:
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (GCC version >= 5, clang)
 -  `Python <https://www.python.org/>`__ version >= 3 (note that our scripts
-  remain compatible with Python 2.7, but `this version is now strongly
-  deprecated and is no longer supported
-  <https://www.python.org/doc/sunset-python-2/>`__).
+   remain compatible with Python 2.7, but `this version is now strongly
+   deprecated and is no longer supported
+   <https://www.python.org/doc/sunset-python-2/>`__).
 -  The `zlib <http://www.zlib.net/>`__ compression library
 -  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
@@ -52,9 +52,9 @@ on Linux, macOS, and Windows platforms.
 .. WARNING::
 
     To run the GUI components of *MRtrix3* (``mrview`` &
-    ``shview``), you will also need:
-
-    -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver
+    ``shview``), you will also need an `OpenGL
+    <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and
+    corresponding software driver
 
     Note that this implies you *cannot run the GUI components over a remote
     X11 connection*, since it can't support OpenGL 3.3+ rendering. The
