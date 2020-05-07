@@ -125,6 +125,15 @@ packages:
    qmake, rcc & moc executables (note these will probably be included in
    one of the other packages).
 
+- *[optional]* the TIFF library and utilities version >= 4.0, and its
+  corresponding development header/include files
+
+-  *[optional]* the FFTW library version >= 3.0, and its corresponding development
+  header/include files
+
+-  *[optional]* the PNG library and its corresponding development
+  header/include files
+
 .. WARNING::
    The compiler included in Ubuntu 12.04 and other older distributions is no
    longer capable of compiling *MRtrix3*, as it now requires C++11 support.
