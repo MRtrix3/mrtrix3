@@ -83,9 +83,9 @@ some of the most common Linux distributions below.
 
    .. NOTE::
 
-         On Ubuntu 20.04 and newer, you'll to replace `python` in the line
-         above with `python-is-python3` (or `python-is-python2` if you're still
-         using version 2.7, which is now *very* deprecated).
+         On Ubuntu 20.04 and newer, you'll to replace ``python`` in the line
+         above with ``python-is-python3`` (or ``python-is-python2`` if you're
+         still using version 2.7, which is now *very* deprecated).
 
 -  RPM-based distros (Fedora, CentOS)::
 
