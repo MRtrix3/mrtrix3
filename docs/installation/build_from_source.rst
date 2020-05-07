@@ -15,6 +15,9 @@ The instructions below describe the process of compiling and installing
   available for their platform from the `main MRtrix website <https://www.mrtrix.org/download/>`__.
 
 
+----
+
+
 Install Dependencies
 --------------------
 
@@ -61,9 +64,15 @@ Linux
 
 The installation procedure will depend on your system. Package names may
 changes between distributions, and between different releases of the
-same distribution. The commands below are suggestions based on what has
-been reported to work in the past, but may need to be amended. See below
-for hints on how to proceed in this case.
+same distribution. We provide commands to install the required dependencies on
+some of the most common Linux distributions below.
+
+.. WARNING::
+
+    The commands below are suggestions based on what has been reported to work
+    in the past, but may need to be amended. See below for hints on how to
+    proceed in this case.
+
 
 -  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
@@ -265,6 +274,8 @@ All of these dependencies are installed below by the MSYS2 package manager.
    ``pacman`` has completed the installation, should solve the problem.
 
 
+----
+
 
 Git setup
 ---------
@@ -272,6 +283,9 @@ Git setup
 If you intend to contribute to the development of *MRtrix3*, set up your git
 environment as per the `Git instructions page
 <https://help.github.com/articles/set-up-git/#setting-up-git>`__
+
+
+----
 
 
 .. _build_mrtrix3:
@@ -298,6 +312,10 @@ Build *MRtrix3*
 3. Build the binaries::
 
        ./build
+
+
+----
+
 
 Set up *MRtrix3*
 ----------------
@@ -329,6 +347,10 @@ Set up *MRtrix3*
     file, for example ``~/.bash_profile`` or ``~/.profile``, e.g. as follows::
 
       ./set_path ~/.bash_profile
+
+
+----
+
 
 Keeping *MRtrix3* up to date
 ----------------------------
