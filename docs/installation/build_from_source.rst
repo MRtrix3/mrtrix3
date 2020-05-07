@@ -67,7 +67,13 @@ for hints on how to proceed in this case.
 
 -  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
-       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev libpng-dev
+       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt5opengl5-dev libqt5svg5-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev libpng-dev
+
+   .. NOTE::
+
+         On Ubuntu 20.04 and newer, you'll to replace `python` in the line
+         above with `python-is-python3` (or `python-is-python2` if you're still
+         using version 2.7, which is now *very* deprecated).
 
 -  RPM-based distros (Fedora, CentOS)::
 
@@ -75,7 +81,7 @@ for hints on how to proceed in this case.
 
    on Fedora 24, this is reported to work::
 
-           sudo yum install git gcc-c++ python eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel libpng-devel
+       sudo yum install git gcc-c++ python eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel libpng-devel
 
 -  Arch Linux::
 
