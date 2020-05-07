@@ -110,7 +110,7 @@ packages:
 -  your compiler (gcc 5 or above, or clang)
 
 -  Python version >= 3 (version 2.7 will still work, but is strongly
-  deprecated)
+   deprecated)
 
 -  the zlib compression library and its corresponding development
    header/include files
@@ -125,14 +125,14 @@ packages:
    qmake, rcc & moc executables (note these will probably be included in
    one of the other packages).
 
-- *[optional]* the TIFF library and utilities version >= 4.0, and its
-  corresponding development header/include files
+-  *[optional]* the TIFF library and utilities version >= 4.0, and its
+   corresponding development header/include files
 
 -  *[optional]* the FFTW library version >= 3.0, and its corresponding development
-  header/include files
+   header/include files
 
 -  *[optional]* the PNG library and its corresponding development
-  header/include files
+   header/include files
 
 .. WARNING::
    The compiler included in Ubuntu 12.04 and other older distributions is no
