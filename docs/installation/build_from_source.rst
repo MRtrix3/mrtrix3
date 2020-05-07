@@ -30,7 +30,7 @@ subsequent sections.
 Required dependencies:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
-   compiler (GCC version >= 4.9, clang)
+   compiler (GCC version >= 5, clang)
 -  `Python <https://www.python.org/>`__ version >= 2.7
 -  The `zlib <http://www.zlib.net/>`__ compression library
 -  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2
@@ -104,7 +104,7 @@ packages:
 
 -  git
 
--  your compiler (gcc 4.9 or above, or clang)
+-  your compiler (gcc 5 or above, or clang)
 
 -  Python version >2.7
 
@@ -129,11 +129,11 @@ packages:
    <https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test>`__ -
    follow the link for instructions on how to add the PPA. Once the PPA has
    been added, you'll need to issue a ``sudo apt-get update``, followed by
-   ``sudo apt-get install g++-4.9``. You will probably also need to tell
+   ``sudo apt-get install g++-7``. You will probably also need to tell
    ``./configure`` to use this compiler (see ``./configure -help`` for further
    options)::
 
-        CXX=g++-4.9 ./configure
+        CXX=g++-7 ./configure
 
 
 .. SEEALSO::
