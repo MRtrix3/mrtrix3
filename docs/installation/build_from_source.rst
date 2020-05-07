@@ -12,7 +12,7 @@ The instructions below describe the process of compiling and installing
   These instructions are for more advanced users who wish to install very
   specific versions of *MRtrix3*, or make their own modifications. Most
   users will find it much easier to install one of the `pre-compiled packages
-  available for their platform from the `main MRtrix website <https://www.mrtrix.org/download/>`__.
+  available for their platform from the main MRtrix website <https://www.mrtrix.org/download/>`__.
 
 
 ----
@@ -31,7 +31,10 @@ Required dependencies:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (GCC version >= 5, clang)
--  `Python <https://www.python.org/>`__ version >= 2.7
+-  `Python <https://www.python.org/>`__ version >= 3 (note that our scripts
+  remain compatible with Python 2.7, but `this version is now strongly
+  deprecated and is no longer supported
+  <https://www.python.org/doc/sunset-python-2/>`__).
 -  The `zlib <http://www.zlib.net/>`__ compression library
 -  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2
 -  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
@@ -106,7 +109,8 @@ packages:
 
 -  your compiler (gcc 5 or above, or clang)
 
--  Python version >2.7
+-  Python version >= 3 (version 2.7 will still work, but is strongly
+  deprecated)
 
 -  the zlib compression library and its corresponding development
    header/include files
