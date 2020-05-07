@@ -12,7 +12,7 @@ The instructions below describe the process of compiling and installing
   These instructions are for more advanced users who wish to install very
   specific versions of *MRtrix3*, or make their own modifications. Most
   users will find it much easier to install one of the `pre-compiled packages
-  available for their platform from the main MRtrix website` <https://www.mrtrix.org/download/>`__.
+  available for their platform from the `main MRtrix website <https://www.mrtrix.org/download/>`__.
 
 
 Install Dependencies
@@ -54,7 +54,7 @@ on Linux, macOS, and Windows platforms.
     X11 connection*, since it can't support OpenGL 3.3+ rendering. The
     most up-to-date recommendations in this context can be found in the
     `relevant Wiki entry <http://community.mrtrix.org/t/remote-display-issues/2547>`__
-    on the `*MRtrix3* community forum <http://community.mrtrix.org>`__.
+    on the `MRtrix3 community forum <http://community.mrtrix.org>`__.
 
 Linux
 ^^^^^
