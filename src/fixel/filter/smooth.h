@@ -16,6 +16,8 @@
 #ifndef __fixel_filter_smooth_h__
 #define __fixel_filter_smooth_h__
 
+#include "fixel/types.h"
+
 #include "fixel/matrix.h"
 #include "fixel/filter/base.h"
 

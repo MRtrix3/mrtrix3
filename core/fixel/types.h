@@ -16,6 +16,8 @@
 #ifndef __fixel_types_h__
 #define __fixel_types_h__
 
+#include <stdint.h>
+
 namespace MR
 {
   namespace Fixel

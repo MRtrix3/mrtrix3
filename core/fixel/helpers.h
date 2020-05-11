@@ -296,14 +296,14 @@ namespace MR
       return header;
     }
 
-    //! Generate a header for a sparse data file (Nx1x1) using an index image as a template
-    template <class IndexHeaderType>
-    FORCE_INLINE Header data_header_from_index (IndexHeaderType& index) {
-      Header header (index);
+    //! Generate a header for a sparse data file (Nx1x1) with a known number of fixels
+    FORCE_INLINE Header make_data_header (const size_t num_fixels) {
+      Header header;
       header.ndim() = 3;
-      header.size(0) = get_number_of_fixels (index);
+      header.size(0) = num_fixels;
       header.size(1) = 1;
       header.size(2) = 1;
+      header.spacing(0) = header.spacing(1) = header.spacing(2) = 1.0;
       header.stride(0) = 1;
       header.stride(1) = 2;
       header.stride(2) = 3;
@@ -311,6 +311,12 @@ namespace MR
       header.datatype() = DataType::Float32;
       header.datatype().set_byte_order_native();
       return header;
+    }
+
+    //! Generate a header for a sparse data file (Nx1x1) using an index image as a template
+    template <class IndexHeaderType>
+    FORCE_INLINE Header data_header_from_index (IndexHeaderType& index) {
+      return make_data_header (get_number_of_fixels (index));
     }
 
     //! Generate a header for a fixel directions data file (Nx3x1) using an index image as a template
