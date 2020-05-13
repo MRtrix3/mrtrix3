@@ -19,7 +19,7 @@ LOGFILE=pylint.log
 echo logging to \""$LOGFILE"\"
 
 # generate list of tests to run:
-tests="build configure"
+tests="build configure update_copyright"
 if [ $# == 0 ]; then
   for lib_path in lib/mrtrix3/*; do
     if [[ -d ${lib_path} && ! ( ${lib_path} == *"__pycache__"* ) ]]; then
