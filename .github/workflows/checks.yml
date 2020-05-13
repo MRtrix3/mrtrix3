@@ -176,6 +176,9 @@ jobs:
          echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
          PYTHON=python3 ./run_pylint || { cat pylint.log; false; }
 
+    - name: check copyright headers
+      run: ./update_copyright && git diff --exit-code
+
     - name: check building of documentation
       run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
 
