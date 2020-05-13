@@ -11,6 +11,7 @@
 *
 * For more details, see http://www.mrtrix.org/
 */
+
 #ifndef __sync_enums_h__
 #define __sync_enums_h__
 
@@ -41,3 +42,4 @@ namespace MR
   }
 }
 #endif
+
