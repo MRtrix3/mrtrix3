@@ -43,7 +43,8 @@ void usage ()
     + Argument ("output", "the output directions file").type_file_out();
 
   OPTIONS
-    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
+    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].")
+    + Option ("indices", "Print out the indices of the reordered directions to standard output.");
 }
 
 
@@ -117,15 +118,23 @@ void run ()
 
   value_type min_cost = std::numeric_limits<value_type>::infinity();
   vector<size_t> best_order;
-  ProgressBar progress ("Determining best reordering", directions.rows());
-  for (size_t first_volume = 0; first_volume != size_t(directions.rows()); ++first_volume) {
-    const vector<size_t> order = optimise (directions, first_volume);
-    const value_type cost = calc_cost (directions, order);
-    if (cost < min_cost) {
-      min_cost = cost;
-      best_order = order;
+  {
+    ProgressBar progress ("Determining best reordering", directions.rows());
+    for (size_t first_volume = 0; first_volume != size_t(directions.rows()); ++first_volume) {
+      const vector<size_t> order = optimise (directions, first_volume);
+      const value_type cost = calc_cost (directions, order);
+      if (cost < min_cost) {
+        min_cost = cost;
+        best_order = order;
+      }
+      ++progress;
     }
-    ++progress;
+  }
+
+  if (get_options("indices").size()) {
+    for (const auto i : best_order)
+      std::cout << i << " ";
+    std::cout << "\n";
   }
 
   decltype(directions) output (directions.rows(), 3);
