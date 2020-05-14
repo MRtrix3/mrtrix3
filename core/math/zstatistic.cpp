@@ -236,7 +236,7 @@ namespace MR
                                              ).unaryExpr (&Math::erfcinv));
 #else
       data.resize (x.size());
-      for (size_t i = 0; i != x.size(); ++i)
+      for (ssize_t i = 0; i != x.size(); ++i)
         data[i] = Math::sqrt2 * Math::erfcinv (Math::betaincreg (0.5 * dof, 0.5, x[i]));
 #endif
       // Need to negate Z-scores for which t-statistic is negative
@@ -325,7 +325,7 @@ namespace MR
                                  ).unaryExpr (&Math::erfcinv);
 #else
       data_upper.resize (x_upper.size());
-      for (size_t i = 0; i != x_upper.size(); ++i)
+      for (ssize_t i = 0; i != x_upper.size(); ++i)
         data_upper[i] = Math::sqrt2 * Math::erfcinv (2.0 * Math::betaincreg (0.5 * dof, 0.5 * rank, x_upper[i]));
 #endif
 
@@ -340,7 +340,7 @@ namespace MR
                                  ).unaryExpr (&Math::erfinv);
 #else
       data_lower.resize (x_lower.size());
-      for (size_t i = 0; i != x_lower.size(); ++i)
+      for (ssize_t i = 0; i != x_lower.size(); ++i)
         data_lower[i] = Math::sqrt2 * Math::erfinv (2.0 * Math::betaincreg (0.5 * rank, 0.5 * dof, x_lower[i]) - 1.0);
 #endif
     }
