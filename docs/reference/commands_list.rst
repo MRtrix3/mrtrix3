@@ -20,6 +20,7 @@ List of MRtrix3 commands
     commands/amp2response
     commands/amp2sh
     commands/connectome2tck
+    commands/connectomeedit
     commands/connectomestats
     commands/dcmedit
     commands/dcminfo
@@ -42,21 +43,25 @@ List of MRtrix3 commands
     commands/dwigradcheck
     commands/dwinormalise
     commands/dwishellmath
+    commands/fixel2peaks
     commands/fixel2sh
     commands/fixel2tsf
     commands/fixel2voxel
     commands/fixelcfestats
+    commands/fixelconnectivity
     commands/fixelconvert
     commands/fixelcorrespondence
     commands/fixelcrop
+    commands/fixelfilter
     commands/fixelreorient
     commands/fod2dec
     commands/fod2fixel
-    commands/foreach
+    commands/for_each
     commands/label2colour
     commands/label2mesh
     commands/labelconvert
     commands/labelsgmfix
+    commands/labelstats
     commands/maskdump
     commands/maskfilter
     commands/mesh2voxel
@@ -65,6 +70,7 @@ List of MRtrix3 commands
     commands/mraverageheader
     commands/mrcalc
     commands/mrcat
+    commands/mrcentroid
     commands/mrcheckerboardmask
     commands/mrclusterstats
     commands/mrcolour
@@ -83,9 +89,11 @@ List of MRtrix3 commands
     commands/mrstats
     commands/mrthreshold
     commands/mrtransform
+    commands/mrtrix_cleanup
     commands/mrview
     commands/mtnormalise
     commands/peaks2amp
+    commands/peaks2fixel
     commands/population_template
     commands/responsemean
     commands/sh2amp
@@ -106,8 +114,8 @@ List of MRtrix3 commands
     commands/tckmap
     commands/tckresample
     commands/tcksample
-    commands/tcksift2
     commands/tcksift
+    commands/tcksift2
     commands/tckstats
     commands/tcktransform
     commands/tensor2metric
@@ -142,6 +150,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`amp2response`, "Estimate response function coefficients based on the DWI signal in single-fibre voxels"
     |cpp.png|, :ref:`amp2sh`, "Convert a set of amplitudes (defined along a set of corresponding directions) to their spherical harmonic representation"
     |cpp.png|, :ref:`connectome2tck`, "Extract streamlines from a tractogram based on their assignment to parcellated nodes"
+    |cpp.png|, :ref:`connectomeedit`, "Perform basic operations on a connectome"
     |cpp.png|, :ref:`connectomestats`, "Connectome group-wise statistics at the edge level using non-parametric permutation testing"
     |cpp.png|, :ref:`dcmedit`, "Edit DICOM file in-place"
     |cpp.png|, :ref:`dcminfo`, "Output DICOM fields in human-readable format"
@@ -164,21 +173,25 @@ List of MRtrix3 commands
     |python.png|, :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
     |python.png|, :ref:`dwinormalise`, "Perform various forms of intensity normalisation of DWIs"
     |python.png|, :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
+    |cpp.png|, :ref:`fixel2peaks`, "Convert data in the fixel directory format into a 4D image of 3-vectors"
     |cpp.png|, :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
     |cpp.png|, :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
     |cpp.png|, :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
     |cpp.png|, :ref:`fixelcfestats`, "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing"
+    |cpp.png|, :ref:`fixelconnectivity`, "Generate a fixel-fixel connectivity matrix"
     |cpp.png|, :ref:`fixelconvert`, "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format"
     |cpp.png|, :ref:`fixelcorrespondence`, "Obtain fixel-fixel correpondence between a subject fixel image and a template fixel mask"
     |cpp.png|, :ref:`fixelcrop`, "Crop/remove fixels from sparse fixel image using a binary fixel mask"
+    |cpp.png|, :ref:`fixelfilter`, "Perform filtering operations on fixel-based data"
     |cpp.png|, :ref:`fixelreorient`, "Reorient fixel directions"
     |cpp.png|, :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
     |cpp.png|, :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
-    |python.png|, :ref:`foreach`, "Perform some arbitrary processing step for each of a set of inputs"
+    |python.png|, :ref:`for_each`, "Perform some arbitrary processing step for each of a set of inputs"
     |cpp.png|, :ref:`label2colour`, "Convert a parcellated image (where values are node indices) into a colour image"
     |cpp.png|, :ref:`label2mesh`, "Generate meshes from a label image"
     |cpp.png|, :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
     |python.png|, :ref:`labelsgmfix`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
+    |cpp.png|, :ref:`labelstats`, "Compute statistics of parcels within a label image"
     |cpp.png|, :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     |cpp.png|, :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
     |cpp.png|, :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"
@@ -187,6 +200,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
     |cpp.png|, :ref:`mrcalc`, "Apply generic voxel-wise mathematical operations to images"
     |cpp.png|, :ref:`mrcat`, "Concatenate several images into one"
+    |cpp.png|, :ref:`mrcentroid`, "Determine the centre of mass / centre of gravity of an image"
     |cpp.png|, :ref:`mrcheckerboardmask`, "Create bitwise checkerboard image"
     |cpp.png|, :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     |cpp.png|, :ref:`mrcolour`, "Apply a colour map to an image"
@@ -205,9 +219,11 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrstats`, "Compute images statistics"
     |cpp.png|, :ref:`mrthreshold`, "Create bitwise image by thresholding image intensity"
     |cpp.png|, :ref:`mrtransform`, "Apply spatial transformations to an image"
+    |python.png|, :ref:`mrtrix_cleanup`, "Clean up residual temporary files & scratch directories from MRtrix3 commands"
     |cpp.png|, :ref:`mrview`, "The MRtrix image viewer"
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
+    |cpp.png|, :ref:`peaks2fixel`, "Convert peak directions image to a fixel directory"
     |python.png|, :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
     |python.png|, :ref:`responsemean`, "Calculate the mean response function from a set of text files"
     |cpp.png|, :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
@@ -215,7 +231,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
     |cpp.png|, :ref:`sh2response`, "Generate an appropriate response function from the image data for spherical deconvolution"
     |cpp.png|, :ref:`shbasis`, "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used"
-    |cpp.png|, :ref:`shconv`, "Perform a spherical convolution"
+    |cpp.png|, :ref:`shconv`, "Perform spherical convolution"
     |cpp.png|, :ref:`shview`, "View spherical harmonics surface plots"
     |cpp.png|, :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     |cpp.png|, :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
@@ -228,8 +244,8 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`tckmap`, "Use track data as a form of contrast for producing a high-resolution image"
     |cpp.png|, :ref:`tckresample`, "Resample each streamline in a track file to a new set of vertices"
     |cpp.png|, :ref:`tcksample`, "Sample values of an associated image along tracks"
-    |cpp.png|, :ref:`tcksift2`, "Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities"
     |cpp.png|, :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
+    |cpp.png|, :ref:`tcksift2`, "Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities"
     |cpp.png|, :ref:`tckstats`, "Calculate statistics on streamlines lengths"
     |cpp.png|, :ref:`tcktransform`, "Apply a spatial transformation to a tracks file"
     |cpp.png|, :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"

@@ -19,40 +19,59 @@
 
 #include <fstream>
 #include "mrtrix.h"
+#include "types.h"
 
 namespace MR
 {
   namespace File
   {
 
-    class KeyValue { NOMEMALIGN
-      public:
-        KeyValue () { }
-        KeyValue (const std::string& file, const char* first_line = NULL) {
-          open (file, first_line);
-        }
+    class OFStream;
 
-        void  open (const std::string& file, const char* first_line = NULL);
-        bool  next ();
-        void  close () {
-          in.close();
-        }
+    namespace KeyValue
+    {
 
-        const std::string& key () const throw ()   {
-          return (K);
-        }
-        const std::string& value () const throw () {
-          return (V);
-        }
-        const std::string& name () const throw ()  {
-          return (filename);
-        }
 
-      protected:
-        std::string K, V, filename;
-        std::ifstream in;
-    };
 
+      class Reader { NOMEMALIGN
+        public:
+          Reader () { }
+          Reader (const std::string& file, const char* first_line = nullptr) {
+            open (file, first_line);
+          }
+
+          void open (const std::string& file, const char* first_line = nullptr);
+          bool next ();
+          void close () {
+            in.close();
+          }
+
+          const std::string& key () const throw ()   {
+            return (K);
+          }
+          const std::string& value () const throw () {
+            return (V);
+          }
+          const std::string& name () const throw ()  {
+            return (filename);
+          }
+
+        protected:
+          std::string K, V, filename;
+          std::ifstream in;
+      };
+
+
+
+
+      void write (File::OFStream& out,
+                  const KeyValues& keyvals,
+                  const std::string& prefix,
+                  const bool add_to_command_history = true);
+
+
+
+    }
   }
 }
 

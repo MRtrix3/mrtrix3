@@ -17,6 +17,7 @@
 #ifndef __fixel_loop_h__
 #define __fixel_loop_h__
 
+#include "fixel/types.h"
 #include "formats/mrtrix_utils.h"
 
 namespace MR
@@ -26,10 +27,10 @@ namespace MR
 
     namespace {
       struct set_offset { NOMEMALIGN
-        FORCE_INLINE set_offset (uint32_t offset) : offset (offset) { }
+        FORCE_INLINE set_offset (index_type offset) : offset (offset) { }
         template <class DataType>
           FORCE_INLINE void operator() (DataType& data) { data.index(0) = offset; }
-        uint32_t offset;
+        index_type offset;
       };
 
       struct inc_fixel { NOMEMALIGN
@@ -39,16 +40,16 @@ namespace MR
     }
 
     struct LoopFixelsInVoxel { NOMEMALIGN
-      const size_t num_fixels;
-      const uint32_t offset;
+      const index_type num_fixels;
+      const index_type offset;
 
       template <class... DataType>
       struct Run { NOMEMALIGN
-        const size_t num_fixels;
-        const uint32_t offset;
-        uint32_t fixel_index;
+        const index_type num_fixels;
+        const index_type offset;
+        index_type fixel_index;
         const std::tuple<DataType&...> data;
-        FORCE_INLINE Run (const size_t num_fixels, const uint32_t offset, const std::tuple<DataType&...>& data) :
+        FORCE_INLINE Run (const index_type num_fixels, const index_type offset, const std::tuple<DataType&...>& data) :
           num_fixels (num_fixels), offset (offset), fixel_index (0), data (data) {
           apply (set_offset (offset), data);
         }
@@ -66,9 +67,9 @@ namespace MR
       FORCE_INLINE LoopFixelsInVoxel
       Loop (IndexType& index) {
         index.index(3) = 0;
-        size_t num_fixels = index.value();
+        index_type num_fixels = index.value();
         index.index(3) = 1;
-        uint32_t offset = index.value();
+        index_type offset = index.value();
         return { num_fixels, offset };
       }
   }

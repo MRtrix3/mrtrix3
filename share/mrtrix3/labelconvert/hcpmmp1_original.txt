@@ -1,3 +1,18 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
 # Lookup table for grey matter parcellations as provided by the Glasser atlas
 # This tableprovides parcel names and colours as they are provded from e.g. the following command:
 #   mri_aparc2aseg --old-ribbon --annotation glasser --s hmsc001-01 --o glasser.mgz
@@ -227,13 +242,13 @@
 2017 R_IPS1    57 114 160 255
 2018 R_FFC     57  89 117 255
 2019 R_V3B     25  47 206 255
-2020 R_RO1      0  49 184 255
-2021 R_RO2     18  33 181 255
+2020 R_LO1      0  49 184 255
+2021 R_LO2     18  33 181 255
 2022 R_PIT     34  43 171 255
 2023 R_MT      31  86 104 255
 2024 R_A1     235  19  47 255
-2025 R_PSR    122  79  56 255
-2026 R_SFR     31  49  22 255
+2025 R_PSL    122  79  56 255
+2026 R_SFL     31  49  22 255
 2027 R_PCV    138 128 153 255
 2028 R_STV    142  87  76 255
 2029 R_7Pm    149 181 188 255
@@ -246,16 +261,16 @@
 2036 R_5m      48 163  48 255
 2037 R_5mv    153 172 136 255
 2038 R_23c    205 190 194 255
-2039 R_5R      64 154  64 255
+2039 R_5L      64 154  64 255
 2040 R_24dd    69 161  44 255
 2041 R_24dv   119 159  66 255
-2042 R_7AR    115 194 134 255
+2042 R_7AL    115 194 134 255
 2043 R_SCEF   110 146  86 255
 2044 R_6ma    144 179 135 255
 2045 R_7Am    184 243 224 255
-2046 R_7PR    169 246 237 255
+2046 R_7PL    169 246 237 255
 2047 R_7PC     68 177 108 255
-2048 R_RIPv    63 113 158 255
+2048 R_LIPv    63 113 158 255
 2049 R_VIP     50 129 137 255
 2050 R_MIP    136 206 204 255
 2051 R_1       20 191  38 255
@@ -277,13 +292,13 @@
 2067 R_8Av     53  54  43 255
 2068 R_8Ad     63  67  48 255
 2069 R_9m      43  35  18 255
-2070 R_8BR     34  39  20 255
+2070 R_8BL     34  39  20 255
 2071 R_9p      38  43  28 255
 2072 R_10d     38  35  24 255
 2073 R_8C     101  85  84 255
 2074 R_44      88  88  62 255
 2075 R_45      60  63  42 255
-2076 R_47R     51  49  31 255
+2076 R_47l     51  49  31 255
 2077 R_a47r    77  76  66 255
 2078 R_6r     178 214 151 255
 2079 R_IFJa   126 119  95 255
@@ -298,11 +313,11 @@
 2088 R_10v     14  35  14 255
 2089 R_a10p    98  75  89 255
 2090 R_10pp    55  62  58 255
-2091 R_11R    129 106 118 255
-2092 R_13R     82  60  69 255
+2091 R_11l    129 106 118 255
+2092 R_13l     82  60  69 255
 2093 R_OFC     40  35  31 255
 2094 R_47s     66  35  33 255
-2095 R_RIPd   155 180 202 255
+2095 R_LIPd   155 180 202 255
 2096 R_6a     121 192 136 255
 2097 R_i6-8    90  98  83 255
 2098 R_s6-8    88  92  73 255
@@ -331,7 +346,7 @@
 2121 R_ProS    87  59 176 255
 2122 R_PeEc    61  62  51 255
 2123 R_STGa    58  42  26 255
-2124 R_PBeRt  195  30   5 255
+2124 R_PBelt  195  30   5 255
 2125 R_A5      99  39   6 255
 2126 R_PHA1    69  50  75 255
 2127 R_PHA3    96 102 113 255
@@ -366,7 +381,7 @@
 2156 R_V4t     14  79 128 255
 2157 R_FST     92 157 153 255
 2158 R_V3CD    15  46 182 255
-2159 R_RO3     54  94 160 255
+2159 R_LO3     54  94 160 255
 2160 R_VMV2    67  62 161 255
 2161 R_31pd    56  22  45 255
 2162 R_31a    143 105 133 255
@@ -380,8 +395,8 @@
 2170 R_p10p    89  64  76 255
 2171 R_p47r   126 123 112 255
 2172 R_TGv     46  51  42 255
-2173 R_MBeRt  187  30  24 255
-2174 R_RBeRt  233  18  27 255
+2173 R_MBelt  187  30  24 255
+2174 R_LBelt  233  18  27 255
 2175 R_A4     152  39   4 255
 2176 R_STSva   40  33  22 255
 2177 R_TE1m    59  45  43 255

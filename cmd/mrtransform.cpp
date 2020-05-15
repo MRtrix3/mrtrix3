@@ -36,6 +36,7 @@
 #include "math/average_space.h"
 #include "math/SH.h"
 #include "adapter/jacobian.h"
+#include "file/nifti_utils.h"
 
 
 
@@ -86,7 +87,7 @@ void usage ()
     + "* If FOD modulation is being performed:\n"
     "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.; " // Internal
     "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images. "
-    "NeuroImage, 2012, 15;59(4), 3976-94.";
+    "NeuroImage, 2012, 15;59(4), 3976-94";
 
   ARGUMENTS
   + Argument ("input", "input image to be transformed.").type_image_in ()
@@ -192,6 +193,8 @@ void usage ()
 
     + DWI::GradImportOptions()
 
+    + DWI::GradExportOptions()
+
     + DataType::options ()
 
     + Stride::Options
@@ -295,6 +298,11 @@ void run ()
   opt = get_options ("warp_full");
   Image<default_type> warp;
   if (opt.size()) {
+    if (!Path::is_mrtrix_image (opt[0][0]) && !(Path::has_suffix (opt[0][0], {".nii", ".nii.gz"}) &&
+                                                File::Config::get_bool ("NIfTIAutoLoadJSON", false) &&
+                                                Path::exists(File::NIfTI::get_json_path(opt[0][0]))))
+      WARN ("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
+            "Converting to other file formats may remove linear transformations stored in the image header.");
     warp = Image<default_type>::open (opt[0][0]).with_direct_io();
     Registration::Warp::check_warp_full (warp);
     if (linear)
@@ -555,13 +563,11 @@ void run ()
 
     if (get_options ("midway_space").size()) {
       INFO("regridding to midway space");
-      vector<Header> headers;
-      headers.push_back(input_header);
-      headers.push_back(template_header);
-      vector<Eigen::Transform<default_type, 3, Eigen::Projective>> void_trafo;
-      auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
-      int subsampling = 1;
-      auto midway_header = compute_minimum_average_header (headers, subsampling, padding, void_trafo);
+      if (!half)
+        WARN ("regridding to midway_space assumes the linear transformation to be a transformation from input to midway space. Use -half if the input transformation is a full transformation.");
+      transform_type linear_transform_inverse;
+      linear_transform_inverse.matrix() = linear_transform.inverse().matrix();
+      auto midway_header = compute_minimum_average_header (input_header, template_header, linear_transform_inverse, linear_transform);
       for (size_t i = 0; i < 3; ++i) {
         output_header.size(i) = midway_header.size(i);
         output_header.spacing(i) = midway_header.spacing(i);
@@ -645,6 +651,8 @@ void run ()
           output, warp, directions_cartesian.transpose(), modulate_fod);
     }
 
+    DWI::export_grad_commandline (output);
+
   // No reslicing required, so just modify the header and do a straight copy of the data
   } else {
 
@@ -675,6 +683,8 @@ void run ()
       if (modulate_jac)
         apply_linear_jacobian (output, transform);
     }
+
+    DWI::export_grad_commandline (output);
   }
 }
 

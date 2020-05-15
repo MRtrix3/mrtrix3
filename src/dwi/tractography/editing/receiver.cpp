@@ -63,7 +63,7 @@ namespace MR {
               if (p.allFinite()) {
                 temp.push_back (p);
               } else if (temp.size()) {
-                temp.index = in.index;
+                temp.set_index (in.get_index());
                 temp.weight = in.weight;
                 writer (temp);
                 ++segments;

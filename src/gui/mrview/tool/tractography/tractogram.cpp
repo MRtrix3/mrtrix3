@@ -230,7 +230,7 @@ namespace MR
             source += using_geom ? "in vec3 g_tangent;\n" : "in vec3 v_tangent;\n";
 
           if (threshold_type != TrackThresholdType::None)
-            source += using_geom ? "in float g_amp;\n" : "in vec3 v_amp;\n";
+            source += using_geom ? "in float g_amp;\n" : "in float v_amp;\n";
 
           if (use_lighting && (using_geom || using_points)) {
             source +=
@@ -577,7 +577,9 @@ namespace MR
 
         inline void Tractogram::update_stride ()
         {
-          const float step_size = DWI::Tractography::get_step_size (properties);
+          // Note: If streamlines have been resampled at all,
+          //   strides will be incorrect
+          const float step_size = properties.get_stepsize();
           GLint new_stride = 1;
 
           if (geometry_type == TrackGeometryType::Pseudotubes && std::isfinite (step_size)) {
@@ -704,7 +706,7 @@ namespace MR
           value_min = std::numeric_limits<float>::infinity();
           value_max = -std::numeric_limits<float>::infinity();
           vector<float> buffer;
-          vector<float> tck_scalar;
+          DWI::Tractography::TrackScalar<float> tck_scalar;
 
           if (Path::has_suffix (filename, ".tsf")) {
             DWI::Tractography::Properties scalar_properties;
@@ -799,7 +801,7 @@ namespace MR
           threshold_min = std::numeric_limits<float>::infinity();
           threshold_max = -std::numeric_limits<float>::infinity();
           vector<float> buffer;
-          vector<float> tck_scalar;
+          DWI::Tractography::TrackScalar<float> tck_scalar;
 
           if (Path::has_suffix (filename, ".tsf")) {
             DWI::Tractography::Properties scalar_properties;
@@ -1058,5 +1060,3 @@ namespace MR
     }
   }
 }
-
-

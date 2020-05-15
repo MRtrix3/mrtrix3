@@ -112,7 +112,7 @@ namespace MR {
               bool operator() (const Streamline<>& in, Cont& out) const
               {
                 out.clear();
-                out.index = in.index;
+                out.index = in.get_index();
                 out.weight = in.weight;
                 if (in.empty())
                   return true;
@@ -295,6 +295,14 @@ namespace MR {
         template <class Cont>
           void TrackMapperBase::voxelise_ends (const Streamline<>& tck, Cont& out) const
           {
+            if (!tck.size())
+              return;
+            if (tck.size() == 1) {
+              const auto vox = round (scanner2voxel * tck.front());
+              if (check (vox, info))
+                add_to_set (out, vox, Eigen::Vector3(NaN, NaN, NaN), 1.0);
+              return;
+            }
             for (size_t end = 0; end != 2; ++end) {
               const auto vox = round (scanner2voxel * (end ? tck.back() : tck.front()));
               if (check (vox, info)) {

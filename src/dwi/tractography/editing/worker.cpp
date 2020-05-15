@@ -29,97 +29,97 @@ namespace MR {
         {
 
           out.clear();
-          out.index = in.index;
+          out.set_index (in.get_index());
           out.weight = in.weight;
 
+          // Need to track exclusion separately, since we may still need to apply
+          //   mask (or, more accurately, their inverse) afterwards if -inverse is specified
+          bool exclude = false;
+
           if (!thresholds (in)) {
-            // Want to test thresholds before wasting time on resampling
-            if (inverse)
-              in.swap (out);
-            return true;
-          }
+            exclude = true;
+          } else if (include_visitation.size() || properties.exclude.size()) {
 
-          // Assign to ROIs
-          if (properties.include.size() || properties.exclude.size()) {
-
-            include_visited.assign (properties.include.size(), false);
+            // Assign to ROIs
+            include_visitation.reset();
 
             if (ends_only) {
               for (size_t i = 0; i != 2; ++i) {
                 const Eigen::Vector3f& p (i ? in.back() : in.front());
-                properties.include.contains (p, include_visited);
+                include_visitation (p);
                 if (properties.exclude.contains (p)) {
-                  if (inverse)
-                    in.swap (out);
-                  return true;
+                  exclude = true;
+                  break;
                 }
               }
             } else {
               for (const auto& p : in) {
-                properties.include.contains (p, include_visited);
+                include_visitation (p);
                 if (properties.exclude.contains (p)) {
-                  if (inverse)
-                    in.swap (out);
-                  return true;
+                  exclude = true;
+                  break;
                 }
               }
             }
 
             // Make sure all of the include regions were visited
-            for (const auto& i : include_visited) {
-              if (!i) {
-                if (inverse)
-                  in.swap (out);
-                return true;
-              }
-            }
+            if (!include_visitation)
+               exclude = true;
+
+          } else if (inverse) {
+
+            // If no thresholds are specified, and no include / exclude ROIs are defined, then
+            //   it's still possible that one or more masks have been provided;
+            //   if this is the case, then we want to continue processing this streamline,
+            //   regardless of whether or not -inverse has been specified
+            exclude = true;
 
           }
 
-          if (properties.mask.size()) {
+          // In default usage, pass the empty track down the queue if track is excluded
+          // If inverse selection is sought, pass the empty track if it did not fail any criteria
+          if (exclude != inverse)
+            return true;
 
-            // Split tck into separate tracks based on the mask
-            vector<vector<Eigen::Vector3f>> cropped_tracks;
-            vector<Eigen::Vector3f> temp;
+          if (!properties.mask.size()) {
+            std::swap (in, out);
+            return true;
+          }
 
-            for (const auto& p : in) {
-              const bool contains = properties.mask.contains (p);
-              if (contains == inverse) {
-                if (temp.size() >= 2)
-                  cropped_tracks.push_back (temp);
-                temp.clear();
-              } else {
-                temp.push_back (p);
-              }
+          // Split tck into separate tracks based on the mask
+          vector<vector<Eigen::Vector3f>> cropped_tracks;
+          vector<Eigen::Vector3f> temp;
+
+          for (const auto& p : in) {
+            const bool contains = properties.mask.contains (p);
+            // "Inverse" applies to masks in addition to selection criteria
+            if (contains == inverse) {
+              if (temp.size() >= 2)
+                cropped_tracks.push_back (temp);
+              temp.clear();
+            } else {
+              temp.push_back (p);
             }
-            if (temp.size() >= 2)
-              cropped_tracks.push_back (temp);
+          }
+          if (temp.size() >= 2)
+            cropped_tracks.push_back (temp);
 
-            if (cropped_tracks.empty())
-              return true;
+          if (cropped_tracks.empty())
+            return true;
 
-            if (cropped_tracks.size() == 1) {
-              cropped_tracks[0].swap (out);
-              return true;
-            }
+          if (cropped_tracks.size() == 1) {
+            cropped_tracks[0].swap (out);
+            return true;
+          }
 
-            // Stitch back together in preparation for sending down queue as a single track
+          // Stitch back together in preparation for sending down queue as a single track
+          out.push_back ({ NaN, NaN, NaN });
+          for (const auto& i : cropped_tracks) {
+            for (const auto& p : i)
+              out.push_back (p);
             out.push_back ({ NaN, NaN, NaN });
-            for (const auto& i : cropped_tracks) {
-              for (const auto& p : i)
-                out.push_back (p);
-              out.push_back ({ NaN, NaN, NaN });
-            }
-            return true;
-
-          } else {
-
-            if (!inverse)
-              in.swap (out);
-            return true;
-
           }
-
+          return true;
         }
 
 
@@ -135,7 +135,7 @@ namespace MR {
           min_length (0.0f),
           max_weight (std::numeric_limits<float>::infinity()),
           min_weight (0.0f),
-          step_size (get_step_size (properties))
+          step_size (properties.get_stepsize())
         {
           if (properties.find ("max_dist") != properties.end()) {
             try {
@@ -196,4 +196,3 @@ namespace MR {
     }
   }
 }
-

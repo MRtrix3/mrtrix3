@@ -25,9 +25,11 @@
 #include <cstring>
 #include <cerrno>
 #include <unistd.h>
+#include <algorithm>
 
-#include "types.h"
 #include "exception.h"
+#include "mrtrix.h"
+#include "types.h"
 
 #define HOME_ENV "HOME"
 
@@ -86,7 +88,13 @@ namespace MR
     inline bool exists (const std::string& path)
     {
       struct stat buf;
-      if (!stat (path.c_str(), &buf)) return true;
+#ifdef MRTRIX_WINDOWS
+      const std::string stripped (strip (path, PATH_SEPARATORS, false, true));
+      if (!stat (stripped.c_str(), &buf))
+#else
+      if (!stat (path.c_str(), &buf))
+#endif
+        return true;
       if (errno == ENOENT) return false;
       throw Exception (strerror (errno));
       return false;
@@ -96,7 +104,13 @@ namespace MR
     inline bool is_dir (const std::string& path)
     {
       struct stat buf;
-      if (!stat (path.c_str(), &buf)) return S_ISDIR (buf.st_mode);
+#ifdef MRTRIX_WINDOWS
+      const std::string stripped (strip (path, PATH_SEPARATORS, false, true));
+      if (!stat (stripped.c_str(), &buf))
+#else
+      if (!stat (path.c_str(), &buf))
+#endif
+        return S_ISDIR (buf.st_mode);
       if (errno == ENOENT) return false;
       throw Exception (strerror (errno));
       return false;
@@ -112,19 +126,31 @@ namespace MR
       return false;
     }
 
+
     inline bool has_suffix (const std::string& name, const std::string& suffix)
     {
       return name.size() >= suffix.size() &&
         name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
     }
 
-    inline bool has_suffix (const std::string&name, const std::initializer_list<const std::string> &suffix_list)
+    inline bool has_suffix (const std::string &name, const std::initializer_list<const std::string> &suffix_list)
     {
-      bool flag(false);
+      return std::any_of (suffix_list.begin(),
+                          suffix_list.end(),
+                          [&] (const std::string& suffix) { return has_suffix (name, suffix); });
+    }
 
-      for(const auto& suffix : suffix_list) { flag = flag || has_suffix (name, suffix); }
+    inline bool has_suffix (const std::string &name, const vector<std::string> &suffix_list)
+    {
+      return std::any_of (suffix_list.begin(),
+                          suffix_list.end(),
+                          [&] (const std::string& suffix) { return has_suffix (name, suffix); });
+    }
 
-      return flag;
+    inline bool is_mrtrix_image (const std::string& name)
+    {
+      return strcmp(name.c_str(), std::string("-").c_str()) == 0 ||
+        Path::has_suffix (name, {".mif", ".mih", ".mif.gz"});
     }
 
     inline std::string cwd ()
@@ -182,6 +208,19 @@ namespace MR
       protected:
         DIR* p;
     };
+
+
+
+    inline char delimiter (const std::string& filename)
+    {
+      if (Path::has_suffix (filename, ".tsv"))
+        return '\t';
+      else if (Path::has_suffix (filename, ".csv"))
+        return ',';
+      else
+        return ' ';
+    }
+
 
   }
 }

@@ -43,13 +43,32 @@ namespace MR
         class Base;
 
 
+        class CameraInteractor
+        { NOMEMALIGN
+          public:
+            CameraInteractor () : _active (false) { }
+            bool active () const { return _active; }
+            virtual void deactivate ();
+            virtual bool slice_move_event (const ModelViewProjection& projection, float inc);
+            virtual bool pan_event (const ModelViewProjection& projection);
+            virtual bool panthrough_event (const ModelViewProjection& projection);
+            virtual bool tilt_event (const ModelViewProjection& projection);
+            virtual bool rotate_event (const ModelViewProjection& projection);
+          protected:
+            bool _active;
+            void set_active (bool onoff) { _active = onoff; }
+        };
+
 
 
         class Dock : public QDockWidget
         { NOMEMALIGN
           public:
-            Dock (const QString& name) :
-              QDockWidget (name, Window::main), tool (nullptr) { }
+            Dock (const QString& name, bool floating) :
+              QDockWidget (name, Window::main), tool (nullptr) {
+                Window::main->addDockWidget (Qt::RightDockWidgetArea, this);
+                setFloating (floating);
+              }
             ~Dock ();
 
             void closeEvent (QCloseEvent*) override;
@@ -66,6 +85,8 @@ namespace MR
           public:
             Base (Dock* parent);
             Window& window () const { return *Window::main; }
+
+            std::string current_folder;
 
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
@@ -128,7 +149,6 @@ namespace MR
                 }
             };
 
-            void adjustSize();
             virtual void draw (const Projection& transform, bool is_3D, int axis, int slice);
             virtual void draw_colourbars ();
             virtual size_t visible_number_colourbars () { return 0; }
@@ -180,21 +200,18 @@ namespace MR
 
             virtual ~__Action__ () { delete dock; }
 
-            virtual Dock* create () = 0;
+            virtual Dock* create (bool floating) = 0;
             Dock* dock;
         };
         //! \endcond
 
 
         template <class T>
-          Dock* create (const QString& text)
+          Dock* create (const QString& text, bool floating)
           {
-            Dock* dock = new Dock (text);
-            Window::main->addDockWidget (Qt::RightDockWidgetArea, dock);
+            Dock* dock = new Dock (text, floating);
             dock->tool = new T (dock);
-            dock->tool->adjustSize();
             dock->setWidget (dock->tool);
-            dock->setFloating (true);
             dock->show();
             return dock;
           }
@@ -210,8 +227,8 @@ namespace MR
                 int index) :
               __Action__ (parent, name, description, index) { }
 
-            virtual Dock* create () {
-              dock = Tool::create<T> (this->text());
+            virtual Dock* create (bool floating) {
+              dock = Tool::create<T> (this->text(), floating);
               return dock;
             }
         };

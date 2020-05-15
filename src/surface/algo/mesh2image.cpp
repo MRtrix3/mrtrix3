@@ -83,6 +83,7 @@ namespace MR
           // Create some memory to work with:
           // Stores a flag for each voxel as encoded in enum vox_mesh_t
           Header H (image);
+          H.datatype() = DataType::UInt8;
           auto init_seg = Image<uint8_t>::scratch (H);
           for (auto l = Loop(init_seg) (init_seg); l; ++l)
             init_seg.value() = vox_mesh_t::UNDEFINED;
@@ -208,7 +209,6 @@ namespace MR
                     voxel2poly.insert (std::make_pair (voxel, this_voxel_polys));
                   } } } }
 
-
           }
           ++progress;
 
@@ -218,6 +218,8 @@ namespace MR
           //   by the normal at the vertex.
           // Each voxel not directly on the mesh should then be assigned as prelim_inside or prelim_outside
           //   depending on whether the summed value is positive or negative
+          H.datatype() = DataType::Float32;
+          H.datatype().set_byte_order_native();
           auto sum_distances = Image<float>::scratch (H, "Sum of distances from polygon planes");
           Vox adj_voxel;
           for (size_t i = 0; i != mesh.num_vertices(); ++i) {
@@ -257,6 +259,7 @@ namespace MR
           for (auto l = Loop(seed) (seed); l; ++l) {
             if (seed.value() == vox_mesh_t::PRELIM_INSIDE || seed.value() == vox_mesh_t::PRELIM_OUTSIDE) {
               size_t prelim_inside_count = 0, prelim_outside_count = 0;
+              float sum_sum_distances = 0.0f;
               if (seed.value() == vox_mesh_t::PRELIM_INSIDE)
                 prelim_inside_count = 1;
               else
@@ -276,6 +279,8 @@ namespace MR
                         ++prelim_inside_count;
                       else if (adj_value == vox_mesh_t::PRELIM_OUTSIDE)
                         ++prelim_outside_count;
+                      assign_pos_of (init_seg).to (sum_distances);
+                      sum_sum_distances += sum_distances.value();
                       to_expand.push (adj_voxel);
                       to_fill.push_back (adj_voxel);
                       init_seg.value() = vox_mesh_t::FILL_TEMP;
@@ -283,10 +288,40 @@ namespace MR
                   }
                 }
               } while (to_expand.size());
-              if (prelim_inside_count == prelim_outside_count)
-                throw Exception ("Mapping mesh to image failed: Unable to label connected voxel region as inside or outside mesh");
-              const vox_mesh_t fill_value = (prelim_inside_count > prelim_outside_count ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE);
-              for (auto voxel : to_fill) {
+              vox_mesh_t fill_value = vox_mesh_t::UNDEFINED;
+              if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
+                fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
+              } else if (prelim_inside_count > 10 * prelim_outside_count) {
+                fill_value = vox_mesh_t::INSIDE;
+              } else if (prelim_outside_count > 10 * prelim_inside_count) {
+                fill_value = vox_mesh_t::OUTSIDE;
+              } else {
+                // Residual ambiguity about whether the connected region is inside or outside the surface
+                // What other tests can we perform to make this decision?
+                // If all eight corners of the FoV are included in to_fill, we can be
+                //   reasonably confident that this connected region lies outside the structure
+                size_t corner_count = 0;
+                for (const auto& voxel : to_fill) {
+                  if ((voxel[0] == 0 || voxel[0] == H.size(0) - 1) &&
+                      (voxel[1] == 0 || voxel[1] == H.size(1) - 1) &&
+                      (voxel[2] == 0 || voxel[2] == H.size(2) - 1))
+                    ++corner_count;
+                }
+                if (corner_count == 8) {
+                  fill_value = vox_mesh_t::OUTSIDE;
+                } else if (!corner_count) {
+                  fill_value = vox_mesh_t::INSIDE;
+                } else if (sum_sum_distances) {
+                  fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
+                } else {
+                  Exception e ("Internal error: fundamental ambiguity in voxel-based segmentation of surface");
+                  e.push_back ("Fill region size: " + str(to_fill.size()));
+                  e.push_back ("Preliminary classifications: " + str(prelim_inside_count) + " inside, " + str(prelim_outside_count) + " outside");
+                  e.push_back ("FoV corners: " + str(corner_count));
+                  throw e;
+                }
+              }
+              for (const auto& voxel : to_fill) {
                 assign_pos_of (voxel).to (init_seg);
                 init_seg.value() = fill_value;
               }

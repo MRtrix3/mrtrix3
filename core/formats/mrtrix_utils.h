@@ -40,7 +40,7 @@ namespace MR
 
     // These are helper functiosn for reading key/value pairs from either a File::KeyValue construct,
     //   or from a GZipped file (where the getline() function must be used explicitly)
-    bool next_keyvalue (File::KeyValue&, std::string&, std::string&);
+    bool next_keyvalue (File::KeyValue::Reader&, std::string&, std::string&);
     bool next_keyvalue (File::GZ&,       std::string&, std::string&);
 
     // Get the path to a file - use same function for image data and sparse data
@@ -173,8 +173,8 @@ namespace MR
         if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)
           out << "\nscaling: " << H.intensity_offset() << "," << H.intensity_scale();
 
-        for (const auto i : H.keyval())
-          for (const auto line : split_lines (i.second))
+        for (const auto& i : H.keyval())
+          for (const auto& line : split_lines (i.second))
             out << "\n" << i.first << ": " << line;
 
 

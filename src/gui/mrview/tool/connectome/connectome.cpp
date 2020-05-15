@@ -24,7 +24,6 @@
 #include "algo/threaded_loop.h"
 #include "file/path.h"
 #include "gui/dialog/file.h"
-#include "gui/mrview/colourmap.h"
 #include "math/math.h"
 #include "math/rng.h"
 
@@ -52,7 +51,7 @@ namespace MR
             mat2vec (nullptr),
             lighting (this),
             lighting_dock (nullptr),
-            node_list (new Tool::Dock ("Connectome node list")),
+            node_list (new Tool::Dock ("Connectome node list", Window::tools_floating)),
             is_3D (true),
             crop_to_slab (false),
             slab_thickness (0.0f),
@@ -866,7 +865,7 @@ namespace MR
 
         void Connectome::image_open_slot()
         {
-          const std::string path = Dialog::File::get_image (this, "Select connectome parcellation image");
+          const std::string path = Dialog::File::get_image (this, "Select connectome parcellation image", &current_folder);
           if (path.empty())
             return;
 
@@ -897,7 +896,7 @@ namespace MR
 
         void Connectome::matrix_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open");
+          vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open", "", &current_folder);
           if (list.empty())
             return;
           add_matrices (list);
@@ -2634,6 +2633,7 @@ namespace MR
                   gl::Uniform1f (edge_alpha_ID, edge_alpha_given_selection (edge) * edge_fixed_alpha);
                 switch (edge_geometry) {
                   case edge_geometry_t::LINE:
+                    // TODO: in OpenGL >3, this has no effect:
                     gl::LineWidth (calc_line_width (edge_size_given_selection (edge) * edge_size_scale_factor, edge_geometry_line_smooth_checkbox->isChecked()));
                     edge.render_line();
                     break;
@@ -2693,7 +2693,7 @@ namespace MR
 
         bool Connectome::import_vector_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv)");
+          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv)", &current_folder);
           if (path.empty())
             return false;
           try {
@@ -2717,7 +2717,7 @@ namespace MR
 
         bool Connectome::import_matrix_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)");
+          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)", &current_folder);
           if (path.empty())
             return false;
           MR::Connectome::matrix_type temp;
@@ -3782,7 +3782,7 @@ namespace MR
         void Connectome::get_meshes()
         {
           // Request exemplar track file path from user
-          const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)");
+          const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)", &current_folder);
           if (!path.size()) return;
           Surface::MeshMulti meshes;
           meshes.load (path);
@@ -3800,7 +3800,7 @@ namespace MR
         void Connectome::get_exemplars()
         {
           // Request exemplar track file path from user
-          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars", "Track files (*.tck)");
+          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars", "Track files (*.tck)", &current_folder);
           if (!path.size()) return;
           MR::DWI::Tractography::Properties properties;
           MR::DWI::Tractography::Reader<float> reader (path, properties);
@@ -3810,8 +3810,8 @@ namespace MR
           ProgressBar progress ("Importing connection exemplars", num_edges());
           MR::DWI::Tractography::Streamline<float> tck;
           while (reader (tck)) {
-            edges[tck.index].load_exemplar (tck);
-            edges[tck.index].create_streamline();
+            edges[tck.get_index()].load_exemplar (tck);
+            edges[tck.get_index()].create_streamline();
             ++progress;
           }
           have_exemplars = true;

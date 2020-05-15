@@ -61,7 +61,7 @@ void usage ()
       "to seed from new random locations until the target number of "
       "streamlines have been selected (in other words, after all inclusion & "
       "exclusion criteria have been applied), or the maximum number of seeds "
-      "has been exceeded (by default, this is 1000× the desired number of selected "
+      "has been exceeded (by default, this is 1000 x the desired number of selected "
       "streamlines). Use the -select and/or -seeds options to modify as "
       "required. See also the Seeding options section for alternative seeding "
       "strategies."
@@ -216,7 +216,8 @@ void usage ()
 
   + DWI::Tractography::MACT::MACTOption
 
-  + DWI::Tractography::Algorithms::iFOD2Option
+  + DWI::Tractography::Algorithms::iFODOptions
+  + DWI::Tractography::Algorithms::iFOD2Options
 
   + DWI::GradImportOptions();
 
@@ -237,9 +238,8 @@ void run ()
   auto opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
-  load_rois (properties);
 
-  Tracking::load_streamline_properties (properties);
+
 
   ACT::load_act_properties (properties);
   MACT::load_mact_properties (properties);
@@ -247,8 +247,16 @@ void run ()
   Seeding::load_seed_mechanisms (properties);
   Seeding::load_seed_parameters (properties);
 
+  if (algorithm == 1 || algorithm == 2)
+    Algorithms::load_iFOD_options (properties);
   if (algorithm == 2)
     Algorithms::load_iFOD2_options (properties);
+
+
+  //load ROIs and tractography specific options
+  //NB must occur before seed check below due to -select option override
+  Tracking::load_streamline_properties_and_rois (properties);
+  properties.compare_stepsize_rois();
 
   // Check validity of options -select and -seeds; these are meaningless if seeds are number-limited
   // By over-riding the values in properties, the progress bar should still be valid
@@ -263,6 +271,8 @@ void run ()
     properties["max_num_seeds"] = str (properties.seeds.get_total_count());
 
   }
+
+
 
   switch (algorithm) {
     case 0:

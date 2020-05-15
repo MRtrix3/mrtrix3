@@ -84,7 +84,7 @@ namespace MR
               return std::pow (source.spacing(0)*source.spacing(1)*source.spacing(2), float (1.0/3.0));
             }
 
-            void set_step_size (float stepsize, bool is_higher_order);
+            void set_step_and_angle (const float stepsize, const float angle, bool is_higher_order);
             void set_num_points();
             void set_num_points (const float angle_minradius_preds, const float max_step_postds);
             void set_cutoff (float cutoff);

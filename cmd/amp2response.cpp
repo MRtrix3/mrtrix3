@@ -21,15 +21,14 @@
 #include "image.h"
 #include "image_helpers.h"
 #include "types.h"
-
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "math/constrained_least_squares.h"
 #include "math/rng.h"
 #include "math/sphere.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 
-#include "dwi/gradient.h"
-#include "dwi/shells.h"
 
 
 
@@ -235,7 +234,7 @@ void run ()
       dirs_azel.push_back (std::move (directions));
       volumes.push_back (all_volumes (dirs_azel.size()));
     } else {
-      auto grad = DWI::get_valid_DW_scheme (header);
+      auto grad = DWI::get_DW_scheme (header);
       shells.reset (new DWI::Shells (grad));
       shells->select_shells (false, false, false);
       for (size_t i = 0; i != shells->count(); ++i) {
@@ -357,7 +356,7 @@ void run ()
       constraints.block (amp_transform.rows(), 0, deriv_transform.rows(), deriv_transform.cols()) = deriv_transform;
 
       // Initialise the problem solver
-      auto problem = Math::ICLS::Problem<default_type> (shared.M, constraints, 1e-10, 1e-10, 0, 0.0, true);
+      auto problem = Math::ICLS::Problem<default_type> (shared.M, constraints, Eigen::VectorXd(), 0, 1e-10, 1e-10, 0, 0.0, true);
       auto solver  = Math::ICLS::Solver <default_type> (problem);
 
       // Estimate the solution

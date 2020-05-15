@@ -1,3 +1,24 @@
+# Copyright (c) 2008-2019 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import math, os, shutil
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, matrix, path, run
+
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('tax', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -13,7 +34,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def check_output_paths(): #pylint: disable=unused-variable
-  from mrtrix3 import app
   app.check_output_path(app.ARGS.output)
 
 
@@ -29,9 +49,6 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  import math, os, shutil
-  from mrtrix3 import app, image, matrix, MRtrixError, path, run
-
   lmax_option = ''
   if app.ARGS.lmax:
     lmax_option = ' -lmax ' + app.ARGS.lmax
@@ -56,8 +73,9 @@ def execute(): #pylint: disable=unused-variable
 
       # Grab the mean and standard deviation across all volumes in a single mrstats call
       # Also scale them to reflect the fact that we're moving to the SH basis
-      mean = image.statistic('dwi.mif', 'mean', '-mask mask.mif -allvolumes') * math.sqrt(4.0 * math.pi)
-      std = image.statistic('dwi.mif', 'std', '-mask mask.mif -allvolumes') * math.sqrt(4.0 * math.pi)
+      image_stats = image.statistics('dwi.mif', mask='mask.mif', allvolumes=True)
+      mean = image_stats.mean * math.sqrt(4.0 * math.pi)
+      std = image_stats.std * math.sqrt(4.0 * math.pi)
 
       # Now produce the initial response function
       # Let's only do it to lmax 4
@@ -73,14 +91,12 @@ def execute(): #pylint: disable=unused-variable
     # Get amplitudes of two largest peaks, and directions of largest
     run.command('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
     app.cleanup(prefix + 'FOD.mif')
-    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif split_data ' + prefix + 'amps.mif')
+    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif none ' + prefix + 'amps.mif')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     app.cleanup(prefix + 'amps.mif')
-    run.command('fixel2voxel ' + prefix + 'fixel/directions.mif split_dir ' + prefix + 'all_dirs.mif')
+    run.command('fixel2peaks ' + prefix + 'fixel/directions.mif ' + prefix + 'first_dir.mif -number 1')
     app.cleanup(prefix + 'fixel')
-    run.command('mrconvert ' + prefix + 'all_dirs.mif ' + prefix + 'first_dir.mif -coord 3 0:2')
-    app.cleanup(prefix + 'all_dirs.mif')
     # Revise single-fibre voxel selection based on ratio of tallest to second-tallest peak
     run.command('mrcalc ' + prefix + 'second_peaks.mif ' + prefix + 'first_peaks.mif -div ' + prefix + 'peak_ratio.mif')
     app.cleanup(prefix + 'first_peaks.mif')
@@ -88,7 +104,7 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrcalc ' + prefix + 'peak_ratio.mif ' + str(app.ARGS.peak_ratio) + ' -lt ' + mask_in_path + ' -mult ' + prefix + 'SF.mif -datatype bit')
     app.cleanup(prefix + 'peak_ratio.mif')
     # Make sure image isn't empty
-    sf_voxel_count = image.statistic(prefix + 'SF.mif', 'count', '-mask ' + prefix + 'SF.mif')
+    sf_voxel_count = image.statistics(prefix + 'SF.mif', mask=prefix+'SF.mif').count
     if not sf_voxel_count:
       raise MRtrixError('Aborting: All voxels have been excluded from single-fibre selection')
     # Generate a new response function
@@ -131,4 +147,4 @@ def execute(): #pylint: disable=unused-variable
 
   run.function(shutil.copyfile, 'response.txt', path.from_user(app.ARGS.output, False))
   if app.ARGS.voxels:
-    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input), force=app.FORCE_OVERWRITE)
+    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)

@@ -18,16 +18,6 @@ References
    NeuroImage, 94 (2014), pp. 312–336.
    [`full text link <http://www.sciencedirect.com/science/article/pii/S1053811913012676>`__\ ]
 
-.. [Dhollander2015a] T. Dhollander, R.E. Smith, J.-D. Tournier, B. Jeurissen, and A. Connelly.
-   *Time to move on: an FOD-based DEC map to replace DTI's trademark DEC FA.*
-   Proceedings of the 23th annual meeting of the International Society of Magnetic Resonance in Medicine (2015), pp. 1027.
-   [`full text link <https://www.researchgate.net/publication/276412466_Time_to_move_on_an_FOD-based_DEC_map_to_replace_DTI's_trademark_DEC_FA>`__\ ]
-
-.. [Dhollander2015b] T. Dhollander, D. Raffelt, R.E. Smith, and A. Connelly.
-   *Panchromatic sharpening of FOD-based DEC maps by structural T1 information.*
-   Proceedings of the 23th annual meeting of the International Society of Magnetic Resonance in Medicine (2015), pp. 566.
-   [`full text link <https://www.researchgate.net/publication/276412176_Panchromatic_sharpening_of_FOD-based_DEC_maps_by_structural_T1_information>`__\ ]
-
 .. [Dhollander2016a] T. Dhollander, D. Raffelt, and A. Connelly.
    *A novel iterative approach to reap the benefits of multi-tissue CSD from just single-shell (+b=0) diffusion MRI data.*
    Proceedings of the 24th annual meeting of the International Society of Magnetic Resonance in Medicine (2016), pp. 3010.
@@ -113,6 +103,11 @@ References
    NeuroImage 119 (2015), pp. 338-51.
    [`full text link <https://www.ncbi.nlm.nih.gov/pubmed/26163802>`__\ ]
 
+.. [Smith2019a] R.E. Smith, D. Dimond, S. Bray, A. Connelly.
+   *Mitigation of DWI brain cropping in Fixel-Based Analysis.*
+   In Proc OHBM (2019), W765
+   [`full text link <https://www.researchgate.net/publication/332495497_Mitigation_of_DWI_brain_cropping_in_Fixel-Based_Analysis>`__\ ]
+
 .. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B.Vos, M.A. Viergever, and A. Leemans.
    *Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data.*
    NeuroImage, 86 (2014), pp. 67–80.
@@ -137,6 +132,11 @@ References
    *Determination of the appropriate b value and number of gradient directions for high-angular-resolution diffusion-weighted imaging.*
    NMR Biomed., 26 (2013), pp. 1775–86.
    [`full text link <https://onlinelibrary.wiley.com/doi/abs/10.1002/nbm.3017>`__\ ]
+   
+.. [Tournier2019] J.-D. Tournier, R. E. Smith, D. Raffelt, R. Tabbara, T. Dhollander, M. Pietsch, D. Christiaens, B. Jeurissen, C.-H. Yeh, and A. Connelly.
+   *MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation.*
+   NeuroImage, 202 (2019), pp. 116–37.
+   [`fulltext link <https://www.sciencedirect.com/science/article/pii/S1053811919307281>`__\ ]
 
 .. [Veraart2016a] J. Veraart, E. Fieremans, and D.S. Novikov.
    *Diffusion MRI noise mapping using random matrix theory.*

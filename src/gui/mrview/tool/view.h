@@ -43,7 +43,7 @@ namespace MR
             std::string name;
         };
 
-        class View : public Base, public Mode::ModeGuiVisitor
+        class View : public Base, public Mode::ModeGuiVisitor, public Tool::CameraInteractor
         { MEMALIGN(View)
           Q_OBJECT
           public:
@@ -57,6 +57,13 @@ namespace MR
             bool get_clipintersectionmodestate () const;
 
             void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
+            void update_ortho_mode_gui (const Mode::Ortho &mode) override;
+            void deactivate () override;
+            bool slice_move_event (const ModelViewProjection& projection, float inc) override;
+            bool pan_event (const ModelViewProjection& projection) override;
+            bool panthrough_event (const ModelViewProjection& projection) override;
+            bool tilt_event (const ModelViewProjection& projection) override;
+            bool rotate_event (const ModelViewProjection& projection) override;
 
           protected:
             virtual void showEvent (QShowEvent* event) override;
@@ -112,7 +119,7 @@ namespace MR
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
             AdjustButton *lower_threshold, *upper_threshold;
-            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box, *clip_highlight_check_box, *clip_intersectionmode_check_box;
+            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box, *clip_highlight_check_box, *clip_intersectionmode_check_box, *ortho_view_in_row_check_box;
             QComboBox *plane_combobox;
             QGroupBox *volume_box, *transparency_box, *threshold_box, *clip_box, *lightbox_box;
             QSlider *opacity;
@@ -136,6 +143,8 @@ namespace MR
             void reset_light_box_gui_controls ();
             void set_transparency_from_image ();
 
+            void move_clip_planes_in_out (const ModelViewProjection& projection, vector<GL::vec4*>& clip, float distance);
+            void rotate_clip_planes (vector<GL::vec4*>& clip, const Eigen::Quaternionf& rot);
         };
 
       }

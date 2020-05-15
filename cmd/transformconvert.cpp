@@ -140,7 +140,7 @@ void parse_itk_trafo (const std::string& itk_file, TransformationType& transform
   // QuaternionRigidTransform_double_3_3?
   // QuaternionRigidTransform_float_3_3?
 
-  File::KeyValue file (itk_file, first_line.c_str());
+  File::KeyValue::Reader file (itk_file, first_line.c_str());
   std::string line;
   size_t invalid (2);
   while (file.next()) {

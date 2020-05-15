@@ -71,7 +71,7 @@ Multi-file numbered image support
 It is possible to access a numbered series of images as a single
 multi-dimensional dataset, using a syntax specific to MRtrix. For example::
 
-    $ mrinfo MRI-volume-[].nii.gz
+    $ mrinfo MRI-volume-'[]'.nii.gz
 
 will collate all images that match the pattern
 ``MRI-volume-<number>.nii.gz``, sort them in ascending numerical order,
@@ -82,7 +82,7 @@ that contained in the images. In other words, assuming there are 10
 
 Note that this isn't limited to one level of numbering::
 
-    $ mrconvert data-[]-[].nii combined.mif
+    $ mrconvert data-'[]'-'[]'.nii combined.mif
 
 will collate all images that match the ``data-number-number.nii``
 pattern and generate a single dataset with dimensionality two larger
@@ -92,8 +92,12 @@ Finally, it is also possible to explicitly request specific numbers,
 using :ref:`number_sequences`
 within the square brackets::
 
-    $ mrconvert data-[10:20].nii combined.mif
+    $ mrconvert data-'[10:20]'.nii combined.mif
 
+Note that the single quotation marks surrounding the square brackets are required
+for shells that treat ``[`` within a string as a special character (such as zsh).
+See our `command-line tutorial <https://command-line-tutorial.readthedocs.io>`__
+for more information on special character escaping.
 
 
 .. _data_types:
@@ -336,7 +340,8 @@ It is important to bear this in mind when interpreting for output of
 :ref:`mrinfo` for example, since this produces the strides and transform *as
 interpreted by MRtrix3*, rather than those actually stored on file - although
 the two representations should be strictly equivalent. If you need to inspect
-the information as stored on file, use :ref:`mrinfo`'s ``-norealign`` option.
+the information as stored on file, use :ref:`mrinfo`'s ``-config
+RealignTransform false`` option.
 
 
 .. _supported_image_formats:

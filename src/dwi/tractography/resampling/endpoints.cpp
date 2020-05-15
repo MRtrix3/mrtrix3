@@ -26,9 +26,12 @@ namespace MR {
 
         bool Endpoints::operator() (const Streamline<>& in, Streamline<>& out) const
         {
-          out.resize (2);
-          out.index = in.index;
+          out.clear();
+          out.set_index (in.get_index());
           out.weight = in.weight;
+          if (in.size() < 2)
+            return true;
+          out.resize (2);
           out[0] = in.front();
           out[1] = in.back();
           return true;

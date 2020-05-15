@@ -14,9 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/mrview/colourmap_button.h"
-#include "gui/mrview/colourmap.h"
 #include "math/rng.h"
+#include "gui/gui.h"
+#include "gui/mrview/colourmap_button.h"
 
 
 namespace MR
@@ -61,7 +61,7 @@ void ColourMapButton::init_core_menu_items(bool create_shortcuts)
         addAction(action);
 
         if (create_shortcuts)
-          action->setShortcut(QObject::tr(std::string ("Ctrl+" + str (n+1)).c_str()));
+          action->setShortcut (qstr ("Ctrl+" + str (n+1)));
 
         colourmap_actions.push_back (action);
         n++;
@@ -107,7 +107,7 @@ void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts)
         addAction(action);
 
         if (create_shortcuts)
-          action->setShortcut(QObject::tr(std::string ("Ctrl+" + str (n+1)).c_str()));
+          action->setShortcut (qstr ("Ctrl+" + str (n+1)));
 
         colourmap_actions.push_back(action);
         n++;

@@ -18,16 +18,12 @@ List of MRtrix3 configuration file options
      should be assumed to be in LAS orientation (default) or RAS
      (when this is option is turned on).
 
-.. option:: BValueScaling
+.. option:: BValueEpsilon
 
-    *default: 1 (true)*
+    *default: 80.0*
 
-     Specifies whether the b-values should be scaled by the squared
-     norm of the gradient vectors when loading a DW gradient scheme.
-     This is commonly required to correctly interpret images acquired
-     on scanners that nominally only allow a single b-value, as the
-     common workaround is to scale the gradient vectors to modulate
-     the actual b-value.
+     Specifies the difference between b-values necessary for image
+     volumes to be classified as belonging to different shells.
 
 .. option:: BZeroThreshold
 
@@ -247,7 +243,7 @@ List of MRtrix3 configuration file options
 
     *default: true*
 
-     Interpolation switched on in the main image.
+     Define default interplation setting for image and image overlay.
 
 .. option:: InitialToolBarPosition
 
@@ -268,6 +264,12 @@ List of MRtrix3 configuration file options
     *default: 100*
 
      The height of the colourbar in MRView, in pixels.
+
+.. option:: MRViewColourBarHorizontalPadding
+
+    *default: 100*
+
+     The width in pixels between horizontally adjacent colour bars.
 
 .. option:: MRViewColourBarInset
 
@@ -295,12 +297,6 @@ List of MRtrix3 configuration file options
     *default: 20*
 
      The width of the colourbar in MRView, in pixels.
-
-.. option:: MRViewColourHorizontalPadding
-
-    *default: 100*
-
-     The width in pixels between horizontally adjacent colour bars.
 
 .. option:: MRViewDefaultTractGeomType
 
@@ -336,7 +332,7 @@ List of MRtrix3 configuration file options
 
      Initial window size of MRView in pixels.
 
-.. option:: MRViewMaxNumColourmapRows
+.. option:: MRViewMaxNumColourBarRows
 
     *default: 3*
 
@@ -356,6 +352,19 @@ List of MRtrix3 configuration file options
     *default: 1.0*
 
      The factor by which the ODF overlay is scaled.
+
+.. option:: MRViewOrthoAsRow
+
+    *default: false*
+
+     Display the 3 orthogonal views of the Ortho mode in a row,
+     rather than as a 2x2 montage
+
+.. option:: MRViewRoiAlpha
+
+    *default: 0.5*
+
+     The default alpha of a ROI overlay.
 
 .. option:: MRViewRotateModifierKey
 
@@ -395,6 +404,12 @@ List of MRtrix3 configuration file options
 
      Voxel information shown in main image overlay.
 
+.. option:: MRViewSyncFocus
+
+    *default: false*
+
+     Whether to sync the focus in mrview between other mrview processes.
+
 .. option:: MRViewToolFontSize
 
     *default: 2 points less than the standard system font*
@@ -407,6 +422,12 @@ List of MRtrix3 configuration file options
 
      The position of all visible tool colourbars within the main window in MRView.
      Valid values are: bottomleft, bottomright, topleft, topright.
+
+.. option:: MRViewWrapVolumes
+
+    *default: false*
+
+     Wrap volumes around when cycling through
 
 .. option:: MSAA
 
@@ -454,13 +475,14 @@ List of MRtrix3 configuration file options
 
 .. option:: NIfTIUseSform
 
-    *default: 0 (false)*
+    *default: 1 (true)*
 
      A boolean value to control whether, in cases where both
      the sform and qform transformations are defined in an
      input NIfTI image, but those transformations differ, the
      sform transformation should be used in preference to the
-     qform matrix (the default behaviour).
+     qform matrix. The default is to use the sform matrix;
+     set to 0 / false to override and instead use the qform.
 
 .. option:: NeedOpenGLCoreProfile
 
@@ -488,6 +510,13 @@ List of MRtrix3 configuration file options
 
      The default colour to use for objects (i.e. SH glyphs) when not
      colouring by direction.
+
+.. option:: RealignTransform
+
+    *default: 1 (true)*
+
+     A boolean value to indicate whether all images should be realigned
+     to an approximately axial orientation at load.
 
 .. option:: RegAnalyseDescent
 

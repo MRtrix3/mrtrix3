@@ -17,8 +17,8 @@
 #include "command.h"
 #include "math/math.h"
 #include "image.h"
+#include "ordered_thread_queue.h"
 #include "thread.h"
-#include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resampling/arc.h"
@@ -55,10 +55,7 @@ void usage ()
     "vertices will typically change the quantified length of that streamline; the "
     "magnitude of the difference will typically depend on the discrepancy in the "
     "number of vertices, with less vertices leading to a shorter length (due to "
-    "taking chordal lengths of curved trajectories)."
-
-
-  + DWI::Tractography::preserve_track_order_desc;
+    "taking chordal lengths of curved trajectories).";
 
   ARGUMENTS
   + Argument ("in_tracks",  "the input track file").type_tracks_in()
@@ -125,33 +122,12 @@ void run ()
 
   const std::unique_ptr<Resampling::Base> resampler (Resampling::get_resampler());
 
-  const float old_step_size = get_step_size (properties);
-  if (!std::isfinite (old_step_size)) {
-    INFO ("Do not have step size information from input track file");
-  }
-
-  float new_step_size = NaN;
-  if (dynamic_cast<Resampling::FixedStepSize*>(resampler.get())) {
-    new_step_size = dynamic_cast<Resampling::FixedStepSize*> (resampler.get())->get_step_size();
-  } else if (std::isfinite (old_step_size)) {
-    if (dynamic_cast<Resampling::Downsampler*>(resampler.get()))
-      new_step_size = old_step_size * dynamic_cast<Resampling::Downsampler*> (resampler.get())->get_ratio();
-    if (dynamic_cast<Resampling::Upsampler*>(resampler.get()))
-      new_step_size = old_step_size / dynamic_cast<Resampling::Upsampler*> (resampler.get())->get_ratio();
-  }
-  properties["output_step_size"] = std::isfinite (new_step_size) ? str(new_step_size) : "variable";
-
-  auto downsample = properties.find ("downsample_factor");
-  if (downsample != properties.end())
-    properties.erase (downsample);
-
   Worker worker (resampler);
   Receiver receiver (argument[1], properties);
-  Thread::run_queue (read,
-                     Thread::batch (Streamline<value_type>()),
-                     Thread::multi (worker),
-                     Thread::batch (Streamline<value_type>()),
-                     receiver);
+  Thread::run_ordered_queue (read,
+                             Thread::batch (Streamline<value_type>()),
+                             Thread::multi (worker),
+                             Thread::batch (Streamline<value_type>()),
+                             receiver);
 
 }
-

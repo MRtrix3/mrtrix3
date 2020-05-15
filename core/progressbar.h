@@ -21,6 +21,7 @@
 #include <memory>
 #include <mutex>
 #include <condition_variable>
+#include <chrono>
 
 
 #include "mrtrix.h"
@@ -62,7 +63,9 @@ namespace MR
       ProgressBar (const ProgressBar& p) = delete;
       ProgressBar (ProgressBar&& p) = default;
 
-      FORCE_INLINE ~ProgressBar  () { done(); }
+      FORCE_INLINE ~ProgressBar  () {
+        done();
+      }
 
       //! Create a new ProgressBar, displaying the specified text.
       /*! If \a target is unspecified or set to zero, the ProgressBar will
@@ -87,6 +90,13 @@ namespace MR
       FORCE_INLINE bool operator! () const {
         return !show;
       }
+
+      FORCE_INLINE size_t value () const { return _value; }
+      FORCE_INLINE size_t count () const { return current_val; }
+      FORCE_INLINE bool show_percent () const { return _multiplier; }
+      FORCE_INLINE bool text_has_been_modified () const { return _text_has_been_modified; }
+      FORCE_INLINE const std::string& text () const { return _text; }
+      FORCE_INLINE const std::string& ellipsis () const { return _ellipsis; }
 
       //! set the maximum target value of the ProgressBar
       /*! This function should only be called if the ProgressBar has been
@@ -126,7 +136,10 @@ namespace MR
       FORCE_INLINE void operator++ (int) { ++ (*this); }
 
       FORCE_INLINE void done () {
-        done_func (*this);
+        if (show) {
+          done_func (*this);
+          progressbar_active = false;
+        }
       }
 
       template <class ThreadType>
@@ -138,16 +151,6 @@ namespace MR
       };
 
 
-      const bool show;
-      std::string text, ellipsis;
-      size_t value, current_val, next_percent;
-      double next_time;
-      float multiplier;
-      Timer timer;
-      bool text_has_been_modified;
-
-      FORCE_INLINE void display_now () { display_func (*this); }
-
 
       static bool set_update_method ();
       static void (*display_func) (const ProgressBar& p);
@@ -155,8 +158,23 @@ namespace MR
       static void (*previous_display_func) (const ProgressBar& p);
 
       static std::condition_variable notifier;
+      static bool notification_is_genuine;
       static std::mutex mutex;;
       static void* data;
+
+    private:
+
+      const bool show;
+      std::string _text, _ellipsis;
+      size_t _value, current_val, next_percent;
+      double next_time;
+      float _multiplier;
+      Timer timer;
+      bool _text_has_been_modified;
+
+      FORCE_INLINE void display_now () { display_func (*this); }
+
+      static bool progressbar_active;
   };
 
 
@@ -169,16 +187,19 @@ namespace MR
 
 
   FORCE_INLINE ProgressBar::ProgressBar (const std::string& text, size_t target, int log_level) :
-    show (App::log_level >= log_level),
-    text (text),
-    ellipsis ("... "),
-    value (0),
+    show (std::this_thread::get_id() == ::MR::App::main_thread_ID && !progressbar_active && App::log_level >= log_level),
+    _text (text),
+    _ellipsis ("... "),
+    _value (0),
     current_val (0),
     next_percent (0),
     next_time (0.0),
-    multiplier (0.0),
-    text_has_been_modified (false) {
-      set_max (target);
+    _multiplier (0.0),
+    _text_has_been_modified (false) {
+      if (show) {
+        set_max (target);
+        progressbar_active = true;
+      }
     }
 
 
@@ -186,14 +207,16 @@ namespace MR
 
   inline void ProgressBar::set_max (size_t target)
   {
+    if (!show)
+      return;
     if (target) {
-      multiplier = 0.01 * target;
-      next_percent = multiplier;
+      _multiplier = 0.01 * target;
+      next_percent = _multiplier;
       if (!next_percent)
         next_percent = 1;
     }
     else {
-      multiplier = 0.0;
+      _multiplier = 0.0;
       next_time = BUSY_INTERVAL;
       timer.start();
     }
@@ -203,15 +226,17 @@ namespace MR
 
   FORCE_INLINE void ProgressBar::set_text (const std::string& new_text)
   {
-    text_has_been_modified = true;
+    if (!show)
+      return;
+    _text_has_been_modified = true;
     if (new_text.size()) {
 #ifdef MRTRIX_WINDOWS
-      size_t old_size = text.size();
+      size_t old_size = _text.size();
 #endif
-      text = new_text;
+      _text = new_text;
 #ifdef MRTRIX_WINDOWS
-      if (text.size() < old_size)
-        text.resize (old_size, ' ');
+      if (_text.size() < old_size)
+        _text.resize (old_size, ' ');
 #endif
     }
   }
@@ -223,13 +248,15 @@ namespace MR
   template <class TextFunc>
     FORCE_INLINE void ProgressBar::update (TextFunc&& text_func, const bool increment)
     {
+      if (!show)
+        return;
       double time = timer.elapsed();
-      if (increment && multiplier) {
+      if (increment && _multiplier) {
         if (++current_val >= next_percent) {
           set_text (text_func());
-          ellipsis.clear();
-          value = std::round (current_val / multiplier);
-          next_percent = std::ceil ((value+1) * multiplier);
+          _ellipsis.clear();
+          _value = std::round (current_val / _multiplier);
+          next_percent = std::ceil ((_value+1) * _multiplier);
           next_time = time;
           display_now();
           return;
@@ -237,11 +264,11 @@ namespace MR
       }
       if (time >= next_time) {
         set_text (text_func());
-        ellipsis.clear();
-        if (multiplier)
+        _ellipsis.clear();
+        if (_multiplier)
           next_time = time + BUSY_INTERVAL;
         else {
-          value = time / BUSY_INTERVAL;
+          _value = time / BUSY_INTERVAL;
           do { next_time += BUSY_INTERVAL; }
           while (next_time <= time);
         }
@@ -254,17 +281,19 @@ namespace MR
 
   FORCE_INLINE void ProgressBar::operator++ ()
   {
-    if (multiplier) {
+    if (!show)
+      return;
+    if (_multiplier) {
       if (++current_val >= next_percent) {
-        value = std::round (current_val / multiplier);
-        next_percent = std::ceil ((value+1) * multiplier);
+        _value = std::round (current_val / _multiplier);
+        next_percent = std::ceil ((_value+1) * _multiplier);
         display_now();
       }
     }
     else {
       double time = timer.elapsed();
       if (time >= next_time) {
-        value = time / BUSY_INTERVAL;
+        _value = time / BUSY_INTERVAL;
         do { next_time += BUSY_INTERVAL; }
         while (next_time <= time);
         display_now();
@@ -279,10 +308,15 @@ namespace MR
   template <class ThreadType>
     inline void ProgressBar::run_update_thread (const ThreadType& threads) const
     {
+      if (!show)
+        return;
       std::unique_lock<std::mutex> lock (mutex);
       while (!threads.finished()) {
-        notifier.wait (lock, []{ return true; });
-        previous_display_func (*this);
+        notifier.wait_for (lock, std::chrono::milliseconds(1), []{ return notification_is_genuine; });
+        if (notification_is_genuine) {
+          previous_display_func (*this);
+          notification_is_genuine = false;
+        }
       }
     }
 

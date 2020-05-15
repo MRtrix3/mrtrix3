@@ -279,7 +279,7 @@ void run ()
       if (volumes[index])
         COMs[index] = (transform.voxel2scanner * (COMs[index] * (1.0f / float(volumes[index]))).cast<default_type>()).cast<float>();
       else
-        COMs[index][0] = COMs[index][1] = COMs[index][2] = NAN;
+        COMs[index][0] = COMs[index][1] = COMs[index][2] = NaN;
     }
 
     // If user specifies a subset of nodes, only a subset of exemplars need to be calculated
@@ -289,11 +289,11 @@ void run ()
       std::mutex mutex;
       ProgressBar progress ("generating exemplars for connectome", count);
       if (assignments_pairs.size()) {
-        auto loader = [&] (Tractography::Connectome::Streamline_nodepair& out) { if (!reader (out)) return false; out.set_nodes (assignments_pairs[out.index]); return true; };
+        auto loader = [&] (Tractography::Connectome::Streamline_nodepair& out) { if (!reader (out)) return false; out.set_nodes (assignments_pairs[out.get_index()]); return true; };
         auto worker = [&] (const Tractography::Connectome::Streamline_nodepair& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
         Thread::run_queue (loader, Thread::batch (Tractography::Connectome::Streamline_nodepair()), Thread::multi (worker));
       } else {
-        auto loader = [&] (Tractography::Connectome::Streamline_nodelist& out) { if (!reader (out)) return false; out.set_nodes (assignments_lists[out.index]); return true; };
+        auto loader = [&] (Tractography::Connectome::Streamline_nodelist& out) { if (!reader (out)) return false; out.set_nodes (assignments_lists[out.get_index()]); return true; };
         auto worker = [&] (const Tractography::Connectome::Streamline_nodelist& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
         Thread::run_queue (loader, Thread::batch (Tractography::Connectome::Streamline_nodelist()), Thread::multi (worker));
       }
@@ -380,14 +380,14 @@ void run ()
     if (assignments_pairs.size()) {
       Tractography::Connectome::Streamline_nodepair tck;
       while (reader (tck)) {
-        tck.set_nodes (assignments_pairs[tck.index]);
+        tck.set_nodes (assignments_pairs[tck.get_index()]);
         writer (tck);
         ++progress;
       }
     } else {
       Tractography::Connectome::Streamline_nodelist tck;
       while (reader (tck)) {
-        tck.set_nodes (assignments_lists[tck.index]);
+        tck.set_nodes (assignments_lists[tck.get_index()]);
         writer (tck);
         ++progress;
       }

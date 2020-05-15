@@ -1,7 +1,21 @@
 Beginner DWI tutorial
 =====================
 
-.. WARNING:: This tutorial is not intended to show the optimal or even recommended way of processing. It is merely a simplified example, intended to familiarise the user with the typical command line interface of certain basic processing steps.
+.. TIP::
+
+  Some proficiency with the Unix command-line is required to make the best use
+  of this software. There are many resources online to help you get
+  started if you are not already familiar with it. We also recommend our own
+  `Introduction to the Unix command-line
+  <https://command-line-tutorial.readthedocs.io/>`__, which was written with a
+  particular focus on the types of use that are common when using *MRtrix3*.
+
+.. WARNING::
+
+  This tutorial is not intended to show the optimal or even recommended way of
+  processing. It is merely a simplified example, intended to familiarise the
+  user with the typical command line interface of certain basic processing
+  steps.
 
 This tutorial will hopefully provide enough information for a novice
 user to get from the raw DW image data to performing some streamlines
@@ -103,4 +117,8 @@ particularly when a very large number of streamlines is generated.
 
     $ tckmap <Input track file> <Output TDI> -vox <Voxel size in mm>
     $ mrview <Output TDI>
+
+
+
+
 

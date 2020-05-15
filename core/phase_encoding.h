@@ -81,7 +81,9 @@ namespace MR
        *  Header::keyval() structure of \a header.
        *  - If the phase encoding direction and/or total readout
        *    time varies between volumes, then the information
-       *    will be stored
+       *    will be stored in field "pe_scheme"; if not, it
+       *    will instead be stored in fields "PhaseEncodingDirection"
+       *    and "TotalReadoutTime"
        */
     template <class MatrixType>
     void set_scheme (Header& header, const MatrixType& PE)

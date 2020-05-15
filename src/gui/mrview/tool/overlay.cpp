@@ -17,7 +17,6 @@
 #include "gui/mrview/tool/overlay.h"
 
 #include "mrtrix.h"
-#include "gui/mrview/colourmap.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
@@ -104,6 +103,8 @@ namespace MR
 
             image_list_view = new QListView (this);
             image_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
+            image_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+            image_list_view->setTextElideMode (Qt::ElideLeft);
             image_list_view->setDragEnabled (true);
             image_list_view->setDragDropMode (QAbstractItemView::InternalMove);
             image_list_view->setAcceptDrops (true);
@@ -191,7 +192,7 @@ namespace MR
 
         void Overlay::image_open_slot ()
         {
-          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
+          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open", &current_folder);
           if (overlay_names.empty())
             return;
           vector<std::unique_ptr<MR::Header>> list;
@@ -656,7 +657,7 @@ namespace MR
             for (size_t d = 3; d < overlay->image.ndim(); ++d) {
               SpinBox* vol_index = new SpinBox (this);
               vol_index->setMinimum (0);
-              vol_index->setPrefix (tr((str(d+1) + ": ").c_str()));;
+              vol_index->setPrefix (qstr(str(d+1) + ": "));
               vol_index->setValue (overlay->image.index(d));
               vol_index->setMaximum (overlay->image.size(d) - 1);
               vol_index->setEnabled (overlay->image.size(d) > 1);
@@ -792,10 +793,9 @@ namespace MR
               auto values = parse_floats (opt[0]);
               if (values.size() != 2)
                 throw Exception ("must provide exactly two comma-separated values to the -overlay.intensity option");
-              min_value->blockSignals (true);
               min_value->setValue (values[0]);
-              min_value->blockSignals (false);
               max_value->setValue (values[1]);
+              values_changed();
             }
             catch (Exception& e) { e.display(); }
             return true;
@@ -836,7 +836,6 @@ namespace MR
             interpolate_changed();
             return true;
           }
-
 
           return false;
         }

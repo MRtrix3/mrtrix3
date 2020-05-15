@@ -25,6 +25,7 @@
 #include "fixel/helpers.h"
 #include "fixel/keys.h"
 #include "fixel/loop.h"
+#include "fixel/types.h"
 
 #include "fixel/legacy/fixel_metric.h"
 #include "fixel/legacy/keys.h"
@@ -34,6 +35,7 @@
 using namespace MR;
 using namespace App;
 
+using Fixel::index_type;
 using Fixel::Legacy::FixelMetric;
 
 
@@ -53,8 +55,8 @@ void usage ()
              "(likely all of them) as an additional fixel data file.")
 
   + Example ("Convert multiple files from old to new format, preserving fixel correspondence",
-             "foreach *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
-             "In this example, the foreach script is used to execute the fixelconvert "
+             "for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
+             "In this example, the for_each script is used to execute the fixelconvert "
              "command once for each of a series of input files in the old fixel format, "
              "generating a new output fixel directory for each."
              "Importantly here though, the -template option is used to ensure that the "
@@ -114,7 +116,7 @@ void convert_old2new ()
   const std::string output_fixel_directory = argument[1];
   Fixel::check_fixel_directory (output_fixel_directory, true);
 
-  uint32_t fixel_count = 0;
+  index_type fixel_count = 0;
   for (auto i = Loop (input) (input); i; ++i)
     fixel_count += input.value().size();
 
@@ -132,29 +134,29 @@ void convert_old2new ()
   header.keyval()[Fixel::n_fixels_key] = str(fixel_count);
   header.ndim() = 4;
   header.size(3) = 2;
-  header.datatype() = DataType::from<uint32_t>();
+  header.datatype() = DataType::from<index_type>();
   header.datatype().set_byte_order_native();
 
-  auto index_image = Image<uint32_t>::create (Path::join (output_fixel_directory, "index" + file_extension), header);
+  auto index_image = Image<index_type>::create (Path::join (output_fixel_directory, "index" + file_extension), header);
   auto directions_image = Image<float>::create (Path::join (output_fixel_directory, "directions" + file_extension), directions_header).with_direct_io();
   auto value_image = Image<float>::create (Path::join (output_fixel_directory, value_name + file_extension), data_header);
   Image<float> size_image;
   if (output_size)
     size_image = Image<float>::create (Path::join (output_fixel_directory, "size" + file_extension), data_header);
 
-  Image<uint32_t> template_index_image;
+  Image<index_type> template_index_image;
   Image<float> template_directions_image;
   opt = get_options ("template");
   if (opt.size()) {
     Fixel::check_fixel_directory (opt[0][0]);
-    template_index_image = Fixel::find_index_header (opt[0][0]).get_image<uint32_t>();
+    template_index_image = Fixel::find_index_header (opt[0][0]).get_image<index_type>();
     check_dimensions (index_image, template_index_image);
     template_directions_image = Fixel::find_directions_header (opt[0][0]).get_image<float>();
   }
 
-  uint32_t offset = 0;
+  index_type offset = 0;
   for (auto i = Loop ("converting fixel format", input, 0, 3) (input, index_image); i; ++i) {
-    const uint32_t num_fixels = input.value().size();
+    const index_type num_fixels = input.value().size();
     if (template_index_image.valid()) {
       assign_pos_of (index_image).to (template_index_image);
       template_index_image.index(3) = 0;
@@ -228,7 +230,7 @@ void convert_new2old ()
   H_out.keyval()[Fixel::Legacy::size_key] = str(sizeof(FixelMetric));
   Fixel::Legacy::Image<Fixel::Legacy::FixelMetric> out_image (argument[1], H_out);
 
-  auto index_image = H_index.get_image<uint32_t>();
+  auto index_image = H_index.get_image<index_type>();
   auto dirs_image = H_dirs.get_image<float>();
   auto value_image = H_data[value_index].get_image<float>();
   Image<float> size_image;
@@ -237,7 +239,7 @@ void convert_new2old ()
 
   for (auto l = Loop (out_image) (out_image, index_image); l; ++l) {
     index_image.index(3) = 0;
-    const uint32_t num_fixels = index_image.value();
+    const index_type num_fixels = index_image.value();
     out_image.value().set_size (num_fixels);
     for (auto f = Fixel::Loop (index_image) (dirs_image, value_image); f; ++f) {
       // Construct the direction

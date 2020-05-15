@@ -21,16 +21,21 @@
 #include "image.h"
 #include "fixel/helpers.h"
 #include "fixel/keys.h"
+#include "fixel/types.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/streamline.h"
 
-#include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
+#include "dwi/tractography/mapping/mapper.h"
+
 
 
 using namespace MR;
 using namespace App;
+
+using Fixel::index_type;
 
 
 #define DEFAULT_ANGULAR_THRESHOLD 45.0
@@ -72,7 +77,7 @@ void run ()
                      "therefore the input fixel data file must have dimension Nx1x1");
 
   Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
-  auto in_index_image = in_index_header.get_image<uint32_t>();
+  auto in_index_image = in_index_header.get_image<index_type>();
   auto in_directions_image = Fixel::find_directions_header (Fixel::get_fixel_directory (argument[0])).get_image<float>().with_direct_io();
 
   DWI::Tractography::Properties properties;
@@ -93,14 +98,17 @@ void run ()
 
   ProgressBar progress ("mapping fixel values to streamline points", num_tracks);
   DWI::Tractography::Streamline<float> tck;
+  DWI::Tractography::TrackScalar<float> scalars;
 
-  Transform transform (in_index_image);
+  const Transform transform (in_index_image);
   Eigen::Vector3 voxel_pos;
 
   while (reader (tck)) {
     SetVoxelDir dixels;
     mapper (tck, dixels);
-    vector<float> scalars (tck.size(), 0.0f);
+    scalars.clear();
+    scalars.set_index (tck.get_index());
+    scalars.resize (tck.size(), 0.0f);
     for (size_t p = 0; p < tck.size(); ++p) {
       voxel_pos = transform.scanner2voxel * tck[p].cast<default_type> ();
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
@@ -112,9 +120,9 @@ void run ()
           int32_t closest_fixel_index = -1;
 
           in_index_image.index(3) = 0;
-          uint32_t num_fixels_in_voxel = in_index_image.value();
+          index_type num_fixels_in_voxel = in_index_image.value();
           in_index_image.index(3) = 1;
-          uint32_t offset = in_index_image.value();
+          index_type offset = in_index_image.value();
 
           for (size_t fixel = 0; fixel < num_fixels_in_voxel; ++fixel) {
             in_directions_image.index(0) = offset + fixel;

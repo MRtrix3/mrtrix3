@@ -100,6 +100,10 @@ namespace MR
       void push_back (const std::string& s) {
         description.push_back (s);
       }
+      void push_back (const Exception& e) {
+        for (auto s : e.description)
+          push_back (s);
+      }
 
       static void (*display_func) (const Exception& E, int log_level);
 
@@ -111,6 +115,12 @@ namespace MR
       InvalidImageException (const std::string& msg) : Exception(msg) {}
       InvalidImageException (const Exception& previous_exception, const std::string& msg)
         : Exception(previous_exception, msg) {}
+  };
+
+
+  class CancelException : public Exception { NOMEMALIGN
+    public:
+      CancelException () : Exception ("operation cancelled by user") { }
   };
 
   void display_exception_cmdline (const Exception& E, int log_level);

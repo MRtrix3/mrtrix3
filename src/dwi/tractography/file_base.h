@@ -19,6 +19,7 @@
 
 #include <iomanip>
 #include <map>
+#include <set>
 
 #include "types.h"
 #include "file/key_value.h"
@@ -40,6 +41,7 @@ namespace MR
       class __ReaderBase__
       { NOMEMALIGN
         public:
+            __ReaderBase__() : current_index (0) { }
           ~__ReaderBase__ () {
             if (in.is_open())
               in.close();
@@ -50,9 +52,9 @@ namespace MR
           void close () { in.close(); }
 
         protected:
-
-          std::ifstream  in;
-          DataType  dtype;
+          std::ifstream in;
+          DataType dtype;
+          uint64_t current_index;
       };
 
 
@@ -91,8 +93,10 @@ namespace MR
               out << "mrtrix " + type + "\nEND\n";
 
               for (const auto& i : properties) {
-                if ((i.first != "count") && (i.first != "total_count"))
-                  out << i.first << ": " << i.second << "\n";
+                if ((i.first != "count") && (i.first != "total_count")) {
+                  for (const auto& line : split_lines (i.second))
+                    out << i.first << ": " << line << "\n";
+                }
               }
 
               for (const auto& i : properties.comments)
@@ -147,6 +151,9 @@ namespace MR
               verify_stream (out);
             }
         };
+
+
+
       //! \endcond
 
 
@@ -156,4 +163,3 @@ namespace MR
 
 
 #endif
-

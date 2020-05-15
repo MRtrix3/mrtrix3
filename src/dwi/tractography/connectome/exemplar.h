@@ -36,12 +36,13 @@ class Exemplar : private Tractography::Streamline<float>
 { MEMALIGN(Exemplar)
   public:
     using Tractography::Streamline<float>::point_type;
-    Exemplar (const size_t length, const NodePair& nodes, const std::pair<point_type, point_type>& COMs) :
+    Exemplar (const size_t exemplar_index, const size_t length, const NodePair& nodes, const std::pair<point_type, point_type>& COMs) :
         Tractography::Streamline<float> (length, { 0.0f, 0.0f, 0.0f }),
         nodes (nodes),
         node_COMs (COMs),
         is_finalized (false)
     {
+      set_index (exemplar_index);
       weight = 0.0f;
     }
 
