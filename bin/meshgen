@@ -1,0 +1,118 @@
+#!/usr/bin/env python
+
+# Script that generates brain tissue surface meshes for Mesh-based Anatomically-Constrained Tractography (MACT)
+
+
+def usage( cmdline ): #pylint: disable=unused-variable
+  cmdline.set_author( 'Chun-Hung Yeh (jimmy.chyeh@gmail.com)' )
+  cmdline.set_synopsis( 'Generate tissue surface meshes for Mesh-based ACT (MACT)' )
+  cmdline.add_argument( 'subj', help='The path to the data produced by FreeSurfer\'s recon-all' )
+  cmdline.add_argument( 'path', help='The output mesh directory' )
+
+
+def check_output_paths(): #pylint: disable=unused-variable
+  from mrtrix3 import app
+  app.check_output_path( app.ARGS.path )
+
+
+def execute(): #pylint: disable=unused-variable
+  import os, shutil
+  from mrtrix3 import app, MRtrixError, path, run, fsl #pylint: disable=no-name-in-module
+
+  #### check path & freesurfer environment
+  check_output_paths()
+  if not os.environ.get( 'FREESURFER_HOME', '' ):
+    raise MRtrixError( 'Environment variable FREESURFER_HOME is not set' )
+  app.make_scratch_dir()
+  path.make_dir( app.ARGS.path )
+
+  #### collect required input data
+  run.function( shutil.copyfile, path.from_user( app.ARGS.subj ) + '/mri/orig/001.mgz',
+                path.to_scratch( '001.mgz', False ) )
+  run.function( shutil.copyfile, path.from_user( app.ARGS.subj ) + '/mri/T1.mgz',
+                path.to_scratch( 'T1.mgz', False ) )
+  run.function( shutil.copyfile, path.from_user( app.ARGS.subj ) + '/mri/aseg.mgz',
+                path.to_scratch( 'aseg.mgz', False ) )
+  run.function( shutil.copyfile, path.from_user( app.ARGS.subj ) + '/mri/norm.mgz',
+                path.to_scratch( 'norm.mgz', False ) )
+  run.function( shutil.copyfile, path.from_user( app.ARGS.subj ) + '/surf/lh.white',
+                path.to_scratch( 'lh.white', False ) )
+  run.function( shutil.copyfile, path.from_user( app.ARGS.subj ) + '/surf/rh.white',
+                path.to_scratch( 'rh.white', False ) )
+  run.function( shutil.copyfile, path.from_user( app.ARGS.subj ) + '/label/lh.aparc.annot',
+                path.to_scratch( 'lh.aparc.annot', False ) )
+  run.function( shutil.copyfile, path.from_user( app.ARGS.subj ) + '/label/rh.aparc.annot',
+                path.to_scratch( 'rh.aparc.annot', False ) )
+
+  #### process data in the temp folder
+  app.goto_scratch_dir()
+
+  #### cortical grey matter
+  # cerebrum
+  run.command( 'meshcrop lh.white lh.white.vtk -annot lh.aparc.annot 0' )
+  run.command( 'meshcrop rh.white rh.white.vtk -annot rh.aparc.annot 0' )
+  run.command( 'meshcat lh.white.vtk rh.white.vtk cerebrum_cgm.vtk' )
+  run.command( 'meshconvert cerebrum_cgm.vtk cerebrum_cgm.vtk -transform fs2real T1.mgz -force' )
+
+  # cerebellum - see FreeSurferColorLUT.txt for labelled structures 
+  aseg_labels = [ '7', '8', '46', '47' ]
+  aseg2mesh( aseg_labels, prefix = 'cbl' )
+  run.command( 'meshcrop cbl_7.vtk cerebellum_cgm_left.vtk -setdiff cbl_8.vtk 2' )
+  run.command( 'meshcrop cbl_46.vtk cerebellum_cgm_right.vtk -setdiff cbl_47.vtk 2' )
+  run.command( 'meshcat cerebellum_cgm_left.vtk cerebellum_cgm_right.vtk cerebellum_cgm.vtk' )
+
+  run.command( 'meshcat cerebrum_cgm.vtk cerebellum_cgm.vtk result-cgm.vtk' )
+
+  #### sub-cortical grey matter & brain stem
+  if not os.environ.get( 'FSLDIR', '' ):
+    raise MRtrixError( 'Environment variable FSLDIR is not set' )
+  sgm_structures = [ 'L_Accu', 'L_Amyg', 'L_Caud', 'L_Hipp', 'L_Pall', 'L_Puta', 'L_Thal', 
+                     'R_Accu', 'R_Amyg', 'R_Caud', 'R_Hipp', 'R_Pall', 'R_Puta', 'R_Thal',
+                     'BrStem' ]
+  run.command( 'mrconvert 001.mgz T1.nii.gz -strides -1,+2,+3' )
+  run.command( 'run_first_all -i T1.nii.gz -o fsl-first -3 -s ' + ','.join( sgm_structures ) )
+  fsl.check_first( 'fsl-first', sgm_structures )
+  run.command( 'meshcat fsl-first-L*.vtk fsl-first-R*.vtk fsl-first-sgm.vtk', shell=True )
+  run.command( 'meshconvert fsl-first-sgm.vtk result-sgm.vtk -transform first2real 001.mgz' )
+  run.command( 'meshconvert fsl-first-BrStem_first.vtk result-bst.vtk -transform first2real 001.mgz' )
+
+  #### ventricles - see FreeSurferColorLUT.txt for labelled structures 
+  aseg_labels = [ '4', '5', '14', '15', '24', '31', '43', '44', '63' ]
+  run.command( 'mrcalc aseg.mgz 72 -eq - | mrstats - -output max >> have_5th_ventricle', shell=True )
+  if float( open( 'have_5th_ventricle', 'r' ).read() ):
+    aseg_labels.extend( [ '72' ] )
+  aseg2mesh( aseg_labels, prefix = 'csf' )
+  run.command( 'meshcat csf*.vtk result-csf.vtk', shell=True )
+
+  #### export the results
+  run.function( shutil.copyfile, 'result-cgm.vtk',
+                path.from_user( app.ARGS.path, False ) + '/cgm.vtk' )
+  run.function( shutil.copyfile, 'result-sgm.vtk',
+                path.from_user( app.ARGS.path, False ) + '/sgm.vtk' )
+  run.function( shutil.copyfile, 'result-bst.vtk',
+                path.from_user( app.ARGS.path, False ) + '/bst.vtk' )
+  run.function( shutil.copyfile, 'result-csf.vtk',
+                path.from_user( app.ARGS.path, False ) + '/csf.vtk' )
+
+
+def aseg2mesh( labels, prefix ):
+  # note on macos: need to turn off System Integrity Protection as FreeSurfer's 
+  # commands need to access libraries in /usr/lib (protected by SIP)
+  from mrtrix3 import run
+  for label in labels:
+    # pre-tessellate
+    run.command( 'mri_pretess aseg.mgz ' + label + ' norm.mgz ' + prefix + '_' + label + '_pretess.mgz' )
+    # tessellate
+    run.command( 'mri_tessellate -n ' + prefix + '_' + label + '_pretess.mgz ' + label + ' ' + prefix + '_' + label + '_tess' )
+    # smooth (mris_smooth add rh. to the output file)
+    run.command( 'mris_smooth -nw ' + prefix + '_' + label + '_tess ' + prefix + '_' + label )
+    run.command( 'mv rh.' + prefix + '_' + label + ' ' + prefix + '_' + label, show=False )
+    # convert srf to vtk (mris_convert add rh. to the output file)
+    run.command( 'mris_convert ' + prefix + '_' + label + ' ' + prefix + '_' + label + '.vtk' )
+    run.command( 'mv rh.' + prefix + '_' + label + '.vtk ' + prefix + '_' + label + '.vtk', show=False )
+
+
+###### Execute the script
+import mrtrix3
+mrtrix3.execute() #pylint: disable=no-member
+
