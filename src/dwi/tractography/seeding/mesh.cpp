@@ -77,7 +77,7 @@ bool Mesh::get_seed( Eigen::Vector3f& point ) const
   // choose a triangle with probability defined by triangle areas
   std::uniform_real_distribution< double > uniform( 0.0, 1.0 );
   int32_t index = -1;
-  double rn = uniform( *rng );
+  double rn = uniform( rng );
   for ( size_t c = 0; c < _cdf.size(); c++ )
   {
     if ( rn <= _cdf[ c ] )
@@ -119,7 +119,7 @@ bool Mesh::get_seed( Eigen::Vector3f& point ) const
   std::uniform_real_distribution< double > rnz( lower_p[ 2 ], upper_p[ 2 ] );
   do
   {
-    Eigen::Vector3d rand_p( rnx( *rng ), rny( *rng ), rnz( *rng ) );
+    Eigen::Vector3d rand_p( rnx( rng ), rny( rng ), rnz( rng ) );
     double t = normal.dot( v1 - rand_p );
     Eigen::Vector3d proj_p = rand_p + normal * t;
     // check whether the projection point is inside the triangle or on the edge

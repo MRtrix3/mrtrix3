@@ -129,7 +129,7 @@ namespace MR
               if (track_rejected (item)) {
                 item.clear();
                 item.set_status (GeneratedTrack::status_t::TRACK_REJECTED);
-              } else if (S.downsampler.get_ratio() > 1 || (S.is_act() && S.act().crop_at_gmwmi())) || (S.is_mact() && S.mact().crop_at_gmwmi()) {
+              } else if (S.downsampler.get_ratio() > 1 || (S.is_act() && S.act().crop_at_gmwmi()) || (S.is_mact() && S.mact().crop_at_gmwmi())) {
                 S.downsampler (item);
                 check_downsampled_length (item);
               } else {
@@ -211,9 +211,9 @@ namespace MR
               // If it is enabled, this check can only be performed after the streamline is completed
               if ( !( S.is_mact() && S.mact().backtrack() ) )
               {
-                S.properties.include.contains( method.pos, track_included );
+                include_visitation (method.pos);
               }
-              if ( S.stop_on_all_include && traversed_all_include_regions() )
+              if (S.stop_on_all_include && bool(include_visitation))
               {
                 return TRAVERSE_ALL_INCLUDE;
               }

@@ -85,7 +85,7 @@ class Assigner
       _sceneModeller->nearestTissue( last, ix2 );
       nodePair.setSecond( ix2.nearestVertexId() );
 
-      nodePair.set_tck_index( tck.index );
+      nodePair.set_tck_index( tck.get_index() );
       nodePair.set_tck_weight( tck.weight );
 
       return true;
@@ -209,7 +209,7 @@ class Graph
 
     void set_weight( const Streamline< float >& tck )
     {
-      _assignment_pairs[ tck.index ].set_tck_weight( tck.weight );
+      _assignment_pairs[ tck.get_index() ].set_tck_weight( tck.weight );
     }
 
   protected:
