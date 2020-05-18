@@ -29,9 +29,9 @@ DEFAULT_CONFIG = """{
     "svr": true,
     "rec-iter": 3,
     "reg-iter": 10,
-    "reg-scale": 1.0
+    "reg-scale": 1.0,
     "lbreg": 0.0
-  }
+  },
   "epochs": [
     {
       "svr": false,
@@ -69,7 +69,7 @@ def usage(cmdline): #pylint: disable=unused-variable
     options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 2,2,0)')
     options.add_argument('-reg', help='Regularization for dwirecon (overrides config; default = 0.005)')
     options.add_argument('-zreg', help='Regularization for dwirecon (overrides config; default = 0.001)')
-    options.add_argument('-config', help='Configuration file (json structured)')
+    options.add_argument('-setup', help='Configuration setup file (json structured)')
     options.add_argument('-mb', help='Multiband factor (default = 1)')
     options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
     options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
@@ -154,8 +154,8 @@ def execute(): #pylint: disable=unused-variable
 
     # Configuration
     config = json.loads(DEFAULT_CONFIG)
-    if app.ARGS.config:
-        with open(app.ARGS.config) as f:
+    if app.ARGS.setup:
+        with open(path.from_user(app.ARGS.setup, True)) as f:
             customconfig = json.load(f)
             # use defaults for unspecified config options
             customconfig['global'] = {**config['global'], **customconfig['global']}
@@ -229,7 +229,7 @@ def execute(): #pylint: disable=unused-variable
     #   __________ Function definitions __________
 
     def reconstep(k, conf):
-        rcmd = 'dwirecon {} recon-{}.mif -spred spred.mif '.format(intpufn, k)
+        rcmd = 'dwirecon {} recon-{}.mif -spred spred.mif '.format(inputfn, k)
         rcmd += '-maxiter {} -reg {} -zreg {} '.format(conf['rec-iter'], conf['rec-reg'], conf['rec-zreg'])
         rcmd += ssp_option + ' -rf ' + ' -rf '.join(rfs)
         if k>0:
@@ -270,7 +270,7 @@ def execute(): #pylint: disable=unused-variable
     def registrationstep(k, conf):
         if app.ARGS.fixedmotion:
             return;
-        rcmd = 'dwislicealign {} rankredux.mif motion.txt -mask mask.mif -maxiter {}'.format(infputfn, conf['reg-iter'])
+        rcmd = 'dwislicealign {} rankredux.mif motion.txt -mask mask.mif -maxiter {}'.format(inputfn, conf['reg-iter'])
         rcmd += ' -mb ' + (str(mb) if conf['svr'] else '0') + (' -init motion.txt' if k>0 else '')
         rcmd += ssp_option + ' -force' + nthr
         run.command(rcmd)
@@ -290,7 +290,7 @@ def execute(): #pylint: disable=unused-variable
 
     #   __________ Motion correction __________
 
-    liveconfig = copy(config['global'])
+    liveconfig = {**config['global']}
     nepochs = len(config['epochs']) - 1
     for k, epoch in enumerate(config['epochs']):
         liveconfig.update(epoch)
@@ -311,7 +311,7 @@ def execute(): #pylint: disable=unused-variable
 
     #   __________ Copy outputs __________
 
-    run.command('mrconvert recon-'+str(len(iters)-1)+'.mif ' + path.from_user(app.ARGS.output, True) + (' -force' if app.FORCE_OVERWRITE else ''))
+    run.command('mrconvert recon-'+str(nepochs)+'.mif ' + path.from_user(app.ARGS.output, True) + (' -force' if app.FORCE_OVERWRITE else ''))
     if app.ARGS.export_motion:
         run.command('cp motion.txt ' + path.from_user(app.ARGS.export_motion, True))
     if app.ARGS.export_weights:
