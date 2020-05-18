@@ -19,6 +19,38 @@
 
 import mrtrix3
 from mrtrix3 import app, image, path, run
+import json
+
+
+DEFAULT_CONFIG = """{
+  "global": {
+    "rec-reg": 0.005,
+    "rec-zreg": 0.001,
+    "svr": true,
+    "rec-iter": 3,
+    "reg-iter": 10,
+    "reg-scale": 1.0
+    "lbreg": 0.0
+  }
+  "epochs": [
+    {
+      "svr": false,
+      "reg-scale": 3.0
+    },{
+      "svr": false,
+      "reg-scale": 2.4
+    },{
+      "reg-scale": 1.9
+    },{
+      "reg-scale": 1.5
+    },{
+      "reg-scale": 1.2
+    },{
+      "rec-iter": 10
+    }
+  ]
+}"""
+
 
 
 def usage(cmdline): #pylint: disable=unused-variable
@@ -35,10 +67,9 @@ def usage(cmdline): #pylint: disable=unused-variable
     options.add_argument('-mask', help='Manually provide a mask image for motion correction')
     options.add_argument('-lmax', help='SH basis order per shell (default = 0,4,4,...)')
     options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 2,2,0)')
-    options.add_argument('-reg', help='Regularization for dwirecon (default = 0.001)')
-    options.add_argument('-zreg', help='Regularization for dwirecon (default = 0.01)')
-    options.add_argument('-lbreg', help='Laplace-Beltrami regularization for SHARD (default = 0)')
-    options.add_argument('-v2v', action='store_true', help='Constrain to volume-level motion correction only')
+    options.add_argument('-reg', help='Regularization for dwirecon (overrides config; default = 0.005)')
+    options.add_argument('-zreg', help='Regularization for dwirecon (overrides config; default = 0.001)')
+    options.add_argument('-config', help='Configuration file (json structured)')
     options.add_argument('-mb', help='Multiband factor (default = 1)')
     options.add_argument('-sorder', help='Slice order (default = 2,1, for odd-even)')
     options.add_argument('-sspwidth', help='Slice thickness for Gaussian SSP (default = 1)')
@@ -121,12 +152,21 @@ def execute(): #pylint: disable=unused-variable
     if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
         app.error('-rlmax invalid.')
 
-    # Regularization options
-    reg_option = ''
+    # Configuration
+    config = json.loads(DEFAULT_CONFIG)
+    if app.ARGS.config:
+        with open(app.ARGS.config) as f:
+            customconfig = json.load(f)
+            # use defaults for unspecified config options
+            customconfig['global'] = {**config['global'], **customconfig['global']}
+            # update config
+            config.update(customconfig)
+
+    # Override regularization options if provided
     if app.ARGS.reg:
-        reg_option += ' -reg ' + app.ARGS.reg
+        config['rec-reg'] = float(app.ARGS.reg)
     if app.ARGS.zreg:
-        reg_option += ' -zreg ' + app.ARGS.zreg
+        config['rec-zreg'] = float(app.ARGS.zreg)
 
     # SSP option
     ssp_option = ''
@@ -153,9 +193,6 @@ def execute(): #pylint: disable=unused-variable
     if app.ARGS.nthreads:
         nthr = ' -nthreads ' + app.ARGS.nthreads
 
-    # Slice-level motion?
-    slm = not app.ARGS.v2v
-
     # Set multiband factor
     mb = 1
     if app.ARGS.mb:
@@ -181,24 +218,7 @@ def execute(): #pylint: disable=unused-variable
         # mrcalc "hack" to check image dimensions & copy PE table
         run.command('mrcalc in.mif 0 -mult ' + path.from_user(app.ARGS.voxelweights, True) + ' -add voxelweights.mif')
 
-
-    # Configuration
-    class Config:
-        def __init__(self, svr=False, recit=5, regit=10, scale=1.):
-            self.svr = svr
-            self.recit = recit
-            self.regit = regit
-            self.scale = scale
-
-
-    iters = [Config(False, 3, 10, 3.0),
-             Config(False, 3, 10, 2.4),
-             Config(slm,   3, 10, 1.9),
-             Config(slm,   3, 10, 1.5),
-             Config(slm,   3, 10, 1.2),
-             Config(slm,  10, -1, 1.0)]
-
-
+    
     # Variable input file name
     global inputfn, voxweightsfn
     inputfn = 'in.mif'
@@ -208,12 +228,12 @@ def execute(): #pylint: disable=unused-variable
 
     #   __________ Function definitions __________
 
-    def reconstep(k):
-        im = inputfn;
-        rcmd = 'dwirecon ' + im + ' recon-' + str(k) + '.mif -spred spred.mif -maxiter ' + str(iters[k].recit)
-        rcmd += reg_option + ssp_option + ' -rf ' + ' -rf '.join(rfs)
+    def reconstep(k, conf):
+        rcmd = 'dwirecon {} recon-{}.mif -spred spred.mif '.format(intpufn, k)
+        rcmd += '-maxiter {} -reg {} -zreg {} '.format(conf['rec-iter'], conf['rec-reg'], conf['rec-zreg'])
+        rcmd += ssp_option + ' -rf ' + ' -rf '.join(rfs)
         if k>0:
-            rcmd += ' -motion motion.txt -weights sliceweights.txt -init recon-' + str(k-1) + '.mif'
+            rcmd += ' -motion motion.txt -weights sliceweights.txt -init recon-{}.mif'.format(k-1)
         elif app.ARGS.priorweights:
             rcmd += ' -weights priorweights.txt'
         if app.ARGS.voxelweights:
@@ -234,60 +254,59 @@ def execute(): #pylint: disable=unused-variable
             np.savetxt('sliceweights.txt', W1 * W0)
 
 
-    def basisupdatestep(k):
-        run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in sorted(lmax)[::-1]]) +
-                    (' -lbreg ' + app.ARGS.lbreg if app.ARGS.lbreg else '') + ' ' + ' '.join(rfs) + ' -force')
+    def basisupdatestep(k, conf):
+        lboption = ' -lbreg {}'.format(conf['lbreg']) if conf['lbreg']>0 else ''
+        run.command('msshsvd recon-' + str(k) + '.mif -mask mask.mif -lmax ' + ','.join([str(l) for l in sorted(lmax)[::-1]]) + lboption + ' ' + ' '.join(rfs) + ' -force')
 
 
-    def rankreduxstep(k, scale=1.):
-        run.command('mrfilter recon-' + str(k) + '.mif smooth - -fwhm ' + str(round(vu*scale, 2)) + ' | ' +
+    def rankreduxstep(k, conf):
+        lboption = ' -lbreg {}'.format(conf['lbreg']) if conf['lbreg']>0 else ''
+        fwhmoption = ' -fwhm {}'.format(round(vu*conf['reg-scale'], 2))
+        run.command('mrfilter recon-' + str(k) + '.mif smooth -' + fwhmoption + ' | ' +
                     'msshsvd - -mask mask.mif -lmax ' + ','.join([str(l) for l in rlmax]) +
-                    (' -lbreg ' + app.ARGS.lbreg if app.ARGS.lbreg else '') + ' ' + ' '.join(redrfs) + ' -proj rankredux.mif -force')
+                    lboption + ' ' + ' '.join(redrfs) + ' -proj rankredux.mif -force')
 
 
-    def registrationstep(k):
+    def registrationstep(k, conf):
         if app.ARGS.fixedmotion:
             return;
-        run.command('dwislicealign ' + inputfn + ' rankredux.mif motion.txt -mask mask.mif -maxiter ' + str(iters[k].regit) +
-                    ' -mb ' + (str(mb) if iters[k].svr else '0') + (' -init motion.txt' if k>0 else '') +
-                    ssp_option + ' -force' + nthr)
+        rcmd = 'dwislicealign {} rankredux.mif motion.txt -mask mask.mif -maxiter {}'.format(infputfn, conf['reg-iter'])
+        rcmd += ' -mb ' + (str(mb) if conf['svr'] else '0') + (' -init motion.txt' if k>0 else '')
+        rcmd += ssp_option + ' -force' + nthr
+        run.command(rcmd)
         run.command('motionfilter motion.txt sliceweights.txt motion.txt -medfilt 5' + motfilt_option)
 
 
     def fieldalignstep(k):
         global inputfn, voxweightsfn
         if app.ARGS.fieldmap:
-            if k == 0:
-                run.command('mrfieldunwarp in.mif field.mif unwarped.mif')
-                if app.ARGS.voxelweights:
-                    run.command('mrfieldunwarp -nomodulation voxelweights.mif field.mif voxelweights-unwarped.mif')
-            else:
-                fidx = '-fidx ' + ('0' if not app.ARGS.fieldidx else app.ARGS.fieldidx)
-                run.command('mrfieldunwarp in.mif field.mif -motion motion.txt ' + fidx + ' unwarped.mif -force')
-                if app.ARGS.voxelweights:
-                    run.command('mrfieldunwarp -nomodulation -motion motion.txt voxelweights.mif field.mif voxelweights-unwarped.mif -force')
+            cmdopt = ' -motion motion.txt -fidx ' + ('0' if not app.ARGS.fieldidx else app.ARGS.fieldidx) + ' -force' if k > 0 else ''
+            run.command('mrfieldunwarp in.mif field.mif unwarped.mif' + cmdopt)
+            if app.ARGS.voxelweights:
+                run.command('mrfieldunwarp -nomodulation voxelweights.mif field.mif voxelweights-unwarped.mif' + cmdopt)
             inputfn = 'unwarped.mif'
             voxweightsfn = 'voxelweights-unwarped.mif'
 
 
     #   __________ Motion correction __________
 
-    # initial template
-    fieldalignstep(0)
-    reconstep(0)
-
-    # running reconstruction
-    for k, it in enumerate(iters[:-1]):
+    liveconfig = copy(config['global'])
+    nepochs = len(config['epochs']) - 1
+    for k, epoch in enumerate(config['epochs']):
+        liveconfig.update(epoch)
+        # update template
+        fieldalignstep(k)
+        reconstep(k, liveconfig)
+        # end on last recon step
+        if k == nepochs:
+            break
         # basis update and rank reduction
-        basisupdatestep(k)
-        rankreduxstep(k, it.scale)
+        basisupdatestep(k, liveconfig)
+        rankreduxstep(k, liveconfig)
         # slice weights
         sliceweightstep(k)
         # register template to volumes
-        registrationstep(k)
-        fieldalignstep(k+1)
-        # update template
-        reconstep(k+1)
+        registrationstep(k, liveconfig)
 
 
     #   __________ Copy outputs __________
