@@ -229,8 +229,8 @@ def execute(): #pylint: disable=unused-variable
     #   __________ Function definitions __________
 
     def reconstep(k, conf):
-        rcmd = 'dwirecon {} recon-{}.mif -spred spred.mif '.format(inputfn, k)
-        rcmd += '-maxiter {} -reg {} -zreg {} '.format(conf['rec-iter'], conf['rec-reg'], conf['rec-zreg'])
+        rcmd = 'dwirecon {} recon-{}.mif -spred spred.mif'.format(inputfn, k)
+        rcmd += ' -maxiter {} -reg {} -zreg {}'.format(conf['rec-iter'], conf['rec-reg'], conf['rec-zreg'])
         rcmd += ssp_option + ' -rf ' + ' -rf '.join(rfs)
         if k>0:
             rcmd += ' -motion motion.txt -weights sliceweights.txt -init recon-{}.mif'.format(k-1)
