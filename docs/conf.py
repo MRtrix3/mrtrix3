@@ -28,7 +28,7 @@ import os
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [ 'sphinx.ext.mathjax' ]
+extensions = [ 'sphinx.ext.mathjax', 'notfound.extension' ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -308,3 +308,9 @@ else:
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+
+# --- options for 404 sphinx-notfound-page
+
+notfound_context = {'title': 'Page not found', 'body': '<h1>Page not found</h1>\n\nThis page does not exist in this version of the MRtrix3 docs. Sorry about that. Please select the appropriate version and use the menu or search functionality.'}
+
