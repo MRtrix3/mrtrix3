@@ -146,7 +146,9 @@ namespace MR
         }
 
         vector<std::string> directories { Path::dirname (listpath) };
-        if (directories[0].size() && directories[0] != ".")
+        if (directories[0].empty())
+          directories[0] = ".";
+        else if (directories[0] != ".")
           directories.push_back (".");
         if (explicit_from_directory.size())
           directories.insert (directories.begin(), explicit_from_directory);
