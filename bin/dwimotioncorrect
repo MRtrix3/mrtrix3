@@ -164,9 +164,9 @@ def execute(): #pylint: disable=unused-variable
 
     # Override regularization options if provided
     if app.ARGS.reg:
-        config['rec-reg'] = float(app.ARGS.reg)
+        config['global']['rec-reg'] = float(app.ARGS.reg)
     if app.ARGS.zreg:
-        config['rec-zreg'] = float(app.ARGS.zreg)
+        config['global']['rec-zreg'] = float(app.ARGS.zreg)
 
     # SSP option
     ssp_option = ''
