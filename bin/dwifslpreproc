@@ -514,7 +514,7 @@ def execute(): #pylint: disable=unused-variable
       app.console('DWIs and SE-EPI images used for inhomogeneity field estimation are defined on different image grids; '
                   'the latter will be automatically re-gridded to match the former')
       new_se_epi_path = 'se_epi_regrid.mif'
-      run.command('mrtransform ' + se_epi_path + ' - -interp sinc -template dwi.mif | mrcalc - 0.0 -max ' + new_se_epi_path)
+      run.command('mrtransform ' + se_epi_path + ' - -reorient_fod no -interp sinc -template dwi.mif | mrcalc - 0.0 -max ' + new_se_epi_path)
       app.cleanup(se_epi_path)
       se_epi_path = new_se_epi_path
       se_epi_header = image.Header(se_epi_path)
