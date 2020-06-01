@@ -1189,6 +1189,9 @@ def execute(): #pylint: disable=unused-variable
     keyval = json.load(input_json_file)
   for key in keys_to_remove:
     keyval.pop(key, None)
+  # Make sure to use the revised diffusion gradient table rather than that of the input;
+  #  incorporates motion correction, and possibly also the explicit volume recombination
+  keyval['dw_scheme'] = image.Header('result.mif').keyval()['dw_scheme']
   # 'Stash' the phase encoding scheme of the original uncorrected DWIs, since it still
   #   may be useful information at some point in the future but is no longer relevant
   #   for e.g. tracking for different volumes, or performing any geometric corrections
