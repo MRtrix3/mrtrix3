@@ -487,6 +487,8 @@ void run ()
 {
   if (argument.size() % 2)
     throw Exception ("The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
+  if (argument.size() == 2)
+    WARN("Only one contrast provided. If multi-tissue CSD was performed, provide all components to mtnormalise.");
 
   const int order = get_option_value<int> ("order", DEFAULT_POLY_ORDER);
   const float reference_value = get_option_value ("reference", DEFAULT_REFERENCE_VALUE);
