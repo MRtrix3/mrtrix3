@@ -312,5 +312,17 @@ else:
 
 # --- options for 404 sphinx-notfound-page
 
-notfound_context = {'title': 'Page not found', 'body': '<h1>Page not found</h1>\n\nThis page does not exist in this version of the MRtrix3 docs. Sorry about that. Please select the appropriate version and use the menu or search functionality.'}
+notfound_context = {'title': 'Page not found', 'body': '''
+<h1>Page not found</h1>
+<p>
+This page does not exist in the documentation for this version of <em>MRtrix3</em>.
+This is likely to be due to updates we make every so often to the way the documentation is organised.
+</p>
+<p>
+To find the page you're looking for, make sure to select the relevant version, by clicking on the green version string at the bottom left of the page. To figure out which version of <em>MRtrix3</em> you're currently using, use the <pre>-version</pre> option with any <em>MRtrix3</em> command, for example: <pre>mrinfo -version</pre>.
+</p>
+<p>
+Alternatively, if you want to find the corresponding section in this version of the documentation, use the search functionality at the top left of the page.
+</p>
+'''}
 
