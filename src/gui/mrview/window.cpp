@@ -57,6 +57,9 @@ namespace MR
 
       namespace {
 
+        template <class Event> inline QPoint position (Event* event) { return event->pos(); }
+        template <> inline QPoint position (QWheelEvent* event) { return event->position().toPoint(); }
+
         Qt::KeyboardModifiers get_modifier (const char* key, Qt::KeyboardModifiers default_key) {
           std::string value = lowercase (MR::File::Config::get (key));
           if (value.empty())
@@ -1622,7 +1625,7 @@ namespace MR
         buttons_ = event->buttons();
         modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         mouse_displacement_ = QPoint (0,0);
-        mouse_position_ = event->pos();
+        mouse_position_ = position (event);
         mouse_position_.setY (glarea->height() - mouse_position_.y());
       }
 
@@ -1630,7 +1633,7 @@ namespace MR
       template <class Event> void Window::update_mouse_state (Event* event)
       {
         mouse_displacement_ = mouse_position_;
-        mouse_position_ = event->pos();
+        mouse_position_ = position (event);
         mouse_position_.setY (glarea->height() - mouse_position_.y());
         mouse_displacement_ = mouse_position_ - mouse_displacement_;
       }
