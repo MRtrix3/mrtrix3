@@ -52,12 +52,12 @@ namespace MR
             QVariant headerData (int section, Qt::Orientation orientation, int role) const override;
 
             Qt::ItemFlags flags (const QModelIndex& index) const override {
-              if (!index.isValid()) return 0;
+              if (!index.isValid()) return {};
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
             }
 
             QModelIndex parent (const QModelIndex&) const override {
-              return QModelIndex(); 
+              return {};
             }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const override;
