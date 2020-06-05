@@ -169,7 +169,7 @@ macOS
 1. Update macOS to version 10.10 (Yosemite) or higher (OpenGL 3.3 will
    typically not work on older versions);
 
-2. Install XCode from the Apple Store;
+2. Install XCode from the `App Store <https://apps.apple.com/us/app/xcode/id497799835?mt=12>`__;
 
 3. Install Eigen3 and Qt5. 
 
