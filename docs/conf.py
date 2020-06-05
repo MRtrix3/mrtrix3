@@ -319,7 +319,7 @@ This page does not exist in the documentation for this version of <em>MRtrix3</e
 This is likely to be due to updates we make every so often to the way the documentation is organised.
 </p>
 <p>
-To find the page you're looking for, make sure to select the relevant version, by clicking on the green version string at the bottom left of the page. To figure out which version of <em>MRtrix3</em> you're currently using, use the <pre>-version</pre> option with any <em>MRtrix3</em> command, for example: <pre>mrinfo -version</pre>.
+To find the page you're looking for, make sure to select the relevant version, by clicking on the green version string at the bottom of the menu. To figure out which version of <em>MRtrix3</em> you're currently using, use the <code>-version</code> option with any <em>MRtrix3</em> command, for example: <code>mrinfo -version</code>.
 </p>
 <p>
 Alternatively, if you want to find the corresponding section in this version of the documentation, use the search functionality at the top left of the page.
