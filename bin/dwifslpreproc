@@ -938,7 +938,7 @@ def execute(): #pylint: disable=unused-variable
                            + exception_openmp.stdout
         exception_stderr = eddy_cuda_header \
                            + exception_cuda.stderr \
-                           + '\n\n'
+                           + '\n\n' \
                            + eddy_openmp_header \
                            + exception_openmp.stderr
         raise run.MRtrixCmdError('eddy* ' + eddy_all_options,
