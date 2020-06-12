@@ -54,7 +54,7 @@ namespace MR
             }
 
             Qt::ItemFlags flags (const QModelIndex& index) const override {
-              if (!index.isValid()) return 0;
+              if (!index.isValid()) return Qt::ItemFlags();
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
             }
 
