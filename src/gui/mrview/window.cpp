@@ -1623,16 +1623,16 @@ namespace MR
         inline typename std::enable_if<std::is_same<EventType, QMouseEvent>::value, QPoint>::type
         grab_mouse_position (EventType& event)
         {
-          return event.globalPos();
+          return event.pos();
         }
         template <class EventType>
         inline typename std::enable_if<std::is_same<EventType, QWheelEvent>::value, QPoint>::type
         grab_mouse_position (EventType& event)
         {
-#if QT_VERSION >= 0x050F00
-          return event.globalPosition().toPoint();
+#if QT_VERSION >= 0x050E00
+          return event.position().toPoint();
 #else
-          return event.globalPos();
+          return event.pos();
 #endif
         }
       }
