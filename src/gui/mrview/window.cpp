@@ -1617,12 +1617,27 @@ namespace MR
       }
 
 
+      namespace
+      {
+        template <class EventType>
+        inline typename std::enable_if<std::is_same<EventType, QMouseEvent>::value, QPoint>::type
+        grab_mouse_position (EventType& event)
+        {
+          return event.globalPos();
+        }
+        template <class EventType>
+        inline typename std::enable_if<std::is_same<EventType, QWheelEvent>::value, QPoint>::type
+        grab_mouse_position (EventType& event)
+        {
+          return event.globalPosition().toPoint();
+        }
+      }
       template <class Event> void Window::grab_mouse_state (Event* event)
       {
         buttons_ = event->buttons();
         modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         mouse_displacement_ = QPoint (0,0);
-        mouse_position_ = event->pos();
+        mouse_position_ = grab_mouse_position (*event);
         mouse_position_.setY (glarea->height() - mouse_position_.y());
       }
 

@@ -332,7 +332,7 @@ namespace MR
 
       void RenderFrame::wheelEvent (QWheelEvent* event)
       {
-        int scroll = event->delta() / 120;
+        int scroll = event->angleDelta().y() / 120;
         for (int n = 0; n < scroll; n++) scale *= ScaleInc;
         for (int n = 0; n > scroll; n--) scale /= ScaleInc;
         update();

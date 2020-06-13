@@ -292,7 +292,7 @@ namespace MR
 
           transparent_intensity = new AdjustButton (this);
           connect (transparent_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
-          hlayout->addWidget (transparent_intensity, 0, 0);
+          hlayout->addWidget (transparent_intensity);
 
           opaque_intensity = new AdjustButton (this);
           connect (opaque_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
