@@ -48,18 +48,18 @@ namespace MR
             Matrix_list_model (Connectome* parent);
 
             QVariant data (const QModelIndex& index, int role) const override {
-              if (!index.isValid()) return QVariant();
-              if (role != Qt::DisplayRole) return QVariant();
+              if (!index.isValid()) return {};
+              if (role != Qt::DisplayRole) return {};
               return qstr (shorten (items[index.row()].get_name().toStdString(), 35, 0));
             }
 
             Qt::ItemFlags flags (const QModelIndex& index) const override {
-              if (!index.isValid()) return Qt::ItemFlags();
+              if (!index.isValid()) return {};
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
             }
 
             QModelIndex parent (const QModelIndex&) const override {
-              return QModelIndex();
+              return {};
             }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const override {

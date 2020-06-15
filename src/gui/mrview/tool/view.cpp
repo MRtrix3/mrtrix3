@@ -63,11 +63,11 @@ namespace MR
               QAbstractItemModel (parent) { }
 
             QVariant data (const QModelIndex& index, int role) const {
-              if (!index.isValid()) return QVariant();
+              if (!index.isValid()) return {};
               if (role == Qt::CheckStateRole) {
                 return planes[index.row()].active ? Qt::Checked : Qt::Unchecked;
               }
-              if (role != Qt::DisplayRole) return QVariant();
+              if (role != Qt::DisplayRole) return {};
               return qstr (planes[index.row()].name);
             }
 
@@ -81,7 +81,7 @@ namespace MR
             }
 
             Qt::ItemFlags flags (const QModelIndex& index) const {
-              if (!index.isValid()) return Qt::ItemFlags();
+              if (!index.isValid()) return {};
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
             }
 
@@ -91,7 +91,7 @@ namespace MR
               return createIndex (row, column);
             }
 
-            QModelIndex parent (const QModelIndex&) const { return QModelIndex(); }
+            QModelIndex parent (const QModelIndex&) const { return {}; }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const
             {

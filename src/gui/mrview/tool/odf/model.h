@@ -44,8 +44,8 @@ namespace MR
               QAbstractItemModel (parent) { }
 
             QVariant data (const QModelIndex& index, int role) const {
-              if (!index.isValid()) return QVariant();
-              if (role != Qt::DisplayRole) return QVariant();
+              if (!index.isValid()) return {};
+              if (role != Qt::DisplayRole) return {};
               return qstr (shorten (items[index.row()]->image.get_filename(), 35, 0));
             }
 
@@ -54,12 +54,12 @@ namespace MR
             }
 
             Qt::ItemFlags flags (const QModelIndex& index) const {
-              if (!index.isValid()) return Qt::ItemFlags();
+              if (!index.isValid()) return {};
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
             }
 
             QModelIndex parent (const QModelIndex&) const {
-              return QModelIndex();
+              return {};
             }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const {

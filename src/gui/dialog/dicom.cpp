@@ -103,7 +103,7 @@ namespace MR
             }
 
             Qt::ItemFlags flags (const QModelIndex& index) const {
-              if (!index.isValid()) return Qt::ItemFlags();
+              if (!index.isValid()) return {};
               return (Qt::ItemIsEnabled | Qt::ItemIsSelectable);
             }
 
