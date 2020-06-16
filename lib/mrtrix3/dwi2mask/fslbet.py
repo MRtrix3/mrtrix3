@@ -68,7 +68,11 @@ def execute(): #pylint: disable=unused-variable
   run.command(cmd_string)
   mask = fsl.find_image('DWI_BET_mask')
 
+  strides = image.Header('input.mif').strides()[0:3]
+  strides = [value + 1 - min(abs(v) for v in strides) for value in strides]
   run.command('mrconvert ' + mask + ' ' + path.from_user(app.ARGS.output)
-              + (' -vox ' + ','.join(str(value) for value in vox) if app.ARGS.rescale else ''),
+              + (' -vox ' + ','.join(str(value) for value in vox) if app.ARGS.rescale else '')
+              + ' -strides ' + ','.join(str(value) for value in strides)
+              + ' -datatype bit',
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
               force=app.FORCE_OVERWRITE)
