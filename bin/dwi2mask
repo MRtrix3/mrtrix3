@@ -23,10 +23,10 @@
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import algorithm, app #pylint: disable=no-name-in-module, import-outside-toplevel
 
-  cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)')
+  cmdline.set_author('Warda Syeda (wtsyeda@unimelb.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Generate binary mask for DWI data')
-  cmdline.add_description('')
-  cmdline.add_description('Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the \'?\' algorithm, type \'dwi2mask ?\'.')
+  cmdline.add_description('Create a brain mask for DWI data')
+  cmdline.add_description('Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the \'fslbet\' algorithm, type \'dwi2mask fslbet\'.')
 
   # General options
   #common_options = cmdline.add_argument_group('General dwi2mask options')
