@@ -22,7 +22,7 @@ from mrtrix3 import app, fsl, image, path, run, utils
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('fslbet', parents=[base_parser])
-  parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Warda Syeda (wtsyeda@unimelb.edu.au)')
+  parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use FSL commands to generate mask image using BET')
   parser.add_citation('Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155', is_external=True)
   parser.add_argument('input',  help='The input DWI image')
@@ -31,8 +31,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-f', metavar='<f float>', help='Fractional intensity threshold (0->1); default=0.5; smaller values give larger brain outline estimates')  #Ask Robert: how to add metavar for float?
   options.add_argument('-g', metavar='<g float>', help='vertical gradient in fractional intensity threshold (-1->1); default=0; positive values give larger brain outline at bottom, smaller at top')
   options.add_argument('-c', metavar='<x float y float z float>', help='centre-of-gravity (voxels not mm) of initial mesh surface.')
-  options.add_argument('-r', metavar='<r float>', help='')
-  options.add_argument('-rescale', action='store_true', help='')
+  options.add_argument('-r', metavar='<r float>', help='head radius (mm not voxels); initial surface sphere is set to half of this')
+  options.add_argument('-rescale', action='store_true', help=' Use this option to rescale voxel size to 1mm isotropic, works best for rodent data')
 
 
 
