@@ -306,7 +306,7 @@ that they support. The :ref:`mrtrix_image_formats` are the only formats to
 support arbitrary combinations.
 
 .. NOTE::
-  Not all image formats support all possible datatypes. The
+  Not all image formats support all possible stride combinations. The
   :ref:`mrtrix_image_formats` are designed to handle arbitrary strides, while
   other image formats may only support a limited subset.  When strides are
   requested that are not supported by the image format, a hopefully suitable
