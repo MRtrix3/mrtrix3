@@ -98,12 +98,12 @@ namespace MR
               }),
 
           Entry ("PET",
-              "color.r = 2.0*amplitude - 0.5;\n"
+              "color.r = clamp (2.0*amplitude - 0.5, 0.0, 1.0);\n"
               "color.g = clamp (2.0 * (0.25 - abs (amplitude - 0.25)), 0.0, 1.0) + clamp (2.0*amplitude - 1.0, 0.0, 1.0);\n"
               "color.b = 1.0 - (clamp (1.0 - 2.0 * amplitude, 0.0, 1.0) + clamp (1.0 - 4.0 * abs (amplitude - 0.75), 0.0, 1.0));\n",
               [] (float amplitude) { return Eigen::Array3f (clamp (2.0f * amplitude - 0.5f),
-                                                            clamp (0.25f - abs (amplitude - 0.25f)) + clamp (2.0f * (amplitude - 0.5)),
-                                                            clamp (1.0f - 2.0f * amplitude) + clamp (1.0 - 4.0 * abs (amplitude - 0.75))); }),
+                                                            clamp (2.0f * (0.25f - abs (amplitude - 0.25f))) + clamp (2.0f * amplitude - 1.0f),
+                                                            1.0f - (clamp (1.0f - 2.0f * amplitude) + clamp (1.0f - 4.0f * abs (amplitude - 0.75f)))); }),
 
           Entry ("Colour",
               "color.rgb = amplitude * colourmap_colour;\n",
