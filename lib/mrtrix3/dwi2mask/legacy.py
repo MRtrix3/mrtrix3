@@ -45,9 +45,11 @@ def execute(): #pylint: disable=unused-variable
               'mrcalc 1 - -sub - | '
               'maskfilter - connect -largest - | '
               'mrcalc 1 - -sub - | '
-              'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' mask.mif')
+              'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' init_mask.mif')
+  run.command('mrmath input_nonneg.mif max -axis 3 - | '
+              'mrcalc - 0.0 -gt init_mask.mif -mult final_mask.mif -datatype bit')
 
-  run.command('mrconvert mask.mif '
+  run.command('mrconvert final_mask.mif '
               + path.from_user(app.ARGS.output),
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
               force=app.FORCE_OVERWRITE)
