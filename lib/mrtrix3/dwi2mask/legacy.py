@@ -34,6 +34,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
+def get_inputs():
+  pass
+
+
+
 def execute(): #pylint: disable=unused-variable
 
   run.command('mrcalc input.mif 0 -max input_nonneg.mif')
