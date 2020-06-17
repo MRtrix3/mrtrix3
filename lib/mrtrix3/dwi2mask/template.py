@@ -13,7 +13,10 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+import os
 from distutils.spawn import find_executable
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, fsl, image, path, run
 
 SOFTWARES = ['ants', 'fsl']
 
@@ -21,6 +24,12 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('template', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Register the mean b=0 image to a T2-weighted template to back-propagate a brain mask')
+  parser.add_citation('M. Jenkinson, C.F. Beckmann, T.E. Behrens, M.W. Woolrich, S.M. Smith. FSL. NeuroImage, 62:782-90, 2012',
+                      condition='If FSL software is used for registration',
+                      is_external=True)
+  parser.add_citation('B. Avants, N.J. Tustison, G. Song, P.A. Cook, A. Klein, J.C. Jee. A reproducible evaluation of ANTs similarity metric performance in brain image registration. NeuroImage, 2011, 54, 2033-2044',
+                      condition='If ANTs software is used for registration',
+                      is_external=True)
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the "template" algorithm')
@@ -29,15 +38,12 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
-
-def get_inputs():
+def get_inputs(): #pylint: disable=unused-variable
   pass
 
 
 
-
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import fsl, run
 
   # TODO What image to generate here depends on the template:
   # - If a good T2-weighted template is found, use the mean b=0 image
@@ -72,11 +78,11 @@ def execute(): #pylint: disable=unused-variable
     fnirt_cmd = fsl.exe_name('fnirt')
     invwarp_cmd = fsl.exe_name('invwarp')
     applywarp_cmd = fsl.exe_name('applywarp')
-    fnirt_config_basename = 'T1_2_MNI152_2mm.cnf'
-    fnirt_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', fnirt_config_basename)
-    if not os.path.isfile(self.fnirt_config_path):
-      raise MRtrixError('Unable to find configuration file for FNI FNIRT '
-                        + '(expected location: ' + fnirt_config_path + ')')
+    # fnirt_config_basename = 'T1_2_MNI152_2mm.cnf'
+    # fnirt_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', fnirt_config_basename)
+    # if not os.path.isfile(fnirt_config_path):
+    #   raise MRtrixError('Unable to find configuration file for FNI FNIRT '
+    #                     + '(expected location: ' + fnirt_config_path + ')')
   else:
     assert False
 
@@ -106,16 +112,18 @@ def execute(): #pylint: disable=unused-variable
                 + ' -ref ' + app.ARGS.template[0]
                 + ' -in bzero.nii'
                 + ' -omat bzero_to_template.mat'
-                + ' -dof 12')
+                + ' -dof 12'
+                + (' -v' if app.VERBOSITY >= 3 else ''))
 
     # Non-linear registration to template
     # Note: Unmasked
     run.command(fnirt_cmd
-                + ' --config=' + fnirt_config_path
+                #+ ' --config=' + fnirt_config_path
                 + ' --ref=' + app.ARGS.template[0]
                 + ' --in=bzero.nii'
                 + ' --aff=bzero_to_template.mat'
-                + ' --cout=bzero_to_template.nii')
+                + ' --cout=bzero_to_template.nii'
+                + (' --verbose' if app.VERBOSITY >= 3 else ''))
     fnirt_output_path = fsl.find_image('bzero_to_template')
 
     # Invert non-linear warp from subject->template to template->subject
@@ -126,7 +134,8 @@ def execute(): #pylint: disable=unused-variable
     invwarp_output_path = fsl.find_image('template_to_bzero')
 
     # Transform mask image from template to subject
-    # Note: Don't use nearest-neighbour interpolation
+    # Note: Don't use nearest-neighbour interpolation;
+    #   allow "partial volume fractions" in output, and threshold later
     run.command(applywarp_cmd
                 + ' --ref=bzero.nii'
                 + ' --in=' + app.ARGS.template[1]
@@ -137,18 +146,20 @@ def execute(): #pylint: disable=unused-variable
   else:
     assert False
 
-  # Instead of neaerest-neighbour interpolation,
+  # Instead of neaerest-neighbour interpolation during transformation,
   #   apply a threshold of 0.5 at this point
   run.command('mrthreshold '
               + mask_path
               + ' mask.mif -abs 0.5')
 
+  # Make relative strides of three spatial axes of output mask equivalent
+  #   to input DWI; this may involve decrementing magnitude of stride
+  #   if the input DWI is volume-contiguous
   strides = image.Header('input.mif').strides()[0:3]
-  strides = [value + 1 - min(abs(v) for v in strides) for value in strides]
+  strides = [(abs(value) + 1 - min(abs(v) for v in strides)) * (-1 if value < 0 else 1) for value in strides]
 
   run.command('mrconvert mask.mif '
               + path.from_user(app.ARGS.output)
-              + ' -strides ' + ','.join(str(value) for value in strides)
-              + ' -datatype bit',
+              + ' -strides ' + ','.join(str(value) for value in strides),
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
               force=app.FORCE_OVERWRITE)
