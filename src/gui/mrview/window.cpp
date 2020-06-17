@@ -62,7 +62,7 @@ namespace MR
 #if QT_VERSION >= 0x050E00 // translates to 5.14.0
           return event->position().toPoint();
 #else
-          return event->pos().toPoint();
+          return event->pos();
 #endif
         }
 
