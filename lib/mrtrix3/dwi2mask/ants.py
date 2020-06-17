@@ -18,6 +18,10 @@ from distutils.spawn import find_executable
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run
 
+
+ANTS_BRAIN_EXTRACTION_CMD = 'antsBrainExtraction.sh'
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('ants', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -46,10 +50,9 @@ def execute(): #pylint: disable=unused-variable
   if not ants_path:
     raise MRtrixError('Environment variable ANTSPATH is not set; '
                       'please appropriately confirure ANTs software')
-  ants_brain_extraction_cmd = find_executable('antsBrainExtraction.sh')
-  if not ants_brain_extraction_cmd:
+  if not find_executable(ANTS_BRAIN_EXTRACTION_CMD):
     raise MRtrixError('Unable to find command "'
-                      + ants_brain_extraction_cmd
+                      + ANTS_BRAIN_EXTRACTION_CMD
                       + '"; please check ANTs installation')
 
   # Produce mean b=0 image
@@ -57,7 +60,7 @@ def execute(): #pylint: disable=unused-variable
               'mrmath - mean - -axis 3 | '
               'mrconvert - bzero.nii -strides +1,+2,+3')
 
-  run.command('antsBrainExtraction.sh '
+  run.command(ANTS_BRAIN_EXTRACTION_CMD
               + ' -d 3'
               + ' -c 3x3x2x1'
               + ' -a bzero.nii'
