@@ -58,7 +58,13 @@ namespace MR
       namespace {
 
         template <class Event> inline QPoint position (Event* event) { return event->pos(); }
-        template <> inline QPoint position (QWheelEvent* event) { return event->position().toPoint(); }
+        template <> inline QPoint position (QWheelEvent* event) {
+#if QT_VERSION >= 0x050E00 // translates to 5.14.0
+          return event->position().toPoint();
+#else
+          return event->pos().toPoint();
+#endif
+        }
 
         Qt::KeyboardModifiers get_modifier (const char* key, Qt::KeyboardModifiers default_key) {
           std::string value = lowercase (MR::File::Config::get (key));
