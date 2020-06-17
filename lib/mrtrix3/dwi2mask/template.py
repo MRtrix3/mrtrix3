@@ -100,7 +100,7 @@ def execute(): #pylint: disable=unused-variable
                 + ' -e ' + app.ARGS.template[0]
                 + ' -m ' + app.ARGS.template[1]
                 + ' -o mask.nii'
-                + ('' if app.DO_CLEANUP else ' -k')
+                + ('' if app.DO_CLEANUP else ' -k 1')
                 + (' -z' if app.VERBOSITY >= 3 else ''))
 
     mask_path = 'mask.nii'
