@@ -29,6 +29,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
+def get_inputs(): #pylint: disable=unused-variable
+  pass
+
+
+
 def execute(): #pylint: disable=unused-variable
   hdbet_cmd = find_executable('hd-bet')
   if not hdbet_cmd:

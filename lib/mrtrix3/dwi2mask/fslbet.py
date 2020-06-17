@@ -35,6 +35,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
+def get_inputs(): #pylint: disable=unused-variable
+  pass
+
+
+
 def execute(): #pylint: disable=unused-variable
   if not os.environ.get('FSLDIR', ''):
     raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
@@ -69,7 +74,7 @@ def execute(): #pylint: disable=unused-variable
   mask = fsl.find_image('DWI_BET_mask')
 
   strides = image.Header('input.mif').strides()[0:3]
-  strides = [value + 1 - min(abs(v) for v in strides) for value in strides]
+  strides = [(abs(value) + 1 - min(abs(v) for v in strides)) * (-1 if value < 0 else 1) for value in strides]
   run.command('mrconvert ' + mask + ' ' + path.from_user(app.ARGS.output)
               + (' -vox ' + ','.join(str(value) for value in vox) if app.ARGS.rescale else '')
               + ' -strides ' + ','.join(str(value) for value in strides)
