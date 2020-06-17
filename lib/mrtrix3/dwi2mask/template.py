@@ -99,11 +99,11 @@ def execute(): #pylint: disable=unused-variable
                 + ' -a bzero.nii'
                 + ' -e ' + app.ARGS.template[0]
                 + ' -m ' + app.ARGS.template[1]
-                + ' -o mask.nii'
+                + ' -o out'
                 + ('' if app.DO_CLEANUP else ' -k 1')
                 + (' -z' if app.VERBOSITY >= 3 else ''))
 
-    mask_path = 'mask.nii'
+    mask_path = 'outBrainExtractionMask.nii.gz'
 
   elif reg_software == 'fsl':
 
@@ -141,16 +141,19 @@ def execute(): #pylint: disable=unused-variable
                 + ' --in=' + app.ARGS.template[1]
                 + ' --warp=' + invwarp_output_path
                 + ' --out=mask.nii')
-    mask_path = fsl.find_image('mask.nii')
+    applywarp_output_path = fsl.find_image('mask.nii')
+
+    # Instead of neaerest-neighbour interpolation during transformation,
+    #   apply a threshold of 0.5 at this point
+    mask_path = 'mask.mif'
+    run.command('mrthreshold '
+                + applywarp_output_path
+                + ' '
+                + mask_path
+                + ' -abs 0.5')
 
   else:
     assert False
-
-  # Instead of neaerest-neighbour interpolation during transformation,
-  #   apply a threshold of 0.5 at this point
-  run.command('mrthreshold '
-              + mask_path
-              + ' mask.mif -abs 0.5')
 
   # Make relative strides of three spatial axes of output mask equivalent
   #   to input DWI; this may involve decrementing magnitude of stride
@@ -158,7 +161,9 @@ def execute(): #pylint: disable=unused-variable
   strides = image.Header('input.mif').strides()[0:3]
   strides = [(abs(value) + 1 - min(abs(v) for v in strides)) * (-1 if value < 0 else 1) for value in strides]
 
-  run.command('mrconvert mask.mif '
+  run.command('mrconvert '
+              + mask_path
+              + ' '
               + path.from_user(app.ARGS.output)
               + ' -strides ' + ','.join(str(value) for value in strides),
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
