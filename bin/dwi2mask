@@ -47,13 +47,15 @@ def execute(): #pylint: disable=unused-variable
   image.check_3d_nonunity(input_header)
   grad_import_option = app.read_dwgrad_import_options()
   if not grad_import_option and 'dw_scheme' not in input_header.keyval():
-    raise MRtrixError('Script requires diffusion gradient table: either in image header, or using -grad / -fslgrad option')
+    raise MRtrixError('Script requires diffusion gradient table: '
+                      'either in image header, or using -grad / -fslgrad option')
 
   app.make_scratch_dir()
 
-  # Get standard input data into the scratch directory
-  app.console('Importing DWI data (' + path.from_user(app.ARGS.input) + ')...')
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif') + ' -strides 0,0,0,1' + grad_import_option, show=False)
+  # Get input data into the scratch directory
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif')
+              + ' -strides 0,0,0,1' + grad_import_option)
+  alg.get_inputs()
 
   app.goto_scratch_dir()
 
