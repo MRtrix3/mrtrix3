@@ -55,7 +55,7 @@ def execute(): #pylint: disable=unused-variable
       raise run.MRtrixCmdError('hd-bet', 1, exception_stdout, exception_stderr)
 
   strides = image.Header('input.mif').strides()[0:3]
-  strides = [value + 1 - min(abs(v) for v in strides) for value in strides]
+  strides = [(abs(value) + 1 - min(abs(v) for v in strides)) * (-1 if value < 0 else 1) for value in strides]
 
   run.command('mrconvert bzero_bet_mask.nii.gz '
               + path.from_user(app.ARGS.output)
