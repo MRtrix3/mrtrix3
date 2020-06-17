@@ -36,20 +36,18 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
 
-  run.command('dwishellmath input.mif mean trace.mif')
-
-  # TODO From here to final export can be done using pipes
-  run.command('mrthreshold trace.mif shell_masks.mif -comparison gt')
-  run.command('mrmath shell_masks.mif max -axis 3 init_combined_mask.mif')
-  run.command('mrfilter init_combined_mask.mif median median_filtered_mask.mif')
-  run.command('maskfilter median_filtered_mask.mif connect -largest - | '
+  run.command('mrcalc input.mif 0 -max input_nonneg.mif')
+  run.command('dwishellmath input_nonneg.mif mean trace.mif')
+  run.command('mrthreshold trace.mif - -comparison gt | '
+              'mrmath - max -axis 3 - | '
+              'maskfilter - median - | '
+              'maskfilter - connect -largest - | '
               'mrcalc 1 - -sub - | '
               'maskfilter - connect -largest - | '
               'mrcalc 1 - -sub - | '
-              'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' final_mask.mif')
+              'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' mask.mif')
 
-  run.command('mrconvert final_mask.mif '
-              + path.from_user(app.ARGS.output)
-              + ' -datatype bit',
+  run.command('mrconvert mask.mif '
+              + path.from_user(app.ARGS.output),
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
               force=app.FORCE_OVERWRITE)
