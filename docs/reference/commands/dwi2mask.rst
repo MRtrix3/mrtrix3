@@ -1,65 +1,67 @@
 .. _dwi2mask:
 
 dwi2mask
-===================
+========
 
 Synopsis
 --------
 
-Generates a whole brain mask from a DWI image
+Generate a binary mask from DWI data
 
 Usage
---------
+-----
 
 ::
 
-    dwi2mask [ options ]  input output
+    dwi2mask algorithm [ options ] ...
 
--  *input*: the input DWI image containing volumes that are both diffusion weighted and b=0
--  *output*: the output whole-brain mask image
+-  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: fslbet, hdbet, legacy, template
 
 Description
 -----------
 
-All diffusion weighted and b=0 volumes are used to obtain a mask that includes both brain tissue and CSF.
-
-In a second step peninsula-like extensions, where the peninsula itself is wider than the bridge connecting it to the mask, are removed. This may help removing artefacts and non-brain parts, e.g. eyes, from the mask.
+This script serves as an interface for many different algorithms that generate a binary mask from DWI data in different ways. Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the 'fslbet' algorithm, type 'dwi2mask fslbet'.
 
 Options
 -------
 
--  **-clean_scale value** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-DW gradient table import options
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- **-grad** Provide the diffusion gradient table in MRtrix format
 
--  **-grad file** Provide the diffusion-weighted gradient scheme used in the acquisition in a text file. This should be supplied as a 4xN text file with each line is in the format [ X Y Z b ], where [ X Y Z ] describe the direction of the applied gradient, and b gives the b-value in units of s/mm^2. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
--  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
 
 Standard options
 ^^^^^^^^^^^^^^^^
 
--  **-info** display information messages.
+- **-info** display information messages.
 
--  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+- **-debug** display debugging messages.
 
--  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
+- **-force** force overwrite of output files.
 
--  **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
 
--  **-config key value** *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
 
--  **-help** display this information page and exit.
+- **-help** display this information page and exit.
 
--  **-version** display version information and exit.
+- **-version** display version information and exit.
 
 References
 ^^^^^^^^^^
-
-Dhollander T, Raffelt D, Connelly A. Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
@@ -67,7 +69,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au), Thijs Dhollander (thijs.dhollander@gmail.com) and Ben Jeurissen (ben.jeurissen@uantwerpen.be)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and Warda Syeda (wtsyeda@unimelb.edu.au)
 
 **Copyright:** Copyright (c) 2008-2020 the MRtrix3 contributors.
 
@@ -84,4 +86,374 @@ See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 
+.. _dwi2mask_fslbet:
+
+dwi2mask fslbet
+===============
+
+Synopsis
+--------
+
+Use the FSL Brain Extraction Tool (bet) to generate a brain mask
+
+Usage
+-----
+
+::
+
+    dwi2mask fslbet input output [ options ]
+
+-  *input*: The input DWI series
+-  *output*: The output mask image
+
+Options
+-------
+
+Options specific to the 'fslbet' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-bet_f** Fractional intensity threshold (0->1); smaller values give larger brain outline estimates
+
+- **-bet_g** Vertical gradient in fractional intensity threshold (-1->1); positive values give larger brain outline at bottom, smaller at top
+
+- **-bet_c <x y z>** Centre-of-gravity (voxels not mm) of initial mesh surface
+
+- **-bet_r** Head radius (mm not voxels); initial surface sphere is set to half of this
+
+- **-rescale** Rescale voxel size provided to BET to 1mm isotropic; can improve results for rodent data
+
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages.
+
+- **-force** force overwrite of output files.
+
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+
+- **-help** display this information page and exit.
+
+- **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+* Smith, S. M. Fast robust automated brain extraction. Human Brain Mapping, 2002, 17, 143-155
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
+--------------
+
+
+
+**Author:** Warda Syeda (wtsyeda@unimelb.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)
+
+**Copyright:** Copyright (c) 2008-2020 the MRtrix3 contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
+
+For more details, see http://www.mrtrix.org/.
+
+.. _dwi2mask_hdbet:
+
+dwi2mask hdbet
+==============
+
+Synopsis
+--------
+
+Use HD-BET to derive a brain mask from the DWI mean b=0 image
+
+Usage
+-----
+
+::
+
+    dwi2mask hdbet input output [ options ]
+
+-  *input*: The input DWI series
+-  *output*: The output mask image
+
+Options
+-------
+
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages.
+
+- **-force** force overwrite of output files.
+
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+
+- **-help** display this information page and exit.
+
+- **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+* Isensee F, Schell M, Tursunova I, Brugnara G, Bonekamp D, Neuberger U, Wick A, Schlemmer HP, Heiland S, Wick W, Bendszus M, Maier-Hein KH, Kickingereder P. Automated brain extraction of multi-sequence MRI using artificial neural networks. Hum Brain Mapp. 2019; 1–13. https://doi.org/10.1002/hbm.24750
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
+--------------
+
+
+
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+
+**Copyright:** Copyright (c) 2008-2020 the MRtrix3 contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
+
+For more details, see http://www.mrtrix.org/.
+
+.. _dwi2mask_legacy:
+
+dwi2mask legacy
+===============
+
+Synopsis
+--------
+
+Use the legacy MRtrix3 dwi2mask heuristic (based on thresholded trace images)
+
+Usage
+-----
+
+::
+
+    dwi2mask legacy input output [ options ]
+
+-  *input*: The input DWI series
+-  *output*: The output mask image
+
+Options
+-------
+
+- **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages.
+
+- **-force** force overwrite of output files.
+
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+
+- **-help** display this information page and exit.
+
+- **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
+--------------
+
+
+
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+
+**Copyright:** Copyright (c) 2008-2020 the MRtrix3 contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
+
+For more details, see http://www.mrtrix.org/.
+
+.. _dwi2mask_template:
+
+dwi2mask template
+=================
+
+Synopsis
+--------
+
+Register the mean b=0 image to a T2-weighted template to back-propagate a brain mask
+
+Usage
+-----
+
+::
+
+    dwi2mask template input output [ options ]
+
+-  *input*: The input DWI series
+-  *output*: The output mask image
+
+Description
+-----------
+
+This script currently assumes that the template image provided via the -template option is T2-weighted, and can therefore be trivially registered to a mean b=0 image.
+
+Options
+-------
+
+Options specific to the "template" algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-software** The software to use for template registration; options are: ants,fsl; default is fsl
+
+- **-template TemplateImage MaskImage** Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.
+
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages.
+
+- **-force** force overwrite of output files.
+
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+
+- **-help** display this information page and exit.
+
+- **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+* If FSL software is used for registration: M. Jenkinson, C.F. Beckmann, T.E. Behrens, M.W. Woolrich, S.M. Smith. FSL. NeuroImage, 62:782-90, 2012
+
+* If ANTs software is used for registration: B. Avants, N.J. Tustison, G. Song, P.A. Cook, A. Klein, J.C. Jee. A reproducible evaluation of ANTs similarity metric performance in brain image registration. NeuroImage, 2011, 54, 2033-2044
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
+--------------
+
+
+
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+
+**Copyright:** Copyright (c) 2008-2020 the MRtrix3 contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
+
+For more details, see http://www.mrtrix.org/.
 
