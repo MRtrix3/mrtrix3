@@ -24,6 +24,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('template', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Register the mean b=0 image to a T2-weighted template to back-propagate a brain mask')
+  parser.add_description('This script currently assumes that the template image provided via the -template option '
+                         'is T2-weighted, and can therefore be trivially registered to a mean b=0 image.')
   parser.add_citation('M. Jenkinson, C.F. Beckmann, T.E. Behrens, M.W. Woolrich, S.M. Smith. FSL. NeuroImage, 62:782-90, 2012',
                       condition='If FSL software is used for registration',
                       is_external=True)
@@ -39,13 +41,18 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  pass
+  if not app.ARGS.template:
+    raise MRtrixError('For "template" dwi2mask algorithm, '
+                      '-template command-line option is currently mandatory')
+  run.command('mrconvert ' + app.ARGS.template[0] + ' ' + path.to_scratch('template_image.nii')
+              + ' -strides +1,+2,+3')
+  run.command('mrconvert ' + app.ARGS.template[1] + ' ' + path.to_scratch('template_mask.nii')
+              + ' -strides +1,+2,+3')
 
 
 
 def execute(): #pylint: disable=unused-variable
-
-  # TODO What image to generate here depends on the template:
+  # What image to generate here depends on the template:
   # - If a good T2-weighted template is found, use the mean b=0 image
   # - If a T1-weighted template is to be used, can't use histogram
   #   matching (relies on a good brain mask), and can't use MT-CSD
@@ -53,10 +60,8 @@ def execute(): #pylint: disable=unused-variable
   #   APM doesn't seem to do particularly well for unmasked data...
   # - Could use FA or MD templates from FSL / HCP? Might also struggle
   #   with non-brain data
-
-  if not app.ARGS.template:
-    raise MRtrixError('For "template" dwi2mask algorithm, '
-                      '-template command-line option is currently mandatory')
+  #
+  # For now, script assumes T2-weighted template image.
 
   reg_software = app.ARGS.software if app.ARGS.software else 'fsl'
   if reg_software == 'ants':
@@ -78,11 +83,11 @@ def execute(): #pylint: disable=unused-variable
     fnirt_cmd = fsl.exe_name('fnirt')
     invwarp_cmd = fsl.exe_name('invwarp')
     applywarp_cmd = fsl.exe_name('applywarp')
-    # fnirt_config_basename = 'T1_2_MNI152_2mm.cnf'
-    # fnirt_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', fnirt_config_basename)
-    # if not os.path.isfile(fnirt_config_path):
-    #   raise MRtrixError('Unable to find configuration file for FNI FNIRT '
-    #                     + '(expected location: ' + fnirt_config_path + ')')
+    fnirt_config_basename = 'T1_2_MNI152_2mm.cnf'
+    fnirt_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', fnirt_config_basename)
+    if not os.path.isfile(fnirt_config_path):
+      raise MRtrixError('Unable to find configuration file for FNI FNIRT '
+                        + '(expected location: ' + fnirt_config_path + ')')
   else:
     assert False
 
@@ -115,11 +120,15 @@ def execute(): #pylint: disable=unused-variable
                 + ' -dof 12'
                 + (' -v' if app.VERBOSITY >= 3 else ''))
 
+    # Produce dilated template mask image, so that registration is not
+    #   too influenced by effects at the edge of the processing mask
+    run.command('maskfilter template_mask.nii dilate template_mask_dilated.nii -npass 3')
+
     # Non-linear registration to template
-    # Note: Unmasked
     run.command(fnirt_cmd
-                #+ ' --config=' + fnirt_config_path
+                + ' --config=' + os.path.splitext(os.path.basename(fnirt_config_path))[0]
                 + ' --ref=' + app.ARGS.template[0]
+                + ' --refmask=template_mask_dilated.nii'
                 + ' --in=bzero.nii'
                 + ' --aff=bzero_to_template.mat'
                 + ' --cout=bzero_to_template.nii'
