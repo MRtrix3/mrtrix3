@@ -52,7 +52,7 @@ def execute(): #pylint: disable=unused-variable
       cpu_header = ('===\nCPU\n===\n')
       exception_stdout = gpu_header + e_gpu.stdout + '\n\n' + cpu_header + e_cpu.stdout + '\n\n'
       exception_stderr = gpu_header + e_gpu.stderr + '\n\n' + cpu_header + e_cpu.stderr + '\n\n'
-      raise run.MRtrixRunError('hd-bet', 1, exception_stdout, exception_stderr)
+      raise run.MRtrixCmdError('hd-bet', 1, exception_stdout, exception_stderr)
 
   strides = image.Header('input.mif').strides()[0:3]
   strides = [value + 1 - min(abs(v) for v in strides) for value in strides]
