@@ -15,7 +15,7 @@
 
 import os
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, fsl, image, path, run
+from mrtrix3 import app, fsl, image, run
 
 
 
@@ -35,23 +35,28 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
+def get_inputs(): #pylint: disable=unused-variable
+  pass
+
+
+
+def needs_mean_bzero(): #pylint: disable=unused-variable
+  return True
+
+
+
 def execute(): #pylint: disable=unused-variable
   if not os.environ.get('FSLDIR', ''):
     raise MRtrixError('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
   bet_cmd = fsl.exe_name('bet')
 
-  # Calculating mean b=0 image for BET
-  run.command('dwiextract input.mif - -bzero | '
-              'mrmath - mean - -axis 3 | '
-              'mrconvert - mean_bzero.nii -strides +1,+2,+3')
-
   # Starting brain masking using BET
   if app.ARGS.rescale:
-    run.command('mrconvert mean_bzero.nii mean_bzero_rescaled.nii -vox 1,1,1')
-    vox = image.Header('mean_bzero.nii').spacing()
-    b0_image = 'mean_bzero_rescaled.nii'
+    run.command('mrconvert bzero.nii bzero_rescaled.nii -vox 1,1,1')
+    vox = image.Header('bzero.nii').spacing()
+    b0_image = 'bzero_rescaled.nii'
   else:
-    b0_image = 'mean_bzero.nii'
+    b0_image = 'bzero.nii'
 
   cmd_string = bet_cmd + ' ' + b0_image + ' DWI_BET -R -m'
 
@@ -68,11 +73,7 @@ def execute(): #pylint: disable=unused-variable
   run.command(cmd_string)
   mask = fsl.find_image('DWI_BET_mask')
 
-  strides = image.Header('input.mif').strides()[0:3]
-  strides = [value + 1 - min(abs(v) for v in strides) for value in strides]
-  run.command('mrconvert ' + mask + ' ' + path.from_user(app.ARGS.output)
-              + (' -vox ' + ','.join(str(value) for value in vox) if app.ARGS.rescale else '')
-              + ' -strides ' + ','.join(str(value) for value in strides)
-              + ' -datatype bit',
-              mrconvert_keyval=path.from_user(app.ARGS.input, False),
-              force=app.FORCE_OVERWRITE)
+  if app.ARGS.rescale:
+    run.command('mrconvert ' + mask + ' mask_rescaled.nii -vox ' + ','.join(str(value) for value in vox))
+    return 'mask_rescaled.nii'
+  return mask
