@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import app, image, path, run
+from mrtrix3 import app, image, run
 
 DEFAULT_CLEAN_SCALE = 2
 
@@ -24,7 +24,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'trace\' algorithm')
-  options.add_argument('-avg_all', action='store_true', help='Average volumes across all shells to create a mean image')
+  options.add_argument('-avg_all', action='store_true', help='Average DWI volumes directly to create an image for thresholding')
   options.add_argument('-shells', help='Comma separated list of shells used for masking')
   parser.add_argument('-clean_scale',
                       type=int,
@@ -34,45 +34,60 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                            'this to 0 disables the mask cleaning step. (Default: ' + str(DEFAULT_CLEAN_SCALE) + ')')
 
 
+
+def get_inputs(): #pylint: disable=unused-variable
+  pass
+
+
+
+def needs_mean_bzero(): #pylint: disable=unused-variable
+  return False
+
+
+
 def execute(): #pylint: disable=unused-variable
 
-  # Averaging shells
+  # Averaging volumes
   if app.ARGS.avg_all:
-    run.command(('dwiextract input.mif - -shells ' + app.ARGS.shells + ' | mrmath - ' if app.ARGS.shells else 'mrmath input.mif ') +
-                'mean - -axis 3 | '
-                'mrthreshold - - | '
-                'mrconvert - mask.mif -strides +1,+2,+3')
+    run.command(('dwiextract input.mif - -shells ' + app.ARGS.shells + ' | mrmath -' \
+                 if app.ARGS.shells \
+                 else 'mrmath input.mif')
+                + ' mean - -axis 3 |'
+                + ' mrthreshold - init_mask.mif')
 
   else:
+
     if app.ARGS.shells:
       run.command('dwiextract input.mif input_shells.mif -shells ' + app.ARGS.shells)
-      run.command('dwishellmath input_shells.mif mean mean_shells.mif')
+      run.command('dwishellmath input_shells.mif mean shell_traces.mif')
     else:
-      run.command('dwishellmath input.mif mean mean_shells.mif')
-    run.command('mrconvert mean_shells.mif -coord 3 0 meanb0.mif')
+      run.command('dwishellmath input.mif mean shell_traces.mif')
+
+    run.command('mrconvert shell_traces.mif -coord 3 0 -axes 0,1,2 shell-00.mif')
 
     # run per-shell histogram matching
-    files = []
-    nImgs=(image.Header('mean_shells.mif').size()).pop()
-    progress = app.ProgressBar('Performing per-shell histogram matching', nImgs)
-    for index in range(nImgs):
+    files = ['shell-00.mif']
+    shell_count = image.Header('shell_traces.mif').size()[-1]
+    progress = app.ProgressBar('Performing per-shell histogram matching', shell_count-1)
+    for index in range(1, shell_count):
       filename = 'shell-{:02d}.mif'.format(index)
-      run.command('mrconvert mean_shells.mif -coord 3 ' + str(index) + ' - | '
-                  'mrhistmatch scale - meanb0.mif ' + filename)
+      run.command('mrconvert shell_traces.mif -coord 3 ' + str(index) + ' - | '
+                  'mrhistmatch scale - shell-00.mif ' + filename)
       files.append(filename)
       progress.increment()
-
-    # concatenate matched shells
-    run.command('mrcat -axis 3 ' + ' '.join(files) + ' cat.mif')
-    run.command('mrmath cat.mif mean - -axis 3 | mrthreshold - mask.mif')
     progress.done()
 
+    # concatenate matched shells
+    run.command(['mrmath', files, 'mean', '-', '|',
+                 'mrthreshold', '-', 'init_mask.mif'])
+
   # Cleaning the mask
-  run.command('maskfilter mask.mif connect -largest - | '
+  run.command('maskfilter init_mask.mif connect -largest - | '
               'mrcalc 1 - -sub - | '
               'maskfilter - connect -largest - | '
               'mrcalc 1 - -sub - | '
-              'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' final_mask.mif')
+              'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' cleaned_mask.mif')
+  run.command('mrmath input.mif max -axis 3 - | '
+              'mrcalc - 0.0 -gt cleaned_mask.mif -mult final_mask.mif -datatype bit')
 
-  #run.command('mrconvert final_mask.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
   return 'final_mask.mif'
