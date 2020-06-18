@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import app, path, run
+from mrtrix3 import app, run
 
 DEFAULT_CLEAN_SCALE = 2
 
@@ -39,6 +39,11 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 
+def needs_mean_bzero(): #pylint: disable=unused-variable
+  return False
+
+
+
 def execute(): #pylint: disable=unused-variable
 
   run.command('mrcalc input.mif 0 -max input_nonneg.mif')
@@ -54,7 +59,4 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrmath input_nonneg.mif max -axis 3 - | '
               'mrcalc - 0.0 -gt init_mask.mif -mult final_mask.mif -datatype bit')
 
-  run.command('mrconvert final_mask.mif '
-              + path.from_user(app.ARGS.output),
-              mrconvert_keyval=path.from_user(app.ARGS.input, False),
-              force=app.FORCE_OVERWRITE)
+  return 'final_mask.mif'
