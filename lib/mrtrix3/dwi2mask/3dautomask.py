@@ -21,7 +21,7 @@ from mrtrix3 import app, image, path, run
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('3dautomask', parents=[base_parser])
-  parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Ricardo Rios (ricardo.rios@cimat.mx)')
+  parser.set_author('Ricardo Rios (ricardo.rios@cimat.mx)')
   parser.set_synopsis('Use AFNI 3dAutomask to derive a brain mask from the DWI mean b=0 image')
   parser.add_citation('RW Cox. AFNI: Software for analysis and visualization of functional magnetic resonance neuroimages. Computers and Biomedical Research, 29:162-173, 1996.', is_external=True)
   parser.add_argument('input',  help='The input DWI series')
@@ -33,10 +33,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-nbhrs', type=int, help='Define the number of neighbors needed for a voxel NOT to be eroded.  It should be between 6 and 26.')
   options.add_argument('-eclip', action='store_true', help='After creating the mask, remove exterior voxels below the clip threshold.')   
   options.add_argument('-SI', type=float, help='After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains).')
-                 
-  #ToDo Are the next parameters actually floats?
-  options.add_argument('-dilate', type=float, help='Dilate the mask outwards n times')
-  options.add_argument('-erode ', type=float, help='Erode  the mask outwards n times')
+  options.add_argument('-dilate', type=int, help='Dilate the mask outwards n times')
+  options.add_argument('-erode', type=int, help='Erode the mask outwards n times')
   
   # ToDo. Maybe there is a better way to code these related inputs (they are not mutually exclusive tough)
   options.add_argument('-NN1', action='store_true', help='Erode and dilate using different neighbor definitions NN1=faces, NN2=edges, NN3= corners')   
@@ -54,7 +52,7 @@ def execute(): #pylint: disable=unused-variable
               'mrconvert - bzero.nii -strides +1,+2,+3')
   
   #main command to execute
-  cmd_string = afni3dAutomaskt_cmd + ' -prefix afni_mask.nii.gz '
+  cmd_string = afni3dAutomaskt_cmd + ' -prefix afni_mask.nii.gz'
   # Adding optional parameters
   if app.ARGS.clfrac is not None:
     cmd_string += ' -clfrac ' + str(app.ARGS.clfrac)
@@ -70,15 +68,15 @@ def execute(): #pylint: disable=unused-variable
     cmd_string += ' -SI ' + str(app.ARGS.SI)
     
   if app.ARGS.nograd:
-    cmd_string += ' -nograd '
+    cmd_string += ' -nograd'
   if app.ARGS.eclip:
-    cmd_string += ' -eclip '
+    cmd_string += ' -eclip'
   if app.ARGS.NN1:
-    cmd_string += ' -NN1 ' 
+    cmd_string += ' -NN1' 
   if app.ARGS.NN2:
-    cmd_string += ' -NN2 '  
+    cmd_string += ' -NN2'  
   if app.ARGS.NN3:
-    cmd_string += ' -NN3 '  
+    cmd_string += ' -NN3'  
   # Adding dataset to main command 
   cmd_string +=  ' bzero.nii'
   
