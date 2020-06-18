@@ -237,6 +237,13 @@ List of MRtrix3 configuration file options
      ants" or "dwi2mask template" algorithms are invoked but no template
      image / mask pair are explicitly nominated at the command-line.
 
+.. option:: Dwi2maskTemplateSoftware
+
+    *default: fsl*
+
+     The software to be used for registration and transformation
+     by default within the "dwi2mask template" algorithm.
+
 .. option:: FailOnWarn
 
     *default: 0 (false)*
