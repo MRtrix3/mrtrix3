@@ -35,13 +35,19 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  if not app.ARGS.template:
-    raise MRtrixError('For "ants" dwi2mask algorithm, '
-                      '-template command-line option is currently mandatory')
-  run.command('mrconvert ' + app.ARGS.template[0] + ' ' + path.to_scratch('template_image.nii')
-              + ' -strides +1,+2,+3')
-  run.command('mrconvert ' + app.ARGS.template[1] + ' ' + path.to_scratch('template_mask.nii')
-              + ' -strides +1,+2,+3')
+  if app.ARGS.template:
+    run.command('mrconvert ' + app.ARGS.template[0] + ' ' + path.to_scratch('template_image.nii')
+                + ' -strides +1,+2,+3')
+    run.command('mrconvert ' + app.ARGS.template[1] + ' ' + path.to_scratch('template_mask.nii')
+                + ' -strides +1,+2,+3 -datatype uint8')
+  elif all(item in CONFIG for item in ['Dwi2maskTemplateImage', 'Dwi2maskTemplateMask']):
+    run.command('mrconvert ' + CONFIG['Dwi2maskTemplateImage'] + ' ' + path.to_scratch('template_image.nii')
+                + ' -strides +1,+2,+3')
+    run.command('mrconvert ' + CONFIG['Dwi2maskTemplateMask'] + ' ' + path.to_scratch('template_mask.nii')
+                + ' -strides +1,+2,+3 -datatype uint8')
+  else:
+    raise MRtrixError('No template image information available from '
+                      'either command-line or MRtrix configuration file(s)')
 
 
 
