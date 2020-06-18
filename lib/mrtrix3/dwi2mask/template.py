@@ -169,7 +169,7 @@ def execute(): #pylint: disable=unused-variable
   # Instead of neaerest-neighbour interpolation during transformation,
   #   apply a threshold of 0.5 at this point
   run.command('mrthreshold '
-              + mask_path
+              + transformed_path
               + ' mask.mif -abs 0.5')
 
   # Make relative strides of three spatial axes of output mask equivalent
