@@ -62,6 +62,12 @@ def execute(): #pylint: disable=unused-variable
     cmd_string += ' -peels ' + str(app.ARGS.peels)
   if app.ARGS.nbhrs is not None:
     cmd_string += ' -nbhrs ' + str(app.ARGS.nbhrs)
+  if app.ARGS.dilate is not None:
+    cmd_string += ' -dilate ' + str(app.ARGS.dilate)
+  if app.ARGS.erode is not None:
+    cmd_string += ' -erode ' + str(app.ARGS.erode)
+  if app.ARGS.SI is not None:
+    cmd_string += ' -SI ' + str(app.ARGS.SI)
     
   if app.ARGS.nograd:
     cmd_string += ' -nograd '
