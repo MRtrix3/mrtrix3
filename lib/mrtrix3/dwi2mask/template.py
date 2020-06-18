@@ -77,7 +77,7 @@ def execute(): #pylint: disable=unused-variable
   #
   # For now, script assumes T2-weighted template image.
 
-  reg_software = app.ARGS.software if app.ARGS.software else 'fsl'
+  reg_software = app.ARGS.software if app.ARGS.software else CONFIG.get('Dwi2maskTemplateSoftware', 'fsl')
   if reg_software == 'ants':
     ants_path = os.environ.get('ANTSPATH', '')
     if not ants_path:
@@ -134,7 +134,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Initial affine registration to template
     run.command(flirt_cmd
-                + ' -ref ' + app.ARGS.template[0]
+                + ' -ref template_image.nii'
                 + ' -in bzero.nii'
                 + ' -omat bzero_to_template.mat'
                 + ' -dof 12'
@@ -142,12 +142,13 @@ def execute(): #pylint: disable=unused-variable
 
     # Produce dilated template mask image, so that registration is not
     #   too influenced by effects at the edge of the processing mask
-    run.command('maskfilter template_mask.nii dilate template_mask_dilated.nii -npass 3')
+    run.command('maskfilter template_mask.nii dilate - -npass 3 | '
+                'mrconvert - template_mask_dilated.nii -datatype uint8')
 
     # Non-linear registration to template
     run.command(fnirt_cmd
                 + ' --config=' + os.path.splitext(os.path.basename(fnirt_config_path))[0]
-                + ' --ref=' + app.ARGS.template[0]
+                + ' --ref=template_image.nii'
                 + ' --refmask=template_mask_dilated.nii'
                 + ' --in=bzero.nii'
                 + ' --aff=bzero_to_template.mat'
@@ -167,7 +168,7 @@ def execute(): #pylint: disable=unused-variable
     #   allow "partial volume fractions" in output, and threshold later
     run.command(applywarp_cmd
                 + ' --ref=bzero.nii'
-                + ' --in=' + app.ARGS.template[1]
+                + ' --in=template_mask.nii'
                 + ' --warp=' + invwarp_output_path
                 + ' --out=transformed.nii')
     transformed_path = fsl.find_image('transformed.nii')

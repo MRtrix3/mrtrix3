@@ -29,6 +29,11 @@
 //CONF within a Python script, and the user is not provided with the
 //CONF opportunity to select the algorithm at the command-line.
 
+//CONF option: Dwi2maskTemplateSoftware
+//CONF default: fsl
+//CONF The software to be used for registration and transformation
+//CONF by default within the "dwi2mask template" algorithm.
+
 //CONF option: Dwi2maskTemplateImage
 //CONF default: (none)
 //CONF The template image to utilise by default whenever the "dwi2mask ants"
