@@ -26,20 +26,34 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   #parser.add_citation('Isensee F, Schell M, Tursunova I, Brugnara G, Bonekamp D, Neuberger U, Wick A, Schlemmer HP, Heiland S, Wick W, Bendszus M, Maier-Hein KH, Kickingereder P. Automated brain extraction of multi-sequence MRI using artificial neural networks. Hum Brain Mapp. 2019; 1–13. https://doi.org/10.1002/hbm.24750', is_external=True)
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
-  # ToDo Add all the method options https://afni.nimh.nih.gov/pub/dist/doc/program_help/3dAutomask.html
+  options = parser.add_argument_group('Options specific to the \'afni_3dautomask\' algorithm')
+  options.add_argument('-clfrac', type=float, help='Set the \'clip level fraction\', must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger.')
+  options.add_argument('-nograd', action='store_true', help='The program uses a \'gradual\' clip level by default. Add this option to use a fixed clip level.')
 
 def execute(): #pylint: disable=unused-variable
-  hdbet_cmd = find_executable('3dAutomask')
-  if not hdbet_cmd:
+  afni3dAutomaskt_cmd = find_executable('3dAutomask')
+  if not afni3dAutomaskt_cmd:
     raise MRtrixError('Unable to locate AFNI "3dAutomask" executable; check installation')
 
   # Produce mean b=0 image
   run.command('dwiextract input.mif -bzero - | '
               'mrmath - mean - -axis 3 | '
               'mrconvert - bzero.nii -strides +1,+2,+3')
-
-  # Execute afni 3dbrainmask
-  run.command('3dAutomask -prefix afni_mask.nii.gz bzero.nii')
+  
+  #main command to execute
+  cmd_string = afni3dAutomaskt_cmd + ' -prefix afni_mask.nii.gz '
+  # Adding optional parameters
+  if app.ARGS.clfrac is not None:
+    cmd_string += ' -clfrac ' + str(app.ARGS.clfrac)
+    
+  if app.ARGS.nograd:
+    cmd_string += ' -nograd '
+  
+  # Adding dataset to main command 
+  cmd_string +=  ' bzero.nii'
+  
+  # Execute main command for afni 3dbrainmask
+  run.command(cmd_string )
   #run.command('3dAutomask -prefix afni_mask.nii.gz  -apply_prefix afni_masked.nii.gz  bzero.nii')
 
 
