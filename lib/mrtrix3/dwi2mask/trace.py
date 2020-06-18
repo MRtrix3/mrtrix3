@@ -22,17 +22,16 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'trace\' algorithm')
-  options.add_argument('-avg_all', action='store_true', help='Average all shells')
+  options.add_argument('-avg_all', action='store_true', help='Average volumes across all shells to create a mean image')
   options.add_argument('-shells', help='Comma separated list of shells used for masking')
 
 
 def execute(): #pylint: disable=unused-variable
 
-  # Generating Mask
-
   # Averaging shells
   if app.ARGS.avg_all:
-    run.command('mrmath input.mif mean - -axis 3 | '
+    run.command(('dwiextract input.mif - -shells ' + app.ARGS.shells + ' | ' if app.ARGS.shells else 'echo input.mif | ') +
+                'mrmath - mean - -axis 3 | '
                 'mrthreshold - - | '
                 'mrconvert - mask.mif -strides +1,+2,+3')
 
@@ -46,9 +45,8 @@ def execute(): #pylint: disable=unused-variable
 
     # run per-shell histogram matching
     files = []
-    for index in range(int((image.mrinfo('mean_shells.mif', 'size').split()).pop())):
+    for index in range((image.Header('mean_shells.mif').size()).pop()):
       filename = 'shell-{:02d}.mif'.format(index)
-      print(filename)
       run.command('mrconvert mean_shells.mif -coord 3 ' + str(index) + ' - | '
                   'mrhistmatch scale - meanb0.mif ' + filename)
       files.append(filename)
