@@ -15,8 +15,9 @@
 
 from distutils.spawn import find_executable
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, image, path, run
+from mrtrix3 import app, run
 
+AFNI3DAUTOMASK_CMD = '3dAutomask'
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
@@ -31,28 +32,32 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-nograd', action='store_true', help='The program uses a \'gradual\' clip level by default. Add this option to use a fixed clip level.')
   options.add_argument('-peels', type=float, help='Peel (erode) the mask n times, then unpeel (dilate).')
   options.add_argument('-nbhrs', type=int, help='Define the number of neighbors needed for a voxel NOT to be eroded.  It should be between 6 and 26.')
-  options.add_argument('-eclip', action='store_true', help='After creating the mask, remove exterior voxels below the clip threshold.')   
+  options.add_argument('-eclip', action='store_true', help='After creating the mask, remove exterior voxels below the clip threshold.')
   options.add_argument('-SI', type=float, help='After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains).')
   options.add_argument('-dilate', type=int, help='Dilate the mask outwards n times')
   options.add_argument('-erode', type=int, help='Erode the mask outwards n times')
-  
-  # ToDo. Maybe there is a better way to code these related inputs (they are not mutually exclusive tough)
-  options.add_argument('-NN1', action='store_true', help='Erode and dilate using different neighbor definitions NN1=faces, NN2=edges, NN3= corners')   
-  options.add_argument('-NN2', action='store_true', help='Erode and dilate using different neighbor definitions NN1=faces, NN2=edges, NN3= corners')   
-  options.add_argument('-NN3', action='store_true', help='Erode and dilate using different neighbor definitions NN1=faces, NN2=edges, NN3= corners')   
-  
-def execute(): #pylint: disable=unused-variable
-  afni3dAutomaskt_cmd = find_executable('3dAutomask')
-  if not afni3dAutomaskt_cmd:
-    raise MRtrixError('Unable to locate AFNI "3dAutomask" executable; check installation')
 
-  # Produce mean b=0 image
-  run.command('dwiextract input.mif -bzero - | '
-              'mrmath - mean - -axis 3 | '
-              'mrconvert - bzero.nii -strides +1,+2,+3')
-  
-  #main command to execute
-  cmd_string = afni3dAutomaskt_cmd + ' -prefix afni_mask.nii.gz'
+  options.add_argument('-NN1', action='store_true', help='Erode and dilate based on mask faces')
+  options.add_argument('-NN2', action='store_true', help='Erode and dilate based on mask edges')
+  options.add_argument('-NN3', action='store_true', help='Erode and dilate based on mask corners')
+
+
+
+def needs_mean_bzero(): #pylint: disable=unused-variable
+  return True
+
+
+
+def execute(): #pylint: disable=unused-variable
+  if not find_executable(AFNI3DAUTOMASK_CMD):
+    raise MRtrixError('Unable to locate AFNI "'
+                      + AFNI3DAUTOMASK_CMD
+                      + '" executable; check installation')
+
+  # main command to execute
+  mask_path = 'afni_mask.nii.gz'
+  cmd_string = AFNI3DAUTOMASK_CMD + ' -prefix ' + mask_path
+
   # Adding optional parameters
   if app.ARGS.clfrac is not None:
     cmd_string += ' -clfrac ' + str(app.ARGS.clfrac)
@@ -66,30 +71,22 @@ def execute(): #pylint: disable=unused-variable
     cmd_string += ' -erode ' + str(app.ARGS.erode)
   if app.ARGS.SI is not None:
     cmd_string += ' -SI ' + str(app.ARGS.SI)
-    
+
   if app.ARGS.nograd:
     cmd_string += ' -nograd'
   if app.ARGS.eclip:
     cmd_string += ' -eclip'
   if app.ARGS.NN1:
-    cmd_string += ' -NN1' 
+    cmd_string += ' -NN1'
   if app.ARGS.NN2:
-    cmd_string += ' -NN2'  
+    cmd_string += ' -NN2'
   if app.ARGS.NN3:
-    cmd_string += ' -NN3'  
-  # Adding dataset to main command 
+    cmd_string += ' -NN3'
+
+  # Adding input dataset to main command
   cmd_string +=  ' bzero.nii'
-  
-  # Execute main command for afni 3dbrainmask
-  run.command(cmd_string )
 
+  # Execute main command for afni 3dautomask
+  run.command(cmd_string)
 
-  strides = image.Header('input.mif').strides()[0:3]
-  strides = [(abs(value) + 1 - min(abs(v) for v in strides)) * (-1 if value < 0 else 1) for value in strides]
-
-  run.command('mrconvert afni_mask.nii.gz '
-              + path.from_user(app.ARGS.output)
-              + ' -strides ' + ','.join(str(value) for value in strides)
-              + ' -datatype bit',
-              mrconvert_keyval=path.from_user(app.ARGS.input, False),
-              force=app.FORCE_OVERWRITE)
+  return mask_path
