@@ -15,6 +15,8 @@
 
 from mrtrix3 import app, image, path, run
 
+DEFAULT_CLEAN_SCALE = 2
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('trace', parents=[base_parser])
   parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
@@ -24,14 +26,20 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the \'trace\' algorithm')
   options.add_argument('-avg_all', action='store_true', help='Average volumes across all shells to create a mean image')
   options.add_argument('-shells', help='Comma separated list of shells used for masking')
+  parser.add_argument('-clean_scale',
+                      type=int,
+                      default=DEFAULT_CLEAN_SCALE,
+                      help='the maximum scale used to cut bridges. A certain maximum scale cuts '
+                           'bridges up to a width (in voxels) of 2x the provided scale. Setting '
+                           'this to 0 disables the mask cleaning step. (Default: ' + str(DEFAULT_CLEAN_SCALE) + ')')
 
 
 def execute(): #pylint: disable=unused-variable
 
   # Averaging shells
   if app.ARGS.avg_all:
-    run.command(('dwiextract input.mif - -shells ' + app.ARGS.shells + ' | ' if app.ARGS.shells else 'echo input.mif | ') +
-                'mrmath - mean - -axis 3 | '
+    run.command(('dwiextract input.mif - -shells ' + app.ARGS.shells + ' | mrmath - ' if app.ARGS.shells else 'mrmath input.mif ') +
+                'mean - -axis 3 | '
                 'mrthreshold - - | '
                 'mrconvert - mask.mif -strides +1,+2,+3')
 
@@ -58,5 +66,12 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrcat -axis 3 ' + ' '.join(files) + ' cat.mif')
     run.command('mrmath cat.mif mean - -axis 3 | mrthreshold - mask.mif')
     progress.done()
-      
-  run.command('mrconvert mask.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+
+  # Cleaning the mask
+  run.command('maskfilter mask.mif connect -largest - | '
+              'mrcalc 1 - -sub - | '
+              'maskfilter - connect -largest - | '
+              'mrcalc 1 - -sub - | '
+              'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' final_mask.mif')
+
+  run.command('mrconvert final_mask.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
