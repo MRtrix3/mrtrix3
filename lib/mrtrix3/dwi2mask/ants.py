@@ -16,7 +16,7 @@
 import os
 from distutils.spawn import find_executable
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, fsl, image, path, run
+from mrtrix3 import app, image, path, run
 
 
 ANTS_BRAIN_EXTRACTION_CMD = 'antsBrainExtraction.sh'
