@@ -13,19 +13,15 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-#import os
-#from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, path, run
 
-
-
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('exvivo', parents=[base_parser])
+  parser = subparsers.add_parser('trace', parents=[base_parser])
   parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
-  parser.set_synopsis('A method to generate a brain mask for exvivo data')
+  parser.set_synopsis('A method to generate a brain mask from trace images of b-value shells')
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
-  options = parser.add_argument_group('Options specific to the \'exvivo\' algorithm')
+  options = parser.add_argument_group('Options specific to the \'trace\' algorithm')
   options.add_argument('-avg_all', action='store_true', help='Average all shells')
   options.add_argument('-shells', help='Comma separated list of shells used for masking')
 
