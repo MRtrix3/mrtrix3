@@ -728,7 +728,7 @@ def execute(): #pylint: disable=unused-variable
 
   # Need gradient table if running dwi2mask after applytopup to derive a brain mask for eddy
   run.command('mrinfo dwi.mif -export_grad_mrtrix grad.b')
-
+  dwi2mask_algo = CONFIG.get('Dwi2maskAlgorithm', 'legacy')
 
   eddy_in_topup_option = ''
   dwi_post_eddy_crop_option = ''
@@ -831,10 +831,11 @@ def execute(): #pylint: disable=unused-variable
 
     # Use the initial corrected volumes to derive a brain mask for eddy
     if not app.ARGS.eddy_mask:
+
       if len(applytopup_image_list) == 1:
-        run.command('dwi2mask ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
+        run.command('dwi2mask ' + dwi2mask_algo + ' ' + applytopup_image_list[0] + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
       else:
-        run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
+        run.command('mrcat ' + ' '.join(applytopup_image_list) + ' - -axis 3 | dwi2mask ' + dwi2mask_algo + ' - - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
 
     app.cleanup(applytopup_image_list)
 
@@ -844,7 +845,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Generate a processing mask for eddy based on the uncorrected input DWIs
     if not app.ARGS.eddy_mask:
-      run.command('dwi2mask ' + dwi_path + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
+      run.command('dwi2mask ' + dwi2mask_algo + ' ' + dwi_path + ' - | maskfilter - dilate - | mrconvert - eddy_mask.nii -datatype float32 -strides -1,+2,+3')
 
 
   # Use user supplied mask for eddy instead of one derived from the images using dwi2mask
