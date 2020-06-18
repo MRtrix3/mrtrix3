@@ -30,13 +30,19 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  if not app.ARGS.template:
-    raise MRtrixError('For "consensus" dwi2mask algorithm, '
-                      '-template command-line option is currently mandatory')
-  run.command('mrconvert ' + app.ARGS.template[0] + ' ' + path.to_scratch('template_image.nii')
-              + ' -strides +1,+2,+3')
-  run.command('mrconvert ' + app.ARGS.template[1] + ' ' + path.to_scratch('template_mask.nii')
-              + ' -strides +1,+2,+3')
+  if app.ARGS.template:
+    run.command('mrconvert ' + app.ARGS.template[0] + ' ' + path.to_scratch('template_image.nii')
+                + ' -strides +1,+2,+3')
+    run.command('mrconvert ' + app.ARGS.template[1] + ' ' + path.to_scratch('template_mask.nii')
+                + ' -strides +1,+2,+3 -datatype uint8')
+  elif all(item in CONFIG for item in ['Dwi2maskTemplateImage', 'Dwi2maskTemplateMask']):
+    run.command('mrconvert ' + CONFIG['Dwi2maskTemplateImage'] + ' ' + path.to_scratch('template_image.nii')
+                + ' -strides +1,+2,+3')
+    run.command('mrconvert ' + CONFIG['Dwi2maskTemplateMask'] + ' ' + path.to_scratch('template_mask.nii')
+                + ' -strides +1,+2,+3 -datatype uint8')
+  else:
+    raise MRtrixError('No template image information available from '
+                      'either command-line or MRtrix configuration file(s)')
 
 
 
@@ -50,7 +56,7 @@ def execute(): #pylint: disable=unused-variable
     app.check_output_path(path.from_user(app.ARGS.masks, False))
 
   algorithm_list = [item for item in algorithm.get_list() if item != 'consensus']
-  app.var(algorithm_list)
+  app.debug(str(algorithm_list))
 
   if app.ARGS.algorithms:
     if 'consensus' in app.ARGS.algorithms:
@@ -69,7 +75,7 @@ def execute(): #pylint: disable=unused-variable
   algorithm_list = [item for item in algorithm_list if item != 'template']
   algorithm_list.append('template -software ants')
   algorithm_list.append('template -software fsl')
-  app.var(algorithm_list)
+  app.debug(str(algorithm_list))
 
   mask_list = []
   for alg in algorithm_list:
@@ -86,7 +92,7 @@ def execute(): #pylint: disable=unused-variable
       app.warn('"dwi2mask ' + alg + '" failed; will be omitted from consensus')
       app.debug(str(e_dwi2mask))
 
-  app.var(mask_list)
+  app.debug(str(mask_list))
   if not mask_list:
     raise MRtrixError('No dwi2mask algorithms were successful; cannot generate mask')
   if len(mask_list) == 1:
@@ -94,6 +100,7 @@ def execute(): #pylint: disable=unused-variable
     final_mask = mask_list[0]
   else:
     final_mask = 'consensus.mif'
+    app.console('Computing consensus from ' + str(len(mask_list)) + ' of ' + str(len(algorithm_list)) + ' algorithms')
     run.command(['mrmath', mask_list, 'mean', '-', '|',
                  'mrthreshold', '-', '-abs', '0.5', '-comparison', 'gt', final_mask])
 

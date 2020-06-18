@@ -15,7 +15,7 @@
 
 import os
 from distutils.spawn import find_executable
-from mrtrix3 import MRtrixError
+from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, fsl, path, run
 
 SOFTWARES = ['ants', 'fsl']
@@ -44,13 +44,19 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  if not app.ARGS.template:
-    raise MRtrixError('For "template" dwi2mask algorithm, '
-                      '-template command-line option is currently mandatory')
-  run.command('mrconvert ' + app.ARGS.template[0] + ' ' + path.to_scratch('template_image.nii')
-              + ' -strides +1,+2,+3')
-  run.command('mrconvert ' + app.ARGS.template[1] + ' ' + path.to_scratch('template_mask.nii')
-              + ' -strides +1,+2,+3')
+  if app.ARGS.template:
+    run.command('mrconvert ' + app.ARGS.template[0] + ' ' + path.to_scratch('template_image.nii')
+                + ' -strides +1,+2,+3')
+    run.command('mrconvert ' + app.ARGS.template[1] + ' ' + path.to_scratch('template_mask.nii')
+                + ' -strides +1,+2,+3 -datatype uint8')
+  elif all(item in CONFIG for item in ['Dwi2maskTemplateImage', 'Dwi2maskTemplateMask']):
+    run.command('mrconvert ' + CONFIG['Dwi2maskTemplateImage'] + ' ' + path.to_scratch('template_image.nii')
+                + ' -strides +1,+2,+3')
+    run.command('mrconvert ' + CONFIG['Dwi2maskTemplateMask'] + ' ' + path.to_scratch('template_mask.nii')
+                + ' -strides +1,+2,+3 -datatype uint8')
+  else:
+    raise MRtrixError('No template image information available from '
+                      'either command-line or MRtrix configuration file(s)')
 
 
 
@@ -71,7 +77,7 @@ def execute(): #pylint: disable=unused-variable
   #
   # For now, script assumes T2-weighted template image.
 
-  reg_software = app.ARGS.software if app.ARGS.software else 'fsl'
+  reg_software = app.ARGS.software if app.ARGS.software else CONFIG.get('Dwi2maskTemplateSoftware', 'fsl')
   if reg_software == 'ants':
     ants_path = os.environ.get('ANTSPATH', '')
     if not ants_path:
@@ -128,7 +134,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Initial affine registration to template
     run.command(flirt_cmd
-                + ' -ref ' + app.ARGS.template[0]
+                + ' -ref template_image.nii'
                 + ' -in bzero.nii'
                 + ' -omat bzero_to_template.mat'
                 + ' -dof 12'
@@ -136,12 +142,13 @@ def execute(): #pylint: disable=unused-variable
 
     # Produce dilated template mask image, so that registration is not
     #   too influenced by effects at the edge of the processing mask
-    run.command('maskfilter template_mask.nii dilate template_mask_dilated.nii -npass 3')
+    run.command('maskfilter template_mask.nii dilate - -npass 3 | '
+                'mrconvert - template_mask_dilated.nii -datatype uint8')
 
     # Non-linear registration to template
     run.command(fnirt_cmd
                 + ' --config=' + os.path.splitext(os.path.basename(fnirt_config_path))[0]
-                + ' --ref=' + app.ARGS.template[0]
+                + ' --ref=template_image.nii'
                 + ' --refmask=template_mask_dilated.nii'
                 + ' --in=bzero.nii'
                 + ' --aff=bzero_to_template.mat'
@@ -161,7 +168,7 @@ def execute(): #pylint: disable=unused-variable
     #   allow "partial volume fractions" in output, and threshold later
     run.command(applywarp_cmd
                 + ' --ref=bzero.nii'
-                + ' --in=' + app.ARGS.template[1]
+                + ' --in=template_mask.nii'
                 + ' --warp=' + invwarp_output_path
                 + ' --out=transformed.nii')
     transformed_path = fsl.find_image('transformed.nii')

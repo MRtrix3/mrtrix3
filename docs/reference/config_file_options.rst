@@ -213,6 +213,37 @@ List of MRtrix3 configuration file options
 
      The default intensity for the diffuse light in OpenGL renders.
 
+.. option:: Dwi2maskAlgorithm
+
+    *default: legacy*
+
+     The dwi2mask algorithm to utilise whenever dwi2mask must be invoked
+     within a Python script, and the user is not provided with the
+     opportunity to select the algorithm at the command-line.
+
+.. option:: Dwi2maskTemplateImage
+
+    *default: (none)*
+
+     The template image to utilise by default whenever the "dwi2mask ants"
+     or "dwi2mask template" algorithms are invoked but no template image
+     / mask pair are explicitly nominated at the command-line.
+
+.. option:: Dwi2maskTemplateMask
+
+    *default: (none)*
+
+     The template brain mask to utilise by default whenever the "dwi2mask
+     ants" or "dwi2mask template" algorithms are invoked but no template
+     image / mask pair are explicitly nominated at the command-line.
+
+.. option:: Dwi2maskTemplateSoftware
+
+    *default: fsl*
+
+     The software to be used for registration and transformation
+     by default within the "dwi2mask template" algorithm.
+
 .. option:: FailOnWarn
 
     *default: 0 (false)*

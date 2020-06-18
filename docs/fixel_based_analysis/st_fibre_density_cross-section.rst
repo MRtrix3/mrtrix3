@@ -40,7 +40,7 @@ Pre-processsing steps
 
 Compute a brain mask::
 
-    for_each * : dwi2mask IN/dwi_denoised_preproc.mif IN/dwi_temp_mask.mif
+    for_each * : dwi2mask legacy IN/dwi_denoised_preproc.mif IN/dwi_temp_mask.mif
 
 
 AFD-specific pre-processsing steps
