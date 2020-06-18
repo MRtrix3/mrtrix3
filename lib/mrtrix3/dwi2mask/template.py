@@ -69,10 +69,15 @@ def execute(): #pylint: disable=unused-variable
     if not ants_path:
       raise MRtrixError('Environment variable ANTSPATH is not set; '
                         'please appropriately confirure ANTs software')
-    ants_brain_extraction_cmd = find_executable('antsBrainExtraction.sh')
-    if not ants_brain_extraction_cmd:
+    ants_register_cmd = find_executable('ANTS')
+    if not ants_register_cmd:
       raise MRtrixError('Unable to find command "'
-                        + ants_brain_extraction_cmd
+                        + ants_register_cmd
+                        + '"; please check ANTs installation')
+    ants_transform_cmd = find_executable('WarpImageMultiTransform')
+    if not ants_transform_cmd:
+      raise MRtrixError('Unable to find command "'
+                        + ants_transform_cmd
                         + '"; please check ANTs installation')
   elif reg_software == 'fsl':
     fsl_path = os.environ.get('FSLDIR', '')
@@ -98,17 +103,22 @@ def execute(): #pylint: disable=unused-variable
 
   if reg_software == 'ants':
 
-    run.command(ants_brain_extraction_cmd
-                + ' -d 3'
-                + ' -c 3x3x2x1'
-                + ' -a bzero.nii'
-                + ' -e ' + app.ARGS.template[0]
-                + ' -m ' + app.ARGS.template[1]
-                + ' -o out'
-                + ('' if app.DO_CLEANUP else ' -k 1')
-                + (' -z' if app.VERBOSITY >= 3 else ''))
-
-    mask_path = 'outBrainExtractionMask.nii.gz'
+    # Use ANTs SyN for registration to template
+    # From Klein et al., NeuroImage 2009:
+    run.command('ANTS 3 '
+                + '-m PR[template_image.nii, bzero.nii, 1, 2]'
+                + ' -o ANTS'
+                + ' -r Gauss[2,0]'
+                + ' -t SyN[0.5]'
+                + ' -i 30x99x11'
+                + ' --use-Histogram-Matching')
+    transformed_path = 'transformed.nii'
+    # Note: Don't use nearest-neighbour interpolation;
+    #   allow "partial volume fractions" in output, and threshold later
+    run.command('WarpImageMultiTransform 3 template_mask.nii '
+                + transformed_path
+                + ' -R bzero.nii'
+                + ' -i ANTSAffine.txt ANTSInverseWarp.nii')
 
   elif reg_software == 'fsl':
 
@@ -149,20 +159,18 @@ def execute(): #pylint: disable=unused-variable
                 + ' --ref=bzero.nii'
                 + ' --in=' + app.ARGS.template[1]
                 + ' --warp=' + invwarp_output_path
-                + ' --out=mask.nii')
-    applywarp_output_path = fsl.find_image('mask.nii')
+                + ' --out=transformed.nii')
+    transformed_path = fsl.find_image('transformed.nii')
 
-    # Instead of neaerest-neighbour interpolation during transformation,
-    #   apply a threshold of 0.5 at this point
-    mask_path = 'mask.mif'
-    run.command('mrthreshold '
-                + applywarp_output_path
-                + ' '
-                + mask_path
-                + ' -abs 0.5')
 
   else:
     assert False
+
+  # Instead of neaerest-neighbour interpolation during transformation,
+  #   apply a threshold of 0.5 at this point
+  run.command('mrthreshold '
+              + transformed_path
+              + ' mask.mif -abs 0.5')
 
   # Make relative strides of three spatial axes of output mask equivalent
   #   to input DWI; this may involve decrementing magnitude of stride
@@ -170,9 +178,7 @@ def execute(): #pylint: disable=unused-variable
   strides = image.Header('input.mif').strides()[0:3]
   strides = [(abs(value) + 1 - min(abs(v) for v in strides)) * (-1 if value < 0 else 1) for value in strides]
 
-  run.command('mrconvert '
-              + mask_path
-              + ' '
+  run.command('mrconvert mask.mif '
               + path.from_user(app.ARGS.output)
               + ' -strides ' + ','.join(str(value) for value in strides),
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
