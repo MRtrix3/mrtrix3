@@ -34,7 +34,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 
-def get_inputs():
+def get_inputs(): #pylint: disable=unused-variable
   pass
 
 
