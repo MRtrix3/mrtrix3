@@ -16,14 +16,19 @@
 import os
 from distutils.spawn import find_executable
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, fsl, image, path, run
+from mrtrix3 import app, fsl, path, run
 
 SOFTWARES = ['ants', 'fsl']
+
+ANTS_REGISTER_CMD = 'ANTS'
+ANTS_TRANSFORM_CMD = 'WarpImageMultiTransform'
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('template', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Register the mean b=0 image to a T2-weighted template to back-propagate a brain mask')
+  parser.add_description('This script currently assumes that the template image provided via the -template option '
+                         'is T2-weighted, and can therefore be trivially registered to a mean b=0 image.')
   parser.add_citation('M. Jenkinson, C.F. Beckmann, T.E. Behrens, M.W. Woolrich, S.M. Smith. FSL. NeuroImage, 62:782-90, 2012',
                       condition='If FSL software is used for registration',
                       is_external=True)
@@ -39,13 +44,23 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  pass
+  if not app.ARGS.template:
+    raise MRtrixError('For "template" dwi2mask algorithm, '
+                      '-template command-line option is currently mandatory')
+  run.command('mrconvert ' + app.ARGS.template[0] + ' ' + path.to_scratch('template_image.nii')
+              + ' -strides +1,+2,+3')
+  run.command('mrconvert ' + app.ARGS.template[1] + ' ' + path.to_scratch('template_mask.nii')
+              + ' -strides +1,+2,+3')
+
+
+
+def needs_mean_bzero(): #pylint: disable=unused-variable
+  return True
 
 
 
 def execute(): #pylint: disable=unused-variable
-
-  # TODO What image to generate here depends on the template:
+  # What image to generate here depends on the template:
   # - If a good T2-weighted template is found, use the mean b=0 image
   # - If a T1-weighted template is to be used, can't use histogram
   #   matching (relies on a good brain mask), and can't use MT-CSD
@@ -53,10 +68,8 @@ def execute(): #pylint: disable=unused-variable
   #   APM doesn't seem to do particularly well for unmasked data...
   # - Could use FA or MD templates from FSL / HCP? Might also struggle
   #   with non-brain data
-
-  if not app.ARGS.template:
-    raise MRtrixError('For "template" dwi2mask algorithm, '
-                      '-template command-line option is currently mandatory')
+  #
+  # For now, script assumes T2-weighted template image.
 
   reg_software = app.ARGS.software if app.ARGS.software else 'fsl'
   if reg_software == 'ants':
@@ -64,10 +77,13 @@ def execute(): #pylint: disable=unused-variable
     if not ants_path:
       raise MRtrixError('Environment variable ANTSPATH is not set; '
                         'please appropriately confirure ANTs software')
-    ants_brain_extraction_cmd = find_executable('antsBrainExtraction.sh')
-    if not ants_brain_extraction_cmd:
+    if not find_executable(ANTS_REGISTER_CMD):
       raise MRtrixError('Unable to find command "'
-                        + ants_brain_extraction_cmd
+                        + ANTS_REGISTER_CMD
+                        + '"; please check ANTs installation')
+    if not find_executable(ANTS_TRANSFORM_CMD):
+      raise MRtrixError('Unable to find command "'
+                        + ANTS_TRANSFORM_CMD
                         + '"; please check ANTs installation')
   elif reg_software == 'fsl':
     fsl_path = os.environ.get('FSLDIR', '')
@@ -78,32 +94,35 @@ def execute(): #pylint: disable=unused-variable
     fnirt_cmd = fsl.exe_name('fnirt')
     invwarp_cmd = fsl.exe_name('invwarp')
     applywarp_cmd = fsl.exe_name('applywarp')
-    # fnirt_config_basename = 'T1_2_MNI152_2mm.cnf'
-    # fnirt_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', fnirt_config_basename)
-    # if not os.path.isfile(fnirt_config_path):
-    #   raise MRtrixError('Unable to find configuration file for FNI FNIRT '
-    #                     + '(expected location: ' + fnirt_config_path + ')')
+    fnirt_config_basename = 'T1_2_MNI152_2mm.cnf'
+    fnirt_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', fnirt_config_basename)
+    if not os.path.isfile(fnirt_config_path):
+      raise MRtrixError('Unable to find configuration file for FNI FNIRT '
+                        + '(expected location: ' + fnirt_config_path + ')')
   else:
     assert False
 
-  # Produce mean b=0 image
-  run.command('dwiextract input.mif -bzero - | '
-              'mrmath - mean - -axis 3 | '
-              'mrconvert - bzero.nii -strides +1,+2,+3')
-
   if reg_software == 'ants':
 
-    run.command(ants_brain_extraction_cmd
-                + ' -d 3'
-                + ' -c 3x3x2x1'
-                + ' -a bzero.nii'
-                + ' -e ' + app.ARGS.template[0]
-                + ' -m ' + app.ARGS.template[1]
-                + ' -o mask.nii'
-                + ('' if app.DO_CLEANUP else ' -k 1')
-                + (' -z' if app.VERBOSITY >= 3 else ''))
-
-    mask_path = 'mask.nii'
+    # Use ANTs SyN for registration to template
+    # From Klein et al., NeuroImage 2009:
+    run.command(ANTS_REGISTER_CMD
+                + ' 3'
+                + ' -m PR[template_image.nii, bzero.nii, 1, 2]'
+                + ' -o ANTS'
+                + ' -r Gauss[2,0]'
+                + ' -t SyN[0.5]'
+                + ' -i 30x99x11'
+                + ' --use-Histogram-Matching')
+    transformed_path = 'transformed.nii'
+    # Note: Don't use nearest-neighbour interpolation;
+    #   allow "partial volume fractions" in output, and threshold later
+    run.command(ANTS_TRANSFORM_CMD
+                + ' 3'
+                + ' template_mask.nii '
+                + transformed_path
+                + ' -R bzero.nii'
+                + ' -i ANTSAffine.txt ANTSInverseWarp.nii')
 
   elif reg_software == 'fsl':
 
@@ -115,11 +134,15 @@ def execute(): #pylint: disable=unused-variable
                 + ' -dof 12'
                 + (' -v' if app.VERBOSITY >= 3 else ''))
 
+    # Produce dilated template mask image, so that registration is not
+    #   too influenced by effects at the edge of the processing mask
+    run.command('maskfilter template_mask.nii dilate template_mask_dilated.nii -npass 3')
+
     # Non-linear registration to template
-    # Note: Unmasked
     run.command(fnirt_cmd
-                #+ ' --config=' + fnirt_config_path
+                + ' --config=' + os.path.splitext(os.path.basename(fnirt_config_path))[0]
                 + ' --ref=' + app.ARGS.template[0]
+                + ' --refmask=template_mask_dilated.nii'
                 + ' --in=bzero.nii'
                 + ' --aff=bzero_to_template.mat'
                 + ' --cout=bzero_to_template.nii'
@@ -140,8 +163,9 @@ def execute(): #pylint: disable=unused-variable
                 + ' --ref=bzero.nii'
                 + ' --in=' + app.ARGS.template[1]
                 + ' --warp=' + invwarp_output_path
-                + ' --out=mask.nii')
-    mask_path = fsl.find_image('mask.nii')
+                + ' --out=transformed.nii')
+    transformed_path = fsl.find_image('transformed.nii')
+
 
   else:
     assert False
@@ -149,17 +173,6 @@ def execute(): #pylint: disable=unused-variable
   # Instead of neaerest-neighbour interpolation during transformation,
   #   apply a threshold of 0.5 at this point
   run.command('mrthreshold '
-              + mask_path
+              + transformed_path
               + ' mask.mif -abs 0.5')
-
-  # Make relative strides of three spatial axes of output mask equivalent
-  #   to input DWI; this may involve decrementing magnitude of stride
-  #   if the input DWI is volume-contiguous
-  strides = image.Header('input.mif').strides()[0:3]
-  strides = [(abs(value) + 1 - min(abs(v) for v in strides)) * (-1 if value < 0 else 1) for value in strides]
-
-  run.command('mrconvert mask.mif '
-              + path.from_user(app.ARGS.output)
-              + ' -strides ' + ','.join(str(value) for value in strides),
-              mrconvert_keyval=path.from_user(app.ARGS.input, False),
-              force=app.FORCE_OVERWRITE)
+  return 'mask.mif'

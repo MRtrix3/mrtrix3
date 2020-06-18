@@ -162,7 +162,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`dirstat`, "Report statistics on a direction set"
     |cpp.png|, :ref:`dwi2adc`, "Convert mean dwi (trace-weighted) images to mean ADC maps"
     |cpp.png|, :ref:`dwi2fod`, "Estimate fibre orientation distributions from diffusion data using spherical deconvolution"
-    |cpp.png|, :ref:`dwi2mask`, "Generates a whole brain mask from a DWI image"
+    |python.png|, :ref:`dwi2mask`, "Generate a binary mask from DWI data"
     |python.png|, :ref:`dwi2response`, "Estimate response function(s) for spherical deconvolution"
     |cpp.png|, :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     |python.png|, :ref:`dwibiascorrect`, "Perform B1 field inhomogeneity correction for a DWI volume series"
