@@ -23,13 +23,26 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('3dautomask', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Ricardo Rios (ricardo.rios@cimat.mx)')
   parser.set_synopsis('Use AFNI 3dAutomask to derive a brain mask from the DWI mean b=0 image')
-  #parser.add_citation('Isensee F, Schell M, Tursunova I, Brugnara G, Bonekamp D, Neuberger U, Wick A, Schlemmer HP, Heiland S, Wick W, Bendszus M, Maier-Hein KH, Kickingereder P. Automated brain extraction of multi-sequence MRI using artificial neural networks. Hum Brain Mapp. 2019; 1–13. https://doi.org/10.1002/hbm.24750', is_external=True)
+  #parser.add_citation('RW Cox. AFNI: Software for analysis and visualization of functional magnetic resonance neuroimages. Computers and Biomedical Research, 29:162-173, 1996.', is_external=True)
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'afni_3dautomask\' algorithm')
   options.add_argument('-clfrac', type=float, help='Set the \'clip level fraction\', must be a number between 0.1 and 0.9. A small value means to make the initial threshold for clipping smaller, which will tend to make the mask larger.')
   options.add_argument('-nograd', action='store_true', help='The program uses a \'gradual\' clip level by default. Add this option to use a fixed clip level.')
-
+  options.add_argument('-peels', type=float, help='Peel (erode) the mask n times, then unpeel (dilate).')
+  options.add_argument('-nbhrs', type=int, help='Define the number of neighbors needed for a voxel NOT to be eroded.  It should be between 6 and 26.')
+  options.add_argument('-eclip', action='store_true', help='After creating the mask, remove exterior voxels below the clip threshold.')   
+  options.add_argument('-SI', type=float, help='After creating the mask, find the most superior voxel, then zero out everything more than SI millimeters inferior to that. 130 seems to be decent (i.e., for Homo Sapiens brains).')
+                 
+  #ToDo Are the next parameters actually floats?
+  options.add_argument('-dilate', type=float, help='Dilate the mask outwards n times')
+  options.add_argument('-erode ', type=float, help='Erode  the mask outwards n times')
+  
+  # ToDo. Maybe there is a better way to code these related inputs (they are not mutually exclusive tough)
+  options.add_argument('-NN1', action='store_true', help='Erode and dilate using different neighbor definitions NN1=faces, NN2=edges, NN3= corners')   
+  options.add_argument('-NN2', action='store_true', help='Erode and dilate using different neighbor definitions NN1=faces, NN2=edges, NN3= corners')   
+  options.add_argument('-NN3', action='store_true', help='Erode and dilate using different neighbor definitions NN1=faces, NN2=edges, NN3= corners')   
+  
 def execute(): #pylint: disable=unused-variable
   afni3dAutomaskt_cmd = find_executable('3dAutomask')
   if not afni3dAutomaskt_cmd:
@@ -45,16 +58,26 @@ def execute(): #pylint: disable=unused-variable
   # Adding optional parameters
   if app.ARGS.clfrac is not None:
     cmd_string += ' -clfrac ' + str(app.ARGS.clfrac)
+  if app.ARGS.peels is not None:
+    cmd_string += ' -peels ' + str(app.ARGS.peels)
+  if app.ARGS.nbhrs is not None:
+    cmd_string += ' -nbhrs ' + str(app.ARGS.nbhrs)
     
   if app.ARGS.nograd:
     cmd_string += ' -nograd '
-  
+  if app.ARGS.eclip:
+    cmd_string += ' -eclip '
+  if app.ARGS.NN1:
+    cmd_string += ' -NN1 ' 
+  if app.ARGS.NN2:
+    cmd_string += ' -NN2 '  
+  if app.ARGS.NN3:
+    cmd_string += ' -NN3 '  
   # Adding dataset to main command 
   cmd_string +=  ' bzero.nii'
   
   # Execute main command for afni 3dbrainmask
   run.command(cmd_string )
-  #run.command('3dAutomask -prefix afni_mask.nii.gz  -apply_prefix afni_masked.nii.gz  bzero.nii')
 
 
   strides = image.Header('input.mif').strides()[0:3]
