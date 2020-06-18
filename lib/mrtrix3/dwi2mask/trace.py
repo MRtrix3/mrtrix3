@@ -45,13 +45,18 @@ def execute(): #pylint: disable=unused-variable
 
     # run per-shell histogram matching
     files = []
-    for index in range((image.Header('mean_shells.mif').size()).pop()):
+    nImgs=(image.Header('mean_shells.mif').size()).pop()
+    progress = app.ProgressBar('Performing per-shell histogram matching', nImgs)
+    for index in range(nImgs):
       filename = 'shell-{:02d}.mif'.format(index)
       run.command('mrconvert mean_shells.mif -coord 3 ' + str(index) + ' - | '
                   'mrhistmatch scale - meanb0.mif ' + filename)
       files.append(filename)
+      progress.increment()
 
     # concatenate matched shells
     run.command('mrcat -axis 3 ' + ' '.join(files) + ' cat.mif')
     run.command('mrmath cat.mif mean - -axis 3 | mrthreshold - mask.mif')
+    progress.done()
+      
   run.command('mrconvert mask.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
