@@ -20,6 +20,9 @@ from mrtrix3 import app, fsl, image, path, run
 
 SOFTWARES = ['ants', 'fsl']
 
+ANTS_REGISTER_CMD = 'ANTS'
+ANTS_TRANSFORM_CMD = 'WarpImageMultiTransform'
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('template', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -69,15 +72,13 @@ def execute(): #pylint: disable=unused-variable
     if not ants_path:
       raise MRtrixError('Environment variable ANTSPATH is not set; '
                         'please appropriately confirure ANTs software')
-    ants_register_cmd = find_executable('ANTS')
-    if not ants_register_cmd:
+    if not find_executable(ANTS_REGISTER_CMD):
       raise MRtrixError('Unable to find command "'
-                        + ants_register_cmd
+                        + ANTS_REGISTER_CMD
                         + '"; please check ANTs installation')
-    ants_transform_cmd = find_executable('WarpImageMultiTransform')
-    if not ants_transform_cmd:
+    if not find_executable(ANTS_TRANSFORM_CMD):
       raise MRtrixError('Unable to find command "'
-                        + ants_transform_cmd
+                        + ANTS_TRANSFORM_CMD
                         + '"; please check ANTs installation')
   elif reg_software == 'fsl':
     fsl_path = os.environ.get('FSLDIR', '')
@@ -105,8 +106,9 @@ def execute(): #pylint: disable=unused-variable
 
     # Use ANTs SyN for registration to template
     # From Klein et al., NeuroImage 2009:
-    run.command('ANTS 3 '
-                + '-m PR[template_image.nii, bzero.nii, 1, 2]'
+    run.command(ANTS_REGISTER_CMD
+                + ' 3'
+                + ' -m PR[template_image.nii, bzero.nii, 1, 2]'
                 + ' -o ANTS'
                 + ' -r Gauss[2,0]'
                 + ' -t SyN[0.5]'
@@ -115,7 +117,9 @@ def execute(): #pylint: disable=unused-variable
     transformed_path = 'transformed.nii'
     # Note: Don't use nearest-neighbour interpolation;
     #   allow "partial volume fractions" in output, and threshold later
-    run.command('WarpImageMultiTransform 3 template_mask.nii '
+    run.command(ANTS_TRANSFORM_CMD
+                + ' 3'
+                + ' template_mask.nii '
                 + transformed_path
                 + ' -R bzero.nii'
                 + ' -i ANTSAffine.txt ANTSInverseWarp.nii')
