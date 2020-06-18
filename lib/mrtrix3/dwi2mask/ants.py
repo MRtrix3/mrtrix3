@@ -16,7 +16,7 @@
 import os
 from distutils.spawn import find_executable
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, image, path, run
+from mrtrix3 import app, path, run
 
 
 ANTS_BRAIN_EXTRACTION_CMD = 'antsBrainExtraction.sh'
@@ -45,6 +45,11 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 
+def needs_mean_bzero(): #pylint: disable=unused-variable
+  return True
+
+
+
 def execute(): #pylint: disable=unused-variable
   ants_path = os.environ.get('ANTSPATH', '')
   if not ants_path:
@@ -54,11 +59,6 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError('Unable to find command "'
                       + ANTS_BRAIN_EXTRACTION_CMD
                       + '"; please check ANTs installation')
-
-  # Produce mean b=0 image
-  run.command('dwiextract input.mif -bzero - | '
-              'mrmath - mean - -axis 3 | '
-              'mrconvert - bzero.nii -strides +1,+2,+3')
 
   run.command(ANTS_BRAIN_EXTRACTION_CMD
               + ' -d 3'
@@ -70,11 +70,4 @@ def execute(): #pylint: disable=unused-variable
               + ('' if app.DO_CLEANUP else ' -k 1')
               + (' -z' if app.VERBOSITY >= 3 else ''))
 
-  strides = image.Header('input.mif').strides()[0:3]
-  strides = [(abs(value) + 1 - min(abs(v) for v in strides)) * (-1 if value < 0 else 1) for value in strides]
-
-  run.command('mrconvert outBrainExtractionMask.nii.gz '
-              + path.from_user(app.ARGS.output)
-              + ' -strides ' + ','.join(str(value) for value in strides),
-              mrconvert_keyval=path.from_user(app.ARGS.input, False),
-              force=app.FORCE_OVERWRITE)
+  return 'outBrainExtractionMask.nii.gz'
