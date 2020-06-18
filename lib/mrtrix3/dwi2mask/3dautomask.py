@@ -23,7 +23,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('3dautomask', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Ricardo Rios (ricardo.rios@cimat.mx)')
   parser.set_synopsis('Use AFNI 3dAutomask to derive a brain mask from the DWI mean b=0 image')
-  #parser.add_citation('RW Cox. AFNI: Software for analysis and visualization of functional magnetic resonance neuroimages. Computers and Biomedical Research, 29:162-173, 1996.', is_external=True)
+  parser.add_citation('RW Cox. AFNI: Software for analysis and visualization of functional magnetic resonance neuroimages. Computers and Biomedical Research, 29:162-173, 1996.', is_external=True)
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'afni_3dautomask\' algorithm')
