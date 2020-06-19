@@ -79,7 +79,8 @@ def execute(): #pylint: disable=unused-variable
 
   mask_list = []
   for alg in algorithm_list:
-    mask_path = alg.replace(' -software ', '_') + '.mif'
+    alg_string = alg.replace(' -software ', '_')
+    mask_path = alg_string + '.mif'
     cmd = 'dwi2mask ' + alg + ' input.mif ' + mask_path
     # Ideally this would be determined based on the presence of this option
     #   in the command's help page
@@ -91,6 +92,8 @@ def execute(): #pylint: disable=unused-variable
     except run.MRtrixCmdError as e_dwi2mask:
       app.warn('"dwi2mask ' + alg + '" failed; will be omitted from consensus')
       app.debug(str(e_dwi2mask))
+      with open('error_' + alg_string + '.txt', 'w') as f_error:
+        f_error.write(str(e_dwi2mask))
 
   app.debug(str(mask_list))
   if not mask_list:
