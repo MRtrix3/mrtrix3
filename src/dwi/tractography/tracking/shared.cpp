@@ -106,7 +106,7 @@ namespace MR
               case CALIBRATOR:            name = "calibrator";     break;
               case EXIT_IMAGE:            name = "exit_image";     break;
               case ENTER_CSF:             name = "enter_csf";      break;
-              case BAD_SIGNAL:            name = "bad_signal";     break;
+              case MODEL:                 name = "model";          break;
               case HIGH_CURVATURE:        name = "curvature";      break;
               case LENGTH_EXCEED:         name = "max_length";     break;
               case TERM_IN_SGM:           name = "term_in_sgm";    break;
