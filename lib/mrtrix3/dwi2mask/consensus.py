@@ -97,15 +97,19 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError('No dwi2mask algorithms were successful; cannot generate mask')
   if len(mask_list) == 1:
     app.warn('Only one dwi2mask algorithm was successful; output mask will be this result and not a consensus')
-    final_mask = mask_list[0]
-  else:
-    final_mask = 'consensus.mif'
-    app.console('Computing consensus from ' + str(len(mask_list)) + ' of ' + str(len(algorithm_list)) + ' algorithms')
-    run.command(['mrmath', mask_list, 'mean', '-', '|',
-                 'mrthreshold', '-', '-abs', '0.5', '-comparison', 'gt', final_mask])
+    if app.ARGS.masks:
+      run.command('mrconvert ' + mask_list[0] + ' ' + path.from_user(app.ARGS.masks),
+                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                force=app.FORCE_OVERWRITE)
+    return mask_list[0]
+  final_mask = 'consensus.mif'
+  app.console('Computing consensus from ' + str(len(mask_list)) + ' of ' + str(len(algorithm_list)) + ' algorithms')
+  run.command(['mrcat', mask_list, '-axis', '3', 'all_masks.mif'])
+  run.command('mrmath all_masks.mif mean - -axis 3 | '
+              'mrthreshold - -abs 0.5 -comparison gt ' + final_mask)
 
   if app.ARGS.masks:
-    run.command(['mrcat', mask_list, '-axis', '3', path.from_user(app.ARGS.masks, False)],
+    run.command('mrconvert all_masks.mif ' + path.from_user(app.ARGS.masks),
                 mrconvert_keyval=path.from_user(app.ARGS.input, False),
                 force=app.FORCE_OVERWRITE)
 
