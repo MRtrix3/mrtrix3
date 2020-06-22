@@ -86,6 +86,9 @@ def execute(): #pylint: disable=unused-variable
     #   in the command's help page
     if any(item in alg for item in ['ants', 'template']):
       cmd += ' -template template_image.nii template_mask.nii'
+    cmd += ' -scratch ' + app.SCRATCH_DIR
+    if not app.DO_CLEANUP:
+      cmd += ' -nocleanup'
     try:
       run.command(cmd)
       mask_list.append(mask_path)
