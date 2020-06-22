@@ -142,7 +142,7 @@ fprintf (fid, '\nfile: ')
 
 if strcmp(filename(end-3:end), '.mif')
   dataoffset = ftell (fid) + 18;
-  dataoffset += mod((4 - mod(dataoffset, 4)), 4);
+  dataoffset = dataoffset + mod((4 - mod(dataoffset, 4)), 4);
   fprintf (fid, '. %d\nEND\n              ', dataoffset);
   fseek (fid, dataoffset);
 elseif strcmp(filename(end-3:end), '.mih')
