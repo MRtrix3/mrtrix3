@@ -144,7 +144,7 @@ if strcmp(filename(end-3:end), '.mif')
   dataoffset = ftell (fid) + 18;
   dataoffset = dataoffset + mod((4 - mod(dataoffset, 4)), 4);
   fprintf (fid, '. %d\nEND\n              ', dataoffset);
-  fseek (fid, dataoffset);
+  fseek (fid, dataoffset, 'bof');
 elseif strcmp(filename(end-3:end), '.mih')
   datafile = [ filename(1:end-4) '.dat' ];
   fprintf (fid, '%s 0\nEND\n', datafile);
