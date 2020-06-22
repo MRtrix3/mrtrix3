@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import MRtrixError
+from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import algorithm, app, path, run
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
