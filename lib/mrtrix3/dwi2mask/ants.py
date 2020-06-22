@@ -15,7 +15,7 @@
 
 import os
 from distutils.spawn import find_executable
-from mrtrix3 import MRtrixError
+from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, path, run
 
 
