@@ -51,10 +51,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrthreshold trace.mif - -comparison gt | '
               'mrmath - max -axis 3 - | '
               'maskfilter - median - | '
-              'maskfilter - connect -largest - | '
-              'mrcalc 1 - -sub - | '
-              'maskfilter - connect -largest - | '
-              'mrcalc 1 - -sub - | '
+              'maskfilter - bigblob - | '
               'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' init_mask.mif')
   run.command('mrmath input_nonneg.mif max -axis 3 - | '
               'mrcalc - 0.0 -gt init_mask.mif -mult final_mask.mif -datatype bit')
