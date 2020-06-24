@@ -16,7 +16,7 @@ Usage
     mrcolour [ options ]  input map output
 
 -  *input*: the input image
--  *map*: the colourmap to apply; choices are: gray,hot,cool,jet,pet,colour,rgb
+-  *map*: the colourmap to apply; choices are: gray,hot,cool,jet,inferno,viridis,pet,colour,rgb
 -  *output*: the output image
 
 Description
