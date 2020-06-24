@@ -185,9 +185,10 @@ namespace MR
 
             ~iFOD2 ()
             {
-              S.update_stats (calibrate_list.size() + float(mean_sample_num)/float(num_sample_runs),
-                  float(num_truncations) / float(num_sample_runs),
-                  max_truncation);
+              if (num_sample_runs)
+                S.update_stats (calibrate_list.size() + float(mean_sample_num)/float(num_sample_runs),
+                    float(num_truncations) / float(num_sample_runs),
+                    max_truncation);
             }
 
 
