@@ -15,16 +15,14 @@ Usage
 
     maskfilter [ options ]  input filter output
 
--  *input*: the input image.
--  *filter*: the type of filter to be applied (clean, connect, dilate, erode, median)
--  *output*: the output image.
+-  *input*: the input mask.
+-  *filter*: the name of the filter to be applied; options are: bigblob, clean, connect, dilate, erode, median
+-  *output*: the output mask.
 
 Description
 -----------
 
-The available filters are: clean, connect, dilate, erode, median.
-
-Each filter has its own unique set of optional parameters.
+Many filters have their own unique set of optional parameters; see the option groups dedicated to each filter type.
 
 Options
 -------
