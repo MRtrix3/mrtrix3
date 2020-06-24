@@ -3,6 +3,8 @@ mrcolour dwi_mean.mif gray - | testing_diff_image - mrcolour/gray.mif
 mrcolour dwi_mean.mif hot - | testing_diff_image - mrcolour/hot.mif
 mrcolour dwi_mean.mif cool - | testing_diff_image - mrcolour/cool.mif
 mrcolour dwi_mean.mif jet - | testing_diff_image - mrcolour/jet.mif
+mrcolour dwi_mean.mif inferno - | testing_diff_image - mrcolour/inferno.mif
+mrcolour dwi_mean.mif viridis - | testing_diff_image - mrcolour/viridis.mif
 mrcolour dwi_mean.mif pet - | testing_diff_image - mrcolour/pet.mif
 mrcolour unit_warp.mif rgb - | testing_diff_image - $(mrcalc unit_warp.mif $(mrstats unit_warp.mif -output max -allvolumes) -div -) -frac 1e-6
 mrcolour dwi_mean.mif gray -upper 80 - | testing_diff_image - mrcolour/upper.mif
