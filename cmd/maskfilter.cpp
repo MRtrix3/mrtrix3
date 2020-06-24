@@ -17,10 +17,11 @@
 #include "command.h"
 #include "image.h"
 #include "filter/base.h"
-#include "filter/mask_clean.h"
+#include "filter/bigblob.h"
 #include "filter/connected_components.h"
 #include "filter/dilate.h"
 #include "filter/erode.h"
+#include "filter/mask_clean.h"
 #include "filter/median.h"
 
 using namespace MR;
@@ -29,7 +30,7 @@ using namespace App;
 #define DEFAULT_CLEAN_SCALE 2
 
 
-const char* filters[] = { "clean", "connect", "dilate", "erode", "median", nullptr };
+const char* filters[] = { "bigblob", "clean", "connect", "dilate", "erode", "median", nullptr };
 
 
 
@@ -78,15 +79,13 @@ void usage ()
   SYNOPSIS = "Perform filtering operations on 3D / 4D mask images";
 
   DESCRIPTION
-  + "The available filters are: clean, connect, dilate, erode, median."
-
-  + "Each filter has its own unique set of optional parameters.";
-
+  + "Many filters have their own unique set of optional parameters; "
+    "see the option groups dedicated to each filter type.";
 
   ARGUMENTS
-  + Argument ("input",  "the input image.").type_image_in ()
-  + Argument ("filter", "the type of filter to be applied (clean, connect, dilate, erode, median)").type_choice (filters)
-  + Argument ("output", "the output image.").type_image_out ();
+  + Argument ("input",  "the input mask.").type_image_in ()
+  + Argument ("filter", "the name of the filter to be applied; options are: " + join(filters, ", ")).type_choice (filters)
+  + Argument ("output", "the output mask.").type_image_out ();
 
 
   OPTIONS
@@ -107,19 +106,26 @@ void run () {
 
   int filter_index = argument[1];
 
-  if (filter_index == 0) { // Mask clean
+  if (filter_index == 0) { // Bigblob
+    Filter::BigBlob filter (input_image, std::string("obtaining filled largest blob in image ") + Path::basename (argument[0]));
+    Stride::set_from_command_line (filter);
+    auto output_image = Image<value_type>::create (argument[2], filter);
+    filter (input_image, output_image);
+    return;
+  }
+
+  if (filter_index == 1) { // Mask clean
     Filter::MaskClean filter (input_image, std::string("applying mask cleaning filter to image ") + Path::basename (argument[0]));
     filter.set_scale(get_option_value ("scale", DEFAULT_CLEAN_SCALE));
 
     Stride::set_from_command_line (filter);
-    filter.datatype() = DataType::Bit;
 
     auto output_image = Image<value_type>::create (argument[2], filter);
     filter (input_image, output_image);
     return;
   }
 
-  if (filter_index == 1) { // Connected components
+  if (filter_index == 2) { // Connected components
     Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("axes");
     if (opt.size()) {
@@ -151,7 +157,7 @@ void run () {
     return;
   }
 
-  if (filter_index == 2) { // Dilate
+  if (filter_index == 3) { // Dilate
     Filter::Dilate filter (input_image, std::string("applying dilate filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("npass");
     if (opt.size())
@@ -165,7 +171,7 @@ void run () {
     return;
   }
 
-  if (filter_index == 3) { // Erode
+  if (filter_index == 4) { // Erode
     Filter::Erode filter (input_image, std::string("applying erode filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("npass");
     if (opt.size())
@@ -179,7 +185,7 @@ void run () {
     return;
   }
 
-  if (filter_index == 4) { // Median
+  if (filter_index == 5) { // Median
     Filter::Median filter (input_image, std::string("applying median filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("extent");
     if (opt.size())
