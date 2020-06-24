@@ -82,10 +82,7 @@ def execute(): #pylint: disable=unused-variable
                  'mrthreshold', '-', 'init_mask.mif'])
 
   # Cleaning the mask
-  run.command('maskfilter init_mask.mif connect -largest - | '
-              'mrcalc 1 - -sub - | '
-              'maskfilter - connect -largest - | '
-              'mrcalc 1 - -sub - | '
+  run.command('maskfilter init_mask.mif bigblob - | '
               'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' cleaned_mask.mif')
   run.command('mrmath input.mif max -axis 3 - | '
               'mrcalc - 0.0 -gt cleaned_mask.mif -mult final_mask.mif -datatype bit')
