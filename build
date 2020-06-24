@@ -574,6 +574,8 @@ lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
 
 if ld_enabled and runpath:
   ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
+else:
+  ld_flags += [ '-static-libgcc', '-static-libstdc++' ]
 
 
 
