@@ -82,13 +82,17 @@ EOD
 
 
 if [ ! -z $datadir ]; then
-  echo -n "fetching requisite test data... "
+  echo -n "checking for requisite test data... "
   git submodule update --init $datadir >> $LOGFILE 2>&1
   if [ $? != 0 ]; then
-    echo ERROR!
-    exit 1
+    if [[ -e $datadir && ! -z $(ls -A $datadir) ]]; then
+      echo "Found; UNABLE TO VERIFY VERSION MATCH"
+    else
+      echo "ERROR!"
+      exit 1
+    fi
   else
-    echo OK
+    echo "Synchronized OK"
   fi
 fi
 
