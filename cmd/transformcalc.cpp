@@ -67,7 +67,8 @@ void usage ()
              "")
 
   + Example ("Calculate the transformation matrix from an original image and an image with modified header",
-             "transformcalc mov mapmovhdr header output",
+             "transformcalc original.mif modified.mif header output",
+             "This transformation can be used for instance: mrtransform original_too.mif -linear output modified_too.mif"
              "")
 
   + Example ("Calculate the average affine matrix of a set of input matrices",
@@ -202,6 +203,7 @@ void run ()
     case 3: { // header
       if (num_inputs != 2)
         throw Exception ("header requires 2 inputs");
+      Header::do_realign_transform = false;
       auto orig_header = Header::open (argument[0]);
       auto modified_header = Header::open (argument[1]);
 
