@@ -58,6 +58,7 @@
 
 5     Left-Cerebellum-Cortex
 
+6     Left-Thalamus
 6     Left-Thalamus-Proper
 6     Left-Caudate
 6     Left-Putamen
@@ -66,6 +67,7 @@
 6     Left-Amygdala
 6     Left-Accumbens-area
 
+7     Right-Thalamus
 7     Right-Thalamus-Proper
 7     Right-Caudate
 7     Right-Putamen
