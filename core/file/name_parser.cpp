@@ -26,7 +26,7 @@ namespace MR
     namespace
     {
 
-      inline bool in_seq (const vector<uint32_t>& seq, int val)
+      inline bool in_seq (const vector<uint32_t>& seq, uint32_t val)
       {
         if (seq.size() == 0)
           return true;
@@ -278,7 +278,7 @@ namespace MR
 
       for (size_t n = 0; n < dim.size(); n++)
         if (parser.sequence (n).size())
-          if (dim[n] != (int) parser.sequence (n).size())
+          if (dim[n] != parser.sequence (n).size())
             throw Exception ("number of files found does not match specification \"" + specifier + "\"");
 
       return dim;

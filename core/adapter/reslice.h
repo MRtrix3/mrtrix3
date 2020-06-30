@@ -185,11 +185,11 @@ namespace MR
             Vector3 d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
             default_type sum (0.0);
             Vector3 s;
-            for (int z = 0; z < OS[2]; ++z) {
+            for (uint32_t z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
-              for (int y = 0; y < OS[1]; ++y) {
+              for (uint32_t y = 0; y < OS[1]; ++y) {
                 s[1] = d[1] + y*inc[1];
-                for (int x = 0; x < OS[0]; ++x) {
+                for (uint32_t x = 0; x < OS[0]; ++x) {
                   s[0] = d[0] + x*inc[0];
                   if (interp.voxel (direct_transform * s))
                     sum += interp.value();
