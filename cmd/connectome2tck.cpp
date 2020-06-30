@@ -222,14 +222,14 @@ void run ()
   bool manual_node_list = false;
   if (opt.size()) {
     manual_node_list = true;
-    vector<int> data = parse_ints (opt[0][0]);
+    const auto data = parse_ints<node_t> (opt[0][0]);
     bool zero_in_list = false;
-    for (vector<int>::const_iterator i = data.begin(); i != data.end(); ++i) {
-      if (size_t(*i) > max_node_index) {
-        WARN ("Node of interest " + str(*i) + " is above the maximum detected node index of " + str(max_node_index));
+    for (auto i : data) {
+      if (i > max_node_index) {
+        WARN ("Node of interest " + str(i) + " is above the maximum detected node index of " + str(max_node_index));
       } else {
-        nodes.push_back (node_t (*i));
-        if (!*i)
+        nodes.push_back (i);
+        if (!i)
           zero_in_list = true;
       }
     }

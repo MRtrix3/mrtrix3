@@ -174,7 +174,7 @@ namespace MR
               header.keyval()["trafo2"] = str(trafo2.matrix());
               auto check = Image<default_type>::create (image_path, header);
 
-              vector<int> no_oversampling (3,1);
+              vector<uint32_t> no_oversampling (3,1);
               Adapter::Reslice<Interp::Linear, Im1ImageType > im1_reslicer (
                 im1_image, midway_image, trafo1, no_oversampling, NAN);
               Adapter::Reslice<Interp::Linear, Im2ImageType > im2_reslicer (

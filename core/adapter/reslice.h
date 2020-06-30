@@ -61,7 +61,7 @@ namespace MR
 
 
     extern const transform_type NoTransform;
-    extern const vector<int> AutoOverSample;
+    extern const vector<uint32_t> AutoOverSample;
 
     //! \addtogroup interp
     // @{
@@ -118,7 +118,7 @@ namespace MR
           Reslice (const ImageType& original,
                    const HeaderType& reference,
                    const transform_type& transform = NoTransform,
-                   const vector<int>& oversample = AutoOverSample,
+                   const vector<uint32_t>& oversample = AutoOverSample,
                    const value_type value_when_out_of_bounds = Interp::Base<ImageType>::default_out_of_bounds_value()) :
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },
@@ -214,7 +214,7 @@ namespace MR
         const ssize_t dim[3];
         const default_type vox[3];
         bool oversampling;
-        int OS[3];
+        uint32_t OS[3];
         default_type from[3], inc[3];
         default_type norm;
         const transform_type transform_, direct_transform;
