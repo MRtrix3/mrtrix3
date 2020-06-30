@@ -301,9 +301,9 @@ inline vector<int> set_header (Header& header, const ImageType& input)
   header.transform() = input.transform();
 
   auto opt = get_options ("axes");
-  vector<int> axes;
+  vector<int32_t> axes;
   if (opt.size()) {
-    axes = opt[0][0];
+    axes = parse_ints<int32_t> (opt[0][0]);
     header.ndim() = axes.size();
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] >= static_cast<int> (input.ndim()))
@@ -363,7 +363,7 @@ void copy_permute (const InputType& in, Header& header_out, const std::string& o
 
 
 template <typename T>
-void extract (Header& header_in, Header& header_out, const vector<vector<int>>& pos, const std::string& output_filename)
+void extract (Header& header_in, Header& header_out, const vector<vector<uint32_t>>& pos, const std::string& output_filename)
 {
   auto in = header_in.get_image<T>();
   if (pos.empty()) {
@@ -460,16 +460,16 @@ void run ()
 
 
   opt = get_options ("coord");
-  vector<vector<int>> pos;
+  vector<vector<uint32_t>> pos;
   if (opt.size()) {
-    pos.assign (header_in.ndim(), vector<int>());
+    pos.assign (header_in.ndim(), vector<uint32_t>());
     for (size_t n = 0; n < opt.size(); n++) {
-      int axis = opt[n][0];
-      if (axis >= (int)header_in.ndim())
+      size_t axis = opt[n][0];
+      if (axis >= header_in.ndim())
         throw Exception ("axis " + str(axis) + " provided with -coord option is out of range of input image");
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
-      pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
+      pos[axis] = parse_ints<uint32_t> (opt[n][1], header_in.size(axis)-1);
 
       auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
       if (*minval < 0)
@@ -511,7 +511,7 @@ void run ()
     for (size_t n = 0; n < header_in.ndim(); ++n) {
       if (pos[n].empty()) {
         pos[n].resize (header_in.size (n));
-        for (size_t i = 0; i < pos[n].size(); i++)
+        for (uint32_t i = 0; i < uint32_t(pos[n].size()); i++)
           pos[n][i] = i;
       }
     }

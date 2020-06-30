@@ -136,9 +136,9 @@ namespace MR
         //CONF Initial window size of MRView in pixels.
         //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
-        vector<int> init_window_size;
+        vector<uint32_t> init_window_size;
         if (init_size_string.length())
-          init_window_size = parse_ints(init_size_string);
+          init_window_size = parse_ints<uint32_t> (init_size_string);
         if (init_window_size.size() == 2)
           return QSize (init_window_size[0], init_window_size[1]);
         else
@@ -1895,7 +1895,7 @@ namespace MR
           }
 
           if (opt.opt->is ("size")) {
-            vector<int> glsize = parse_ints (opt[0]);
+            vector<uint32_t> glsize = parse_ints<uint32_t> (opt[0]);
             if (glsize.size() != 2)
               throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
             if (glsize[0] < 1 || glsize[1] < 1)
@@ -1961,9 +1961,9 @@ namespace MR
 
           if (opt.opt->is ("volume")) {
             if (image()) {
-              auto pos = parse_ints (opt[0]);
+              auto pos = parse_ints<uint32_t> (opt[0]);
               for (size_t n = 0; n < std::min (pos.size(), image()->image.ndim()); ++n) {
-                if (pos[n] < 0 || pos[n] >= image()->image.size(n+3))
+                if (pos[n] >= image()->image.size(n+3))
                   throw Exception ("volume index outside of image dimensions");
                 set_image_volume (n+3, pos[n]);
                 set_image_navigation_menu();
@@ -2046,7 +2046,7 @@ namespace MR
           }
 
           if (opt.opt->is ("position")) {
-            vector<int> pos = opt[0];
+            vector<int> pos = parse_ints<int> (opt[0]);
             if (pos.size() != 2)
               throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
             move (pos[0], pos[1]);
