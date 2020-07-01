@@ -208,7 +208,7 @@ void usage ()
 }
 
 void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp,
-  const int interp, const float out_of_bounds_value, const vector<int>& oversample, const bool jacobian_modulate = false) {
+  const int interp, const float out_of_bounds_value, const vector<uint32_t>& oversample, const bool jacobian_modulate = false) {
   switch (interp) {
   case 0:
     Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
@@ -360,7 +360,7 @@ void run ()
   // Flip
   opt = get_options ("flip");
   if (opt.size()) {
-    vector<int> axes = opt[0][0];
+    vector<int32_t> axes = parse_ints<int32_t> (opt[0][0]);
     transform_type flip;
     flip.setIdentity();
     for (size_t i = 0; i < axes.size(); ++i) {
@@ -527,12 +527,12 @@ void run ()
   }
 
   // over-sampling
-  vector<int> oversample = Adapter::AutoOverSample;
+  vector<uint32_t> oversample = Adapter::AutoOverSample;
   opt = get_options ("oversample");
   if (opt.size()) {
     if (!template_header.valid() && !warp)
       throw Exception ("-oversample option applies only to regridding using the template option or to non-linear transformations");
-    oversample = opt[0][0];
+    oversample = parse_ints<uint32_t> (opt[0][0]);
     if (oversample.size() == 1)
       oversample.resize (3, oversample[0]);
     else if (oversample.size() != 3)
