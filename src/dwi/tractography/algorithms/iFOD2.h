@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2020 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -185,9 +185,10 @@ namespace MR
 
             ~iFOD2 ()
             {
-              S.update_stats (calibrate_list.size() + float(mean_sample_num)/float(num_sample_runs),
-                  float(num_truncations) / float(num_sample_runs),
-                  max_truncation);
+              if (num_sample_runs)
+                S.update_stats (calibrate_list.size() + float(mean_sample_num)/float(num_sample_runs),
+                    float(num_truncations) / float(num_sample_runs),
+                    max_truncation);
             }
 
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2020 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -174,7 +174,7 @@ namespace MR
       INFO ("opening image \"" + image_name + "\"...");
 
       File::ParsedName::List list;
-      const vector<int> num = list.parse_scan_check (image_name);
+      const auto num = list.parse_scan_check (image_name);
 
       const Formats::Base** format_handler = Formats::handlers;
       size_t item_index = 0;
@@ -324,7 +324,7 @@ namespace MR
 
       File::NameParser parser;
       parser.parse (image_name);
-      vector<int> Pdim (parser.ndim());
+      vector<uint32_t> Pdim (parser.ndim());
 
       vector<int> Hdim (H.ndim());
       for (size_t i = 0; i < H.ndim(); ++i)
@@ -394,7 +394,7 @@ namespace MR
 
 
       Header header (H);
-      vector<int> num (Pdim.size());
+      vector<uint32_t> num (Pdim.size());
 
       if (image_name != "-")
         H.name() = parser.name (num);
