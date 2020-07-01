@@ -203,12 +203,27 @@ void run ()
     case 3: { // header
       if (num_inputs != 2)
         throw Exception ("header requires 2 inputs");
-      Header::do_realign_transform = false;
+      // manual_realign: check if Header::do_realign_transform = false should potentially be set
+      const bool manual_realign = Header::do_realign_transform &&
+                                  (Path::is_mrtrix_image(argument[0]) || Path::is_mrtrix_image(argument[1]));
+      if (manual_realign) Header::do_realign_transform = false;
       auto orig_header = Header::open (argument[0]);
       auto modified_header = Header::open (argument[1]);
-
-      transform_type forward_transform = Transform(modified_header).voxel2scanner * Transform(orig_header).voxel2scanner.inverse();
-      save_transform (forward_transform.inverse(), output_path);
+      transform_type o_s2v = Transform(orig_header).scanner2voxel;
+      transform_type m_v2s = Transform(modified_header).voxel2scanner;
+      if (manual_realign) {
+        Header::do_realign_transform = true;
+        transform_type o_s2v_r = Transform(Header::open (argument[0])).scanner2voxel;
+        transform_type m_v2s_r = Transform(Header::open (argument[1])).voxel2scanner;
+        if (!o_s2v_r.matrix().isApprox(o_s2v.matrix()) || !m_v2s_r.matrix().isApprox(m_v2s.matrix())) {
+          WARN ("Automatic realignment of transform matrix into near-standard (RAS) coordinate system "
+            "and a large relative rotation between images might cause an image flip. Please verify the transformation and "
+             "rerun with '-config RealignTransform false' if needed.");
+        }
+        o_s2v = o_s2v_r;
+        m_v2s = m_v2s_r;
+      }
+      save_transform ((m_v2s * o_s2v).inverse(), output_path);
       break;
     }
     case 4: { // average
