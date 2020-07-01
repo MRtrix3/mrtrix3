@@ -64,14 +64,14 @@ namespace MR
       void read_mrtrix_header (Header& H, SourceType& kv)
       {
         std::string dtype, layout;
-        vector<uint64_t> dim;
+        vector<int> dim;
         vector<default_type> vox, scaling;
         vector<vector<default_type>> transform;
 
         std::string key, value;
         while (next_keyvalue (kv, key, value)) {
           const std::string lkey = lowercase (key);
-          if (lkey == "dim") dim = parse_ints<uint64_t> (value);
+          if (lkey == "dim") dim = parse_ints (value);
           else if (lkey == "vox") vox = parse_floats (value);
           else if (lkey == "layout") layout = value;
           else if (lkey == "datatype") dtype = value;

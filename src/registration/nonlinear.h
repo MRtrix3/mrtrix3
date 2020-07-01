@@ -394,7 +394,10 @@ namespace MR
             is_initialised = true;
           }
 
-          void set_max_iter (const vector<uint32_t>& maxiter) {
+          void set_max_iter (const vector<int>& maxiter) {
+            for (size_t i = 0; i < maxiter.size (); ++i)
+              if (maxiter[i] < 0)
+                throw Exception ("the number of iterations must be positive");
             max_iter = maxiter;
           }
 
@@ -428,10 +431,10 @@ namespace MR
             disp_smoothing = voxel_fwhm;
           }
 
-          void set_lmax (const vector<uint32_t>& lmax) {
+          void set_lmax (const vector<int>& lmax) {
             for (size_t i = 0; i < lmax.size (); ++i)
-              if (lmax[i] % 2)
-                throw Exception ("the input nonlinear lmax must be even");
+              if (lmax[i] < 0 || lmax[i] % 2)
+                throw Exception ("the input nonlinear lmax must be positive and even");
             fod_lmax = lmax;
           }
 
@@ -547,14 +550,14 @@ namespace MR
 
 
           bool is_initialised;
-          vector<uint32_t> max_iter;
+          vector<int> max_iter;
           vector<default_type> scale_factor;
           default_type update_smoothing;
           default_type disp_smoothing;
           default_type gradient_step;
           Eigen::MatrixXd aPSF_directions;
           bool do_reorientation;
-          vector<uint32_t> fod_lmax;
+          vector<int> fod_lmax;
           bool use_cc;
           std::basic_string<char> diagnostics_image_prefix;
 

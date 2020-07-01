@@ -297,7 +297,7 @@ class ASCIIWriter: public WriterInterface<float> { MEMALIGN(ASCIIWriter)
 
   private:
     File::NameParser parser;
-    vector<uint32_t> count;
+    vector<int> count;
 
 };
 

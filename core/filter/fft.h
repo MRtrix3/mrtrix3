@@ -63,13 +63,15 @@ namespace MR
         }
 
 
-        void set_axes (const vector<uint32_t>& in)
+        void set_axes (const vector<int>& in)
         {
           axes_to_process.clear();
-          for (auto i : in) {
-            if (i >= this->ndim())
-              throw Exception ("Axis index " + str(i) + " for FFT image filter exceeds number of image dimensions (" + str(this->ndim()) + ")");
-            axes_to_process.push_back (i);
+          for (vector<int>::const_iterator i = in.begin(); i != in.end(); ++i) {
+            if (*i < 0)
+              throw Exception ("Axis indices for FFT image filter must be positive");
+            if (*i >= (int)this->ndim())
+              throw Exception ("Axis index " + str(*i) + " for FFT image filter exceeds number of image dimensions (" + str(this->ndim()) + ")");
+            axes_to_process.push_back (*i);
           }
         }
 

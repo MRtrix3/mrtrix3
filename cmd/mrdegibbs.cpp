@@ -318,7 +318,7 @@ void run ()
   auto opt = get_options ("axes");
   const bool axes_set_manually = opt.size();
   if (opt.size()) {
-    vector<uint32_t> axes = parse_ints<uint32_t> (opt[0][0]);
+    vector<int> axes = opt[0][0];
     if (axes.size() != 2)
       throw Exception ("slice axes must be specified as a comma-separated 2-vector");
     if (size_t(std::max (axes[0], axes[1])) >= header.ndim())

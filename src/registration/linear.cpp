@@ -119,10 +119,10 @@ namespace MR
 
       opt = get_options("linstage.iterations");
       if (opt.size()) {
-        const auto iterations = parse_ints<uint32_t> (opt[0][0]);
+        vector<int> iterations = parse_ints (opt[0][0]);
         registration.set_stage_iterations (iterations);
       } else {
-        registration.set_stage_iterations (vector<uint32_t> {1});
+        registration.set_stage_iterations (vector<int> {1});
       }
 
       opt = get_options("linstage.diagnostics.prefix");

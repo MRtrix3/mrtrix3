@@ -21,13 +21,13 @@
 
 namespace MR
 {
-    namespace Adapter
+    namespace Adapter 
     {
 
 
     template <class ImageType>
-      class Normalise3D :
-        public Base<Normalise3D<ImageType>,ImageType>
+      class Normalise3D : 
+        public Base<Normalise3D<ImageType>,ImageType> 
     { MEMALIGN(Normalise3D<ImageType>)
       public:
 
@@ -44,20 +44,20 @@ namespace MR
             set_extent (vector<int>(1,3));
           }
 
-        Normalise3D (const ImageType& parent, const vector<uint32_t>& extent) :
+        Normalise3D (const ImageType& parent, const vector<int>& extent) :
           base_type (parent) {
             set_extent (extent);
           }
 
-        void set_extent (const vector<uint32_t>& ext)
+        void set_extent (const vector<int>& ext)
         {
           for (size_t i = 0; i < ext.size(); ++i)
-            if (! (ext[i] & uint32_t(1)))
+            if (! (ext[i] & int(1)))
               throw Exception ("expected odd number for extent");
           if (ext.size() != 1 && ext.size() != 3)
             throw Exception ("unexpected number of elements specified in extent");
           if (ext.size() == 1)
-            extent = vector<uint32_t> (3, ext[0]);
+            extent = vector<int> (3, ext[0]);
           else
             extent = ext;
 
@@ -104,7 +104,7 @@ namespace MR
         }
 
       protected:
-        vector<uint32_t> extent;
+        vector<int> extent;
         value_type mean;
         value_type pos_value;
         size_t nelements;

@@ -116,7 +116,7 @@ class Processor { MEMALIGN(Processor)
         Image<value_type>& cs_img,
         Image<value_type>& value_img,
         Image<value_type>& vector_img,
-        vector<uint32_t>& vals,
+        vector<int>& vals,
         int modulate) :
       mask_img (mask_img),
       adc_img (adc_img),
@@ -260,7 +260,7 @@ class Processor { MEMALIGN(Processor)
     Image<value_type> cs_img;
     Image<value_type> value_img;
     Image<value_type> vector_img;
-    vector<uint32_t> vals;
+    vector<int> vals;
     int modulate;
 };
 
@@ -341,10 +341,10 @@ void run ()
     metric_count++;
   }
 
-  vector<uint32_t> vals = {1};
+  vector<int> vals = {1};
   opt = get_options ("num");
   if (opt.size()) {
-    vals = parse_ints<uint32_t> (opt[0][0]);
+    vals = opt[0][0];
     if (vals.empty())
       throw Exception ("invalid eigenvalue/eigenvector number specifier");
     for (size_t i = 0; i < vals.size(); ++i)

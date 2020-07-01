@@ -91,7 +91,7 @@ namespace MR
       catch (Exception& E) {
         E.display (3);
         try {
-          auto tmp = parse_ints<int> (opt[0][0]);
+          auto tmp = parse_ints (opt[0][0]);
           for (auto x : tmp)
             strides.push_back (x);
         }

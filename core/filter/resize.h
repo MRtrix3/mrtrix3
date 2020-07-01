@@ -69,7 +69,7 @@ namespace MR
         ~Resize () { delete out_of_bounds_value; }
 
         void set_voxel_size (default_type size) {
-          vector<default_type> voxel_size (3, size);
+          vector <default_type> voxel_size (3, size);
           set_voxel_size (voxel_size);
         }
 
@@ -93,7 +93,7 @@ namespace MR
         }
 
 
-        void set_size (const vector<uint32_t>& image_res) {
+        void set_size (const vector<int>& image_res) {
           if (image_res.size() != 3)
             throw Exception ("the image resolution must be defined for 3 spatial dimensions");
           vector<default_type> new_voxel_size (3);
@@ -123,7 +123,7 @@ namespace MR
           set_voxel_size (new_voxel_size);
         }
 
-        void set_oversample (vector<uint32_t> oversample) {
+        void set_oversample (vector<int> oversample) {
           if (oversample.size() == 1)
             oversample.resize (3, oversample[0]);
           else if (oversample.size() != 3 and oversample.size() != 0)
@@ -138,7 +138,7 @@ namespace MR
         void set_interp_type (int type) {
           interp_type = type;
           if (interp_type == 0) // nearest
-            set_oversample (vector<uint32_t> (3, 1));
+            set_oversample (vector<int> (3, 1));
         }
 
         void set_transform (const transform_type& trafo) {
@@ -177,7 +177,7 @@ namespace MR
       protected:
         int interp_type;
         transform_type transformation;
-        vector<uint32_t> oversampling;
+        vector<int> oversampling;
         default_type *out_of_bounds_value;
     };
     //! @}
