@@ -204,8 +204,7 @@ void run ()
       if (num_inputs != 2)
         throw Exception ("header requires 2 inputs");
       // manual_realign: check if Header::do_realign_transform = false should potentially be set
-      const bool manual_realign = Header::do_realign_transform &&
-                                  (Path::is_mrtrix_image(argument[0]) || Path::is_mrtrix_image(argument[1]));
+      const bool manual_realign = Header::do_realign_transform;
       if (manual_realign) Header::do_realign_transform = false;
       auto orig_header = Header::open (argument[0]);
       auto modified_header = Header::open (argument[1]);
