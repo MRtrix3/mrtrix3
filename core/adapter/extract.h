@@ -135,10 +135,8 @@ namespace MR
                 indices[2][0] * spacing (2)
                 );
 
-            for (auto& idx : this->indices) {
-              sizes.push_back (idx.size());
-              idx.push_back (idx.back());
-            }
+            for (const auto& i : indices)
+              sizes.push_back (i.size());
           }
 
 
@@ -155,13 +153,17 @@ namespace MR
 
         ssize_t get_index (size_t axis) const { return current_pos[axis]; }
         void move_index (size_t axis, ssize_t increment) {
-          ssize_t prev = current_pos[axis];
           current_pos[axis] += increment;
-          parent().index (axis) += indices[axis][current_pos[axis]] - indices[axis][prev];
+          if (current_pos[axis] < 0)
+            parent().index (axis) = -1;
+          else if (current_pos[axis] >= sizes[axis])
+            parent().index (axis) = parent().size (axis);
+          else
+            parent().index (axis) = indices[axis][current_pos[axis]];
         }
 
       private:
-        vector<size_t> current_pos;
+        vector<ssize_t> current_pos;
         vector<vector<uint32_t> > indices;
         vector<ssize_t> sizes;
         transform_type trans;
