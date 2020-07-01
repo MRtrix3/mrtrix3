@@ -63,7 +63,7 @@ void usage ()
   + "The -vox option is used to change the size of the voxels in the output "
     "image as reported in the image header; note however that this does not "
     "re-sample the image based on a new voxel size (that is done using the "
-    "mrresize command)."
+    "mrgrid command)."
 
   + "By default, the intensity scaling parameters in the input image header "
     "are passed through to the output image header when writing to an integer "
