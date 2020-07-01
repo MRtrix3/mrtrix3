@@ -668,6 +668,14 @@ appropriately according to the standard.
   setting the ``Analyse.LeftToRight`` entry to ``true``.
 
 
+Fixel image (directory) format
+------------------------------
+
+Documentation on this format has moved to a new location:
+
+:ref:`fixel_format`
+
+
 .. _legacy_mrtrix_sparse_format:
 
 Legacy MRtrix Sparse Format (``.msh / .msf``)
