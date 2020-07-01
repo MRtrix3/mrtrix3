@@ -18,7 +18,7 @@ The [online documentation for *MRtrix3*](http://mrtrix.readthedocs.org/) is gene
 
 3. Install requisite Python packages using `pip` (may require `sudo`):
 
-   -  `pip install recommonmark sphinx sphinx_rtd_theme typing`
+   -  `pip install recommonmark sphinx sphinx-notfound-page sphinx_rtd_theme typing`
       (should not need to include `sphinx` in this list if it was installed via the distribution package manager in step 2)
 
 4. Compile the documentation:

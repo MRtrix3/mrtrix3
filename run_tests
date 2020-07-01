@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2020 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -82,13 +82,17 @@ EOD
 
 
 if [ ! -z $datadir ]; then
-  echo -n "fetching requisite test data... "
+  echo -n "checking for requisite test data... "
   git submodule update --init $datadir >> $LOGFILE 2>&1
   if [ $? != 0 ]; then
-    echo ERROR!
-    exit 1
+    if [[ -e $datadir && ! -z $(ls -A $datadir) ]]; then
+      echo "Found; UNABLE TO VERIFY VERSION MATCH"
+    else
+      echo "ERROR!"
+      exit 1
+    fi
   else
-    echo OK
+    echo "Synchronized OK"
   fi
 fi
 

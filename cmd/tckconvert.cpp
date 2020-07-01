@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2020 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -297,7 +297,7 @@ class ASCIIWriter: public WriterInterface<float> { MEMALIGN(ASCIIWriter)
 
   private:
     File::NameParser parser;
-    vector<int> count;
+    vector<uint32_t> count;
 
 };
 

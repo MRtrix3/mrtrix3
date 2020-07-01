@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2020 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -409,7 +409,7 @@ void run () {
   if (opt.size ()) {
     if (!do_rigid)
       throw Exception ("the number of rigid iterations have been input when no rigid registration is requested");
-    rigid_registration.set_max_iter (parse_ints (opt[0][0]));
+    rigid_registration.set_max_iter (parse_ints<uint32_t> (opt[0][0]));
   }
 
   opt = get_options ("rigid_metric");
@@ -451,13 +451,13 @@ void run () {
   }
 
   opt = get_options ("rigid_lmax");
-  vector<int> rigid_lmax;
+  vector<uint32_t> rigid_lmax;
   if (opt.size ()) {
     if (!do_rigid)
       throw Exception ("the -rigid_lmax option has been set when no rigid registration is requested");
     if (max_mc_image_lmax == 0)
       throw Exception ("-rigid_lmax option is not valid if no input image is FOD image");
-    rigid_lmax = parse_ints (opt[0][0]);
+    rigid_lmax = parse_ints<uint32_t> (opt[0][0]);
     for (size_t i = 0; i < rigid_lmax.size (); ++i)
        if (rigid_lmax[i] > max_mc_image_lmax) {
         WARN ("the requested -rigid_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
@@ -599,17 +599,17 @@ void run () {
   if (opt.size ()) {
     if (!do_affine)
       throw Exception ("the number of affine iterations have been input when no affine registration is requested");
-    affine_registration.set_max_iter (parse_ints (opt[0][0]));
+    affine_registration.set_max_iter (parse_ints<uint32_t> (opt[0][0]));
   }
 
   opt = get_options ("affine_lmax");
-  vector<int> affine_lmax;
+  vector<uint32_t> affine_lmax;
   if (opt.size ()) {
     if (!do_affine)
       throw Exception ("the -affine_lmax option has been set when no affine registration is requested");
     if (max_mc_image_lmax == 0)
       throw Exception ("-affine_lmax option is not valid if no input image is FOD image");
-    affine_lmax = parse_ints (opt[0][0]);
+    affine_lmax = parse_ints<uint32_t> (opt[0][0]);
     for (size_t i = 0; i < affine_lmax.size (); ++i)
       if (affine_lmax[i] > max_mc_image_lmax) {
         WARN ("the requested -affine_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
@@ -725,7 +725,7 @@ void run () {
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the number of non-linear iterations have been input when no non-linear registration is requested");
-    vector<int> iterations_per_level = parse_ints (opt[0][0]);
+    vector<uint32_t> iterations_per_level = parse_ints<uint32_t> (opt[0][0]);
     if (nonlinear_init && iterations_per_level.size() > 1)
       throw Exception ("when initialising the non-linear registration the max number of iterations can only be defined for a single level");
     else
@@ -754,13 +754,13 @@ void run () {
   }
 
   opt = get_options ("nl_lmax");
-  vector<int> nl_lmax;
+  vector<uint32_t> nl_lmax;
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("the -nl_lmax option has been set when no non-linear registration is requested");
     if (input1[0].ndim() < 4)
       throw Exception ("-nl_lmax option is not valid with 3D images");
-    nl_lmax = parse_ints (opt[0][0]);
+    nl_lmax = parse_ints<uint32_t> (opt[0][0]);
     nl_registration.set_lmax (nl_lmax);
     for (size_t i = 0; i < (nl_lmax).size (); ++i)
       if ((nl_lmax)[i] > max_mc_image_lmax)
