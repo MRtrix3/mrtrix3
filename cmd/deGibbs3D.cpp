@@ -13,7 +13,7 @@ void usage() {
 
 	SYNOPSIS = "Removal of Gibbs Ringing in 3D";
 
-	DESCRIPTION 
+	DESCRIPTION
 	+ "This reads an input nifti file and outputs an image after running fft function.";
 
 	ARGUMENTS
@@ -39,7 +39,8 @@ void run() {
 
 	// insert code here to use fft
 
+       threaded_copy_with_progress_message ("copying from input to output", input, output);
 
 
-	
+
 }
