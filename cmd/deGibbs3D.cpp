@@ -4,6 +4,7 @@
 #include "command.h"
 #include "image.h"
 #include "header.h"
+#include "filter/fft.h"
 using namespace std;
 using namespace MR;
 using namespace App;
@@ -24,22 +25,12 @@ void usage() {
 
 void run() {
 
-	// opening image which is specified by first argument
-	auto input = Image<float>::open (argument[0]);
-	// argument[0] retrieves values as a string
-	// The auto keyword specifies that the type of the variable that is being declared will be automatically deducted from its initializer
-
-
-	Header header (input); // creating an instance of Header as it is a required argument when creating output image
-	header.datatype() = DataType::from_command_line (DataType::Float64);
-	// defining data type of header
-	auto output = Image<float>::create (argument[1], header);
-	//MR::Image::create creates output file using second argument and Header
-
 
 	// insert code here to use fft
-
-       threaded_copy_with_progress_message ("copying from input to output", input, output);
+	auto input = Image<cdouble>::open(argument[0]);
+	Filter::FFT fft (input,false);
+	auto output = Image<cdouble>::create (argument[1], fft);
+	fft (input, output);
 
 
 
