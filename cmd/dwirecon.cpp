@@ -193,7 +193,7 @@ void run ()
   }
 
   // Select subset
-  auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<vector<int>> (idx));
+  auto dwisub = Adapter::make <Adapter::Extract1D> (dwi, 3, container_cast<vector<uint32_t>> (idx));
 
   Eigen::MatrixXf gradsub (idx.size(), grad.cols());
   for (size_t i = 0; i < idx.size(); i++)
