@@ -26,6 +26,16 @@ namespace MR
   namespace ImageIO
   {
 
+    Pipe::~Pipe ()
+    {
+      if (!is_new && files.size() == 1) {
+        DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
+        std::remove (files[0].name.c_str());
+        SignalHandler::unmark_file_for_deletion (files[0].name);
+      }
+    }
+
+
 
     void Pipe::load (const Header& header, size_t)
     {
@@ -52,13 +62,6 @@ namespace MR
           std::cout << files[0].name << "\n";
         addresses[0].release();
       }
-
-      if (!is_new && files.size() == 1) {
-        DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
-        std::remove (files[0].name.c_str());
-        SignalHandler::unmark_file_for_deletion (files[0].name);
-      }
-
     }
 
   }
