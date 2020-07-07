@@ -22,10 +22,14 @@
 namespace MR
 {
   namespace SignalHandler
-  { 
-      void init(); 
-      void mark_file_for_deletion (const std::string&);
-      void unmark_file_for_deletion (const std::string&);
+  {
+    using cleanup_function_type = void(*)();
+
+    void init();
+    void on_signal (cleanup_function_type func);
+
+    void mark_file_for_deletion (const std::string&);
+    void unmark_file_for_deletion (const std::string&);
   }
 }
 
