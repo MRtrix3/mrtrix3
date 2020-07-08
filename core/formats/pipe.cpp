@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <unistd.h>
+
 #include "signal_handler.h"
 #include "file/utils.h"
 #include "file/path.h"
@@ -34,7 +36,7 @@ namespace MR
         H.name() = name;
       }
       else {
-        if (!File::is_tempfile (H.name())) 
+        if (!File::is_tempfile (H.name()))
           return std::unique_ptr<ImageIO::Base>();
       }
 
@@ -59,6 +61,9 @@ namespace MR
     {
       if (H.name() != "-")
         return false;
+
+      if (isatty (STDOUT_FILENO))
+        throw Exception ("attempt to pipe image to standard output (this will leave temporary files behind)");
 
       H.name() = File::create_tempfile (0, "mif");
 
