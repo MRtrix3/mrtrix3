@@ -30,7 +30,6 @@ namespace MR
     { NOMEMALIGN
       public:
         Pipe (Base&& io_handler) : Base (std::move (io_handler)) { }
-        virtual ~Pipe();
 
       protected:
         std::unique_ptr<File::MMap> mmap;

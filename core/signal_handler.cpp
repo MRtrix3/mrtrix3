@@ -97,6 +97,8 @@ namespace MR
 
     void init()
     {
+      on_signal (delete_temporary_files);
+
       //ENVVAR name: MRTRIX_NOSIGNALS
       //ENVVAR If this variable is set to any value, disable MRtrix3's custom
       //ENVVAR signal handlers. This may sometimes be useful when debugging.
@@ -105,8 +107,6 @@ namespace MR
       //ENVVAR abnormally.
       if (getenv ("MRTRIX_NOSIGNALS"))
         return;
-
-      on_signal (delete_temporary_files);
 
 #ifdef MRTRIX_WINDOWS
       // Use signal() rather than sigaction() for Windows, as the latter is not supported
@@ -128,23 +128,24 @@ namespace MR
     void on_signal (cleanup_function_type func)
     {
       cleanup_operations.push_back (func);
+      std::atexit (func);
     }
 
 
 
-    void mark_file_for_deletion (const std::string& s)
+    void mark_file_for_deletion (const std::string& filename)
     {
       while (!flag.test_and_set());
-      marked_files.push_back (s);
+      marked_files.push_back (filename);
       flag.clear();
     }
 
-    void unmark_file_for_deletion (const std::string& s)
+    void unmark_file_for_deletion (const std::string& filename)
     {
       while (!flag.test_and_set());
       auto i = marked_files.begin();
       while (i != marked_files.end()) {
-        if (*i == s)
+        if (*i == filename)
           i = marked_files.erase (i);
         else
           ++i;
