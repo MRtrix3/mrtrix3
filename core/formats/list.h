@@ -85,10 +85,7 @@ namespace MR
         virtual std::unique_ptr<ImageIO::Base> create (Header& H) const = 0;
     };
 
-#ifdef MRTRIX_AS_R_LIBRARY
     DECLARE_IMAGEFORMAT (RAM, "RAM buffer");
-#endif
-
     DECLARE_IMAGEFORMAT (Pipe, "Internal pipe");
     DECLARE_IMAGEFORMAT (DICOM, "DICOM");
     DECLARE_IMAGEFORMAT (MRtrix, "MRtrix");
