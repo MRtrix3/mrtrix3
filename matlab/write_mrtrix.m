@@ -138,13 +138,16 @@ if isstruct (image)
   end
 end
 
-fprintf (fid, '\nfile: ')
+fprintf (fid, '\nfile: ');
 
 if strcmp(filename(end-3:end), '.mif')
   dataoffset = ftell (fid) + 18;
   dataoffset = dataoffset + mod((4 - mod(dataoffset, 4)), 4);
-  fprintf (fid, '. %d\nEND\n              ', dataoffset);
-  fseek (fid, dataoffset, 'bof');
+  s = sprintf ('. %d\nEND\n              ', dataoffset);
+  s = s(1:(dataoffset-ftell(fid)));
+  fprintf (fid, s);
+  fclose (fid);
+  fid = fopen (filename, 'a+', byteorder);
 elseif strcmp(filename(end-3:end), '.mih')
   datafile = [ filename(1:end-4) '.dat' ];
   fprintf (fid, '%s 0\nEND\n', datafile);
