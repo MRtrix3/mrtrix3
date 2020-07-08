@@ -35,9 +35,17 @@ namespace MR
   namespace SignalHandler {
 
     namespace {
+      std::vector<cleanup_function_type> cleanup_operations;
+
       std::vector<std::string> marked_files;
       std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
+      void delete_temporary_files ()
+      {
+        for (const auto& i : marked_files)
+          std::remove (i.c_str());
+        marked_files.clear();
+      }
 
 
 
@@ -48,9 +56,8 @@ namespace MR
 
           // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
           // Don't use File::remove: may throw an exception
-          for (const auto& i : marked_files)
-            std::remove (i.c_str());
-
+          for (auto func : cleanup_operations)
+            func();
 
           const char* sig = nullptr;
           const char* msg = nullptr;
@@ -99,6 +106,8 @@ namespace MR
       if (getenv ("MRTRIX_NOSIGNALS"))
         return;
 
+      on_signal (delete_temporary_files);
+
 #ifdef MRTRIX_WINDOWS
       // Use signal() rather than sigaction() for Windows, as the latter is not supported
 # define __SIGNAL(SIG,MSG) signal (SIG, handler)
@@ -115,6 +124,11 @@ namespace MR
 #include "signals.h"
     }
 
+
+    void on_signal (cleanup_function_type func)
+    {
+      cleanup_operations.push_back (func);
+    }
 
 
 
