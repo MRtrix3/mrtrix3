@@ -97,6 +97,11 @@ Options for exporting phase-encode tables
 
 -  **-petable** print the phase encoding table
 
+Handling of piped images
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-nodelete** don't delete images passed to mrinfo via Unix pipes
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
