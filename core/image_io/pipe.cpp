@@ -55,6 +55,8 @@ namespace MR
       }
     }
 
+    bool Pipe::delete_piped_images = true;
+
   }
 }
 

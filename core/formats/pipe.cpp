@@ -43,7 +43,8 @@ namespace MR
       if (H.name().empty())
         throw Exception ("no filename supplied to standard input (broken pipe?)");
 
-      SignalHandler::mark_file_for_deletion (H.name());
+      if (ImageIO::Pipe::delete_piped_images)
+        SignalHandler::mark_file_for_deletion (H.name());
 
       if (!Path::has_suffix (H.name(), ".mif"))
         throw Exception ("MRtrix only supports the .mif format for command-line piping");
