@@ -29,6 +29,10 @@ function write_mrtrix (image, filename)
 %    image.mrtrix_version:  a character array [optional]
 %    image.transform:       a 4x4 matrix [optional]
 %    image.dw_scheme:       a NDWx4 matrix of gradient directions [optional]
+ 
+% helper function: acts as ternary conditional operator
+choose = @(varargin)varargin{end-varargin{1}};
+
 
 fid = fopen (filename, 'w');
 assert(fid ~= -1, 'error opening %s', filename);
@@ -62,36 +66,23 @@ fprintf (fid, ',+%d', 1:(size(dim,2)-1));
 [computerType, maxSize, endian] = computer;
 if isstruct (image) && isfield (image, 'datatype')
   datatype = lower(image.datatype);
-  byteorder = datatype(end-1:end);
-
-  if strcmp (byteorder, 'le')
-    precision = datatype(1:end-2);
-    byteorder = 'l';
-  elseif strcmp(byteorder, 'be')
-    precision = datatype(1:end-2);
-    byteorder = 'b';
-  else
-    if strcmp(datatype, 'bit')
-      precision = 'bit1';
-      byteorder = 'n';
-    elseif strcmp (datatype, 'int8') || strcmp (datatype, 'uint8')
-      precision = datatype;
-      byteorder = 'n';
-      if endian == 'L'
-        datatype(end+1:end+3) = 'le';
-      else
-        datatype(end+1:end+3) = 'be';
+  switch datatype(end-1:end)
+    case 'le', precision = datatype(1:end-2); byteorder = 'l';
+    case 'be', precision = datatype(1:end-2); byteorder = 'b';
+    otherwise
+      switch datatype
+        case 'bit',                precision = 'bit1'; byteorder = 'n';
+        case { 'int8', 'uint8' },  precision = datatype; byteorder = 'n';
+        otherwise, 
+          precision = datatype;
+          datatype = [ datatype choose(endian=='L','le','be') ];
+          byteorder = choose (endian=='L', 'l', 'b');
       end
-    end
   end
 else
-  if endian == 'L'
-    datatype = 'float32le';
-  else
-    datatype = 'float32be';
-  end
+  datatype = [ 'float32' choose(endian=='L','le','be') ];
   precision = 'float32';
-  byteorder = 'n';
+  byteorder = choose (endian=='L', 'l', 'b');
 end
 fprintf (fid, [ '\ndatatype: ' datatype ]);
 
