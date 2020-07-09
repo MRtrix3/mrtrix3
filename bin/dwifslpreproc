@@ -982,7 +982,7 @@ def execute(): #pylint: disable=unused-variable
       if os.path.isfile('dwi_post_eddy.eddy_residuals'):
         eddyqc_options += ' -g ' + bvecs_path
       if do_topup:
-        eddyqc_options += ' -f ' + fsl.find_image('field_fieldcoef')
+        eddyqc_options += ' -f ' + fsl.find_image('field_map')
       if eddy_mporder:
         eddyqc_options += ' -s slspec.txt'
       if app.VERBOSITY > 2:
