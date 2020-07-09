@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2020 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -216,11 +216,18 @@ namespace MR
         uint64_t as_uint () const { return uint64_t (as_int()); }
         default_type as_float () const;
 
-        vector<int> as_sequence_int () const {
+        vector<int32_t> as_sequence_int () const {
           assert (arg->type == IntSeq);
-          try { return parse_ints (p); }
+          try { return parse_ints<int32_t> (p); }
           catch (Exception& e) { error (e); }
-          return vector<int>();
+          return vector<int32_t>();
+        }
+
+        vector<uint32_t> as_sequence_uint () const {
+          assert (arg->type == IntSeq);
+          try { return parse_ints<uint32_t> (p); }
+          catch (Exception& e) { error (e); }
+          return vector<uint32_t>();
         }
 
         vector<default_type> as_sequence_float () const {
@@ -239,7 +246,8 @@ namespace MR
         operator long long unsigned int () const { return as_uint(); }
         operator float () const { return as_float(); }
         operator double () const { return as_float(); }
-        operator vector<int> () const { return as_sequence_int(); }
+        operator vector<int32_t> () const { return as_sequence_int(); }
+        operator vector<uint32_t> () const { return as_sequence_uint(); }
         operator vector<default_type> () const { return as_sequence_float(); }
 
         const char* c_str () const { return p; }

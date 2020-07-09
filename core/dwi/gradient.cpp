@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2020 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -288,7 +288,8 @@ namespace MR
         // write the scheme as interpreted back into the header if:
         // - vector normalisation effect is large, regardless of whether or not b-value scaling was applied
         // - gradient information was pulled from file
-        if (exceeds_single_precision || get_options ("grad").size() || get_options ("fslgrad").size())
+        // - explicit b-value scaling is requested
+        if (exceeds_single_precision || get_options ("grad").size() || get_options ("fslgrad").size() || bvalue_scaling != BValueScalingBehaviour::Auto)
           set_DW_scheme (const_cast<Header&> (header), grad);
 
         INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion gradient table");
