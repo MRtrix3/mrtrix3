@@ -28,6 +28,8 @@ Options
 
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
 
+-  **-indices** Print out the indices of the reordered directions to standard output.
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
