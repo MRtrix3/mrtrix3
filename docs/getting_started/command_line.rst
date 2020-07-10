@@ -201,9 +201,11 @@ from the pipeline is specified for each program using a single dash
 
    ``mrconvert`` has no way to tell that the image it produced hasn't been passed
    onto another command. This means the temporary file it creates will remain
-   on the filesystem (``/tmp/`` by default), needlessly taking up storage
-   space. Eventually this can fill up the entire filesystem, causing
-   subsequent commands to fail and creating problems for the system as a whole.
+   on the filesystem (default: ``/tmp/`` on Unix, '.' on Windows, see
+   :ref:`mrtrix_config`), needlessly taking up storage space. Eventually this can
+   fill up the entire filesystem, causing subsequent commands to fail and creating
+   problems for the system as a whole. If this happens, the script
+   :ref:`mrtrix_cleanup` can be used to remove temporary files from a specific location.
 
 
 For this to work properly, it is important to know which arguments each

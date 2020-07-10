@@ -100,7 +100,7 @@ Options for exporting phase-encode tables
 Handling of piped images
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-nodelete** don't delete images passed to mrinfo via Unix pipes
+-  **-nodelete** don't delete temporary images or images passed to mrinfo via Unix pipes
 
 Standard options
 ^^^^^^^^^^^^^^^^
