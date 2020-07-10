@@ -110,7 +110,7 @@ void usage ()
     +   Option ("petable", "print the phase encoding table")
 
     + OptionGroup ("Handling of piped images")
-    +   Option ("nodelete", "don't delete images passed to mrinfo via Unix pipes");
+    +   Option ("nodelete", "don't delete temporary images or images passed to mrinfo via Unix pipes");
 
 }
 
