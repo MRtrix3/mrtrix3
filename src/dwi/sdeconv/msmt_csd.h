@@ -134,7 +134,7 @@ namespace MR
 
                 INFO ("initialising multi-tissue CSD for " + str(num_tissues()) + " tissue types, with " + str (nparams) + " parameters");
 
-                Eigen::MatrixXd C (grad.rows(), nparams);
+                Eigen::MatrixXd C = Eigen::MatrixXd::Zero (grad.rows(), nparams);
 
                 vector<size_t> dwilist;
                 for (size_t i = 0; i != size_t(grad.rows()); i++)
