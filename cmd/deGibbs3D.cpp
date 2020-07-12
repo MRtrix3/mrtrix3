@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <numeric>
 
 
 #include "command.h"
@@ -44,22 +45,25 @@ void run() {
   Math::FFT (output, 1, FFTW_FORWARD);
   Math::FFT (output, 2, FFTW_FORWARD);
 
+
   // creating temporary image to store intermediate image shifts
-  //auto tmp = Image<cdouble>::scratch(header)
+  auto tmp = Image<cdouble>::scratch(header);
 
   // performing a shift in the image domain is equivalent to multiplying the image in the fourier domain with an exponential
   double shift = 100.0;
-  const double pi = 3.14159265358979323846;
   const complex<double> j(0.0,-1.0);
 
   // performing shift in 1D
-  for (int x = 0; x < output.size(0); x++){
+  for (int x = output.get_index(0); x < output.size(0); x++){
   	double ind = output.get_index(0);
-  	cdouble val = output.get_value() * exp(j * 2.0 * ind * pi * shift);
-  	output.set_value(val);
+  	cdouble val = output.get_value() * exp(j * 2.0 * ind * Math::pi * shift);
+  	tmp.set_value(val);
   	output.move_index(0, shift);
+  	tmp.move_index(0,shift);
   };
 
+  // copying tmp into output
+  output = tmp; 
 
   // FFT back to check we get back the original image:
   Math::FFT (output, 0, FFTW_BACKWARD);
