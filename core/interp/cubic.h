@@ -27,9 +27,6 @@ namespace MR
   namespace Interp
   {
 
-    //! \addtogroup interp
-    // @{
-
     //! This class provides access to the voxel intensities of an image using cubic spline interpolation.
     /*! Interpolation is only performed along the first 3 (spatial) axes.
      * The (integer) position along the remaining axes should be set using the
@@ -62,6 +59,8 @@ namespace MR
      * float f = input.value();
      * transform_type M = input.transform(); // a valid 4x4 transformation matrix
      * \endcode
+     *
+     * \ingroup interp
      */
 
     // To avoid unnecessary computation, we want to partially specialize our template based
@@ -516,13 +515,16 @@ namespace MR
     };
 
 
+    //! \ingroup interp
+    //! @{
+
     // Template alias for default Cubic interpolator
     // This allows an interface that's consistent with other interpolators that all have one template argument
     template <typename ImageType>
-    using Cubic = SplineInterp<ImageType, Math::HermiteSpline<typename ImageType::value_type>, Math::SplineProcessingType::Value>;
+      using Cubic = SplineInterp<ImageType, Math::HermiteSpline<typename ImageType::value_type>, Math::SplineProcessingType::Value>;
 
     template <typename ImageType>
-    using CubicUniform = SplineInterp<ImageType, Math::UniformBSpline<typename ImageType::value_type>, Math::SplineProcessingType::Value>;
+      using CubicUniform = SplineInterp<ImageType, Math::UniformBSpline<typename ImageType::value_type>, Math::SplineProcessingType::Value>;
 
 
     template <class ImageType, typename... Args>

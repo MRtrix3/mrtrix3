@@ -646,7 +646,7 @@ namespace MR
          * Eigen::Vector3f x (in.row(3));
          * out.row(3) += x;
          * out.row(3) += M*Eigen::Vector3f(in.row(3)) + Eigen::VectorXf (other.row(3));
-         * \code
+         * \endcode
          * */
         FORCE_INLINE Helper::ConstRow<Derived> row (size_t axis) const { return { static_cast<Derived&> (*this), axis }; }
         FORCE_INLINE Helper::Row<Derived> row (size_t axis) { return { static_cast<Derived&> (*this), axis }; }

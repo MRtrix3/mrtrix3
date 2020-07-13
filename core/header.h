@@ -38,14 +38,18 @@ namespace MR
    * \brief Classes and functions providing access to image data.
    *
    * See @ref image_access for details. */
-  // @{
-
-  //! functions and classes related to image data input/output
 
 
   template <typename ValueType> class Image;
 
-  class Header { MEMALIGN (Header)
+  //! Holds information about an image, whether stored on disk or held in RAM
+  /*! This class holds information about an image, including its metadata
+   * (voxel sizes, dimensions, transformation, etc), and its accessor
+   * (ImageIO) methods
+   *
+   * \ingroup ImageAPI
+   */
+  class Header { MEMALIGN(Header)
     public:
 
       //! a class to hold attributes about each axis
@@ -413,7 +417,6 @@ namespace MR
   inline const ssize_t& Header::stride (size_t axis) const { return axes_[axis].stride; }
   inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; }
 
-  //! @}
 }
 
 #endif

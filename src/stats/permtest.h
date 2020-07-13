@@ -51,6 +51,8 @@ namespace MR
       using matrix_type = Math::Stats::matrix_type;
       using count_matrix_type = Eigen::Array<uint32_t, Eigen::Dynamic, Eigen::Dynamic>;
 
+      //! \ingroup Statistics
+      //! @{
 
 
       /*! A class to pre-compute the empirical enhanced statistic image for non-stationarity correction */

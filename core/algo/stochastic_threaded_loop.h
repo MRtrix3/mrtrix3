@@ -164,7 +164,8 @@ namespace MR
 
 
 
-
+  //! \ingroup loop thread_classes
+  //! @{
 
 
   template <class HeaderType>
@@ -193,7 +194,7 @@ namespace MR
       return { source,
         Loop (get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
         get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
-      }
+    }
 
   template <class HeaderType>
     inline StochasticThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> StochasticThreadedLoop (
@@ -213,7 +214,7 @@ namespace MR
       return { source,
         Loop (progress_message, get_outer_axes (axes, num_inner_axes)),
         get_inner_axes (axes, num_inner_axes) };
-      }
+    }
 
   template <class HeaderType>
     inline StochasticThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> StochasticThreadedLoop (
@@ -225,10 +226,12 @@ namespace MR
       return { source,
         Loop (progress_message, get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
         get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
-      }
+    }
 
 
-  /*! \} */
+
+
+  //! @}
 
 }
 

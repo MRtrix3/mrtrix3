@@ -25,7 +25,7 @@ namespace MR
   {
 
     //! \addtogroup Optimisation
-    // @{
+    //! @{
 
 
     namespace {

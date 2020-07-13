@@ -28,7 +28,7 @@ namespace MR
   {
 
     //! \addtogroup interp
-    // @{
+    //! @{
 
     //! an Image providing interpolated values from another Image
     /*! the Warp class provides an Image interface to data
@@ -51,7 +51,7 @@ namespace MR
     template <template <class ImageType> class Interpolator, class ImageType, class WarpType>
       class Warp :
         public ImageBase<Warp<Interpolator,ImageType,WarpType>, typename ImageType::value_type>
-    { MEMALIGN(Warp<Interpolator,ImageType,WarpType>) 
+    { MEMALIGN(Warp<Interpolator,ImageType,WarpType>)
       public:
         using value_type = typename ImageType::value_type;
 

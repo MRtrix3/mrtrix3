@@ -32,9 +32,9 @@ namespace MR
         return AdapterType<ImageType> (parent, std::forward<Args> (args)...);
       }
 
-    template <class AdapterType, class ImageType> 
-      class Base : 
-        public ImageBase<AdapterType, typename ImageType::value_type> 
+    template <class AdapterType, class ImageType>
+      class Base :
+        public ImageBase<AdapterType, typename ImageType::value_type>
     { MEMALIGN (Base<AdapterType,ImageType>)
       public:
 
@@ -43,7 +43,7 @@ namespace MR
         Base (const ImageType& parent) : parent_ (parent) { }
 
 
-        template <class U> 
+        template <class U>
           const Base& operator= (const U& V) { return parent_ = V; }
 
         FORCE_INLINE ImageType& parent () { return parent_; }
@@ -61,14 +61,14 @@ namespace MR
         FORCE_INLINE ssize_t get_index (size_t axis) const { return parent_.index (axis); }
         FORCE_INLINE void move_index (size_t axis, ssize_t increment) { parent_.index (axis) += increment; }
 
-        FORCE_INLINE value_type get_value () const { return parent_.value(); } 
-        FORCE_INLINE void set_value (value_type val) { parent_.value() = val; } 
+        FORCE_INLINE value_type get_value () const { return parent_.value(); }
+        FORCE_INLINE void set_value (value_type val) { parent_.value() = val; }
 
         FORCE_INLINE void reset () { parent_.reset(); }
 
         friend std::ostream& operator<< (std::ostream& stream, const Base& V) {
           stream << "image adapter \"" << V.name() << "\", datatype " << MR::DataType::from<value_type>().specifier() << ", position [ ";
-          for (size_t n = 0; n < V.ndim(); ++n) 
+          for (size_t n = 0; n < V.ndim(); ++n)
             stream << V[n] << " ";
           stream << "], value = " << V.value();
           return stream;

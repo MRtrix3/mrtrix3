@@ -24,8 +24,6 @@ namespace MR
 {
   namespace Filter
   {
-    /** \addtogroup Filters
-    @{ */
 
     /*! A base class for defining image filters.
      *
@@ -40,6 +38,7 @@ namespace MR
      * standardised functor interface that image filter classes
      * should ideally conform to.
      *
+     * \ingroup Filters
      */
     class Base : public Header { MEMALIGN(Base)
       public:
@@ -66,7 +65,7 @@ namespace MR
         std::string message;
 
     };
-    //! @}
+
   }
 }
 

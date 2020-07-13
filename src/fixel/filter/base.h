@@ -34,6 +34,7 @@ namespace MR
        * standardised functor interface that fixel data filter
        * classes should ideally conform to.
        *
+       * \ingroup Filters
        */
       class Base
       { MEMALIGN (Base)
@@ -55,7 +56,6 @@ namespace MR
           std::string message;
 
       };
-      //! @}
 
 
 

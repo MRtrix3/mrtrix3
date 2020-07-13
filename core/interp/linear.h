@@ -30,9 +30,6 @@ namespace MR
   namespace Interp
   {
 
-    //! \addtogroup interp
-    // @{
-
     //! This class provides access to the voxel intensities of a data set, using tri-linear interpolation.
     /*! Interpolation is only performed along the first 3 (spatial) axes.
      * The (integer) position along the remaining axes should be set using the
@@ -67,6 +64,9 @@ namespace MR
      * float f = input.value();
      * transform_type M = input.transform(); // a valid 4x4 transformation matrix
      * \endcode
+     *
+     * \ingroup interp
+     * @{
      */
 
     template <class C>

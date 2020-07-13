@@ -27,6 +27,8 @@
 
 namespace MR
 {
+  //! \addtogroup loop
+  //! @{
 
  template <class ImageType, class RandomEngine>
   class Random_loop { NOMEMALIGN

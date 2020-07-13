@@ -25,10 +25,149 @@
 namespace MR
 {
 
-  /** \addtogroup thread_classes
-   * @{
-   *
-   * \defgroup image_thread_looping Thread-safe image looping
+  namespace {
+
+    inline vector<size_t> get_inner_axes (const vector<size_t>& axes, size_t num_inner_axes) {
+      return { axes.begin(), axes.begin()+num_inner_axes };
+    }
+
+    inline vector<size_t> get_outer_axes (const vector<size_t>& axes, size_t num_inner_axes) {
+      return { axes.begin()+num_inner_axes, axes.end() };
+    }
+
+    template <class HeaderType>
+      inline vector<size_t> get_inner_axes (const HeaderType& source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
+        return get_inner_axes (Stride::order (source, from_axis, to_axis), num_inner_axes);
+      }
+
+    template <class HeaderType>
+      inline vector<size_t> get_outer_axes (const HeaderType& source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
+        return get_outer_axes (Stride::order (source, from_axis, to_axis), num_inner_axes);
+      }
+
+
+    template <int N, class Functor, class... ImageType>
+      struct ThreadedLoopRunInner
+      { MEMALIGN(ThreadedLoopRunInner<N,Functor,ImageType...>)
+        const vector<size_t>& outer_axes;
+        decltype (Loop (outer_axes)) loop;
+        typename std::remove_reference<Functor>::type func;
+        std::tuple<ImageType...> vox;
+
+        ThreadedLoopRunInner (const vector<size_t>& outer_axes, const vector<size_t>& inner_axes,
+            const Functor& functor, ImageType&... voxels) :
+          outer_axes (outer_axes),
+          loop (Loop (inner_axes)),
+          func (functor),
+          vox (voxels...) { }
+
+        void operator() (const Iterator& pos) {
+          assign_pos_of (pos, outer_axes).to (vox);
+          for (auto i = unpack (loop, vox); i; ++i)
+            unpack (func, vox);
+        }
+      };
+
+
+    template <class Functor, class... ImageType>
+      struct ThreadedLoopRunInner<0,Functor,ImageType...>
+      { MEMALIGN(ThreadedLoopRunInner<0, Functor,ImageType...>)
+        const vector<size_t>& outer_axes;
+        decltype (Loop (outer_axes)) loop;
+        typename std::remove_reference<Functor>::type func;
+
+        ThreadedLoopRunInner (const vector<size_t>& outer_axes, const vector<size_t>& inner_axes,
+            const Functor& functor, ImageType&... /*voxels*/) :
+          outer_axes (outer_axes),
+          loop (Loop (inner_axes)),
+          func (functor) { }
+
+        void operator() (Iterator& pos) {
+          for (auto i = loop (pos); i; ++i)
+            func (pos);
+        }
+      };
+
+
+      inline void __manage_progress (...) { }
+      template <class LoopType, class ThreadType>
+        inline auto __manage_progress (const LoopType* loop, const ThreadType* threads)
+        -> decltype((void) (&loop->progress), void())
+      {
+        loop->progress.run_update_thread (*threads);
+      }
+
+
+    template <class OuterLoopType>
+      struct ThreadedLoopRunOuter { MEMALIGN(ThreadedLoopRunOuter<OuterLoopType>)
+        Iterator iterator;
+        OuterLoopType outer_loop;
+        vector<size_t> inner_axes;
+
+        //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
+        template <class Functor>
+          void run_outer (Functor&& functor)
+          {
+            if (Thread::threads_to_execute() == 0) {
+              for (auto i = outer_loop (iterator); i; ++i)
+                functor (iterator);
+              return;
+            }
+
+            std::mutex mutex;
+            ProgressBar::SwitchToMultiThreaded progress_functions;
+
+            struct Shared { MEMALIGN(Shared)
+              Iterator& iterator;
+              decltype (outer_loop (iterator)) loop;
+              std::mutex& mutex;
+              FORCE_INLINE bool next (Iterator& pos) {
+                std::lock_guard<std::mutex> lock (mutex);
+                if (loop) {
+                  assign_pos_of (iterator, loop.axes).to (pos);
+                  ++loop;
+                  return true;
+                }
+                else return false;
+              }
+            } shared = { iterator, outer_loop (iterator), mutex };
+
+            struct PerThread { MEMALIGN(PerThread)
+              Shared& shared;
+              typename std::remove_reference<Functor>::type func;
+              void execute () {
+                Iterator pos = shared.iterator;
+                while (shared.next (pos))
+                  func (pos);
+              }
+            } loop_thread = { shared, functor };
+
+            auto threads = Thread::run (Thread::multi (loop_thread), "loop threads");
+
+            __manage_progress (&shared.loop, &threads);
+            threads.wait();
+          }
+
+
+
+        //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
+        template <class Functor, class... ImageType>
+          void run (Functor&& functor, ImageType&&... vox)
+          {
+            ThreadedLoopRunInner<
+              sizeof...(ImageType),
+              typename std::remove_reference<Functor>::type,
+              typename std::remove_reference<ImageType>::type...
+                > loop_thread (outer_loop.axes, inner_axes, functor, vox...);
+            run_outer (loop_thread);
+            check_app_exit_code();
+          }
+
+      };
+  }
+
+
+  /** \defgroup image_thread_looping Thread-safe image looping
    *
    * These functions allows arbitrary looping operations to be performed in
    * parallel, using a versatile multi-threading framework. It works
@@ -235,152 +374,9 @@ namespace MR
    * \sa Thread::run()
    * \sa thread_queue
    *
-   * @}
+   * \ingroup loop
+   * @{
    */
-
-
-
-  namespace {
-
-    inline vector<size_t> get_inner_axes (const vector<size_t>& axes, size_t num_inner_axes) {
-      return { axes.begin(), axes.begin()+num_inner_axes };
-    }
-
-    inline vector<size_t> get_outer_axes (const vector<size_t>& axes, size_t num_inner_axes) {
-      return { axes.begin()+num_inner_axes, axes.end() };
-    }
-
-    template <class HeaderType>
-      inline vector<size_t> get_inner_axes (const HeaderType& source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
-        return get_inner_axes (Stride::order (source, from_axis, to_axis), num_inner_axes);
-      }
-
-    template <class HeaderType>
-      inline vector<size_t> get_outer_axes (const HeaderType& source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
-        return get_outer_axes (Stride::order (source, from_axis, to_axis), num_inner_axes);
-      }
-
-
-    template <int N, class Functor, class... ImageType>
-      struct ThreadedLoopRunInner
-      { MEMALIGN(ThreadedLoopRunInner<N,Functor,ImageType...>)
-        const vector<size_t>& outer_axes;
-        decltype (Loop (outer_axes)) loop;
-        typename std::remove_reference<Functor>::type func;
-        std::tuple<ImageType...> vox;
-
-        ThreadedLoopRunInner (const vector<size_t>& outer_axes, const vector<size_t>& inner_axes,
-            const Functor& functor, ImageType&... voxels) :
-          outer_axes (outer_axes),
-          loop (Loop (inner_axes)),
-          func (functor),
-          vox (voxels...) { }
-
-        void operator() (const Iterator& pos) {
-          assign_pos_of (pos, outer_axes).to (vox);
-          for (auto i = unpack (loop, vox); i; ++i)
-            unpack (func, vox);
-        }
-      };
-
-
-    template <class Functor, class... ImageType>
-      struct ThreadedLoopRunInner<0,Functor,ImageType...>
-      { MEMALIGN(ThreadedLoopRunInner<0, Functor,ImageType...>)
-        const vector<size_t>& outer_axes;
-        decltype (Loop (outer_axes)) loop;
-        typename std::remove_reference<Functor>::type func;
-
-        ThreadedLoopRunInner (const vector<size_t>& outer_axes, const vector<size_t>& inner_axes,
-            const Functor& functor, ImageType&... /*voxels*/) :
-          outer_axes (outer_axes),
-          loop (Loop (inner_axes)),
-          func (functor) { }
-
-        void operator() (Iterator& pos) {
-          for (auto i = loop (pos); i; ++i)
-            func (pos);
-        }
-      };
-
-
-      inline void __manage_progress (...) { }
-      template <class LoopType, class ThreadType>
-        inline auto __manage_progress (const LoopType* loop, const ThreadType* threads)
-        -> decltype((void) (&loop->progress), void())
-      {
-        loop->progress.run_update_thread (*threads);
-      }
-
-
-    template <class OuterLoopType>
-      struct ThreadedLoopRunOuter { MEMALIGN(ThreadedLoopRunOuter<OuterLoopType>)
-        Iterator iterator;
-        OuterLoopType outer_loop;
-        vector<size_t> inner_axes;
-
-        //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
-        template <class Functor>
-          void run_outer (Functor&& functor)
-          {
-            if (Thread::threads_to_execute() == 0) {
-              for (auto i = outer_loop (iterator); i; ++i)
-                functor (iterator);
-              return;
-            }
-
-            std::mutex mutex;
-            ProgressBar::SwitchToMultiThreaded progress_functions;
-
-            struct Shared { MEMALIGN(Shared)
-              Iterator& iterator;
-              decltype (outer_loop (iterator)) loop;
-              std::mutex& mutex;
-              FORCE_INLINE bool next (Iterator& pos) {
-                std::lock_guard<std::mutex> lock (mutex);
-                if (loop) {
-                  assign_pos_of (iterator, loop.axes).to (pos);
-                  ++loop;
-                  return true;
-                }
-                else return false;
-              }
-            } shared = { iterator, outer_loop (iterator), mutex };
-
-            struct PerThread { MEMALIGN(PerThread)
-              Shared& shared;
-              typename std::remove_reference<Functor>::type func;
-              void execute () {
-                Iterator pos = shared.iterator;
-                while (shared.next (pos))
-                  func (pos);
-              }
-            } loop_thread = { shared, functor };
-
-            auto threads = Thread::run (Thread::multi (loop_thread), "loop threads");
-
-            __manage_progress (&shared.loop, &threads);
-            threads.wait();
-          }
-
-
-
-        //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
-        template <class Functor, class... ImageType>
-          void run (Functor&& functor, ImageType&&... vox)
-          {
-            ThreadedLoopRunInner<
-              sizeof...(ImageType),
-              typename std::remove_reference<Functor>::type,
-              typename std::remove_reference<ImageType>::type...
-                > loop_thread (outer_loop.axes, inner_axes, functor, vox...);
-            run_outer (loop_thread);
-            check_app_exit_code();
-          }
-
-      };
-  }
-
 
 
 
@@ -465,6 +461,7 @@ namespace MR
         get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
     }
 
+    //! @}
 
 
 }

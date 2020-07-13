@@ -29,8 +29,6 @@ namespace MR
   namespace Interp
   {
 
-    //! \addtogroup interp
-    // @{
 
     //! This class defines the interface for classes that perform image interpolation
     /*! Interpolation is generally performed along the first 3 (spatial) axes;
@@ -64,6 +62,8 @@ namespace MR
      * float f = input.value();
      * transform_type M = input.transform(); // a valid 4x4 transformation matrix
      * \endcode
+     *
+     * \ingroup interp
      */
 
     template <class ImageType> class Base : public ImageType, public Transform
@@ -216,9 +216,6 @@ namespace MR
 
     };
 
-
-
-    //! @}
 
   }
 }

@@ -70,8 +70,8 @@ namespace MR
 
 
 
-    //! \addtogroup CmdParse
-    // @{
+    //! \ingroup CmdParse
+    //! @{
 
     //! A class to specify a command-line argument
     /*! Command-line arguments that are accepted by a particular command are
@@ -443,10 +443,10 @@ namespace MR
     };
 
 
+    //! @}
 
   }
 
-  //! @}
 }
 
 #endif

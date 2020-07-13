@@ -45,15 +45,19 @@ namespace MR
 
 
 
-        // Define a base class to contain information regarding an individual hypothesis, and
-        //   pre-compute as much as possible with regards to Freedman-Lane
-        // Note: This can be constructed for both t-tests and F-tests
-        //   (This is why the constructor is a template: Could be created either from a row()
-        //   call on the contrast matrix, or from a matrix explicitly constructed from a set of
-        //   rows from the contrast matrix, which is how an F-test is constructed.
-        // In the case of a single-row F-test, still need to be able to differentiate between
-        //   a t-test and an F-test for the sake of signedness (and taking the square root);
-        //   this is managed by having two separate constructor templates
+        //! a base class to contain information regarding an individual hypothesis, and
+        //!   pre-compute as much as possible with regards to Freedman-Lane
+        /*! Note: This can be constructed for both t-tests and F-tests (This is
+         * why the constructor is a template: Could be created either from a
+         * row() call on the contrast matrix, or from a matrix explicitly
+         * constructed from a set of rows from the contrast matrix, which is
+         * how an F-test is constructed.  In the case of a single-row F-test,
+         * still need to be able to differentiate between a t-test and an
+         * F-test for the sake of signedness (and taking the square root); this
+         * is managed by having two separate constructor templates
+         *
+         *   \ingroup Statistics
+         */
         class Hypothesis
         { MEMALIGN(Hypothesis)
           public:
@@ -409,7 +413,7 @@ namespace MR
 
 
 
-        /** \addtogroup Statistics
+        /** \ingroup Statistics
         @{ */
         /*! A class to compute statistics from heteroscedastic data using a variable General Linear Model.
          * This class produces a statistic per effect of interest. It should be used in

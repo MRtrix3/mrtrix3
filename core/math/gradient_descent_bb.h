@@ -31,7 +31,7 @@ namespace MR
   {
 
     //! \addtogroup Optimisation
-    // @{
+    //! @{
 
     class LinearUpdateBB { NOMEMALIGN
       public:

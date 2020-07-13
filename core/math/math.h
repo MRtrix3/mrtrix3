@@ -91,7 +91,7 @@ namespace MR
     /** @} */
   }
 
-  /** @defgroup elfun Eigen helper functions
+  /** @ingroup elfun
       @{ */
   //! check if all elements of an Eigen MatrixBase object are finite
   template<typename Derived>

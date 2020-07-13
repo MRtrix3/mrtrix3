@@ -70,7 +70,7 @@ namespace MR
 
 
     //! \addtogroup CmdParse
-    // @{
+    //! @{
 
     //! vector of strings to hold more comprehensive command description
     class Description : public vector<const char*> { NOMEMALIGN
@@ -475,9 +475,9 @@ namespace MR
       return stream;
     }
 
+    //! @}
   }
 
-  //! @}
 }
 
 #endif

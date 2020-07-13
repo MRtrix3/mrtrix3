@@ -64,7 +64,7 @@ namespace MR
     extern const vector<uint32_t> AutoOverSample;
 
     //! \addtogroup interp
-    // @{
+    //! @{
 
     //! an Image providing interpolated values from another Image
     /*! the Reslice class provides an Image interface to data

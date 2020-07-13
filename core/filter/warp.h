@@ -31,14 +31,14 @@ namespace MR
   {
 
 
-  // TODO if there is a use for this elsewhere then we should have threaded_copy4D convenience functions
-  class CopyKernel4D { NOMEMALIGN
-    public:
-      template <class InputImageType, class OutputImageType>
-        FORCE_INLINE void operator() (InputImageType& in, OutputImageType& out) const {
-          out.row(3) = in.row(3);
-        }
-  };
+    // TODO if there is a use for this elsewhere then we should have threaded_copy4D convenience functions
+    class CopyKernel4D { NOMEMALIGN
+      public:
+        template <class InputImageType, class OutputImageType>
+          FORCE_INLINE void operator() (InputImageType& in, OutputImageType& out) const {
+            out.row(3) = in.row(3);
+          }
+    };
 
 
 
@@ -60,6 +60,8 @@ namespace MR
      * // regrid source onto destination using linear interpolation:
      * Filter::warp<Image::Interp::Linear> (source, destination, warp);
      * \endcode
+     *
+     * \ingroup Filters interp Transforms
      */
     template <template <class VoxelType> class Interpolator, class ImageTypeDestination, class ImageTypeSource, class WarpType>
       void warp (
@@ -100,7 +102,6 @@ namespace MR
         }
       }
 
-    //! @}
   }
 }
 

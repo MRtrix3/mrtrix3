@@ -30,9 +30,6 @@ namespace MR
   namespace Interp
   {
 
-    //! \addtogroup interp
-    // @{
-
     //! This class provides access to the voxel intensities of an image, using sinc interpolation.
     /*! Interpolation is only performed along the first 3 (spatial) axes.
      * The (integer) position along the remaining axes should be set using the
@@ -41,30 +38,32 @@ namespace MR
      * and scanner().
      * For example:
      * \code
-   * auto input = Image<float>::create (Argument[0]);
-   *
-   * // create an Interp::Sinc object using input as the parent data set:
-   * Interp::Sinc<decltype(input) > interp (input);
-   *
-   * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
-   * interp.scanner (10.2, 3.59, 54.1);
-   *
-   * // get the value at this position:
-   * float value = interp.value();
-   * \endcode
-   *
-   * The template \a input class must be usable with this type of syntax:
-   * \code
-   * int xsize = input.size(0);    // return the dimension
-   * int ysize = input.size(1);    // along the x, y & z dimensions
-   * int zsize = input.size(2);
-   * float v[] = { input.spacing(0), input.spacing(1), input.spacing(2) };  // return voxel dimensions
-   * input.index(0) = 0;               // these lines are used to
-   * input.index(1)--;                 // set the current position
-   * input.index(2)++;                 // within the data set
-   * float f = input.value();
-   * transform_type M = input.transform(); // a valid 4x4 transformation matrix
+     * auto input = Image<float>::create (Argument[0]);
+     *
+     * // create an Interp::Sinc object using input as the parent data set:
+     * Interp::Sinc<decltype(input) > interp (input);
+     *
+     * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
+     * interp.scanner (10.2, 3.59, 54.1);
+     *
+     * // get the value at this position:
+     * float value = interp.value();
      * \endcode
+     *
+     * The template \a input class must be usable with this type of syntax:
+     * \code
+     * int xsize = input.size(0);    // return the dimension
+     * int ysize = input.size(1);    // along the x, y & z dimensions
+     * int zsize = input.size(2);
+     * float v[] = { input.spacing(0), input.spacing(1), input.spacing(2) };  // return voxel dimensions
+     * input.index(0) = 0;               // these lines are used to
+     * input.index(1)--;                 // set the current position
+     * input.index(2)++;                 // within the data set
+     * float f = input.value();
+     * transform_type M = input.transform(); // a valid 4x4 transformation matrix
+     * \endcode
+     *
+     * \ingroup interp
      */
 
     template <class ImageType> class Sinc : public Base<ImageType>
@@ -164,13 +163,13 @@ namespace MR
 
 
 
+    //! \ingroup interp
+    //! @{
 
-
-  template <class ImageType, typename... Args>
-    inline Sinc<ImageType> make_sinc (const ImageType& parent, Args&&... args) {
-      return Sinc<ImageType> (parent, std::forward<Args> (args)...);
-    }
-
+    template <class ImageType, typename... Args>
+      inline Sinc<ImageType> make_sinc (const ImageType& parent, Args&&... args) {
+        return Sinc<ImageType> (parent, std::forward<Args> (args)...);
+      }
 
     //! @}
 

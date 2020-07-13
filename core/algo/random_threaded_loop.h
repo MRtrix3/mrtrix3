@@ -120,7 +120,7 @@ namespace MR
           for (size_t i = 0; i < max_cnt; ++i){
             pos.index(inner[0]) = *it;
             it++;
-          // for (auto i = loop (pos); i; ++i){
+            // for (auto i = loop (pos); i; ++i){
             // if (rng() >= density){
             //   DEBUG (str(pos) + " ...skipped inner.");
             //   continue;
@@ -132,143 +132,145 @@ namespace MR
             ++cnt;
           }
           pos.index(inner[0]) = dims[inner[0]];
-        }
+          }
 
-      };
+        };
 
 
-    template <class OuterLoopType>
-      struct RandomThreadedLoopRunOuter { MEMALIGN(RandomThreadedLoopRunOuter<OuterLoopType>)
-        Iterator iterator;
-        OuterLoopType outer_loop;
-        vector<size_t> inner_axes;
+        template <class OuterLoopType>
+          struct RandomThreadedLoopRunOuter { MEMALIGN(RandomThreadedLoopRunOuter<OuterLoopType>)
+            Iterator iterator;
+            OuterLoopType outer_loop;
+            vector<size_t> inner_axes;
 
-        //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
-        template <class Functor>
-          void run_outer (Functor&& functor, const double voxel_density, const vector<size_t>& dimensions)
-          {
-            if (Thread::threads_to_execute() == 0) {
-              for (auto i = outer_loop (iterator); i; ++i){
-                // std::cerr << "outer: " << str(iterator) << " " << voxel_density << " " << dimensions << std::endl;
-                functor (iterator);
-              }
-              return;
-            }
-
-            struct Shared { MEMALIGN(Shared)
-              Iterator& iterator;
-              decltype (outer_loop (iterator)) loop;
-              std::mutex mutex;
-              FORCE_INLINE bool next (Iterator& pos) {
-                std::lock_guard<std::mutex> lock (mutex);
-                if (loop) {
-                  assign_pos_of (iterator, loop.axes).to (pos);
-                  ++loop;
-                  return true;
+            //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
+            template <class Functor>
+              void run_outer (Functor&& functor, const double voxel_density, const vector<size_t>& dimensions)
+              {
+                if (Thread::threads_to_execute() == 0) {
+                  for (auto i = outer_loop (iterator); i; ++i){
+                    // std::cerr << "outer: " << str(iterator) << " " << voxel_density << " " << dimensions << std::endl;
+                    functor (iterator);
+                  }
+                  return;
                 }
-                else return false;
+
+                struct Shared { MEMALIGN(Shared)
+                  Iterator& iterator;
+                  decltype (outer_loop (iterator)) loop;
+                  std::mutex mutex;
+                  FORCE_INLINE bool next (Iterator& pos) {
+                    std::lock_guard<std::mutex> lock (mutex);
+                    if (loop) {
+                      assign_pos_of (iterator, loop.axes).to (pos);
+                      ++loop;
+                      return true;
+                    }
+                    else return false;
+                  }
+                } shared = { iterator, outer_loop (iterator) };
+
+                struct PerThread { MEMALIGN(PerThread)
+                  Shared& shared;
+                  typename std::remove_reference<Functor>::type func;
+                  void execute () {
+                    Iterator pos = shared.iterator;
+                    while (shared.next (pos))
+                      func (pos);
+                  }
+                } loop_thread = { shared, functor };
+
+                Thread::run (Thread::multi (loop_thread), "loop threads").wait();
               }
-            } shared = { iterator, outer_loop (iterator) };
 
-            struct PerThread { MEMALIGN(PerThread)
-              Shared& shared;
-              typename std::remove_reference<Functor>::type func;
-              void execute () {
-                Iterator pos = shared.iterator;
-                while (shared.next (pos))
-                  func (pos);
+
+
+            //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
+            template <class Functor, class... ImageType>
+              void run (Functor&& functor, const double voxel_density, vector<size_t> dimensions, ImageType&&... vox)
+              {
+                RandomThreadedLoopRunInner<
+                  sizeof...(ImageType),
+                  typename std::remove_reference<Functor>::type,
+                  typename std::remove_reference<ImageType>::type...
+                    > loop_thread (outer_loop.axes, inner_axes, functor, voxel_density, dimensions, vox...);
+                run_outer (loop_thread, voxel_density, dimensions);
+                check_app_exit_code();
               }
-            } loop_thread = { shared, functor };
 
-            Thread::run (Thread::multi (loop_thread), "loop threads").wait();
-          }
-
-
-
-        //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
-        template <class Functor, class... ImageType>
-          void run (Functor&& functor, const double voxel_density, vector<size_t> dimensions, ImageType&&... vox)
-          {
-            RandomThreadedLoopRunInner<
-              sizeof...(ImageType),
-              typename std::remove_reference<Functor>::type,
-              typename std::remove_reference<ImageType>::type...
-                > loop_thread (outer_loop.axes, inner_axes, functor, voxel_density, dimensions, vox...);
-            run_outer (loop_thread, voxel_density, dimensions);
-            check_app_exit_code();
-          }
-
-      };
-  }
-
-
-
-
-
-
-
-  template <class HeaderType>
-    inline RandomThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> RandomThreadedLoop (
-        const HeaderType& source,
-        const vector<size_t>& outer_axes,
-        const vector<size_t>& inner_axes) {
-      return { source, Loop (outer_axes), inner_axes };
-    }
-
-
-  template <class HeaderType>
-    inline RandomThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> RandomThreadedLoop (
-        const HeaderType& source,
-        const vector<size_t>& axes,
-        size_t num_inner_axes = 1) {
-      return { source, Loop (get_outer_axes (axes, num_inner_axes)), get_inner_axes (axes, num_inner_axes) };
-    }
-
-  template <class HeaderType>
-    inline RandomThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> RandomThreadedLoop (
-        const HeaderType& source,
-        size_t from_axis = 0,
-        size_t to_axis = std::numeric_limits<size_t>::max(),
-        size_t num_inner_axes = 1) {
-      return { source,
-        Loop (get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
-        get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
-      }
-
-  template <class HeaderType>
-    inline RandomThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> RandomThreadedLoop (
-        const std::string& progress_message,
-        const HeaderType& source,
-        const vector<size_t>& outer_axes,
-        const vector<size_t>& inner_axes) {
-      return { source, Loop (progress_message, outer_axes), inner_axes };
-    }
-
-  template <class HeaderType>
-    inline RandomThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> RandomThreadedLoop (
-        const std::string& progress_message,
-        const HeaderType& source,
-        const vector<size_t>& axes,
-        size_t num_inner_axes = 1) {
-      return { source,
-        Loop (progress_message, get_outer_axes (axes, num_inner_axes)),
-        get_inner_axes (axes, num_inner_axes) };
-      }
-
-  template <class HeaderType>
-    inline RandomThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> RandomThreadedLoop (
-        const std::string& progress_message,
-        const HeaderType& source,
-        size_t from_axis = 0,
-        size_t to_axis = std::numeric_limits<size_t>::max(),
-        size_t num_inner_axes = 1) {
-      return { source,
-        Loop (progress_message, get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
-        get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
+          };
       }
 
 
-  /*! \} */
+
+
+
+  //! \ingroup loop thread_classes
+  //! @{
+
+
+    template <class HeaderType>
+      inline RandomThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> RandomThreadedLoop (
+          const HeaderType& source,
+          const vector<size_t>& outer_axes,
+          const vector<size_t>& inner_axes) {
+        return { source, Loop (outer_axes), inner_axes };
+      }
+
+
+    template <class HeaderType>
+      inline RandomThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> RandomThreadedLoop (
+          const HeaderType& source,
+          const vector<size_t>& axes,
+          size_t num_inner_axes = 1) {
+        return { source, Loop (get_outer_axes (axes, num_inner_axes)), get_inner_axes (axes, num_inner_axes) };
+      }
+
+    template <class HeaderType>
+      inline RandomThreadedLoopRunOuter<decltype(Loop(vector<size_t>()))> RandomThreadedLoop (
+          const HeaderType& source,
+          size_t from_axis = 0,
+          size_t to_axis = std::numeric_limits<size_t>::max(),
+          size_t num_inner_axes = 1) {
+        return { source,
+          Loop (get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
+          get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
+      }
+
+    template <class HeaderType>
+      inline RandomThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> RandomThreadedLoop (
+          const std::string& progress_message,
+          const HeaderType& source,
+          const vector<size_t>& outer_axes,
+          const vector<size_t>& inner_axes) {
+        return { source, Loop (progress_message, outer_axes), inner_axes };
+      }
+
+    template <class HeaderType>
+      inline RandomThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> RandomThreadedLoop (
+          const std::string& progress_message,
+          const HeaderType& source,
+          const vector<size_t>& axes,
+          size_t num_inner_axes = 1) {
+        return { source,
+          Loop (progress_message, get_outer_axes (axes, num_inner_axes)),
+          get_inner_axes (axes, num_inner_axes) };
+      }
+
+    template <class HeaderType>
+      inline RandomThreadedLoopRunOuter<decltype(Loop("", vector<size_t>()))> RandomThreadedLoop (
+          const std::string& progress_message,
+          const HeaderType& source,
+          size_t from_axis = 0,
+          size_t to_axis = std::numeric_limits<size_t>::max(),
+          size_t num_inner_axes = 1) {
+        return { source,
+          Loop (progress_message, get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
+          get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
+      }
+
+
+    //! @}
 
 }
 

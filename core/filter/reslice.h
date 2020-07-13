@@ -43,6 +43,8 @@ namespace MR
      * // regrid source onto destination using linear interpolation:
      * Image::Filter::reslice<Interp::Linear> (source, destination);
      * \endcode
+     *
+     * \ingroup interp Filters
      */
     template <template <class ImageType> class Interpolator, class ImageTypeDestination, class ImageTypeSource>
       void reslice (
@@ -56,8 +58,6 @@ namespace MR
         threaded_copy_with_progress_message ("reslicing \"" + source.name() + "\"", interp, destination, 0, source.ndim(), 2);
       }
 
-
-    //! @}
   }
 }
 

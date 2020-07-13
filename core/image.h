@@ -35,9 +35,18 @@ namespace MR
   constexpr int SpatiallyContiguous = -1;
 
 
+  //! A lightweight class providing access to a voxel position and value
+  /*! This class holds a voxel position (index) and provides methods to access
+   * the corresponding intensity value at that position. It is designed to be
+   * lightweight and copy-constructable from another Image so different threads
+   * can own their own version to access the same image independently and
+   * concurrently.
+   *
+   * \ingroup ImageAPI
+   */
   template <typename ValueType>
     class Image :
-      public ImageBase<Image<ValueType>, ValueType>
+      public ImageBase<Image<ValueType>,ValueType>
   { MEMALIGN (Image<ValueType>)
       public:
         using value_type = ValueType;
