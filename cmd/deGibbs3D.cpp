@@ -47,23 +47,14 @@ void run() {
 
 
   // creating temporary image to store intermediate image shifts
-  auto tmp = Image<cdouble>::scratch(header);
+  //auto tmp = Image<cdouble>::scratch(header);
 
   // performing a shift in the image domain is equivalent to multiplying the image in the fourier domain with an exponential
-  double shift = 100.0;
-  const complex<double> j(0.0,-1.0);
+  const double shift = 0.1;
+  const complex<double> j(0.0,1.0);
 
-  // performing shift in 1D
-  for (int x = output.get_index(0); x < output.size(0); x++){
-  	double ind = output.get_index(0);
-  	cdouble val = output.get_value() * exp(j * 2.0 * ind * Math::pi * shift);
-  	tmp.set_value(val);
-  	output.move_index(0, shift);
-  	tmp.move_index(0,shift);
-  };
-
-  // copying tmp into output
-  output = tmp; 
+  for (auto l = Loop (output,0,3)(output); l; ++l)
+    output.value() *= exp(j * 2.0 * cdouble(output.index(0)) * Math::pi * shift);
 
   // FFT back to check we get back the original image:
   Math::FFT (output, 0, FFTW_BACKWARD);
@@ -79,7 +70,7 @@ void run() {
 
   // This class will perform the per-voxel operation (divide by N):
   struct RescaleFn {
-    RescaleFn (double N) : N (N) { } // intialiser list 
+    RescaleFn (double N) : N (N) { } // intialiser list
     void operator() (decltype(output)& out) { out.value() /= N; }
     const double N;
   };
