@@ -230,13 +230,19 @@ void convert_new2old ()
   H_out.keyval()[Fixel::Legacy::size_key] = str(sizeof(FixelMetric));
   Fixel::Legacy::Image<Fixel::Legacy::FixelMetric> out_image (argument[1], H_out);
 
+  TRACE;
   auto index_image = H_index.get_image<index_type>();
+  TRACE;
   auto dirs_image = H_dirs.get_image<float>();
+  TRACE;
   auto value_image = H_data[value_index].get_image<float>();
+  TRACE;
   Image<float> size_image;
+  TRACE;
   if (size_index != H_data.size())
     size_image = H_data[size_index].get_image<float>();
 
+  TRACE;
   for (auto l = Loop (out_image) (out_image, index_image); l; ++l) {
     index_image.index(3) = 0;
     const index_type num_fixels = index_image.value();

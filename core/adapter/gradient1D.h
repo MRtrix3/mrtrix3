@@ -25,19 +25,15 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gradient1D : 
-        public Base<Gradient1D<ImageType>, ImageType> 
-    { MEMALIGN (Gradient1D<ImageType>)
+      class Gradient1D : public Base<ImageType> { MEMALIGN (Gradient1D<ImageType>)
       public:
 
-        using base_type = Base<Gradient1D<ImageType>, ImageType>;
+        using base_type = Base<ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::name;
         using base_type::size;
         using base_type::spacing;
-        using base_type::index;
-
 
         Gradient1D (const ImageType& parent,
                     size_t axis = 0,
@@ -52,7 +48,7 @@ namespace MR
                 derivative_weights[dim] /= spacing(dim);
                 half_derivative_weights[dim] /= spacing(dim);
               }
-            }  
+            }
           }
 
         void set_axis (size_t val)
@@ -88,6 +84,8 @@ namespace MR
           return result;
         }
 
+        DEFINE_IMAGE_INDEX_METHODS;
+        DEFINE_IMAGE_ROW_METHODS;
 
       protected:
         size_t axis;

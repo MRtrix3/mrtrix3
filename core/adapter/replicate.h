@@ -23,66 +23,65 @@
 
 namespace MR
 {
-    namespace Adapter
-    {
+  namespace Adapter
+  {
 
     template <class ImageType>
-      class Replicate :
-        public Base<Replicate<ImageType>,ImageType>
-    { MEMALIGN(Replicate<ImageType>)
-      public:
+      class Replicate : public Base<ImageType> { MEMALIGN(Replicate<ImageType>)
+        public:
 
-        using base_type = Base<Replicate<ImageType>, ImageType>;
-        using value_type = typename ImageType::value_type;
+          using base_type = Base<ImageType>;
+          using value_type = typename ImageType::value_type;
 
-        using base_type::name;
-        using base_type::ndim;
-        using base_type::spacing;
+          using base_type::name;
+          using base_type::ndim;
+          using base_type::spacing;
 
           Replicate (ImageType& original, const Header& replication_template) :
             base_type (original),
             header_ (replication_template),
-            pos_ (std::max<size_t> (parent().ndim(), header_.ndim()), 0)
-          {
-            for (size_t n = 0; n < std::min<size_t> (parent().ndim(), header_.ndim()); ++n) {
-              if (n < parent().ndim())
-                parent().index(n) = 0;
-              if (parent().size(n) > 1 && parent().size(n) != header_.size(n))
-                throw Exception ("cannot replicate over non-singleton dimensions");
+            pos_ (std::max<size_t> (parent().ndim(), header_.ndim()), 0) {
+              for (size_t n = 0; n < std::min<size_t> (parent().ndim(), header_.ndim()); ++n) {
+                if (n < parent().ndim())
+                  parent().index(n) = 0;
+                if (parent().size(n) > 1 && parent().size(n) != header_.size(n))
+                  throw Exception ("cannot replicate over non-singleton dimensions");
+              }
             }
+
+          size_t ndim () const {
+            return header_.ndim();
+          }
+          ssize_t size (size_t axis) const {
+            return header_.size (axis);
+          }
+          float spacing (size_t axis) const {
+            return header_.spacing(axis);
+          }
+          ssize_t stride (size_t axis) const {
+            return axis < parent().ndim() ? parent().stride (axis) : 0;
           }
 
-        size_t ndim () const {
-          return header_.ndim();
-        }
-        ssize_t size (size_t axis) const {
-          return header_.size (axis);
-        }
-        float spacing (size_t axis) const {
-          return header_.spacing(axis);
-        }
-        ssize_t stride (size_t axis) const {
-          return axis < parent().ndim() ? parent().stride (axis) : 0;
-        }
+          DEFINE_IMAGE_METHODS;
 
-        ssize_t get_index (size_t axis) const {
-          return pos_[axis];
-        }
-        void move_index (size_t axis, ssize_t increment) {
-          pos_[axis] += increment;
-          if (axis < parent().ndim())
-            if (parent().size(axis) > 1)
-              parent().index(axis) += increment;
-        }
+        protected:
+          using base_type::parent;
+          Header header_;
+          vector<ssize_t> pos_;
 
-      protected:
-        using base_type::parent;
-        Header header_;
-        vector<ssize_t> pos_;
+          ssize_t get_index (size_t axis) const {
+            return pos_[axis];
+          }
+          void move_index (size_t axis, ssize_t increment) {
+            pos_[axis] += increment;
+            if (axis < parent().ndim())
+              if (parent().size(axis) > 1)
+                parent().index(axis) += increment;
+          }
 
-    };
+      };
 
-    }
+  }
 }
 
 #endif

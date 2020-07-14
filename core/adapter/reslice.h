@@ -106,13 +106,10 @@ namespace MR
      * \sa Interp::reslice()
      */
     template <template <class ImageType> class Interpolator, class ImageType>
-      class Reslice :
-        public ImageBase<Reslice<Interpolator,ImageType>,typename ImageType::value_type>
-    { MEMALIGN (Reslice<Interpolator, ImageType>)
+      class Reslice { MEMALIGN (Reslice<Interpolator, ImageType>)
       public:
 
         using value_type = typename ImageType::value_type;
-
 
         template <class HeaderType>
           Reslice (const ImageType& original,
@@ -201,6 +198,11 @@ namespace MR
           interp.voxel (direct_transform * Vector3 (x[0], x[1], x[2]));
           return interp.value();
         }
+
+        DEFINE_IMAGE_INDEX_METHODS;
+        DEFINE_IMAGE_ROW_METHODS;
+
+      protected:
 
         ssize_t get_index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
         void move_index (size_t axis, ssize_t increment) {

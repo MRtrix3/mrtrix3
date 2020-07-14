@@ -25,12 +25,10 @@ namespace MR
   namespace Adapter {
 
     template <class ImageType>
-      class NeighbourhoodCoord : 
-        public Base<NeighbourhoodCoord<ImageType>,ImageType>
-    { MEMALIGN (NeighbourhoodCoord<ImageType>)
+      class NeighbourhoodCoord : public Base<ImageType> { MEMALIGN (NeighbourhoodCoord<ImageType>)
       public:
 
-        using base_type = Base<NeighbourhoodCoord<ImageType>, ImageType>;
+        using base_type = Base<ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::name;
@@ -52,7 +50,7 @@ namespace MR
                 assert (from_[n] + size_[n] < original.size(n));
               }
 
-              // for (size_t n = 0; n < ndim(); ++n) 
+              // for (size_t n = 0; n < ndim(); ++n)
               //   if (from_[n] + size_[n] > original.size(n))
               //     throw Exception ("FIXME: dimensions requested for NeighbourhoodCoord adapter are out of bounds!");
 
@@ -70,14 +68,16 @@ namespace MR
         ssize_t size (size_t axis) const { return size_ [axis]; }
         const transform_type& transform() const { return transform_; }
 
-        ssize_t get_index (size_t axis) const { return parent().index(axis)-from_[axis]; }
-        void move_index (size_t axis, ssize_t increment) { parent().index(axis) += increment; }
+        DEFINE_IMAGE_METHODS;
 
       protected:
         using base_type::parent;
         vector<ssize_t> from_, size_;
         Iterator iter_;
         transform_type transform_;
+
+        ssize_t get_index (size_t axis) const { return parent().index(axis)-from_[axis]; }
+        void move_index (size_t axis, ssize_t increment) { parent().index(axis) += increment; }
     };
 
   }

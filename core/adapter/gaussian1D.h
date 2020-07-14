@@ -25,12 +25,10 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gaussian1D : 
-        public Base<Gaussian1D<ImageType>,ImageType> 
-    { MEMALIGN (Gaussian1D<ImageType>) 
+      class Gaussian1D : public Base<ImageType> { MEMALIGN (Gaussian1D<ImageType>)
       public:
 
-        using base_type = Base<Gaussian1D<ImageType>, ImageType>;
+        using base_type = Base<ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::name;
@@ -88,6 +86,9 @@ namespace MR
           index (axis) = pos;
           return result;
         }
+
+        DEFINE_IMAGE_INDEX_METHODS;
+        DEFINE_IMAGE_ROW_METHODS;
 
       protected:
 

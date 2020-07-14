@@ -86,7 +86,7 @@ class Processor
           if (!output.index(axis)) {
             multiplier = 1.0;
           } else {
-            input.move_index (axis, -1);
+            --input.index(axis);
           }
           const DWI::Tractography::ACT::Tissues neg (input);
           if (output.index(axis) == output.size(axis)-1) {

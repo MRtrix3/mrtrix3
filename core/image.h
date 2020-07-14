@@ -45,9 +45,7 @@ namespace MR
    * \ingroup ImageAPI
    */
   template <typename ValueType>
-    class Image :
-      public ImageBase<Image<ValueType>,ValueType>
-  { MEMALIGN (Image<ValueType>)
+    class Image { MEMALIGN (Image<ValueType>)
       public:
         using value_type = ValueType;
         class Buffer;
@@ -58,6 +56,8 @@ namespace MR
         FORCE_INLINE Image& operator= (const Image& image) = default;
         FORCE_INLINE Image& operator= (Image&&) = default;
         ~Image();
+
+        DEFINE_IMAGE_METHODS;
 
         //! used internally to instantiate Image objects
         Image (const std::shared_ptr<Buffer>&, const Stride::List& = Stride::List());
@@ -85,23 +85,8 @@ namespace MR
           this->index(n) = 0;
         }
 
-        //! get position of current voxel location along \a axis
-      FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
-      //! move position of current voxel location along \a axis
-        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
-
         FORCE_INLINE bool is_direct_io () const { return data_pointer; }
 
-        //! get voxel value at current location
-      FORCE_INLINE ValueType get_value () const {
-          if (data_pointer) return Raw::fetch_native<ValueType> (data_pointer, data_offset);
-          return buffer->get_value (data_offset);
-        }
-      //! set voxel value at current location
-        FORCE_INLINE void set_value (ValueType val) {
-          if (data_pointer) Raw::store_native<ValueType> (val, data_pointer, data_offset);
-          else buffer->set_value (data_offset, val);
-        }
 
         //! use for debugging
         friend std::ostream& operator<< (std::ostream& stream, const Image& V) {
@@ -216,6 +201,21 @@ namespace MR
         Stride::List strides;
         //! offset to currently pointed-to voxel
         size_t data_offset;
+
+        //! get position of current voxel location along \a axis
+        FORCE_INLINE ssize_t get_index (size_t axis) const { return x[axis]; }
+        //! move position of current voxel location along \a axis
+        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
+        //! get voxel value at current location
+        FORCE_INLINE ValueType get_value () const {
+          if (data_pointer) return Raw::fetch_native<ValueType> (data_pointer, data_offset);
+          return buffer->get_value (data_offset);
+        }
+        //! set voxel value at current location
+        FORCE_INLINE void set_value (ValueType val) {
+          if (data_pointer) Raw::store_native<ValueType> (val, data_pointer, data_offset);
+          else buffer->set_value (data_offset, val);
+        }
     };
 
   CHECK_MEM_ALIGN (Image<float>);
@@ -282,14 +282,14 @@ namespace MR
 
     // lightweight struct to copy data into:
     template <typename ValueType>
-      struct TmpImage :
-        public ImageBase<TmpImage<ValueType>, ValueType>
-    { MEMALIGN (TmpImage<ValueType>)
+      struct TmpImage { MEMALIGN (TmpImage<ValueType>)
         using value_type = ValueType;
 
-      TmpImage (const typename Image<ValueType>::Buffer& b, void* const data,
-          vector<ssize_t> x, const Stride::List& strides, size_t offset) :
-        b (b), data (data), x (x), strides (strides), offset (offset) { }
+        TmpImage (const typename Image<ValueType>::Buffer& b, void* const data,
+            vector<ssize_t> x, const Stride::List& strides, size_t offset) :
+          b (b), data (data), x (x), strides (strides), offset (offset) { }
+
+        DEFINE_IMAGE_METHODS;
 
         const typename Image<ValueType>::Buffer& b;
         void* const data;

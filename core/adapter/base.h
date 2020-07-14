@@ -32,16 +32,13 @@ namespace MR
         return AdapterType<ImageType> (parent, std::forward<Args> (args)...);
       }
 
-    template <class AdapterType, class ImageType>
-      class Base :
-        public ImageBase<AdapterType, typename ImageType::value_type>
-    { MEMALIGN (Base<AdapterType,ImageType>)
+    template <class ImageType>
+      class Base { MEMALIGN (Base<ImageType>)
       public:
 
         using value_type = typename ImageType::value_type;
 
         Base (const ImageType& parent) : parent_ (parent) { }
-
 
         template <class U>
           const Base& operator= (const U& V) { return parent_ = V; }
@@ -58,12 +55,6 @@ namespace MR
         FORCE_INLINE const transform_type& transform () const { return parent_.transform(); }
         FORCE_INLINE const KeyValues& keyval () const { return parent_.keyval(); }
 
-        FORCE_INLINE ssize_t get_index (size_t axis) const { return parent_.index (axis); }
-        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { parent_.index (axis) += increment; }
-
-        FORCE_INLINE value_type get_value () const { return parent_.value(); }
-        FORCE_INLINE void set_value (value_type val) { parent_.value() = val; }
-
         FORCE_INLINE void reset () { parent_.reset(); }
 
         friend std::ostream& operator<< (std::ostream& stream, const Base& V) {
@@ -74,8 +65,16 @@ namespace MR
           return stream;
         }
 
+        DEFINE_IMAGE_METHODS;
+
       protected:
         ImageType parent_;
+
+        FORCE_INLINE ssize_t get_index (size_t axis) const { return parent_.index (axis); }
+        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { parent_.index (axis) += increment; }
+
+        FORCE_INLINE value_type get_value () const { return parent_.value(); }
+        FORCE_INLINE void set_value (value_type val) { parent_.value() = val; }
     };
 
 

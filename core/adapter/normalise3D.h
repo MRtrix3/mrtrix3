@@ -26,18 +26,15 @@ namespace MR
 
 
     template <class ImageType>
-      class Normalise3D :
-        public Base<Normalise3D<ImageType>,ImageType>
-    { MEMALIGN(Normalise3D<ImageType>)
+      class Normalise3D : public Base<ImageType> { MEMALIGN(Normalise3D<ImageType>)
       public:
 
-        using base_type = Base<Normalise3D<ImageType>, ImageType>;
+        using base_type = Base<ImageType>;
         using value_type = typename ImageType::value_type;
         using voxel_type = Normalise3D;
 
         using base_type::name;
         using base_type::size;
-        using base_type::index;
 
         Normalise3D (const ImageType& parent) :
           base_type (parent) {
@@ -102,6 +99,9 @@ namespace MR
 
           return pos_value - mean;
         }
+
+        DEFINE_IMAGE_INDEX_METHODS;
+        DEFINE_IMAGE_ROW_METHODS;
 
       protected:
         vector<uint32_t> extent;

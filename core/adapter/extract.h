@@ -25,12 +25,10 @@ namespace MR
   {
 
     template <class ImageType>
-      class Extract1D :
-        public Base<Extract1D<ImageType>,ImageType>
-    { MEMALIGN (Extract1D<ImageType>)
+      class Extract1D : public Base<ImageType> { MEMALIGN (Extract1D<ImageType>)
       public:
 
-        using base_type = Base<Extract1D<ImageType>, ImageType>;
+        using base_type = Base<ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::ndim;
@@ -68,6 +66,19 @@ namespace MR
 
         const transform_type& transform () const { return trans; }
 
+
+        friend std::ostream& operator<< (std::ostream& stream, const Extract1D& V) {
+          stream << "Extract1D adapter for image \"" << V.name() << "\", position [ ";
+          for (size_t n = 0; n < V.ndim(); ++n)
+            stream << V.index(n) << " ";
+          stream << "], value = " << V.value();
+          return stream;
+        }
+
+        DEFINE_IMAGE_METHODS;
+
+      protected:
+
         ssize_t get_index (size_t axis) const { return ( axis == extract_axis ? current_pos : parent().index(axis) ); }
         void move_index (size_t axis, ssize_t increment) {
           if (axis == extract_axis) {
@@ -80,15 +91,6 @@ namespace MR
           }
           else
             parent().index(axis) += increment;
-        }
-
-
-        friend std::ostream& operator<< (std::ostream& stream, const Extract1D& V) {
-          stream << "Extract1D adapter for image \"" << V.name() << "\", position [ ";
-          for (size_t n = 0; n < V.ndim(); ++n)
-            stream << V.index(n) << " ";
-          stream << "], value = " << V.value();
-          return stream;
         }
 
       private:
@@ -110,12 +112,10 @@ namespace MR
 
 
     template <class ImageType>
-      class Extract :
-        public Base<Extract<ImageType>,ImageType>
-    { MEMALIGN (Extract<ImageType>)
+      class Extract : public Base<ImageType> { MEMALIGN (Extract<ImageType>)
       public:
 
-        using base_type = Base<Extract<ImageType>, ImageType>;
+        using base_type = Base<ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::ndim;
@@ -150,6 +150,10 @@ namespace MR
             parent().index(n) = indices[n][0];
           }
         }
+
+        DEFINE_IMAGE_METHODS;
+
+      protected:
 
         ssize_t get_index (size_t axis) const { return current_pos[axis]; }
         void move_index (size_t axis, ssize_t increment) {

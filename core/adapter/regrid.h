@@ -26,12 +26,11 @@ namespace MR
   namespace Adapter {
 
     template <class ImageType>
-      class Regrid :
-        public Base<Regrid<ImageType>,ImageType>
+      class Regrid : public Base<ImageType>
     { MEMALIGN(Regrid<ImageType>)
       public:
 
-        using base_type = Base<Regrid<ImageType>, ImageType>;
+        using base_type = Base<ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::name;
@@ -72,6 +71,26 @@ namespace MR
         ssize_t size (size_t axis) const { return size_ [axis]; }
         const transform_type& transform() const { return transform_; }
 
+        value_type value () {
+          for (size_t axis = 0; axis < index_.size(); ++axis)
+            if (index_requires_bound_check[axis] &&
+              (index_[axis] >= index_invalid_lower_upper[axis][1] || index_[axis] <= index_invalid_lower_upper[axis][0]))
+              return fill_;
+          return parent().value();
+        }
+
+        DEFINE_IMAGE_INDEX_METHODS;
+        DEFINE_IMAGE_ROW_METHODS;
+
+      protected:
+        using base_type::parent;
+        const vector<ssize_t> from_, size_;
+        const vector<vector<ssize_t>> index_invalid_lower_upper;
+        const vector<bool> index_requires_bound_check;
+        const value_type fill_;
+        transform_type transform_;
+        vector<ssize_t> index_;
+
         ssize_t get_index (size_t axis) const {
           return index_requires_bound_check[axis] ? index_[axis] : parent().index(axis) - from_[axis];
         }
@@ -88,23 +107,6 @@ namespace MR
           } else
             parent().index(axis) += increment;
         }
-
-        value_type value () {
-          for (size_t axis = 0; axis < index_.size(); ++axis)
-            if (index_requires_bound_check[axis] &&
-              (index_[axis] >= index_invalid_lower_upper[axis][1] || index_[axis] <= index_invalid_lower_upper[axis][0]))
-              return fill_;
-          return parent().value();
-        }
-
-      protected:
-        using base_type::parent;
-        const vector<ssize_t> from_, size_;
-        const vector<vector<ssize_t>> index_invalid_lower_upper;
-        const vector<bool> index_requires_bound_check;
-        const value_type fill_;
-        transform_type transform_;
-        vector<ssize_t> index_;
     };
 
   }

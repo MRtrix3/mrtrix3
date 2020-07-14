@@ -27,18 +27,15 @@ namespace MR
   {
 
     template <class WarpType>
-      class Jacobian : 
-        public Base<Jacobian<WarpType>,WarpType> 
-    { MEMALIGN (Jacobian<WarpType>)
+      class Jacobian : public Base<WarpType> { MEMALIGN (Jacobian<WarpType>)
         public:
 
-          using base_type = Base<Jacobian<WarpType>, WarpType>;
+          using base_type = Base<WarpType>;
           using value_type = Eigen::Matrix<typename WarpType::value_type, 3, 3>;
 
           using base_type::name;
           using base_type::size;
           using base_type::spacing;
-          using base_type::index;
 
           Jacobian (const WarpType& parent, bool wrt_scanner = true) :
             base_type (parent),
@@ -63,6 +60,8 @@ namespace MR
             return jacobian;
           }
 
+        DEFINE_IMAGE_INDEX_METHODS;
+        DEFINE_IMAGE_ROW_METHODS;
 
         protected:
           value_type jacobian;
@@ -70,6 +69,7 @@ namespace MR
           Transform transform;
           const bool wrt_scanner;
       };
+
   }
 }
 

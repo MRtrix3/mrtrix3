@@ -27,18 +27,15 @@ namespace MR
 
 
     template <class ImageType>
-        class Median :
-          public Base<Median<ImageType>,ImageType>
-      { MEMALIGN(Median<ImageType>)
+        class Median : public Base<ImageType> { MEMALIGN(Median<ImageType>)
       public:
 
-          using base_type = Base<Median<ImageType>, ImageType>;
+          using base_type = Base<ImageType>;
           using value_type = typename ImageType::value_type;
           using voxel_type = Median;
 
           using base_type::name;
           using base_type::size;
-          using base_type::index;
 
         Median (const ImageType& parent) :
           base_type (parent) {
@@ -70,7 +67,7 @@ namespace MR
 
 
 
-          value_type value ()
+        value_type value ()
         {
           const ssize_t old_pos [3] = { index(0), index(1), index(2) };
           const ssize_t from[3] = {
@@ -89,14 +86,17 @@ namespace MR
           for (index(2) = from[2]; index(2) < to[2]; ++index(2))
             for (index(1) = from[1]; index(1) < to[1]; ++index(1))
               for (index(0) = from[0]; index(0) < to[0]; ++index(0))
-                  values.push_back (base_type::value());
+                values.push_back (base_type::value());
 
           index(0) = old_pos[0];
           index(1) = old_pos[1];
           index(2) = old_pos[2];
 
-            return Math::median (values);
+          return Math::median (values);
         }
+
+        DEFINE_IMAGE_INDEX_METHODS;
+        DEFINE_IMAGE_ROW_METHODS;
 
       protected:
         vector<uint32_t> extent;

@@ -622,37 +622,25 @@ namespace MR
   }
 
 
-  template <class Derived, typename ValueType>
-    class ImageBase
-    { MEMALIGN (ImageBase<Derived,ValueType>)
-      public:
-        using value_type = ValueType;
+#define DEFINE_IMAGE_VALUE_METHODS \
+  FORCE_INLINE auto value() -> Helper::Value<typename std::decay<decltype(*this)>::type> { return { *this }; } \
+  FORCE_INLINE value_type value() const { return this->get_value(); } \
+  template <class T> friend class Helper::Value
 
-        FORCE_INLINE Helper::Index<Derived> index (size_t axis) { return { static_cast<Derived&> (*this), axis }; }
-        FORCE_INLINE ssize_t index (size_t axis) const { return static_cast<const Derived*>(this)->get_index (axis); }
+#define DEFINE_IMAGE_INDEX_METHODS \
+  FORCE_INLINE auto index (size_t axis) -> Helper::Index<typename std::decay<decltype(*this)>::type> { return { *this, axis }; } \
+  FORCE_INLINE ssize_t index (size_t axis) const { return this->get_index (axis); } \
+  template <class T> friend class Helper::Index
 
-        FORCE_INLINE Helper::Value<Derived> value () { return { static_cast<Derived&> (*this) }; }
-        FORCE_INLINE ValueType value () const { return static_cast<const Derived*>(this)->get_value(); }
-
-        //! a proxy class for the vector of values along the specified axis
-        /*! returns a proxy class to simplify interactions with the data as a
-         * vector along the specified axis. This class can be cast to an Eigen
-         * matrix type, and can be assigned to using another instance of the
-         * same class, or using an Eigen type. For example:
-         * \code
-         * Image<float> in; // assuming size 3 along volume dimension
-         *
-         * in.row(3) = Eigen::Vector3f::Random(3,1);
-         * Eigen::Vector3f x (in.row(3));
-         * out.row(3) += x;
-         * out.row(3) += M*Eigen::Vector3f(in.row(3)) + Eigen::VectorXf (other.row(3));
-         * \endcode
-         * */
-        FORCE_INLINE Helper::ConstRow<Derived> row (size_t axis) const { return { static_cast<Derived&> (*this), axis }; }
-        FORCE_INLINE Helper::Row<Derived> row (size_t axis) { return { static_cast<Derived&> (*this), axis }; }
-    };
+#define DEFINE_IMAGE_ROW_METHODS \
+  FORCE_INLINE auto row (size_t axis) const -> Helper::ConstRow<typename std::decay<decltype(*this)>::type> { return { *this, axis }; } \
+  FORCE_INLINE auto row (size_t axis) -> Helper::Row<typename std::decay<decltype(*this)>::type> { return { *this, axis }; }
 
 
+#define DEFINE_IMAGE_METHODS \
+  DEFINE_IMAGE_VALUE_METHODS; \
+  DEFINE_IMAGE_INDEX_METHODS; \
+  DEFINE_IMAGE_ROW_METHODS
 
 }
 

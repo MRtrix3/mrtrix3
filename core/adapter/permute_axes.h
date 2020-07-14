@@ -25,12 +25,10 @@ namespace MR
   {
 
     template <class ImageType>
-      class PermuteAxes :
-        public Base<PermuteAxes<ImageType>,ImageType>
-    { MEMALIGN (PermuteAxes<ImageType>)
+      class PermuteAxes : public Base<ImageType> { MEMALIGN (PermuteAxes<ImageType>)
         public:
 
-        using base_type = Base<PermuteAxes<ImageType>, ImageType>;
+        using base_type = Base<ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::size;
@@ -75,6 +73,10 @@ next_axis:
           }
 
           void reset () { parent().reset(); }
+
+          DEFINE_IMAGE_METHODS;
+
+        protected:
 
           ssize_t get_index (size_t axis) const { const auto a = axes_[axis]; return a < 0 ? non_existent_axes[-1-a] : parent().index (a); }
           void move_index (size_t axis, ssize_t increment) {

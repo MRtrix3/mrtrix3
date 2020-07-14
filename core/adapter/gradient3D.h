@@ -26,9 +26,7 @@ namespace MR
   {
 
     template <class ImageType>
-      class Gradient3D : 
-        public Gradient1D<ImageType> 
-    { MEMALIGN(Gradient3D<ImageType>)
+      class Gradient3D : public Gradient1D<ImageType> { MEMALIGN(Gradient3D<ImageType>)
 
       public:
 
@@ -52,6 +50,9 @@ namespace MR
 
           return grad;
         }
+
+        DEFINE_IMAGE_INDEX_METHODS;
+        DEFINE_IMAGE_ROW_METHODS;
 
       protected:
         const bool wrt_scanner;

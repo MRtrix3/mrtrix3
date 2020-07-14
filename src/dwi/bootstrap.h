@@ -24,18 +24,15 @@ namespace MR {
   namespace DWI {
 
 
-    template <class ImageType, class Functor, size_t NUM_VOX_PER_CHUNK = 256> 
-      class Bootstrap : 
-        public Adapter::Base<Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>,ImageType>
-    { MEMALIGN (Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>)
+    template <class ImageType, class Functor, size_t NUM_VOX_PER_CHUNK = 256>
+      class Bootstrap : public Adapter::Base<ImageType> { MEMALIGN (Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>)
       public:
 
-        using base_type = Adapter::Base<Bootstrap<ImageType,Functor,NUM_VOX_PER_CHUNK>, ImageType>;
+        using base_type = Adapter::Base<ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::ndim;
         using base_type::size;
-        using base_type::index;
 
         class IndexCompare { NOMEMALIGN
           public:
@@ -56,32 +53,35 @@ namespace MR {
             assert (ndim() == 4);
           }
 
-        value_type value () { 
-          return get_voxel()[index(3)]; 
+        value_type value () {
+          return get_voxel()[index(3)];
         }
 
         template <class VectorType>
-          void get_values (VectorType& values) { 
+          void get_values (VectorType& values) {
             if (index(0) < 0 || index(0) >= size(0) ||
                 index(1) < 0 || index(1) >= size(1) ||
                 index(2) < 0 || index(2) >= size(2))
               values.setZero();
             else {
               auto p = get_voxel();
-              for (ssize_t n = 0; n < size(3); ++n) 
+              for (ssize_t n = 0; n < size(3); ++n)
                 values[n] = p[n];
             }
           }
 
-        void clear () 
+        void clear ()
         {
-          voxels.clear(); 
+          voxels.clear();
           if (voxel_buffer.empty())
             voxel_buffer.push_back (vector<value_type> (NUM_VOX_PER_CHUNK * size(3)));
           next_voxel = &voxel_buffer[0][0];
           last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);
           current_chunk = 0;
         }
+
+        DEFINE_IMAGE_INDEX_METHODS;
+        DEFINE_IMAGE_ROW_METHODS;
 
       protected:
         Functor func;
@@ -91,11 +91,11 @@ namespace MR {
         value_type* last_voxel;
         size_t current_chunk;
 
-        value_type* allocate_voxel () 
+        value_type* allocate_voxel ()
         {
           if (next_voxel == last_voxel) {
             ++current_chunk;
-            if (current_chunk >= voxel_buffer.size()) 
+            if (current_chunk >= voxel_buffer.size())
               voxel_buffer.push_back (vector<value_type> (NUM_VOX_PER_CHUNK * size(3)));
             assert (current_chunk < voxel_buffer.size());
             next_voxel = &voxel_buffer.back()[0];

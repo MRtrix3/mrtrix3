@@ -25,12 +25,10 @@ namespace MR
   namespace Adapter {
 
     template <class ImageType>
-      class Subset :
-        public Base<Subset<ImageType>,ImageType>
-    { MEMALIGN(Subset<ImageType>)
+      class Subset : public Base<ImageType> { MEMALIGN(Subset<ImageType>)
       public:
 
-        using base_type = Base<Subset<ImageType>, ImageType>;
+        using base_type = Base<ImageType>;
         using value_type = typename ImageType::value_type;
 
         using base_type::name;
@@ -64,13 +62,15 @@ namespace MR
         ssize_t size (size_t axis) const { return size_ [axis]; }
         const transform_type& transform() const { return transform_; }
 
-        ssize_t get_index (size_t axis) const { return parent().index(axis)-from_[axis]; }
-        void move_index (size_t axis, ssize_t increment) { parent().index(axis) += increment; }
+        DEFINE_IMAGE_METHODS;
 
       protected:
         using base_type::parent;
         const vector<ssize_t> from_, size_;
         transform_type transform_;
+
+        ssize_t get_index (size_t axis) const { return parent().index(axis)-from_[axis]; }
+        void move_index (size_t axis, ssize_t increment) { parent().index(axis) += increment; }
     };
 
   }

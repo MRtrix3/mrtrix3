@@ -49,9 +49,7 @@ namespace MR
      * \sa Interp::warp()
      */
     template <template <class ImageType> class Interpolator, class ImageType, class WarpType>
-      class Warp :
-        public ImageBase<Warp<Interpolator,ImageType,WarpType>, typename ImageType::value_type>
-    { MEMALIGN(Warp<Interpolator,ImageType,WarpType>)
+      class Warp { MEMALIGN(Warp<Interpolator,ImageType,WarpType>)
       public:
         using value_type = typename ImageType::value_type;
 
@@ -102,6 +100,11 @@ namespace MR
           }
           return (value_type) val;
         }
+
+        DEFINE_IMAGE_INDEX_METHODS;
+        DEFINE_IMAGE_ROW_METHODS;
+
+      protected:
 
         ssize_t get_index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
         void move_index (size_t axis, ssize_t increment) {
