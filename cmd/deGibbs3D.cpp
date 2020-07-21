@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <numeric>
+#include <cmath>
 
 
 #include "command.h"
@@ -10,7 +11,6 @@
 #include "header.h"
 
 
-using namespace std;
 using namespace MR;
 using namespace App;
 
@@ -35,19 +35,19 @@ inline double indexshift(ssize_t n, ssize_t size) {
 }
 
 
-inline vector<double> Range(ssize_t begin, ssize_t end, size_t num_shifts) {
+inline std::vector<double> make_range(double begin, double end, double num_shifts) {
 
-	vector<double> range(num_shifts);
-	range.push_back(begin);
+	std::vector<double> new_range(num_shifts);
+	new_range.push_back(begin);
 
 	double shift = (end - begin)/num_shifts;
 
-	for (r = 0; r < range.size()-1; ++r)
-		range.push_back(range[r]+shift);
+	for (int r = 0; r < new_range.size()-1; ++r)
+		new_range.push_back(new_range[r]+shift);
 	
-	range.push_back(end);
+	new_range.push_back(end);
 
-	return range;
+	return new_range;
 }
 
 
@@ -77,7 +77,7 @@ void run() {
      Shift1D(double shift) : shift(shift) {}
      void operator() (decltype(output)& output)
      {
-       const complex<double> j(0.0,1.0);
+       const std::complex<double> j(0.0,1.0);
        output.value() *= exp(j * 2.0 * indexshift(output.index(0),output.size(0)) * Math::pi * shift);
      }
         
@@ -88,56 +88,59 @@ void run() {
 
   //ThreadedLoop (output).run (Shift1D(shift), output);
   
-  // initialising range vector to loop over
-  const vector<double> range = Range(1,3,20s); // K=[1,3]; 20 shifts
+  // initialising interval vector to loop over
+  const std::vector<double> interval = make_range(1.0,3.0,20.0); // K=[1,3]; 20 shifts
 
-  // intialising variabls
-  Shift1D(range[0]);
-  double out1 = abs(output.value());
-  Shift1D(range[0]-1);
-  double out2 = abs(output.value());
+  // intialising variables
+  (Shift1D(interval[0]));
+  std::complex<double> out1 = output.value();
+  (Shift1D(interval[0]-1));
+  std::complex<double> out2 = output.value();
   double osc_msr_left = abs(out1 - out2);
 
-  Shift1D(-range[0]);
+  (Shift1D(-interval[0]));
   out1 = output.value();
-  Shift1D(1-range[0]);
+  (Shift1D(1-interval[0]));
   out2 = output.value();
   double osc_msr_right = abs(out1 - out2);
 
   double opt_left, opt_right, opt_shift;
 
+
   // looping over single axis to find optimum shift 
   for (auto l = Loop (output,0,3)(output); l ; ++l) {
 
   	// FIND OPTIMAL SHIFT FOR GIVEN POINT
-  	for (double r = 1; r < range.size(); ++r){
+  	for (int r = 1; r < interval.size(); ++r){
 
   		// calculate optimal to the left of the point
-  		Shift1D(range[r]);
+  		(Shift1D(interval[r]));
   		out1 = output.value();
-  		Shift1D(range[r]-1);
+  		(Shift1D(interval[r]-1));
   		out2 = output.value();
-  		osc_msr_left = abs(out1 - out2);
+  		double osc= abs(out1 - out2);
 
-  		if osc < osc_msr_left {
+  		if (osc < osc_msr_left) {
   			osc_msr_left = osc;
-  			opt_left = range[r];
+  			opt_left = interval[r];
   		}
 
   		// similarly for the right side of the voxel
-  		Shift1D(-range[r]);
+  		(Shift1D(-interval[r]));
   		out1 = output.value();
-  		Shift1D(1-range[r]);
+  		(Shift1D(1-interval[r]));
   		out2 = output.value();
-  		osc_msr_right = abs(out1 - out2);
+  		osc = abs(out1 - out2);
 
-  		if osc < osc_msr_right
-  			osc_msr_right = osc;
-  			opt_right = range[r];
+  		if (osc < osc_msr_right) {
+        osc_msr_right = osc;
+  			opt_right = interval[r];
+      }
+
   	}
 
   	// finding min between left and right sides
-  	if opt_right > opt_left
+  	if (opt_right > opt_left)
   		opt_shift = -1 * opt_right;
   	else
   		opt_shift = opt_left;
