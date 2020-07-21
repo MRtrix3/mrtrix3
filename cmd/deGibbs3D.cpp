@@ -29,6 +29,27 @@ void usage() {
 }
 
 
+inline double indexshift(ssize_t n, ssize_t size) {
+  if (n > size/2) n -= size;
+  return n;
+}
+
+
+inline vector<double> Range(ssize_t begin, ssize_t end, size_t num_shifts) {
+
+	vector<double> range(num_shifts);
+	range.push_back(begin);
+
+	double shift = (end - begin)/num_shifts;
+
+	for (r = 0; r < range.size()-1; ++r)
+		range.push_back(range[r]+shift);
+	
+	range.push_back(end);
+
+	return range;
+}
+
 
 void run() {
 
@@ -39,22 +60,113 @@ void run() {
   header.datatype() = DataType::CFloat32;
   auto output = Image<cdouble>::create (argument[1], header);
 
+  // creating temp image to store gaussian filter
+  auto gauss = Image<cdouble>::scratch(header);
+
   // first FFT from input to output:
   Math::FFT (input, output, 0, FFTW_FORWARD);
   // subsequent FFTs in-place:
   Math::FFT (output, 1, FFTW_FORWARD);
   Math::FFT (output, 2, FFTW_FORWARD);
 
-
   // creating temporary image to store intermediate image shifts
   //auto tmp = Image<cdouble>::scratch(header);
 
-  // performing a shift in the image domain is equivalent to multiplying the image in the fourier domain with an exponential
-  const double shift = 0.1;
-  const complex<double> j(0.0,1.0);
+  class Shift1D {
+   public:
+     Shift1D(double shift) : shift(shift) {}
+     void operator() (decltype(output)& output)
+     {
+       const complex<double> j(0.0,1.0);
+       output.value() *= exp(j * 2.0 * indexshift(output.index(0),output.size(0)) * Math::pi * shift);
+     }
+        
+   protected:
+     const double shift;
+  };
 
-  for (auto l = Loop (output,0,3)(output); l; ++l)
-    output.value() *= exp(j * 2.0 * cdouble(output.index(0)) * Math::pi * shift);
+
+  //ThreadedLoop (output).run (Shift1D(shift), output);
+  
+  // initialising range vector to loop over
+  const vector<double> range = Range(1,3,20s); // K=[1,3]; 20 shifts
+
+  // intialising variabls
+  Shift1D(range[0]);
+  double out1 = abs(output.value());
+  Shift1D(range[0]-1);
+  double out2 = abs(output.value());
+  double osc_msr_left = abs(out1 - out2);
+
+  Shift1D(-range[0]);
+  out1 = output.value();
+  Shift1D(1-range[0]);
+  out2 = output.value();
+  double osc_msr_right = abs(out1 - out2);
+
+  double opt_left, opt_right, opt_shift;
+
+  // looping over single axis to find optimum shift 
+  for (auto l = Loop (output,0,3)(output); l ; ++l) {
+
+  	// FIND OPTIMAL SHIFT FOR GIVEN POINT
+  	for (double r = 1; r < range.size(); ++r){
+
+  		// calculate optimal to the left of the point
+  		Shift1D(range[r]);
+  		out1 = output.value();
+  		Shift1D(range[r]-1);
+  		out2 = output.value();
+  		osc_msr_left = abs(out1 - out2);
+
+  		if osc < osc_msr_left {
+  			osc_msr_left = osc;
+  			opt_left = range[r];
+  		}
+
+  		// similarly for the right side of the voxel
+  		Shift1D(-range[r]);
+  		out1 = output.value();
+  		Shift1D(1-range[r]);
+  		out2 = output.value();
+  		osc_msr_right = abs(out1 - out2);
+
+  		if osc < osc_msr_right
+  			osc_msr_right = osc;
+  			opt_right = range[r];
+  	}
+
+  	// finding min between left and right sides
+  	if opt_right > opt_left
+  		opt_shift = -1 * opt_right;
+  	else
+  		opt_shift = opt_left;
+
+  }
+
+
+  // APPLYING GAUSSIAN FILTER
+  // const double sigma = 2;
+  // for (auto l = Loop (output,0,3)(output); l ; ++l) {
+  // 	const double r = pow(output.index(0),2.0) + pow(output.index(1),2.0) + pow(output.index(2),2.0);
+  // 	output.value() *= exp(-2.0* pow(Math::pi,2.0) * pow(sigma,2.0) * pow(r,2.0));
+ 	// }
+
+
+ 	// 	class FiltGauss {
+ 	// 	public:
+ 	// 		FiltGauss(double sigma) : sigma(sigma){}
+ 	// 		void operator() (decltype(output)& output)
+ 	// 		{
+ 	// 			const double r = pow(output.index(0),2.0) + pow(output.index(1),2.0) + pow(output.index(2),2.0);
+  // 			output.value() *= exp(-2.0* pow(Math::pi,2.0) * pow(sigma,2.0) * pow(r,2.0));
+ 	// 		}
+ 	// 	protected: 
+ 	// 		const double sigma;
+ 	// 	};
+
+ 	// ThreadedLoop (output).run (FiltGauss(sigma),output);
+
 
   // FFT back to check we get back the original image:
   Math::FFT (output, 0, FFTW_BACKWARD);
