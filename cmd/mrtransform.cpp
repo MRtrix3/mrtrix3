@@ -178,7 +178,7 @@ void usage ()
         "fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation. \n"
         "jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation "
         "to preserve the total intensity before and after the transformation.")
-    + Argument ("intensity modulation method").type_choice (modulation_choices)
+    + Argument ("method").type_choice (modulation_choices)
 
     + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation "
