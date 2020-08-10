@@ -29,39 +29,49 @@ void usage() {
 }
 
 
+
+using ImageType = Image<cdouble>;
+
+
+
 inline double indexshift(ssize_t n, ssize_t size) {
   if (n > size/2) n -= size;
   return n;
 }
 
 
-inline std::vector<double> make_range(double begin, double end, double num_shifts) {
-
-	std::vector<double> new_range(num_shifts);
-	new_range.push_back(begin);
-
-	double shift = (end - begin)/num_shifts;
-
-	for (int r = 0; r < new_range.size()-1; ++r)
-		new_range.push_back(new_range[r]+shift);
-	
-	new_range.push_back(end);
-
-	return new_range;
-}
-
 
 void run() {
 
 
   // reading input and assigning output
-  auto input = Image<cdouble>::open(argument[0]);
+  auto input = ImageType::open(argument[0]);
   Header header (input);
   header.datatype() = DataType::CFloat32;
-  auto output = Image<cdouble>::create (argument[1], header);
+  auto output = ImageType::create (argument[1], header);
 
-  // creating temp image to store gaussian filter
-  auto gauss = Image<cdouble>::scratch(header);
+
+
+  // Filter for axis 0
+  class Filter {
+  	public:
+  		Filter(size_t axis, double sigma) : axis(axis), sigma(sigma) {}
+  		void operator() (ImageType& image){
+  			//apply filter
+  			const double x[3] = {
+          indexshift(image.index(0), image.size(0)),
+          indexshift(image.index(1), image.size(1)),
+          indexshift(image.index(2), image.size(2))
+        };
+        image.value() *= exp (-(x[0]*x[0] + x[1]*x[1] + x[2]*x[2]) / sigma);
+  		}
+
+  	protected: 
+  		const size_t axis;
+  		const double sigma;
+  };
+
+
 
   // first FFT from input to output:
   Math::FFT (input, output, 0, FFTW_FORWARD);
@@ -69,8 +79,19 @@ void run() {
   Math::FFT (output, 1, FFTW_FORWARD);
   Math::FFT (output, 2, FFTW_FORWARD);
 
+  //filter along x:
+  ThreadedLoop(output).run(Filter(0,0.1),output);
+
+  // then inverse FT back to image domain
+  Math::FFT (output, 0, FFTW_BACKWARD);
+  Math::FFT (output, 1, FFTW_BACKWARD);
+  Math::FFT (output, 2, FFTW_BACKWARD);
+
+
+
   // creating temporary image to store intermediate image shifts
   //auto tmp = Image<cdouble>::scratch(header);
+
 
   class Shift1D {
    public:
@@ -85,96 +106,123 @@ void run() {
      const double shift;
   };
 
+  //line-by-line single-threaded processing along x:
+  Shift1D shifter (0.1); 
+  Math::FFT1D fft (output.size(0), FFTW_FORWARD);
+  Math::FFT1D ifft (output.size(0), FFTW_BACKWARD);
 
-  //ThreadedLoop (output).run (Shift1D(shift), output);
+
+ 	//ThreadedLoop (output).run (Shift1D(shift), output); <--- this runs it for the entire image
   
-  // initialising interval vector to loop over
-  const std::vector<double> interval = make_range(1.0,3.0,20.0); // K=[1,3]; 20 shifts
-
-  // intialising variables
-  (Shift1D(interval[0]));
-  std::complex<double> out1 = output.value();
-  (Shift1D(interval[0]-1));
-  std::complex<double> out2 = output.value();
-  double osc_msr_left = abs(out1 - out2);
-
-  (Shift1D(-interval[0]));
-  out1 = output.value();
-  (Shift1D(1-interval[0]));
-  out2 = output.value();
-  double osc_msr_right = abs(out1 - out2);
-
-  double opt_left, opt_right, opt_shift;
 
 
-  // looping over single axis to find optimum shift 
-  for (auto l = Loop (output,0,3)(output); l ; ++l) {
+  for (output.index(2) = 0; output.index(2) < output.size(2); ++output.index(2)) {
+   for (output.index(1) = 0; output.index(1) < output.size(1); ++output.index(1)) {
 
-  	// FIND OPTIMAL SHIFT FOR GIVEN POINT
-  	for (int r = 1; r < interval.size(); ++r){
+    for (output.index(0) = 0; output.index(0) < output.size(0); ++output.index(0))
+     fft[output.index(0)] = output.value();
+    fft.run();
 
-  		// calculate optimal to the left of the point
-  		(Shift1D(interval[r]));
-  		out1 = output.value();
-  		(Shift1D(interval[r]-1));
-  		out2 = output.value();
-  		double osc= abs(out1 - out2);
 
-  		if (osc < osc_msr_left) {
-  			osc_msr_left = osc;
-  			opt_left = interval[r];
-  		}
+    const std::complex<double> j(0.0,1.0);
+    double shift = 0.1;
+    for (ssize_t n = 0; n < output.size(0); ++n)
+      ifft[n] = fft[n] * exp(j * 2.0 * indexshift(n,output.size(0)) * Math::pi * shift);
 
-  		// similarly for the right side of the voxel
-  		(Shift1D(-interval[r]));
-  		out1 = output.value();
-  		(Shift1D(1-interval[r]));
-  		out2 = output.value();
-  		osc = abs(out1 - out2);
+    ifft.run();
 
-  		if (osc < osc_msr_right) {
-        osc_msr_right = osc;
-  			opt_right = interval[r];
+    for (output.index(0) = 0; output.index(0) < output.size(0); ++output.index(0))
+      output.value() = ifft[output.index(0)];
+
+   }
+  }
+ 	
+
+ 	// equivalent implementation using multi-threading:
+  class LineProcessor {
+    public:
+      LineProcessor (size_t axis, ImageType& image) :
+        axis (axis),
+        image (image),
+        fft (image.size(axis), FFTW_FORWARD),
+        ifft (20, Math::FFT1D(image.size(axis), FFTW_BACKWARD)) { }
+
+
+      void operator() (const Iterator& pos)
+      {
+        assign_pos_of (pos).to (image);
+
+        for (image.index(axis) = 0; image.index(axis) < image.size(axis); ++image.index(axis))
+          fft[image.index(axis)] = image.value();
+        fft.run();
+
+        int num_shifts = 20;
+        const std::complex<double> j(0.0,1.0);
+        const double shift = 1.0/(image.size(axis)*double(num_shifts));
+        for (int f = 0; f < num_shifts; f ++) {
+          for (int n = 0; n < image.size(axis); ++n)
+            ifft[f][n] = fft[n] * exp(j * 2.0 * indexshift(n,image.size(axis)) * Math::pi * f * shift);
+          ifft[f].run();
+        }
+
+        image.index(axis) = 0;
+        do {
+          for (int n = 0; n < image.size(axis); ++n) {
+            optshift_ind = optimumshift(n);
+            double optshift = (optshift_ind+1) * shift;
+
+            //interpolate particular ifft back to right place
+            if (!(n == 0 | n == image.size(axis)-1)) 
+              image.value() = (ifft[0][n+1] - ifft[0][n]) * optshift + image.value();
+
+            ++image.index(axis);
+          }
+        }while (image.index(axis) < image.size(axis));
+
+        // for (image.index(axis) = 0; image.index(axis) < image.size(axis); ++image.index(axis))
+        //   image.value() = ifft[image.index(axis)];
       }
 
-  	}
 
-  	// finding min between left and right sides
-  	if (opt_right > opt_left)
-  		opt_shift = -1 * opt_right;
-  	else
-  		opt_shift = opt_left;
+    protected:
+      const size_t axis;
+      ImageType image;
+      Math::FFT1D fft;
+      std::vector<Math::FFT1D> ifft;
+      int optimumshift(int n) {
 
-  }
+        int num_shifts = 20;
+        double opt_var = 0;
+        int ind;
 
+        for (int f = 0; f < num_shifts; ++f) {
+          double sum_left = 0;
+          double sum_right = 0;
 
-  // APPLYING GAUSSIAN FILTER
-  // const double sigma = 2;
-  // for (auto l = Loop (output,0,3)(output); l ; ++l) {
-  // 	const double r = pow(output.index(0),2.0) + pow(output.index(1),2.0) + pow(output.index(2),2.0);
-  // 	output.value() *= exp(-2.0* pow(Math::pi,2.0) * pow(sigma,2.0) * pow(r,2.0));
- 	// }
+          for (ssize_t k = -3 ; k < 3; ++k) {
+            sum_left += abs(ifft[f][n+k] - ifft[f][n+(k-1)]);
+            sum_right += abs(ifft[f][n-k] - ifft[f][n-(k-1)]);
+          }
 
+          double tot_var;
+          if (sum_left < sum_right) 
+            tot_var = sum_left;
+          else
+            tot_var = sum_right;
 
- 	// 	class FiltGauss {
- 	// 	public:
- 	// 		FiltGauss(double sigma) : sigma(sigma){}
- 	// 		void operator() (decltype(output)& output)
- 	// 		{
- 	// 			const double r = pow(output.index(0),2.0) + pow(output.index(1),2.0) + pow(output.index(2),2.0);
-  // 			output.value() *= exp(-2.0* pow(Math::pi,2.0) * pow(sigma,2.0) * pow(r,2.0));
- 	// 		}
- 	// 	protected: 
- 	// 		const double sigma;
- 	// 	};
+          if (opt_var > tot_var)
+            ind = f;
+        }
+        return ind;
+      }
+  };
 
- 	// ThreadedLoop (output).run (FiltGauss(sigma),output);
-
+  
 
   // FFT back to check we get back the original image:
   Math::FFT (output, 0, FFTW_BACKWARD);
-  Math::FFT (output, 1, FFTW_BACKWARD);
-  Math::FFT (output, 2, FFTW_BACKWARD);
+  //Math::FFT (output, 1, FFTW_BACKWARD);
+  //Math::FFT (output, 2, FFTW_BACKWARD);
 
 
   // This rescales the output because the FFT is unnormalised
@@ -184,15 +232,15 @@ void run() {
   // multi-threading you'll come across...
 
   // This class will perform the per-voxel operation (divide by N):
-  struct RescaleFn {
-    RescaleFn (double N) : N (N) { } // intialiser list
-    void operator() (decltype(output)& out) { out.value() /= N; }
-    const double N;
-  };
+  // struct RescaleFn {
+  //   RescaleFn (double N) : N (N) { } // intialiser list
+  //   void operator() (decltype(output)& out) { out.value() /= N; }
+  //   const double N;
+  // };
 
   // This sets up the loop to run over the output image (with a progress status
   // message), then directly runs the RescaleFn on the output image:
-  ThreadedLoop ("rescaling", output).run (RescaleFn (output.size(0)*output.size(1)*output.size(2)), output);
+  // ThreadedLoop ("rescaling", output).run (RescaleFn (output.size(0)*output.size(1)*output.size(2)), output);
 
   // To better appreciate the above, this is what it might look like when it's
   // more fully expanded:
