@@ -443,12 +443,17 @@ void run ()
   }
 
 
-  // Rotate/Flip gradient directions if present
+  // Rotate/Flip direction information if present
   if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
     Eigen::MatrixXd rotation = linear_transform.linear().inverse();
     Eigen::MatrixXd test = rotation.transpose() * rotation;
     test = test.array() / test.diagonal().mean();
-    auto grad = DWI::get_DW_scheme (input_header);
+
+    // Diffusion gradient table
+    Eigen::MatrixXd grad;
+    try {
+      grad = DWI::get_DW_scheme (input_header);
+    } catch (Exception&) {}
     if (grad.rows()) {
       if (replace)
         rotation = linear_transform.linear() * input_header.transform().linear().inverse();
@@ -476,6 +481,7 @@ void run ()
         WARN ("DW gradients not correctly reoriented");
       }
     }
+
     // Also look for key 'directions', and rotate those if present
     auto hit = input_header.keyval().find ("directions");
     if (hit != input_header.keyval().end()) {
