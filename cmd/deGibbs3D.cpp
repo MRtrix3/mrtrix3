@@ -39,6 +39,11 @@ inline double indexshift(ssize_t n, ssize_t size) {
   return n;
 }
 
+inline int wraparound(ssize_t n, ssize_t size) {
+	if (n > size || n < 0) n = (n+size)%size;
+	return n;
+}
+
 
 
 void run() {
@@ -90,60 +95,64 @@ void run() {
 
 
   // creating temporary image to store intermediate image shifts
-  //auto tmp = Image<cdouble>::scratch(header);
+  // auto tmp = Image<cdouble>::scratch(header);
 
 
-  class Shift1D {
-   public:
-     Shift1D(double shift) : shift(shift) {}
-     void operator() (decltype(output)& output)
-     {
-       const std::complex<double> j(0.0,1.0);
-       output.value() *= exp(j * 2.0 * indexshift(output.index(0),output.size(0)) * Math::pi * shift);
-     }
+  // class Shift1D {
+  //  public:
+  //    Shift1D(double shift) : shift(shift) {}
+  //    void operator() (decltype(output)& output)
+  //    {
+  //      const std::complex<double> j(0.0,1.0);
+  //      output.value() *= exp(j * 2.0 * indexshift(output.index(0),output.size(0)) * Math::pi * shift);
+  //    }
         
-   protected:
-     const double shift;
-  };
+  //  protected:
+  //    const double shift;
+  // };
 
-  //line-by-line single-threaded processing along x:
-  Shift1D shifter (0.1); 
-  Math::FFT1D fft (output.size(0), FFTW_FORWARD);
-  Math::FFT1D ifft (output.size(0), FFTW_BACKWARD);
+  // //line-by-line single-threaded processing along x:
+  // Shift1D shifter (0.1); 
+  // Math::FFT1D fft (output.size(0), FFTW_FORWARD);
+  // Math::FFT1D ifft (output.size(0), FFTW_BACKWARD);
 
 
- 	//ThreadedLoop (output).run (Shift1D(shift), output); <--- this runs it for the entire image
+ 	// //ThreadedLoop (output).run (Shift1D(shift), output); <--- this runs it for the entire image
   
 
 
-  for (output.index(2) = 0; output.index(2) < output.size(2); ++output.index(2)) {
-   for (output.index(1) = 0; output.index(1) < output.size(1); ++output.index(1)) {
+  // for (output.index(2) = 0; output.index(2) < output.size(2); ++output.index(2)) {
+  //  for (output.index(1) = 0; output.index(1) < output.size(1); ++output.index(1)) {
 
-    for (output.index(0) = 0; output.index(0) < output.size(0); ++output.index(0))
-     fft[output.index(0)] = output.value();
-    fft.run();
+  //   for (output.index(0) = 0; output.index(0) < output.size(0); ++output.index(0))
+  //    fft[output.index(0)] = output.value();
+  //   fft.run();
 
 
-    const std::complex<double> j(0.0,1.0);
-    double shift = 0.1;
-    for (ssize_t n = 0; n < output.size(0); ++n)
-      ifft[n] = fft[n] * exp(j * 2.0 * indexshift(n,output.size(0)) * Math::pi * shift);
+  //   const std::complex<double> j(0.0,1.0);
+  //   double shift = 0.1;
+  //   for (ssize_t n = 0; n < output.size(0); ++n)
+  //     ifft[n] = fft[n] * exp(j * 2.0 * indexshift(n,output.size(0)) * Math::pi * shift);
 
-    ifft.run();
+  //   ifft.run();
 
-    for (output.index(0) = 0; output.index(0) < output.size(0); ++output.index(0))
-      output.value() = ifft[output.index(0)];
+  //   for (output.index(0) = 0; output.index(0) < output.size(0); ++output.index(0))
+  //     output.value() = ifft[output.index(0)];
 
-   }
-  }
+  //  }
+  // }
  	
+  const int minW = 1;
+  const int maxW = 3;
 
  	// equivalent implementation using multi-threading:
   class LineProcessor {
     public:
-      LineProcessor (size_t axis, ImageType& image) :
+      LineProcessor (size_t axis, ImageType& image, const int minW, const int maxW) :
         axis (axis),
         image (image),
+        minW (minW),
+        maxW (maxW), 
         fft (image.size(axis), FFTW_FORWARD),
         ifft (20, Math::FFT1D(image.size(axis), FFTW_BACKWARD)) { }
 
@@ -155,30 +164,52 @@ void run() {
         for (image.index(axis) = 0; image.index(axis) < image.size(axis); ++image.index(axis))
           fft[image.index(axis)] = image.value();
         fft.run();
+        std::cout << "ifft created" << std::endl;
 
         int num_shifts = 20;
         const std::complex<double> j(0.0,1.0);
         const double shift = 1.0/(image.size(axis)*double(num_shifts));
-        for (int f = 0; f < num_shifts; f ++) {
-          for (int n = 0; n < image.size(axis); ++n)
-            ifft[f][n] = fft[n] * exp(j * 2.0 * indexshift(n,image.size(axis)) * Math::pi * f * shift);
+        int lsize = image.size(axis);
+        
+        // creating zero-centred shift array
+       	long shift_ind[2*num_shifts+1];
+        shift_ind[0] = 0;
+        for (int j = 0; j < num_shifts; j++) {
+          shift_ind[j+1] = j+1;
+          shift_ind[1+num_shifts+j] = -(j+1);
+        }
+
+
+        for (int f = 0; f < 2*num_shifts+1; f ++) {
+          for (int n = 0; n < lsize; ++n)
+            ifft[f][n] = fft[n] * exp(j * 2.0 * indexshift(n,image.size(axis)) * Math::pi * double(shift_ind[f]) * shift);
           ifft[f].run();
         }
 
-        image.index(axis) = 0;
-        do {
-          for (int n = 0; n < image.size(axis); ++n) {
-            optshift_ind = optimumshift(n);
-            double optshift = (optshift_ind+1) * shift;
+        for (int n = 0; n < lsize; ++n) {
+          image.index(axis) = n;
+          // calculating value for optimum shift
+          int optshift_ind = optimumshift(n, lsize);
 
-            //interpolate particular ifft back to right place
-            if (!(n == 0 | n == image.size(axis)-1)) 
-              image.value() = (ifft[0][n+1] - ifft[0][n]) * optshift + image.value();
+          std::cout << "Optimum shift found" << std::endl;
 
-            ++image.index(axis);
-          }
-        }while (image.index(axis) < image.size(axis));
+          double shift = double(shift_ind[optshift_ind]/num_shifts);
 
+          // calculating current, previous and next (real and imaginary) values
+          double a0r = ifft[optshift_ind][wraparound(n-1,lsize)].real();
+          double a1r = ifft[optshift_ind][n].real();
+          double a2r = ifft[optshift_ind][wraparound(n+1,lsize)].real();
+          double a0i = ifft[optshift_ind][wraparound(n-1,lsize)].imag();
+          double a1i = ifft[optshift_ind][n].imag();
+          double a2i = ifft[optshift_ind][wraparound(n+1,lsize)].imag();
+
+          //interpolate particular ifft back to right place
+          if (shift < 0.0)
+            //image.value() = ifft[optshift_ind][n-1+] + (ifft[optshift_ind][n-1] - ifft[optshift_ind][n]) * shift_ind[optshift_ind];
+            image.value() = cdouble (a1r - shift*(a0r-a1r), a1i - shift*(a0i-a1i));
+          else
+          	image.value() = cdouble (a1r + shift*(a2r-a1r), a1i + shift*(a2i-a1i));
+        }
         // for (image.index(axis) = 0; image.index(axis) < image.size(axis); ++image.index(axis))
         //   image.value() = ifft[image.index(axis)];
       }
@@ -186,22 +217,27 @@ void run() {
 
     protected:
       const size_t axis;
+      const int minW, maxW;
       ImageType image;
       Math::FFT1D fft;
       std::vector<Math::FFT1D> ifft;
-      int optimumshift(int n) {
+      int optimumshift(int n, int lsize) {
 
         int num_shifts = 20;
         double opt_var = 0;
         int ind;
 
-        for (int f = 0; f < num_shifts; ++f) {
+        for (int f = 0; f < 2*num_shifts+1; f++) {
           double sum_left = 0;
           double sum_right = 0;
 
-          for (ssize_t k = -3 ; k < 3; ++k) {
-            sum_left += abs(ifft[f][n+k] - ifft[f][n+(k-1)]);
-            sum_right += abs(ifft[f][n-k] - ifft[f][n-(k-1)]);
+          // calculating oscillation measure within given window
+          for (int k = minW; k <= maxW; ++k) {
+              sum_left += abs(ifft[f][wraparound(n-k,lsize)].real() - ifft[f][wraparound(n-k-1,lsize)].real());
+              sum_left += abs(ifft[f][wraparound(n-k,lsize)].imag() - ifft[f][wraparound(n-k-1,lsize)].imag());
+
+              sum_right += abs(ifft[f][wraparound(n+k,lsize)].real() - ifft[f][wraparound(n+k+1,lsize)].real());
+              sum_right += abs(ifft[f][wraparound(n+k,lsize)].imag() - ifft[f][wraparound(n+k+1,lsize)].imag());
           }
 
           double tot_var;
@@ -212,17 +248,23 @@ void run() {
 
           if (opt_var > tot_var)
             ind = f;
+
         }
+        
         return ind;
       }
+
   };
 
-  
+    ThreadedLoop (output, { 0, 1, 2 }).run_outer (LineProcessor (0, output, minW, maxW));
+  //ThreadedLoop (output, { 1, 0, 2 }).run_outer (LineProcessor (1, output, minW, maxW));
+  //ThreadedLoop (output, { 2, 0, 1 }).run_outer (LineProcessor (2, output, minW, maxW));
+
 
   // FFT back to check we get back the original image:
-  Math::FFT (output, 0, FFTW_BACKWARD);
-  //Math::FFT (output, 1, FFTW_BACKWARD);
-  //Math::FFT (output, 2, FFTW_BACKWARD);
+  // Math::FFT (output, 0, FFTW_BACKWARD); 
+  // Math::FFT (output, 1, FFTW_BACKWARD);
+  // Math::FFT (output, 2, FFTW_BACKWARD);
 
 
   // This rescales the output because the FFT is unnormalised
