@@ -438,20 +438,18 @@ void run ()
     } else if (is_possible_fod_image) {
       WARN ("Jacobian modulation performed on possible SH series image. Did you mean FOD modulation?");
     }
-
     if (!linear && !warp.valid())
       throw Exception ("Jacobian modulation requires linear or nonlinear transformation");
-
   }
 
 
   // Rotate/Flip gradient directions if present
   if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
+    Eigen::MatrixXd rotation = linear_transform.linear().inverse();
+    Eigen::MatrixXd test = rotation.transpose() * rotation;
+    test = test.array() / test.diagonal().mean();
     auto grad = DWI::get_DW_scheme (input_header);
     if (grad.rows()) {
-      Eigen::MatrixXd rotation = linear_transform.linear().inverse();
-      Eigen::MatrixXd test = rotation.transpose() * rotation;
-      test = test.array() / test.diagonal().mean();
       if (replace)
         rotation = linear_transform.linear() * input_header.transform().linear().inverse();
       try {
