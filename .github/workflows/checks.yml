@@ -37,6 +37,9 @@ jobs:
 
     - name: binary tests
       run: ./run_tests binaries || { cat testing_binaries.log; false; }
+      
+    - name: script tests
+      run: ./run_tests scripts_nodep || { cat testing_scripts_nodep.log; false; }
 
 
 
@@ -98,6 +101,9 @@ jobs:
 
     - name: binary tests
       run: ./run_tests binaries || { cat testing_binaries.log; false; }
+      
+    - name: script tests
+      run: ./run_tests scripts_nodep || { cat testing_scripts_nodep; false; }
 
     - name: check command documentation
       run: ./docs/generate_user_docs.sh && git diff --exit-code docs/
@@ -143,6 +149,10 @@ jobs:
     - name: binary tests
       shell: cmd
       run: msys64\msys2_shell.cmd -c "./run_tests binaries || { cat testing_binaries.log; false; }"
+      
+    - name: script tests
+      shell: cmd
+      run: msys64\msys2_shell.cmd -c "./run_tests scripts_nodep || { cat testing_scripts_nodep.log; false; }"
 
 
 

@@ -15,14 +15,19 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+
+# Scripts to be blacklisted from testing due to external software dependencies
+SCRIPTS_EXTDEP="5ttgen dwibiascorrect dwifslpreproc labelsgmfix"
+
+
 if test "$#" -ne 1; then
-  echo "Script must be provided with single input argument: \"binaries\", \"scripts\", \"units\", or the name of a specific test to be run."
+  echo "Script must be provided with single input argument: \"binaries\", \"scripts\", \"scripts_nodep\", \"units\", or the name of a specific test to be run."
   exit 1
 fi
 
 
 if [ -d testing/data/ ]; then
-  echo -n "Deleting old testing data directory testing/data/"
+  echo -n "Deleting old testing data directory testing/data/ ... "
   rm -rf testing/data/
   echo OK
 fi
@@ -42,6 +47,11 @@ case $1 in
     datadir="testing/scripts/data/"
     testsdir="testing/scripts/tests/"
     teststring="scripts"
+    ;;
+  scripts_nodep)
+    datadir="testing/scripts/data/"
+    testsdir="testing/scripts/tests/"
+    teststring="scripts (no external dependencies)"
     ;;
   units)
     testsdir="testing/tests/"
@@ -105,6 +115,16 @@ if [ ! -z $testsdir ]; then
   if [ -z "$testlist" ]; then
     echo ERROR!
     exit 1
+  fi
+  if [ $1 == "scripts_nodep" ]; then
+    blacklist="("$(echo $SCRIPTS_EXTDEP | tr ' ' '|')")"
+    revisedtestlist=""
+    for item in $testlist; do
+      if [[ ! $item =~ $blacklist ]]; then
+        revisedtestlist="$revisedtestlist $item"
+      fi
+    done
+    testlist=$revisedtestlist
   fi
   echo OK
   cat >> $LOGFILE <<EOD
