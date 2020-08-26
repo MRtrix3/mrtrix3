@@ -160,7 +160,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   eddy_manual_options = []
-  topup_file_prefix = None
+  topup_file_userpath = None
   if app.ARGS.eddy_options:
     # Initially process as a list; we'll convert back to a string later
     eddy_manual_options = app.ARGS.eddy_options.strip().split()
@@ -175,7 +175,7 @@ def execute(): #pylint: disable=unused-variable
     if len(eddy_topup_entry) > 1:
       raise MRtrixError('Input to -eddy_options contains multiple "--topup=" entries')
     if eddy_topup_entry:
-      topup_file_prefix = path.from_user(eddy_topup_entry[0].lstrip('--topup='), False)
+      topup_file_userpath = path.from_user(eddy_topup_entry[0][len('--topup='):], False)
       eddy_manual_options = [entry for entry in eddy_manual_options if not entry.startswith('--topup=')]
 
 
@@ -188,10 +188,10 @@ def execute(): #pylint: disable=unused-variable
   topup_input_movpar = None
   topup_input_fieldcoef = None
   if app.ARGS.topup_files:
-    if topup_file_prefix:
+    if topup_file_userpath:
       raise MRtrixError('Cannot use -topup_files option and also specify "... --topup=<prefix> ..." within content of -eddy_options')
-    topup_file_prefix = path.from_user(app.ARGS.topup_files, False)
-  if topup_file_prefix:
+    topup_file_userpath = path.from_user(app.ARGS.topup_files, False)
+  if topup_file_userpath:
     # Find files based on what the user may or may not have specified:
     # - Path to the movement parameters text file
     # - Path to the field coefficients image
@@ -200,31 +200,36 @@ def execute(): #pylint: disable=unused-variable
 
     def check_movpar():
       if not os.path.isfile(topup_input_movpar):
-        raise MRtrixError('No topup movement parameter file found based on path "' + topup_file_prefix + '" (expected location: ' + topup_input_movpar + ')')
+        raise MRtrixError('No topup movement parameter file found based on path "' + topup_file_userpath + '" (expected location: ' + topup_input_movpar + ')')
 
     def find_fieldcoef(fieldcoef_prefix):
       fieldcoef_candidates = glob.glob(fieldcoef_prefix + '_fieldcoef.nii*')
       if not fieldcoef_candidates:
-        raise MRtrixError('No topup field coefficient image found based on path "' + topup_file_prefix + '"')
+        raise MRtrixError('No topup field coefficient image found based on path "' + topup_file_userpath + '"')
       if len(fieldcoef_candidates) > 1:
-        raise MRtrixError('Multiple topup field coefficient images found based on path "' + topup_file_prefix + '": ' + str(fieldcoef_candidates))
+        raise MRtrixError('Multiple topup field coefficient images found based on path "' + topup_file_userpath + '": ' + str(fieldcoef_candidates))
       return fieldcoef_candidates[0]
 
-    if os.path.isfile(topup_file_prefix):
-      if topup_file_prefix.endswith('_movpar.txt'):
-        topup_input_movpar = topup_file_prefix
-        topup_input_fieldcoef = find_fieldcoef(topup_file_prefix.rstrip('_movpar.txt'))
-      elif topup_file_prefix.rstrip('.gz').endswith('_fieldcoef.nii'):
-        topup_input_fieldcoef = topup_file_prefix
-        topup_input_movpar = topup_file_prefix.rstrip('.gz').rstrip('_fieldcoef.nii') + '_movpar.txt'
+    if os.path.isfile(topup_file_userpath):
+      if topup_file_userpath.endswith('_movpar.txt'):
+        topup_input_movpar = topup_file_userpath
+        topup_input_fieldcoef = find_fieldcoef(topup_file_userpath[:-len('_movpar.txt')])
+      elif topup_file_userpath.endswith('_fieldcoef.nii') or topup_file_userpath.endswith('_fieldcoef.nii.gz'):
+        topup_input_fieldcoef = topup_file_userpath
+        topup_input_movpar = topup_file_userpath
+        if topup_input_movpar.endswith('.gz'):
+          topup_input_movpar = topup_input_movpar[:-len('.gz')]
+        topup_input_movpar = topup_input_movpar[:-len('_fieldcoef.nii')] + '_movpar.txt'
         check_movpar()
       else:
-        raise MRtrixError('Unrecognised file "' + topup_file_prefix + '" specified as pre-calculated topup susceptibility field')
+        raise MRtrixError('Unrecognised file "' + topup_file_userpath + '" specified as pre-calculated topup susceptibility field')
     else:
-      topup_file_prefix = topup_file_prefix.rstrip('_')
-      topup_input_movpar = topup_file_prefix + '_movpar.txt'
+      topup_input_movpar = topup_file_userpath
+      if topup_input_movpar[-1] == '_':
+        topup_input_movpar = topup_input_movpar[:-1]
+      topup_input_movpar += '_movpar.txt'
       check_movpar()
-      topup_input_fieldcoef = find_fieldcoef(topup_file_prefix)
+      topup_input_fieldcoef = find_fieldcoef(topup_input_movpar[:-len('_movpar.txt')])
 
 
   # Convert all input images into MRtrix format and store in scratch directory first
@@ -239,7 +244,7 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.se_epi:
     image.check_3d_nonunity(path.from_user(app.ARGS.se_epi, False))
     run.command('mrconvert ' + path.from_user(app.ARGS.se_epi) + ' ' + path.to_scratch('se_epi.mif'))
-  if topup_file_prefix:
+  if topup_file_userpath:
     run.function(shutil.copyfile, topup_input_movpar, path.to_scratch('field_movpar.txt', False))
     # Can't run field spline coefficients image through mrconvert:
     #   topup encodes voxel sizes within the three NIfTI intent parameters, and
@@ -563,7 +568,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Deal with the phase-encoding of the images to be fed to topup (if applicable)
-  execute_topup = (not pe_design == 'None') and not topup_file_prefix
+  execute_topup = (not pe_design == 'None') and not topup_file_userpath
   overwrite_se_epi_pe_scheme = False
   se_epi_path = 'se_epi.mif'
   dwi_permvols_preeddy_option = ''
@@ -730,7 +735,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Completed checking for presence of -se_epi option
 
-  elif not pe_design == 'None' and not topup_file_prefix: # No SE EPI images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
+  elif not pe_design == 'None' and not topup_file_userpath: # No SE EPI images explicitly provided: In some cases, can extract appropriate b=0 images from DWI
 
     # If using 'All' or 'Header', and haven't been given any topup images, need to extract the b=0 volumes from the series,
     #   preserving phase-encoding information while doing so
@@ -758,7 +763,7 @@ def execute(): #pylint: disable=unused-variable
   #   first input volume to topup and the first input volume to eddy are one and the same.
   # Note: If at a later date, the statistical outputs from eddy are considered (e.g. motion, outliers),
   #   then this volume permutation will need to be taken into account
-  if not topup_file_prefix:
+  if not topup_file_userpath:
     if dwi_first_bzero_index == len(grad):
       app.warn("No image volumes were classified as b=0 by MRtrix3; no permutation of order of DWI volumes can occur " + \
               "(do you need to adjust config file entry BZeroThreshold?)")
@@ -861,7 +866,7 @@ def execute(): #pylint: disable=unused-variable
       sys.stderr.write(topup_output.stdout + '\n' + topup_output.stderr + '\n')
 
 
-  if execute_topup or topup_file_prefix:
+  if execute_topup or topup_file_userpath:
 
     # Apply the warp field to the input image series to get an initial corrected volume estimate
     # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
@@ -1046,7 +1051,7 @@ def execute(): #pylint: disable=unused-variable
       eddyqc_options = '-idx eddy_indices.txt -par eddy_config.txt -m eddy_mask.nii -b bvals'
       if os.path.isfile('dwi_post_eddy.eddy_residuals'):
         eddyqc_options += ' -g ' + bvecs_path
-      if execute_topup or topup_file_prefix:
+      if execute_topup or topup_file_userpath:
         eddyqc_options += ' -f ' + fsl.find_image('field_fieldcoef')
       if eddy_mporder:
         eddyqc_options += ' -s slspec.txt'
@@ -1280,7 +1285,7 @@ def execute(): #pylint: disable=unused-variable
 
   keys_to_remove = [ 'MultibandAccelerationFactor', 'SliceEncodingDirection', 'SliceTiming' ]
   # These keys are still relevant for the output data if no EPI distortion correction was performed
-  if execute_topup or topup_file_prefix:
+  if execute_topup or topup_file_userpath:
     keys_to_remove.extend([ 'PhaseEncodingDirection', 'TotalReadoutTime', 'pe_scheme' ])
   # Get the header key-value entries from the input DWI, remove those we don't wish to keep, and
   #   export the result to a new JSON file so that they can be inserted into the output header
@@ -1294,7 +1299,7 @@ def execute(): #pylint: disable=unused-variable
   # 'Stash' the phase encoding scheme of the original uncorrected DWIs, since it still
   #   may be useful information at some point in the future but is no longer relevant
   #   for e.g. tracking for different volumes, or performing any geometric corrections
-  if execute_topup or topup_file_prefix:
+  if execute_topup or topup_file_userpath:
     keyval['prior_pe_scheme'] = dwi_manual_pe_scheme if dwi_manual_pe_scheme else dwi_pe_scheme
   with open('output.json', 'w') as output_json_file:
     json.dump(keyval, output_json_file)
