@@ -448,6 +448,8 @@ void run ()
     Eigen::MatrixXd rotation = linear_transform.linear().inverse();
     Eigen::MatrixXd test = rotation.transpose() * rotation;
     test = test.array() / test.diagonal().mean();
+    if (replace)
+      rotation = linear_transform.linear() * input_header.transform().linear().inverse();
 
     // Diffusion gradient table
     Eigen::MatrixXd grad;
@@ -455,8 +457,6 @@ void run ()
       grad = DWI::get_DW_scheme (input_header);
     } catch (Exception&) {}
     if (grad.rows()) {
-      if (replace)
-        rotation = linear_transform.linear() * input_header.transform().linear().inverse();
       try {
         if (input_header.size(3) != (ssize_t) grad.rows()) {
           throw Exception ("DW gradient table of different length ("
