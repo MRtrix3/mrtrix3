@@ -241,7 +241,10 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrconvert ' + path.from_user(app.ARGS.se_epi) + ' ' + path.to_scratch('se_epi.mif'))
   if topup_file_prefix:
     run.function(shutil.copyfile, topup_input_movpar, path.to_scratch('field_movpar.txt', False))
-    run.command(['mrconvert', topup_input_fieldcoef, path.to_scratch('field_fieldcoef.nii.gz', False)])
+    # Can't run field spline coefficients image through mrconvert:
+    #   topup encodes voxel sizes within the three NIfTI intent parameters, and
+    #   applytopup requires that these be set, but mrconvert will wipe them
+    run.function(shutil.copyfile, topup_input_fieldcoef, path.to_scratch('field_fieldcoef.nii' + ('.gz' if topup_input_fieldcoef.endswith('.nii.gz') else ''), False))
   if app.ARGS.eddy_mask:
     run.command('mrconvert ' + path.from_user(app.ARGS.eddy_mask) + ' ' + path.to_scratch('eddy_mask.mif') + ' -datatype bit')
 
