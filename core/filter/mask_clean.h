@@ -79,7 +79,7 @@ namespace MR
         {
 
           std::unique_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message) : nullptr);
-          
+
           if (progress)
             ++(*progress);
 
@@ -139,7 +139,7 @@ namespace MR
           for (auto l = Loop (0,3) (temp_image, output); l; ++l)
             output.value() = temp_image.value();
         }
-        
+
         // Core operation for a single specific scale s.
         template <class InputImageType, class OutputImageType>
         void single_scale (InputImageType& input, OutputImageType& output, const int ss)
@@ -159,11 +159,13 @@ namespace MR
               del_image.value() = 0;
 
           Dilate dilation_filter (del_image);
-          dilation_filter.set_npass(ss+1);
-          dilation_filter (del_image, del_image);
-
-          for (auto l = Loop (0,3) (input, largest_image, del_image); l; ++l)
-            largest_image.value() = del_image.value() ? 0 : input.value();
+          for (size_t iter = 0; iter <= ss; ++iter) {
+            dilation_filter (del_image, del_image);
+            for (auto l = Loop(0, 3) (input, largest_image, del_image); l; ++l) {
+              del_image.value() = input.value() ? del_image.value() : 0;
+              largest_image.value() = del_image.value() ? 0 : input.value();
+            }
+          }
 
           for (auto l = Loop (0,3) (largest_image, output); l; ++l)
             output.value() = largest_image.value();
@@ -175,7 +177,7 @@ namespace MR
           for (auto l = Loop (0,3) (ima, imb); l; ++l)
             if (ima.value() != imb.value())
               return true;
-            
+
           return false;
         }
 
