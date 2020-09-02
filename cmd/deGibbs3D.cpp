@@ -40,7 +40,7 @@ inline double indexshift(ssize_t n, ssize_t size) {
 }
 
 inline int wraparound(ssize_t n, ssize_t size) {
-	if (n > size || n < 0) n = (n+size)%size;
+	n = (n+size)%size;
 	return n;
 }
 
@@ -115,7 +115,7 @@ void run() {
   // Shift1D shifter (0.1); 
   // Math::FFT1D fft (output.size(0), FFTW_FORWARD);
   // Math::FFT1D ifft (output.size(0), FFTW_BACKWARD);
-
+  // std::cout << "Shift1D passed" << std::endl;
 
  	// //ThreadedLoop (output).run (Shift1D(shift), output); <--- this runs it for the entire image
   
@@ -152,19 +152,19 @@ void run() {
         axis (axis),
         image (image),
         minW (minW),
-        maxW (maxW), 
+        maxW (maxW),
         fft (image.size(axis), FFTW_FORWARD),
-        ifft (20, Math::FFT1D(image.size(axis), FFTW_BACKWARD)) { }
+        ifft (2*20+1, Math::FFT1D(image.size(axis), FFTW_BACKWARD)) { }
 
 
       void operator() (const Iterator& pos)
       {
+        //std::cout << "LineProcessor has been initialised" << std::endl;
         assign_pos_of (pos).to (image);
 
         for (image.index(axis) = 0; image.index(axis) < image.size(axis); ++image.index(axis))
           fft[image.index(axis)] = image.value();
         fft.run();
-        std::cout << "ifft created" << std::endl;
 
         int num_shifts = 20;
         const std::complex<double> j(0.0,1.0);
@@ -172,46 +172,47 @@ void run() {
         int lsize = image.size(axis);
         
         // creating zero-centred shift array
-       	long shift_ind[2*num_shifts+1];
+       	double shift_ind [2*num_shifts+1];
         shift_ind[0] = 0;
         for (int j = 0; j < num_shifts; j++) {
-          shift_ind[j+1] = j+1;
-          shift_ind[1+num_shifts+j] = -(j+1);
+          shift_ind[j+1] = double(j+1);
+          shift_ind[1+num_shifts+j] = double(-(j+1));
         }
 
 
         for (int f = 0; f < 2*num_shifts+1; f ++) {
-          for (int n = 0; n < lsize; ++n)
-            ifft[f][n] = fft[n] * exp(j * 2.0 * indexshift(n,image.size(axis)) * Math::pi * double(shift_ind[f]) * shift);
+          for (int n = 0; n < lsize; ++n) {
+            ifft[f][n] = fft[n] * exp(j * 2.0 * indexshift(n,image.size(axis)) * Math::pi * shift_ind[f] * shift);
+        	}
           ifft[f].run();
         }
 
         for (int n = 0; n < lsize; ++n) {
           image.index(axis) = n;
+
           // calculating value for optimum shift
-          int optshift_ind = optimumshift(n, lsize);
-
-          std::cout << "Optimum shift found" << std::endl;
-
-          double shift = double(shift_ind[optshift_ind]/num_shifts);
-
+          int optshift_ind = optimumshift(n,lsize);
+     
+          double shift = double(shift_ind[optshift_ind]/2*num_shifts);
+       
           // calculating current, previous and next (real and imaginary) values
-          double a0r = ifft[optshift_ind][wraparound(n-1,lsize)].real();
+          double a0r = ifft[optshift_ind][wraparound(n-1,lsize)].real();  
           double a1r = ifft[optshift_ind][n].real();
-          double a2r = ifft[optshift_ind][wraparound(n+1,lsize)].real();
+          double a2r = ifft[optshift_ind][wraparound(n+1,lsize)].real();       
           double a0i = ifft[optshift_ind][wraparound(n-1,lsize)].imag();
           double a1i = ifft[optshift_ind][n].imag();
           double a2i = ifft[optshift_ind][wraparound(n+1,lsize)].imag();
 
-          //interpolate particular ifft back to right place
-          if (shift < 0.0)
+          // interpolate particular ifft back to right place
+          if (shift > 0.0) 
             //image.value() = ifft[optshift_ind][n-1+] + (ifft[optshift_ind][n-1] - ifft[optshift_ind][n]) * shift_ind[optshift_ind];
-            image.value() = cdouble (a1r - shift*(a0r-a1r), a1i - shift*(a0i-a1i));
-          else
-          	image.value() = cdouble (a1r + shift*(a2r-a1r), a1i + shift*(a2i-a1i));
+            image.value() = cdouble (a1r + shift*(a0r-a1r), a1i + shift*(a0i-a1i));
+          else 
+          	image.value() = cdouble (a1r - shift*(a2r+a1r), a1i - shift*(a2i+a1i));
         }
         // for (image.index(axis) = 0; image.index(axis) < image.size(axis); ++image.index(axis))
         //   image.value() = ifft[image.index(axis)];
+        
       }
 
 
@@ -224,12 +225,31 @@ void run() {
       int optimumshift(int n, int lsize) {
 
         int num_shifts = 20;
-        double opt_var = 0;
-        int ind;
 
-        for (int f = 0; f < 2*num_shifts+1; f++) {
-          double sum_left = 0;
-          double sum_right = 0;
+        // calculating for first shift
+        double sum_left = 0;
+        double sum_right = 0;
+
+        // calculating oscillation measure within given window
+        for (int k = minW; k <= maxW; ++k) {
+          sum_left += abs(ifft[0][wraparound(n-k,lsize)].real() - ifft[0][wraparound(n-k-1,lsize)].real());
+          sum_left += abs(ifft[0][wraparound(n-k,lsize)].imag() - ifft[0][wraparound(n-k-1,lsize)].imag());
+
+          sum_right += abs(ifft[0][wraparound(n+k,lsize)].real() - ifft[0][wraparound(n+k+1,lsize)].real());
+          sum_right += abs(ifft[0][wraparound(n+k,lsize)].imag() - ifft[0][wraparound(n+k+1,lsize)].imag());
+         }
+
+        double tot_var;
+        if (sum_left < sum_right) 
+          tot_var = sum_left;
+        else
+        	tot_var = sum_right;
+
+        double opt_var = tot_var;
+        int ind = 0;
+
+        // calculating oscillation measure for subsequent shifts
+        for (int f = 1; f < 2*num_shifts+1; f++) {
 
           // calculating oscillation measure within given window
           for (int k = minW; k <= maxW; ++k) {
@@ -240,17 +260,17 @@ void run() {
               sum_right += abs(ifft[f][wraparound(n+k,lsize)].imag() - ifft[f][wraparound(n+k+1,lsize)].imag());
           }
 
-          double tot_var;
           if (sum_left < sum_right) 
             tot_var = sum_left;
           else
             tot_var = sum_right;
 
-          if (opt_var > tot_var)
+          if (tot_var < opt_var) {
+          	opt_var = tot_var;
             ind = f;
+          }
 
         }
-        
         return ind;
       }
 
