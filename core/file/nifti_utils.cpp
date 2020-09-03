@@ -81,6 +81,7 @@ namespace MR
           using dim_type = typename Type<NiftiHeader>::dim_type;
           using code_type = typename Type<NiftiHeader>::code_type;
           using float_type = typename Type<NiftiHeader>::float_type;
+          using vox_offset_type = typename Type<NiftiHeader>::vox_offset_type;
 
           bool is_BE = false;
           if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != sizeof(NH)) {
@@ -217,7 +218,7 @@ namespace MR
 
 
 
-          const int64_t data_offset = Raw::fetch_<float_type> (&NH.vox_offset, is_BE);
+          const int64_t data_offset = Raw::fetch_<vox_offset_type> (&NH.vox_offset, is_BE);
 
 
 
