@@ -1948,6 +1948,17 @@ namespace MR
             return;
           }
 
+          if (opt.opt->is ("orientation")) {
+            if (image()) {
+              vector<default_type> pos = parse_floats (opt[0]);
+              if (pos.size() != 4)
+                throw Exception ("-orientation option expects a comma-separated list of 4 floating-point values");
+              set_orientation ({ float(pos[0]), float(pos[1]), float(pos[2]), float(pos[3]) });
+              glarea->update();
+            }
+            return;
+          }
+
           if (opt.opt->is ("voxel")) {
             if (image()) {
               vector<default_type> pos = parse_floats (opt[0]);
@@ -2173,6 +2184,9 @@ namespace MR
           + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
               "that will appear at the centre of the viewing window")
           +   Argument ("x,y,z").type_sequence_float()
+
+          + Option ("orientation", "Set the orientation of the camera for the viewing window, in the form of a quaternion representing the rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point values (this will be automatically normalised).")
+          +   Argument ("w,x,y,z").type_sequence_float()
 
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
               "relative the image currently displayed. The new position should be supplied "
