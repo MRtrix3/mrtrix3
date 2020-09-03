@@ -98,6 +98,9 @@ jobs:
 
     - name: binary tests
       run: ./run_tests binaries || { cat testing_binaries.log; false; }
+      
+    - name: script tests
+      run: ./run_tests scripts_quick || { cat testing_scripts_quick; false; }
 
     - name: check command documentation
       run: ./docs/generate_user_docs.sh && git diff --exit-code docs/

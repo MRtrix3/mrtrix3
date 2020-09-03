@@ -16,13 +16,13 @@
 # For more details, see http://www.mrtrix.org/.
 
 if test "$#" -ne 1; then
-  echo "Script must be provided with single input argument: \"binaries\", \"scripts\", \"units\", or the name of a specific test to be run."
+  echo "Script must be provided with single input argument: \"binaries\", \"scripts_quick\", \"scripts_full\", \"units\", or the name of a specific test to be run."
   exit 1
 fi
 
 
 if [ -d testing/data/ ]; then
-  echo -n "Deleting old testing data directory testing/data/"
+  echo -n "Deleting old testing data directory testing/data/ ... "
   rm -rf testing/data/
   echo OK
 fi
@@ -38,10 +38,16 @@ case $1 in
     testsdir="testing/binaries/tests/"
     teststring="binaries"
     ;;
-  scripts)
+  scripts_quick)
+    datadir="testing/scripts/data/"
+    testlist="quick_tests"
+    testsdir="testing/scripts/"
+    teststring="scripts (quick tests only)"
+    ;;
+  scripts_full)
     datadir="testing/scripts/data/"
     testsdir="testing/scripts/tests/"
-    teststring="scripts"
+    teststring="scripts (comprehensive testing)"
     ;;
   units)
     testsdir="testing/tests/"
@@ -97,7 +103,7 @@ if [ ! -z $datadir ]; then
 fi
 
 
-if [ ! -z $testsdir ]; then
+if [ -z $testlist ]; then
   echo -n "building list of tests... "
   for item in $testsdir/*; do
     testlist="$testlist $(basename $item)"
