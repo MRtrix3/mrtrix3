@@ -53,12 +53,8 @@ namespace MR
         //CONF improve display quality).
 
         GL::Format f;
-#if QT_VERSION >= 0x050400
         f.setSwapBehavior (GL::Format::DoubleBuffer);
         f.setRenderableType (GL::Format::OpenGL);
-#else
-        f.setDoubleBuffer (true);
-#endif
 
         if (File::Config::get_bool ("NeedOpenGLCoreProfile", true)) {
           f.setVersion (3,3);
