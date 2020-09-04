@@ -264,11 +264,9 @@ namespace MR
 
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
         // otherwise we get transparent windows...
-#if QT_VERSION >= 0x050400
         gl::ClearColor (0.0, 0.0, 0.0, 1.0);
         gl::ColorMask (false, false, false, true);
         gl::Clear (gl::COLOR_BUFFER_BIT);
-#endif
 
         if (OS > 0) snapshot();
 
