@@ -143,7 +143,7 @@ public:
   {
     // Process voxels in mask only
     if (mask.valid()) {
-      assign_pos_of (dwi).to (mask);
+      assign_pos_of (dwi, 0, 3).to (mask);
       if (!mask.value())
         return;
     }
@@ -196,7 +196,7 @@ public:
 
     // store noise map if requested:
     if (noise.valid()) {
-      assign_pos_of(dwi).to(noise);
+      assign_pos_of(dwi, 0, 3).to(noise);
       noise.value() = real_type (std::sqrt(sigma2));
     }
   }
