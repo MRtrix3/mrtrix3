@@ -1,5 +1,5 @@
 #!/bin/bash -e
-tag=$(basename $(curl -Ls -o /dev/null -w %{url_effective} https://github.com/MRtrix3/mrtrix3/releases/latest))
+tag=$(basename $(/usr/bin/curl -Ls -o /dev/null -w %{url_effective} https://github.com/MRtrix3/mrtrix3/releases/latest))
 if [ -z "${tag}" ]; then
   echo "ERROR: could not find tag name for latest release ..."
   exit
@@ -39,7 +39,7 @@ if [ -z "${url}" ]; then
 fi
 
 echo "Downloading "${url}" ..."
-curl -sL "${url}" -O
+/usr/bin/curl -sL "${url}" -O
 
 tarball=$(basename "${url}")
 if [ ! -f "${tarball}" ]; then
