@@ -124,6 +124,17 @@ namespace MR
         }
 
         void set_oversample (vector<uint32_t> oversample) {
+          // Prevent use of oversampling when using nearest-neighbour interpolation
+          if (interp_type == 0) { // nearest
+            for (auto s : oversample) {
+              if (s != 1) {
+                WARN("oversampling is ignored for nearest neighbour interpolation");
+                break;
+              }
+            }
+            oversampling = {1, 1, 1};
+            return;
+          }
           if (oversample.size() == 1)
             oversample.resize (3, oversample[0]);
           else if (oversample.size() != 3 and oversample.size() != 0)
@@ -137,6 +148,7 @@ namespace MR
 
         void set_interp_type (int type) {
           interp_type = type;
+          // Prevent use of oversampling when using nearest-neighbour interpolation
           if (interp_type == 0) // nearest
             set_oversample (vector<uint32_t> (3, 1));
         }
@@ -156,8 +168,7 @@ namespace MR
              *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
             switch (interp_type) {
             case 0:
-              // Prevent use of oversampling when using nearest-neighbour interpolation
-              reslice <Interp::Nearest> (input, output, transformation, {1, 1, 1}, oob);
+              reslice <Interp::Nearest> (input, output, transformation, oversampling, oob);
               break;
             case 1:
               reslice <Interp::Linear> (input, output, transformation, oversampling, oob);
