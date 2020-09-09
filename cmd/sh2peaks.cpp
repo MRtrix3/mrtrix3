@@ -169,7 +169,7 @@ class Processor { MEMALIGN(Processor)
                int npeaks,
                vector<Direction> true_peaks,
                value_type threshold,
-               Image<value_type>* ipeaks_data,
+               Image<value_type> ipeaks_data,
                bool use_precomputer) :
       dirs_vox (dirs_data),
       dirs (directions),
@@ -210,17 +210,17 @@ class Processor { MEMALIGN(Processor)
           all_peaks.push_back (p);
       }
 
-      if (ipeaks_vox) {
-        ipeaks_vox->index(0) = item.pos[0];
-        ipeaks_vox->index(1) = item.pos[1];
-        ipeaks_vox->index(2) = item.pos[2];
+      if (ipeaks_vox.valid()) {
+        ipeaks_vox.index(0) = item.pos[0];
+        ipeaks_vox.index(1) = item.pos[1];
+        ipeaks_vox.index(2) = item.pos[2];
 
         for (int i = 0; i < npeaks; i++) {
           Eigen::Vector3f p;
-          ipeaks_vox->index(3) = 3*i;
+          ipeaks_vox.index(3) = 3*i;
           for (int n = 0; n < 3; n++) {
-            p[n] = ipeaks_vox->value();
-            ipeaks_vox->index(3)++;
+            p[n] = ipeaks_vox.value();
+            ipeaks_vox.index(3)++;
           }
           p.normalize();
 
@@ -270,16 +270,16 @@ class Processor { MEMALIGN(Processor)
     vector<Direction> true_peaks;
     value_type threshold;
     vector<Direction> peaks_out;
-    copy_ptr<Image<value_type> > ipeaks_vox;
+    Image<value_type> ipeaks_vox;
     Math::SH::PrecomputedAL<value_type>* precomputer;
 
     bool check_input (const Item& item) {
-      if (ipeaks_vox) {
-        ipeaks_vox->index(0) = item.pos[0];
-        ipeaks_vox->index(1) = item.pos[1];
-        ipeaks_vox->index(2) = item.pos[2];
-        ipeaks_vox->index(3) = 0;
-        if (std::isnan (value_type (ipeaks_vox->value())))
+      if (ipeaks_vox.valid()) {
+        ipeaks_vox.index(0) = item.pos[0];
+        ipeaks_vox.index(1) = item.pos[1];
+        ipeaks_vox.index(2) = item.pos[2];
+        ipeaks_vox.index(3) = 0;
+        if (std::isnan (value_type (ipeaks_vox.value())))
           return true;
       }
 
@@ -339,22 +339,22 @@ void run ()
   header.datatype() = DataType::Float32;
 
   opt = get_options ("peaks");
-  std::unique_ptr<Image<value_type> > ipeaks_data;
+  Image<value_type> ipeaks_data;
   if (opt.size()) {
     if (true_peaks.size())
       throw Exception ("you can't specify both a peaks file and orientations to be estimated at the same time");
     if (opt.size())
-      ipeaks_data.reset (new Image<value_type> (Image<value_type>::open(opt[0][0])));
+      ipeaks_data = Image<value_type> (Image<value_type>::open(opt[0][0]));
 
-    check_dimensions (SH_data, *ipeaks_data, 0, 3);
-    npeaks = ipeaks_data->size (3) / 3;
+    check_dimensions (SH_data, ipeaks_data, 0, 3);
+    npeaks = ipeaks_data.size (3) / 3;
   }
   header.size(3) = 3 * npeaks;
   auto peaks = Image<value_type>::create (argument[1], header);
 
   DataLoader loader (SH_data, mask_data.get());
   Processor processor (peaks, dirs, Math::SH::LforN (SH_data.size (3)),
-      npeaks, true_peaks, threshold, ipeaks_data.get(), get_options("fast").size());
+      npeaks, true_peaks, threshold, ipeaks_data, get_options("fast").size());
 
   Thread::run_queue (loader, Thread::batch (Item()), Thread::multi (processor));
 }
