@@ -134,12 +134,11 @@ class DataLoader { MEMALIGN(DataLoader)
         item.pos[1] = sh.index(1);
         item.pos[2] = sh.index(2);
 
-        if (mask.valid()) {
+        if (mask.valid())
           assign_pos_of(sh).to(mask);
-          if (!mask.value()) {
-            for (auto l = Loop(3) (sh); l; ++l)
-              item.data[sh.index(3)] = NaN;
-          }
+        if (mask.valid() && !mask.value()) {
+          for (auto l = Loop(3) (sh); l; ++l)
+            item.data[sh.index(3)] = NaN;
         } else {
           // iterates over SH coefficients
           for (auto l = Loop(3) (sh); l; ++l)
