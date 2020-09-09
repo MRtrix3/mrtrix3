@@ -122,8 +122,9 @@ class Item { MEMALIGN(Item)
 class DataLoader { MEMALIGN(DataLoader)
   public:
     DataLoader (Image<value_type>& sh_data,
-                Image<bool>* mask_data) :
+                const Image<bool>& mask_data) :
       sh (sh_data),
+      mask (mask_data),
       loop (Loop("estimating peak directions", 0, 3) (sh)) { }
 
     bool operator() (Item& item) {
@@ -133,9 +134,9 @@ class DataLoader { MEMALIGN(DataLoader)
         item.pos[1] = sh.index(1);
         item.pos[2] = sh.index(2);
 
-        if (mask) {
-          assign_pos_of(sh).to(*mask);
-          if (!mask->value()) {
+        if (mask.valid()) {
+          assign_pos_of(sh).to(mask);
+          if (!mask.value()) {
             for (auto l = Loop(3) (sh); l; ++l)
               item.data[sh.index(3)] = NaN;
           }
@@ -154,7 +155,7 @@ class DataLoader { MEMALIGN(DataLoader)
 
   private:
     Image<value_type>  sh;
-    std::unique_ptr<Image<bool> > mask;
+    Image<bool> mask;
     LoopAlongAxisRangeProgress::Run<Image<value_type> > loop;
 };
 
@@ -308,9 +309,9 @@ void run ()
 
   auto opt = get_options ("mask");
 
-  std::unique_ptr<Image<bool> > mask_data;
+  Image<bool> mask_data;
   if (opt.size())
-    mask_data.reset (new Image<bool>(Image<bool>::open (opt[0][0])));
+    mask_data = Image<bool>::open (opt[0][0]);
 
   opt = get_options ("seeds");
   Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
@@ -344,7 +345,7 @@ void run ()
     if (true_peaks.size())
       throw Exception ("you can't specify both a peaks file and orientations to be estimated at the same time");
     if (opt.size())
-      ipeaks_data = Image<value_type> (Image<value_type>::open(opt[0][0]));
+      ipeaks_data = Image<value_type>::open(opt[0][0]);
 
     check_dimensions (SH_data, ipeaks_data, 0, 3);
     npeaks = ipeaks_data.size (3) / 3;
@@ -352,7 +353,7 @@ void run ()
   header.size(3) = 3 * npeaks;
   auto peaks = Image<value_type>::create (argument[1], header);
 
-  DataLoader loader (SH_data, mask_data.get());
+  DataLoader loader (SH_data, mask_data);
   Processor processor (peaks, dirs, Math::SH::LforN (SH_data.size (3)),
       npeaks, true_peaks, threshold, ipeaks_data, get_options("fast").size());
 
