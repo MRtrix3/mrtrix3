@@ -157,7 +157,7 @@ namespace MR
             switch (interp_type) {
             case 0:
               // Prevent use of oversampling when using nearest-neighbour interpolation
-              reslice <Interp::Nearest> (input, output, transformation, oversampling, oob);
+              reslice <Interp::Nearest> (input, output, transformation, {1, 1, 1}, oob);
               break;
             case 1:
               reslice <Interp::Linear> (input, output, transformation, oversampling, oob);
