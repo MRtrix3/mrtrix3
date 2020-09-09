@@ -135,7 +135,7 @@ class DataLoader { MEMALIGN(DataLoader)
         item.pos[2] = sh.index(2);
 
         if (mask.valid())
-          assign_pos_of(sh).to(mask);
+          assign_pos_of(sh,0,3).to(mask);
         if (mask.valid() && !mask.value()) {
           for (auto l = Loop(3) (sh); l; ++l)
             item.data[sh.index(3)] = NaN;
