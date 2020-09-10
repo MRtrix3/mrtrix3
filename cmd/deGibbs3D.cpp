@@ -134,11 +134,13 @@ class LineProcessor {
         double a1i = ifft[optshift_ind][n].imag();
         double a2i = ifft[optshift_ind][wraparound(n+1,lsize)].imag();
 
+        const double scale = input.size(0)*input.size(1)*input.size(2) * lsize;
+
         // interpolate particular ifft back to right place
         if (shift > 0.0)
-          output.value() += cdouble (a1r - shift*(a1r-a0r), a1i - shift*(a1i-a0i)) / double(lsize);
+          output.value() += cdouble (a1r - shift*(a1r-a0r), a1i - shift*(a1i-a0i)) / scale;
         else
-          output.value() += cdouble (a1r + shift*(a1r-a2r), a1i + shift*(a1i-a2i)) / double(lsize);
+          output.value() += cdouble (a1r + shift*(a1r-a2r), a1i + shift*(a1i-a2i)) / scale;
 
       }
 
@@ -242,21 +244,19 @@ void run()
   Math::FFT (image_FT, 2, FFTW_FORWARD);
 
 
-  for (int axis = 0; axis < 1; ++axis) {
+  for (int axis = 0; axis < 2; ++axis) {
 
     // filter along x:
     ThreadedLoop(image_FT).run (Filter(axis), image_FT, image_filtered);
 
-    //then inverse FT back to image domain
+    // then inverse FT back to image domain:
     Math::FFT (image_filtered, 0, FFTW_BACKWARD);
     Math::FFT (image_filtered, 1, FFTW_BACKWARD);
     Math::FFT (image_filtered, 2, FFTW_BACKWARD);
 
-    // equivalent implementation using multi-threading:
+    // apply unringing operation on desired axis:
     ThreadedLoop (image_filtered, strides_for_axis (axis))
       .run_outer (LineProcessor (axis, image_filtered, output, minW, maxW, num_shifts));
-
-
   }
 
 }
