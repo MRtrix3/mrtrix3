@@ -17,10 +17,12 @@
 #ifndef __fixel_helpers_h__
 #define __fixel_helpers_h__
 
+#include "app.h"
 #include "image.h"
 #include "image_diff.h"
 #include "image_helpers.h"
 #include "algo/loop.h"
+#include "file/utils.h"
 #include "fixel/keys.h"
 #include "fixel/types.h"
 #include "formats/mrtrix_utils.h"
@@ -188,22 +190,37 @@ namespace MR
 
     FORCE_INLINE void check_fixel_directory (const std::string &path, bool create_if_missing = false, bool check_if_empty = false)
     {
-      std::string path_temp = path;
       // handle the use case when a fixel command is run from inside a fixel directory
-      if (path.empty())
-        path_temp = Path::cwd();
+      const std::string path_temp = path.empty() ? Path::cwd() : path;
 
-      bool exists (true);
-
-      if (!(exists = Path::exists (path_temp))) {
-        if (create_if_missing) File::mkdir (path_temp);
-        else throw Exception ("Fixel directory (" + str(path_temp) + ") does not exist");
+      if (Path::exists (path_temp)) {
+        if (App::overwrite_files) {
+          if (Path::is_dir (path_temp)) {
+            if (Path::Dir (path_temp).read_name ().size () != 0) {
+              WARN("Contents of existing directory \"" + path_temp + "\" being erased");
+              File::rmdir (path_temp, true);
+              File::mkdir (path_temp);
+            }
+          } else { // Exists, is a file rather than a directory, & we have overwrite privileges
+            WARN("Existing file \"" + path_temp + "\" being erased ahead of fixel directory creation");
+            File::remove (path_temp);
+            if (create_if_missing)
+              File::mkdir (path_temp);
+          }
+        } else { // Exists, and we don't have overwrite privileges
+          if (Path::is_dir (path_temp)) {
+            if (check_if_empty && Path::Dir (path_temp).read_name ().size () != 0)
+              throw Exception ("Expected fixel directory \"" + path_temp + "\" to be empty");
+          } else {
+            throw Exception ("Target output fixel directory \"" + path_temp + "\" already exists as a file");
+          }
+        }
+      } else { // Doesn't exist
+        if (create_if_missing)
+          File::mkdir (path_temp);
+        else
+          throw Exception ("Fixel directory (" + str(path_temp) + ") does not exist");
       }
-      else if (!Path::is_dir (path_temp))
-        throw Exception (str(path_temp) + " is not a directory");
-
-      if (check_if_empty && Path::Dir (path_temp).read_name ().size () != 0)
-        throw Exception ("Expected fixel directory " + path_temp + " to be empty.");
     }
 
 
