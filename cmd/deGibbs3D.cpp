@@ -58,21 +58,14 @@ class Filter {
     void operator() (ImageType& in, ImageType& out){
       //apply filter
       const double x[3] = {
-        indexshift(in.index(0), in.size(0)),
-        indexshift(in.index(1), in.size(1)),
-        indexshift(in.index(2), in.size(2))
+        1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(0), in.size(0)) / in.size(0)),
+        1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(1), in.size(1)) / in.size(1)),
+        1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(2), in.size(2)) / in.size(2))
       };
+      const double denom = x[0] + x[1]; // + x[2];
 
-      //Gaussian filter
-      //out.value() = cdouble(in.value()) * exp (-Math::pow2 (x[axis]) / sigma) / double(in.size(0)*in.size(1)*in.size(2));
-      
-      const std::complex<double> denom = (1 + std::cos(2*Math::pi*x[1])) + (1 + std::cos(2*Math::pi*x[0]));
+      out.value() = cdouble (in.value()) * ( denom ? x[axis] / denom : 1.0);
 
-      switch (axis) {
-      	case 0: out.value() = cdouble(in.value()) * (1.0 + std::cos(2*Math::pi*x[1])) / denom; break;
-      	case 1: out.value() = cdouble(in.value()) * (1.0 + std::cos(2*Math::pi*x[0])) / denom; break;
-      }
-      
     }
 
   protected:
@@ -259,8 +252,9 @@ void run()
     Math::FFT (image_filtered, 1, FFTW_BACKWARD);
     Math::FFT (image_filtered, 2, FFTW_BACKWARD);
 
-    // // equivalent implementation using multi-threading:
-    ThreadedLoop (image_filtered, strides_for_axis (axis)).run_outer (LineProcessor (axis, image_filtered, output, minW, maxW, num_shifts));
+    // equivalent implementation using multi-threading:
+    ThreadedLoop (image_filtered, strides_for_axis (axis))
+      .run_outer (LineProcessor (axis, image_filtered, output, minW, maxW, num_shifts));
 
 
   }
