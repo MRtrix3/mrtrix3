@@ -396,7 +396,7 @@ void run() {
     for (size_t i = 0; i != num_hypotheses; ++i) {
       write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
-      write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
+      write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
       write_output (null_contributions.col(i), *v2v, prefix + "null_contributions" + postfix(i) + ".mif", output_header);
       ++progress;
