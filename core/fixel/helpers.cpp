@@ -70,7 +70,7 @@ namespace MR
 
 
 
-    std::string get_fixel_directory (const std::string& fixel_file) {
+    std::string filename2directory (const std::string& fixel_file) {
       std::string fixel_directory = Path::dirname (fixel_file);
       // assume the user is running the command from within the fixel directory
       if (fixel_directory.empty())
@@ -235,18 +235,6 @@ namespace MR
 
 
 
-    void copy_fixel_file (const std::string& input_file_path, const std::string& output_directory)
-    {
-      check_fixel_directory_out (output_directory, false, false);
-      std::string output_path = Path::join (output_directory, Path::basename (input_file_path));
-      Header input_header = Header::open (input_file_path);
-      auto input_image = input_header.get_image<float>();
-      auto output_image = Image<float>::create (output_path, input_header);
-      threaded_copy (input_image, output_image);
-    }
-
-
-
     void copy_index_file (const std::string& input_directory, const std::string& output_directory)
     {
       Header input_header = Fixel::find_index_header (input_directory);
@@ -287,10 +275,12 @@ namespace MR
                            "which is not the same as the expected output. Use -force to override if desired");
 
       } else {
-        copy_fixel_file (input_header.name(), output_directory);
+        copy_data_file (input_header.name(), output_directory);
       }
 
     }
+
+
 
     void copy_index_and_directions_file (const std::string& input_directory, const std::string &output_directory)
     {
@@ -300,10 +290,22 @@ namespace MR
 
 
 
+    void copy_data_file (const std::string& input_file_path, const std::string& output_directory)
+    {
+      check_fixel_directory_out (output_directory, false, false);
+      std::string output_path = Path::join (output_directory, Path::basename (input_file_path));
+      Header input_header = Header::open (input_file_path);
+      auto input_image = input_header.get_image<float>();
+      auto output_image = Image<float>::create (output_path, input_header);
+      threaded_copy (input_image, output_image);
+    }
+
+
+
     void copy_all_data_files (const std::string &input_directory, const std::string &output_directory)
     {
       for (auto& input_header : Fixel::find_data_headers (input_directory, Fixel::find_index_header (input_directory)))
-        copy_fixel_file (input_header.name(), output_directory);
+        copy_data_file (input_header.name(), output_directory);
     }
 
 

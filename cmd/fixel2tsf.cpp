@@ -75,10 +75,11 @@ void run ()
   if (in_data_image.size(2) != 1)
     throw Exception ("Only a single scalar value for each fixel can be output as a track scalar file, "
                      "therefore the input fixel data file must have dimension Nx1x1");
+  const std::string in_directory = Fixel::filename2directory (argument[0]);
 
-  Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
+  Header in_index_header = Fixel::find_index_header (in_directory);
   auto in_index_image = in_index_header.get_image<index_type>();
-  auto in_directions_image = Fixel::find_directions_header (Fixel::get_fixel_directory (argument[0])).get_image<float>().with_direct_io();
+  auto in_directions_image = Fixel::find_directions_header (in_directory).get_image<float>().with_direct_io();
 
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<float> reader (argument[1], properties);

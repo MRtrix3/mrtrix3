@@ -107,7 +107,7 @@ void run()
     output_header = Header (multiple_files[0]);
   } catch (...) {
     try {
-      index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
+      index_header = Fixel::find_index_header (Fixel::filename2directory (argument[0]));
       single_file = Image<float>::open (argument[0]);
       Fixel::check_data_file (single_file);
       output_header = Header (single_file);

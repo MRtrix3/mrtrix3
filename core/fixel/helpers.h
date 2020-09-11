@@ -53,8 +53,7 @@ namespace MR
     bool is_index_filename (const std::string& path);
     bool is_directions_filename (const std::string& path);
 
-    // TODO Rename
-    std::string get_fixel_directory (const std::string& fixel_file);
+    std::string filename2directory (const std::string& fixel_file);
 
     void check_fixel_size (const Header& index_h, const Header& data_h);
 
@@ -69,15 +68,14 @@ namespace MR
                                     const bool new_index,
                                     const bool new_directions);
 
-    //! Copy a file from one fixel directory into another.
-    // TODO Check
-    void copy_fixel_file (const std::string& input_file_path, const std::string& output_directory);
     //! Copy the index file from one fixel directory into another
     void copy_index_file (const std::string& input_directory, const std::string& output_directory);
     //! Copy the directions file from one fixel directory into another
     void copy_directions_file (const std::string& input_directory, const std::string& output_directory);
     //! Copy both the index and directions file from one fixel directory into another
     void copy_index_and_directions_file (const std::string& input_directory, const std::string &output_directory);
+    //! Copy a file from one fixel directory into another.
+    void copy_data_file (const std::string& input_file_path, const std::string& output_directory);
     //! Copy all data files in a fixel directory into another directory. Data files do not include the index or directions file.
     void copy_all_data_files (const std::string &input_directory, const std::string &output_directory);
 
@@ -225,7 +223,7 @@ namespace MR
       Fixel::check_data_file (in_data_header);
       auto in_data_image = in_data_header.get_image<ValueType>();
 
-      Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (input_file));
+      Header in_index_header = Fixel::find_index_header (Fixel::filename2directory (input_file));
       if (input_file == in_index_header.name())
         throw Exception ("input fixel data file cannot be the index file");
 
