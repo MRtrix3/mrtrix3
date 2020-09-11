@@ -324,7 +324,7 @@ void run ()
       throw Exception ("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
   }
 
-  Fixel::check_fixel_directory (fixel_directory_path, true, true);
+  Fixel::check_fixel_directory_out (fixel_directory_path, true, true);
 
   FMLS::FODQueueWriter writer (fod_data, mask);
 

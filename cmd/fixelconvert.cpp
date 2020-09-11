@@ -114,7 +114,7 @@ void convert_old2new ()
   const bool output_size = get_options ("out_size").size();
 
   const std::string output_fixel_directory = argument[1];
-  Fixel::check_fixel_directory (output_fixel_directory, true);
+  Fixel::check_fixel_directory_out (output_fixel_directory, true, true);
 
   index_type fixel_count = 0;
   for (auto i = Loop (input) (input); i; ++i)
@@ -148,7 +148,7 @@ void convert_old2new ()
   Image<float> template_directions_image;
   opt = get_options ("template");
   if (opt.size()) {
-    Fixel::check_fixel_directory (opt[0][0]);
+    Fixel::check_fixel_directory_in (opt[0][0]);
     template_index_image = Fixel::find_index_header (opt[0][0]).get_image<index_type>();
     check_dimensions (index_image, template_index_image);
     template_directions_image = Fixel::find_directions_header (opt[0][0]).get_image<float>();

@@ -53,7 +53,7 @@ void usage ()
 void run ()
 {
   const auto in_directory = argument[0];
-  Fixel::check_fixel_directory (in_directory);
+  Fixel::check_fixel_directory_in (in_directory);
   Header in_index_header = Fixel::find_index_header (in_directory);
   auto in_index_image = in_index_header.get_image <index_type>();
 
@@ -61,7 +61,7 @@ void run ()
   Fixel::check_fixel_size (in_index_image, mask_image);
 
   const auto out_fixel_directory = argument[2];
-  Fixel::check_fixel_directory (out_fixel_directory, true);
+  Fixel::check_fixel_directory_out (out_fixel_directory, true, true);
 
   Header out_header = Header (in_index_image);
   index_type total_nfixels = Fixel::get_number_of_fixels (in_index_header);

@@ -38,23 +38,23 @@ void usage ()
   DESCRIPTION
   + "Reorientation is performed by transforming the vector representing "
     "the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, "
-    "then re-normalising the vector.";
+    "then re-normalising the vector."
+
+  + "If the the input and output directories are the same, the existing directions file will "
+    "be replaced (providing the -force option is supplied). If a new directory is supplied then "
+    "the fixel directions and all other fixel data will be copied to the new directory.";
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel directory").type_directory_in()
-  + Argument ("warp", "a 4D deformation field used to perform reorientation. "
-                      "Reorientation is performed by applying the Jacobian affine transform in each voxel in the warp, "
-                      "then re-normalising the vector representing the fixel direction").type_image_in ()
-  + Argument ("fixel_out", "the output fixel directory. If the the input and output directories are the same, the existing directions file will "
-                           "be replaced (providing the -force option is supplied). If a new directory is supplied then the fixel directions and all "
-                           "other fixel data will be copied to the new directory.").type_directory_out();
+  + Argument ("warp", "a 4D deformation field used to perform reorientation").type_image_in ()
+  + Argument ("fixel_out", "the output fixel directory").type_directory_out();
 }
 
 
 void run ()
 {
   std::string input_fixel_directory = argument[0];
-  Fixel::check_fixel_directory (input_fixel_directory);
+  Fixel::check_fixel_directory_in (input_fixel_directory);
 
   auto input_index_image = Fixel::find_index_header (input_fixel_directory).get_image <index_type>();
 
@@ -64,7 +64,7 @@ void run ()
   Adapter::Jacobian<Image<float> > jacobian (warp_header.get_image<float>());
 
   std::string output_fixel_directory = argument[2];
-  Fixel::check_fixel_directory (output_fixel_directory, true);
+  Fixel::check_fixel_directory_out (output_fixel_directory, false, true);
 
   // scratch buffer so inplace reorientation can be performed if desired
   Image<float> input_directions_image;
@@ -74,6 +74,11 @@ void run ()
     input_directions_image = Image<float>::scratch(tmp);
     threaded_copy (tmp, input_directions_image);
     output_directions_filename = Path::basename(tmp.name());
+  }
+
+  if (output_fixel_directory != input_fixel_directory) {
+    Fixel::copy_index_file (input_fixel_directory, output_fixel_directory);
+    Fixel::copy_all_data_files (input_fixel_directory, output_fixel_directory);
   }
 
   auto output_directions_image = Image<float>::create (Path::join(output_fixel_directory, output_directions_filename), input_directions_image).with_direct_io();
@@ -91,11 +96,6 @@ void run ()
         output_directions_image.row(1) = (transform * Eigen::Vector3f (input_directions_image.row(1))).normalized();
       }
     }
-  }
-
-  if (output_fixel_directory != input_fixel_directory) {
-    Fixel::copy_index_file (input_fixel_directory, output_fixel_directory);
-    Fixel::copy_all_data_files (input_fixel_directory, output_fixel_directory);
   }
 }
 
