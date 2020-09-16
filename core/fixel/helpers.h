@@ -17,6 +17,7 @@
 #ifndef __fixel_helpers_h__
 #define __fixel_helpers_h__
 
+#include "app.h"
 #include "image.h"
 #include "image_diff.h"
 #include "image_helpers.h"
@@ -203,7 +204,10 @@ namespace MR
         throw Exception (str(path_temp) + " is not a directory");
 
       if (check_if_empty && Path::Dir (path_temp).read_name ().size () != 0)
-        throw Exception ("Expected fixel directory " + path_temp + " to be empty.");
+        throw Exception ("Output fixel directory \"" + path_temp + "\" is not empty"
+                         + (App::overwrite_files ?
+                            " (-force option does not work on directories; need to erase manually)" :
+                            ""));
     }
 
 
