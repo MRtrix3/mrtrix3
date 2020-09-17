@@ -64,7 +64,7 @@ class Filter {
       };
       const double denom = x[0] + x[1]; // + x[2];
 
-      out.value() = cdouble (in.value()) * ( denom ? x[axis] / denom : 1.0);
+      out.value() = cdouble (in.value()) * ( denom ? 1.0 - x[axis] / denom : 1.0);
 
     }
 
