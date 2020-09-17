@@ -31,6 +31,7 @@ void usage() {
 
 
 using ImageType = Image<cdouble>;
+using OutputImageType = Image<float>;
 
 
 
@@ -81,7 +82,7 @@ class Filter {
 
 class LineProcessor {
   public:
-    LineProcessor (size_t axis, ImageType& input, ImageType& output, const int minW, const int maxW, const int num_shifts) :
+    LineProcessor (size_t axis, ImageType& input, OutputImageType& output, const int minW, const int maxW, const int num_shifts) :
       axis (axis),
       input (input),
       output (output),
@@ -130,17 +131,14 @@ class LineProcessor {
         double a0r = ifft[optshift_ind][wraparound(n-1,lsize)].real();
         double a1r = ifft[optshift_ind][n].real();
         double a2r = ifft[optshift_ind][wraparound(n+1,lsize)].real();
-        double a0i = ifft[optshift_ind][wraparound(n-1,lsize)].imag();
-        double a1i = ifft[optshift_ind][n].imag();
-        double a2i = ifft[optshift_ind][wraparound(n+1,lsize)].imag();
 
         const double scale = input.size(0)*input.size(1)*input.size(2) * lsize;
 
         // interpolate particular ifft back to right place
         if (shift > 0.0)
-          output.value() += cdouble (a1r - shift*(a1r-a0r), a1i - shift*(a1i-a0i)) / scale;
+          output.value() += (a1r - shift*(a1r-a0r)) / scale;
         else
-          output.value() += cdouble (a1r + shift*(a1r-a2r), a1i + shift*(a1i-a2i)) / scale;
+          output.value() += (a1r + shift*(a1r-a2r)) / scale;
 
       }
 
@@ -149,7 +147,8 @@ class LineProcessor {
 
   protected:
     const size_t axis;
-    ImageType input, output;
+    ImageType input;
+    OutputImageType output;
     const int minW, maxW, num_shifts;
     Math::FFT1D fft;
     std::vector<Math::FFT1D> ifft;
@@ -233,9 +232,11 @@ void run()
   auto input = ImageType::open(argument[0]);
   Header header (input);
   header.datatype() = DataType::CFloat32;
-  auto output = ImageType::create (argument[1], header);
   auto image_FT = ImageType::scratch (header, "FFT of input image");
   auto image_filtered = ImageType::scratch (header, "filtered image");
+
+  header.datatype() = DataType::Float32;
+  auto output = OutputImageType::create (argument[1], header);
 
 
   // full 3D FFT of input:
