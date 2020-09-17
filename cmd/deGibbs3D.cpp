@@ -62,9 +62,9 @@ class Filter {
         1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(1), in.size(1)) / in.size(1)),
         1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(2), in.size(2)) / in.size(2))
       };
-      const double denom = x[0] + x[1]; // + x[2];
+      const double denom = x[0] + x[1] + x[2];
 
-      out.value() = cdouble (in.value()) * ( denom ? 1.0 - x[axis] / denom : 1.0);
+      out.value() = cdouble (in.value()) * ( denom ? 0.5 * (denom - x[axis]) / denom : 0.0);
 
     }
 
@@ -244,7 +244,7 @@ void run()
   Math::FFT (image_FT, 2, FFTW_FORWARD);
 
 
-  for (int axis = 0; axis < 2; ++axis) {
+  for (int axis = 0; axis < 3; ++axis) {
 
     // filter along x:
     ThreadedLoop(image_FT).run (Filter(axis), image_FT, image_filtered);
