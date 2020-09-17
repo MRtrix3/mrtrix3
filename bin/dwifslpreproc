@@ -970,15 +970,8 @@ def execute(): #pylint: disable=unused-variable
 
   # Run eddy qc tool QUAD if installed and one of -eddyqc_text or -eddyqc_all is specified
   if eddyqc_path:
-    eddyqc_cmd = find_executable('eddy_quad')
-    if eddyqc_cmd:
-      # The eddy_quad script is not compatible with Python 2; try to explicitly invoke Python 3
-      if sys.version_info[0] == 2:
-        if find_executable('python3'):
-          eddyqc_cmd = 'python3 ' + eddyqc_cmd
-      else:
-        eddyqc_cmd = 'eddy_quad'
-      eddyqc_options = '-idx eddy_indices.txt -par eddy_config.txt -m eddy_mask.nii -b bvals'
+    if find_executable('eddy_quad'):
+      eddyqc_options = ' -idx eddy_indices.txt -par eddy_config.txt -m eddy_mask.nii -b bvals'
       if os.path.isfile('dwi_post_eddy.eddy_residuals'):
         eddyqc_options += ' -g ' + bvecs_path
       if do_topup:
@@ -988,17 +981,19 @@ def execute(): #pylint: disable=unused-variable
       if app.VERBOSITY > 2:
         eddyqc_options += ' -v'
       try:
-        run.command(eddyqc_cmd + ' dwi_post_eddy ' + eddyqc_options)
+        run.command('eddy_quad dwi_post_eddy' + eddyqc_options)
       except run.MRtrixCmdError as exception:
-        app.warn('Error running automated eddy qc tool QUAD; data will not be provided')
+        with open('eddy_quad_failure_output.txt', 'w') as eddy_quad_output_file:
+          eddy_quad_output_file.write(str(exception))
         app.debug(str(exception))
+        app.warn('Error running automated EddyQC tool \'eddy_quad\'; QC data written to "' + eddyqc_path + '" will be files from "eddy" only')
         # Delete the directory if the script only made it partway through
         try:
           shutil.rmtree('dwi_post_eddy.qc')
         except OSError:
           pass
     else:
-      app.console('Command \'eddy_quad\' not found in PATH; not running automated eddy qc tool QUAD')
+      app.console('Command \'eddy_quad\' not found in PATH; skipping')
 
 
   # Have to retain these images until after eddyQC is run
