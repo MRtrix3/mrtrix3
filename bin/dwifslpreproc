@@ -970,8 +970,7 @@ def execute(): #pylint: disable=unused-variable
 
   # Run eddy qc tool QUAD if installed and one of -eddyqc_text or -eddyqc_all is specified
   if eddyqc_path:
-    eddyqc_exe = find_executable('eddy_quad')
-    if eddyqc_exe:
+    if find_executable('eddy_quad'):
       eddyqc_options = ' -idx eddy_indices.txt -par eddy_config.txt -m eddy_mask.nii -b bvals'
       if os.path.isfile('dwi_post_eddy.eddy_residuals'):
         eddyqc_options += ' -g ' + bvecs_path
@@ -983,9 +982,10 @@ def execute(): #pylint: disable=unused-variable
         eddyqc_options += ' -v'
       try:
         run.command('eddy_quad dwi_post_eddy' + eddyqc_options)
-      except run.MRtrixCmdError as exception_eddyquad:
+      except run.MRtrixCmdError as exception:
         with open('eddy_quad_failure_output.txt', 'w') as eddy_quad_output_file:
-          eddy_quad_output_file.write(str(exception_eddyquad))
+          eddy_quad_output_file.write(str(exception))
+        app.debug(str(exception))
         app.warn('Error running automated EddyQC tool \'eddy_quad\'; QC data written to "' + eddyqc_path + '" will be files from "eddy" only')
         # Delete the directory if the script only made it partway through
         try:
