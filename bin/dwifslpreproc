@@ -983,20 +983,15 @@ def execute(): #pylint: disable=unused-variable
         eddyqc_options += ' -v'
       try:
         run.command('eddy_quad dwi_post_eddy' + eddyqc_options)
-      except run.MRtrixCmdError as exception_default:
-        with open('eddy_quad_default_failure_output.txt', 'w') as eddy_quad_output_file:
-          eddy_quad_output_file.write(str(exception_default))
+      except run.MRtrixCmdError as exception_eddyquad:
+        with open('eddy_quad_failure_output.txt', 'w') as eddy_quad_output_file:
+          eddy_quad_output_file.write(str(exception_eddyquad))
+        app.warn('Error running automated EddyQC tool \'eddy_quad\'; QC data written to "' + eddyqc_path + '" will be files from "eddy" only')
+        # Delete the directory if the script only made it partway through
         try:
-          run.command('python3 ' + eddyqc_exe + ' dwi_post_eddy' + eddyqc_options)
-        except run.MRtrixCmdError as exception_python3:
-          with open('eddy_quad_python3_failure_output.txt', 'w') as eddy_quad_output_file:
-            eddy_quad_output_file.write(str(exception_python3))
-          app.warn('Error running automated EddyQC tool \'eddy_quad\'; QC data written to "' + eddyqc_path + '" will be files from "eddy" only')
-          # Delete the directory if the script only made it partway through
-          try:
-            shutil.rmtree('dwi_post_eddy.qc')
-          except OSError:
-            pass
+          shutil.rmtree('dwi_post_eddy.qc')
+        except OSError:
+          pass
     else:
       app.console('Command \'eddy_quad\' not found in PATH; skipping')
 
