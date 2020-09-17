@@ -206,7 +206,7 @@ namespace MR
       if (check_if_empty && Path::Dir (path_temp).read_name ().size () != 0)
         throw Exception ("Output fixel directory \"" + path_temp + "\" is not empty"
                          + (App::overwrite_files ?
-                            " (-force option does not work on directories; need to erase manually)" :
+                            " (-force option cannot safely be applied on directories; please erase manually instead)" :
                             ""));
     }
 
