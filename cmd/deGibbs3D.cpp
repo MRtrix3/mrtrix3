@@ -64,7 +64,7 @@ class Filter {
       };
       const double denom = x[0] + x[1]; // + x[2];
 
-      out.value() = cdouble (in.value()) * ( denom ? x[axis] / denom : 1.0);
+      out.value() = cdouble (in.value()) * ( denom ? 0.5 * (denom - x[axis]) / denom : 0.0);
 
     }
 
@@ -96,12 +96,15 @@ class LineProcessor {
     {
       assign_pos_of (pos).to (input, output);
 
+
       for (auto l = Loop (axis, axis+1)(input); l; ++l)
         fft[input.index(axis)] = input.value();
       fft.run();
 
+
       const std::complex<double> j(0.0,1.0);
       const int lsize = input.size(axis);
+
 
       // creating zero-centred shift array
       double shift_ind [2*num_shifts+1];
@@ -111,7 +114,8 @@ class LineProcessor {
         shift_ind[1+num_shifts+j] = -shift_ind[j+1];
       }
 
-      // applying shift and inverse fourier transnform back line-by-line
+
+      // applying shift and inverse fourier transform back line-by-line
       for (int f = 0; f < 2*num_shifts+1; f ++) {
         for (int n = 0; n < lsize; ++n)
           ifft[f][n] = fft[n] * exp(j * 2.0 * indexshift(n,lsize) * Math::pi * shift_ind[f] / double(lsize));
@@ -135,6 +139,8 @@ class LineProcessor {
         double a2i = ifft[optshift_ind][wraparound(n+1,lsize)].imag();
 
         const double scale = input.size(0)*input.size(1)*input.size(2) * lsize;
+        // output.value() = ifft[40][n] / scale;
+        // continue;
 
         // interpolate particular ifft back to right place
         if (shift > 0.0)
@@ -237,6 +243,8 @@ void run()
   auto image_FT = ImageType::scratch (header, "FFT of input image");
   auto image_filtered = ImageType::scratch (header, "filtered image");
 
+  
+
 
   // full 3D FFT of input:
   Math::FFT (input, image_FT, 0, FFTW_FORWARD);
@@ -244,12 +252,12 @@ void run()
   Math::FFT (image_FT, 2, FFTW_FORWARD);
 
 
-  for (int axis = 0; axis < 2; ++axis) {
+  for (int axis = 0; axis < 3; ++axis) {
 
     // filter along x:
     ThreadedLoop(image_FT).run (Filter(axis), image_FT, image_filtered);
 
-    // then inverse FT back to image domain:
+    // // then inverse FT back to image domain:
     Math::FFT (image_filtered, 0, FFTW_BACKWARD);
     Math::FFT (image_filtered, 1, FFTW_BACKWARD);
     Math::FFT (image_filtered, 2, FFTW_BACKWARD);
