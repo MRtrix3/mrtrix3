@@ -366,8 +366,8 @@ namespace MR
 
       // If the directions file already exists check it is the same as the input directions file
       if (Path::exists (output_path)) {
-        auto input_image = input_header.get_image<index_type>();
-        auto output_image = Image<index_type>::open (output_path);
+        auto input_image = input_header.get_image<float>();
+        auto output_image = Image<float>::open (output_path);
         if (!images_match_abs (input_image, output_image))
           throw Exception ("output fixel directory \"" + output_directory + "\" already contains directions file, "
                            + "which is not the same as the expected output"
