@@ -180,10 +180,7 @@ for testitem in $testlist; do
 EOD
 
   echo -n 'running "'${testitem}'"... '
-  rm -f $datadir/tmp*.*
-  rm -rf $datadir/tmp-*/
-  rm -rf $datadir/tmp_*/
-  rm -rf $datadir/*-tmp-*/
+  rm -rf $datadir/tmp*
   ((ntests=0))
   ((success=0))
   while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
