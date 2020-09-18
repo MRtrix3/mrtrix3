@@ -375,7 +375,9 @@ namespace MR
                               " (-force option cannot safely be applied on directories; please erase manually instead)" :
                               ""));
       } else {
-        copy_fixel_file (input_header.name(), output_directory);
+        auto output_image = Image<float>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
+        auto input_image = input_header.get_image<float>();
+        threaded_copy (input_image, output_image);
       }
 
     }
