@@ -343,14 +343,15 @@ namespace MR
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
 
       // If the index file already exists check it is the same as the input index file
-      if (Path::exists (output_path) && !App::overwrite_files) {
+      if (Path::exists (output_path)) {
         auto input_image = input_header.get_image<index_type>();
         auto output_image = Image<index_type>::open (output_path);
-
         if (!images_match_abs (input_image, output_image))
-          throw Exception ("output sparse image directory (" + output_directory + ") already contains index file, "
-                           "which is not the same as the expected output. Use -force to override if desired");
-
+          throw Exception ("output fixel directory \"" + output_directory + "\" already contains index file, "
+                           + "which is not the same as the expected output"
+                           + (App::overwrite_files ?
+                              " (-force option cannot safely be applied on directories; please erase manually instead)" :
+                              ""));
       } else {
         auto output_image = Image<index_type>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
         auto input_image = input_header.get_image<index_type>();
@@ -363,15 +364,16 @@ namespace MR
       Header input_header = Fixel::find_directions_header (input_directory);
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
 
-      // If the index file already exists check it is the same as the input index file
-      if (Path::exists (output_path) && !App::overwrite_files) {
+      // If the directions file already exists check it is the same as the input directions file
+      if (Path::exists (output_path)) {
         auto input_image = input_header.get_image<index_type>();
         auto output_image = Image<index_type>::open (output_path);
-
         if (!images_match_abs (input_image, output_image))
-          throw Exception ("output sparse image directory (" + output_directory + ") already contains a directions file, "
-                           "which is not the same as the expected output. Use -force to override if desired");
-
+          throw Exception ("output fixel directory \"" + output_directory + "\" already contains directions file, "
+                           + "which is not the same as the expected output"
+                           + (App::overwrite_files ?
+                              " (-force option cannot safely be applied on directories; please erase manually instead)" :
+                              ""));
       } else {
         copy_fixel_file (input_header.name(), output_directory);
       }
