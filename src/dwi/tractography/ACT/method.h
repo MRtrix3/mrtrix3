@@ -51,7 +51,12 @@ namespace MR
                 sgm_seed_to_wm (false),
                 act_image (shared.act().voxel) { }
 
-            ACT_Method_additions (const ACT_Method_additions&) = delete;
+            ACT_Method_additions (const ACT_Method_additions& that) :
+                sgm_depth (0),
+                seed_in_sgm (false),
+                sgm_seed_to_wm (false),
+                act_image (that.act_image) { }
+
             ACT_Method_additions() = delete;
 
 

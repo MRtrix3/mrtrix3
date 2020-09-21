@@ -50,17 +50,26 @@ namespace MR
             mask (Image<bool>::scratch (make_mask_header (parent), "scratch binary mask for masked interpolator"))
         {
           typename InterpType::image_type temp (parent);
-          // True if at least one finite & non-zero value
-          for (auto l_voxel = Loop(mask) (temp, mask); l_voxel; ++l_voxel) {
-            bool value = false;
-            for (auto l_inner = Loop(temp, 3) (temp); l_inner; ++l_inner) {
-              if (temp.value()) {
-                value = true;
-                continue;
-              }
-            }
-            mask.value() = value;
-          }
+          compute_mask (temp);
+        }
+
+        //! Alternative constructor that uses a separate image to construct the mask
+        /* If the cost of accessing the underlying image is high (e.g. bootstrapping),
+         * this constructor enables use of the original plain data in the sampling of
+         * image values to construct the implicit mask */
+        template <class ImageType>
+        Masked (const typename InterpType::image_type& parent,
+                const ImageType& masking_data,
+                const value_type value_when_out_of_bounds = Base<typename InterpType::image_type>::default_out_of_bounds_value()) :
+            InterpType (parent, value_when_out_of_bounds),
+            mask (Image<bool>::scratch (make_mask_header (masking_data), "scratch binary mask for masked interpolator"))
+        {
+          assert (dimensions_match (parent, masking_data, 0, 3));
+          ImageType temp (masking_data);
+          if (masking_data.ndim() == 3)
+            copy (temp, mask);
+          else
+            compute_mask (temp);
         }
 
         //! Set the current position to <b>voxel space</b> position \a pos
@@ -71,8 +80,7 @@ namespace MR
          * See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          InterpType::intravoxel_offset (pos);
-          if (InterpType::out_of_bounds)
+          if (InterpType::set_out_of_bounds (pos))
             return false;
           mask.index(0) = std::round (pos[0]);
           mask.index(1) = std::round (pos[1]);
@@ -99,12 +107,30 @@ namespace MR
       protected:
         Image<bool> mask;
 
-        static Header make_mask_header (const typename InterpType::image_type& image)
+        template <class ImageType>
+        static Header make_mask_header (const ImageType& image)
         {
           Header H (image);
           H.ndim() = 3;
           H.datatype() = DataType::Bit;
           return H;
+        }
+
+        template <class ImageType>
+        void compute_mask (ImageType& data)
+        {
+          // True if at least one finite & non-zero value
+          for (auto l_voxel = Loop("pre-computing implicit voxel mask for \"" + data.name() + "\"", mask) (mask); l_voxel; ++l_voxel) {
+            assign_pos_of (mask, 0, 3).to (data);
+            bool value = false;
+            for (auto l_inner = Loop(data, 3) (data); l_inner; ++l_inner) {
+              if (data.value()) {
+                value = true;
+                continue;
+              }
+            }
+            mask.value() = value;
+          }
         }
 
     };
