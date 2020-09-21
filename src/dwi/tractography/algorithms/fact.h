@@ -97,7 +97,7 @@ namespace MR
         else
           dir = S.init_dir;
 
-        return do_next (dir) >= S.threshold;
+        return select_fixel (dir) >= S.threshold;
       }
 
       term_t next () override
@@ -105,7 +105,7 @@ namespace MR
         if (!get_data (source))
           return EXIT_IMAGE;
 
-        const float max_norm = do_next (dir);
+        const float max_norm = select_fixel (dir);
 
         if (max_norm < S.threshold)
           return MODEL;
@@ -114,11 +114,12 @@ namespace MR
         return CONTINUE;
       }
 
-
-      float get_metric() override
+      float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) override
       {
-        Eigen::Vector3f d (dir);
-        return do_next (d);
+        if (!get_data (source, position))
+          return 0.0;
+        Eigen::Vector3f d (direction);
+        return select_fixel (d);
       }
 
 
@@ -126,7 +127,7 @@ namespace MR
       const Shared& S;
       Interp::Masked<Interp::Nearest<Image<float>>> source;
 
-      float do_next (Eigen::Vector3f& d) const
+      float select_fixel (Eigen::Vector3f& d) const
       {
 
         int idx = -1;
