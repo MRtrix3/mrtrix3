@@ -69,6 +69,7 @@ namespace MR
     template <class ImageType> class Base : public ImageType, public Transform
     { MEMALIGN(Base<ImageType>)
       public:
+        using image_type = ImageType;
         using value_type = typename ImageType::value_type;
 
         //! construct an Interp object to obtain interpolated values using the

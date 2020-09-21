@@ -17,6 +17,7 @@
 #ifndef __dwi_tractography_algorithms_fact_h__
 #define __dwi_tractography_algorithms_fact_h__
 
+#include "interp/masked.h"
 #include "interp/nearest.h"
 
 #include "dwi/tractography/tracking/method.h"
@@ -123,7 +124,7 @@ namespace MR
 
       protected:
       const Shared& S;
-      Interp::Nearest<Image<float>> source;
+      Interp::Masked<Interp::Nearest<Image<float>>> source;
 
       float do_next (Eigen::Vector3f& d) const
       {

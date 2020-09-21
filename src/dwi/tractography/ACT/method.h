@@ -24,6 +24,7 @@
 #include "dwi/tractography/tracking/types.h"
 
 #include "interp/linear.h"
+#include "interp/masked.h"
 
 
 #define GMWMI_NORMAL_PERTURBATION 0.001
@@ -152,7 +153,7 @@ namespace MR
 
 
           private:
-            Interp::Linear<Image<float>> act_image;
+            Interp::Masked<Interp::Linear<Image<float>>> act_image;
             Tissues tissue_values;
 
         };
