@@ -31,6 +31,7 @@ void usage() {
 
 
 using ImageType = Image<cdouble>;
+using OutputImageType = Image<float>;
 
 
 
@@ -62,7 +63,7 @@ class Filter {
         1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(1), in.size(1)) / in.size(1)),
         1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(2), in.size(2)) / in.size(2))
       };
-      const double denom = x[0] + x[1]; // + x[2];
+      const double denom = x[0] + x[1] + x[2];
 
       out.value() = cdouble (in.value()) * ( denom ? 0.5 * (denom - x[axis]) / denom : 0.0);
 
@@ -81,7 +82,7 @@ class Filter {
 
 class LineProcessor {
   public:
-    LineProcessor (size_t axis, ImageType& input, ImageType& output, const int minW, const int maxW, const int num_shifts) :
+    LineProcessor (size_t axis, ImageType& input, OutputImageType& output, const int minW, const int maxW, const int num_shifts) :
       axis (axis),
       input (input),
       output (output),
@@ -134,19 +135,14 @@ class LineProcessor {
         double a0r = ifft[optshift_ind][wraparound(n-1,lsize)].real();
         double a1r = ifft[optshift_ind][n].real();
         double a2r = ifft[optshift_ind][wraparound(n+1,lsize)].real();
-        double a0i = ifft[optshift_ind][wraparound(n-1,lsize)].imag();
-        double a1i = ifft[optshift_ind][n].imag();
-        double a2i = ifft[optshift_ind][wraparound(n+1,lsize)].imag();
 
         const double scale = input.size(0)*input.size(1)*input.size(2) * lsize;
-        // output.value() = ifft[40][n] / scale;
-        // continue;
 
         // interpolate particular ifft back to right place
         if (shift > 0.0)
-          output.value() += cdouble (a1r - shift*(a1r-a0r), a1i - shift*(a1i-a0i)) / scale;
+          output.value() += (a1r - shift*(a1r-a0r)) / scale;
         else
-          output.value() += cdouble (a1r + shift*(a1r-a2r), a1i + shift*(a1i-a2i)) / scale;
+          output.value() += (a1r + shift*(a1r-a2r)) / scale;
 
       }
 
@@ -155,7 +151,8 @@ class LineProcessor {
 
   protected:
     const size_t axis;
-    ImageType input, output;
+    ImageType input;
+    OutputImageType output;
     const int minW, maxW, num_shifts;
     Math::FFT1D fft;
     std::vector<Math::FFT1D> ifft;
@@ -239,12 +236,11 @@ void run()
   auto input = ImageType::open(argument[0]);
   Header header (input);
   header.datatype() = DataType::CFloat32;
-  auto output = ImageType::create (argument[1], header);
   auto image_FT = ImageType::scratch (header, "FFT of input image");
   auto image_filtered = ImageType::scratch (header, "filtered image");
 
-  
-
+  header.datatype() = DataType::Float32;
+  auto output = OutputImageType::create (argument[1], header);
 
   // full 3D FFT of input:
   Math::FFT (input, image_FT, 0, FFTW_FORWARD);
