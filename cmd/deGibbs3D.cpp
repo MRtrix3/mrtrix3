@@ -63,9 +63,9 @@ class Filter {
         1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(1), in.size(1)) / in.size(1)),
         1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(2), in.size(2)) / in.size(2))
       };
-      const double denom = x[0] + x[1] + x[2];
+      const double denom = x[0] + x[1];// + x[2];
 
-      out.value() = cdouble (in.value()) * ( denom ? 0.5 * (denom - x[axis]) / denom : 0.0);
+      out.value() = cdouble (in.value()) * ( denom ? (denom - x[axis]) / denom : 0.0);
 
     }
 
@@ -136,7 +136,7 @@ class LineProcessor {
         double a1r = ifft[optshift_ind][n].real();
         double a2r = ifft[optshift_ind][wraparound(n+1,lsize)].real();
 
-        const double scale = input.size(0)*input.size(1)*input.size(2) * lsize;
+        const double scale = input.size(0)*input.size(1) /*input.size(2)*/ * lsize;
 
         // interpolate particular ifft back to right place
         if (shift > 0.0)
@@ -245,10 +245,10 @@ void run()
   // full 3D FFT of input:
   Math::FFT (input, image_FT, 0, FFTW_FORWARD);
   Math::FFT (image_FT, 1, FFTW_FORWARD);
-  Math::FFT (image_FT, 2, FFTW_FORWARD);
+  //Math::FFT (image_FT, 2, FFTW_FORWARD);
 
 
-  for (int axis = 0; axis < 3; ++axis) {
+  for (int axis = 0; axis < 2; ++axis) {
 
     // filter along x:
     ThreadedLoop(image_FT).run (Filter(axis), image_FT, image_filtered);
@@ -256,7 +256,7 @@ void run()
     // // then inverse FT back to image domain:
     Math::FFT (image_filtered, 0, FFTW_BACKWARD);
     Math::FFT (image_filtered, 1, FFTW_BACKWARD);
-    Math::FFT (image_filtered, 2, FFTW_BACKWARD);
+    //Math::FFT (image_filtered, 2, FFTW_BACKWARD);
 
     // apply unringing operation on desired axis:
     ThreadedLoop (image_filtered, strides_for_axis (axis))
