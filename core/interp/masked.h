@@ -68,7 +68,8 @@ namespace MR
             if (InterpType::image_type::value())
               return InterpType::voxel (pos);
           }
-          return InterpType::set_out_of_bounds (true);
+          InterpType::set_out_of_bounds (true);
+          return true;
         }
 
         //! Set the current position to <b>image space</b> position \a pos
