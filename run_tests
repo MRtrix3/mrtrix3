@@ -180,10 +180,7 @@ for testitem in $testlist; do
 EOD
 
   echo -n 'running "'${testitem}'"... '
-  rm -f $datadir/tmp*.*
-  rm -rf $datadir/tmp-*/
-  rm -rf $datadir/tmp_*/
-  rm -rf $datadir/*-tmp-*/
+  rm -rf $datadir/tmp* $datadir/*-tmp-*
   ((ntests=0))
   ((success=0))
   while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
@@ -229,9 +226,7 @@ done
 
 if [[ ! -z $testsdir && ! -z $datadir ]]; then
   echo -n "Cleaning up temporary files... "
-  rm -f $datadir/tmp*.*
-  rm -rf $datadir/tmp-*/
-  rm -rf $datadir/*-tmp-*/
+  rm -rf $datadir/tmp* $datadir/*-tmp-*/
   echo OK
 fi
 
@@ -240,5 +235,3 @@ if [ ${a_test_has_failed} = true ];
 then
   exit 1
 fi
-
-
