@@ -99,7 +99,13 @@ namespace MR
       {
         if (!get_data (source))
           return false;
-        return do_init();
+        if (!do_init())
+          return false;
+        if (S.init_dir.allFinite())
+          return true;
+        if (S.init_dir.dot (dir) < 0.0)
+          dir = -dir;
+        return true;
       }
 
 
@@ -107,7 +113,7 @@ namespace MR
       term_t next () override
       {
         if (!get_data (source))
-          return Tracking::EXIT_IMAGE;
+          return EXIT_IMAGE;
         return do_next();
       }
 
