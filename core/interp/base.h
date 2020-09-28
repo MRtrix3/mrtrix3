@@ -203,9 +203,8 @@ namespace MR
                                     pos[2] <= -0.5 || pos[2] >= bounds[2])));
         }
 
-        template <>
-        bool set_out_of_bounds (const bool& value) {
-          return ((out_of_bounds = value));
+        void set_out_of_bounds (const bool value) {
+          out_of_bounds = value;
         }
 
         template <class VectorType>
