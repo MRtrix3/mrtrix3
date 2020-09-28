@@ -120,7 +120,7 @@ namespace MR
               public:
                 Interp (const Bootstrap<Image<float>,WildBootstrap>& bootstrap_vox,
                         const Image<float>& vox) :
-                    Interpolator<Bootstrap<Image<float>,WildBootstrap> >::type (bootstrap_vox, vox)
+                    Interpolator<Bootstrap<Image<float>,WildBootstrap> >::type (bootstrap_vox)
                 {
                   for (size_t i = 0; i < 8; ++i)
                     raw_signals.push_back (Eigen::VectorXf (size(3)));
@@ -129,15 +129,13 @@ namespace MR
                 vector<Eigen::VectorXf> raw_signals;
 
                 bool get (const Eigen::Vector3f& pos, Eigen::VectorXf& data) {
-                  scanner (pos);
-                  if (out_of_bounds) {
+                  if (!scanner (pos)) {
                     data.fill (NaN);
                     return false;
                   }
 
                   data.setZero();
 
-                  // Modified to be consistent with the new Interp::Linear implementation
                   size_t i = 0;
                   for (ssize_t z = 0; z < 2; ++z) {
                     index(2) = clamp (P[2]+z, size(2));

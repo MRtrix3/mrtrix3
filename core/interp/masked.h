@@ -18,6 +18,7 @@
 #define __interp_masked_h__
 
 #include "datatype.h"
+#include "algo/loop.h"
 #include "interp/base.h"
 
 namespace MR
@@ -36,9 +37,8 @@ namespace MR
      *
      * (NaN values are permitted in order to be compatible with 3-vectors
      * images, i.e. sets of XYZ triplets; but there needs to be at least
-     * one non-NaN value in the voxel)
+     * one non-NaN & non-zero value in the voxel)
      */
-
     template <class InterpType>
     class Masked : public InterpType { MEMALIGN(Masked<InterpType>)
       public:
@@ -46,48 +46,29 @@ namespace MR
 
         Masked (const typename InterpType::image_type& parent,
                 const value_type value_when_out_of_bounds = Base<typename InterpType::image_type>::default_out_of_bounds_value()) :
-            InterpType (parent, value_when_out_of_bounds),
-            mask (Image<bool>::scratch (make_mask_header (parent), "scratch binary mask for masked interpolator"))
-        {
-          typename InterpType::image_type temp (parent);
-          compute_mask (temp);
-        }
-
-        //! Alternative constructor that uses a separate image to construct the mask
-        /* If the cost of accessing the underlying image is high (e.g. bootstrapping),
-         * this constructor enables use of the original plain data in the sampling of
-         * image values to construct the implicit mask */
-        template <class ImageType>
-        Masked (const typename InterpType::image_type& parent,
-                const ImageType& masking_data,
-                const value_type value_when_out_of_bounds = Base<typename InterpType::image_type>::default_out_of_bounds_value()) :
-            InterpType (parent, value_when_out_of_bounds),
-            mask (Image<bool>::scratch (make_mask_header (masking_data), "scratch binary mask for masked interpolator"))
-        {
-          assert (dimensions_match (parent, masking_data, 0, 3));
-          ImageType temp (masking_data);
-          if (masking_data.ndim() == 3)
-            copy (temp, mask);
-          else
-            compute_mask (temp);
-        }
+            InterpType (parent, value_when_out_of_bounds) { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
-        /* Unlike other interpolators, this involves checking the value of
-         * an internally stored mask, which tracks those voxels that contain
-         * at least one finite & non-zero value.
+        /* Unlike other interpolators, this sets the .index() location of
+         * the parent image, and checks to see whether or not there is
+         * any finite & non-zero data present; if there is not, then the
+         * function returns false, as though the location is outside of the
+         * image FoV.
          *
          * See file interp/base.h for details. */
         template <class VectorType>
-        bool voxel (const VectorType& pos) {
+        bool voxel (const VectorType& pos)
+        {
           if (InterpType::set_out_of_bounds (pos))
             return false;
-          mask.index(0) = std::round (pos[0]);
-          mask.index(1) = std::round (pos[1]);
-          mask.index(2) = std::round (pos[2]);
-          if (!mask.value())
-            return false;
-          return InterpType::voxel (pos);
+          InterpType::image_type::index(0) = std::round (pos[0]);
+          InterpType::image_type::index(1) = std::round (pos[1]);
+          InterpType::image_type::index(2) = std::round (pos[2]);
+          for (auto l_inner = Loop(*this, 3) (*this); l_inner; ++l_inner) {
+            if (InterpType::image_type::value())
+              return InterpType::voxel (pos);
+          }
+          return InterpType::set_out_of_bounds (true);
         }
 
         //! Set the current position to <b>image space</b> position \a pos
@@ -102,35 +83,6 @@ namespace MR
         template <class VectorType>
         FORCE_INLINE bool scanner (const VectorType& pos) {
           return voxel (Transform::scanner2voxel * pos.template cast<default_type>());
-        }
-
-      protected:
-        Image<bool> mask;
-
-        template <class ImageType>
-        static Header make_mask_header (const ImageType& image)
-        {
-          Header H (image);
-          H.ndim() = 3;
-          H.datatype() = DataType::Bit;
-          return H;
-        }
-
-        template <class ImageType>
-        void compute_mask (ImageType& data)
-        {
-          // True if at least one finite & non-zero value
-          for (auto l_voxel = Loop("pre-computing implicit voxel mask for \"" + data.name() + "\"", mask) (mask); l_voxel; ++l_voxel) {
-            assign_pos_of (mask, 0, 3).to (data);
-            bool value = false;
-            for (auto l_inner = Loop(data, 3) (data); l_inner; ++l_inner) {
-              if (data.value()) {
-                value = true;
-                continue;
-              }
-            }
-            mask.value() = value;
-          }
         }
 
     };

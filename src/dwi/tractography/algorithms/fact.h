@@ -90,13 +90,10 @@ namespace MR
       bool init() override
       {
         if (!get_data (source)) return false;
-        if (!S.init_dir.allFinite()) {
-          if (!dir.allFinite())
-            dir = random_direction();
-        }
-        else
+        if (S.init_dir.allFinite())
           dir = S.init_dir;
-
+        else
+          dir = random_direction();
         return select_fixel (dir) >= S.threshold;
       }
 

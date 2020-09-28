@@ -203,6 +203,11 @@ namespace MR
                                     pos[2] <= -0.5 || pos[2] >= bounds[2])));
         }
 
+        template <>
+        bool set_out_of_bounds (const bool& value) {
+          return ((out_of_bounds = value));
+        }
+
         template <class VectorType>
         Eigen::Vector3 intravoxel_offset (const VectorType& pos) {
           if (set_out_of_bounds (pos))
