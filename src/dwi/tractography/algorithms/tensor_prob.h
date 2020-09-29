@@ -59,12 +59,12 @@ namespace MR
             Tensor_Prob (const Shared& shared) :
               Tensor_Det (shared),
               S (shared),
-              source (Bootstrap<Image<float>,WildBootstrap> (S.source, WildBootstrap (S.Hat)), S.source) { }
+              source (Bootstrap<Image<float>,WildBootstrap> (S.source, WildBootstrap (S.Hat))) { }
 
             Tensor_Prob (const Tensor_Prob& F) :
               Tensor_Det (F.S),
               S (F.S),
-              source (Bootstrap<Image<float>,WildBootstrap> (S.source, WildBootstrap (S.Hat)), S.source) { }
+              source (Bootstrap<Image<float>,WildBootstrap> (S.source, WildBootstrap (S.Hat))) { }
 
 
 
@@ -118,8 +118,7 @@ namespace MR
 
             class Interp : public Interpolator<Bootstrap<Image<float>,WildBootstrap>>::type { MEMALIGN(Interp)
               public:
-                Interp (const Bootstrap<Image<float>,WildBootstrap>& bootstrap_vox,
-                        const Image<float>& vox) :
+                Interp (const Bootstrap<Image<float>,WildBootstrap>& bootstrap_vox) :
                     Interpolator<Bootstrap<Image<float>,WildBootstrap> >::type (bootstrap_vox)
                 {
                   for (size_t i = 0; i < 8; ++i)
