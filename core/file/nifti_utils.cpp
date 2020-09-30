@@ -513,7 +513,7 @@ namespace MR
           Eigen::Quaterniond Q (R);
 
           if (Q.w() < 0.0)
-            Q.vec() = -Q.vec();
+            Q.coeffs() *= -1.0;
 
           if (R.isApprox (Q.matrix(), 1e-6)) {
             Raw::store<code_type> (NIFTI_XFORM_SCANNER_ANAT, &NH.qform_code, is_BE);
