@@ -114,14 +114,14 @@ void match_linear (Image<float>& input,
     const default_type output_position = (target_data.size()-1) * (default_type(input_index) / default_type(input_data.size()-1));
     const size_t target_index_lower = std::floor (output_position);
     const default_type mu = output_position - default_type(target_index_lower);
-    output_vector[input_index] = ((1.0-mu)*target_data[target_index_lower] + mu*target_data[target_index_lower+1]);
+    output_vector[input_index] = ((1.0-mu)*target_data[target_index_lower]) + (mu*target_data[target_index_lower+1]);
   }
   input_matrix(input_data.size()-1, 0) = input_data.back();
   output_vector[input_data.size()-1] = target_data.back();
   if (estimate_intercept)
     input_matrix.col(1).fill (1.0f);
 
-  auto parameters = input_matrix.fullPivLu().solve (output_vector).eval();
+  auto parameters = (input_matrix.transpose() * input_matrix).ldlt().solve(input_matrix.transpose() * output_vector).eval();
 
   Header H (input);
   H.datatype() = DataType::Float32;
