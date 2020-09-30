@@ -281,9 +281,11 @@ end_init:
             }
 
 
-            float get_metric() override
+            float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) override
             {
-              return FOD (dir);
+              if (!get_data (source, position))
+                return 0.0;
+              return FOD (direction);
             }
 
 
