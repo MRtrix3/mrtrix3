@@ -107,8 +107,8 @@ void match_linear (Image<float>& input,
   // A: Input data
   // x: Model parameters; in the "scale" case, it's a single multiplier; if "linear", include a column of ones and estimate an intercept
   // b: Output data (or actually, interpolated histogram-matched output data)
-  Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> input_matrix (input_data.size(), estimate_intercept ? 2 : 1);
-  Eigen::Matrix<float, Eigen::Dynamic, 1> output_vector (input_data.size());
+  Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> input_matrix (input_data.size(), estimate_intercept ? 2 : 1);
+  Eigen::Matrix<default_type, Eigen::Dynamic, 1> output_vector (input_data.size());
   for (size_t input_index = 0; input_index != input_data.size()-1; ++input_index) {
     input_matrix(input_index, 0) = input_data[input_index];
     const default_type output_position = (target_data.size()-1) * (default_type(input_index) / default_type(input_data.size()-1));
