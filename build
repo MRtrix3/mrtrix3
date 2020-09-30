@@ -15,7 +15,7 @@ if [ -f "${PREFIX}-build-deps.tar.gz" ]; then
   tar xfz ${PREFIX}-build-deps.tar.gz
 else
   # Grab latest versions from git
-  EIGEN_VERSION=$(git ls-remote --tags https://github.com/eigenteam/eigen-git-mirror.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v '-' | sort -V | tail -1)
+  EIGEN_VERSION=$(git ls-remote --tags https://gitlab.com/libeigen/eigen.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v '-' | sort -V | tail -1)
   EIGEN_VERSION=${EIGEN_VERSION#*/*/}
   echo "Using eigen ${EIGEN_VERSION}"
 
@@ -37,11 +37,11 @@ else
 
   # EIGEN
   SECONDS=0
-  DNAME=eigen*
-  FNAME=${EIGEN_VERSION}.tar.bz2
-  curl -s -O -L http://bitbucket.org/eigen/eigen/get/${FNAME}
+  DNAME=eigen-${EIGEN_VERSION}
+  FNAME=eigen-${EIGEN_VERSION}.tar.bz2
+  curl -s -O -L https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_VERSION}/${FNAME}
   tar xf ${FNAME}
-  mkdir -p ${PREFIX}/include/eigen3
+  mkdir -p ${PREFIX}/include/
   cp -R ${DNAME}/Eigen ${PREFIX}/include
   cp -R ${DNAME}/unsupported ${PREFIX}/include
   rm -r ${FNAME} ${DNAME}
