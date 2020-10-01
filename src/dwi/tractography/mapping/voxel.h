@@ -24,6 +24,7 @@
 #include "image.h"
 
 #include "dwi/directions/set.h"
+#include "dwi/tractography/streamline.h"
 
 
 namespace MR {
@@ -33,10 +34,14 @@ namespace MR {
 
 
 
+        using tangent_type = Streamline<>::point_type;
+
+
+
         // Helper functions; note that int[3] rather than Voxel is always used during the mapping itself
         template <typename T>
         inline Eigen::Vector3i round (const Eigen::Matrix<T, 3, 1>& p)
-        { 
+        {
           assert (p.allFinite());
           return { int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])) };
         }
@@ -47,7 +52,7 @@ namespace MR {
             return (V[0] >= 0 && V[0] < H.size(0) && V[1] >= 0 && V[1] < H.size(1) && V[2] >= 0 && V[2] < H.size(2));
           }
 
-        inline Eigen::Vector3 vec2DEC (const Eigen::Vector3& d)
+        inline tangent_type vec2DEC (const tangent_type& d)
         {
           return { abs(d[0]), abs(d[1]), abs(d[2]) };
         }
@@ -73,7 +78,7 @@ namespace MR {
 
 
 
-        class VoxelDEC : public Voxel 
+        class VoxelDEC : public Voxel
         { MEMALIGN(VoxelDEC)
 
           public:
@@ -85,11 +90,11 @@ namespace MR {
               Voxel (V),
               colour (0.0, 0.0, 0.0) { }
 
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d) :
+            VoxelDEC (const Eigen::Vector3i& V, const tangent_type& d) :
               Voxel (V),
               colour (vec2DEC (d)) { }
 
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d, const float l) :
+            VoxelDEC (const Eigen::Vector3i& V, const tangent_type& d, const float l) :
               Voxel (V, l),
               colour (vec2DEC (d)) { }
 
@@ -101,13 +106,13 @@ namespace MR {
             bool      operator<  (const VoxelDEC& V) const { return Voxel::operator< (V); }
 
             void normalize() const { colour.normalize(); Voxel::normalize(); }
-            void set_dir (const Eigen::Vector3& i) { colour = vec2DEC (i); }
-            void add (const Eigen::Vector3& i, const default_type l) const { Voxel::operator+= (l); colour += vec2DEC (i); }
-            void operator+= (const Eigen::Vector3& i) const { Voxel::operator+= (1.0); colour += vec2DEC (i); }
-            const Eigen::Vector3& get_colour() const { return colour; }
+            void set_dir (const tangent_type& i) { colour = vec2DEC (i); }
+            void add (const tangent_type& i, const default_type l) const { Voxel::operator+= (l); colour += vec2DEC (i); }
+            void operator+= (const tangent_type& i) const { Voxel::operator+= (1.0); colour += vec2DEC (i); }
+            const tangent_type& get_colour() const { return colour; }
 
           private:
-            mutable Eigen::Vector3 colour;
+            mutable tangent_type colour;
 
         };
 
@@ -127,11 +132,11 @@ namespace MR {
               Voxel (V),
               dir (0.0, 0.0, 0.0) { }
 
-            VoxelDir (const Eigen::Vector3i& V, const Eigen::Vector3& d) :
+            VoxelDir (const Eigen::Vector3i& V, const tangent_type& d) :
               Voxel (V),
               dir (d) { }
 
-            VoxelDir (const Eigen::Vector3i& V, const Eigen::Vector3& d, const default_type l) :
+            VoxelDir (const Eigen::Vector3i& V, const tangent_type& d, const default_type l) :
               Voxel (V, l),
               dir (d) { }
 
@@ -142,13 +147,13 @@ namespace MR {
             bool      operator<  (const VoxelDir& V) const { return Voxel::operator< (V); }
 
             void normalize() const { dir.normalize(); Voxel::normalize(); }
-            void set_dir (const Eigen::Vector3& i) { dir = i; }
-            void add (const Eigen::Vector3& i, const default_type l) const { Voxel::operator+= (l); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
-            void operator+= (const Eigen::Vector3& i) const { Voxel::operator+= (1.0); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
-            const Eigen::Vector3& get_dir() const { return dir; }
+            void set_dir (const tangent_type& i) { dir = i; }
+            void add (const tangent_type& i, const default_type l) const { Voxel::operator+= (l); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
+            void operator+= (const tangent_type& i) const { Voxel::operator+= (1.0); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
+            const tangent_type& get_dir() const { return dir; }
 
           private:
-            mutable Eigen::Vector3 dir;
+            mutable tangent_type dir;
 
         };
 
@@ -317,12 +322,12 @@ namespace MR {
               else
                 existing->add (v.get_colour(), v.get_length());
             }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d)
+            inline void insert (const Eigen::Vector3i& v, const tangent_type& d)
             {
               const VoxelDEC temp (v, d);
               insert (temp);
             }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l)
+            inline void insert (const Eigen::Vector3i& v, const tangent_type& d, const default_type l)
             {
               const VoxelDEC temp (v, d, l);
               insert (temp);
@@ -344,12 +349,12 @@ namespace MR {
               else
                 existing->add (v.get_dir(), v.get_length());
             }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d)
+            inline void insert (const Eigen::Vector3i& v, const tangent_type& d)
             {
               const VoxelDir temp (v, d);
               insert (temp);
             }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l)
+            inline void insert (const Eigen::Vector3i& v, const tangent_type& d, const default_type l)
             {
               const VoxelDir temp (v, d, l);
               insert (temp);

@@ -28,6 +28,9 @@ namespace MR {
 
 
 
+          using Mapping::tangent_type;
+
+
 
           // Base class to handle case where the factor contributed by the streamline varies along its length
           //   (currently only occurs when the track-wise statistic is Gaussian)
@@ -80,18 +83,18 @@ namespace MR {
             public:
             VoxelDEC () : Base (), VoxelAddon () { }
             VoxelDEC (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d) : Base (V, d), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d, const default_type l) : Base (V, d, l), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d, const default_type l, const default_type f) : Base (V, d, l), VoxelAddon (f) { }
+            VoxelDEC (const Eigen::Vector3i& V, const tangent_type& d) : Base (V, d), VoxelAddon () { }
+            VoxelDEC (const Eigen::Vector3i& V, const tangent_type& d, const default_type l) : Base (V, d, l), VoxelAddon () { }
+            VoxelDEC (const Eigen::Vector3i& V, const tangent_type& d, const default_type l, const default_type f) : Base (V, d, l), VoxelAddon (f) { }
 
             VoxelDEC& operator=  (const VoxelDEC& V)   { Base::operator= (V); VoxelAddon::operator= (V); return (*this); }
             void operator+= (const default_type) const { assert (0); }
-            void operator+= (const Eigen::Vector3&) const { assert (0); }
+            void operator+= (const tangent_type&) const { assert (0); }
             bool operator== (const VoxelDEC& V) const { return Base::operator== (V); }
             bool operator<  (const VoxelDEC& V) const { return Base::operator<  (V); }
 
-            void add (const Eigen::Vector3&, const default_type) const { assert (0); }
-            void add (const Eigen::Vector3& i, const default_type l, const default_type f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
+            void add (const tangent_type&, const default_type) const { assert (0); }
+            void add (const tangent_type& i, const default_type l, const default_type f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); Base::normalize(); }
 
           };
@@ -191,7 +194,7 @@ namespace MR {
 
               using VoxType = VoxelDEC;
 
-              inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l, const default_type f)
+              inline void insert (const Eigen::Vector3i& v, const tangent_type& d, const default_type l, const default_type f)
               {
                 const VoxelDEC temp (v, d, l, f);
                 iterator existing = std::set<VoxelDEC>::find (temp);

@@ -66,7 +66,7 @@ class TrackProcessor { MEMALIGN (TrackProcessor)
          index_type last_index = first_index + num_fibres;
          index_type closest_fixel_index = 0;
          float largest_dp = 0.0;
-         const Eigen::Vector3 dir (i->get_dir().normalized());
+         const Eigen::Vector3 dir (i->get_dir().cast<default_type>().normalized());
          for (index_type j = first_index; j < last_index; ++j) {
            const float dp = abs (dir.dot (fixel_directions[j]));
            if (dp > largest_dp) {

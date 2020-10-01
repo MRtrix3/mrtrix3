@@ -254,7 +254,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   if (contrast != CURVATURE)
     throw Exception ("Unsupported contrast in function TrackMapperTWI::load_factors()");
 
-  vector<Eigen::Vector3> tangents;
+  vector<Eigen::Vector3f> tangents;
   tangents.reserve (tck.size());
 
   // Would like to be able to manipulate the length over which the tangent calculation is affected
@@ -271,17 +271,8 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   step_sizes.reserve (tck.size());
 
   for (size_t i = 0; i != tck.size(); ++i) {
-    Eigen::Vector3 this_tangent;
-    if (i == 0)
-      this_tangent = ((tck[1]   - tck[0]  ).cast<default_type>().normalized());
-    else if (i == tck.size() - 1)
-      this_tangent = ((tck[i]   - tck[i-1]).cast<default_type>().normalized());
-    else
-      this_tangent = ((tck[i+1] - tck[i-1]).cast<default_type>().normalized());
-    if (this_tangent.allFinite())
-      tangents.push_back (this_tangent);
-    else
-      tangents.push_back ({ 0.0, 0.0, 0.0 });
+    const Eigen::Vector3f this_tangent = Tractography::tangent (tck, i);
+    tangents.push_back (this_tangent.allFinite() ? this_tangent : Eigen::Vector3f (0.0, 0.0, 0.0));
     if (i)
       step_sizes.push_back ((tck[i] - tck[i-1]).norm());
   }
@@ -335,7 +326,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
     for (size_t j = 0; j != tck.size(); ++j) {
       const default_type distance = spline_distances (i, j);
       const default_type this_weight = exp (-distance * distance / gaussian_denominator);
-      this_tangent += tangents[j] * this_weight;
+      this_tangent += tangents[j].cast<default_type>() * this_weight;
     }
 
     smoothed_tangents.push_back (this_tangent.normalized());
