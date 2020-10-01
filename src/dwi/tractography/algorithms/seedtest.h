@@ -55,7 +55,7 @@ class Seedtest : public MethodBase { MEMALIGN(Seedtest)
 
   bool init() override { return true; }
   term_t next () override { return EXIT_IMAGE; }
-  float get_metric() override { return 1.0f; }
+  float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) override { return 1.0f; }
 
 
   protected:
