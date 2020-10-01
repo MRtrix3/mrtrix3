@@ -137,8 +137,6 @@ namespace MR
 
         void set_interp_type (int type) {
           interp_type = type;
-          if (interp_type == 0) // nearest
-            set_oversample (vector<uint32_t> (3, 1));
         }
 
         void set_transform (const transform_type& trafo) {
@@ -156,7 +154,7 @@ namespace MR
              *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
             switch (interp_type) {
             case 0:
-              // Prevent use of oversampling when using nearest-neighbour interpolation
+              // Use of oversampling is prevented in reslice adapter
               reslice <Interp::Nearest> (input, output, transformation, oversampling, oob);
               break;
             case 1:
