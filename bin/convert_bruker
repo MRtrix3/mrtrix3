@@ -134,7 +134,7 @@ def main():
 
     try:
       assert len(bvec) == 3*len(bval)
-      bvec = [ bvec[n:n+3] for n in range(0,len(bval),3) ]
+      bvec = [ bvec[n:n+3] for n in range(0,len(bvec),3) ]
       for direction, value in zip(bvec, bval):
         file_out.write ('dw_scheme: ' + direction[0] + ',' + direction[1] + ',' + str(-float(direction[2])) + ',' + value + '\n')
     except:

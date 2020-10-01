@@ -143,7 +143,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
     bool all_fixels;
     DWI::Tractography::Mapping::TrackMapperBase mapper;
     Image<value_type> v_fod;
-    copy_ptr<DWI::FMLS::Segmenter> fmls;
+    std::unique_ptr<DWI::FMLS::Segmenter> fmls;
 
     using Fixel_map<Fixel>::accessor;
 
