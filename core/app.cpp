@@ -1422,7 +1422,7 @@ namespace MR
         std::string msg = std::string ("unexpected value supplied for ");
         if (opt) msg += std::string ("option \"") + opt->id;
         else msg += std::string ("argument \"") + arg->id;
-        msg += std::string ("\" (valid choices are: ") + join (choices, ", ") + ")";
+        msg += std::string ("\" (received \"" + std::string(p) + "\"; valid choices are: ") + join (choices, ", ") + ")";
         throw Exception (msg);
       }
       assert (0);
