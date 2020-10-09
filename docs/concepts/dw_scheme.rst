@@ -300,7 +300,8 @@ In order to robustly handle such data, some *MRtrix3* commands will internally r
 a clustering algorithm that groups DWI volumes according to *b*-value similarity.
 So for instance, if one were to run the :ref:`dwiextract` command on the data above,
 specifying the option ``-shell 3000``, those volumes with reported *b*-values 
-2994.94, 3009.96 and 2989.96 would be extracted, despite not being *exactly* *b*=3000.
+2994.94, 3009.96 and 2989.96 would be extracted, despite the *b*-value not being
+*precisely* 3000 in each case.
 
 The behaviour of this algorithm can be interrogated directly using the :ref:`mrinfo`
 command, using the following command-line options:
