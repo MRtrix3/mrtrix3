@@ -105,8 +105,8 @@ def execute(): #pylint: disable=unused-variable
     app.warn('Only one dwi2mask algorithm was successful; output mask will be this result and not a consensus')
     if app.ARGS.masks:
       run.command('mrconvert ' + mask_list[0] + ' ' + path.from_user(app.ARGS.masks),
-                mrconvert_keyval=path.from_user(app.ARGS.input, False),
-                force=app.FORCE_OVERWRITE)
+                  mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                  force=app.FORCE_OVERWRITE)
     return mask_list[0]
   final_mask = 'consensus.mif'
   app.console('Computing consensus from ' + str(len(mask_list)) + ' of ' + str(len(algorithm_list)) + ' algorithms')

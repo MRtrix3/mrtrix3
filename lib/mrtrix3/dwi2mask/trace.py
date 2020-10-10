@@ -26,15 +26,19 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'trace\' algorithm')
-  options.add_argument('-avg_all', action='store_true', help='Average DWI volumes directly to create an image for thresholding')
+  options.add_argument('-volumes', action='store_true', help='Average DWI volumes directly, rather than shell trace images, to create an image for thresholding')
   options.add_argument('-max_iters', type=int, default=DEFAULT_MAX_ITERS, help='Set the maximum number of iterations for the algorithm (default: ' + str(DEFAULT_MAX_ITERS) + ')')
   options.add_argument('-shells', help='Comma separated list of shells used for masking')
-  parser.add_argument('-clean_scale',
-                      type=int,
-                      default=DEFAULT_CLEAN_SCALE,
-                      help='the maximum scale used to cut bridges. A certain maximum scale cuts '
-                           'bridges up to a width (in voxels) of 2x the provided scale. Setting '
-                           'this to 0 disables the mask cleaning step. (Default: ' + str(DEFAULT_CLEAN_SCALE) + ')')
+  options.add_argument('-clean_scale',
+                       type=int,
+                       default=DEFAULT_CLEAN_SCALE,
+                       help='the maximum scale used to cut bridges. A certain maximum scale cuts '
+                            'bridges up to a width (in voxels) of 2x the provided scale. Setting '
+                            'this to 0 disables the mask cleaning step. (Default: ' + str(DEFAULT_CLEAN_SCALE) + ')')
+  options.add_argument('-iterative',
+                       action='store_true',
+                       help='(EXPERIMENTAL) Iteratively refine the combination ')
+  parser.set_mutually_exclusive_options(['volumes', 'iterative'], False)
 
 
 
@@ -54,7 +58,7 @@ def execute(): #pylint: disable=unused-variable
               'mrthreshold - -abs 0 -comparison gt input_pos_mask.mif')
 
   # Averaging volumes directly
-  if app.ARGS.avg_all:
+  if app.ARGS.volumes:
     run.command(('dwiextract input.mif - -shells ' + app.ARGS.shells + ' | mrmath -' \
                  if app.ARGS.shells \
                  else 'mrmath input.mif')
@@ -92,6 +96,9 @@ def execute(): #pylint: disable=unused-variable
                'maskfilter', '-', 'bigblob', '-', '|',
                'maskfilter', '-', 'clean', '-scale', str(app.ARGS.clean_scale), '-', '|',
                'mrcalc', 'input_pos_mask.mif', '-', '-mult', 'init_mask.mif', '-datatype', 'bit'])
+
+  if not app.ARGS.iterative:
+    return 'init_mask.mif'
 
   # The per-shell histogram matching should be only the first pass
   # Once an initial mask has been derived, the weights with which the different
@@ -136,6 +143,4 @@ def execute(): #pylint: disable=unused-variable
       return mask_path
     current_mask = mask_path
 
-
-  #return 'final_mask.mif'
-  return 'init_mask.mif'
+  assert False
