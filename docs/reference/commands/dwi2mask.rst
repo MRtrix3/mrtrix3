@@ -683,7 +683,7 @@ Options
 Options specific to the "template" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-software** The software to use for template registration; options are: ants,fsl; default is fsl
+- **-software** The software to use for template registration; options are: antsfull,antsquick,fsl; default is fsl
 
 - **-template TemplateImage MaskImage** Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.
 
@@ -775,14 +775,21 @@ Usage
 Options
 -------
 
-- **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+Options for turning 'dwi2mask trace' into an iterative algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-iterative** (EXPERIMENTAL) Iteratively refine the weights for combination of per-shell trace-weighted images prior to thresholding
+
+- **-max_iters** Set the maximum number of iterations for the algorithm (default: 10)
 
 Options specific to the 'trace' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-avg_all** Average DWI volumes directly to create an image for thresholding
+- **-volumes** Average DWI volumes directly, rather than shell trace images, to create an image for thresholding
 
-- **-shells** Comma separated list of shells used for masking
+- **-shells** Comma separated list of shells used to generate trace-weighted images for masking
+
+- **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
