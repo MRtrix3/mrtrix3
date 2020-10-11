@@ -73,7 +73,7 @@ def execute(): #pylint: disable=unused-variable
   # Ideally this would be determined based on the help page,
   #   rather than pre-programmed
   algorithm_list = [item for item in algorithm_list if item != 'template']
-  algorithm_list.append('template -software ants')
+  algorithm_list.append('template -software antsfull')
   algorithm_list.append('template -software fsl')
   app.debug(str(algorithm_list))
 
