@@ -18,10 +18,13 @@ from distutils.spawn import find_executable
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, fsl, path, run
 
-SOFTWARES = ['ants', 'fsl']
 
-ANTS_REGISTER_CMD = 'antsRegistrationSyNQuick.sh'
+SOFTWARES = ['antsfull', 'antsquick', 'fsl']
+
+ANTS_REGISTERFULL_CMD = 'antsRegistration'
+ANTS_REGISTERQUICK_CMD = 'antsRegistrationSyNQuick.sh'
 ANTS_TRANSFORM_CMD = 'antsApplyTransforms'
+
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('template', parents=[base_parser])
@@ -78,18 +81,19 @@ def execute(): #pylint: disable=unused-variable
   # For now, script assumes T2-weighted template image.
 
   reg_software = app.ARGS.software if app.ARGS.software else CONFIG.get('Dwi2maskTemplateSoftware', 'fsl')
-  if reg_software == 'ants':
+  if reg_software.startswith('ants'):
     ants_path = os.environ.get('ANTSPATH', '')
     if not ants_path:
       raise MRtrixError('Environment variable ANTSPATH is not set; '
                         'please appropriately confirure ANTs software')
-    if not find_executable(ANTS_REGISTER_CMD):
-      raise MRtrixError('Unable to find command "'
-                        + ANTS_REGISTER_CMD
-                        + '"; please check ANTs installation')
     if not find_executable(ANTS_TRANSFORM_CMD):
       raise MRtrixError('Unable to find command "'
                         + ANTS_TRANSFORM_CMD
+                        + '"; please check ANTs installation')
+    ants_register_cmd = ANTS_REGISTERFULL_CMD if reg_software == 'antsfull' else ANTS_REGISTERQUICK_CMD
+    if not find_executable(ants_register_cmd):
+      raise MRtrixError('Unable to find command "'
+                        + ants_register_cmd
                         + '"; please check ANTs installation')
   elif reg_software == 'fsl':
     fsl_path = os.environ.get('FSLDIR', '')
@@ -108,14 +112,39 @@ def execute(): #pylint: disable=unused-variable
   else:
     assert False
 
-  if reg_software == 'ants':
+  if reg_software.startswith('ants'):
 
-    # Use ANTs SyNQuick for registration to template
-    run.command(ANTS_REGISTER_CMD
-                + ' -d 3'
-                + ' -f template_image.nii'
-                + ' -m bzero.nii'
-                + ' -o ANTS')
+    # Use ANTs SyN for registration to template
+    # From Klein and Avants, Frontiers in Neuroinformatics 2013:
+    if reg_software == 'antsfull':
+      run.command(ANTS_REGISTERFULL_CMD
+                  + ' --dimensionality 3'
+                  + ' --output ANTS'
+                  + ' --use-histogram-matching 1'
+                  + ' --initial-moving-transform [template_image.nii,template_image.nii,1]'
+                  + ' --transform Rigid[0.1]'
+                  + ' --metric MI[template_image.nii,bzero.nii,1,32,Regular,0.25]'
+                  + ' --convergence 1000x500x250x100'
+                  + ' --smoothing-sigmas 3x2x1x0'
+                  + ' --shrink-factors 8x4x2x1'
+                  + ' --transform Affine[0.1]'
+                  + ' --metric MI[template_image.nii,bzero.nii,1,32,Regular,0.25]'
+                  + ' --convergence 1000x500x250x100'
+                  + ' --smoothing-sigmas 3x2x1x0'
+                  + ' --shrink-factors 8x4x2x1'
+                  + ' --transform BSplineSyN[0.1,26,0,3]'
+                  + ' --metric CC[template_image.nii,bzero.nii,1,4]'
+                  + ' --convergence 100x70x50x20'
+                  + ' --smoothing-sigmas 3x2x1x0'
+                  + ' --shrink-factors 6x4x2x1')
+
+    else:
+      # Use ANTs SyNQuick for registration to template
+      run.command(ANTS_REGISTERQUICK_CMD
+                  + ' -d 3'
+                  + ' -f template_image.nii'
+                  + ' -m bzero.nii'
+                  + ' -o ANTS')
 
     transformed_path = 'transformed.nii'
     # Note: Don't use nearest-neighbour interpolation;
