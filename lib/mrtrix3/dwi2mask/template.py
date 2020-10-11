@@ -20,8 +20,8 @@ from mrtrix3 import app, fsl, path, run
 
 SOFTWARES = ['ants', 'fsl']
 
-ANTS_REGISTER_CMD = 'ANTS'
-ANTS_TRANSFORM_CMD = 'WarpImageMultiTransform'
+ANTS_REGISTER_CMD = 'antsRegistrationSyNQuick.sh'
+ANTS_TRANSFORM_CMD = 'antsApplyTransforms'
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('template', parents=[base_parser])
@@ -110,25 +110,23 @@ def execute(): #pylint: disable=unused-variable
 
   if reg_software == 'ants':
 
-    # Use ANTs SyN for registration to template
-    # From Klein et al., NeuroImage 2009:
+    # Use ANTs SyNQuick for registration to template
     run.command(ANTS_REGISTER_CMD
-                + ' 3'
-                + ' -m PR[template_image.nii, bzero.nii, 1, 2]'
-                + ' -o ANTS'
-                + ' -r Gauss[2,0]'
-                + ' -t SyN[0.5]'
-                + ' -i 30x99x11'
-                + ' --use-Histogram-Matching')
+                + ' -d 3'
+                + ' -f template_image.nii'
+                + ' -m bzero.nii'
+                + ' -o ANTS')
+
     transformed_path = 'transformed.nii'
     # Note: Don't use nearest-neighbour interpolation;
     #   allow "partial volume fractions" in output, and threshold later
     run.command(ANTS_TRANSFORM_CMD
-                + ' 3'
-                + ' template_mask.nii '
-                + transformed_path
-                + ' -R bzero.nii'
-                + ' -i ANTSAffine.txt ANTSInverseWarp.nii')
+                + ' -d 3'
+                + ' -i template_mask.nii'
+                + ' -o ' + transformed_path
+                + ' -r bzero.nii'
+                + ' -t [ANTS0GenericAffine.mat,1]'
+                + ' -t ANTS1InverseWarp.nii.gz')
 
   elif reg_software == 'fsl':
 
