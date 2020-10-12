@@ -20,6 +20,7 @@ from mrtrix3 import app, fsl, path, run
 
 
 SOFTWARES = ['antsfull', 'antsquick', 'fsl']
+DEFAULT_SOFTWARE = 'antsquick'
 
 ANTS_REGISTERFULL_CMD = 'antsRegistration'
 ANTS_REGISTERQUICK_CMD = 'antsRegistrationSyNQuick.sh'
@@ -41,7 +42,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the "template" algorithm')
-  options.add_argument('-software', choices=SOFTWARES, help='The software to use for template registration; options are: ' + ','.join(SOFTWARES) + '; default is fsl')
+  options.add_argument('-software', choices=SOFTWARES, help='The software to use for template registration; options are: ' + ','.join(SOFTWARES) + '; default is ' + DEFAULT_SOFTWARE)
   options.add_argument('-template', metavar='TemplateImage MaskImage', nargs=2, help='Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.')
 
 
@@ -80,7 +81,7 @@ def execute(): #pylint: disable=unused-variable
   #
   # For now, script assumes T2-weighted template image.
 
-  reg_software = app.ARGS.software if app.ARGS.software else CONFIG.get('Dwi2maskTemplateSoftware', 'fsl')
+  reg_software = app.ARGS.software if app.ARGS.software else CONFIG.get('Dwi2maskTemplateSoftware', DEFAULT_SOFTWARE)
   if reg_software.startswith('ants'):
     ants_path = os.environ.get('ANTSPATH', '')
     if not ants_path:
