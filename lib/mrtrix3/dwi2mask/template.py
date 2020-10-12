@@ -115,7 +115,7 @@ def execute(): #pylint: disable=unused-variable
   if reg_software.startswith('ants'):
 
     # Use ANTs SyN for registration to template
-    # From Klein and Avants, Frontiers in Neuroinformatics 2013:
+    # From Tustison and Avants, Frontiers in Neuroinformatics 2013:
     if reg_software == 'antsfull':
       run.command(ANTS_REGISTERFULL_CMD
                   + ' --dimensionality 3'
