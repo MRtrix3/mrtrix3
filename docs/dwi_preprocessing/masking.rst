@@ -144,6 +144,10 @@ the core image registration and transformation processes:
    - ``invwarp_``: Inversion of warp from subject to template;
    - ``applywarp_``: Transform template mask to subject space. 
 
+By default, if no manual selection is made here using either the ``-software``
+command-line option or the ``Dwi2maskTemplateSoftware`` configuration file
+entry, the ``antsquick`` approach will be used.
+
 The registration operation can be expected to perform best if the specified
 template image is of comparable shape and image contrast to that of the
 *b=0* volumes of the DWI data being processed. As such, if using an existing
@@ -213,7 +217,7 @@ Algorithm comparison
 |   ``fslbet``   |      Yes (FSL_)       |          No          |     Approx. spherical      |         Yes          |      No     |
 |   ``hdbet``    |     Yes (HD-BET_)     |          No          |           Brain            |         Yes          |      Yes    |
 |  ``legacy``    |          No           |          Yes         | Single connected component |         No           |      No     |
-|  ``template``  |  Yes (FSL_ / ANTs_)   |          No          |      Matches template      |         Yes          |      No     |
+|  ``template``  |  Yes (ANTs_ / FSL_)   |          No          |      Matches template      |         Yes          |      No     |
 |   ``trace``    |          No           |          Yes         | Single connected component |         No           |      No     |
 +----------------+-----------------------+----------------------+----------------------------+----------------------+-------------+
 
@@ -277,7 +281,8 @@ mentioned here also for discoverability:
    tool that will be utilised for registration to the template and
    back-propagation of the mask in template space to the subject's DWI
    data. Valid values are specified in :ref:`dwi2mask_template` above. In the
-   absence of this configuration file option, the FSL_ software will be used.
+   absence of this configuration file option, ``antsquick`` (i.e. ANTs_
+   ``antsRegistrationSyNQuick.sh``) will be used.
 
 -  ``Dwi2maskTemplateImage`` and ``Dwi2maskTemplateMask``
 
