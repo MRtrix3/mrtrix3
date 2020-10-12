@@ -772,7 +772,7 @@ Options
 Options specific to the "template" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-software** The software to use for template registration; options are: antsfull,antsquick,fsl; default is fsl
+- **-software** The software to use for template registration; options are: antsfull,antsquick,fsl; default is antsquick
 
 - **-template TemplateImage MaskImage** Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.
 
