@@ -55,9 +55,6 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
 
-  run.command('mrmath input.mif max - -axis 3 | '
-              'mrthreshold - -abs 0 -comparison gt input_pos_mask.mif')
-
   if app.ARGS.shells:
     run.command('dwiextract input.mif input_shells.mif -shells ' + app.ARGS.shells)
     run.command('dwishellmath input_shells.mif mean shell_traces.mif')
@@ -82,8 +79,7 @@ def execute(): #pylint: disable=unused-variable
   run.command(['mrmath', files, 'mean', '-', '|',
                'mrthreshold', '-', '-', '|',
                'maskfilter', '-', 'bigblob', '-', '|',
-               'maskfilter', '-', 'clean', '-scale', str(app.ARGS.clean_scale), '-', '|',
-               'mrcalc', 'input_pos_mask.mif', '-', '-mult', 'init_mask.mif', '-datatype', 'bit'])
+               'maskfilter', '-', 'clean', '-scale', str(app.ARGS.clean_scale), 'init_mask.mif'])
 
   if not app.ARGS.iterative:
     return 'init_mask.mif'

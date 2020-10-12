@@ -48,12 +48,11 @@ def execute(): #pylint: disable=unused-variable
 
   run.command('mrcalc input.mif 0 -max input_nonneg.mif')
   run.command('dwishellmath input_nonneg.mif mean trace.mif')
+  app.cleanup('input_nonneg.mif')
   run.command('mrthreshold trace.mif - -comparison gt | '
               'mrmath - max -axis 3 - | '
               'maskfilter - median - | '
               'maskfilter - bigblob - | '
-              'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' init_mask.mif')
-  run.command('mrmath input_nonneg.mif max -axis 3 - | '
-              'mrcalc - 0.0 -gt init_mask.mif -mult final_mask.mif -datatype bit')
+              'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' mask.mif')
 
-  return 'final_mask.mif'
+  return 'mask.mif'

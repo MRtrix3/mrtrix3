@@ -13,6 +13,8 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+from mrtrix3 import app, run
+
 DEFAULT_CLEAN_SCALE = 2
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
@@ -43,16 +45,12 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
 
-  run.command('mrmath input.mif max - -axis 3 | '
-              'mrthreshold - -abs 0 -comparison gt input_pos_mask.mif')
-
   run.command(('dwiextract input.mif - -shells ' + app.ARGS.shells + ' | mrmath -' \
                 if app.ARGS.shells \
                 else 'mrmath input.mif')
               + ' mean - -axis 3 |'
               + ' mrthreshold - - |'
               + ' maskfilter - bigblob - | '
-              + ' maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' - |'
-              + ' mrcalc input_pos_mask.mif - -mult mask.mif -datatype bit')
+              + ' maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' mask.mif')
 
   return 'mask.mif'
