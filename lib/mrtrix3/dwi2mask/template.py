@@ -121,7 +121,7 @@ def execute(): #pylint: disable=unused-variable
                   + ' --dimensionality 3'
                   + ' --output ANTS'
                   + ' --use-histogram-matching 1'
-                  + ' --initial-moving-transform [template_image.nii,template_image.nii,1]'
+                  + ' --initial-moving-transform [template_image.nii,bzero.nii,1]'
                   + ' --transform Rigid[0.1]'
                   + ' --metric MI[template_image.nii,bzero.nii,1,32,Regular,0.25]'
                   + ' --convergence 1000x500x250x100'
