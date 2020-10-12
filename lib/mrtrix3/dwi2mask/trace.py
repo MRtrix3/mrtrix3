@@ -26,7 +26,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'trace\' algorithm')
-  options.add_argument('-volumes', action='store_true', help='Average DWI volumes directly, rather than shell trace images, to create an image for thresholding')
   options.add_argument('-shells', help='Comma separated list of shells used to generate trace-weighted images for masking')
   parser.flag_mutually_exclusive_options(['volumes', 'shells'], False)
   options.add_argument('-clean_scale',
@@ -58,19 +57,6 @@ def execute(): #pylint: disable=unused-variable
 
   run.command('mrmath input.mif max - -axis 3 | '
               'mrthreshold - -abs 0 -comparison gt input_pos_mask.mif')
-
-  # Averaging volumes directly
-  if app.ARGS.volumes:
-    run.command(('dwiextract input.mif - -shells ' + app.ARGS.shells + ' | mrmath -' \
-                 if app.ARGS.shells \
-                 else 'mrmath input.mif')
-                + ' mean - -axis 3 |'
-                + ' mrthreshold - - |'
-                + ' maskfilter - bigblob - | '
-                + ' maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' - |'
-                + ' mrcalc input_pos_mask.mif - -mult mask.mif -datatype bit')
-    return 'mask.mif'
-
 
   if app.ARGS.shells:
     run.command('dwiextract input.mif input_shells.mif -shells ' + app.ARGS.shells)
