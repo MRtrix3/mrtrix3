@@ -61,13 +61,13 @@ def execute(): #pylint: disable=unused-variable
   cmd_string = bet_cmd + ' ' + b0_image + ' DWI_BET -R -m'
 
   if app.ARGS.bet_f is not None:
-    cmd_string += ' -f ' + str(app.ARGS.f)
+    cmd_string += ' -f ' + str(app.ARGS.bet_f)
   if app.ARGS.bet_g is not None:
-    cmd_string += ' -g ' + str(app.ARGS.g)
+    cmd_string += ' -g ' + str(app.ARGS.bet_g)
   if app.ARGS.bet_r is not None:
-    cmd_string += ' -r ' + str(app.ARGS.r)
+    cmd_string += ' -r ' + str(app.ARGS.bet_r)
   if app.ARGS.bet_c is not None:
-    cmd_string += ' -c ' + app.ARGS.c
+    cmd_string += ' -c ' + app.ARGS.bet_c
 
   # Running BET command
   run.command(cmd_string)
