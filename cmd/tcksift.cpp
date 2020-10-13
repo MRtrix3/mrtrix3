@@ -47,7 +47,7 @@ void usage ()
 
   SYNOPSIS = "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals";
 
-  REFERENCES 
+  REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "SIFT: Spherical-deconvolution informed filtering of tractograms. "
     "NeuroImage, 2013, 67, 298-312";
@@ -123,7 +123,7 @@ void run ()
       sifter.set_csv_path (opt[0][0]);
     opt = get_options ("output_at_counts");
     if (opt.size()) {
-      vector<int> counts = parse_ints (opt[0][0]);
+      vector<uint32_t> counts = parse_ints<uint32_t> (opt[0][0]);
       sifter.set_regular_outputs (counts, out_debug);
     }
 

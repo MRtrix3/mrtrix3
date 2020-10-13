@@ -24,7 +24,7 @@
 #ifdef MRTRIX_MACOSX
 # define FILE_DIALOG_OPTIONS QFileDialog::DontUseNativeDialog
 #else
-# define FILE_DIALOG_OPTIONS static_cast<QFileDialog::Options> (0)
+# define FILE_DIALOG_OPTIONS QFileDialog::Options()
 #endif
 
 namespace MR

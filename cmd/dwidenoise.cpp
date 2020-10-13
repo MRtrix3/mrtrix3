@@ -129,7 +129,7 @@ public:
   using MatrixType = Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic>;
   using SValsType = Eigen::VectorXd;
 
-  DenoisingFunctor (int ndwi, const vector<int>& extent,
+  DenoisingFunctor (int ndwi, const vector<uint32_t>& extent,
                     Image<bool>& mask, Image<real_type>& noise, bool exp1)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (ndwi), n (extent[0]*extent[1]*extent[2]),
@@ -143,7 +143,7 @@ public:
   {
     // Process voxels in mask only
     if (mask.valid()) {
-      assign_pos_of (dwi).to (mask);
+      assign_pos_of (dwi, 0, 3).to (mask);
       if (!mask.value())
         return;
     }
@@ -196,7 +196,7 @@ public:
 
     // store noise map if requested:
     if (noise.valid()) {
-      assign_pos_of(dwi).to(noise);
+      assign_pos_of(dwi, 0, 3).to(noise);
       noise.value() = real_type (std::sqrt(sigma2));
     }
   }
@@ -246,7 +246,7 @@ private:
 
 template <typename T>
 void process_image (Header& data, Image<bool>& mask, Image<real_type> noise,
-                    const std::string& output_name, const vector<int>& extent, bool exp1)
+                    const std::string& output_name, const vector<uint32_t>& extent, bool exp1)
   {
     auto input = data.get_image<T>().with_direct_io(3);
     // create output
@@ -275,9 +275,9 @@ void run ()
   }
 
   opt = get_options("extent");
-  vector<int> extent;
+  vector<uint32_t> extent;
   if (opt.size()) {
-    extent = parse_ints(opt[0][0]);
+    extent = parse_ints<uint32_t> (opt[0][0]);
     if (extent.size() == 1)
       extent = {extent[0], extent[0], extent[0]};
     if (extent.size() != 3)
@@ -287,7 +287,7 @@ void run ()
         throw Exception ("-extent must be a (list of) odd numbers");
     INFO("user defined patch size " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
   } else {
-    int e = 1;
+    uint32_t e = 1;
     while (e*e*e < dwi.size(3))
       e += 2;
     extent = {e, e, e};
