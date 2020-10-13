@@ -20,6 +20,7 @@
 
 #include "image.h"
 #include "interp/linear.h"
+#include "interp/masked.h"
 
 
 
@@ -49,7 +50,7 @@ namespace MR
         template <class ImageType>
           class Interpolator { MEMALIGN(Interpolator<ImageType>)
             public:
-              using type = Interp::Linear<ImageType>;
+              using type = Interp::Masked<Interp::Linear<ImageType>>;
           };
 
 

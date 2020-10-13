@@ -92,7 +92,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          if ((out_of_bounds = Base<ImageType>::is_out_of_bounds (pos)))
+          if (Base<ImageType>::set_out_of_bounds (pos))
             return false;
           Sinc_x.set (*this, 0, pos[0]);
           Sinc_y.set (*this, 1, pos[1]);

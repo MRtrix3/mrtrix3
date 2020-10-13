@@ -452,7 +452,7 @@ void run()
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
-    const bool fwe_strong = get_option_value ("strong", false);
+    const bool fwe_strong = get_options("strong").size();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
@@ -479,7 +479,7 @@ void run()
     for (size_t i = 0; i != num_hypotheses; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), mask, output_header);
       ++progress;
-      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), mask, output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_1mpvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), mask, output_header);
       ++progress;
       write_fixel_output (Path::join (output_fixel_directory, "null_contributions" + postfix(i) + ".mif"), null_contributions.col(i), mask, output_header);
       ++progress;

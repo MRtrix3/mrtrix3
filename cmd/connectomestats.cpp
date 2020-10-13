@@ -351,7 +351,7 @@ void run()
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
-    const bool fwe_strong = get_option_value ("strong", false);
+    const bool fwe_strong = get_options ("strong").size();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
@@ -369,7 +369,7 @@ void run()
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_matrix (mat2vec.V2M (pvalue_output.col(i)),       output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
-      save_matrix (mat2vec.V2M (uncorrected_pvalues.col(i)), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");
+      save_matrix (mat2vec.V2M (uncorrected_pvalues.col(i)), output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");
       save_matrix (mat2vec.V2M (null_contributions.col(i)),  output_prefix + "null_contributions" + postfix(i) + ".csv");
     }
 

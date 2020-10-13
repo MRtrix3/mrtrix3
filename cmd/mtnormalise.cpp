@@ -498,12 +498,12 @@ void run ()
   size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
   auto opt = get_options ("niter");
   if (opt.size()) {
-    vector<int> num = opt[0][0];
+    vector<size_t> num = parse_ints<size_t> (opt[0][0]);
     if (num.size() < 1 && num.size() > 2)
-      throw Exception ("unexpected number of entries provided to option \"niter\"");
-    for (const int n : num)
-      if (n < 1)
-        throw Exception ("number of iterations must be positive");
+      throw Exception ("unexpected number of entries provided to option \"-niter\"");
+    for (auto n : num)
+      if (!n)
+        throw Exception ("number of iterations must be nonzero");
 
     max_iter = num[0];
     if (num.size() > 1)

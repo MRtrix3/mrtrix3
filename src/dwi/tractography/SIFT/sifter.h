@@ -79,7 +79,7 @@ namespace MR
         void set_term_mu     (const float i)        { term_mu = i; }
         void set_csv_path    (const std::string& i) { csv_path = i; }
 
-        void set_regular_outputs (const vector<int>&, const bool);
+        void set_regular_outputs (const vector<uint32_t>&, const bool);
 
 
         // DEBUGGING

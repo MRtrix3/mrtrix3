@@ -46,12 +46,12 @@ namespace MR
         value_max = -std::numeric_limits<float>::infinity();
 
         switch (type) {
-            case gl::BYTE: _scale_factor = std::numeric_limits<int8_t>::max(); break;
-            case gl::UNSIGNED_BYTE: _scale_factor = std::numeric_limits<uint8_t>::max(); break;
-            case gl::SHORT: _scale_factor = std::numeric_limits<int16_t>::max(); break;
-            case gl::UNSIGNED_SHORT: _scale_factor = std::numeric_limits<uint16_t>::max(); break;
-            case gl::INT: _scale_factor = std::numeric_limits<int32_t>::max(); break;
-            case gl::UNSIGNED_INT: _scale_factor = std::numeric_limits<uint32_t>::max(); break;
+            case gl::BYTE: _scale_factor = float (std::numeric_limits<int8_t>::max()); break;
+            case gl::UNSIGNED_BYTE: _scale_factor = float (std::numeric_limits<uint8_t>::max()); break;
+            case gl::SHORT: _scale_factor = float (std::numeric_limits<int16_t>::max()); break;
+            case gl::UNSIGNED_SHORT: _scale_factor = float (std::numeric_limits<uint16_t>::max()); break;
+            case gl::INT: _scale_factor = float (std::numeric_limits<int32_t>::max()); break;
+            case gl::UNSIGNED_INT: _scale_factor = float (std::numeric_limits<uint32_t>::max()); break;
             default: _scale_factor = 1.0f;
         }
       }

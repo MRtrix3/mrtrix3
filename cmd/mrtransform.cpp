@@ -178,7 +178,7 @@ void usage ()
         "fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation. \n"
         "jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation "
         "to preserve the total intensity before and after the transformation.")
-    + Argument ("intensity modulation method").type_choice (modulation_choices)
+    + Argument ("method").type_choice (modulation_choices)
 
     + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation "
@@ -208,7 +208,7 @@ void usage ()
 }
 
 void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp,
-  const int interp, const float out_of_bounds_value, const vector<int>& oversample, const bool jacobian_modulate = false) {
+  const int interp, const float out_of_bounds_value, const vector<uint32_t>& oversample, const bool jacobian_modulate = false) {
   switch (interp) {
   case 0:
     Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
@@ -360,7 +360,7 @@ void run ()
   // Flip
   opt = get_options ("flip");
   if (opt.size()) {
-    vector<int> axes = opt[0][0];
+    vector<int32_t> axes = parse_ints<int32_t> (opt[0][0]);
     transform_type flip;
     flip.setIdentity();
     for (size_t i = 0; i < axes.size(); ++i) {
@@ -438,23 +438,33 @@ void run ()
     } else if (is_possible_fod_image) {
       WARN ("Jacobian modulation performed on possible SH series image. Did you mean FOD modulation?");
     }
-
     if (!linear && !warp.valid())
       throw Exception ("Jacobian modulation requires linear or nonlinear transformation");
-
   }
 
 
-  // Rotate/Flip gradient directions if present
+  // Rotate/Flip direction information if present
   if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
     Eigen::MatrixXd rotation = linear_transform.linear().inverse();
     Eigen::MatrixXd test = rotation.transpose() * rotation;
     test = test.array() / test.diagonal().mean();
     if (replace)
       rotation = linear_transform.linear() * input_header.transform().linear().inverse();
+
+    // Diffusion gradient table
+    Eigen::MatrixXd grad;
     try {
-      auto grad = DWI::get_DW_scheme (input_header);
-      if (input_header.size(3) == (ssize_t) grad.rows()) {
+      grad = DWI::get_DW_scheme (input_header);
+    } catch (Exception&) {}
+    if (grad.rows()) {
+      try {
+        if (input_header.size(3) != (ssize_t) grad.rows()) {
+          throw Exception ("DW gradient table of different length ("
+                           + str(grad.rows())
+                           + ") to number of image volumes ("
+                           + str(input_header.size(3))
+                           + ")");
+        }
         INFO ("DW gradients detected and will be reoriented");
         if (!test.isIdentity (0.001)) {
           WARN ("the input linear transform contains shear or anisotropic scaling and "
@@ -466,11 +476,12 @@ void run ()
         }
         DWI::set_DW_scheme (output_header, grad);
       }
+      catch (Exception& e) {
+        e.display (2);
+        WARN ("DW gradients not correctly reoriented");
+      }
     }
-    catch (Exception& e) {
-      e.display (2);
-      WARN ("DW gradients not correctly reoriented");
-    }
+
     // Also look for key 'directions', and rotate those if present
     auto hit = input_header.keyval().find ("directions");
     if (hit != input_header.keyval().end()) {
@@ -527,12 +538,12 @@ void run ()
   }
 
   // over-sampling
-  vector<int> oversample = Adapter::AutoOverSample;
+  vector<uint32_t> oversample = Adapter::AutoOverSample;
   opt = get_options ("oversample");
   if (opt.size()) {
     if (!template_header.valid() && !warp)
       throw Exception ("-oversample option applies only to regridding using the template option or to non-linear transformations");
-    oversample = opt[0][0];
+    oversample = parse_ints<uint32_t> (opt[0][0]);
     if (oversample.size() == 1)
       oversample.resize (3, oversample[0]);
     else if (oversample.size() != 3)
