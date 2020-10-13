@@ -4,7 +4,7 @@ dwi2mask ants tmp-sub-01_dwi.mif ../tmp/dwi2mask/ants.mif -template dwi2mask/tem
 dwi2mask ants tmp-sub-01_dwi.mif ../tmp/dwi2mask/ants.mif -config Dwi2maskTemplateImage dwi2mask/template_image.mif.gz -config Dwi2maskTemplateMask dwi2mask/template_mask.mif.gz -force
 dwi2mask consensus tmp-sub-01_dwi.mif ../tmp/dwi2mask/consensus_output.mif -masks ../tmp/dwi2mask/consensus_masks.mif -template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz -force
 dwi2mask fslbet tmp-sub-01_dwi.mif ../tmp/dwi2mask/fslbet_default.mif -force
-dwi2mask fslbet tmp-sub-01_dwi.mif ../tmp/dwi2mask/fslbet_options.mif -bet_f 0.5 -bet_g 0.0 -bet_c 14,18,16 -bet_r 130.0 -force 
+dwi2mask fslbet tmp-sub-01_dwi.mif ../tmp/dwi2mask/fslbet_options.mif -bet_f 0.5 -bet_g 0.0 -bet_c 14 18 16 -bet_r 130.0 -force
 dwi2mask fslbet tmp-sub-01_dwi.mif ../tmp/dwi2mask/fslbet_rescale.mif -rescale -force
 dwi2mask hdbet tmp-sub-01_dwi.mif ../tmp/dwi2mask/hdbet.mif -force
 dwi2mask legacy tmp-sub-01_dwi.mif ../tmp/dwi2mask/legacy.mif -force && testing_diff_image ../tmp/dwi2mask/legacy.mif dwi2mask/legacy.mif.gz
@@ -13,5 +13,5 @@ dwi2mask template tmp-sub-01_dwi.mif ../tmp/dwi2mask/template_antsfull.mif -soft
 dwi2mask template tmp-sub-01_dwi.mif ../tmp/dwi2mask/template_antsquick.mif -software antsquick -template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz -force
 dwi2mask template tmp-sub-01_dwi.mif ../tmp/dwi2mask/template_fsl.mif -software fsl -template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz -force
 dwi2mask trace tmp-sub-01_dwi.mif ../tmp/dwi2mask/trace_default.mif -force && testing_diff_image ../tmp/dwi2mask/trace_default.mif dwi2mask/trace_default.mif.gz
-dwi2mask trace tmp-sub-01_dwi.mif ../tmp/dwi2mask/trace_iterative.mif -force && testing_diff_image ../tmp/dwi2mask/trace_iterative.mif dwi2mask/trace_iterative.mif.gz
+dwi2mask trace tmp-sub-01_dwi.mif ../tmp/dwi2mask/trace_iterative.mif -iterative -force && testing_diff_image ../tmp/dwi2mask/trace_iterative.mif dwi2mask/trace_iterative.mif.gz
 
