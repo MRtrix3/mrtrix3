@@ -34,6 +34,12 @@ Provides the mean *b=0* image directly to AFNI_ `command
 Provides the mean *b=0* image directly to ANTs_ command
 ``antsBrainExtraction.sh``, configured for T2-weighted image input.
 
+This algorithm necessitates the specification of a template image and
+corresponding binary mask image defined on that template. These two images
+must be provided by the user either using the ``-template`` command-line
+option, or the ``Dwi2maskTemplateImage`` and ``Dwi2maskTemplateMask``
+configuration file options (see :ref:`dwi2mask_config`).
+
 ``dwi2mask consensus``
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -147,6 +153,12 @@ the core image registration and transformation processes:
 By default, if no manual selection is made here using either the ``-software``
 command-line option or the ``Dwi2maskTemplateSoftware`` configuration file
 entry, the ``antsquick`` approach will be used.
+
+This algorithm necessitates the specification of a template image and
+corresponding binary mask image defined on that template. These two images
+must be provided by the user either using the ``-template`` command-line
+option, or the ``Dwi2maskTemplateImage`` and ``Dwi2maskTemplateMask``
+configuration file options (see :ref:`dwi2mask_config`).
 
 The registration operation can be expected to perform best if the specified
 template image is of comparable shape and image contrast to that of the
@@ -288,12 +300,13 @@ mentioned here also for discoverability:
 
    This pair of configuration file options allow the user to pre-specify the
    filesystem locations of the two images (T2-weighted template and 
-   corresponding binary mask) to be utilised by the ``dwi2mask template``
-   algorithm. Note that there is no "default" template to be utilised by
-   this algorithm; so the user *must* either include these entries in their
-   configuration file, or manually specify the ``-template`` command-line 
-   option whenever they use ``dwi2mask template``. If the value of 
-   configuration file option "``Dwi2maskAlgorithm``" is "``template``", then
+   corresponding binary mask) to be utilised by the ``dwi2mask ants`` and
+   ``dwi2mask template`` algorithms. Note that there is no "default" template
+   to be utilised by these algorithms; so the user *must* either include these
+   entries in their configuration file, or manually specify the ``-template``
+   command-line  option whenever they use ``dwi2mask ants`` or
+   ``dwi2mask template``. If the value of configuration file option
+   "``Dwi2maskAlgorithm``" is "``ants``" or "``template``", then
    these two entries *must also* be specified.
 
 .. _AFNI: https://afni.nimh.nih.gov/
