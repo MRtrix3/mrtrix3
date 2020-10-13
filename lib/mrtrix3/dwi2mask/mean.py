@@ -24,6 +24,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'mean\' algorithm')
+  options.add_argument('-shells', help='Comma separated list of shells to be included in the volume averaging')
   options.add_argument('-clean_scale',
                        type=int,
                        default=DEFAULT_CLEAN_SCALE,
