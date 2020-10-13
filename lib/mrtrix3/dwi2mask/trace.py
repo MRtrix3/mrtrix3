@@ -27,7 +27,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'trace\' algorithm')
   options.add_argument('-shells', help='Comma separated list of shells used to generate trace-weighted images for masking')
-  parser.flag_mutually_exclusive_options(['volumes', 'shells'], False)
   options.add_argument('-clean_scale',
                        type=int,
                        default=DEFAULT_CLEAN_SCALE,
@@ -39,7 +38,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                             action='store_true',
                             help='(EXPERIMENTAL) Iteratively refine the weights for combination of per-shell trace-weighted images prior to thresholding')
   iter_options.add_argument('-max_iters', type=int, default=DEFAULT_MAX_ITERS, help='Set the maximum number of iterations for the algorithm (default: ' + str(DEFAULT_MAX_ITERS) + ')')
-  parser.flag_mutually_exclusive_options(['volumes', 'iterative'], False)
 
 
 
