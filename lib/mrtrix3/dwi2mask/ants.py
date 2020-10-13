@@ -70,8 +70,8 @@ def execute(): #pylint: disable=unused-variable
               + ' -d 3'
               + ' -c 3x3x2x1'
               + ' -a bzero.nii'
-              + ' -e ' + app.ARGS.template[0]
-              + ' -m ' + app.ARGS.template[1]
+              + ' -e template_image.nii'
+              + ' -m template_mask.nii'
               + ' -o out'
               + ('' if app.DO_CLEANUP else ' -k 1')
               + (' -z' if app.VERBOSITY >= 3 else ''))
