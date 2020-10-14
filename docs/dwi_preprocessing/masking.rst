@@ -1,4 +1,4 @@
-.. dwi_masking:
+.. _dwi_masking:
 
 DWI masking
 ===========
