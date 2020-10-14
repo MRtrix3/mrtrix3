@@ -320,6 +320,8 @@ Options specific to the "consensus" algorithm
 
 - **-template TemplateImage MaskImage** Provide a template image and corresponding mask for those algorithms requiring such
 
+- **-threshold** The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: 0.501)
+
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

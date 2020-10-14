@@ -16,6 +16,8 @@
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import algorithm, app, path, run
 
+DEFAULT_THRESHOLD = 0.501
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('consensus', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
@@ -26,6 +28,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-algorithms', nargs='+', help='Provide a list of dwi2mask algorithms that are to be utilised')
   options.add_argument('-masks', help='Export a 4D image containing the individual algorithm masks')
   options.add_argument('-template', metavar='TemplateImage MaskImage', nargs=2, help='Provide a template image and corresponding mask for those algorithms requiring such')
+  options.add_argument('-threshold', type=float, default=DEFAULT_THRESHOLD, help='The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: ' + str(DEFAULT_THRESHOLD) + ')')
 
 
 
@@ -52,6 +55,10 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
+
+  if app.ARGS.threshold <= 0.0 or app.ARGS.threshold > 1.0:
+    raise MRtrixError('-threshold parameter value must lie between 0.0 and 1.0')
+
   if app.ARGS.masks:
     app.check_output_path(path.from_user(app.ARGS.masks, False))
 
@@ -112,7 +119,7 @@ def execute(): #pylint: disable=unused-variable
   app.console('Computing consensus from ' + str(len(mask_list)) + ' of ' + str(len(algorithm_list)) + ' algorithms')
   run.command(['mrcat', mask_list, '-axis', '3', 'all_masks.mif'])
   run.command('mrmath all_masks.mif mean - -axis 3 | '
-              'mrthreshold - -abs 0.5 -comparison gt ' + final_mask)
+              'mrthreshold - -abs ' + app.ARGS.threshold + ' -comparison ge ' + final_mask)
 
   if app.ARGS.masks:
     run.command('mrconvert all_masks.mif ' + path.from_user(app.ARGS.masks),
