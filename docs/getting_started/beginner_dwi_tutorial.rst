@@ -49,17 +49,20 @@ phase encoding scheme used in the acquisition.
 DWI brain mask estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In previous versions of MRtrix, a heuristic was used to derive this mask;
-a dedicated command is now provided:
+In previous versions of MRtrix3, a single command ``dwi2mask`` was provided
+for generating a brain mask from DWI data. There are now multiple algorithms
+offered through the ``dwi2mask``_ interface, with the behaviour prior to
+MRtrix version ``3.1.0`` being provided via the "``legacy``" algorithm:
 
 .. code::
 
-    $ dwi2mask <Input DWI> <Output mask>
+    $ dwi2mask legacy <Input DWI> <Output mask>
     $ mrview <Input DWI> -roi.load <Output mask>
 
-Note that if you are working with ex-vivo data, this command will likely
-not give the desired results. It can also give inconsistent results in
-cases of low SNR, strong B1 bias field, or even with good-quality images;
+Different ``dwi2mask`` algorithms may work better or worse on different types
+of DWI data, so you may wish to experiment with different options. The
+various algorithms available are described in more detail in the
+:ref:`dwi_masking` page. Regardless of which algorithm you use,
 it is recommended that the output of this command should *always* be
 checked (and corrected if necessary) before proceeding with further
 processing.
