@@ -184,7 +184,7 @@ shared = Shared() #pylint: disable=invalid-name
 
 class MRtrixCmdError(MRtrixBaseError):
   def __init__(self, cmd, code, stdout, stderr):
-    super(MRtrixCmdError, self).__init__('Command failed')
+    super().__init__('Command failed')
     self.command = cmd
     self.returncode = code
     self.stdout = stdout
@@ -194,7 +194,7 @@ class MRtrixCmdError(MRtrixBaseError):
 
 class MRtrixFnError(MRtrixBaseError):
   def __init__(self, fn, text):
-    super(MRtrixFnError, self).__init__('Function failed')
+    super().__init__('Function failed')
     self.function = fn
     self.errortext = text
   def __str__(self):
@@ -372,7 +372,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         this_process_list.append(shared.Process(to_execute, this_stdin, this_stdout, this_stderr, **subprocess_kwargs))
       # FileNotFoundError not defined in Python 2.7
       except OSError as exception:
-        raise MRtrixCmdError(cmdstring, 1, '', str(exception))
+        raise MRtrixCmdError(cmdstring, 1, '', str(exception)) from exception
 
   # End branching based on shell=True/False
 
@@ -497,7 +497,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
     else:
       result = fn_to_execute(*args)
   except Exception as exception: # pylint: disable=broad-except
-    raise MRtrixFnError(fnstring, str(exception))
+    raise MRtrixFnError(fnstring, str(exception)) from exception
 
   # Only now do we append to the script log, since the function has completed successfully
   if shared.get_scratch_dir():

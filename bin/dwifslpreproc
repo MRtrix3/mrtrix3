@@ -306,10 +306,10 @@ def execute(): #pylint: disable=unused-variable
                    'contents of file \"' + app.ARGS.eddy_slspec + '\" appears to instead be slice timings; '
                    'these data have been imported and will be converted to the appropriate format')
           if len(slice_timing) != dwi_num_slices:
-            raise MRtrixError('Cannot use slice timing information from file \"' + app.ARGS.eddy_slspec + '\" for slice-to-volume correction: ' + \
+            raise MRtrixError('Cannot use slice timing information from file \"' + app.ARGS.eddy_slspec + '\" for slice-to-volume correction: ' # pylint: disable=raise-missing-from
                               'number of entries (' + str(len(slice_timing)) + ') does not match number of slices (' + str(dwi_num_slices) + ')')
         except ValueError:
-          raise MRtrixError('Error parsing eddy \"slspec\" file \"' + app.ARGS.eddy_slspec + '\" '
+          raise MRtrixError('Error parsing eddy \"slspec\" file \"' + app.ARGS.eddy_slspec + '\" ' # pylint: disable=raise-missing-from
                             '(please see FSL eddy help page, specifically the --slspec option)')
     else:
       if 'SliceTiming' not in dwi_header.keyval():
@@ -341,9 +341,9 @@ def execute(): #pylint: disable=unused-variable
       if not all( [ isinstance(entry, float) for entry in slice_timing ] ):
         try:
           slice_timing = [ float(entry) for entry in slice_timing ]
-        except ValueError:
+        except ValueError as exception:
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
-                            'data are not numeric')
+                            'data are not numeric') from exception
       app.debug('Re-formatted slice timing contents from header: ' + str(slice_timing))
       if len(slice_timing) != dwi_num_slices:
         raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
