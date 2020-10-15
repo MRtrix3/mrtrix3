@@ -97,7 +97,7 @@ void usage ()
               + str(DEFAULT_NITER) + ") (see Description).")
     +   Argument ("integer").type_integer (0, 10)
 
-    + Option ("constrain", "constrain fit to nonegative diffusivity and kurtosis as well as monotonic signal decay.")
+    + Option ("constrain", "constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).")
 
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
