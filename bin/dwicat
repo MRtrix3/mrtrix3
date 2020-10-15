@@ -109,8 +109,8 @@ def execute(): #pylint: disable=unused-variable
       if 'Estimated scale factor is' in line:
         try:
           scaling_factor = float(line.split()[-1])
-        except ValueError:
-          raise MRtrixError('Unable to convert scaling factor from mrhistmatch output to floating-point number')
+        except ValueError as exception:
+          raise MRtrixError('Unable to convert scaling factor from mrhistmatch output to floating-point number') from exception
         break
     if scaling_factor is None:
       raise MRtrixError('Unable to extract scaling factor from mrhistmatch output')

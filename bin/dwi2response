@@ -62,16 +62,16 @@ def execute(): #pylint: disable=unused-variable
       lmax = [ int(x) for x in app.ARGS.lmax.split(',') ]
       if any([lmax_value%2 for lmax_value in lmax]):
         raise MRtrixError('Value of lmax must be even')
-    except:
-      raise MRtrixError('Parameter lmax must be a number')
+    except ValueError as exception:
+      raise MRtrixError('Parameter lmax must be a number') from exception
     if alg.needs_single_shell() and not len(lmax) == 1:
       raise MRtrixError('Can only specify a single lmax value for single-shell algorithms')
   shells_option = ''
   if app.ARGS.shells:
     try:
       shells_values = [ int(round(float(x))) for x in app.ARGS.shells.split(',') ]
-    except:
-      raise MRtrixError('-shells option should provide a comma-separated list of b-values')
+    except ValueError as exception:
+      raise MRtrixError('-shells option should provide a comma-separated list of b-values') from exception
     if alg.needs_single_shell() and not len(shells_values) == 1:
       raise MRtrixError('Can only specify a single b-value shell for single-shell algorithms')
     shells_option = ' -shells ' + app.ARGS.shells

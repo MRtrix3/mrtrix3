@@ -154,8 +154,8 @@ def execute(): #pylint: disable=unused-variable
 
   try:
     next(entry for entry in CMDSPLIT if any(key for key in KEYLIST if key in entry))
-  except StopIteration:
-    raise MRtrixError('None of the unique for_each keys ' + str(KEYLIST) + ' appear in command string "' + app.ARGS.command + '"; no substitution can occur')
+  except StopIteration as exception:
+    raise MRtrixError('None of the unique for_each keys ' + str(KEYLIST) + ' appear in command string "' + app.ARGS.command + '"; no substitution can occur') from exception
 
   class Entry(object):
     def __init__(self, input_text):

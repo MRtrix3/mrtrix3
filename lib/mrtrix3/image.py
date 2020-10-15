@@ -63,8 +63,8 @@ class Header(object):
         self._keyval = { }
       else:
         self._keyval = data['keyval']
-    except:
-      raise MRtrixError('Error in reading header information from file \'' + image_path + '\'')
+    except Exception as exception:
+      raise MRtrixError('Error in reading header information from file \'' + image_path + '\'') from exception
     app.debug(str(vars(self)))
 
   def name(self):

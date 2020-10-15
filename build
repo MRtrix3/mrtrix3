@@ -1157,9 +1157,9 @@ def version_from_git (folder):
       commit = subprocess.check_output ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip() #pylint: disable=unexpected-keyword-arg
     log (tag + ', ' + commit + '\n')
     return [ tag, commit ]
-  except Exception:
+  except Exception as e:
     log ('not found\n')
-    raise LookupError
+    raise LookupError from e
 
 
 
@@ -1175,9 +1175,9 @@ def version_from_file (version_file, version_macro):
           return tag
     if not tag:
       raise NameError
-  except Exception:
+  except Exception as e:
     log ('not found\n')
-    raise LookupError
+    raise LookupError from e
   return None
 
 

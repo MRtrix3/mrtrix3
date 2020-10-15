@@ -36,7 +36,7 @@ def direction(string): #pylint: disable=unused-variable
       pe_dir[pe_axis] = -1
     else:
       pe_dir[pe_axis] = 1
-  except:
+  except Exception as exception:
     string = string.lower()
     if string == 'lr':
       pe_dir = [1,0,0]
@@ -63,7 +63,7 @@ def direction(string): #pylint: disable=unused-variable
     elif string == 'k-':
       pe_dir = [0,0,-1]
     else:
-      raise MRtrixError('Unrecognized phase encode direction specifier: ' + string)
+      raise MRtrixError('Unrecognized phase encode direction specifier: ' + string) from exception
   app.debug(string + ' -> ' + str(pe_dir))
   return pe_dir
 

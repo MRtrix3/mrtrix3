@@ -505,7 +505,7 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
 
   except OSError as e:
     log ('error invoking command "' + cmd[0] + '": ' + e.strerror + '\n>>\n\n')
-    raise exception
+    raise exception from e
   except Exception as excp:
     error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
   else:
