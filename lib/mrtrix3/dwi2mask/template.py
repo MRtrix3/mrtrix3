@@ -146,7 +146,7 @@ def execute(): #pylint: disable=unused-variable
       if os.path.isfile('ants_options.txt'):
         with open('ants_options.txt', 'r') as ants_options_file:
           ants_options = ants_options_file.readlines()
-        ants_options = ' '.join(line.lstrip().rstrip(' \/') for line in ants_options if not line.lstrip()[0] == '#')
+        ants_options = ' '.join(line.lstrip().rstrip(' \/') for line in ants_options if line and not line.lstrip()[0] == '#')
       else:
         ants_options = app.ARGS.ants_options
     else:
@@ -165,7 +165,7 @@ def execute(): #pylint: disable=unused-variable
       ants_options_split = ants_options.split()
       nonlinear = any(i for i in range(0, len(ants_options_split)-1)
                       if ants_options_split[i] == '--transform'
-                      and not any(item in ants_options_split[i+1] for item in ['Rigid', 'Affine']))
+                      and not any(item in ants_options_split[i+1] for item in ['Rigid', 'Affine', 'Translation']))
     else:
       # Use ANTs SyNQuick for registration to template
       run.command(ANTS_REGISTERQUICK_CMD
@@ -175,7 +175,10 @@ def execute(): #pylint: disable=unused-variable
                   + ' -o ANTS'
                   + ' '
                   + ants_options)
-      nonlinear = True
+      ants_options_split = ants_options.split()
+      nonlinear = not any(i for i in range(0, len(ants_options_split)-1)
+                          if ants_options_split[i] == '-t'
+                          and ants_options_split[i+1] in ['t', 'r', 'a'])
 
     transformed_path = 'transformed.nii'
     # Note: Don't use nearest-neighbour interpolation;
