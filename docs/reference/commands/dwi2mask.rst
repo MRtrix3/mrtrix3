@@ -770,8 +770,22 @@ Description
 
 This script currently assumes that the template image provided via the -template option is T2-weighted, and can therefore be trivially registered to a mean b=0 image.
 
+Command-line option -ants_options can be used with either the "antsquick" or "antsfull" software options. In both cases, image dimensionality is assumed to be 3, and so this should be omitted from the user-specified options.The input can be either a string (encased in double-quotes if more than one option is specified), or a path to a text file containing the requested options. In the case of the "antsfull" software option, one will require the names of the fixed and moving images that are provided to the antsRegistration command: these are "template_image.nii" and "bzero.nii" respectively.
+
 Options
 -------
+
+Options applicable when using the FSL software for registration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-flirt_options " FlirtOptions"** Command-line options to pass to the FSL flirt command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to flirt)
+
+- **-fnirt_config FILE** Specify a FNIRT configuration file for registration
+
+Options applicable when using the ANTs software for registration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-ants_options** Provide options to be passed to the ANTs registration command (see Description)
 
 Options specific to the "template" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

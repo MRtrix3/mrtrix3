@@ -221,6 +221,39 @@ List of MRtrix3 configuration file options
      within a Python script, and the user is not provided with the
      opportunity to select the algorithm at the command-line.
 
+.. option:: Dwi2maskTemplateANTsFullOptions
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software antsfull (or
+     Dwi2maskTemplate is set to "antsfull"), specify the command-line
+     options with which command "antsRegistration" will be provided.
+
+.. option:: Dwi2maskTemplateANTsQuickOptions
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software antsquick (or
+     Dwi2maskTemplate is set to "antsquick"), specify the command-line
+     options with which command "antsRegistrationSynQuick.sh" will be
+     provided.
+
+.. option:: Dwi2maskTemplateFSLFlirtOptions
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software fsl (or
+     Dwi2maskTemplate is set to "fsl"), specify the command-line
+     options with which FSL command flirt will be provided.
+
+.. option:: Dwi2maskTemplateFSLFnirtConfig
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software fsl (or
+     Dwi2maskTemplate is set to "fsl"), specify the configuration
+     file to be provided to the FSL command fnirt.
+
 .. option:: Dwi2maskTemplateImage
 
     *default: (none)*

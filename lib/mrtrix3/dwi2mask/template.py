@@ -27,12 +27,39 @@ ANTS_REGISTERQUICK_CMD = 'antsRegistrationSyNQuick.sh'
 ANTS_TRANSFORM_CMD = 'antsApplyTransforms'
 
 
+# From Tustison and Avants, Frontiers in Neuroinformatics 2013:
+ANTS_REGISTERFULL_OPTIONS = \
+  ' --use-histogram-matching 1' \
+  ' --initial-moving-transform [template_image.nii,bzero.nii,1]' \
+  ' --transform Rigid[0.1]' \
+  ' --metric MI[template_image.nii,bzero.nii,1,32,Regular,0.25]' \
+  ' --convergence 1000x500x250x100' \
+  ' --smoothing-sigmas 3x2x1x0' \
+  ' --shrink-factors 8x4x2x1' \
+  ' --transform Affine[0.1]' \
+  ' --metric MI[template_image.nii,bzero.nii,1,32,Regular,0.25]' \
+  ' --convergence 1000x500x250x100' \
+  ' --smoothing-sigmas 3x2x1x0' \
+  ' --shrink-factors 8x4x2x1' \
+  ' --transform BSplineSyN[0.1,26,0,3]' \
+  ' --metric CC[template_image.nii,bzero.nii,1,4]' \
+  ' --convergence 100x70x50x20' \
+  ' --smoothing-sigmas 3x2x1x0' \
+  ' --shrink-factors 6x4x2x1'
+
+ANTS_REGISTERQUICK_OPTIONS = '-j 1'
+
+
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('template', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Register the mean b=0 image to a T2-weighted template to back-propagate a brain mask')
   parser.add_description('This script currently assumes that the template image provided via the -template option '
                          'is T2-weighted, and can therefore be trivially registered to a mean b=0 image.')
+  parser.add_description('Command-line option -ants_options can be used with either the "antsquick" or "antsfull" software options. '
+                         'In both cases, image dimensionality is assumed to be 3, and so this should be omitted from the user-specified options.'
+                         'The input can be either a string (encased in double-quotes if more than one option is specified), or a path to a text file containing the requested options. '
+                         'In the case of the "antsfull" software option, one will require the names of the fixed and moving images that are provided to the antsRegistration command: these are "template_image.nii" and "bzero.nii" respectively.')
   parser.add_citation('M. Jenkinson, C.F. Beckmann, T.E. Behrens, M.W. Woolrich, S.M. Smith. FSL. NeuroImage, 62:782-90, 2012',
                       condition='If FSL software is used for registration',
                       is_external=True)
@@ -44,10 +71,44 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the "template" algorithm')
   options.add_argument('-software', choices=SOFTWARES, help='The software to use for template registration; options are: ' + ','.join(SOFTWARES) + '; default is ' + DEFAULT_SOFTWARE)
   options.add_argument('-template', metavar='TemplateImage MaskImage', nargs=2, help='Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.')
+  ants_options = parser.add_argument_group('Options applicable when using the ANTs software for registration')
+  ants_options.add_argument('-ants_options', help='Provide options to be passed to the ANTs registration command (see Description)')
+  fsl_options = parser.add_argument_group('Options applicable when using the FSL software for registration')
+  fsl_options.add_argument('-flirt_options', metavar='" FlirtOptions"', help='Command-line options to pass to the FSL flirt command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to flirt)')
+  fsl_options.add_argument('-fnirt_config', metavar='FILE', help='Specify a FNIRT configuration file for registration')
 
 
 
 def get_inputs(): #pylint: disable=unused-variable
+
+  reg_software = app.ARGS.software if app.ARGS.software else CONFIG.get('Dwi2maskTemplateSoftware', DEFAULT_SOFTWARE)
+  if reg_software.startswith('ants'):
+    if not os.environ.get('ANTSPATH', ''):
+      raise MRtrixError('Environment variable ANTSPATH is not set; '
+                        'please appropriately configure ANTs software')
+    if app.ARGS.ants_options:
+      if os.path.isfile(path.from_user(app.ARGS.ants_options, False)):
+        run.function(shutil.copyfile, path.from_user(app.ARGS.ants_options, False), path.to_scratch('ants_options.txt', False))
+  elif reg_software == 'fsl':
+    fsl_path = os.environ.get('FSLDIR', '')
+    if not fsl_path:
+      raise MRtrixError('Environment variable FSLDIR is not set; '
+                        'please run appropriate FSL configuration script')
+    if app.ARGS.fnirt_config:
+      fnirt_config = path.from_user(app.ARGS.fnirt_config, False)
+      if not os.path.isfile(fnirt_config):
+        raise MRtrixError('No file found at -fnirt_config location "' + fnirt_config + '"')
+    elif 'Dwi2maskTemplateFSLFnirtConfig' in CONFIG:
+      fnirt_config = CONFIG['Dwi2maskTemplateFSLFnirtConfig']
+      if not os.path.isfile(fnirt_config):
+        raise MRtrixError('No file found at config file entry "Dwi2maskTemplateFSLFnirtConfig" location "' + fnirt_config + '"')
+    else:
+      fnirt_config = None
+    if fnirt_config:
+      run.function(shutil.copyfile, fnirt_config, path.to_scratch('fnirt_config.cnf', False))
+  else:
+    assert False
+
   if app.ARGS.template:
     run.command('mrconvert ' + app.ARGS.template[0] + ' ' + path.to_scratch('template_image.nii')
                 + ' -strides +1,+2,+3')
@@ -70,74 +131,37 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  # What image to generate here depends on the template:
-  # - If a good T2-weighted template is found, use the mean b=0 image
-  # - If a T1-weighted template is to be used, can't use histogram
-  #   matching (relies on a good brain mask), and can't use MT-CSD
-  #   pseudo-T1 generation. Instead consider APM?
-  #   APM doesn't seem to do particularly well for unmasked data...
-  # - Could use FA or MD templates from FSL / HCP? Might also struggle
-  #   with non-brain data
-  #
-  # For now, script assumes T2-weighted template image.
 
   reg_software = app.ARGS.software if app.ARGS.software else CONFIG.get('Dwi2maskTemplateSoftware', DEFAULT_SOFTWARE)
-  if reg_software.startswith('ants'):
-    ants_path = os.environ.get('ANTSPATH', '')
-    if not ants_path:
-      raise MRtrixError('Environment variable ANTSPATH is not set; '
-                        'please appropriately confirure ANTs software')
-    if not find_executable(ANTS_TRANSFORM_CMD):
-      raise MRtrixError('Unable to find command "'
-                        + ANTS_TRANSFORM_CMD
-                        + '"; please check ANTs installation')
-    ants_register_cmd = ANTS_REGISTERFULL_CMD if reg_software == 'antsfull' else ANTS_REGISTERQUICK_CMD
-    if not find_executable(ants_register_cmd):
-      raise MRtrixError('Unable to find command "'
-                        + ants_register_cmd
-                        + '"; please check ANTs installation')
-  elif reg_software == 'fsl':
-    fsl_path = os.environ.get('FSLDIR', '')
-    if not fsl_path:
-      raise MRtrixError('Environment variable FSLDIR is not set; '
-                        'please run appropriate FSL configuration script')
-    flirt_cmd = fsl.exe_name('flirt')
-    fnirt_cmd = fsl.exe_name('fnirt')
-    invwarp_cmd = fsl.exe_name('invwarp')
-    applywarp_cmd = fsl.exe_name('applywarp')
-    fnirt_config_basename = 'T1_2_MNI152_2mm.cnf'
-    fnirt_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', fnirt_config_basename)
-    if not os.path.isfile(fnirt_config_path):
-      raise MRtrixError('Unable to find configuration file for FNI FNIRT '
-                        + '(expected location: ' + fnirt_config_path + ')')
-  else:
-    assert False
 
   if reg_software.startswith('ants'):
+
+    def check_ants_executable(cmdname):
+      if not find_executable(cmdname):
+        raise MRtrixError('Unable to find ANTs command "' + cmdname + '"; please check ANTs installation')
+    check_ants_executable(ANTS_REGISTERFULL_CMD if reg_software == 'antsfull' else ANTS_REGISTERQUICK_CMD)
+    check_ants_executable(ANTS_TRANSFORM_CMD)
+
+    if app.ARGS.ants_options:
+      if os.path.isfile('ants_options.txt'):
+        with open('ants_options.txt', 'r') as ants_options_file:
+          ants_options = ants_options_file.readlines()
+        ants_options = ' '.join(line.lstrip().rstrip(' \/') for line in ants_options if not line.lstrip()[0] == '#')
+      else:
+        ants_options = app.ARGS.ants_options
+    else:
+      if reg_software == 'antsfull':
+        ants_options = CONFIG.get('Dwi2maskTemplateANTsFullOptions', ANTS_REGISTERFULL_OPTIONS)
+      elif reg_software == 'antsquick':
+        ants_options = CONFIG.get('Dwi2maskTemplateANTsQuickOptions', ANTS_REGISTERQUICK_OPTIONS)
 
     # Use ANTs SyN for registration to template
-    # From Tustison and Avants, Frontiers in Neuroinformatics 2013:
     if reg_software == 'antsfull':
       run.command(ANTS_REGISTERFULL_CMD
                   + ' --dimensionality 3'
                   + ' --output ANTS'
-                  + ' --use-histogram-matching 1'
-                  + ' --initial-moving-transform [template_image.nii,bzero.nii,1]'
-                  + ' --transform Rigid[0.1]'
-                  + ' --metric MI[template_image.nii,bzero.nii,1,32,Regular,0.25]'
-                  + ' --convergence 1000x500x250x100'
-                  + ' --smoothing-sigmas 3x2x1x0'
-                  + ' --shrink-factors 8x4x2x1'
-                  + ' --transform Affine[0.1]'
-                  + ' --metric MI[template_image.nii,bzero.nii,1,32,Regular,0.25]'
-                  + ' --convergence 1000x500x250x100'
-                  + ' --smoothing-sigmas 3x2x1x0'
-                  + ' --shrink-factors 8x4x2x1'
-                  + ' --transform BSplineSyN[0.1,26,0,3]'
-                  + ' --metric CC[template_image.nii,bzero.nii,1,4]'
-                  + ' --convergence 100x70x50x20'
-                  + ' --smoothing-sigmas 3x2x1x0'
-                  + ' --shrink-factors 6x4x2x1')
+                  + ' '
+                  + ants_options)
 
     else:
       # Use ANTs SyNQuick for registration to template
@@ -145,7 +169,9 @@ def execute(): #pylint: disable=unused-variable
                   + ' -d 3'
                   + ' -f template_image.nii'
                   + ' -m bzero.nii'
-                  + ' -o ANTS')
+                  + ' -o ANTS'
+                  + ' '
+                  + ants_options)
 
     transformed_path = 'transformed.nii'
     # Note: Don't use nearest-neighbour interpolation;
@@ -160,12 +186,22 @@ def execute(): #pylint: disable=unused-variable
 
   elif reg_software == 'fsl':
 
+    flirt_cmd = fsl.exe_name('flirt')
+    fnirt_cmd = fsl.exe_name('fnirt')
+    invwarp_cmd = fsl.exe_name('invwarp')
+    applywarp_cmd = fsl.exe_name('applywarp')
+
+    flirt_options = app.ARGS.flirt_options \
+                    if app.ARGS.flirt_options \
+                    else CONFIG.get('Dwi2maskTemplateFSLFlirtOptions', '-dof 12')
+
     # Initial affine registration to template
     run.command(flirt_cmd
                 + ' -ref template_image.nii'
                 + ' -in bzero.nii'
                 + ' -omat bzero_to_template.mat'
-                + ' -dof 12'
+                + ' '
+                + flirt_options
                 + (' -v' if app.VERBOSITY >= 3 else ''))
 
     # Produce dilated template mask image, so that registration is not
@@ -175,7 +211,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Non-linear registration to template
     run.command(fnirt_cmd
-                + ' --config=' + os.path.splitext(os.path.basename(fnirt_config_path))[0]
+                + (' --config=fnirt_config' if fnirt_config else '')
                 + ' --ref=template_image.nii'
                 + ' --refmask=template_mask_dilated.nii'
                 + ' --in=bzero.nii'
@@ -200,7 +236,6 @@ def execute(): #pylint: disable=unused-variable
                 + ' --warp=' + invwarp_output_path
                 + ' --out=transformed.nii')
     transformed_path = fsl.find_image('transformed.nii')
-
 
   else:
     assert False

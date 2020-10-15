@@ -46,6 +46,31 @@
 //CONF ants" or "dwi2mask template" algorithms are invoked but no template
 //CONF image / mask pair are explicitly nominated at the command-line.
 
+//CONF option: Dwi2maskTemplateANTsFullOptions
+//CONF default: (none)
+//CONF When dwi2mask template is used with -software antsfull (or
+//CONF Dwi2maskTemplate is set to "antsfull"), specify the command-line
+//CONF options with which command "antsRegistration" will be provided.
+
+//CONF option: Dwi2maskTemplateANTsQuickOptions
+//CONF default: (none)
+//CONF When dwi2mask template is used with -software antsquick (or
+//CONF Dwi2maskTemplate is set to "antsquick"), specify the command-line
+//CONF options with which command "antsRegistrationSynQuick.sh" will be
+//CONF provided.
+
+//CONF option: Dwi2maskTemplateFSLFlirtOptions
+//CONF default: (none)
+//CONF When dwi2mask template is used with -software fsl (or
+//CONF Dwi2maskTemplate is set to "fsl"), specify the command-line
+//CONF options with which FSL command flirt will be provided.
+
+//CONF option: Dwi2maskTemplateFSLFnirtConfig
+//CONF default: (none)
+//CONF When dwi2mask template is used with -software fsl (or
+//CONF Dwi2maskTemplate is set to "fsl"), specify the configuration
+//CONF file to be provided to the FSL command fnirt.
+
 //CONF option: ScriptScratchDir
 //CONF default: `.`
 //CONF The location in which to generate the scratch directories to be
