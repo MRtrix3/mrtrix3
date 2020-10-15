@@ -21,6 +21,7 @@
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
 #include <Eigen/Eigenvalues>
+#include "dwi/directions/predefined.h"
 
 using namespace MR;
 using namespace App;
@@ -76,6 +77,22 @@ void usage ()
             "compute the selected eigenvector(s) of the diffusion tensor.")
   + Argument ("image").type_image_out()
 
+  + Option ("dkt",
+            "input diffusion kurtosis tensor.")
+  + Argument ("image").type_image_in()
+
+  + Option ("mk",
+            "compute the mean kurtosis (MK) of the kurtosis tensor.")
+  + Argument ("image").type_image_out()
+
+  + Option ("ak",
+            "compute the axial kurtosis (AK) of the kurtosis tensor.")
+  + Argument ("image").type_image_out()
+
+  + Option ("rk",
+            "compute the radial kurtosis (RK) of the kurtosis tensor.")
+  + Argument ("image").type_image_out()
+
   + Option ("num",
             "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
             "can be specified as a number sequence. For example, '1,3' specifies the "
@@ -91,7 +108,7 @@ void usage ()
             "only perform computation within the specified binary brain mask image.")
   + Argument ("image").type_image_in();
 
-  AUTHOR = "Thijs Dhollander (thijs.dhollander@gmail.com) & Ben Jeurissen (ben.jeurissen@uantwerpen.be) & J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be), J-Donald Tournier (jdtournier@gmail.com) & Thijs Dhollander (thijs.dhollander@gmail.com)";
 
   SYNOPSIS = "Generate maps of tensor-derived parameters";
 
@@ -116,6 +133,10 @@ class Processor { MEMALIGN(Processor)
         Image<value_type>& cs_img,
         Image<value_type>& value_img,
         Image<value_type>& vector_img,
+        Image<value_type>& dkt_img,
+        Image<value_type>& mk_img,
+        Image<value_type>& ak_img,
+        Image<value_type>& rk_img,
         vector<uint32_t>& vals,
         int modulate) :
       mask_img (mask_img),
@@ -128,6 +149,10 @@ class Processor { MEMALIGN(Processor)
       cs_img (cs_img),
       value_img (value_img),
       vector_img (vector_img),
+      dkt_img (dkt_img),
+      mk_img (mk_img),
+      ak_img (ak_img),
+      rk_img (rk_img),
       vals (vals),
       modulate (modulate) {
         for (auto& n : this->vals)
@@ -164,7 +189,8 @@ class Processor { MEMALIGN(Processor)
         fa_img.value() = fa;
       }
 
-      bool need_eigenvalues = value_img.valid() || vector_img.valid() || ad_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid();
+      bool need_eigenvalues = value_img.valid() || vector_img.valid() || ad_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid() || ak_img.valid() || rk_img.valid() ;
+      bool need_eigenvectors = vector_img.valid() || ak_img.valid() || rk_img.valid();
 
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
       if (need_eigenvalues || vector_img.valid()) {
@@ -175,7 +201,7 @@ class Processor { MEMALIGN(Processor)
         M (0,1) = M (1,0) = dt[3];
         M (0,2) = M (2,0) = dt[4];
         M (1,2) = M (2,1) = dt[5];
-        es = Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d>(M, vector_img.valid() ? Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly);
+        es = Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d>(M, need_eigenvectors ? Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly);
       }
 
       Eigen::Vector3d eigval;
@@ -247,6 +273,63 @@ class Processor { MEMALIGN(Processor)
           vector_img.value() = eigvec(2,ith_eig[vals[i]])*fact; l++;
         }
       }
+
+      /* input dkt */
+      Eigen::Matrix<double, 15, 1> dkt;
+      if (dkt_img.valid()) {
+        double adc_sq = (dt[0]+dt[1]+dt[2])*(dt[0]+dt[1]+dt[2])/9.0;
+        assign_pos_of (dt_img, 0, 3).to (dkt_img);
+        for (auto l = Loop (3) (dkt_img); l; ++l)
+          dkt[dkt_img.index(3)] = dkt_img.value()*adc_sq;
+      }
+
+      /* output mk */
+      if (mk_img.valid()) {
+        Eigen::MatrixXd dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+        Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (dirs, true);
+        Eigen::VectorXd D = tmp.block(0,1,tmp.rows(),6)*dt;
+        Eigen::VectorXd Dsquared = D.array()*D.array();
+        Eigen::VectorXd DsquaredK = -6.0*tmp.block(0,7,tmp.rows(),15)*dkt;
+        Eigen::VectorXd K = DsquaredK.array()/Dsquared.array();
+        assign_pos_of (dt_img, 0, 3).to (mk_img);
+        mk_img.value() = K.mean();
+      }
+
+      /* output ak */
+      if (ak_img.valid()) {
+        Eigen::Matrix3d eigvec = es.eigenvectors();
+        Eigen::MatrixXd dirs = eigvec.col(ith_eig[0]).transpose();
+        Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (dirs, true);
+        Eigen::VectorXd D = tmp.block(0,1,tmp.rows(),6)*dt;
+        Eigen::VectorXd Dsquared = D.array()*D.array();
+        Eigen::VectorXd DsquaredK = -6.0*tmp.block(0,7,tmp.rows(),15)*dkt;
+        Eigen::VectorXd K = DsquaredK.array()/Dsquared.array();
+        assign_pos_of (dt_img, 0, 3).to (ak_img);
+        ak_img.value() = K.mean();
+      }
+
+      /* output rk */
+      if (rk_img.valid()) {
+        int k = 300;
+        Eigen::MatrixXd dirs(k,3);
+        Eigen::Matrix3d eigvec = es.eigenvectors();
+        Eigen::Vector3d dir1 = eigvec.col(ith_eig[0]);
+        Eigen::Vector3d dir2 = eigvec.col(ith_eig[1]);
+        double delta = Math::pi/k;
+        double a = 0;
+        for (int i = 0; i < k; i++) {
+          dirs.row(i) = Eigen::AngleAxisd(a, dir1)*dir2;
+          a+=delta;
+        }
+        Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (dirs, true);
+        Eigen::VectorXd D = tmp.block(0,1,tmp.rows(),6)*dt;
+        Eigen::VectorXd Dsquared = D.array()*D.array();
+        Eigen::VectorXd DsquaredK = -6.0*tmp.block(0,7,tmp.rows(),15)*dkt;
+        Eigen::VectorXd K = DsquaredK.array()/Dsquared.array();
+        assign_pos_of (dt_img, 0, 3).to (rk_img);
+        rk_img.value() = K.mean();
+      }
+
     }
 
   private:
@@ -260,6 +343,10 @@ class Processor { MEMALIGN(Processor)
     Image<value_type> cs_img;
     Image<value_type> value_img;
     Image<value_type> vector_img;
+    Image<value_type> dkt_img;
+    Image<value_type> mk_img;
+    Image<value_type> ak_img;
+    Image<value_type> rk_img;
     vector<uint32_t> vals;
     int modulate;
 };
@@ -287,6 +374,7 @@ void run ()
   }
 
   size_t metric_count = 0;
+  size_t dki_metric_count = 0;
 
   auto adc_img = Image<value_type>();
   opt = get_options ("adc");
@@ -378,9 +466,47 @@ void run ()
     metric_count++;
   }
 
+  auto dkt_img = Image<value_type>();
+  opt = get_options ("dkt");
+  if (opt.size()) {
+    dkt_img = Image<value_type>::open (opt[0][0]);
+    check_dimensions (dt_img, dkt_img, 0, 3);
+  }
+
+  auto mk_img = Image<value_type>();
+  opt = get_options ("mk");
+  if (opt.size()) {
+    header.ndim() = 3;
+    mk_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
+    dki_metric_count++;
+  }
+
+  auto ak_img = Image<value_type>();
+  opt = get_options ("ak");
+  if (opt.size()) {
+    header.ndim() = 3;
+    ak_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
+    dki_metric_count++;
+  }
+
+  auto rk_img = Image<value_type>();
+  opt = get_options ("rk");
+  if (opt.size()) {
+    header.ndim() = 3;
+    rk_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
+    dki_metric_count++;
+  }
+
+  if (dki_metric_count && !dkt_img.valid()) {
+    throw Exception ("Cannot calculate diffusion kurtosis metrics; must provide the kurtosis tensor using the -dkt input option");
+  }
+
   if (!metric_count)
     throw Exception ("No output specified; must request at least one metric of interest using the available command-line options");
 
   ThreadedLoop (std::string("computing metric") + (metric_count > 1 ? "s" : ""), dt_img, 0, 3)
-    .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, vals, modulate), dt_img);
+    .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, dkt_img, mk_img, ak_img, rk_img, vals, modulate), dt_img);
 }
