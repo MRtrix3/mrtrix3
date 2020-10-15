@@ -146,7 +146,7 @@ def execute(): #pylint: disable=unused-variable
       if os.path.isfile('ants_options.txt'):
         with open('ants_options.txt', 'r') as ants_options_file:
           ants_options = ants_options_file.readlines()
-        ants_options = ' '.join(line.lstrip().rstrip(' \/') for line in ants_options if line and not line.lstrip()[0] == '#')
+        ants_options = ' '.join(line.lstrip().rstrip(' \/') for line in ants_options if line.strip() and not line.lstrip()[0] == '#')
       else:
         ants_options = app.ARGS.ants_options
     else:
@@ -176,9 +176,9 @@ def execute(): #pylint: disable=unused-variable
                   + ' '
                   + ants_options)
       ants_options_split = ants_options.split()
-      nonlinear = not any(i for i in range(0, len(ants_options_split)-1)
-                          if ants_options_split[i] == '-t'
-                          and ants_options_split[i+1] in ['t', 'r', 'a'])
+      nonlinear = not [i for i in range(0, len(ants_options_split)-1)
+                       if ants_options_split[i] == '-t'
+                       and ants_options_split[i+1] in ['t', 'r', 'a']]
 
     transformed_path = 'transformed.nii'
     # Note: Don't use nearest-neighbour interpolation;
