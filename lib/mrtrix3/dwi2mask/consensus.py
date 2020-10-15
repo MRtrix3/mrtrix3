@@ -119,7 +119,7 @@ def execute(): #pylint: disable=unused-variable
   app.console('Computing consensus from ' + str(len(mask_list)) + ' of ' + str(len(algorithm_list)) + ' algorithms')
   run.command(['mrcat', mask_list, '-axis', '3', 'all_masks.mif'])
   run.command('mrmath all_masks.mif mean - -axis 3 | '
-              'mrthreshold - -abs ' + app.ARGS.threshold + ' -comparison ge ' + final_mask)
+              'mrthreshold - -abs ' + str(app.ARGS.threshold) + ' -comparison ge ' + final_mask)
 
   if app.ARGS.masks:
     run.command('mrconvert all_masks.mif ' + path.from_user(app.ARGS.masks),
