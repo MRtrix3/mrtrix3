@@ -168,6 +168,13 @@ could produce a population template *b=0* image based on one's own data, and
 manually define a mask on that template that could then subsequently be
 used for DWI masking.
 
+For all registration algorithms, there are ``dwi2mask`` command-line options
+available for fine-tuning the behaviour of the registration by passing
+command-line options down to the relevant command(s); further, it is possible
+to set such parameters within the MRtrix configuration file, which may be of
+particular use if configuration file option ``Dwi2maskAlgorithm`` is set to
+``template`` (see :ref:`dwi2mask_config`).
+
 ``dwi2mask trace``
 ^^^^^^^^^^^^^^^^^^
 
@@ -266,9 +273,9 @@ scenarios (see below).
 Configuration file options
 --------------------------
 
-There are *four* options that can be set within the *MRtrix3*
+There are many options that can be set within the *MRtrix3*
 :ref:`mrtrix_config` that directly influence the operation of the ``dwi2mask``
-command. These are included in the :ref:`config_file_options`, but are
+command. These are included in the :ref:`config_file_options` page, but are
 mentioned here also for discoverability:
 
 -  ``Dwi2maskAlgorithm``
@@ -308,6 +315,17 @@ mentioned here also for discoverability:
    ``dwi2mask template``. If the value of configuration file option
    "``Dwi2maskAlgorithm``" is "``ants``" or "``template``", then
    these two entries *must also* be specified.
+
+-  ``Dwi2maskTemplateANTsQuickOptions``, ``Dwi2maskTemplateANTsFullOptions``,
+   ``Dwi2maskTemplateFSLFlirtOptions`` and ``Dwi2maskTemplateFSLFnirtConfig``
+
+   These options allow full automated control over the parameters with which
+   the external neuroimaging software package registration commands are
+   executed. If one of the relevant ``dwi2mask template`` command-line options
+   is used explicitly (``-ants_options``, ``-flirt_options``, ``-fnirt_config``),
+   that information takes precedence; otherwise, if one of these configuration
+   file entries is set, that information will be propagated directly to the
+   relevant command.
 
 .. _AFNI: https://afni.nimh.nih.gov/
 .. _ANTs: http://stnava.github.io/ANTs/
