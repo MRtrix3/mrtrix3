@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os
+import os, shutil
 from distutils.spawn import find_executable
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, fsl, path, run
@@ -162,7 +162,10 @@ def execute(): #pylint: disable=unused-variable
                   + ' --output ANTS'
                   + ' '
                   + ants_options)
-
+      ants_options_split = ants_options.split()
+      nonlinear = any(i for i in range(0, len(ants_options_split)-1)
+                      if ants_options_split[i] == '--transform'
+                      and not any(item in ants_options_split[i+1] for item in ['Rigid', 'Affine']))
     else:
       # Use ANTs SyNQuick for registration to template
       run.command(ANTS_REGISTERQUICK_CMD
@@ -172,6 +175,7 @@ def execute(): #pylint: disable=unused-variable
                   + ' -o ANTS'
                   + ' '
                   + ants_options)
+      nonlinear = True
 
     transformed_path = 'transformed.nii'
     # Note: Don't use nearest-neighbour interpolation;
@@ -182,7 +186,7 @@ def execute(): #pylint: disable=unused-variable
                 + ' -o ' + transformed_path
                 + ' -r bzero.nii'
                 + ' -t [ANTS0GenericAffine.mat,1]'
-                + ' -t ANTS1InverseWarp.nii.gz')
+                + (' -t ANTS1InverseWarp.nii.gz' if nonlinear else ''))
 
   elif reg_software == 'fsl':
 
@@ -211,7 +215,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Non-linear registration to template
     run.command(fnirt_cmd
-                + (' --config=fnirt_config' if fnirt_config else '')
+                + (' --config=fnirt_config' if os.path.isfile('fnirt_config.cnf') else '')
                 + ' --ref=template_image.nii'
                 + ' --refmask=template_mask_dilated.nii'
                 + ' --in=bzero.nii'
