@@ -359,8 +359,9 @@ void run ()
 
   // Flip
   opt = get_options ("flip");
+  vector<int32_t> axes;
   if (opt.size()) {
-    vector<int32_t> axes = parse_ints<int32_t> (opt[0][0]);
+    axes = parse_ints<int32_t> (opt[0][0]);
     transform_type flip;
     flip.setIdentity();
     for (size_t i = 0; i < axes.size(); ++i) {
@@ -665,7 +666,7 @@ void run ()
     DWI::export_grad_commandline (output);
 
   // No reslicing required, so just modify the header and do a straight copy of the data
-  } else {
+  } else if (linear || replace || axes.size()) {
 
     if (get_options ("midway").size())
       throw Exception ("midway option given but no template image defined");
@@ -696,6 +697,8 @@ void run ()
     }
 
     DWI::export_grad_commandline (output);
+  } else {
+    throw Exception ("No transformation operation specified");
   }
 }
 
