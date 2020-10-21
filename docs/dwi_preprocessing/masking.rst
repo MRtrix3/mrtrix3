@@ -40,6 +40,74 @@ must be provided by the user either using the ``-template`` command-line
 option, or the ``Dwi2maskTemplateImage`` and ``Dwi2maskTemplateMask``
 configuration file options (see :ref:`dwi2mask_config`).
 
+``dwi2mask b02template``
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Registers the subject's mean *b=0* image to a template image, and
+back-propagates a binary mask back into the individual's DWI voxel grid.
+Achieved as follows:
+
+1. Non-linearly register subject's mean *b=0* image to a specified template
+   image;
+
+2. *(If not calculated implicitly as part of step 1)* Invert the non-linear
+   deformation field;
+
+3. Transform binary mask associated with template image onto voxel grid of
+   mean *b=0* image (with interpolation);
+
+4. Apply a threshold of 0.5 to transformed image to produce a mask.
+
+There are multiple external software tools that can be utilised for performing
+the core image registration and transformation processes:
+
+-  ``antsquick``: Utilises the ANTs_ command ``antsRegistrationSyNQuick.sh``
+   for registration; transforms mask image to subject space using ANTs_
+   command ``antsApplyTransforms``.
+
+-  ``antsquick``: Utilises the ANTs_ commands ``antsRegistration``
+   for registration, using the registration parameters specified in the article:
+
+   Tustison, Nicholas J., and Brian B. Avants.
+   Explicit B-Spline Regularization in Diffeomorphic Image Registration.
+   Frontiers in Neuroinformatics 7 (December 23, 2013): 39.
+   https://doi.org/10.3389/fninf.2013.00039.
+
+   Template mask image is then transformed to subject space using ANTs_
+   command ``antsApplyTransforms``.
+
+-  ``fsl``: Utilises FSL_ commands as follows:
+
+   - ``flirt_``: Initial affine registration;
+   - ``fnirt_``: Non-linear registration;
+   - ``invwarp_``: Inversion of warp from subject to template;
+   - ``applywarp_``: Transform template mask to subject space.
+
+By default, if no manual selection is made here using either the ``-software``
+command-line option or the ``Dwi2maskTemplateSoftware`` configuration file
+entry, the ``antsquick`` approach will be used.
+
+This algorithm necessitates the specification of a template image and
+corresponding binary mask image defined on that template. These two images
+must be provided by the user either using the ``-template`` command-line
+option, or the ``Dwi2maskTemplateImage`` and ``Dwi2maskTemplateMask``
+configuration file options (see :ref:`dwi2mask_config`).
+
+The registration operation can be expected to perform best if the specified
+template image is of comparable shape and image contrast to that of the
+*b=0* volumes of the DWI data being processed. As such, if using an existing
+template image, a T2-weighted image would be recommended. Alternatively, one
+could produce a population template *b=0* image based on one's own data, and
+manually define a mask on that template that could then subsequently be
+used for DWI masking.
+
+For all registration algorithms, there are ``dwi2mask`` command-line options
+available for fine-tuning the behaviour of the registration by passing
+command-line options down to the relevant command(s); further, it is possible
+to set such parameters within the MRtrix configuration file, which may be of
+particular use if configuration file option ``Dwi2maskAlgorithm`` is set to
+``b02template`` (see :ref:`dwi2mask_config`).
+
 ``dwi2mask consensus``
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -108,73 +176,6 @@ Operations are as follows:
 4. Apply mask cleaning filter to remove small areas only connected to the
    largest component via thin "bridges".
 
-``dwi2mask template``
-^^^^^^^^^^^^^^^^^^^^^
-
-Propagates a binary mask that is defined in the space of some template image
-back into the individual's DWI voxel grid. Achieved as follows:
-
-1. Non-linearly register subject's mean *b=0* image to a specified template
-   image;
-
-2. *(If not calculated implicitly as part of step 1)* Invert the non-linear
-   deformation field;
-
-3. Transform binary mask associated with template image onto voxel grid of
-   mean *b=0* image (with interpolation);
-
-4. Apply a threshold of 0.5 to transformed image to produce a mask.
-
-There are multiple external software tools that can be utilised for performing
-the core image registration and transformation processes:
-
--  ``antsquick``: Utilises the ANTs_ command ``antsRegistrationSyNQuick.sh``
-   for registration; transforms mask image to subject space using ANTs_
-   command ``antsApplyTransforms``.
-   
--  ``antsquick``: Utilises the ANTs_ commands ``antsRegistration``
-   for registration, using the registration parameters specified in the article:
-   
-   Tustison, Nicholas J., and Brian B. Avants.
-   Explicit B-Spline Regularization in Diffeomorphic Image Registration.
-   Frontiers in Neuroinformatics 7 (December 23, 2013): 39.
-   https://doi.org/10.3389/fninf.2013.00039.
-
-   Template mask image is then transformed to subject space using ANTs_
-   command ``antsApplyTransforms``.
-   
--  ``fsl``: Utilises FSL_ commands as follows:
-
-   - ``flirt_``: Initial affine registration;
-   - ``fnirt_``: Non-linear registration;
-   - ``invwarp_``: Inversion of warp from subject to template;
-   - ``applywarp_``: Transform template mask to subject space. 
-
-By default, if no manual selection is made here using either the ``-software``
-command-line option or the ``Dwi2maskTemplateSoftware`` configuration file
-entry, the ``antsquick`` approach will be used.
-
-This algorithm necessitates the specification of a template image and
-corresponding binary mask image defined on that template. These two images
-must be provided by the user either using the ``-template`` command-line
-option, or the ``Dwi2maskTemplateImage`` and ``Dwi2maskTemplateMask``
-configuration file options (see :ref:`dwi2mask_config`).
-
-The registration operation can be expected to perform best if the specified
-template image is of comparable shape and image contrast to that of the
-*b=0* volumes of the DWI data being processed. As such, if using an existing
-template image, a T2-weighted image would be recommended. Alternatively, one
-could produce a population template *b=0* image based on one's own data, and
-manually define a mask on that template that could then subsequently be
-used for DWI masking.
-
-For all registration algorithms, there are ``dwi2mask`` command-line options
-available for fine-tuning the behaviour of the registration by passing
-command-line options down to the relevant command(s); further, it is possible
-to set such parameters within the MRtrix configuration file, which may be of
-particular use if configuration file option ``Dwi2maskAlgorithm`` is set to
-``template`` (see :ref:`dwi2mask_config`).
-
 ``dwi2mask trace``
 ^^^^^^^^^^^^^^^^^^
 
@@ -227,18 +228,18 @@ entirely experimental.
 Algorithm comparison
 --------------------
 
-+----------------+-----------------------+----------------------+----------------------------+----------------------+-------------|
-|    Algorithm   | External dependencies | Uses more than *b=0* |        Assumptions         | Robust to bias field | Can use GPU |
-+----------------+-----------------------+----------------------+----------------------------+----------------------+-------------|
-| ``3dautomask`` |      Yes (AFNI_)      |          No          |          Unknown           |       Unknown        |      No     |
-|    ``ants``    |      Yes (ANTs_)      |          No          |  Brain; WM darker than GM  |       Unknown        |      No     |
-| ``consensus``  |   Only if installed   |          Yes         |          Various           |       Various        |      No     |
-|   ``fslbet``   |      Yes (FSL_)       |          No          |     Approx. spherical      |         Yes          |      No     |
-|   ``hdbet``    |     Yes (HD-BET_)     |          No          |           Brain            |         Yes          |      Yes    |
-|  ``legacy``    |          No           |          Yes         | Single connected component |         No           |      No     |
-|  ``template``  |  Yes (ANTs_ / FSL_)   |          No          |      Matches template      |         Yes          |      No     |
-|   ``trace``    |          No           |          Yes         | Single connected component |         No           |      No     |
-+----------------+-----------------------+----------------------+----------------------------+----------------------+-------------+
++-----------------+-----------------------+----------------------+----------------------------+----------------------+-------------|
+|    Algorithm    | External dependencies | Uses more than *b=0* |        Assumptions         | Robust to bias field | Can use GPU |
++-----------------+-----------------------+----------------------+----------------------------+----------------------+-------------|
+| ``3dautomask``  |      Yes (AFNI_)      |          No          |          Unknown           |       Unknown        |      No     |
+|    ``ants``     |      Yes (ANTs_)      |          No          |  Brain; WM darker than GM  |       Unknown        |      No     |
+| ``b02template`` |  Yes (ANTs_ / FSL_)   |          No          |      Matches template      |         Yes          |      No     |
+| ``consensus``   |   Only if installed   |          Yes         |          Various           |       Various        |      No     |
+|   ``fslbet``    |      Yes (FSL_)       |          No          |     Approx. spherical      |         Yes          |      No     |
+|   ``hdbet``     |     Yes (HD-BET_)     |          No          |           Brain            |         Yes          |      Yes    |
+|  ``legacy``     |          No           |          Yes         | Single connected component |         No           |      No     |
+|   ``trace``     |          No           |          Yes         | Single connected component |         No           |      No     |
++-----------------+-----------------------+----------------------+----------------------------+----------------------+-------------+
 
 .. _dwi2mask_python:
 
@@ -295,11 +296,11 @@ mentioned here also for discoverability:
 
 -  ``Dwi2maskTemplateSoftware``
 
-   If ``dwi2mask template`` is invoked, and the ``-software`` command-line
+   If ``dwi2mask b02template`` is invoked, and the ``-software`` command-line
    option is *not* used, the value of this option determines the software
    tool that will be utilised for registration to the template and
    back-propagation of the mask in template space to the subject's DWI
-   data. Valid values are specified in :ref:`dwi2mask_template` above. In the
+   data. Valid values are specified in :ref:`dwi2mask_b02template` above. In the
    absence of this configuration file option, ``antsquick`` (i.e. ANTs_
    ``antsRegistrationSyNQuick.sh``) will be used.
 
@@ -308,12 +309,12 @@ mentioned here also for discoverability:
    This pair of configuration file options allow the user to pre-specify the
    filesystem locations of the two images (T2-weighted template and 
    corresponding binary mask) to be utilised by the ``dwi2mask ants`` and
-   ``dwi2mask template`` algorithms. Note that there is no "default" template
+   ``dwi2mask b02template`` algorithms. Note that there is no "default" template
    to be utilised by these algorithms; so the user *must* either include these
    entries in their configuration file, or manually specify the ``-template``
    command-line  option whenever they use ``dwi2mask ants`` or
-   ``dwi2mask template``. If the value of configuration file option
-   "``Dwi2maskAlgorithm``" is "``ants``" or "``template``", then
+   ``dwi2mask b02template``. If the value of configuration file option
+   "``Dwi2maskAlgorithm``" is "``ants``" or "``b02template``", then
    these two entries *must also* be specified.
 
 -  ``Dwi2maskTemplateANTsQuickOptions``, ``Dwi2maskTemplateANTsFullOptions``,
@@ -321,7 +322,7 @@ mentioned here also for discoverability:
 
    These options allow full automated control over the parameters with which
    the external neuroimaging software package registration commands are
-   executed. If one of the relevant ``dwi2mask template`` command-line options
+   executed. If one of the relevant ``dwi2mask b02template`` command-line options
    is used explicitly (``-ants_options``, ``-flirt_options``, ``-fnirt_config``),
    that information takes precedence; otherwise, if one of these configuration
    file entries is set, that information will be propagated directly to the
