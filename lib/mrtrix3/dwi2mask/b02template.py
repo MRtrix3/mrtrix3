@@ -51,7 +51,7 @@ ANTS_REGISTERQUICK_OPTIONS = '-j 1'
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('template', parents=[base_parser])
+  parser = subparsers.add_parser('b02template', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Register the mean b=0 image to a T2-weighted template to back-propagate a brain mask')
   parser.add_description('This script currently assumes that the template image provided via the -template option '
