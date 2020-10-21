@@ -217,8 +217,13 @@ def execute(): #pylint: disable=unused-variable
                 'mrconvert - template_mask_dilated.nii -datatype uint8')
 
     # Non-linear registration to template
+    if os.path.isfile('fnirt_config.cnf'):
+      fnirt_config_option = ' --config=fnirt_config'
+    else:
+      fnirt_config_option = ''
+      app.console('No config file provided for FSL fnirt; it will use its internal defaults')
     run.command(fnirt_cmd
-                + (' --config=fnirt_config' if os.path.isfile('fnirt_config.cnf') else '')
+                + fnirt_config_option
                 + ' --ref=template_image.nii'
                 + ' --refmask=template_mask_dilated.nii'
                 + ' --in=bzero.nii'
