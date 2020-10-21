@@ -698,7 +698,7 @@ void run ()
 
     DWI::export_grad_commandline (output);
   } else {
-    throw Exception ("No transformation operation specified");
+    throw Exception ("No operation specified");
   }
 }
 
