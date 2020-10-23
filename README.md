@@ -1,10 +1,14 @@
 # MRtrix3 module for motion and distortion correction.
 
-This module contains a *beta*-release of the SHARD reconstruction software for 
-slice-level motion correction in multi-shell diffusion MRI.
+This module contains the SHARD reconstruction software for slice-level motion 
+correction in multi-shell diffusion MRI, as described in
+
+Daan Christiaens, Lucilio Cordero-Grande, Maximilian Pietsch, Jana Hutter, Anthony N. Price, Emer J. Hughes, Katy Vecchiato, Maria Deprez, A. David Edwards, Joseph V.Hajnal, and J-Donald Tournier, *Scattered slice SHARD reconstruction for motion correction in multi-shell diffusion MRI*, NeuroImage 117437 (2020). doi:[10.1016/j.neuroimage.2020.117437](https://doi.org/10.1016/j.neuroimage.2020.117437)
 
 
 ## Setup & build
+
+Prerequisites: MRtrix 3.0 and Eigen 3.3.3 
 
 The code is built like any other [MRtrix3](https://github.com/MRtrix3/mrtrix3) 
 module, i.e., by setting up a symbolic link to the core build script:
@@ -19,14 +23,9 @@ $ ./build
 This will compile the code into `shard-recon/bin`, which then needs to be added 
 to the `PATH`.
 
-Note: For this to work, the code needs to compiled against the current MRtrix3 
-`master` branch, configured with Eigen 3.3.3. 
-
 
 ## Help & support
 
 Contact daan.christiaens@kcl.ac.uk
 
-*License:* The source code is protected under exclusive copyright by the authors.
-At this stage, the code may *NOT* be modified or distributed without written permission.
 
