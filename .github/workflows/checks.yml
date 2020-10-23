@@ -87,7 +87,6 @@ jobs:
          brew uninstall python@2.7.17   # https://github.com/actions/virtual-environments/issues/1811#issuecomment-708480190
          brew untap local/openssl
          brew untap local/python2
-         brew cask install xquartz
          brew update
          brew install qt5 eigen pkg-config libtiff fftw libpng
          brew link --force qt5
