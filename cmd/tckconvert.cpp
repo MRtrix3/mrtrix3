@@ -21,11 +21,13 @@
 #include "file/name_parser.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
-
+#include "raw.h"
 
 using namespace MR;
 using namespace App;
 using namespace MR::DWI::Tractography;
+using namespace MR::Raw;
+using namespace MR::ByteOrder;
 
 void usage ()
 {
@@ -89,8 +91,12 @@ void usage ()
 
   + OptionGroup ("Options for both PLY and RIB writer")
 
-  + Option ("radius", "radius of the streamlines")
-  +   Argument("radius").type_float(0.0f);
+    + Option ("radius", "radius of the streamlines")
+    +   Argument("radius").type_float(0.0f)
+
+    + OptionGroup ("Options VTK writer")
+
+    + Option ("binary", "write a binary VTK file");
 
 }
 
@@ -102,13 +108,17 @@ void usage ()
 
 class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
   public:
-    VTKWriter(const std::string& file) : VTKout (file) {
+    VTKWriter(const std::string& file, bool write_binary = false) : VTKout (file, std::ios::binary ), write_binary(write_binary){
       // create and write header of VTK output file:
       VTKout <<
-        "# vtk DataFile Version 1.0\n"
-        "Data values for Tracks\n"
-        "ASCII\n"
-        "DATASET POLYDATA\n"
+        "# vtk DataFile Version 4.2\n"
+        "Data values for Tracks\n";
+      if ( write_binary ) {
+          VTKout << "BINARY\n";
+      } else {
+          VTKout << "ASCII\n";
+      }
+      VTKout << "DATASET POLYDATA\n"
         "POINTS ";
       // keep track of offset to write proper value later:
       offset_num_points = VTKout.tellp();
@@ -120,9 +130,16 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
       size_t start_index = current_index;
       current_index += tck.size();
       track_list.push_back (std::pair<size_t,size_t> (start_index, current_index));
-
-      for (const auto& pos : tck) {
-        VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
+      if ( write_binary ) {
+          float p[3];
+          for (const auto& pos : tck) {
+              for (auto i = 0; i < 3; ++i) Raw::store_BE(pos[i], p, i);
+              VTKout.write((char*)p, 3 * sizeof(float));
+          }
+      } else {
+          for (const auto& pos : tck) {
+              VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
+          }
       }
       return true;
     }
@@ -130,13 +147,35 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
     ~VTKWriter() {
       try {
         // write out list of tracks:
+        if ( write_binary ) {
+            // Need to include an extra new line when writing binary
+            VTKout << "\n";
+        }
         VTKout << "LINES " << track_list.size() << " " << track_list.size() + current_index << "\n";
         for (const auto& track : track_list) {
-          VTKout << track.second - track.first << " " << track.first;
-          for (size_t i = track.first + 1; i < track.second; ++i)
-            VTKout << " " << i;
-          VTKout << "\n";
+            if ( write_binary ) {
+                int32_t buffer;
+                buffer = ByteOrder::BE<int32_t> (track.second - track.first);
+                VTKout.write((char*) &buffer, 1 * sizeof(int32_t));
+
+                buffer = ByteOrder::BE<int32_t> (track.first);
+                VTKout.write((char*) &buffer, 1 * sizeof(int32_t));
+
+                for ( size_t i = track.first + 1; i < track.second; ++i) {
+                    buffer = ByteOrder::BE<int32_t> (i);
+                    VTKout.write((char*)&buffer, 1* sizeof(int32_t));
+                }
+            } else {
+              VTKout << track.second - track.first << " " << track.first;
+              for (size_t i = track.first + 1; i < track.second; ++i)
+                VTKout << " " << i;
+              VTKout << "\n";
+            }
         };
+      if ( write_binary ) {
+          // Need to include an extra new line when writing binary
+          VTKout << "\n";
+      }
 
         // write back total number of points:
         VTKout.seekp (offset_num_points);
@@ -153,6 +192,7 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
 
   private:
     File::OFStream VTKout;
+    bool write_binary;
     size_t offset_num_points;
     vector<std::pair<size_t,size_t>> track_list;
     size_t current_index = 0;
@@ -704,7 +744,8 @@ void run ()
     writer.reset( new Writer<float>(argument[1], properties) );
   }
   else if (Path::has_suffix(argument[1], ".vtk")) {
-    writer.reset( new VTKWriter(argument[1]) );
+      auto write_binary = get_options("binary").size();
+    writer.reset( new VTKWriter(argument[1], write_binary));
   }
   else if (Path::has_suffix(argument[1], ".ply")) {
     auto increment = get_options("increment").size() ? get_options("increment")[0][0].as_int() : 1;
