@@ -200,7 +200,7 @@ New code can be added to this new module as follows:
 
 - **Stand-alone Python file**: A stand-alone Python script designed to make use
   of the *MRtrix3* Python APIs will typically not have any file extension, and
-  will have its first line set to ``#!/usr/bin/env python``. Such files should be
+  will have its first line set to ``#!/usr/bin/python3``. Such files should be
   placed directly into the ``bin/`` directory. It will also typically be
   necessary to mark the file as executable before the system will allow it to
   run::
