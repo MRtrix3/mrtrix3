@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 # Copyright (c) 2008-2020 the MRtrix3 contributors.
 #
@@ -14,9 +14,6 @@
 # See the Mozilla Public License v. 2.0 for more details.
 #
 # For more details, see http://www.mrtrix.org/.
-
-# Script for estimating response functions for spherical deconvolution
-# A number of different approaches are available within this script for performing response function estimation.
 
 
 
@@ -123,5 +120,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3
+import mrtrix3 #pylint: disable=wrong-import-position
 mrtrix3.execute() #pylint: disable=no-member

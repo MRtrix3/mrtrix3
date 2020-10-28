@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 # Copyright (c) 2008-2020 the MRtrix3 contributors.
 #
@@ -18,7 +18,6 @@
 
 
 import glob, itertools, json, math, os, shutil, sys
-from distutils.spawn import find_executable
 
 
 
@@ -323,7 +322,7 @@ def execute(): #pylint: disable=unused-variable
       # Fudges necessary to maniupulate nature of slice timing data in cases where
       #   bad JSON formatting has led to the data not being simply a list of floats
       #   (whether from MRtrix3 DICOM conversion or from anything else)
-      if isinstance(slice_timing, utils.STRING_TYPES):
+      if isinstance(slice_timing, str):
         slice_timing = slice_timing.split()
       if not isinstance(slice_timing, list):
         raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
@@ -1040,7 +1039,7 @@ def execute(): #pylint: disable=unused-variable
 
   # Run eddy qc tool QUAD if installed and one of -eddyqc_text or -eddyqc_all is specified
   if eddyqc_path:
-    if find_executable('eddy_quad'):
+    if shutil.which('eddy_quad'):
       eddyqc_options = ' -idx eddy_indices.txt -par eddy_config.txt -m eddy_mask.nii -b bvals'
       if os.path.isfile('dwi_post_eddy.eddy_residuals'):
         eddyqc_options += ' -g ' + bvecs_path
@@ -1309,5 +1308,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3
+import mrtrix3 #pylint: disable=wrong-import-position
 mrtrix3.execute() #pylint: disable=no-member
