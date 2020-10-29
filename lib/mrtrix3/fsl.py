@@ -72,7 +72,7 @@ def eddy_binary(cuda): #pylint: disable=unused-variable
         if version > max_version:
           max_version = version
           exe_path = entry
-      except TypeError:
+      except ValueError:
         pass
     if exe_path:
       app.debug('CUDA version ' + str(max_version) + ': ' + exe_path)

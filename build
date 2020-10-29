@@ -1456,7 +1456,7 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 #  entry.display()
 try:
   num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
-except (KeyError, TypeError):
+except (KeyError, ValueError):
   try:
     num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
   except ValueError:

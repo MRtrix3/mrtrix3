@@ -17,7 +17,7 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import collections, json, math, os, re, shutil, sys
+import collections, json, math, os, re, shlex, shutil, sys
 
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
@@ -1388,8 +1388,8 @@ def execute(): #pylint: disable=unused-variable
       with open(json_path, 'w') as json_file:
         json.dump(keyval, json_file)
       run.command('mrconvert ' + os.path.join('warps', inp.uid + '.mif') + ' ' +
-                  path.quote(os.path.join(warp_path, xcontrast_xsubject_pre_postfix[0] +
-                                          inp.uid + xcontrast_xsubject_pre_postfix[1] + '.mif')),
+                  shlex.quote(os.path.join(warp_path, xcontrast_xsubject_pre_postfix[0] +
+                                           inp.uid + xcontrast_xsubject_pre_postfix[1] + '.mif')),
                   mrconvert_keyval=json_path, force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
