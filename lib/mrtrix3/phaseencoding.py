@@ -35,7 +35,7 @@ def direction(string): #pylint: disable=unused-variable
       pe_dir[pe_axis] = -1
     else:
       pe_dir[pe_axis] = 1
-  except TypeError:
+  except ValueError:
     string = string.lower()
     if string == 'lr':
       pe_dir = [1,0,0]
