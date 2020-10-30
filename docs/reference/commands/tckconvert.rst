@@ -57,6 +57,11 @@ Options for both PLY and RIB writer
 
 -  **-radius radius** radius of the streamlines
 
+Options specific to VTK writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-ascii** write an ASCII VTK file (binary by default)
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
