@@ -7,3 +7,9 @@ tckedit tracks.tck -number 10 tmp.tck -nthread 0 && tckconvert tmp.tck tmp-[].tx
 tckconvert tckconvert/out2-[2:9].txt tmp.tck -force && testing_diff_tck tmp.tck tckconvert/out3.tck
 echo 1 2 3 > tmp.txt && tckconvert -force -quiet tmp.txt tmp.tck && tckconvert -quiet -force tmp.tck tmp.rib && [ $(wc -l < tmp.rib ) == 4 ]
 tckconvert -force -quiet tckconvert/empty.vtk tmp.tck
+
+# convert tck -> vtk -> txt and compare to tck -> txt
+tckconvert tracks.tck tmp.vtk -force -quiet && tckconvert tmp.vtk tmp-vtk-streamlines-[].txt -force && cat tmp-vtk-streamlines-*.txt > tmp-vtk-all.txt && tckconvert tracks.tck tmp-mrtrix-streamlines-[].txt -force -quiet && cat tmp-mrtrix-streamlines-*.txt > tmp-mrtrix-all.txt && testing_diff_matrix tmp-vtk-all.txt tmp-mrtrix-all.txt
+
+# convert tck -> vtk -> txt and compare to tck -> vtk -> tck -> txt
+tckconvert tracks.tck tmp.vtk -force -quiet && tckconvert tmp.vtk tmp-roundtrip.tck -force && tckconvert tmp-roundtrip.tck tmp-roundtrip-streamlines-[].txt -force && cat tmp-roundtrip-streamlines-*.txt > tmp-roundtrip-all.txt && tckconvert tracks.tck tmp-mrtrix-streamlines-[].txt -force -quiet && cat tmp-mrtrix-streamlines-*.txt > tmp-mrtrix-all.txt && testing_diff_matrix tmp-roundtrip-all.txt tmp-mrtrix-all.txt
