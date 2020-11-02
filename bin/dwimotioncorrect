@@ -18,7 +18,7 @@
 #
 
 import mrtrix3
-from mrtrix3 import app, image, path, run
+from mrtrix3 import app, image, path, run, MRtrixError
 import json
 
 
@@ -115,21 +115,21 @@ def execute(): #pylint: disable=unused-variable
     header = image.Header('in.mif')
     dwi_sizes = header.size()
     if len(dwi_sizes) != 4:
-        app.error('Input image must be a 4D image')
+        raise MRtrixError('Input image must be a 4D image')
     DW_scheme = image.mrinfo('in.mif', 'dwgrad').split('\n')
     if len(DW_scheme) != int(dwi_sizes[3]):
-        app.error('Input image does not contain valid DW gradient scheme')
+        raise MRtrixError('Input image does not contain valid DW gradient scheme')
 
     # Check PE table if field map is passed.
     if app.ARGS.fieldmap:
         PE_scheme = image.mrinfo('in.mif', 'petable').split('\n')
         if len(PE_scheme) != int(dwi_sizes[3]):
-            app.error('Input image does not contain valid phase encoding scheme')
+            raise MRtrixError('Input image does not contain valid phase encoding scheme')
 
     # Generate a brain mask if required, or check the mask if provided
     if app.ARGS.mask:
         if not image.match(header, 'mask.mif', up_to_dim=3):
-            app.error('Provided mask image does not match input DWI')
+            raise MRtrixError('Provided mask image does not match input DWI')
     else:
         run.command('dwi2mask in.mif mask.mif')
 
@@ -144,13 +144,13 @@ def execute(): #pylint: disable=unused-variable
     if app.ARGS.lmax:
         lmax = [int(l) for l in app.ARGS.lmax.split(',')]
     if len(lmax) != len(shells):
-        app.error('No. lmax must match no. shells.')
+        raise MRtrixError('No. lmax must match no. shells.')
 
     rlmax = [2,2,0]
     if app.ARGS.rlmax:
         rlmax = [int(l) for l in app.ARGS.rlmax.split(',')]
     if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
-        app.error('-rlmax invalid.')
+        raise MRtrixError('-rlmax invalid.')
 
     # Configuration
     config = json.loads(DEFAULT_CONFIG)
