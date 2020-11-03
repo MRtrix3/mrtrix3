@@ -14,7 +14,7 @@ The code is built like any other [MRtrix3](https://github.com/MRtrix3/mrtrix3)
 module, i.e., by setting up a symbolic link to the core build script:
 
 ```
-$ git clone https://gitlab.com/ChD/shard-recon.git
+$ git clone https://github.com/dchristiaens/shard-recon.git
 $ cd shard-recon
 $ ln -s /path/to/mrtrix3/build
 $ ./build
