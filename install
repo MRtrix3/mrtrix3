@@ -17,6 +17,11 @@ if [ $EUID != 0 ]; then
   exit
 fi
 
+if [ ! -d "/usr/local/bin" ] || [ -L "/usr/local/bin" ]; then
+  echo "WARNING: /usr/local/bin does not exist, creating it for you."
+  mkdir -m 755 /usr/local/bin
+fi
+
 if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
   echo "WARNING: /usr/local/mrtrix3 already exists and will be replaced during installation."
 fi
