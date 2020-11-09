@@ -17,6 +17,15 @@ if [ $EUID != 0 ]; then
   exit
 fi
 
+if [ ! -d "/usr/local/bin" ]; then
+  if [ -e "/usr/local/bin" ]; then
+    echo "WARNING: /usr/local/bin is not a directory, cannot create symlinks"
+  else
+    echo "WARNING: /usr/local/bin does not exist, creating it for you."
+    mkdir -m -p 755 /usr/local/bin
+  fi
+fi
+
 if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
   echo "WARNING: /usr/local/mrtrix3 already exists and will be replaced during installation."
 fi
@@ -89,5 +98,8 @@ for target in /usr/local/mrtrix3/bin/*.app; do
   ln -sf "${target}"
   echo /Applications/"$(basename "${target}")" >> /usr/local/mrtrix3/symlinks
 done
+
+if [[ $SHELL = "/bin/zsh" ]]; then profile=~/.zprofile; else profile=~/.bash_profile; fi
+echo "$PATH" | grep -q '/usr/local/bin:' || printf "WARNING: /usr/local/bin is not in PATH. You can add it to the PATH with:\necho 'export PATH=/usr/local/bin:\$PATH' >> ${profile}\n"
 
 echo "Installation complete!"
