@@ -72,7 +72,7 @@ for l in /usr/local/bin/*; do
 done
 
 echo "Unpacking "${tarball}" to /usr/local/mrtrix3 ..."
-tar xf "${tarball}" -C /usr/local
+tar oxf "${tarball}" -C /usr/local
 rm "${tarball}"
 
 echo "Creating symlinks in /usr/local/bin ..."
