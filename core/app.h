@@ -462,7 +462,7 @@ namespace MR
             assert (false);
             throw Exception ("Internal error parsing command-line option \"-" + name + "\"");
           }
-          return T(opt[0][0]);
+          return opt[0][0];
         default:
           assert (false);
           throw Exception ("Internal error parsing command-line option \"-" + name + "\"");
