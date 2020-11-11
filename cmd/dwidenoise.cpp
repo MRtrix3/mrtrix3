@@ -132,10 +132,18 @@ public:
   DenoisingFunctor (int ndwi, const vector<uint32_t>& extent,
                     Image<bool>& mask, Image<real_type>& noise, bool exp1)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
-      m (ndwi), n (extent[0]*extent[1]*extent[2]),
-      r (std::min(m,n)), q (std::max(m,n)), exp1(exp1),
-      X (m,n), pos {{0, 0, 0}},
-      mask (mask), noise (noise)
+      m (ndwi),
+      n (extent[0]*extent[1]*extent[2]),
+      r (std::min(m,n)),
+      q (std::max(m,n)),
+      exp1(exp1),
+      X (m,n),
+      XtX (r, r),
+      eig (r),
+      s (SValsType()),
+      pos {{0, 0, 0}},
+      mask (mask),
+      noise (noise)
   { }
 
   template <typename ImageType>
@@ -152,14 +160,13 @@ public:
     load_data (dwi);
 
     // Compute Eigendecomposition:
-    MatrixType XtX (r,r);
     if (m <= n)
       XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
     else
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
-    Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
+    eig.compute (XtX);
     // eigenvalues sorted in increasing order:
-    SValsType s = eig.eigenvalues().template cast<double>();
+    s = eig.eigenvalues().template cast<double>();
 
     // Marchenko-Pastur optimal threshold
     const double lam_r = std::max(s[0], 0.0) / q;
@@ -206,6 +213,9 @@ private:
   const ssize_t m, n, r, q;
   const bool exp1;
   MatrixType X;
+  MatrixType XtX;
+  Eigen::SelfAdjointEigenSolver<MatrixType> eig;
+  SValsType s;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
