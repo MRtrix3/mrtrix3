@@ -458,11 +458,8 @@ namespace MR
       switch (opt.size()) {
         case 0: return default_value;
         case 1:
-          if (opt[0].opt->size() != 1) {
-            assert (false);
-            throw Exception ("Internal error parsing command-line option \"-" + name + "\"");
-          }
-          return opt[0][0];
+          if (opt[0].opt->size() == 1)
+            return opt[0][0];
         default:
           assert (false);
           throw Exception ("Internal error parsing command-line option \"-" + name + "\"");
