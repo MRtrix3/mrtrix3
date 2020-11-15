@@ -17,15 +17,6 @@ if [ $EUID != 0 ]; then
   exit
 fi
 
-if [ ! -d "/usr/local/bin" ]; then
-  if [ -e "/usr/local/bin" ]; then
-    echo "WARNING: /usr/local/bin is not a directory, cannot create symlinks"
-  else
-    echo "WARNING: /usr/local/bin does not exist, creating it for you."
-    mkdir -p -m 755 /usr/local/bin
-  fi
-fi
-
 if [ -d "/usr/local/mrtrix3" ] || [ -L "/usr/local/mrtrix3" ] ; then
   echo "WARNING: /usr/local/mrtrix3 already exists and will be replaced during installation."
 fi
@@ -38,6 +29,15 @@ if [ "$1" != "-f" ]; then
       [Nn]* ) exit;;
     esac
   done
+fi
+
+if [ ! -d "/usr/local/bin" ]; then
+  if [ -e "/usr/local/bin" ]; then
+    echo "WARNING: /usr/local/bin is not a directory, cannot create symlinks"
+  else
+    echo "WARNING: /usr/local/bin does not exist, creating it for you."
+    mkdir -p -m 755 /usr/local/bin
+  fi
 fi
 
 url=https://github.com/MRtrix3/mrtrix3/releases/download/${tag}/mrtrix3-macos-${tag}.tar.gz
