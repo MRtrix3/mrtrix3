@@ -22,7 +22,7 @@ if [ ! -d "/usr/local/bin" ]; then
     echo "WARNING: /usr/local/bin is not a directory, cannot create symlinks"
   else
     echo "WARNING: /usr/local/bin does not exist, creating it for you."
-    mkdir -m -p 755 /usr/local/bin
+    mkdir -p -m 755 /usr/local/bin
   fi
 fi
 
