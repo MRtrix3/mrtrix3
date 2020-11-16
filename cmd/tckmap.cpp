@@ -188,9 +188,11 @@ DESCRIPTION
     "in conjunction with -vox, the image axes and FoV will still match that of the template "
     "image, but the spatial resolution will differ."
 
-  + "Note: if you run into limitations with RAM usage, make sure you output the "
-    "results to a .mif file or .mih / .dat file pair - this will avoid the allocation "
-    "of an additional buffer to store the output for write-out.";
+  + "Note: if you run into limitations with RAM usage, try writing the output image "
+    "as a .mif file or .mih / .dat file pair to a local hard drive: this will allow "
+    "tckmap to dump the generated image contents directly to disk, rather than allocating "
+    "an additional buffer to store the output image for write-out, thereby potentially "
+    "halving RAM usage.";
 
 REFERENCES
   + "* For TDI or DEC TDI:\n"
