@@ -332,12 +332,12 @@ following two variables can be set within the MRtrix :ref:`mrtrix_config`:
 .. NOTE::
 
   There can be some ambiguity around the relationship between the common definition
-  of "shell" in the diffusion MRI field, and the interpretation of *b*=0 volumes in 
-  *MRtrix3*. A DWI acquisition that involves acquisition of some number of *b*=0
-  volumes, and some number of volumes at some fixed non-zero *b*-value, e.g. *b*=3000,
+  of "shell" in the diffusion MRI field, and the interpretation of *b* = 0 volumes in 
+  *MRtrix3*. A DWI acquisition that involves acquisition of some number of *b* = 0
+  volumes, and some number of volumes at some fixed non-zero *b*-value, e.g. *b* = 3000,
   would conventionally be referred to as a "single-shell" acquisition. However,
   internally within *MRtrix3*, such data would be interpreted as consisting of *two*
-  "shells": one at *b*=0, and one at *b*=3000. The nominally *b*=0 volumes can still
+  "shells": one at *b* = 0, and one at *b* = 3000. The nominally *b* = 0 volumes can still
   be utilised as a "shell" in various applications given that, when treated as a 
   discrete set, they possess effectively an equivalent *b*-value, and the condition
   of "different sensitisation directions" is essentially irrelevant in this specific
