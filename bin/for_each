@@ -273,7 +273,7 @@ def execute(): #pylint: disable=unused-variable
           app.warn('No output from command for input "' + job.sub_in + '" (return code = ' + str(job.returncode) + ')')
         if fail_count > 1:
           sys.stderr.write(app.EXEC_NAME + ':\n')
-    raise MRtrixError(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
+    raise MRtrixError(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully: ' + str([job.input_text for job in jobs if job.returncode]))
 
   if app.VERBOSITY > 1:
     if any(job.outputtext for job in jobs):
