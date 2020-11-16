@@ -313,6 +313,22 @@ command, using the following command-line options:
   note that the first volume of the 4D series has index 0; volumes within each shell
   are separated by commas, while shells are separated by spaces.
 
+It is possible that in some instances, this automatic grouping of volumes with
+near-equivalent *b*-values into shells within *MRtrix3* may not yield the results
+wanted by the user. Rather than modifying the gradient table data directly, it is
+possible in some instances that modifying the underlying parameters within the
+*b*-value *clustering* algorithm may be sufficient to alter this behaviour. The
+following two variables can be set within the MRtrix :ref:`mrtrix_config`:
+
+-  :option:`BValueEpsilon`: If the *minimal* difference in *b*-value between two groups
+   of volumes is at least this amount (in s.mm<sup>-1</sup>), then those two groups
+   will be classified as two separate shells, rather than agglomerated into a single
+   shell.
+
+-  :option:`BZeroThreshold`: Any volume for which the *b*-value is this value or lesser
+   will be classified as a "*b* = 0" volume, and therefore assigned to the group of
+   all volumes that are classified as "*b* = 0".
+
 .. NOTE::
 
   There can be some ambiguity around the relationship between the common definition
