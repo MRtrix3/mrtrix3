@@ -77,7 +77,7 @@ when ``mrview`` is first run using the ``-connectome.load`` option.
 Basis of connectome visualisation customisation
 -----------------------------------------------
 
-With the above steps completed, you should obtain a fairly rduimentary
+With the above steps completed, you should obtain a fairly rudimentary
 visualisation of the connectome you have loaded. The plethora of
 buttons and gadgets in the connectome tool user interface is however
 a clue regarding the scope of customisation available for precisely
