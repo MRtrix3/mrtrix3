@@ -59,7 +59,7 @@ namespace MR
 
         template <class Event> inline QPoint position (Event* event) { return event->pos(); }
         template <> inline QPoint position (QWheelEvent* event) {
-#if QT_VERSION >= 0x050E00 // translates to 5.14.0
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
           return event->position().toPoint();
 #else
           return event->pos();
@@ -1597,11 +1597,9 @@ namespace MR
 
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
         // otherwise we get transparent windows...
-#if QT_VERSION >= 0x050400
         gl::ColorMask (false, false, false, true);
         gl::Clear (gl::COLOR_BUFFER_BIT);
         glColorMask (true, true, true, true);
-#endif
         GL_CHECK_ERROR;
         GL::assert_context_is_current();
       }
@@ -1753,15 +1751,11 @@ namespace MR
       void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
-#if QT_VERSION >= 0x050500
         QPoint delta;
         if (event->source() == Qt::MouseEventNotSynthesized)
           delta = event->angleDelta();
         else
           delta = 30 * event->pixelDelta();
-#else
-        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
-#endif
         if (delta.isNull())
           return;
 

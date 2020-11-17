@@ -90,12 +90,8 @@ namespace MR
       {
         QModelIndex topleft = createIndex (0, 0);
         QModelIndex bottomright = createIndex (rowCount()-1, 0);
-#if QT_VERSION >= 0x050400
         QVector<int> roles (1, Qt::DecorationRole);
         emit dataChanged (topleft, bottomright, roles);
-#else
-         emit dataChanged (topleft, bottomright);
-#endif
       }
 
 
