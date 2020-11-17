@@ -290,7 +290,7 @@ Intuitively, these data look like there are three unique *b*-values: 0, 1500 and
 
 - The scanner vendor reporting a *b*-value that is calculated based on the
   comprehensive set of all gradients applied during acquisition (this regularly 
-  deviates from 5-20 s.mm<sup>-2</sup> from the nominal intended *b*-value);
+  deviates by 5-20 s/mm² from the nominal intended *b*-value);
 
 - Imprecise gradient vector directions leading to minor modulation of the *b*-value
   once those vector directions are normalised to unit length (see :ref:`dw_scaling`
@@ -321,7 +321,7 @@ possible in some instances that modifying the underlying parameters within the
 following two variables can be set within the MRtrix :ref:`mrtrix_config`:
 
 -  :option:`BValueEpsilon`: If the *minimal* difference in *b*-value between two groups
-   of volumes is at least this amount (in s.mm<sup>-1</sup>), then those two groups
+   of volumes is at least this amount (in s/mm²), then those two groups
    will be classified as two separate shells, rather than agglomerated into a single
    shell.
 
