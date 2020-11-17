@@ -210,7 +210,7 @@ void run ()
 
   File::OFStream out (argument[argument.size()-1]);
   for (auto& d : merged)
-    out << MR::printf ("%#20.15f %#20.15f %#20.15f %5d %3d\n",
+    out << MR::printf (num_subsets > 1 ? "%#20.15f %#20.15f %#20.15f %5d %3d\n" : "%#20.15f %#20.15f %#20.15f %5d\n",
         d.d[0], d.d[1], d.d[2],
         int (bvalue[d.b]), int (d.pe+1));
 
