@@ -92,13 +92,13 @@ except NameError:
   pass
 
 
-def abspath(*arg):
-  return os.path.abspath(os.path.join(*arg))
+def abspath(first, *arg):
+  return os.path.abspath(os.path.join(first, *arg))
 
 
-def relpath(*arg):
+def relpath(first, *arg):
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
-  return os.path.relpath(os.path.join(*arg), app.WORKING_DIR)
+  return os.path.relpath(os.path.join(first, *arg), app.WORKING_DIR)
 
 def copy(src, dst, follow_symlinks=True):
   """Copy data but do not set mode bits. Return the file's destination.
