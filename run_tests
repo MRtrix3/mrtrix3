@@ -169,6 +169,7 @@ cat >> $LOGFILE <<EOD
 Testing executables in: $MRTRIX_BINDIR
 EOD
 
+export PATH="$(pwd)/testing/bin:${MRTRIX_BINDIR}:${PATH}"
 
 for testitem in $testlist; do
 
@@ -179,7 +180,19 @@ for testitem in $testlist; do
 
 EOD
 
+  # check executable actually resides in the folder being tested:
+  executable="$(basename "${testitem}")"
+  exec_path="$(which "${executable}")"
+  [[ "$(dirname "${exec_path}")" -ef "${MRTRIX_BINDIR}" ]] || \
+    {
+      echo ""
+      echo "ERROR: command ${executable} resides in unexpected location: \"${exec_path}\""; 
+      echo "       command was expected to reside in \"${MRTRIX_BINDIR}\"";
+      exit 1;
+    }
+
   echo -n 'running "'${testitem}'"... '
+
   [[ -n "$datadir" ]] && rm -rf $datadir/tmp* $datadir/*-tmp-*
   ((ntests=0))
   ((success=0))
@@ -188,7 +201,6 @@ EOD
     [[ -n "$cmd" ]] || continue
     echo -n '# command: '$cmd >> $LOGFILE
     (
-      export PATH="$(pwd)/testing/bin:${MRTRIX_BINDIR}:$PATH";
       cd $datadir
       eval $cmd
     ) > .__tmp.log 2>&1
