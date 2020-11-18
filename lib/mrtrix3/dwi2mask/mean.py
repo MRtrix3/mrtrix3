@@ -51,7 +51,8 @@ def execute(): #pylint: disable=unused-variable
                 else 'mrmath input.mif')
               + ' mean - -axis 3 |'
               + ' mrthreshold - - |'
-              + ' maskfilter - bigblob - | '
+              + ' maskfilter - connect -largest - |'
+              + ' maskfilter - fill - |'
               + ' maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' mask.mif')
 
   return 'mask.mif'
