@@ -52,7 +52,8 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrthreshold trace.mif - -comparison gt | '
               'mrmath - max -axis 3 - | '
               'maskfilter - median - | '
-              'maskfilter - bigblob - | '
+              'maskfilter - connect -largest - | '
+              'maskfilter - fill - | '
               'maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' mask.mif')
 
   return 'mask.mif'

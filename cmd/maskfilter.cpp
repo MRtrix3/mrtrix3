@@ -17,10 +17,10 @@
 #include "command.h"
 #include "image.h"
 #include "filter/base.h"
-#include "filter/bigblob.h"
 #include "filter/connected_components.h"
 #include "filter/dilate.h"
 #include "filter/erode.h"
+#include "filter/fill.h"
 #include "filter/mask_clean.h"
 #include "filter/median.h"
 
@@ -30,7 +30,7 @@ using namespace App;
 #define DEFAULT_CLEAN_SCALE 2
 
 
-const char* filters[] = { "bigblob", "clean", "connect", "dilate", "erode", "median", nullptr };
+const char* filters[] = { "clean", "connect", "dilate", "erode", "fill", "median", nullptr };
 
 
 
@@ -59,6 +59,15 @@ const OptionGroup DilateErodeOption = OptionGroup ("Options for dilate / erode f
   + Option ("npass", "the number of times to repeatedly apply the filter")
     + Argument ("value").type_integer (1, 1e6);
 
+
+
+const OptionGroup FillOption = OptionGroup ("Options for interior-filling filter")
+
++ Option ("axes", "specify which axes should be included in the connected components. By default only "
+                  "the first 3 axes are included. The axes should be provided as a comma-separated list of values.")
+  + Argument ("axes").type_sequence_int()
+
++ Option ("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
 
 
 const OptionGroup MedianOption = OptionGroup ("Options for median filter")
@@ -92,6 +101,7 @@ void usage ()
   + CleanOption
   + ConnectOption
   + DilateErodeOption
+  + FillOption
   + MedianOption
 
   + Stride::Options;
@@ -106,15 +116,7 @@ void run () {
 
   int filter_index = argument[1];
 
-  if (filter_index == 0) { // Bigblob
-    Filter::BigBlob filter (input_image, std::string("obtaining filled largest blob in image ") + Path::basename (argument[0]));
-    Stride::set_from_command_line (filter);
-    auto output_image = Image<value_type>::create (argument[2], filter);
-    filter (input_image, output_image);
-    return;
-  }
-
-  if (filter_index == 1) { // Mask clean
+  if (filter_index == 0) { // Mask clean
     Filter::MaskClean filter (input_image, std::string("applying mask cleaning filter to image ") + Path::basename (argument[0]));
     filter.set_scale(get_option_value ("scale", DEFAULT_CLEAN_SCALE));
 
@@ -125,7 +127,7 @@ void run () {
     return;
   }
 
-  if (filter_index == 2) { // Connected components
+  if (filter_index == 1) { // Connected components
     Filter::ConnectedComponents filter (input_image, std::string("applying connected-component filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("axes");
     if (opt.size()) {
@@ -157,7 +159,7 @@ void run () {
     return;
   }
 
-  if (filter_index == 3) { // Dilate
+  if (filter_index == 2) { // Dilate
     Filter::Dilate filter (input_image, std::string("applying dilate filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("npass");
     if (opt.size())
@@ -171,7 +173,7 @@ void run () {
     return;
   }
 
-  if (filter_index == 4) { // Erode
+  if (filter_index == 3) { // Erode
     Filter::Erode filter (input_image, std::string("applying erode filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("npass");
     if (opt.size())
@@ -180,6 +182,22 @@ void run () {
     Stride::set_from_command_line (filter);
     filter.datatype() = DataType::Bit;
 
+    auto output_image = Image<value_type>::create (argument[2], filter);
+    filter (input_image, output_image);
+    return;
+  }
+
+  if (filter_index == 4) { // Fill
+    Filter::Fill filter (input_image, std::string("filling interior of image ") + Path::basename (argument[0]));
+    auto opt = get_options ("axes");
+    if (opt.size()) {
+      const vector<int> axes = opt[0][0];
+      filter.set_axes (axes);
+    }
+    opt = get_options ("connectivity");
+    if (opt.size())
+      filter.set_26_connectivity (true);
+    Stride::set_from_command_line (filter);
     auto output_image = Image<value_type>::create (argument[2], filter);
     filter (input_image, output_image);
     return;

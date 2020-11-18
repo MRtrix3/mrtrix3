@@ -76,7 +76,8 @@ def execute(): #pylint: disable=unused-variable
   # concatenate intensity-matched shells, and perform standard cleaning
   run.command(['mrmath', files, 'mean', '-', '|',
                'mrthreshold', '-', '-', '|',
-               'maskfilter', '-', 'bigblob', '-', '|',
+               'maskfilter', '-', 'connect', '-largest', '-', '|',
+               'maskfilter', '-', 'fill', '-', '|',
                'maskfilter', '-', 'clean', '-scale', str(app.ARGS.clean_scale), 'init_mask.mif'])
 
   if not app.ARGS.iterative:
@@ -112,7 +113,8 @@ def execute(): #pylint: disable=unused-variable
                 + ' -add '.join(filepath + ' ' + str(weight) + ' -mult' for filepath, weight in zip(files[1:], shell_weights[1:]))
                 + ' -add - |'
                 + ' mrthreshold - - |'
-                + ' maskfilter - bigblob - |'
+                + ' maskfilter - connect -largest - |'
+                + ' maskfilter - fill - |'
                 + ' maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' - |'
                 + ' mrcalc input_pos_mask.mif - -mult ' + mask_path + ' -datatype bit')
     mask_mismatch_path = 'mask_mismatch-{:02d}.mif'.format(iteration)
