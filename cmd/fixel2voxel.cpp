@@ -28,10 +28,9 @@
 
 #include "math/SH.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
@@ -77,7 +76,9 @@ void usage ()
     "influence on the calculation than fixels with lesser volume. For instance, when estimating "
     "a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's "
     "mean axon diameter should be weigthed by its relative volume within the voxel in the "
-    "calculation of that voxel mean.";
+    "calculation of that voxel mean."
+
+  + Fixel::format_description;
 
   REFERENCES
     + "* Reference for 'complexity' operation:\n"
