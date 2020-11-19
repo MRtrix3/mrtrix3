@@ -20,6 +20,12 @@ Usage
 -  *fixel_folder_out*: the fixel folder to which the output will be written. This can be the same as the input folder if desired
 -  *fixel_data_out*: the name of the fixel data image.
 
+Description
+-----------
+
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.2/fixel_based_analysis/fixel_directory_format.html
+
 Options
 -------
 

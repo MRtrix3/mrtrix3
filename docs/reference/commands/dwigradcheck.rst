@@ -17,10 +17,16 @@ Usage
 
 -  *input*: The input DWI series to be checked
 
+Description
+-----------
+
+Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. More information on mask derivation from DWI data can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.2/dwi_preprocessing/masking.html
+
 Options
 -------
 
-- **-mask image** Provide a brain mask image
+- **-mask image** Provide a mask image within which to seed & constrain tracking
 
 - **-number** Set the number of tracks to generate for each test
 

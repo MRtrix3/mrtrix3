@@ -24,12 +24,17 @@ Description
 
 This command will reconstruct the global white matter fibre tractogram that best explains the input DWI data, using a multi-tissue spherical convolution model.
 
-Example use: 
+A more thorough description of the operation of global tractography in MRtrix3 can be found in the online documentation:  |br|
+https://mrtrix.readthedocs.io/en/3.0.2/quantitative_structural_connectivity/global_tractography.html
 
- $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif  |br|
-   -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck 
+Example usages
+--------------
 
-in which dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is saved to tracks.tck. Optional output images fod.mif and fiso.mif contain the predicted WM fODF and isotropic tissue fractions of CSF and GM respectively, estimated as part of the global optimization and thus affected by spatial regularization.
+-   *Basic usage*::
+
+        $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck
+
+    dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is saved to tracks.tck. Optional output images fod.mif and fiso.mif contain the predicted WM fODF and isotropic tissue fractions of CSF and GM respectively, estimated as part of the global optimization and thus affected by spatial regularization.
 
 Options
 -------

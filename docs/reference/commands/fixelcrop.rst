@@ -24,6 +24,9 @@ Description
 
 The mask must be input as a fixel data file the same dimensions as the fixel data file(s) to be cropped.
 
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.2/fixel_based_analysis/fixel_directory_format.html
+
 Options
 -------
 

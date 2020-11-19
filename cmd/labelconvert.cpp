@@ -19,6 +19,7 @@
 #include "image_helpers.h"
 #include "mrtrix.h"
 #include "transform.h"
+#include "version.h"
 
 #include "algo/loop.h"
 #include "file/path.h"
@@ -55,7 +56,11 @@ void usage ()
     "the lookup table provided by that software, to conform to a new lookup table, particularly "
     "one where the node indices increment from 1, in preparation for connectome construction; "
     "examples of such target lookup table files are provided in share//mrtrix3//labelconvert//, "
-    "but can be created by the user to provide the desired node set // ordering // colours.";
+    "but can be created by the user to provide the desired node set // ordering // colours."
+
+  + "A more thorough description of the operation and purpose of the labelconvert command "
+    "can be found in the online documentation: \n"
+    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/quantitative_structural_connectivity/labelconvert_tutorial.html";
 
   EXAMPLES
   + Example ("Convert a Desikan-Killiany parcellation image as provided by FreeSurfer to have nodes incrementing from 1",
