@@ -13,12 +13,8 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import inspect, os, sys
+import inspect, os, shlex, sys
 from collections import namedtuple
-try:
-  from shlex import quote
-except ImportError:
-  from pipes import quote
 from mrtrix3._version import __version__
 
 
@@ -36,7 +32,7 @@ COMMAND_HISTORY_STRING = None
 if sys.argv:
   COMMAND_HISTORY_STRING = sys.argv[0]
   for arg in sys.argv[1:]:
-    COMMAND_HISTORY_STRING += ' ' + quote(arg) # Use quotation marks only if required
+    COMMAND_HISTORY_STRING += ' ' + shlex.quote(arg) # Use quotation marks only if required
   COMMAND_HISTORY_STRING += '  (version=' + __version__ + ')'
 
 

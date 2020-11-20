@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 # Copyright (c) 2008-2020 the MRtrix3 contributors.
 #
@@ -81,7 +81,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 # These need to be globals in order to be accessible from execute_parallel()
-class Shared(object):
+class Shared:
   def __init__(self):
     self._job_index = 0
     self.lock = threading.Lock()
@@ -132,7 +132,7 @@ def execute(): #pylint: disable=unused-variable
             to_exclude.extend(regex_hits)
           else:
             exclude_unmatched.append(exclude)
-        except Exception:
+        except re.error:
           exclude_unmatched.append(exclude)
     if exclude_unmatched:
       app.warn('Item' + ('s' if len(exclude_unmatched) > 1 else '') + ' specified via -exclude did not appear in input list: ' + str('\'' + exclude_unmatched[0] + '\'' if len(exclude_unmatched) == 1 else exclude_unmatched))
@@ -154,10 +154,10 @@ def execute(): #pylint: disable=unused-variable
 
   try:
     next(entry for entry in CMDSPLIT if any(key for key in KEYLIST if key in entry))
-  except StopIteration:
-    raise MRtrixError('None of the unique for_each keys ' + str(KEYLIST) + ' appear in command string "' + app.ARGS.command + '"; no substitution can occur')
+  except StopIteration as exception:
+    raise MRtrixError('None of the unique for_each keys ' + str(KEYLIST) + ' appear in command string "' + app.ARGS.command + '"; no substitution can occur') from exception
 
-  class Entry(object):
+  class Entry:
     def __init__(self, input_text):
       self.input_text = input_text
       self.sub_in = input_text
@@ -297,5 +297,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3
+import mrtrix3 #pylint: disable=wrong-import-position
 mrtrix3.execute() #pylint: disable=no-member
