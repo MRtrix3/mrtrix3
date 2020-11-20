@@ -256,8 +256,6 @@ namespace MR
         for (ssize_t row = 0; row != grad.rows(); ++row) {
           if (squared_norms[row])
             grad.row(row).template head<3>().array() /= std::sqrt(squared_norms[row]);
-          else
-            squared_norms[row] = 1.0;
         }
         // modulate verbosity of message & whether or not header is modified
         // based on magnitude of effect of normalisation
