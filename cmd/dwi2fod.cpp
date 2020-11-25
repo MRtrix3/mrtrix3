@@ -119,10 +119,14 @@ void usage ()
 
 class CSD_Processor { MEMALIGN(CSD_Processor)
   public:
-    CSD_Processor (const DWI::SDeconv::CSD::Shared& shared, Image<bool>& mask) :
+    CSD_Processor (const DWI::SDeconv::CSD::Shared& shared, Image<bool>& mask,
+                   Image<float> dwi_modelled = Image<float>()) :
       sdeconv (shared),
       data (shared.dwis.size()),
-      mask (mask) { }
+      mask (mask),
+      modelled_image(dwi_modelled),
+      dwi_data (shared.grad.rows()),
+      output_data (shared.problem.H.cols()) { }
 
 
     void operator () (Image<float>& dwi, Image<float>& fod) {
@@ -143,7 +147,14 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
         INFO ("voxel [ " + str (dwi.index(0)) + " " + str (dwi.index(1)) + " " + str (dwi.index(2)) +
             " ] did not reach full convergence");
 
-      fod.row(3) = sdeconv.FOD();
+      output_data = sdeconv.FOD();
+      fod.row(3) = output_data;
+
+      if (modelled_image.valid()) {
+        assign_pos_of (fod, 0, 3).to (modelled_image);
+        dwi_data = sdeconv.shared.problem.H * output_data;
+        modelled_image.row(3) = dwi_data;
+      }
     }
 
 
@@ -151,6 +162,9 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
     DWI::SDeconv::CSD sdeconv;
     Eigen::VectorXd data;
     Image<bool> mask;
+    Image<float> modelled_image;
+    Eigen::VectorXd dwi_data;
+    Eigen::VectorXd output_data;
 
 
     bool load_data (Image<float>& dwi) {
