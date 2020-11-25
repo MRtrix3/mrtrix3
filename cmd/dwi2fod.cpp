@@ -56,7 +56,11 @@ OptionGroup CommonOptions = OptionGroup ("Options common to more than one algori
 
     + Option ("mask",
               "only perform computation within the specified binary brain mask image.")
-      + Argument ("image").type_image_in();
+      + Argument ("image").type_image_in()
+      
+    + Option ("predicted_signal",
+              "output the predicted dwi image.")
+      + Argument ("image").type_image_out();
 
 void usage ()
 {
@@ -126,7 +130,7 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
       mask (mask),
       modelled_image(dwi_modelled),
       dwi_data (shared.grad.rows()),
-      output_data (shared.problem.H.cols()) { }
+      output_data (shared.HR_dirs.cols()) { }
 
 
     void operator () (Image<float>& dwi, Image<float>& fod) {
@@ -152,7 +156,7 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
 
       if (modelled_image.valid()) {
         assign_pos_of (fod, 0, 3).to (modelled_image);
-        dwi_data = sdeconv.shared.problem.H * output_data;
+        dwi_data = sdeconv.shared.HR_dirs * output_data;
         modelled_image.row(3) = dwi_data;
       }
     }
@@ -267,6 +271,11 @@ void run ()
     check_dimensions (header_in, mask, 0, 3);
   }
 
+  Image<float> dwi_modelled;
+  opt = get_options ("predicted_signal");
+  if (opt.size())
+    dwi_modelled = Image<float>::create (opt[0][0], header_in);
+
   int algorithm = argument[0];
   if (algorithm == 0) {
 
@@ -289,7 +298,7 @@ void run ()
     header_out.size(3) = shared.nSH();
     auto fod = Image<float>::create (argument[3], header_out);
 
-    CSD_Processor processor (shared, mask);
+    CSD_Processor processor (shared, mask, dwi_modelled);
     auto dwi = header_in.get_image<float>().with_direct_io (3);
     ThreadedLoop ("performing constrained spherical deconvolution", dwi, 0, 3)
         .run (processor, dwi, fod);
@@ -326,10 +335,6 @@ void run ()
       odfs.push_back (Image<float> (Image<float>::create (odf_paths[i], header_out)));
     }
 
-    Image<float> dwi_modelled;
-    auto opt = get_options ("predicted_signal");
-    if (opt.size())
-      dwi_modelled = Image<float>::create (opt[0][0], header_in);
 
     MSMT_Processor processor (shared, mask, odfs, dwi_modelled);
     auto dwi = header_in.get_image<float>().with_direct_io (3);
