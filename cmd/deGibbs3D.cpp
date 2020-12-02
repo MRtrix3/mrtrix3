@@ -59,13 +59,13 @@ class Filter {
     void operator() (ImageType& in, ImageType& out){
       //apply filter
       const double x[3] = {
-        1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(0), in.size(0)) / in.size(0)),
-        1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(1), in.size(1)) / in.size(1)),
-        1.0 + std::cos (2.0 * Math::pi * indexshift(in.index(2), in.size(2)) / in.size(2))
+        1.0 + std::cos (2.0 * Math::pi * indexshift (in.index(0), in.size(0)) / in.size(0)),
+        1.0 + std::cos (2.0 * Math::pi * indexshift (in.index(1), in.size(1)) / in.size(1)),
+        1.0 + std::cos (2.0 * Math::pi * indexshift (in.index(2), in.size(2)) / in.size(2))
       };
-      const double denom = x[0] + x[1];// + x[2];
+      const double denom = x[0] + x[1] + x[2];
 
-      out.value() = cdouble (in.value()) * ( denom ? (denom - x[axis]) / denom : 0.0);
+      out.value() = cdouble (in.value()) * ( denom ? 0.5*(denom - x[axis]) / denom : 0.0);
 
     }
 
@@ -103,7 +103,6 @@ class LineProcessor {
       fft.run();
 
 
-      const std::complex<double> j(0.0,1.0);
       const int lsize = input.size(axis);
 
 
@@ -117,9 +116,12 @@ class LineProcessor {
 
 
       // applying shift and inverse fourier transform back line-by-line
+      const std::complex<double> j(0.0,1.0);
       for (int f = 0; f < 2*num_shifts+1; f ++) {
         for (int n = 0; n < lsize; ++n)
           ifft[f][n] = fft[n] * exp(j * 2.0 * indexshift(n,lsize) * Math::pi * shift_ind[f] / double(lsize));
+        if (!(lsize&1))
+          ifft[f][lsize/2] = 0.0;
         ifft[f].run();
       }
 
@@ -136,7 +138,7 @@ class LineProcessor {
         double a1r = ifft[optshift_ind][n].real();
         double a2r = ifft[optshift_ind][wraparound(n+1,lsize)].real();
 
-        const double scale = input.size(0)*input.size(1) /*input.size(2)*/ * lsize;
+        const double scale = input.size(0)*input.size(1)*input.size(2) * lsize;
 
         // interpolate particular ifft back to right place
         if (shift > 0.0)
@@ -156,41 +158,26 @@ class LineProcessor {
     const int minW, maxW, num_shifts;
     Math::FFT1D fft;
     std::vector<Math::FFT1D> ifft;
+
+
     int optimumshift(int n, int lsize) {
-
-      // calculating for first shift
-      double sum_left = 0;
-      double sum_right = 0;
-
-      // calculating oscillation measure within given window
-      for (int k = minW; k <= maxW; ++k) {
-        sum_left += abs(ifft[0][wraparound(n-k,lsize)].real() - ifft[0][wraparound(n-k-1,lsize)].real());
-        sum_left += abs(ifft[0][wraparound(n-k,lsize)].imag() - ifft[0][wraparound(n-k-1,lsize)].imag());
-
-        sum_right += abs(ifft[0][wraparound(n+k,lsize)].real() - ifft[0][wraparound(n+k+1,lsize)].real());
-        sum_right += abs(ifft[0][wraparound(n+k,lsize)].imag() - ifft[0][wraparound(n+k+1,lsize)].imag());
-      }
-
-      double tot_var = std::min(sum_left,sum_right);
-
-      double opt_var = tot_var;
       int ind = 0;
-
+      double opt_var = std::numeric_limits<double>::max();
 
       // calculating oscillation measure for subsequent shifts
-      for (int f = 1; f < 2*num_shifts+1; f++) {
-        sum_right = sum_left = 0;
+      for (int f = 0; f < 2*num_shifts+1; f++) {
+        double sum_left = 0.0, sum_right = 0.0;
 
         // calculating oscillation measure within given window
         for (int k = minW; k <= maxW; ++k) {
-          sum_right += abs(ifft[f][wraparound(n-k,lsize)].real() - ifft[f][wraparound(n-k-1,lsize)].real());
-          sum_right += abs(ifft[f][wraparound(n-k,lsize)].imag() - ifft[f][wraparound(n-k-1,lsize)].imag());
+          sum_left += abs(ifft[f][wraparound(n-k,lsize)].real() - ifft[f][wraparound(n-k-1,lsize)].real());
+          sum_left += abs(ifft[f][wraparound(n-k,lsize)].imag() - ifft[f][wraparound(n-k-1,lsize)].imag());
 
-          sum_left += abs(ifft[f][wraparound(n+k,lsize)].real() - ifft[f][wraparound(n+k+1,lsize)].real());
-          sum_left += abs(ifft[f][wraparound(n+k,lsize)].imag() - ifft[f][wraparound(n+k+1,lsize)].imag());
+          sum_right += abs(ifft[f][wraparound(n+k,lsize)].real() - ifft[f][wraparound(n+k+1,lsize)].real());
+          sum_right += abs(ifft[f][wraparound(n+k,lsize)].imag() - ifft[f][wraparound(n+k+1,lsize)].imag());
         }
 
-        tot_var = std::min(sum_left,sum_right);
+        double tot_var = std::min(sum_left,sum_right);
 
         if (tot_var < opt_var) {
           opt_var = tot_var;
@@ -198,6 +185,7 @@ class LineProcessor {
         }
 
       }
+
       return ind;
     }
 
@@ -245,10 +233,10 @@ void run()
   // full 3D FFT of input:
   Math::FFT (input, image_FT, 0, FFTW_FORWARD);
   Math::FFT (image_FT, 1, FFTW_FORWARD);
-  //Math::FFT (image_FT, 2, FFTW_FORWARD);
+  Math::FFT (image_FT, 2, FFTW_FORWARD);
 
 
-  for (int axis = 0; axis < 2; ++axis) {
+  for (int axis = 0; axis < 3; ++axis) {
 
     // filter along x:
     ThreadedLoop(image_FT).run (Filter(axis), image_FT, image_filtered);
@@ -256,7 +244,7 @@ void run()
     // // then inverse FT back to image domain:
     Math::FFT (image_filtered, 0, FFTW_BACKWARD);
     Math::FFT (image_filtered, 1, FFTW_BACKWARD);
-    //Math::FFT (image_filtered, 2, FFTW_BACKWARD);
+    Math::FFT (image_filtered, 2, FFTW_BACKWARD);
 
     // apply unringing operation on desired axis:
     ThreadedLoop (image_filtered, strides_for_axis (axis))
