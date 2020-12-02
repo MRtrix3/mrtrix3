@@ -63,9 +63,10 @@ class Filter {
         1.0 + std::cos (2.0 * Math::pi * indexshift (in.index(1), in.size(1)) / in.size(1)),
         1.0 + std::cos (2.0 * Math::pi * indexshift (in.index(2), in.size(2)) / in.size(2))
       };
-      const double denom = x[0] + x[1] + x[2];
+      const double w[3] = { x[1]*x[2], x[0]*x[2], x[0]*x[1] };
+      const double denom = w[0] + w[1] + w[2];
 
-      out.value() = cdouble (in.value()) * ( denom ? 0.5*(denom - x[axis]) / denom : 0.0);
+      out.value() = cdouble (in.value()) * ( denom ? w[axis] / denom : 0.0 );
 
     }
 
