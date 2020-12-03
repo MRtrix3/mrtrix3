@@ -231,25 +231,32 @@ void run()
   header.datatype() = DataType::Float32;
   auto output = OutputImageType::create (argument[1], header);
 
+  ProgressBar progress ("performing 3D Gibbs ringing removal", 3);
+
   // full 3D FFT of input:
+  INFO ("performing initial 3D forward Fourier transform...");
   Math::FFT (input, image_FT, 0, FFTW_FORWARD);
   Math::FFT (image_FT, 1, FFTW_FORWARD);
   Math::FFT (image_FT, 2, FFTW_FORWARD);
 
-
   for (int axis = 0; axis < 3; ++axis) {
 
     // filter along x:
+    INFO ("filtering for axis "+str(axis)+"...");
     ThreadedLoop(image_FT).run (Filter(axis), image_FT, image_filtered);
 
-    // // then inverse FT back to image domain:
+    // then inverse FT back to image domain:
+    INFO ("applying 3D backward Fourier transform...");
     Math::FFT (image_filtered, 0, FFTW_BACKWARD);
     Math::FFT (image_filtered, 1, FFTW_BACKWARD);
     Math::FFT (image_filtered, 2, FFTW_BACKWARD);
 
     // apply unringing operation on desired axis:
+    INFO ("performing unringing along axis "+str(axis)+"...");
     ThreadedLoop (image_filtered, strides_for_axis (axis))
       .run_outer (LineProcessor (axis, image_filtered, output, minW, maxW, num_shifts));
+
+    ++progress;
   }
 
 }
