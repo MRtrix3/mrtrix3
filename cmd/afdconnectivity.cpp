@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "memory.h"
+#include "version.h"
 #include "dwi/fmls.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -56,8 +57,17 @@ void usage ()
     "that is more related to the cross-sectional volume of the tract (and therefore 'connectivity'). "
     "Note that SIFT-ed tract count is a superior measure because it is unaffected by tangential yet unrelated "
     "fibres. However, AFD connectivity may be used as a substitute when Anatomically Constrained Tractography "
-    "is not possible due to uncorrectable EPI distortions, and SIFT may therefore not be as effective.";
+    "is not possible due to uncorrectable EPI distortions, and SIFT may therefore not be as effective."
 
+  + "Longer discussion regarding this command can additionally be found at: "
+    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/afd_connectivity.html "
+    "(as well as in the relevant reference).";
+
+
+  REFERENCES
+  + "Smith, R. E.; Raffelt, D.; Tournier, J.-D.; Connelly, A. " // Internal
+    "Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. "
+    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
 
 
   ARGUMENTS
