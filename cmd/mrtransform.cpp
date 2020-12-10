@@ -188,7 +188,7 @@ void usage ()
     + Option ("reorient_fod",
         "specify whether to perform FOD reorientation. This is required if the number "
         "of volumes in the 4th dimension corresponds to the number of coefficients in an "
-        "antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes.")
+        "antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes).")
     + Argument ("boolean").type_bool()
 
     + DWI::GradImportOptions()
