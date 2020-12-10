@@ -375,6 +375,8 @@ def execute(): #pylint: disable=unused-variable
       line.append(trt)
       dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
       app.debug('Manual DWI PE scheme for \'Pair\' PE design: ' + str(dwi_manual_pe_scheme))
+      if len(se_epi_header.size()) != 4:
+        raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must be a 4D image')
       se_epi_num_volumes = se_epi_header.size()[3]
       if se_epi_num_volumes%2:
         raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
