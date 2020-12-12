@@ -977,16 +977,18 @@ namespace MR
     void sort_arguments (int argc, const char* const* argv)
     {
       for (int n = 1; n < argc; ++n) {
-        const Option* opt = match_option (argv[n]);
-        if (opt) {
-          if (n + int (opt->size()) >= argc)
-            throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
+        if (argv[n]) {
+          const Option* opt = match_option (argv[n]);
+          if (opt) {
+            if (n + int (opt->size()) >= argc)
+              throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
 
-          option.push_back (ParsedOption (opt, argv+n+1));
-          n += opt->size();
+            option.push_back (ParsedOption (opt, argv+n+1));
+            n += opt->size();
+          }
+          else
+            argument.push_back (ParsedArgument (nullptr, nullptr, argv[n]));
         }
-        else
-          argument.push_back (ParsedArgument (nullptr, nullptr, argv[n]));
       }
     }
 
