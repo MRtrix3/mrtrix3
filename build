@@ -15,23 +15,23 @@ if [ -f "${PREFIX}-build-deps.tar.gz" ]; then
   tar xfz ${PREFIX}-build-deps.tar.gz
 else
   # Grab latest versions from git
-  EIGEN_VERSION=$(git ls-remote --tags https://gitlab.com/libeigen/eigen.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v '-' | sort -V | tail -1)
+  EIGEN_VERSION=$(git ls-remote --tags https://gitlab.com/libeigen/eigen.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep -v '-' | sort -V | tail -1)
   EIGEN_VERSION=${EIGEN_VERSION#*/*/}
   echo "Using eigen ${EIGEN_VERSION}"
 
-  TIFF_VERSION=$(git ls-remote --tags https://gitlab.com/libtiff/libtiff.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
+  TIFF_VERSION=$(git ls-remote --tags https://gitlab.com/libtiff/libtiff.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep v.* | sort -V | tail -1)
   TIFF_VERSION=${TIFF_VERSION#*/*/v}
   echo "Using tiff ${TIFF_VERSION}"
 
-  PNG_VERSION=$(git ls-remote --tags https://github.com/glennrp/libpng.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep v.* | sort -V | tail -1)
+  PNG_VERSION=$(git ls-remote --tags https://github.com/glennrp/libpng.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep v.* | sort -V | tail -1)
   PNG_VERSION=${PNG_VERSION#*/*/v}
   echo "Using png ${PNG_VERSION}"
 
-  FFTW_VERSION=$(git ls-remote --tags https://github.com/FFTW/fftw3.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep 'fftw-3' | sort -V | tail -1)
+  FFTW_VERSION=$(git ls-remote --tags https://github.com/FFTW/fftw3.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep 'fftw-3' | sort -V | tail -1)
   FFTW_VERSION=${FFTW_VERSION#*/*/fftw-}
   echo "Using fftw ${FFTW_VERSION}"
 
-  QT_VERSION=$(git ls-remote --tags https://github.com/qt/qt5.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v '-' | grep '5.' | sort -V | tail -1)
+  QT_VERSION=$(git ls-remote --tags https://code.qt.io/qt/qt5.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep -v '-' | grep '5.' | sort -V | tail -1)
   QT_VERSION=${QT_VERSION#*/*/v}
   echo "Using qt ${QT_VERSION}"
 
@@ -135,10 +135,10 @@ cp -R ${PREFIX}-src/lib    ${PREFIX}
 cp -R ${PREFIX}-src/share  ${PREFIX}
 cp -R ${PREFIX}-src/matlab ${PREFIX}
 rm -rf ${PREFIX}-src
-cp -a ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Network,Svg,Widgets}${QT_POSTFIX}.*.dylib ${PREFIX}/lib
+cp -a ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Network,Svg,Widgets}.*.dylib ${PREFIX}/lib
 mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats}
-cp -a ${PREFIX}_dep/plugins/platforms/libqcocoa${QT_POSTFIX}.dylib  ${PREFIX}/bin/plugins/platforms
-cp -a ${PREFIX}_dep/plugins/imageformats/libqsvg${QT_POSTFIX}.dylib ${PREFIX}/bin/plugins/imageformats
+cp -a ${PREFIX}_dep/plugins/platforms/libqcocoa.dylib  ${PREFIX}/bin/plugins/platforms
+cp -a ${PREFIX}_dep/plugins/imageformats/libqsvg.dylib ${PREFIX}/bin/plugins/imageformats
 rm -rf ${PREFIX}_dep
 
 cp -R ${PLD}/MRView.app ${PREFIX}/bin
