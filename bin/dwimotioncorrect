@@ -290,9 +290,9 @@ def execute(): #pylint: disable=unused-variable
 
     #   __________ Motion correction __________
 
-    liveconfig = {**config['global']}
     nepochs = len(config['epochs']) - 1
     for k, epoch in enumerate(config['epochs']):
+        liveconfig = {**config['global']}
         liveconfig.update(epoch)
         # update template
         fieldalignstep(k)
