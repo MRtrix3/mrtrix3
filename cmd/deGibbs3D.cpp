@@ -217,7 +217,7 @@ inline vector<size_t> strides_for_axis (int axis)
 void run()
 {
   const int minW = 1;
-  const int maxW = 3;
+  const int maxW = 2;
   const int num_shifts = 20;
 
 
