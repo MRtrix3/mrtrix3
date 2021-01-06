@@ -46,7 +46,7 @@ View options
 
 -  **-focus x,y,z or boolean** *(multiple uses permitted)* Either set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values or show or hide the focus cross hair using a boolean value as argument.
 
--  **-target x,y,z** Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window
+-  **-target x,y,z** *(multiple uses permitted)* Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window
 
 -  **-voxel x,y,z** *(multiple uses permitted)* Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values.
 
