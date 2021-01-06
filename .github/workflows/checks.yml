@@ -83,10 +83,6 @@ jobs:
 
     - name: install dependencies
       run: |
-         brew uninstall openssl@1.0.2t  # required to fix brew update failure
-         brew uninstall python@2.7.17   # https://github.com/actions/virtual-environments/issues/1811#issuecomment-708480190
-         brew untap local/openssl
-         brew untap local/python2
          brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
          brew upgrade
          brew install qt5 eigen pkg-config libtiff fftw libpng
