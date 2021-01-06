@@ -161,9 +161,13 @@ namespace MR
 
           if (use_lighting || color_type == TrackColourType::Direction)
             source += "g_tangent = v_tangent[0];\n";
+          if (do_crop_to_slab)
+            source += "g_include = v_include[0];\n";
           source += "gl_Position = gl_in[0].gl_Position; EmitVertex();\n";
           if (use_lighting || color_type == TrackColourType::Direction)
             source += "g_tangent = v_tangent[1];\n";
+          if (do_crop_to_slab)
+            source += "g_include = v_include[1];\n";
           source += "gl_Position = gl_in[1].gl_Position; EmitVertex();\n}\n";
           return source;
 
