@@ -116,7 +116,7 @@ def execute(): #pylint: disable=unused-variable
   for ibv, bval in enumerate(bvalues):
     app.console(' * b=' + str(bval) + '...')
     meanpath = 'mean_b' + str(bval) + '.mif'
-    run.command('dwiextract dwi.mif -shells ' + str(bval) + ' - | mrmath - mean ' + meanpath + ' -axis 3', show=False)
+    run.command('dwiextract dwi.mif -shells ' + str(bval) + ' - | mrcalc - 0 -max - | mrmath - mean ' + meanpath + ' -axis 3', show=False)
     errpath = 'err_b' + str(bval) + '.mif'
     run.command('mrcalc ' + meanpath + ' -finite ' + meanpath + ' 0 -if 0 -le ' + errpath + ' -datatype bit', show=False)
     errcmd += ' ' + errpath
