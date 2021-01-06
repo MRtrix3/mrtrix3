@@ -126,7 +126,8 @@ namespace MR
 
           std::string source =
           "layout(lines) in;\n"
-          "layout(triangle_strip, max_vertices = 4) out;\n"
+          //"layout(triangle_strip, max_vertices = 4) out;\n"
+          "layout(line_strip, max_vertices = 2) out;\n"
           "uniform float line_thickness;\n"
           "uniform float downscale_factor;\n"
           "uniform mat4 MV;\n"
@@ -157,6 +158,14 @@ namespace MR
             "out float g_height;\n";
 
           source += "void main() {\n";
+
+          if (use_lighting || color_type == TrackColourType::Direction)
+            source += "g_tangent = v_tangent[0];\n";
+          source += "gl_Position = gl_in[0].gl_Position; EmitVertex();\n";
+          if (use_lighting || color_type == TrackColourType::Direction)
+            source += "g_tangent = v_tangent[1];\n";
+          source += "gl_Position = gl_in[1].gl_Position; EmitVertex();\n}\n";
+          return source;
 
           if (do_crop_to_slab)
             source +=
