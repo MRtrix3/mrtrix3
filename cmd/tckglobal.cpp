@@ -281,7 +281,12 @@ void run ()
     }
   }
 
-  uint64_t niter = get_option_value("niter", DEFAULT_NITER);
+  uint64_t niter = DEFAULT_NITER;
+  opt = get_options("niter");
+  if (opt.size())
+  {
+    niter = opt[0][0].as_uint();
+  }
   double t0 = get_option_value("t0", DEFAULT_T0);
   double t1 = get_option_value("t1", DEFAULT_T1);
 
