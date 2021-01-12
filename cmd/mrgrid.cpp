@@ -1,15 +1,17 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
 #include <set>
@@ -166,10 +168,10 @@ void run () {
     }
 
     // over-sampling
-    vector<int> oversample = Adapter::AutoOverSample;
+    vector<uint32_t> oversample = Adapter::AutoOverSample;
     opt = get_options ("oversample");
     if (opt.size()) {
-      oversample = opt[0][0];
+      oversample = parse_ints<uint32_t> (opt[0][0]);
     }
 
     Header template_header;
@@ -200,10 +202,10 @@ void run () {
       ++resize_option_count;
     }
 
-    vector<int> image_size;
+    vector<uint32_t> image_size;
     opt = get_options ("size");
     if (opt.size()) {
-      image_size = parse_ints (opt[0][0]);
+      image_size = parse_ints<uint32_t> (opt[0][0]);
       regrid_filter.set_size (image_size);
       ++resize_option_count;
     }
@@ -360,7 +362,7 @@ void run () {
       end = spec.find_first_of(":", start);
       if (end == std::string::npos) { // spec = delta_lower,delta_upper
         vector<int> delta; // 0: not changed, > 0: pad, < 0: crop
-        try { delta = parse_ints (opt[i][1]); }
+        try { delta = parse_ints<int> (opt[i][1]); }
         catch (Exception& E) { Exception (E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\""); }
         if (delta.size() != 2)
           throw Exception ("-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");

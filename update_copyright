@@ -1,0 +1,145 @@
+#!/usr/bin/env python
+
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import datetime, os
+from collections import namedtuple
+
+
+
+COPYRIGHT = [
+    'Copyright (c) 2008-' + str(datetime.date.today().year) + ' the MRtrix3 contributors.',
+    '',
+    'This Source Code Form is subject to the terms of the Mozilla Public',
+    'License, v. 2.0. If a copy of the MPL was not distributed with this',
+    'file, You can obtain one at http://mozilla.org/MPL/2.0/.',
+    '',
+    'Covered Software is provided under this License on an "as is"',
+    'basis, without warranty of any kind, either expressed, implied, or',
+    'statutory, including, without limitation, warranties that the',
+    'Covered Software is free of defects, merchantable, fit for a',
+    'particular purpose or non-infringing.',
+    'See the Mozilla Public License v. 2.0 for more details.',
+    '',
+    'For more details, see http://www.mrtrix.org/.']
+
+SearchPath = namedtuple('SearchPath', 'dirname recursive need_shebang comment extensions blacklist')
+ProcessFile = namedtuple('ProcessFile', 'path keep_shebang comment')
+
+MRTRIX_ROOT = os.path.abspath(os.path.dirname(__file__))
+APP_CPP_PATH = os.path.join(MRTRIX_ROOT, 'core', 'app.cpp')
+APP_CPP_STRING = 'const char* COPYRIGHT ='
+APP_PY_PATH = os.path.join(MRTRIX_ROOT, 'lib', 'mrtrix3', 'app.py')
+APP_PY_STRING = '_DEFAULT_COPYRIGHT ='
+
+SEARCH_PATHS = [
+    SearchPath('.', False, True, '#', [], ['mrtrix-mrview.desktop']),
+    SearchPath('bin', False, True, '#', [], []),
+    SearchPath('bin', False, True, '#', ['.py'], []),
+    SearchPath('cmd', False, False, '*', ['.cpp'], []),
+    SearchPath('core', True, False, '*', ['.cpp', '.h'], [os.path.join('file', 'json.h'), os.path.join('file', 'nifti1.h'), 'version.h']),
+    SearchPath('docs', False, True, '#', [], []),
+    SearchPath('matlab', True, False, '%', ['.m'], []),
+    SearchPath('lib', True, False, '#', ['.py'], [os.path.join('mrtrix3', '_version.py')]),
+    SearchPath('share', True, False, '#', ['.txt'], []),
+    SearchPath('src', True, False, '*', ['.cpp', '.h'], []),
+    SearchPath(os.path.join('testing', 'cmd'), False, False, '*', ['.cpp'], []),
+    SearchPath(os.path.join('testing', 'src'), True, False, '*', ['.cpp', '.h'], [])]
+
+
+
+
+
+
+
+def main():
+
+  def has_shebang(filepath):
+    try:
+      with open(filepath, 'r') as shebang_file:
+        return shebang_file.read(2) == '#!'
+    except UnicodeDecodeError:
+      return False
+
+  filelist = []
+  for path in SEARCH_PATHS:
+    start = os.path.join(MRTRIX_ROOT, path.dirname)
+    if path.recursive:
+      for root, _, files in os.walk(start):
+        for filename in sorted(files):
+          if (not path.extensions) or any(filename.endswith(extension) for extension in path.extensions):
+            fullpath = os.path.join(root, filename)
+            relpath = os.path.relpath(fullpath, start)
+            if (relpath not in path.blacklist) and (not path.need_shebang or has_shebang(fullpath)):
+              filelist.append(ProcessFile(fullpath, path.need_shebang, path.comment))
+    else:
+      for filename in sorted(os.listdir(start)):
+        if (not path.extensions) or any(filename.endswith(extension) for extension in path.extensions):
+          fullpath = os.path.join(start, filename)
+          if os.path.isfile(fullpath) and (filename not in path.blacklist) and (not path.need_shebang or has_shebang(fullpath)):
+            filelist.append(ProcessFile(fullpath, path.need_shebang, path.comment))
+
+  for item in filelist:
+    with open(item.path, 'r') as infile:
+      data = infile.readlines()
+    if not data:
+      continue
+    if item.keep_shebang:
+      shebang = data[0]
+      data = data[next(index for index, value in enumerate(data[1:]) if value.strip())+1:]
+    else:
+      shebang = None
+    if item.comment == '*':
+      # Crop existing copyright notice
+      data = data[next(index for index, value in enumerate(data) if not any(value.lstrip().startswith(prefix) for prefix in ['/*', '*', '*/'])):]
+      # Insert new copyright notice
+      data = ['/* ' + COPYRIGHT[0] + '\n'] + [' *' + (' ' + line if line else '') + '\n' for line in COPYRIGHT[1:]] + [' */\n'] + data
+    else:
+      # Crop existing copyright notice
+      data = data[next(index for index, value in enumerate(data) if not value.startswith(item.comment)):]
+      # Insert new copyright notice
+      data = [item.comment + (' ' + line if line else '') + '\n' for line in COPYRIGHT] + data
+    with open(item.path, 'w') as outfile:
+      if shebang:
+        outfile.write(shebang + '\n')
+      outfile.write(''.join(data))
+
+
+
+  with open(APP_CPP_PATH, 'r') as app_cpp_file:
+    data = app_cpp_file.readlines()
+  first_line = next(index for index, value in enumerate(data) if value.strip().startswith(APP_CPP_STRING)) + 1
+  indent = ' ' * (len(data[first_line]) - len(data[first_line].lstrip()))
+  with open(APP_CPP_PATH, 'w') as app_cpp_file:
+    app_cpp_file.write(''.join(data[:first_line]))
+    for line in COPYRIGHT[:-1]:
+      app_cpp_file.write(indent + '"' + line.replace('"', '\\"') + '\\n"\n')
+    app_cpp_file.write(indent + '"' + COPYRIGHT[-1].replace('"', '\\"') + '\\n";\n')
+    app_cpp_file.write(''.join(data[first_line+len(COPYRIGHT):]))
+
+
+  with open(APP_PY_PATH, 'r') as app_py_file:
+    data = app_py_file.readlines()
+  first_line = next(index for index, value in enumerate(data) if value.startswith(APP_PY_STRING)) + 1
+  with open(APP_PY_PATH, 'w') as app_py_file:
+    app_py_file.write(''.join(data[:first_line]))
+    app_py_file.write('\'\'\'' + '\n'.join(COPYRIGHT) + '\'\'\'\n')
+    app_py_file.write(''.join(data[first_line+len(COPYRIGHT):]))
+
+
+
+if __name__ == '__main__':
+  main()

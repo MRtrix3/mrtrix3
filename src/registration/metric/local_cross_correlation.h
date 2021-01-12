@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -163,7 +163,7 @@ namespace MR
                 auto cc_mask_header = Header::scratch (parameters.midway_image);
 
                 auto cc_image = cc_image_header.template get_image <ProcessedImageValueType>().with_direct_io(Stride::contiguous_along_axis(3));
-                vector<int> NoOversample;
+                vector<uint32_t> NoOversample;
                 {
                   LogLevelLatch log_level (0);
                   if (parameters.im1_mask.valid() or parameters.im2_mask.valid())

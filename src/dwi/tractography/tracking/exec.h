@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -113,6 +113,12 @@ namespace MR
             Exec (const typename Method::Shared& shared) :
               S (shared),
               method (shared),
+              track_excluded (false),
+              include_visitation (S.properties.include, S.properties.ordered_include) { }
+
+            Exec (const Exec& that) :
+              S (that.S),
+              method (that.method),
               track_excluded (false),
               include_visitation (S.properties.include, S.properties.ordered_include) { }
 
@@ -447,17 +453,13 @@ namespace MR
 
             void truncate_exit_sgm (vector<Eigen::Vector3f>& tck)
             {
-              Interpolator<Image<float>>::type source (S.source);
-
               const size_t sgm_start = tck.size() - method.act().sgm_depth;
               assert (sgm_start >= 0 && sgm_start < tck.size());
               size_t best_termination = tck.size() - 1;
               float min_value = std::numeric_limits<float>::infinity();
               for (size_t i = sgm_start; i != tck.size(); ++i) {
-                method.pos = tck[i];
-                method.get_data (source);
-                method.dir = (tck[i] - tck[i-1]).normalized();
-                const float this_value = method.get_metric();
+                const Eigen::Vector3f direction = (tck[i] - tck[i-1]).normalized();
+                const float this_value = method.get_metric (tck[i], direction);
                 if (this_value < min_value) {
                   min_value = this_value;
                   best_termination = i;

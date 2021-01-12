@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -119,10 +119,10 @@ namespace MR
 
       opt = get_options("linstage.iterations");
       if (opt.size()) {
-        vector<int> iterations = parse_ints (opt[0][0]);
+        const auto iterations = parse_ints<uint32_t> (opt[0][0]);
         registration.set_stage_iterations (iterations);
       } else {
-        registration.set_stage_iterations (vector<int> {1});
+        registration.set_stage_iterations (vector<uint32_t> {1});
       }
 
       opt = get_options("linstage.diagnostics.prefix");

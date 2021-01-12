@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -247,7 +247,7 @@ namespace MR
         WarpType deformation = WarpType::scratch (midway_header);
 
         transform_type linear;
-        vector<int> index(1);
+        vector<uint32_t> index (1);
         if (from == 1) {
           linear = Registration::Warp::parse_linear_transform (warp, "linear1");
           index[0] = 0;
@@ -270,7 +270,7 @@ namespace MR
         transform_type linear1 = Registration::Warp::parse_linear_transform (warp, "linear1");
         transform_type linear2 = Registration::Warp::parse_linear_transform (warp, "linear2");
 
-        vector<int> index(1);
+        vector<uint32_t> index (1);
         if (from == 1) {
           index[0] = 0;
           Adapter::Extract1D<Image<default_type>> im1_to_mid (warp, 4, index);

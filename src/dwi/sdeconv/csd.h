@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ namespace MR
               using namespace App;
               auto opt = get_options ("lmax");
               if (opt.size()) {
-                auto list = parse_ints (opt[0][0]);
+                auto list = parse_ints<uint32_t> (opt[0][0]);
                 if (list.size() != 1)
                   throw Exception ("CSD algorithm expects a single lmax to be specified");
                 lmax_cmdline = list.front();
@@ -123,7 +123,7 @@ namespace MR
               if (lmax_response <= 0)
                 throw Exception ("response function does not contain anisotropic terms");
 
-              lmax = ( lmax_cmdline ? lmax_cmdline : std::min (lmax_response, DEFAULT_CSD_LMAX) );
+              lmax = ( lmax_cmdline ? lmax_cmdline : std::min (lmax_response, uint32_t(DEFAULT_CSD_LMAX)) );
 
               if (lmax <= 0 || lmax % 2)
                 throw Exception ("lmax must be a positive even integer");
@@ -206,7 +206,7 @@ namespace MR
             Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
             default_type neg_lambda, norm_lambda, threshold;
             vector<size_t> dwis;
-            int lmax_response, lmax_data, lmax_cmdline, lmax;
+            uint32_t lmax_response, lmax_data, lmax_cmdline, lmax;
             size_t niter;
         };
 

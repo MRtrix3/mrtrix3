@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,6 +23,7 @@
 #include "transform.h"
 #include "types.h"
 #include "interp/base.h"
+#include "interp/nearest.h"
 
 namespace MR
 {
@@ -61,7 +62,7 @@ namespace MR
 
 
     extern const transform_type NoTransform;
-    extern const vector<int> AutoOverSample;
+    extern const vector<uint32_t> AutoOverSample;
 
     //! \addtogroup interp
     // @{
@@ -118,7 +119,7 @@ namespace MR
           Reslice (const ImageType& original,
                    const HeaderType& reference,
                    const transform_type& transform = NoTransform,
-                   const vector<int>& oversample = AutoOverSample,
+                   const vector<uint32_t>& oversample = AutoOverSample,
                    const value_type value_when_out_of_bounds = Interp::Base<ImageType>::default_out_of_bounds_value()) :
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },
@@ -129,22 +130,33 @@ namespace MR
               using namespace Eigen;
               assert (ndim() >= 3);
 
-              if (oversample.size()) {
+              const bool is_nearest = std::is_same<typename Interp::Nearest<ImageType>, decltype(interp)>::value;
+
+              if (oversample.size()) { // oversample explicitly set
                 assert (oversample.size() == 3);
                 if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1)
                   throw Exception ("oversample factors must be greater than zero");
-                OS[0] = oversample[0];
-                OS[1] = oversample[1];
-                OS[2] = oversample[2];
+                if (is_nearest && (oversample[0] != 1 || oversample[1] != 1 || oversample[2] != 1)) {
+                  WARN("oversampling factors ignored for nearest neighbour interpolation");
+                  OS[0] = OS[1] = OS[2] = 1;
+                }
+                else {
+                  OS[0] = oversample[0]; OS[1] = oversample[1]; OS[2] = oversample[2];
+                }
               }
-              else {
-                Vector3 y = direct_transform * Vector3 (0.0, 0.0, 0.0);
-                Vector3 x0 = direct_transform * Vector3 (1.0, 0.0, 0.0);
-                OS[0] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
-                x0 = direct_transform * Vector3 (0.0, 1.0, 0.0);
-                OS[1] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
-                x0 = direct_transform * Vector3 (0.0, 0.0, 1.0);
-                OS[2] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
+              else { // oversample is default
+                if (is_nearest) {
+                  OS[0] = OS[1] = OS[2] = 1;
+                }
+                else {
+                  Vector3 y = direct_transform * Vector3 (0.0, 0.0, 0.0);
+                  Vector3 x0 = direct_transform * Vector3 (1.0, 0.0, 0.0);
+                  OS[0] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
+                  x0 = direct_transform * Vector3 (0.0, 1.0, 0.0);
+                  OS[1] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
+                  x0 = direct_transform * Vector3 (0.0, 0.0, 1.0);
+                  OS[2] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
+                }
               }
 
               if (OS[0] * OS[1] * OS[2] > 1) {
@@ -185,11 +197,11 @@ namespace MR
             Vector3 d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
             default_type sum (0.0);
             Vector3 s;
-            for (int z = 0; z < OS[2]; ++z) {
+            for (uint32_t z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
-              for (int y = 0; y < OS[1]; ++y) {
+              for (uint32_t y = 0; y < OS[1]; ++y) {
                 s[1] = d[1] + y*inc[1];
-                for (int x = 0; x < OS[0]; ++x) {
+                for (uint32_t x = 0; x < OS[0]; ++x) {
                   s[0] = d[0] + x*inc[0];
                   if (interp.voxel (direct_transform * s))
                     sum += interp.value();
@@ -214,7 +226,7 @@ namespace MR
         const ssize_t dim[3];
         const default_type vox[3];
         bool oversampling;
-        int OS[3];
+        uint32_t OS[3];
         default_type from[3], inc[3];
         default_type norm;
         const transform_type transform_, direct_transform;

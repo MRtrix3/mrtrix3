@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -114,12 +114,12 @@ void run ()
   }
 
   auto in = H_in.get_image<float>();
-  float lower = int(argument[1]) == 6 ? 0.0 : get_option_value ("lower", NaN);
+  float lower = colourmap.is_rgb ? 0.0 : get_option_value ("lower", NaN);
   float upper = get_option_value ("upper", NaN);
   if (!std::isfinite (lower) || !std::isfinite (upper)) {
     float image_min = NaN, image_max = NaN;
     min_max (in, image_min, image_max);
-    if (int(argument[1]) == 6) { // RGB
+    if (colourmap.is_rgb) { // RGB
       image_max = std::max (MR::abs (image_min), MR::abs (image_max));
     } else {
       if (!std::isfinite (lower)) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -106,12 +106,14 @@ namespace MR
       else {
         __need_newline = true;
         if (p.show_percent()) {
-          if (p.value() == 0) {
+          if (p.first_time) {
+             p.first_time = false;
             __print_stderr (printf ("%s: %s%s [",
                   App::NAME.c_str(), p.text().c_str(), p.ellipsis().c_str()));;
           }
-          else if (p.value()%2 == 0) {
+          else while (p.last_value < p.value()) {
             __print_stderr (printf ("="));
+            p.last_value += 2;
           }
         }
         else {
@@ -141,7 +143,7 @@ namespace MR
         if (p.show_percent())
           __print_stderr (printf ("]\n"));
         else
-          __print_stderr (printf (" done\n"));
+          __print_stderr (printf ("done\n"));
       }
       __need_newline = false;
     }
