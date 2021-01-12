@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,6 @@ namespace MR
   namespace ImageIO
   {
 
-
     void Pipe::load (const Header& header, size_t)
     {
       assert (files.size() == 1);
@@ -48,18 +47,15 @@ namespace MR
     {
       if (mmap) {
         mmap.reset();
-        if (is_new)
+        if (is_new) {
           std::cout << files[0].name << "\n";
+          SignalHandler::unmark_file_for_deletion (files[0].name);
+        }
         addresses[0].release();
       }
-
-      if (!is_new && files.size() == 1) {
-        DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
-        std::remove (files[0].name.c_str());
-        SignalHandler::unmark_file_for_deletion (files[0].name);
-      }
-
     }
+
+    bool Pipe::delete_piped_images = true;
 
   }
 }

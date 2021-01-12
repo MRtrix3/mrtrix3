@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -393,14 +393,16 @@ namespace MR
               throw Exception ("Error reading colour table from file \"" + H.name() + "\": No entries");
             std::string table;
             const int32_t filename_length = fetch<int32_t> (in);
-            std::string filename (filename_length + 1, '\0');
+            std::string filename (filename_length, '\0');
             in.read (const_cast<char*> (filename.data()), filename_length);
             for (int32_t structure = 0; structure != nentries; ++structure) {
               const int32_t structurename_length = fetch<int32_t> (in);
               if (structurename_length < 0)
                 throw Exception ("Error reading colour table from file \"" + H.name() + "\": Negative structure name length");
-              std::string structurename (structurename_length + 1, '\0');
+              std::string structurename (structurename_length, '\0');
               in.read (const_cast<char*> (structurename.data()), structurename_length);
+              while (structurename.size() && !structurename.back())
+                structurename.pop_back();
               const int32_t r = fetch<int32_t> (in);
               const int32_t g = fetch<int32_t> (in);
               const int32_t b = fetch<int32_t> (in);
@@ -420,7 +422,7 @@ namespace MR
               throw Exception ("Error reading colour table from file \"" + H.name() + "\": No entries");
             vector<std::string> table;
             const int32_t filename_length = fetch<int32_t> (in);
-            std::string filename (filename_length + 1, '\0');
+            std::string filename (filename_length, '\0');
             in.read (const_cast<char*> (filename.data()), filename_length);
             const int32_t num_entries_to_read = fetch<int32_t> (in);
             for (int32_t i = 0; i != num_entries_to_read; ++i) {
@@ -434,8 +436,10 @@ namespace MR
               const int32_t structurename_length = fetch<int32_t> (in);
               if (structurename_length < 0)
                 throw Exception ("Error reading colour table from file \"" + H.name() + "\": Negative structure name length");
-              std::string structurename (structurename_length + 1, '\0');
+              std::string structurename (structurename_length, '\0');
               in.read (const_cast<char*> (structurename.data()), structurename_length);
+              while (structurename.size() && !structurename.back())
+                structurename.pop_back();
               const int32_t r = fetch<int32_t> (in);
               const int32_t g = fetch<int32_t> (in);
               const int32_t b = fetch<int32_t> (in);
@@ -474,6 +478,8 @@ namespace MR
                     || id == MGH_TAG_OLD_USEREALRAS
                     || id == MGH_TAG_OLD_COLORTABLE)
                 size = 0;
+              else if (id <= 0)
+                throw Exception ("Invalid tag (" + str(id) + ") in MGH format \"other data\"");
               else
                 size = fetch<int64_t> (in);
               std::string content (size+1, '\0');
@@ -818,7 +824,7 @@ namespace MR
             const std::string filename = "INTERNAL";
             store<int32_t> (filename.size()+1, out);
             out.write (filename.c_str(), filename.size()+1);
-            for (auto line : lines) {
+            for (const auto& line : lines) {
               const auto entries = split (line, ",", true);
               if (entries.size() != 5)
                 throw Exception ("Error writing colour table to file: Line has " + str(entries.size()) + " fields, expected 5");
@@ -836,6 +842,7 @@ namespace MR
 
           auto write_colourtable_V2 = [] (const std::string& table, Output& out)
           {
+            store<int32_t> (MGH_TAG_OLD_COLORTABLE, out);
             store<int32_t> (-2, out);
             // Need to find out the maximum node index
             const auto lines = split_lines (table);
@@ -847,13 +854,13 @@ namespace MR
               const int32_t index = to<int32_t> (entries[0]);
               max_index = std::max (max_index, index);
             }
-            store<int32_t> (max_index, out);
+            store<int32_t> (max_index+1, out);
             const std::string filename = "INTERNAL";
             store<int32_t> (filename.size()+1, out);
             out.write (filename.c_str(), filename.size()+1);
             // Actual number of entries in the table
             store<int32_t> (lines.size(), out);
-            for (auto line : lines) {
+            for (const auto& line : lines) {
               const auto entries = split (line, ",", true);
               // Index,Name,Red,Green,Blue,Transparency
               store<int32_t> (to<int32_t> (entries[0]), out);
@@ -954,8 +961,8 @@ namespace MR
           //   tag ID.
           for (const auto& tag : tags) {
             store<int32_t> (tag.id, out);
-            store<int64_t> (tag.content.size(), out);
-            out.write (tag.content.c_str(), tag.content.size());
+            store<int64_t> (tag.content.size()+1, out);
+            out.write (tag.content.c_str(), tag.content.size()+1);
           }
           if (auto_align_matrix)
             write_matrix (*auto_align_matrix, out);
@@ -981,12 +988,10 @@ namespace MR
               default: WARN ("Malformed colour table in header (incorrect number of columns); not written to output image"); break;
             }
           }
-          if (cmdline_tags.size()) {
-            for (auto tag : cmdline_tags) {
-              store<int32_t> (tag.id, out);
-              store<int64_t> (tag.content.size()+1, out);
-              out.write (tag.content.c_str(), tag.content.size()+1);
-            }
+          for (const auto& tag : cmdline_tags) {
+            store<int32_t> (tag.id, out);
+            store<int64_t> (tag.content.size()+1, out);
+            out.write (tag.content.c_str(), tag.content.size()+1);
           }
         }
 

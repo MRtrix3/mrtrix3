@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -318,7 +318,7 @@ void run ()
   auto opt = get_options ("axes");
   const bool axes_set_manually = opt.size();
   if (opt.size()) {
-    vector<int> axes = opt[0][0];
+    vector<uint32_t> axes = parse_ints<uint32_t> (opt[0][0]);
     if (axes.size() != 2)
       throw Exception ("slice axes must be specified as a comma-separated 2-vector");
     if (size_t(std::max (axes[0], axes[1])) >= header.ndim())

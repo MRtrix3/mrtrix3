@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -180,24 +180,6 @@ namespace MR
             min_entry->setValue (tractogram->scaling_min());
             max_entry->setValue (tractogram->scaling_max());
 
-            threshold_lower_box->setEnabled (true);
-            if (tractogram->use_discard_lower()) {
-              threshold_lower_box->setChecked(true);
-              threshold_lower->setEnabled (true);
-            } else {
-              threshold_lower->setEnabled (false);
-              threshold_lower_box->setChecked(false);
-            }
-            threshold_upper_box->setEnabled (true);
-            if (tractogram->use_discard_upper()) {
-              threshold_upper_box->setChecked (true);
-              threshold_upper->setEnabled (true);
-            } else {
-              threshold_upper->setEnabled (false);
-              threshold_upper_box->setChecked (false);
-            }
-            threshold_lower->setRate (tractogram->scaling_rate());
-
             colourmap_menu->setEnabled (true);
             colourmap_actions[tractogram->colourmap]->setChecked (true);
             show_colour_bar->setChecked (tractogram->show_colour_bar);
@@ -242,9 +224,9 @@ namespace MR
             threshold_lower    ->setEnabled (tractogram->use_discard_lower());
             threshold_upper_box->setChecked (tractogram->use_discard_upper());
             threshold_upper    ->setEnabled (tractogram->use_discard_upper());
-            threshold_lower->setRate  (tractogram->scaling_rate());
+            threshold_lower->setRate  (tractogram->get_threshold_rate());
             threshold_lower->setValue (tractogram->lessthan);
-            threshold_upper->setRate  (tractogram->scaling_rate());
+            threshold_upper->setRate  (tractogram->get_threshold_rate());
             threshold_upper->setValue (tractogram->greaterthan);
           }
         }

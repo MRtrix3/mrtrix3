@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,9 +50,9 @@ def execute(): #pylint: disable=unused-variable
 
   fast_cmd = fsl.exe_name('fast')
 
-  app.warn('Use of -fsl option in dwibiascorrect script is discouraged due to its strong dependence ' + \
+  app.warn('Use of fsl algorithm in dwibiascorrect script is discouraged due to its strong dependence ' + \
            'on brain masking (specifically its inability to correct voxels outside of this mask).' + \
-           'Use of the -ants option is recommended for quantitative DWI analyses.')
+           'Use of the ants algorithm is recommended for quantitative DWI analyses.')
 
   # Generate a mean b=0 image
   run.command('dwiextract in.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3')

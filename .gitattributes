@@ -1,0 +1,18 @@
+# Sources
+*.h     text diff=cpp
+*.cpp   text diff=cpp
+*.py    text diff=python
+*.m     text diff=matlab
+
+
+# Documentation
+*.md    text
+*.rst   text
+*.html  text -diff
+*.css   text -diff
+
+
+# Auxillary files
+*.svg       binary -diff
+
+

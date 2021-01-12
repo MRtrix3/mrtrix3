@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -63,11 +63,11 @@ namespace MR
               QAbstractItemModel (parent) { }
 
             QVariant data (const QModelIndex& index, int role) const {
-              if (!index.isValid()) return QVariant();
+              if (!index.isValid()) return {};
               if (role == Qt::CheckStateRole) {
                 return planes[index.row()].active ? Qt::Checked : Qt::Unchecked;
               }
-              if (role != Qt::DisplayRole) return QVariant();
+              if (role != Qt::DisplayRole) return {};
               return qstr (planes[index.row()].name);
             }
 
@@ -81,7 +81,7 @@ namespace MR
             }
 
             Qt::ItemFlags flags (const QModelIndex& index) const {
-              if (!index.isValid()) return 0;
+              if (!index.isValid()) return {};
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
             }
 
@@ -91,7 +91,7 @@ namespace MR
               return createIndex (row, column);
             }
 
-            QModelIndex parent (const QModelIndex&) const { return QModelIndex(); }
+            QModelIndex parent (const QModelIndex&) const { return {}; }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const
             {
@@ -292,7 +292,7 @@ namespace MR
 
           transparent_intensity = new AdjustButton (this);
           connect (transparent_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));
-          hlayout->addWidget (transparent_intensity, 0, 0);
+          hlayout->addWidget (transparent_intensity);
 
           opaque_intensity = new AdjustButton (this);
           connect (opaque_intensity, SIGNAL (valueChanged()), this, SLOT (onSetTransparency()));

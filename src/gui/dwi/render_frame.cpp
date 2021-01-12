@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -332,7 +332,14 @@ namespace MR
 
       void RenderFrame::wheelEvent (QWheelEvent* event)
       {
-        int scroll = event->delta() / 120;
+#if QT_VERSION >= 0x050500
+        QPoint delta = event->pixelDelta();
+        if (delta.isNull())
+          delta = event->angleDelta() / 8;
+#else
+        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
+#endif
+        int scroll = delta.y() / 15;
         for (int n = 0; n < scroll; n++) scale *= ScaleInc;
         for (int n = 0; n > scroll; n--) scale /= ScaleInc;
         update();

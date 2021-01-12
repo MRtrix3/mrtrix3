@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,7 +42,7 @@ namespace MR
 
             void set_seq (const std::string& s) {
               clear ();
-              if (s.size()) seq = parse_ints (s);
+              if (s.size()) seq = parse_ints<uint32_t> (s);
               seq_length = 1;
             }
 
@@ -56,11 +56,11 @@ namespace MR
               return (str);
             }
 
-            const vector<int>& sequence () const {
+            const vector<uint32_t>& sequence () const {
               return (seq);
             }
 
-            vector<int>& sequence () {
+            vector<uint32_t>& sequence () {
               return (seq);
             }
 
@@ -83,7 +83,7 @@ namespace MR
           protected:
             size_t seq_length;
             std::string str;
-            vector<int> seq;
+            vector<uint32_t> seq;
         };
 
 
@@ -101,7 +101,7 @@ namespace MR
           return (array[i]);
         }
 
-        const vector<int>& sequence (size_t index) const {
+        const vector<uint32_t>& sequence (size_t index) const {
           return (array[seq_index[index]].sequence());
         }
 
@@ -113,10 +113,10 @@ namespace MR
           return (seq_index[number]);
         }
 
-        bool match (const std::string& file_name, vector<int>& indices) const;
-        void calculate_padding (const vector<int>& maxvals);
-        std::string name (const vector<int>& indices);
-        std::string get_next_match (vector<int>& indices, bool return_seq_index = false);
+        bool match (const std::string& file_name, vector<uint32_t>& indices) const;
+        void calculate_padding (const vector<uint32_t>& maxvals);
+        std::string name (const vector<uint32_t>& indices);
+        std::string get_next_match (vector<uint32_t>& indices, bool return_seq_index = false);
 
         friend std::ostream& operator<< (std::ostream& stream, const NameParser& parser);
 
@@ -150,17 +150,17 @@ namespace MR
     //! a class to hold a parsed image filename
     class ParsedName { NOMEMALIGN
       public:
-        ParsedName (const std::string& name, const vector<int>& index) : indices (index), filename (name) { }
+        ParsedName (const std::string& name, const vector<uint32_t>& index) : indices (index), filename (name) { }
 
         //! a class to hold a set of parsed image filenames
         class List { NOMEMALIGN
           public:
-            vector<int> parse_scan_check (const std::string& specifier, 
-                size_t max_num_sequences = std::numeric_limits<size_t>::max());
+            vector<uint32_t> parse_scan_check (const std::string& specifier,
+                                               size_t max_num_sequences = std::numeric_limits<size_t>::max());
 
             void scan (NameParser& parser);
 
-            vector<int> count () const;
+            vector<uint32_t> count () const;
 
             size_t biggest_filename_size () const {
               return max_name_size;
@@ -174,7 +174,7 @@ namespace MR
 
           protected:
             vector<std::shared_ptr<ParsedName>> list;
-            void count_dim (vector<int>& dim, size_t& current_entry, size_t current_dim) const;
+            void count_dim (vector<uint32_t>& dim, size_t& current_entry, size_t current_dim) const;
             size_t max_name_size;
         };
 
@@ -186,7 +186,7 @@ namespace MR
         size_t ndim () const {
           return indices.size();
         }
-        int index (size_t num) const {
+        uint32_t index (size_t num) const {
           return indices[num];
         }
 
@@ -194,8 +194,8 @@ namespace MR
         friend std::ostream& operator<< (std::ostream& stream, const ParsedName& pin);
 
       protected:
-        vector<int>    indices;
-        std::string         filename;
+        vector<uint32_t> indices;
+        std::string filename;
 
     };
 

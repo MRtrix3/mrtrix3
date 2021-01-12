@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -359,11 +359,11 @@ namespace MR
 
 
 
-      void SIFTer::set_regular_outputs (const vector<int>& in, const bool b)
+      void SIFTer::set_regular_outputs (const vector<uint32_t>& in, const bool b)
       {
-        for (vector<int>::const_iterator i = in.begin(); i != in.end(); ++i) {
-          if (*i > 0 && *i <= (int)contributions.size())
-            output_at_counts.push_back (*i);
+        for (auto i : in) {
+          if (i > 0 && i <= contributions.size())
+            output_at_counts.push_back (i);
         }
         sort (output_at_counts.begin(), output_at_counts.end());
         output_debug = b;

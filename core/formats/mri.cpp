@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -344,7 +344,7 @@ namespace MR
       write_tag (out, MRI_DATA, 1, is_BE);
       out.put (store_datatype (H.datatype()));
 
-      size_t data_offset = out.tellp();
+      size_t data_offset = int64_t(out.tellp());
       out.close();
 
       std::unique_ptr<ImageIO::Base> io_handler (new ImageIO::Default (H));

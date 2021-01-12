@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -244,20 +244,18 @@ void run ()
     }
   }
 
-  vector<int> lmax;
-  int max_lmax = 0;
+  vector<uint32_t> lmax;
+  uint32_t max_lmax = 0;
   opt = get_options ("lmax");
   if (get_options("isotropic").size()) {
     for (size_t i = 0; i != dirs_azel.size(); ++i)
       lmax.push_back (0);
     max_lmax = 0;
   } else if (opt.size()) {
-    lmax = parse_ints (opt[0][0]);
+    lmax = parse_ints<uint32_t> (opt[0][0]);
     if (lmax.size() != dirs_azel.size())
       throw Exception ("Number of lmax\'s specified (" + str(lmax.size()) + ") does not match number of b-value shells (" + str(dirs_azel.size()) + ")");
     for (auto i : lmax) {
-      if (i < 0)
-        throw Exception ("Values specified for lmax must be non-negative");
       if (i%2)
         throw Exception ("Values specified for lmax must be even");
       max_lmax = std::max (max_lmax, i);

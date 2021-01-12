@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -2268,6 +2268,8 @@ namespace MR
           for (node_t n = 1; n <= max_index; ++n)
             node_coms[n] *= (1.0f / float(node_volumes[n]));
 
+          selected_nodes.resize (max_index+1);
+
           nodes.clear();
           const size_t pixheight = dynamic_cast<Node_list*>(node_list->tool)->row_height();
 
@@ -2316,8 +2318,6 @@ namespace MR
           H_overlay.sanitise();
           node_overlay.reset (new NodeOverlay (std::move (H_overlay)));
           update_node_overlay();
-
-          selected_nodes.resize (num_nodes()+1);
 
           dynamic_cast<Node_list*>(node_list->tool)->initialize();
         }
@@ -2755,13 +2755,44 @@ namespace MR
           } else {
             // Load the node names from the LUT
             // Other properties will only be pulled from the LUT if requested
+            // Permit two indices to have a duplicate entry without warning
+            //   (so that using new FreeSurfer tables will not raise a warning);
+            //   if more than two node indices has a duplicate entry, issue the
+            //   user with a warning, as they may have selected the incorrect
+            //   LUT file
+            for (node_t node_index = 1; node_index <= num_nodes(); ++node_index)
+              nodes[node_index].set_name ("");
+            size_t duplicate_entry_count = 0;
             for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
               const size_t count = lut.count (node_index);
-              if (count) {
-                if (count > 1)
-                  throw Exception ("Duplicate entries in lookup table file for index " + str(node_index));
+              if (count == 1) {
                 nodes[node_index].set_name (lut.find(node_index)->second.get_name());
+              } else if (count > 1) {
+                ++duplicate_entry_count;
+                vector<std::string> names;
+                const auto range = lut.equal_range (node_index);
+                for (auto i = range.first; i != range.second; ++i)
+                  names.push_back (i->second.get_name());
+                std::nth_element (names.begin(), names.begin(), names.end());
+                nodes[node_index].set_name (names.front());
               }
+            }
+            if (duplicate_entry_count > 2) {
+              WARN("Lookup table file contains " + str(duplicate_entry_count) + " indices with duplicate entries; "
+                   "file may be intended for use in conversion rather than visualisation");
+            }
+            size_t absent_entry_count = 0;
+            for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
+              if (nodes[node_index].get_volume() && !nodes[node_index].get_name().size()) {
+                const std::string name = "Node " + str(node_index);
+                nodes[node_index].set_name (name);
+                lut.insert (std::make_pair (node_index, MR::Connectome::LUT_node (name)));
+                ++absent_entry_count;
+              }
+            }
+            if (absent_entry_count) {
+              WARN(str(absent_entry_count) + " indices present in parcellation image with no entry in lookup table; "
+                   "lookup table file and parcellation image may not match");
             }
           }
 
