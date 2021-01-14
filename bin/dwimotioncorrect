@@ -310,8 +310,8 @@ def execute(): #pylint: disable=unused-variable
 
 
     #   __________ Copy outputs __________
-
-    run.command('mrconvert recon-'+str(nepochs)+'.mif ' + path.from_user(app.ARGS.output, True) + (' -force' if app.FORCE_OVERWRITE else ''))
+    
+    run.command('mrconvert recon-'+str(nepochs)+'.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
     if app.ARGS.export_motion:
         run.command('cp motion.txt ' + path.from_user(app.ARGS.export_motion, True))
     if app.ARGS.export_weights:
