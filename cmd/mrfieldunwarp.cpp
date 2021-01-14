@@ -28,13 +28,22 @@ void usage ()
 
   SYNOPSIS = "Unwarp an EPI image according to its susceptibility field.";
 
+  DESCRIPTION
+    + "This command takes EPI data and a field map in Hz, and inverts the distortion introduced "
+      "by the B0 field inhomogeneity. The command can also take motion parameters for each volume "
+      "or slice, but does not invert the motion. The motion parameters are only used to align the "
+      "field with the moving subject."
+
+    + "If the field map is estimated using FSL Topup, make sure to use the --fmap output "
+      "(the field map in Hz) instead of the spline coefficient representation saved by default.";
+
   ARGUMENTS
     + Argument ("input",
                 "the input image.").type_image_in ()
     + Argument ("field",
-                "the B0 field.").type_file_in ()
+                "the B0 field map in Hz.").type_file_in ()
     + Argument ("output",
-                "the output, field unwrapped, image.").type_image_out ();
+                "the field-unwrapped image.").type_image_out ();
 
   OPTIONS
     + Option ("motion",
