@@ -132,6 +132,11 @@ void run ()
 {
   auto data = Image<value_type>::open(argument[0]);
   auto field = Image<value_type>::open(argument[1]);
+  if (not voxel_grids_match_in_scanner_space(data, field)) {
+    WARN("Field map voxel grid does not match the input data. "
+         "If the field map was estimated using FSL TOPUP, make sure to use the --fmap output "
+         "(the field map in Hz) instead of the spline coefficient representation.");
+  }
 
   auto petable = PhaseEncoding::get_scheme(data);
   if (petable.rows() != data.size(3))
