@@ -8,7 +8,7 @@ Daan Christiaens, Lucilio Cordero-Grande, Maximilian Pietsch, Jana Hutter, Antho
 
 ## Setup & build
 
-Prerequisites: MRtrix 3.0 and Eigen 3.3.3 
+Prerequisites: MRtrix 3.0, Eigen 3.3.3, and python 3.x with numpy and scipy.
 
 The code is built like any other [MRtrix3](https://github.com/MRtrix3/mrtrix3) 
 module, i.e., by setting up a symbolic link to the core build script:
@@ -17,6 +17,7 @@ module, i.e., by setting up a symbolic link to the core build script:
 $ git clone https://github.com/dchristiaens/shard-recon.git
 $ cd shard-recon
 $ ln -s /path/to/mrtrix3/build
+$ ln -s /path/to/mrtrix3/bin/mrtrix3.py bin/
 $ ./build
 ```
 
