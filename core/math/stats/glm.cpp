@@ -491,7 +491,8 @@ namespace MR
 
 
         // Same model partitioning as is used in FSL randomise
-        Hypothesis::Partition Hypothesis::partition (const matrix_type& design) const
+        template <class MatrixType>
+        Hypothesis::Partition Hypothesis::partition (const MatrixType& design) const
         {
           // eval() calls necessary for older versions of Eigen / compiler to work:
           //   can't seem to map Eigen template result to const matrix_type& as the Math::pinv() input
@@ -508,6 +509,8 @@ namespace MR
                                 (design * D * Cv * (Cv.transpose() * D * Cv).inverse()).eval();
           return Partition (X, Z);
         }
+        template Hypothesis::Partition Hypothesis::partition (const matrix_type&) const;
+        template Hypothesis::Partition Hypothesis::partition (const matrix_type::ConstRowsBlockXpr&) const;
 
 
 
@@ -973,29 +976,20 @@ namespace MR
           //   based on the presence of non-finite values?
           if (finite_count == num_inputs()) {
 
-            Mfull_masked.resize (num_inputs(), num_factors());
             Mfull_masked.block (0, 0, num_inputs(), M.cols()) = M;
-            Mfull_masked.block (0, M.cols(), num_inputs(), extra_column_data.cols()) = extra_column_data;
+            if (num_importers())
+              Mfull_masked.block (0, M.cols(), num_inputs(), extra_column_data.cols()) = extra_column_data;
             shuffling_matrix_masked = shuffling_matrix;
             y_masked = y.col (ie);
 
           } else {
-#ifdef GLM_TEST_DEBUG
-            VAR (M.cols());
-            VAR (num_importers());
-#endif
-            Mfull_masked.resize (finite_count, num_factors());
-#ifdef GLM_TEST_DEBUG
-            VAR (Mfull_masked.rows());
-            VAR (Mfull_masked.cols());
-#endif
-            y_masked.resize (finite_count);
             permuted_mask.clear (true);
             size_t out_index = 0;
             for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
               if (element_mask[in_index]) {
                 Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
-                Mfull_masked.block (out_index, M.cols(), 1, extra_column_data.cols()) = extra_column_data.row (in_index);
+                if (num_importers())
+                  Mfull_masked.block (out_index, M.cols(), 1, extra_column_data.cols()) = extra_column_data.row (in_index);
                 y_masked[out_index++] = y(in_index, ie);
               } else {
                 // Any row in the permutation matrix that contains a non-zero entry
@@ -1009,10 +1003,10 @@ namespace MR
             }
             assert (out_index == finite_count);
             assert (permuted_mask.count() == finite_count);
-            assert (y_masked.allFinite());
+            assert (Mfull_masked.topRows (finite_count).allFinite());
+            assert (y_masked.head (finite_count).allFinite());
             // Only after we've reduced the design matrix do we now reduce the shuffling matrix
             // Step 1: Remove rows that contain non-zero entries in columns to be removed
-            intermediate_shuffling_matrix.resize (finite_count, num_inputs());
             out_index = 0;
             for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
               if (permuted_mask[in_index])
@@ -1020,7 +1014,6 @@ namespace MR
             }
             assert (out_index == finite_count);
             // Step 2: Remove columns
-            shuffling_matrix_masked.resize (finite_count, finite_count);
             out_index = 0;
             for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
               if (element_mask[in_index])
@@ -1100,8 +1093,6 @@ namespace MR
           stats .resize (num_elements(), num_hypotheses());
           zstats.resize (num_elements(), num_hypotheses());
 
-          // TODO Alter so that rather than using resizing, utilises Eigen blocks
-
           // Let's loop over elements first, then hypotheses in the inner loop
           for (ssize_t ie = 0; ie != num_elements(); ++ie) {
 
@@ -1149,17 +1140,14 @@ namespace MR
               dof.row (ie).fill (NaN);
             } else {
               apply_mask (ie, shuffling_matrix);
-#ifdef GLM_TEST_DEBUG
-              VAR (Mfull_masked.rows());
-              VAR (Mfull_masked.cols());
-#endif
-              assert (Mfull_masked.allFinite());
+              assert (Mfull_masked.topRows (finite_count).allFinite());
 
               // Test condition number of NaN-masked & data-filled design matrix;
               //   need to skip statistical testing if it is too poor
               // TODO Condition number testing may be quite slow;
               //   would a rank calculation with tolerance be faster?
-              const default_type condition_number = Math::condition_number (Mfull_masked);
+              // TODO JacobiSVD refuses to run on an Eigen::Block due to member "Options" not being defined
+              const default_type condition_number = Math::condition_number (Mfull_masked.topRows (finite_count).eval());
 #ifdef GLM_TEST_DEBUG
               VAR (condition_number);
 #endif
@@ -1169,27 +1157,19 @@ namespace MR
                 dof.row (ie).fill (NaN);
               } else {
 
-                pinvMfull_masked = Math::pinv (Mfull_masked);
-#ifdef GLM_TEST_DEBUG
-                VAR (pinvMfull_masked.rows());
-                VAR (pinvMfull_masked.cols());
-#endif
-                Rm.noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
-#ifdef GLM_TEST_DEBUG
-                VAR (Rm.rows());
-                VAR (Rm.cols());
-#endif
+                pinvMfull_masked.leftCols (finite_count) = Math::pinv (Mfull_masked.topRows (finite_count));
+                Rm.topLeftCorner (finite_count, finite_count).noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked.topRows (finite_count) * pinvMfull_masked.leftCols (finite_count));
 
                 // We now have our permutation (shuffling) matrix and design matrix prepared,
                 //   and can commence regressing the partitioned model of each hypothesis
                 for (size_t ih = 0; ih != num_hypotheses(); ++ih) {
 
-                  const auto partition = c[ih].partition (Mfull_masked);
+                  const auto partition = c[ih].partition (Mfull_masked.topRows (finite_count));
                   dof (ie, ih) = finite_count - partition.rank_x - partition.rank_z;
                   if (dof (ie, ih) < 1) {
                     stats (ie, ih) = zstats (ie, ih) = dof (ie, ih) = value_type(0);
                   } else {
-                    XtX[ih].noalias() = partition.X.transpose()*partition.X;
+                    XtX[ih].noalias() = partition.X.transpose() * partition.X;
 #ifdef GLM_TEST_DEBUG
                     VAR (XtX[ih].rows());
                     VAR (XtX[ih].cols());
@@ -1197,7 +1177,7 @@ namespace MR
                     // Now that we have the individual hypothesis model partition for these data,
                     //   the rest of this function should proceed similarly to the fixed
                     //   design matrix case
-                    Sy = shuffling_matrix_masked * partition.Rz * y_masked.matrix();
+                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count) * partition.Rz * y_masked.head (finite_count).matrix();
                     lambda = pinvMfull_masked * Sy.matrix();
                     beta[ih].noalias() = c[ih].matrix() * lambda.matrix();
 #ifdef GLM_TEST_DEBUG
@@ -1206,7 +1186,7 @@ namespace MR
                     VAR (beta[ih].rows());
                     VAR (beta[ih].cols());
 #endif
-                    const default_type sse = (Rm*Sy.matrix()).squaredNorm();
+                    const default_type sse = (Rm.topLeftCorner (finite_count, finite_count) * Sy.head (finite_count).matrix()).squaredNorm();
 
                     const default_type F = ((beta[ih].transpose() * XtX[ih] * beta[ih]) (0, 0) / c[ih].rank()) /
                                             (sse / dof (ie, ih));
@@ -1277,12 +1257,15 @@ namespace MR
                                                                   const bool nans_in_data,
                                                                   const bool nans_in_columns) :
             TestVariableBase (measurements, design, hypotheses, importers),
-            VG_masked (num_inputs())
+            W (measurements.rows()),
+            sq_residuals (measurements.rows()),
+            VG_masked (measurements.rows())
         {
           shared.reset (new Shared (hypotheses, variance_groups, importers, nans_in_data, nans_in_columns));
           // Require shared to have bene initialised
           sse_per_vg.resize (num_variance_groups());
           Rnn_sums.resize (num_variance_groups());
+          Wterms.resize (num_variance_groups());
           VG_counts.resize (num_variance_groups());
         }
 
@@ -1290,8 +1273,11 @@ namespace MR
 
         TestVariableHeteroscedastic::TestVariableHeteroscedastic (const TestVariableHeteroscedastic& that) :
             TestVariableBase (that),
+            W (num_inputs()),
+            sq_residuals (num_inputs()),
             sse_per_vg (num_variance_groups()),
             Rnn_sums (num_variance_groups()),
+            Wterms (num_variance_groups()),
             VG_masked (num_inputs()),
             VG_counts (num_variance_groups()) { }
 
@@ -1325,12 +1311,11 @@ namespace MR
               zstats.row (ie).setZero();
             } else {
               apply_mask (ie, shuffling_matrix);
-              const default_type condition_number = Math::condition_number (Mfull_masked);
+              const default_type condition_number = Math::condition_number (Mfull_masked.topRows (finite_count).eval());
               if (!std::isfinite (condition_number) || condition_number > 1e5) {
                 stats.row (ie).fill (0.0);
                 zstats.row (ie).fill (0.0);
               } else {
-                VG_masked.resize (finite_count);
                 VG_counts.setZero();
                 size_t out_index = 0;
                 for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
@@ -1344,16 +1329,16 @@ namespace MR
                   stats.row (ie).fill (0.0);
                   zstats.row (ie).fill (0.0);
                 } else {
-                  pinvMfull_masked = Math::pinv (Mfull_masked);
-                  Rm.noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
+                  pinvMfull_masked.leftCols (finite_count) = Math::pinv (Mfull_masked.topRows (finite_count));
+                  Rm.topLeftCorner (finite_count, finite_count).noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked.topRows (finite_count) * pinvMfull_masked.leftCols (finite_count));
                   for (size_t ih = 0; ih != num_hypotheses(); ++ih) {
-                    const auto partition = c[ih].partition (Mfull_masked);
+                    const auto partition = c[ih].partition (Mfull_masked.topRows (finite_count));
 
                     // At this point the implementation diverges from the TestVariableHomoscedastic case,
                     //   more closely mimicing the TestFixedHeteroscedastic case
-                    Sy = shuffling_matrix_masked * partition.Rz * y_masked.matrix();
-                    lambda = pinvMfull_masked * Sy.matrix();
-                    sq_residuals = (Rm*Sy.matrix()).array().square();
+                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count) * partition.Rz * y_masked.head (finite_count).matrix();
+                    lambda = pinvMfull_masked.leftCols (finite_count) * Sy.head (finite_count).matrix();
+                    sq_residuals.head (finite_count) = (Rm.topLeftCorner (finite_count, finite_count) * Sy.head (finite_count).matrix()).array().square();
                     sse_per_vg.setZero();
                     Rnn_sums.setZero();
                     for (size_t input = 0; input != finite_count; ++input) {
@@ -1366,13 +1351,12 @@ namespace MR
                         Wterms[vg] = 0.0;
                     }
                     default_type W_trace (0.0);
-                    W.resize (finite_count);
                     for (size_t input = 0; input != finite_count; ++input) {
                       W[input] = Wterms[VG_masked[input]];
                       W_trace += W[input];
                     }
 
-                    const default_type numerator = lambda.matrix().transpose() * c[ih].matrix().transpose() * (c[ih].matrix() * (Mfull_masked.transpose() * W.asDiagonal() * Mfull_masked).inverse() * c[ih].matrix().transpose()).inverse() * c[ih].matrix() * lambda.matrix();
+                    const default_type numerator = lambda.matrix().transpose() * c[ih].matrix().transpose() * (c[ih].matrix() * (Mfull_masked.topRows (finite_count).transpose() * W.matrix().head (finite_count).asDiagonal() * Mfull_masked.topRows (finite_count)).inverse() * c[ih].matrix().transpose()).inverse() * c[ih].matrix() * lambda.matrix();
 
                     default_type gamma (0.0);
                     for (size_t vg_index = 0; vg_index != num_variance_groups(); ++vg_index)

@@ -95,7 +95,8 @@ namespace MR
                 F (true),
                 i (index) { check_nonzero(); }
 
-            Partition partition (const matrix_type&) const;
+            template <class MatrixType>
+            Partition partition (const MatrixType&) const;
 
             const matrix_type& matrix() const { return c; }
             ssize_t cols() const { return c.cols(); }
@@ -595,8 +596,7 @@ namespace MR
 
           protected:
             // Temporaries
-            Eigen::Matrix<default_type, Eigen::Dynamic, 1> W;
-            vector_type sq_residuals, sse_per_vg, Rnn_sums, Wterms;
+            vector_type W, sq_residuals, sse_per_vg, Rnn_sums, Wterms;
             index_array_type VG_masked, VG_counts;
 
         };
