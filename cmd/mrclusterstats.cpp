@@ -327,12 +327,12 @@ void run() {
   }
 
   // Construct the class for performing the initial statistical tests
-  std::shared_ptr<GLM::TestBase> glm_test;
+  std::unique_ptr<GLM::TestBase> glm_test;
   if (extra_columns.size() || nans_in_data) {
     if (variance_groups.size())
-      glm_test.reset (new GLM::TestVariableHeteroscedastic (extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+      glm_test.reset (new GLM::TestVariableHeteroscedastic (data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns));
     else
-      glm_test.reset (new GLM::TestVariableHomoscedastic (extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+      glm_test.reset (new GLM::TestVariableHomoscedastic (data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns));
   } else {
     if (variance_groups.size())
       glm_test.reset (new GLM::TestFixedHeteroscedastic (data, design, hypotheses, variance_groups));

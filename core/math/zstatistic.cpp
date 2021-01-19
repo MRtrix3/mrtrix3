@@ -38,10 +38,10 @@ namespace MR
 
     namespace
     {
-      default_type F2z_upper (const default_type F, const size_t rank, const default_type dof)
+      default_type G2z_upper (const default_type G, const size_t rank, const default_type dof)
       {
-        assert (F >= 1.0);
-        const default_type x = (dof/F) / (dof/F + default_type(rank));
+        assert (G >= 1.0);
+        const default_type x = (dof/G) / (dof/G + default_type(rank));
         return Math::sqrt2 * Math::erfcinv (2.0 *
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
               Math::betaincreg (Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, 0.5 * dof),
@@ -53,10 +53,10 @@ namespace MR
                                             );
       }
 
-      default_type F2z_lower (const default_type oneoverF, const size_t rank, const default_type dof)
+      default_type G2z_lower (const default_type oneoverG, const size_t rank, const default_type dof)
       {
-        assert (oneoverF >= 1.0);
-        const default_type x = (default_type(rank)/oneoverF) / (default_type(rank)/oneoverF + dof);
+        assert (oneoverG >= 1.0);
+        const default_type x = (default_type(rank)/oneoverG) / (default_type(rank)/oneoverG + dof);
         return Math::sqrt2 * Math::erfinv (2.0 *
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
               Math::betaincreg (Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, 0.5 * default_type(rank)),
@@ -74,9 +74,24 @@ namespace MR
 
 
 
-    default_type t2z (const default_type stat, const default_type dof)
+
+    default_type t2z (const default_type stat, const size_t dof)
     {
-      const default_type x = dof / (Math::pow2 (stat) + dof);
+      return v2z (stat, default_type (dof));
+    }
+
+    default_type F2z (const default_type F, const size_t rank, const size_t dof)
+    {
+      return G2z (F, rank, default_type (dof));
+    }
+
+
+
+
+
+    default_type v2z (const default_type v, const default_type dof)
+    {
+      const default_type x = dof / (Math::pow2 (v) + dof);
       return Math::sqrt2 * Math::erfcinv (
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
             Math::betaincreg (Eigen::Array<default_type, Eigen::Dynamic, 1>::Constant (1, 0.5 * dof),
@@ -85,17 +100,19 @@ namespace MR
 #else
             Math::betaincreg (0.5 * dof, 0.5, x)
 #endif
-                                           ) * (stat < 0.0 ? -1.0 : 1.0);
+                                           ) * (v < 0.0 ? -1.0 : 1.0);
     }
 
 
 
-    default_type F2z (const default_type F, const size_t rank, const default_type dof)
+    default_type G2z (const default_type G, const size_t rank, const default_type dof)
     {
-      if (F >= 1.0)
-        return F2z_upper (F, rank, dof);
+      assert (G >= 0.0);
+      if (!G) return -std::numeric_limits<default_type>::infinity();
+      if (G >= 1.0)
+        return G2z_upper (G, rank, dof);
       else
-        return F2z_lower (1.0/F, rank, dof);
+        return G2z_lower (1.0/G, rank, dof);
     }
 
 
@@ -109,7 +126,8 @@ namespace MR
 
 
 
-    default_type Zstatistic::t2z (const default_type t, const size_t dof)
+
+    default_type Zstatistic::t2z (const default_type t, const size_t dof) const
     {
       auto it = t2z_data.find (dof);
       if (it == t2z_data.end()) {
@@ -125,7 +143,7 @@ namespace MR
 
 
 
-    default_type Zstatistic::F2z (const default_type F, const size_t rank, const size_t dof)
+    default_type Zstatistic::F2z (const default_type F, const size_t rank, const size_t dof) const
     {
       const auto pair = std::make_pair (rank, dof);
       auto it = F2z_data.find (pair);
@@ -139,21 +157,6 @@ namespace MR
       }
       return (it->second) (F);
     }
-
-
-
-    default_type Zstatistic::v2z (const default_type v, const default_type dof)
-    {
-      return Math::t2z (v, dof);
-    }
-
-
-
-    default_type Zstatistic::G2z (const default_type G, const size_t rank, const default_type dof)
-    {
-      return Math::F2z (G, rank, dof);
-    }
-
 
 
 
@@ -351,8 +354,8 @@ namespace MR
 
     default_type Zstatistic::Lookup_F2z::operator() (const default_type F) const
     {
-      auto func_upper = [&] (const default_type in) { return F2z_upper (in, rank, default_type(dof)); };
-      auto func_lower = [&] (const default_type in) { return F2z_lower (in, rank, default_type(dof)); };
+      auto func_upper = [&] (const default_type in) { return G2z_upper (in, rank, default_type(dof)); };
+      auto func_lower = [&] (const default_type in) { return G2z_lower (in, rank, default_type(dof)); };
       if (F >= 1.0)
         return interp (F, offset_upper, scale_upper, data_upper, func_upper);
       else

@@ -25,12 +25,12 @@ namespace MR
 
 
 
-      PreProcessor::PreProcessor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+      PreProcessor::PreProcessor (const std::unique_ptr<Math::Stats::GLM::TestBase>& stats_calculator,
                                   const std::shared_ptr<EnhancerBase> enhancer,
                                   const default_type skew,
                                   matrix_type& global_enhanced_sum,
                                   count_matrix_type& global_enhanced_count) :
-          stats_calculator (stats_calculator),
+          stats_calculator (stats_calculator->__clone()),
           enhancer (enhancer),
           skew (skew),
           global_enhanced_sum (global_enhanced_sum),
@@ -38,12 +38,28 @@ namespace MR
           enhanced_sum (matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses())),
           enhanced_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses())),
           stats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
+          zstats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
           enhanced_stats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
           mutex (new std::mutex())
       {
         assert (stats_calculator);
         assert (enhancer);
       }
+
+
+
+      PreProcessor::PreProcessor (const PreProcessor& that) :
+          stats_calculator (that.stats_calculator->__clone()),
+          enhancer (that.enhancer),
+          skew (that.skew),
+          global_enhanced_sum (that.global_enhanced_sum),
+          global_enhanced_count (that.global_enhanced_count),
+          enhanced_sum (matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses())),
+          enhanced_count (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses())),
+          stats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
+          zstats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
+          enhanced_stats (global_enhanced_sum.rows(), global_enhanced_sum.cols()),
+          mutex (that.mutex) { }
 
 
 
@@ -60,8 +76,8 @@ namespace MR
       {
         if (!shuffle.data.rows())
           return false;
-        (*stats_calculator) (shuffle.data, stats);
-        (*enhancer) (stats, enhanced_stats);
+        (*stats_calculator) (shuffle.data, stats, zstats);
+        (*enhancer) (zstats, enhanced_stats);
         for (size_t ih = 0; ih != stats_calculator->num_hypotheses(); ++ih) {
           for (size_t ie = 0; ie != stats_calculator->num_elements(); ++ie) {
             if (enhanced_stats(ie, ih) > 0.0) {
@@ -79,18 +95,19 @@ namespace MR
 
 
 
-      Processor::Processor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+      Processor::Processor (const std::unique_ptr<Math::Stats::GLM::TestBase>& stats_calculator,
                             const std::shared_ptr<EnhancerBase> enhancer,
                             const matrix_type& empirical_enhanced_statistics,
                             const matrix_type& default_enhanced_statistics,
                             matrix_type& perm_dist,
                             count_matrix_type& perm_dist_contributions,
                             count_matrix_type& global_uncorrected_pvalue_counter) :
-          stats_calculator (stats_calculator),
+          stats_calculator (stats_calculator->__clone()),
           enhancer (enhancer),
           empirical_enhanced_statistics (empirical_enhanced_statistics),
           default_enhanced_statistics (default_enhanced_statistics),
           statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
+          zstatistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           null_dist (perm_dist),
           global_null_dist_contributions (perm_dist_contributions),
@@ -101,6 +118,25 @@ namespace MR
       {
         assert (stats_calculator);
       }
+
+
+
+      Processor::Processor (const Processor& that) :
+          stats_calculator (that.stats_calculator->__clone()),
+          enhancer (that.enhancer),
+          empirical_enhanced_statistics (that.empirical_enhanced_statistics),
+          default_enhanced_statistics (that.default_enhanced_statistics),
+          statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
+          zstatistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
+          enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
+          null_dist (that.null_dist),
+          global_null_dist_contributions (that.global_null_dist_contributions),
+          null_dist_contribution_counter (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses())),
+          global_uncorrected_pvalue_counter (that.global_uncorrected_pvalue_counter),
+          uncorrected_pvalue_counter (count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses())),
+          mutex (that.mutex) { }
+
+
 
 
 
@@ -115,11 +151,11 @@ namespace MR
 
       bool Processor::operator() (const Math::Stats::Shuffle& shuffle)
       {
-        (*stats_calculator) (shuffle.data, statistics);
+        (*stats_calculator) (shuffle.data, statistics, zstatistics);
         if (enhancer)
-          (*enhancer) (statistics, enhanced_statistics);
+          (*enhancer) (zstatistics, enhanced_statistics);
         else
-          enhanced_statistics = statistics;
+          enhanced_statistics = zstatistics;
 
         if (empirical_enhanced_statistics.size())
           enhanced_statistics.array() /= empirical_enhanced_statistics.array();
@@ -152,7 +188,7 @@ namespace MR
 
 
 
-      void precompute_empirical_stat (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+      void precompute_empirical_stat (const std::unique_ptr<Math::Stats::GLM::TestBase>& stats_calculator,
                                       const std::shared_ptr<EnhancerBase> enhancer,
                                       const default_type skew,
                                       matrix_type& empirical_statistic)
@@ -178,7 +214,7 @@ namespace MR
 
 
 
-      void precompute_default_permutation (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+      void precompute_default_permutation (const std::unique_ptr<Math::Stats::GLM::TestBase>& stats_calculator,
                                            const std::shared_ptr<EnhancerBase> enhancer,
                                            const matrix_type& empirical_enhanced,
                                            matrix_type& output_statistics,
@@ -209,7 +245,7 @@ namespace MR
 
 
 
-      void run_permutations (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+      void run_permutations (const std::unique_ptr<Math::Stats::GLM::TestBase>& stats_calculator,
                              const std::shared_ptr<EnhancerBase> enhancer,
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
