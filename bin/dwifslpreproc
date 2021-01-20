@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2020 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_description('This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.')
   cmdline.add_description('The "-topup_options" and "-eddy_options" command-line options allow the user to pass desired command-line options directly to the FSL commands topup and eddy. The available options for those commands may vary between versions of FSL; users can interrogate such by querying the help pages of the installed software, and/or the FSL online documentation: (topup) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide ; (eddy) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide')
   cmdline.add_description('The script will attempt to run the CUDA version of eddy; if this does not succeed for any reason, or is not present on the system, the CPU version will be attempted instead. By default, the CUDA eddy binary found that indicates compilation against the most recent version of CUDA will be attempted; this can be over-ridden by providing a soft-link "eddy_cuda" within your path that links to the binary you wish to be executed.')
-  cmdline.add_description('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to eddy is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).')
+  cmdline.add_description('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to topup is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).')
   cmdline.add_example_usage('A basic DWI acquisition, where all image volumes are acquired in a single protocol with fixed phase encoding',
                             'dwifslpreproc DWI_in.mif DWI_out.mif -rpe_none -pe_dir ap -readout_time 0.55',
                             'Due to use of a single fixed phase encoding, no EPI distortion correction can be applied in this case.')
@@ -375,6 +375,8 @@ def execute(): #pylint: disable=unused-variable
       line.append(trt)
       dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
       app.debug('Manual DWI PE scheme for \'Pair\' PE design: ' + str(dwi_manual_pe_scheme))
+      if len(se_epi_header.size()) != 4:
+        raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must be a 4D image')
       se_epi_num_volumes = se_epi_header.size()[3]
       if se_epi_num_volumes%2:
         raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
@@ -575,7 +577,7 @@ def execute(): #pylint: disable=unused-variable
           app.console('No phase-encoding contrast present in SE-EPI images; will examine again after combining with DWI b=0 images')
           new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_dwibzeros.mif'
           # Don't worry about trying to produce a balanced scheme here
-          run.command('dwiextract dwi.mif - -bzero | mrcat - se_epi.mif ' + new_se_epi_path + ' -axis 3')
+          run.command('dwiextract dwi.mif - -bzero | mrcat - ' + se_epi_path + ' ' + new_se_epi_path + ' -axis 3')
           se_epi_header = image.Header(new_se_epi_path)
           se_epi_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
           if se_epi_pe_scheme_has_contrast:

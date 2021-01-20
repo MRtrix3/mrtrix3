@@ -77,14 +77,15 @@ jobs:
 
     env:
       CFLAGS: -Werror
+      PACKAGES: "qt5 eigen pkg-config fftw libpng"
 
     steps:
     - uses: actions/checkout@v1
 
     - name: install dependencies
       run: |
-         brew update
-         brew install qt5 eigen pkg-config libtiff fftw libpng
+         brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
+         brew install $PACKAGES || brew install $PACKAGES
          brew link --force qt5
 
     - name: configure

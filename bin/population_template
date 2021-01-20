@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2020 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -92,13 +92,10 @@ except NameError:
   pass
 
 
-def abspath(arg, *args):
-  return os.path.abspath(os.path.join(arg, *args))
-
-
 def relpath(arg, *args):
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   return os.path.relpath(os.path.join(arg, *args), app.WORKING_DIR)
+
 
 def copy(src, dst, follow_symlinks=True):
   """Copy data but do not set mode bits. Return the file's destination.
