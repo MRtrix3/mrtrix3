@@ -5,4 +5,4 @@ while [[ -L "${f}" ]]; do
  if [[ "${f2}" = /* ]]; then f="${f2}"; else f="$(dirname "${f}")/${f2}"; fi
 done
 f=$(dirname "${f}")
-"${f}"/MRView.app/Contents/MacOS/shview "$@"
+"${f}"/SHView.app/Contents/MacOS/shview "$@"
