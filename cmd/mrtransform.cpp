@@ -290,7 +290,6 @@ void run ()
       output_header.spacing(i) = template_header.spacing(i);
     }
     output_header.transform() = template_header.transform();
-    add_line (output_header.keyval()["comments"], std::string ("regridded to template image \"" + template_header.name() + "\""));
   }
 
   // Warp 5D warp
@@ -626,7 +625,6 @@ void run ()
         output_header.spacing(i) = warp.spacing(i);
       }
       output_header.transform() = warp.transform();
-      add_line (output_header.keyval()["comments"], std::string ("resliced using warp image \"" + warp.name() + "\""));
     }
 
     auto output = Image<float>::create(argument[1], output_header).with_direct_io();
