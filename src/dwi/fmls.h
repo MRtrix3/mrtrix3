@@ -160,6 +160,9 @@ namespace MR
       };
 
 
+      bool order_by_fd (const FOD_lobe&, const FOD_lobe&);
+
+
 
       class FOD_lobes : public vector<FOD_lobe> { MEMALIGN(FOD_lobes)
         public:
