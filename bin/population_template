@@ -92,6 +92,10 @@ except NameError:
   pass
 
 
+def abspath(arg, *args):
+  return os.path.abspath(os.path.join(arg, *args))
+
+
 def relpath(arg, *args):
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   return os.path.relpath(os.path.join(arg, *args), app.WORKING_DIR)
