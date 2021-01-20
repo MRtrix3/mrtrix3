@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -282,17 +282,21 @@ void run ()
       extent = {extent[0], extent[0], extent[0]};
     if (extent.size() != 3)
       throw Exception ("-extent must be either a scalar or a list of length 3");
-    for (auto &e : extent)
-      if (!(e & 1))
+    for (int i = 0; i < 3; i++) {
+      if (!(extent[i] & 1))
         throw Exception ("-extent must be a (list of) odd numbers");
-    INFO("user defined patch size " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
+      if (extent[i] > dwi.size(i))
+        throw Exception ("-extent must nott exceed the image dimensions");
+    }
   } else {
     uint32_t e = 1;
     while (e*e*e < dwi.size(3))
       e += 2;
-    extent = {e, e, e};
-    INFO("select default patch size " + str(e) + " x " + str(e) + " x " + str(e) + ".");
+    extent = { std::min(e, uint32_t(dwi.size(0))),
+               std::min(e, uint32_t(dwi.size(1))),
+               std::min(e, uint32_t(dwi.size(2))) };
   }
+  INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
   bool exp1 = get_option_value("estimator", 1) == 0;    // default: Exp2 (unbiased estimator)
 

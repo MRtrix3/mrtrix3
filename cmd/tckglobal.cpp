@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -281,7 +281,7 @@ void run ()
     }
   }
 
-  uint64_t niter = get_option_value("niter", DEFAULT_NITER);
+  uint64_t niter = get_option_value<uint64_t>("niter", DEFAULT_NITER);
   double t0 = get_option_value("t0", DEFAULT_T0);
   double t1 = get_option_value("t1", DEFAULT_T1);
 
