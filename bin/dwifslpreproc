@@ -319,6 +319,8 @@ def execute(): #pylint: disable=unused-variable
 
   # Utilise the b-value clustering algorithm in src/dwi/shells.*
   shell_indices = [ [ int(i) for i in entry.split(',') ] for entry in image.mrinfo('dwi.mif', 'shell_indices').split(' ') ]
+  shell_bvalues = [ float(f) for f in image.mrinfo('dwi.mif', 'shell_bvalues').split(' ')]
+
   # For each volume index, store the index of the shell to which it is attributed
   #   (this will make it much faster to determine whether or not two volumes belong to the same shell)
   vol2shell = [ -1 ] * dwi_num_volumes
@@ -329,9 +331,12 @@ def execute(): #pylint: disable=unused-variable
 
 
   def grads_match(one, two):
-    # Are the two volumes assigned to the same b-value shell?
+    # Are the two volumes assigned to different b-value shells?
     if vol2shell[one] != vol2shell[two]:
       return False
+    # Does this shell correspond to *b*=0?
+    if shell_bvalues[vol2shell[one]] <= bzero_threshold:
+      return True
     # Dot product between gradient directions
     # First, need to check for zero-norm vectors:
     # - If both are zero, skip this check
@@ -493,7 +498,7 @@ def execute(): #pylint: disable=unused-variable
   # This needs to occur at the outermost loop as it is pertinent information
   #   not only for the -align_seepi option, but also for when the -se_epi option
   #   is not provided at all, and the input to topup is extracted solely from the DWIs
-  bzero_threshold = float(CONFIG['BZeroThreshold']) if 'BZeroThreshold' in CONFIG else 10.0
+  bzero_threshold = float(CONFIG.get('BZeroThreshold', 10.0))
   dwi_first_bzero_index = 0
   for line in grad:
     if line[3] <= bzero_threshold:
