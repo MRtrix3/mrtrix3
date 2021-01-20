@@ -33,7 +33,7 @@ namespace MR {
         {
           size_t gidx0 = pos2idx(p->getPosition());
           size_t gidx1 = pos2idx(pos);
-          std::remove (grid[gidx0].begin(), grid[gidx0].end(), p);
+          grid[gidx0].erase(std::remove(grid[gidx0].begin(), grid[gidx0].end(), p), grid[gidx0].end());
           p->setPosition(pos);
           p->setDirection(dir);
           grid[gidx1].push_back(p);
@@ -42,7 +42,7 @@ namespace MR {
         void ParticleGrid::remove(Particle* p)
         {
           size_t gidx0 = pos2idx(p->getPosition());
-          std::remove (grid[gidx0].begin(), grid[gidx0].end(), p);
+          grid[gidx0].erase(std::remove(grid[gidx0].begin(), grid[gidx0].end(), p), grid[gidx0].end());
           pool.destroy(p);
         }
         
