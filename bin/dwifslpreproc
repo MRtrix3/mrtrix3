@@ -79,6 +79,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   rpe_options.add_argument('-rpe_header', action='store_true', help='Specify that the phase-encoding information can be found in the image header(s), and that this is the information that the script should use')
   cmdline.flag_mutually_exclusive_options( [ 'rpe_none', 'rpe_pair', 'rpe_all', 'rpe_header' ], True )
   cmdline.flag_mutually_exclusive_options( [ 'rpe_none', 'se_epi' ], False ) # May still technically provide -se_epi even with -rpe_all
+  cmdline.flag_mutually_exclusive_options( [ 'rpe_pair', 'topup_files'] ) # Would involve two separate sources of inhomogeneity field information
+  cmdline.flag_mutually_exclusive_options( [ 'se_epi', 'topup_files'] ) # Would involve two separate sources of inhomogeneity field information
   cmdline.flag_mutually_exclusive_options( [ 'rpe_header', 'pe_dir' ], False ) # Can't manually provide phase-encoding direction if expecting it to be in the header
   cmdline.flag_mutually_exclusive_options( [ 'rpe_header', 'readout_time' ], False ) # Can't manually provide readout time if expecting it to be in the header
 
@@ -122,7 +124,6 @@ def execute(): #pylint: disable=unused-variable
     if not os.path.isfile(topup_config_path):
       raise MRtrixError('Could not find necessary default config file for FSL topup command (expected location: ' + topup_config_path + ')')
     topup_cmd = fsl.exe_name('topup')
-    applytopup_cmd = fsl.exe_name('applytopup')
 
   if not fsl.eddy_binary(True) and not fsl.eddy_binary(False):
     raise MRtrixError('Could not find any version of FSL eddy command')
@@ -174,6 +175,10 @@ def execute(): #pylint: disable=unused-variable
     if len(eddy_topup_entry) > 1:
       raise MRtrixError('Input to -eddy_options contains multiple "--topup=" entries')
     if eddy_topup_entry:
+      # -topup_files and -se_epi are mutually exclusive, but need to check in case
+      #   pre-calculated topup output files were provided this way instead
+      if app.ARGS.se_epi:
+        raise MRtrixError('Cannot use both -eddy_options "--topup=" and -se_epi')
       topup_file_userpath = path.from_user(eddy_topup_entry[0][len('--topup='):], False)
       eddy_manual_options = [entry for entry in eddy_manual_options if not entry.startswith('--topup=')]
 
@@ -190,6 +195,11 @@ def execute(): #pylint: disable=unused-variable
     if topup_file_userpath:
       raise MRtrixError('Cannot use -topup_files option and also specify "... --topup=<prefix> ..." within content of -eddy_options')
     topup_file_userpath = path.from_user(app.ARGS.topup_files, False)
+
+  execute_applytopup = pe_design != 'None' or topup_file_userpath
+  if execute_applytopup:
+    applytopup_cmd = fsl.exe_name('applytopup')
+
   if topup_file_userpath:
     # Find files based on what the user may or may not have specified:
     # - Path to the movement parameters text file
@@ -866,8 +876,7 @@ def execute(): #pylint: disable=unused-variable
       app.console('Output of topup command:')
       sys.stderr.write(topup_output.stdout + '\n' + topup_output.stderr + '\n')
 
-
-  if execute_topup or topup_file_userpath:
+  if execute_applytopup:
 
     # Apply the warp field to the input image series to get an initial corrected volume estimate
     # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
@@ -1045,7 +1054,7 @@ def execute(): #pylint: disable=unused-variable
       eddyqc_options = ' -idx eddy_indices.txt -par eddy_config.txt -m eddy_mask.nii -b bvals'
       if os.path.isfile('dwi_post_eddy.eddy_residuals'):
         eddyqc_options += ' -g ' + bvecs_path
-      if execute_topup or topup_file_userpath:
+      if execute_applytopup:
         eddyqc_options += ' -f ' + fsl.find_image('field_map')
       if eddy_mporder:
         eddyqc_options += ' -s slspec.txt'
@@ -1281,7 +1290,7 @@ def execute(): #pylint: disable=unused-variable
 
   keys_to_remove = [ 'MultibandAccelerationFactor', 'SliceEncodingDirection', 'SliceTiming' ]
   # These keys are still relevant for the output data if no EPI distortion correction was performed
-  if execute_topup or topup_file_userpath:
+  if execute_applytopup:
     keys_to_remove.extend([ 'PhaseEncodingDirection', 'TotalReadoutTime', 'pe_scheme' ])
   # Get the header key-value entries from the input DWI, remove those we don't wish to keep, and
   #   export the result to a new JSON file so that they can be inserted into the output header
@@ -1295,7 +1304,7 @@ def execute(): #pylint: disable=unused-variable
   # 'Stash' the phase encoding scheme of the original uncorrected DWIs, since it still
   #   may be useful information at some point in the future but is no longer relevant
   #   for e.g. tracking for different volumes, or performing any geometric corrections
-  if execute_topup or topup_file_userpath:
+  if execute_applytopup:
     keyval['prior_pe_scheme'] = dwi_manual_pe_scheme if dwi_manual_pe_scheme else dwi_pe_scheme
   with open('output.json', 'w') as output_json_file:
     json.dump(keyval, output_json_file)
