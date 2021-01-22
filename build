@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 # Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -58,6 +57,9 @@ SPECIAL TARGETS
        used to update the command documentation, so that any modifications to
        the inline documentation in commands can be propagated through to the
        user documentation site.
+
+    app_bundles
+       used to create app bundles for MacOS
 
     select name
        used to switch between configs / builds. This stores the current config
@@ -358,6 +360,7 @@ def modify_path (name, tmp=False, strip=None, add=None):
 
 command_doc = False
 bash_completion = False
+app_bundles = False
 
 for arg in sys.argv[1:]:
   if '-help'.startswith(arg):
@@ -392,6 +395,8 @@ for arg in sys.argv[1:]:
     bash_completion = True
   elif arg == 'doc':
     command_doc = True
+  elif arg == 'app_bundles':
+    app_bundles = True
   elif arg == 'clean':
     targets = [ 'clean' ]
   else:
@@ -1334,6 +1339,60 @@ def update_user_docs ():
   if execute ('[DOC] generating user documentation (./docs)', [ script_path ], scripts_dir):
     sys.exit (1)
 
+def update_app_bundles ():
+  if os.uname()[0] != 'Darwin' or nogui:
+    return
+  print('Creating app bundles for MacOS')
+  shutil.rmtree(os.path.join('bin','MRView.app'),ignore_errors=True)
+
+  os.makedirs (os.path.join('bin','MRView.app','Contents'),exist_ok=True)
+  shutil.copy('mrtrix-mrview.plist',os.path.join('bin','MRView.app','Contents','Info.plist'))
+
+  os.makedirs (os.path.join('bin','MRView.app','Contents','MacOS'),exist_ok=True)
+  shutil.move(os.path.join('bin','mrview'),os.path.join('bin','MRView.app','Contents','MacOS','mrview'))
+
+  os.makedirs (os.path.join('bin','MRView.app','Contents','Resources'),exist_ok=True)
+  shutil.copy(os.path.join('icons','mrview.icns'),os.path.join('bin','MRView.app','Contents','Resources'))
+  shutil.copy(os.path.join('icons','mrview_doc.icns'),os.path.join('bin','MRView.app','Contents','Resources'))
+
+  os.symlink(os.path.relpath('lib',os.path.join('bin','MRView.app','Contents')),os.path.join('bin','MRView.app','Contents','lib'),target_is_directory=True)
+
+  with open (os.path.join('bin','mrview'), 'w') as fd:
+    fd.write ('''#!/bin/bash
+f="${BASH_SOURCE}"
+while [[ -L "${f}" ]]; do
+ f2="$(readlink "${f}")"
+ if [[ "${f2}" = /* ]]; then f="${f2}"; else f="$(dirname "${f}")/${f2}"; fi
+done
+f=$(dirname "${f}")
+"${f}"/MRView.app/Contents/MacOS/mrview "$@"''')
+  os.chmod(os.path.join('bin','mrview'), 0o755)
+  os.utime(os.path.join('bin','mrview'),(0, 0))
+
+
+  shutil.rmtree(os.path.join('bin','SHView.app'),ignore_errors=True)
+
+  os.makedirs (os.path.join('bin','SHView.app','Contents'),exist_ok=True)
+  shutil.copy('mrtrix-shview.plist',os.path.join('bin','SHView.app','Contents','Info.plist'))
+
+  os.makedirs (os.path.join('bin','SHView.app','Contents','MacOS'),exist_ok=True)
+  shutil.move(os.path.join('bin','shview'),os.path.join('bin','SHView.app','Contents','MacOS','shview'))
+
+  os.symlink(os.path.relpath(os.path.join('bin','MRView.app','Contents','Resources'),os.path.join('bin','SHView.app','Contents')),os.path.join('bin','SHView.app','Contents','Resources'),target_is_directory=True)
+
+  os.symlink(os.path.relpath('lib',os.path.join('bin','SHView.app','Contents')),os.path.join('bin','SHView.app','Contents','lib'),target_is_directory=True)
+
+  with open (os.path.join('bin','shview'), 'w') as fd:
+    fd.write ('''#!/bin/bash
+f="${BASH_SOURCE}"
+while [[ -L "${f}" ]]; do
+ f2="$(readlink "${f}")"
+ if [[ "${f2}" = /* ]]; then f="${f2}"; else f="$(dirname "${f}")/${f2}"; fi
+done
+f=$(dirname "${f}")
+"${f}"/SHView.app/Contents/MacOS/shview "$@"''')
+  os.chmod(os.path.join('bin','shview'), 0o755)
+  os.utime(os.path.join('bin','shview'),(0, 0))
 
 ###########################################################################
 #                              SCRIPT VERSION                             #
@@ -1511,5 +1570,7 @@ if not separate_project and stop <= 1:
     update_bash_completion()
   if command_doc:
     update_user_docs()
+  if app_bundles:
+    update_app_bundles()
 
 sys.exit (stop > 1)

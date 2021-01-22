@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>CFBundleInfoDictionaryVersion</key>  <string>6.0</string>
+    <key>CFBundleDevelopmentRegion</key>      <string>en-UK</string>
+    <key>CFBundleName</key>                   <string>MRView</string>
+    <key>CFBundleDisplayName</key>            <string>MRView</string>
+    <key>CFBundleExecutable</key>             <string>mrview</string>
+    <key>CFBundleIconFile</key>               <string>mrview.icns</string>
+    <key>CFBundleIdentifier</key>             <string>org.mrtrix.mrview</string>
+    <key>CFBundlePackageType</key>            <string>APPL</string>
+    <key>CFBundleShortVersionString</key>     <string>3.0</string>
+    <key>CFBundleVersion</key>                <string>3.0</string>
+    <key>NSHumanReadableCopyright</key>       <string>Copyright (c) 2008-2021 the MRtrix3 contributors</string>
+    <key>LSMinimumSystemVersion</key>         <string>10.13.0</string>
+    <key>LSBackgroundOnly</key>               <string>0</string>
+    <key>NSHighResolutionCapable</key>        <true/>
+
+    <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleURLName</key>
+        <string>MRView file</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>mrview</string>
+        </array>
+      </dict>
+    </array>
+
+    <key>CFBundleDocumentTypes</key>
+    <array>
+
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>gz</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>MRtrix of NIfTI image (compressed)</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>mrview_doc.icns</string>
+      </dict>
+
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>mif</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>MRtrix image</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>mrview_doc.icns</string>
+      </dict>
+
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>mih</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>MRtrix image header</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>mrview_doc.icns</string>
+      </dict>
+
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>mif.gz</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>MRtrix image (compressed)</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>mrview_doc.icns</string>
+      </dict>
+
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>nii</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>NIfTI image</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>mrview_doc.icns</string>
+      </dict>
+
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>nii.gz</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>NIfTI image (compressed)</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>mrview_doc.icns</string>
+      </dict>
+
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>mgh</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>MGH image</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>mrview_doc.icns</string>
+      </dict>
+
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>mgz</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>MGH image (compressed)</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>mrview_doc.icns</string>
+      </dict>
+
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>img</string>
+        </array>
+        <key>CFBundleTypeName</key>
+        <string>Analyze image</string>
+        <key>CFBundleTypeRole</key>
+        <string>Viewer</string>
+        <key>CFBundleTypeIconFile</key>
+        <string>mrview_doc.icns</string>
+      </dict>
+
+    </array>
+  </dict>
+</plist>
