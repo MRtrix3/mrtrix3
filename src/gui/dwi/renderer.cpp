@@ -334,6 +334,10 @@ namespace MR
 
 
 
+      std::string Renderer::ModeBase::grab_ply () const
+      {
+        return std::string();
+      }
 
 
 
@@ -659,6 +663,32 @@ namespace MR
         index_count = 3 * indices_data.size();
       }
 
+
+
+
+
+
+      std::string Renderer::SH::grab_ply () const
+      {
+        vector<GLfloat> vertices;
+        vector<GLuint> indices;
+        half_sphere.grab_geometry (vertices, indices);
+
+        vector<GLfloat> amplitudes (vertices.size());
+        surface_buffer.bind (gl::ARRAY_BUFFER);
+        gl::GetBufferSubData (gl::ARRAY_BUFFER, 0, amplitudes.size()*sizeof(GLfloat), &amplitudes[0]);
+
+
+        std::string out = "vertices:\n";
+        for (size_t n = 0; n < vertices.size(); n+=3)
+          out += str(amplitudes[n]*vertices[n]) + " " + str(amplitudes[n]*vertices[n+1]) + " " + str(amplitudes[n]*vertices[n+2]) + "\n";
+
+        out += "indices:\n";
+        for (size_t n = 0; n < indices.size(); n+=3)
+          out += str(indices[n]) + " " + str(indices[n+1]) + " " + str(indices[n+2]) + "\n";
+
+        return out;
+      }
 
 
 

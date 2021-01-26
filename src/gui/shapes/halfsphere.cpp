@@ -80,7 +80,7 @@ namespace MR
           GLuint  index[3];
       };
 
-      class Edge 
+      class Edge
       { NOMEMALIGN
         public:
           Edge (const Edge& E) {
@@ -176,6 +176,21 @@ namespace MR
     }
 
 
+
+
+
+
+    void HalfSphere::grab_geometry (vector<GLfloat>& vertbuf, vector<GLuint>& index_buf) const
+    {
+      vertbuf.resize (3*vertices.size());
+      index_buf.resize (num_indices);
+
+      vertex_buffer.bind (gl::ARRAY_BUFFER);
+      gl::GetBufferSubData (gl::ARRAY_BUFFER, 0, vertices.size()*sizeof(Vertex), &vertbuf[0]);
+
+      index_buffer.bind ();
+      gl::GetBufferSubData (gl::ELEMENT_ARRAY_BUFFER, 0, index_buf.size()*sizeof(GLuint), &index_buf[0]);
+    }
 
     }
   }

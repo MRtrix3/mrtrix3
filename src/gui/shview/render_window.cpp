@@ -415,6 +415,8 @@ namespace MR
       void Window::screenshot_slot ()
       {
         render_frame->screenshot (screenshot_OS_group->checkedAction()->data().toInt(), "screenshot.png");
+
+        std::cerr << render_frame->grab_ply() << "\n";
       }
 
 

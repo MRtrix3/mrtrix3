@@ -94,6 +94,14 @@ namespace MR
             object_color[2] = c.blue() /255.0f;
           }
 
+          std::string grab_ply () const {
+            switch (mode) {
+              case mode_t::SH:     return sh.grab_ply();
+              case mode_t::TENSOR: return tensor.grab_ply();
+              case mode_t::DIXEL:  return dixel.grab_ply();
+            }
+          }
+
 
         protected:
           mode_t mode;
@@ -129,6 +137,7 @@ namespace MR
               virtual void bind() = 0;
               virtual void set_data (const vector_t&, int buffer_ID = 0) const = 0;
               virtual GLuint num_indices() const = 0;
+              virtual std::string grab_ply () const;
 
             protected:
               Renderer& parent;
@@ -161,6 +170,8 @@ namespace MR
               }
 
               int get_LOD() const { return LOD; }
+
+              std::string grab_ply () const override;
 
             private:
               int LOD;

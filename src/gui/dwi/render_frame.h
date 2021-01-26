@@ -133,6 +133,8 @@ namespace MR
 
           void screenshot (int oversampling, const std::string& image_name);
 
+          std::string grab_ply () const { return renderer.grab_ply(); }
+
         protected:
           float view_angle, distance, scale;
           int lmax_computed, lod_computed;

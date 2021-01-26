@@ -66,6 +66,8 @@ namespace MR
         };
 
         vector<Vertex> vertices;
+
+        void grab_geometry (vector<GLfloat>& vertbuf, vector<GLuint>& index_buf) const;
     };
 
 
