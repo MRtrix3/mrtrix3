@@ -343,8 +343,8 @@ void run ()
     size_t j = 0, k = 0;
     for (auto l = Loop("loading initialisation", {0, 1, 2})(init); l; l++, j+=ncoefs) {
       k = 0;
-      for (auto l2 = Loop({4,3})(init); l2; l2++) {
-        if (init.index(4) < Math::SH::NforL(lmax))
+      for (auto l2 = Loop(3)(init); l2; l2++) {
+        for (init.index(4) = 0; init.index(4) < Math::SH::NforL(lmax); init.index(4)++)
           c[k++] = std::isfinite((float) init.value()) ? init.value() : 0.0f;
       }
       x0.segment(j, ncoefs) = mssh2x.solve(c);
