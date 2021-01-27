@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+
 # Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
@@ -1367,8 +1368,7 @@ done
 f=$(dirname "${f}")
 "${f}"/MRView.app/Contents/MacOS/mrview "$@"''')
   os.chmod(os.path.join('bin','mrview'), 0o755)
-  os.utime(os.path.join('bin','mrview'),(0, 0))
-
+  os.utime(os.path.join('bin','mrview'),(1609459200,1609459200))
 
   shutil.rmtree(os.path.join('bin','SHView.app'),ignore_errors=True)
 
@@ -1392,7 +1392,7 @@ done
 f=$(dirname "${f}")
 "${f}"/SHView.app/Contents/MacOS/shview "$@"''')
   os.chmod(os.path.join('bin','shview'), 0o755)
-  os.utime(os.path.join('bin','shview'),(0, 0))
+  os.utime(os.path.join('bin','shview'),(1609459200,1609459200))
 
 ###########################################################################
 #                              SCRIPT VERSION                             #
