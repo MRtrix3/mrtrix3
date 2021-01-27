@@ -30,8 +30,10 @@ namespace MR
 
 
 
-    default_type t2z (const default_type stat, const default_type dof);
-    default_type F2z (const default_type stat, const size_t rank, const default_type dof);
+    default_type t2z (const default_type stat, const size_t dof);
+    default_type F2z (const default_type stat, const size_t rank, const size_t dof);
+    default_type v2z (const default_type stat, const default_type dof);
+    default_type G2z (const default_type stat, const size_t rank, const default_type dof);
 
 
 
@@ -42,21 +44,12 @@ namespace MR
 
         // Convert a t-statistic to a z-statistic
         default_type t2z (const default_type t,
-                          const size_t dof);
+                          const size_t dof) const;
 
         // Convert an F-statistic to a z-statistic
         default_type F2z (const default_type F,
                           const size_t rank,
-                          const size_t dof);
-
-        // Convert an Aspin-Welch v to a z-statistic
-        default_type v2z (const default_type v,
-                          const default_type dof);
-
-        // Convert a G-statistic to a z-statistic
-        default_type G2z (const default_type G,
-                          const size_t rank,
-                          const default_type dof);
+                          const size_t dof) const;
 
       protected:
 
@@ -103,9 +96,9 @@ namespace MR
             array_type data_lower;
         };
 
-        std::map<size_t, Lookup_t2z> t2z_data;
-        std::map<std::pair<size_t, size_t>, Lookup_F2z> F2z_data;
-        std::mutex mutex;
+        mutable std::map<size_t, Lookup_t2z> t2z_data;
+        mutable std::map<std::pair<size_t, size_t>, Lookup_F2z> F2z_data;
+        mutable std::mutex mutex;
 
     };
 
