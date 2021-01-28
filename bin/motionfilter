@@ -21,6 +21,7 @@ if __name__ == '__main__':
     parser.add_argument('-packs', type=int, default=2, help='no. slice packs')
     parser.add_argument('-shift', type=int, default=1, help='slice shift')
     parser.add_argument('-medfilt', type=int, default=1, help='median filtering kernel size (default = 1; disabled)')
+    parser.add_argument('-driftfilt', action='store_true', help='drift filter slice packs')
     # mandatory MRtrix options (unused)
     parser.add_argument('-nthreads', type=int, default=1, help='no. threads (unused)')
     parser.add_argument('-info', help='(unused)')
@@ -47,6 +48,8 @@ if __name__ == '__main__':
     # median filtering
     if ne > 1:
         M2 = medfilt(M2, (args.medfilt, 1))
+    if args.driftfilt:
+        M2 = M2.reshape((nv,ne,6)) - np.median(M2.reshape((nv,ne,6)), 0)
     # reorder output
     M3 = np.reshape(M2.reshape((nv,ne,6))[:,isliceorder,:], (-1,6))
     np.savetxt(args.output, M3, fmt='%.6f')
