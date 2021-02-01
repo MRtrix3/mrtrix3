@@ -1367,8 +1367,9 @@ while [[ -L "${f}" ]]; do
 done
 f=$(dirname "${f}")
 "${f}"/MRView.app/Contents/MacOS/mrview "$@"''')
+  stat = os.stat(os.path.join('bin','MRView.app','Contents','MacOS','mrview'))
   os.chmod(os.path.join('bin','mrview'), 0o755)
-  os.utime(os.path.join('bin','mrview'),(1609459200,1609459200))
+  os.utime(os.path.join('bin','mrview'), ns=(stat.st_atime_ns, stat.st_mtime_ns))
 
   shutil.rmtree(os.path.join('bin','SHView.app'),ignore_errors=True)
 
@@ -1391,8 +1392,9 @@ while [[ -L "${f}" ]]; do
 done
 f=$(dirname "${f}")
 "${f}"/SHView.app/Contents/MacOS/shview "$@"''')
+  stat = os.stat(os.path.join('bin','SHView.app','Contents','MacOS','shview'))
   os.chmod(os.path.join('bin','shview'), 0o755)
-  os.utime(os.path.join('bin','shview'),(1609459200,1609459200))
+  os.utime(os.path.join('bin','shview'), ns=(stat.st_atime_ns, stat.st_mtime_ns))
 
 ###########################################################################
 #                              SCRIPT VERSION                             #
