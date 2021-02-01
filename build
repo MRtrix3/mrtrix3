@@ -1349,7 +1349,7 @@ def update_user_docs ():
     sys.exit (1)
 
 def update_app_bundles ():
-  if build_mrview:
+  if build_mrview or not os.path.isdir(os.path.join('bin','MRView.app')):
     print('Creating macOS app bundle for mrview')
     shutil.rmtree(os.path.join('bin','MRView.app'),ignore_errors=True)
 
@@ -1378,7 +1378,7 @@ def update_app_bundles ():
     os.chmod(os.path.join('bin','mrview'), 0o755)
     os.utime(os.path.join('bin','mrview'), ns=(stat.st_atime_ns, stat.st_mtime_ns))
 
-  if build_shview:
+  if build_shview or not os.path.isdir(os.path.join('bin','SHView.app')):
     print('Creating macOS app bundle for shview')
     shutil.rmtree(os.path.join('bin','SHView.app'),ignore_errors=True)
 
