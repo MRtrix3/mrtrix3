@@ -645,6 +645,14 @@ if 'clean' in targets:
       except OSError as excp:
         disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
+  for appname in glob.glob (os.path.join ('bin', '*.app')):
+    if os.path.isdir (appname):
+      disp ('delete app: ' + appname + '\n')
+      try:
+        shutil.rmtree (appname)
+      except OSError as excp:
+        disp ('error deleting app "' + appname + '": ' + os.strerror (excp.errno))
+
   sys.exit (0)
 
 
