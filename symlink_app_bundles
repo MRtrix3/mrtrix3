@@ -1,0 +1,85 @@
+#!/usr/bin/python3
+
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+# Create symbolic links in you ~/Application folder to the MacOS application
+# bundles. This script must be run after a successful build, from the MRtrix3
+# toplevel folder:
+#
+#   ./symlink_app_bundles
+#
+
+
+import sys, os, platform, subprocess, glob
+
+sysname = platform.system().lower()
+if sysname != 'darwin':
+    print ('''
+ERROR: only compatible with MacOS!
+''')
+    sys.exit (1)
+
+# check whether we are in the right location:
+bin_dir = os.path.join(os.getcwd(), 'bin')
+if not os.path.isdir (bin_dir):
+    print ('''
+ERROR: no bin/ folder found in expected location!
+
+This script needs to be run from the MRtrix3 toplevel folder.
+''')
+    sys.exit (1)
+
+app_dir = os.path.join(os.path.expanduser('~'), 'Applications')
+
+# check for the -remove flag:
+remove = False
+if '-remove' in sys.argv[1:]:
+  remove = True
+  sys.argv.remove ('-remove')
+
+if len(sys.argv) > 1:
+  print ('''
+ERROR: usage is:
+
+  ./symlink_app_bundles [-remove]
+
+Where:
+
+  -remove    [optional] indicates that the symbolic links should be removed
+''')
+  sys.exit (1)
+for app in ['MRView.app','SHView.app']:
+  target = os.path.join(bin_dir,app)
+  destination = os.path.join(app_dir,app)
+  if os.path.exists(destination):
+    if os.path.islink(destination):
+      if remove:
+        print('Removing symlink',destination)
+      else:
+        print('WARNING: removing existing symlink',destination)
+      os.remove(destination)
+    else:
+      print('ERROR:',app_dir,'already contains', app, 'that is not a symlink')
+      sys.exit(1)
+  else:
+    if remove:
+      print('WARNING:', destination, 'not found, skipping...')
+  if not remove:
+    if os.path.isdir(target):
+      print('Creating symbolic link from', destination, 'to',target)
+      os.symlink(target,destination,target_is_directory=True)
+    else:
+      print('WARNING:', target, 'not found, skipping...')
