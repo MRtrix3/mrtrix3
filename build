@@ -1367,13 +1367,14 @@ def update_app_bundles ():
 
     with open (os.path.join('bin','mrview'), 'w') as fd:
       fd.write ('''#!/bin/bash
-  f="${BASH_SOURCE}"
-  while [[ -L "${f}" ]]; do
-   f2="$(readlink "${f}")"
-   if [[ "${f2}" = /* ]]; then f="${f2}"; else f="$(dirname "${f}")/${f2}"; fi
-  done
-  f=$(dirname "${f}")
-  "${f}"/MRView.app/Contents/MacOS/mrview "$@"''')
+f="${BASH_SOURCE}"
+while [[ -L "${f}" ]]; do
+ f2="$(readlink "${f}")"
+ if [[ "${f2}" = /* ]]; then f="${f2}"; else f="$(dirname "${f}")/${f2}"; fi
+done
+f=$(dirname "${f}")
+"${f}"/MRView.app/Contents/MacOS/mrview "$@"
+''')
     stat = os.stat(os.path.join('bin','MRView.app','Contents','MacOS','mrview'))
     os.chmod(os.path.join('bin','mrview'), 0o755)
     os.utime(os.path.join('bin','mrview'), ns=(stat.st_atime_ns, stat.st_mtime_ns))
@@ -1394,13 +1395,14 @@ def update_app_bundles ():
 
     with open (os.path.join('bin','shview'), 'w') as fd:
       fd.write ('''#!/bin/bash
-  f="${BASH_SOURCE}"
-  while [[ -L "${f}" ]]; do
-   f2="$(readlink "${f}")"
-   if [[ "${f2}" = /* ]]; then f="${f2}"; else f="$(dirname "${f}")/${f2}"; fi
-  done
-  f=$(dirname "${f}")
-  "${f}"/SHView.app/Contents/MacOS/shview "$@"''')
+f="${BASH_SOURCE}"
+while [[ -L "${f}" ]]; do
+ f2="$(readlink "${f}")"
+ if [[ "${f2}" = /* ]]; then f="${f2}"; else f="$(dirname "${f}")/${f2}"; fi
+done
+f=$(dirname "${f}")
+"${f}"/SHView.app/Contents/MacOS/shview "$@"
+''')
     stat = os.stat(os.path.join('bin','SHView.app','Contents','MacOS','shview'))
     os.chmod(os.path.join('bin','shview'), 0o755)
     os.utime(os.path.join('bin','shview'), ns=(stat.st_atime_ns, stat.st_mtime_ns))
