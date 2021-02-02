@@ -40,7 +40,7 @@
           <string>gz</string>
         </array>
         <key>CFBundleTypeName</key>
-        <string>MRtrix of NIfTI image (compressed)</string>
+        <string>MRtrix or NIfTI image (compressed)</string>
         <key>CFBundleTypeRole</key>
         <string>Viewer</string>
         <key>CFBundleTypeIconFile</key>
