@@ -91,7 +91,7 @@ vector<size_t> optimise (const Eigen::MatrixXd& directions, const size_t first_v
 value_type calc_cost (const Eigen::MatrixXd& directions, const vector<size_t>& order)
 {
   const size_t start = Math::SH::NforL (2);
-  if (directions.rows() <= start)
+  if (size_t(directions.rows()) <= start)
     return value_type(0);
   Eigen::MatrixXd subset (start, 3);
   for (size_t i = 0; i != start; ++i)
@@ -118,7 +118,7 @@ void run ()
   auto directions = DWI::Directions::load_cartesian (argument[0]);
 
   size_t last_candidate_first_volume = directions.rows();
-  if (directions.rows() <= Math::SH::NforL (2)) {
+  if (size_t(directions.rows()) <= Math::SH::NforL (2)) {
     WARN ("Very few directions in input ("
           + str(directions.rows())
           + "); selection of first direction cannot be optimised"
