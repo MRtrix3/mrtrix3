@@ -105,12 +105,16 @@ if sysname == 'linux':
       for s in ['16', '32', '48', '64', '128']:
         for t in ['mrtrix', 'mrtrix-gz', 'nifti', 'nifti-gz', 'mgh', 'mgz', 'analyze']:
           subprocess.call(['xdg-icon-resource', xdg_action, '--context', 'apps', '--size', s, 'icons/desktop/' + s + 'x' + s + '/mrtrix.png', 'application-x-' + t])
+      print('xdg icon resources ' + xdg_action + 'ed')
       subprocess.call(['xdg-mime', xdg_action, 'mrtrix-mime.xml'])
+      print('xdg mime info ' + xdg_action + 'ed')
       shutil.copy('mrtrix-mrview.desktop','tmp/mrtrix-mrview.desktop')
       for line in fileinput.input('tmp/mrtrix-mrview.desktop', inplace=True):
         print(line.replace('mrview', bin_dir + '/mrview').rstrip('\n'))
       subprocess.call(['xdg-desktop-menu', xdg_action, 'tmp/mrtrix-mrview.desktop'])
+      print('xdg desktop menu ' + xdg_action + 'ed')
       subprocess.call(['xdg-desktop-icon', xdg_action, 'tmp/mrtrix-mrview.desktop'])
+      print('xdg desktop icon ' + xdg_action + 'ed')
     except FileNotFoundError:
       print ('xdg tools not available')
 
