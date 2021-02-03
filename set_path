@@ -32,7 +32,7 @@
 # particular). This will not work for the C shell and derivatives.
 
 
-import sys, os, platform, subprocess
+import sys, os, platform, subprocess, shutil, fileinput
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
@@ -81,9 +81,6 @@ if sysname == 'darwin':
     destination = os.path.join(app_dir,app)
     if os.path.exists(destination):
       if os.path.islink(destination):
-        #if remove:
-        #  print ('Symbolic link "''' + destination + '" successfully removed')
-        #else:
         if remove:
           print ('Symbolic link "''' + destination + '" successfully removed')
         removed_link = True
@@ -91,9 +88,6 @@ if sysname == 'darwin':
       else:
         print('ERROR:',app_dir,'already contains', app, 'that is not a symlink')
         sys.exit(1)
-    #else:
-    #  if remove:
-    #    print ('Symbolic link "''' + destination + '" successfully removed')
     if not remove:
       if os.path.isdir(target):
         os.symlink(target,destination,target_is_directory=True)
@@ -101,9 +95,24 @@ if sysname == 'darwin':
           print ('Symbolic link "''' + destination + '" successfully updated')
         else:
           print ('Symbolic link "''' + destination + '" successfully created')
-      #else:
-        #print('WARNING:', target, 'not found, skipping...')
 
+if sysname == 'linux':
+  if remove or os.path.exists(os.path.join(bin_dir,'mrview')):
+    xdg_action = 'install'
+    if remove:
+      xdg_action = 'uninstall'
+    try:
+      for s in ['16', '32', '48', '64', '128']:
+        for t in ['mrtrix', 'mrtrix-gz', 'nifti', 'nifti-gz', 'mgh', 'mgz', 'analyze']:
+          subprocess.call(['xdg-icon-resource', xdg_action, '--context', 'apps', '--size', s, 'icons/desktop/' + s + 'x' + s + '/mrtrix.png', 'application-x-' + t])
+      subprocess.call(['xdg-mime', xdg_action, 'mrtrix-mime.xml'])
+      shutil.copy('mrtrix-mrview.desktop','tmp/mrtrix-mrview.desktop')
+      for line in fileinput.input('tmp/mrtrix-mrview.desktop', inplace=True):
+        print(line.replace('mrview', bin_dir + '/mrview').rstrip('\n'))
+      subprocess.call(['xdg-desktop-menu', xdg_action, 'tmp/mrtrix-mrview.desktop'])
+      subprocess.call(['xdg-desktop-icon', xdg_action, 'tmp/mrtrix-mrview.desktop'])
+    except FileNotFoundError:
+      print ('xdg tools not available')
 
 # check whether destination file has been specified explicitly:
 if len(sys.argv) > 2:
