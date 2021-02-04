@@ -113,8 +113,6 @@ if sysname == 'linux':
         print(line.replace('mrview', bin_dir + '/mrview').rstrip('\n'))
       subprocess.call(['xdg-desktop-menu', xdg_action, 'tmp/mrtrix-mrview.desktop'])
       print('xdg desktop menu ' + xdg_action + 'ed')
-      subprocess.call(['xdg-desktop-icon', xdg_action, 'tmp/mrtrix-mrview.desktop'])
-      print('xdg desktop icon ' + xdg_action + 'ed')
     except FileNotFoundError:
       print ('xdg tools not available')
 
