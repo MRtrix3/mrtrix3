@@ -99,5 +99,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3
+import mrtrix3  #pylint: disable=wrong-import-position
 mrtrix3.execute() #pylint: disable=no-member
