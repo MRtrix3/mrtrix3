@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -59,7 +59,7 @@ namespace MR
 
         template <class Event> inline QPoint position (Event* event) { return event->pos(); }
         template <> inline QPoint position (QWheelEvent* event) {
-#if QT_VERSION >= 0x050E00 // translates to 5.14.0
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
           return event->position().toPoint();
 #else
           return event->pos();
@@ -1597,11 +1597,9 @@ namespace MR
 
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
         // otherwise we get transparent windows...
-#if QT_VERSION >= 0x050400
         gl::ColorMask (false, false, false, true);
         gl::Clear (gl::COLOR_BUFFER_BIT);
         glColorMask (true, true, true, true);
-#endif
         GL_CHECK_ERROR;
         GL::assert_context_is_current();
       }
@@ -1753,15 +1751,11 @@ namespace MR
       void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
-#if QT_VERSION >= 0x050500
         QPoint delta;
         if (event->source() == Qt::MouseEventNotSynthesized)
           delta = event->angleDelta();
         else
           delta = 30 * event->pixelDelta();
-#else
-        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
-#endif
         if (delta.isNull())
           return;
 
@@ -1943,6 +1937,17 @@ namespace MR
               if (pos.size() != 3)
                 throw Exception ("-target option expects a comma-separated list of 3 floating-point values");
               set_target (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              glarea->update();
+            }
+            return;
+          }
+
+          if (opt.opt->is ("orientation")) {
+            if (image()) {
+              vector<default_type> pos = parse_floats (opt[0]);
+              if (pos.size() != 4)
+                throw Exception ("-orientation option expects a comma-separated list of 4 floating-point values");
+              set_orientation ({ float(pos[0]), float(pos[1]), float(pos[2]), float(pos[3]) });
               glarea->update();
             }
             return;
@@ -2173,6 +2178,9 @@ namespace MR
           + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
               "that will appear at the centre of the viewing window")
           +   Argument ("x,y,z").type_sequence_float()
+
+          + Option ("orientation", "Set the orientation of the camera for the viewing window, in the form of a quaternion representing the rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point values (this will be automatically normalised).")
+          +   Argument ("w,x,y,z").type_sequence_float()
 
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
               "relative the image currently displayed. The new position should be supplied "

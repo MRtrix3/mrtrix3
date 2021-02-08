@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
-# Copyright (c) 2008-2020 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,9 +14,6 @@
 # See the Mozilla Public License v. 2.0 for more details.
 #
 # For more details, see http://www.mrtrix.org/.
-
-# Script for estimating response functions for spherical deconvolution
-# A number of different approaches are available within this script for performing response function estimation.
 
 
 
@@ -62,16 +59,16 @@ def execute(): #pylint: disable=unused-variable
       lmax = [ int(x) for x in app.ARGS.lmax.split(',') ]
       if any([lmax_value%2 for lmax_value in lmax]):
         raise MRtrixError('Value of lmax must be even')
-    except:
-      raise MRtrixError('Parameter lmax must be a number')
+    except ValueError as exception:
+      raise MRtrixError('Parameter lmax must be a number') from exception
     if alg.needs_single_shell() and not len(lmax) == 1:
       raise MRtrixError('Can only specify a single lmax value for single-shell algorithms')
   shells_option = ''
   if app.ARGS.shells:
     try:
       shells_values = [ int(round(float(x))) for x in app.ARGS.shells.split(',') ]
-    except:
-      raise MRtrixError('-shells option should provide a comma-separated list of b-values')
+    except ValueError as exception:
+      raise MRtrixError('-shells option should provide a comma-separated list of b-values') from exception
     if alg.needs_single_shell() and not len(shells_values) == 1:
       raise MRtrixError('Can only specify a single b-value shell for single-shell algorithms')
     shells_option = ' -shells ' + app.ARGS.shells
@@ -123,5 +120,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3
+import mrtrix3 #pylint: disable=wrong-import-position
 mrtrix3.execute() #pylint: disable=no-member

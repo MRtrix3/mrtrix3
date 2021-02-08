@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -254,8 +254,8 @@ namespace MR
                   if (enforce_quantisation && (term_number || term_ratio || term_mu)) {
                     if (App::log_level)
                       fprintf (stderr, "\n");
-                    WARN ("filtering has reached quantisation error but desired termination criterion has not been met;");
-                    WARN ("  disabling cost function quantisation check");
+                    CONSOLE ("filtering has reached quantisation error, but user's desired termination criterion has not yet been met;");
+                    CONSOLE ("  disabling cost function quantisation check and continuing filtering to try to satisfy user's request");
                     enforce_quantisation = false;
                   } else {
                     // Filtering completed to convergence
