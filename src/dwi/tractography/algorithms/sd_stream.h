@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -134,9 +134,11 @@ class SDStream : public MethodBase { MEMALIGN(SDStream)
     }
 
 
-    float get_metric() override
+    float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) override
     {
-      return FOD (dir);
+      if (!get_data (source, position))
+        return 0.0;
+      return FOD (direction);
     }
 
 

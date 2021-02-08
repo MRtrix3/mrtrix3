@@ -1,4 +1,4 @@
-% Copyright (c) 2008-2020 the MRtrix3 contributors.
+% Copyright (c) 2008-2021 the MRtrix3 contributors.
 %
 % This Source Code Form is subject to the terms of the Mozilla Public
 % License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,24 +40,17 @@ while 1
   if isempty(d)
     disp (['invalid line in header: ''' L ''' - ignored']);
   else
-    key = lower(strtrim(L(1:d(1)-1)));
+    key = strtrim(L(1:d(1)-1));
     value = strtrim(L(d(1)+1:end));
-    if strcmp(key, 'dim')
-      image.dim = str2num(char(split_strings (value, ',')))';
-    elseif strcmp(key, 'vox')
-      image.vox = str2num(char(split_strings (value, ',')))';
-    elseif strcmp(key, 'layout')
-      image.layout = value;
-    elseif strcmp(key, 'datatype')
-      image.datatype = value;
-    elseif strcmp(key, 'transform')
-      transform(end+1,:) = str2num(char(split_strings (value, ',')))';
-    elseif strcmp(key, 'file')
-      file = value;
-    elseif strcmp(key, 'dw_scheme')
-      dw_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
-    else
-      image = add_field (image, key, value);
+    switch lower(key)
+      case 'dim',        image.dim = str2num(char(split_strings (value, ',')))';
+      case 'vox',        image.vox = str2num(char(split_strings (value, ',')))';
+      case 'layout',     image.layout = value;
+      case 'datatype',   image.datatype = value;
+      case 'transform',  transform(end+1,:) = str2num(char(split_strings (value, ',')))';
+      case 'file',       file = value;
+      case 'dw_scheme',  dw_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
+      otherwise,         image = add_field (image, key, value);
     end
   end
 end

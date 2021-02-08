@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,6 +24,7 @@
 #include "file/json.h"
 #include "file/json_utils.h"
 #include "dwi/gradient.h"
+#include "image_io/pipe.h"
 
 
 using namespace MR;
@@ -106,7 +107,10 @@ void usage ()
     +   Option ("shell_indices", "list the image volumes attributed to each b-value shell")
 
     + PhaseEncoding::ExportOptions
-    +   Option ("petable", "print the phase encoding table");
+    +   Option ("petable", "print the phase encoding table")
+
+    + OptionGroup ("Handling of piped images")
+    +   Option ("nodelete", "don't delete temporary images or images passed to mrinfo via Unix pipes");
 
 }
 
@@ -242,6 +246,9 @@ void run ()
         return true;
     return false;
   };
+
+  if (get_options("nodelete").size())
+    ImageIO::Pipe::delete_piped_images = false;
 
   const bool export_grad = check_option_group (GradExportOptions);
   const bool export_pe   = check_option_group (PhaseEncoding::ExportOptions);

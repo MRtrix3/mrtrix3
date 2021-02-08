@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -61,7 +61,7 @@ void run ()
   Fixel::check_fixel_size (in_index_image, mask_image);
 
   const auto out_fixel_directory = argument[2];
-  Fixel::check_fixel_directory (out_fixel_directory, true);
+  Fixel::check_fixel_directory (out_fixel_directory, true, true);
 
   Header out_header = Header (in_index_image);
   index_type total_nfixels = Fixel::get_number_of_fixels (in_index_header);

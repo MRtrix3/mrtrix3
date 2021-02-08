@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,7 +55,7 @@ class Seedtest : public MethodBase { MEMALIGN(Seedtest)
 
   bool init() override { return true; }
   term_t next () override { return EXIT_IMAGE; }
-  float get_metric() override { return 1.0f; }
+  float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) override { return 1.0f; }
 
 
   protected:

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -134,7 +134,7 @@ namespace MR
 
                 INFO ("initialising multi-tissue CSD for " + str(num_tissues()) + " tissue types, with " + str (nparams) + " parameters");
 
-                Eigen::MatrixXd C (grad.rows(), nparams);
+                Eigen::MatrixXd C = Eigen::MatrixXd::Zero (grad.rows(), nparams);
 
                 vector<size_t> dwilist;
                 for (size_t i = 0; i != size_t(grad.rows()); i++)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,6 +81,7 @@ namespace MR
           using dim_type = typename Type<NiftiHeader>::dim_type;
           using code_type = typename Type<NiftiHeader>::code_type;
           using float_type = typename Type<NiftiHeader>::float_type;
+          using vox_offset_type = typename Type<NiftiHeader>::vox_offset_type;
 
           bool is_BE = false;
           if (Raw::fetch_<int32_t> (&NH.sizeof_hdr, is_BE) != sizeof(NH)) {
@@ -217,7 +218,7 @@ namespace MR
 
 
 
-          const int64_t data_offset = Raw::fetch_<float_type> (&NH.vox_offset, is_BE);
+          const int64_t data_offset = Raw::fetch_<vox_offset_type> (&NH.vox_offset, is_BE);
 
 
 
@@ -512,7 +513,7 @@ namespace MR
           Eigen::Quaterniond Q (R);
 
           if (Q.w() < 0.0)
-            Q.vec() = -Q.vec();
+            Q.coeffs() *= -1.0;
 
           if (R.isApprox (Q.matrix(), 1e-6)) {
             Raw::store<code_type> (NIFTI_XFORM_SCANNER_ANAT, &NH.qform_code, is_BE);

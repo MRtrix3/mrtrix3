@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -114,7 +114,7 @@ void convert_old2new ()
   const bool output_size = get_options ("out_size").size();
 
   const std::string output_fixel_directory = argument[1];
-  Fixel::check_fixel_directory (output_fixel_directory, true);
+  Fixel::check_fixel_directory (output_fixel_directory, true, true);
 
   index_type fixel_count = 0;
   for (auto i = Loop (input) (input); i; ++i)

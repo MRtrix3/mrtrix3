@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -137,8 +137,6 @@ namespace MR
 
         void set_interp_type (int type) {
           interp_type = type;
-          if (interp_type == 0) // nearest
-            set_oversample (vector<uint32_t> (3, 1));
         }
 
         void set_transform (const transform_type& trafo) {
@@ -156,7 +154,7 @@ namespace MR
              *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
             switch (interp_type) {
             case 0:
-              // Prevent use of oversampling when using nearest-neighbour interpolation
+              // Use of oversampling is prevented in reslice adapter
               reslice <Interp::Nearest> (input, output, transformation, oversampling, oob);
               break;
             case 1:

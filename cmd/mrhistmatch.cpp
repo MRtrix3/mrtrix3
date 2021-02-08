@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -107,21 +107,21 @@ void match_linear (Image<float>& input,
   // A: Input data
   // x: Model parameters; in the "scale" case, it's a single multiplier; if "linear", include a column of ones and estimate an intercept
   // b: Output data (or actually, interpolated histogram-matched output data)
-  Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> input_matrix (input_data.size(), estimate_intercept ? 2 : 1);
-  Eigen::Matrix<float, Eigen::Dynamic, 1> output_vector (input_data.size());
+  Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> input_matrix (input_data.size(), estimate_intercept ? 2 : 1);
+  Eigen::Matrix<default_type, Eigen::Dynamic, 1> output_vector (input_data.size());
   for (size_t input_index = 0; input_index != input_data.size()-1; ++input_index) {
     input_matrix(input_index, 0) = input_data[input_index];
     const default_type output_position = (target_data.size()-1) * (default_type(input_index) / default_type(input_data.size()-1));
     const size_t target_index_lower = std::floor (output_position);
     const default_type mu = output_position - default_type(target_index_lower);
-    output_vector[input_index] = ((1.0-mu)*target_data[target_index_lower] + mu*target_data[target_index_lower+1]);
+    output_vector[input_index] = ((1.0-mu)*target_data[target_index_lower]) + (mu*target_data[target_index_lower+1]);
   }
   input_matrix(input_data.size()-1, 0) = input_data.back();
   output_vector[input_data.size()-1] = target_data.back();
   if (estimate_intercept)
     input_matrix.col(1).fill (1.0f);
 
-  auto parameters = input_matrix.fullPivLu().solve (output_vector).eval();
+  auto parameters = (input_matrix.transpose() * input_matrix).llt().solve(input_matrix.transpose() * output_vector).eval();
 
   Header H (input);
   H.datatype() = DataType::Float32;

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2020 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,7 @@
 
 
 
-import glob, os, re
-from distutils.spawn import find_executable
+import glob, os, re, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run
 
@@ -201,7 +200,7 @@ def execute(): #pylint: disable=unused-variable
     app.warn('Environment variable FSLDIR is not set; script will run without FSL components')
 
   acpc_string = 'anterior ' + ('& posterior commissures' if ATTEMPT_PC else 'commissure')
-  have_acpcdetect = bool(find_executable('acpcdetect')) and 'ARTHOME' in os.environ
+  have_acpcdetect = bool(shutil.which('acpcdetect')) and 'ARTHOME' in os.environ
   if have_acpcdetect:
     if have_fast:
       app.console('ACPCdetect and FSL FAST will be used for explicit segmentation of ' + acpc_string)

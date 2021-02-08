@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -93,69 +93,73 @@ void run()
                                       "minweight",
                                       "mask" };
 
-  Header index_header;
   Image<float> single_file;
   vector<Header> multiple_files;
-  Header output_header;
-  try {
-    index_header = Fixel::find_index_header (argument[0]);
-    multiple_files = Fixel::find_data_headers (argument[0], index_header);
-    if (multiple_files.empty())
-      throw Exception ("No fixel data files found in directory \"" + argument[0] + "\"");
-    output_header = Header (multiple_files[0]);
-  } catch (...) {
-    try {
-      index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
-      single_file = Image<float>::open (argument[0]);
-      Fixel::check_data_file (single_file);
-      output_header = Header (single_file);
-    } catch (...) {
-      throw Exception ("Could not interpret first argument \"" + argument[0] + "\" as either a fixel data file, or a fixel directory");
-    }
-  }
-
-  if (single_file.valid() && !Fixel::fixels_match (index_header, single_file))
-    throw Exception ("File \"" + argument[0] + "\" is not a valid fixel data file (does not match corresponding index image)");
-
-  auto opt = get_options ("matrix");
-  Fixel::Matrix::Reader matrix (opt[0][0]);
-
-  Image<index_type> index_image = index_header.get_image<index_type>();
-  const size_t nfixels = Fixel::get_number_of_fixels (index_image);
-  if (nfixels != matrix.size())
-    throw Exception ("Number of fixels in input (" + str(nfixels) + ") does not match number of fixels in connectivity matrix (" + str(matrix.size()) + ")");
-
   std::unique_ptr<Fixel::Filter::Base> filter;
-  switch (int(argument[1])) {
-    case 0:
-    {
-      const float value = get_option_value ("threshold_value", float(DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD));
-      const float connect = get_option_value ("threshold_connectivity", float(DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD));
-      filter.reset (new Fixel::Filter::Connect (matrix, value, connect));
-      output_header.datatype() = DataType::UInt32;
-      output_header.datatype().set_byte_order_native();
-      option_list.erase ("threshold_value");
-      option_list.erase ("threshold_connectivity");
-    }
-      break;
-    case 1:
-    {
-      const float fwhm = get_option_value ("fwhm", float(DEFAULT_FIXEL_SMOOTHING_FWHM));
-      const float threshold = get_option_value ("minweight", float(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT));
-      opt = get_options ("mask");
-      if (opt.size()) {
-        Image<bool> mask_image = Image<bool>::open (opt[0][0]);
-        filter.reset (new Fixel::Filter::Smooth (index_image, matrix, mask_image, fwhm, threshold));
-      } else {
-        filter.reset (new Fixel::Filter::Smooth (index_image, matrix, fwhm, threshold));
+
+  {
+    Header index_header;
+    Header output_header;
+    try {
+      index_header = Fixel::find_index_header (argument[0]);
+      multiple_files = Fixel::find_data_headers (argument[0], index_header);
+      if (multiple_files.empty())
+        throw Exception ("No fixel data files found in directory \"" + argument[0] + "\"");
+      output_header = Header (multiple_files[0]);
+    } catch (...) {
+      try {
+        index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
+        single_file = Image<float>::open (argument[0]);
+        Fixel::check_data_file (single_file);
+        output_header = Header (single_file);
+      } catch (...) {
+        throw Exception ("Could not interpret first argument \"" + argument[0] + "\" as either a fixel data file, or a fixel directory");
       }
-      option_list.erase ("fwhm");
-      option_list.erase ("minweight");
-      option_list.erase ("mask");
     }
-      break;
-    default:
-      assert (0);
+
+    if (single_file.valid() && !Fixel::fixels_match (index_header, single_file))
+      throw Exception ("File \"" + argument[0] + "\" is not a valid fixel data file (does not match corresponding index image)");
+
+    auto opt = get_options ("matrix");
+    Fixel::Matrix::Reader matrix (opt[0][0]);
+
+    Image<index_type> index_image = index_header.get_image<index_type>();
+    const size_t nfixels = Fixel::get_number_of_fixels (index_image);
+    if (nfixels != matrix.size())
+      throw Exception ("Number of fixels in input (" + str(nfixels) + ") does not match number of fixels in connectivity matrix (" + str(matrix.size()) + ")");
+
+    switch (int(argument[1])) {
+      case 0:
+      {
+        const float value = get_option_value ("threshold_value", float(DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD));
+        const float connect = get_option_value ("threshold_connectivity", float(DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD));
+        filter.reset (new Fixel::Filter::Connect (matrix, value, connect));
+        output_header.datatype() = DataType::UInt32;
+        output_header.datatype().set_byte_order_native();
+        option_list.erase ("threshold_value");
+        option_list.erase ("threshold_connectivity");
+      }
+        break;
+      case 1:
+      {
+        const float fwhm = get_option_value ("fwhm", float(DEFAULT_FIXEL_SMOOTHING_FWHM));
+        const float threshold = get_option_value ("minweight", float(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT));
+        opt = get_options ("mask");
+        if (opt.size()) {
+          Image<bool> mask_image = Image<bool>::open (opt[0][0]);
+          filter.reset (new Fixel::Filter::Smooth (index_image, matrix, mask_image, fwhm, threshold));
+        } else {
+          filter.reset (new Fixel::Filter::Smooth (index_image, matrix, fwhm, threshold));
+        }
+        option_list.erase ("fwhm");
+        option_list.erase ("minweight");
+        option_list.erase ("mask");
+      }
+        break;
+      default:
+        assert (0);
+    }
+
   }
 
   for (const auto& i : option_list) {

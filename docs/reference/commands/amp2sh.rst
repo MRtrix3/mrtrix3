@@ -26,7 +26,7 @@ The spherical harmonic decomposition is calculated by least-squares linear fitti
 The directions can be defined either as a DW gradient scheme (for example to compute the SH representation of the DW signal), a set of [az el] pairs as output by the dirgen command, or a set of [ x y z ] directions in Cartesian coordinates. The DW gradient scheme or direction set can be supplied within the input image header or using the -gradient or -directions option. Note that if a direction set and DW gradient scheme can be found, the direction set will be used by default.
 
 The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.1/concepts/spherical_harmonics.html
+https://mrtrix.readthedocs.io/en/3.0.2/concepts/spherical_harmonics.html
 
 Options
 -------
@@ -87,7 +87,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2020 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

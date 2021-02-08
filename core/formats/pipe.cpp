@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,8 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <unistd.h>
 
 #include "signal_handler.h"
 #include "file/utils.h"
@@ -34,14 +36,15 @@ namespace MR
         H.name() = name;
       }
       else {
-        if (!File::is_tempfile (H.name())) 
-          return std::unique_ptr<ImageIO::Base>();
+        if (!File::is_tempfile (H.name()))
+          return { };
       }
 
       if (H.name().empty())
         throw Exception ("no filename supplied to standard input (broken pipe?)");
 
-      SignalHandler::mark_file_for_deletion (H.name());
+      if (ImageIO::Pipe::delete_piped_images)
+        SignalHandler::mark_file_for_deletion (H.name());
 
       if (!Path::has_suffix (H.name(), ".mif"))
         throw Exception ("MRtrix only supports the .mif format for command-line piping");
@@ -59,6 +62,9 @@ namespace MR
     {
       if (H.name() != "-")
         return false;
+
+      if (isatty (STDOUT_FILENO))
+        throw Exception ("attempt to pipe image to standard output (this will leave temporary files behind)");
 
       H.name() = File::create_tempfile (0, "mif");
 

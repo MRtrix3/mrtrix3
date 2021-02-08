@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,6 +23,7 @@
 #include "transform.h"
 #include "types.h"
 #include "interp/base.h"
+#include "interp/nearest.h"
 
 namespace MR
 {
@@ -129,22 +130,33 @@ namespace MR
               using namespace Eigen;
               assert (ndim() >= 3);
 
-              if (oversample.size()) {
+              const bool is_nearest = std::is_same<typename Interp::Nearest<ImageType>, decltype(interp)>::value;
+
+              if (oversample.size()) { // oversample explicitly set
                 assert (oversample.size() == 3);
                 if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1)
                   throw Exception ("oversample factors must be greater than zero");
-                OS[0] = oversample[0];
-                OS[1] = oversample[1];
-                OS[2] = oversample[2];
+                if (is_nearest && (oversample[0] != 1 || oversample[1] != 1 || oversample[2] != 1)) {
+                  WARN("oversampling factors ignored for nearest neighbour interpolation");
+                  OS[0] = OS[1] = OS[2] = 1;
+                }
+                else {
+                  OS[0] = oversample[0]; OS[1] = oversample[1]; OS[2] = oversample[2];
+                }
               }
-              else {
-                Vector3 y = direct_transform * Vector3 (0.0, 0.0, 0.0);
-                Vector3 x0 = direct_transform * Vector3 (1.0, 0.0, 0.0);
-                OS[0] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
-                x0 = direct_transform * Vector3 (0.0, 1.0, 0.0);
-                OS[1] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
-                x0 = direct_transform * Vector3 (0.0, 0.0, 1.0);
-                OS[2] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
+              else { // oversample is default
+                if (is_nearest) {
+                  OS[0] = OS[1] = OS[2] = 1;
+                }
+                else {
+                  Vector3 y = direct_transform * Vector3 (0.0, 0.0, 0.0);
+                  Vector3 x0 = direct_transform * Vector3 (1.0, 0.0, 0.0);
+                  OS[0] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
+                  x0 = direct_transform * Vector3 (0.0, 1.0, 0.0);
+                  OS[1] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
+                  x0 = direct_transform * Vector3 (0.0, 0.0, 1.0);
+                  OS[2] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
+                }
               }
 
               if (OS[0] * OS[1] * OS[2] > 1) {

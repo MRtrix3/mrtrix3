@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #ifndef __fixel_helpers_h__
 #define __fixel_helpers_h__
 
+#include "app.h"
 #include "image.h"
 #include "image_diff.h"
 #include "image_helpers.h"
@@ -203,7 +204,10 @@ namespace MR
         throw Exception (str(path_temp) + " is not a directory");
 
       if (check_if_empty && Path::Dir (path_temp).read_name ().size () != 0)
-        throw Exception ("Expected fixel directory " + path_temp + " to be empty.");
+        throw Exception ("Output fixel directory \"" + path_temp + "\" is not empty"
+                         + (App::overwrite_files ?
+                            " (-force option cannot safely be applied on directories; please erase manually instead)" :
+                            ""));
     }
 
 
@@ -339,14 +343,15 @@ namespace MR
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
 
       // If the index file already exists check it is the same as the input index file
-      if (Path::exists (output_path) && !App::overwrite_files) {
+      if (Path::exists (output_path)) {
         auto input_image = input_header.get_image<index_type>();
         auto output_image = Image<index_type>::open (output_path);
-
         if (!images_match_abs (input_image, output_image))
-          throw Exception ("output sparse image directory (" + output_directory + ") already contains index file, "
-                           "which is not the same as the expected output. Use -force to override if desired");
-
+          throw Exception ("output fixel directory \"" + output_directory + "\" already contains index file, "
+                           + "which is not the same as the expected output"
+                           + (App::overwrite_files ?
+                              " (-force option cannot safely be applied on directories; please erase manually instead)" :
+                              ""));
       } else {
         auto output_image = Image<index_type>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
         auto input_image = input_header.get_image<index_type>();
@@ -359,17 +364,20 @@ namespace MR
       Header input_header = Fixel::find_directions_header (input_directory);
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
 
-      // If the index file already exists check it is the same as the input index file
-      if (Path::exists (output_path) && !App::overwrite_files) {
-        auto input_image = input_header.get_image<index_type>();
-        auto output_image = Image<index_type>::open (output_path);
-
+      // If the directions file already exists check it is the same as the input directions file
+      if (Path::exists (output_path)) {
+        auto input_image = input_header.get_image<float>();
+        auto output_image = Image<float>::open (output_path);
         if (!images_match_abs (input_image, output_image))
-          throw Exception ("output sparse image directory (" + output_directory + ") already contains a directions file, "
-                           "which is not the same as the expected output. Use -force to override if desired");
-
+          throw Exception ("output fixel directory \"" + output_directory + "\" already contains directions file, "
+                           + "which is not the same as the expected output"
+                           + (App::overwrite_files ?
+                              " (-force option cannot safely be applied on directories; please erase manually instead)" :
+                              ""));
       } else {
-        copy_fixel_file (input_header.name(), output_directory);
+        auto output_image = Image<float>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
+        auto input_image = input_header.get_image<float>();
+        threaded_copy (input_image, output_image);
       }
 
     }

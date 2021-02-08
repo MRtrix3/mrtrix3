@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -159,7 +159,8 @@ namespace MR
    template <class ImageType1, class ImageType2>
      inline bool images_match_abs (ImageType1& in1, ImageType2& in2, const double tol = 0.0)
      {
-       headers_match (in1, in2);
+       if (!headers_match (in1, in2))
+         return false;
        for (auto i = Loop (in1)(in1, in2); i; ++i)
          if (abs (cdouble (in1.value()) - cdouble (in2.value())) > tol)
            return false;

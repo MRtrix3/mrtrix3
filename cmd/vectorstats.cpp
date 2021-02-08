@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -115,16 +115,40 @@ class SubjectVectorImport : public SubjectDataImportBase
 void run()
 {
 
+  // Unlike other statistical inference commands, don't delay actual
+  //   loading of input data: feasible for the input itself to be
+  //   a text file containing raw numerical matrix data, rather than
+  //   a list of files
   CohortDataImport importer;
-  importer.initialise<SubjectVectorImport> (argument[0]);
-  const size_t num_inputs = importer.size();
-  CONSOLE ("Number of subjects: " + str(num_inputs));
-  const size_t num_elements = importer[0]->size();
-  CONSOLE ("Number of elements: " + str(num_elements));
-  for (size_t i = 0; i != importer.size(); ++i) {
-    if (importer[i]->size() != num_elements)
-      throw Exception ("Subject file \"" + importer[i]->name() + "\" contains incorrect number of elements (" + str(importer[i]) + "; expected " + str(num_elements) + ")");
+  matrix_type data;
+  size_t num_inputs = 0, num_elements = 0;
+  try {
+    importer.initialise<SubjectVectorImport> (argument[0]);
+    num_inputs = importer.size();
+    num_elements = importer[0]->size();
+    for (size_t i = 0; i != importer.size(); ++i) {
+      if (importer[i]->size() != num_elements)
+        throw Exception ("Subject file \"" + importer[i]->name() + "\" contains incorrect number of elements (" + str(importer[i]) + "; expected " + str(num_elements) + ")");
+    }
+    data.resize (num_inputs, num_elements);
+    for (size_t subject = 0; subject != num_inputs; subject++)
+      (*importer[subject]) (data.row(subject));
+  } catch (Exception& e_asfilelist) {
+    try {
+      data = load_matrix (argument[0]);
+      num_inputs = data.rows();
+      num_elements = data.cols();
+    } catch (Exception& e_asmatrix) {
+      Exception e ("Unable to load input data from file \"" + argument[0] + '"');
+      e.push_back ("Error when interpreted as containing list of file names: ");
+      e.push_back (e_asfilelist);
+      e.push_back ("Error when interpreted as numerical matrix data: ");
+      e.push_back (e_asmatrix);
+      throw e;
+    }
   }
+  CONSOLE ("Number of subjects: " + str(num_inputs));
+  CONSOLE ("Number of elements: " + str(num_elements));
 
   // Load design matrix
   const matrix_type design = load_matrix (argument[1]);
@@ -167,11 +191,6 @@ void run()
   CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   const std::string output_prefix = argument[3];
-
-  // Load input data
-  matrix_type data (num_inputs, num_elements);
-  for (size_t subject = 0; subject != num_inputs; subject++)
-    (*importer[subject]) (data.row(subject));
 
   const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
@@ -247,7 +266,7 @@ void run()
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
-    const bool fwe_strong = get_option_value ("strong", false);
+    const bool fwe_strong = get_options ("strong").size();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
@@ -267,7 +286,7 @@ void run()
     const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_zstat);
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_vector (fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
-      save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_pvalue" + postfix(i) + ".csv");
+      save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");
       save_vector (null_contributions.col(i), output_prefix + "null_contributions" + postfix(i) + ".csv");
     }
 

@@ -241,7 +241,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`tckgen`, "Perform streamlines tractography"
     |cpp.png|, :ref:`tckglobal`, "Multi-Shell Multi-Tissue Global Tractography"
     |cpp.png|, :ref:`tckinfo`, "Print out information about a track file"
-    |cpp.png|, :ref:`tckmap`, "Use track data as a form of contrast for producing a high-resolution image"
+    |cpp.png|, :ref:`tckmap`, "Map streamlines to an image, with various options for generating image contrast"
     |cpp.png|, :ref:`tckresample`, "Resample each streamline in a track file to a new set of vertices"
     |cpp.png|, :ref:`tcksample`, "Sample values of an associated image along tracks"
     |cpp.png|, :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
