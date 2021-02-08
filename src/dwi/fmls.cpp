@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -87,7 +87,6 @@ namespace MR {
           segmenter.set_lobe_merge_ratio (default_type(opt[0][0]));
 
       }
-
 
 
 
@@ -301,6 +300,8 @@ namespace MR {
             }
           }
         }
+
+        std::sort (out.begin(), out.end(), [] (const FOD_lobe& a, const FOD_lobe& b) { return (a.get_integral() > b.get_integral()); } );
 
         if (create_lookup_table) {
 
