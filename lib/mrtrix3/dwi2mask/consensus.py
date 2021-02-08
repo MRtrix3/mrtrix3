@@ -79,9 +79,9 @@ def execute(): #pylint: disable=unused-variable
   # For "template" algorithm, can run twice with two different softwares
   # Ideally this would be determined based on the help page,
   #   rather than pre-programmed
-  algorithm_list = [item for item in algorithm_list if item != 'template']
-  algorithm_list.append('template -software antsfull')
-  algorithm_list.append('template -software fsl')
+  algorithm_list = [item for item in algorithm_list if item != 'b02template']
+  algorithm_list.append('b02template -software antsfull')
+  algorithm_list.append('b02template -software fsl')
   app.debug(str(algorithm_list))
 
   mask_list = []
@@ -91,7 +91,7 @@ def execute(): #pylint: disable=unused-variable
     cmd = 'dwi2mask ' + alg + ' input.mif ' + mask_path
     # Ideally this would be determined based on the presence of this option
     #   in the command's help page
-    if any(item in alg for item in ['ants', 'template']):
+    if any(item in alg for item in ['ants', 'b02template']):
       cmd += ' -template template_image.nii template_mask.nii'
     cmd += ' -scratch ' + app.SCRATCH_DIR
     if not app.DO_CLEANUP:
