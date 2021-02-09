@@ -18,6 +18,12 @@ Usage
 -  *directions*: the input directions image; each volume corresponds to the x, y & z component of each direction vector in turn.
 -  *fixels*: the output fixel directory.
 
+Description
+-----------
+
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.2/fixel_based_analysis/fixel_directory_format.html
+
 Options
 -------
 

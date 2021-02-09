@@ -18,12 +18,18 @@
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm, app #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import algorithm, app, _version #pylint: disable=no-name-in-module, import-outside-toplevel
 
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)')
   cmdline.set_synopsis('Estimate response function(s) for spherical deconvolution')
   cmdline.add_description('dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after \'dwi2response\'. The subsequent arguments and options depend on the particular algorithm being invoked.')
   cmdline.add_description('Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the \'fa\' algorithm, type \'dwi2response fa\'.')
+  cmdline.add_description('More information on response function estimation for spherical deconvolution can be found at the following link: \n'
+                          'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/constrained_spherical_deconvolution/response_function_estimation.html')
+  cmdline.add_description('Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to '
+                          'derive an initial voxel exclusion mask. '
+                          'More information on mask derivation from DWI data can be found at: '
+                          'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/dwi_preprocessing/masking.html')
 
   # General options
   common_options = cmdline.add_argument_group('General dwi2response options')

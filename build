@@ -1189,26 +1189,42 @@ def mrtrix_version ():
   try:
     return mrtrix_version.version
   except AttributeError:
-    pass
+    fetch_mrtrix_version()
+    return mrtrix_version.version
+
+
+
+def mrtrix_tag ():
+  try:
+    return mrtrix_version.tag
+  except AttributeError:
+    fetch_mrtrix_version()
+    return mrtrix_version.tag
+
+
+
+def fetch_mrtrix_version ():
 
   log ('''
 getting MRtrix version from folder "''' + mrtrix_dir[-1] + '"...\n  ')
   try:
-    tag = version_from_file (os.path.join (lib_dir, 'version.h'), 'MRTRIX_BASE_VERSION')
+    base_version = version_from_file (os.path.join (lib_dir, 'version.h'), 'MRTRIX_BASE_VERSION')
   except LookupError:
-    fail ('ERROR: failed to read version information from file "' + os.path.join (lib_dir, 'version.h') + '"\n')
+    fail ('ERROR: failed to read base version information from file "' + os.path.join (lib_dir, 'version.h') + '"\n')
 
   try:
     log ('  ')
-    version = version_from_git (mrtrix_dir[-1])
-    if version[0] != tag:
+    [ tag, commit ] = version_from_git (mrtrix_dir[-1])
+    if tag != base_version:
       fail ('ERROR: version stored in "' + os.path.join (lib_dir, 'version.h') + '" does not match git tag name\n')
-    mrtrix_version.version = version[1]
+    mrtrix_version.tag = tag
+    mrtrix_version.version = commit
   except LookupError:
-    mrtrix_version.version = tag
+    mrtrix_version.tag = base_version
+    mrtrix_version.version = base_version
 
   log ('Using MRtrix version "' + mrtrix_version.version + '"\n')
-  return mrtrix_version.version
+
 
 
 
@@ -1341,6 +1357,7 @@ def update_user_docs ():
 
 with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
   vfile.write('__version__ = "'+ mrtrix_version() +'" #pylint: disable=unused-variable\n')
+  vfile.write('__tag__ = "'+ mrtrix_tag() +'" #pylint: disable=unused-variable\n')
 
 
 ###########################################################################

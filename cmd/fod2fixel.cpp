@@ -19,9 +19,8 @@
 
 #include "image.h"
 
-#include "fixel/keys.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/types.h"
 
 #include "math/SH.h"
 
@@ -66,6 +65,9 @@ void usage ()
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels";
+
+  DESCRIPTION
+  + Fixel::format_description;
 
   REFERENCES
     + "* Reference for the FOD segmentation method:\n"
