@@ -65,7 +65,7 @@ the core image registration and transformation processes:
    for registration; transforms mask image to subject space using ANTs_
    command ``antsApplyTransforms``.
 
--  ``antsquick``: Utilises the ANTs_ commands ``antsRegistration``
+-  ``antsfull``: Utilises the ANTs_ commands ``antsRegistration``
    for registration, using the registration parameters specified in the article:
 
    Tustison, Nicholas J., and Brian B. Avants.
