@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,11 +38,12 @@ namespace MR {
       void NBS::operator() (in_column_type in, const value_type T, out_column_type out) const
       {
         out.setZero();
+        BitSet visited (in.size());
 
         for (ssize_t seed = 0; seed != in.size(); ++seed) {
           if (std::isfinite (in[seed]) && in[seed] >= T && !out[seed]) {
 
-            BitSet visited (in.size());
+            visited.clear();
             visited[seed] = true;
             vector<size_t> to_expand (1, seed);
             size_t cluster_size = 0;

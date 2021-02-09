@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -182,16 +182,10 @@ namespace MR
           set_viewport (frame);
         }
 
-#if QT_VERSION >= 0x050100
         void set_viewport (const QWidget& frame) const {
           int m = frame.window()->devicePixelRatio();
           gl::Viewport (m*viewport[0], m*viewport[1], m*viewport[2], m*viewport[3]);
         }
-#else
-        void set_viewport (const QWidget&) const {
-          gl::Viewport (viewport[0], viewport[1], viewport[2], viewport[3]);
-        }
-#endif
 
         void render_crosshairs (const Eigen::Vector3f& focus) const { crosshair->render (focus, *this); }
 
@@ -206,11 +200,11 @@ namespace MR
 
         void render_text_align (int x, int y, const std::string& text, int halign = 0, int valign = 0) const {
           QString s (qstr(text));
-          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
+#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           int w = font.metric.width (s);
-          #else
+#else
           int w = font.metric.horizontalAdvance (s);
-          #endif
+#endif
           int h = font.metric.height();
           if (halign == 0) x -= w/2;
           else if (halign > 0) x -= w;
@@ -225,13 +219,13 @@ namespace MR
             inset = font.metric.height() / 2;
           if (x < inset)
             x = inset;
-          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
+#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           if (x + font.metric.width (s) + inset > width())
             x = width() - font.metric.width (s) - inset;
-          #else
+#else
           if (x + font.metric.horizontalAdvance (s) + inset > width())
             x = width() - font.metric.horizontalAdvance (s) - inset;
-          #endif
+#endif
 
           if (y < inset)
             y = inset;
@@ -244,15 +238,15 @@ namespace MR
           QString s (qstr(text));
           int x, y;
 
-          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
+#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           if (position & RightEdge) x = width() - font.metric.height() / 2 - font.metric.width (s);
           else if (position & LeftEdge) x = font.metric.height() / 2;
           else x = (width() - font.metric.width (s)) / 2;
-          #else
+#else
           if (position & RightEdge) x = width() - font.metric.height() / 2 - font.metric.horizontalAdvance (s);
           else if (position & LeftEdge) x = font.metric.height() / 2;
           else x = (width() - font.metric.horizontalAdvance (s)) / 2;
-          #endif
+#endif
 
           if (position & TopEdge) y = height() - 1.5 * font.metric.height() - line * font.metric.lineSpacing();
           else if (position & BottomEdge) y = font.metric.height() / 2 + line * font.metric.lineSpacing();

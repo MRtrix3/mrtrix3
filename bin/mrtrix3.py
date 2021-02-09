@@ -15,7 +15,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 import imp, os, sys
-from distutils.spawn import find_executable
 
 def imported(lib_path):
   success = False

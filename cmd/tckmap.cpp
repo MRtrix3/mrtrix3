@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -161,12 +161,38 @@ void usage () {
 
 AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
-SYNOPSIS = "Use track data as a form of contrast for producing a high-resolution image";
+SYNOPSIS = "Map streamlines to an image, with various options for generating image contrast";
 
 DESCRIPTION
-  + "Note: if you run into limitations with RAM usage, make sure you output the "
-    "results to a .mif file or .mih / .dat file pair - this will avoid the allocation "
-    "of an additional buffer to store the output for write-out.";
+
+  + "The -contrast option controls how a value is derived for each streamline that is "
+    "subsequently contributed to the image elements intersected by that streamline, and "
+    "therefore strongly influences the contrast of that image. The permissible values "
+    "are briefly summarised as follows: "
+  + "- tdi: Each streamline effectively contributes a value of unity to the final map "
+      "(equivalent to the original Track Density Imaging (TDI) method)"
+  + "- length: The length of the streamline in mm"
+  + "- invlength: The reciprocal of streamline length"
+  + "- scalar_map: Values are sampled from a scalar image (which must be provided via -image)"
+  + "- scalar_map_count: If a non-zero value is sampled from a scalar image (as provided "
+      "via -image), the streamline contributes a value of 1, otherwise it contributes 0, such "
+      "that an image can be produced reflecting the density of streamlines that intersect such "
+      "an image"
+  + "- fod_amp: The amplitudes of a Fibre Orientation Distribution (FOD) image"
+  + "- curvature: The curvature of the streamline"
+  + "- vector_file: A value for each streamline has been pre-calculated, and these are "
+      "provided in a text file via the -vector_file option"
+
+  + "A \"super-resolution\" output image can be generated using the -vox option, whether "
+    "or not a template image is provided using the -template option. If -template is used "
+    "in conjunction with -vox, the image axes and FoV will still match that of the template "
+    "image, but the spatial resolution will differ."
+
+  + "Note: if you run into limitations with RAM usage, try writing the output image "
+    "as a .mif file or .mih / .dat file pair to a local hard drive: this will allow "
+    "tckmap to dump the generated image contents directly to disk, rather than allocating "
+    "an additional buffer to store the output image for write-out, thereby potentially "
+    "halving RAM usage.";
 
 REFERENCES
   + "* For TDI or DEC TDI:\n"

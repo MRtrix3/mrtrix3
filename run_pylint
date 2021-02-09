@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2020 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ if [ $# == 0 ]; then
     fi
   done
   for bin_path in bin/*; do
-    if [ -f ${bin_path} ] && $(head -n1 ${bin_path} | grep -q "#!/usr/bin/env python"); then
+    if [ -f ${bin_path} ] && $(head -n1 ${bin_path} | grep -q "#!\/usr\/bin\/python3"); then
       tests="$tests $bin_path"
     fi
   done
@@ -44,13 +44,6 @@ fi
 success=0
 ntests=0
 
-if [ -z $PYTHON ]; then
-  forcepyversion=""
-else
-  echo "Using pylint for "${PYTHON}" (from PYTHON environment variable)"
-  forcepyversion="$PYTHON -m "
-fi
-
 
 
 cat > $LOGFILE <<EOD
@@ -60,7 +53,7 @@ cat > $LOGFILE <<EOD
 
 EOD
 
-eval ${forcepyversion} pylint --version >> $LOGFILE
+python3 -m pylint --version >> $LOGFILE
 
 cat >> $LOGFILE <<EOD
 
@@ -82,7 +75,7 @@ EOD
 
   echo -n 'testing "'${file}'"... '
 
-  eval ${forcepyversion} pylint --rcfile=testing/pylint.rc ${file} > .__tmp.log 2>&1
+  python3 -m pylint --rcfile=testing/pylint.rc ${file} > .__tmp.log 2>&1
 
   if [[ $? -ne 0 ]]; then
     echo 'ERROR'

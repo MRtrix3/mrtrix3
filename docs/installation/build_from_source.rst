@@ -31,8 +31,7 @@ Required dependencies:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
    compiler (GCC version >= 5, clang);
--  `Python <https://www.python.org/>`__ version >= 2.7 (>= 3 strongly recommended
-   due to `deprecation of Python2 <https://www.python.org/doc/sunset-python-2/>`__);
+-  `Python <https://www.python.org/>`__ version >= 3.3;
 -  The `zlib <http://www.zlib.net/>`__ compression library;
 -  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2 (>= 3.3 recommended);
 -  `Qt <http://www.qt.io/>`__ version >= 5.5 *[GUI components only]*;
@@ -76,21 +75,15 @@ some of the most common Linux distributions below.
 
 -  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
-       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt5opengl5-dev libqt5svg5-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev libpng-dev
-
-   .. NOTE::
-
-         On Ubuntu 20.04 and newer, you'll to replace ``python`` in the line
-         above with ``python-is-python3`` (or ``python-is-python2`` if you're
-         still using version 2.7, which is now *very* deprecated).
+       sudo apt-get install git g++ python3 libeigen3-dev zlib1g-dev libqt5opengl5-dev libqt5svg5-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev libpng-dev
 
 -  RPM-based distros (Fedora, CentOS)::
 
-       sudo yum install git g++ python eigen3-devel zlib-devel libqt5-devel libgl1-mesa-dev fftw-devel libtiff-devel libpng-devel
+       sudo yum install git g++ python3 eigen3-devel zlib-devel libqt5-devel libgl1-mesa-dev fftw-devel libtiff-devel libpng-devel
 
    On Fedora 24, this is reported to work::
 
-       sudo yum install git gcc-c++ python eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel libpng-devel
+       sudo yum install git gcc-c++ python3 eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel libpng-devel
 
 -  Arch Linux::
 
@@ -106,7 +99,7 @@ packages:
 
 -  an appropriate C++ compiler (e.g. GCC 5 or above, or clang);
 
--  Python version >= 2.7 (version >= 3.0 strongly recommended);
+-  Python version >= 3.3;
 
 -  the ``zlib`` compression library and its corresponding development
    header/include files;
@@ -272,7 +265,7 @@ All of these dependencies are installed below by the MSYS2 package manager.
 
 4. From the **'MinGW-w64 Win64 Shell'** run::
 
-       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-libpng
+       pacman -S git python3 pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-libpng
     
    Sometimes ``pacman`` may fail to find a particular package from any of
    the available mirrors. If this occurs, you can download the relevant
