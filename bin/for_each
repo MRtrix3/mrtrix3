@@ -28,7 +28,7 @@ CMDSPLIT = [ ]
 
 def usage(cmdline): #pylint: disable=unused-variable
   global CMDSPLIT
-  from mrtrix3 import _version
+  from mrtrix3 import _version #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   cmdline.set_synopsis('Perform some arbitrary processing step for each of a set of inputs')
   cmdline.add_description('This script greatly simplifies various forms of batch processing by enabling the execution of a command (or set of commands) independently for each of a set of inputs.')
