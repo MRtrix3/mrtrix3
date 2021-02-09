@@ -11,8 +11,8 @@ Support and general discussion is hosted on the [MRtrix3 Community Forum](http:/
 ## Quick install
 
 1. Install dependencies by whichever means your system uses. 
-   These include: Python (>=2.6), a C++ compiler with full C++11 support (`g++` 4.9 or later, `clang++`), 
-   Eigen (>=3.2.8), zlib, OpenGL (>=3.3), and Qt (>=4.8, or at least 5.1 on MacOSX).
+   These include: Python3, a C++ compiler with full C++11 support (`g++` 4.9 or later, `clang++`), 
+   Eigen (>=3.2.8), zlib, OpenGL (>=3.3), and Qt (>=5.5).
 
 2. Clone Git repository and compile:
 
