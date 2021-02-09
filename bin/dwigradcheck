@@ -35,7 +35,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()
@@ -87,7 +87,7 @@ def execute(): #pylint: disable=unused-variable
   # Note that gradient table must be explicitly loaded, since there may not
   #   be one in the image header (user may be relying on -grad or -fslgrad input options)
   if not os.path.exists('mask.mif'):
-    run.command('dwi2mask data.mif mask.mif -grad grad.b')
+    run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' data.mif mask.mif -grad grad.b')
 
   # How many tracks are we going to generate?
   number_option = ' -select ' + str(app.ARGS.number)

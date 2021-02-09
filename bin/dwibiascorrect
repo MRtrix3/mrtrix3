@@ -32,7 +32,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import algorithm, app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Find out which algorithm the user has requested
@@ -67,7 +67,7 @@ def execute(): #pylint: disable=unused-variable
     if not image.match('in.mif', 'mask.mif', up_to_dim=3):
       raise MRtrixError('Provided mask image does not match input DWI')
   else:
-    run.command('dwi2mask in.mif mask.mif')
+    run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' in.mif mask.mif')
 
   # From here, the script splits depending on what estimation algorithm is being used
   alg.execute()
