@@ -19,10 +19,9 @@
 #include "algo/loop.h"
 #include "image.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
@@ -97,6 +96,9 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Compute a fixel TDI map from a tractogram";
+
+  DESCRIPTION
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("tracks",  "the input tracks.").type_tracks_in()

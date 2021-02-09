@@ -17,7 +17,7 @@
 #ifndef __fixel_loop_h__
 #define __fixel_loop_h__
 
-#include "fixel/types.h"
+#include "fixel/fixel.h"
 #include "formats/mrtrix_utils.h"
 
 namespace MR

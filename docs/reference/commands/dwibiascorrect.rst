@@ -17,6 +17,12 @@ Usage
 
 -  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: ants, fsl
 
+Description
+-----------
+
+Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive a mask that will be passed to the relevant bias field estimation command. More information on mask derivation from DWI data can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.2/dwi_preprocessing/masking.html
+
 Options
 -------
 
