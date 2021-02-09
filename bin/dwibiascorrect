@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
-# Copyright (c) 2008-2020 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,6 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-# Script that performs B1 field inhomogeneity correction for a DWI volume series
-# Bias field is typically estimated using the mean b=0 image, and subsequently used to correct all volumes
 
 
 def usage(cmdline): #pylint: disable=unused-variable
@@ -83,5 +81,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3
+import mrtrix3 #pylint: disable=wrong-import-position
 mrtrix3.execute() #pylint: disable=no-member

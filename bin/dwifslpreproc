@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
-# Copyright (c) 2008-2020 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,6 @@
 
 
 import glob, itertools, json, math, os, shutil, sys
-from distutils.spawn import find_executable
 
 
 
@@ -31,7 +30,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_description('Note that the MRtrix3 command dwi2mask will automatically be called to derive a processing mask for the FSL command "eddy", which determines which voxels contribute to the estimation of geometric distortion parameters and possibly also the classification of outlier slices. If FSL command "topup" is used to estimate a susceptibility field, then dwi2mask will be executed on the resuts of running FSL command "applytopup" to the input DWIs; otherwise it will be executed directly on the input DWIs. Alternatively, the -eddy_mask option can be specified in order to manually provide such a processing mask. More information on mask derivation from DWI data can be found at: https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/dwi_preprocessing/masking.html')
   cmdline.add_description('The "-topup_options" and "-eddy_options" command-line options allow the user to pass desired command-line options directly to the FSL commands topup and eddy. The available options for those commands may vary between versions of FSL; users can interrogate such by querying the help pages of the installed software, and/or the FSL online documentation: (topup) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide ; (eddy) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide')
   cmdline.add_description('The script will attempt to run the CUDA version of eddy; if this does not succeed for any reason, or is not present on the system, the CPU version will be attempted instead. By default, the CUDA eddy binary found that indicates compilation against the most recent version of CUDA will be attempted; this can be over-ridden by providing a soft-link "eddy_cuda" within your path that links to the binary you wish to be executed.')
-  cmdline.add_description('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to eddy is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).')
+  cmdline.add_description('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to topup is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).')
   cmdline.add_example_usage('A basic DWI acquisition, where all image volumes are acquired in a single protocol with fixed phase encoding',
                             'dwifslpreproc DWI_in.mif DWI_out.mif -rpe_none -pe_dir ap -readout_time 0.55',
                             'Due to use of a single fixed phase encoding, no EPI distortion correction can be applied in this case.')
@@ -82,6 +81,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   rpe_options.add_argument('-rpe_header', action='store_true', help='Specify that the phase-encoding information can be found in the image header(s), and that this is the information that the script should use')
   cmdline.flag_mutually_exclusive_options( [ 'rpe_none', 'rpe_pair', 'rpe_all', 'rpe_header' ], True )
   cmdline.flag_mutually_exclusive_options( [ 'rpe_none', 'se_epi' ], False ) # May still technically provide -se_epi even with -rpe_all
+  cmdline.flag_mutually_exclusive_options( [ 'rpe_pair', 'topup_files'] ) # Would involve two separate sources of inhomogeneity field information
+  cmdline.flag_mutually_exclusive_options( [ 'se_epi', 'topup_files'] ) # Would involve two separate sources of inhomogeneity field information
   cmdline.flag_mutually_exclusive_options( [ 'rpe_header', 'pe_dir' ], False ) # Can't manually provide phase-encoding direction if expecting it to be in the header
   cmdline.flag_mutually_exclusive_options( [ 'rpe_header', 'readout_time' ], False ) # Can't manually provide readout time if expecting it to be in the header
 
@@ -125,7 +126,6 @@ def execute(): #pylint: disable=unused-variable
     if not os.path.isfile(topup_config_path):
       raise MRtrixError('Could not find necessary default config file for FSL topup command (expected location: ' + topup_config_path + ')')
     topup_cmd = fsl.exe_name('topup')
-    applytopup_cmd = fsl.exe_name('applytopup')
 
   if not fsl.eddy_binary(True) and not fsl.eddy_binary(False):
     raise MRtrixError('Could not find any version of FSL eddy command')
@@ -177,6 +177,10 @@ def execute(): #pylint: disable=unused-variable
     if len(eddy_topup_entry) > 1:
       raise MRtrixError('Input to -eddy_options contains multiple "--topup=" entries')
     if eddy_topup_entry:
+      # -topup_files and -se_epi are mutually exclusive, but need to check in case
+      #   pre-calculated topup output files were provided this way instead
+      if app.ARGS.se_epi:
+        raise MRtrixError('Cannot use both -eddy_options "--topup=" and -se_epi')
       topup_file_userpath = path.from_user(eddy_topup_entry[0][len('--topup='):], False)
       eddy_manual_options = [entry for entry in eddy_manual_options if not entry.startswith('--topup=')]
 
@@ -193,6 +197,11 @@ def execute(): #pylint: disable=unused-variable
     if topup_file_userpath:
       raise MRtrixError('Cannot use -topup_files option and also specify "... --topup=<prefix> ..." within content of -eddy_options')
     topup_file_userpath = path.from_user(app.ARGS.topup_files, False)
+
+  execute_applytopup = pe_design != 'None' or topup_file_userpath
+  if execute_applytopup:
+    applytopup_cmd = fsl.exe_name('applytopup')
+
   if topup_file_userpath:
     # Find files based on what the user may or may not have specified:
     # - Path to the movement parameters text file
@@ -308,10 +317,10 @@ def execute(): #pylint: disable=unused-variable
                    'contents of file \"' + app.ARGS.eddy_slspec + '\" appears to instead be slice timings; '
                    'these data have been imported and will be converted to the appropriate format')
           if len(slice_timing) != dwi_num_slices:
-            raise MRtrixError('Cannot use slice timing information from file \"' + app.ARGS.eddy_slspec + '\" for slice-to-volume correction: ' + \
+            raise MRtrixError('Cannot use slice timing information from file \"' + app.ARGS.eddy_slspec + '\" for slice-to-volume correction: ' # pylint: disable=raise-missing-from
                               'number of entries (' + str(len(slice_timing)) + ') does not match number of slices (' + str(dwi_num_slices) + ')')
         except ValueError:
-          raise MRtrixError('Error parsing eddy \"slspec\" file \"' + app.ARGS.eddy_slspec + '\" '
+          raise MRtrixError('Error parsing eddy \"slspec\" file \"' + app.ARGS.eddy_slspec + '\" ' # pylint: disable=raise-missing-from
                             '(please see FSL eddy help page, specifically the --slspec option)')
     else:
       if 'SliceTiming' not in dwi_header.keyval():
@@ -325,7 +334,7 @@ def execute(): #pylint: disable=unused-variable
       # Fudges necessary to maniupulate nature of slice timing data in cases where
       #   bad JSON formatting has led to the data not being simply a list of floats
       #   (whether from MRtrix3 DICOM conversion or from anything else)
-      if isinstance(slice_timing, utils.STRING_TYPES):
+      if isinstance(slice_timing, str):
         slice_timing = slice_timing.split()
       if not isinstance(slice_timing, list):
         raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
@@ -343,9 +352,9 @@ def execute(): #pylint: disable=unused-variable
       if not all( [ isinstance(entry, float) for entry in slice_timing ] ):
         try:
           slice_timing = [ float(entry) for entry in slice_timing ]
-        except ValueError:
+        except ValueError as exception:
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
-                            'data are not numeric')
+                            'data are not numeric') from exception
       app.debug('Re-formatted slice timing contents from header: ' + str(slice_timing))
       if len(slice_timing) != dwi_num_slices:
         raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
@@ -444,6 +453,8 @@ def execute(): #pylint: disable=unused-variable
       line.append(trt)
       dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
       app.debug('Manual DWI PE scheme for \'Pair\' PE design: ' + str(dwi_manual_pe_scheme))
+      if len(se_epi_header.size()) != 4:
+        raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must be a 4D image')
       se_epi_num_volumes = se_epi_header.size()[3]
       if se_epi_num_volumes%2:
         raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
@@ -644,7 +655,7 @@ def execute(): #pylint: disable=unused-variable
           app.console('No phase-encoding contrast present in SE-EPI images; will examine again after combining with DWI b=0 images')
           new_se_epi_path = os.path.splitext(se_epi_path)[0] + '_dwibzeros.mif'
           # Don't worry about trying to produce a balanced scheme here
-          run.command('dwiextract dwi.mif - -bzero | mrcat - se_epi.mif ' + new_se_epi_path + ' -axis 3')
+          run.command('dwiextract dwi.mif - -bzero | mrcat - ' + se_epi_path + ' ' + new_se_epi_path + ' -axis 3')
           se_epi_header = image.Header(new_se_epi_path)
           se_epi_pe_scheme_has_contrast = 'pe_scheme' in se_epi_header.keyval()
           if se_epi_pe_scheme_has_contrast:
@@ -867,8 +878,7 @@ def execute(): #pylint: disable=unused-variable
       app.console('Output of topup command:')
       sys.stderr.write(topup_output.stdout + '\n' + topup_output.stderr + '\n')
 
-
-  if execute_topup or topup_file_userpath:
+  if execute_applytopup:
 
     # Apply the warp field to the input image series to get an initial corrected volume estimate
     # applytopup can't receive the complete DWI input and correct it as a whole, because the phase-encoding
@@ -1043,11 +1053,11 @@ def execute(): #pylint: disable=unused-variable
 
   # Run eddy qc tool QUAD if installed and one of -eddyqc_text or -eddyqc_all is specified
   if eddyqc_path:
-    if find_executable('eddy_quad'):
+    if shutil.which('eddy_quad'):
       eddyqc_options = ' -idx eddy_indices.txt -par eddy_config.txt -m eddy_mask.nii -b bvals'
       if os.path.isfile('dwi_post_eddy.eddy_residuals'):
         eddyqc_options += ' -g ' + bvecs_path
-      if execute_topup or topup_file_userpath:
+      if execute_applytopup:
         eddyqc_options += ' -f ' + fsl.find_image('field_map')
       if eddy_mporder:
         eddyqc_options += ' -s slspec.txt'
@@ -1283,7 +1293,7 @@ def execute(): #pylint: disable=unused-variable
 
   keys_to_remove = [ 'MultibandAccelerationFactor', 'SliceEncodingDirection', 'SliceTiming' ]
   # These keys are still relevant for the output data if no EPI distortion correction was performed
-  if execute_topup or topup_file_userpath:
+  if execute_applytopup:
     keys_to_remove.extend([ 'PhaseEncodingDirection', 'TotalReadoutTime', 'pe_scheme' ])
   # Get the header key-value entries from the input DWI, remove those we don't wish to keep, and
   #   export the result to a new JSON file so that they can be inserted into the output header
@@ -1297,7 +1307,7 @@ def execute(): #pylint: disable=unused-variable
   # 'Stash' the phase encoding scheme of the original uncorrected DWIs, since it still
   #   may be useful information at some point in the future but is no longer relevant
   #   for e.g. tracking for different volumes, or performing any geometric corrections
-  if execute_topup or topup_file_userpath:
+  if execute_applytopup:
     keyval['prior_pe_scheme'] = dwi_manual_pe_scheme if dwi_manual_pe_scheme else dwi_pe_scheme
   with open('output.json', 'w') as output_json_file:
     json.dump(keyval, output_json_file)
@@ -1312,5 +1322,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3
+import mrtrix3 #pylint: disable=wrong-import-position
 mrtrix3.execute() #pylint: disable=no-member

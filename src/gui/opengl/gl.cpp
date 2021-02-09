@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -53,12 +53,8 @@ namespace MR
         //CONF improve display quality).
 
         GL::Format f;
-#if QT_VERSION >= 0x050400
         f.setSwapBehavior (GL::Format::DoubleBuffer);
         f.setRenderableType (GL::Format::OpenGL);
-#else
-        f.setDoubleBuffer (true);
-#endif
 
         if (File::Config::get_bool ("NeedOpenGLCoreProfile", true)) {
           f.setVersion (3,3);

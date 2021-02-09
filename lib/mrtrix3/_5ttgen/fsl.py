@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2020 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import math, os
-from distutils.spawn import find_executable
+import math, os, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run, utils
 
@@ -74,7 +73,7 @@ def execute(): #pylint: disable=unused-variable
 
   fsl_suffix = fsl.suffix()
 
-  if not app.ARGS.mask and not app.ARGS.premasked and not find_executable('dc'):
+  if not app.ARGS.mask and not app.ARGS.premasked and not shutil.which('dc'):
     app.warn('Unix command "dc" not found; FSL script "standard_space_roi" may fail')
 
   sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
@@ -149,7 +148,7 @@ def execute(): #pylint: disable=unused-variable
       pre_bet_image = fsl.find_image('T1_preBET')
     except MRtrixError:
       app.warn('FSL script \'standard_space_roi\' did not complete successfully' + \
-               ('' if find_executable('dc') else ' (possibly due to program \'dc\' not being installed') + '; ' + \
+               ('' if shutil.which('dc') else ' (possibly due to program \'dc\' not being installed') + '; ' + \
                'attempting to continue by providing un-cropped image to BET')
       pre_bet_image = 'T1.nii'
 
