@@ -12,7 +12,7 @@ devise an appropriate heuristic for deriving an appropriate mask that works
 for a wide range of DWI data. It is not uncommon for the derivation of this
 mask to go awry in a range of scenarios, which can have serious implications
 for downstream processing steps. For this reason, as of MRtrix version
-`3.1.0`, a *range* of DWI mask derivation algorithms are provided, allowing
+``3.1.0``, a *range* of DWI mask derivation algorithms are provided, allowing
 users to assess which heuristics work best for their particular data. The
 purpose of this documentation page is to describe those algorithms that are
 available, the circumstances in which they may or may not work, the features
@@ -25,8 +25,7 @@ applications in which these details are most relevant for user attention.
 ``dwi2mask 3dautomask``
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Provides the mean *b=0* image directly to AFNI_ `command
-``3dAutomask`` <https://afni.nimh.nih.gov/pub/dist/doc/program_help/3dAutomask.html>`_ .
+Provides the mean *b=0* image directly to AFNI_ `command 3dAutomask <https://afni.nimh.nih.gov/pub/dist/doc/program_help/3dAutomask.html>`_ .
 
 ``dwi2mask ants``
 ^^^^^^^^^^^^^^^^^
@@ -78,10 +77,10 @@ the core image registration and transformation processes:
 
 -  ``fsl``: Utilises FSL_ commands as follows:
 
-   - ``flirt_``: Initial affine registration;
-   - ``fnirt_``: Non-linear registration;
-   - ``invwarp_``: Inversion of warp from subject to template;
-   - ``applywarp_``: Transform template mask to subject space.
+   - flirt_: Initial affine registration;
+   - fnirt_: Non-linear registration;
+   - invwarp_: Inversion of warp from subject to template;
+   - applywarp_: Transform template mask to subject space.
 
 By default, if no manual selection is made here using either the ``-software``
 command-line option or the ``Dwi2maskTemplateSoftware`` configuration file
@@ -228,18 +227,18 @@ entirely experimental.
 Algorithm comparison
 --------------------
 
-+-----------------+-----------------------+----------------------+----------------------------+----------------------+-------------|
-|    Algorithm    | External dependencies | Uses more than *b=0* |        Assumptions         | Robust to bias field | Can use GPU |
-+-----------------+-----------------------+----------------------+----------------------------+----------------------+-------------|
-| ``3dautomask``  |      Yes (AFNI_)      |          No          |          Unknown           |       Unknown        |      No     |
-|    ``ants``     |      Yes (ANTs_)      |          No          |  Brain; WM darker than GM  |       Unknown        |      No     |
-| ``b02template`` |  Yes (ANTs_ / FSL_)   |          No          |      Matches template      |         Yes          |      No     |
-| ``consensus``   |   Only if installed   |          Yes         |          Various           |       Various        |      No     |
-|   ``fslbet``    |      Yes (FSL_)       |          No          |     Approx. spherical      |         Yes          |      No     |
-|   ``hdbet``     |     Yes (HD-BET_)     |          No          |           Brain            |         Yes          |      Yes    |
-|  ``legacy``     |          No           |          Yes         | Single connected component |         No           |      No     |
-|   ``trace``     |          No           |          Yes         | Single connected component |         No           |      No     |
-+-----------------+-----------------------+----------------------+----------------------------+----------------------+-------------+
+.. csv-table::
+   :header: "Algorithm", "External dependencies", "Uses more that *b=0*", "Assumptions", "Robust to bias field", "Can use GPU"
+   :widths: auto
+
+   "``3dAutomask``", "Yes (AFNI_)", "No", "Unknown", "Unknown", "No"
+   "``ants``", "Yes (ANTs_)", "No", "Brain; WM darker than GM", "Unknown", "No"
+   "``b02template``", "Yes (ANTs_ / FSL_)", "No", "Matches template", "Yes", "No"
+   "``consensus``", "Only if installed", "Yes", "Various", "Various", "No"
+   "``fslbet``", "Yes (FSL_)", "No", "Approx. spherical", "Yes", "No"
+   "``hdbet``", "Yes (HD-BET_)", "No", "Brain", "Yes", "Yes"
+   "``legacy``", "No", "Yes", "Single connected component", "No", "No"
+   "``trace``", "No", "Yes", "Single connected component", "No", "No"
 
 .. _dwi2mask_python:
 
@@ -257,17 +256,17 @@ should be utilised in this scenario, there are
 provided to assist in controlling the behaviour of ``dwi2mask`` in these
 scenarios (see below).
 
-+--------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| *MRtrix3* Python command | Purpose of DWI mask                                                                                                                                                                                                                                |
-+--------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-|    ``dwibiascorrect``    | Only voxels within the mask are utilised in optimisation of bias field parameters.                                                                                                                                                                 |
-|                          | For ``ants`` algorithm, field is estimated within the mask but applied to all voxels within the field of view (field basis is extrapolated beyond the extremities of the mask);                                                                    |
-|                          | for ``fsl`` algorithm, field is both estimated within, and applied to, only those voxels within the mask, producing a discontinuity in image intensity at the outer edge of the mask that can be deleterious for subsequent quantitative analyses. |
-|    ``dwifslpreproc``     | Constrains optimisation of distortion parameter estimates in FSL_ ``eddy``.                                                                                                                                                                        |
-|                          | If performing susceptibility distortion correction, this is applied to the DWI data subsequently to the appplication of FSL_ command ``applytopup``.                                                                                               |
-|    ``dwigradcheck``      | Utilised as both seed and mask image for streamlines tractography in the ``tckgen`` command.                                                                                                                                                       |
-|    ``dwi2response``      | Voxels outside of the initial mask are never considered as candidates for response function(s), nor do they contribute to any optimisation of the selection of such.                                                                               |
-+--------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+.. csv-table::
+    :header: "*MRtrix3* Python command", "Purpose of DWI mask"
+    :widths: auto
+    
+    "``dwibiascorrect``", "| Only voxels within the mask are utilised in optimisation of bias field parameters.
+    | For ``ants`` algorithm, field is estimated within the mask but applied to all voxels within the field of view (field basis is extrapolated beyond the extremities of the mask);
+    | for ``fsl`` algorithm, field is both estimated within, and applied to, only those voxels within the mask, producing a discontinuity in image intensity at the outer edge of the mask that can be deleterious for subsequent quantitative analyses."
+    "``dwifslpreproc``", "| Constrains optimisation of distortion parameter estimates in FSL_ ``eddy``.
+    | If performing susceptibility distortion correction, this is applied to the DWI data subsequently to the appplication of FSL_ command ``applytopup``."
+    "``dwigradcheck``", "| Utilised as both seed and mask image for streamlines tractography in the ``tckgen`` command."
+    "``dwi2response``", "| Voxels outside of the initial mask are never considered as candidates for response function(s), nor do they contribute to any optimisation of the selection of such."
 
 .. _dwi2mask_config:
 
@@ -300,9 +299,8 @@ mentioned here also for discoverability:
    option is *not* used, the value of this option determines the software
    tool that will be utilised for registration to the template and
    back-propagation of the mask in template space to the subject's DWI
-   data. Valid values are specified in :ref:`dwi2mask_b02template` above. In the
-   absence of this configuration file option, ``antsquick`` (i.e. ANTs_
-   ``antsRegistrationSyNQuick.sh``) will be used.
+   data. In the absence of this configuration file option, ``antsquick``
+   (i.e. ANTs_ ``antsRegistrationSyNQuick.sh``) will be used.
 
 -  ``Dwi2maskTemplateImage`` and ``Dwi2maskTemplateMask``
 
