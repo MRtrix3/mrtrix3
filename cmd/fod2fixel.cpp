@@ -203,6 +203,8 @@ void Segmented_FOD_receiver::commit ()
   fixel_data_header.ndim() = 3;
   fixel_data_header.size(0) = fixel_count;
   fixel_data_header.size(2) = 1;
+  fixel_data_header.transform().setIdentity();
+  fixel_data_header.spacing(0) = fixel_data_header.spacing(1) = fixel_data_header.spacing(2) = 1.0;
   fixel_data_header.datatype() = DataType::Float32;
   fixel_data_header.datatype().set_byte_order_native();
 
