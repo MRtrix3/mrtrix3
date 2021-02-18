@@ -89,6 +89,10 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
+    try:
+        import scipy
+    except ImportError:
+        raise MRtrixError('SciPy required: https://www.scipy.org/install.html')
     # import metadata
     grad_import_option = app.read_dwgrad_import_options()
     pe_import_option = ''
