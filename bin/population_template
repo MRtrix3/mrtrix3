@@ -122,12 +122,12 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
   data = utils.load_keyval(transformation + 'decomp')
   run.function(os.remove, transformation + 'decomp')
   scaling = [float(value) for value in data['scaling']]
-  if any([a < 0 for a in scaling]) or any([a > (1 + max_scaling) for a in scaling]) or any(
-      [a < (1 - max_scaling) for a in scaling]):
+  if any(a < 0 for a in scaling) or any(a > (1 + max_scaling) for a in scaling) or any(
+      a < (1 - max_scaling) for a in scaling):
     app.warn("large scaling (" + str(scaling) + ") in " + transformation)
     good = False
   shear = [float(value) for value in data['shear']]
-  if any([abs(a) > max_shear for a in shear]):
+  if any(abs(a) > max_shear for a in shear):
     app.warn("large shear (" + str(shear) + ") in " + transformation)
     good = False
   rot_angle = float(data['angle_axis'][0])
@@ -184,7 +184,7 @@ def aggregate(inputs, output, contrast_idx, mode, force=True):
     run.command(['mrmath', images, 'median', '-keep_unary_axes', output], force=force)
   elif mode == 'weighted_mean':
     weights = [inp.aggregation_weight for inp in inputs]
-    assert not any([w is None for w in weights]), weights
+    assert not any(w is None for w in weights), weights
     wsum = sum([float(w) for w in weights])
     cmd = ['mrcalc']
     if wsum <= 0:
@@ -502,7 +502,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
   for cid, files in enumerate(in_files):
     c_uids.append([re.sub(re.escape(common_postfix[cid])+'$', '',
                           re.sub('^'+re.escape(common_prefix[cid]), '', fname)) for fname in files])
-    if not all([len(_uid) for _uid in c_uids[-1]]):
+    if not all(len(_uid) for _uid in c_uids[-1]):
       MRtrixError("No uniquely identifiable part of filename found in file :\n" + '""\n'.join(non_unique))
 
   for uids in c_uids:
@@ -559,7 +559,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
     weights = [float(inp.aggregation_weight) for inp in inputs if inp.aggregation_weight is not None]
     if sum(weights) <= 0:
       raise MRtrixError('Sum of aggregation weights is not positive: ' + str(weights))
-    if any([w < 0 for w in weights]):
+    if any(w < 0 for w in weights):
       app.warn('Negative aggregation weights: ' + str(weights))
 
   return inputs, xcontrast_xsubject_pre_postfix

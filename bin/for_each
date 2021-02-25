@@ -254,7 +254,7 @@ def execute(): #pylint: disable=unused-variable
 
   progress.done()
 
-  assert all([ job.returncode is not None for job in jobs ])
+  assert all(job.returncode is not None for job in jobs)
   fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
   if fail_count:
     app.warn(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')

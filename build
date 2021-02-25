@@ -1530,8 +1530,8 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 
 ''')
 
-build_mrview = any(['mrview' in k for k in todo])
-build_shview = any(['shview' in k for k in todo])
+build_mrview = any('mrview' in k for k in todo)
+build_shview = any('shview' in k for k in todo)
 
 #for entry in todo.values():
 #  entry.display()

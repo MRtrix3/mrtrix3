@@ -78,6 +78,8 @@ if sysname == 'darwin':
   for app in ['MRView.app','SHView.app']:
     removed_link = False
     target = os.path.join(bin_dir,app)
+    if not os.path.exists(app_dir):
+      os.mkdir(app_dir)
     destination = os.path.join(app_dir,app)
     if os.path.exists(destination):
       if os.path.islink(destination):
