@@ -861,7 +861,7 @@ namespace MR
             + Option ("tractography.tsf_thresh", "Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.").allow_multiple()
             +  Argument ("ThresholdMin,ThesholdMax").type_sequence_float()
             
-            + Option ("tractography.tsf_colourmap", "Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already ").allow_multiple()
+            + Option ("tractography.tsf_colourmap", "Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already.").allow_multiple()
             +   Argument ("index").type_integer();
 
         }

@@ -146,11 +146,15 @@ Tractography tool options
 
 -  **-tractography.lighting value** *(multiple uses permitted)* Toggle the use of lighting of tractogram geometry
 
+-  **-tractography.colour value** *(multiple uses permitted)* Specify a manual colour for the tractogram, as three comma-separated values
+
 -  **-tractography.tsf_load tsf** *(multiple uses permitted)* Load the specified tractography scalar file.
 
 -  **-tractography.tsf_range RangeMin,RangeMax** *(multiple uses permitted)* Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
 -  **-tractography.tsf_thresh ThresholdMin,ThesholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
+
+-  **-tractography.tsf_colourmap value** *(multiple uses permitted)* Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already.
 
 ODF tool options
 ^^^^^^^^^^^^^^^^
