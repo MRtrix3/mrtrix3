@@ -848,19 +848,19 @@ namespace MR
 
             + Option ("tractography.lighting", "Toggle the use of lighting of tractogram geometry").allow_multiple()
             +  Argument ("value").type_bool()
-            
+
             + Option ("tractography.colour", "Specify a manual colour for the tractogram, as three comma-separated values").allow_multiple()
-            +   Argument ("R,G,B").type_sequence_float()            
-           
+            +   Argument ("R,G,B").type_sequence_float()
+
             + Option ("tractography.tsf_load", "Load the specified tractography scalar file.").allow_multiple()
-            +  Argument ("tsf").type_file_in()  
+            +  Argument ("tsf").type_file_in()
 
             + Option ("tractography.tsf_range", "Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.").allow_multiple()
             +  Argument ("RangeMin,RangeMax").type_sequence_float()
 
             + Option ("tractography.tsf_thresh", "Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.").allow_multiple()
             +  Argument ("ThresholdMin,ThesholdMax").type_sequence_float()
-            
+
             + Option ("tractography.tsf_colourmap", "Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already.").allow_multiple()
             +   Argument ("index").type_integer();
 
@@ -878,7 +878,7 @@ namespace MR
             window().updateGL();
           }
         }
-        
+
 
         bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt)
         {
@@ -958,12 +958,12 @@ namespace MR
             try {
               int n = opt[0];
               if (n < 0 || !ColourMap::maps[n].name)
-                throw Exception ("invalid overlay colourmap index \"" + std::string (opt[0]) + "\" for -tractography.tsf_colourmap option"); 
+                throw Exception ("invalid overlay colourmap index \"" + std::string (opt[0]) + "\" for -tractography.tsf_colourmap option");
 		// help needed here !
 		// scalar_file_options->set_track_colormap(n) ?
             }
 	    catch (Exception& e) { e.display(); }
-	    
+
 	    if (process_commandline_option_tsf_check_tracto_loaded()) {
                 // get list of selected tractograms:
                 QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
@@ -980,49 +980,50 @@ namespace MR
 
              }
           }
-          
-          
+
+
            if (opt.opt->is ("tractography.colour")) {
             try {
-            
+
               auto values = parse_floats (opt[0]);
               if (values.size() != 3)
-                throw Exception ("must provide exactly three comma-separated values to the -overlay.colour option");
+                throw Exception ("must provide exactly three comma-separated values to the -tractography.colour option");
               const float max_value = std::max ({ values[0], values[1], values[2] });
               if (std::min ({ values[0], values[1], values[2] }) < 0.0 || max_value > 255)
                 throw Exception ("values provided to -tractogram.colour must be either between 0.0 and 1.0, or between 0 and 255");
-              const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
-              QColor colour (int(values[0] * multiplier), int(values[1]*multiplier), int(values[2]*multiplier));               
-                           
-              QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes(); 
-              
+              const float multiplier = max_value <= 1.0 ? 1.0 : 1.0/255.0;
+
+              //input need to be a float *
+              float colour_input[3] = {
+                multiplier * float (values[0]),
+                multiplier * float (values[1]),
+                multiplier * float (values[2])
+              };
+
+              QColor colour (int(values[0]*255.0), int(values[1]*255.0), int(values[2]*255.0));
+
+              QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+
               if (indices.size() != 1)
                   throw Exception ("-tractography.colour option requires one tractogram to be selected");
               // get pointer to tractogram:
               Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
-                
-              //input need to be a float *  
-              float colour_input[3];
-                
-               colour_input[0]=values[0]/255;
-               colour_input[1]=values[1]/255;
-               colour_input[2]=values[2]/255;
-                
-               // set the color
-               tractogram->set_color_type (TrackColourType::Manual);
-               tractogram->set_colour(colour_input);
-                
-               // update_color_type_gui
-               colour_combobox->setCurrentIndex (3);                
-               colour_button->setEnabled (true);
-               colour_button->setColor (QColor (colour_input[0]*255.0f, colour_input[1]*255.0f, colour_input[2]*255.0f));
-              
-            
+
+              // set the color
+              tractogram->set_color_type (TrackColourType::Manual);
+              tractogram->set_colour (colour_input);
+
+              // update_color_type_gui
+              colour_combobox->setCurrentIndex (3);
+              colour_button->setEnabled (true);
+              colour_button->setColor (colour);
+
+
             }
             catch (Exception& e) { e.display(); }
             return true;
-          }
-          
+           }
+
 
           if (opt.opt-> is ("tractography.geometry")) {
             try {             const TrackGeometryType geom_type = geometry_index2type (geometry_string2index (opt[0]));
