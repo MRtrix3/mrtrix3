@@ -1857,7 +1857,7 @@ namespace MR
 
       void Window::register_camera_interactor (Tool::CameraInteractor* agent)
       {
-        if (camera_interactor)
+        if (camera_interactor && camera_interactor != agent)
           camera_interactor->deactivate();
         camera_interactor = agent;
       }
