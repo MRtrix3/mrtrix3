@@ -122,9 +122,6 @@ namespace MR
             weight = 1.0;
           }
 
-          float calc_length() const;
-          float calc_length (const float step_size) const;
-
           float weight;
       };
 
@@ -139,6 +136,22 @@ namespace MR
         for (size_t i = 1; i != tck.size(); ++i)
           value += (tck[i] - tck[i-1]).norm();
         return value;
+      }
+
+
+
+      // Assumes equidistant spacing of vertices
+      template <typename PointType>
+      PointType tangent (const vector<PointType>& tck, const size_t index)
+      {
+        assert (index < tck.size());
+        if (tck.size() < 2)
+          return { NaN, NaN, NaN };
+        if (!index)
+          return (tck[1] - tck[0]).normalized();
+        if (index == tck.size() - 1)
+          return (tck[index] - tck[index-1]).normalized();
+        return (tck[index+1] - tck[index-1]).normalized();
       }
 
 

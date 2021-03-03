@@ -45,7 +45,8 @@ namespace MR {
               dirs (directions) { }
             DixelMappingPlugin (const DixelMappingPlugin& that) :
               dirs (that.dirs) { }
-            DWI::Directions::index_type operator() (const Eigen::Vector3& d) const { return dirs.select_direction (d); }
+            template <class UnitVectorType>
+            DWI::Directions::index_type operator() (const UnitVectorType& d) const { return dirs.select_direction (d.template cast<default_type>()); }
           private:
             const DWI::Directions::FastLookupSet& dirs;
         };

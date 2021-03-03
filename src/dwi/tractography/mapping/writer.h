@@ -328,8 +328,7 @@ namespace MR {
               assign_pos_of (i).to (buffer);
               const default_type factor = get_factor (i, in);
               const default_type weight = in.weight * i.get_length();
-              auto scaled_colour = i.get_colour();
-              scaled_colour *= factor;
+              const auto scaled_colour = i.get_colour().template cast<default_type>() * factor;
               const auto current_value = get_dec();
               switch (voxel_statistic) {
                 case V_SUM:
