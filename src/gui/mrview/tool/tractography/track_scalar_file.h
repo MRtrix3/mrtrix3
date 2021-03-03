@@ -51,7 +51,7 @@ namespace MR
               void update_UI();
               void set_scaling(default_type min, default_type max);
               void set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max);
-
+              void set_colourmap (int colourmap_index);
 
             public slots:
               bool open_intensity_track_scalar_file_slot ();
@@ -69,6 +69,7 @@ namespace MR
               void threshold_upper_value_changed ();
               void invert_colourmap_slot ();
               void reset_intensity_slot ();
+            
 
             protected:
               Tractography* tool;
