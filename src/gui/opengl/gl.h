@@ -26,7 +26,11 @@
 #else
 #include <QtGui>
 #endif
+#if QT_VERSION >= 0x050400
 #include <QOpenGLWidget>
+#else
+#include <QGLWidget>
+#endif
 #include "gui/opengl/gl_core_3_3.h"
 
 // necessary to avoid conflict with Qt4's macros:
@@ -71,10 +75,10 @@ namespace MR
       using Format = QSurfaceFormat;
 
 #else
-      class Area : public QOpenGLWidget { NOMEMALIGN
+      class Area : public QGLWidget { NOMEMALIGN
         public:
-          //using QOpenGLWidget::QOpenGLWidget;
-          QImage grabFramebuffer () { return QOpenGLWidget::grabFrameBuffer(); }
+          using QGLWidget::QGLWidget;
+          QImage grabFramebuffer () { return QGLWidget::grabFrameBuffer(); }
       };
 
       using Format = QGLFormat;
