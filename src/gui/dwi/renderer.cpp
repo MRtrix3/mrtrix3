@@ -33,7 +33,7 @@ namespace MR
 
 
 
-      Renderer::Renderer (QGLWidget* widget) :
+      Renderer::Renderer (QOpenGLWidget* widget) :
           mode (mode_t::SH),
           reverse_ID (0),
           origin_ID (0),

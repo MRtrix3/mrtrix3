@@ -1251,7 +1251,7 @@ int main() { Foo f; }
       filetext = 'CONFIG += c++11'
       if debug:
         filetext += ' debug'
-      filetext += '\nQT += core gui opengl svg network\n'
+      filetext += '\nQT += core gui openglwidgets svg network\n'
       filetext += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
       if system == "darwin":
         filetext += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = ' + macosx_version + '\n'
