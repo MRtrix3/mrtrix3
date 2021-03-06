@@ -21,7 +21,7 @@
 #include "debug.h"
 
 #include <QtGlobal>
-#include <QtGui>
+#include <QtWidgets>
 #include <QOpenGLWidget>
 #include "gui/opengl/gl_core_3_3.h"
 
