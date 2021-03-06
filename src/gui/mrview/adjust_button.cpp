@@ -67,7 +67,7 @@ namespace MR
           if (event->type() == QEvent::MouseButtonPress) {
             QMouseEvent* mevent = static_cast<QMouseEvent*> (event);
             if (mevent->button() == mevent->buttons()) {
-              previous_y = deadzone_y = mevent->position().y();
+              previous_y = deadzone_y = mevent->y();
               deadzone_value = value();
             }
           }
@@ -80,18 +80,18 @@ namespace MR
           else if (event->type() == QEvent::MouseMove) {
             QMouseEvent* mevent = static_cast<QMouseEvent*> (event);
             if (mevent->buttons() != Qt::NoButton) {
-              if (abs (mevent->position().y() - deadzone_y) < ADJUST_BUTTON_DEADZONE_SIZE) {
+              if (abs (mevent->y() - deadzone_y) < ADJUST_BUTTON_DEADZONE_SIZE) {
                 if (value() != deadzone_value) {
                   setValue (deadzone_value);
                   emit valueChanged();
                   emit valueChanged(value());
                 }
-              } else if (mevent->position().y() != previous_y) {
-                setValue (value() - rate * (mevent->position().y() - previous_y));
+              } else if (mevent->y() != previous_y) {
+                setValue (value() - rate * (mevent->y() - previous_y));
                 emit valueChanged();
                 emit valueChanged(value());
               }
-              previous_y = mevent->position().y();
+              previous_y = mevent->y();
               return true;
             }
           }

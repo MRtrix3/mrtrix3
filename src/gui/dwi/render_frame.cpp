@@ -295,8 +295,8 @@ namespace MR
 
       void RenderFrame::mouseMoveEvent (QMouseEvent* event)
       {
-        int dx = event->position().x() - last_pos.x();
-        int dy = event->position().y() - last_pos.y();
+        int dx = event->x() - last_pos.x();
+        int dy = event->y() - last_pos.y();
         last_pos = event->pos();
         if (dx == 0 && dy == 0) return;
 
