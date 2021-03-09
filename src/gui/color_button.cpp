@@ -21,7 +21,7 @@ QColorButton::QColorButton (QWidget *parent, const char *name) : QPushButton (na
   connect (this, SIGNAL(clicked()), this, SLOT(chooseColor()));
 }
 
-QColorButton::QColorButton (const QColor &c, QWidget *parent, const char *name) : QPushButton (name, parent) 
+QColorButton::QColorButton (const QColor &c, QWidget *parent, const char *name) : QPushButton (name, parent)
 {
   setColor (c);
   connect (this, SIGNAL(clicked()), this, SLOT(chooseColor()));
@@ -74,7 +74,7 @@ QSize QColorButton::sizeHint() const
 {
   QStyleOptionButton option;
   option.initFrom (this);
-  return (style()->sizeFromContents(QStyle::CT_PushButton, &option, option.fontMetrics.size (0, "MM"), this).expandedTo(QApplication::globalStrut()));
+  return (style()->sizeFromContents(QStyle::CT_PushButton, &option, option.fontMetrics.size (0, "MM"), this).expandedTo(QSize(0,0)));
 }
 
 void QColorButton::chooseColor()
@@ -82,4 +82,3 @@ void QColorButton::chooseColor()
   QColor c = QColorDialog::getColor (color(), this);
   if (c.isValid()) setColor (c);
 }
-
