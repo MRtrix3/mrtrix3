@@ -66,7 +66,7 @@ namespace MR
         const size_t axis;
         const ssize_t index;
         template <class ImageType>
-          FORCE_INLINE void operator() (ImageType& x) { apply (__assign<DestImageType...> (axis, index), x); }
+          FORCE_INLINE void operator() (ImageType& x) { MR::apply (__assign<DestImageType...> (axis, index), x); }
       };
 
     template <class... DestImageType>
@@ -82,7 +82,7 @@ namespace MR
         __max_axis (size_t& axis) : axis (axis) { }
         size_t& axis;
         template <class ImageType>
-          FORCE_INLINE void operator() (ImageType& x) { apply (__max_axis<DestImageType...> (axis), x); }
+          FORCE_INLINE void operator() (ImageType& x) { MR::apply (__max_axis<DestImageType...> (axis), x); }
       };
 
     template <class ImageType>
@@ -90,9 +90,9 @@ namespace MR
         template <class... DestImageType>
           FORCE_INLINE void to (DestImageType&... dest) const {
             size_t last_axis = to_axis;
-            apply (__max_axis<DestImageType...> (last_axis), std::tie (ref, dest...));
+            MR::apply (__max_axis<DestImageType...> (last_axis), std::tie (ref, dest...));
             for (size_t n = from_axis; n < last_axis; ++n)
-              apply (__assign<DestImageType...> (n, __get_index (ref, n)), std::tie (dest...));
+              MR::apply (__assign<DestImageType...> (n, __get_index (ref, n)), std::tie (dest...));
           }
         const ImageType& ref;
         const size_t from_axis, to_axis;
@@ -104,7 +104,7 @@ namespace MR
         template <class... DestImageType>
           FORCE_INLINE void to (DestImageType&... dest) const {
             for (auto a : axes)
-              apply (__assign<DestImageType...> (a, __get_index (ref, a)), std::tie (dest...));
+              MR::apply (__assign<DestImageType...> (a, __get_index (ref, a)), std::tie (dest...));
           }
         const ImageType& ref;
         const vector<IntType> axes;
@@ -657,8 +657,3 @@ namespace MR
 }
 
 #endif
-
-
-
-
-
