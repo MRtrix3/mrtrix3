@@ -267,7 +267,7 @@ void load_data (Eigen::MatrixXd& data, const std::string& image_name, IndexType&
       void operator() (ImageType& in, IndexType& index) {
         const uint32_t idx = index.value();
         if (idx != std::numeric_limits<uint32_t>::max())
-          data(idx, num) = std::isfinite (in.value()) ? std::max<ValueType> (in.value(), 0.0) : 0.0;
+          data(idx, num) = std::isfinite (ValueType (in.value())) ? std::max<ValueType> (in.value(), 0.0) : 0.0;
       }
       Eigen::MatrixXd& data;
       const int num;
