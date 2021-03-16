@@ -36,13 +36,16 @@
 using namespace MR;
 using namespace App;
 
-enum filter_t {            BOXBLUR,   FARID,   FFT,   LAPLACIAN3D,   MEDIAN,   RADIALBLUR,   SOBEL,   SOBELFELDMAN,   UNSHARPMASK, ZCLEAN };
-const char* filters[] = { "boxblur", "farid", "fft", "laplacian3d", "median", "radialblur", "sobel", "sobelfeldman", "unsharpmask", "zclean", nullptr };
+enum filter_t {            BOXBLUR,   FARID,   FFT,   GAUSSIAN,   LAPLACIAN3D,   MEDIAN,   RADIALBLUR,   SOBEL,   SOBELFELDMAN,   SHARPEN,   UNSHARPMASK,   ZCLEAN };
+const char* filters[] = { "boxblur", "farid", "fft", "gaussian", "laplacian3d", "median", "radialblur", "sobel", "sobelfeldman", "sharpen", "unsharpmask", "zclean", nullptr };
 // TODO Remaining: gradient, laplacian1d, smooth
+
+const std::string filter_list_description = "The available filters are: " + join (filters, ", ") + ".";
 
 
 // TODO Should smoothing prior to filter operation be possible for filters other than gradient?
 // TODO Option to rotate sobel / sobel-feldman result to scanner space?
+//   What about more generally scaling kernels based on anisotropic voxel sizes?
 
 
 const OptionGroup BoxblurOption = OptionGroup ("Options for boxblur filter")
@@ -78,6 +81,21 @@ const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
             "appears in the centre of the image, rather than at the edges");
 
 
+
+
+const OptionGroup GaussianOption = OptionGroup ("Options for Gaussian filter")
+
+  + Option ("fwhm", "set the Full-Width at Half-Maximum (FWHM) of the kernel in mm "
+                    "(default: 1 voxel)")
+    + Argument ("value").type_float (0.0)
+
+  + Option ("radius", "set the radius in mm beyond which the kernel will be truncated "
+                      "(default: 3 x FWHM)")
+    + Argument ("value").type_float (0.0);
+
+
+
+
 /*
 const OptionGroup GradientLaplaceOption = OptionGroup ("Options for gradient & laplacian1d filters")
 
@@ -98,6 +116,7 @@ const OptionGroup GradientLaplaceOption = OptionGroup ("Options for gradient & l
 
 
 
+
 const OptionGroup MedianOption = OptionGroup ("Options for median filter")
 
   + Option ("extent", "specify extent of median filtering neighbourhood in voxels. "
@@ -110,7 +129,7 @@ const OptionGroup MedianOption = OptionGroup ("Options for median filter")
 const OptionGroup RadialblurOption = OptionGroup ("Options for radialblur filter")
 
   + Option ("radius", "specify radius of blurring kernel in mm. "
-        "This option is compulsory when the radial blurring filter is used.")
+                      "(Default: 2 voxels along axis with largest voxel spacing)")
     + Argument ("value").type_float(0.0);
 
 
@@ -143,11 +162,23 @@ const OptionGroup SmoothOption = OptionGroup ("Options for smooth filter")
 
 
 
-const OptionGroup UnsharpmaskOption = OptionGroup ("Options for unsharpmask filter")
+const OptionGroup SharpenOption = OptionGroup ("Options for sharpen filter")
 
-  + Option ("force", "specify the force of the unsharp masking kernel. ")
+  + Option ("strength", "specify the strength of the sharpening kernel. "
+                        "(default = 1.0)")
     + Argument ("value").type_float(0.0);
 
+
+
+const OptionGroup UnsharpMaskOption = OptionGroup ("Options for UnsharpMask filter")
+
+  + Option ("fwhm", "set the Full-Width at Half-Maximum (FWHM) of the smoothing kernel in mm "
+                    "(default: 2 voxels)")
+    + Argument ("value").type_float (0.0)
+
+  + Option ("strength", "set the strength of the edge enhancement "
+                      "(default: 1.0)")
+    + Argument ("value").type_float (0.0);
 
 
 
@@ -176,7 +207,7 @@ void usage ()
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "The available filters are: " + join(filters, ", ").c_str() + "."
+  + filter_list_description.c_str()
   + "Each filter has its own unique set of optional parameters."
   + "For 4D images, each 3D volume is processed independently.";
 
@@ -189,13 +220,23 @@ void usage ()
   + BoxblurOption
   + FaridOption
   + FFTOption
+  + GaussianOption
   //+ GradientLaplaceOption
   + MedianOption
   + RadialblurOption
   //+ SmoothOption
   + SobelOption
+  + SharpenOption
+  + UnsharpMaskOption
   + ZcleanOption
   + Stride::Options;
+}
+
+
+template <class HeaderType>
+default_type voxel_size (const HeaderType& header)
+{
+  return std::cbrt (header.spacing (0) * header.spacing (1) * header.spacing (2));
 }
 
 
@@ -269,6 +310,7 @@ void run ()
     case BOXBLUR:
     case LAPLACIAN3D:
     case RADIALBLUR:
+    case SHARPEN:
     case UNSHARPMASK:
     {
       Image<float> input = input_header.get_image<float>().with_direct_io();
@@ -287,18 +329,38 @@ void run ()
             }
           }
           break;
-        case LAPLACIAN3D: kernel = Filter::Kernels::laplacian3d(); break;
+        case LAPLACIAN3D:
+          kernel = Filter::Kernels::laplacian3d();
+          break;
         case RADIALBLUR:
-        {
-          auto opt = get_options ("radius");
-          if (!opt.size())
-            throw Exception ("Option \"-radius\" is compusory with use of the radial blur filter");
-          kernel = Filter::Kernels::radialblur (input_header, opt[0][0]);
-        }
-        break;
-        case UNSHARPMASK: kernel = Filter::Kernels::unsharp_mask (get_option_value ("force", 1.0)); break;
-        default: assert (0);
+          kernel = Filter::Kernels::radialblur (input_header, get_option_value ("radius", 2.0 * std::max({input_header.spacing(0), input_header.spacing(1), input_header.spacing(2)})));
+          break;
+        case SHARPEN:
+          kernel = Filter::Kernels::sharpen (get_option_value ("strength", 1.0));
+          break;
+        case UNSHARPMASK:
+          kernel = Filter::Kernels::unsharp_mask (input_header,
+                                                  get_option_value ("fwhm", 2.0 * voxel_size (input_header)),
+                                                  get_option_value ("strength", 1.0));
+          break;
+        default:
+          assert (0);
       }
+      Adapter::Kernel::Single<decltype(edge_adapter)> kernel_adapter (edge_adapter, kernel);
+      Image<float> output (Image<float>::create (argument[2], kernel_adapter));
+      copy_with_progress_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]),
+                                  kernel_adapter, output);
+    }
+    break;
+
+    case GAUSSIAN:
+    {
+      Image<float> input = input_header.get_image<float>().with_direct_io();
+      // Different edge handler to other filters
+      Adapter::EdgeCrop<Image<float>> edge_adapter (input, 0.0f);
+      const float fwhm = get_option_value ("fwhm", float (std::cbrt (input.spacing (0) * input.spacing(1) * input.spacing(2))));
+      const float radius = get_option_value ("radius", 3.0f * fwhm);
+      auto kernel = Filter::Kernels::gaussian (input, fwhm, radius);
       Adapter::Kernel::Single<decltype(edge_adapter)> kernel_adapter (edge_adapter, kernel);
       Image<float> output (Image<float>::create (argument[2], kernel_adapter));
       copy_with_progress_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]),
@@ -308,7 +370,7 @@ void run ()
 
     case MEDIAN:
     {
-      auto input = input_header.get_image<float>();
+      auto input = input_header.get_image<float>().with_direct_io();
       Filter::Median filter (input);
 
       auto extent = parse_extent();
@@ -365,7 +427,7 @@ void run ()
 
     case ZCLEAN:
     {
-      auto input = input_header.get_image<float>();
+      auto input = input_header.get_image<float>().with_direct_io();
       Filter::ZClean filter (input);
 
       auto opt = get_options ("maskin");

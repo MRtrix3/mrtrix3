@@ -58,8 +58,64 @@ namespace MR
 
 
 
-      kernel_type radialblur (const Header& header, const float radius)
+      kernel_type gaussian (const Header& header, const default_type fwhm, const default_type radius)
       {
+        assert (fwhm >= 0.0);
+        assert (radius >= 0.0);
+        // Initialise kernel fullwidths
+        //   As soon as voxel distance _exceeds_ radius, weight is set to zero
+        kernel_type result ( vector<int> { 1 + 2*int(std::floor (radius / header.spacing(0))),
+                                           1 + 2*int(std::floor (radius / header.spacing(1))),
+                                           1 + 2*int(std::floor (radius / header.spacing(2))) } );
+        Eigen::Matrix<int, 3, 1> offset;
+        default_type mass = 0.0;
+        const default_type sq_radius = Math::pow2 (radius);
+        const default_type sigma = fwhm / (2.0 * std::sqrt (2.0 * std::log (2.0)));
+        const default_type sq_sigma = Math::pow2 (sigma);
+        size_t index = 0;
+        for (offset[2] = -int(result.halfsize (2)); offset[2] <= int(result.halfsize (2)); ++offset[2]) {
+          for (offset[1] = -int(result.halfsize (1)); offset[1] <= int(result.halfsize (1)); ++offset[1]) {
+            for (offset[0] = -int(result.halfsize (0)); offset[0] <= int(result.halfsize (0)); ++offset[0], ++index) {
+              const default_type sq_distance = offset.squaredNorm();
+              if (sq_distance <= sq_radius) {
+                const default_type weight = std::exp (-sq_distance / sq_sigma);
+                result[index] = weight;
+                mass += weight;
+              } else {
+                result[index] = 0.0;
+              }
+            }
+          }
+        }
+        result *= (1.0 / mass);
+        return result;
+      }
+
+
+
+      kernel_type laplacian3d()
+      {
+        const default_type m = 1.0/26.0;
+        kernel_type result (3);
+        result << 2.0*m,   3.0*m, 2.0*m,
+                  3.0*m,   6.0*m, 3.0*m,
+                  2.0*m,   3.0*m, 2.0*m,
+
+                  3.0*m,   6.0*m, 3.0*m,
+                  6.0*m, -88.0*m, 6.0*m,
+                  3.0*m,   6.0*m, 3.0*m,
+
+                  2.0*m,   3.0*m, 2.0*m,
+                  3.0*m,   6.0*m, 3.0*m,
+                  2.0*m,   3.0*m, 2.0*m;
+        return result;
+      }
+
+
+
+      kernel_type radialblur (const Header& header, const default_type radius)
+      {
+        assert (radius >= 0.0);
         const vector<int> half_extents ({
             int(std::floor (radius / header.spacing(0))),
             int(std::floor (radius / header.spacing(1))),
@@ -88,34 +144,35 @@ namespace MR
 
 
 
-      kernel_type laplacian3d()
+      kernel_type sharpen (const default_type strength)
       {
-        const default_type m = 1.0/26.0;
-        kernel_type result (3);
-        result << 2.0*m,   3.0*m, 2.0*m,
-                  3.0*m,   6.0*m, 3.0*m,
-                  2.0*m,   3.0*m, 2.0*m,
-
-                  3.0*m,   6.0*m, 3.0*m,
-                  6.0*m, -88.0*m, 6.0*m,
-                  3.0*m,   6.0*m, 3.0*m,
-
-                  2.0*m,   3.0*m, 2.0*m,
-                  3.0*m,   6.0*m, 3.0*m,
-                  2.0*m,   3.0*m, 2.0*m;
-        return result;
-      }
-
-
-
-      kernel_type unsharp_mask (const default_type force)
-      {
+        assert (strength >= 0.0);
         kernel_type result (3);
         result.fill (0.0);
-        result[13] = 1.0 + (4.0 * force);
-        result[4] = result[10] = result[12] = result[14] = result[16] = result[22] = -1.0 * force;
+        result[13] = 1.0 + (6.0 * strength);
+        result[4] = result[10] = result[12] = result[14] = result[16] = result[22] = -strength;
         return result;
       }
+
+
+
+      kernel_type unsharp_mask (const Header& header, const default_type smooth_fwhm, const default_type sharpen_strength)
+      {
+        // Initial smoothing kernel
+        kernel_type result (gaussian (header, smooth_fwhm, 3.0 * smooth_fwhm));
+        // Subtract this from the original image to get the unsharp mask
+        result *= -1.0;
+        const size_t central_voxel_index = (result.size() - 1)/2;
+        result[central_voxel_index] += 1.0;
+        // Now take the original image, and add some fraction of the unsharp mask
+        result *= sharpen_strength;
+        result[central_voxel_index] += 1.0;
+        return result;
+      }
+
+
+
+
 
 
 

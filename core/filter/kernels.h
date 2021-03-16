@@ -89,10 +89,16 @@ namespace MR
       kernel_type boxblur (const ssize_t size);
       kernel_type boxblur (const vector<int>& size);
 
-      kernel_type radialblur (const Header& header, const float radius);
+      kernel_type gaussian (const Header& header, const default_type fwhm, const default_type radius);
 
       kernel_type laplacian3d();
-      kernel_type unsharp_mask (const default_type force);
+
+      kernel_type radialblur (const Header& header, const default_type radius);
+
+      kernel_type sharpen (const default_type strength);
+
+      kernel_type unsharp_mask (const Header& header, const default_type smooth_fwhm, const default_type sharpen_strength);
+
 
       kernel_triplet sobel();
       kernel_triplet sobel_feldman();

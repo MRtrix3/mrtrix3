@@ -27,6 +27,31 @@ namespace MR
 
 
     template <class ImageType>
+    class EdgeCrop : public Base<EdgeCrop<ImageType>,ImageType>
+    { MEMALIGN(EdgeCrop<ImageType>)
+      public:
+
+        using base_type = Base<EdgeCrop<ImageType>, ImageType>;
+        using value_type = typename ImageType::value_type;
+
+        EdgeCrop (ImageType& original, const value_type default_value = std::numeric_limits<value_type>::quiet_NaN()) :
+            base_type (original),
+            _default_value (default_value) { }
+
+        value_type get_value () const {
+          if (is_out_of_bounds (parent()))
+            return _default_value;
+          return parent().value();
+        }
+
+      protected:
+        using base_type::parent;
+        const value_type _default_value;
+    };
+
+
+
+    template <class ImageType>
     class EdgeExtend : public Base<EdgeExtend<ImageType>,ImageType>
     { MEMALIGN(EdgeExtend<ImageType>)
       public:
@@ -86,26 +111,7 @@ namespace MR
 
 
 
-    template <class ImageType>
-    class EdgeCrop : public Base<EdgeCrop<ImageType>,ImageType>
-    { MEMALIGN(EdgeCrop<ImageType>)
-      public:
 
-        using base_type = Base<EdgeCrop<ImageType>, ImageType>;
-        using value_type = typename ImageType::value_type;
-
-        EdgeCrop (ImageType& original) :
-            base_type (original) { }
-
-        value_type get_value () const {
-          if (is_out_of_bounds (parent()))
-            return std::numeric_limits<value_type>::quiet_NaN();
-          return parent().value();
-        }
-
-      protected:
-        using base_type::parent;
-    };
 
 
 

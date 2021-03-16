@@ -22,7 +22,7 @@ Usage
 Description
 -----------
 
-The available filters are: fft, gradient, median, smooth, normalise, zclean.
+The available filters are: boxblur, farid, fft, gaussian, laplacian3d, median, radialblur, sobel, sobelfeldman, sharpen, unsharpmask, zclean.
 
 Each filter has its own unique set of optional parameters.
 
@@ -30,6 +30,20 @@ For 4D images, each 3D volume is processed independently.
 
 Options
 -------
+
+Options for boxblur filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-extent size** specify extent of boxblur filtering kernel in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).
+
+Options for farid filter
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-order value** specify order of derivative (default: 1st order i.e. gradient)
+
+-  **-extent value** specify width of filter kernel (default: 1 + (2 x order)) (must be odd)
+
+-  **-magnitude** output norm magnitude of filter result rather than 3 spatial components
 
 Options for FFT filter
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -42,33 +56,39 @@ Options for FFT filter
 
 -  **-centre_zero** re-arrange the FFT results so that the zero-frequency component appears in the centre of the image, rather than at the edges
 
-Options for gradient filter
+Options for Gaussian filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-stdev sigma** the standard deviation of the Gaussian kernel used to smooth the input image (in mm). The image is smoothed to reduced large spurious gradients caused by noise. Use this option to override the default stdev of 1 voxel. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis.
+-  **-fwhm value** set the Full-Width at Half-Maximum (FWHM) of the kernel in mm (default: 1 voxel)
 
--  **-magnitude** output the gradient magnitude, rather than the default x,y,z components
-
--  **-scanner** define the gradient with respect to the scanner coordinate frame of reference.
+-  **-radius value** set the radius in mm beyond which the kernel will be truncated (default: 3 x FWHM)
 
 Options for median filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-extent size** specify extent of median filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).
 
-Options for normalisation filter
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for radialblur filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-extent size** specify extent of normalisation filtering neighbourhood in voxels. This can be specified either as a single value to be used for all 3 axes, or as a comma-separated list of 3 values, one for each axis (default: 3x3x3).
+-  **-radius value** specify radius of blurring kernel in mm. (Default: 2 voxels along axis with largest voxel spacing)
 
-Options for smooth filter
-^^^^^^^^^^^^^^^^^^^^^^^^^
+Options for sobel and sobelfeldman filters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-stdev mm** apply Gaussian smoothing with the specified standard deviation. The standard deviation is defined in mm (Default 1 voxel). This can be specified either as a single value to be used for all axes, or as a comma-separated list of the stdev for each axis.
+-  **-magnitude** output norm magnitude of filter result rather than 3 spatial components
 
--  **-fwhm mm** apply Gaussian smoothing with the specified full-width half maximum. The FWHM is defined in mm (Default 1 voxel * 2.3548). This can be specified either as a single value to be used for all axes, or as a comma-separated list of the FWHM for each axis.
+Options for sharpen filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-extent voxels** specify the extent (width) of kernel size in voxels. This can be specified either as a single value to be used for all axes, or as a comma-separated list of the extent for each axis. The default extent is 2 * ceil(2.5 * stdev / voxel_size) - 1.
+-  **-strength value** specify the strength of the sharpening kernel. (default = 1.0)
+
+Options for UnsharpMask filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-fwhm value** set the Full-Width at Half-Maximum (FWHM) of the smoothing kernel in mm (default: 2 voxels)
+
+-  **-strength value** set the strength of the edge enhancement (default: 1.0)
 
 Options for zclean filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -79,7 +99,7 @@ Options for zclean filter
 
 -  **-bridge num** number of voxels to gap to fill holes in mask: default: 4
 
--  **-maskin image** initial mask that defines the maximum spatial extent and the region from which to smaple the intensity range.
+-  **-maskin image** initial mask that defines the maximum spatial extent and the region from which to sample the intensity range.
 
 -  **-maskout image** Output a refined mask based on a spatially coherent region with normal intensity range.
 
