@@ -18,6 +18,9 @@
 #define __gui_app_h__
 
 #include <QApplication>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
+#include <QStyleHints>
+#endif
 
 #include "app.h"
 #include "file/config.h"
