@@ -43,6 +43,10 @@ namespace MR
       std::setlocale (LC_ALL, "C");
 
       setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
+
+      #if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
+      styleHints()->setShowShortcutsInContextMenus(true);
+      #endif
     }
 
 
