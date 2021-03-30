@@ -761,7 +761,7 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError("rigid_lmax option set when no rigid registration is performed")
     rigid_lmax = [int(x) for x in app.ARGS.rigid_lmax.split(',')]
     if do_fod_registration and len(rigid_scales) != len(rigid_lmax):
-      raise MRtrixError('rigid_scales and rigid_lmax schedules are not equal in length')
+      raise MRtrixError('rigid_scales and rigid_lmax schedules are not equal in length: scales stages: %s, lmax stages: %s' % (len(rigid_scales), len(rigid_lmax)))
   else:
     rigid_lmax = DEFAULT_RIGID_LMAX
 
@@ -773,7 +773,7 @@ def execute(): #pylint: disable=unused-variable
     if len(rigid_niter) == 1:
       rigid_niter = rigid_niter * len(rigid_scales)
     elif len(rigid_scales) != len(rigid_niter):
-      raise MRtrixError('rigid_scales and rigid_niter schedules are not equal in length')
+      raise MRtrixError('rigid_scales and rigid_niter schedules are not equal in length: scales stages: %s, niter stages: %s' % (len(rigid_scales), len(rigid_niter)))
 
   # affine options
   if app.ARGS.affine_scale:
@@ -787,7 +787,7 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError("affine_lmax option set when no affine registration is performed")
     affine_lmax = [int(x) for x in app.ARGS.affine_lmax.split(',')]
     if do_fod_registration and len(affine_scales) != len(affine_lmax):
-      raise MRtrixError('affine_scales and affine_lmax schedules are not equal in length')
+      raise MRtrixError('affine_scales and affine_lmax schedules are not equal in length: scales stages: %s, lmax stages: %s' % (len(affine_scales), len(affine_lmax)))
   else:
     affine_lmax = DEFAULT_AFFINE_LMAX
 
@@ -799,7 +799,7 @@ def execute(): #pylint: disable=unused-variable
     if len(affine_niter) == 1:
       affine_niter = affine_niter * len(affine_scales)
     elif len(affine_scales) != len(affine_niter):
-      raise MRtrixError('affine_scales and affine_niter schedules are not equal in length')
+      raise MRtrixError('affine_scales and affine_niter schedules are not equal in length: scales stages: %s, niter stages: %s' % (len(affine_scales), len(affine_niter)))
 
   linear_scales = []
   linear_lmax = []
@@ -820,7 +820,11 @@ def execute(): #pylint: disable=unused-variable
   assert len(linear_type) == len(linear_scales)
   assert len(linear_scales) == len(linear_niter)
   if do_fod_registration:
-    assert len(linear_lmax) == len(linear_niter)
+    if len(linear_lmax) != len(linear_niter):
+      mismatch = []
+      if len(rigid_lmax) != len(rigid_niter): mismatch += ['rigid: lmax stages: %s, niter stages: %s' % (len(rigid_lmax), len(rigid_niter))]
+      if len(affine_lmax) != len(affine_niter): mismatch += ['affine: lmax stages: %s, niter stages: %s' % (len(affine_lmax), len(affine_niter))]
+      raise MRtrixError('linear registration: lmax and niter schedules are not equal in length: %s' % (', '.join(mismatch)))
   app.console('-' * 60)
   app.console('initial alignment of images: %s' % initial_alignment)
   app.console('-' * 60)
@@ -864,7 +868,7 @@ def execute(): #pylint: disable=unused-variable
     nl_lmax = [int(x) for x in app.ARGS.nl_lmax.split(',')] if app.ARGS.nl_lmax else DEFAULT_NL_LMAX
 
     if len(nl_scales) != len(nl_niter):
-      raise MRtrixError('nl_scales and nl_niter schedules are not equal in length')
+      raise MRtrixError('nl_scales and nl_niter schedules are not equal in length: scales stages: %s, niter stages: %s' % (len(nl_scales), len(nl_niter)))
 
     app.console('-' * 60)
     app.console('nonlinear registration stages:')
@@ -875,7 +879,7 @@ def execute(): #pylint: disable=unused-variable
 
     if do_fod_registration:
       if len(nl_scales) != len(nl_lmax):
-        raise MRtrixError('nl_scales and nl_lmax schedules are not equal in length')
+        raise MRtrixError('nl_scales and nl_lmax schedules are not equal in length: scales stages: %s, lmax stages: %s' % (len(nl_scales), len(nl_lmax)))
 
     if do_fod_registration:
       for istage, [scale, lmax, niter] in enumerate(zip(nl_scales, nl_lmax, nl_niter)):
