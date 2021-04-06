@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,12 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifdef MRTRIX_AS_R_LIBRARY
 
 #include <limits>
 #include <unistd.h>
 
 #include "app.h"
+#include "header.h"
 #include "image_io/ram.h"
 
 namespace MR
@@ -32,7 +32,8 @@ namespace MR
     {
       DEBUG ("allocating RAM buffer for image \"" + header.name() + "\"...");
       int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
-      addresses.push_back (new uint8_t [bytes_per_segment]);
+      addresses.resize(1);
+      addresses[0].reset (new uint8_t [bytes_per_segment]);
     }
 
 
@@ -40,12 +41,11 @@ namespace MR
     {
       if (addresses.size()) {
         DEBUG ("deleting RAM buffer for image \"" + header.name() + "\"...");
-        delete [] addresses[0];
+        addresses[0].reset();
       }
     }
 
   }
 }
 
-#endif
 

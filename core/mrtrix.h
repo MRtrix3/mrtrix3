@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -184,8 +184,8 @@ namespace MR
     return split (string, "\n", ignore_empty_fields, num);
   }
 
-  vector<default_type> parse_floats (const std::string& spec);
-  vector<int> parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
+
+
 
   /*
   inline int round (default_type x)
@@ -364,6 +364,86 @@ namespace MR
         throw Exception ("error converting string \"" + string + "\" to complex double (ambiguity in imaginary component)");
     }
     return candidates[0];
+  }
+
+
+
+
+
+
+
+  vector<default_type> parse_floats (const std::string& spec);
+
+
+
+  template <typename IntType>
+  vector<IntType> parse_ints (const std::string& spec, const IntType last = std::numeric_limits<IntType>::max())
+  {
+    typedef typename std::make_signed<IntType>::type SignedIntType;
+    if (!spec.size()) throw Exception ("integer sequence specifier is empty");
+
+    auto to_unsigned = [&] (const SignedIntType value)
+    {
+      if (std::is_unsigned<IntType>::value && value < 0)
+        throw Exception ("Impermissible negative value present in sequence \"" + spec + "\"");
+      return IntType(value);
+    };
+
+    vector<IntType> V;
+    std::string::size_type start = 0, end;
+    std::array<SignedIntType, 3> num;
+    size_t i = 0;
+    try {
+      do {
+        start = spec.find_first_not_of (" \t", start);
+        if (start == std::string::npos)
+          break;
+        end = spec.find_first_of (" \t,:", start);
+        std::string token (strip (spec.substr (start, end-start)));
+        if (lowercase (token) == "end") {
+          if (last == std::numeric_limits<IntType>::max())
+            throw Exception ("value of \"end\" is not known in number sequence \"" + spec + "\"");
+          num[i] = SignedIntType(last);
+        }
+        else num[i] = to<SignedIntType> (spec.substr (start, end-start));
+
+        end = spec.find_first_not_of (" \t", end);
+        char last_char = end < spec.size() ? spec[end] : '\0';
+        if (last_char == ':') {
+          ++i;
+          ++end;
+          if (i > 2) throw Exception ("invalid number range in number sequence \"" + spec + "\"");
+        } else {
+          if (i) {
+            SignedIntType inc, last;
+            if (i == 2) {
+              inc = num[1];
+              last = num[2];
+            }
+            else {
+              inc = 1;
+              last = num[1];
+            }
+            if (inc * (last - num[0]) < 0)
+              inc = -inc;
+            for (; (inc > 0 ? num[0] <= last : num[0] >= last) ; num[0] += inc)
+              V.push_back (to_unsigned(num[0]));
+          }
+          else V.push_back (to_unsigned(num[0]));
+          i = 0;
+        }
+
+        start = end;
+        if (last_char == ',')
+          ++start;
+      }
+      while (end < spec.size());
+    }
+    catch (Exception& E) {
+      throw Exception (E, "can't parse integer sequence specifier \"" + spec + "\"");
+    }
+
+    return (V);
   }
 
 

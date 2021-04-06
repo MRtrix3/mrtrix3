@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,9 +17,8 @@
 
 
 
-import itertools, os, re
+import io, itertools, os, re
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
-from mrtrix3.utils import STRING_TYPES
 
 
 _TRANSFORM_LAST_ROW = [ 0.0, 0.0, 0.0, 1.0 ]
@@ -160,7 +159,6 @@ def load_vector(filename, **kwargs): #pylint: disable=unused-variable
 
 # Save numeric data to a text file
 def save_numeric(filename, data, **kwargs):
-  from mrtrix3 import app # pylint: disable=import-outside-toplevel
   fmt = kwargs.pop('fmt', '%.15g')
   delimiter = kwargs.pop('delimiter', ' ')
   newline = kwargs.pop('newline', '\n')
@@ -169,10 +167,11 @@ def save_numeric(filename, data, **kwargs):
   footer = kwargs.pop('footer', { })
   comments = kwargs.pop('comments', '# ')
   encoding = kwargs.pop('encoding', None)
+  force = kwargs.pop('force', False)
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to matrix.save_numeric(): ' + str(kwargs))
 
-  if not app.FORCE_OVERWRITE and os.path.exists(filename):
+  if not force and os.path.exists(filename):
     raise MRtrixError('output file "' + filename + '" already exists (use -force option to force overwrite)')
 
   encode_args = {'errors': 'ignore'}
@@ -180,7 +179,7 @@ def save_numeric(filename, data, **kwargs):
     encode_args['encoding'] = encoding
 
   if header:
-    if isinstance(header, STRING_TYPES):
+    if isinstance(header, str):
       header = { 'comments' : header }
     elif isinstance(header, list):
       header = { 'comments' : '\n'.join(str(entry) for entry in header) }
@@ -198,7 +197,7 @@ def save_numeric(filename, data, **kwargs):
       header['command_history'] = COMMAND_HISTORY_STRING
 
   if footer:
-    if isinstance(footer, STRING_TYPES):
+    if isinstance(footer, str):
       footer = { 'comments' : footer }
     elif isinstance(footer, list):
       footer = { 'comments' : '\n'.join(str(entry) for entry in footer) }
@@ -210,9 +209,12 @@ def save_numeric(filename, data, **kwargs):
     footer = { }
 
   open_mode = os.O_WRONLY | os.O_CREAT
-  if not app.FORCE_OVERWRITE:
+  if force:
+    open_mode = open_mode | os.O_TRUNC
+  else:
     open_mode = open_mode | os.O_EXCL
-  with os.open(filename, open_mode) as outfile:
+  file_descriptor = os.open(filename, open_mode)
+  with io.open(file_descriptor, 'wb') as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
         outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
@@ -232,8 +234,6 @@ def save_numeric(filename, data, **kwargs):
     for key, value in sorted(footer.items()):
       for line in value.splitlines():
         outfile.write((comments + key + ': ' + line + newline).encode(**encode_args))
-
-
 
 
 

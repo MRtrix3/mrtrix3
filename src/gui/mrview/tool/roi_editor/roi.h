@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -108,7 +108,7 @@ namespace MR
              void load (vector<std::unique_ptr<MR::Header>>& list);
              void save (ROI_Item*);
 
-             int normal2axis (const Eigen::Vector3f&, const MR::Transform&) const;
+             int normal2axis (const Eigen::Vector3f&, const ROI_Item&) const;
 
              void dropEvent (QDropEvent* event) override;
         };

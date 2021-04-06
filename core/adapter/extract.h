@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,9 +24,9 @@ namespace MR
   namespace Adapter
   {
 
-    template <class ImageType> 
-      class Extract1D : 
-        public Base<Extract1D<ImageType>,ImageType> 
+    template <class ImageType>
+      class Extract1D :
+        public Base<Extract1D<ImageType>,ImageType>
     { MEMALIGN (Extract1D<ImageType>)
       public:
 
@@ -38,7 +38,7 @@ namespace MR
         using base_type::parent;
 
 
-        Extract1D (const ImageType& original, const size_t axis, const vector<int>& indices) :
+        Extract1D (const ImageType& original, const size_t axis, const vector<uint32_t>& indices) :
           base_type (original),
           extract_axis (axis),
           indices (indices),
@@ -57,7 +57,7 @@ namespace MR
 
 
         void reset () {
-          for (size_t n = 0; n < ndim(); ++n) 
+          for (size_t n = 0; n < ndim(); ++n)
             parent().index(n) = ( n == extract_axis ? indices[0] : 0 );
           current_pos = 0;
         }
@@ -66,26 +66,26 @@ namespace MR
           return ( axis == extract_axis ? nsize : base_type::size (axis) );
         }
 
-        const transform_type& transform () const { return trans; } 
+        const transform_type& transform () const { return trans; }
 
         ssize_t get_index (size_t axis) const { return ( axis == extract_axis ? current_pos : parent().index(axis) ); }
         void move_index (size_t axis, ssize_t increment) {
           if (axis == extract_axis) {
             ssize_t prev_pos = current_pos < nsize ? indices[current_pos] : 0;
             current_pos += increment;
-            if (current_pos < nsize) 
+            if (current_pos < nsize)
               parent().index(axis) += indices[current_pos] - prev_pos;
             else
               parent().index(axis) = 0;
           }
-          else 
+          else
             parent().index(axis) += increment;
         }
 
 
         friend std::ostream& operator<< (std::ostream& stream, const Extract1D& V) {
           stream << "Extract1D adapter for image \"" << V.name() << "\", position [ ";
-          for (size_t n = 0; n < V.ndim(); ++n) 
+          for (size_t n = 0; n < V.ndim(); ++n)
             stream << V.index(n) << " ";
           stream << "], value = " << V.value();
           return stream;
@@ -93,7 +93,7 @@ namespace MR
 
       private:
         const size_t extract_axis;
-        vector<int> indices;
+        vector<uint32_t> indices;
         const ssize_t nsize;
         transform_type trans;
         ssize_t current_pos;
@@ -109,8 +109,8 @@ namespace MR
 
 
 
-    template <class ImageType> 
-      class Extract : 
+    template <class ImageType>
+      class Extract :
         public Base<Extract<ImageType>,ImageType>
     { MEMALIGN (Extract<ImageType>)
       public:
@@ -123,22 +123,20 @@ namespace MR
         using base_type::parent;
 
 
-        Extract (const ImageType& original, const vector<vector<int>>& indices) :
+        Extract (const ImageType& original, const vector<vector<uint32_t>>& indices) :
           base_type (original),
-          current_pos (ndim()), 
+          current_pos (ndim()),
           indices (indices),
           trans (original.transform()) {
             reset();
             trans.translation() = trans * Eigen::Vector3d (
-                indices[0][0] * spacing (0), 
-                indices[1][0] * spacing (1), 
-                indices[2][0] * spacing (2) 
+                indices[0][0] * spacing (0),
+                indices[1][0] * spacing (1),
+                indices[2][0] * spacing (2)
                 );
 
-            for (auto& idx : this->indices) {
-              sizes.push_back (idx.size());
-              idx.push_back (idx.back());
-            }
+            for (const auto& i : indices)
+              sizes.push_back (i.size());
           }
 
 
@@ -155,14 +153,18 @@ namespace MR
 
         ssize_t get_index (size_t axis) const { return current_pos[axis]; }
         void move_index (size_t axis, ssize_t increment) {
-          ssize_t prev = current_pos[axis];
           current_pos[axis] += increment;
-          parent().index (axis) += indices[axis][current_pos[axis]] - indices[axis][prev];
+          if (current_pos[axis] < 0)
+            parent().index (axis) = -1;
+          else if (current_pos[axis] >= sizes[axis])
+            parent().index (axis) = parent().size (axis);
+          else
+            parent().index (axis) = indices[axis][current_pos[axis]];
         }
 
       private:
-        vector<size_t> current_pos;
-        vector<vector<int> > indices;
+        vector<ssize_t> current_pos;
+        vector<vector<uint32_t> > indices;
         vector<ssize_t> sizes;
         transform_type trans;
     };

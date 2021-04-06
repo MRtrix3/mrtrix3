@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -298,65 +298,6 @@ namespace MR
 
 
 
-  struct LoopAlongStaticAxes { NOMEMALIGN
-    const std::initializer_list<size_t> axes;
-
-    template <class... ImageType>
-      struct Run { NOMEMALIGN
-        const std::initializer_list<size_t> axes;
-        const std::tuple<ImageType&...> vox;
-        const size_t from;
-        const ssize_t size0;
-        bool ok;
-        FORCE_INLINE Run (const std::initializer_list<size_t> axes, const std::tuple<ImageType&...>& vox) :
-          axes (axes), vox (vox), from (*axes.begin()), size0 (std::get<0>(vox).size(from)), ok (true) {
-            for (auto axis : axes)
-              apply (set_pos (axis, 0), vox);
-          }
-        FORCE_INLINE operator bool() const { return ok; }
-        FORCE_INLINE void operator++() {
-          apply (inc_pos (from), vox);
-          if (std::get<0>(vox).index(from) < size0)
-            return;
-
-          apply (set_pos (from, 0), vox);
-          auto axis = axes.begin()+1;
-          while (axis != axes.end()) {
-            apply (inc_pos (*axis), vox);
-            if (std::get<0>(vox).index(*axis) < std::get<0>(vox).size(*axis))
-              return;
-            apply (set_pos (*axis, 0), vox);
-            ++axis;
-          }
-          ok = false;
-        }
-        FORCE_INLINE void operator++(int) { operator++(); }
-      };
-
-    template <class... ImageType>
-      FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { axes, std::tie (images...) }; }
-  };
-
-  struct LoopAlongStaticAxesProgress : public LoopAlongStaticAxes { NOMEMALIGN
-    const std::string text;
-    LoopAlongStaticAxesProgress (const std::string& text, const std::initializer_list<size_t> axes) :
-      LoopAlongStaticAxes ({ axes }), text (text) { }
-
-    template <class... ImageType>
-      struct Run : public LoopAlongStaticAxes::Run<ImageType...> { NOMEMALIGN
-        MR::ProgressBar progress;
-        FORCE_INLINE Run (const std::string& text, const std::initializer_list<size_t> axes, const std::tuple<ImageType&...>& vox) :
-          LoopAlongStaticAxes::Run<ImageType...> (axes, vox), progress (text, MR::voxel_count (std::get<0>(vox), axes)) { }
-        FORCE_INLINE void operator++() { LoopAlongStaticAxes::Run<ImageType...>::operator++(); ++progress; }
-        FORCE_INLINE void operator++(int) { operator++(); }
-      };
-
-    template <class... ImageType>
-      FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { text, axes, std::tie (images...) }; }
-  };
-
-
-
   struct LoopAlongDynamicAxes { NOMEMALIGN
     const vector<size_t> axes;
 
@@ -438,14 +379,6 @@ namespace MR
   FORCE_INLINE LoopAlongAxisRangeProgress
     Loop (const std::string& progress_message, size_t axis_from, size_t axis_to)
     { return { progress_message, axis_from, axis_to }; }
-
-  FORCE_INLINE LoopAlongStaticAxes
-    Loop (std::initializer_list<size_t> axes)
-    { return { axes }; }
-
-  FORCE_INLINE LoopAlongStaticAxesProgress
-    Loop (const std::string& progress_message, std::initializer_list<size_t> axes)
-    { return { progress_message, axes }; }
 
   FORCE_INLINE LoopAlongDynamicAxes
     Loop (const vector<size_t>& axes)

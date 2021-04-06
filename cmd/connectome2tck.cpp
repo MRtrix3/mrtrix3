@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -222,14 +222,14 @@ void run ()
   bool manual_node_list = false;
   if (opt.size()) {
     manual_node_list = true;
-    vector<int> data = parse_ints (opt[0][0]);
+    const auto data = parse_ints<node_t> (opt[0][0]);
     bool zero_in_list = false;
-    for (vector<int>::const_iterator i = data.begin(); i != data.end(); ++i) {
-      if (size_t(*i) > max_node_index) {
-        WARN ("Node of interest " + str(*i) + " is above the maximum detected node index of " + str(max_node_index));
+    for (auto i : data) {
+      if (i > max_node_index) {
+        WARN ("Node of interest " + str(i) + " is above the maximum detected node index of " + str(max_node_index));
       } else {
-        nodes.push_back (node_t (*i));
-        if (!*i)
+        nodes.push_back (i);
+        if (!i)
           zero_in_list = true;
       }
     }
@@ -289,11 +289,11 @@ void run ()
       std::mutex mutex;
       ProgressBar progress ("generating exemplars for connectome", count);
       if (assignments_pairs.size()) {
-        auto loader = [&] (Tractography::Connectome::Streamline_nodepair& out) { if (!reader (out)) return false; out.set_nodes (assignments_pairs[out.index]); return true; };
+        auto loader = [&] (Tractography::Connectome::Streamline_nodepair& out) { if (!reader (out)) return false; out.set_nodes (assignments_pairs[out.get_index()]); return true; };
         auto worker = [&] (const Tractography::Connectome::Streamline_nodepair& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
         Thread::run_queue (loader, Thread::batch (Tractography::Connectome::Streamline_nodepair()), Thread::multi (worker));
       } else {
-        auto loader = [&] (Tractography::Connectome::Streamline_nodelist& out) { if (!reader (out)) return false; out.set_nodes (assignments_lists[out.index]); return true; };
+        auto loader = [&] (Tractography::Connectome::Streamline_nodelist& out) { if (!reader (out)) return false; out.set_nodes (assignments_lists[out.get_index()]); return true; };
         auto worker = [&] (const Tractography::Connectome::Streamline_nodelist& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
         Thread::run_queue (loader, Thread::batch (Tractography::Connectome::Streamline_nodelist()), Thread::multi (worker));
       }
@@ -380,14 +380,14 @@ void run ()
     if (assignments_pairs.size()) {
       Tractography::Connectome::Streamline_nodepair tck;
       while (reader (tck)) {
-        tck.set_nodes (assignments_pairs[tck.index]);
+        tck.set_nodes (assignments_pairs[tck.get_index()]);
         writer (tck);
         ++progress;
       }
     } else {
       Tractography::Connectome::Streamline_nodelist tck;
       while (reader (tck)) {
-        tck.set_nodes (assignments_lists[tck.index]);
+        tck.set_nodes (assignments_lists[tck.get_index()]);
         writer (tck);
         ++progress;
       }

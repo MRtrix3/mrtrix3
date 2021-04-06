@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,6 +25,7 @@
 #include "gui/mrview/tool/screen_capture.h"
 #include "gui/mrview/tool/tractography/tractography.h"
 #include "gui/mrview/tool/connectome/connectome.h"
+#include "gui/mrview/tool/transform.h"
 
 #else
 
@@ -41,6 +42,7 @@ TOOL(ODF, ODF display, Display orientation density functions)
 TOOL(Fixel, Fixel plot, Plot fixel images)
 TOOL(Connectome, Connectome, Plot connectome properties)
 TOOL(Capture, Screen capture, Capture the screen as a png file)
+TOOL(Transform, Transform, Manipulate the rigid-body transform of the image)
 
 #endif
 

@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,9 +15,12 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-# pylint: disable=redefined-outer-name,invalid-name
+# pylint: disable=redefined-outer-name,invalid-name,broad-except
 
-usage_string = '''
+import atexit, codecs, copy, glob, os, platform, re, shutil, subprocess, sys, tempfile, time, threading
+from timeit import default_timer as timer
+
+USAGE_STRING = '''
 USAGE
 
     ./build [-verbose] [-showdep[=target|all]] [target ...]
@@ -108,12 +111,11 @@ OPTIONS
 #                          COMMON DEFINITIONS                              #
 ############################################################################
 
-import atexit, codecs, copy, glob, os, platform, re, shutil, subprocess, sys, tempfile, time, threading
-from timeit import default_timer as timer
+
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
-  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).decode(errors='ignore').splitlines()[0].strip()
+  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python3' ]).decode(errors='ignore').splitlines()[0].strip()
   sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
 
 
@@ -359,7 +361,7 @@ bash_completion = False
 
 for arg in sys.argv[1:]:
   if '-help'.startswith(arg):
-    sys.stdout.write (usage_string)
+    sys.stdout.write (USAGE_STRING)
     sys.exit (0)
   elif '-verbose'.startswith(arg):
     verbose = True
@@ -574,6 +576,8 @@ lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
 
 if ld_enabled and runpath:
   ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
+else:
+  ld_flags += [ '-static-libgcc', '-static-libstdc++' ]
 
 
 
@@ -692,7 +696,7 @@ for filepath in list_unexpected_bin_files(exe_suffix):
 class TargetException (Exception):
   pass
 
-class Entry(object):
+class Entry:
   def __init__ (self, name):
     global todo
     name = os.path.normpath (name)
@@ -1155,9 +1159,9 @@ def version_from_git (folder):
       commit = subprocess.check_output ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip() #pylint: disable=unexpected-keyword-arg
     log (tag + ', ' + commit + '\n')
     return [ tag, commit ]
-  except Exception:
+  except Exception as e:
     log ('not found\n')
-    raise LookupError
+    raise LookupError from e
 
 
 
@@ -1173,9 +1177,9 @@ def version_from_file (version_file, version_macro):
           return tag
     if not tag:
       raise NameError
-  except Exception:
+  except Exception as e:
     log ('not found\n')
-    raise LookupError
+    raise LookupError from e
   return None
 
 
@@ -1185,26 +1189,42 @@ def mrtrix_version ():
   try:
     return mrtrix_version.version
   except AttributeError:
-    pass
+    fetch_mrtrix_version()
+    return mrtrix_version.version
+
+
+
+def mrtrix_tag ():
+  try:
+    return mrtrix_version.tag
+  except AttributeError:
+    fetch_mrtrix_version()
+    return mrtrix_version.tag
+
+
+
+def fetch_mrtrix_version ():
 
   log ('''
 getting MRtrix version from folder "''' + mrtrix_dir[-1] + '"...\n  ')
   try:
-    tag = version_from_file (os.path.join (lib_dir, 'version.h'), 'MRTRIX_BASE_VERSION')
+    base_version = version_from_file (os.path.join (lib_dir, 'version.h'), 'MRTRIX_BASE_VERSION')
   except LookupError:
-    fail ('ERROR: failed to read version information from file "' + os.path.join (lib_dir, 'version.h') + '"\n')
+    fail ('ERROR: failed to read base version information from file "' + os.path.join (lib_dir, 'version.h') + '"\n')
 
   try:
     log ('  ')
-    version = version_from_git (mrtrix_dir[-1])
-    if version[0] != tag:
+    [ tag, commit ] = version_from_git (mrtrix_dir[-1])
+    if tag != base_version:
       fail ('ERROR: version stored in "' + os.path.join (lib_dir, 'version.h') + '" does not match git tag name\n')
-    mrtrix_version.version = version[1]
+    mrtrix_version.tag = tag
+    mrtrix_version.version = commit
   except LookupError:
-    mrtrix_version.version = tag
+    mrtrix_version.tag = base_version
+    mrtrix_version.version = base_version
 
   log ('Using MRtrix version "' + mrtrix_version.version + '"\n')
-  return mrtrix_version.version
+
 
 
 
@@ -1337,6 +1357,7 @@ def update_user_docs ():
 
 with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
   vfile.write('__version__ = "'+ mrtrix_version() +'" #pylint: disable=unused-variable\n')
+  vfile.write('__tag__ = "'+ mrtrix_tag() +'" #pylint: disable=unused-variable\n')
 
 
 ###########################################################################
@@ -1452,7 +1473,7 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 #  entry.display()
 try:
   num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
-except (KeyError, TypeError):
+except (KeyError, ValueError):
   try:
     num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
   except ValueError:

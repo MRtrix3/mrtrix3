@@ -127,33 +127,93 @@ Non-axial acquisitions
 When images are acquired in such a manner that the axes do not approximately
 correspond to RAS convention (i.e. first axis increases from left to right, second
 axis increases from posterior to anterior, third axis increases from inferior to
-superior), *MRtrix3* will automatically alter the axis strides & transform
+superior), *MRtrix3* will automatically alter the axis :ref:`strides` & transform
 in order to make the image *appear* as close to an axial acquisition as possible.
-This is briefly mentioned in the :ref:`transform` section. The behaviour may
-also be observed by running ``mrinfo`` with and without the ``-norealign`` option,
-which temporarily disables this behaviour.
+This is briefly mentioned in :ref:`transform` section. The behaviour may
+also be observed by running ``mrinfo`` with and without the
+``-config RealignTransform false`` option, which temporarily disables this behaviour.
 
 Because phase encoding is defined with respect to the image axes, any
 transformation of image axes must correspondingly be applied to the phase encoding
-data. This is done automatically by *MRtrix3* as the transformation occurs.
-Consequently, the phase encoding direction "reported" by *MRtrix3* may in fact be
-different to that stored within the image header itself (or indeed within a
-sidecar JSON file); but it is vital that this information remain consistent with
-the image data, and *MRtrix3* does its best to do so.
+data. When the phase encoding information is stored within the image data,
+*MRtrix3* should automatically manipulate such phase encoding information in order
+to maintain correspondence with the image data.
+
+Where management of such information becomes more complex and prone to errors
+is when it is included in the sidecar information of a JSON file, e.g. as is
+commonly now utilised alongside NIfTI images such as in the BIDS format. This
+becomes more complex at both read and write stages, each in their own complex way.
+
+1. When *reading* a JSON file, *MRtrix3* will take the transformation that was
+   applied to the corresponding input image, and apply that to the phase encoding
+   information.
+
+   This has two curious consequences:
+
+   1. Running::
+
+         mrconvert image.nii -json_import image.json - | mrinfo - | grep PhaseEncodingDirection
+
+      and::
+
+         cat image.json | grep PhaseEncodingDirection
+
+      *may produce different results*. This is because once imported via the
+      ``-json_import`` option, the phase encoding direction is altered to
+      reflect *how MRtrix3 interprets the image data*, rather than how they
+      are actually stored on file.
+
+   2. Running::
+
+         mrconvert image.nii - | mrconvert - -json_import image.json image.mif
+
+      *may produce the incorrect result*. This is because information regarding
+      the transformation that is applied to the NIfTI image in the *first*
+      ``mrconvert`` call in order to approximate an axial acquisition is
+      *no longer available* in the *second* ``mrconvert`` call. When the
+      ``-json_import`` command-line option is used, it is interpreted with
+      respect to the input image *for that command* - which, in the above case,
+      is an MRtrix piped image to which the axial transformation has
+      *already been applied* - and so must *always* be used immediately in
+      conjunction with loading the image with which that JSON file is associated.
+
+2. When *writing* a JSON file, *MRtrix3* will attempt to modify the phase
+   encoding information in order to conform to the limitations of the output
+   image format alongside which the JSON file is intended to reside.
+
+   Unlike the :ref:`mrtrix_image_formats`, :ref:`nifti_format` do not support
+   arbitrary image strides. When writing image data with non-trivial strides to
+   a NIfTI image, *MRtrix3* will reorder the three spatial axes in order to
+   approximate an axial alignment, performing the corresponding modifications
+   to the image transform. Any exported JSON file must therefore also have the
+   same transformation applied.
+
+   This has the curious consequence that::
+
+      mrconvert input.mif output.mif -json_export output.json
+      cat output.json | grep PhaseEncodingDirection
+
+   and::
+
+      mrconvert input.mif output.nii -json_export output.json
+      cat output.json | grep PhaseEncodingDirection
+
+   *may produce different results*. A JSON file *must* only be interpreted in
+   conjunction with the singular image file alongside which it was generated.
+   In the case of the MRtrix image format, we suggest relying instead on the
+   storage of sidecar information within the :ref:`header_keyvalue_pairs`
+   rather than in such an external file, as it allows *MRtrix3* to apply any
+   requisite modifications to such data to echo modifications to the image
+   without user intervention.
 
 .. NOTE::
 
-   This process has consequences for the ``dwifslpreproc`` script when manually
+   This concept also has consequences for the ``dwifslpreproc`` script when manually
    providing the phase encoding direction. The axis and sign of phase encoding
    provided to the script must reflect the direction of phase encoding *after*
    *MRtrix3* has performed this transformation, i.e. as it is read by any
    *MRtrix3* command or as it appears in ``mrview``, *not* the actual encoding
    of axes within the file.
-
-When exporting a sidecar JSON file to accompany an output NIfTI image, the
-direction of phase encoding may also be transformed from that stored in the input
-image, in order to reflect any transformation that occurs when writing an
-output image specifically to the NIfTI format.
 
 
 Manipulation of phase encoding data

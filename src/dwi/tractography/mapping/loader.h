@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -48,7 +48,7 @@ namespace MR {
                 progress.reset();
                 return false;
               }
-              if (tracks_to_load && out.index >= tracks_to_load) {
+              if (tracks_to_load && out.get_index() >= tracks_to_load) {
                 out.clear();
                 progress.reset();
                 return false;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,6 +20,7 @@
 #include <memory>
 
 #include "datatype.h"
+#include "types.h"
 #include "file/dicom/element.h"
 
 namespace MR {
@@ -47,8 +48,9 @@ namespace MR {
             transfer_syntax_supported = true;
             pe_axis = 3;
             pe_sign = 0;
-            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = repetition_time = flip_angle = time_after_start = NaN;
+            pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = inversion_time = repetition_time = flip_angle = partial_fourier = time_after_start = NaN;
             echo_train_length = 0;
+            bipolar_flag = readoutmode_flag = 0;
           }
 
           size_t acq_dim[2], dim[2], series_num, instance, acq, sequence;
@@ -60,9 +62,11 @@ namespace MR {
           size_t pe_axis;
           int pe_sign;
           Time acquisition_time;
-          default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time, repetition_time, flip_angle, time_after_start;
+          default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time, inversion_time, repetition_time, flip_angle, partial_fourier, time_after_start;
           size_t echo_train_length;
+          size_t bipolar_flag, readoutmode_flag;
           vector<uint32_t> index;
+          vector<default_type> flip_angles;
 
           bool operator< (const Frame& frame) const {
             if (series_num != frame.series_num)
@@ -71,7 +75,7 @@ namespace MR {
               return image_type < frame.image_type;
             if (acq != frame.acq)
               return acq < frame.acq;
-            if (std::isfinite (distance) && std::isfinite (frame.distance) && distance != frame.distance) 
+            if (std::isfinite (distance) && std::isfinite (frame.distance) && distance != frame.distance)
               return distance < frame.distance;
             for (size_t n = index.size(); n--;)
               if (index[n] != frame.index[n])
@@ -89,7 +93,7 @@ namespace MR {
             if (!std::isfinite (orientation_z[0]))
               orientation_z = orientation_x.cross (orientation_y);
             else {
-              if (!orientation_x.allFinite() || !orientation_y.allFinite()) 
+              if (!orientation_x.allFinite() || !orientation_y.allFinite())
                 throw Exception ("slice orientation information missing from DICOM header!");
               Eigen::Vector3 normal = orientation_x.cross (orientation_y);
               if (normal.dot (orientation_z) < 0.0)
@@ -98,7 +102,7 @@ namespace MR {
                 orientation_z = normal;
             }
 
-            if (!position_vector.allFinite()) 
+            if (!position_vector.allFinite())
               throw Exception ("slice position information missing from DICOM header!");
 
             orientation_z.normalize();
@@ -144,12 +148,14 @@ namespace MR {
           void read ();
           void parse_item (Element& item, const std::string& dirname = "");
           void decode_csa (const uint8_t* start, const uint8_t* end);
+          KeyValues read_csa_ascii (const vector<std::string>& data);
 
           bool operator< (const Image& ima) const {
             return Frame::operator< (ima);
           }
 
           friend std::ostream& operator<< (std::ostream& stream, const Image& item);
+
       };
 
 

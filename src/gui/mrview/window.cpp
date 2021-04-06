@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,6 +56,15 @@ namespace MR
       bool Window::tools_floating = false;
 
       namespace {
+
+        template <class Event> inline QPoint position (Event* event) { return event->pos(); }
+        template <> inline QPoint position (QWheelEvent* event) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+          return event->position().toPoint();
+#else
+          return event->pos();
+#endif
+        }
 
         Qt::KeyboardModifiers get_modifier (const char* key, Qt::KeyboardModifiers default_key) {
           std::string value = lowercase (MR::File::Config::get (key));
@@ -127,9 +136,9 @@ namespace MR
         //CONF Initial window size of MRView in pixels.
         //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
-        vector<int> init_window_size;
+        vector<uint32_t> init_window_size;
         if (init_size_string.length())
-          init_window_size = parse_ints(init_size_string);
+          init_window_size = parse_ints<uint32_t> (init_size_string);
         if (init_window_size.size() == 2)
           return QSize (init_window_size[0], init_window_size[1]);
         else
@@ -231,12 +240,13 @@ namespace MR
         mouse_action (NoAction),
         focal_point { NAN, NAN, NAN },
         camera_target { NAN, NAN, NAN },
-        orient (),
+        orient (NaN, NaN, NaN, NaN),
         field_of_view (100.0),
         anatomical_plane (2),
         colourbar_position (ColourBars::Position::BottomRight),
         tools_colourbar_position (ColourBars::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
+        camera_interactor (nullptr),
         tool_has_focus (nullptr),
         best_FPS (NAN),
         show_FPS (false),
@@ -442,9 +452,6 @@ namespace MR
           reset_windowing_action->setShortcut (tr ("Esc"));
           addAction (reset_windowing_action);
 
-          //CONF option: ImageInterpolation
-          //CONF default: true
-          //CONF Interpolation switched on in the main image.
           image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
           image_interpolate_action->setShortcut (tr ("I"));
           image_interpolate_action->setCheckable (true);
@@ -776,6 +783,10 @@ namespace MR
           vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < MR::App::argument.size(); ++n) {
             try { list.push_back (make_unique<MR::Header> (MR::Header::open (MR::App::argument[n]))); }
+            catch (CancelException& e) {
+              for (const auto& msg : e.description)
+                CONSOLE (msg);
+            }
             catch (Exception& e) { e.display(); }
           }
           add_images (list);
@@ -859,6 +870,9 @@ namespace MR
           vector<std::unique_ptr<MR::Header>> list;
           list.push_back (make_unique<MR::Header> (MR::Header::open (folder)));
           add_images (list);
+        }
+        catch (CancelException& E) {
+          E.display (-1);
         }
         catch (Exception& E) {
           E.display();
@@ -1583,11 +1597,9 @@ namespace MR
 
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
         // otherwise we get transparent windows...
-#if QT_VERSION >= 0x050400
         gl::ColorMask (false, false, false, true);
         gl::Clear (gl::COLOR_BUFFER_BIT);
         glColorMask (true, true, true, true);
-#endif
         GL_CHECK_ERROR;
         GL::assert_context_is_current();
       }
@@ -1617,7 +1629,7 @@ namespace MR
         buttons_ = event->buttons();
         modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         mouse_displacement_ = QPoint (0,0);
-        mouse_position_ = event->pos();
+        mouse_position_ = position (event);
         mouse_position_.setY (glarea->height() - mouse_position_.y());
       }
 
@@ -1625,7 +1637,7 @@ namespace MR
       template <class Event> void Window::update_mouse_state (Event* event)
       {
         mouse_displacement_ = mouse_position_;
-        mouse_position_ = event->pos();
+        mouse_position_ = position (event);
         mouse_position_.setY (glarea->height() - mouse_position_.y());
         mouse_displacement_ = mouse_position_ - mouse_displacement_;
       }
@@ -1739,15 +1751,11 @@ namespace MR
       void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
-#if QT_VERSION >= 0x050500
         QPoint delta;
         if (event->source() == Qt::MouseEventNotSynthesized)
           delta = event->angleDelta();
         else
           delta = 30 * event->pixelDelta();
-#else
-        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
-#endif
         if (delta.isNull())
           return;
 
@@ -1795,6 +1803,8 @@ namespace MR
       bool Window::gestureEventGL (QGestureEvent* event)
       {
         assert (mode);
+        if (!image())
+          return true;
 
         if (QGesture* pan = event->gesture(Qt::PanGesture)) {
           QPanGesture* e = static_cast<QPanGesture*> (pan);
@@ -1839,6 +1849,12 @@ namespace MR
 
 
 
+      void Window::register_camera_interactor (Tool::CameraInteractor* agent)
+      {
+        if (camera_interactor)
+          camera_interactor->deactivate();
+        camera_interactor = agent;
+      }
 
 
       void Window::process_commandline_option ()
@@ -1873,7 +1889,7 @@ namespace MR
           }
 
           if (opt.opt->is ("size")) {
-            vector<int> glsize = parse_ints (opt[0]);
+            vector<uint32_t> glsize = parse_ints<uint32_t> (opt[0]);
             if (glsize.size() != 2)
               throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
             if (glsize[0] < 1 || glsize[1] < 1)
@@ -1926,12 +1942,23 @@ namespace MR
             return;
           }
 
+          if (opt.opt->is ("orientation")) {
+            if (image()) {
+              vector<default_type> pos = parse_floats (opt[0]);
+              if (pos.size() != 4)
+                throw Exception ("-orientation option expects a comma-separated list of 4 floating-point values");
+              set_orientation ({ float(pos[0]), float(pos[1]), float(pos[2]), float(pos[3]) });
+              glarea->update();
+            }
+            return;
+          }
+
           if (opt.opt->is ("voxel")) {
             if (image()) {
               vector<default_type> pos = parse_floats (opt[0]);
               if (pos.size() != 3)
                 throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
-              set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+              set_focus (image()->voxel2scanner() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
               glarea->update();
             }
             return;
@@ -1939,9 +1966,9 @@ namespace MR
 
           if (opt.opt->is ("volume")) {
             if (image()) {
-              auto pos = parse_ints (opt[0]);
+              auto pos = parse_ints<uint32_t> (opt[0]);
               for (size_t n = 0; n < std::min (pos.size(), image()->image.ndim()); ++n) {
-                if (pos[n] < 0 || pos[n] >= image()->image.size(n+3))
+                if (pos[n] >= image()->image.size(n+3))
                   throw Exception ("volume index outside of image dimensions");
                 set_image_volume (n+3, pos[n]);
                 set_image_navigation_menu();
@@ -2024,7 +2051,7 @@ namespace MR
           }
 
           if (opt.opt->is ("position")) {
-            vector<int> pos = opt[0];
+            vector<int> pos = parse_ints<int> (opt[0]);
             if (pos.size() != 2)
               throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
             move (pos[0], pos[1]);
@@ -2151,6 +2178,9 @@ namespace MR
           + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
               "that will appear at the centre of the viewing window")
           +   Argument ("x,y,z").type_sequence_float()
+
+          + Option ("orientation", "Set the orientation of the camera for the viewing window, in the form of a quaternion representing the rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point values (this will be automatically normalised).")
+          +   Argument ("w,x,y,z").type_sequence_float()
 
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
               "relative the image currently displayed. The new position should be supplied "

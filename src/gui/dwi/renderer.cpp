@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -53,7 +53,7 @@ namespace MR
 
 
       void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale,
-          bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
+          bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic, const GL::mat4* colour_relative_to_projection)
       {
         switch (mode) {
           case mode_t::SH:     sh.bind(); break;
@@ -64,10 +64,12 @@ namespace MR
         if (mode == mode_t::TENSOR)
           scale *= 1000.0f;
 
-        shader.start (mode, use_lighting, colour_by_direction, hide_neg_values, orthographic);
+        shader.start (mode, use_lighting, colour_by_direction, hide_neg_values, orthographic, colour_relative_to_projection);
 
         gl::UniformMatrix4fv (gl::GetUniformLocation (shader, "MV"), 1, gl::FALSE_, projection.modelview());
         gl::UniformMatrix4fv (gl::GetUniformLocation (shader, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
+        if (colour_relative_to_projection)
+          gl::UniformMatrix4fv (gl::GetUniformLocation (shader, "rotation"), 1, gl::FALSE_, *colour_relative_to_projection);
         gl::Uniform3fv (gl::GetUniformLocation (shader, "light_pos"), 1, lighting.lightpos);
         gl::Uniform1f (gl::GetUniformLocation (shader, "ambient"), lighting.ambient);
         gl::Uniform1f (gl::GetUniformLocation (shader, "diffuse"), lighting.diffuse);
@@ -87,15 +89,17 @@ namespace MR
 
 
 
-      void Renderer::Shader::start (mode_t mode, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
+      void Renderer::Shader::start (mode_t mode, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic, bool colour_relative_to_projection)
       {
         GL_CHECK_ERROR;
-        if (!(*this) || mode != mode_ || use_lighting != use_lighting_ || colour_by_direction != colour_by_direction_ || hide_neg_values != hide_neg_values_ || orthographic != orthographic_) {
+        if (!(*this) || mode != mode_ || use_lighting != use_lighting_ || colour_by_direction != colour_by_direction_ ||
+            hide_neg_values != hide_neg_values_ || orthographic != orthographic_ || colour_relative_to_projection != colour_relative_to_projection_) {
           mode_ = mode;
           use_lighting_ = use_lighting;
           colour_by_direction_ = colour_by_direction;
           hide_neg_values_ = hide_neg_values;
           orthographic_ = orthographic;
+          colour_relative_to_projection_ = colour_relative_to_projection;
           if (*this)
             clear();
           GL::Shader::Vertex vertex_shader (vertex_shader_source());
@@ -135,6 +139,9 @@ namespace MR
           "uniform int reverse;\n"
           "uniform vec3 constant_color, origin;\n"
           "uniform mat4 MV, MVP;\n";
+
+        if (colour_relative_to_projection_)
+          source += "uniform mat4 rotation;\n";
 
         if (mode_ == mode_t::TENSOR) {
           source +=
@@ -199,7 +206,8 @@ namespace MR
           "  vertex_color = dec;\n";
           } else {
           source +=
-          "  vertex_" + std::string ( mode_ == mode_t::DIXEL ? "orig_" : "" ) + "color = abs (vertex.xyz);\n";
+          "  vertex_" + std::string ( mode_ == mode_t::DIXEL ? "orig_" : "" ) +
+          "color = abs (" + (colour_relative_to_projection_ ? "mat3(rotation) * " : "") + "vertex.xyz);\n";
           }
         } else {
           source +=

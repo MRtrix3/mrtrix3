@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -154,8 +154,8 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
     case VECTOR_FILE:
       assert (vector_data);
-      assert (tck.index < size_t(vector_data->size()));
-      out.factor = (*vector_data)[tck.index];
+      assert (tck.get_index() < size_t(vector_data->size()));
+      out.factor = (*vector_data)[tck.get_index()];
       break;
 
     default:

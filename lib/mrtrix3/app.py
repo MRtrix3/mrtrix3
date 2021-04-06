@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,13 +56,14 @@ CMDLINE = None
 
 
 
-_DEFAULT_COPYRIGHT = '''Copyright (c) 2008-2019 the MRtrix3 contributors.
+_DEFAULT_COPYRIGHT = \
+'''Copyright (c) 2008-2021 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-Covered Software is provided under this License on an \"as is\"
+Covered Software is provided under this License on an "as is"
 basis, without warranty of any kind, either expressed, implied, or
 statutory, including, without limitation, warranties that the
 Covered Software is free of defects, merchantable, fit for a
@@ -114,7 +115,7 @@ def _execute(module): #pylint: disable=unused-variable
   for sig in _SIGNALS:
     try:
       signal.signal(getattr(signal, sig), handler)
-    except:
+    except AttributeError:
       pass
 
   CMDLINE = Parser()
@@ -205,7 +206,7 @@ def _execute(module): #pylint: disable=unused-variable
     try:
       filename = exception_frame.filename
       lineno = exception_frame.lineno
-    except: # Prior to Python 3.5
+    except AttributeError: # Prior to Python 3.5
       filename = exception_frame[1]
       lineno = exception_frame[2]
     sys.stderr.write('\n')
@@ -453,7 +454,7 @@ def warn(text): #pylint: disable=unused-variable
 
 # A class that can be used to display a progress bar on the terminal,
 #   mimicing the behaviour of MRtrix3 binary commands
-class ProgressBar(object): #pylint: disable=unused-variable
+class ProgressBar: #pylint: disable=unused-variable
 
   BUSY = [ '.   ',
            ' .  ',
@@ -469,7 +470,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
   def __init__(self, msg, target=0):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     global EXEC_NAME, VERBOSITY
-    if not (isinstance(msg, utils.STRING_TYPES) or callable(msg)):
+    if not (isinstance(msg, str) or callable(msg)):
       raise TypeError('app.ProgressBar must be constructed using either a string or a function')
     self.counter = 0
     self.isatty = sys.stderr.isatty()
@@ -629,19 +630,19 @@ class Parser(argparse.ArgumentParser):
 
   # Mutually exclusive options need to be added before the command-line input is parsed
   def flag_mutually_exclusive_options(self, options, required=False): #pylint: disable=unused-variable
-    if not isinstance(options, list) or not isinstance(options[0], utils.STRING_TYPES):
+    if not isinstance(options, list) or not isinstance(options[0], str):
       raise Exception('Parser.flagMutuallyExclusiveOptions() only accepts a list of strings')
     self._mutually_exclusive_option_groups.append( (options, required) )
 
-  def parse_args(self):
+  def parse_args(self, args=None, namespace=None):
     if not self._author:
       raise Exception('Script author MUST be set in script\'s usage() function')
     if not self._synopsis:
       raise Exception('Script synopsis MUST be set in script\'s usage() function')
-    if '-version' in sys.argv:
+    if '-version' in args if args else '-version' in sys.argv[1:]:
       self.print_version()
       sys.exit(0)
-    result = argparse.ArgumentParser.parse_args(self)
+    result = super().parse_args(args, namespace)
     self._check_mutex_options(result)
     if self._subparsers:
       for alg in self._subparsers._group_actions[0].choices:
@@ -668,7 +669,7 @@ class Parser(argparse.ArgumentParser):
       console('')
 
   # Overloads argparse.ArgumentParser function to give a better error message on failed parsing
-  def error(self, text):
+  def error(self, message):
     for entry in sys.argv:
       if '-help'.startswith(entry):
         self.print_help()
@@ -682,11 +683,11 @@ class Parser(argparse.ArgumentParser):
         if alg == sys.argv[1]:
           usage = self._subparsers._group_actions[0].choices[alg].format_usage()
           continue
-    sys.stderr.write('\nError: %s\n' % text)
+    sys.stderr.write('\nError: %s\n' % message)
     sys.stderr.write('Usage: ' + usage + '\n')
     sys.stderr.write('       (Run ' + self.prog + ' -help for more information)\n\n')
     sys.stderr.flush()
-    sys.exit(1)
+    sys.exit(2)
 
   def _check_mutex_options(self, args_in):
     for group in self._mutually_exclusive_option_groups:
@@ -725,7 +726,7 @@ class Parser(argparse.ArgumentParser):
         argument_list.append(arg.dest)
     return self.prog + ' ' + ' '.join(argument_list) + ' [ options ]' + trailing_ellipsis
 
-  def print_help(self):
+  def print_help(self, file=None):
     def bold(text):
       return ''.join( c + chr(0x08) + c for c in text)
 
@@ -855,17 +856,21 @@ class Parser(argparse.ArgumentParser):
       text += wrapper_other.fill(entry[1]) + '\n'
       text += '\n'
     text += wrapper_other.fill(_MRTRIX3_CORE_REFERENCE) + '\n\n'
-    command = CONFIG.get('HelpCommand', 'less -X')
-    if command:
-      try:
-        process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE)
-        process.communicate(text.encode())
-      except:
+    if file:
+      file.write(text)
+      file.flush()
+    else:
+      command = CONFIG.get('HelpCommand', 'less -X')
+      if command:
+        try:
+          process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE)
+          process.communicate(text.encode())
+        except (subprocess.CalledProcessError, FileNotFoundError):
+          sys.stdout.write(text)
+          sys.stdout.flush()
+      else:
         sys.stdout.write(text)
         sys.stdout.flush()
-    else:
-      sys.stdout.write(text)
-      sys.stdout.flush()
 
   def print_full_usage(self):
     sys.stdout.write(self._synopsis + '\n')

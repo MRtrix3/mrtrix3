@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,13 +18,13 @@
 #define __dwi_gradient_h__
 
 #include "app.h"
-#include "file/path.h"
-#include "file/config.h"
 #include "header.h"
+#include "dwi/shells.h"
+#include "file/config.h"
+#include "file/path.h"
 #include "math/condition_number.h"
 #include "math/sphere.h"
 #include "math/SH.h"
-#include "dwi/shells.h"
 
 
 namespace MR
@@ -34,12 +34,18 @@ namespace MR
   namespace DWI
   {
 
-    App::OptionGroup GradImportOptions (bool include_bvalue_scaling = true);
+    App::OptionGroup GradImportOptions();
     App::OptionGroup GradExportOptions();
+
+    extern App::Option bvalue_scaling_option;
+    extern const char* const bvalue_scaling_description;
 
 
 
     //! check that the DW scheme matches the DWI data in \a header
+    /*! \note This is mostly for internal use. If you have obtained the DW
+     * scheme using DWI::get_DW_scheme(), it should already by guaranteed to
+     * match the corresponding header. */
     template <class MatrixType>
       inline void check_DW_scheme (const Header& header, const MatrixType& grad)
       {
@@ -48,29 +54,18 @@ namespace MR
         if (grad.cols() < 4)
           throw Exception ("unexpected diffusion gradient table matrix dimensions");
 
-        if (header.ndim() == 4) {
+        if (header.ndim() >= 4) {
           if (header.size (3) != (int) grad.rows())
-            throw Exception ("number of studies in base image (" + str(header.size(3)) + ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
-        } else if (header.ndim() < 4 && grad.rows() != 1) {
+            throw Exception ("number of studies in base image (" + str(header.size(3))
+                + ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
+        }
+        else if (grad.rows() != 1)
           throw Exception ("For images with less than four dimensions, gradient table can have one row only");
-        }
       }
 
 
 
-    //! ensure each non-b=0 gradient vector is normalised to unit amplitude
-    template <class MatrixType>
-      Eigen::MatrixXd& normalise_grad (MatrixType& grad)
-      {
-        if (grad.cols() < 3)
-          throw Exception ("invalid diffusion gradient table dimensions (" + str(grad.rows()) + " x " + str(grad.cols()) + ")");
-        for (ssize_t i = 0; i < grad.rows(); i++) {
-          auto norm = grad.row(i).template head<3>().norm();
-          if (norm)
-            grad.row(i).template head<3>().array() /= norm;
-        }
-        return grad;
-      }
+
 
 
     /*! \brief convert the DW encoding matrix in \a grad into a
@@ -134,18 +129,6 @@ namespace MR
 
 
 
-    //! scale b-values by square of gradient norm
-    template <class MatrixType>
-      void scale_bvalue_by_G_squared (MatrixType& G)
-      {
-        INFO ("b-values will be scaled by the square of DW gradient norm");
-        for (ssize_t n = 0; n < G.rows(); ++n)
-          if (G(n,3))
-            G(n,3) *= G.row(n).template head<3>().squaredNorm();
-      }
-
-
-
     namespace
     {
       template <class MatrixType>
@@ -191,8 +174,23 @@ namespace MR
     /*! extract the DW gradient encoding matrix stored in the \a header if one
      * is present. This is expected to be stored in the Header::keyval()
      * structure, under the key 'dw_scheme'.
+     *
+     * \note This is mostly for internal use. In general, you should use
+     * DWI::get_DW_scheme()
      */
     Eigen::MatrixXd parse_DW_scheme (const Header& header);
+
+
+
+    //! get the DW scheme as found in the headers or supplied at the command-line
+    /*! return the DW gradient encoding matrix found from the command-line
+     * arguments, or if not provided that way, as stored in the \a header.
+     * This return the scheme prior to any modification or validation.
+     *
+     * \note This is mostly for internal use. In general, you should use
+     * DWI::get_DW_scheme()
+     */
+    Eigen::MatrixXd get_raw_DW_scheme (const Header& header);
 
 
 
@@ -222,18 +220,24 @@ namespace MR
 
 
 
+    enum class BValueScalingBehaviour { Auto, UserOn, UserOff };
+    BValueScalingBehaviour get_cmdline_bvalue_scaling_behaviour ();
 
-    //! get the DW gradient encoding matrix
-    /*! attempts to find the DW gradient encoding matrix, using the following
+    //! get the fully-interpreted DW gradient encoding matrix
+    /*!  find and validate the DW gradient encoding matrix, using the following
      * procedure:
-     * - if the -grad option has been supplied, then load the matrix assuming
+     * - if the \c -grad option has been supplied, then load the matrix assuming
      *     it is in MRtrix format, and return it;
-     * - if the -fslgrad option has been supplied, then load and rectify the
+     * - if the \c -fslgrad option has been supplied, then load and rectify the
      *     bvecs/bvals pair using load_bvecs_bvals() and return it;
      * - if the DW_scheme member of the header is non-empty, return it;
-     * - if no source of gradient encoding is found, return an empty matrix.
+     * - validate the DW scheme and ensure it matches the header;
+     * - if \a bvalue_scaling is \c true (the default), scale the b-values
+     *   accordingly, but only if non-unit vectors are detected;
+     * - normalise the gradient vectors;
+     * - update the header with this information
      */
-    Eigen::MatrixXd get_DW_scheme (const Header& header);
+    Eigen::MatrixXd get_DW_scheme (const Header& header, BValueScalingBehaviour bvalue_scaling = BValueScalingBehaviour::Auto);
 
 
 
@@ -242,26 +246,6 @@ namespace MR
     /*! this checks for the \c -export_grad_mrtrix & \c -export_grad_fsl
      * options, and exports the DW schemes if and as requested. */
     void export_grad_commandline (const Header& header);
-
-
-    /*! \brief validate the DW encoding matrix \a grad and
-     * check that it matches the DW header in \a header
-     *
-     * This ensures the dimensions match the corresponding DWI data, applies
-     * b-value scaling if specified, and normalises the gradient vectors. */
-    void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail = false);
-
-    /*! \brief get the DW encoding matrix as per get_DW_scheme(), and
-     * check that it matches the DW header in \a header
-     *
-     * This is the version that should be used in any application that
-     * processes the DWI raw data. */
-    inline Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail = false)
-    {
-      auto grad = get_DW_scheme (header);
-      validate_DW_scheme (grad, header, nofail);
-      return grad;
-    }
 
 
     //! \brief get the matrix mapping SH coefficients to amplitudes

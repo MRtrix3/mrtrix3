@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #ifndef __dwi_tractography_algorithms_fact_h__
 #define __dwi_tractography_algorithms_fact_h__
 
+#include "interp/masked.h"
 #include "interp/nearest.h"
 
 #include "dwi/tractography/tracking/method.h"
@@ -89,14 +90,11 @@ namespace MR
       bool init() override
       {
         if (!get_data (source)) return false;
-        if (!S.init_dir.allFinite()) {
-          if (!dir.allFinite())
-            dir = random_direction();
-        }
-        else
+        if (S.init_dir.allFinite())
           dir = S.init_dir;
-
-        return do_next (dir) >= S.threshold;
+        else
+          dir = random_direction();
+        return select_fixel (dir) >= S.threshold;
       }
 
       term_t next () override
@@ -104,7 +102,7 @@ namespace MR
         if (!get_data (source))
           return EXIT_IMAGE;
 
-        const float max_norm = do_next (dir);
+        const float max_norm = select_fixel (dir);
 
         if (max_norm < S.threshold)
           return MODEL;
@@ -113,19 +111,20 @@ namespace MR
         return CONTINUE;
       }
 
-
-      float get_metric() override
+      float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) override
       {
-        Eigen::Vector3f d (dir);
-        return do_next (d);
+        if (!get_data (source, position))
+          return 0.0;
+        Eigen::Vector3f d (direction);
+        return select_fixel (d);
       }
 
 
       protected:
       const Shared& S;
-      Interp::Nearest<Image<float>> source;
+      Interp::Masked<Interp::Nearest<Image<float>>> source;
 
-      float do_next (Eigen::Vector3f& d) const
+      float select_fixel (Eigen::Vector3f& d) const
       {
 
         int idx = -1;

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,7 @@
 
 
 
-import glob, os, re
-from distutils.spawn import find_executable
+import glob, os, re, shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run
 
@@ -41,6 +40,16 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('-hippocampi', choices=HIPPOCAMPI_CHOICES, help='Select method to be used for hippocampi (& amygdalae) segmentation; options are: ' + ','.join(HIPPOCAMPI_CHOICES))
   parser.add_argument('-thalami', choices=THALAMI_CHOICES, help='Select method to be used for thalamic segmentation; options are: ' + ','.join(THALAMI_CHOICES))
   parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter')
+  parser.add_citation('Smith, R.; Skoch, A.; Bajada, C.; Caspers, S.; Connelly, A. Hybrid Surface-Volume Segmentation for improved Anatomically-Constrained Tractography. In Proc OHBM 2020')
+  parser.add_citation('Fischl, B. Freesurfer. NeuroImage, 2012, 62(2), 774-781', is_external=True)
+  parser.add_citation('Iglesias, J.E.; Augustinack, J.C.; Nguyen, K.; Player, C.M.; Player, A.; Wright, M.; Roy, N.; Frosch, M.P.; Mc Kee, A.C.; Wald, L.L.; Fischl, B.; and Van Leemput, K. A computational atlas of the hippocampal formation using ex vivo, ultra-high resolution MRI: Application to adaptive segmentation of in vivo MRI. NeuroImage, 2015, 115, 117-137', condition='If FreeSurfer hippocampal subfields module is utilised', is_external=True)
+  parser.add_citation('Saygin, Z.M. & Kliemann, D.; Iglesias, J.E.; van der Kouwe, A.J.W.; Boyd, E.; Reuter, M.; Stevens, A.; Van Leemput, K.; Mc Kee, A.; Frosch, M.P.; Fischl, B.; Augustinack, J.C. High-resolution magnetic resonance imaging reveals nuclei of the human amygdala: manual segmentation to automatic atlas. NeuroImage, 2017, 155, 370-382', condition='If FreeSurfer hippocampal subfields module is utilised and includes amygdalae segmentation', is_external=True)
+  parser.add_citation('Iglesias, J.E.; Insausti, R.; Lerma-Usabiaga, G.; Bocchetta, M.; Van Leemput, K.; Greve, D.N.; van der Kouwe, A.; ADNI; Fischl, B.; Caballero-Gaudes, C.; Paz-Alonso, P.M. A probabilistic atlas of the human thalamic nuclei combining ex vivo MRI and histology. NeuroImage, 2018, 183, 314-326', condition='If -thalami nuclei is used', is_external=True)
+  parser.add_citation('Ardekani, B.; Bachman, A.H. Model-based automatic detection of the anterior and posterior commissures on MRI scans. NeuroImage, 2009, 46(3), 677-682', condition='If ACPCDetect is installed', is_external=True)
+
+
+
+
 
 
 
@@ -191,7 +200,7 @@ def execute(): #pylint: disable=unused-variable
     app.warn('Environment variable FSLDIR is not set; script will run without FSL components')
 
   acpc_string = 'anterior ' + ('& posterior commissures' if ATTEMPT_PC else 'commissure')
-  have_acpcdetect = bool(find_executable('acpcdetect')) and 'ARTHOME' in os.environ
+  have_acpcdetect = bool(shutil.which('acpcdetect')) and 'ARTHOME' in os.environ
   if have_acpcdetect:
     if have_fast:
       app.console('ACPCdetect and FSL FAST will be used for explicit segmentation of ' + acpc_string)
@@ -407,47 +416,29 @@ def execute(): #pylint: disable=unused-variable
   # Deal with brain stem, including determining those voxels that should
   #   be erased from the 5TT image in order for streamlines traversing down
   #   the spinal column to be terminated & accepted
-  bs_fullmask_path = 'Brain_stem_init.mif'
+  bs_fullmask_path = 'brain_stem_init.mif'
   bs_cropmask_path = ''
-  progress = app.ProgressBar('Segmenting and cropping brain stem', 6 + (2 if app.ARGS.template else 0))
-
+  progress = app.ProgressBar('Segmenting and cropping brain stem', 5)
   run.command('mrcalc ' + aparc_image + ' ' + str(BRAIN_STEM_ASEG[0][0]) + ' -eq '
               + ' -add '.join([ aparc_image + ' ' + str(index) + ' -eq' for index, name in BRAIN_STEM_ASEG[1:] ]) + ' -add '
               + bs_fullmask_path + ' -datatype bit')
   progress.increment()
-  fourthventricle_zmin = min([ int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines() ])
-  bs_voxel2mesh_input = bs_fullmask_path
-  if fourthventricle_zmin:
-    bs_wmmask_path = 'Brain_stem_preserve.mif'
-    bs_cropmask_path = 'Brain_stem_crop.mif'
-    run.command('mredit ' + bs_fullmask_path + ' ' + bs_wmmask_path + ' ' + ' '.join([ '-plane 2 ' + str(index) + ' 0' for index in range(0, fourthventricle_zmin) ]))
-    progress.increment()
-    run.command('mrcalc ' + bs_fullmask_path + ' ' + bs_wmmask_path + ' -sub -1 -mult ' + bs_cropmask_path + ' -datatype bit')
-    progress.increment()
-    if app.ARGS.template:
-      bs_cropmesh_path = 'Brain_stem_crop.vtk'
-      bs_new_cropmask_path = 'Brain_stem_crop_template.mif'
-      run.command('voxel2mesh ' + bs_cropmask_path + ' ' + bs_cropmesh_path + ' -blocky')
-      progress.increment()
-      run.command('mesh2voxel ' + bs_cropmesh_path + ' ' + template_image + ' - | ' + \
-                  'mrthreshold - -abs 1e-6 ' + bs_new_cropmask_path)
-      progress.increment()
-      app.cleanup(bs_cropmesh_path)
-      app.cleanup(bs_cropmask_path)
-      bs_cropmask_path = bs_new_cropmask_path
-    bs_voxel2mesh_input = bs_wmmask_path
-
-  app.cleanup(bs_fullmask_path)
   bs_init_mesh_path = 'brain_stem_init.vtk'
-  bs_smoothed_mesh_path = 'brain_stem.vtk'
-  run.command('voxel2mesh ' + bs_voxel2mesh_input + ' ' + bs_init_mesh_path)
-  app.cleanup(bs_voxel2mesh_input)
+  run.command('voxel2mesh ' + bs_fullmask_path + ' ' + bs_init_mesh_path)
   progress.increment()
+  bs_smoothed_mesh_path = 'brain_stem.vtk'
   run.command('meshfilter ' + bs_init_mesh_path + ' smooth ' + bs_smoothed_mesh_path)
   app.cleanup(bs_init_mesh_path)
   progress.increment()
   run.command('mesh2voxel ' + bs_smoothed_mesh_path + ' ' + template_image + ' brain_stem.mif')
   app.cleanup(bs_smoothed_mesh_path)
+  progress.increment()
+  fourthventricle_zmin = min([ int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines() ])
+  if fourthventricle_zmin:
+    bs_cropmask_path = 'brain_stem_crop.mif'
+    run.command('mredit brain_stem.mif - ' + ' '.join([ '-plane 2 ' + str(index) + ' 0' for index in range(0, fourthventricle_zmin) ]) + ' | '
+                'mrcalc brain_stem.mif - -sub 1e-6 -gt ' + bs_cropmask_path + ' -datatype bit')
+  app.cleanup(bs_fullmask_path)
   progress.done()
 
 
@@ -866,7 +857,7 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(tissue_images[2])
     progress.increment()
     run.command('mrcalc ' + tissue_images[4] + ' brain_stem_white_overlap.mif -add ' + new_tissue_images[4])
-    app.cleanup(tissue_images[2])
+    app.cleanup(tissue_images[4])
     app.cleanup('brain_stem_white_overlap.mif')
     progress.done()
     tissue_images = new_tissue_images

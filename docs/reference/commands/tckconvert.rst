@@ -25,7 +25,7 @@ The program currently supports MRtrix .tck files (input/output), ascii text file
 
 Note that ascii files will be stored with one streamline per numbered file. To support this, the command will use the multi-file numbering syntax, where square brackets denote the position of the numbering for the files, for example:
 
-$ tckconvert input.tck output-[].txt
+$ tckconvert input.tck output-'[]'.txt
 
 will produce files named output-0000.txt, output-0001.txt, output-0002.txt, ...
 
@@ -57,6 +57,11 @@ Options for both PLY and RIB writer
 
 -  **-radius radius** radius of the streamlines
 
+Options specific to VTK writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-ascii** write an ASCII VTK file (binary by default)
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
@@ -87,7 +92,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Daan Christiaens (daan.christiaens@kcl.ac.uk), J-Donald Tournier (jdtournier@gmail.com), Philip Broser (philip.broser@me.com), Daniel Blezek (daniel.blezek@gmail.com).
 
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

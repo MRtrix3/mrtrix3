@@ -26,6 +26,10 @@ Alternatively, command-line options may be used to extract specific details from
 
 The command can also write the diffusion gradient table from a single input image to file; either in the MRtrix or FSL format (bvecs/bvals file pair; includes appropriate diffusion gradient vector reorientation)
 
+The -dwgrad, -export_* and -shell_* options provide (information about) the diffusion weighting gradient table after it has been processed by the MRtrix3 back-end (vectors normalised, b-values scaled by the square of the vector norm, depending on the -bvalue_scaling option). To see the raw gradient table information as stored in the image header, i.e. without MRtrix3 back-end processing, use "-property dw_scheme".
+
+The -bvalue_scaling option controls an aspect of the import of diffusion gradient tables. When the input diffusion-weighting direction vectors have norms that differ substantially from unity, the b-values will be scaled by the square of their corresponding vector norm (this is how multi-shell acquisitions are frequently achieved on scanner platforms). However in some rare instances, the b-values may be correct, despite the vectors not being of unit norm (or conversely, the b-values may need to be rescaled even though the vectors are close to unit norm). This option allows the user to control this operation and override MRrtix3's automatic detection.
+
 Options
 -------
 
@@ -67,9 +71,7 @@ DW gradient table import options
 
 -  **-fslgrad bvecs bvals** Provide the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format files. If a diffusion gradient scheme is present in the input image header, the data provided with this option will be instead used.
 
--  **-bvalue_scaling mode** specifies whether the b-values should be scaled by the square of the corresponding DW gradient norm, as often required for multi-shell or DSI DW acquisition schemes. The default action can also be set in the MRtrix config file, under the BValueScaling entry. Valid choices are yes/no, true/false, 0/1 (default: true).
-
--  **-raw_dwgrad** do not modify the gradient table from what was found in the image headers. This skips the validation steps normally performed within MRtrix applications (i.e. do not verify that the number of entries in the gradient table matches the number of volumes in the image, do not scale b-values by gradient norms, do not normalise gradient vectors)
+-  **-bvalue_scaling mode** enable or disable scaling of diffusion b-values by the square of the corresponding DW gradient norm (see Desciption). Valid choices are yes/no, true/false, 0/1 (default: automatic).
 
 DW gradient table export options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -78,7 +80,7 @@ DW gradient table export options
 
 -  **-export_grad_fsl bvecs_path bvals_path** export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format
 
--  **-dwgrad** the diffusion-weighting gradient table, as stored in the header (i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)
+-  **-dwgrad** the diffusion-weighting gradient table, as interpreted by MRtrix3
 
 -  **-shell_bvalues** list the average b-value of each shell
 
@@ -94,6 +96,11 @@ Options for exporting phase-encode tables
 -  **-export_pe_eddy config indices** export phase-encoding information to an EDDY-style config / index file pair
 
 -  **-petable** print the phase encoding table
+
+Handling of piped images
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-nodelete** don't delete temporary images or images passed to mrinfo via Unix pipes
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -125,7 +132,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (d.tournier@brain.org.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

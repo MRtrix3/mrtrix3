@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,7 +27,7 @@ namespace MR {
       class QuickScan { NOMEMALIGN
 
         public:
-          bool read (const std::string& file_name, bool print_DICOM_fields = false, bool print_CSA_fields = false, bool force_read = false);
+          bool read (const std::string& file_name, bool print_DICOM_fields = false, bool print_CSA_fields = false, bool print_Phoenix = false, bool force_read = false);
 
           std::string filename, modality;
           std::string patient, patient_ID, patient_DOB;

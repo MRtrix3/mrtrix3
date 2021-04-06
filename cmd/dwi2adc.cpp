@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,7 +81,7 @@ class DWI2ADC { MEMALIGN(DWI2ADC)
 
 void run () {
   auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_valid_DW_scheme (dwi);
+  auto grad = DWI::get_DW_scheme (dwi);
 
   size_t dwi_axis = 3;
   while (dwi.size (dwi_axis) < 2)

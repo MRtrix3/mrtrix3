@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,11 +20,10 @@
 #include "thread_queue.h"
 #include "transform.h"
 #include "algo/loop.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/index_remapper.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 #include "fixel/filter/smooth.h"
 #include "math/stats/fwe.h"
 #include "math/stats/glm.h"
@@ -74,22 +73,24 @@ void usage ()
     "outside the processing mask will immediately disappear from view as soon as any data-file-based fixel colouring or "
     "thresholding is applied."
 
-  + Math::Stats::GLM::column_ones_description;
+  + Math::Stats::GLM::column_ones_description
+
+  + Fixel::format_description;
 
   REFERENCES
-  + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A." // Internal
+  + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A. " // Internal
     "Connectivity-based fixel enhancement: Whole-brain statistical analysis of diffusion MRI measures in the presence of crossing fibres."
     "Neuroimage, 2015, 15(117):40-55"
 
   + "* If not using the -cfe_legacy option: \n"
-    "Smith, RE.; Dimond, D; Vaughan, D.; Parker, D.; Dhollander, T.; Jackson, G.; Connelly, A. \n"
-    "Intrinsic non-stationarity correction for Fixel-Based Analysis. \n"
-    "In Proc OHBM 2019 M789\n"
+    "Smith, RE.; Dimond, D; Vaughan, D.; Parker, D.; Dhollander, T.; Jackson, G.; Connelly, A. "
+    "Intrinsic non-stationarity correction for Fixel-Based Analysis. "
+    "In Proc OHBM 2019 M789"
 
   + "* If using the -nonstationary option: \n"
     "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. "
     "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. "
-    "NeuroImage, 2011, 54(3), 2006-19" ;
+    "NeuroImage, 2011, 54(3), 2006-19";
 
   ARGUMENTS
   + Argument ("in_fixel_directory", "the fixel directory containing the data files for each subject (after obtaining fixel correspondence").type_directory_in()
@@ -137,24 +138,6 @@ void usage ()
 
 
 
-
-// TODO Re-think how to manage use of a fixel mask & the reordering of fixel indices that arises from it
-// Options:
-// 1. Remove re-indexing mechanism altogether. Will any matrix operations fail?
-//    Some may be a little slower, but probably not the most expensive parts...
-//    Would need to find the most efficient way to detect and ignore voxels without any data
-// 2. Re-index data matrix in order to remove empty columns, perform GLM computations, then pad out
-//    data in preparation for statistical enhancement
-//    Could this end up being more expensive than just having some unused columns?
-// 3. Within enhancer, utilise index remapper to access, for each internal fixel index,
-//    the external fixel index, grab the relevant row of the connectivity matrix,
-//    convert all entries back to internal fixel index representation,
-//    also grab only the relevant Z-statistics and place them in a contiguous vector
-
-
-
-
-
 template <class VectorType>
 void write_fixel_output (const std::string& filename,
                          const VectorType& data,
@@ -176,7 +159,7 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
   public:
     SubjectFixelImport (const std::string& path) :
         Math::Stats::SubjectDataImportBase (path),
-        H (Header::open (find_image (path))),
+        H (Header::open (path)),
         data (H.get_image<float>())
     {
       for (size_t axis = 1; axis < data.ndim(); ++axis) {
@@ -205,33 +188,13 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
     const Header& header() const { return H; }
 
 
-    static void set_fixel_directory (const std::string& s) { fixel_directory = s; }
-
 
   private:
     Header H;
     Image<float> data; // May be mapped input file, or scratch smoothed data
 
-    // Enable input image paths to be either absolute, relative to CWD, or
-    //   relative to input fixel template directory
-    std::string find_image (const std::string& path) const
-    {
-      const std::string cat_path = Path::join (fixel_directory, path);
-      if (Path::is_file (cat_path))
-        return cat_path;
-      if (Path::is_file (path))
-        return path;
-      throw Exception ("Unable to find subject image \"" + path +
-                       "\" either in input fixel diretory \"" + fixel_directory +
-                       "\" or in current working directory");
-      return "";
-    }
-
-    static std::string fixel_directory;
-
 };
 
-std::string SubjectFixelImport::fixel_directory;
 
 
 
@@ -253,7 +216,6 @@ void run()
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
   const std::string input_fixel_directory = argument[0];
-  SubjectFixelImport::set_fixel_directory (input_fixel_directory);
   Header index_header = Fixel::find_index_header (input_fixel_directory);
   auto index_image = index_header.get_image<index_type>();
 
@@ -283,8 +245,9 @@ void run()
   }
 
   // Read file names and check files exist
+  // Preference for finding files relative to input template fixel directory
   Math::Stats::CohortDataImport importer;
-  importer.initialise<SubjectFixelImport> (argument[1]);
+  importer.initialise<SubjectFixelImport> (argument[1], input_fixel_directory);
   for (size_t i = 0; i != importer.size(); ++i) {
     if (!Fixel::fixels_match (index_header, dynamic_cast<SubjectFixelImport*>(importer[i].get())->header()))
       throw Exception ("Fixel data file \"" + importer[i]->name() + "\" does not match template fixel image");
@@ -381,7 +344,7 @@ void run()
   output_header.keyval()["cfe_c"] = str(cfe_c);
   output_header.keyval()["cfe_legacy"] = str(cfe_legacy);
 
-  matrix_type data = matrix_type::Zero (importer.size(), mask_fixels);
+  matrix_type data = matrix_type::Zero (importer.size(), num_fixels);
   {
     ProgressBar progress (std::string ("Loading fixel data (no smoothing)"), importer.size());
     for (size_t subject = 0; subject != importer.size(); subject++) {
@@ -410,11 +373,11 @@ void run()
   auto postfix = [&] (const size_t i) -> std::string { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
 
   {
-    matrix_type betas (num_factors, mask_fixels);
-    matrix_type abs_effect_size (mask_fixels, num_hypotheses);
-    matrix_type std_effect_size (mask_fixels, num_hypotheses);
-    matrix_type stdev (num_vgs, mask_fixels);
-    vector_type cond (mask_fixels);
+    matrix_type betas (num_factors, num_fixels);
+    matrix_type abs_effect_size (num_fixels, num_hypotheses);
+    matrix_type std_effect_size (num_fixels, num_hypotheses);
+    matrix_type stdev (num_vgs, num_fixels);
+    vector_type cond (num_fixels);
 
     Math::Stats::GLM::all_stats (data, design, extra_columns, hypotheses, variance_groups,
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
@@ -471,11 +434,11 @@ void run()
   matrix_type empirical_cfe_statistic;
   if (do_nonstationarity_adjustment) {
     Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, empirical_skew, empirical_cfe_statistic);
-    output_header.keyval()["nonstationarity adjustment"] = str(true);
+    output_header.keyval()["nonstationarity_adjustment"] = str(true);
     for (size_t i = 0; i != num_hypotheses; ++i)
       write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.col(i), mask, output_header);
   } else {
-    output_header.keyval()["nonstationarity adjustment"] = str(false);
+    output_header.keyval()["nonstationarity_adjustment"] = str(false);
   }
 
   // Precompute default statistic and CFE statistic
@@ -490,7 +453,7 @@ void run()
   // Perform permutation testing
   if (!get_options ("notest").size()) {
 
-    const bool fwe_strong = get_option_value ("strong", false);
+    const bool fwe_strong = get_options("strong").size();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
@@ -517,7 +480,7 @@ void run()
     for (size_t i = 0; i != num_hypotheses; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), mask, output_header);
       ++progress;
-      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), mask, output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_1mpvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), mask, output_header);
       ++progress;
       write_fixel_output (Path::join (output_fixel_directory, "null_contributions" + postfix(i) + ".mif"), null_contributions.col(i), mask, output_header);
       ++progress;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -90,10 +90,10 @@ namespace MR
         header << "mrtrix image\n";
         write_mrtrix_header (H, header);
 
-        int64_t offset = header.tellp() + int64_t(24);
+        int64_t offset = int64_t(header.tellp()) + int64_t(24);
         offset += ((4 - (offset % 4)) % 4);
         header << "file: . " << offset << "\nEND\n";
-        while (header.tellp() < offset)
+        while (int64_t(header.tellp()) < offset)
           header << '\0';
 
         std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, offset));

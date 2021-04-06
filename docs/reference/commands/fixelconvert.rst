@@ -18,6 +18,12 @@ Usage
 -  *fixel_in*: the input fixel file / directory.
 -  *fixel_out*: the output fixel file / directory.
 
+Description
+-----------
+
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.2/fixel_based_analysis/fixel_directory_format.html
+
 Example usages
 --------------
 
@@ -29,9 +35,9 @@ Example usages
 
 -   *Convert multiple files from old to new format, preserving fixel correspondence*::
 
-        $ foreach *.msf : fixelconvert IN NAME_new/ -template template_fixels/
+        $ for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/
 
-    In this example, the foreach script is used to execute the fixelconvert command once for each of a series of input files in the old fixel format, generating a new output fixel directory for each.Importantly here though, the -template option is used to ensure that the ordering of fixels within these output directories is identical, such that fixel data files can be exchanged between them (e.g. accumulating fixel data files across subjects into a single template fixel directory
+    In this example, the for_each script is used to execute the fixelconvert command once for each of a series of input files in the old fixel format, generating a new output fixel directory for each.Importantly here though, the -template option is used to ensure that the ordering of fixels within these output directories is identical, such that fixel data files can be exchanged between them (e.g. accumulating fixel data files across subjects into a single template fixel directory
 
 -   *Convert from the new directory format to the old file format*::
 
@@ -90,7 +96,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

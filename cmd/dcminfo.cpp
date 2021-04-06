@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,8 @@ void usage ()
   OPTIONS
   + Option ("all", "print all DICOM fields.")
 
-  + Option ("csa", "print all Siemens CSA fields")
+  + Option ("csa", "print all Siemens CSA fields (excluding Phoenix unless requested)")
+  + Option ("phoenix", "print Siemens Phoenix protocol information")
 
   + Option ("tag", "print field specified by the group & element tags supplied. "
       "Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing).")
@@ -86,13 +87,17 @@ void run ()
 
   File::Dicom::QuickScan reader;
 
-  if (get_options("all").size())
+  const bool all = get_options("all").size();
+  const bool csa = get_options("csa").size();
+  const bool phoenix = get_options("phoenix").size();
+
+  if (all)
     print (File::Dicom::Element::print_header());
 
-  if (reader.read (argument[0], get_options ("all").size(), get_options ("csa").size(), true))
+  if (reader.read (argument[0], all, csa, phoenix, true))
     throw Exception ("error reading file \"" + reader.filename + "\"");
 
-  if (!get_options ("all").size() && !get_options ("csa").size())
+  if (!all && !csa && !phoenix)
     std::cout << reader;
 }
 

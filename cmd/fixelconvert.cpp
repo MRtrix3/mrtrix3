@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,10 +22,9 @@
 
 #include "math/SH.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 
 #include "fixel/legacy/fixel_metric.h"
 #include "fixel/legacy/keys.h"
@@ -46,6 +45,9 @@ void usage ()
 
   SYNOPSIS = "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format";
 
+  DESCRIPTION
+  + Fixel::format_description;
+
   EXAMPLES
   + Example ("Convert from the old file format to the new directory format",
              "fixelconvert old_fixels.msf new_fixels/ -out_size",
@@ -55,8 +57,8 @@ void usage ()
              "(likely all of them) as an additional fixel data file.")
 
   + Example ("Convert multiple files from old to new format, preserving fixel correspondence",
-             "foreach *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
-             "In this example, the foreach script is used to execute the fixelconvert "
+             "for_each *.msf : fixelconvert IN NAME_new/ -template template_fixels/",
+             "In this example, the for_each script is used to execute the fixelconvert "
              "command once for each of a series of input files in the old fixel format, "
              "generating a new output fixel directory for each."
              "Importantly here though, the -template option is used to ensure that the "
@@ -114,7 +116,7 @@ void convert_old2new ()
   const bool output_size = get_options ("out_size").size();
 
   const std::string output_fixel_directory = argument[1];
-  Fixel::check_fixel_directory (output_fixel_directory, true);
+  Fixel::check_fixel_directory (output_fixel_directory, true, true);
 
   index_type fixel_count = 0;
   for (auto i = Loop (input) (input); i; ++i)

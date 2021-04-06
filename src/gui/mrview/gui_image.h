@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,6 +43,10 @@ namespace MR
         class ODF;
       }
 
+
+
+
+
       class ImageBase : public Volume
       { MEMALIGN(ImageBase)
         public:
@@ -63,6 +67,11 @@ namespace MR
 
       };
 
+
+
+
+
+
       class Image : public ImageBase
       { MEMALIGN(Image)
         public:
@@ -79,15 +88,12 @@ namespace MR
           cfloat trilinear_value (const Eigen::Vector3f&) const;
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
-          const MR::Transform& transform() const { return linear_interp; }
+          const transform_type& transform() const { return image.transform(); }
           const vector<std::string>& comments() const { return _comments; }
 
           void reset_windowing (const int, const bool);
 
         protected:
-          mutable MR::Interp::Linear <MR::Image<cfloat>> linear_interp;
-          mutable MR::Interp::Nearest<MR::Image<cfloat>> nearest_interp;
-          friend class Tool::ODF;
 
           struct CachedTexture { MEMALIGN(CachedTexture)
             GL::Texture tex;

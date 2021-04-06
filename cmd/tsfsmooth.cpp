@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 #include "math/median.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/streamline.h"
 
 
 #define DEFAULT_SMOOTHING 4.0
@@ -52,7 +53,7 @@ void run ()
   DWI::Tractography::ScalarWriter<value_type> writer (argument[1], properties);
 
   float stdev = get_option_value ("stdev", DEFAULT_SMOOTHING);
-  
+
   vector<float> kernel (2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;
   float radius = (kernel.size() - 1.0) / 2.0;
@@ -63,9 +64,10 @@ void run ()
   for (size_t c = 0; c < kernel.size(); c++)
     kernel[c] /= norm_factor;
 
-  vector<value_type> tck_scalar;
+  DWI::Tractography::TrackScalar<value_type> tck_scalar;
   while (reader (tck_scalar)) {
-    vector<value_type> tck_scalars_smoothed (tck_scalar.size());
+    DWI::Tractography::TrackScalar<value_type> tck_scalars_smoothed (tck_scalar.size());
+    tck_scalars_smoothed.set_index (tck_scalar.get_index());
 
     for (int i = 0; i < (int)tck_scalar.size(); ++i) {
       float norm_factor = 0.0;

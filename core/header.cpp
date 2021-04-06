@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -69,6 +69,40 @@ namespace MR
 
 
 
+  namespace {
+    std::string resolve_slice_timing (const std::string& one, const std::string& two)
+    {
+      if (one == "variable" || two == "variable")
+        return "variable";
+      vector<std::string> one_split = split (one, ",");
+      vector<std::string> two_split = split (two, ",");
+      if (one_split.size() != two_split.size()) {
+        DEBUG ("Slice timing vectors of inequal length");
+        return "invalid";
+      }
+      // Siemens CSA reports with 2.5ms precision = 0.0025s
+      // Allow slice times to vary by 1.5x this amount, but no more
+      for (size_t i = 0; i != one_split.size(); ++i) {
+        default_type f_one, f_two;
+        try {
+          f_one = to<default_type> (one_split[i]);
+          f_two = to<default_type> (two_split[i]);
+        } catch (Exception& e) {
+          DEBUG ("Error converting slice timing vector to floating-point");
+          return "invalid";
+        }
+        const default_type diff = abs (f_two - f_one);
+        if (diff > 0.00375) {
+          DEBUG ("Supra-threshold difference of " + str(diff) + "s in slice times");
+          return "variable";
+        }
+      }
+      return one;
+    }
+  }
+
+
+
   void Header::merge_keyval (const Header& H)
   {
     std::map<std::string, std::string> new_keyval;
@@ -96,6 +130,8 @@ namespace MR
         auto it = keyval().find (item.first);
         if (it == keyval().end() || it->second == item.second)
           new_keyval.insert (item);
+        else if (item.first == "SliceTiming")
+          new_keyval["SliceTiming"] = resolve_slice_timing (item.second, it->second);
         else
           new_keyval[item.first] = "variable";
       }
@@ -138,7 +174,7 @@ namespace MR
       INFO ("opening image \"" + image_name + "\"...");
 
       File::ParsedName::List list;
-      const vector<int> num = list.parse_scan_check (image_name);
+      const auto num = list.parse_scan_check (image_name);
 
       const Formats::Base** format_handler = Formats::handlers;
       size_t item_index = 0;
@@ -235,6 +271,7 @@ namespace MR
       if (do_realign_transform)
         H.realign_transform();
     }
+    catch (CancelException& e) { throw; }
     catch (Exception& E) {
       throw Exception (E, "error opening image \"" + image_name + "\"");
     }
@@ -287,7 +324,7 @@ namespace MR
 
       File::NameParser parser;
       parser.parse (image_name);
-      vector<int> Pdim (parser.ndim());
+      vector<uint32_t> Pdim (parser.ndim());
 
       vector<int> Hdim (H.ndim());
       for (size_t i = 0; i < H.ndim(); ++i)
@@ -357,7 +394,7 @@ namespace MR
 
 
       Header header (H);
-      vector<int> num (Pdim.size());
+      vector<uint32_t> num (Pdim.size());
 
       if (image_name != "-")
         H.name() = parser.name (num);
@@ -596,6 +633,24 @@ namespace MR
       WARN ("transform matrix contains invalid entries - resetting to sane defaults");
       transform() = Transform::get_default (*this);
     }
+
+    // check that cosine vectors are unit length (to some precision):
+    bool rescale_cosine_vectors = false;
+    for (size_t i = 0; i < 3; ++i) {
+      auto length = transform().matrix().col(i).head<3>().norm();
+      if (abs (length-1.0) > 1.0e-6)
+        rescale_cosine_vectors = true;
+    }
+
+    // if unit length, rescale and modify voxel sizes accordingly:
+    if (rescale_cosine_vectors) {
+      INFO ("non unit cosine vectors detected - normalising and rescaling voxel sizes to match");
+      for (size_t i = 0; i < 3; ++i) {
+        auto length = transform().matrix().col(i).head(3).norm();
+        transform().matrix().col(i).head(3) /= length;
+        spacing(i) *= length;
+      }
+    }
   }
 
 
@@ -775,7 +830,7 @@ namespace MR
       // Concatenate 4D schemes if necessary
       if (axis_to_concat == 3) {
         try {
-          const auto extra_dw = DWI::get_DW_scheme (H);
+          const auto extra_dw = DWI::parse_DW_scheme (H);
           concat_scheme (dw_scheme, extra_dw);
         } catch (Exception&) {
           dw_scheme.resize (0, 0);

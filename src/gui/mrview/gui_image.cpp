@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,6 +55,8 @@ namespace MR
       {
         update_texture2D (plane, slice);
 
+        auto V2S = voxel2scanner();
+
         int x, y;
         get_axes (plane, x, y);
         float xsize = header().size(x)-0.5, ysize = header().size(y)-0.5;
@@ -64,22 +66,22 @@ namespace MR
 
         p[x] = -0.5;
         p[y] = -0.5;
-        vertices[0].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[0].noalias() = V2S * p;
         vertices[1] = { 0.0f, 0.0f, 0.0f };
 
         p[x] = -0.5;
         p[y] = ysize;
-        vertices[2].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[2].noalias() = V2S * p;
         vertices[3] = { 0.0f, 1.0f, 0.0f };
 
         p[x] = xsize;
         p[y] = ysize;
-        vertices[4].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[4].noalias() = V2S * p;
         vertices[5] = { 1.0f, 1.0f, 0.0f };
 
         p[x] = xsize;
         p[y] = -0.5;
-        vertices[6].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[6].noalias() = V2S * p;
         vertices[7] = { 1.0f, 0.0f, 0.0f };
 
         start (shader_program);
@@ -123,8 +125,6 @@ namespace MR
       Image::Image (MR::Header&& image_header) :
           ImageBase (std::move (image_header)),
           image (header().get_image<cfloat>()),
-          linear_interp (image),
-          nearest_interp (image),
           slice_min { { NaN, NaN, NaN } },
           slice_max { { NaN, NaN, NaN } }
       {
@@ -611,19 +611,24 @@ namespace MR
 
 
 
-      cfloat Image::trilinear_value (const Eigen::Vector3f& scanner_point) const {
-        if (!linear_interp.scanner (scanner_point))
+      cfloat Image::trilinear_value (const Eigen::Vector3f& scanner_point) const
+      {
+        auto interp = Interp::make_linear (image);
+        if (!interp.scanner (scanner_point))
           return cfloat(NAN, NAN);
         for (size_t n = 3; n < image.ndim(); ++n)
-          linear_interp.index (n) = image.index (n);
-        return linear_interp.value();
+          interp.index (n) = image.index (n);
+        return interp.value();
       }
-      cfloat Image::nearest_neighbour_value (const Eigen::Vector3f& scanner_point) const {
-        if (!nearest_interp.scanner (scanner_point))
+
+      cfloat Image::nearest_neighbour_value (const Eigen::Vector3f& scanner_point) const
+      {
+        auto interp = Interp::make_nearest (image);
+        if (!interp.scanner (scanner_point))
           return cfloat(NAN, NAN);
         for (size_t n = 3; n < image.ndim(); ++n)
-          nearest_interp.index (n) = image.index (n);
-        return nearest_interp.value();
+          interp.index (n) = image.index (n);
+        return interp.value();
       }
 
 
@@ -669,6 +674,8 @@ namespace MR
 
         return true;
       }
+
+
 
 
     }

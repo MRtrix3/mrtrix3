@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,7 +42,9 @@ namespace MR
           Volume (MR::Header&& header) :
               Displayable (header.name()),
               _header (std::move (header)),
-              _transform (_header),
+              //CONF option: ImageInterpolation
+              //CONF default: true
+              //CONF Define default interplation setting for image and image overlay.
               interpolation (File::Config::get_bool("ImageInterpolation", true) ? gl::LINEAR : gl::NEAREST),
               _current_texture (&_texture),
               texture_mode_changed (true) { }
@@ -78,6 +80,25 @@ namespace MR
             texture().set_interp (interpolation);
           }
 
+
+          Eigen::Transform<float,3,Eigen::AffineCompact> image2scanner () const {
+            return _header.transform().cast<float>();
+          }
+
+          Eigen::Transform<float,3,Eigen::AffineCompact> scanner2image () const {
+            return _header.transform().inverse().cast<float>();
+          }
+
+          Eigen::Transform<float,3,Eigen::AffineCompact> voxel2scanner () const {
+            auto T = _header.transform();
+            return T.scale (Eigen::Vector3d (_header.spacing(0), _header.spacing(1), _header.spacing(2))).cast<float>();
+          }
+
+          Eigen::Transform<float,3,Eigen::AffineCompact> scanner2voxel () const {
+            auto T = _header.transform().inverse();
+            return T.prescale (Eigen::Vector3d (1.0/_header.spacing(0), 1.0/_header.spacing(1), 1.0/_header.spacing(2))).cast<float>();
+          }
+
           void allocate();
 
           float focus_rate () const {
@@ -93,7 +114,6 @@ namespace MR
           GL::Texture& texture () { return *_current_texture; }
           const MR::Header& header () const { return _header; }
           MR::Header& header () { return _header; }
-          const MR::Transform& transform () const { return _transform; }
 
           void min_max_set() {
             update_levels();
@@ -112,7 +132,6 @@ namespace MR
 
         protected:
           MR::Header _header;
-          MR::Transform _transform;
           int interpolation;
           GL::Texture _texture;
           GL::Texture* _current_texture;
@@ -137,10 +156,11 @@ namespace MR
             vertices[6] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position()+projection.height(), depth);
 
             const Eigen::Vector3f sizes (_header.size (0), _header.size (1), _header.size (2));
-            vertices[1] = div ((_transform.scanner2voxel.cast<float>() * vertices[0]) + Eigen::Vector3f { 0.5, 0.5, 0.5 }, sizes);
-            vertices[3] = div ((_transform.scanner2voxel.cast<float>() * vertices[2]) + Eigen::Vector3f { 0.5, 0.5, 0.5 }, sizes);
-            vertices[5] = div ((_transform.scanner2voxel.cast<float>() * vertices[4]) + Eigen::Vector3f { 0.5, 0.5, 0.5 }, sizes);
-            vertices[7] = div ((_transform.scanner2voxel.cast<float>() * vertices[6]) + Eigen::Vector3f { 0.5, 0.5, 0.5 }, sizes);
+            const auto S2V = scanner2voxel();
+            vertices[1] = div ((S2V * vertices[0]) + Eigen::Vector3f { 0.5, 0.5, 0.5 }, sizes);
+            vertices[3] = div ((S2V * vertices[2]) + Eigen::Vector3f { 0.5, 0.5, 0.5 }, sizes);
+            vertices[5] = div ((S2V * vertices[4]) + Eigen::Vector3f { 0.5, 0.5, 0.5 }, sizes);
+            vertices[7] = div ((S2V * vertices[6]) + Eigen::Vector3f { 0.5, 0.5, 0.5 }, sizes);
           }
 
           void draw_vertices ()

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,6 +37,7 @@ namespace MR
     namespace GL
     {
       class Lighting;
+      class mat4;
     }
 
     namespace DWI
@@ -68,7 +69,7 @@ namespace MR
           }
 
           void start (const Projection& projection, const GL::Lighting& lighting, float scale,
-              bool use_lighting, bool color_by_direction, bool hide_neg_lobes, bool orthographic = false);
+              bool use_lighting, bool color_by_direction, bool hide_neg_lobes, bool orthographic = false, const GL::mat4* colour_relative_to_projection = nullptr);
 
           void draw (const Eigen::Vector3f& origin, int buffer_ID = 0) const {
             (void) buffer_ID; // to silence unused-parameter warnings
@@ -102,10 +103,10 @@ namespace MR
           class Shader : public GL::Shader::Program { NOMEMALIGN
             public:
               Shader () : mode_ (mode_t::SH), use_lighting_ (true), colour_by_direction_ (true), hide_neg_values_ (true), orthographic_ (false) { }
-              void start (mode_t mode, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic);
+              void start (mode_t mode, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic, bool colour_relative_to_projection);
             protected:
               mode_t mode_;
-              bool use_lighting_, colour_by_direction_, hide_neg_values_, orthographic_;
+              bool use_lighting_, colour_by_direction_, hide_neg_values_, orthographic_, colour_relative_to_projection_;
               std::string vertex_shader_source() const;
               std::string geometry_shader_source() const;
               std::string fragment_shader_source() const;

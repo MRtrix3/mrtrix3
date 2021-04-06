@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,8 +18,6 @@
 #define __gui_mrview_tool_screen_capture_h__
 
 #include <deque>
-
-#include "math/versor.h"
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
@@ -88,13 +86,13 @@ namespace MR
 
             class CaptureState { MEMALIGN(CaptureState)
               public:
-                Math::Versorf orientation;
+                Eigen::Quaternionf orientation;
                 Eigen::Vector3f focus, target;
                 float fov;
                 size_t volume, volume_axis;
                 size_t frame_index;
                 int plane;
-                CaptureState(const Math::Versorf& orientation,
+                CaptureState(const Eigen::Quaternionf& orientation,
                   const Eigen::Vector3f& focus, const Eigen::Vector3f& target, float fov,
                   size_t volume, size_t volume_axis,
                   size_t frame_index, int plane)

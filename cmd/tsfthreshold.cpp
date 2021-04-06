@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #include "command.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/streamline.h"
 
 
 using namespace MR;
@@ -30,7 +31,7 @@ void usage ()
 
   ARGUMENTS
   + Argument ("input",  "the input track scalar file.").type_file_in()
-  + Argument ("N",      "the desired threshold").type_float ()
+  + Argument ("T",      "the desired threshold").type_float ()
   + Argument ("output", "the binary output track scalar file").type_file_out();
 
 
@@ -51,20 +52,21 @@ void run ()
   DWI::Tractography::ScalarReader<value_type> reader (argument[0], properties);
   DWI::Tractography::ScalarWriter<value_type> writer (argument[2], properties);
 
-  vector<value_type> tck_scalar;
+  DWI::Tractography::TrackScalar<value_type> tck_scalar;
   while (reader (tck_scalar)) {
-    vector<value_type> tck_mask (tck_scalar.size());
+    DWI::Tractography::TrackScalar<value_type> tck_mask (tck_scalar.size());
+    tck_mask.set_index (tck_scalar.get_index());
     for (size_t i = 0; i < tck_scalar.size(); ++i) {
       if (invert) {
         if (tck_scalar[i] > threshold)
-          tck_mask[i] = 0.0;
+          tck_mask[i] = value_type(0);
         else
-          tck_mask[i] = 1.0;
+          tck_mask[i] = value_type(1);
       } else {
         if (tck_scalar[i] > threshold)
-          tck_mask[i] = 1.0;
+          tck_mask[i] = value_type(1);
         else
-          tck_mask[i] = 0.0;
+          tck_mask[i] = value_type(0);
       }
     }
     writer (tck_mask);

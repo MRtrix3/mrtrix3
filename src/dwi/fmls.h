@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@
 
 #define FMLS_INTEGRAL_THRESHOLD_DEFAULT 0.0 // By default, don't threshold by integral (tough to get a good number)
 #define FMLS_PEAK_VALUE_THRESHOLD_DEFAULT 0.1
-#define FMLS_RATIO_TO_PEAK_VALUE_TO_MERGE_DEFAULT 1.0 // By default, turn all peaks into lobes (discrete peaks are never merged)
+#define FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT 1.0 // By default, never perform merging of lobes generated from discrete peaks such that a single lobe contains multiple peaks
 
 
 // By default, the mean direction of each FOD lobe is calculated by taking a weighted average of the
@@ -98,13 +98,13 @@ namespace MR
             integral += abs (value * weight);
           }
 
-          void revise_peak (const size_t index, const Eigen::Vector3& real_peak, const default_type value)
+          void revise_peak (const size_t index, const Eigen::Vector3& revised_peak_dir, const default_type revised_peak_value)
           {
             assert (!neg);
             assert (index < num_peaks());
-            peak_dirs[index] = real_peak;
+            peak_dirs[index] = revised_peak_dir;
             if (!index)
-              max_peak_value = value;
+              max_peak_value = revised_peak_value;
           }
 
 #ifdef FMLS_OPTIMISE_MEAN_DIR
@@ -240,18 +240,18 @@ namespace MR
           bool operator() (const SH_coefs&, FOD_lobes&) const;
 
 
-          default_type get_integral_threshold           ()               const { return integral_threshold; }
-          void         set_integral_threshold           (const default_type i) { integral_threshold = i; }
-          default_type get_peak_value_threshold         ()               const { return peak_value_threshold; }
-          void         set_peak_value_threshold         (const default_type i) { peak_value_threshold = i; }
-          default_type get_ratio_of_peak_value_to_merge ()               const { return ratio_of_peak_value_to_merge; }
-          void         set_ratio_of_peak_value_to_merge (const default_type i) { ratio_of_peak_value_to_merge = i; }
-          bool         get_create_null_lobe             ()               const { return create_null_lobe; }
-          void         set_create_null_lobe             (const bool i)         { create_null_lobe = i; verify_settings(); }
-          bool         get_create_lookup_table          ()               const { return create_lookup_table; }
-          void         set_create_lookup_table          (const bool i)         { create_lookup_table = i; verify_settings(); }
-          bool         get_dilate_lookup_table          ()               const { return dilate_lookup_table; }
-          void         set_dilate_lookup_table          (const bool i)         { dilate_lookup_table = i; verify_settings(); }
+          default_type get_integral_threshold   ()               const { return integral_threshold; }
+          void         set_integral_threshold   (const default_type i) { integral_threshold = i; }
+          default_type get_peak_value_threshold ()               const { return peak_value_threshold; }
+          void         set_peak_value_threshold (const default_type i) { peak_value_threshold = i; }
+          default_type get_lobe_merge_ratio     ()               const { return lobe_merge_ratio; }
+          void         set_lobe_merge_ratio     (const default_type i) { lobe_merge_ratio = i; }
+          bool         get_create_null_lobe     ()               const { return create_null_lobe; }
+          void         set_create_null_lobe     (const bool i)         { create_null_lobe = i; verify_settings(); }
+          bool         get_create_lookup_table  ()               const { return create_lookup_table; }
+          void         set_create_lookup_table  (const bool i)         { create_lookup_table = i; verify_settings(); }
+          bool         get_dilate_lookup_table  ()               const { return dilate_lookup_table; }
+          void         set_dilate_lookup_table  (const bool i)         { dilate_lookup_table = i; verify_settings(); }
 
 
         private:
@@ -267,12 +267,12 @@ namespace MR
           std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
           std::shared_ptr<IntegrationWeights> weights;
 
-          default_type integral_threshold; // Integral of positive lobe must be at least this value
+          default_type integral_threshold;   // Integral of positive lobe must be at least this value
           default_type peak_value_threshold; // Absolute threshold for the peak amplitude of the lobe
-          default_type ratio_of_peak_value_to_merge; // Determines whether two lobes get agglomerated into one, depending on the FOD amplitude at the current point and how it compares to the peak amplitudes of the lobes to which it could be assigned
-          bool         create_null_lobe; // If this is set, an additional lobe will be created after segmentation with zero size, containing all directions not assigned to any other lobe
-          bool         create_lookup_table; // If this is set, an additional lobe will be created after segmentation with zero size, containing all directions not assigned to any other lobe
-          bool         dilate_lookup_table; // If this is set, the lookup table created for each voxel will be dilated so that all directions correspond to the nearest positive non-zero FOD lobe
+          default_type lobe_merge_ratio;     // Determines whether two lobes get agglomerated into one, depending on the FOD amplitude at the current point and how it compares to the maximal amplitudes of the lobes to which it could be assigned
+          bool         create_null_lobe;     // If this is set, an additional lobe will be created after segmentation with zero size, containing all directions not assigned to any other lobe
+          bool         create_lookup_table;  // If this is set, an additional lobe will be created after segmentation with zero size, containing all directions not assigned to any other lobe
+          bool         dilate_lookup_table;  // If this is set, the lookup table created for each voxel will be dilated so that all directions correspond to the nearest positive non-zero FOD lobe
 
 
           void verify_settings() const
@@ -298,4 +298,3 @@ namespace MR
 
 
 #endif
-

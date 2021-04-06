@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,7 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import collections, json, math, os, re, shutil, sys
+import collections, json, math, os, re, shlex, shutil, sys
 
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
@@ -90,21 +90,15 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 # ENH: add option to initialise warps / transformations
 
-# Binds raw_input() to input() in Python2, so that input() can be used
-#   and the code will work on both Python 2 and 3
-try:
-  input = raw_input #pylint: disable=redefined-builtin, invalid-name
-except NameError:
-  pass
 
 
-def abspath(*arg):
-  return os.path.abspath(os.path.join(*arg))
+def abspath(first, *arg):
+  return os.path.abspath(os.path.join(first, *arg))
 
 
-def relpath(*arg):
+def relpath(first, *arg):
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
-  return os.path.relpath(os.path.join(*arg), app.WORKING_DIR)
+  return os.path.relpath(os.path.join(first, *arg), app.WORKING_DIR)
 
 def copy(src, dst, follow_symlinks=True):
   """Copy data but do not set mode bits. Return the file's destination.
@@ -249,7 +243,7 @@ def get_common_prefix(file_list):
   return os.path.commonprefix(file_list)
 
 
-class Contrasts(object):
+class Contrasts:
   """
       Class that parses arguments and holds information specific to each image contrast
 
@@ -339,7 +333,7 @@ class Contrasts(object):
     return text
 
 
-class Input(object):
+class Input:
   """
       Class that holds input information specific to a single image (multiple contrasts)
 
@@ -632,8 +626,8 @@ def execute(): #pylint: disable=unused-variable
       if len(voxel_size) != 3:
         raise ValueError
       [float(v) for v in voxel_size]  #pylint: disable=expression-not-assigned
-    except ValueError:
-      raise MRtrixError('voxel size needs to be a single or three comma-separated floating point numbers; received: ' + str(app.ARGS.voxel_size))
+    except ValueError as exception:
+      raise MRtrixError('voxel size needs to be a single or three comma-separated floating point numbers; received: ' + str(app.ARGS.voxel_size)) from exception
 
   agg_measure = 'mean'
   if app.ARGS.aggregate is not None:
@@ -1161,7 +1155,7 @@ def execute(): #pylint: disable=unused-variable
                     outofbounds_option +
                     datatype_option)
         run.function(os.remove, inp.ims_transformed[cid] + '_translated.mif')
-      progress.increment()
+        progress.increment()
     progress.done()
 
     if nanmask_input:
@@ -1187,8 +1181,8 @@ def execute(): #pylint: disable=unused-variable
     level = 0
     regtype = linear_type[0]
     def linear_msg():
-      return 'Optimising template with linear registration (stage {0} of {1}; {2})'.format(level, len(linear_scales), regtype)
-    progress = app.ProgressBar(linear_msg, (3 if use_masks else 2) * len(linear_scales) * len(ins))
+      return 'Optimising template with linear registration (stage {0} of {1}; {2})'.format(level + 1, len(linear_scales), regtype)
+    progress = app.ProgressBar(linear_msg, len(linear_scales) * len(ins) * (1 + n_contrasts + int(use_masks)))
     for level, (regtype, scale, niter, lmax) in enumerate(zip(linear_type, linear_scales, linear_niter, linear_lmax)):
       for inp in ins:
         initialise_option = ''
@@ -1278,7 +1272,7 @@ def execute(): #pylint: disable=unused-variable
       if average_inv is not None:
         for inp in ins:
           transform = matrix.dot(matrix.load_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt')), average_inv)
-          matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform)
+          matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform, force=True)
 
       for cid in range(n_contrasts):
         for inp in ins:
@@ -1292,15 +1286,14 @@ def execute(): #pylint: disable=unused-variable
           progress.increment()
 
       if use_masks:
-        for cid in range(n_contrasts):
-          for inp in ins:
-            run.command('mrtransform ' + inp.msk_path +
-                        ' -template ' + cns.templates[cid] +
-                        ' -interp nearest' +
-                        ' -linear ' + os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt') +
-                        ' ' + inp.msk_transformed,
-                        force=True)
-            progress.increment()
+        for inp in ins:
+          run.command('mrtransform ' + inp.msk_path +
+                      ' -template ' + cns.templates[0] +
+                      ' -interp nearest' +
+                      ' -linear ' + os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt') +
+                      ' ' + inp.msk_transformed,
+                      force=True)
+          progress.increment()
 
       if nanmask_input:
         inplace_nan_mask([inp.ims_transformed[cid] for inp in ins for cid in range(n_contrasts)],
@@ -1460,8 +1453,8 @@ def execute(): #pylint: disable=unused-variable
       with open(json_path, 'w') as json_file:
         json.dump(keyval, json_file)
       run.command('mrconvert ' + os.path.join('warps', inp.uid + '.mif') + ' ' +
-                  path.quote(os.path.join(warp_path, xcontrast_xsubject_pre_postfix[0] +
-                                          inp.uid + xcontrast_xsubject_pre_postfix[1] + '.mif')),
+                  shlex.quote(os.path.join(warp_path, xcontrast_xsubject_pre_postfix[0] +
+                                           inp.uid + xcontrast_xsubject_pre_postfix[1] + '.mif')),
                   mrconvert_keyval=json_path, force=app.FORCE_OVERWRITE)
       progress.increment()
     progress.done()
@@ -1476,7 +1469,8 @@ def execute(): #pylint: disable=unused-variable
       matrix.save_transform(os.path.join(linear_transformations_path,
                                          xcontrast_xsubject_pre_postfix[0] + inp.uid
                                          + xcontrast_xsubject_pre_postfix[1] + '.txt'),
-                            trafo)
+                            trafo,
+                            force=app.FORCE_OVERWRITE)
 
   if app.ARGS.transformed_dir:
     for cid, trdir in enumerate(app.ARGS.transformed_dir):
@@ -1496,6 +1490,7 @@ def execute(): #pylint: disable=unused-variable
                 mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
 
 
+
 # Execute the script
-import mrtrix3
+import mrtrix3 #pylint: disable=wrong-import-position
 mrtrix3.execute() #pylint: disable=no-member

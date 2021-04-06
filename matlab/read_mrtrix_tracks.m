@@ -1,4 +1,4 @@
-% Copyright (c) 2008-2019 the MRtrix3 contributors.
+% Copyright (c) 2008-2021 the MRtrix3 contributors.
 %
 % This Source Code Form is subject to the terms of the Mozilla Public
 % License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -93,18 +93,3 @@ for n = 1:(prod(size(k))-1)
   tracks.data{end+1} = data(pk:(k(n)-1),:);
   pk = k(n)+1;
 end
-
-
-
-
-function image = add_field (image, key, value)
-  if isfield (image, key)
-    previous = getfield (image, key);
-    if iscell (previous)
-      image = setfield (image, key, [ previous {value} ]);
-    else
-      image = setfield (image, key, { previous, value });
-    end
-  else
-    image = setfield (image, key, value);
-  end

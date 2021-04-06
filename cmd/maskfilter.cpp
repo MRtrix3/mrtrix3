@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,10 +17,11 @@
 #include "command.h"
 #include "image.h"
 #include "filter/base.h"
-#include "filter/mask_clean.h"
 #include "filter/connected_components.h"
 #include "filter/dilate.h"
 #include "filter/erode.h"
+#include "filter/fill.h"
+#include "filter/mask_clean.h"
 #include "filter/median.h"
 
 using namespace MR;
@@ -29,7 +30,7 @@ using namespace App;
 #define DEFAULT_CLEAN_SCALE 2
 
 
-const char* filters[] = { "clean", "connect", "dilate", "erode", "median", nullptr };
+const char* filters[] = { "clean", "connect", "dilate", "erode", "fill", "median", nullptr };
 
 
 
@@ -60,6 +61,15 @@ const OptionGroup DilateErodeOption = OptionGroup ("Options for dilate / erode f
 
 
 
+const OptionGroup FillOption = OptionGroup ("Options for interior-filling filter")
+
++ Option ("axes", "specify which axes should be included in the connected components. By default only "
+                  "the first 3 axes are included. The axes should be provided as a comma-separated list of values.")
+  + Argument ("axes").type_sequence_int()
+
++ Option ("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
+
+
 const OptionGroup MedianOption = OptionGroup ("Options for median filter")
 
   + Option ("extent", "specify the extent (width) of kernel size in voxels. "
@@ -78,21 +88,20 @@ void usage ()
   SYNOPSIS = "Perform filtering operations on 3D / 4D mask images";
 
   DESCRIPTION
-  + "The available filters are: clean, connect, dilate, erode, median."
-
-  + "Each filter has its own unique set of optional parameters.";
-
+  + "Many filters have their own unique set of optional parameters; "
+    "see the option groups dedicated to each filter type.";
 
   ARGUMENTS
-  + Argument ("input",  "the input image.").type_image_in ()
-  + Argument ("filter", "the type of filter to be applied (clean, connect, dilate, erode, median)").type_choice (filters)
-  + Argument ("output", "the output image.").type_image_out ();
+  + Argument ("input",  "the input mask.").type_image_in ()
+  + Argument ("filter", "the name of the filter to be applied; options are: " + join(filters, ", ")).type_choice (filters)
+  + Argument ("output", "the output mask.").type_image_out ();
 
 
   OPTIONS
   + CleanOption
   + ConnectOption
   + DilateErodeOption
+  + FillOption
   + MedianOption
 
   + Stride::Options;
@@ -112,7 +121,6 @@ void run () {
     filter.set_scale(get_option_value ("scale", DEFAULT_CLEAN_SCALE));
 
     Stride::set_from_command_line (filter);
-    filter.datatype() = DataType::Bit;
 
     auto output_image = Image<value_type>::create (argument[2], filter);
     filter (input_image, output_image);
@@ -179,11 +187,27 @@ void run () {
     return;
   }
 
-  if (filter_index == 4) { // Median
+  if (filter_index == 4) { // Fill
+    Filter::Fill filter (input_image, std::string("filling interior of image ") + Path::basename (argument[0]));
+    auto opt = get_options ("axes");
+    if (opt.size()) {
+      const vector<int> axes = opt[0][0];
+      filter.set_axes (axes);
+    }
+    opt = get_options ("connectivity");
+    if (opt.size())
+      filter.set_26_connectivity (true);
+    Stride::set_from_command_line (filter);
+    auto output_image = Image<value_type>::create (argument[2], filter);
+    filter (input_image, output_image);
+    return;
+  }
+
+  if (filter_index == 5) { // Median
     Filter::Median filter (input_image, std::string("applying median filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("extent");
     if (opt.size())
-      filter.set_extent (parse_ints (opt[0][0]));
+      filter.set_extent (parse_ints<uint32_t> (opt[0][0]));
 
     Stride::set_from_command_line (filter);
     filter.datatype() = DataType::Bit;

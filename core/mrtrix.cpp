@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -63,63 +63,6 @@ namespace MR
     }
     return (V);
   }
-
-
-
-
-  vector<int> parse_ints (const std::string& spec, int last)
-  {
-    vector<int> V;
-    if (!spec.size()) throw Exception ("integer sequence specifier is empty");
-    std::string::size_type start = 0, end;
-    int num[3];
-    int i = 0;
-    try {
-      do {
-        end = spec.find_first_of (",:", start);
-        std::string token (strip (spec.substr (start, end-start)));
-        if (lowercase (token) == "end") {
-          if (last == std::numeric_limits<int>::max())
-            throw Exception ("value of \"end\" is not known in number sequence \"" + spec + "\"");
-          num[i] = last;
-        }
-        else num[i] = to<int> (spec.substr (start, end-start));
-
-        char last_char = end < spec.size() ? spec[end] : '\0';
-        if (last_char == ':') {
-          i++;
-          if (i > 2) throw Exception ("invalid number range in number sequence \"" + spec + "\"");
-        }
-        else {
-          if (i) {
-            int inc, last;
-            if (i == 2) {
-              inc = num[1];
-              last = num[2];
-            }
-            else {
-              inc = 1;
-              last = num[1];
-            }
-            if (inc * (last - num[0]) < 0) inc = -inc;
-            for (; (inc > 0 ? num[0] <= last : num[0] >= last) ; num[0] += inc) V.push_back (num[0]);
-          }
-          else V.push_back (num[0]);
-          i = 0;
-        }
-
-        start = end+1;
-      }
-      while (end < spec.size());
-    }
-    catch (Exception& E) {
-      throw Exception (E, "can't parse integer sequence specifier \"" + spec + "\"");
-    }
-
-    return (V);
-  }
-
-
 
 
 

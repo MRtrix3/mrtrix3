@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -162,6 +162,9 @@ namespace MR
       static std::mutex mutex;;
       static void* data;
 
+      mutable bool first_time;
+      mutable size_t last_value;
+
     private:
 
       const bool show;
@@ -187,9 +190,11 @@ namespace MR
 
 
   FORCE_INLINE ProgressBar::ProgressBar (const std::string& text, size_t target, int log_level) :
+    first_time (true),
+    last_value (0),
     show (std::this_thread::get_id() == ::MR::App::main_thread_ID && !progressbar_active && App::log_level >= log_level),
     _text (text),
-    _ellipsis ("... "),
+    _ellipsis ("..."),
     _value (0),
     current_val (0),
     next_percent (0),
@@ -211,13 +216,9 @@ namespace MR
       return;
     if (target) {
       _multiplier = 0.01 * target;
-      next_percent = _multiplier;
-      if (!next_percent)
-        next_percent = 1;
     }
     else {
       _multiplier = 0.0;
-      next_time = BUSY_INTERVAL;
       timer.start();
     }
   }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,9 +21,10 @@
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "math/SH.h"
+
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
-#include "math/SH.h"
 
 
 using namespace MR;

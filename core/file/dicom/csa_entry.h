@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -127,6 +127,18 @@ namespace MR {
                 for (uint32_t m = nitems; m < v.size(); ++m)
                   v[m] = NaN;
               }
+
+            vector<std::string> get_string () const {
+              vector<std::string> result;
+              const uint8_t* p = start + 84;
+              for (uint32_t m = 0; m < nitems; m++) {
+                const uint32_t length = Raw::fetch_LE<uint32_t> (p);
+                std::string s (reinterpret_cast<const char*> (p)+16, length);
+                result.push_back (std::move (s));
+                p += 16 + 4*((length+3)/4);
+              }
+              return result;
+            }
 
             friend std::ostream& operator<< (std::ostream& stream, const CSAEntry& item) {
               stream << "[CSA] " << item.name << " (" + str(item.nitems) + " items):";

@@ -1,15 +1,17 @@
-/*
- * Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -127,13 +129,21 @@ public:
   using MatrixType = Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic>;
   using SValsType = Eigen::VectorXd;
 
-  DenoisingFunctor (int ndwi, const vector<int>& extent,
+  DenoisingFunctor (int ndwi, const vector<uint32_t>& extent,
                     Image<bool>& mask, Image<real_type>& noise, bool exp1)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
-      m (ndwi), n (extent[0]*extent[1]*extent[2]),
-      r (std::min(m,n)), q (std::max(m,n)), exp1(exp1),
-      X (m,n), pos {{0, 0, 0}},
-      mask (mask), noise (noise)
+      m (ndwi),
+      n (extent[0]*extent[1]*extent[2]),
+      r (std::min(m,n)),
+      q (std::max(m,n)),
+      exp1(exp1),
+      X (m,n),
+      XtX (r, r),
+      eig (r),
+      s (SValsType()),
+      pos {{0, 0, 0}},
+      mask (mask),
+      noise (noise)
   { }
 
   template <typename ImageType>
@@ -141,7 +151,7 @@ public:
   {
     // Process voxels in mask only
     if (mask.valid()) {
-      assign_pos_of (dwi).to (mask);
+      assign_pos_of (dwi, 0, 3).to (mask);
       if (!mask.value())
         return;
     }
@@ -150,14 +160,13 @@ public:
     load_data (dwi);
 
     // Compute Eigendecomposition:
-    MatrixType XtX (r,r);
     if (m <= n)
       XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
     else
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
-    Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
+    eig.compute (XtX);
     // eigenvalues sorted in increasing order:
-    SValsType s = eig.eigenvalues().template cast<double>();
+    s = eig.eigenvalues().template cast<double>();
 
     // Marchenko-Pastur optimal threshold
     const double lam_r = std::max(s[0], 0.0) / q;
@@ -194,7 +203,7 @@ public:
 
     // store noise map if requested:
     if (noise.valid()) {
-      assign_pos_of(dwi).to(noise);
+      assign_pos_of(dwi, 0, 3).to(noise);
       noise.value() = real_type (std::sqrt(sigma2));
     }
   }
@@ -204,6 +213,9 @@ private:
   const ssize_t m, n, r, q;
   const bool exp1;
   MatrixType X;
+  MatrixType XtX;
+  Eigen::SelfAdjointEigenSolver<MatrixType> eig;
+  SValsType s;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
@@ -244,7 +256,7 @@ private:
 
 template <typename T>
 void process_image (Header& data, Image<bool>& mask, Image<real_type> noise,
-                    const std::string& output_name, const vector<int>& extent, bool exp1)
+                    const std::string& output_name, const vector<uint32_t>& extent, bool exp1)
   {
     auto input = data.get_image<T>().with_direct_io(3);
     // create output
@@ -273,24 +285,28 @@ void run ()
   }
 
   opt = get_options("extent");
-  vector<int> extent;
+  vector<uint32_t> extent;
   if (opt.size()) {
-    extent = parse_ints(opt[0][0]);
+    extent = parse_ints<uint32_t> (opt[0][0]);
     if (extent.size() == 1)
       extent = {extent[0], extent[0], extent[0]};
     if (extent.size() != 3)
       throw Exception ("-extent must be either a scalar or a list of length 3");
-    for (auto &e : extent)
-      if (!(e & 1))
+    for (int i = 0; i < 3; i++) {
+      if (!(extent[i] & 1))
         throw Exception ("-extent must be a (list of) odd numbers");
-    INFO("user defined patch size " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
+      if (extent[i] > dwi.size(i))
+        throw Exception ("-extent must nott exceed the image dimensions");
+    }
   } else {
-    int e = 1;
+    uint32_t e = 1;
     while (e*e*e < dwi.size(3))
       e += 2;
-    extent = {e, e, e};
-    INFO("select default patch size " + str(e) + " x " + str(e) + " x " + str(e) + ".");
+    extent = { std::min(e, uint32_t(dwi.size(0))),
+               std::min(e, uint32_t(dwi.size(1))),
+               std::min(e, uint32_t(dwi.size(2))) };
   }
+  INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
   bool exp1 = get_option_value("estimator", 1) == 0;    // default: Exp2 (unbiased estimator)
 

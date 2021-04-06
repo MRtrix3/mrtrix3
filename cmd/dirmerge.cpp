@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,7 +43,8 @@ ARGUMENTS
 OPTIONS
   + Option ("unipolar_weight",
       "set the weight given to the unipolar electrostatic repulsion model compared to the "
-      "bipolar model (default: 0.2).");
+      "bipolar model (default: 0.2).")
+    + Argument ("value").type_float(0.0, 1.0);
 }
 
 
@@ -120,7 +121,8 @@ void run ()
   {
     // use combination of mono- and bi-polar electrostatic repulsion models
     // to ensure adequate coverage of eddy-current space as well as
-    // orientation space. Use a moderate bias, favouring the bipolar model.
+    // orientation space.
+    // By default, use a moderate bias, favouring the bipolar model.
 
     return (unipolar_weight+bipolar_weight) / (b-a).norm()
          + bipolar_weight / (b+a).norm();
@@ -208,8 +210,8 @@ void run ()
 
   File::OFStream out (argument[argument.size()-1]);
   for (auto& d : merged)
-    out << MR::printf ("%#10f %#10f %#10f %5d %3d\n",
-        float (d.d[0]), float (d.d[1]), float (d.d[2]),
+    out << MR::printf (num_subsets > 1 ? "%#20.15f %#20.15f %#20.15f %5d %3d\n" : "%#20.15f %#20.15f %#20.15f %5d\n",
+        d.d[0], d.d[1], d.d[2],
         int (bvalue[d.b]), int (d.pe+1));
 
 }

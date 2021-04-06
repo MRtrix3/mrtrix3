@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,20 +21,12 @@
 #include "debug.h"
 
 #include <QtGlobal>
-#if QT_VERSION >= 0x050000
 #include <QtWidgets>
-#else
-#include <QtGui>
-#endif
 #include <QGLWidget>
 #include "gui/opengl/gl_core_3_3.h"
 
-// necessary to avoid conflict with Qt4's macros:
-#ifdef Complex
-# undef Complex
-#endif
-#ifdef foreach
-# undef foreach
+#if QT_VERSION < QT_VERSION_CHECK(5, 5, 0)
+#error "MRtrix3 requires Qt version 5.5 or later"
 #endif
 
 // uncomment to trace texture/VAO/VBO/FBO operations:
@@ -65,20 +57,8 @@ namespace MR
 
 
 
-#if QT_VERSION >= 0x050400
-
       using Area = QOpenGLWidget;
       using Format = QSurfaceFormat;
-
-#else
-      class Area : public QGLWidget { NOMEMALIGN
-        public:
-          using QGLWidget::QGLWidget;
-          QImage grabFramebuffer () { return QGLWidget::grabFrameBuffer(); }
-      };
-
-      using Format = QGLFormat;
-#endif
 
       void init ();
       void set_default_context ();
@@ -107,7 +87,6 @@ namespace MR
 
       namespace Context
       {
-#if QT_VERSION >= 0x050400
         inline std::pair<QOpenGLContext*,QSurface*> current() {
           QOpenGLContext* context = QOpenGLContext::currentContext();
           QSurface* surface = context ? context->surface() : nullptr;
@@ -131,12 +110,6 @@ namespace MR
           if (previous_context.first)
             previous_context.first->makeCurrent (previous_context.second);
         }
-#else
-        inline std::pair<int,int> current() { return { 0, 0 }; }
-        inline std::pair<int,int> get (QWidget*) { return { 0, 0 }; }
-        inline std::pair<int,int> makeCurrent (QWidget*) { return { 0, 0 }; }
-        inline void restore (std::pair<int,int>) { }
-#endif
 
         struct Grab { NOMEMALIGN
           decltype (current()) previous_context;
@@ -355,11 +328,7 @@ namespace MR
           void unbind () const {
             check_context();
             GL_DEBUG ("binding default OpenGL framebuffer");
-#if QT_VERSION >= 0x050400
             gl::BindFramebuffer (gl::FRAMEBUFFER, QOpenGLContext::currentContext()->defaultFramebufferObject());
-#else
-            gl::BindFramebuffer (gl::FRAMEBUFFER, 0);
-#endif
           }
 
 

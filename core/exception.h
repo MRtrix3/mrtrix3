@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -115,6 +115,12 @@ namespace MR
       InvalidImageException (const std::string& msg) : Exception(msg) {}
       InvalidImageException (const Exception& previous_exception, const std::string& msg)
         : Exception(previous_exception, msg) {}
+  };
+
+
+  class CancelException : public Exception { NOMEMALIGN
+    public:
+      CancelException () : Exception ("operation cancelled by user") { }
   };
 
   void display_exception_cmdline (const Exception& E, int log_level);

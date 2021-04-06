@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,42 +27,42 @@ namespace MR
 
     // any -> floating-point
     template <typename TypeOUT, typename TypeIN>
-      inline typename std::enable_if<std::is_floating_point<TypeOUT>::value, TypeOUT>::type 
+      inline typename std::enable_if<std::is_floating_point<TypeOUT>::value, TypeOUT>::type
       round_func (TypeIN in, typename std::enable_if<std::is_arithmetic<TypeIN>::value>::type* = nullptr) {
         return in;
       }
 
     // integer -> integer
     template <typename TypeOUT, typename TypeIN>
-      inline typename std::enable_if<std::is_integral<TypeOUT>::value, TypeOUT>::type 
+      inline typename std::enable_if<std::is_integral<TypeOUT>::value, TypeOUT>::type
       round_func (TypeIN in, typename std::enable_if<std::is_integral<TypeIN>::value>::type* = nullptr) {
         return in;
       }
 
     // floating-point -> integer
     template <typename TypeOUT, typename TypeIN>
-      inline typename std::enable_if<std::is_integral<TypeOUT>::value, TypeOUT>::type 
+      inline typename std::enable_if<std::is_integral<TypeOUT>::value, TypeOUT>::type
       round_func (TypeIN in, typename std::enable_if<std::is_floating_point<TypeIN>::value>::type* = nullptr) {
         return std::isfinite (in) ? std::round (in) : TypeOUT (0);
       }
 
     // complex -> complex
     template <typename TypeOUT, typename TypeIN>
-      inline typename std::enable_if<std::is_same<std::complex<typename TypeOUT::value_type>, TypeOUT>::value, TypeOUT>::type 
+      inline typename std::enable_if<std::is_same<std::complex<typename TypeOUT::value_type>, TypeOUT>::value, TypeOUT>::type
       round_func (TypeIN in, typename std::enable_if<std::is_same<std::complex<typename TypeIN::value_type>, TypeIN>::value>::type* = nullptr) {
         return TypeOUT (in);
       }
 
     // real -> complex
     template <typename TypeOUT, typename TypeIN>
-      inline typename std::enable_if<std::is_same<std::complex<typename TypeOUT::value_type>, TypeOUT>::value, TypeOUT>::type 
+      inline typename std::enable_if<std::is_same<std::complex<typename TypeOUT::value_type>, TypeOUT>::value, TypeOUT>::type
       round_func (TypeIN in, typename std::enable_if<std::is_arithmetic<TypeIN>::value>::type* = nullptr) {
         return round_func<typename TypeOUT::value_type> (in);
       }
 
     // complex -> real
     template <typename TypeOUT, typename TypeIN>
-      inline typename std::enable_if<std::is_arithmetic<TypeOUT>::value, TypeOUT>::type 
+      inline typename std::enable_if<std::is_arithmetic<TypeOUT>::value, TypeOUT>::type
       round_func (TypeIN in, typename std::enable_if<std::is_same<std::complex<typename TypeIN::value_type>, TypeIN>::value>::type* = nullptr) {
         return round_func<TypeOUT> (in.real());
       }
@@ -71,26 +71,26 @@ namespace MR
 
     // apply scaling from storage:
     template <typename DiskType>
-      inline typename std::enable_if<std::is_arithmetic<DiskType>::value, default_type>::type 
+      inline typename std::enable_if<std::is_arithmetic<DiskType>::value, default_type>::type
       scale_from_storage (DiskType val, default_type offset, default_type scale) {
         return offset + scale * val;
       }
 
     template <typename DiskType>
-      inline typename std::enable_if<std::is_same<std::complex<typename DiskType::value_type>, DiskType>::value, DiskType>::type 
+      inline typename std::enable_if<std::is_same<std::complex<typename DiskType::value_type>, DiskType>::value, DiskType>::type
       scale_from_storage (DiskType val, default_type offset, default_type scale) {
         return typename DiskType::value_type (offset) + typename DiskType::value_type (scale) * val;
       }
 
     // apply scaling to storage:
     template <typename DiskType>
-      inline typename std::enable_if<std::is_arithmetic<DiskType>::value, default_type>::type 
+      inline typename std::enable_if<std::is_arithmetic<DiskType>::value, default_type>::type
       scale_to_storage (DiskType val, default_type offset, default_type scale) {
         return (val - offset) / scale;
       }
 
     template <typename DiskType>
-      inline typename std::enable_if<std::is_same<std::complex<typename DiskType::value_type>, DiskType>::value, DiskType>::type 
+      inline typename std::enable_if<std::is_same<std::complex<typename DiskType::value_type>, DiskType>::value, DiskType>::type
       scale_to_storage (DiskType val, default_type offset, default_type scale) {
         return (val - typename DiskType::value_type (offset)) / typename DiskType::value_type (scale);
       }
@@ -99,24 +99,24 @@ namespace MR
 
     // for single-byte types:
 
-    template <typename RAMType, typename DiskType> 
+    template <typename RAMType, typename DiskType>
       RAMType __fetch (const void* data, size_t i, default_type offset, default_type scale) {
-        return round_func<RAMType> (scale_from_storage (Raw::fetch<DiskType> (data, i), offset, scale)); 
+        return round_func<RAMType> (scale_from_storage (Raw::fetch<DiskType> (data, i), offset, scale));
       }
 
-    template <typename RAMType, typename DiskType> 
+    template <typename RAMType, typename DiskType>
       void __store (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
-        return Raw::store<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
+        return Raw::store<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i);
       }
 
     // for little-endian multi-byte types:
 
-    template <typename RAMType, typename DiskType> 
+    template <typename RAMType, typename DiskType>
       RAMType __fetch_LE (const void* data, size_t i, default_type offset, default_type scale) {
         return round_func<RAMType> (scale_from_storage (Raw::fetch_LE<DiskType> (data, i), offset, scale));
       }
 
-    template <typename RAMType, typename DiskType> 
+    template <typename RAMType, typename DiskType>
       void __store_LE (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
         return Raw::store_LE<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i);
       }
@@ -124,12 +124,12 @@ namespace MR
 
     // for big-endian multi-byte types:
 
-    template <typename RAMType, typename DiskType> 
+    template <typename RAMType, typename DiskType>
       RAMType __fetch_BE (const void* data, size_t i, default_type offset, default_type scale) {
         return round_func<RAMType> (scale_from_storage (Raw::fetch_BE<DiskType> (data, i), offset, scale));
       }
 
-    template <typename RAMType, typename DiskType> 
+    template <typename RAMType, typename DiskType>
       void __store_BE (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
         return Raw::store_BE<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i);
       }
@@ -144,7 +144,7 @@ namespace MR
   template <typename ValueType>
     typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_store_functions (
         std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func,
-        std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, 
+        std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func,
         DataType datatype) {
 
       switch (datatype()) {
@@ -245,9 +245,27 @@ namespace MR
       }
     }
 
-#undef MRTRIX_EXTERN
-#define MRTRIX_EXTERN
-  __DEFINE_FETCH_STORE_FUNCTIONS;
+  // explicit instantiation of fetch/store methods for all types:
+#define __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(ValueType) \
+  template void __set_fetch_store_functions<ValueType> ( \
+      std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func, \
+      std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, \
+      DataType datatype)
+
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(bool);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint8_t);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int8_t);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint16_t);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int16_t);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint32_t);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int32_t);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint64_t);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int64_t);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(float);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(double);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(cfloat);
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(cdouble);
+
 
 }
 

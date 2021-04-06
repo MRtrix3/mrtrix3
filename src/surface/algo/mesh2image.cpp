@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -301,7 +301,7 @@ namespace MR
                 // If all eight corners of the FoV are included in to_fill, we can be
                 //   reasonably confident that this connected region lies outside the structure
                 size_t corner_count = 0;
-                for (const auto voxel : to_fill) {
+                for (const auto& voxel : to_fill) {
                   if ((voxel[0] == 0 || voxel[0] == H.size(0) - 1) &&
                       (voxel[1] == 0 || voxel[1] == H.size(1) - 1) &&
                       (voxel[2] == 0 || voxel[2] == H.size(2) - 1))
@@ -321,7 +321,7 @@ namespace MR
                   throw e;
                 }
               }
-              for (auto voxel : to_fill) {
+              for (const auto& voxel : to_fill) {
                 assign_pos_of (voxel).to (init_seg);
                 init_seg.value() = fill_value;
               }

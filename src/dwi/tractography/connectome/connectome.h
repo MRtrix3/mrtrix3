@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ namespace Connectome {
 
 
 
-#define TCK2NODES_RADIAL_DEFAULT_DIST 2.0
+#define TCK2NODES_RADIAL_DEFAULT_DIST 4.0
 #define TCK2NODES_REVSEARCH_DEFAULT_DIST 0.0 // Default = no distance limit, reverse search all the way to the streamline midpoint
 #define TCK2NODES_FORWARDSEARCH_DEFAULT_DIST 3.0
 

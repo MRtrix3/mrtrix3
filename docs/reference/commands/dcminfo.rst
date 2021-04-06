@@ -22,7 +22,9 @@ Options
 
 -  **-all** print all DICOM fields.
 
--  **-csa** print all Siemens CSA fields
+-  **-csa** print all Siemens CSA fields (excluding Phoenix unless requested)
+
+-  **-phoenix** print Siemens Phoenix protocol information
 
 -  **-tag group element** *(multiple uses permitted)* print field specified by the group & element tags supplied. Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing).
 
@@ -56,7 +58,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

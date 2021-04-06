@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -289,10 +289,11 @@ namespace MR
 
           inline GL::mat4 get_tex_to_scanner_matrix (const ImageBase& image)
           {
-            const Eigen::Vector3f pos   = image.transform().voxel2scanner.cast<float>() * Eigen::Vector3f { -0.5f, -0.5f, -0.5f };
-            const Eigen::Vector3f vec_X = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { float(image.header().size(0)), 0.0f, 0.0f };
-            const Eigen::Vector3f vec_Y = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { 0.0f, float(image.header().size(1)), 0.0f };
-            const Eigen::Vector3f vec_Z = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, float(image.header().size(2)) };
+            const auto V2S = image.voxel2scanner();
+            const Eigen::Vector3f pos   = V2S * Eigen::Vector3f { -0.5f, -0.5f, -0.5f };
+            const Eigen::Vector3f vec_X = V2S.linear() * Eigen::Vector3f { float(image.header().size(0)), 0.0f, 0.0f };
+            const Eigen::Vector3f vec_Y = V2S.linear() * Eigen::Vector3f { 0.0f, float(image.header().size(1)), 0.0f };
+            const Eigen::Vector3f vec_Z = V2S.linear() * Eigen::Vector3f { 0.0f, 0.0f, float(image.header().size(2)) };
             GL::mat4 T2S;
             T2S(0,0) = vec_X[0];
             T2S(1,0) = vec_X[1];
@@ -322,6 +323,18 @@ namespace MR
 
 
 
+        void Volume::tilt_event()
+        {
+          Base::tilt_event();
+
+          auto MV = adjust_projection_matrix (GL::transpose (GL::mat4 (orientation())));
+          Eigen::Vector3f screen_normal (MV(2,0), MV(2,1), MV(2,2));
+          screen_normal.normalize();
+
+          window().set_target (window().target() + screen_normal * screen_normal.dot (window().focus() - window().target()));
+        }
+
+
 
 
 
@@ -332,7 +345,6 @@ namespace MR
           GL_CHECK_ERROR;
           setup_projection (orientation(), projection);
           GL_CHECK_ERROR;
-
 
           overlays_for_3D.clear();
           render_tools (projection, true);
@@ -355,7 +367,7 @@ namespace MR
           GL::mat4 S2T = GL::inv (T2S);
 
           float step_size = 0.5f * std::min ( { float(image()->header().spacing (0)), float(image()->header().spacing (1)), float(image()->header().spacing (2)) } );
-          Eigen::Vector3f ray = image()->transform().scanner2voxel.matrix().topLeftCorner<3,3>().cast<float>() * projection.screen_normal();
+          Eigen::Vector3f ray = image()->scanner2voxel().linear() * projection.screen_normal();
           Eigen::Vector3f ray_real_space = ray;
           ray *= step_size;
           ray[0] /= image()->header().size(0);
@@ -463,12 +475,8 @@ namespace MR
             depth_texture.bind();
 
           GL_CHECK_ERROR;
-#if QT_VERSION >= 0x050100
           int m = window().windowHandle()->devicePixelRatio();
           gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, m*projection.width(), m*projection.height(), 0);
-#else
-          gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
-#endif
 
           GL_CHECK_ERROR;
           gl::Uniform1i (gl::GetUniformLocation (volume_shader, "depth_sampler"), 1);
@@ -556,111 +564,6 @@ namespace MR
         {
           Tool::View* view = get_view_tool();
           return view ? view->get_clipintersectionmodestate() : false;
-        }
-
-        inline void Volume::move_clip_planes_in_out (vector<GL::vec4*>& clip, float distance)
-        {
-          Eigen::Vector3f d = get_current_projection()->screen_normal();
-          for (size_t n = 0; n < clip.size(); ++n) {
-            GL::vec4& p (*clip[n]);
-            p[3] += distance * (p[0]*d[0] + p[1]*d[1] + p[2]*d[2]);
-          }
-          updateGL();
-        }
-
-
-        inline void Volume::rotate_clip_planes (vector<GL::vec4*>& clip, const Math::Versorf& rot)
-        {
-          for (size_t n = 0; n < clip.size(); ++n) {
-            GL::vec4& p (*clip[n]);
-            float distance_to_focus = p[0]*focus()[0] + p[1]*focus()[1] + p[2]*focus()[2] - p[3];
-            const Math::Versorf norm (0.0f, p[0], p[1], p[2]);
-            const Math::Versorf rotated = norm * rot;
-            p[0] = rotated.x();
-            p[1] = rotated.y();
-            p[2] = rotated.z();
-            p[3] = p[0]*focus()[0] + p[1]*focus()[1] + p[2]*focus()[2] - distance_to_focus;
-          }
-          updateGL();
-        }
-
-
-
-
-
-        void Volume::slice_move_event (float x)
-        {
-
-          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
-          if (clip.size()) {
-            const auto &header = image()->header();
-            float increment = snap_to_image() ?
-              x * header.spacing (plane()) :
-              x * std::pow (header.spacing (0) * header.spacing (1) * header.spacing (2), 1/3.f);
-            move_clip_planes_in_out (clip, increment);
-          } else
-            Base::slice_move_event (x);
-        }
-
-
-
-        void Volume::pan_event ()
-        {
-          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
-          if (clip.size()) {
-            Eigen::Vector3f move = get_current_projection()->screen_to_model_direction (window().mouse_displacement(), target());
-            for (size_t n = 0; n < clip.size(); ++n) {
-              GL::vec4& p (*clip[n]);
-              p[3] += (p[0]*move[0] + p[1]*move[1] + p[2]*move[2]);
-            }
-            updateGL();
-          }
-          else
-            Base::pan_event();
-        }
-
-
-        void Volume::panthrough_event ()
-        {
-          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
-          if (clip.size())
-            move_clip_planes_in_out (clip, MOVE_IN_OUT_FOV_MULTIPLIER * window().mouse_displacement().y() * FOV());
-          else
-            Base::panthrough_event();
-        }
-
-
-
-        void Volume::tilt_event ()
-        {
-          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
-          if (clip.size()) {
-            const ModelViewProjection* proj = get_current_projection();
-            if (!proj) return;
-            const Math::Versorf rot = get_tilt_rotation (*proj);
-            if (!rot)
-              return;
-            rotate_clip_planes (clip, rot);
-          }
-          else
-            Base::tilt_event();
-        }
-
-
-
-        void Volume::rotate_event ()
-        {
-          vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
-          if (clip.size()) {
-            const ModelViewProjection* proj = get_current_projection();
-            if (!proj) return;
-            const Math::Versorf rot = get_rotate_rotation (*proj);
-            if (!rot)
-              return;
-            rotate_clip_planes (clip, rot);
-          }
-          else
-            Base::rotate_event();
         }
 
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -64,14 +64,14 @@ namespace MR
       void read_mrtrix_header (Header& H, SourceType& kv)
       {
         std::string dtype, layout;
-        vector<int> dim;
+        vector<uint64_t> dim;
         vector<default_type> vox, scaling;
         vector<vector<default_type>> transform;
 
         std::string key, value;
         while (next_keyvalue (kv, key, value)) {
           const std::string lkey = lowercase (key);
-          if (lkey == "dim") dim = parse_ints (value);
+          if (lkey == "dim") dim = parse_ints<uint64_t> (value);
           else if (lkey == "vox") vox = parse_floats (value);
           else if (lkey == "layout") layout = value;
           else if (lkey == "datatype") dtype = value;
@@ -173,8 +173,8 @@ namespace MR
         if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)
           out << "\nscaling: " << H.intensity_offset() << "," << H.intensity_scale();
 
-        for (const auto i : H.keyval())
-          for (const auto line : split_lines (i.second))
+        for (const auto& i : H.keyval())
+          for (const auto& line : split_lines (i.second))
             out << "\n" << i.first << ": " << line;
 
 

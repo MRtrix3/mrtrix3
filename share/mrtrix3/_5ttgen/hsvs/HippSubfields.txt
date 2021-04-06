@@ -1,0 +1,54 @@
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+3 Left-hippocampal_fissure
+2 Left-CADG-head
+2 Left-subiculum
+3 Left-fimbria
+3 Right-hippocampal_fissure
+2 Right-CADG-head
+2 Right-subiculum
+3 Right-fimbria
+2 alveus
+2 perforant_pathway
+2 parasubiculum
+2 presubiculum
+2 subiculum
+2 CA1
+2 CA2
+2 CA3
+2 CA4
+2 GC-DG
+2 HATA
+3 fimbria
+2 molecular_layer_HP
+3 hippocampal_fissure
+2 entorhinal_cortex
+2 molecular_layer_subiculum
+2 HP_tail
+2 presubiculum-head
+2 presubiculum-body
+2 subiculum-head
+2 subiculum-body
+2 CA1-head
+2 CA1-body
+2 CA3-head
+2 CA3-body
+2 CA4-head
+2 CA4-body
+2 GC-ML-DG-head
+2 GC-ML-DG-body
+2 molecular_layer_HP-head
+2 molecular_layer_HP-body

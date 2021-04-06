@@ -46,20 +46,25 @@ Patch size
 The noise level in MRI is spatially varying, due to the proximity of the coil 
 elements and parallel imaging. Noise level estimation and denoising therefore 
 operates in image patches around each voxel, where the noise can be assumed to 
-be approximately homoscedastic. The patch size, default 5x5x5, can be chosen by 
-the user with the option ``-extent``. For maximal SNR gain we suggest to choose 
-N>M, where M is typically the number of DW images in the data (single or 
-multi-shell) and N is the number of kernel elements. However, larger kernels 
-also extend the required run time, so in large datasets it might be beneficial 
-to select smaller sliding kernels.
+be approximately homoscedastic. The patch size can be chosen by the user with
+the option ``-extent``. For maximal SNR gain (when using Exp2, see below) we 
+suggest to choose :math:`N \approx M`, where :math:`M` is the no. DW volumes 
+and :math:`N` is the number of kernel elements. However, larger kernels also 
+extend the required run time, so in large datasets it might be beneficial to 
+select smaller sliding kernels. By default, the command will select the smallest 
+isotropic patch size that exceeds the number of DW images in the input data, 
+e.g., 5x5x5 for data with <= 125 DWI volumes, 7x7x7 for data with <= 343 DWI 
+volumes, etc.
+
+
 
 Noise level estimation
 ^^^^^^^^^^^^^^^^^^^^^^
 
 The noise level in each patch is experimentally estimated from the eigenvalue 
-spectrum of the local data matrix. Assuming M<N, P signal-carying components 
-(also estimated), and M-P noise components, the squared noise level is
-estimated as:
+spectrum of the local data matrix. Assuming :math:`M<N`, :math:`P` signal-carying 
+components (also estimated), and :math:`M-P` noise components, the squared noise 
+level is estimated as:
 
 .. math::
    \sigma^2 = \frac{\lambda_{P+1}-\lambda_M}{4\sqrt{\gamma}}

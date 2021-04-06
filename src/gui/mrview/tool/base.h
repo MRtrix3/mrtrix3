@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,6 +42,22 @@ namespace MR
       {
         class Base;
 
+
+        class CameraInteractor
+        { NOMEMALIGN
+          public:
+            CameraInteractor () : _active (false) { }
+            bool active () const { return _active; }
+            virtual void deactivate ();
+            virtual bool slice_move_event (const ModelViewProjection& projection, float inc);
+            virtual bool pan_event (const ModelViewProjection& projection);
+            virtual bool panthrough_event (const ModelViewProjection& projection);
+            virtual bool tilt_event (const ModelViewProjection& projection);
+            virtual bool rotate_event (const ModelViewProjection& projection);
+          protected:
+            bool _active;
+            void set_active (bool onoff) { _active = onoff; }
+        };
 
 
 

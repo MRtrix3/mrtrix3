@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -63,7 +63,7 @@ void usage ()
   + "The -vox option is used to change the size of the voxels in the output "
     "image as reported in the image header; note however that this does not "
     "re-sample the image based on a new voxel size (that is done using the "
-    "mrresize command)."
+    "mrgrid command)."
 
   + "By default, the intensity scaling parameters in the input image header "
     "are passed through to the output image header when writing to an integer "
@@ -77,7 +77,9 @@ void usage ()
     "comma-separated list of axis indices. If an axis from the input image is "
     "to be omitted from the output image, it must either already have a size of "
     "1, or a single coordinate along that axis must be selected by the user by "
-    "using the -coord option. Examples are provided further below.";
+    "using the -coord option. Examples are provided further below."
+
+  + DWI::bvalue_scaling_description;
 
 
   EXAMPLES
@@ -217,19 +219,24 @@ void usage ()
 
   + DataType::options()
 
-  + DWI::GradImportOptions (false)
+  + DWI::GradImportOptions ()
+  + DWI::bvalue_scaling_option
+
   + DWI::GradExportOptions()
 
-  + PhaseEncoding::ImportOptions
-  + PhaseEncoding::ExportOptions;
+    + PhaseEncoding::ImportOptions
+    + PhaseEncoding::ExportOptions;
 }
+
+
+
 
 
 
 
 void permute_DW_scheme (Header& H, const vector<int>& axes)
 {
-  auto in = DWI::get_DW_scheme (H);
+  auto in = DWI::parse_DW_scheme (H);
   if (!in.rows())
     return;
 
@@ -294,9 +301,9 @@ inline vector<int> set_header (Header& header, const ImageType& input)
   header.transform() = input.transform();
 
   auto opt = get_options ("axes");
-  vector<int> axes;
+  vector<int32_t> axes;
   if (opt.size()) {
-    axes = opt[0][0];
+    axes = parse_ints<int32_t> (opt[0][0]);
     header.ndim() = axes.size();
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] >= static_cast<int> (input.ndim()))
@@ -356,7 +363,7 @@ void copy_permute (const InputType& in, Header& header_out, const std::string& o
 
 
 template <typename T>
-void extract (Header& header_in, Header& header_out, const vector<vector<int>>& pos, const std::string& output_filename)
+void extract (Header& header_in, Header& header_out, const vector<vector<uint32_t>>& pos, const std::string& output_filename)
 {
   auto in = header_in.get_image<T>();
   if (pos.empty()) {
@@ -379,15 +386,21 @@ void extract (Header& header_in, Header& header_out, const vector<vector<int>>& 
 void run ()
 {
   Header header_in = Header::open (argument[0]);
+  Eigen::MatrixXd dw_scheme;
+  try {
+    dw_scheme = DWI::get_DW_scheme (header_in, DWI::get_cmdline_bvalue_scaling_behaviour());
+  }
+  catch (Exception& e) {
+    if (get_options ("grad").size() || get_options ("fslgrad").size() || get_options ("bvalue_scaling").size())
+      throw;
+    e.display (2);
+  }
 
   Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
 
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
-
-  if (get_options ("grad").size() || get_options ("fslgrad").size())
-    DWI::set_DW_scheme (header_out, DWI::get_DW_scheme (header_in));
 
   if (get_options ("import_pe_table").size() || get_options ("import_pe_eddy").size())
     PhaseEncoding::set_scheme (header_out, PhaseEncoding::get_scheme (header_in));
@@ -421,7 +434,9 @@ void run ()
       add_to_command_history = false;
     auto entry = header_out.keyval().find (opt[n][0]);
     if (entry == header_out.keyval().end()) {
-      WARN ("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
+      if (std::string(opt[n][0]) != "command_history") {
+        WARN ("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
+      }
     } else {
       header_out.keyval().erase (entry);
     }
@@ -445,16 +460,16 @@ void run ()
 
 
   opt = get_options ("coord");
-  vector<vector<int>> pos;
+  vector<vector<uint32_t>> pos;
   if (opt.size()) {
-    pos.assign (header_in.ndim(), vector<int>());
+    pos.assign (header_in.ndim(), vector<uint32_t>());
     for (size_t n = 0; n < opt.size(); n++) {
-      int axis = opt[n][0];
-      if (axis >= (int)header_in.ndim())
+      size_t axis = opt[n][0];
+      if (axis >= header_in.ndim())
         throw Exception ("axis " + str(axis) + " provided with -coord option is out of range of input image");
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
-      pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
+      pos[axis] = parse_ints<uint32_t> (opt[n][1], header_in.size(axis)-1);
 
       auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
       if (*minval < 0)
@@ -465,11 +480,11 @@ void run ()
 
       header_out.size (axis) = pos[axis].size();
       if (axis == 3) {
-        const auto grad = DWI::get_DW_scheme (header_in);
+        const auto grad = DWI::parse_DW_scheme (header_out);
         if (grad.rows()) {
           if ((ssize_t)grad.rows() != header_in.size(3)) {
             WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
-            header_out.keyval().erase ("dw_scheme");
+            DWI::clear_DW_scheme (header_out);
           } else {
             Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
             for (size_t dir = 0; dir != pos[3].size(); ++dir)
@@ -496,7 +511,7 @@ void run ()
     for (size_t n = 0; n < header_in.ndim(); ++n) {
       if (pos[n].empty()) {
         pos[n].resize (header_in.size (n));
-        for (size_t i = 0; i < pos[n].size(); i++)
+        for (uint32_t i = 0; i < uint32_t(pos[n].size()); i++)
           pos[n][i] = i;
       }
     }

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -84,15 +84,15 @@ def execute(): #pylint: disable=unused-variable
     # Run CSD
     run.command('dwi2fod csd dwi.mif ' + rf_in_path + ' ' + prefix + 'FOD.mif -mask ' + mask_in_path)
     # Get amplitudes of two largest peaks, and direction of largest
-    run.command('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak peaks.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
+    run.command('fod2fixel ' + prefix + 'FOD.mif ' + prefix + 'fixel -peak_amp peak_amps.mif -mask ' + mask_in_path + ' -fmls_no_thresholds')
     app.cleanup(prefix + 'FOD.mif')
     if iteration:
       app.cleanup(mask_in_path)
-    run.command('fixel2voxel ' + prefix + 'fixel/peaks.mif none ' + prefix + 'amps.mif -number 2')
+    run.command('fixel2voxel ' + os.path.join(prefix + 'fixel', 'peak_amps.mif') + ' none ' + prefix + 'amps.mif -number 2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'first_peaks.mif -coord 3 0 -axes 0,1,2')
     run.command('mrconvert ' + prefix + 'amps.mif ' + prefix + 'second_peaks.mif -coord 3 1 -axes 0,1,2')
     app.cleanup(prefix + 'amps.mif')
-    run.command('fixel2peaks ' + prefix + 'fixel/directions.mif ' + prefix + 'first_dir.mif -number 1')
+    run.command('fixel2peaks ' + os.path.join(prefix + 'fixel', 'directions.mif') + ' ' + prefix + 'first_dir.mif -number 1')
     app.cleanup(prefix + 'fixel')
     # Calculate the 'cost function' Donald derived for selecting single-fibre voxels
     # https://github.com/MRtrix3/mrtrix3/pull/426

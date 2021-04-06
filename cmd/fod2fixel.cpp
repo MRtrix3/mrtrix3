@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,9 +19,8 @@
 
 #include "image.h"
 
-#include "fixel/keys.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/types.h"
 
 #include "math/SH.h"
 
@@ -49,12 +48,12 @@ const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sp
             "output the total Apparent Fibre Density per fixel (integral of FOD lobe)")
     + Argument ("image").type_image_out()
 
-  + Option ("peak",
-            "output the peak FOD amplitude per fixel")
+  + Option ("peak_amp",
+            "output the amplitude of the FOD at the maximal peak per fixel")
     + Argument ("image").type_image_out()
 
   + Option ("disp",
-            "output a measure of dispersion per fixel as the ratio between FOD lobe integral and peak amplitude")
+            "output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude")
     + Argument ("image").type_image_out();
 
 
@@ -67,6 +66,9 @@ void usage ()
 
   SYNOPSIS = "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels";
 
+  DESCRIPTION
+  + Fixel::format_description;
+
   REFERENCES
     + "* Reference for the FOD segmentation method:\n"
     "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
@@ -76,7 +78,7 @@ void usage ()
     + "* Reference for Apparent Fibre Density (AFD):\n"
     "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. " // Internal
     "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
-    "Neuroimage, 2012, 15;59(4), 3976-94.";
+    "Neuroimage, 2012, 15;59(4), 3976-94";
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ()
@@ -99,7 +101,7 @@ void usage ()
 
   + Option ("nii", "output the directions and index file in nii format (instead of the default mif)")
 
-  + Option ("dirpeak", "define the fixel direction as the peak lobe direction as opposed to the lobe mean");
+  + Option ("dirpeak", "define the fixel direction as that of the lobe's maximal peak as opposed to its weighted mean direction (the default)");
 
 }
 
@@ -108,8 +110,8 @@ void usage ()
 class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 
   public:
-    Segmented_FOD_receiver (const Header& header, const index_type maxnum = 0, bool dir_as_peak = false) :
-        H (header), fixel_count (0), max_per_voxel (maxnum), dir_as_peak (dir_as_peak) { }
+    Segmented_FOD_receiver (const Header& header, const index_type maxnum = 0, bool dir_from_peak = false) :
+        H (header), fixel_count (0), max_per_voxel (maxnum), dir_from_peak (dir_from_peak) { }
 
     void commit ();
 
@@ -117,7 +119,7 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
     void set_index_output (const std::string& path) { index_path = path; }
     void set_directions_output (const std::string& path) { dir_path = path; }
     void set_afd_output (const std::string& path) { afd_path = path; }
-    void set_peak_output (const std::string& path) { peak_path = path; }
+    void set_peak_amp_output (const std::string& path) { peak_amp_path = path; }
     void set_disp_output (const std::string& path) { disp_path = path; }
 
     bool operator() (const FOD_lobes&);
@@ -128,21 +130,21 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
     struct Primitive_FOD_lobe { MEMALIGN (Primitive_FOD_lobe)
       Eigen::Vector3f dir;
       float integral;
-      float peak_value;
-      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float peak_value) :
-          dir (dir), integral (integral), peak_value (peak_value) {}
+      float max_peak_amp;
+      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float max_peak_amp) :
+          dir (dir), integral (integral), max_peak_amp (max_peak_amp) {}
     };
 
 
     class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { MEMALIGN (Primitive_FOD_lobes)
       public:
-        Primitive_FOD_lobes (const FOD_lobes& in, const index_type maxcount, bool use_peak_dir) :
+        Primitive_FOD_lobes (const FOD_lobes& in, const index_type maxcount, bool dir_from_peak) :
             vox (in.vox)
         {
           const index_type N = maxcount ? std::min (index_type(in.size()), maxcount) : in.size();
           for (index_type i = 0; i != N; ++i) {
             const FOD_lobe& lobe (in[i]);
-            if (use_peak_dir)
+            if (dir_from_peak)
               this->emplace_back (lobe.get_peak_dir(0).cast<float>(), lobe.get_integral(), lobe.get_max_peak_value());
             else
               this->emplace_back (lobe.get_mean_dir().cast<float>(), lobe.get_integral(), lobe.get_max_peak_value());
@@ -152,11 +154,11 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
     };
 
     Header H;
-    std::string fixel_directory_path, index_path, dir_path, afd_path, peak_path, disp_path;
+    std::string fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path;
     vector<Primitive_FOD_lobes> lobes;
     index_type fixel_count;
     index_type max_per_voxel;
-    bool dir_as_peak;
+    bool dir_from_peak;
 };
 
 
@@ -165,7 +167,7 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 {
   if (in.size()) {
-    lobes.emplace_back (in, max_per_voxel, dir_as_peak);
+    lobes.emplace_back (in, max_per_voxel, dir_from_peak);
     fixel_count += lobes.back().size();
   }
   return true;
@@ -186,7 +188,7 @@ void Segmented_FOD_receiver::commit ()
   std::unique_ptr<IndexImage> index_image;
   std::unique_ptr<DataImage> dir_image;
   std::unique_ptr<DataImage> afd_image;
-  std::unique_ptr<DataImage> peak_image;
+  std::unique_ptr<DataImage> peak_amp_image;
   std::unique_ptr<DataImage> disp_image;
 
   auto index_header (H);
@@ -201,6 +203,8 @@ void Segmented_FOD_receiver::commit ()
   fixel_data_header.ndim() = 3;
   fixel_data_header.size(0) = fixel_count;
   fixel_data_header.size(2) = 1;
+  fixel_data_header.transform().setIdentity();
+  fixel_data_header.spacing(0) = fixel_data_header.spacing(1) = fixel_data_header.spacing(2) = 1.0;
   fixel_data_header.datatype() = DataType::Float32;
   fixel_data_header.datatype().set_byte_order_native();
 
@@ -220,12 +224,12 @@ void Segmented_FOD_receiver::commit ()
     Fixel::check_fixel_size (*index_image, *afd_image);
   }
 
-  if (peak_path.size()) {
-    auto peak_header(fixel_data_header);
-    peak_header.size(1) = 1;
-    peak_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, peak_path), peak_header));
-    peak_image->index(1) = 0;
-    Fixel::check_fixel_size (*index_image, *peak_image);
+  if (peak_amp_path.size()) {
+    auto peak_amp_header (fixel_data_header);
+    peak_amp_header.size(1) = 1;
+    peak_amp_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, peak_amp_path), peak_amp_header));
+    peak_amp_image->index(1) = 0;
+    Fixel::check_fixel_size (*index_image, *peak_amp_image);
   }
 
   if (disp_path.size()) {
@@ -264,17 +268,17 @@ void Segmented_FOD_receiver::commit ()
       }
     }
 
-    if (peak_image) {
+    if (peak_amp_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
-        peak_image->index(0) = offset + i;
-        peak_image->value() = vox_fixels[i].peak_value;
+        peak_amp_image->index(0) = offset + i;
+        peak_amp_image->value() = vox_fixels[i].max_peak_amp;
       }
     }
 
     if (disp_image) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
         disp_image->index(0) = offset + i;
-        disp_image->value() = vox_fixels[i].integral / vox_fixels[i].peak_value;
+        disp_image->value() = vox_fixels[i].integral / vox_fixels[i].max_peak_amp;
       }
     }
 
@@ -312,9 +316,9 @@ void run ()
   receiver.set_directions_output (default_directions_filename);
 
   auto
-  opt = get_options ("afd");  if (opt.size()) receiver.set_afd_output  (opt[0][0]);
-  opt = get_options ("peak"); if (opt.size()) receiver.set_peak_output (opt[0][0]);
-  opt = get_options ("disp"); if (opt.size()) receiver.set_disp_output (opt[0][0]);
+  opt = get_options ("afd");      if (opt.size()) receiver.set_afd_output      (opt[0][0]);
+  opt = get_options ("peak_amp"); if (opt.size()) receiver.set_peak_amp_output (opt[0][0]);
+  opt = get_options ("disp");     if (opt.size()) receiver.set_disp_output     (opt[0][0]);
 
   opt = get_options ("mask");
   Image<float> mask;
@@ -335,4 +339,3 @@ void run ()
   Thread::run_queue (writer, Thread::batch (SH_coefs()), Thread::multi (fmls), Thread::batch (FOD_lobes()), receiver);
   receiver.commit ();
 }
-

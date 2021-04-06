@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,10 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "debug.h"
+#include "dwi/shells.h"
 
 #include "math/math.h"
-#include "dwi/shells.h"
 
 
 
@@ -351,6 +350,14 @@ namespace MR
       size_t clusterIdx = 0;
 
       for (ssize_t ii = 0; ii != bvals.size(); ii++) {
+        if (bvals[ii] <= bzero_threshold()) {
+          visited[ii] = true;
+          clusterIdx = 1;
+          clusters[ii] = 1;
+        }
+      }
+
+      for (ssize_t ii = 0; ii != bvals.size(); ii++) {
         if (!visited[ii]) {
 
           visited[ii] = true;
@@ -391,7 +398,7 @@ namespace MR
     void Shells::regionQuery (const BValueList& bvals, const default_type b, vector<size_t>& idx) const
     {
       for (ssize_t i = 0; i < bvals.size(); i++) {
-        if (abs (b - bvals[i]) < bvalue_epsilon())
+        if (bvals[i] > bzero_threshold() && abs (b - bvals[i]) < bvalue_epsilon())
           idx.push_back (i);
       }
     }

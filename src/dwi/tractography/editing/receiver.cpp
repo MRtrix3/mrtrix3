@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -63,7 +63,7 @@ namespace MR {
               if (p.allFinite()) {
                 temp.push_back (p);
               } else if (temp.size()) {
-                temp.index = in.index;
+                temp.set_index (in.get_index());
                 temp.weight = in.weight;
                 writer (temp);
                 ++segments;

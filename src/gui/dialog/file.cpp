@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@
 #ifdef MRTRIX_MACOSX
 # define FILE_DIALOG_OPTIONS QFileDialog::DontUseNativeDialog
 #else
-# define FILE_DIALOG_OPTIONS static_cast<QFileDialog::Options> (0)
+# define FILE_DIALOG_OPTIONS QFileDialog::Options()
 #endif
 
 namespace MR

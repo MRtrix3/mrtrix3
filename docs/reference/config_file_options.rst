@@ -25,17 +25,6 @@ List of MRtrix3 configuration file options
      Specifies the difference between b-values necessary for image
      volumes to be classified as belonging to different shells.
 
-.. option:: BValueScaling
-
-    *default: 1 (true)*
-
-     Specifies whether the b-values should be scaled by the squared
-     norm of the gradient vectors when loading a DW gradient scheme.
-     This is commonly required to correctly interpret images acquired
-     on scanners that nominally only allow a single b-value, as the
-     common workaround is to scale the gradient vectors to modulate
-     the actual b-value.
-
 .. option:: BZeroThreshold
 
     *default: 10.0*
@@ -224,6 +213,70 @@ List of MRtrix3 configuration file options
 
      The default intensity for the diffuse light in OpenGL renders.
 
+.. option:: Dwi2maskAlgorithm
+
+    *default: legacy*
+
+     The dwi2mask algorithm to utilise whenever dwi2mask must be invoked
+     within a Python script, and the user is not provided with the
+     opportunity to select the algorithm at the command-line.
+
+.. option:: Dwi2maskTemplateANTsFullOptions
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software antsfull (or
+     Dwi2maskTemplate is set to "antsfull"), specify the command-line
+     options with which command "antsRegistration" will be provided.
+
+.. option:: Dwi2maskTemplateANTsQuickOptions
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software antsquick (or
+     Dwi2maskTemplate is set to "antsquick"), specify the command-line
+     options with which command "antsRegistrationSynQuick.sh" will be
+     provided.
+
+.. option:: Dwi2maskTemplateFSLFlirtOptions
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software fsl (or
+     Dwi2maskTemplate is set to "fsl"), specify the command-line
+     options with which FSL command flirt will be provided.
+
+.. option:: Dwi2maskTemplateFSLFnirtConfig
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software fsl (or
+     Dwi2maskTemplate is set to "fsl"), specify the configuration
+     file to be provided to the FSL command fnirt.
+
+.. option:: Dwi2maskTemplateImage
+
+    *default: (none)*
+
+     The template image to utilise by default whenever the "dwi2mask ants"
+     or "dwi2mask template" algorithms are invoked but no template image
+     / mask pair are explicitly nominated at the command-line.
+
+.. option:: Dwi2maskTemplateMask
+
+    *default: (none)*
+
+     The template brain mask to utilise by default whenever the "dwi2mask
+     ants" or "dwi2mask template" algorithms are invoked but no template
+     image / mask pair are explicitly nominated at the command-line.
+
+.. option:: Dwi2maskTemplateSoftware
+
+    *default: fsl*
+
+     The software to be used for registration and transformation
+     by default within the "dwi2mask template" algorithm.
+
 .. option:: FailOnWarn
 
     *default: 0 (false)*
@@ -254,7 +307,7 @@ List of MRtrix3 configuration file options
 
     *default: true*
 
-     Interpolation switched on in the main image.
+     Define default interplation setting for image and image overlay.
 
 .. option:: InitialToolBarPosition
 
@@ -486,13 +539,14 @@ List of MRtrix3 configuration file options
 
 .. option:: NIfTIUseSform
 
-    *default: 0 (false)*
+    *default: 1 (true)*
 
      A boolean value to control whether, in cases where both
      the sform and qform transformations are defined in an
      input NIfTI image, but those transformations differ, the
      sform transformation should be used in preference to the
-     qform matrix (the default behaviour).
+     qform matrix. The default is to use the sform matrix;
+     set to 0 / false to override and instead use the qform.
 
 .. option:: NeedOpenGLCoreProfile
 

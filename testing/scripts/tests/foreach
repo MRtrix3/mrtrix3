@@ -1,3 +1,0 @@
-foreach -test 1 2 3 4 : echo IN
-mkdir -p ../tmp/foreach && rm -f ../tmp/foreach/out.txt && foreach 1 2 3 4 : echo IN ">>" ../tmp/foreach/out.txt && testing_diff_matrix ../tmp/foreach/out.txt foreach/out.txt
-foreach -nthreads 2 1 2 3 4 : mrconvert BIDS/sub-01/dwi/sub-01_brainmask.nii.gz tmpIN.mif

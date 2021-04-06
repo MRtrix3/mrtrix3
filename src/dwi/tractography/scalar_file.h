@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,8 +23,9 @@
 #include "file/config.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
-#include "dwi/tractography/properties.h"
 #include "dwi/tractography/file_base.h"
+#include "dwi/tractography/properties.h"
+#include "dwi/tractography/streamline.h"
 
 
 namespace MR
@@ -74,7 +75,7 @@ namespace MR
             open (file, "track scalars", properties);
           }
 
-          bool operator() (vector<value_type>& tck_scalar)
+          bool operator() (TrackScalar<T>& tck_scalar)
           {
             tck_scalar.clear();
 
@@ -91,8 +92,10 @@ namespace MR
                 return false;
               }
 
-              if (std::isnan (val))
+              if (std::isnan (val)) {
+                tck_scalar.set_index (current_index++);
                 return true;
+              }
               tck_scalar.push_back (val);
             } while (in.good());
 
@@ -103,6 +106,7 @@ namespace MR
         protected:
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
+          using __ReaderBase__::current_index;
 
           value_type get_next_scalar ()
           {
@@ -136,7 +140,7 @@ namespace MR
                 assert (0);
                 break;
             }
-            return (value_type (NAN));
+            return (value_type (NaN));
           }
 
           ScalarReader (const ScalarReader&) = delete;
@@ -200,7 +204,7 @@ namespace MR
           }
 
 
-          bool operator() (const vector<value_type>& tck_scalar)
+          bool operator() (const TrackScalar<T>& tck_scalar)
           {
             if (buffer_size + tck_scalar.size() > buffer_capacity)
               commit();
@@ -214,24 +218,6 @@ namespace MR
             ++total_count;
             return true;
           }
-
-
-          template <typename matrix_type>
-          bool operator() (const Eigen::Matrix<matrix_type, Eigen::Dynamic, 1>& data)
-          {
-            assert (data.allFinite());
-
-            if (buffer_size + data.size() > buffer_capacity)
-              commit();
-
-            for (int i = 0; i != data.size(); ++i)
-              add_scalar (value_type(data[i]));
-            add_scalar (delimiter());
-            ++count;
-            ++total_count;
-            return true;
-          }
-
 
 
         protected:

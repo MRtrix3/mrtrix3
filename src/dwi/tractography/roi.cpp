@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -87,7 +87,7 @@ namespace MR {
       Image<bool> Mask::__get_mask (const std::string& name)
       {
         auto data = Image<bool>::open (name);
-        vector<size_t> bottom (data.ndim(), 0), top (data.ndim(), 0);
+        vector<size_t> bottom (3, 0), top (3, 0);
         std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
 
         size_t sum = 0;

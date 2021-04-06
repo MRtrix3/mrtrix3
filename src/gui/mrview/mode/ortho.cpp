@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -184,12 +184,19 @@ namespace MR
         void Ortho::slice_move_event (float x)
         {
           const Projection* proj = get_current_projection();
-          if (!proj) return;
+          if (!proj)
+            return;
+
+          if (window().active_camera_interactor() && window().active_camera_interactor()->slice_move_event(*proj, x))
+            return;
+
           const auto &header = image()->header();
           float increment = snap_to_image() ?
             x * header.spacing (current_plane) :
             x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);
-          move_in_out (increment, *proj);
+          auto move = get_through_plane_translation (increment, *proj);
+
+          set_focus (focus() + move);
           updateGL();
         }
 
@@ -197,8 +204,15 @@ namespace MR
         void Ortho::panthrough_event ()
         {
           const Projection* proj = get_current_projection();
-          if (!proj) return;
-          move_in_out_FOV (window().mouse_displacement().y(), *proj);
+          if (!proj)
+            return;
+
+          if (window().active_camera_interactor() && window().active_camera_interactor()->panthrough_event (*proj))
+            return;
+
+          auto move = get_through_plane_translation_FOV (window().mouse_displacement().y(), *proj);
+
+          set_focus (focus() + move);
           updateGL();
         }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@
 
 #include <iomanip>
 #include <map>
+#include <set>
 
 #include "types.h"
 #include "file/key_value.h"
@@ -40,6 +41,7 @@ namespace MR
       class __ReaderBase__
       { NOMEMALIGN
         public:
+            __ReaderBase__() : current_index (0) { }
           ~__ReaderBase__ () {
             if (in.is_open())
               in.close();
@@ -50,9 +52,9 @@ namespace MR
           void close () { in.close(); }
 
         protected:
-
-          std::ifstream  in;
-          DataType  dtype;
+          std::ifstream in;
+          DataType dtype;
+          uint64_t current_index;
       };
 
 
@@ -92,7 +94,7 @@ namespace MR
 
               for (const auto& i : properties) {
                 if ((i.first != "count") && (i.first != "total_count")) {
-                  for (const auto line : split_lines (i.second))
+                  for (const auto& line : split_lines (i.second))
                     out << i.first << ": " << line << "\n";
                 }
               }
@@ -149,6 +151,9 @@ namespace MR
               verify_stream (out);
             }
         };
+
+
+
       //! \endcond
 
 

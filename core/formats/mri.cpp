@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -224,8 +224,8 @@ namespace MR
             {
               std::string dw_scheme;
               const size_t nrows = size (current, is_BE) / (4*sizeof (float32));
-              for (size_t i = 0; i < nrows; ++i) 
-                dw_scheme += 
+              for (size_t i = 0; i < nrows; ++i)
+                dw_scheme +=
                   str (Raw::fetch_<float32> (data (current) + (i*4 + 0) *sizeof (float32), is_BE)) + "," +
                   str (Raw::fetch_<float32> (data (current) + (i*4 + 1) *sizeof (float32), is_BE)) + "," +
                   str (Raw::fetch_<float32> (data (current) + (i*4 + 2) *sizeof (float32), is_BE)) + "," +
@@ -314,7 +314,7 @@ namespace MR
 
       const auto comments = H.keyval().find ("comments");
       if (comments != H.keyval().end()) {
-        for (const auto comment : split_lines (comments->second)) {
+        for (const auto& comment : split_lines (comments->second)) {
           size_t l = comment.size();
           if (l) {
             write_tag (out, MRI_COMMENT, l, is_BE);
@@ -336,15 +336,15 @@ namespace MR
       if (dw_scheme != H.keyval().end()) {
         const auto rows = split_lines (dw_scheme->second);
         write_tag (out, MRI_DWSCHEME, 4*rows.size() *sizeof (float32), is_BE);
-        for (const auto row : rows) 
-          for (const auto val : parse_floats (row)) 
+        for (const auto& row : rows)
+          for (const auto val : parse_floats (row))
             write<float> (out, val, is_BE);
       }
 
       write_tag (out, MRI_DATA, 1, is_BE);
       out.put (store_datatype (H.datatype()));
 
-      size_t data_offset = out.tellp();
+      size_t data_offset = int64_t(out.tellp());
       out.close();
 
       std::unique_ptr<ImageIO::Base> io_handler (new ImageIO::Default (H));

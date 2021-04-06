@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,7 +25,7 @@ namespace MR
     using namespace App;
     using namespace Eigen;
 
-    OptionGroup GradImportOptions (bool include_bvalue_scaling)
+    OptionGroup GradImportOptions()
     {
       OptionGroup group ("DW gradient table import options");
 
@@ -46,16 +46,6 @@ namespace MR
         +   Argument ("bvecs").type_file_in()
         +   Argument ("bvals").type_file_in();
 
-      if (include_bvalue_scaling)
-        group
-          + Option ("bvalue_scaling",
-              "specifies whether the b-values should be scaled by the square of "
-              "the corresponding DW gradient norm, as often required for "
-              "multi-shell or DSI DW acquisition schemes. The default action can "
-              "also be set in the MRtrix config file, under the BValueScaling entry. "
-              "Valid choices are yes/no, true/false, 0/1 (default: true).")
-          +   Argument ("mode").type_bool();
-
       return group;
     }
 
@@ -72,7 +62,37 @@ namespace MR
         +   Argument ("bvals_path").type_file_out();
     }
 
+    Option bvalue_scaling_option = Option ("bvalue_scaling",
+        "enable or disable scaling of diffusion b-values by the square of the "
+        "corresponding DW gradient norm (see Desciption). "
+        "Valid choices are yes/no, true/false, 0/1 (default: automatic).")
+    +   Argument ("mode").type_bool();
 
+
+    const char* const bvalue_scaling_description (
+      "The -bvalue_scaling option controls an aspect of the import of "
+      "diffusion gradient tables. When the input diffusion-weighting "
+      "direction vectors have norms that differ substantially from unity, "
+      "the b-values will be scaled by the square of their corresponding "
+      "vector norm (this is how multi-shell acquisitions are frequently "
+      "achieved on scanner platforms). However in some rare instances, the "
+      "b-values may be correct, despite the vectors not being of unit norm "
+      "(or conversely, the b-values may need to be rescaled even though the "
+      "vectors are close to unit norm). This option allows the user to "
+      "control this operation and override MRrtix3's automatic detection."
+    );
+
+
+
+    BValueScalingBehaviour get_cmdline_bvalue_scaling_behaviour ()
+    {
+      auto opt = App::get_options ("bvalue_scaling");
+      if (opt.empty())
+        return BValueScalingBehaviour::Auto;
+      if (opt[0][0])
+        return BValueScalingBehaviour::UserOn;
+      return BValueScalingBehaviour::UserOff;
+    }
 
 
     Eigen::MatrixXd parse_DW_scheme (const Header& header)
@@ -194,36 +214,27 @@ namespace MR
 
 
 
-    Eigen::MatrixXd get_DW_scheme (const Header& header)
+    Eigen::MatrixXd get_raw_DW_scheme (const Header& header)
     {
       DEBUG ("searching for suitable gradient encoding...");
       using namespace App;
       Eigen::MatrixXd grad;
 
-      try {
-        const auto opt_mrtrix = get_options ("grad");
+      // check whether the DW scheme has been provided via the command-line:
+      const auto opt_mrtrix = get_options ("grad");
+      if (opt_mrtrix.size())
+        grad = load_matrix<> (opt_mrtrix[0][0]);
+
+      const auto opt_fsl = get_options ("fslgrad");
+      if (opt_fsl.size()) {
         if (opt_mrtrix.size())
-          grad = load_matrix<> (opt_mrtrix[0][0]);
-        const auto opt_fsl = get_options ("fslgrad");
-        if (opt_fsl.size()) {
-          if (opt_mrtrix.size())
-            throw Exception ("Diffusion gradient table can be provided using either -grad or -fslgrad option, but NOT both");
-          grad = load_bvecs_bvals (header, opt_fsl[0][0], opt_fsl[0][1]);
-        }
-        if (!opt_mrtrix.size() && !opt_fsl.size())
-          grad = parse_DW_scheme (header);
-      }
-      catch (Exception& e) {
-        throw Exception (e, "error importing diffusion gradient table for image \"" + header.name() + "\"");
+          throw Exception ("Diffusion gradient table can be provided using either -grad or -fslgrad option, but NOT both");
+        grad = load_bvecs_bvals (header, opt_fsl[0][0], opt_fsl[0][1]);
       }
 
-      if (!grad.rows())
-        return grad;
-
-      if (grad.cols() < 4)
-        throw Exception ("unexpected diffusion gradient table matrix dimensions");
-
-      INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion gradient table");
+      // otherwise use the information from the header:
+      if (!opt_mrtrix.size() && !opt_fsl.size())
+        grad = parse_DW_scheme (header);
 
       return grad;
     }
@@ -232,36 +243,61 @@ namespace MR
 
 
 
-    void validate_DW_scheme (Eigen::MatrixXd& grad, const Header& header, bool nofail)
+
+    Eigen::MatrixXd get_DW_scheme (const Header& header, BValueScalingBehaviour bvalue_scaling)
     {
-      if (grad.rows() == 0)
-        throw Exception ("no diffusion encoding information found in image \"" + header.name() + "\"");
-
-      //CONF option: BValueScaling
-      //CONF default: 1 (true)
-      //CONF Specifies whether the b-values should be scaled by the squared
-      //CONF norm of the gradient vectors when loading a DW gradient scheme.
-      //CONF This is commonly required to correctly interpret images acquired
-      //CONF on scanners that nominally only allow a single b-value, as the
-      //CONF common workaround is to scale the gradient vectors to modulate
-      //CONF the actual b-value.
-      bool scale_bvalues = true;
-      auto opt = App::get_options ("bvalue_scaling");
-      if (opt.size())
-        scale_bvalues = opt[0][0];
-      else
-        scale_bvalues = File::Config::get_bool ("BValueScaling", scale_bvalues);
-
-      if (scale_bvalues)
-        scale_bvalue_by_G_squared (grad);
-
       try {
+        auto grad = get_raw_DW_scheme (header);
         check_DW_scheme (header, grad);
-        normalise_grad (grad);
+
+        Eigen::Array<default_type, Eigen::Dynamic, 1> squared_norms = grad.leftCols(3).rowwise().squaredNorm();
+        // ensure interpreted directions are always normalised
+        // also make sure that directions of [0, 0, 0] don't affect subsequent calculations
+        for (ssize_t row = 0; row != grad.rows(); ++row) {
+          if (squared_norms[row])
+            grad.row(row).template head<3>().array() /= std::sqrt(squared_norms[row]);
+          else
+            squared_norms[row] = 1.0;
+        }
+        // modulate verbosity of message & whether or not header is modified
+        // based on magnitude of effect of normalisation
+        const default_type max_log_scaling_factor = squared_norms.log().abs().maxCoeff();
+        const default_type max_scaling_factor = std::exp (max_log_scaling_factor);
+        const bool exceeds_single_precision = max_log_scaling_factor > 1e-5;
+        const bool requires_bvalue_scaling = max_log_scaling_factor > 0.01;
+
+        DEBUG ("b-value scaling: max scaling factor = exp("
+            + str(max_log_scaling_factor) + ") = " + str(max_scaling_factor));
+
+        if (( requires_bvalue_scaling && bvalue_scaling == BValueScalingBehaviour::Auto ) ||
+            bvalue_scaling == BValueScalingBehaviour::UserOn ) {
+          grad.col(3).array() *= squared_norms;
+          INFO ("b-values scaled by the square of DW gradient norm "
+              "(maximum scaling factor = " + str(max_scaling_factor) + ")");
+        }
+        else if (bvalue_scaling == BValueScalingBehaviour::UserOff ) {
+          if (requires_bvalue_scaling) {
+            CONSOLE ("disabling b-value scaling during normalisation of DW vectors on user request "
+                "(maximum scaling factor would have been " + str(max_scaling_factor) + ")");
+          } else {
+            WARN ("use of -bvalue_scaling option had no effect: gradient vector norms are all within tolerance "
+                "(maximum scaling factor = " + str(max_scaling_factor) + ")");
+          }
+        }
+
+        // write the scheme as interpreted back into the header if:
+        // - vector normalisation effect is large, regardless of whether or not b-value scaling was applied
+        // - gradient information was pulled from file
+        // - explicit b-value scaling is requested
+        if (exceeds_single_precision || get_options ("grad").size() || get_options ("fslgrad").size() || bvalue_scaling != BValueScalingBehaviour::Auto)
+          set_DW_scheme (const_cast<Header&> (header), grad);
+
+        INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion gradient table");
+        return grad;
       }
       catch (Exception& e) {
-        if (!nofail)
-          throw Exception (e, "unable to get valid diffusion gradient table for image \"" + header.name() + "\"");
+        clear_DW_scheme (const_cast<Header&> (header));
+        throw Exception (e, "error importing diffusion gradient table for image \"" + header.name() + "\"");
       }
     }
 

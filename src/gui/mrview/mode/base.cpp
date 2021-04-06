@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,6 @@ namespace MR
           features (flags),
           update_overlays (false),
           visible (true) { }
-
 
         Base::~Base ()
         {
@@ -71,7 +70,7 @@ namespace MR
 
             projection.setup_render_text();
             if (window().show_voxel_info()) {
-              Eigen::Vector3f voxel (image()->transform().scanner2voxel.cast<float>() * focus());
+              Eigen::Vector3f voxel (image()->scanner2voxel() * focus());
               ssize_t vox [] = { ssize_t(std::round (voxel[0])), ssize_t(std::round (voxel[1])), ssize_t(std::round (voxel[2])) };
 
               std::string vox_str = printf ("voxel index: [ %d %d %d ", vox[0], vox[1], vox[2]);
@@ -159,11 +158,16 @@ done_painting:
 
         void Base::slice_move_event (const ModelViewProjection& proj, float x)
         {
+          if (window().active_camera_interactor() && window().active_camera_interactor()->slice_move_event (proj, x))
+            return;
+
           const auto &header = image()->header();
           float increment = snap_to_image() ?
             x * header.spacing (plane()) :
             x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);
-          move_in_out (increment, proj);
+          auto move = get_through_plane_translation (increment, proj);
+
+          set_focus (focus() + move);
           move_target_to_focus_plane (proj);
           updateGL();
         }
@@ -205,7 +209,10 @@ done_painting:
 
         void Base::pan_event (const ModelViewProjection& proj)
         {
-          set_target (target() - proj.screen_to_model_direction (window().mouse_displacement(), target()));
+          if (window().active_camera_interactor() && window().active_camera_interactor()->pan_event (proj))
+            return;
+          auto move = proj.screen_to_model_direction (window().mouse_displacement(), target());
+          set_target (target() - move);
           updateGL();
         }
 
@@ -219,10 +226,15 @@ done_painting:
 
         void Base::panthrough_event (const ModelViewProjection& proj)
         {
-          move_in_out_FOV (window().mouse_displacement().y(), proj);
+          if (window().active_camera_interactor() && window().active_camera_interactor()->panthrough_event (proj))
+            return;
+          auto move = get_through_plane_translation_FOV (window().mouse_displacement().y(), proj);
+
+          set_focus (focus() + move);
           move_target_to_focus_plane (proj);
           updateGL();
         }
+
 
         void Base::panthrough_event ()
         {
@@ -246,11 +258,11 @@ done_painting:
 
         void Base::setup_projection (const int axis, ModelViewProjection& with_projection) const
         {
-          const GL::mat4 M = snap_to_image() ? GL::mat4 (image()->transform().image2scanner.matrix()) : GL::mat4 (orientation());
+          const GL::mat4 M = snap_to_image() ? GL::mat4 (image()->image2scanner().matrix()) : GL::mat4 (orientation());
           setup_projection (adjust_projection_matrix (GL::transpose (M), axis), with_projection);
         }
 
-        void Base::setup_projection (const Math::Versorf& V, ModelViewProjection& with_projection) const
+        void Base::setup_projection (const Eigen::Quaternionf& V, ModelViewProjection& with_projection) const
         {
           setup_projection (adjust_projection_matrix (GL::transpose (GL::mat4 (V))), with_projection);
         }
@@ -274,11 +286,11 @@ done_painting:
 
 
 
-        Math::Versorf Base::get_tilt_rotation (const ModelViewProjection& proj) const
+        Eigen::Quaternionf Base::get_tilt_rotation (const ModelViewProjection& proj) const
         {
           QPoint dpos = window().mouse_displacement();
           if (dpos.x() == 0 && dpos.y() == 0)
-            return Math::Versorf();
+            return Eigen::Quaternionf (NaN, NaN, NaN, NaN);
 
           const Eigen::Vector3f x = proj.screen_to_model_direction (dpos, target());
           const Eigen::Vector3f z = proj.screen_normal();
@@ -286,7 +298,7 @@ done_painting:
           float angle = -ROTATION_INC * std::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
           if (angle > Math::pi_2)
             angle = Math::pi_2;
-          return Math::Versorf (Eigen::AngleAxisf (angle, v));
+          return Eigen::Quaternionf (Eigen::AngleAxisf (angle, v));
         }
 
 
@@ -294,18 +306,18 @@ done_painting:
 
 
 
-        Math::Versorf Base::get_rotate_rotation (const ModelViewProjection& proj) const
+        Eigen::Quaternionf Base::get_rotate_rotation (const ModelViewProjection& proj) const
         {
           QPoint dpos = window().mouse_displacement();
           if (dpos.x() == 0 && dpos.y() == 0)
-            return Math::Versorf();
+            return Eigen::Quaternionf (NaN, NaN, NaN, NaN);
 
           Eigen::Vector3f x1 (window().mouse_position().x() - proj.x_position() - proj.width()/2,
                               window().mouse_position().y() - proj.y_position() - proj.height()/2,
                               0.0);
 
           if (x1.norm() < 16.0f)
-            return Math::Versorf();
+            return Eigen::Quaternionf (NaN, NaN, NaN, NaN);
 
           Eigen::Vector3f x0 (dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
 
@@ -315,7 +327,7 @@ done_painting:
           const Eigen::Vector3f n = x1.cross (x0);
           const float angle = n[2];
           Eigen::Vector3f v = (proj.screen_normal()).normalized();
-          return Math::Versorf (Eigen::AngleAxisf (angle, v));
+          return Eigen::Quaternionf (Eigen::AngleAxisf (angle, v));
         }
 
 
@@ -325,13 +337,17 @@ done_painting:
 
         void Base::tilt_event (const ModelViewProjection& proj)
         {
+          if (window().active_camera_interactor() && window().active_camera_interactor()->tilt_event (proj))
+            return;
+
           if (snap_to_image())
             window().set_snap_to_image (false);
 
-          const Math::Versorf rot = get_tilt_rotation (proj);
-          if (!rot)
+          const Eigen::Quaternionf rot = get_tilt_rotation (proj);
+          if (!rot.coeffs().allFinite())
             return;
-          Math::Versorf orient = rot * orientation();
+
+          Eigen::Quaternionf orient = rot * orientation();
           set_orientation (orient);
           updateGL();
         }
@@ -351,13 +367,17 @@ done_painting:
 
         void Base::rotate_event (const ModelViewProjection& proj)
         {
+          if (window().active_camera_interactor() && window().active_camera_interactor()->rotate_event (proj))
+            return;
+
           if (snap_to_image())
             window().set_snap_to_image (false);
 
-          const Math::Versorf rot = get_rotate_rotation (proj);
-          if (!rot)
+          const Eigen::Quaternionf rot = get_rotate_rotation (proj);
+          if (!rot.coeffs().allFinite())
             return;
-          Math::Versorf orient = rot * orientation();
+
+          Eigen::Quaternionf orient = rot * orientation();
           set_orientation (orient);
           updateGL();
         }
@@ -407,7 +427,7 @@ done_painting:
               std::floor ((image()->header().size(2)-1)/2.0f)
               );
 
-          set_focus (image()->transform().voxel2scanner.cast<float>() * p);
+          set_focus (image()->voxel2scanner() * p);
           set_target (focus());
           reset_orientation();
 

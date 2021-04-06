@@ -22,7 +22,14 @@ Usage
 Description
 -----------
 
-This script greatly simplifies various forms of batch processing by enabling the execution of a command (or set of commands) independently for each of a set of inputs. Part of the way that this is achieved is by providing basic text substitutions, which simplify the formation of valid command strings based on the unique components of the input strings on which the script is instructed to execute. The available substitutions are listed below (note that the -test command-line option can be used to ensure correct command string formation prior to actually executing the commands):
+This script greatly simplifies various forms of batch processing by enabling the execution of a command (or set of commands) independently for each of a set of inputs.
+
+More information on use of the for_each command can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.2/tips_and_tricks/batch_processing_with_foreach.html
+
+The way that this batch processing capability is achieved is by providing basic text substitutions, which simplify the formation of valid command strings based on the unique components of the input strings on which the script is instructed to execute. This does however mean that the items to be passed as inputs to the for_each command (e.g. file / directory names) MUST NOT contain any instances of these substitution strings, as otherwise those paths will be corrupted during the course of the substitution.
+
+The available substitutions are listed below (note that the -test command-line option can be used to ensure correct command string formation prior to actually executing the commands):
 
    - IN:   The full matching pattern, including leading folders. For example, if the target list contains a file "folder/image.mif", any occurrence of "IN" will be substituted with "folder/image.mif".
 
@@ -107,7 +114,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

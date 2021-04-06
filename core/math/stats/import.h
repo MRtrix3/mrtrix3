@@ -1,16 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
 #ifndef __math_stats_import_h__
 #define __math_stats_import_h__
@@ -91,7 +92,7 @@ namespace MR
           // Needs to be its own function rather than the constructor
           //   so that the correct template type can be invoked explicitly
           template <class SubjectDataImport>
-          void initialise (const std::string&);
+          void initialise (const std::string& listpath, const std::string& explicit_from_directory = "");
 
           /*!
            * @param index for a particular element being tested (data will be acquired for
@@ -99,6 +100,7 @@ namespace MR
            */
           vector_type operator() (const size_t index) const;
 
+          operator bool() const { return bool(files.size()); }
           size_t size() const { return files.size(); }
 
           std::shared_ptr<SubjectDataImportBase> operator[] (const size_t i) const
@@ -116,29 +118,74 @@ namespace MR
 
 
       template <class SubjectDataImport>
-      void CohortDataImport::initialise (const std::string& path)
+      void CohortDataImport::initialise (const std::string& listpath, const std::string& explicit_from_directory)
       {
         // Read the provided text file one at a time
         // For each file, create an instance of SubjectDataImport
         //   (which must derive from SubjectDataImportBase)
-        ProgressBar progress ("Importing data from files listed in \"" + Path::basename (path) + "\"");
-        const std::string directory = Path::dirname (path);
-        std::ifstream ifs (path.c_str());
-        if (!ifs)
-          throw Exception ("Unable to open subject file list \"" + path + "\"");
-        std::string line;
-        while (getline (ifs, line)) {
-          size_t p = line.find_last_not_of(" \t");
-          if (p != std::string::npos)
-            line.erase (p+1);
-          if (line.size()) {
-            const std::string filename (Path::join (directory, line));
-            try {
-              std::shared_ptr<SubjectDataImport> subject (new SubjectDataImport (filename));
-              files.emplace_back (subject);
-            } catch (Exception& e) {
-              throw Exception (e, "Reading text file \"" + Path::basename (path) + "\": input image data file not found: \"" + filename + "\"");
+
+        // - If a directory path is explicitly provided, first try to find
+        //   all input files relative to that directory
+        // - If that fails, try to find all files relative to
+        //   directory in which subject list text file is stored
+        // - If that fails, try to find all files relative to
+        //   current working directory
+        // Only once a directory is selected that contains all inputs listed in the
+        //   text file is an attempt made to load all of those files
+        vector<std::string> lines;
+        {
+          std::ifstream ifs (listpath.c_str());
+          if (!ifs)
+            throw Exception ("Unable to open subject file list \"" + listpath + "\"");
+          std::string line;
+          while (getline (ifs, line)) {
+            size_t p = line.find_last_not_of(" \t");
+            if (p != std::string::npos)
+              line.erase (p+1);
+            if (line.size())
+              lines.push_back (line);
+          }
+        }
+
+        vector<std::string> directories { Path::dirname (listpath) };
+        if (directories[0].empty())
+          directories[0] = ".";
+        else if (directories[0] != ".")
+          directories.push_back (".");
+        if (explicit_from_directory.size())
+          directories.insert (directories.begin(), explicit_from_directory);
+
+        Exception e_nosuccess ("Unable to load all input data from file \"" + listpath + "\"");
+        std::string load_from_dir;
+        for (const auto& directory : directories) {
+          try {
+            for (const auto& line : lines) {
+              const std::string full_path = Path::join (directory, line);
+              if (!Path::is_file (full_path))
+                throw Exception ("File \"" + full_path + "\" not found");
             }
+            load_from_dir = directory;
+            break;
+          } catch (Exception& e) {
+            e_nosuccess.push_back ("If loading relative to directory \"" + directory + "\": ");
+            e_nosuccess.push_back (e);
+          }
+        }
+
+        if (load_from_dir.empty())
+          throw e_nosuccess;
+
+        ProgressBar progress ("Configuring data import from files listed in \""
+                              + Path::basename (listpath)
+                              + "\" as found relative to directory \""
+                              + load_from_dir + "\"");
+
+        for (const auto& line : lines) {
+          try {
+            std::shared_ptr<SubjectDataImport> subject (new SubjectDataImport (Path::join (load_from_dir, line)));
+            files.emplace_back (subject);
+          } catch (Exception& e) {
+            throw Exception (e, "Input data not successfully configured for load: \"" + line + "\"");
           }
           ++progress;
         }

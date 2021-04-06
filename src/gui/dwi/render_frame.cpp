@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,7 +44,7 @@ namespace MR
         constexpr float AngleMax = 90.0f;
 
 
-        const Math::Versorf DefaultOrientation = Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) *
+        const Eigen::Quaternionf DefaultOrientation = Eigen::AngleAxisf (Math::pi_4, Eigen::Vector3f (0.0f, 0.0f, 1.0f)) *
                                                      Eigen::AngleAxisf (Math::pi/3.0f, Eigen::Vector3f (1.0f, 0.0f, 0.0f));
         QFont get_font (QWidget* parent) {
           QFont f = parent->font();
@@ -87,7 +87,7 @@ namespace MR
           for (size_t j = 0; j != 3; ++j)
             M(i,j) = rotation(j,i);
         }
-        orientation = Math::Versorf (M);
+        orientation = Eigen::Quaternionf (M);
         update();
       }
 
@@ -264,11 +264,9 @@ namespace MR
 
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
         // otherwise we get transparent windows...
-#if QT_VERSION >= 0x050400
         gl::ClearColor (0.0, 0.0, 0.0, 1.0);
         gl::ColorMask (false, false, false, true);
         gl::Clear (gl::COLOR_BUFFER_BIT);
-#endif
 
         if (OS > 0) snapshot();
 
@@ -307,7 +305,7 @@ namespace MR
             const Eigen::Vector3f v = x.cross (z).normalized();
             float angle = RotationInc * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
             if (angle > Math::pi_2) angle = Math::pi_2;
-            const Math::Versorf rot (Eigen::AngleAxisf (angle, v));
+            const Eigen::Quaternionf rot (Eigen::AngleAxisf (angle, v));
             orientation = rot * orientation;
             update();
           }
@@ -332,7 +330,14 @@ namespace MR
 
       void RenderFrame::wheelEvent (QWheelEvent* event)
       {
-        int scroll = event->delta() / 120;
+#if QT_VERSION >= 0x050500
+        QPoint delta = event->pixelDelta();
+        if (delta.isNull())
+          delta = event->angleDelta() / 8;
+#else
+        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
+#endif
+        int scroll = delta.y() / 15;
         for (int n = 0; n < scroll; n++) scale *= ScaleInc;
         for (int n = 0; n > scroll; n--) scale /= ScaleInc;
         update();

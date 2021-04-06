@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -90,12 +90,8 @@ namespace MR
       {
         QModelIndex topleft = createIndex (0, 0);
         QModelIndex bottomright = createIndex (rowCount()-1, 0);
-#if QT_VERSION >= 0x050400
         QVector<int> roles (1, Qt::DecorationRole);
         emit dataChanged (topleft, bottomright, roles);
-#else
-         emit dataChanged (topleft, bottomright);
-#endif
       }
 
 

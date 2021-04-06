@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@
 #include "image_helpers.h"
 #include "mrtrix.h"
 #include "transform.h"
+#include "version.h"
 
 #include "algo/loop.h"
 #include "file/path.h"
@@ -55,7 +56,11 @@ void usage ()
     "the lookup table provided by that software, to conform to a new lookup table, particularly "
     "one where the node indices increment from 1, in preparation for connectome construction; "
     "examples of such target lookup table files are provided in share//mrtrix3//labelconvert//, "
-    "but can be created by the user to provide the desired node set // ordering // colours.";
+    "but can be created by the user to provide the desired node set // ordering // colours."
+
+  + "A more thorough description of the operation and purpose of the labelconvert command "
+    "can be found in the online documentation: \n"
+    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/quantitative_structural_connectivity/labelconvert_tutorial.html";
 
   EXAMPLES
   + Example ("Convert a Desikan-Killiany parcellation image as provided by FreeSurfer to have nodes incrementing from 1",
@@ -129,32 +134,31 @@ void run ()
   auto opt = get_options ("spine");
   if (opt.size()) {
 
-    if (duplicates) {
-      WARN ("Could not add spine node: \"" + SPINE_NODE_NAME + "\" appears multiple times in output LUT");
+    if (duplicates)
+      throw Exception ("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" appears multiple times in output LUT");
+    if (!spine_index)
+      throw Exception ("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" not present in output LUT");
+
+    auto in_spine = Image<bool>::open (opt[0][0]);
+    if (dimensions_match (in_spine, out)) {
+
+      for (auto l = Loop (in_spine) (in_spine, out); l; ++l) {
+        if (in_spine.value())
+          out.value() = spine_index;
+      }
+
     } else {
 
-      auto in_spine = Image<bool>::open (opt[0][0]);
-      if (dimensions_match (in_spine, out)) {
+      WARN ("Spine node is being created from the mask image provided using -spine option using nearest-neighbour interpolation;");
+      WARN ("recommend using the parcellation image as the basis for this mask so that interpolation is not required");
 
-        for (auto l = Loop (in_spine) (in_spine, out); l; ++l) {
-          if (in_spine.value())
-            out.value() = spine_index;
-        }
-
-      } else {
-
-        WARN ("Spine node is being created from the mask image provided using -spine option using nearest-neighbour interpolation;");
-        WARN ("recommend using the parcellation image as the basis for this mask so that interpolation is not required");
-
-        Transform transform (out);
-        Interp::Nearest<decltype(in_spine)> nearest (in_spine);
-        for (auto l = Loop (out) (out); l; ++l) {
-          Eigen::Vector3 p (out.index (0), out.index (1), out.index (2));
-          p = transform.voxel2scanner * p;
-          if (nearest.scanner (p) && nearest.value())
-            out.value() = spine_index;
-        }
-
+      Transform transform (out);
+      Interp::Nearest<decltype(in_spine)> nearest (in_spine);
+      for (auto l = Loop (out) (out); l; ++l) {
+        Eigen::Vector3 p (out.index (0), out.index (1), out.index (2));
+        p = transform.voxel2scanner * p;
+        if (nearest.scanner (p) && nearest.value())
+          out.value() = spine_index;
       }
 
     }

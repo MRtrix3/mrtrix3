@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,6 @@
 
 #include "header.h"
 #include "dwi/gradient.h"
-#include "dwi/shells.h"
 #include "math/SH.h"
 
 namespace MR
@@ -79,7 +78,7 @@ namespace MR
             shell_index (0)
         {
           try {
-            grad = MR::DWI::get_valid_DW_scheme (H);
+            grad = MR::DWI::get_DW_scheme (H);
             shells.reset (new MR::DWI::Shells (grad));
             shell_index = shells->count() - 1;
           } catch (...) { }

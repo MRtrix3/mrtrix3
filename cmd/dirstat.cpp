@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,9 +17,11 @@
 #include "command.h"
 #include "progressbar.h"
 #include "header.h"
-#include "dwi/directions/file.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "math/sphere.h"
+
+#include "dwi/directions/file.h"
 
 
 
@@ -109,7 +111,7 @@ void run ()
     }
     catch (Exception& E) {
       auto header = Header::open (argument[0]);
-      directions = DWI::get_valid_DW_scheme (header);
+      directions = DWI::get_DW_scheme (header);
     }
   }
 
@@ -197,7 +199,7 @@ Metrics compute (Eigen::MatrixXd& directions)
 {
   if (directions.cols() < 3)
     throw Exception ("unexpected matrix size for scheme \"" + str(argument[0]) + "\"");
-  DWI::normalise_grad (directions);
+  Math::Sphere::normalise_cartesian (directions);
 
   vector<double> NN_bipolar (directions.rows(), -1.0);
   vector<double> NN_unipolar (directions.rows(), -1.0);
@@ -306,7 +308,11 @@ void report (const std::string& title, Eigen::MatrixXd& directions)
   output += "    energy: total = " + str(metrics.UE[0], precision) + ", mean = " + str(metrics.UE[1], precision) + ", range [ " + str(metrics.UE[2], precision) + " - " + str(metrics.UE[3], precision) + " ]\n";
 
 
-  output += "\n  Spherical Harmonic fit:\n    condition numbers for lmax = 2 -> " + str(metrics.SH.size()*2) + ": " + str(metrics.SH, precision) + "\n";
+  output += "\n  Spherical Harmonic fit:\n";
+  if (metrics.SH.size() > 1)
+    output += "    condition numbers for lmax = 2 -> " + str(metrics.SH.size()*2) + ": " + str(metrics.SH, precision) + "\n";
+  else
+    output += "    condition number for lmax = 2: " + str(metrics.SH[0], precision) + "\n";
 
   output += "\n  Asymmetry of sampling:\n    norm of mean direction vector = " + str(metrics.ASYM, precision) + "\n";
   if (metrics.ASYM >= 0.1)

@@ -1,0 +1,16 @@
+tckedit tckedit/in.tck -include SIFT_phantom/upper.mif tmp.tck -force && testing_diff_tck tmp.tck tckedit/upper.tck
+tckedit tckedit/in.tck -include SIFT_phantom/lower.mif tmp.tck -force && testing_diff_tck tmp.tck tckedit/lower.tck
+tckedit tckedit/in.tck -exclude SIFT_phantom/upper.mif tmp.tck -force && testing_diff_tck tmp.tck tckedit/lower.tck
+tckedit tckedit/in.tck -exclude SIFT_phantom/lower.mif tmp.tck -force && testing_diff_tck tmp.tck tckedit/upper.tck
+tckedit tckedit/in.tck -include SIFT_phantom/upper.mif -inverse tmp.tck -force && testing_diff_tck tmp.tck tckedit/lower.tck
+tckedit tckedit/in.tck -include SIFT_phantom/lower.mif -inverse tmp.tck -force && testing_diff_tck tmp.tck tckedit/upper.tck
+tckedit tckedit/in.tck -exclude SIFT_phantom/upper.mif -inverse tmp.tck -force && testing_diff_tck tmp.tck tckedit/upper.tck
+tckedit tckedit/in.tck -exclude SIFT_phantom/lower.mif -inverse tmp.tck -force && testing_diff_tck tmp.tck tckedit/lower.tck
+tckedit tckedit/in.tck -minlength 10 tmp.tck -force && testing_diff_tck tmp.tck tckedit/upper.tck
+tckedit tckedit/in.tck -maxlength 10 tmp.tck -force && testing_diff_tck tmp.tck tckedit/lower.tck
+tckedit tckedit/in.tck -mask tckedit/mask.mif tmp.tck -force && testing_diff_tck tmp.tck tckedit/mask.tck
+tckedit tckedit/in.tck -mask tckedit/mask.mif -inverse tmp.tck -force && testing_diff_tck tmp.tck tckedit/invmask.tck
+tckedit tckedit/in.tck -include SIFT_phantom/upper.mif -mask tckedit/mask.mif tmp.tck -force && testing_diff_tck tmp.tck tckedit/maskupper.tck
+tckedit tckedit/in.tck -include SIFT_phantom/lower.mif -mask tckedit/mask.mif tmp.tck -force && testing_diff_tck tmp.tck tckedit/masklower.tck
+tckedit tckedit/in.tck -include SIFT_phantom/upper.mif -mask tckedit/mask.mif -inverse tmp.tck -force && testing_diff_tck tmp.tck tckedit/invmaskupper.tck
+tckedit tckedit/in.tck -include SIFT_phantom/lower.mif -mask tckedit/mask.mif -inverse tmp.tck -force && testing_diff_tck tmp.tck tckedit/invmasklower.tck

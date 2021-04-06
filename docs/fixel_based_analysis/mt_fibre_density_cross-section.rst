@@ -64,16 +64,18 @@ There is however no strict requirement for the final set of response functions t
 ^^^^^^^^^^^^^^^^^^^^^^^
 Upsampling DWI data *before* computing FODs increases anatomical contrast and improves downstream template building, registration, tractography and statistics. We recommend upsampling to an isotropic voxel size of 1.25 mm for human brains (if your original resolution is already higher, you can skip this step)::
 
-    for_each * : mrresize IN/dwi_denoised_unringed_preproc_unbiased.mif -vox 1.25 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
+    for_each * : mrgrid IN/dwi_denoised_unringed_preproc_unbiased.mif regrid -vox 1.25 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
 
 
 6. Compute upsampled brain mask images
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Compute a whole brain mask from the upsampled DW images::
 
-    for_each * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif IN/dwi_mask_upsampled.mif
+    for_each * : dwi2mask legacy IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif IN/dwi_mask_upsampled.mif
 
-.. WARNING:: It is absolutely **crucial** to check at this stage that *all* individual subject masks include *all* regions of the brain that are intended to be analysed. Fibre orientation distributions will *only* be computed within these masks; and at a later step (in template space) the analysis mask will be restricted to the *intersection* of all masks, so *any* individual subject mask which excludes a certain region, will result in this region being excluded from the entire analysis. Masks appearing too generous or otherwise including non-brain regions should generally not cause any concerns at this stage. Hence, if in doubt, it is advised to always err on the side of *inclusion* (of regions) at this stage.
+.. WARNING:: Deriving a brain mask is a common point of failure for DWI processing pipelines. We recommend checking these masks manually, and evaluating whether there is a ``dwi2mask`` algorithm that performs best for your cohort; see :ref:`dwi_masking` for more information.
+
+.. WARNING:: It is absolutely **crucial** to check at this stage that *all* individual subject masks include *all* regions of the brain that are intended to be analysed. Fibre orientation distributions will *only* be computed within these masks; and at a later step (in template space) the analysis mask will be restricted to the *intersection* of all masks, so *any* individual subject mask which excludes a certain region, will result in this region being excluded from the entire analysis (unless a more advanced pipeline is followed; see :ref:`mitigating_brain_cropping`). Masks appearing too generous or otherwise including non-brain regions should generally not cause any concerns at this stage. Hence, if in doubt, it is advised to always err on the side of *inclusion* (of regions) at this stage.
 
 .. NOTE:: The earlier :ref:`dwibiascorrect` step is not fundamentally important in the multi-tissue fixel-based analysis pipeline, as the later :ref:`mtnormalise` step performs more robustly (and if :ref:`dwibiascorrect` is included, :ref:`mtnormalise` will later on typically improve the result further). While performing the earlier :ref:`dwibiascorrect` step typically improves :ref:`dwi2mask` performance, cases have been observed where the opposite is true (typically if the data contains only weak bias fields). If required, experiment by either including or excluding :ref:`dwibiascorrect` in the pipeline in function of the best :ref:`dwi2mask` outcome and manually correct the masks if necessary (by *adding* regions which :ref:`dwi2mask` fails to include).
 
@@ -87,11 +89,13 @@ When performing fixel-based analysis, multi-tissue constrained spherical deconvo
 8. Joint bias field correction and intensity normalisation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To perform joint bias field correction and global intensity normalisation of the multi-tissue compartment parameters (in the log-domain), use :ref:`mtnormalise`::
+To perform joint bias field correction and global intensity normalisation of the multi-tissue compartment parameters, use :ref:`mtnormalise`::
 
     for_each * : mtnormalise IN/wmfod.mif IN/wmfod_norm.mif IN/gm.mif IN/gm_norm.mif IN/csf.mif IN/csf_norm.mif -mask IN/dwi_mask_upsampled.mif
 
 If multi-tissue CSD was performed with the same single set of (three) tissue response functions for all subjects, then the resulting output of :ref:`mtnormalise` makes the absolute amplitudes comparable between those subjects as well. Note that this step is **crucial** in the FBA pipeline, even if bias field correction was applied earlier using :ref:`dwibiascorrect`, since :ref:`dwibiascorrect` does *not* correct for *global* intensity differences between subjects. The performance of :ref:`mtnormalise` is not significantly impacted by either having run :ref:`dwibiascorrect` before or not. In case prior bias field correction was run in the pipeline, :ref:`mtnormalise` will further correct for residual intensity inhomogeneities.
+
+.. WARNING:: :ref:`mtnormalise` results can be sensitive to masks that contain non-brain voxels. The underlying algorithm will attempt to drive the sum of tissue volumes to unity in such voxels - despite not containing brain tissue - which can result in erroneous bias field correction if the number of such voxels is large. For this reason we recommend using conservative (i.e. less spatially extended) masks for the :ref:`mtnormalise` step. Unlike step 6, where inclusion of all brain voxels was encouraged even at the expense of including some non-brain voxels, for bias field estimation exclusion of non-brain voxels is of greater priority than inclusion of all brain voxels.
 
 
 9. Generate a study-specific unbiased FOD template
@@ -142,7 +146,7 @@ In this step, we segment fixels from the FOD template. The result is the *fixel 
 
 Note that here we warp FOD images into template space *without* FOD reorientation, as reorientation will be performed in a separate subsequent step (after fixel segmentation)::
 
-    for_each * : mrtransform IN/wmfod_norm.mif -warp IN/subject2template_warp.mif -noreorientation IN/fod_in_template_space_NOT_REORIENTED.mif
+    for_each * : mrtransform IN/wmfod_norm.mif -warp IN/subject2template_warp.mif -reorient_fod no IN/fod_in_template_space_NOT_REORIENTED.mif
 
 
 14. Segment FOD images to estimate fixels and their apparent fibre density (FD)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,6 +56,12 @@ namespace MR
         bool Base::process_commandline_option (const MR::App::ParsedOption&) { return false; }
         void Base::add_commandline_options (MR::App::OptionList&) { }
 
+        void CameraInteractor::deactivate () { }
+        bool CameraInteractor::slice_move_event (const ModelViewProjection&, float) { return false; }
+        bool CameraInteractor::pan_event (const ModelViewProjection&) { return false; }
+        bool CameraInteractor::panthrough_event (const ModelViewProjection&) { return false; }
+        bool CameraInteractor::tilt_event (const ModelViewProjection&) { return false; }
+        bool CameraInteractor::rotate_event (const ModelViewProjection&) { return false; }
       }
     }
   }

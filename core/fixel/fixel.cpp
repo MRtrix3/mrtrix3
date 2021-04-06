@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,18 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_keys_h__
-#define __fixel_keys_h__
-
-#include <string>
+#include "fixel/fixel.h"
+#include "version.h"
 
 namespace MR
 {
   namespace Fixel
   {
-    const std::string n_fixels_key ("nfixels");
-    const std::initializer_list <const std::string> supported_sparse_formats { ".mif", ".nii", ".mif.gz" , ".nii.gz" };
+
+    const char* format_description =
+      "Fixel data are stored utilising the fixel directory format "
+      "described in the main documentation, which can be found at the following link: \n"
+      "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/fixel_based_analysis/fixel_directory_format.html";
+
   }
 }
 
-#endif

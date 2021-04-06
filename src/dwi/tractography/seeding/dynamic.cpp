@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -367,12 +367,12 @@ namespace MR
 
         bool WriteKernelDynamic::operator() (const Tracking::GeneratedTrack& in, Tractography::Streamline<>& out)
         {
-          out.index = writer.count;
-          out.weight = 1.0;
+          out.set_index (writer.count);
+          out.weight = 1.0f;
           if (!WriteKernel::operator() (in)) {
             out.clear();
             // Flag to indicate that tracking has completed, and threads should therefore terminate
-            out.weight = 0.0;
+            out.weight = 0.0f;
             // Actually need to pass this down the queue so that the seeder thread receives it and knows to terminate
             return true;
           }

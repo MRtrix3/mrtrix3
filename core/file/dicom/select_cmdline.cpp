@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ namespace MR {
               study.push_back ((*patient[0])[i]);
           }
           if (study.empty())
-            throw ("no matching studies in DICOM dataset \"" + tree.description + "\"");
+            throw Exception ("no matching studies in DICOM dataset \"" + tree.description + "\"");
           if (study.size() > 1)
             throw Exception ("too many matching studies in DICOM dataset \"" + tree.description + "\"");
 
@@ -105,15 +105,15 @@ namespace MR {
             }
             std::cerr << "? ";
             std::cin >> buf;
-            if (!isdigit (buf[0])) {
-              series.clear();
-              return series;
+            if (buf[0] == 'q' || buf[0] == 'Q')
+              throw CancelException();
+            if (isdigit (buf[0])) {
+              int n = to<int>(buf) - 1;
+              if (n <= (int) tree.size())
+                patient_p = tree[n].get();
             }
-            int n = to<int>(buf) - 1;
-            if (n > (int) tree.size())
+            if (!patient_p)
               fprintf (stderr, "invalid selection - try again\n");
-            else
-              patient_p = tree[n].get();
           }
         }
         else
@@ -145,15 +145,15 @@ namespace MR {
             }
             std::cerr << "? ";
             std::cin >> buf;
-            if (!isdigit (buf[0])) {
-              series.clear();
-              return series;
+            if (buf[0] == 'q' || buf[0] == 'Q')
+              throw CancelException();
+            if (isdigit (buf[0])) {
+              int n = to<int>(buf) - 1;
+              if (n <= (int) patient.size())
+                study_p = patient[n].get();
             }
-            int n = to<int>(buf) - 1;
-            if (n > (int) patient.size())
+            if (!study_p)
               fprintf (stderr, "invalid selection - try again\n");
-            else
-              study_p = patient[n].get();
           }
         }
         else
@@ -188,28 +188,26 @@ namespace MR {
             }
             std::cerr << "? ";
             std::cin >> buf;
-            if (!isdigit (buf[0])) {
-              series.clear();
-              return (series);
-            }
-            vector<int> seq;
-            try {
-              seq = parse_ints (buf);
-            }
-            catch (Exception) {
-              fprintf (stderr, "Invalid number sequence - please try again\n");
-              seq.clear();
-            }
-            if (seq.size()) {
-              for (size_t i = 0; i < seq.size(); i++) {
-                if (seq[i] < 0 || seq[i] >= (int) study.size()) {
-                  fprintf (stderr, "invalid selection - try again\n");
-                  series.clear();
-                  break;
+            if (buf[0] == 'q' || buf[0] == 'Q')
+              throw CancelException();
+            if (isdigit (buf[0])) {
+              vector<uint32_t> seq;
+              try {
+                seq = parse_ints<uint32_t> (buf);
+                for (size_t i = 0; i < seq.size(); i++) {
+                  if (seq[i] < 0 || seq[i] >= (uint32_t) study.size()) {
+                    series.clear();
+                    break;
+                  }
+                  series.push_back (study[seq[i]]);
                 }
-                series.push_back (study[seq[i]]);
+              }
+              catch (Exception) {
+                seq.clear();
               }
             }
+            if (series.size() == 0)
+              fprintf (stderr, "Invalid selection - please try again\n");
           }
         }
         else series.push_back (study[0]);

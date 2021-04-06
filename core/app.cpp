@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ namespace MR
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2019 the MRtrix3 contributors.\n"
+       "Copyright (c) 2008-2021 the MRtrix3 contributors.\n"
        "\n"
        "This Source Code Form is subject to the terms of the Mozilla Public\n"
        "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
@@ -977,16 +977,18 @@ namespace MR
     void sort_arguments (int argc, const char* const* argv)
     {
       for (int n = 1; n < argc; ++n) {
-        const Option* opt = match_option (argv[n]);
-        if (opt) {
-          if (n + int (opt->size()) >= argc)
-            throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
+        if (argv[n]) {
+          const Option* opt = match_option (argv[n]);
+          if (opt) {
+            if (n + int (opt->size()) >= argc)
+              throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
 
-          option.push_back (ParsedOption (opt, argv+n+1));
-          n += opt->size();
+            option.push_back (ParsedOption (opt, argv+n+1));
+            n += opt->size();
+          }
+          else
+            argument.push_back (ParsedArgument (nullptr, nullptr, argv[n]));
         }
-        else
-          argument.push_back (ParsedArgument (nullptr, nullptr, argv[n]));
       }
     }
 
@@ -1142,10 +1144,10 @@ namespace MR
               count++;
 
           if (count < 1 && ! (OPTIONS[i][j].flags & Optional))
-            throw Exception (std::string ("mandatory option \"") + OPTIONS[i][j].id + "\" must be specified");
+            throw Exception (std::string ("mandatory option \"-") + OPTIONS[i][j].id + "\" must be specified");
 
           if (count > 1 && ! (OPTIONS[i][j].flags & AllowMultiple))
-            throw Exception (std::string ("multiple instances of option \"") +  OPTIONS[i][j].id + "\" are not allowed");
+            throw Exception (std::string ("multiple instances of option \"-") +  OPTIONS[i][j].id + "\" are not allowed");
         }
       }
 

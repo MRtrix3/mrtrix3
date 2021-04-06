@@ -6,14 +6,13 @@ Please visit the [official website for MRtrix](http://www.mrtrix.org) to access 
 
 ## Getting help
 
-Support and general discussion is hosted on the [MRtrix3 Community Forum](http://community.mrtrix.org/). Please
-address all MRtrix3-related queries there. You can use your GitHub or Google login to post questions.
+Support and general discussion is hosted on the [MRtrix3 Community Forum](http://community.mrtrix.org/). Please also look through the Frequently Asked Questions on the [wiki section of the forum](http://community.mrtrix.org/c/wiki). You can address all MRtrix3-related queries there, using your GitHub or Google login to post questions.
 
 ## Quick install
 
 1. Install dependencies by whichever means your system uses. 
-   These include: Python (>=2.6), a C++ compiler with full C++11 support (`g++` 4.9 or later, `clang++`), 
-   Eigen (>=3.2.8), zlib, OpenGL (>=3.3), and Qt (>=4.8, or at least 5.1 on MacOSX).
+   These include: Python3, a C++ compiler with full C++11 support (`g++` 4.9 or later, `clang++`), 
+   Eigen (>=3.2.8), zlib, OpenGL (>=3.3), and Qt (>=5.5).
 
 2. Clone Git repository and compile:
 

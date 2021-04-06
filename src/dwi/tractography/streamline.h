@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,23 +31,64 @@ namespace MR
     {
 
 
+
+      // Base class for storing an index alongside either streamline vertex or track scalar data
+      //
+      class DataIndex
+      { NOMEMALIGN
+        public:
+          static constexpr size_t invalid = std::numeric_limits<size_t>::max();
+          DataIndex () : index (invalid) { }
+          DataIndex (const size_t i) : index (i) { }
+          DataIndex (const DataIndex& i) : index (i.index) { }
+          DataIndex (DataIndex&& i) : index (i.index) { i.index = invalid; }
+          DataIndex& operator= (const DataIndex& i) { index = i.index; return *this; }
+          DataIndex& operator= (DataIndex&& i) { index = i.index; i.index = invalid; return *this; }
+          void set_index (const size_t i) { index = i; }
+          size_t get_index() const { return index; }
+          void clear() { index = invalid; }
+          bool operator< (const DataIndex& i) const { return index < i.index; }
+        private:
+          size_t index;
+      };
+
+
+
+
+      // A class for track scalars
       template <typename ValueType = float>
-        class Streamline : public vector<Eigen::Matrix<ValueType,3,1>>
+      class TrackScalar : public vector<ValueType>, public DataIndex
+      { MEMALIGN(TrackScalar)
+        public:
+          using value_type = ValueType;
+          using vector<ValueType>::vector;
+          TrackScalar () = default;
+          TrackScalar (const TrackScalar&) = default;
+          TrackScalar (TrackScalar&& that) :
+              vector<value_type> (std::move (that)),
+              DataIndex (std::move (that)) { }
+          TrackScalar& operator= (const TrackScalar& that) = default;
+          void clear() { vector<ValueType>::clear(); DataIndex::clear(); }
+      };
+
+
+
+
+      template <typename ValueType = float>
+        class Streamline : public vector<Eigen::Matrix<ValueType,3,1>>, public DataIndex
       { MEMALIGN(Streamline<ValueType>)
         public:
           using point_type = Eigen::Matrix<ValueType,3,1>;
           using value_type = ValueType;
 
-          Streamline () : index (-1), weight (1.0f) { }
+          Streamline () : weight (1.0f) { }
 
           Streamline (size_t size) :
             vector<point_type> (size),
-            index (-1),
             weight (value_type (1.0)) { }
 
           Streamline (size_t size, const point_type& fill) :
             vector<point_type> (size, fill),
-            index (-1),
             weight (value_type (1.0)) { }
 
           Streamline (const Streamline&) = default;
@@ -55,22 +96,21 @@ namespace MR
 
           Streamline (Streamline&& that) :
             vector<point_type> (std::move (that)),
-            index (that.index),
+            DataIndex (std::move (that)),
             weight (that.weight) {
-              that.index = -1;
               that.weight = 1.0f;
             }
 
           Streamline (const vector<point_type>& tck) :
             vector<point_type> (tck),
-            index (-1),
+            DataIndex (),
             weight (1.0) { }
 
           Streamline& operator= (Streamline&& that)
           {
             vector<point_type>::operator= (std::move (that));
-            index = that.index; that.index = -1;
-            weight = that.weight; that.weight = 1.0f;
+            DataIndex::operator= (std::move (that));
+            weight = that.weight; that.weight = 0.0f;
             return *this;
           }
 
@@ -78,11 +118,13 @@ namespace MR
           void clear()
           {
             vector<point_type>::clear();
-            index = -1;
+            DataIndex::clear();
             weight = 1.0;
           }
 
-          size_t index;
+          float calc_length() const;
+          float calc_length (const float step_size) const;
+
           float weight;
       };
 

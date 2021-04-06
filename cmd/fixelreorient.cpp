@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,8 +21,8 @@
 #include "adapter/jacobian.h"
 #include "registration/warp/helpers.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 
 using namespace MR;
 using namespace App;
@@ -38,7 +38,9 @@ void usage ()
   DESCRIPTION
   + "Reorientation is performed by transforming the vector representing "
     "the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, "
-    "then re-normalising the vector.";
+    "then re-normalising the vector."
+
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel directory").type_directory_in()

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -333,8 +333,8 @@ namespace MR
       template <class Fixel>
       bool Model<Fixel>::TrackMappingWorker::operator() (const Tractography::Streamline<>& in)
       {
-        assert (in.index < master.contributions.size());
-        assert (!master.contributions[in.index]);
+        assert (in.get_index() < master.contributions.size());
+        assert (!master.contributions[in.get_index()]);
 
         try {
 
@@ -359,7 +359,7 @@ namespace MR
             }
           }
 
-          master.contributions[in.index] = new TrackContribution (masked_contributions, total_contribution, total_length);
+          master.contributions[in.get_index()] = new TrackContribution (masked_contributions, total_contribution, total_length);
 
           TD_sum += total_contribution;
           for (vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)

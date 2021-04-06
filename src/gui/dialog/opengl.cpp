@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,12 +52,8 @@ namespace MR
         bit_depths->appendChild (new TreeItem ("depth", str (format.depthBufferSize()), bit_depths));
         bit_depths->appendChild (new TreeItem ("stencil", str (format.stencilBufferSize()), bit_depths));
 
-#if QT_VERSION >= 0x050400
         root->appendChild (new TreeItem ("Buffering", format.swapBehavior() == QSurfaceFormat::SingleBuffer ? "single" :
                ( format.swapBehavior() == QSurfaceFormat::DoubleBuffer ? "double" : "triple" ), root));
-#else
-        root->appendChild (new TreeItem ("Buffering", format.doubleBuffer() ? "double" : "single", root));
-#endif
         root->appendChild (new TreeItem ("VSync", format.swapInterval() ? "on" : "off", root));
         root->appendChild (new TreeItem ("Multisample anti-aliasing", format.samples() ? str(format.samples()).c_str() : "off", root));
 

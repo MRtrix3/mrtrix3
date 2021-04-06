@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from distutils.spawn import find_executable
+import shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, path, run
 
@@ -50,7 +50,7 @@ def get_inputs(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  if not find_executable('N4BiasFieldCorrection'):
+  if not shutil.which('N4BiasFieldCorrection'):
     raise MRtrixError('Could not find ANTS program N4BiasFieldCorrection; please check installation')
 
   for key in sorted(OPT_N4_BIAS_FIELD_CORRECTION):

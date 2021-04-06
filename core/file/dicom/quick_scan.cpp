@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@ namespace MR {
 
 
 
-      bool QuickScan::read (const std::string& file_name, bool print_DICOM_fields, bool print_CSA_fields, bool force_read)
+      bool QuickScan::read (const std::string& file_name, bool print_DICOM_fields, bool print_CSA_fields, bool print_Phoenix, bool force_read)
       {
         filename = file_name;
         modality.clear();
@@ -83,7 +83,7 @@ namespace MR {
               if (print_DICOM_fields)
                 print (str(item));
 
-              if (print_CSA_fields && item.group == 0x0029U) {
+              if ((print_CSA_fields || print_Phoenix) && item.group == 0x0029U) {
                 if (item.element == 0x1010U ||
                     item.element == 0x1020U ||
                     item.element == 0x1110U ||
@@ -91,8 +91,28 @@ namespace MR {
                     item.element == 0x1210U ||
                     item.element == 0x1220U) {
                   CSAEntry entry (item.data, item.data + item.size);
-                  while (entry.parse())
-                    print (str (entry));
+                  while (entry.parse()) {
+                    const bool is_phoenix = (strcmp ("MrPhoenixProtocol", entry.key()) == 0);
+                    if ((print_Phoenix && is_phoenix) || (print_CSA_fields && !is_phoenix)) {
+                      if (print_CSA_fields) {
+                        print (str (entry));
+                      } else {
+                        const auto data = entry.get_string();
+                        for (const auto& entry : data)
+                          print (entry);
+                      }
+                    } else if (print_CSA_fields && is_phoenix) {
+                      print (std::string("[CSA] ") + entry.key() + " (" + str(entry.num_items()) + " items): <");
+                      const auto data = entry.get_string();
+                      size_t line_count = 0;
+                      for (const auto& entry : data) {
+                        if (entry.size())
+                          line_count += 1;
+                        line_count += std::count (entry.begin(), entry.end(), '\n');
+                       }
+                       print (str(line_count) + " text lines>\n");
+                    }
+                  }
                 }
               }
             }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -399,10 +399,8 @@ namespace MR {
           return { printf ("%04X %04X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)) };
 
         auto strings = split (std::string (reinterpret_cast<const char*> (data), size), "\\", false);
-        for (auto& entry: strings) {
+        for (auto& entry: strings)
           entry = strip (entry);
-          replace (entry, '^', ' ');
-        }
         return strings;
       }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -520,12 +520,12 @@ namespace MR
                 case TrackColourType::Ends:
                   gl::BindBuffer (gl::ARRAY_BUFFER, colour_buffers[buf]);
                   gl::EnableVertexAttribArray (3);
-                  gl::VertexAttribPointer (3, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)0);
+                  gl::VertexAttribPointer (3, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)(3*sample_stride*sizeof(float)));
                   break;
                 case TrackColourType::ScalarFile:
                   gl::BindBuffer (gl::ARRAY_BUFFER, intensity_scalar_buffers[buf]);
                   gl::EnableVertexAttribArray (3);
-                  gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
+                  gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)(sample_stride*sizeof(float)));
                   break;
                 default:
                   break;
@@ -534,7 +534,7 @@ namespace MR
               if (threshold_type == TrackThresholdType::SeparateFile) {
                 gl::BindBuffer (gl::ARRAY_BUFFER, threshold_scalar_buffers[buf]);
                 gl::EnableVertexAttribArray (4);
-                gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
+                gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)(sample_stride*sizeof(float)));
               }
 
               gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffers[buf]);
@@ -706,7 +706,7 @@ namespace MR
           value_min = std::numeric_limits<float>::infinity();
           value_max = -std::numeric_limits<float>::infinity();
           vector<float> buffer;
-          vector<float> tck_scalar;
+          DWI::Tractography::TrackScalar<float> tck_scalar;
 
           if (Path::has_suffix (filename, ".tsf")) {
             DWI::Tractography::Properties scalar_properties;
@@ -801,7 +801,7 @@ namespace MR
           threshold_min = std::numeric_limits<float>::infinity();
           threshold_max = -std::numeric_limits<float>::infinity();
           vector<float> buffer;
-          vector<float> tck_scalar;
+          DWI::Tractography::TrackScalar<float> tck_scalar;
 
           if (Path::has_suffix (filename, ".tsf")) {
             DWI::Tractography::Properties scalar_properties;
@@ -811,7 +811,7 @@ namespace MR
             while (file (tck_scalar)) {
 
               const size_t tck_size = tck_scalar.size();
-              assert (tck_size == size_t(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
+              assert (tck_size == size_t(original_track_sizes[threshold_scalar_buffers.size()][tck_count]));
 
               if (!tck_size)
                 continue;

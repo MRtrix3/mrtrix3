@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,7 +43,7 @@ namespace MR
             std::string name;
         };
 
-        class View : public Base, public Mode::ModeGuiVisitor
+        class View : public Base, public Mode::ModeGuiVisitor, public Tool::CameraInteractor
         { MEMALIGN(View)
           Q_OBJECT
           public:
@@ -56,8 +56,14 @@ namespace MR
             bool get_cliphighlightstate () const;
             bool get_clipintersectionmodestate () const;
 
-            void update_lightbox_mode_gui (const Mode::LightBox &mode) override;
+            void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
             void update_ortho_mode_gui (const Mode::Ortho &mode) override;
+            void deactivate () override;
+            bool slice_move_event (const ModelViewProjection& projection, float inc) override;
+            bool pan_event (const ModelViewProjection& projection) override;
+            bool panthrough_event (const ModelViewProjection& projection) override;
+            bool tilt_event (const ModelViewProjection& projection) override;
+            bool rotate_event (const ModelViewProjection& projection) override;
 
           protected:
             virtual void showEvent (QShowEvent* event) override;
@@ -137,6 +143,8 @@ namespace MR
             void reset_light_box_gui_controls ();
             void set_transparency_from_image ();
 
+            void move_clip_planes_in_out (const ModelViewProjection& projection, vector<GL::vec4*>& clip, float distance);
+            void rotate_clip_planes (vector<GL::vec4*>& clip, const Eigen::Quaternionf& rot);
         };
 
       }

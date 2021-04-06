@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,11 +17,12 @@
 #include <sstream>
 
 #include "command.h"
-#include "math/SH.h"
 #include "image.h"
-#include "math/sphere.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "math/sphere.h"
+#include "math/SH.h"
+
 #include "dwi/directions/file.h"
 
 
@@ -166,7 +167,7 @@ void run ()
     }
     catch (Exception& E) {
       auto header = Header::open (argument[1]);
-      directions = DWI::get_valid_DW_scheme (header);
+      directions = DWI::get_DW_scheme (header);
     }
   }
 

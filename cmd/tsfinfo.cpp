@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,8 +17,9 @@
 #include "command.h"
 #include "progressbar.h"
 #include "file/ofstream.h"
-#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/streamline.h"
 
 using namespace MR;
 using namespace MR::DWI;
@@ -79,7 +80,7 @@ void run ()
 
 
     if (actual_count) {
-      vector<float > tck;
+      DWI::Tractography::TrackScalar<> tck;
       size_t count = 0;
       {
         ProgressBar progress ("counting tracks in file");
@@ -93,12 +94,11 @@ void run ()
 
     if (opt.size()) {
       ProgressBar progress ("writing track scalar data to ascii files");
-      vector<float> tck;
-      size_t count = 0;
+      DWI::Tractography::TrackScalar<> tck;
       while (file (tck)) {
         std::string filename (opt[0][0]);
         filename += "-000000.txt";
-        std::string num (str (count));
+        std::string num (str (tck.get_index()));
         filename.replace (filename.size()-4-num.size(), num.size(), num);
 
         File::OFStream out (filename);
@@ -106,7 +106,6 @@ void run ()
           out << (*i) << "\n";
         out.close();
 
-        count++;
         ++progress;
       }
     }

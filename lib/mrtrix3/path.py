@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,16 +17,8 @@
 
 
 
-import ctypes, errno, inspect, os, random, string, subprocess, time
-from distutils.spawn import find_executable
-# Function can be used in isolation if potentially needing to place quotation marks around a
-#   filesystem path that is to be included as part of a command string
-try:
-  from shlex import quote
-except ImportError:
-  from pipes import quote
+import ctypes, errno, inspect, os, random, shlex, shutil, string, subprocess, time
 from mrtrix3 import CONFIG
-from mrtrix3.utils import STRING_TYPES
 
 
 
@@ -66,7 +58,7 @@ def from_user(filename, escape=True): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   fullpath = os.path.abspath(os.path.join(app.WORKING_DIR, filename))
   if escape:
-    fullpath = quote(fullpath)
+    fullpath = shlex.quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
   return fullpath
 
@@ -132,7 +124,7 @@ def script_subdir_name(): #pylint: disable=unused-variable
   frameinfo = inspect.stack()[-1]
   try:
     frame = frameinfo.frame
-  except: # Prior to Version 3.5
+  except AttributeError: # Prior to Version 3.5
     frame = frameinfo[0]
   # If the script has been run through a softlink, we need the name of the original
   #   script in order to locate the additional data
@@ -164,7 +156,7 @@ def to_scratch(filename, escape=True): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   fullpath = os.path.abspath(os.path.join(app.SCRATCH_DIR, filename))
   if escape:
-    fullpath = quote(fullpath)
+    fullpath = shlex.quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
   return fullpath
 
@@ -200,9 +192,9 @@ def wait_for(paths): #pylint: disable=unused-variable
         with open(path, 'rb+') as dummy_f:
           pass
         return False
-      except:
+      except IOError:
         return True
-    if not find_executable('fuser'):
+    if not shutil.which('fuser'):
       return None
     # fuser returns zero if there IS at least one process accessing the file
     # A fatal error will result in a non-zero code -> in_use() = False, so wait_for() can return
@@ -230,12 +222,12 @@ def wait_for(paths): #pylint: disable=unused-variable
 
   # Make sure the data we're dealing with is a list of strings;
   #   or make it a list of strings if it's just a single entry
-  if isinstance(paths, STRING_TYPES):
+  if isinstance(paths, str):
     paths = [ paths ]
   else:
     assert isinstance(paths, list)
     for entry in paths:
-      assert isinstance(entry, STRING_TYPES)
+      assert isinstance(entry, str)
 
   app.debug(str(paths))
 

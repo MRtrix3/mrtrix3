@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,19 +15,20 @@
  */
 
 #include "command.h"
+#include "image.h"
 #include "progressbar.h"
 #include "algo/loop.h"
 
-#include "image.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
-#include "fixel/types.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/streamline.h"
 
-#include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
+#include "dwi/tractography/mapping/mapper.h"
+
 
 
 using namespace MR;
@@ -48,7 +49,9 @@ void usage ()
   SYNOPSIS = "Map fixel values to a track scalar file based on an input tractogram";
 
   DESCRIPTION
-  + "This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.";
+  + "This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D."
+
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file (within the fixel directory)").type_image_in ()
@@ -96,14 +99,17 @@ void run ()
 
   ProgressBar progress ("mapping fixel values to streamline points", num_tracks);
   DWI::Tractography::Streamline<float> tck;
+  DWI::Tractography::TrackScalar<float> scalars;
 
-  Transform transform (in_index_image);
+  const Transform transform (in_index_image);
   Eigen::Vector3 voxel_pos;
 
   while (reader (tck)) {
     SetVoxelDir dixels;
     mapper (tck, dixels);
-    vector<float> scalars (tck.size(), 0.0f);
+    scalars.clear();
+    scalars.set_index (tck.get_index());
+    scalars.resize (tck.size(), 0.0f);
     for (size_t p = 0; p < tck.size(); ++p) {
       voxel_pos = transform.scanner2voxel * tck[p].cast<default_type> ();
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {

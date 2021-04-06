@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,10 +19,9 @@
 #include "algo/loop.h"
 #include "image.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
@@ -97,6 +96,9 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Compute a fixel TDI map from a tractogram";
+
+  DESCRIPTION
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("tracks",  "the input tracks.").type_tracks_in()

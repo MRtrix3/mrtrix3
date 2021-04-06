@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,11 +39,6 @@ void usage ()
     "and J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Multi-tissue informed log-domain intensity normalisation";
-
-  REFERENCES
-    + "Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. " // Internal
-    "Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. "
-    "In Proc. ISMRM, 2017, 26, 3541";
 
   DESCRIPTION
     + "This command takes as input any number of tissue components (e.g. from "
@@ -105,6 +100,11 @@ void usage ()
 
     + Option ("check_factors", "output the tissue balance factors computed during normalisation.")
     + Argument ("file").type_file_out ();
+
+    REFERENCES
+    + "Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. " // Internal
+    "Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. "
+    "In Proc. ISMRM, 2017, 26, 3541";
 
 }
 
@@ -487,6 +487,8 @@ void run ()
 {
   if (argument.size() % 2)
     throw Exception ("The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
+  if (argument.size() == 2)
+    WARN("Only one contrast provided. If multi-tissue CSD was performed, provide all components to mtnormalise.");
 
   const int order = get_option_value<int> ("order", DEFAULT_POLY_ORDER);
   const float reference_value = get_option_value ("reference", DEFAULT_REFERENCE_VALUE);
@@ -496,12 +498,12 @@ void run ()
   size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
   auto opt = get_options ("niter");
   if (opt.size()) {
-    vector<int> num = opt[0][0];
+    vector<size_t> num = parse_ints<size_t> (opt[0][0]);
     if (num.size() < 1 && num.size() > 2)
-      throw Exception ("unexpected number of entries provided to option \"niter\"");
-    for (const int n : num)
-      if (n < 1)
-        throw Exception ("number of iterations must be positive");
+      throw Exception ("unexpected number of entries provided to option \"-niter\"");
+    for (auto n : num)
+      if (!n)
+        throw Exception ("number of iterations must be nonzero");
 
     max_iter = num[0];
     if (num.size() > 1)

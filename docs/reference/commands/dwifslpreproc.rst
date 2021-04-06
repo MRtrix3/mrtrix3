@@ -23,11 +23,16 @@ Description
 
 This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.
 
+More information on use of the dwifslpreproc command can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.2/dwi_preprocessing/dwifslpreproc.html
+
+Note that the MRtrix3 command dwi2mask will automatically be called to derive a processing mask for the FSL command "eddy", which determines which voxels contribute to the estimation of geometric distortion parameters and possibly also the classification of outlier slices. If FSL command "topup" is used to estimate a susceptibility field, then dwi2mask will be executed on the resuts of running FSL command "applytopup" to the input DWIs; otherwise it will be executed directly on the input DWIs. Alternatively, the -eddy_mask option can be specified in order to manually provide such a processing mask. More information on mask derivation from DWI data can be found at: https://mrtrix.readthedocs.io/en/3.0.2/dwi_preprocessing/masking.html
+
 The "-topup_options" and "-eddy_options" command-line options allow the user to pass desired command-line options directly to the FSL commands topup and eddy. The available options for those commands may vary between versions of FSL; users can interrogate such by querying the help pages of the installed software, and/or the FSL online documentation: (topup) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide ; (eddy) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide
 
 The script will attempt to run the CUDA version of eddy; if this does not succeed for any reason, or is not present on the system, the CPU version will be attempted instead. By default, the CUDA eddy binary found that indicates compilation against the most recent version of CUDA will be attempted; this can be over-ridden by providing a soft-link "eddy_cuda" within your path that links to the binary you wish to be executed.
 
-Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to eddy is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).
+Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to topup is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).
 
 Example usages
 --------------
@@ -59,23 +64,7 @@ Example usages
 Options
 -------
 
-- **-pe_dir PE** Manually specify the phase encoding direction of the input series; can be a signed axis number (e.g. -0, 1, +2), an axis designator (e.g. RL, PA, IS), or NIfTI axis codes (e.g. i-, j, k)
-
-- **-readout_time time** Manually specify the total readout time of the input series (in seconds)
-
-- **-se_epi image** Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)
-
-- **-align_seepi** Achieve alignment between the SE-EPI images used for inhomogeneity field estimation, and the DWIs (more information in Description section)
-
 - **-json_import file** Import image header information from an associated JSON file (may be necessary to determine phase encoding information)
-
-- **-topup_options " TopupOptions"** Manually provide additional command-line options to the topup command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to topup)
-
-- **-eddy_options " EddyOptions"** Manually provide additional command-line options to the eddy command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to eddy)
-
-- **-eddyqc_text directory** Copy the various text-based statistical outputs generated by eddy, and the output of eddy_qc (if installed), into an output directory
-
-- **-eddyqc_all directory** Copy ALL outputs generated by eddy (including images), and the output of eddy_qc (if installed), into an output directory
 
 Options for specifying the acquisition phase-encoding design; note that one of the -rpe_* options MUST be provided
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -101,6 +90,40 @@ Options for exporting the diffusion gradient table
 - **-export_grad_mrtrix grad** Export the final gradient table in MRtrix format
 
 - **-export_grad_fsl bvecs bvals** Export the final gradient table in FSL bvecs/bvals format
+
+Options for utilising EddyQC
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-eddyqc_text directory** Copy the various text-based statistical outputs generated by eddy, and the output of eddy_qc (if installed), into an output directory
+
+- **-eddyqc_all directory** Copy ALL outputs generated by eddy (including images), and the output of eddy_qc (if installed), into an output directory
+
+Options for affecting the operation of the FSL "eddy" command
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-eddy_mask image** Provide a processing mask to use for eddy, instead of having dwifslpreproc generate one internally using dwi2mask
+
+- **-eddy_slspec file** Provide a file containing slice groupings for eddy's slice-to-volume registration
+
+- **-eddy_options " EddyOptions"** Manually provide additional command-line options to the eddy command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to eddy)
+
+Options for achieving correction of susceptibility distortions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-se_epi image** Provide an additional image series consisting of spin-echo EPI images, which is to be used exclusively by topup for estimating the inhomogeneity field (i.e. it will not form part of the output image series)
+
+- **-align_seepi** Achieve alignment between the SE-EPI images used for inhomogeneity field estimation, and the DWIs (more information in Description section)
+
+- **-topup_options " TopupOptions"** Manually provide additional command-line options to the topup command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to topup)
+
+- **-topup_files prefix** Provide files generated by prior execution of the FSL "topup" command to be utilised by eddy
+
+Options for manually specifying the phase encoding of the input DWIs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-pe_dir PE** Manually specify the phase encoding direction of the input series; can be a signed axis number (e.g. -0, 1, +2), an axis designator (e.g. RL, PA, IS), or NIfTI axis codes (e.g. i-, j, k)
+
+- **-readout_time time** Manually specify the total readout time of the input series (in seconds)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -145,7 +168,7 @@ References
 
 * If including "--mporder" in -eddy_options input: Andersson, J. L. R.; Graham, M. S.; Drobnjak, I.; Zhang, H.; Filippini, N. & Bastiani, M. Towards a comprehensive framework for movement and distortion correction of diffusion MR images: Within volume movement. NeuroImage, 2017, 152, 450-466
 
-* If using -eddyqc_test or -eddyqc_all option and eddy_quad is installed: Bastiani, M.; Cottaar, M.; Fitzgibbon, S.P.; Suri, S.; Alfaro-Almagro, F.; Sotiropoulos, S.N.; Jbabdi, S.; Andersson, J.L.R. Automated quality control for within and between studies diffusion MRI data using a non-parametric framework for movement and distortion correction. NeuroImage, 2019, 184, 801-812
+* If using -eddyqc_text or -eddyqc_all option and eddy_quad is installed: Bastiani, M.; Cottaar, M.; Fitzgibbon, S.P.; Suri, S.; Alfaro-Almagro, F.; Sotiropoulos, S.N.; Jbabdi, S.; Andersson, J.L.R. Automated quality control for within and between studies diffusion MRI data using a non-parametric framework for movement and distortion correction. NeuroImage, 2019, 184, 801-812
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
@@ -155,7 +178,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

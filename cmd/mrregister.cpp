@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,6 +35,7 @@
 #include "math/SH.h"
 #include "math/sphere.h"
 #include "transform.h"
+#include "file/nifti_utils.h"
 
 
 using namespace MR;
@@ -411,7 +412,7 @@ void run () {
   if (opt.size ()) {
     if (!do_rigid)
       throw Exception ("the number of rigid iterations have been input when no rigid registration is requested");
-    rigid_registration.set_max_iter (parse_ints (opt[0][0]));
+    rigid_registration.set_max_iter (parse_ints<uint32_t> (opt[0][0]));
   }
 
   opt = get_options ("rigid_metric");
@@ -475,13 +476,13 @@ void run () {
   }
 
   opt = get_options ("rigid_lmax");
-  vector<int> rigid_lmax;
+  vector<uint32_t> rigid_lmax;
   if (opt.size ()) {
     if (!do_rigid)
       throw Exception ("the -rigid_lmax option has been set when no rigid registration is requested");
     if (max_mc_image_lmax == 0)
       throw Exception ("-rigid_lmax option is not valid if no input image is FOD image");
-    rigid_lmax = parse_ints (opt[0][0]);
+    rigid_lmax = parse_ints<uint32_t> (opt[0][0]);
     for (size_t i = 0; i < rigid_lmax.size (); ++i)
       if (rigid_lmax[i] > max_mc_image_lmax) {
         WARN ("the requested -rigid_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
@@ -646,17 +647,17 @@ void run () {
   if (opt.size ()) {
     if (!do_affine)
       throw Exception ("the number of affine iterations have been input when no affine registration is requested");
-    affine_registration.set_max_iter (parse_ints (opt[0][0]));
+    affine_registration.set_max_iter (parse_ints<uint32_t> (opt[0][0]));
   }
 
   opt = get_options ("affine_lmax");
-  vector<int> affine_lmax;
+  vector<uint32_t> affine_lmax;
   if (opt.size ()) {
     if (!do_affine)
       throw Exception ("the -affine_lmax option has been set when no affine registration is requested");
     if (max_mc_image_lmax == 0)
       throw Exception ("-affine_lmax option is not valid if no input image is FOD image");
-    affine_lmax = parse_ints (opt[0][0]);
+    affine_lmax = parse_ints<uint32_t> (opt[0][0]);
     for (size_t i = 0; i < affine_lmax.size (); ++i)
       if (affine_lmax[i] > max_mc_image_lmax) {
         WARN ("the requested -affine_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
@@ -715,6 +716,9 @@ void run () {
     if (!do_nonlinear)
       throw Exception ("Non-linear warp output requested when no non-linear registration is requested");
     warp_full_filename = std::string (opt[0][0]);
+    if (!Path::is_mrtrix_image (warp_full_filename) && !(Path::has_suffix (warp_full_filename, {".nii", ".nii.gz"}) &&
+                                                         File::Config::get_bool ("NIfTIAutoSaveJSON", false)))
+      throw Exception ("nl_warp_full output requires .mif/.mih or NIfTI file format with NIfTIAutoSaveJSON config option set.");
   }
 
 
@@ -725,6 +729,12 @@ void run () {
 
     if (!do_nonlinear)
       throw Exception ("the non linear initialisation option -nl_init cannot be used when no non linear registration is requested");
+
+    if (!Path::is_mrtrix_image (opt[0][0]) && !(Path::has_suffix (opt[0][0], {".nii", ".nii.gz"}) &&
+                                                File::Config::get_bool ("NIfTIAutoLoadJSON", false) &&
+                                                Path::exists(File::NIfTI::get_json_path(opt[0][0]))))
+      WARN ("nl_init input requires warp_full in original .mif/.mih file format or in NIfTI file format with associated JSON. "
+            "Converting to other file formats may remove linear transformations stored in the image header.");
 
     Image<default_type> input_warps = Image<default_type>::open (opt[0][0]);
     if (input_warps.ndim() != 5)
@@ -763,7 +773,7 @@ void run () {
   if (opt.size ()) {
     if (!do_nonlinear)
       throw Exception ("the number of non-linear iterations have been input when no non-linear registration is requested");
-    vector<int> iterations_per_level = parse_ints (opt[0][0]);
+    vector<uint32_t> iterations_per_level = parse_ints<uint32_t> (opt[0][0]);
     if (nonlinear_init && iterations_per_level.size() > 1)
       throw Exception ("when initialising the non-linear registration the max number of iterations can only be defined for a single level");
     else
@@ -792,13 +802,13 @@ void run () {
   }
 
   opt = get_options ("nl_lmax");
-  vector<int> nl_lmax;
+  vector<uint32_t> nl_lmax;
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("the -nl_lmax option has been set when no non-linear registration is requested");
     if (max_mc_image_lmax == 0)
       throw Exception ("-nl_lmax option is not valid if no input image is FOD image");
-    nl_lmax = parse_ints (opt[0][0]);
+    nl_lmax = parse_ints<uint32_t> (opt[0][0]);
     for (size_t i = 0; i < nl_lmax.size (); ++i) {
       if ((nl_lmax)[i] > max_mc_image_lmax) {
         WARN ("the requested -nl_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
@@ -830,7 +840,7 @@ void run () {
   if (opt.size ()) {
     if (!do_nonlinear)
         throw Exception ("the nonlinear lncc kernel radius has been input when no nonlinear registration is requested");
-      vector<int> input_radii = parse_ints (opt[0][0]);
+      vector<int> input_radii = parse_ints<int> (opt[0][0]);
       size_t lncc_radius = input_radii[0];
       if (lncc_radius > 0 && nl_metric != Registration::NL_NCC)
         throw Exception ("nl_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");

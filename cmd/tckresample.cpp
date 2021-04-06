@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,8 +17,8 @@
 #include "command.h"
 #include "math/math.h"
 #include "image.h"
+#include "ordered_thread_queue.h"
 #include "thread.h"
-#include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resampling/arc.h"
@@ -55,10 +55,7 @@ void usage ()
     "vertices will typically change the quantified length of that streamline; the "
     "magnitude of the difference will typically depend on the discrepancy in the "
     "number of vertices, with less vertices leading to a shorter length (due to "
-    "taking chordal lengths of curved trajectories)."
-
-
-  + DWI::Tractography::preserve_track_order_desc;
+    "taking chordal lengths of curved trajectories).";
 
   ARGUMENTS
   + Argument ("in_tracks",  "the input track file").type_tracks_in()
@@ -127,10 +124,10 @@ void run ()
 
   Worker worker (resampler);
   Receiver receiver (argument[1], properties);
-  Thread::run_queue (read,
-                     Thread::batch (Streamline<value_type>()),
-                     Thread::multi (worker),
-                     Thread::batch (Streamline<value_type>()),
-                     receiver);
+  Thread::run_ordered_queue (read,
+                             Thread::batch (Streamline<value_type>()),
+                             Thread::multi (worker),
+                             Thread::batch (Streamline<value_type>()),
+                             receiver);
 
 }

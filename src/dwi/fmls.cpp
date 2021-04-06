@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,19 +35,19 @@ namespace MR {
         + App::Argument ("value").type_float (0.0)
 
         + App::Option ("fmls_peak_value",
-            "threshold the raw peak amplitude of positive FOD lobes. "
-            "Any lobe for which the peak amplitude is smaller than this threshold will be discarded. "
+            "threshold peak amplitude of positive FOD lobes. "
+            "Any lobe for which the maximal peak amplitude is smaller than this threshold will be discarded. "
             "Default: " + str(FMLS_PEAK_VALUE_THRESHOLD_DEFAULT, 2) + ".")
         + App::Argument ("value").type_float (0.0)
 
         + App::Option ("fmls_no_thresholds",
-            "disable all FOD lobe thresholding; every lobe with a positive FOD amplitude will be retained.")
+            "disable all FOD lobe thresholding; every lobe where the FOD is positive will be retained.")
 
-        + App::Option ("fmls_peak_ratio_to_merge",
-            "specify the amplitude ratio between a sample and the smallest peak amplitude of the adjoining lobes, above which the lobes will be merged. "
-            "This is the relative amplitude between the smallest of two adjoining lobes, and the 'bridge' between the two lobes. "
-            "A value of 1.0 will never merge two peaks into a single lobe; a value of 0.0 will always merge lobes unless they are bisected by a zero crossing. "
-            "Default: " + str(FMLS_RATIO_TO_PEAK_VALUE_TO_MERGE_DEFAULT, 2) + ".")
+        + App::Option ("fmls_lobe_merge_ratio",
+            "Specify the ratio between a given FOD amplitude sample between two lobes, and the smallest peak amplitude of the adjacent lobes, above which those lobes will be merged. "
+            "This is the amplitude of the FOD at the 'bridge' point between the two lobes, divided by the peak amplitude of the smaller of the two adjoining lobes. "
+            "A value of 1.0 will never merge two lobes into one; a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing. "
+            "Default: " + str(FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT, 2) + ".")
         + App::Argument ("value").type_float (0.0, 1.0);
 
 
@@ -82,12 +82,11 @@ namespace MR {
           }
         }
 
-        opt = get_options ("fmls_peak_ratio_to_merge");
+        opt = get_options ("fmls_merge_ratio");
         if (opt.size())
-          segmenter.set_ratio_of_peak_value_to_merge (default_type(opt[0][0]));
+          segmenter.set_lobe_merge_ratio (default_type(opt[0][0]));
 
       }
-
 
 
 
@@ -135,15 +134,15 @@ namespace MR {
 
 
       Segmenter::Segmenter (const DWI::Directions::FastLookupSet& directions, const size_t l) :
-          dirs                         (directions),
-          lmax                         (l),
-          precomputer                  (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
-          integral_threshold           (FMLS_INTEGRAL_THRESHOLD_DEFAULT),
-          peak_value_threshold         (FMLS_PEAK_VALUE_THRESHOLD_DEFAULT),
-          ratio_of_peak_value_to_merge (FMLS_RATIO_TO_PEAK_VALUE_TO_MERGE_DEFAULT),
-          create_null_lobe             (false),
-          create_lookup_table          (true),
-          dilate_lookup_table          (false)
+          dirs                 (directions),
+          lmax                 (l),
+          precomputer          (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
+          integral_threshold   (FMLS_INTEGRAL_THRESHOLD_DEFAULT),
+          peak_value_threshold (FMLS_PEAK_VALUE_THRESHOLD_DEFAULT),
+          lobe_merge_ratio     (FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT),
+          create_null_lobe     (false),
+          create_lookup_table  (true),
+          dilate_lookup_table  (false)
       {
         Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs (dirs.size(), 2);
         for (size_t row = 0; row != dirs.size(); ++row) {
@@ -213,7 +212,7 @@ namespace MR {
             // Changed handling of lobe merges
             // Merge lobes as they appear to be merged, but update the
             //   contents of retrospective_assignments accordingly
-            if (abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > ratio_of_peak_value_to_merge) {
+            if (abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > lobe_merge_ratio) {
 
               std::sort (adj_lobes.begin(), adj_lobes.end());
               for (size_t j = 1; j != adj_lobes.size(); ++j)
@@ -264,18 +263,17 @@ namespace MR {
 
             // Revise multiple peaks if present
             for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
-              Eigen::Vector3 newton_peak = i->get_peak_dir (peak_index);
-              const default_type newton_peak_value = Math::SH::get_peak (in, lmax, newton_peak, &(*precomputer));
-              if (std::isfinite (newton_peak_value) && newton_peak.allFinite()) {
+              Eigen::Vector3 newton_peak_dir = i->get_peak_dir (peak_index); // to be updated by subsequent Math::SH::get_peak() call
+              const default_type newton_peak_value = Math::SH::get_peak (in, lmax, newton_peak_dir, &(*precomputer));
+              if (std::isfinite (newton_peak_value) && newton_peak_dir.allFinite()) {
 
                 // Ensure that the new peak direction found via Newton optimisation
-                //   is still approximately the same peak as that found via FMLS:
-
-                // - Needs to be closer to this peak than any other peaks within the lobe
+                //   is still approximately the same direction as that found via FMLS:
+                // Also needs to be closer to this peak than any other peaks within the lobe
                 default_type max_dp = 0.0;
                 size_t nearest_original_peak = i->num_peaks();
                 for (size_t j = 0; j != i->num_peaks(); ++j) {
-                  const default_type this_dp = abs (newton_peak.dot (i->get_peak_dir (j)));
+                  const default_type this_dp = abs (newton_peak_dir.dot (i->get_peak_dir (j)));
                   if (this_dp > max_dp) {
                     max_dp = this_dp;
                     nearest_original_peak = j;
@@ -283,10 +281,10 @@ namespace MR {
                 }
                 if (nearest_original_peak == peak_index) {
 
-                  // - Needs to still lie within the lobe: Determined via mask
-                  const index_type newton_peak_closest_dir_index = dirs.select_direction (newton_peak);
+                  // Needs to still lie within the lobe: Determined via mask
+                  const index_type newton_peak_closest_dir_index = dirs.select_direction (newton_peak_dir);
                   if (i->get_mask()[newton_peak_closest_dir_index])
-                    i->revise_peak (peak_index, newton_peak, newton_peak_value);
+                    i->revise_peak (peak_index, newton_peak_dir, newton_peak_value);
 
                 }
               }
@@ -302,6 +300,8 @@ namespace MR {
             }
           }
         }
+
+        std::sort (out.begin(), out.end(), [] (const FOD_lobe& a, const FOD_lobe& b) { return (a.get_integral() > b.get_integral()); } );
 
         if (create_lookup_table) {
 
@@ -457,4 +457,3 @@ namespace MR {
     }
   }
 }
-

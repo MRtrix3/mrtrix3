@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -59,18 +59,19 @@ void usage ()
     + Stride::Options;
 }
 
+
+
+
+
+
 void run()
 {
-  auto input_header = Header::open (argument[0]);
-  auto input_image = input_header.get_image<float>();
-
-  Eigen::MatrixXd grad_unprocessed = DWI::get_DW_scheme (input_image);
-  Eigen::MatrixXd grad = grad_unprocessed;
-  DWI::validate_DW_scheme (grad, input_image);
+  auto input_image = Image<float>::open (argument[0]);
+  auto grad = DWI::get_DW_scheme (input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
-  vector<int> volumes;
+  vector<uint32_t> volumes;
   bool bzero = get_options ("bzero").size();
   if (get_options ("shells").size() || get_options ("singleshell").size()) {
     DWI::Shells shells (grad);
@@ -93,19 +94,19 @@ void run()
   } else {
     // "pe" option has been provided - need to initialise list of volumes
     //   to include all voxels, as the PE selection filters from this
-    for (int i = 0; i != grad.rows(); ++i)
+    for (uint32_t i = 0; i != grad.rows(); ++i)
       volumes.push_back (i);
   }
 
   auto opt = get_options ("pe");
-  const auto pe_scheme = PhaseEncoding::get_scheme (input_header);
+  const auto pe_scheme = PhaseEncoding::get_scheme (input_image);
   if (opt.size()) {
     if (!pe_scheme.rows())
       throw Exception ("Cannot filter volumes by phase-encoding: No such information present");
     const auto filter = parse_floats (opt[0][0]);
     if (!(filter.size() == 3 || filter.size() == 4))
       throw Exception ("Phase encoding filter must be a comma-separated list of either 3 or 4 numbers");
-    vector<int> new_volumes;
+    vector<uint32_t> new_volumes;
     for (const auto i : volumes) {
       bool keep = true;
       for (size_t axis = 0; axis != 3; ++axis) {
@@ -137,7 +138,7 @@ void run()
 
   Eigen::MatrixXd new_grad (volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
-    new_grad.row (i) = grad_unprocessed.row (volumes[i]);
+    new_grad.row (i) = grad.row (volumes[i]);
   DWI::set_DW_scheme (header, new_grad);
 
   if (pe_scheme.rows()) {

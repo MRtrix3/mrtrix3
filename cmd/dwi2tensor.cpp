@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -95,12 +95,11 @@ void usage ()
    + "References based on fitting algorithm used:"
 
    + "* OLS, WLS:\n"
-     "Basser, P.J.; Mattiello, J.; LeBihan, D."
-     "Estimation of the effective self-diffusion tensor from the NMR spin echo."
+     "Basser, P.J.; Mattiello, J.; LeBihan, D. "
+     "Estimation of the effective self-diffusion tensor from the NMR spin echo. "
      "J Magn Reson B., 1994, 103, 247–254."
 
-
-  +  "* IWLS:\n"
+   + "* IWLS:\n"
      "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. " // Internal
      "Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. "
      "NeuroImage, 2013, 81, 335-346";
@@ -112,7 +111,7 @@ template <class MASKType, class B0Type, class DKTType, class PredictType>
 class Processor { MEMALIGN(Processor)
   public:
     Processor (const Eigen::MatrixXd& b, const bool ols, const int iter,
-        MASKType* mask_image, B0Type* b0_image, DKTType* dkt_image, PredictType* predict_image) :
+        const MASKType& mask_image, const B0Type& b0_image, const DKTType& dkt_image, const PredictType& predict_image) :
       mask_image (mask_image),
       b0_image (b0_image),
       dkt_image (dkt_image),
@@ -129,9 +128,9 @@ class Processor { MEMALIGN(Processor)
     template <class DWIType, class DTType>
       void operator() (DWIType& dwi_image, DTType& dt_image)
       {
-        if (mask_image) {
-          assign_pos_of (dwi_image, 0, 3).to (*mask_image);
-          if (!mask_image->value())
+        if (mask_image.valid()) {
+          assign_pos_of (dwi_image, 0, 3).to (mask_image);
+          if (!mask_image.value())
             return;
         }
 
@@ -158,34 +157,34 @@ class Processor { MEMALIGN(Processor)
           dt_image.value() = p[dt_image.index(3)];
         }
 
-        if (b0_image) {
-          assign_pos_of (dwi_image, 0, 3).to (*b0_image);
-          b0_image->value() = exp(p[6]);
+        if (b0_image.valid()) {
+          assign_pos_of (dwi_image, 0, 3).to (b0_image);
+          b0_image.value() = exp(p[6]);
         }
 
-        if (dkt_image) {
-          assign_pos_of (dwi_image, 0, 3).to (*dkt_image);
+        if (dkt_image.valid()) {
+          assign_pos_of (dwi_image, 0, 3).to (dkt_image);
           double adc_sq = (p[0]+p[1]+p[2])*(p[0]+p[1]+p[2])/9.0;
-          for (auto l = Loop(3)(*dkt_image); l; ++l) {
-            dkt_image->value() = p[dkt_image->index(3)+7]/adc_sq;
+          for (auto l = Loop(3)(dkt_image); l; ++l) {
+            dkt_image.value() = p[dkt_image.index(3)+7]/adc_sq;
           }
         }
 
-        if (predict_image) {
-          assign_pos_of (dwi_image, 0, 3).to (*predict_image);
+        if (predict_image.valid()) {
+          assign_pos_of (dwi_image, 0, 3).to (predict_image);
           dwi = (b*p).array().exp();
-          for (auto l = Loop(3)(*predict_image); l; ++l) {
-            predict_image->value() = dwi[predict_image->index(3)];
+          for (auto l = Loop(3)(predict_image); l; ++l) {
+            predict_image.value() = dwi[predict_image.index(3)];
           }
         }
 
       }
 
   private:
-    copy_ptr<MASKType> mask_image;
-    copy_ptr<B0Type> b0_image;
-    copy_ptr<DKTType> dkt_image;
-    copy_ptr<PredictType> predict_image;
+    MASKType mask_image;
+    B0Type b0_image;
+    DKTType dkt_image;
+    PredictType predict_image;
     Eigen::VectorXd dwi;
     Eigen::VectorXd p;
     Eigen::VectorXd w;
@@ -197,20 +196,20 @@ class Processor { MEMALIGN(Processor)
 };
 
 template <class MASKType, class B0Type, class DKTType, class PredictType>
-inline Processor<MASKType, B0Type, DKTType, PredictType> processor (const Eigen::MatrixXd& b, const bool ols, const int iter, MASKType* mask_image, B0Type* b0_image, DKTType* dkt_image, PredictType* predict_image) {
+inline Processor<MASKType, B0Type, DKTType, PredictType> processor (const Eigen::MatrixXd& b, const bool ols, const int iter, const MASKType& mask_image, const B0Type& b0_image, const DKTType& dkt_image, const PredictType& predict_image) {
   return { b, ols, iter, mask_image, b0_image, dkt_image, predict_image };
 }
 
 void run ()
 {
   auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_valid_DW_scheme (dwi);
+  auto grad = DWI::get_DW_scheme (dwi);
 
-  Image<bool>* mask = nullptr;
+  Image<bool> mask;
   auto opt = get_options ("mask");
   if (opt.size()) {
-    mask = new Image<bool> (Image<bool>::open (opt[0][0]));
-    check_dimensions (dwi, *mask, 0, 3);
+    mask = Image<bool>::open (opt[0][0]);
+    check_dimensions (dwi, mask, 0, 3);
   }
 
   bool ols = get_options ("ols").size();
@@ -224,27 +223,27 @@ void run ()
   DWI::stash_DW_scheme (header, grad);
   PhaseEncoding::clear_scheme (header);
 
-  Image<value_type>* predict = nullptr;
+  Image<value_type> predict;
   opt = get_options ("predicted_signal");
   if (opt.size())
-    predict = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
+    predict = Image<value_type>::create (opt[0][0], header);
 
   header.size(3) = 6;
   auto dt = Image<value_type>::create (argument[1], header);
 
-  Image<value_type>* b0 = nullptr;
+  Image<value_type> b0;
   opt = get_options ("b0");
   if (opt.size()) {
     header.ndim() = 3;
-    b0 = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
+    b0 = Image<value_type>::create (opt[0][0], header);
   }
 
-  Image<value_type>* dkt = nullptr;
+  Image<value_type> dkt;
   opt = get_options ("dkt");
   if (opt.size()) {
     header.ndim() = 4;
     header.size(3) = 15;
-    dkt = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
+    dkt = Image<value_type>::create (opt[0][0], header);
   }
 
   Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad, opt.size()>0);

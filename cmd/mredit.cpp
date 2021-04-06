@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -128,7 +128,7 @@ void run ()
   operation_count += opt.size();
   for (auto p : opt) {
     const size_t axis = p[0];
-    const auto coords = parse_ints (p[1]);
+    const auto coords = parse_ints<uint32_t> (p[1]);
     const float value = p[2];
     const std::array<size_t, 2> loop_axes { { axis == 0 ? size_t(1) : size_t(0), axis == 2 ? size_t(1) : size_t(2) } };
     for (auto c : coords) {

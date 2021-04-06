@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -103,6 +103,7 @@ BINARY_OP (add, "(%1 + %2)", NORMAL, "add values", { return a+b; }, { return a+b
 BINARY_OP (subtract, "(%1 - %2)", NORMAL, "subtract nth operand from (n-1)th", { return a-b; }, { return a-b; })
 BINARY_OP (multiply, "(%1 * %2)", NORMAL, "multiply values", { return a*b; }, { return a*b; })
 BINARY_OP (divide, "(%1 / %2)", NORMAL, "divide (n-1)th operand by nth", { return a/b; }, { return a/b; })
+BINARY_OP (modulo, "(%1 \% %2)", NORMAL, "remainder after dividing (n-1)th operand by nth", { return std::fmod(a, b); }, NOT_IMPLEMENTED)
 BINARY_OP (min, "min (%1, %2)", NORMAL, "smallest of last two operands", { return std::min (a, b); }, NOT_IMPLEMENTED)
 BINARY_OP (max, "max (%1, %2)", NORMAL, "greatest of last two operands", { return std::max (a, b); }, NOT_IMPLEMENTED)
 

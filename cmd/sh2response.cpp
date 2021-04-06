@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,18 +16,16 @@
 
 #include "command.h"
 #include "exception.h"
+#include "image.h"
 #include "mrtrix.h"
 #include "progressbar.h"
-
-#include "image.h"
 #include "algo/loop.h"
-
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "math/math.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 
-#include "dwi/gradient.h"
-#include "dwi/shells.h"
 
 
 

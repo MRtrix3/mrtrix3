@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,16 +17,17 @@
 #include "mrtrix.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+
+#include "gui/lighting_dock.h"
 #include "dwi/directions/set.h"
 #include "gui/dialog/file.h"
-#include "gui/lighting_dock.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
+#include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/odf/item.h"
 #include "gui/mrview/tool/odf/model.h"
 #include "gui/mrview/tool/odf/odf.h"
 #include "gui/mrview/tool/odf/preview.h"
-#include "gui/mrview/mode/base.h"
 
 namespace MR
 {
@@ -207,11 +208,16 @@ namespace MR
             connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
             box_layout->addWidget (use_lighting_box, 5, 2, 1, 2);
 
+            colour_relative_to_projection_box = new QCheckBox ("colour by camera");
+            colour_relative_to_projection_box->setToolTip (tr ("Colour ODFs according their direction relative to the camera,\nrather than relative to the scanner coordinate system"));
+            colour_relative_to_projection_box->setChecked (false);
+            connect (colour_relative_to_projection_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
+            box_layout->addWidget (colour_relative_to_projection_box, 6, 0, 1, 2);
+
             QPushButton *lighting_settings_button = new QPushButton ("ODF lighting...", this);
             lighting_settings_button->setIcon (QIcon (":/light.svg"));
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
-            box_layout->addWidget (lighting_settings_button, 6, 0, 1, 4);
-
+            box_layout->addWidget (lighting_settings_button, 6, 2, 1, 2);
 
             connect (image_list_view->selectionModel(),
                 SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
@@ -282,8 +288,16 @@ namespace MR
 
             renderer->set_mode (settings->odf_type);
 
+
+            const GL::mat4* rotation = nullptr;
+            GL::mat4 rot;
+            if (colour_relative_to_projection_box->isChecked()) {
+              rot = GL::inv (window().snap_to_image() ? GL::mat4 (image.transform().matrix()) : GL::mat4 (window().orientation()));
+              rotation = &rot;
+            }
+
             renderer->start (projection, *lighting, settings->scale,
-                use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative, true);
+                use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative, true, rotation);
 
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
@@ -291,28 +305,28 @@ namespace MR
             Eigen::Vector3f pos (window().target());
             pos += projection.screen_normal() * (projection.screen_normal().dot (window().focus() - window().target()));
             if (lock_to_grid_box->isChecked()) {
-              Eigen::Vector3f p = image.transform().scanner2voxel.cast<float>() * pos;
+              Eigen::Vector3f p = image.scanner2voxel() * pos;
               p[0] = std::round (p[0]);
               p[1] = std::round (p[1]);
               p[2] = std::round (p[2]);
-              pos = image.transform().voxel2scanner.cast<float>() * p;
+              pos = image.voxel2scanner() * p;
             }
 
             Eigen::Vector3f x_dir = projection.screen_to_model_direction (1.0, 0.0, projection.depth_of (pos));
             x_dir.normalize();
-            x_dir = image.transform().scanner2image.rotation().cast<float>() * x_dir;
+            x_dir = image.scanner2image().rotation() * x_dir;
             x_dir[0] *= image.header().spacing (0);
             x_dir[1] *= image.header().spacing (1);
             x_dir[2] *= image.header().spacing (2);
-            x_dir = image.transform().image2scanner.rotation().cast<float>() * x_dir;
+            x_dir = image.image2scanner().rotation() * x_dir;
 
             Eigen::Vector3f y_dir = projection.screen_to_model_direction (0.0, 1.0, projection.depth_of (pos));
             y_dir.normalize();
-            y_dir = image.transform().scanner2image.rotation().cast<float>() * y_dir;
+            y_dir = image.scanner2image().rotation() * y_dir;
             y_dir[0] *= image.header().spacing (0);
             y_dir[1] *= image.header().spacing (1);
             y_dir[2] *= image.header().spacing (2);
-            y_dir = image.transform().image2scanner.rotation().cast<float>() * y_dir;
+            y_dir = image.image2scanner().rotation() * y_dir;
 
             const Eigen::Vector3f x_width = projection.screen_to_model_direction (projection.width()/2.0, 0.0, projection.depth_of (pos));
             const int nx = std::ceil (x_width.norm() / x_dir.norm());
@@ -398,14 +412,16 @@ namespace MR
           MRView::Image& image (item.image);
           values.setZero();
           if (interp) {
-            if (image.linear_interp.scanner (pos)) {
-              for (image.linear_interp.index(3) = 0; image.linear_interp.index(3) < std::min (ssize_t(values.size()), image.linear_interp.size(3)); ++image.linear_interp.index(3))
-                values[image.linear_interp.index(3)] = image.linear_interp.value().real();
+            auto linear_interp = Interp::make_linear (image.image);
+            if (linear_interp.scanner (pos)) {
+              for (linear_interp.index(3) = 0; linear_interp.index(3) < std::min (ssize_t(values.size()), linear_interp.size(3)); ++linear_interp.index(3))
+                values[linear_interp.index(3)] = linear_interp.value().real();
             }
           } else {
-            if (image.nearest_interp.scanner (pos)) {
-              for (image.nearest_interp.index(3) = 0; image.nearest_interp.index(3) < std::min (ssize_t(values.size()), image.nearest_interp.size(3)); ++image.nearest_interp.index(3))
-                values[image.nearest_interp.index(3)] = image.nearest_interp.value().real();
+            auto nearest_interp = Interp::make_nearest (image.image);
+            if (nearest_interp.scanner (pos)) {
+              for (nearest_interp.index(3) = 0; nearest_interp.index(3) < std::min (ssize_t(values.size()), nearest_interp.size(3)); ++nearest_interp.index(3))
+                values[nearest_interp.index(3)] = nearest_interp.value().real();
             }
           }
           if (item.odf_type == odf_type_t::DIXEL && item.dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME) {

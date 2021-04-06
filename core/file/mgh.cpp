@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,6 @@
 #include "header.h"
 #include "file/ofstream.h"
 #include "file/mgh.h"
-#include "file/nifti1_utils.h"
 
 namespace MR
 {

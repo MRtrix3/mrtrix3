@@ -1,3 +1,5 @@
+.. _mitigating_brain_cropping:
+
 Mitigating the effects of brain cropping
 ========================================
 

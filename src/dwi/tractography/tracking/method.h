@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -51,7 +51,7 @@ namespace MR
               pos (0.0, 0.0, 0.0),
               dir (0.0, 0.0, 1.0),
               S (that.S),
-              act_method_additions (S.is_act() ? new ACT::ACT_Method_additions (S) : nullptr),
+              act_method_additions (S.is_act() ? new ACT::ACT_Method_additions (that.act()) : nullptr),
               uniform (that.uniform),
               values (that.values.size()) { }
 
@@ -72,10 +72,9 @@ namespace MR
               return get_data (source, pos);
             }
 
-
             virtual bool init() = 0;
             virtual term_t next() = 0;
-            virtual float get_metric() = 0;
+            virtual float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) = 0;
 
             virtual void reverse_track() { if (act_method_additions) act().reverse_track(); }
             virtual void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step);

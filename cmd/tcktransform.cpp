@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,10 +15,10 @@
  */
 
 #include "command.h"
-#include "progressbar.h"
 #include "image.h"
+#include "ordered_thread_queue.h"
+#include "progressbar.h"
 #include "interp/linear.h"
-#include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -68,7 +68,7 @@ class Warper { MEMALIGN(Warper)
 
     bool operator () (const TrackType& in, TrackType& out) {
       out.clear();
-      out.index = in.index;
+      out.set_index (in.get_index());
       out.weight = in.weight;
       for (size_t n = 0; n < in.size(); ++n) {
         auto vertex = pos(in[n]);
@@ -127,7 +127,7 @@ void run ()
 
   Writer writer (argument[2], loader.properties);
 
-  Thread::run_queue (
+  Thread::run_ordered_queue (
       loader,
       Thread::batch (TrackType(), 1024),
       Thread::multi (warper),

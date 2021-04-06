@@ -1,4 +1,4 @@
-% Copyright (c) 2008-2019 the MRtrix3 contributors.
+% Copyright (c) 2008-2021 the MRtrix3 contributors.
 %
 % This Source Code Form is subject to the terms of the Mozilla Public
 % License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,7 +50,7 @@ while 1
     elseif strcmp(key, 'datatype')
       tsf.datatype = value;
     else
-      tsf = setfield (tsf, key, value);
+      tsf = add_field (tsf, key, value);
     end
   end
 end
@@ -104,5 +104,3 @@ for n = 1:(prod(size(k)))
   tsf.data{end+1} = data(pk:(k(n)-1),:);
   pk = k(n)+1;
 end
-
-

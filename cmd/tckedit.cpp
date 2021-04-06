@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,7 @@
 #include "command.h"
 #include "exception.h"
 #include "mrtrix.h"
-#include "thread_queue.h"
+#include "ordered_thread_queue.h"
 #include "types.h"
 
 #include "dwi/tractography/file.h"
@@ -53,9 +53,7 @@ void usage ()
   DESCRIPTION
   + "This command can be used to perform various types of manipulations "
     "on track data. A range of such manipulations are demonstrated in the "
-    "examples provided below."
-
-  + DWI::Tractography::preserve_track_order_desc;
+    "examples provided below.";
 
   EXAMPLES
   + Example ("Concatenate data from multiple track files into one",
@@ -105,8 +103,9 @@ void usage ()
   + WeightsOption
 
   + OptionGroup ("Other options specific to tckedit")
-  + Option ("inverse", "output the inverse selection of streamlines based on the criteria provided, "
-                       "i.e. only those streamlines that fail at least one criterion will be written to file.")
+  + Option ("inverse", "output the inverse selection of streamlines based on the criteria provided; "
+                       "i.e. only those streamlines that fail at least one selection criterion, "
+                       "and/or vertices that are outside masks if provided, will be written to file")
 
   + Option ("ends_only", "only test the ends of each streamline against the provided include/exclude ROIs")
 
@@ -218,7 +217,7 @@ void run ()
   Worker worker (properties, inverse, ends_only);
   Receiver receiver (output_path, properties, number, skip);
 
-  Thread::run_queue (
+  Thread::run_ordered_queue (
       loader,
       Thread::batch (Streamline<>()),
       Thread::multi (worker),

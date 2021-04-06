@@ -1,15 +1,17 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -157,14 +159,14 @@ namespace MR
               for (const auto& i : in) {
                 assign_pos_of (i).to (fixel_indexer);
                 fixel_indexer.index(3) = 0;
-                const index_type num_connections = fixel_indexer.value();
-                if (num_connections > 0) {
+                const index_type num_fixels = fixel_indexer.value();
+                if (num_fixels > 0) {
                   fixel_indexer.index(3) = 1;
                   const index_type first_index = fixel_indexer.value();
-                  const index_type last_index = first_index + num_connections;
+                  const index_type last_index = first_index + num_fixels;
                   // Note: Streamlines can still be assigned to a fixel that is outside the mask;
                   //   however this will not be permitted to contribute to the matrix
-                  index_type closest_fixel_index = num_connections;
+                  index_type closest_fixel_index = last_index;
                   default_type largest_dp = 0.0;
                   const direction_type dir (i.get_dir().normalized());
                   for (index_type j = first_index; j < last_index; ++j) {
@@ -177,7 +179,7 @@ namespace MR
                         closest_fixel_index = j;
                     }
                   }
-                  if (closest_fixel_index != num_connections && largest_dp > angular_threshold_dp)
+                  if (closest_fixel_index != last_index && largest_dp > angular_threshold_dp)
                     out.push_back (closest_fixel_index);
                 }
               }

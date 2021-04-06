@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -82,7 +82,7 @@ void Exemplar::add (const Connectome::Streamline_nodelist& in)
   Tractography::Streamline<float> subtck;
   for (size_t i = first; i <= last; ++i)
     subtck.push_back (in[i]);
-  subtck.index  = in.index;
+  subtck.set_index (in.get_index());
   subtck.weight = in.weight;
   add (in, is_reversed);
 }

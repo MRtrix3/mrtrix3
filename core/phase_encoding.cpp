@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -74,14 +74,15 @@ namespace MR
         if (ssize_t(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
           throw Exception ("malformed PE scheme in image \"" + header.name() + "\" - number of rows does not equal number of volumes");
       } else {
-        // Header entries are cast to lowercase at some point
         const auto it_dir  = header.keyval().find ("PhaseEncodingDirection");
-        const auto it_time = header.keyval().find ("TotalReadoutTime");
-        if (it_dir != header.keyval().end() && it_time != header.keyval().end()) {
-          Eigen::Matrix<default_type, 4, 1> row;
-          row.head<3>() = Axes::id2dir (it_dir->second);
-          row[3] = to<default_type>(it_time->second);
-          PE.resize ((header.ndim() > 3) ? header.size(3) : 1, 4);
+        if (it_dir != header.keyval().end()) {
+          const auto it_time = header.keyval().find ("TotalReadoutTime");
+          const size_t cols = it_time == header.keyval().end() ? 3 : 4;
+          Eigen::Matrix<default_type, Eigen::Dynamic, 1> row (cols);
+          row.head(3) = Axes::id2dir (it_dir->second);
+          if (it_time != header.keyval().end())
+            row[3] = to<default_type>(it_time->second);
+          PE.resize ((header.ndim() > 3) ? header.size(3) : 1, cols);
           PE.rowwise() = row.transpose();
         }
       }
@@ -116,7 +117,7 @@ namespace MR
       if (!result.rows())
         return result;
 
-      if (result.cols() < 4)
+      if (result.cols() < 3)
         throw Exception ("unexpected phase encoding table matrix dimensions");
 
       INFO ("found " + str (result.rows()) + "x" + str (result.cols()) + " phase encoding table");

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,13 +49,6 @@ namespace MR
           throw Exception ("Error parsing JSON file \"" + path + "\": " + e.what());
         }
         read (json, H, true);
-        const auto intendedfor_it = H.keyval().find ("IntendedFor");
-        if (intendedfor_it != H.keyval().end()) {
-          if (Path::basename (H.name()) != intendedfor_it->second) {
-            WARN ("JSON file \"" + path + "\" intended for \"" + intendedfor_it->second + "\", but opened in conjunction with image \"" + H.name() + "\"");
-          }
-          H.keyval().erase (intendedfor_it);
-        }
       }
 
 
@@ -286,8 +279,6 @@ namespace MR
       {
         Header H_adj (header);
         H_adj.name() = image_path;
-        if (image_path.size())
-          H_adj.keyval()["IntendedFor"] = image_path;
         if (!Path::has_suffix (image_path, { ".nii", ".nii.gz", ".img" })) {
           write (H_adj.keyval(), json);
           return;
