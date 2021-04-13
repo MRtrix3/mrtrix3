@@ -1851,7 +1851,7 @@ namespace MR
 
       void Window::register_camera_interactor (Tool::CameraInteractor* agent)
       {
-        if (camera_interactor)
+        if (camera_interactor && camera_interactor != agent)
           camera_interactor->deactivate();
         camera_interactor = agent;
       }
@@ -2173,10 +2173,10 @@ namespace MR
           + Option ("focus", "Either set the position of the crosshairs in scanner coordinates, "
               "with the new position supplied as a comma-separated list of floating-point values or "
               "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
-          +   Argument ("x,y,z or boolean")
+          +   Argument ("x,y,z or boolean").type_various()
 
           + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
-              "that will appear at the centre of the viewing window")
+              "that will appear at the centre of the viewing window").allow_multiple()
           +   Argument ("x,y,z").type_sequence_float()
 
           + Option ("orientation", "Set the orientation of the camera for the viewing window, in the form of a quaternion representing the rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point values (this will be automatically normalised).")
