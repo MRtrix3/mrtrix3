@@ -149,7 +149,7 @@ def execute(): #pylint: disable=unused-variable
   if eddyqc_path:
     if os.path.exists(eddyqc_path):
       if os.path.isdir(eddyqc_path):
-        if any([ os.path.exists(os.path.join(eddyqc_path, filename)) for filename in eddyqc_files ]):
+        if any(os.path.exists(os.path.join(eddyqc_path, filename)) for filename in eddyqc_files):
           if app.FORCE_OVERWRITE:
             app.warn('Output eddy QC directory already contains relevant files; these will be overwritten on completion')
           else:
@@ -345,11 +345,11 @@ def execute(): #pylint: disable=unused-variable
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'unexpected data format')
       if isinstance(slice_timing[0], list):
-        if not all( [ len(entry) == 1 for entry in slice_timing ] ):
+        if not all(len(entry) == 1 for entry in slice_timing):
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'data do not appear to be 1D')
         slice_timing = [ entry[0] for entry in slice_timing ]
-      if not all( [ isinstance(entry, float) for entry in slice_timing ] ):
+      if not all(isinstance(entry, float) for entry in slice_timing):
         try:
           slice_timing = [ float(entry) for entry in slice_timing ]
         except ValueError as exception:
