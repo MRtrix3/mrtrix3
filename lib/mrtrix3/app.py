@@ -754,13 +754,15 @@ class Parser(argparse.ArgumentParser):
     text += '\n'
     text += bold('USAGE') + '\n'
     text += '\n'
-    usage = self.prog + ' [ options ]'
+    usage = self.prog + ' '
     # Compulsory subparser algorithm selection (if present)
     if self._subparsers:
-      usage += ' ' + self._subparsers._group_actions[0].dest + ' ...'
-    # Find compulsory input arguments
-    for arg in self._positionals._group_actions:
-      usage += ' ' + arg.dest
+      usage += self._subparsers._group_actions[0].dest + ' [ options ] ...'
+    else:
+      usage += '[ options ]'
+      # Find compulsory input arguments
+      for arg in self._positionals._group_actions:
+        usage += ' ' + arg.dest
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact

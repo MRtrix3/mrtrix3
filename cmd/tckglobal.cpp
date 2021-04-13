@@ -284,7 +284,7 @@ void run ()
     }
   }
 
-  uint64_t niter = get_option_value("niter", DEFAULT_NITER);
+  uint64_t niter = get_option_value<uint64_t>("niter", DEFAULT_NITER);
   double t0 = get_option_value("t0", DEFAULT_T0);
   double t1 = get_option_value("t1", DEFAULT_T1);
 

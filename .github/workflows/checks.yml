@@ -164,7 +164,6 @@ jobs:
          sudo apt-get install python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip python3-setuptools
          pip3 install pylint sphinx-notfound-page
 
-
     - name: check syntax
       run: ./check_syntax || { cat syntax.log; false; }
 

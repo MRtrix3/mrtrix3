@@ -246,7 +246,7 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   stdout_lines = [ line.strip() for line in stdout.decode('cp437').splitlines() ]
   result = [ ]
   for line in stdout_lines:
-    line = line.split()
+    line = line.replace('N/A', 'nan').split()
     assert len(line) == len(IMAGE_STATISTICS)
     result.append(ImageStatistics(float(line[0]), float(line[1]), float(line[2]), float(line[3]), float(line[4]), float(line[5]), int(line[6])))
   if len(result) == 1:
