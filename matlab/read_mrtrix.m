@@ -50,7 +50,7 @@ while 1
       case 'transform',  transform(end+1,:) = str2num(char(split_strings (value, ',')))';
       case 'file',       file = value;
       case 'dw_scheme',  dw_scheme(end+1,:) = str2num(char(split_strings (value, ',')))';
-      otherwise,         image = add_field (image, key, value);
+      otherwise,         image = add_field (image, matlab.lang.makeValidName(key, 'ReplacementStyle', 'hex'), value);
     end
   end
 end
