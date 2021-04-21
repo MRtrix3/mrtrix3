@@ -87,6 +87,9 @@ void usage ()
                        "real and imaginary channels, so a scale factor sqrt(2) applies.")
     +   Argument ("level").type_image_out()
 
+    + Option ("rank", "The selected signal rank of the output denoised image.")
+    +   Argument ("cutoff").type_image_out()
+
     + Option ("datatype", "Datatype for the eigenvalue decomposition (single or double precision). "
                           "For complex input data, this will select complex float32 or complex float64 datatypes.")
     +   Argument ("float32/float64").type_choice(dtypes)
@@ -130,12 +133,13 @@ public:
   using SValsType = Eigen::VectorXd;
 
   DenoisingFunctor (int ndwi, const vector<uint32_t>& extent,
-                    Image<bool>& mask, Image<real_type>& noise, bool exp1)
+                    Image<bool>& mask, Image<real_type>& noise,
+                    Image<uint16_t>& rank, bool exp1)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (ndwi), n (extent[0]*extent[1]*extent[2]),
       r (std::min(m,n)), q (std::max(m,n)), exp1(exp1),
       X (m,n), pos {{0, 0, 0}},
-      mask (mask), noise (noise)
+      mask (mask), noise (noise), rankmap (rank)
   { }
 
   template <typename ImageType>
@@ -199,6 +203,12 @@ public:
       assign_pos_of(dwi, 0, 3).to(noise);
       noise.value() = real_type (std::sqrt(sigma2));
     }
+    // store rank map if requested:
+    if (rankmap.valid()) {
+      assign_pos_of(dwi, 0, 3).to(rankmap);
+      rankmap.value() = uint16_t (r - cutoff_p);
+    }
+
   }
 
 private:
@@ -210,6 +220,7 @@ private:
   double sigma2;
   Image<bool> mask;
   Image<real_type> noise;
+  Image<uint16_t> rankmap;
 
   template <typename ImageType>
   void load_data (ImageType& dwi) {
@@ -245,7 +256,7 @@ private:
 
 
 template <typename T>
-void process_image (Header& data, Image<bool>& mask, Image<real_type> noise,
+void process_image (Header& data, Image<bool>& mask, Image<real_type>& noise, Image<uint16_t>& rank,
                     const std::string& output_name, const vector<uint32_t>& extent, bool exp1)
   {
     auto input = data.get_image<T>().with_direct_io(3);
@@ -254,7 +265,7 @@ void process_image (Header& data, Image<bool>& mask, Image<real_type> noise,
     header.datatype() = DataType::from<T>();
     auto output = Image<T>::create (output_name, header);
     // run
-    DenoisingFunctor<T> func (data.size(3), extent, mask, noise, exp1);
+    DenoisingFunctor<T> func (data.size(3), extent, mask, noise, rank, exp1);
     ThreadedLoop ("running MP-PCA denoising", data, 0, 3).run (func, input, output);
   }
 
@@ -309,24 +320,33 @@ void run ()
     noise = Image<real_type>::create (opt[0][0], header);
   }
 
+  Image<uint16_t> rank;
+  opt = get_options("rank");
+  if (opt.size()) {
+    Header header (dwi);
+    header.ndim() = 3;
+    header.datatype() = DataType::UInt16;
+    rank = Image<uint16_t>::create (opt[0][0], header);
+  }
+
   int prec = get_option_value("datatype", 0);     // default: single precision
   if (dwi.datatype().is_complex()) prec += 2;     // support complex input data
   switch (prec) {
     case 0:
       INFO("select real float32 for processing");
-      process_image<float>(dwi, mask, noise, argument[1], extent, exp1);
+      process_image<float>(dwi, mask, noise, rank, argument[1], extent, exp1);
       break;
     case 1:
       INFO("select real float64 for processing");
-      process_image<double>(dwi, mask, noise, argument[1], extent, exp1);
+      process_image<double>(dwi, mask, noise, rank, argument[1], extent, exp1);
       break;
     case 2:
       INFO("select complex float32 for processing");
-      process_image<cfloat>(dwi, mask, noise, argument[1], extent, exp1);
+      process_image<cfloat>(dwi, mask, noise, rank, argument[1], extent, exp1);
       break;
     case 3:
       INFO("select complex float64 for processing");
-      process_image<cdouble>(dwi, mask, noise, argument[1], extent, exp1);
+      process_image<cdouble>(dwi, mask, noise, rank, argument[1], extent, exp1);
       break;
   }
 
