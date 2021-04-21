@@ -13,6 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+#include <QDebug>
 #include "app.h"
 #include "timer.h"
 #include "file/config.h"
@@ -117,6 +118,7 @@ namespace MR
           setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
           grabGesture (Qt::PinchGesture);
+          // grabGesture (Qt::PanGesture); // deactivated to prevent sticky pan: https://github.com/MRtrix3/mrtrix3/issues/761
           QFont font_ = font();
           //CONF option: FontSize
           //CONF The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
@@ -1810,11 +1812,8 @@ namespace MR
         if (!image())
           return true;
 
-        if (QGesture* pan = event->gesture(Qt::PanGesture)) {
-          QPanGesture* e = static_cast<QPanGesture*> (pan);
-          mouse_displacement_ = QPoint (e->delta().x(), -e->delta().y());
-          mode->pan_event();
-        }
+        if (log_level > 2)
+          qDebug() << event;
 
         if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
           QPinchGesture* e = static_cast<QPinchGesture*> (pinch);
