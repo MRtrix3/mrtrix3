@@ -286,7 +286,7 @@ void run ()
       if (!(extent[i] & 1))
         throw Exception ("-extent must be a (list of) odd numbers");
       if (extent[i] > dwi.size(i))
-        throw Exception ("-extent must nott exceed the image dimensions");
+        throw Exception ("-extent must not exceed the image dimensions");
     }
   } else {
     uint32_t e = 1;
