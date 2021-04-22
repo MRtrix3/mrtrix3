@@ -186,6 +186,7 @@ namespace MR {
             H.keyval()["FlipAngle"] = join (frame.flip_angles, ",");
         }
 
+        // TODO Double-check whether frame or image should be used for different fields here
         size_t nchannels = image.frames.size() ? 1 : image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
         if (nchannels > 1)
           INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
@@ -342,34 +343,34 @@ namespace MR {
           if (H.size (2) != 1)
             throw Exception ("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 
-          size_t mosaic_size = std::ceil (std::sqrt (image.images_in_mosaic));
-          H.size(0) = std::floor (frame.dim[0] / mosaic_size);
-          H.size(1) = std::floor (frame.dim[1] / mosaic_size);
-          H.size(2) = image.images_in_mosaic;
+          H.size(0) = image.acq_dim[0];
+          H.size(1) = image.acq_dim[1];
+          // if Siemens mosaic, use images_in_mosaic as number of slices.
+          // If images_in_mosaic is max(size_t), this means that information is
+          // missing, although the images were detected as mosaic (because
+          // ImageType DICOM tag contains the string 'MOSAIC'), in which case
+          // we use a best guess: the max number of slices that can fit based
+          // on the size of the mosaic and the size of the acquired matrix.
+          H.size(2) = (
+              ( image.images_in_mosaic == std::numeric_limits<size_t>::max() ) ?
+              (image.dim[0]/image.acq_dim[0]) * (image.dim[1]/image.acq_dim[1]) :
+              image.images_in_mosaic
+              );
 
-          if (frame.acq_dim[0] > size_t(H.size(0)) || frame.acq_dim[1] > size_t(H.size(1))) {
-            WARN ("acquisition matrix [ " + str (frame.acq_dim[0]) + " " + str (frame.acq_dim[1])
-                + " ] is smaller than expected [ " + str(H.size(0)) + " " + str(H.size(1)) + " ] in DICOM mosaic");
-            WARN ("  image may be incorrectly reformatted");
+          if (image.dim[0] % image.acq_dim[0] || image.dim[1] % image.acq_dim[1]) {
+            WARN ("acquisition matrix [ " + str (image.acq_dim[0]) + " " + str (image.acq_dim[1])
+                + " ] does not fit into DICOM mosaic [ " + str (image.dim[0]) + " " + str (image.dim[1])
+                + " ] -  adjusting matrix size to suit");
+            H.size(0) = image.dim[0] / size_t (float(image.dim[0]) / float(image.acq_dim[0]));
+            H.size(1) = image.dim[1] / size_t (float(image.dim[1]) / float(image.acq_dim[1]));
           }
 
-          if (H.size(0)*mosaic_size != frame.dim[0] || H.size(1)*mosaic_size != frame.dim[1]) {
-            WARN ("dimensions of DICOM mosaic [ " + str(frame.dim[0]) + " " + str(frame.dim[1])
-                + " ] do not match expected size [ " + str(H.size(0)*mosaic_size) + " " + str(H.size(0)*mosaic_size) + " ]");
-            WARN ("  assuming data are stored as " + str(mosaic_size)+"x"+str(mosaic_size) + " mosaic of " + str(H.size(0))+"x"+ str(H.size(1)) + " slices.");
-            WARN ("  image may be incorrectly reformatted");
-          }
-
-          if (frame.acq_dim[0] != size_t(H.size(0)) || frame.acq_dim[1] != size_t(H.size(1)))
-            INFO ("note: acquisition matrix [ " + str (frame.acq_dim[0]) + " " + str (frame.acq_dim[1])
-                + " ] differs from reconstructed matrix [ " + str(H.size(0)) + " " + str(H.size(1)) + " ]");
-
-          float xinc = H.spacing(0) * (frame.dim[0] - H.size(0)) / 2.0;
-          float yinc = H.spacing(1) * (frame.dim[1] - H.size(1)) / 2.0;
+          float xinc = H.spacing(0) * (image.dim[0] - H.size(0)) / 2.0;
+          float yinc = H.spacing(1) * (image.dim[1] - H.size(1)) / 2.0;
           for (size_t i = 0; i < 3; i++)
             H.transform()(i,3) += xinc * H.transform()(i,0) + yinc * H.transform()(i,1);
 
-          io_handler.reset (new MR::ImageIO::Mosaic (H, frame.dim[0], frame.dim[1], H.size (0), H.size (1), H.size (2)));
+          io_handler.reset (new MR::ImageIO::Mosaic (H, image.dim[0], image.dim[1], H.size (0), H.size (1), H.size (2)));
 
         }
         else if (inconsistent_scaling) {

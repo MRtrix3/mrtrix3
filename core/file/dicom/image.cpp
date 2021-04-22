@@ -46,6 +46,7 @@ namespace MR {
         // process image-specific or per-frame items here:
         if (is_toplevel) {
           switch (item.group) {
+
             case 0x0008U:
               switch (item.element) {
                 case 0x0008U:
@@ -234,9 +235,20 @@ namespace MR {
 
         switch (item.group) {
           case 0x0008U:
-            if (item.element == 0x0070U)
-              manufacturer = item.get_string()[0];
-            return;
+            switch (item.element) {
+              case 0x0070U:
+                manufacturer = item.get_string (0, manufacturer);
+                return;
+              case 0x0008U:
+                if (images_in_mosaic == 0) {
+                  for (size_t n = 0; n < item.get_string().size(); ++n)
+                    if (item.get_string(n) == "MOSAIC")
+                      images_in_mosaic = std::numeric_limits<size_t>::max();
+                }
+                return;
+              default:
+                return;
+            }
           case 0x0019U:
             switch (item.element) { // GE DW encoding info:
               case 0x10BBU:
