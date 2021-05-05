@@ -241,7 +241,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         cmdstring += (' ' if cmdstring else '') + quote_nonpipe(entry)
         cmdsplit.append(entry)
       elif isinstance(entry, list):
-        assert all([ isinstance(item, STRING_TYPES) for item in entry ])
+        assert all(isinstance(item, STRING_TYPES) for item in entry)
         if len(entry) > 1:
           common_prefix = os.path.commonprefix(entry)
           common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
