@@ -96,7 +96,7 @@ namespace MR
               throw Exception ("the max number of non-linear iterations needs to be defined for each multi-resolution level (scale_factor)");
 
             if (do_reorientation and (fod_lmax.size() != scale_factor.size()))
-              throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
+              throw Exception ("the lmax " + str(fod_lmax) + " needs to be defined for each multi-resolution level (scale factor): " + str(scale_factor));
             else
               fod_lmax.resize (scale_factor.size(), 0);
 
@@ -389,6 +389,9 @@ namespace MR
             threaded_copy (input_warps, *mid_to_im2, 0, 4);
             Registration::Warp::deformation2displacement (*mid_to_im2, *mid_to_im2);
             is_initialised = true;
+
+            scale_factor.resize (1);
+            scale_factor[0] = 1.0;
           }
 
           void set_max_iter (const vector<uint32_t>& maxiter) {
@@ -397,6 +400,8 @@ namespace MR
 
 
           void set_scale_factor (const vector<default_type>& scalefactor) {
+            if (is_initialised && ((scalefactor.size() > 1) || (scalefactor[0] != 1)))
+              throw Exception ("non-linear registration scale factor has to be 1 with initialised warp");
             for (size_t level = 0; level < scalefactor.size(); ++level) {
               if (scalefactor[level] <= 0 || scalefactor[level] > 1)
                 throw Exception ("the non-linear registration scale factor for each multi-resolution level must be between 0 and 1");
