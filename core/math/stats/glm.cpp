@@ -471,7 +471,7 @@ namespace MR
                 local_stdev = matrix_type::Zero (num_vgs, 1);
                 for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
                   if (hypotheses[ih].is_F())
-                    local_abs_effect_size (1, ih) = local_std_effect_size (1, ih) = NaN;
+                    local_abs_effect_size (0, ih) = local_std_effect_size (0, ih) = NaN;
                 }
               }
           };
