@@ -912,13 +912,13 @@ def execute(): #pylint: disable=unused-variable
     except run.MRtrixCmdError as exception_cuda:
       if not eddy_openmp_cmd:
         raise
-      with open('eddy_cuda_failure_output.txt', 'w') as eddy_output_file:
+      with open('eddy_cuda_failure_output.txt', 'wb') as eddy_output_file:
         eddy_output_file.write(str(exception_cuda))
       app.console('CUDA version of \'eddy\' was not successful; attempting OpenMP version')
       try:
         eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
       except run.MRtrixCmdError as exception_openmp:
-        with open('eddy_openmp_failure_output.txt', 'w') as eddy_output_file:
+        with open('eddy_openmp_failure_output.txt', 'wb') as eddy_output_file:
           eddy_output_file.write(str(exception_openmp))
         # Both have failed; want to combine error messages
         eddy_cuda_header = ('=' * len(eddy_cuda_cmd)) \
