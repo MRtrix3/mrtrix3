@@ -17,6 +17,8 @@
 #include "command.h"
 #include "debug.h"
 #include "file/path.h"
+#include "file/utils.h"
+#include "file/ofstream.h"
 #include "file/dicom/element.h"
 #include "file/dicom/quick_scan.h"
 #include "file/dicom/definitions.h"
@@ -32,16 +34,14 @@ void usage ()
   SYNOPSIS = "Edit DICOM file in-place";
 
   DESCRIPTION
-  + "Note that this command simply replaces the existing "
-    "values without modifying the DICOM structure in any way. Replacement text "
-    "will be truncated if it is too long to fit inside the existing tag."
-
-  + "WARNING: this command will modify existing data! It is recommended to run "
-    "this command on a copy of the original data set to avoid loss of data.";
+  + "Allows the modification or removal of specific DICOM tags, necessary for the "
+    "purposes of anomysation";
 
 
   ARGUMENTS
-  + Argument ("file", "the DICOM file to be edited.").type_file_in();
+  + Argument ("input", "the input DICOM file or folder to be edited.").type_text()
+  + Argument ("output", "the output DICOM file or folded to be produced.").type_text();
+
 
   OPTIONS
   + Option ("anonymise", "remove any identifiable information, by replacing the following tags:\n"
@@ -50,13 +50,18 @@ void usage ()
       "WARNING: there is no guarantee that this command will remove all identiable "
       "information, since such information may be contained in any number "
       "of private vendor-specific tags. You will need to double-check the "
-      "results independently if you " "need to ensure anonymity.")
+      "results independently if you need to ensure anonymity.")
 
   + Option ("id", "replace all ID tags with string supplied. This consists of tags "
       "(0010, 0020) PatientID and (0010, 1000) OtherPatientIDs")
   +   Argument ("text").type_text()
 
-  + Option ("tag", "replace specific tag.").allow_multiple()
+  + Option ("delete", "remove all entries matching the specified group & element tags. "
+      "if 'element' is specified as 'all', this will remove all entries with the matching group.").allow_multiple()
+  +   Argument ("group")
+  +   Argument ("element")
+
+  + Option ("replace", "replace specific tag.").allow_multiple()
   +   Argument ("group")
   +   Argument ("element")
   +   Argument ("newvalue");
@@ -65,10 +70,15 @@ void usage ()
 
 class Tag { NOMEMALIGN
   public:
+    Tag (uint16_t group) :
+      group (group), element (0), replace (false), groupwise_delete (true) { }
+    Tag (uint16_t group, uint16_t element) :
+      group (group), element (element), replace (false), groupwise_delete (false) { }
     Tag (uint16_t group, uint16_t element, const std::string& newvalue) :
-      group (group), element (element), newvalue (newvalue) { }
-    uint16_t group, element;
-    std::string newvalue;
+      group (group), element (element), newvalue (newvalue), replace (true), groupwise_delete (false) { }
+    const uint16_t group, element;
+    const std::string newvalue;
+    const bool replace, groupwise_delete;
 };
 
 
@@ -92,6 +102,84 @@ inline uint16_t read_hex (const std::string& m)
 
 
 
+
+
+
+class DICOMEntry : public File::Dicom::Element
+{
+  public:
+    uint8_t* address () const { return start; }
+    size_t   header () const { return data-start; }
+    void write_leadin (std::ostream& out) const {
+      if (start > fmap->address())
+        out.write ((const char*) fmap->address(), start-fmap->address());
+    }
+    void write_updated (std::ostream& out, const std::string& contents) const {
+      out.write ((const char*) start, data-start);
+      uint32_t nbytes = std::min<uint32_t> (size, contents.size());
+      out.write ((const char*) contents.c_str(), nbytes);
+      while (nbytes < size) {
+        out.put (0);
+        nbytes++;
+      }
+    }
+
+    void write (std::ostream& out, const vector<Tag>& tags, const vector<uint16_t> VRs) const
+    {
+      for (size_t n = 0; n < VRs.size(); ++n) {
+        if (VR == VRs[n]) {
+          write_updated (out, "anonymous");
+          return;
+        }
+      }
+      for (size_t n = 0; n < tags.size(); ++n) {
+        if (tags[n].group == group && tags[n].groupwise_delete)
+          return;
+        if (is (tags[n].group, tags[n].element)) {
+          if (tags[n].replace)
+            write_updated (out, tags[n].newvalue);
+          return;
+        }
+      }
+      out.write ((const char*) start, next-start);
+    }
+};
+
+
+
+
+
+
+void process (const std::string& src, const std::string& dest, const vector<Tag>& tags, const vector<uint16_t> VRs)
+{
+  if (Path::is_dir (src)) {
+    File::mkdir (dest, false);
+    Path::Dir dir (src);
+    std::string filename;
+    while ((filename = dir.read_name()).size()) {
+      try {
+        process (Path::join (src, filename), Path::join (dest, filename), tags, VRs);
+      }
+      catch (Exception& E) {
+        E.display (2);
+      }
+    }
+    return;
+  }
+
+  DICOMEntry item;
+  item.set (src, true, true);
+  File::OFStream out (dest);
+
+  item.write_leadin (out);
+  while (item.read())
+    item.write (out, tags, VRs);
+}
+
+
+
+
+
 void run ()
 {
   vector<Tag> tags;
@@ -104,7 +192,17 @@ void run ()
   }
 
 
-  opt = get_options ("tag");
+  opt = get_options ("delete");
+  if (opt.size()) {
+    for (size_t n = 0; n < opt.size(); ++n) {
+      if (lowercase (opt[n][1]) == "all")
+        tags.push_back (Tag (read_hex (opt[n][0])));
+      else
+        tags.push_back (Tag (read_hex (opt[n][0]), read_hex (opt[n][1])));
+    }
+  }
+
+  opt = get_options ("replace");
   if (opt.size())
     for (size_t n = 0; n < opt.size(); ++n)
       tags.push_back (Tag (read_hex (opt[n][0]), read_hex (opt[n][1]), opt[n][2]));
@@ -124,21 +222,6 @@ void run ()
   for (size_t n = 0; n < tags.size(); ++n)
     INFO ("replacing tag (" + hex(tags[n].group) + "," + hex(tags[n].element) + ") with value \"" + tags[n].newvalue + "\"");
 
-  File::Dicom::Element item;
-  item.set (argument[0], true, true);
-  while (item.read()) {
-    for (size_t n = 0; n < VRs.size(); ++n) {
-      if (item.VR == VRs[n]) {
-        memset (item.data, 32, item.size);
-        memcpy (item.data, "anonymous", std::min<int> (item.size, 9));
-      }
-    }
-    for (size_t n = 0; n < tags.size(); ++n) {
-      if (item.is (tags[n].group, tags[n].element)) {
-        memset (item.data, 32, item.size);
-        memcpy (item.data, tags[n].newvalue.c_str(), std::min<int> (item.size, tags[n].newvalue.size()));
-      }
-    }
-  }
+  process (argument[0], argument[1], tags, VRs);
 }
 

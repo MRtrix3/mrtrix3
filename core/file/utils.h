@@ -239,14 +239,19 @@ namespace MR
     }
 
 
-    inline void mkdir (const std::string& folder)
+    inline void mkdir (const std::string& folder, bool error_if_existing = true)
     {
       if (::mkdir (folder.c_str()
 #ifndef MRTRIX_WINDOWS
             , 0777
 #endif
-            ))
+            )) {
+        if (errno == EEXIST && !error_if_existing) {
+          DEBUG ("folder \"" + folder + "\" already exists");
+          return;
+        }
         throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
+      }
     }
 
     inline void rmdir (const std::string& folder, bool recursive = false)
