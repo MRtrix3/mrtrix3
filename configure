@@ -491,11 +491,10 @@ def fillin (template, keyvalues):
 def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
   log ('EXEC <<\nCMD: ' + ' '.join(cmd) + '\n')
   try:
-    with subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd) as process:
-      ( stdout, stderr ) = process.communicate()
-      returncode = process.returncode
+    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd) #pylint: disable=consider-using-with
+    ( stdout, stderr ) = process.communicate()
 
-    log ('EXIT: ' + str(returncode) + '\n')
+    log ('EXIT: ' + str(process.returncode) + '\n')
     stdout = stdout.decode(errors='ignore').rstrip()
     if stdout:
       log ('STDOUT:\n' + stdout + '\n')
@@ -510,11 +509,11 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
   except Exception as excp:
     error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
   else:
-    if raise_on_non_zero_exit_code and returncode != 0:
+    if raise_on_non_zero_exit_code and process.returncode != 0:
       raise exception (stderr)
 
 
-  return (returncode, stdout, stderr)
+  return (process.returncode, stdout, stderr)
 
 
 
