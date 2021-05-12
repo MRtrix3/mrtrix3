@@ -241,9 +241,8 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
 
   try:
-    from subprocess import DEVNULL
+    from subprocess import DEVNULL #pylint: disable=import-outside-toplevel
   except ImportError:
-    import os
     DEVNULL = open(os.devnull, 'wb')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=DEVNULL)
   stdout = proc.communicate()[0]

@@ -14,7 +14,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
-import mrtrix3
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
 from ._version import __version__
