@@ -597,9 +597,9 @@ class Parser(argparse.ArgumentParser):
     module_file = inspect.getsourcefile(inspect.stack()[-1][0])
     self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
     try:
-      with subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)), stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
-        self._git_version = process.communicate()[0]
-        self._git_version = str(self._git_version.decode(errors='ignore')).strip() if process.returncode == 0 else 'unknown'
+      process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)), stdout=subprocess.PIPE, stderr=subprocess.PIPE) #pylint: disable=consider-using-with
+      self._git_version = process.communicate()[0]
+      self._git_version = str(self._git_version.decode(errors='ignore')).strip() if process.returncode == 0 else 'unknown'
     except OSError:
       self._git_version = 'unknown'
 
@@ -861,8 +861,8 @@ class Parser(argparse.ArgumentParser):
     command = CONFIG.get('HelpCommand', 'less -X')
     if command:
       try:
-        with subprocess.Popen(command.split(' '), stdin=subprocess.PIPE) as process:
-          process.communicate(text.encode())
+        process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE) #pylint: disable=consider-using-with
+        process.communicate(text.encode())
       except:
         sys.stdout.write(text)
         sys.stdout.flush()
