@@ -23,6 +23,9 @@
 #include "image_helpers.h"
 #include "transform.h"
 
+#include "registration/linear.h"
+
+
 namespace MR
 {
     namespace Registration
@@ -243,6 +246,10 @@ namespace MR
 
                     return 0.0;
 
+                }
+                
+                default_type get_gncc() {
+                    return computed_gncc;
                 }
 
                 template <class Params>
@@ -495,6 +502,11 @@ namespace MR
 
                 }
 
+                
+                Eigen::VectorXd get_gncc() {
+                    return computed_gncc;
+                }
+                
 
                 template <class ParamType>
                 default_type precompute(ParamType& params) {
@@ -633,12 +645,195 @@ namespace MR
 
             };
 
+        
+        
+        
+        
+        template <class ParamType>
+        class ACPrecomputeFunctorMasked4D_Naive{ MEMALIGN(ACPrecomputeFunctorMasked4D_Naive)
+
+        protected:
+
+            std::shared_ptr<std::mutex> mutex;
+            ParamType params;
+            size_t order;
+            ssize_t volumes;
+            transform_type voxel2scanner;
+            
+            default_type& global_count;
+            default_type& global_ac;
+            default_type local_ac;
+            default_type local_count;
+            
+        public:
+
+            ACPrecomputeFunctorMasked4D_Naive (const ParamType& parameters, size_t input_order, default_type& output_count, default_type& output_ac) :
+            mutex (new std::mutex),
+            params (parameters),
+            order(input_order),
+            volumes(parameters.im1_image.size(3)),
+            voxel2scanner (MR::Transform(params.midway_image).voxel2scanner),
+            global_count (output_count),
+            global_ac(output_ac) {
+
+                local_ac = 0;
+                local_count = 0;
+
+                if (params.robust_estimate_subset) {
+                    assert (params.robust_estimate_subset_from.size() == 3);
+                    transform_type i2s (params.midway_image.transform());
+                    auto spacing = Eigen::DiagonalMatrix<default_type, 3> (params.midway_image.spacing(0), params.midway_image.spacing(1), params.midway_image.spacing(2));
+                    for (size_t j = 0; j < 3; ++j)
+                        for (size_t i = 0; i < 3; ++i)
+                            i2s(i,3) += params.robust_estimate_subset_from[j] * params.midway_image.spacing(j) * i2s(i,j);
+                    voxel2scanner = i2s * spacing;
+                }
+            }
+
+            ~ACPrecomputeFunctorMasked4D_Naive () {
+
+                std::lock_guard<std::mutex> lock (*mutex);
+
+                global_count += local_count;
+                global_ac += local_ac;
+
+            }
+
+            void operator() (const Iterator& iter) {
+
+                Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+                Eigen::Vector3 midway_point = voxel2scanner * voxel_pos;
+
+                Eigen::Vector3 im1_point;
+                params.transformation.transform_half (im1_point, midway_point);
+
+                Eigen::Vector3 im2_point;
+                params.transformation.transform_half_inverse (im2_point, midway_point);
+
+                params.im1_image_interp->scanner (im1_point);
+                if (!(*params.im1_image_interp))
+                    return;
+
+                params.im2_image_interp->scanner (im2_point);
+                if (!(*params.im2_image_interp))
+                    return;
+
+                if (params.im2_mask_interp) {
+                    params.im2_mask_interp->scanner (im2_point);
+                    if (params.im2_mask_interp->value() < 0.5)
+                    return;
+                }
+
+                if (params.im1_mask_interp) {
+                    params.im1_mask_interp->scanner (im1_point);
+                    if (params.im1_mask_interp->value() < 0.5)
+                    return;
+                }
+
+                Eigen::Matrix<typename ParamType::Im1ValueType, Eigen::Dynamic, 3> im1_grad;
+                Eigen::Matrix<typename ParamType::Im1ValueType, Eigen::Dynamic, 1> im1_values;
+                if (im1_values.rows() != volumes) {
+                    im1_values.resize (volumes);
+                    im1_grad.resize (volumes, 3);
+                }
+
+                Eigen::Matrix<typename ParamType::Im2ValueType, Eigen::Dynamic, 3> im2_grad;
+                Eigen::Matrix<typename ParamType::Im2ValueType, Eigen::Dynamic, 1> im2_values;
+                if (im2_values.rows() != volumes) {
+                    im2_values.resize (volumes);
+                    im2_grad.resize (volumes, 3);
+                }
+
+                params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values, im1_grad);
+                params.im2_image_interp->value_and_gradient_row_wrt_scanner (im2_values, im2_grad);
+
+                if (im1_values.hasNaN())
+                    return;
+
+                if (im2_values.hasNaN())
+                    return;
+
+                default_type current_sm = 0;
+                default_type current_sf = 0;
+                
+                default_type current_sfm = 0;
+                default_type current_sff = 0;
+                default_type current_smm = 0;
+                default_type current_ac = 0;
+                default_type current_nvol = 0;
+                
+                for (ssize_t i = 1; i < order; i++) {
+                    current_sf = current_sf + im1_values[i];
+                    current_sm = current_sm + im2_values[i];
+                    current_sfm = current_sfm + im1_values[i]*im2_values[i];
+                    current_sff = current_sff + im1_values[i]*im1_values[i];
+                    current_smm = current_smm + im2_values[i]*im2_values[i];
+                    current_nvol = current_nvol + 1;
+                }
+                
+                default_type min_value_threshold = 1.e-5;
+                
+                if (abs(current_sfm) > min_value_threshold) {
+                    if (abs(current_smm*current_sff) > 0) {
+                        default_type current_smmff = current_sff*current_smm;
+                        current_ac = current_sfm / sqrt(current_smmff);
+                        local_count++;
+                    }
+                }
+                
+                local_ac = local_ac + current_ac;
+
+                return;
+            }
+
+        };
+
+
+        class GlobalAngularCorrelation4D { MEMALIGN(GlobalAngularCorrelation4D)
+
+        private:
+
+            Eigen::VectorXd mc_weights;
+            bool weighted;
+            default_type weight_sum;
+            const default_type min_value_threshold;
+            
+            size_t order;
+
+            default_type computed_ac;
+            default_type computed_count;
+
+        public:
+
+            /** requires_precompute:
+            type_trait to distinguish metric types that require a call to precompute before the operator() is called */
+            using requires_precompute = int;
+
+            GlobalAngularCorrelation4D ( ) : weighted (false), weight_sum (0.0), min_value_threshold (1.e-7) { }
+
+            default_type get_ac() {
+                return computed_ac;
+            }
+            
+            template <class ParamType>
+            default_type precompute(ParamType& params, size_t input_order) {
+
+                order = input_order;
+                computed_count = 0;
+                computed_ac = 0;
+                
+                ACPrecomputeFunctorMasked4D_Naive<ParamType> compute_ac (params, order, computed_count, computed_ac);
+                ThreadedLoop (params.midway_image, 0, 3).run (compute_ac);
+
+                computed_ac = computed_ac / computed_count;
+
+                return 0.0;
+            }
+
+        };
 
 
         }
     }
 }
 #endif
-
-
-
