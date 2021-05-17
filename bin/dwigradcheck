@@ -23,6 +23,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Check the orientation of the diffusion gradient table')
+  cmdline.add_description('Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option. \n\n')
   cmdline.add_citation('Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962')
   cmdline.add_argument('input', help='The input DWI series to be checked')
   cmdline.add_argument('-mask', metavar='image', help='Provide a brain mask image')
