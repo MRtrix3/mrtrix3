@@ -762,7 +762,7 @@ namespace MR
                 default_type current_ac = 0;
                 default_type current_nvol = 0;
                 
-                for (ssize_t i = 1; i < order; i++) {
+                for (size_t i = 1; i < order; i++) {
                     current_sf = current_sf + im1_values[i];
                     current_sm = current_sm + im2_values[i];
                     current_sfm = current_sfm + im1_values[i]*im2_values[i];
