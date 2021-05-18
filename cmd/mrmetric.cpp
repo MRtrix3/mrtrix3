@@ -230,7 +230,7 @@ void run ()
   if (opt.size())
     interp = opt[0][0];
 
-  int lmax = 4;
+  size_t lmax = 4;
   bool selected_lmax_for_ac_metric = false;
   opt = get_options ("lmax");
   if (opt.size()) {
