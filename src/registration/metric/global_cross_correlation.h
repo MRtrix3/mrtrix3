@@ -792,14 +792,7 @@ namespace MR
         class GlobalAngularCorrelation4D { MEMALIGN(GlobalAngularCorrelation4D)
 
         private:
-
-            Eigen::VectorXd mc_weights;
-            bool weighted;
-            default_type weight_sum;
-            const default_type min_value_threshold;
-            
             size_t order;
-
             default_type computed_ac;
             default_type computed_count;
 
@@ -809,7 +802,7 @@ namespace MR
             type_trait to distinguish metric types that require a call to precompute before the operator() is called */
             using requires_precompute = int;
 
-            GlobalAngularCorrelation4D ( ) : weighted (false), weight_sum (0.0), min_value_threshold (1.e-7) { }
+            GlobalAngularCorrelation4D ( ) { }
 
             default_type get_ac() {
                 return computed_ac;
