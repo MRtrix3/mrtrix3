@@ -290,11 +290,11 @@ end_init:
 
 
             // Restore proper probability from the FOD at the track seed point
-            void reverse_track() override
+            void reverse_track (GeneratedTrack& tck, const Eigen::Vector3f& seed_dir) override
             {
               half_log_prob0 = half_log_prob0_seed;
               sample_idx = S.num_samples;
-              MethodBase::reverse_track();
+              MethodBase::reverse_track (tck, seed_dir);
             }
 
 

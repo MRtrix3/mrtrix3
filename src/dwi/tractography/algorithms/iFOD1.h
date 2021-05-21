@@ -212,6 +212,15 @@ namespace MR
             }
 
 
+
+            void reverse_track (GeneratedTrack& tck, const Eigen::Vector3f& seed_dir) override
+            {
+              MethodBase::reverse_track (tck, seed_dir);
+              if (tck.size() > 1)
+                dir = tck[tck.size()-1] - tck[tck.size()-2];
+              dir.normalize();
+            }
+
             float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) override
             {
               if (!get_data (source, position))
