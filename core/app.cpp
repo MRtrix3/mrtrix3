@@ -93,10 +93,20 @@ namespace MR
     std::string command_history_string;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
+
     //ENVVAR name: MRTRIX_QUIET
     //ENVVAR Do not display information messages or progress status. This has
-    //ENVVAR the same effect as the ``-quiet`` command-line option.
-    int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
+    //ENVVAR the same effect as the ``-quiet`` command-line option. If set,
+    //ENVVAR supersedes the MRTRIX_LOGLEVEL environment variable.
+
+    //ENVVAR name: MRTRIX_LOGLEVEL
+    //ENVVAR Set the default terminal verbosity. Default terminal verbosity
+    //ENVVAR is 1. This has the same effect as the ``-quiet`` (0),
+    //ENVVAR ``-info`` (2) or ``-debug`` (3) comand-line options.
+    int log_level = getenv("MRTRIX_QUIET") ?
+                    0 :
+                    (getenv("MRTRIX_LOGLEVEL") ? to<int>(getenv("MRTRIX_LOGLEVEL")) : 1);
+
     int exit_error_code = 0;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
