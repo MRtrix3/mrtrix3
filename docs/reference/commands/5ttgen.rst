@@ -399,7 +399,7 @@ Options
 
 - **-thalami** Select method to be used for thalamic segmentation; options are: nuclei,first,aseg
 
-- **-white_stem** Classify the brainstem as white matter
+- **-white_stem** Classify the brainstem as white matter. Streamlines terminating within this region will likely be rejected.
 
 Options common to all 5ttgen algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
