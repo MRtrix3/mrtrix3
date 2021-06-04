@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ namespace MR
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2020 the MRtrix3 contributors.\n"
+       "Copyright (c) 2008-2021 the MRtrix3 contributors.\n"
        "\n"
        "This Source Code Form is subject to the terms of the Mozilla Public\n"
        "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
@@ -93,10 +93,20 @@ namespace MR
     std::string command_history_string;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
+
     //ENVVAR name: MRTRIX_QUIET
     //ENVVAR Do not display information messages or progress status. This has
-    //ENVVAR the same effect as the ``-quiet`` command-line option.
-    int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
+    //ENVVAR the same effect as the ``-quiet`` command-line option. If set,
+    //ENVVAR supersedes the MRTRIX_LOGLEVEL environment variable.
+
+    //ENVVAR name: MRTRIX_LOGLEVEL
+    //ENVVAR Set the default terminal verbosity. Default terminal verbosity
+    //ENVVAR is 1. This has the same effect as the ``-quiet`` (0),
+    //ENVVAR ``-info`` (2) or ``-debug`` (3) comand-line options.
+    int log_level = getenv("MRTRIX_QUIET") ?
+                    0 :
+                    (getenv("MRTRIX_LOGLEVEL") ? to<int>(getenv("MRTRIX_LOGLEVEL")) : 1);
+
     int exit_error_code = 0;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
@@ -977,16 +987,18 @@ namespace MR
     void sort_arguments (int argc, const char* const* argv)
     {
       for (int n = 1; n < argc; ++n) {
-        const Option* opt = match_option (argv[n]);
-        if (opt) {
-          if (n + int (opt->size()) >= argc)
-            throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
+        if (argv[n]) {
+          const Option* opt = match_option (argv[n]);
+          if (opt) {
+            if (n + int (opt->size()) >= argc)
+              throw Exception (std::string ("not enough parameters to option \"-") + opt->id + "\"");
 
-          option.push_back (ParsedOption (opt, argv+n+1));
-          n += opt->size();
+            option.push_back (ParsedOption (opt, argv+n+1));
+            n += opt->size();
+          }
+          else
+            argument.push_back (ParsedArgument (nullptr, nullptr, argv[n]));
         }
-        else
-          argument.push_back (ParsedArgument (nullptr, nullptr, argv[n]));
       }
     }
 

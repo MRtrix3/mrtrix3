@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2020 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -128,12 +128,12 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
   data = utils.load_keyval(transformation + 'decomp')
   run.function(os.remove, transformation + 'decomp')
   scaling = [float(value) for value in data['scaling']]
-  if any([a < 0 for a in scaling]) or any([a > (1 + max_scaling) for a in scaling]) or any(
-      [a < (1 - max_scaling) for a in scaling]):
+  if any(a < 0 for a in scaling) or any(a > (1 + max_scaling) for a in scaling) or any(
+      a < (1 - max_scaling) for a in scaling):
     app.warn("large scaling (" + str(scaling) + ") in " + transformation)
     good = False
   shear = [float(value) for value in data['shear']]
-  if any([abs(a) > max_shear for a in shear]):
+  if any(abs(a) > max_shear for a in shear):
     app.warn("large shear (" + str(shear) + ") in " + transformation)
     good = False
   rot_angle = float(data['angle_axis'][0])
@@ -190,7 +190,7 @@ def aggregate(inputs, output, contrast_idx, mode, force=True):
     run.command(['mrmath', images, 'median', '-keep_unary_axes', output], force=force)
   elif mode == 'weighted_mean':
     weights = [inp.aggregation_weight for inp in inputs]
-    assert not any([w is None for w in weights]), weights
+    assert not any(w is None for w in weights), weights
     wsum = sum([float(w) for w in weights])
     cmd = ['mrcalc']
     if wsum <= 0:
@@ -508,7 +508,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
   for cid, files in enumerate(in_files):
     c_uids.append([re.sub(re.escape(common_postfix[cid])+'$', '',
                           re.sub('^'+re.escape(common_prefix[cid]), '', fname)) for fname in files])
-    if not all([len(_uid) for _uid in c_uids[-1]]):
+    if not all(len(_uid) for _uid in c_uids[-1]):
       MRtrixError("No uniquely identifiable part of filename found in file :\n" + '""\n'.join(non_unique))
 
   for uids in c_uids:
@@ -565,7 +565,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
     weights = [float(inp.aggregation_weight) for inp in inputs if inp.aggregation_weight is not None]
     if sum(weights) <= 0:
       raise MRtrixError('Sum of aggregation weights is not positive: ' + str(weights))
-    if any([w < 0 for w in weights]):
+    if any(w < 0 for w in weights):
       app.warn('Negative aggregation weights: ' + str(weights))
 
   return inputs, xcontrast_xsubject_pre_postfix
@@ -761,7 +761,7 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError("rigid_lmax option set when no rigid registration is performed")
     rigid_lmax = [int(x) for x in app.ARGS.rigid_lmax.split(',')]
     if do_fod_registration and len(rigid_scales) != len(rigid_lmax):
-      raise MRtrixError('rigid_scales and rigid_lmax schedules are not equal in length')
+      raise MRtrixError('rigid_scales and rigid_lmax schedules are not equal in length: scales stages: %s, lmax stages: %s' % (len(rigid_scales), len(rigid_lmax)))
   else:
     rigid_lmax = DEFAULT_RIGID_LMAX
 
@@ -773,7 +773,7 @@ def execute(): #pylint: disable=unused-variable
     if len(rigid_niter) == 1:
       rigid_niter = rigid_niter * len(rigid_scales)
     elif len(rigid_scales) != len(rigid_niter):
-      raise MRtrixError('rigid_scales and rigid_niter schedules are not equal in length')
+      raise MRtrixError('rigid_scales and rigid_niter schedules are not equal in length: scales stages: %s, niter stages: %s' % (len(rigid_scales), len(rigid_niter)))
 
   # affine options
   if app.ARGS.affine_scale:
@@ -787,7 +787,7 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError("affine_lmax option set when no affine registration is performed")
     affine_lmax = [int(x) for x in app.ARGS.affine_lmax.split(',')]
     if do_fod_registration and len(affine_scales) != len(affine_lmax):
-      raise MRtrixError('affine_scales and affine_lmax schedules are not equal in length')
+      raise MRtrixError('affine_scales and affine_lmax schedules are not equal in length: scales stages: %s, lmax stages: %s' % (len(affine_scales), len(affine_lmax)))
   else:
     affine_lmax = DEFAULT_AFFINE_LMAX
 
@@ -799,7 +799,7 @@ def execute(): #pylint: disable=unused-variable
     if len(affine_niter) == 1:
       affine_niter = affine_niter * len(affine_scales)
     elif len(affine_scales) != len(affine_niter):
-      raise MRtrixError('affine_scales and affine_niter schedules are not equal in length')
+      raise MRtrixError('affine_scales and affine_niter schedules are not equal in length: scales stages: %s, niter stages: %s' % (len(affine_scales), len(affine_niter)))
 
   linear_scales = []
   linear_lmax = []
@@ -820,7 +820,13 @@ def execute(): #pylint: disable=unused-variable
   assert len(linear_type) == len(linear_scales)
   assert len(linear_scales) == len(linear_niter)
   if do_fod_registration:
-    assert len(linear_lmax) == len(linear_niter)
+    if len(linear_lmax) != len(linear_niter):
+      mismatch = []
+      if len(rigid_lmax) != len(rigid_niter):
+        mismatch += ['rigid: lmax stages: %s, niter stages: %s' % (len(rigid_lmax), len(rigid_niter))]
+      if len(affine_lmax) != len(affine_niter):
+        mismatch += ['affine: lmax stages: %s, niter stages: %s' % (len(affine_lmax), len(affine_niter))]
+      raise MRtrixError('linear registration: lmax and niter schedules are not equal in length: %s' % (', '.join(mismatch)))
   app.console('-' * 60)
   app.console('initial alignment of images: %s' % initial_alignment)
   app.console('-' * 60)
@@ -864,7 +870,7 @@ def execute(): #pylint: disable=unused-variable
     nl_lmax = [int(x) for x in app.ARGS.nl_lmax.split(',')] if app.ARGS.nl_lmax else DEFAULT_NL_LMAX
 
     if len(nl_scales) != len(nl_niter):
-      raise MRtrixError('nl_scales and nl_niter schedules are not equal in length')
+      raise MRtrixError('nl_scales and nl_niter schedules are not equal in length: scales stages: %s, niter stages: %s' % (len(nl_scales), len(nl_niter)))
 
     app.console('-' * 60)
     app.console('nonlinear registration stages:')
@@ -875,7 +881,7 @@ def execute(): #pylint: disable=unused-variable
 
     if do_fod_registration:
       if len(nl_scales) != len(nl_lmax):
-        raise MRtrixError('nl_scales and nl_lmax schedules are not equal in length')
+        raise MRtrixError('nl_scales and nl_lmax schedules are not equal in length: scales stages: %s, lmax stages: %s' % (len(nl_scales), len(nl_lmax)))
 
     if do_fod_registration:
       for istage, [scale, lmax, niter] in enumerate(zip(nl_scales, nl_lmax, nl_niter)):

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2020 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_description('This script is intended to provide convenience of use of the FSL software tools topup and eddy for performing DWI pre-processing, by encapsulating some of the surrounding image data and metadata processing steps. It is intended to simply these processing steps for most commonly-used DWI acquisition strategies, whilst also providing support for some more exotic acquisitions. The "example usage" section demonstrates the ways in which the script can be used based on the (compulsory) -rpe_* command-line options.')
   cmdline.add_description('The "-topup_options" and "-eddy_options" command-line options allow the user to pass desired command-line options directly to the FSL commands topup and eddy. The available options for those commands may vary between versions of FSL; users can interrogate such by querying the help pages of the installed software, and/or the FSL online documentation: (topup) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/topup/TopupUsersGuide ; (eddy) https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/eddy/UsersGuide')
   cmdline.add_description('The script will attempt to run the CUDA version of eddy; if this does not succeed for any reason, or is not present on the system, the CPU version will be attempted instead. By default, the CUDA eddy binary found that indicates compilation against the most recent version of CUDA will be attempted; this can be over-ridden by providing a soft-link "eddy_cuda" within your path that links to the binary you wish to be executed.')
-  cmdline.add_description('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to eddy is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).')
+  cmdline.add_description('Note that this script does not perform any explicit registration between images provided to topup via the -se_epi option, and the DWI volumes provided to eddy. In some instances (motion between acquisitions) this can result in erroneous application of the inhomogeneity field during distortion correction. Use of the -align_seepi option is advocated in this scenario, which ensures that the first volume in the series provided to topup is also the first volume in the series provided to eddy, guaranteeing alignment. But a prerequisite for this approach is that the image contrast within the images provided to the -se_epi option must match the b=0 volumes present within the input DWI series: this means equivalent TE, TR and flip angle (note that differences in multi-band factors between two acquisitions may lead to differences in TR).')
   cmdline.add_example_usage('A basic DWI acquisition, where all image volumes are acquired in a single protocol with fixed phase encoding',
                             'dwifslpreproc DWI_in.mif DWI_out.mif -rpe_none -pe_dir ap -readout_time 0.55',
                             'Due to use of a single fixed phase encoding, no EPI distortion correction can be applied in this case.')
@@ -141,7 +141,7 @@ def execute(): #pylint: disable=unused-variable
   if eddyqc_path:
     if os.path.exists(eddyqc_path):
       if os.path.isdir(eddyqc_path):
-        if any([ os.path.exists(os.path.join(eddyqc_path, filename)) for filename in eddyqc_files ]):
+        if any(os.path.exists(os.path.join(eddyqc_path, filename)) for filename in eddyqc_files):
           if app.FORCE_OVERWRITE:
             app.warn('Output eddy QC directory already contains relevant files; these will be overwritten on completion')
           else:
@@ -267,11 +267,11 @@ def execute(): #pylint: disable=unused-variable
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'unexpected data format')
       if isinstance(slice_timing[0], list):
-        if not all( [ len(entry) == 1 for entry in slice_timing ] ):
+        if not all(len(entry) == 1 for entry in slice_timing):
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'data do not appear to be 1D')
         slice_timing = [ entry[0] for entry in slice_timing ]
-      if not all( [ isinstance(entry, float) for entry in slice_timing ] ):
+      if not all(isinstance(entry, float) for entry in slice_timing):
         try:
           slice_timing = [ float(entry) for entry in slice_timing ]
         except ValueError:
@@ -375,6 +375,8 @@ def execute(): #pylint: disable=unused-variable
       line.append(trt)
       dwi_manual_pe_scheme = [ line ] * dwi_num_volumes
       app.debug('Manual DWI PE scheme for \'Pair\' PE design: ' + str(dwi_manual_pe_scheme))
+      if len(se_epi_header.size()) != 4:
+        raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must be a 4D image')
       se_epi_num_volumes = se_epi_header.size()[3]
       if se_epi_num_volumes%2:
         raise MRtrixError('If using -rpe_pair option, image provided using -se_epi must contain an even number of volumes')
@@ -910,14 +912,14 @@ def execute(): #pylint: disable=unused-variable
     except run.MRtrixCmdError as exception_cuda:
       if not eddy_openmp_cmd:
         raise
-      with open('eddy_cuda_failure_output.txt', 'w') as eddy_output_file:
-        eddy_output_file.write(str(exception_cuda))
+      with open('eddy_cuda_failure_output.txt', 'wb') as eddy_output_file:
+        eddy_output_file.write(str(exception_cuda).encode('utf-8', errors='replace'))
       app.console('CUDA version of \'eddy\' was not successful; attempting OpenMP version')
       try:
         eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
       except run.MRtrixCmdError as exception_openmp:
-        with open('eddy_openmp_failure_output.txt', 'w') as eddy_output_file:
-          eddy_output_file.write(str(exception_openmp))
+        with open('eddy_openmp_failure_output.txt', 'wb') as eddy_output_file:
+          eddy_output_file.write(str(exception_openmp).encode('utf-8', errors='replace'))
         # Both have failed; want to combine error messages
         eddy_cuda_header = ('=' * len(eddy_cuda_cmd)) \
                            + '\n' \
@@ -950,8 +952,8 @@ def execute(): #pylint: disable=unused-variable
 
   else:
     eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
-  with open('eddy_output.txt', 'w') as eddy_output_file:
-    eddy_output_file.write(eddy_output.stdout + '\n' + eddy_output.stderr + '\n')
+  with open('eddy_output.txt', 'wb') as eddy_output_file:
+    eddy_output_file.write((eddy_output.stdout + '\n' + eddy_output.stderr + '\n').encode('utf-8', errors='replace'))
   if app.VERBOSITY > 1:
     app.console('Output of eddy command:')
     sys.stderr.write(eddy_output.stdout + '\n' + eddy_output.stderr + '\n')

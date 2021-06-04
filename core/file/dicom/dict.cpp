@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -2481,8 +2481,8 @@ namespace MR {
         dict[0x04000561UL] =  "SQOriginalAttributesSequence";
         dict[0x04000562UL] =  "DTAttributeModificationDateTime";
         dict[0x04000563UL] =  "LOModifyingSystem";
-        dict[0x04000564UL] =  "LOSourceOfPreviousValuesReasonForTheAttributeModif";
-        dict[0x04000565UL] =  "icationCS";
+        dict[0x04000564UL] =  "LOSourceOfPreviousValues";
+        dict[0x04000565UL] =  "CSReasonForTheAttributeModification";
         dict[0x20000010UL] =  "ISNumberOfCopies";
         dict[0x2000001EUL] =  "SQPrinterConfigurationSequence";
         dict[0x20000020UL] =  "CSPrintPriority";
