@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2020 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -118,7 +118,12 @@ void usage ()
   REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. "
-    "NeuroImage, 2015, 119, 338-351";
+    "NeuroImage, 2015, 119, 338-351"
+
+    + "* If using the -linear option: \n"
+    "Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. " // Internal
+    "Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. "
+    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
 
   ARGUMENTS
   + Argument ("in_tracks",   "the input track file").type_tracks_in()
