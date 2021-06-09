@@ -326,6 +326,7 @@ void run ()
     Header header (dwi);
     header.ndim() = 3;
     header.datatype() = DataType::UInt16;
+    header.reset_intensity_scaling();
     rank = Image<uint16_t>::create (opt[0][0], header);
   }
 
