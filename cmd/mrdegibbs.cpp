@@ -14,14 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <numeric>
 #include <unsupported/Eigen/FFT>
 
-#include "axes.h"
 #include "command.h"
-#include "image.h"
-#include "progressbar.h"
-#include "algo/threaded_loop.h"
-#include <numeric>
+#include "degibbs/unring2d.h"
 
 using namespace MR;
 using namespace App;
@@ -79,223 +76,6 @@ void usage ()
 }
 
 
-typedef double value_type;
-
-
-
-
-class ComputeSlice
-{ MEMALIGN (ComputeSlice)
-  public:
-    ComputeSlice (const vector<size_t>& outer_axes, const vector<size_t>& slice_axes, const int& nsh, const int& minW, const int& maxW, Image<value_type>& in, Image<value_type>& out) :
-      outer_axes (outer_axes),
-      slice_axes (slice_axes),
-      nsh (nsh),
-      minW (minW),
-      maxW (maxW),
-      in (in),
-      out (out),
-      im1 (in.size(slice_axes[0]), in.size(slice_axes[1])),
-      im2 (im1.rows(), im1.cols()) {
-        prealloc_FFT();
-      }
-
-    ComputeSlice (const ComputeSlice& other) :
-      outer_axes (other.outer_axes),
-      slice_axes (other.slice_axes),
-      nsh (other.nsh),
-      minW (other.minW),
-      maxW (other.maxW),
-      in (other.in),
-      out (other.out),
-      fft (),
-      im1 (in.size(slice_axes[0]), in.size(slice_axes[1])),
-      im2 (im1.rows(), im1.cols()) {
-        prealloc_FFT();
-      }
-
-
-    void operator() (const Iterator& pos)
-    {
-      const int X = slice_axes[0];
-      const int Y = slice_axes[1];
-      assign_pos_of (pos, outer_axes).to (in, out);
-
-      for (auto l = Loop (slice_axes) (in); l; ++l)
-        im1 (in.index(X), in.index(Y)) = cdouble (in.value(), 0.0);
-
-      unring_2d ();
-
-      for (auto l = Loop (slice_axes) (out); l; ++l)
-        out.value() = im1 (out.index(X), out.index(Y)).real();
-    }
-
-  private:
-    const vector<size_t>& outer_axes;
-    const vector<size_t>& slice_axes;
-    const int nsh, minW, maxW;
-    Image<value_type> in, out;
-    Eigen::FFT<double> fft;
-    Eigen::MatrixXcd im1, im2, shifted;
-    Eigen::VectorXcd v;
-
-    void prealloc_FFT () {
-      // needed to avoid within-thread allocations,
-      // which aren't thread-safe in FFTW:
-#ifdef EIGEN_FFTW_DEFAULT
-      Eigen::VectorXcd tmp (im1.rows());
-      FFT (tmp);
-      iFFT (tmp);
-      tmp.resize (im1.cols());
-      FFT (tmp);
-      iFFT (tmp);
-#endif
-    }
-
-    template <typename Derived> FORCE_INLINE void FFT      (Eigen::MatrixBase<Derived>&& vec) { fft.fwd (v, vec); vec = v; }
-    template <typename Derived> FORCE_INLINE void FFT      (Eigen::MatrixBase<Derived>& vec) { FFT (std::move (vec)); }
-    template <typename Derived> FORCE_INLINE void iFFT     (Eigen::MatrixBase<Derived>&& vec) { fft.inv (v, vec); vec = v; }
-    template <typename Derived> FORCE_INLINE void iFFT     (Eigen::MatrixBase<Derived>& vec) { iFFT (std::move (vec)); }
-    template <typename Derived> FORCE_INLINE void row_FFT  (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.rows(); ++n)  FFT (mat.row(n)); }
-    template <typename Derived> FORCE_INLINE void row_iFFT (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.rows(); ++n) iFFT (mat.row(n)); }
-    template <typename Derived> FORCE_INLINE void col_FFT  (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.cols(); ++n)  FFT (mat.col(n)); }
-    template <typename Derived> FORCE_INLINE void col_iFFT (Eigen::MatrixBase<Derived>& mat) { for (auto n = 0; n < mat.cols(); ++n) iFFT (mat.col(n)); }
-
-
-
-    FORCE_INLINE void unring_2d ()
-    {
-      row_FFT (im1);
-      col_FFT (im1);
-
-      for (int k = 0; k < im1.cols(); k++) {
-        double ck = (1.0+cos(2.0*Math::pi*(double(k)/im1.cols())))*0.5;
-        for (int j = 0 ; j < im1.rows(); j++) {
-          double cj = (1.0+cos(2.0*Math::pi*(double(j)/im1.rows())))*0.5;
-
-          if (ck+cj != 0.0) {
-            im2(j,k) = im1(j,k) * cj / (ck+cj);
-            im1(j,k) *= ck / (ck+cj);
-          }
-          else
-            im1(j,k) = im2(j,k) = cdouble(0.0, 0.0);
-        }
-      }
-
-      row_iFFT (im1);
-      col_iFFT (im2);
-
-      unring_1d (im1);
-      unring_1d (im2.transpose());
-
-      im1 += im2;
-    }
-
-
-
-
-
-    template <typename Derived>
-      FORCE_INLINE void unring_1d (Eigen::MatrixBase<Derived>&& eig)
-      {
-        const int n = eig.rows();
-        const int numlines = eig.cols();
-        shifted.resize (n, 2*nsh+1);
-
-        int shifts [2*nsh+1];
-        shifts[0] = 0;
-        for (int j = 0; j < nsh; j++) {
-          shifts[j+1] = j+1;
-          shifts[1+nsh+j] = -(j+1);
-        }
-
-        double TV1arr[2*nsh+1];
-        double TV2arr[2*nsh+1];
-
-        for (int k = 0; k < numlines; k++) {
-          shifted.col(0) = eig.col(k);
-
-          const int maxn = (n&1) ? (n-1)/2 : n/2-1;
-
-          for (int j = 1; j < 2*nsh+1; j++) {
-            double phi = Math::pi*double(shifts[j])/double(n*nsh);
-            cdouble u (std::cos(phi), std::sin(phi));
-            cdouble e (1.0, 0.0);
-            shifted(0,j) = shifted(0,0);
-
-            if (!(n&1))
-              shifted(n/2,j) = cdouble(0.0, 0.0);
-
-            for (int l = 0; l < maxn; l++) {
-              e = u*e;
-              int L = l+1; shifted(L,j) = e * shifted(L,0);
-              L = n-1-l;   shifted(L,j) = std::conj(e) * shifted(L,0);
-            }
-          }
-
-
-          col_iFFT (shifted);
-
-          for (int j = 0; j < 2*nsh+1; ++j) {
-            TV1arr[j] = 0.0;
-            TV2arr[j] = 0.0;
-            for (int t = minW; t <= maxW; t++) {
-              TV1arr[j] += abs (shifted((n-t)%n,j).real() - shifted((n-t-1)%n,j).real());
-              TV1arr[j] += abs (shifted((n-t)%n,j).imag() - shifted((n-t-1)%n,j).imag());
-              TV2arr[j] += abs (shifted((n+t)%n,j).real() - shifted((n+t+1)%n,j).real());
-              TV2arr[j] += abs (shifted((n+t)%n,j).imag() - shifted((n+t+1)%n,j).imag());
-            }
-          }
-
-          for (int l = 0; l < n; ++l) {
-            double minTV = std::numeric_limits<double>::max();
-            int minidx = 0;
-            for (int j = 0; j < 2*nsh+1; ++j) {
-
-              if (TV1arr[j] < minTV) {
-                minTV = TV1arr[j];
-                minidx = j;
-              }
-              if (TV2arr[j] < minTV) {
-                minTV = TV2arr[j];
-                minidx = j;
-              }
-
-              TV1arr[j] += abs (shifted((l-minW+1+n)%n,j).real() - shifted((l-(minW  )+n)%n,j).real());
-              TV1arr[j] -= abs (shifted((l-maxW  +n)%n,j).real() - shifted((l-(maxW+1)+n)%n,j).real());
-              TV2arr[j] += abs (shifted((l+maxW+1+n)%n,j).real() - shifted((l+(maxW+2)+n)%n,j).real());
-              TV2arr[j] -= abs (shifted((l+minW  +n)%n,j).real() - shifted((l+(minW+1)+n)%n,j).real());
-
-              TV1arr[j] += abs (shifted((l-minW+1+n)%n,j).imag() - shifted((l-(minW  )+n)%n,j).imag());
-              TV1arr[j] -= abs (shifted((l-maxW  +n)%n,j).imag() - shifted((l-(maxW+1)+n)%n,j).imag());
-              TV2arr[j] += abs (shifted((l+maxW+1+n)%n,j).imag() - shifted((l+(maxW+2)+n)%n,j).imag());
-              TV2arr[j] -= abs (shifted((l+minW  +n)%n,j).imag() - shifted((l+(minW+1)+n)%n,j).imag());
-            }
-
-            double a0r = shifted((l-1+n)%n,minidx).real();
-            double a1r = shifted(l,minidx).real();
-            double a2r = shifted((l+1+n)%n,minidx).real();
-            double a0i = shifted((l-1+n)%n,minidx).imag();
-            double a1i = shifted(l,minidx).imag();
-            double a2i = shifted((l+1+n)%n,minidx).imag();
-            double s = double(shifts[minidx])/(2.0*nsh);
-
-            if (s > 0.0)
-              eig(l,k) = cdouble (a1r*(1.0-s) + a0r*s, a1i*(1.0-s) + a0i*s);
-            else
-              eig(l,k) = cdouble (a1r*(1.0+s) - a2r*s, a1i*(1.0+s) - a2i*s);
-          }
-        }
-      }
-
-    template <typename Derived>
-      FORCE_INLINE void unring_1d (Eigen::MatrixBase<Derived>& eig) { unring_1d (std::move (eig)); }
-
-};
-
-
-
-
 
 
 
@@ -308,11 +88,11 @@ void run ()
   if (minW >= maxW)
     throw Exception ("minW must be smaller than maxW");
 
-  auto in = Image<value_type>::open (argument[0]);
+  auto in = Image<Degibbs::value_type>::open (argument[0]);
   Header header (in);
 
   header.datatype() = DataType::from_command_line (DataType::Float32);
-  auto out = Image<value_type>::create (argument[1], header);
+  auto out = Image<Degibbs::value_type>::create (argument[1], header);
 
   vector<size_t> slice_axes = { 0, 1 };
   auto opt = get_options ("axes");
@@ -371,6 +151,6 @@ void run ()
   }
 
   ThreadedLoop ("performing Gibbs ringing removal", in, outer_axes, slice_axes)
-    .run_outer (ComputeSlice (outer_axes, slice_axes, nshifts, minW, maxW, in, out));
+    .run_outer (Degibbs::Unring2DFunctor (outer_axes, slice_axes, nshifts, minW, maxW, in, out));
 }
 
