@@ -31,6 +31,8 @@ namespace MR {
             _plan = fftw_plan_dft_1d (other._data.size(), p, p, direction, FFTW_MEASURE);
           }
 
+        const size_t size () const { return _data.size(); }
+
         const cdouble& operator[] (size_t n) const { return _data[n]; }
         cdouble& operator[] (size_t n) { return _data[n]; }
 
