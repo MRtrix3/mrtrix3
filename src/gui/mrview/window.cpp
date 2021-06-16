@@ -168,6 +168,7 @@ namespace MR
           }
           if (list.size())
             main->add_images (list);
+          event->acceptProposedAction();
         }
       }
 
