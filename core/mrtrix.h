@@ -198,6 +198,13 @@ namespace MR
   bool match (const std::string& pattern, const std::string& text, bool ignore_case = false);
 
 
+  inline bool is_dash (const std::string& arg)
+  {
+    // https://www.compart.com/en/unicode/category/Pd
+    // see also corresponding code in consume_dash() in core/app.cpp
+    return arg == "-" || arg == "\xE2\x80\x90" || arg == "\xE2\x80\x95" ||
+      arg == "\xEF\xB9\x98" || arg == "\xEF\xB9\xA3" || arg == "\xEF\xB9\x8D";
+  }
 
 
 
