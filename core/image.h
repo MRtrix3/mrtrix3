@@ -458,7 +458,7 @@ namespace MR
         throw Exception ("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
 
       // try to dump file to mrtrix format if possible (direct IO)
-      if (is_dach (filename))
+      if (is_dash (filename))
         filename = File::create_tempfile (0, "mif");
 
       DEBUG ("dumping image \"" + name() + "\" to file \"" + filename + "\"...");

@@ -289,20 +289,19 @@ namespace MR
             opt (option), args (arguments)
         {
           for (size_t i = 0; i != option->size(); ++i) {
-            if (is_dash (arguments[i]))
-              continue;
             const char* p = arguments[i];
-            if (consume_dash (p)) {
-              if ((*option)[i].type == ImageIn || (*option)[i].type == ImageOut ||
-                  (*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
-                  (*option)[i].type == FloatSeq || (*option)[i].type == Various) {
-                continue;
-                WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
-                    ((option->size() == 1) ?
-                     "the expected argument" :
-                     ("one of the " + str(option->size()) + " expected arguments")) +
-                    " for option \"-" + option->id + "\"; is this what you intended?");
-            }
+            if (!consume_dash (p))
+              continue;
+            if (( (*option)[i].type == ImageIn || (*option)[i].type == ImageOut ) && is_dash (arguments[i]))
+              continue;
+            if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
+                (*option)[i].type == FloatSeq || (*option)[i].type == Various)
+              continue;
+            WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
+                ((option->size() == 1) ?
+                 "the expected argument" :
+                 ("one of the " + str(option->size()) + " expected arguments")) +
+                " for option \"-" + option->id + "\"; is this what you intended?");
           }
         }
 

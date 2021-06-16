@@ -936,28 +936,6 @@ namespace MR
     }
 
 
-    namespace {
-      inline bool consume_dash (const char*& arg)
-      {
-        if (arg[0] == '-') {
-          ++arg;
-          return true;
-        }
-        // catch as many UTF-8 dashes as possible...
-        // https://www.compart.com/en/unicode/category/Pd
-        const unsigned char* uarg = reinterpret_cast<const unsigned char*> (arg);
-        if (uarg[0] == 0xE2 && uarg[1] == 0x80 && ( uarg[2] >= 0x90 && uarg[2] <= 0x95 )) {
-          arg += 3;
-          return true;
-        }
-        if (uarg[0] == 0xEF && uarg[1] == 0xB9 && ( uarg[2] == 0x98 || uarg[2] == 0xA3 || uarg[2] == 0x8D )) {
-          arg += 3;
-          return true;
-        }
-        return false;
-      }
-    }
-
 
 
 
