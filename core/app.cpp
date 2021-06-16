@@ -937,7 +937,7 @@ namespace MR
 
 
     namespace {
-      inline bool is_dash (const char*& arg)
+      inline bool consume_dash (const char*& arg)
       {
         if (arg[0] == '-') {
           ++arg;
@@ -963,8 +963,8 @@ namespace MR
 
     const Option* match_option (const char* arg)
     {
-      if (is_dash (arg) && *arg && !isdigit (*arg) && *arg != '.') {
-        while (is_dash(arg));
+      if (consume_dash (arg) && *arg && !isdigit (*arg) && *arg != '.') {
+        while (consume_dash(arg));
         vector<const Option*> candidates;
         std::string root (arg);
 
