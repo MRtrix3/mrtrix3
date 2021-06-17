@@ -299,9 +299,13 @@ namespace MR
               continue;
             WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
                 ((option->size() == 1) ?
-                 "the expected argument" :
-                 ("one of the " + str(option->size()) + " expected arguments")) +
-                " for option \"-" + option->id + "\"; is this what you intended?");
+                 "the expected argument " :
+                 ("one of the " + str(option->size()) + " expected arguments ")) +
+                "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
+                "the requisite input" +
+                ((option->size() == 1) ? " " : "s ") +
+                "to command-line option \"-" + option->id + "\" may have been erroneously omitted, which may cause " +
+                "other command-line parsing errors");
           }
         }
 
