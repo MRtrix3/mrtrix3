@@ -48,6 +48,12 @@ namespace MR
           using is_neighbourhood = int;
           type_trait to distinguish voxel-wise and neighbourhood based metric types (affects ThreadKernel) */
 
+
+        /** iterate_over_processed
+          using iterate_over_processed = int;
+          type_trait to distinguish metrics that require iterating over the preprocessed image */
+
+
         // set contrast weights for 4D metrics
         void set_weights (Eigen::VectorXd weights) {
           mc_weights = weights;

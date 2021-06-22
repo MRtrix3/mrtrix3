@@ -27,6 +27,7 @@
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/difference_robust.h"
 #include "registration/metric/local_cross_correlation.h"
+#include "registration/metric/global_cross_correlation.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
@@ -50,7 +51,7 @@ const OptionGroup multiContrastOptions =
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Alena Uus (alena.uus@kcl.ac.uk)";
 
   SYNOPSIS = "Register two images together using a symmetric rigid, affine or non-linear transformation model";
 
@@ -382,12 +383,14 @@ void run () {
   opt = get_options ("rigid_init_translation");
   if (opt.size()) {
     if (init_rigid_matrix_set)
-      throw Exception ("options -rigid_init_matrix and -rigid_init_translation are mutually exclusive");
+      WARN ("-rigid_init_translation (partially) potentially overwrites -rigid_init_matrix option");
     Registration::set_init_translation_model_from_option (rigid_registration, (int)opt[0][0]);
   }
 
   opt = get_options ("rigid_init_rotation");
   if (opt.size()) {
+    if (init_rigid_matrix_set)
+      WARN ("-rigid_init_rotation potentially (partially) overwrites -rigid_init_matrix option");
     Registration::set_init_rotation_model_from_option (rigid_registration, (int)opt[0][0]);
   }
 
@@ -425,10 +428,32 @@ void run () {
       default:
         break;
     }
+    rigid_registration.set_metric (rigid_metric);
   }
 
-  if (rigid_metric == Registration::NCC)
-    throw Exception ("TODO: cross correlation metric not yet implemented");
+  opt = get_options ("rigid_metric.radius");
+  if (opt.size ()) {
+    if (!do_rigid)
+      throw Exception ("the rigid metric kernel radius has been input when no rigid registration is requested");
+    size_t lncc_radius = opt[0][0];
+    if (lncc_radius > 0 && rigid_metric != Registration::NCC)
+      throw Exception ("rigid_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");
+    rigid_registration.set_radius (vector<size_t>(3, lncc_radius));
+
+    if (lncc_radius > 0)
+      rigid_registration.set_grid_spacing (2);  // TODO run more tests to identify the optimal value
+  }
+
+  opt = get_options ("rigid_metric.grid_spacing");
+  if (opt.size ()) {
+    if (!do_rigid)
+      throw Exception ("the rigid metric grid spacing has been input when no rigid registration is requested");
+    size_t grid_spacing = opt[0][0];
+    if (grid_spacing > 0 && rigid_metric != Registration::NCC)
+      throw Exception ("rigid_metric.grid_spacing set to " + str(grid_spacing) + " but metric does not support grid sampling");
+    if (grid_spacing > 0)
+      rigid_registration.set_grid_spacing (grid_spacing);
+  }
 
   opt = get_options ("rigid_metric.diff.estimator");
   Registration::LinearRobustMetricEstimatorType rigid_estimator = Registration::None;
@@ -459,10 +484,10 @@ void run () {
       throw Exception ("-rigid_lmax option is not valid if no input image is FOD image");
     rigid_lmax = parse_ints<uint32_t> (opt[0][0]);
     for (size_t i = 0; i < rigid_lmax.size (); ++i)
-       if (rigid_lmax[i] > max_mc_image_lmax) {
+      if (rigid_lmax[i] > max_mc_image_lmax) {
         WARN ("the requested -rigid_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
         rigid_lmax[i] = max_mc_image_lmax;
-       }
+      }
     rigid_registration.set_lmax (rigid_lmax);
   }
 
@@ -532,14 +557,14 @@ void run () {
   opt = get_options ("affine_init_translation");
   if (opt.size()) {
     if (init_affine_matrix_set)
-      throw Exception ("options -affine_init_matrix and -affine_init_translation are mutually exclusive");
+      WARN ("-affine_init_translation potentially (partially) overwrites -affine_init_matrix option");
     Registration::set_init_translation_model_from_option (affine_registration, (int)opt[0][0]);
   }
 
   opt = get_options ("affine_init_rotation");
   if (opt.size()) {
     if (init_affine_matrix_set)
-      throw Exception ("options -affine_init_matrix and -affine_init_rotation are mutually exclusive");
+      WARN ("-affine_init_rotation potentially (partially) overwrites -affine_init_matrix option");
     Registration::set_init_rotation_model_from_option (affine_registration, (int)opt[0][0]);
   }
 
@@ -570,10 +595,33 @@ void run () {
       default:
         break;
     }
+    affine_registration.set_metric (affine_metric);
   }
 
-  if (affine_metric == Registration::NCC)
-    throw Exception ("TODO cross correlation metric not yet implemented");
+  opt = get_options ("affine_metric.radius");
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine metric kernel radius has been input when no affine registration is requested");
+    size_t lncc_radius = opt[0][0];
+    if (lncc_radius > 0 && affine_metric != Registration::NCC)
+      throw Exception ("affine_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");
+    affine_registration.set_radius (vector<size_t>(3, lncc_radius));
+
+    if (lncc_radius > 0)
+      affine_registration.set_grid_spacing (2); // TODO run more tests to identify the optimal value
+  }
+
+  opt = get_options ("affine_metric.grid_spacing");
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine metric grid spacing has been input when no affine registration is requested");
+    size_t grid_spacing = opt[0][0];
+    if (grid_spacing > 0 && affine_metric != Registration::NCC)
+      throw Exception ("affine_metric.grid_spacing set to " + str(grid_spacing) + " but metric does not support grid sampling");
+
+    if (grid_spacing > 0)
+      affine_registration.set_grid_spacing (grid_spacing);
+  }
 
   opt = get_options ("affine_metric.diff.estimator");
   Registration::LinearRobustMetricEstimatorType affine_estimator = Registration::None;
@@ -761,12 +809,43 @@ void run () {
     if (max_mc_image_lmax == 0)
       throw Exception ("-nl_lmax option is not valid if no input image is FOD image");
     nl_lmax = parse_ints<uint32_t> (opt[0][0]);
+    for (size_t i = 0; i < nl_lmax.size (); ++i) {
+      if ((nl_lmax)[i] > max_mc_image_lmax) {
+        WARN ("the requested -nl_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
+        nl_lmax[i] = max_mc_image_lmax;
+      }
+    }
     nl_registration.set_lmax (nl_lmax);
-    for (size_t i = 0; i < (nl_lmax).size (); ++i)
-      if ((nl_lmax)[i] > max_mc_image_lmax)
-        throw Exception ("the requested -nl_lmax exceeds the lmax of the input images");
   }
 
+  opt = get_options ("nl_metric");
+  Registration::NonLinearMetricType nl_metric = Registration::NL_Diff;
+  if (opt.size()) {
+    switch ((int)opt[0][0]){
+      case 0:
+        nl_metric = Registration::NL_Diff;
+        break;
+      case 1:
+        nl_metric = Registration::NL_NCC;
+        break;
+      default:
+        break;
+    }
+    if (nl_metric == Registration::NL_NCC){
+      nl_registration.set_metric_cc ();
+    }
+  }
+
+  opt = get_options ("nl_metric.radius");
+  if (opt.size ()) {
+    if (!do_nonlinear)
+        throw Exception ("the nonlinear lncc kernel radius has been input when no nonlinear registration is requested");
+      vector<int> input_radii = parse_ints<int> (opt[0][0]);
+      size_t lncc_radius = input_radii[0];
+      if (lncc_radius > 0 && nl_metric != Registration::NL_NCC)
+        throw Exception ("nl_metric.radius set to " + str(lncc_radius) + " but metric does not support local kernels");
+      nl_registration.set_radius (vector<size_t>(3, lncc_radius));
+  }
 
   // ******  MC options  *******
   // TODO: set tissue specific lmax?
@@ -798,7 +877,7 @@ void run () {
       if (do_rigid) max_requested_lmax = std::max(max_requested_lmax, rigid_registration.get_lmax());
       if (do_affine) max_requested_lmax = std::max(max_requested_lmax, affine_registration.get_lmax());
       if (do_nonlinear) max_requested_lmax = std::max(max_requested_lmax, nl_registration.get_lmax());
-      INFO ("maximum used lmax: "+str(max_requested_lmax));
+      INFO ("maximum requested lmax: "+str(max_requested_lmax));
     }
 
     for (size_t idx = 0; idx < n_images; ++idx) {
@@ -842,8 +921,16 @@ void run () {
     if (images2.ndim() == 4) {
       if (do_reorientation)
         rigid_registration.set_directions (directions_cartesian);
-      // if (rigid_metric == Registration::NCC) // TODO
-      if (rigid_metric == Registration::Diff) {
+      if (rigid_metric == Registration::NCC) {
+        if (rigid_registration.get_lncc_extent_mode()) {
+          Registration::Metric::LocalCrossCorrelation4D metric;
+          rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
+        } else {
+          Registration::Metric::GlobalCrossCorrelation4D metric;
+          rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
+        }
+      }
+      else if (rigid_metric == Registration::Diff) {
         if (rigid_estimator == Registration::None) {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
           rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
@@ -863,10 +950,13 @@ void run () {
       } else throw Exception ("FIXME: metric selection");
     } else { // 3D
       if (rigid_metric == Registration::NCC){
-        Registration::Metric::LocalCrossCorrelation metric;
-        vector<size_t> extent(3,3);
-        rigid_registration.set_extent (extent);
-        rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
+        if (rigid_registration.get_lncc_extent_mode()) {
+          Registration::Metric::LocalCrossCorrelation metric;
+          rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
+        } else {
+          Registration::Metric::GlobalCrossCorrelation metric;
+          rigid_registration.run_masked (metric, rigid, images1, images2, im1_mask, im2_mask);
+        }
       }
       else if (rigid_metric == Registration::Diff) {
         if (rigid_estimator == Registration::None) {
@@ -911,8 +1001,16 @@ void run () {
     if (images2.ndim() == 4) {
       if (do_reorientation)
         affine_registration.set_directions (directions_cartesian);
-      // if (affine_metric == Registration::NCC) // TODO
-      if (affine_metric == Registration::Diff) {
+      if (affine_metric == Registration::NCC) {
+        if (affine_registration.get_lncc_extent_mode()) {
+          Registration::Metric::LocalCrossCorrelation4D metric;
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        } else {
+          Registration::Metric::GlobalCrossCorrelation4D metric;
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        }
+      }
+      else if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
           affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
@@ -932,10 +1030,13 @@ void run () {
       } else throw Exception ("FIXME: metric selection");
     } else { // 3D
       if (affine_metric == Registration::NCC){
-        Registration::Metric::LocalCrossCorrelation metric;
-        vector<size_t> extent(3,3);
-        affine_registration.set_extent (extent);
-        affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        if (affine_registration.get_lncc_extent_mode()) {
+          Registration::Metric::LocalCrossCorrelation metric;
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        } else {
+          Registration::Metric::GlobalCrossCorrelation metric;
+          affine_registration.run_masked (metric, affine, images1, images2, im1_mask, im2_mask);
+        }
       }
       else if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {

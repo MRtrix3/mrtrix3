@@ -169,7 +169,6 @@ namespace MR
 
           void set_translation (const Eigen::Matrix<ParameterType, 1, 3>& trans) {
             trafo.translation() = trans;
-            compute_offset();
             compute_halfspace_transformations();
           }
 
@@ -185,7 +184,6 @@ namespace MR
           void set_centre (const Eigen::Vector3& centre_in) {
             centre = centre_in;
             DEBUG ("centre: " + str(centre.transpose()));
-            compute_offset();
             compute_halfspace_transformations();
           }
 
@@ -252,10 +250,6 @@ namespace MR
 
 
         protected:
-          void compute_offset () {
-            trafo.translation() = (trafo.translation() + centre - trafo.linear() * centre).eval();
-          }
-
           void compute_halfspace_transformations() {
             Eigen::Matrix<ParameterType, 4, 4> tmp;
             tmp.setIdentity();

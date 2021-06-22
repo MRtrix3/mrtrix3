@@ -239,7 +239,7 @@ namespace MR
 
       + Option ("rigid_init_matrix", "initialise either the rigid, affine, or syn registration with "
                                 "the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). "
-                                "Note that this overrides rigid_init_translation and rigid_init_rotation initialisation ") // TODO definition of centre
+                                "Note that this overrides the defaults of rigid_init_translation and rigid_init_rotation initialisation ")
         + Argument ("file").type_file_in ()
 
       + Option ("rigid_scale", "use a multi-resolution scheme by defining a scale factor for each level "
@@ -252,9 +252,15 @@ namespace MR
 
       + Option ("rigid_metric", "valid choices are: "
                                  "diff (intensity differences), "
-                                 // "ncc (normalised cross-correlation) " TODO
+                                 "ncc (normalised cross-correlation) "
                                  "Default: diff")
         + Argument ("type").type_choice (linear_metric_choices)
+
+      + Option ("rigid_metric.radius", "the radius of the local metric kernel (local normalised cross correlation) in voxels. If 0, global ncc will be used. Recommended value for local ncc is 4. (Default: 0)")
+        + Argument ("num").type_integer (0)
+
+      + Option ("rigid_metric.grid_spacing", "spatial distance in voxels between samples. Only applies to the cross correlation metric. (Default: 2 for local ncc and 0 for global ncc)")
+      + Argument ("num").type_integer (0)
 
       + Option ("rigid_metric.diff.estimator", "Valid choices are: "
                                   "l1 (least absolute: |x|), "
@@ -307,7 +313,7 @@ namespace MR
 
       + Option ("affine_init_matrix", "initialise either the affine, or syn registration with "
                                 "the supplied affine transformation (as a 4x4 matrix in scanner coordinates). "
-                                "Note that this overrides affine_init_translation and affine_init_rotation initialisation ") // TODO definition of centre
+                                "Note that this overrides the defaults of affine_init_translation and affine_init_rotation initialisation ")
         + Argument ("file").type_file_in ()
 
       + Option ("affine_scale", "use a multi-resolution scheme by defining a scale factor for each level "
@@ -320,7 +326,7 @@ namespace MR
 
       + Option ("affine_metric", "valid choices are: "
                                  "diff (intensity differences), "
-                                 // "ncc (normalised cross-correlation) " TODO
+                                 "ncc (normalised cross-correlation) "
                                  "Default: diff")
         + Argument ("type").type_choice (linear_metric_choices)
 
@@ -330,6 +336,12 @@ namespace MR
                                   "lp (least powers: |x|^1.2), "
                                   "Default: l2")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
+
+      + Option ("affine_metric.radius", "the radius of the local metric kernel (local normalised cross correlation) in voxels. If 0, global ncc will be used. Recommended value for local ncc is 4. (Default: 0)")
+        + Argument ("num").type_integer (0)
+
+      + Option ("affine_metric.grid_spacing", "sspatial distance in voxels between samples. Only applies to the cross correlation metric. (Default: 2 for local ncc and 0 for global ncc)")
+      + Argument ("num").type_integer (0)
 
       // + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
       //   + Argument ("num").type_sequence_float () // TODO

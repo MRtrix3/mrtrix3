@@ -53,7 +53,7 @@ namespace MR
         };
 
         template <class MetricType>
-        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> { NOMEMALIGN
+        struct use_processed_image<MetricType, typename Void<typename MetricType::iterate_over_processed>::type> { NOMEMALIGN
           using yes = int;
         };
 
@@ -128,44 +128,51 @@ namespace MR
             Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
             Eigen::Vector3 midway_point = voxel2scanner * voxel_pos;
 
+            int spacing = (int) params.get_grid_spacing();
+            int x_pos = (int) iter.index(0);
+            int y_pos = (int) iter.index(1);
+            int z_pos = (int) iter.index(2);
 
+            if ((x_pos % spacing == 0) && (y_pos % spacing == 0) && (z_pos % spacing == 0)) {
 
-            Eigen::Vector3 im2_point;
-            params.transformation.transform_half_inverse (im2_point, midway_point);
-            if (params.im2_mask_interp) {
-              params.im2_mask_interp->scanner (im2_point);
-              if (params.im2_mask_interp->value() < 0.5)
-                return;
+                Eigen::Vector3 im2_point;
+                params.transformation.transform_half_inverse (im2_point, midway_point);
+                if (params.im2_mask_interp) {
+                  params.im2_mask_interp->scanner (im2_point);
+                  if (params.im2_mask_interp->value() < 0.5)
+                    return;
+                }
+                if (params.robust_estimate_use_score && params.robust_estimate_score2_interp) {
+                  params.robust_estimate_score2_interp->scanner (im2_point);
+                  if (!(params.robust_estimate_score2_interp->value() >= 0.5))
+                    return;
+                }
+
+                Eigen::Vector3 im1_point;
+                params.transformation.transform_half (im1_point, midway_point);
+                if (params.im1_mask_interp) {
+                  params.im1_mask_interp->scanner (im1_point);
+                  if (params.im1_mask_interp->value() < 0.5)
+                    return;
+                }
+                if (params.robust_estimate_use_score && params.robust_estimate_score1_interp) {
+                  params.robust_estimate_score1_interp->scanner (im1_point);
+                  if (!(params.robust_estimate_score1_interp->value() >= 0.5))
+                    return;
+                }
+
+                params.im1_image_interp->scanner (im1_point);
+                if (!(*params.im1_image_interp))
+                  return;
+
+                params.im2_image_interp->scanner (im2_point);
+                if (!(*params.im2_image_interp))
+                  return;
+
+                ++cnt;
+                cost_function(0) += metric (params, im1_point, im2_point, midway_point, gradient);
             }
-            if (params.robust_estimate_use_score && params.robust_estimate_score2_interp) {
-              params.robust_estimate_score2_interp->scanner (im2_point);
-              if (!(params.robust_estimate_score2_interp->value() >= 0.5))
-                return;
-            }
 
-            Eigen::Vector3 im1_point;
-            params.transformation.transform_half (im1_point, midway_point);
-            if (params.im1_mask_interp) {
-              params.im1_mask_interp->scanner (im1_point);
-              if (params.im1_mask_interp->value() < 0.5)
-                return;
-            }
-            if (params.robust_estimate_use_score && params.robust_estimate_score1_interp) {
-              params.robust_estimate_score1_interp->scanner (im1_point);
-              if (!(params.robust_estimate_score1_interp->value() >= 0.5))
-                return;
-            }
-
-            params.im1_image_interp->scanner (im1_point);
-            if (!(*params.im1_image_interp))
-              return;
-
-            params.im2_image_interp->scanner (im2_point);
-            if (!(*params.im2_image_interp))
-              return;
-
-            ++cnt;
-            cost_function(0) += metric (params, im1_point, im2_point, midway_point, gradient);
           }
 
 

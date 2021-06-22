@@ -29,9 +29,8 @@
 #include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
 #include "registration/metric/demons.h"
-#include "registration/metric/demons_cc.h"
-#include "registration/metric/cc_helper.h"
 #include "registration/metric/demons4D.h"
+#include "registration/metric/demons_ncc.h"
 #include "registration/multi_resolution_lmax.h"
 #include "math/average_space.h"
 #include "registration/multi_contrast.h"
@@ -43,7 +42,7 @@ namespace MR
 
     extern const App::OptionGroup nonlinear_options;
 
-
+    enum NonLinearMetricType {NL_Diff, NL_NCC};
     class NonLinear
     { MEMALIGN(NonLinear)
 
@@ -59,6 +58,7 @@ namespace MR
           do_reorientation (false),
           fod_lmax (3),
           use_cc (false),
+          kernel_radius (3, 2),
           diagnostics_image_prefix ("") {
             scale_factor[0] = 0.25;
             scale_factor[1] = 0.5;
@@ -96,7 +96,7 @@ namespace MR
               throw Exception ("the max number of non-linear iterations needs to be defined for each multi-resolution level (scale_factor)");
 
             if (do_reorientation and (fod_lmax.size() != scale_factor.size()))
-              throw Exception ("the lmax needs to be defined for each multi-resolution level (scale factor)");
+              throw Exception ("the lmax " + str(fod_lmax) + " needs to be defined for each multi-resolution level (scale factor): " + str(scale_factor));
             else
               fod_lmax.resize (scale_factor.size(), 0);
 
@@ -161,15 +161,6 @@ namespace MR
               auto im1_warped = Image<default_type>::scratch (warped_header);
               auto im2_warped = Image<default_type>::scratch (warped_header);
 
-              Image<default_type> im_cca, im_ccc, im_ccb, im_cc1, im_cc2;
-              if (use_cc) {
-                DEBUG ("Initialising CC images");
-                im_cca = Image<default_type>::scratch(warped_header);
-                im_ccb = Image<default_type>::scratch(warped_header);
-                im_ccc = Image<default_type>::scratch(warped_header);
-                im_cc1 = Image<default_type>::scratch(warped_header);
-                im_cc2 = Image<default_type>::scratch(warped_header);
-              }
 
               Header field_header (midway_image_header_resized);
               field_header.ndim() = 4;
@@ -267,25 +258,31 @@ namespace MR
                 default_type cost_new = 0.0;
                 size_t voxel_count = 0;
 
-                if (use_cc) {
-                  Metric::cc_precompute (im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, im_cca, im_ccb, im_ccc, im_cc1, im_cc2, cc_extent);
-                  // display<Image<default_type>>(im_cca);
-                  // display<Image<default_type>>(im_ccb);
-                  // display<Image<default_type>>(im_ccc);
-                  // display<Image<default_type>>(im_cc1);
-                  // display<Image<default_type>>(im_cc2);
-                }
 
                 if (im1_image.ndim() == 4) {
-                  assert (!use_cc && "TODO");
-                  Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
-                    cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, &stage_contrasts);
-                  ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
+                  if (use_cc) {
+                    ssize_t local_extent = kernel_radius[1];  // TODO use 3D extent
+                    Metric::run_DemonsLNCC_4D (cost_new, voxel_count, local_extent, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, *im1_update_new, *im2_update_new, &stage_contrasts);
+                  } else {
+                    Metric::Demons4D<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                      cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, &stage_contrasts);
+                    ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
+                  }
                 } else {
                   if (use_cc) {
-                    Metric::DemonsCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
-                      cost_new, voxel_count, im_cc1, im_cc2, im1_mask_warped, im2_mask_warped);
-                    ThreadedLoop (im_cc1, 0, 3).run (metric, im_cc1, im_cc2, im_cca, im_ccb, im_ccc, *im1_update_new, *im2_update_new);
+                    ssize_t local_extent = kernel_radius[1];  // TODO use 3D extent
+                    default_type volume_weight_default = 1.0;
+                    bool flag_combine_updates = false;
+                    if (local_extent > 0) {
+                      Metric::DemonsLNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                        cost_new, voxel_count, local_extent, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, volume_weight_default, flag_combine_updates);
+                      ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
+                    } else {
+                      Metric::DemonsGNCC<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
+                        cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped, volume_weight_default, flag_combine_updates);
+                          metric.precompute ();
+                      ThreadedLoop (im1_warped, 0, 3).run (metric, im1_warped, im2_warped, *im1_update_new, *im2_update_new);
+                    }
                   } else {
                     Metric::Demons<Im1ImageType, Im2ImageType, Im1MaskType, Im2MaskType> metric (
                       cost_new, voxel_count, im1_warped, im2_warped, im1_mask_warped, im2_mask_warped);
@@ -392,6 +389,9 @@ namespace MR
             threaded_copy (input_warps, *mid_to_im2, 0, 4);
             Registration::Warp::deformation2displacement (*mid_to_im2, *mid_to_im2);
             is_initialised = true;
+
+            scale_factor.resize (1);
+            scale_factor[0] = 1.0;
           }
 
           void set_max_iter (const vector<uint32_t>& maxiter) {
@@ -400,6 +400,8 @@ namespace MR
 
 
           void set_scale_factor (const vector<default_type>& scalefactor) {
+            if (is_initialised && ((scalefactor.size() > 1) || (scalefactor[0] != 1)))
+              throw Exception ("non-linear registration scale factor has to be 1 with initialised warp");
             for (size_t level = 0; level < scalefactor.size(); ++level) {
               if (scalefactor[level] <= 0 || scalefactor[level] > 1)
                 throw Exception ("the non-linear registration scale factor for each multi-resolution level must be between 0 and 1");
@@ -428,11 +430,15 @@ namespace MR
             disp_smoothing = voxel_fwhm;
           }
 
-          void set_lmax (const vector<uint32_t>& lmax) {
+          void set_lmax (vector<uint32_t> lmax) {
             for (size_t i = 0; i < lmax.size (); ++i)
-              if (lmax[i] % 2)
-                throw Exception ("the input nonlinear lmax must be even");
-            fod_lmax = lmax;
+              if (lmax[i] < 0 || lmax[i] % 2)
+                throw Exception ("the input nonlinear lmax must be positive and even");
+            if (lmax.size() == 1) {
+              lmax.resize (scale_factor.size(), lmax[0]);
+            } else if (lmax.size() != scale_factor.size())
+                throw Exception ("the nonlinear lmax must be defined for each scale factor (1 or " + str(scale_factor.size())+" values)");
+            fod_lmax = std::move(lmax);
           }
 
           // needs to be set after set_lmax
@@ -514,13 +520,21 @@ namespace MR
             return midway_image_header;
           }
 
-          void metric_cc (int radius) {
-            if (radius < 1)
-              throw Exception ("CC radius needs to be larger than 1");
+          void set_metric_cc () {
             use_cc = true;
-            INFO("Cross correlation radius: " + str(radius));
-            cc_extent = vector<size_t>(3, radius * 2 + 1);
+            kernel_radius = vector<size_t>(3, 2);
           }
+
+          void set_radius (const vector<size_t>& radius) {
+            use_cc = true;
+            kernel_radius = radius;
+          }
+
+          bool get_lnkernel_radius_mode () {
+            // returns true when the kernel extent is greater than 0 (requirement for LNCC similarity)
+            return *std::max_element(kernel_radius.begin(), kernel_radius.end()) > 0;
+          }
+
 
           void set_diagnostics_image (const std::basic_string<char>& path) {
             diagnostics_image_prefix = path;
@@ -556,9 +570,9 @@ namespace MR
           bool do_reorientation;
           vector<uint32_t> fod_lmax;
           bool use_cc;
-          std::basic_string<char> diagnostics_image_prefix;
+          vector<size_t> kernel_radius; // kernel_radius
 
-          vector<size_t> cc_extent;
+          std::basic_string<char> diagnostics_image_prefix;
 
           transform_type im1_to_mid_linear;
           transform_type im2_to_mid_linear;

@@ -23,6 +23,8 @@ namespace MR
 
     using namespace App;
 
+    const char* nonlinear_metric_choices[] = { "diff", "ncc", nullptr };
+
     const OptionGroup nonlinear_options =
       OptionGroup ("Non-linear registration options")
 
@@ -65,8 +67,15 @@ namespace MR
                            "use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.")
       + Argument ("num").type_sequence_int ()
 
-      // + Option("cc", "use cc metric with radius")
-      // + Argument ("radius").type_integer (1,100)
+      + Option ("nl_metric", "valid choices are: "
+                "diff (intensity differences), "
+                "ncc (normalised cross-correlation), "
+                "Default: diff")
+        + Argument ("type").type_choice (nonlinear_metric_choices)
+
+      + Option ("nl_metric.radius", "the radius of the local metric kernel (local normalised cross correlation) in voxels. If 0, global ncc will be used. (Default: 2)")
+        + Argument ("num").type_sequence_int ()
+
 
       + Option("diagnostics_image", "write intermediate images for diagnostics purposes")
       + Argument("path");

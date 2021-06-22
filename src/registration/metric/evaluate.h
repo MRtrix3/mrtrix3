@@ -84,11 +84,9 @@ namespace MR
               params (parameters),
               iteration (1) { metric.set_weights(params.get_weights()); }
 
-            //  metric_requires_precompute<U>::yes: operator() loops over processed_image instead of midway_image
             template <class U = MetricType>
             default_type operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::yes = 0) {
               Eigen::VectorXd overall_cost_function = Eigen::VectorXd::Zero(1,1);
-
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
 
@@ -115,15 +113,24 @@ namespace MR
                 params.set_im2_iterpolator (*im2_image_reoriented);
               }
 
-              metric.precompute (params);
-              {
-                overlap_count = 0;
-                ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &overlap_count);
-                {
-                  LogLevelLatch log_level (0);
-                  ThreadedLoop (params.processed_image, 0, 3).run (kernel);
+              metric.precompute(params);
+
+              overlap_count = 0;
+              ThreadKernel <MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient, &overlap_count);
+              if (params.robust_estimate_subset) {
+                assert(params.robust_estimate_subset_from.size() == 3);
+                assert(params.robust_estimate_subset_size.size() == 3);
+                Adapter::Subset<decltype(params.processed_mask)> subset (params.processed_mask, params.robust_estimate_subset_from, params.robust_estimate_subset_size);
+                LogLevelLatch log_level (0);
+                // single threaded as we loop over small VOIs. multi-threading of small VOIs is VERY slow compared to single threading!
+                for (auto i = Loop(0,3) (subset); i; ++i) {
+                  kernel(subset);
                 }
+              } else {
+                LogLevelLatch log_level (0);
+                ThreadedLoop (params.midway_image, 0, 3).run (kernel);
               }
+
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function.transpose()));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));

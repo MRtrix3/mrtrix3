@@ -31,7 +31,6 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "registration/metric/params.h"
-// #include "registration/metric/local_cross_correlation.h"
 #include "registration/metric/evaluate.h"
 #include "registration/transform/initialiser.h"
 #include "math/gradient_descent.h"
@@ -54,6 +53,7 @@ namespace MR
     extern const App::OptionGroup affine_options;
     extern const App::OptionGroup fod_options;
     extern const char* optim_algo_names[];
+    extern const char* linear_metric_choices[];
 
     enum LinearMetricType {Diff, NCC};
     enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
@@ -65,6 +65,7 @@ namespace MR
         stage_iterations (1),
         gd_max_iter (500),
         scale_factor (1.0),
+        metric (LinearMetricType::Diff),
         optimisers (1, OptimiserAlgoType::bbgd),
         optimiser_default (OptimiserAlgoType::bbgd),
         optimiser_first (OptimiserAlgoType::bbgd),
@@ -75,6 +76,7 @@ namespace MR
       std::string info (const bool& do_reorientation = true) {
         std::string st;
         st = "scale factor " + str(scale_factor, 3);
+        st += ", metric: " + str(linear_metric_choices[metric]);
         if (do_reorientation)
           st += ", lmax " + str(fod_lmax);
         st += ", GD max_iter " + str(gd_max_iter);
@@ -90,6 +92,7 @@ namespace MR
       }
       size_t stage_iterations, gd_max_iter;
       default_type scale_factor;
+      LinearMetricType metric;
       vector<OptimiserAlgoType> optimisers;
       OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
       default_type loop_density;
@@ -105,7 +108,8 @@ namespace MR
 
         Linear () :
           stages (3),
-          kernel_extent (3, 1),
+          kernel_radius (3, 0),
+          grid_spacing (1),
           grad_tolerance (1.0e-6),
           step_tolerance (1.0e-10),
           log_stream (nullptr),
@@ -134,6 +138,11 @@ namespace MR
               throw Exception ("the linear registration scale factor for each multi-resolution level must be between 0 and 1");
             stages[level].scale_factor = scalefactor[level];
           }
+        }
+
+        void set_metric (const LinearMetricType& type) {
+          for (size_t i = 0; i < stages.size (); ++i)
+            stages[i].metric = type;
         }
 
         // needs to be set before set_stage_iterations is set
@@ -237,12 +246,13 @@ namespace MR
           }
         }
 
-        void set_extent (const vector<size_t> extent) {
-          for (size_t d = 0; d < extent.size(); ++d) {
-            if (extent[d] < 1)
-              throw Exception ("the neighborhood kernel extent must be at least 1 voxel");
-          }
-          kernel_extent = extent;
+        void set_radius (const vector<size_t> radius) {
+          kernel_radius = radius;
+        }
+
+        bool get_lncc_extent_mode () {
+          // returns true when the kernel radius is greater than 0 (requirement for LNCC similarity)
+          return *std::max_element(kernel_radius.begin(), kernel_radius.end()) > 0;
         }
 
         void set_init_translation_type (Transform::Init::InitType type) {
@@ -257,6 +267,9 @@ namespace MR
           robust_estimate = use;
         }
 
+        void set_grid_spacing (ssize_t spacing) {
+            grid_spacing = spacing;
+        }
 
         void set_grad_tolerance (const float& tolerance) {
           grad_tolerance = tolerance;
@@ -326,6 +339,9 @@ namespace MR
               for (auto & s : stages)
                 if (s.fod_lmax < 0)
                   throw Exception ("the lmax needs to be defined for each registration stage");
+
+            INFO ("Transformation before initialisation:");
+            DEBUG (transform.info());
 
             if (init_translation_type == Transform::Init::mass)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
@@ -434,6 +450,10 @@ namespace MR
               parameters.loop_density = stage.loop_density;
               if (contrasts.size())
                 parameters.set_mc_settings (stage_contrasts);
+              if (grid_spacing > 1) {
+                parameters.set_grid_spacing (grid_spacing);
+                DEBUG ("neighbourhood kernel spacing: " + str(grid_spacing));
+              }
 
 
               // if (robust_estimate)
@@ -449,8 +469,8 @@ namespace MR
                   ext(i) *= midway_image_header.size(i) - 0.5;
                 parameters.set_control_points_extent(ext);
               }
-              DEBUG ("neighbourhood kernel extent: " + str(kernel_extent));
-              parameters.set_extent (kernel_extent);
+              DEBUG ("neighbourhood kernel radius: " + str(kernel_radius));
+              parameters.set_radius (kernel_radius);
               Eigen::Vector3d spacing (
                 midway_image_header.spacing(0),
                 midway_image_header.spacing(1),
@@ -576,7 +596,8 @@ namespace MR
       protected:
         vector<StageSetting> stages;
         vector<MultiContrastSetting> contrasts, stage_contrasts;
-        vector<size_t> kernel_extent;
+        vector<size_t> kernel_radius;
+        ssize_t grid_spacing;  // TODO rename to grid_stride?
         default_type grad_tolerance;
         default_type step_tolerance;
         std::streambuf* log_stream;

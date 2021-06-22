@@ -32,6 +32,8 @@ REGISTRATION_MODES = ['rigid', 'affine', 'nonlinear', 'rigid_affine', 'rigid_non
 
 AGGREGATION_MODES = ["mean", "median"]
 
+METRIC_CHOICES = ["diff", "ncc"]
+
 IMAGEEXT = 'mif nii mih mgh mgz img hdr'.split()
 
 def usage(cmdline): #pylint: disable=unused-variable
@@ -50,7 +52,9 @@ def usage(cmdline): #pylint: disable=unused-variable
 
   linoptions = cmdline.add_argument_group('Options for the linear registration')
   linoptions.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
-  linoptions.add_argument('-linear_estimator', help='Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: None (no robust estimator used)')
+  linoptions.add_argument('-linear_metric', help='Specify the metric used for rigid and affine registration. Valid choices are: diff (intensity differences), ncc (normalised cross-correlation) Default: diff')
+  linoptions.add_argument('-linear_metric_radius', help='Specify the metric kernel radius (for cross correlation only). 0: voxel-wise (global), >0: local cross-correlation (Default: 0)')
+  linoptions.add_argument('-linear_metric_diff_estimator', help='Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: None (no robust estimator used)')
   linoptions.add_argument('-rigid_scale', help='Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: %s). This and affine_scale implicitly  define the number of template levels' % ','.join([str(x) for x in DEFAULT_RIGID_SCALES]))
   linoptions.add_argument('-rigid_lmax', help='Specify the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in DEFAULT_RIGID_LMAX]))
   linoptions.add_argument('-rigid_niter', help='Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:50 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
@@ -59,6 +63,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   linoptions.add_argument('-affine_niter', help='Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:500 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
 
   nloptions = cmdline.add_argument_group('Options for the non-linear registration')
+  nloptions.add_argument('-nl_metric', help='Specify the metric used for nonlinear registration. Valid choices are: diff (intensity differences), ncc (normalised cross-correlation) Default: diff')
+  nloptions.add_argument('-nl_metric_radius', help='Specify the metric kernel radius (for cross correlation only). 0: voxel-wise (global), >0: local cross-correlation (Default: 2)')
   nloptions.add_argument('-nl_scale', help='Specify the multi-resolution pyramid used to build the non-linear template, in the form of a list of scale factors (default: %s). This implicitly defines the number of template levels' % ','.join([str(x) for x in DEFAULT_NL_SCALES]))
   nloptions.add_argument('-nl_lmax', help='Specify the lmax used for non-linear registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in DEFAULT_NL_LMAX]))
   nloptions.add_argument('-nl_niter', help='Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default: %s). The list must be the same length as the nl_scale factor list' % ','.join([str(x) for x in DEFAULT_NL_NITER]))
@@ -641,12 +647,61 @@ def execute(): #pylint: disable=unused-variable
   if initial_alignment not in ["mass", "robust_mass", "geometric", "none"]:
     raise MRtrixError('initial_alignment must be one of ' + " ".join(["mass", "robust_mass", "geometric", "none"]) + " provided: " + str(initial_alignment))
 
-  linear_estimator = app.ARGS.linear_estimator
-  if linear_estimator and not linear_estimator.lower() == 'none':
+  linear_metric = app.ARGS.linear_metric
+  if app.ARGS.linear_metric is not None:
+    linear_metric = app.ARGS.linear_metric
+    if linear_metric not in METRIC_CHOICES:
+      raise MRtrixError('linear_metric needs to be one of ' + ' '.join(METRIC_CHOICES))
     if not dolinear:
-      raise MRtrixError('linear_estimator specified when no linear registration is requested')
-    if linear_estimator not in ["l1", "l2", "lp"]:
-      raise MRtrixError('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]) + " provided: " + str(linear_estimator))
+      raise MRtrixError('linear_metric specified when no linear registration is requested')
+  else:
+    linear_metric = "diff"
+
+  linear_metric_radius = app.ARGS.linear_metric_radius
+  if linear_metric_radius is not None:
+    if linear_metric != 'ncc':
+      raise MRtrixError('linear_metric_radius option requires ncc metric for linear registration')
+    try:
+      if int(linear_metric_radius) < 0:
+        raise ValueError("negative radius")
+    except ValueError:
+      raise MRtrixError('linear_metric_radius option requires non-negative number, received: ' + str(linear_metric_radius))
+  elif linear_metric == 'ncc':
+    linear_metric_radius = '0'
+  else:
+    linear_metric_radius = ''
+
+  linear_metric_diff_estimator = app.ARGS.linear_metric_diff_estimator
+  if linear_metric_diff_estimator and not linear_metric_diff_estimator.lower() == 'none':
+    if not dolinear:
+      raise MRtrixError('linear_metric_diff_estimator specified when no linear registration is requested')
+    if linear_metric != "diff":
+      raise MRtrixError('linear_metric_diff_estimator specified but selected metric %s is not a difference metric' % linear_metric)
+    if linear_metric_diff_estimator not in ["l1", "l2", "lp"]:
+      raise MRtrixError('linear_metric_diff_estimator must be one of ' + " ".join(["l1", "l2", "lp"]) + " provided: " + str(linear_metric_diff_estimator))
+
+  nl_metric = app.ARGS.nl_metric
+  if nl_metric is not None:
+    if nl_metric not in METRIC_CHOICES:
+      raise MRtrixError('nl_metric needs to be one of ' + ' '.join(METRIC_CHOICES))
+    if not dononlinear:
+      raise MRtrixError('nl_metric specified when no nonlinear registration is requested')
+  else:
+    nl_metric = "diff"
+
+  nl_metric_radius = app.ARGS.nl_metric_radius
+  if nl_metric_radius is not None:
+    if nl_metric != 'ncc':
+      raise MRtrixError('nl_metric_radius option requires ncc metric for nonlinear registration')
+    try:
+      if int(nl_metric_radius) < 0:
+        raise ValueError("negative radius")
+    except ValueError:
+      raise MRtrixError('nl_metric_radius option requires non-negative number, received: ' + str(nl_metric_radius))
+  elif nl_metric == 'ncc':
+    nl_metric_radius = '2'
+  else:
+    nl_metric_radius = ''
 
   use_masks = False
   mask_files = []
@@ -1142,7 +1197,6 @@ def execute(): #pylint: disable=unused-variable
         else:
           mask_option = ''
         lmax_option = ' -noreorientation'
-        metric_option = ''
         mrregister_log_option = ''
         if regtype == 'rigid':
           scale_option = ' -rigid_scale ' + str(scale)
@@ -1154,8 +1208,11 @@ def execute(): #pylint: disable=unused-variable
             initialise_option = ' -rigid_init_matrix ' + os.path.join('linear_transforms_%02i' % (level - 1), inp.uid + '.txt')
           if do_fod_registration:
             lmax_option = ' -rigid_lmax ' + str(lmax)
-          if linear_estimator:
-            metric_option = ' -rigid_metric.diff.estimator ' + linear_estimator
+          metric_option = ' -rigid_metric ' + linear_metric
+          if linear_metric_diff_estimator:
+            metric_option += ' -rigid_metric.diff.estimator ' + linear_metric_diff_estimator
+          if linear_metric_radius:
+            metric_option += ' -rigid_metric.radius ' + linear_metric_radius
           if app.VERBOSITY >= 2:
             mrregister_log_option = ' -info -rigid_log ' + os.path.join('log', inp.uid + contrast[cid] + "_" + str(level) + '.log')
         else:
@@ -1168,8 +1225,11 @@ def execute(): #pylint: disable=unused-variable
             initialise_option = ' -affine_init_matrix ' + os.path.join('linear_transforms_%02i' % (level - 1), inp.uid + '.txt')
           if do_fod_registration:
             lmax_option = ' -affine_lmax ' + str(lmax)
-          if linear_estimator:
-            metric_option = ' -affine_metric.diff.estimator ' + linear_estimator
+          metric_option = ' -affine_metric ' + linear_metric
+          if linear_metric_diff_estimator:
+            metric_option += ' -affine_metric.diff.estimator ' + linear_metric_diff_estimator
+          if linear_metric_radius:
+            metric_option += ' -affine_metric.radius ' + linear_metric_radius
           if write_log:
             mrregister_log_option = ' -info -affine_log ' + os.path.join('log', inp.uid + contrast[cid] + "_" + str(level) + '.log')
 
@@ -1284,6 +1344,10 @@ def execute(): #pylint: disable=unused-variable
           else:
             initialise_option = ' -affine_init_matrix ' + os.path.join('linear_transforms', inp.uid + '.txt')
 
+        metric_option = ' -nl_metric ' + nl_metric
+        if nl_metric_radius:
+          metric_option += ' -nl_metric.radius ' + nl_metric_radius
+
         if use_masks:
           mask_option = ' -mask1 ' + inp.msk_path + ' -mask2 ' + current_template_mask
         else:
@@ -1318,6 +1382,7 @@ def execute(): #pylint: disable=unused-variable
                     ' -nl_update_smooth ' + app.ARGS.nl_update_smooth +
                     ' -nl_disp_smooth ' + app.ARGS.nl_disp_smooth +
                     ' -nl_grad_step ' + app.ARGS.nl_grad_step +
+                    metric_option +
                     initialise_option +
                     contrast_weight_option +
                     scale_option +

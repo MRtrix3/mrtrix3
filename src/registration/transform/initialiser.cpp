@@ -37,19 +37,13 @@ namespace MR
 
           CONSOLE ("initialising centre of rotation using centre of mass");
           Eigen::Vector3 im1_centre_mass, im2_centre_mass;
-          Eigen::Vector3 im1_centre_mass_transformed, im2_centre_mass_transformed;
 
           Image<default_type> bogus_mask;
 
           get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_mass, contrast_settings);
           get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_mass, contrast_settings);
 
-          transform.transform_half_inverse (im1_centre_mass_transformed, im1_centre_mass);
-          transform.transform_half (im2_centre_mass_transformed, im2_centre_mass);
-
-          Eigen::Vector3 centre = (im1_centre_mass + im2_centre_mass) * 0.5;
-          DEBUG("centre: " + str(centre.transpose()));
-          transform.set_centre_without_transform_update (centre);
+          transform.set_centre_without_transform_update ((transform.get_transform_half() * im1_centre_mass + transform.get_transform_half_inverse() * im2_centre_mass) / 2.0);
         }
 
         void set_centre_via_image_centres (
@@ -82,16 +76,19 @@ namespace MR
           Registration::Transform::Init::LinearInitialisationParams& init) {
 
           CONSOLE ("initialising centre of rotation and translation using geometric centre");
-          Eigen::Vector3 im1_centre_scanner;
-          get_geometric_centre (im1, im1_centre_scanner);
+          Eigen::Vector3 im1_centre_scanner, im2_centre_scanner;
 
-          Eigen::Vector3 im2_centre_scanner;
+          get_geometric_centre (im1, im1_centre_scanner);
           get_geometric_centre (im2, im2_centre_scanner);
 
-          Eigen::Vector3 translation = im1_centre_scanner - im2_centre_scanner;
-          Eigen::Vector3 centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
-          transform.set_centre (centre);
-          transform.set_translation (translation);
+          // apply existing transformation (required if linear matrix is not identity matrix)
+          auto trafo = transform.get_transform();
+          trafo.translation() = Eigen::Vector3::Zero();
+          Eigen::Vector3 translation = im1_centre_scanner - trafo * im2_centre_scanner;
+          trafo.translation() = translation;
+
+          transform.set_transform(trafo);
+          transform.set_centre_without_transform_update ((transform.get_transform_half() * im1_centre_scanner + transform.get_transform_half_inverse() * im2_centre_scanner) / 2.0);
         }
 
         void initialise_using_image_moments (

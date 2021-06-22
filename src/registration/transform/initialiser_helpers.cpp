@@ -298,7 +298,7 @@ namespace MR
           Registration::Metric::MeanSquaredNoGradient metric; // replace with CrossCorrelationNoGradient?
           Image<default_type> bogus_mask;
           if (contrast_settings.size()>1)
-            WARN ("rotation search does not support multiple contrasts. using only first volume of first contrasts");
+            WARN ("rotation search does not support multiple contrasts. using only first volume of first contrast");
 
           RotationSearch::ExhaustiveRotationSearch<decltype(metric)> (
             im1, im2,
@@ -326,81 +326,15 @@ namespace MR
           get_centre_of_mass (im1, init.init_translation.unmasked1 ? bogus_mask : mask1, im1_centre_of_mass, contrast_settings);
           get_centre_of_mass (im2, init.init_translation.unmasked2 ? bogus_mask : mask2, im2_centre_of_mass, contrast_settings);
 
-          Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
-          Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
-          transform.set_centre_without_transform_update (centre);
-          transform.set_translation (translation);
-#ifdef DEBUG_INIT
-          VEC(im1_centre_of_mass);
-          VEC(im2_centre_of_mass);
-          VEC(centre);
-          VEC(translation);
-          transform.debug();
-#endif
+          // apply existing transformation (required if linear matrix is not identity matrix)
+          auto trafo = transform.get_transform();
+          trafo.translation() = Eigen::Vector3::Zero();
+          Eigen::Vector3 translation = im1_centre_of_mass - trafo * im2_centre_of_mass;
+          trafo.translation() = translation;
+
+          transform.set_transform(trafo);
+          transform.set_centre_without_transform_update ((transform.get_transform_half() * im1_centre_of_mass + transform.get_transform_half_inverse() * im2_centre_of_mass) / 2.0);
         }
-#ifdef DEBUG_INIT
-        // for debug only:
-        void MomentsInitialiser::create_moments_images () {
-          std::string f1 = im1.name();
-          std::string f2 = im2.name();
-          size_t found = f1.rfind(".");
-          if (found==std::string::npos)
-            throw Exception ("problem here 1");
-          f1 = f1.substr(0,found).append("_ev.mif");
-
-          found = f2.rfind(".");
-          if (found==std::string::npos)
-            throw Exception ("problem here 2");
-          f2 = f2.substr(0,found).append("_ev.mif");
-
-          Header new_header1, new_header2;
-          new_header1.ndim() = 4;
-          new_header2.ndim() = 4;
-          for (ssize_t dim=0; dim < 3; ++dim){
-            new_header1.size(dim) = im1.size(dim);
-            new_header2.size(dim) = im2.size(dim);
-            new_header1.spacing(dim) = im1.spacing(dim);
-            new_header2.spacing(dim) = im2.spacing(dim);
-          }
-          new_header1.transform() = im1.transform();
-          new_header2.transform() = im2.transform();
-          new_header1.size(3) = 9;
-          new_header2.size(3) = 9;
-          new_header1.spacing(3) = 1;
-          new_header2.spacing(3) = 1;
-
-          Image<default_type> im1_moments = Image<default_type>::create(f1, new_header1);
-          Image<default_type> im2_moments = Image<default_type>::create(f2, new_header2);
-
-          // Transform tra1;
-          MR::Transform T1 (im1);
-          MR::Transform T2 (im2);
-          Eigen::Vector3 c1 = T1.scanner2voxel * im1_centre_of_mass;
-          Eigen::Vector3 c2 = T2.scanner2voxel * im2_centre_of_mass;
-          VEC(c1)
-          VEC(c2)
-          im1_moments.index(0) = std::round(c1[0]);
-          im1_moments.index(1) = std::round(c1[1]);
-          im1_moments.index(2) = std::round(c1[2]);
-          im2_moments.index(0) = std::round(c2[0]);
-          im2_moments.index(1) = std::round(c2[1]);
-          im2_moments.index(2) = std::round(c2[2]);
-          for (ssize_t i=0; i<3; i++) {
-            for (ssize_t j=0; j<3; j++) {
-              im1_moments.value() = im1_evec(j,i);
-              im2_moments.value() = im2_evec(j,i);
-              if (i*j<9) im1_moments.index(3)++;
-              if (i*j<9) im2_moments.index(3)++;
-            }
-          }
-          // im2_moments.value() = 1;
-          MAT(im1_covariance_matrix);
-          MAT(im2_covariance_matrix);
-          // im1_centre_of_mass, im2_centre_of_mass;
-          // im1_covariance_matrix, im2_covariance_matrix;
-          // im1_evec, im2_evec;
-        }
-#endif
 
         void MomentsInitialiser::run () {
           if (!calculate_eigenvectors(im1, im2, mask1, mask2)) {

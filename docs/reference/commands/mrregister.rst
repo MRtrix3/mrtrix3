@@ -61,13 +61,17 @@ Rigid registration options
    moments (rotation based on directions of intensity variance with respect to centre of mass),  |br|
    none (default).
 
--  **-rigid_init_matrix file** initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides rigid_init_translation and rigid_init_rotation initialisation 
+-  **-rigid_init_matrix file** initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides the defaults of rigid_init_translation and rigid_init_rotation initialisation 
 
 -  **-rigid_scale factor** use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
 
 -  **-rigid_niter num** the maximum number of gradient descent iterations per stage. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
 
--  **-rigid_metric type** valid choices are: diff (intensity differences), Default: diff
+-  **-rigid_metric type** valid choices are: diff (intensity differences), ncc (normalised cross-correlation) Default: diff
+
+-  **-rigid_metric.radius num** the radius of the local metric kernel (local normalised cross correlation) in voxels. If 0, global ncc will be used. Recommended value for local ncc is 4. (Default: 0)
+
+-  **-rigid_metric.grid_spacing num** spatial distance in voxels between samples. Only applies to the cross correlation metric. (Default: 2 for local ncc and 0 for global ncc)
 
 -  **-rigid_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
 
@@ -94,15 +98,19 @@ Affine registration options
    moments (rotation based on directions of intensity variance with respect to centre of mass),  |br|
    none (Default: none).
 
--  **-affine_init_matrix file** initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides affine_init_translation and affine_init_rotation initialisation 
+-  **-affine_init_matrix file** initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix in scanner coordinates). Note that this overrides the defaults of affine_init_translation and affine_init_rotation initialisation 
 
 -  **-affine_scale factor** use a multi-resolution scheme by defining a scale factor for each level using comma separated values (Default: 0.25,0.5,1.0)
 
 -  **-affine_niter num** the maximum number of gradient descent iterations per stage. This can be specified either as a single number for all multi-resolution levels, or a single value for each level. (Default: 1000)
 
--  **-affine_metric type** valid choices are: diff (intensity differences), Default: diff
+-  **-affine_metric type** valid choices are: diff (intensity differences), ncc (normalised cross-correlation) Default: diff
 
 -  **-affine_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
+
+-  **-affine_metric.radius num** the radius of the local metric kernel (local normalised cross correlation) in voxels. If 0, global ncc will be used. Recommended value for local ncc is 4. (Default: 0)
+
+-  **-affine_metric.grid_spacing num** sspatial distance in voxels between samples. Only applies to the cross correlation metric. (Default: 2 for local ncc and 0 for global ncc)
 
 -  **-affine_lmax num** explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
@@ -163,6 +171,10 @@ Non-linear registration options
 
 -  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
+-  **-nl_metric type** valid choices are: diff (intensity differences), ncc (normalised cross-correlation), Default: diff
+
+-  **-nl_metric.radius num** the radius of the local metric kernel (local normalised cross correlation) in voxels. If 0, global ncc will be used. (Default: 2)
+
 -  **-diagnostics_image path** write intermediate images for diagnostics purposes
 
 FOD registration options
@@ -215,7 +227,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)
+**Author:** David Raffelt (david.raffelt@florey.edu.au), Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Alena Uus (alena.uus@kcl.ac.uk)
 
 **Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
 
