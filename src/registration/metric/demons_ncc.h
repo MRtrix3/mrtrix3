@@ -90,9 +90,9 @@ namespace MR
                                  Image<default_type>& im1_update, Image<default_type>& im2_update)
                 {
 
-                    if (im1_image.index(0) < kernel_radius || im1_image.index(0) > im1_image.size(0) - kernel_radius ||
-                        im1_image.index(1) < kernel_radius || im1_image.index(1) > im1_image.size(1) - kernel_radius ||
-                        im1_image.index(2) < kernel_radius || im1_image.index(2) > im1_image.size(2) - kernel_radius) {
+                    if (im1_image.index(0) <= kernel_radius || im1_image.index(0) >= im1_image.size(0) - kernel_radius ||
+                        im1_image.index(1) <= kernel_radius || im1_image.index(1) >= im1_image.size(1) - kernel_radius ||
+                        im1_image.index(2) <= kernel_radius || im1_image.index(2) >= im1_image.size(2) - kernel_radius) {
                             return;
                     }
 
