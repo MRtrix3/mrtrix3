@@ -14,10 +14,10 @@ namespace MR {
     { MEMALIGN (Unring1D)
       public:
         Unring1D (Math::FFT1D& fft, const int nsh, const int minW, const int maxW) :
-          fft (fft),
           nsh (nsh),
           minW (minW),
           maxW (maxW),
+          fft (fft),
           shifted (fft.size(), 2*nsh+1),
           shifts (2*nsh+1) {
             shifts[0] = 0;

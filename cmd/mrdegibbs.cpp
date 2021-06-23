@@ -91,7 +91,7 @@ void run ()
   auto in = Image<Degibbs::value_type>::open (argument[0]);
   Header header (in);
 
-  header.datatype() = DataType::from_command_line (DataType::Float32);
+  header.datatype() = DataType::from_command_line (header.datatype().is_complex() ? DataType::CFloat32 : DataType::Float32);
   auto out = Image<Degibbs::value_type>::create (argument[1], header);
 
   vector<size_t> slice_axes = { 0, 1 };
