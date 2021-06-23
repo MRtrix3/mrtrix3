@@ -11,7 +11,7 @@
 namespace MR {
   namespace Degibbs {
 
-    typedef double value_type;
+    typedef cdouble value_type;
 
 
 
@@ -136,12 +136,12 @@ namespace MR {
           assign_pos_of (pos, outer_axes).to (in, out);
 
           for (auto l = Loop (slice_axes) (in); l; ++l)
-            slice (in.index(X), in.index(Y)) = cdouble (in.value(), 0.0);
+            slice (in.index(X), in.index(Y)) = in.value();
 
           unring2d (slice);
 
           for (auto l = Loop (slice_axes) (out); l; ++l)
-            out.value() = slice (out.index(X), out.index(Y)).real();
+            out.value() = slice (out.index(X), out.index(Y));
         }
 
 
