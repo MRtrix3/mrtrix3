@@ -194,11 +194,10 @@ def execute(): #pylint: disable=unused-variable
   elif app.ARGS.first_dir:
     if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
       raise MRtrixError('FIRST directory cannot be found, please check path')
-    else:
-      for struct in sgm_structures:
-        vtk_in_path = 'first-' + struct + '_first.vtk'
-        run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
-        run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
+    for struct in sgm_structures:
+      vtk_in_path = 'first-' + struct + '_first.vtk'
+      run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
+      run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
   fsl.check_first('first', sgm_structures)
 
   # Convert FIRST meshes to partial volume images
