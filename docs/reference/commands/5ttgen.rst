@@ -213,6 +213,10 @@ Options specific to the 'fsl' algorithm
 
 - **-premasked** Indicate that brain masking has already been applied to the input image
 
+- **-first_dir /path/to/first/dir** use output of FSL FIRST if it has been previously run on input T1-weighted image, in the SAME SPACE as input T1
+
+- **-fast_dir /path/to/fast/dir** use output of FSL FAST if it has been previously run on input T1-weighted image, in the SAME SPACE as input T1
+
 Options common to all 5ttgen algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -399,7 +403,9 @@ Options
 
 - **-thalami** Select method to be used for thalamic segmentation; options are: nuclei,first,aseg
 
-- **-white_stem** Classify the brainstem as white matter. Streamlines terminating within this region will likely be rejected.
+- **-white_stem** Classify the brainstem as white matter
+
+- **-first_dir /path/to/first/dir** use output of FSL FIRST if it has been previously run on input T1-weighted image, in the SAME SPACE as FreeSurfer T1
 
 Options common to all 5ttgen algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
