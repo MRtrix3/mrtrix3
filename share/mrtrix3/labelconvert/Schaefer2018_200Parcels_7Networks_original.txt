@@ -1,4 +1,18 @@
-##FreeSurfer Lookup Table for Schaefer 2018 200 Parcels - 7 Networds: Contributed by Xue Li on 13th June 2018 via MRTrix Community
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+# FreeSurfer Lookup Table for Schaefer 2018 200 Parcels - 7 Networds: Contributed by Xue Li on 13th June 2018 via MRTrix Community
 #No.    Label Name:                                   R   G   B   A
 0    Unknown                                       0   0   0   0
 1    Left-Cerebral-Exterior                        70  130 180 0
