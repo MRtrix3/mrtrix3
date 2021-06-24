@@ -35,7 +35,6 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-mask', help='Manually provide a brain mask, rather than deriving one in the script')
   options.add_argument('-premasked', action='store_true', help='Indicate that brain masking has already been applied to the input image')
   options.add_argument('-first_dir', metavar='/path/to/first/dir', help='use output of FSL FIRST if it has been previously run on input T1-weighted image, in the SAME SPACE as input T1')
-  options.add_argument('-fast_dir', metavar='/path/to/fast/dir', help='use output of FSL FAST if it has been previously run on input T1-weighted image, in the SAME SPACE as input T1')
   parser.flag_mutually_exclusive_options( [ 'mask', 'premasked' ] )
 
 
@@ -170,22 +169,10 @@ def execute(): #pylint: disable=unused-variable
   # Finish branching based on brain masking
 
   # FAST
-  if not app.ARGS.fast_dir:
     if fast_t2_input:
       run.command(fast_cmd + ' -S 2 ' + fast_t2_input + ' ' + fast_t1_input)
     else:
       run.command(fast_cmd + ' ' + fast_t1_input)
-  if app.ARGS.fast_dir:
-    if not os.path.isdir(os.path.abspath(app.ARGS.fast_dir)):
-      app.error('FAST directory cannot be found, please check path')
-    else:
-      fast_output_prefix = fast_t1_input.split('.')[0]
-      fast_csf_input = fsl.findImage(app.ARGS.fast_dir + '/' + fast_output_prefix + '_pve_0.nii.gz')
-      fast_gm_input = fsl.findImage(app.ARGS.fast_dir + '/' + fast_output_prefix + '_pve_1.nii.gz')
-      fast_wm_input = fsl.findImage(app.ARGS.fast_dir + '/' + fast_output_prefix + '_pve_2.nii.gz')
-      run.command('cp ' + fast_csf_input + ' .' ) 
-      run.command('cp ' + fast_gm_input + ' .' )
-      run.command('cp ' + fast_wm_input + ' .' )
 
   # FIRST
   first_input = 'T1.nii'
@@ -206,7 +193,7 @@ def execute(): #pylint: disable=unused-variable
     run.command(first_cmd + ' -m none -s ' + ','.join(sgm_structures) + ' -i ' + first_input + ' -o first' + first_brain_extracted_option + first_debug_option + first_verbosity_option)
   elif app.ARGS.first_dir:
     if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
-      app.error('FIRST directory cannot be found, please check path')
+      raise MRtrixError('FIRST directory cannot be found, please check path')
     else:
       for struct in sgm_structures:
         vtk_in_path = 'first-' + struct + '_first.vtk'
