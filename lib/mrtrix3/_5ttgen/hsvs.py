@@ -38,7 +38,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('-template', help='Provide an image that will form the template for the generated 5TT image')
   parser.add_argument('-hippocampi', choices=HIPPOCAMPI_CHOICES, help='Select method to be used for hippocampi (& amygdalae) segmentation; options are: ' + ','.join(HIPPOCAMPI_CHOICES))
   parser.add_argument('-thalami', choices=THALAMI_CHOICES, help='Select method to be used for thalamic segmentation; options are: ' + ','.join(THALAMI_CHOICES))
-  parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter')
+  parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter. Streamlines terminating within this region will likely be rejected')
   parser.add_argument('-first_dir', metavar='/path/to/first/dir', help='use output of FSL FIRST if it has been previously run on input T1-weighted image, in the SAME SPACE as FreeSurfer T1')
 
   parser.add_citation('Smith, R.; Skoch, A.; Bajada, C.; Caspers, S.; Connelly, A. Hybrid Surface-Volume Segmentation for improved Anatomically-Constrained Tractography. In Proc OHBM 2020')
@@ -515,15 +515,15 @@ def execute(): #pylint: disable=unused-variable
       from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
     if not app.ARGS.first_dir:
       run.command(first_cmd + ' -s ' + ','.join(from_first.keys()) + ' -i T1.nii -b -o first')
+      app.cleanup(glob.glob('T1_to_std_sub.*'))
     elif app.ARGS.first_dir:
       if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
         raise MRtrixError('FIRST directory cannot be found, please check path')
       for key, value in from_first.items():
         vtk_in_path = 'first-' + key + '_first.vtk'
-        run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
-        run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
+        run.command('cp ' + path.from_user(vtk_in_path) + ' ' + path.to_scratch(vtk_in_path))
+      run.command('cp -r ' + path.from_user('first.logs') + ' ' + path.to_scratch('first.logs'))
     fsl.check_first('first', from_first.keys())
-    app.cleanup(glob.glob('T1_to_std_sub.*'))
     progress = app.ProgressBar('Mapping FIRST segmentations to image', 2*len(from_first))
     for key, value in from_first.items():
       vtk_in_path = 'first-' + key + '_first.vtk'

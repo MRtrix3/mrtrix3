@@ -108,12 +108,11 @@ def execute(): #pylint: disable=unused-variable
     run.command(first_cmd + ' -m none -s ' + ','.join(structure_map.keys()) + ' -i T1.nii' + first_input_is_brain_extracted + ' -o first')
   elif app.ARGS.first_dir:
     if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
-      app.error('FIRST directory cannot be found, please check path')
-    else:
-      for key, value in structure_map.items():
-        vtk_in_path = 'first-' + key + '_first.vtk'
-        run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
-        run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
+      raise MRtrixError('FIRST directory cannot be found, please check path')
+    for key, value in structure_map.items():
+      vtk_in_path = 'first-' + key + '_first.vtk'
+      run.command('cp ' + path.from_user(vtk_in_path) + ' ' + path.to_scratch(vtk_in_path))
+    run.command('cp -r ' + path.from_user('first.logs') + ' ' + path.to_scratch('first.logs'))
   fsl.check_first('first', structure_map.keys())
 
   # Generate an empty image that will be used to construct the new SGM nodes

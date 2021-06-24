@@ -215,8 +215,6 @@ Options specific to the 'fsl' algorithm
 
 - **-first_dir /path/to/first/dir** use output of FSL FIRST if it has been previously run on input T1-weighted image, in the SAME SPACE as input T1
 
-- **-fast_dir /path/to/fast/dir** use output of FSL FAST if it has been previously run on input T1-weighted image, in the SAME SPACE as input T1
-
 Options common to all 5ttgen algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
