@@ -19,6 +19,7 @@
 
 #include "command.h"
 #include "degibbs/unring2d.h"
+#include "degibbs/unring3d.h"
 
 using namespace MR;
 using namespace App;
@@ -53,7 +54,8 @@ void usage ()
 
   OPTIONS
   + Option ("axes",
-            "select the slice axes (default: 0,1 - i.e. x-y).")
+            "select the slice axes (default: 0,1 - i.e. x-y). Select all 3 spatial axes for 3D operation, "
+            "i.e. 0:2 or 0,1,2.")
   +   Argument ("list").type_sequence_int ()
 
   + Option ("nshifts", "discretization of subpixel spacing (default: 20).")
@@ -71,7 +73,11 @@ void usage ()
   REFERENCES
     + "Kellner, E; Dhital, B; Kiselev, V.G & Reisert, M. "
     "Gibbs-ringing artifact removal based on local subvoxel-shifts. "
-    "Magnetic Resonance in Medicine, 2016, 76, 1574–1581.";
+    "Magnetic Resonance in Medicine, 2016, 76, 1574–1581."
+
+    + "Bautista, T; O’Muircheartaigh, J; Hajnal, JV; & Tournier, J-D. "
+    "Removal of Gibbs ringing artefacts for 3D acquisitions using subvoxel shifts. "
+    "Proc. ISMRM, 2021, 29, 3535.";
 
 }
 
@@ -88,8 +94,8 @@ void run ()
   if (minW >= maxW)
     throw Exception ("minW must be smaller than maxW");
 
-  auto in = Image<Degibbs::value_type>::open (argument[0]);
-  Header header (in);
+  auto header = Header::open (argument[0]);
+  auto in = header.get_image<Degibbs::value_type>();
 
   header.datatype() = DataType::from_command_line (header.datatype().is_complex() ? DataType::CFloat32 : DataType::Float32);
   auto out = Image<Degibbs::value_type>::create (argument[1], header);
@@ -99,6 +105,13 @@ void run ()
   const bool axes_set_manually = opt.size();
   if (opt.size()) {
     vector<uint32_t> axes = parse_ints<uint32_t> (opt[0][0]);
+    if (axes == vector<uint32_t> ({ 0, 1, 2 })) {
+      // 3D operation:
+      // process data and return immediately
+      Degibbs::unring3D (in, out, minW, maxW, nshifts);
+      return;
+    }
+
     if (axes.size() != 2)
       throw Exception ("slice axes must be specified as a comma-separated 2-vector");
     if (size_t(std::max (axes[0], axes[1])) >= header.ndim())
