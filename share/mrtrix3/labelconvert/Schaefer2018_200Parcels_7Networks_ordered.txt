@@ -1,4 +1,18 @@
-## Schaefer2018_200_Parcels_7_Networks - Contributed by Xue Li on 13th June 2021 
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+# Schaefer2018_200_Parcels_7_Networks - Contributed by Xue Li on 13th June 2021 
 1      7Networks_LH_Vis_1   120  18    129  0
 2      7Networks_LH_Vis_2   120  18    130  0
 3      7Networks_LH_Vis_3   120  18    131  0
