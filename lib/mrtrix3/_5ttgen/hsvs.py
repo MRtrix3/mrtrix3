@@ -67,7 +67,7 @@ ASEG_STRUCTURES = [ ( 5,  4, 'Left-Inf-Lat-Vent'),
                     (62,  4, 'Right-vessel'),
                     (72,  4, '5th-Ventricle'),
                     (250, 3, 'Fornix'),
-		    (77,  5, 'WM-Hypointensities') ]
+                    (77,  5, 'WM-Hypointensities') ]
 
 
 HIPP_ASEG = [ (17,  2, 'Left-Hippocampus'),
@@ -516,15 +516,15 @@ def execute(): #pylint: disable=unused-variable
     if thalami_method != 'first':
       from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
     if not app.ARGS.first_dir:
-        run.command(first_cmd + ' -s ' + ','.join(from_first.keys()) + ' -i T1.nii -b -o first')
+      run.command(first_cmd + ' -s ' + ','.join(from_first.keys()) + ' -i T1.nii -b -o first')
     elif app.ARGS.first_dir:
-        if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
-            app.error('FIRST directory cannot be found, please check path')
-        else:
-            for key, value in from_first.items():
-                vtk_in_path = 'first-' + key + '_first.vtk'
-                run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
-                run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
+      if not os.path.isdir(os.path.abspath(app.ARGS.first_dir)):
+        app.error('FIRST directory cannot be found, please check path')
+      else:
+        for key, value in from_first.items():
+          vtk_in_path = 'first-' + key + '_first.vtk'
+          run.command('cp ' + app.ARGS.first_dir + '/' + vtk_in_path + ' .')
+          run.command('cp -r ' + app.ARGS.first_dir + '/first.logs' + ' .')
     fsl.check_first('first', from_first.keys())
     app.cleanup(glob.glob('T1_to_std_sub.*'))
     progress = app.ProgressBar('Mapping FIRST segmentations to image', 2*len(from_first))
