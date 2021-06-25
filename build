@@ -152,7 +152,7 @@ stop = False
 error_stream = None
 main_cindex = 0
 
-logfile = open ('build.log', 'wb')
+logfile = open ('build.log', 'wb') #pylint: disable=consider-using-with
 timingfile = None
 
 
@@ -210,49 +210,44 @@ def pipe_errors_to_less_handler():
 
 
 def disp (msg):
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  sys.stdout.write (msg)
-  sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    sys.stdout.write (msg)
+    sys.stdout.flush()
 
 
 def log (msg):
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  if verbose:
-    sys.stdout.write (msg)
-    sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    if verbose:
+      sys.stdout.write (msg)
+      sys.stdout.flush()
 
 
 
 def logtime (msg):
-  print_lock.acquire()
-  timingfile.write (msg.encode (errors='ignore'))
-  timingfile.flush()
-  print_lock.release()
+  with print_lock:
+    timingfile.write (msg.encode (errors='ignore'))
+    timingfile.flush()
 
 
 
 def error (msg):
   global error_stream
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  if error_stream is not None:
-    error_stream += msg
-  else:
-    sys.stdout.write (msg)
-    sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    if error_stream is not None:
+      error_stream += msg
+    else:
+      sys.stdout.write (msg)
+      sys.stdout.flush()
 
 
 def fail (msg):
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  sys.stdout.write (msg)
-  sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    sys.stdout.write (msg)
+    sys.stdout.flush()
   sys.exit (1)
 
 
@@ -298,10 +293,10 @@ def list_unexpected_bin_files (exe_suffix, cmd_directory=cmd_dir, bin_directory=
 
 
 def list_untracked_bin_files (directory = '.'):
-  process = subprocess.Popen ([ 'git', '-C', directory, 'ls-files', '-x', '.*', '-o', bin_dir ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  filelist = process.communicate()[0]
-  if process.returncode == 0:
-    return filelist.decode(errors='ignore').splitlines()
+  with subprocess.Popen ([ 'git', '-C', directory, 'ls-files', '-x', '.*', '-o', bin_dir ], stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
+    filelist = process.communicate()[0]
+    if process.returncode == 0:
+      return filelist.decode(errors='ignore').splitlines()
   return []
 
 
@@ -383,7 +378,7 @@ for arg in sys.argv[1:]:
   elif '-tree'.startswith(arg):
     dep_recursive = True
   elif '-timings'.startswith(arg):
-    timingfile = open ('timings.log', 'wb')
+    timingfile = open ('timings.log', 'wb') #pylint: disable=consider-using-with
   elif '-nopaginate'.startswith(arg):
     paginate = False
   elif arg[0] == '-':
@@ -946,15 +941,15 @@ def execute (message, cmd, working_dir=None):
 
   try:
     start = timer()
-    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ, cwd=working_dir)
-    ( stdout, stderr ) = process.communicate()
-    end = timer()
-    if timingfile is not None:
-      logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
+    with subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ, cwd=working_dir) as process:
+      ( stdout, stderr ) = process.communicate()
+      end = timer()
+      if timingfile is not None:
+        logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
 
-    if process.returncode != 0:
-      error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
-      return 1
+      if process.returncode != 0:
+        error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
+        return 1
 
     errstr = None
     if stdout or stderr:
@@ -1099,21 +1094,20 @@ def build_next ():
   try:
     while not stop:
       current = None
-      lock.acquire()
-      if todo:
-        for item in todo:
-          if todo[item].currently_being_processed:
-            continue
-          unsatisfied_deps = set(todo[item].deps).intersection (todo.keys())
-          if not unsatisfied_deps:
-            todo[item].currently_being_processed = True
-            current = item
-            main_cindex+=1
-            cindex = main_cindex
-            break
-      else:
-        stop = max (stop, 1)
-      lock.release()
+      with lock:
+        if todo:
+          for item in todo:
+            if todo[item].currently_being_processed:
+              continue
+            unsatisfied_deps = set(todo[item].deps).intersection (todo.keys())
+            if not unsatisfied_deps:
+              todo[item].currently_being_processed = True
+              current = item
+              main_cindex+=1
+              cindex = main_cindex
+              break
+        else:
+          stop = max (stop, 1)
 
       if stop:
         return
@@ -1127,9 +1121,8 @@ def build_next ():
         stop = 2
         return
 
-      lock.acquire()
-      del todo[current]
-      lock.release()
+      with lock:
+        del todo[current]
 
   except Exception:
     stop = 2
