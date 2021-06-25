@@ -56,14 +56,14 @@ ANSI = ANSICodes('\033[0K', '', '', '', '', '', '') #pylint: disable=unused-vari
 for config_path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.sep, 'etc', 'mrtrix.conf')),
                      os.path.join(os.path.expanduser('~'), '.mrtrix.conf') ]:
   try:
-    f = open (config_path, 'r')
-    for line in f:
-      line = line.strip().split(': ')
-      if len(line) != 2:
-        continue
-      if line[0][0] == '#':
-        continue
-      CONFIG[line[0]] = line[1]
+    with open (config_path, 'r') as f:
+      for line in f:
+        line = line.strip().split(': ')
+        if len(line) != 2:
+          continue
+        if line[0][0] == '#':
+          continue
+        CONFIG[line[0]] = line[1]
   except IOError:
     pass
 
