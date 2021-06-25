@@ -322,6 +322,11 @@ void run ()
 
   bool exp1 = get_option_value("estimator", 1) == 0;    // default: Exp2 (unbiased estimator)
 
+  if (std::min<uint32_t>(dwi.size(3), extent[0]*extent[1]*extent[2]) < 15) {
+    WARN("The number of volumes or the patch size is small. This may lead to discretisation effects "
+         "in the noise level and cause inconsistent denoising between adjacent voxels.");
+  }
+
   Image<real_type> noise;
   opt = get_options("noise");
   if (opt.size()) {
