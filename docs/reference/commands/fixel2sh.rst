@@ -23,8 +23,11 @@ Description
 
 This command generates spherical harmonic data from fixels that can be visualised using the ODF tool in MRview. The output ODF lobes are scaled according to the values in the input fixel image.
 
-The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link:  |br|
+The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link:  |br|
 https://mrtrix.readthedocs.io/en/3.0.2/concepts/spherical_harmonics.html
+
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.2/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------

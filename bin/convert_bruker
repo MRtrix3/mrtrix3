@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 # Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
@@ -83,13 +83,13 @@ def main():
       try:
         nslices #pylint: disable=pointless-statement
         file_out.write (',' + str(nslices))
-      except:
+      except NameError:
         pass
 
     try:
       nacq #pylint: disable=pointless-statement
       file_out.write (',' + str(nacq))
-    except:
+    except NameError:
       pass
 
     file_out.write ('\nvox: ' + str(res[0]) + ',' + str(res[1]))
@@ -99,12 +99,12 @@ def main():
       try:
         slicethick #pylint: disable=pointless-statement
         file_out.write (',' + str(slicethick))
-      except:
+      except NameError:
         pass
     try:
       nacq #pylint: disable=pointless-statement
       file_out.write (',')
-    except:
+    except NameError:
       pass
 
     file_out.write ('\ndatatype: ')
@@ -122,12 +122,12 @@ def main():
     try:
       nslices #pylint: disable=pointless-statement
       file_out.write (',+2')
-    except:
+    except NameError:
       pass
     try:
       nacq #pylint: disable=pointless-statement
       file_out.write (',+3')
-    except:
+    except NameError:
       pass
 
     file_out.write ('\nfile: ' + sys.argv[1] + '\n')
@@ -137,7 +137,7 @@ def main():
       bvec = [ bvec[n:n+3] for n in range(0,len(bvec),3) ]
       for direction, value in zip(bvec, bval):
         file_out.write ('dw_scheme: ' + direction[0] + ',' + direction[1] + ',' + str(-float(direction[2])) + ',' + value + '\n')
-    except:
+    except AssertionError:
       pass
 
 main()

@@ -60,19 +60,19 @@ namespace MR
         DEBUG ("loading font into OpenGL texture...");
 
         font_height = metric.height() + 2;
-        #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
+#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
         const float max_font_width = metric.width("MM") + 2;
-        #else
+#else
         const float max_font_width = metric.horizontalAdvance("MM") + 2;
-        #endif
+#endif
 
         int tex_width = 0;
         for (int c = first_char; c <= last_char; ++c)
-          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
+#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           tex_width += metric.width (c) + 2;
-          #else
+#else
           tex_width += metric.horizontalAdvance (c) + 2;
-          #endif
+#endif
 
         QImage pixmap (max_font_width, font_height, QImage::Format_ARGB32);
         const GLubyte* pix_data = pixmap.bits();
@@ -91,11 +91,11 @@ namespace MR
         for (int c = first_char; c <= last_char; ++c) {
           pixmap.fill (0);
           painter.drawText (1, metric.ascent() + 1, QString(c));
-          #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
+#if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           font_width[c] = metric.width (c);
-          #else
+#else
           font_width[c] = metric.horizontalAdvance (c);
-          #endif
+#endif
           const int current_font_width = font_width[c] + 2;
 
           if (with_shadow) {

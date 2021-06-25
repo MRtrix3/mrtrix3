@@ -14,16 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
-#ifndef __fixel_types_h__
-#define __fixel_types_h__
+#include "fixel/fixel.h"
+#include "version.h"
 
 namespace MR
 {
   namespace Fixel
   {
-    using index_type = uint32_t;
+
+    const char* format_description =
+      "Fixel data are stored utilising the fixel directory format "
+      "described in the main documentation, which can be found at the following link: \n"
+      "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/fixel_based_analysis/fixel_directory_format.html";
+
   }
 }
 
-#endif

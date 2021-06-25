@@ -100,6 +100,7 @@ namespace MR
            */
           vector_type operator() (const size_t index) const;
 
+          operator bool() const { return bool(files.size()); }
           size_t size() const { return files.size(); }
 
           std::shared_ptr<SubjectDataImportBase> operator[] (const size_t i) const
@@ -174,7 +175,7 @@ namespace MR
         if (load_from_dir.empty())
           throw e_nosuccess;
 
-        ProgressBar progress ("Importing data from files listed in \""
+        ProgressBar progress ("Configuring data import from files listed in \""
                               + Path::basename (listpath)
                               + "\" as found relative to directory \""
                               + load_from_dir + "\"");
@@ -184,7 +185,7 @@ namespace MR
             std::shared_ptr<SubjectDataImport> subject (new SubjectDataImport (Path::join (load_from_dir, line)));
             files.emplace_back (subject);
           } catch (Exception& e) {
-            throw Exception (e, "Input data not successfully loaded: \"" + line + "\"");
+            throw Exception (e, "Input data not successfully configured for load: \"" + line + "\"");
           }
           ++progress;
         }

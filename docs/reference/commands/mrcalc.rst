@@ -71,6 +71,8 @@ basic operations
 
 -  **-divide** *(multiple uses permitted)* (%1 / %2) : divide (n-1)th operand by nth
 
+-  **-modulo** *(multiple uses permitted)* (%1 % %2) : remainder after dividing (n-1)th operand by nth
+
 -  **-min** *(multiple uses permitted)* min (%1, %2) : smallest of last two operands
 
 -  **-max** *(multiple uses permitted)* max (%1, %2) : greatest of last two operands

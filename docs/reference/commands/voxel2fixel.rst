@@ -25,6 +25,9 @@ Description
 
 This command is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures.
 
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.2/fixel_based_analysis/fixel_directory_format.html
+
 Options
 -------
 

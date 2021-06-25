@@ -70,8 +70,11 @@ namespace MR {
                       return;
                     while (c >= 0 && isdigit (sequence_name[c]))
                       --c;
-                    ++c;
-                    sequence = to<size_t> (sequence_name.substr (c));
+                    if (c >= 0 && sequence_name[c] != '#') {
+                      sequence = 0;
+                      return;
+                    }
+                    sequence = to<size_t> (sequence_name.substr (++c));
                   }
                   return;
                 case 0x0050U:
@@ -607,9 +610,14 @@ namespace MR {
         const size_t nDW = frames.size() / nslices;
 
         const bool rotate_DW_scheme = frames[0]->DW_scheme_wrt_image;
+        bool report_negative_bvalues = false;
         for (size_t n = 0; n < nDW; ++n) {
           const Frame& frame (*frames[n*nslices]);
           std::array<default_type,4> g = {{ 0.0, 0.0, 0.0, frame.bvalue }};
+          if (g[3] < 0) {
+            g[3] = 0;
+            report_negative_bvalues = true;
+          }
           if (g[3] && std::isfinite (frame.G[0]) && std::isfinite (frame.G[1]) && std::isfinite (frame.G[2])) {
 
             if (rotate_DW_scheme) {
@@ -626,6 +634,9 @@ namespace MR {
           add_line (dw_scheme, str(g[0]) + "," + str(g[1]) + "," + str(g[2]) + "," + str(g[3]));
         }
 
+        if (report_negative_bvalues) {
+          WARN ("Input DICOM data contain negative b-values; clamped to zero in output");
+        }
         return dw_scheme;
       }
 

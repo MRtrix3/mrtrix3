@@ -48,6 +48,8 @@ View options
 
 -  **-target x,y,z** *(multiple uses permitted)* Set the target location for the viewing window (the scanner coordinate that will appear at the centre of the viewing window
 
+-  **-orientation w,x,y,z** Set the orientation of the camera for the viewing window, in the form of a quaternion representing the rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point values (this will be automatically normalised).
+
 -  **-voxel x,y,z** *(multiple uses permitted)* Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values.
 
 -  **-volume idx** *(multiple uses permitted)* Set the volume index for the image displayed, as a comma-separated list of integers.

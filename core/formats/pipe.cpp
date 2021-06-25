@@ -37,7 +37,7 @@ namespace MR
       }
       else {
         if (!File::is_tempfile (H.name()))
-          return std::unique_ptr<ImageIO::Base>();
+          return { };
       }
 
       if (H.name().empty())

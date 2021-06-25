@@ -17,18 +17,7 @@
 
 
 
-import platform, re, sys
-
-
-
-
-# For identifying function input arguments as strings on
-#   both Python 2 and 3
-if sys.version_info[0] == 2:
-  STRING_TYPES = (basestring,) #pylint: disable=undefined-variable
-else:
-  STRING_TYPES = (str,)
-
+import platform, re
 
 
 
@@ -40,7 +29,7 @@ else:
 #     use the corresponding functions in the mrtrix3.run module
 # - Construct using a progress bar message, and a list of command strings to run;
 #     all commands within the list will be executed sequentially within the constructor
-class RunList(object): #pylint: disable=unused-variable
+class RunList: #pylint: disable=unused-variable
   def __init__(self, message, value):
     from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
     if isinstance(value, int):
@@ -49,7 +38,7 @@ class RunList(object): #pylint: disable=unused-variable
       self.counter = 0
       self.valid = True
     elif isinstance(value, list):
-      assert all(isinstance(entry, STRING_TYPES) for entry in value)
+      assert all(isinstance(entry, str) for entry in value)
       self.progress = app.ProgressBar(message, len(value))
       for entry in value:
         run.command(entry)
@@ -60,10 +49,10 @@ class RunList(object): #pylint: disable=unused-variable
       raise TypeError('Construction of RunList class expects either an '
                       'integer (number of commands/functions to run), or a '
                       'list of command strings to execute')
-  def command(self, cmd):
+  def command(self, cmd, **kwargs):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     assert self.valid
-    run.command(cmd)
+    run.command(cmd, **kwargs)
     self._increment()
   def function(self, func, *args, **kwargs):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel

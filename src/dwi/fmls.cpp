@@ -92,7 +92,6 @@ namespace MR {
 
 
 
-
       IntegrationWeights::IntegrationWeights (const DWI::Directions::Set& dirs) :
           data (dirs.size())
       {
@@ -301,6 +300,8 @@ namespace MR {
             }
           }
         }
+
+        std::sort (out.begin(), out.end(), [] (const FOD_lobe& a, const FOD_lobe& b) { return (a.get_integral() > b.get_integral()); } );
 
         if (create_lookup_table) {
 

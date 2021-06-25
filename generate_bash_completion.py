@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 # Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
@@ -23,7 +23,6 @@
 #
 
 
-from __future__ import print_function
 import getopt, sys, os, re, subprocess, locale
 
 def usage():

@@ -40,7 +40,9 @@ Pre-processsing steps
 
 Compute a brain mask::
 
-    for_each * : dwi2mask IN/dwi_denoised_preproc.mif IN/dwi_temp_mask.mif
+    for_each * : dwi2mask legacy IN/dwi_denoised_preproc.mif IN/dwi_temp_mask.mif
+
+.. WARNING:: Deriving a brain mask is a common point of failure for DWI processing pipelines. We recommend checking these masks manually, and evaluating whether there is a ``dwi2mask`` algorithm that performs best for your cohort; see :ref:`dwi_masking` for more information.
 
 
 AFD-specific pre-processsing steps
@@ -54,7 +56,7 @@ To enable robust quantitative comparisons of AFD across subjects three additiona
 
 Because we recommend a :ref:`global intensity normalisation <global-intensity-normalisation>`, bias field correction is required as a pre-processing step to eliminate low frequency intensity inhomogeneities across the image. DWI bias field correction is perfomed by first estimating the bias field from the DWI b=0 data, then applying the field to correct all DW volumes. This can be done in a single step using the :code:`ants` algorithm within the :ref:`dwibiascorrect` script in *MRtrix3*. The script uses a bias field correction algorithm available in `ANTS <http://stnava.github.io/ANTs/>`_ (the N4 algorithm). *Don't* use the :code:`fsl` algorithm with this script in this fixel-based analysis pipeline. To perform bias field correction on DW images, run::
 
-    for_each * : dwibiascorrect ants IN/IN/dwi_denoised_unringed_preproc.mif IN/IN/dwi_denoised_unringed_preproc_unbiased.mif
+    for_each * : dwibiascorrect ants IN/IN/dwi_denoised_unringed_preproc.mif IN/IN/dwi_denoised_unringed_preproc_unbiased.mif -mask IN/dwi_temp_mask.mif
 
 
 5. Global intensity normalisation across subjects
@@ -95,7 +97,7 @@ Fixel-based analysis steps
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 A robust and fully automated (unsupervised) method to obtain single-shell response functions representing single-fibre white matter from your data, is the approach proposed in [Tournier2013]_, which can be run by::
 
-    for_each * : dwi2response tournier IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif IN/response.txt
+    for_each * : dwi2response tournier IN/dwi_denoised_unringed_preproc_unbiased_normalised.mif IN/response.txt -mask IN/dwi_temp_mask.mif
 
 It is crucial for fixel-based analysis to only use a single *unique* response function to perform spherical deconvolution of all subjects: as all resulting fibre orientation distributions will be expressed in function of it, it can (in an abstract way) be seen as the unit of the final apparent fibre density metric. A possible way to obtain a unique response function, is to average the response functions obtained from all subjects::
 
@@ -113,7 +115,9 @@ Upsampling DWI data *before* computing FODs can increase anatomical contrast and
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Compute a whole brain mask from the upsampled DW images::
 
-    for_each * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif IN/dwi_mask_upsampled.mif
+    for_each * : dwi2mask legacy IN/dwi_denoised_unringed_preproc_unbiased_normalised_upsampled.mif IN/dwi_mask_upsampled.mif
+
+.. WARNING:: Deriving a brain mask is a common point of failure for DWI processing pipelines. We recommend checking these masks manually, and evaluating whether there is a ``dwi2mask`` algorithm that performs best for your cohort; see :ref:`dwi_masking` for more information.
 
 .. WARNING:: It is absolutely **crucial** to check at this stage that *all* individual subject masks include *all* regions of the brain that are intended to be analysed. Fibre orientation distributions will *only* be computed within these masks; and at a later step (in template space) the analysis mask will be restricted to the *intersection* of all masks, so *any* individual subject mask which excludes a certain region, will result in this region being excluded from the entire analysis (unless a more advanced pipeline is followed; see :ref:`mitigating_brain_cropping`). Masks appearing too generous or otherwise including non-brain regions should generally not cause any concerns at this stage. Hence, if in doubt, it is advised to always err on the side of *inclusion* (of regions) at this stage. Manually correct the masks if necessary.
 

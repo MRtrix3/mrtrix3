@@ -18,6 +18,7 @@
 #include "command.h"
 #include "image.h"
 #include "algo/loop.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
 
 
@@ -30,6 +31,9 @@ void usage ()
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Convert peak directions image to a fixel directory";
+
+  DESCRIPTION
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("directions", "the input directions image; each volume corresponds to the x, y & z "
