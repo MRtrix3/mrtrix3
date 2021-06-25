@@ -237,6 +237,7 @@ namespace MR
             }
             if (list.size())
               add_images (list);
+            event->acceptProposedAction();
           }
         }
 
