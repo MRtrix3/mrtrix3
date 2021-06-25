@@ -14,7 +14,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
-import mrtrix3
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
 from ._version import __version__
@@ -43,7 +42,7 @@ EXEC_NAME = os.path.basename(sys.argv[0])
 FORCE_OVERWRITE = False #pylint: disable=unused-variable
 NUM_THREADS = None #pylint: disable=unused-variable
 SCRATCH_DIR = ''
-VERBOSITY = 0 if 'MRTRIX_QUIET' in mrtrix3.CONFIG else 1
+VERBOSITY = 0 if 'MRTRIX_QUIET' in os.environ else int(os.environ.get('MRTRIX_LOGLEVEL', '1'))
 WORKING_DIR = os.getcwd()
 
 
@@ -187,7 +186,7 @@ def _execute(module): #pylint: disable=unused-variable
       pass
     run.shared.set_continue(ARGS.cont[1])
 
-  run.shared.verbosity = VERBOSITY
+  run.shared.set_verbosity(VERBOSITY)
   run.shared.set_num_threads(NUM_THREADS)
 
   CMDLINE.print_citation_warning()
@@ -486,6 +485,8 @@ class ProgressBar(object): #pylint: disable=unused-variable
     self.wrapoff = '' if self.newline else ProgressBar.WRAPOFF
     self.wrapon = '' if self.newline else ProgressBar.WRAPON
     VERBOSITY = run.shared.verbosity = VERBOSITY - 1 if VERBOSITY else 0
+    if not self.orig_verbosity:
+      return
     if self.isatty:
       sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
     else:
@@ -523,6 +524,9 @@ class ProgressBar(object): #pylint: disable=unused-variable
       self.message = msg
     if self.multiplier:
       self.value = 100
+    VERBOSITY = run.shared.verbosity = self.orig_verbosity
+    if not self.orig_verbosity:
+      return
     if self.isatty:
       sys.stderr.write('\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('100%' if self.multiplier else 'done') + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + ANSI.clear + ANSI.lineclear + '\n')
     else:
@@ -531,11 +535,13 @@ class ProgressBar(object): #pylint: disable=unused-variable
       else:
         sys.stderr.write('=' * (int(self.value/2) - int(self.old_value/2)) + ']\n')
     sys.stderr.flush()
-    VERBOSITY = run.shared.verbosity = self.orig_verbosity
+
 
   def _update(self):
     global EXEC_NAME
     assert not self.iscomplete
+    if not self.orig_verbosity:
+      return
     if self.isatty:
       sys.stderr.write(self.wrapoff + '\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
     else:
@@ -754,13 +760,15 @@ class Parser(argparse.ArgumentParser):
     text += '\n'
     text += bold('USAGE') + '\n'
     text += '\n'
-    usage = self.prog + ' [ options ]'
+    usage = self.prog + ' '
     # Compulsory subparser algorithm selection (if present)
     if self._subparsers:
-      usage += ' ' + self._subparsers._group_actions[0].dest + ' ...'
-    # Find compulsory input arguments
-    for arg in self._positionals._group_actions:
-      usage += ' ' + arg.dest
+      usage += self._subparsers._group_actions[0].dest + ' [ options ] ...'
+    else:
+      usage += '[ options ]'
+      # Find compulsory input arguments
+      for arg in self._positionals._group_actions:
+        usage += ' ' + arg.dest
     # Unfortunately this can line wrap early because textwrap is counting each
     #   underlined character as 3 characters when calculating when to wrap
     # Fix by underlining after the fact

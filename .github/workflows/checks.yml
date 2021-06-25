@@ -161,17 +161,12 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install pylint pylint3 python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip
+         sudo apt-get install pylint3 python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip
          pip3 install sphinx-notfound-page
 
 
     - name: check syntax
       run: ./check_syntax || { cat syntax.log; false; }
-
-    - name: pylint (Python 2)
-      run: |
-         echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
-         PYTHON=python2 ./run_pylint || { cat pylint.log; false; }
 
     - name: pylint (Python 3)
       run: |

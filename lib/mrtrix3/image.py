@@ -240,7 +240,11 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
 
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
+  try:
+    from subprocess import DEVNULL #pylint: disable=import-outside-toplevel
+  except ImportError:
+    DEVNULL = open(os.devnull, 'wb')
+  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=DEVNULL)
   stdout = proc.communicate()[0]
   if proc.returncode:
     raise MRtrixError('Error trying to calculate statistics from image \'' + image_path + '\'')
