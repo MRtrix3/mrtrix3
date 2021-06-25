@@ -22,10 +22,9 @@
 
 #include "math/SH.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
@@ -45,7 +44,9 @@ void usage ()
     "that can be visualised using the ODF tool in MRview. The output ODF lobes "
     "are scaled according to the values in the input fixel image."
 
-  + Math::SH::encoding_description;
+  + Math::SH::encoding_description
+
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file.").type_image_in ()

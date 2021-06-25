@@ -71,7 +71,9 @@ Upsampling DWI data *before* computing FODs increases anatomical contrast and im
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Compute a whole brain mask from the upsampled DW images::
 
-    for_each * : dwi2mask IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif IN/dwi_mask_upsampled.mif
+    for_each * : dwi2mask legacy IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif IN/dwi_mask_upsampled.mif
+
+.. WARNING:: Deriving a brain mask is a common point of failure for DWI processing pipelines. We recommend checking these masks manually, and evaluating whether there is a ``dwi2mask`` algorithm that performs best for your cohort; see :ref:`dwi_masking` for more information.
 
 .. WARNING:: It is absolutely **crucial** to check at this stage that *all* individual subject masks include *all* regions of the brain that are intended to be analysed. Fibre orientation distributions will *only* be computed within these masks; and at a later step (in template space) the analysis mask will be restricted to the *intersection* of all masks, so *any* individual subject mask which excludes a certain region, will result in this region being excluded from the entire analysis (unless a more advanced pipeline is followed; see :ref:`mitigating_brain_cropping`). Masks appearing too generous or otherwise including non-brain regions should generally not cause any concerns at this stage. Hence, if in doubt, it is advised to always err on the side of *inclusion* (of regions) at this stage.
 

@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import math, shutil
+import math, shlex, shutil
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, image, path, run
 
@@ -240,7 +240,7 @@ def execute(): #pylint: disable=unused-variable
       app.warn('Single-fibre WM response function selection algorithm "tax" will not honour requested WM voxel percentage')
     run.command('dwi2response ' + app.ARGS.wm_algo + ' dwi.mif _respsfwmss.txt -mask refined_wm.mif -voxels voxels_sfwm.mif'
                 + ('' if app.ARGS.wm_algo == 'tax' else (' -number ' + str(voxsfwmcount)))
-                + ' -scratch ' + path.quote(app.SCRATCH_DIR)
+                + ' -scratch ' + shlex.quote(app.SCRATCH_DIR)
                 + recursive_cleanup_option,
                 show=False)
   else:

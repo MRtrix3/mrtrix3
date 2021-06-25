@@ -308,7 +308,11 @@ void report (const std::string& title, Eigen::MatrixXd& directions)
   output += "    energy: total = " + str(metrics.UE[0], precision) + ", mean = " + str(metrics.UE[1], precision) + ", range [ " + str(metrics.UE[2], precision) + " - " + str(metrics.UE[3], precision) + " ]\n";
 
 
-  output += "\n  Spherical Harmonic fit:\n    condition numbers for lmax = 2 -> " + str(metrics.SH.size()*2) + ": " + str(metrics.SH, precision) + "\n";
+  output += "\n  Spherical Harmonic fit:\n";
+  if (metrics.SH.size() > 1)
+    output += "    condition numbers for lmax = 2 -> " + str(metrics.SH.size()*2) + ": " + str(metrics.SH, precision) + "\n";
+  else
+    output += "    condition number for lmax = 2: " + str(metrics.SH[0], precision) + "\n";
 
   output += "\n  Asymmetry of sampling:\n    norm of mean direction vector = " + str(metrics.ASYM, precision) + "\n";
   if (metrics.ASYM >= 0.1)

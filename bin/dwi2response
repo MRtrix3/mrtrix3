@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
 # Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
@@ -15,18 +15,21 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-# Script for estimating response functions for spherical deconvolution
-# A number of different approaches are available within this script for performing response function estimation.
-
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm, app #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import algorithm, app, _version #pylint: disable=no-name-in-module, import-outside-toplevel
 
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)')
   cmdline.set_synopsis('Estimate response function(s) for spherical deconvolution')
   cmdline.add_description('dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after \'dwi2response\'. The subsequent arguments and options depend on the particular algorithm being invoked.')
   cmdline.add_description('Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the \'fa\' algorithm, type \'dwi2response fa\'.')
+  cmdline.add_description('More information on response function estimation for spherical deconvolution can be found at the following link: \n'
+                          'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/constrained_spherical_deconvolution/response_function_estimation.html')
+  cmdline.add_description('Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to '
+                          'derive an initial voxel exclusion mask. '
+                          'More information on mask derivation from DWI data can be found at: '
+                          'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/dwi_preprocessing/masking.html')
 
   # General options
   common_options = cmdline.add_argument_group('General dwi2response options')
@@ -45,7 +48,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import algorithm, app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Find out which algorithm the user has requested
@@ -62,16 +65,16 @@ def execute(): #pylint: disable=unused-variable
       lmax = [ int(x) for x in app.ARGS.lmax.split(',') ]
       if any(lmax_value%2 for lmax_value in lmax):
         raise MRtrixError('Value of lmax must be even')
-    except:
-      raise MRtrixError('Parameter lmax must be a number')
+    except ValueError as exception:
+      raise MRtrixError('Parameter lmax must be a number') from exception
     if alg.needs_single_shell() and not len(lmax) == 1:
       raise MRtrixError('Can only specify a single lmax value for single-shell algorithms')
   shells_option = ''
   if app.ARGS.shells:
     try:
       shells_values = [ int(round(float(x))) for x in app.ARGS.shells.split(',') ]
-    except:
-      raise MRtrixError('-shells option should provide a comma-separated list of b-values')
+    except ValueError as exception:
+      raise MRtrixError('-shells option should provide a comma-separated list of b-values') from exception
     if alg.needs_single_shell() and not len(shells_values) == 1:
       raise MRtrixError('Can only specify a single b-value shell for single-shell algorithms')
     shells_option = ' -shells ' + app.ARGS.shells
@@ -109,7 +112,7 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError('Provided mask image needs to be a 3D image')
   else:
     app.console('Computing brain mask (dwi2mask)...')
-    run.command('dwi2mask dwi.mif mask.mif', show=False)
+    run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' dwi.mif mask.mif', show=False)
 
   if not image.statistics('mask.mif', mask='mask.mif').count:
     raise MRtrixError(('Provided' if app.ARGS.mask else 'Generated') + ' mask image does not contain any voxels')
@@ -123,5 +126,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3
+import mrtrix3 #pylint: disable=wrong-import-position
 mrtrix3.execute() #pylint: disable=no-member
