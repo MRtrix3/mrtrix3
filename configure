@@ -1024,6 +1024,31 @@ ld_lib_flags += zlib_ldflags
 
 
 
+# FFTW:
+
+
+fftw_cflags = get_flags ([], 'FFTW_CFLAGS', '--cflags fftw3')
+fftw_ldflags = get_flags ([ '-lfftw3' ], 'FFTW_LINKFLAGS', '--libs fftw3')
+
+compile_check ('FFTW library', 'FFTW', cpp_flags + fftw_cflags, ld_flags + fftw_ldflags, '''
+#include <iostream>
+#include <fftw3.h>
+
+int main() {
+  std::cout << fftw_version << "\\n";
+  return (0);
+}
+''')
+cpp_flags += [ '-DEIGEN_FFTW_DEFAULT' ] + fftw_cflags
+ld_flags += fftw_ldflags
+ld_lib_flags += fftw_ldflags
+
+
+
+
+
+
+
 # Test that JSON for Modern C++ will compile, since it enforces its own requirements
 
 compile_check ('"JSON for Modern C++" requirements', 'JSON for modern C++', \
@@ -1086,26 +1111,6 @@ int main() {
 
 
 
-
-
-# FFTW:
-
-
-fftw_cflags = get_flags ([], 'FFTW_CFLAGS', '--cflags fftw3')
-fftw_ldflags = get_flags ([ '-lfftw3' ], 'FFTW_LINKFLAGS', '--libs fftw3')
-
-if compile_test ('FFTW library', cpp_flags + fftw_cflags, ld_flags + fftw_ldflags, '''
-#include <iostream>
-#include <fftw3.h>
-
-int main() {
-  std::cout << fftw_version << "\\n";
-  return (0);
-}
-''', on_failure='not found - FFTW support disabled'):
-  cpp_flags += [ '-DEIGEN_FFTW_DEFAULT' ] + fftw_cflags
-  ld_flags += fftw_ldflags
-  ld_lib_flags += fftw_ldflags
 
 
 
