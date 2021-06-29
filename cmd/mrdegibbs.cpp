@@ -54,6 +54,11 @@ void usage ()
 
 
   OPTIONS
+  + Option ("volume",
+            "perform the correction using the 3D volume-wise extension proposed by Bautista et al. "
+            "(see references below). This is appropriate for images acquired using 3D Fourier encoding, "
+            "rather than 2D multi-slice.")
+
   + Option ("axes",
             "select the slice axes (default: 0,1 - i.e. x-y). Select all 3 spatial axes for 3D operation, "
             "i.e. 0:2 or 0,1,2.")
@@ -101,57 +106,70 @@ void run ()
   header.datatype() = DataType::from_command_line (header.datatype().is_complex() ? DataType::CFloat32 : DataType::Float32);
   auto out = Image<Degibbs::value_type>::create (argument[1], header);
 
+  bool run_3D = get_options ("volume").size();
+
+
   vector<size_t> slice_axes = { 0, 1 };
   auto opt = get_options ("axes");
   const bool axes_set_manually = opt.size();
   if (opt.size()) {
     vector<uint32_t> axes = parse_ints<uint32_t> (opt[0][0]);
     if (axes == vector<uint32_t> ({ 0, 1, 2 })) {
-      // 3D operation:
-      // process data and return immediately
-      Degibbs::unring3D (in, out, minW, maxW, nshifts);
-      return;
+      run_3D = true;
     }
-
-    if (axes.size() != 2)
-      throw Exception ("slice axes must be specified as a comma-separated 2-vector");
-    if (size_t(std::max (axes[0], axes[1])) >= header.ndim())
-      throw Exception ("slice axes must be within the dimensionality of the image");
-    if (axes[0] == axes[1])
-      throw Exception ("two independent slice axes must be specified");
-    slice_axes = { size_t(axes[0]), size_t(axes[1]) };
+    else {
+      if (axes.size() != 2)
+        throw Exception ("slice axes must be specified as a comma-separated 2-vector");
+      if (size_t(std::max (axes[0], axes[1])) >= header.ndim())
+        throw Exception ("slice axes must be within the dimensionality of the image");
+      if (axes[0] == axes[1])
+        throw Exception ("two independent slice axes must be specified");
+      slice_axes = { size_t(axes[0]), size_t(axes[1]) };
+    }
   }
 
   auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
-    try {
-      const Eigen::Vector3 slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
-      vector<size_t> auto_slice_axes = { 0, 0 };
-      if (slice_encoding_axis_onehot[0])
-        auto_slice_axes = { 1, 2 };
-      else if (slice_encoding_axis_onehot[1])
-        auto_slice_axes = { 0, 2 };
-      else if (slice_encoding_axis_onehot[2])
-        auto_slice_axes = { 0, 1 };
-      else
-        throw Exception ("Fatal error: Invalid slice axis one-hot encoding [ " + str(slice_encoding_axis_onehot.transpose()) + " ]");
-      if (axes_set_manually) {
-        if (slice_axes == auto_slice_axes) {
-          INFO ("User's manual selection of within-slice axes consistent with \"SliceEncodingDirection\" field in image header");
-        } else {
-          WARN ("Within-slice axes set using -axes option will be used, but is inconsistent with SliceEncodingDirection field present in image header (" + slice_encoding_it->second + ")");
-        }
-      } else {
-        if (slice_axes == auto_slice_axes) {
-          INFO ("\"SliceEncodingDirection\" field in image header is consistent with default selection of first two axes as being within-slice");
-        } else {
-          slice_axes = auto_slice_axes;
-          CONSOLE ("Using axes { " + str(slice_axes[0]) + ", " + str(slice_axes[1]) + " } for Gibbs ringing removal based on \"SliceEncodingDirection\" field in image header");
-        }
-      }
-    } catch (...) {
-      WARN ("Invalid value for field \"SliceEncodingDirection\" in image header (" + slice_encoding_it->second + "); ignoring");
+    if (run_3D) {
+      WARN ("running 3D volume-wise unringing, but image header contains \"SliceEncodingDirection\" field");
+      WARN ("If data were acquired using multi-slice encoding, run without \"-volume\" option.");
     }
+    else {
+      try {
+        const Eigen::Vector3 slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
+        vector<size_t> auto_slice_axes = { 0, 0 };
+        if (slice_encoding_axis_onehot[0])
+          auto_slice_axes = { 1, 2 };
+        else if (slice_encoding_axis_onehot[1])
+          auto_slice_axes = { 0, 2 };
+        else if (slice_encoding_axis_onehot[2])
+          auto_slice_axes = { 0, 1 };
+        else
+          throw Exception ("Fatal error: Invalid slice axis one-hot encoding [ " + str(slice_encoding_axis_onehot.transpose()) + " ]");
+        if (axes_set_manually) {
+          if (slice_axes == auto_slice_axes) {
+            INFO ("User's manual selection of within-slice axes consistent with \"SliceEncodingDirection\" field in image header");
+          } else {
+            WARN ("Within-slice axes set using -axes option will be used, but is inconsistent with SliceEncodingDirection field present in image header (" + slice_encoding_it->second + ")");
+          }
+        } else {
+          if (slice_axes == auto_slice_axes) {
+            INFO ("\"SliceEncodingDirection\" field in image header is consistent with default selection of first two axes as being within-slice");
+          } else {
+            slice_axes = auto_slice_axes;
+            CONSOLE ("Using axes { " + str(slice_axes[0]) + ", " + str(slice_axes[1]) + " } for Gibbs ringing removal based on \"SliceEncodingDirection\" field in image header");
+          }
+        }
+      } catch (...) {
+        WARN ("Invalid value for field \"SliceEncodingDirection\" in image header (" + slice_encoding_it->second + "); ignoring");
+      }
+    }
+  }
+
+
+  if (run_3D) {
+    Degibbs::unring3D (in, out, minW, maxW, nshifts);
+    return;
   }
 
   // build vector of outer axes:
