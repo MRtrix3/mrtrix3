@@ -41,12 +41,12 @@ namespace MR {
               const std::string& series_modality = "", const std::string& series_date = "", const std::string& series_time = "");
 
           bool operator< (const Study& s) const {
-            if (date < s.date) return true;
-            if (date > s.date) return false;
-            if (time < s.time) return true;
-            if (time > s.time) return false;
-            if (name < s.name) return true;
-            if (name > s.name) return false;
+            if (date != s.date)
+              return date < s.date;
+            if (time != s.time)
+              return time < s.time;
+            if (name != s.name)
+              return name < s.name;
             return ID < s.ID;
           }
       };

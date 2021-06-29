@@ -83,6 +83,9 @@ namespace MR {
                 case 0x0081U:
                   echo_time = item.get_float (0, echo_time);
                   return;
+                case 0x0086U:
+                  echo = item.get_int (0, echo);
+                  return;
                 case 0x0082U:
                   inversion_time = item.get_float (0, inversion_time);
                   return;

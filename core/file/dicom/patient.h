@@ -37,10 +37,10 @@ namespace MR {
               const std::string& study_date = "", const std::string& study_time = "");
 
           bool operator< (const Patient& s) const {
-            if (name < s.name) return true;
-            if (name > s.name) return false;
-            if (ID < s.ID) return true;
-            if (ID > s.ID) return false;
+            if (name != s.name)
+              return name < s.name;
+            if (ID != s.ID)
+              return ID < s.ID;
             return DOB < s.DOB;
           }
 
