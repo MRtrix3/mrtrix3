@@ -28,13 +28,21 @@ namespace MR {
 
       class Patient : public vector<std::shared_ptr<Study>> { NOMEMALIGN
         public:
-          Patient (const std::string& patient_name, const std::string& patient_ID = "", 
+          Patient (const std::string& patient_name, const std::string& patient_ID = "",
               const std::string& patient_DOB = "") :
             name (patient_name), ID (patient_ID), DOB (patient_DOB) { }
           std::string name, ID, DOB;
 
-          std::shared_ptr<Study> find (const std::string& study_name, const std::string& study_ID = "", 
+          std::shared_ptr<Study> find (const std::string& study_name, const std::string& study_ID = "",
               const std::string& study_date = "", const std::string& study_time = "");
+
+          bool operator< (const Patient& s) const {
+            if (name < s.name) return true;
+            if (name > s.name) return false;
+            if (ID < s.ID) return true;
+            if (ID > s.ID) return false;
+            return DOB < s.DOB;
+          }
 
       };
 
