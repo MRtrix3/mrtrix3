@@ -396,7 +396,7 @@ namespace MR
       Header header (H);
       vector<uint32_t> num (Pdim.size());
 
-      if (is_dash (image_name))
+      if (!is_dash (image_name))
         H.name() = parser.name (num);
 
       H.io = (*format_handler)->create (H);
