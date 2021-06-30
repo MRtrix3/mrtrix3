@@ -446,6 +446,16 @@ namespace MR
             window().updateGL();
           }
         }
+        
+        void TrackScalarFileOptions::set_colourmap (int colourmap_index)
+        {
+          if (tractogram) {
+            tractogram->colourmap = colourmap_index;
+            update_UI();
+            window().updateGL();
+          }
+        }
+
 
       }
     }
