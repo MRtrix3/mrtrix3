@@ -41,7 +41,7 @@ Example usages
 
 -   *Extract the streamlines connecting node 15 to all other nodes in the parcellation, with one track file for each edge*::
 
-        $ tck2connectome tracks.tck assignments.txt from_15_to_ -nodes 15 -keep_self
+        $ connectome2tck tracks.tck assignments.txt from_15_to_ -nodes 15 -keep_self
 
     The command will generate the same number of track files as there are nodes in the parcellation: one each for the streamlines connecting node 15 to every other node; i.e. "from_15_to_1.tck", "from_15_to_2.tck", "from_15_to_3.tck", etc.. Because the -keep_self option is specified, file "from_15_to_15.tck" will also be generated, containing those streamlines that connect to node 15 at both endpoints.
 
@@ -59,7 +59,7 @@ Example usages
 
 -   *Generate a single track file containing edge exemplar trajectories*::
 
-        $ tck2connectome tracks.tck assignments.txt exemplars.tck -files single -exemplars nodes.mif
+        $ connectome2tck tracks.tck assignments.txt exemplars.tck -files single -exemplars nodes.mif
 
     This produces the track file that is required as input when attempting to display connectome edges using the streamlines or streamtubes geometries within the meview connectome tool.
 
