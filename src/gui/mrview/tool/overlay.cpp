@@ -196,9 +196,13 @@ namespace MR
           if (overlay_names.empty())
             return;
           vector<std::unique_ptr<MR::Header>> list;
-          for (size_t n = 0; n < overlay_names.size(); ++n)
-            list.push_back (make_unique<MR::Header> (MR::Header::open (overlay_names[n])));
-
+          for (size_t n = 0; n < overlay_names.size(); ++n) {
+            try {
+              list.push_back (make_unique<MR::Header> (MR::Header::open (overlay_names[n])));
+            } catch (Exception& e) {
+              e.display();
+            }
+          }
           add_images (list);
         }
 
