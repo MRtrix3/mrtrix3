@@ -204,7 +204,7 @@ namespace MR
    * character, zero if no match. */
   inline size_t char_is_dash (const char* arg)
   {
-    assert (arg[0] != nullptr);
+    assert (arg != nullptr);
     if (arg[0] == '-')
      return 1;
     if (arg[0] == '\0' || arg[1] == '\0' || arg[2] == '\0')
