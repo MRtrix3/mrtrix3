@@ -54,7 +54,13 @@ namespace MR {
 
           vector<int> count () const;
           bool operator< (const Series& s) const {
-            return number < s.number;
+            if (number != s.number)
+              return number < s.number;
+            if (date.size() && date != s.date)
+              return date < s.date;
+            if (time.size() && time != s.time)
+              return time < s.time;
+            return image_type < s.image_type;
           }
 
           friend std::ostream& operator<< (std::ostream& stream, const Series& item);
