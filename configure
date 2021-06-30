@@ -140,6 +140,12 @@ ENVIRONMENT VARIABLES
     TIFF_LINKFLAGS
         Any flags required to link with the TIFF library.
 
+    PNG_CFLAGS
+        Any flags required to compile with the libpng library.
+
+    PNG_LINKFLAGS
+        Any flags required to link with the libpng library.
+
     FFTW_CFLAGS
         Any flags required to compile with the FFTW library.
 
