@@ -758,8 +758,8 @@ void run () {
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("the -nl_lmax option has been set when no non-linear registration is requested");
-    if (input1[0].ndim() < 4)
-      throw Exception ("-nl_lmax option is not valid with 3D images");
+    if (max_mc_image_lmax == 0)
+      throw Exception ("-nl_lmax option is not valid if no input image is FOD image");
     nl_lmax = parse_ints<uint32_t> (opt[0][0]);
     nl_registration.set_lmax (nl_lmax);
     for (size_t i = 0; i < (nl_lmax).size (); ++i)
