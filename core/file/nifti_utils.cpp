@@ -695,7 +695,8 @@ namespace MR
             std::unique_ptr<ImageIO::Default> handler (new ImageIO::Default (H));
             handler->files.push_back (File::Entry (H.name(), ( single_file ? data_offset : 0 )));
             return std::move (handler);
-          } catch (...) {
+          } catch (Exception& e) {
+            e.display();
             return std::unique_ptr<ImageIO::Base>();
           }
         }
