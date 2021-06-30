@@ -378,6 +378,7 @@ namespace MR
             catch (Exception& e) {
               e.display();
             }
+            event->acceptProposedAction();
           }
         }
 
