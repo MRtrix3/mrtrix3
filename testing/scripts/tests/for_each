@@ -1,3 +1,4 @@
 for_each -test 1 2 3 4 : echo IN
 mkdir -p ../tmp/for_each && rm -f ../tmp/for_each/out.txt && for_each 1 2 3 4 : echo IN ">>" ../tmp/for_each/out.txt && testing_diff_matrix ../tmp/for_each/out.txt foreach/out.txt
 for_each -nthreads 2 1 2 3 4 : mrconvert BIDS/sub-01/dwi/sub-01_brainmask.nii.gz tmpIN.mif
+rm -f tmp.txt && for_each -exclude "\d" a b c 1 2 3 : echo IN ">>" tmp.txt && test $(cat tmp.txt | wc -l) -eq 3
