@@ -3317,7 +3317,7 @@ namespace MR {
           { 0x200110A4UL, "ULTextColorBackground" },
           { 0x200110A5UL, "ULTextColorShadow" },
           { 0x200110C8UL, "LOExamCardName" },
-          { 0x200110CCUL, "SeriesDerivationDescription" },
+          { 0x200110CCUL, "STSeriesDerivationDescription" },
           { 0x200110F1UL, "FLProspectiveMotionCorrection" },
           { 0x200110F2UL, "FLRetrospectiveMotionCorrection" },
           { 0x20019000UL, "SQPhilips_2001_9000" },
