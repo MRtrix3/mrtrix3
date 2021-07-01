@@ -113,12 +113,21 @@ namespace MR {
                 flip_angle = item.get_float (0, flip_angle);
                 return;
               case 0x9087U:
-                bvalue = item.get_float (0, bvalue);
+                { // ugly hack to handle badly formatted Philips data:
+                  default_type v = item.get_float (0, bvalue);
+                  if (v < 1.0e10)
+                    bvalue = v;
+                }
                 return;
               case 0x9089U:
-                G[0] = item.get_float (0, G[0]);
-                G[1] = item.get_float (1, G[1]);
-                G[2] = item.get_float (2, G[2]);
+                { // ugly hack to handle badly formatted Philips data:
+                  default_type v = item.get_float (0, G[0]);
+                  if (v < 1.0e10) {
+                    G[0] = v;
+                    G[1] = item.get_float (1, G[1]);
+                    G[2] = item.get_float (2, G[2]);
+                  }
+                }
             }
             return;
           case 0x0019U:
