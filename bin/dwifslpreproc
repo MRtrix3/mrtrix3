@@ -1010,8 +1010,7 @@ def execute(): #pylint: disable=unused-variable
 
         if eddy_mporder and slice_padded:
           # Remove padded slice from slice_groups, write new slspec
-          for group in slice_groups:
-            group = [ index for index in group if index != dwi_header.size()[slice_encoding_axis] ]
+          slice_groups = [ [ index for index in group if index != dwi_num_slices ] for group in slice_groups ]
           # After this removal, slspec should now be a square matrix
           assert all(len(group) == len(slice_groups[0]) for group in slice_groups[1:])
           eddyqc_slspec = 'slspec_unpad.txt'
