@@ -36,7 +36,7 @@ namespace MR
       for (auto& entry : files) {
         File::TIFF tif (entry.name);
 
-        uint16 config (0);
+        uint16_t config (0);
         tif.read_and_check (TIFFTAG_PLANARCONFIG, config);
 
         size_t scanline_size = tif.scanline_size();
