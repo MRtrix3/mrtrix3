@@ -141,7 +141,7 @@ def execute(): #pylint: disable=unused-variable
   if eddyqc_path:
     if os.path.exists(eddyqc_path):
       if os.path.isdir(eddyqc_path):
-        if any([ os.path.exists(os.path.join(eddyqc_path, filename)) for filename in eddyqc_files ]):
+        if any(os.path.exists(os.path.join(eddyqc_path, filename)) for filename in eddyqc_files):
           if app.FORCE_OVERWRITE:
             app.warn('Output eddy QC directory already contains relevant files; these will be overwritten on completion')
           else:
@@ -269,11 +269,11 @@ def execute(): #pylint: disable=unused-variable
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'unexpected data format')
       if isinstance(slice_timing[0], list):
-        if not all( [ len(entry) == 1 for entry in slice_timing ] ):
+        if not all(len(entry) == 1 for entry in slice_timing):
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'data do not appear to be 1D')
         slice_timing = [ entry[0] for entry in slice_timing ]
-      if not all( [ isinstance(entry, float) for entry in slice_timing ] ):
+      if not all(isinstance(entry, float) for entry in slice_timing):
         try:
           slice_timing = [ float(entry) for entry in slice_timing ]
         except ValueError:
@@ -321,6 +321,9 @@ def execute(): #pylint: disable=unused-variable
 
   # Utilise the b-value clustering algorithm in src/dwi/shells.*
   shell_indices = [ [ int(i) for i in entry.split(',') ] for entry in image.mrinfo('dwi.mif', 'shell_indices').split(' ') ]
+  shell_bvalues = [ float(f) for f in image.mrinfo('dwi.mif', 'shell_bvalues').split(' ')]
+  bzero_threshold = float(CONFIG.get('BZeroThreshold', 10.0))
+
   # For each volume index, store the index of the shell to which it is attributed
   #   (this will make it much faster to determine whether or not two volumes belong to the same shell)
   vol2shell = [ -1 ] * dwi_num_volumes
@@ -331,9 +334,12 @@ def execute(): #pylint: disable=unused-variable
 
 
   def grads_match(one, two):
-    # Are the two volumes assigned to the same b-value shell?
+    # Are the two volumes assigned to different b-value shells?
     if vol2shell[one] != vol2shell[two]:
       return False
+    # Does this shell correspond to b=0?
+    if shell_bvalues[vol2shell[one]] <= bzero_threshold:
+      return True
     # Dot product between gradient directions
     # First, need to check for zero-norm vectors:
     # - If both are zero, skip this check
@@ -495,7 +501,6 @@ def execute(): #pylint: disable=unused-variable
   # This needs to occur at the outermost loop as it is pertinent information
   #   not only for the -align_seepi option, but also for when the -se_epi option
   #   is not provided at all, and the input to topup is extracted solely from the DWIs
-  bzero_threshold = float(CONFIG['BZeroThreshold']) if 'BZeroThreshold' in CONFIG else 10.0
   dwi_first_bzero_index = 0
   for line in grad:
     if line[3] <= bzero_threshold:
@@ -917,14 +922,14 @@ def execute(): #pylint: disable=unused-variable
     except run.MRtrixCmdError as exception_cuda:
       if not eddy_openmp_cmd:
         raise
-      with open('eddy_cuda_failure_output.txt', 'w') as eddy_output_file:
-        eddy_output_file.write(str(exception_cuda))
+      with open('eddy_cuda_failure_output.txt', 'wb') as eddy_output_file:
+        eddy_output_file.write(str(exception_cuda).encode('utf-8', errors='replace'))
       app.console('CUDA version of \'eddy\' was not successful; attempting OpenMP version')
       try:
         eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
       except run.MRtrixCmdError as exception_openmp:
-        with open('eddy_openmp_failure_output.txt', 'w') as eddy_output_file:
-          eddy_output_file.write(str(exception_openmp))
+        with open('eddy_openmp_failure_output.txt', 'wb') as eddy_output_file:
+          eddy_output_file.write(str(exception_openmp).encode('utf-8', errors='replace'))
         # Both have failed; want to combine error messages
         eddy_cuda_header = ('=' * len(eddy_cuda_cmd)) \
                            + '\n' \
@@ -957,8 +962,8 @@ def execute(): #pylint: disable=unused-variable
 
   else:
     eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
-  with open('eddy_output.txt', 'w') as eddy_output_file:
-    eddy_output_file.write(eddy_output.stdout + '\n' + eddy_output.stderr + '\n')
+  with open('eddy_output.txt', 'wb') as eddy_output_file:
+    eddy_output_file.write((eddy_output.stdout + '\n' + eddy_output.stderr + '\n').encode('utf-8', errors='replace'))
   if app.VERBOSITY > 1:
     app.console('Output of eddy command:')
     sys.stderr.write(eddy_output.stdout + '\n' + eddy_output.stderr + '\n')
