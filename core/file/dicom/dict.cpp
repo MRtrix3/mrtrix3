@@ -2481,8 +2481,8 @@ namespace MR {
         dict[0x04000561UL] =  "SQOriginalAttributesSequence";
         dict[0x04000562UL] =  "DTAttributeModificationDateTime";
         dict[0x04000563UL] =  "LOModifyingSystem";
-        dict[0x04000564UL] =  "LOSourceOfPreviousValuesReasonForTheAttributeModif";
-        dict[0x04000565UL] =  "icationCS";
+        dict[0x04000564UL] =  "LOSourceOfPreviousValues";
+        dict[0x04000565UL] =  "CSReasonForTheAttributeModification";
         dict[0x20000010UL] =  "ISNumberOfCopies";
         dict[0x2000001EUL] =  "SQPrinterConfigurationSequence";
         dict[0x20000020UL] =  "CSPrintPriority";
