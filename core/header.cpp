@@ -384,7 +384,7 @@ namespace MR
           DWI::clear_DW_scheme (H);
         }
         try {
-          PhaseEncoding::check (template_header, pe_scheme);
+          PhaseEncoding::check (pe_scheme, template_header);
           PhaseEncoding::set_scheme (H, pe_scheme.row (0));
         } catch (Exception&) {
           pe_scheme.resize (0, 0);
@@ -396,7 +396,7 @@ namespace MR
       Header header (H);
       vector<uint32_t> num (Pdim.size());
 
-      if (image_name != "-")
+      if (!is_dash (image_name))
         H.name() = parser.name (num);
 
       H.io = (*format_handler)->create (H);
