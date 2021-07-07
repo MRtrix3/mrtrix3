@@ -74,7 +74,7 @@ QSize QColorButton::sizeHint() const
 {
   QStyleOptionButton option;
   option.initFrom (this);
-  return (style()->sizeFromContents(QStyle::CT_PushButton, &option, option.fontMetrics.size (0, "MM"), this).expandedTo(QSize(0,0)));
+  return (style()->sizeFromContents(QStyle::CT_PushButton, &option, option.fontMetrics.size (0, "MM"), this));
 }
 
 void QColorButton::chooseColor()
