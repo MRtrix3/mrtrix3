@@ -45,7 +45,7 @@ namespace MR
 
             QVariant data (const QModelIndex& index, int role) const {
               if (!index.isValid()) return {};
-              if (role != Qt::DisplayRole) return {};
+              if (role != Qt::DisplayRole && role != Qt::ToolTipRole) return {};
               return qstr (items[index.row()]->image.get_filename());
             }
 
