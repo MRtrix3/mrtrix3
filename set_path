@@ -32,7 +32,7 @@
 # particular). This will not work for the C shell and derivatives.
 
 
-import sys, os, platform, subprocess
+import sys, os, platform, subprocess, shutil, fileinput
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
@@ -60,6 +60,7 @@ module's toplevel folder).
 filename = os.path.expanduser('~')
 sysname = platform.system().lower()
 if sysname == 'darwin':
+  app_dir = os.path.join(filename, 'Applications')
   if os.getenv('SHELL') == '/bin/zsh':
     filename = os.path.join(filename, '.zprofile')
   else:
@@ -67,13 +68,55 @@ if sysname == 'darwin':
 else:
   filename = os.path.join(filename, '.bashrc')
 
-
 # check for the -remove flag:
 remove = False
 if '-remove' in sys.argv[1:]:
   remove = True
   sys.argv.remove ('-remove')
 
+if sysname == 'darwin':
+  for app in ['MRView.app','SHView.app']:
+    removed_link = False
+    target = os.path.join(bin_dir,app)
+    if not os.path.exists(app_dir):
+      os.mkdir(app_dir)
+    destination = os.path.join(app_dir,app)
+    if os.path.exists(destination):
+      if os.path.islink(destination):
+        if remove:
+          print ('Symbolic link "''' + destination + '" successfully removed')
+        removed_link = True
+        os.remove(destination)
+      else:
+        print('ERROR:',app_dir,'already contains', app, 'that is not a symlink')
+        sys.exit(1)
+    if not remove:
+      if os.path.isdir(target):
+        os.symlink(target,destination,target_is_directory=True)
+        if removed_link:
+          print ('Symbolic link "''' + destination + '" successfully updated')
+        else:
+          print ('Symbolic link "''' + destination + '" successfully created')
+
+if sysname == 'linux':
+  if remove or os.path.exists(os.path.join(bin_dir,'mrview')):
+    xdg_action = 'install'
+    if remove:
+      xdg_action = 'uninstall'
+    try:
+      for s in ['16', '32', '48', '64', '128']:
+        for t in ['mrtrix', 'mrtrix-gz', 'nifti', 'nifti-gz', 'mgh', 'mgz', 'analyze']:
+          subprocess.call(['xdg-icon-resource', xdg_action, '--context', 'apps', '--size', s, 'icons/desktop/' + s + 'x' + s + '/mrtrix.png', 'application-x-' + t])
+      print('xdg icon resources ' + xdg_action + 'ed')
+      subprocess.call(['xdg-mime', xdg_action, 'mrtrix-mime.xml'])
+      print('xdg mime info ' + xdg_action + 'ed')
+      shutil.copy('mrtrix-mrview.desktop','tmp/mrtrix-mrview.desktop')
+      for line in fileinput.input('tmp/mrtrix-mrview.desktop', inplace=True):
+        print(line.replace('mrview', bin_dir + '/mrview').rstrip('\n'))
+      subprocess.call(['xdg-desktop-menu', xdg_action, 'tmp/mrtrix-mrview.desktop'])
+      print('xdg desktop menu ' + xdg_action + 'ed')
+    except FileNotFoundError:
+      print ('xdg tools not available')
 
 # check whether destination file has been specified explicitly:
 if len(sys.argv) > 2:
@@ -155,6 +198,5 @@ if not remove:
 
 with open (filename, 'w') as f:
   f.write (output)
-print ('File "''' + filename + '" succesfully updated')
+print ('File "''' + filename + '" successfully updated')
 print ('(Close terminal and open a new one for change to take effect)')
-
