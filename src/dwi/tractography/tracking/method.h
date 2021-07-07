@@ -76,7 +76,13 @@ namespace MR
             virtual term_t next() = 0;
             virtual float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) = 0;
 
-            virtual void reverse_track() { if (act_method_additions) act().reverse_track(); }
+            virtual void reverse_track (GeneratedTrack& tck, const Eigen::Vector3f& seed_dir) {
+              if (act_method_additions)
+                act().reverse_track();
+              tck.reverse();
+              pos = tck.back();
+              dir = -seed_dir;
+            }
             virtual void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step);
 
             bool check_seed();
