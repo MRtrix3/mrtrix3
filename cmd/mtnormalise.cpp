@@ -350,7 +350,7 @@ void compute_balance_factors (
     Eigen::VectorXd& balance_factors)
 {
   Eigen::MatrixXd scaled_data = data.transpose().array().rowwise() / field.transpose().array();
-  for (size_t n = 0; n < scaled_data.cols(); ++n) {
+  for (ssize_t n = 0; n < scaled_data.cols(); ++n) {
     if (!weights[n])
       scaled_data.col(n).array() = 0.0;
   }
