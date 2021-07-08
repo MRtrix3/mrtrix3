@@ -17,6 +17,11 @@ Usage
 
 -  *input*: The input DWI series to be checked
 
+Description
+-----------
+
+Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.
+
 Options
 -------
 
