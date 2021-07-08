@@ -104,7 +104,11 @@ void usage ()
     REFERENCES
     + "Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. " // Internal
     "Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. "
-    "In Proc. ISMRM, 2017, 26, 3541";
+    "In Proc. ISMRM, 2017, 26, 3541"
+    + "Dhollander, T.; Tabbara, R.; Rosnarho-Tornstrand, J.; Tournier, J.-D.; Raffelt, D. & Connelly, A. " // Internal
+    "Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. "
+    "In Proc. ISMRM, 2021, 29, 2472";
+;
 
 }
 
