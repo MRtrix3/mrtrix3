@@ -16,6 +16,7 @@
 
 #include "dwi/gradient.h"
 #include "file/nifti_utils.h"
+#include "dwi/shells.h"
 
 namespace MR
 {
@@ -253,11 +254,12 @@ namespace MR
         Eigen::Array<default_type, Eigen::Dynamic, 1> squared_norms = grad.leftCols(3).rowwise().squaredNorm();
         // ensure interpreted directions are always normalised
         // also make sure that directions of [0, 0, 0] don't affect subsequent calculations
+        bool warnambiguous = false;
         for (ssize_t row = 0; row != grad.rows(); ++row) {
           if (squared_norms[row])
             grad.row(row).template head<3>().array() /= std::sqrt(squared_norms[row]);
           else
-            squared_norms[row] = 1.0;
+            warnambiguous = warnambiguous || ( grad.row(row)[3] > bzero_threshold() );
         }
         // modulate verbosity of message & whether or not header is modified
         // based on magnitude of effect of normalisation
@@ -272,6 +274,9 @@ namespace MR
         if (( requires_bvalue_scaling && bvalue_scaling == BValueScalingBehaviour::Auto ) ||
             bvalue_scaling == BValueScalingBehaviour::UserOn ) {
           grad.col(3).array() *= squared_norms;
+          if (warnambiguous)
+            WARN ("Ambiguous [ 0 0 0 non-zero ] entries found in DW gradient table. "
+                  "These will be interpreted as b=0 volumes unless -bvalue_scaling is disabled.");
           INFO ("b-values scaled by the square of DW gradient norm "
               "(maximum scaling factor = " + str(max_scaling_factor) + ")");
         }
