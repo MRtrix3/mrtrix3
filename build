@@ -197,13 +197,10 @@ def colorize(s):
 def pipe_errors_to_less_handler():
   global error_stream
   if error_stream:
-    [ fid, name ] = tempfile.mkstemp()
-    fid = os.fdopen (fid, 'wb')
-    fid.write (colorize(error_stream).encode (errors='ignore'))
-    fid.close()
-    os.system ("less -RX " + name)
-    os.unlink (name)
-
+    with tempfile.NamedTemporaryFile() as tf:
+      tf.write (colorize(error_stream).encode (errors='ignore'))
+      tf.flush()
+      os.system ("less -RX " + tf.name)
 
 
 
@@ -319,7 +316,7 @@ def is_likely_text(filename, nbytes=1024):
 
     try:
       chunk.decode('utf-8')
-      log('is_likely_text: ' + filename + 'utf-8 encoded \n')
+      log('is_likely_text: ' + filename + ': utf-8 encoded \n')
       return True
     except UnicodeDecodeError:
       pass
@@ -391,7 +388,6 @@ for arg in sys.argv[1:]:
     targets = [ 'clean' ]
   else:
     targets.append(arg)
-
 
 
 
@@ -1447,14 +1443,14 @@ elif dependencies==2:
 Printing dependencies for all files:
 
 ''')
-  for entry in todo.keys():
-    todo[entry].display()
+  for entry in todo.values():
+    entry.display()
   sys.exit (0)
 
 todo_tmp = {}
-for item in todo.keys():
-  if todo[item].action != '--' and todo[item].need_rebuild():
-    todo_tmp[item] = todo[item]
+for label, item in todo.items():
+  if item.action != '--' and item.need_rebuild():
+    todo_tmp[label] = item
 todo = todo_tmp
 
 log ('TODO list contains ' + str(len(todo)) + ''' items

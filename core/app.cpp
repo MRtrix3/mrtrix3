@@ -939,11 +939,10 @@ namespace MR
 
 
 
-
     const Option* match_option (const char* arg)
     {
-      if (arg[0] == '-' && arg[1] && !isdigit (arg[1]) && arg[1] != '.') {
-        while (*arg == '-') arg++;
+      if (consume_dash (arg) && *arg && !isdigit (*arg) && *arg != '.') {
+        while (consume_dash(arg));
         vector<const Option*> candidates;
         std::string root (arg);
 
@@ -1401,7 +1400,7 @@ namespace MR
         std::string msg = std::string ("unexpected value supplied for ");
         if (opt) msg += std::string ("option \"") + opt->id;
         else msg += std::string ("argument \"") + arg->id;
-        msg += std::string ("\" (valid choices are: ") + join (choices, ", ") + ")";
+        msg += std::string ("\" (received \"" + std::string(p) + "\"; valid choices are: ") + join (choices, ", ") + ")";
         throw Exception (msg);
       }
       assert (0);
