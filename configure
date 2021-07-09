@@ -171,6 +171,10 @@ ENVIRONMENT VARIABLES
         Note that this path will be stored in the config file and used during
         subsequent invocations of the build process. It only needs to be
         specified correctly at configure time.
+
+   CXXSTD
+        Set the version of the C++ standard to use. The minimum (and default)
+        is c++11. To use Qt6, you will need to set this to c++17.
 '''
 
 system = platform.system().lower()
@@ -301,6 +305,11 @@ else:
 log ('PATH set to: ' + path)
 
 
+cpp_std = 'c++11'
+if 'CXXSTD' in os.environ.keys():
+  std = os.environ['CXXSTD']
+  if std:
+    cpp_std = std
 
 
 # Test Python version
@@ -318,7 +327,7 @@ cpp = ld = None
 
 cxx = [ 'clang++', 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-std=c++11', '-DMRTRIX_BUILD_TYPE="'+build_type+'"' ]
+cpp_flags = [ '-std='+cpp_std, '-DMRTRIX_BUILD_TYPE="'+build_type+'"' ]
 
 ld_args = 'OBJECTS LINKFLAGS -o EXECUTABLE'.split()
 ld_flags = []
@@ -566,7 +575,7 @@ def compile (source, compiler_flags, linker_flags): # pylint: disable=redefined-
 
 
 def get_flags (default=None, env=None, pkg_config_flags=None):
-  """Return a list of the flags required for a given packagei
+  """Return a list of the flags required for a given package
 
   If 'env' is defined, it will check whether the corresponding environment
   variable is set, and if so return its contents. If 'pkg_config_flags' is set,
@@ -1267,7 +1276,7 @@ int main() { Foo f; }
       with open (os.path.join (qt_dir.name, 'qt.cpp'), 'w', encoding='utf-8') as f:
         f.write (filetext)
 
-      filetext = 'CONFIG += c++11'
+      filetext = 'CONFIG += ' + cpp_std
       if debug:
         filetext += ' debug'
       if [int(i) for i in qmake_version.split('.')][0] == 6:
