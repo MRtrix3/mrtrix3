@@ -139,10 +139,10 @@ struct LoopFixelsInVoxelWithMax { NOMEMALIGN
     const std::tuple<DataType&...> data;
     FORCE_INLINE Run (const index_type num_fixels, const index_type max_fixels, const index_type offset, const std::tuple<DataType&...>& data) :
       num_fixels (num_fixels), max_fixels (max_fixels), offset (offset), fixel_index (0), data (data) {
-      apply (set_offset (offset), data);
+        MR::apply (set_offset (offset), data);
     }
     FORCE_INLINE operator bool() const { return max_fixels ? (fixel_index < max_fixels) : (fixel_index < num_fixels); }
-    FORCE_INLINE void operator++() { if (!padding()) apply (inc_fixel (), data); ++fixel_index; }
+    FORCE_INLINE void operator++() { if (!padding()) MR::apply (inc_fixel (), data); ++fixel_index; }
     FORCE_INLINE void operator++(int) { operator++(); }
     FORCE_INLINE bool padding() const { return (max_fixels && fixel_index >= num_fixels); }
     FORCE_INLINE index_type count() const { return max_fixels ? max_fixels : num_fixels; }
