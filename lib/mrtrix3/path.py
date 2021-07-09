@@ -89,7 +89,8 @@ def make_temporary(suffix): #pylint: disable=unused-variable
       if is_directory:
         os.makedirs(temp_path)
       else:
-        open(temp_path, 'a').close()
+        with open(temp_path, 'a'):
+          pass
       app.debug(temp_path)
       return temp_path
     except OSError as exception:

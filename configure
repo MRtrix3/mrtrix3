@@ -340,7 +340,7 @@ class TempFile:
   def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=redefined-outer-name
       log ('error deleting temporary file "' + self.name + '": ' + excp.strerror)
 
 
@@ -355,7 +355,7 @@ class DeleteAfter:
   def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=redefined-outer-name
       log ('error deleting temporary file "' + self.name + '": ' + excp.strerror)
 
 
@@ -376,7 +376,7 @@ class TempDir:
           os.unlink (fullpath)
       os.rmdir (self.name)
 
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=redefined-outer-name
       log ('error deleting temporary folder "' + self.name + '": ' + excp.strerror)
 
 
@@ -514,10 +514,10 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
       log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
 
-  except OSError as e:
-    log ('error invoking command "' + cmd[0] + '": ' + e.strerror + '\n>>\n\n')
+  except OSError as excp: # pylint: disable=redefined-outer-name
+    log ('error invoking command "' + cmd[0] + '": ' + excp.strerror + '\n>>\n\n')
     raise exception from e
-  except Exception as excp:
+  except Exception as excp: # pylint: disable=redefined-outer-name
     error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
   else:
     if raise_on_non_zero_exit_code and process.returncode != 0:
@@ -660,7 +660,7 @@ def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cfla
     error ('''runtime error!
 
    Unable to configure ''' + name + configure_log_hint)
-  except Exception as excp:
+  except Exception as excp: # pylint: disable=redefined-outer-name
     error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
@@ -1294,18 +1294,19 @@ int main() { Foo f; }
       for qt_makefile in [ 'Makefile', 'Makefile.Release' ]:
         try:
           log ("reading Qt parameters from file '" + qt_makefile + "'... ")
-          for line in open (os.path.join (qt_dir.name, qt_makefile)):
-            line = line.strip()
-            if line.startswith ('DEFINES'):
-              qt_defines = shlex.split (line[line.find('=')+1:].strip())
-            elif line.startswith ('CXXFLAGS'):
-              qt_cflags = shlex.split (line[line.find('=')+1:].strip())
-            elif line.startswith ('INCPATH'):
-              qt_includes = shlex.split (line[line.find('=')+1:].strip())
-            elif line.startswith ('LIBS'):
-              qt_libs = shlex.split (line[line.find('=')+1:].strip())
-            elif line.startswith ('LFLAGS'):
-              qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
+          with open (os.path.join (qt_dir.name, qt_makefile)) as fd:
+            for line in fd:
+              line = line.strip()
+              if line.startswith ('DEFINES'):
+                qt_defines = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('CXXFLAGS'):
+                qt_cflags = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('INCPATH'):
+                qt_includes = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('LIBS'):
+                qt_libs = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('LFLAGS'):
+                qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
           if qt_defines or qt_cflags or qt_includes or qt_libs or qt_ldflags:
             log ('ok\n')
             log ('  qt_defines: ' + str(qt_defines) + '\n')
