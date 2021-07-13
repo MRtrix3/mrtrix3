@@ -803,8 +803,8 @@ def execute(): #pylint: disable=unused-variable
     if app.ARGS.topup_options:
       topup_manual_options = ' ' + app.ARGS.topup_options.strip()
     topup_output = run.command(topup_cmd + ' --imain=topup_in.nii --datain=topup_datain.txt --out=field --fout=field_map' + fsl_suffix + ' --config=' + topup_config_path + ' --verbose' + topup_manual_options)
-    with open('topup_output.txt', 'w') as topup_output_file:
-      topup_output_file.write(topup_output.stdout + '\n' + topup_output.stderr)
+    with open('topup_output.txt', 'wb') as topup_output_file:
+      topup_output_file.write((topup_output.stdout + '\n' + topup_output.stderr + '\n').encode('utf-8', errors='replace'))
     if app.VERBOSITY > 1:
       app.console('Output of topup command:')
       sys.stderr.write(topup_output.stdout + '\n' + topup_output.stderr + '\n')
@@ -1044,7 +1044,7 @@ def execute(): #pylint: disable=unused-variable
         run.command('eddy_quad ' + eddyqc_prefix + eddyqc_options)
       except run.MRtrixCmdError as exception:
         with open('eddy_quad_failure_output.txt', 'wb') as eddy_quad_output_file:
-          eddy_quad_output_file.write(str(exception))
+          eddy_quad_output_file.write(str(exception).encode('utf-8', errors='replace'))
         app.debug(str(exception))
         app.warn('Error running automated EddyQC tool \'eddy_quad\'; QC data written to "' + eddyqc_path + '" will be files from "eddy" only')
         # Delete the directory if the script only made it partway through
