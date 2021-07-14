@@ -679,7 +679,7 @@ namespace MR
 
           // Tool menu:
           tool_group = new QActionGroup (this);
-          tool_group->setExclusive (false);
+          tool_group->setExclusionPolicy (QActionGroup::ExclusionPolicy::None);
           connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
 
           menu = new QMenu (tr ("Tools"), this);
@@ -1025,7 +1025,7 @@ namespace MR
           return;
 
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (tools_floating);
-        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (visibility_slot (bool)));
 
         if (!tools_floating) {
 
