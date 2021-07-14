@@ -186,6 +186,7 @@ namespace MR
 
         class __Action__ : public QAction
         { NOMEMALIGN
+          Q_OBJECT
           public:
             __Action__ (QActionGroup* parent,
                         const char* const name,
@@ -202,6 +203,9 @@ namespace MR
 
             virtual Dock* create (bool floating) = 0;
             Dock* dock;
+
+            public slots:
+              void visibility_slot (bool);
         };
         //! \endcond
 
