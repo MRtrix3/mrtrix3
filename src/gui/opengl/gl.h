@@ -22,7 +22,7 @@
 
 #include <QtGlobal>
 #include <QtWidgets>
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include "gui/opengl/gl_core_3_3.h"
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 5, 0)
@@ -368,4 +368,3 @@ namespace MR
 
 
 #endif
-

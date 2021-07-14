@@ -255,7 +255,7 @@ namespace MR
           GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
 
-          setDockOptions (AllowTabbedDocks | VerticalTabs);
+          setDockOptions (AllowTabbedDocks);
           setDocumentMode (true);
 
           //CONF option: IconSize
@@ -273,7 +273,7 @@ namespace MR
           QMenu* menu;
           QToolButton* button;
 
-          setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
+          setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::North);
 
           //CONF option: MRViewDockFloating
           //CONF default: 0 (false)
@@ -678,7 +678,7 @@ namespace MR
 
           // Tool menu:
           tool_group = new QActionGroup (this);
-          tool_group->setExclusive (false);
+          tool_group->setExclusionPolicy (QActionGroup::ExclusionPolicy::None);
           connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
 
           menu = new QMenu (tr ("Tools"), this);
@@ -1024,7 +1024,7 @@ namespace MR
           return;
 
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (tools_floating);
-        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (visibility_slot (bool)));
 
         if (!tools_floating) {
 
@@ -1675,7 +1675,7 @@ namespace MR
 
         int group = get_mouse_mode();
 
-        if (buttons_ == Qt::MidButton)
+        if (buttons_ == Qt::MiddleButton)
           mouse_action = Pan;
         else if (group == 1) {
           if (buttons_ == Qt::LeftButton) {
@@ -2254,6 +2254,3 @@ namespace MR
     }
   }
 }
-
-
-
