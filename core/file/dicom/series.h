@@ -33,8 +33,8 @@ namespace MR {
           Series (Study* parent, const std::string& series_name, size_t series_number, const std::string& image_type,
               const std::string& series_modality = "", const std::string& series_date = "", const std::string& series_time = "") :
             study (parent), name (series_name), image_type (image_type), modality (series_modality),
-            date (series_date), time (series_time) { 
-              number = series_number; 
+            date (series_date), time (series_time) {
+              number = series_number;
             }
 
           Study* study;
@@ -47,14 +47,20 @@ namespace MR {
           void read () {
             ProgressBar progress ("reading DICOM series \"" + name + "\"", size());
             for (size_t i = 0; i < size(); i++) {
-              (*this)[i]->read(); 
+              (*this)[i]->read();
               ++progress;
             }
           }
 
           vector<int> count () const;
           bool operator< (const Series& s) const {
-            return number < s.number;
+            if (number != s.number)
+              return number < s.number;
+            if (date.size() && date != s.date)
+              return date < s.date;
+            if (time.size() && time != s.time)
+              return time < s.time;
+            return image_type < s.image_type;
           }
 
           friend std::ostream& operator<< (std::ostream& stream, const Series& item);
