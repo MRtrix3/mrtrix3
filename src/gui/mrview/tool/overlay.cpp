@@ -662,9 +662,9 @@ namespace MR
             for (size_t d = 3; d < overlay->image.ndim(); ++d) {
               SpinBox* vol_index = new SpinBox (this);
               vol_index->setMinimum (0);
+              vol_index->setMaximum (overlay->image.size(d) - 1);
               vol_index->setPrefix (qstr(str(d+1) + ": "));
               vol_index->setValue (overlay->image.index(d));
-              vol_index->setMaximum (overlay->image.size(d) - 1);
               vol_index->setEnabled (overlay->image.size(d) > 1);
               volume_index_layout->addWidget (vol_index, volume_index_layout->count()/3, volume_index_layout->count()%3);
               connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
