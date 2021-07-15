@@ -79,6 +79,8 @@ namespace MR
 
   class Exception { NOMEMALIGN
     public:
+      Exception () { }
+
       Exception (const std::string& msg) {
         description.push_back (msg);
       }
