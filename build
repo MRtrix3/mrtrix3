@@ -184,9 +184,9 @@ bcolors = {
 def colorize(s):
   out = ''
   for l in s.splitlines():
-    for st in bcolors:
-      if st in l:
-        l = l.replace (st, bcolors[st] + st) + '\033[0m'
+    for key, value in bcolors.items():
+      if key in l:
+        l = l.replace (key, value + key) + '\033[0m'
         break
     out += l + '\n'
   return out
@@ -197,13 +197,10 @@ def colorize(s):
 def pipe_errors_to_less_handler():
   global error_stream
   if error_stream:
-    [ fid, name ] = tempfile.mkstemp()
-    fid = os.fdopen (fid, 'wb')
-    fid.write (colorize(error_stream).encode (errors='ignore'))
-    fid.close()
-    os.system ("less -RX " + name)
-    os.unlink (name)
-
+    with tempfile.NamedTemporaryFile() as tf:
+      tf.write (colorize(error_stream).encode (errors='ignore'))
+      tf.flush()
+      os.system ("less -RX " + tf.name)
 
 
 
@@ -319,7 +316,7 @@ def is_likely_text(filename, nbytes=1024):
 
     try:
       chunk.decode('utf-8')
-      log('is_likely_text: ' + filename + 'utf-8 encoded \n')
+      log('is_likely_text: ' + filename + ': utf-8 encoded \n')
       return True
     except UnicodeDecodeError:
       pass
@@ -391,7 +388,6 @@ for arg in sys.argv[1:]:
     targets = [ 'clean' ]
   else:
     targets.append(arg)
-
 
 
 
@@ -539,7 +535,7 @@ cpp = cpp_flags = ld = ld_flags = ld_lib = ld_lib_flags = eigen_cflags = qt_cfla
 
 try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
-  exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used
+  exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used,consider-using-with
 except IOError:
   fail ('''no configuration file found!
 please run "./configure" prior to invoking this script
@@ -723,8 +719,8 @@ class Entry:
 
 
     [ Entry(item) for item in self.deps ] # pylint: disable=expression-not-assigned
-    dep_timestamp = [ todo[item].timestamp for item in todo if item in self.deps and not is_library(item) ]
-    dep_timestamp += [ todo[item].dep_timestamp for item in todo if item in self.deps and not is_library(item) ]
+    dep_timestamp = [ item.timestamp for name, item in todo.items() if name in self.deps and not is_library(name) ]
+    dep_timestamp += [ item.dep_timestamp for name, item in todo.items() if name in self.deps and not is_library(name) ]
     if dep_timestamp:
       self.dep_timestamp = max(dep_timestamp)
 
@@ -1096,13 +1092,13 @@ def build_next ():
       current = None
       with lock:
         if todo:
-          for item in todo:
-            if todo[item].currently_being_processed:
+          for label, item in todo.items():
+            if item.currently_being_processed:
               continue
-            unsatisfied_deps = set(todo[item].deps).intersection (todo.keys())
+            unsatisfied_deps = set(item.deps).intersection (todo.keys())
             if not unsatisfied_deps:
-              todo[item].currently_being_processed = True
-              current = item
+              item.currently_being_processed = True
+              current = label
               main_cindex+=1
               cindex = main_cindex
               break
@@ -1422,9 +1418,9 @@ if nogui:
   targets = nogui_targets
 
   nogui_todo = {}
-  for item in todo:
-    if not is_GUI_target (todo[item].name):
-      nogui_todo[item] = todo[item]
+  for label, item in todo.items():
+    if not is_GUI_target (item.name):
+      nogui_todo[label] = item
   todo = nogui_todo
 
 
@@ -1447,14 +1443,14 @@ elif dependencies==2:
 Printing dependencies for all files:
 
 ''')
-  for entry in todo:
-    todo[entry].display()
+  for entry in todo.values():
+    entry.display()
   sys.exit (0)
 
 todo_tmp = {}
-for item in todo:
-  if todo[item].action != '--' and todo[item].need_rebuild():
-    todo_tmp[item] = todo[item]
+for label, item in todo.items():
+  if item.action != '--' and item.need_rebuild():
+    todo_tmp[label] = item
 todo = todo_tmp
 
 log ('TODO list contains ' + str(len(todo)) + ''' items
