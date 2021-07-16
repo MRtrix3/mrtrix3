@@ -35,15 +35,15 @@ namespace MR {
             if (series_number == (*this)[n]->number) {
               if (image_type != (*this)[n]->image_type)
                 match = false;
-              if (series_modality.size() && (*this)[n]->modality.size()) 
-                if (series_modality != (*this)[n]->modality) 
+              if (series_modality.size() && (*this)[n]->modality.size())
+                if (series_modality != (*this)[n]->modality)
                   match = false;
               if (match) {
-                if (series_date.size() && (*this)[n]->date.size()) 
-                  if (series_date != (*this)[n]->date) 
+                if (series_date.size() && (*this)[n]->date.size())
+                  if (series_date != (*this)[n]->date)
                     match = false;
               }
-              if (match && !series_time_mismatch_warning_issued) {
+              if (match) {
                 float stime = NaN, stime_ref = NaN;
                 try {
                   stime = to<float> (series_time);
@@ -53,8 +53,12 @@ namespace MR {
                   INFO ("error reading DICOM series time - field does not exist or is empty?");
                 }
                 if (stime != stime_ref) {
-                  INFO ("WARNING: series times do not match - this may cause problem with series grouping");
-                  series_time_mismatch_warning_issued = true;
+                  if (!series_time_mismatch_warning_issued) {
+                    INFO ("WARNING: series times do not match - this may cause problem with series grouping");
+                    series_time_mismatch_warning_issued = true;
+                  }
+                  if (stime < stime_ref)
+                    (*this)[n]->time = series_time;
                 }
               }
               if (match)
@@ -81,13 +85,13 @@ namespace MR {
 
       std::ostream& operator<< (std::ostream& stream, const Study& item)
       {
-        stream << MR::printf ("    %-30s %-16s %10s %8s\n", 
-              item.name.c_str(), 
+        stream << MR::printf ("    %-30s %-16s %10s %8s\n",
+              item.name.c_str(),
               format_ID(item.ID).c_str(),
               format_date(item.date).c_str(),
               format_time(item.time).c_str() );
 
-        for (size_t n = 0; n < item.size(); n++) 
+        for (size_t n = 0; n < item.size(); n++)
           stream << *item[n];
 
         return stream;

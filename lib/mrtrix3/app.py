@@ -309,7 +309,8 @@ def make_scratch_dir(): #pylint: disable=unused-variable
     outfile.write(WORKING_DIR + '\n')
   with open(os.path.join(SCRATCH_DIR, 'command.txt'), 'w') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
-  open(os.path.join(SCRATCH_DIR, 'log.txt'), 'w').close()
+  with open(os.path.join(SCRATCH_DIR, 'log.txt'), 'w'):
+    pass
   # Also use this scratch directory for any piped images within run.command() calls,
   #   and for keeping a log of executed commands / functions
   run.shared.set_scratch_dir(SCRATCH_DIR)

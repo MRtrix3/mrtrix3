@@ -94,6 +94,9 @@ namespace MR
             image_list_view->setDragEnabled (true);
             image_list_view->viewport()->setAcceptDrops (true);
             image_list_view->setDropIndicatorShown (true);
+            image_list_view->setGridSize (QSize (200, 56));
+            image_list_view->setResizeMode(QListView::Adjust);
+            image_list_view->setTextElideMode (Qt::ElideLeft);
 
             image_list_model = new ODF_Model (this);
             image_list_view->setModel (image_list_model);

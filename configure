@@ -142,6 +142,12 @@ ENVIRONMENT VARIABLES
     TIFF_LINKFLAGS
         Any flags required to link with the TIFF library.
 
+    PNG_CFLAGS
+        Any flags required to compile with the libpng library.
+
+    PNG_LINKFLAGS
+        Any flags required to link with the libpng library.
+
     FFTW_CFLAGS
         Any flags required to compile with the FFTW library.
 
@@ -340,7 +346,7 @@ class TempFile:
   def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=redefined-outer-name
       log ('error deleting temporary file "' + self.name + '": ' + excp.strerror)
 
 
@@ -355,7 +361,7 @@ class DeleteAfter:
   def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=redefined-outer-name
       log ('error deleting temporary file "' + self.name + '": ' + excp.strerror)
 
 
@@ -376,7 +382,7 @@ class TempDir:
           os.unlink (fullpath)
       os.rmdir (self.name)
 
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=redefined-outer-name
       log ('error deleting temporary folder "' + self.name + '": ' + excp.strerror)
 
 
@@ -473,15 +479,15 @@ def qt_exec_hint (name):
 
 # other helper functions:
 
-def commit (name, variable):
-  cache.write (name + ' = ')
+def commit (outfile, name, variable):
+  outfile.write (name + ' = ')
   if isinstance (variable, list):
-    cache.write ('[')
+    outfile.write ('[')
     if variable:
-      cache.write(' \'' + '\', \''.join (variable) + '\' ')
-    cache.write (']\n')
+      outfile.write(' \'' + '\', \''.join (variable) + '\' ')
+    outfile.write (']\n')
   else:
-    cache.write ('\'' + variable + '\'\n')
+    outfile.write ('\'' + variable + '\'\n')
 
 
 
@@ -514,10 +520,10 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
       log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
 
-  except OSError as e:
-    log ('error invoking command "' + cmd[0] + '": ' + e.strerror + '\n>>\n\n')
+  except OSError as excp: # pylint: disable=redefined-outer-name
+    log ('error invoking command "' + cmd[0] + '": ' + excp.strerror + '\n>>\n\n')
     raise exception from e
-  except Exception as excp:
+  except Exception as excp: # pylint: disable=redefined-outer-name
     error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
   else:
     if raise_on_non_zero_exit_code and process.returncode != 0:
@@ -660,7 +666,7 @@ def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cfla
     error ('''runtime error!
 
    Unable to configure ''' + name + configure_log_hint)
-  except Exception as excp:
+  except Exception as excp: # pylint: disable=redefined-outer-name
     error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
@@ -1294,18 +1300,19 @@ int main() { Foo f; }
       for qt_makefile in [ 'Makefile', 'Makefile.Release' ]:
         try:
           log ("reading Qt parameters from file '" + qt_makefile + "'... ")
-          for line in open (os.path.join (qt_dir.name, qt_makefile)):
-            line = line.strip()
-            if line.startswith ('DEFINES'):
-              qt_defines = shlex.split (line[line.find('=')+1:].strip())
-            elif line.startswith ('CXXFLAGS'):
-              qt_cflags = shlex.split (line[line.find('=')+1:].strip())
-            elif line.startswith ('INCPATH'):
-              qt_includes = shlex.split (line[line.find('=')+1:].strip())
-            elif line.startswith ('LIBS'):
-              qt_libs = shlex.split (line[line.find('=')+1:].strip())
-            elif line.startswith ('LFLAGS'):
-              qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
+          with open (os.path.join (qt_dir.name, qt_makefile)) as fd:
+            for line in fd:
+              line = line.strip()
+              if line.startswith ('DEFINES'):
+                qt_defines = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('CXXFLAGS'):
+                qt_cflags = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('INCPATH'):
+                qt_includes = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('LIBS'):
+                qt_libs = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('LFLAGS'):
+                qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
           if qt_defines or qt_cflags or qt_includes or qt_libs or qt_ldflags:
             log ('ok\n')
             log ('  qt_defines: ' + str(qt_defines) + '\n')
@@ -1439,53 +1446,54 @@ elif not debug:
 
 
 # write out configuration:
-cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'config')
 
-sys.stdout.write ('\nwriting configuration to file \'' + cache_filename + '\': ')
+config_filename = os.path.join (os.path.dirname(sys.argv[0]), 'config')
 
-with open (cache_filename, 'w') as cache:
+sys.stdout.write ('\nwriting configuration to file \'' + config_filename + '\': ')
 
-  cache.write ("""#!/usr/bin/python3
+with open (config_filename, 'w') as config_file:
+
+  config_file.write ("""#!/usr/bin/python
   #
   # autogenerated by MRtrix configure script
   #
   # configure output:
   """)
   for line in config_report.splitlines():
-    cache.write ('# ' + line + '\n')
-  cache.write ('\n\n')
+    config_file.write ('# ' + line + '\n')
+  config_file.write ('\n\n')
 
-  cache.write ("PATH = r'" + path + "'\n")
+  config_file.write ("PATH = r'" + path + "'\n")
 
-  commit ('obj_suffix', obj_suffix)
-  commit ('exe_suffix', exe_suffix)
-  commit ('lib_prefix', lib_prefix)
-  commit ('lib_suffix', lib_suffix)
-  commit ('cpp', cpp)
-  commit ('cpp_flags', cpp_flags)
-  commit ('ld', ld)
-  commit ('ld_flags', ld_flags)
-  commit ('runpath', runpath)
-  cache.write ('ld_enabled = ')
+  commit (config_file, 'obj_suffix', obj_suffix)
+  commit (config_file, 'exe_suffix', exe_suffix)
+  commit (config_file, 'lib_prefix', lib_prefix)
+  commit (config_file, 'lib_suffix', lib_suffix)
+  commit (config_file, 'cpp', cpp)
+  commit (config_file, 'cpp_flags', cpp_flags)
+  commit (config_file, 'ld', ld)
+  commit (config_file, 'ld_flags', ld_flags)
+  commit (config_file, 'runpath', runpath)
+  config_file.write ('ld_enabled = ')
   if noshared:
-    cache.write ('False\n')
+    config_file.write ('False\n')
   else:
-    cache.write ('True\n')
-    commit ('ld_lib', ld_lib)
-    commit ('ld_lib_flags', ld_lib_flags)
-  commit ('eigen_cflags', eigen_cflags)
+    config_file.write ('True\n')
+    commit (config_file, 'ld_lib', ld_lib)
+    commit (config_file, 'ld_lib_flags', ld_lib_flags)
+  commit (config_file, 'eigen_cflags', eigen_cflags)
 
-  commit ('moc', moc)
-  commit ('rcc', rcc)
-  commit ('qt_cflags', qt_cflags)
-  commit ('qt_ldflags', qt_ldflags)
-  cache.write ('nogui = ')
+  commit (config_file, 'moc', moc)
+  commit (config_file, 'rcc', rcc)
+  commit (config_file, 'qt_cflags', qt_cflags)
+  commit (config_file, 'qt_ldflags', qt_ldflags)
+  config_file.write ('nogui = ')
   if nogui:
-    cache.write ('True\n')
+    config_file.write ('True\n')
   else:
-    cache.write ('False\n')
+    config_file.write ('False\n')
 
   if dev:
-    cache.write('bash_completion = True\ncommand_doc = True\n')
+    config_file.write('bash_completion = True\ncommand_doc = True\n')
 
 sys.stdout.write ('ok\n\n')

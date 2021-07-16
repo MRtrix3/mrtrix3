@@ -23,6 +23,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app, _version #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Check the orientation of the diffusion gradient table')
+  cmdline.add_description('Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.')
   cmdline.add_description('Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to '
                           'derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. '
                           'More information on mask derivation from DWI data can be found at the following link: \n'

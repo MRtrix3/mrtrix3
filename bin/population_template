@@ -17,7 +17,7 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import collections, json, math, os, re, shlex, shutil, sys
+import json, math, os, re, shlex, shutil, sys
 
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
@@ -86,13 +86,14 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 
-def abspath(first, *arg):
-  return os.path.abspath(os.path.join(first, *arg))
+def abspath(arg, *args):
+  return os.path.abspath(os.path.join(arg, *args))
 
 
-def relpath(first, *arg):
+def relpath(arg, *args):
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
-  return os.path.relpath(os.path.join(first, *arg), app.WORKING_DIR)
+  return os.path.relpath(os.path.join(arg, *args), app.WORKING_DIR)
+
 
 def copy(src, dst, follow_symlinks=True):
   """Copy data but do not set mode bits. Return the file's destination.
@@ -380,7 +381,7 @@ class Input:
 
     self.uid = uid
     assert self.uid, "UID empty"
-    assert self.uid.count(' ') == 0, 'UID contains whitespace'
+    assert self.uid.count(' ') == 0, 'UID "%s" contains whitespace' % self.uid
 
     assert len(directories) == len(filenames)
     self.ims_filenames = filenames
@@ -447,10 +448,11 @@ class Input:
   msk_path = property(get_msk_path)
 
 
-def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
+def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whitespace_repl='_'):
   """
     matches input images across contrasts and pair them with masks.
     extracts unique identifiers from mask and image filenames by stripping common pre and postfix (per contrast and for masks)
+    unique identifiers contain ASCII letters, numbers and '_' but no whitespace which is replaced by whitespace_repl
 
     in_files: list of lists
       the inner list holds filenames specific to a contrast
@@ -467,6 +469,24 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
   from mrtrix3 import MRtrixError, app, path, image  # pylint: disable=no-name-in-module, import-outside-toplevel
   contrasts = contrasts.suff
   inputs = []
+  def paths_to_file_uids(paths, prefix, postfix):
+    """ strip pre and postfix from filename, replace whitespace characters """
+    uid_path = dict()
+    uids = []
+    for path in paths:
+      uid = re.sub(re.escape(postfix)+'$', '', re.sub('^'+re.escape(prefix), '', os.path.split(path)[1]))
+      uid = re.sub(r'\s+', whitespace_repl, uid)
+      if not uid:
+        raise MRtrixError('No uniquely identifiable part of filename "' + path + '" '
+                          'after prefix and postfix substitution '
+                          'with prefix "' + prefix + '" and postfix "' + postfix + '"')
+      app.debug('UID mapping: "' + path + '" --> "' + uid + '"')
+      if uid in uid_path:
+        raise MRtrixError('unique file identifier is not unique: "' + uid + '" mapped to "' + path + '" and "' + uid_path[uid] +'"')
+      uid_path[uid] = path
+      uids.append(uid)
+    return uids
+
   # mask uids
   mask_uids = []
   if mask_files:
@@ -474,12 +494,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
     if not mask_common_postfix:
       raise MRtrixError('mask filenames do not have a common postfix')
     mask_common_prefix = get_common_prefix([os.path.split(m)[1] for m in mask_files])
-    for mfile in mask_files:
-      mask_uids.append(re.sub(re.escape(mask_common_postfix)+'$', '',
-                              re.sub('^'+re.escape(mask_common_prefix), '', os.path.split(mfile)[1])))
-    if len(mask_uids) != len(set(mask_uids)):
-      non_unique = [uid for uid, count in collections.Counter(mask_uids).items() if count > 1]
-      MRtrixError("mask identifiers not unique:\n" + '""\n'.join(non_unique))
+    mask_uids = paths_to_file_uids(mask_files, mask_common_prefix, mask_common_postfix)
     if app.VERBOSITY > 1:
       app.console('mask uids:' + str(mask_uids))
 
@@ -500,15 +515,8 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
 
   c_uids = []
   for cid, files in enumerate(in_files):
-    c_uids.append([re.sub(re.escape(common_postfix[cid])+'$', '',
-                          re.sub('^'+re.escape(common_prefix[cid]), '', fname)) for fname in files])
-    if not all(len(_uid) for _uid in c_uids[-1]):
-      MRtrixError("No uniquely identifiable part of filename found in file :\n" + '""\n'.join(non_unique))
+    c_uids.append(paths_to_file_uids(files, common_prefix[cid], common_postfix[cid]))
 
-  for uids in c_uids:
-    if len(uids) != len(set(uids)):
-      non_unique = [uid for uid, count in collections.Counter(uids).items() if count > 1]
-      MRtrixError("image identifiers not unique:\n" + '""\n'.join(non_unique))
   if app.VERBOSITY > 1:
     app.console('uids by contrast:' + str(c_uids))
 
