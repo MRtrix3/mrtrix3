@@ -35,6 +35,7 @@ ColourMapButton::ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs,
     QToolButton(parent),
     observer(obs),
     core_colourmaps_actions(new QActionGroup(parent)),
+    invert_scale_action (nullptr),
     fixed_colour_index (0)
 {
     setToolTip(tr("Colourmap menu"));
@@ -122,9 +123,9 @@ void ColourMapButton::init_customise_state_menu_items()
     show_colour_bar->setChecked(true);
     addAction(show_colour_bar);
 
-    auto invert_scale = colourmap_menu->addAction(tr("Invert"), this, SLOT(invert_colourmap_slot(bool)));
-    invert_scale->setCheckable(true);
-    addAction(invert_scale);
+    invert_scale_action = colourmap_menu->addAction(tr("Invert"), this, SLOT(invert_colourmap_slot(bool)));
+    invert_scale_action->setCheckable(true);
+    addAction(invert_scale_action);
 
     QAction* reset_intensity = colourmap_menu->addAction(tr("Reset intensity"), this, SLOT(reset_intensity_slot()));
     addAction(reset_intensity);
@@ -160,6 +161,12 @@ void ColourMapButton::set_colourmap_index(size_t index)
         action->setChecked(true);
         select_colourmap_slot(action);
     }
+}
+
+void ColourMapButton::set_scale_inverted(bool yesno)
+{
+    assert (invert_scale_action != nullptr);
+    invert_scale_action->setChecked (yesno);
 }
 
 
