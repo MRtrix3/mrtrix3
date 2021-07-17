@@ -24,7 +24,7 @@ Description
 Peaks of the spherical harmonic function in each voxel are located by commencing a Newton search along each of a set of pre-specified directions
 
 The spherical harmonic coefficients are stored according the conventions described the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.2/concepts/spherical_harmonics.html
+https://mrtrix.readthedocs.io/en/3.0.3/concepts/spherical_harmonics.html
 
 Options
 -------
