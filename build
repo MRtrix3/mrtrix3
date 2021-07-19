@@ -136,9 +136,10 @@ cp -R ${PREFIX}-src/share  ${PREFIX}
 cp -R ${PREFIX}-src/matlab ${PREFIX}
 rm -rf ${PREFIX}-src
 cp -a ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Network,Svg,Widgets}.*.dylib ${PREFIX}/lib
-mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats}
+mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats,styles}
 cp -a ${PREFIX}_dep/plugins/platforms/libqcocoa.dylib  ${PREFIX}/bin/plugins/platforms
 cp -a ${PREFIX}_dep/plugins/imageformats/libqsvg.dylib ${PREFIX}/bin/plugins/imageformats
+cp -a ${PREFIX}_dep/plugins/styles/libqmacstyle.dylib ${PREFIX}/bin/plugins/styles
 rm -rf ${PREFIX}_dep
 
 cp -R ${PLD}/MRView.app ${PREFIX}/bin
