@@ -16,38 +16,24 @@
 # For more details, see http://www.mrtrix.org/.
 
 
-#SUPPORTED_OPS = ['mean', 'median', 'sum', 'product', 'rms', 'norm', 'var', 'std', 'min', 'max', 'absmax', 'magmax']
-
-
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Remika Mito (remika.mito@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Create a glass brain from mask input')
-  cmdline.add_description('The output of this command is a 4D image, where '
-                          'each volume corresponds to a b-value shell (in order of increasing b-value), and '
-                          'the intensities within each volume correspond to the chosen statistic having been computed from across the DWI volumes belonging to that b-value shell.')
+  #cmdline.add_description('The output of this command is a 4D image, where '
+  #                        'each volume corresponds to a b-value shell (in order of increasing b-value), and '
+  #                        'the intensities within each volume correspond to the chosen statistic having been computed from across the DWI volumes belonging to that b-value shell.')
   cmdline.add_argument('input', help='The input mask image')
-  #cmdline.add_argument('operation**', choices=SUPPORTED_OPS, help='The operation to be applied to each shell; this must be one of the following: ' + ', '.join(SUPPORTED_OPS))
   cmdline.add_argument('output', help='The output glass brain image')
   cmdline.add_argument('-scale', type=int, default=2, help='Provide scaling value. Default: 2')
   cmdline.add_argument('-smooth', type=int, default=1, help='Provide smoothing value. Default: 1')
-  cmdline.add_example_usage('To create glass brain image from mask image',
-                            'mask2glass mask.mif glass.mif')
-  #app.add_dwgrad_import_options(cmdline)
 
 
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
-  # check inputs and outputs
   ### something here to check mask; if not convert to mask?? ###
-  # dwi_header = image.Header(path.from_user(app.ARGS.input, False))
-  # if len(dwi_header.size()) != 4:
-  #   raise MRtrixError('Input image must be a 4D image')
-  # gradimport = app.read_dwgrad_import_options()
-  # if not gradimport and 'dw_scheme' not in dwi_header.keyval():
-  #   raise MRtrixError('No diffusion gradient table provided, and none present in image header')
   app.check_output_path(app.ARGS.output)
 
   # import data to scratch directory
@@ -55,14 +41,14 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif') + ' -datatype bit')
   app.goto_scratch_dir()
 
-  scale_option = '-scale ' + str(app.ARGS.scale)
+  scale_option = ' -scale ' + str(app.ARGS.scale)
   smooth_option = ' -stdev ' + str(app.ARGS.smooth)
 
   # run scaling step
-  run.command('mrgrid ' + 'in.mif ' + 'regrid ' + scale_option + ' upsampled.mif')
+  run.command('mrgrid in.mif regrid upsampled.mif' + scale_option)
 
   # run upsampling step
-  run.command('mrfilter ' + 'upsampled.mif smooth' + smooth_option + ' upsampled_smooth.mif')
+  run.command('mrfilter upsampled.mif smooth upsampled_smooth.mif' + smooth_option)
 
   # threshold image
   run.command('mrthreshold upsampled_smooth.mif -abs 0.5 upsampled_smooth_thresh.mif')
@@ -74,7 +60,9 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc upsampled_smooth_thresh_dilate.mif upsampled_smooth_thresh.mif -subtract out.mif')
 
   # create output image
-  run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+  run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output),
+              mrconvert_keyval=path.from_user(app.ARGS.input, False),
+              force=app.FORCE_OVERWRITE)
 
 # Execute the script
 import mrtrix3 #pylint: disable=wrong-import-position
