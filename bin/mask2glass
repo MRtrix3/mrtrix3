@@ -25,8 +25,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   #                        'the intensities within each volume correspond to the chosen statistic having been computed from across the DWI volumes belonging to that b-value shell.')
   cmdline.add_argument('input', help='The input mask image')
   cmdline.add_argument('output', help='The output glass brain image')
-  cmdline.add_argument('-scale', type=int, default=2, help='Provide scaling value. Default: 2')
-  cmdline.add_argument('-smooth', type=int, default=1, help='Provide smoothing value. Default: 1')
+  cmdline.add_argument('-scale', type=float, default=2.0, help='Provide resolution usscaling value; default = 2.0')
+  cmdline.add_argument('-smooth', type=float, default=1.0, help='Provide standard deviation of smoothing (in mm); default = 1.0')
 
 
 def execute(): #pylint: disable=unused-variable
