@@ -41,7 +41,20 @@ the [community forum](http://community.mrtrix.org/). Also consider perusing
 the [online documentation](https://mrtrix.readthedocs.io/en/latest/) for
 the software, in case your issue has already been described there.
 
-## Types of contributions
+## Contribution of content
+
+Thanks for your interest in making direct contributions to *MRtrix3*!
+We are excited to expand the breadth of researchers involved in improving
+and expanding this software, and to ensure that all who make such
+contributions receive appropriate acknowledgement through Git.
+
+The instructions below give an overview of how to go about generating a
+proposed change to *MRtrix3*. Making your first contribution to an
+open-source project can certainly be daunting. The *MRtrix3* developers
+are however more than willing to be engaged in the process for those
+without experience in Git or GitHub.
+
+### Classification of contribution
 
 We here classify three distinct types of contributions. For any particular
 proposed contribution, the classification here will influence the advice
@@ -77,17 +90,7 @@ If any of the following are true:
 
 If you wish to make changes to the [*MRtrix3* documentation](https://mrtrix.readthedocs.io/en/latest/).
 
-## Generating contributions
-
-Thanks for your interest in making direct contributions to *MRtrix3*!
-We are excited to expand the breadth of researchers involved in improving
-and expanding this software, and to ensure that all who make such
-contributions receive appropriate acknowledgement through Git.
-
-The instructions below give an overview of how to go about generating a
-proposed change to *MRtrix3*. The *MRtrix3* developers are however more
-than willing to be engaged in the process for those without experience
-in Git or GitHub.
+### Generating content
 
 1. If you have not already done so, you will need to create a *fork* of
    the [*MRtrix3* repository](https://github.com/MRtrix3/mrtrix3)
@@ -220,7 +223,7 @@ in Git or GitHub.
    repositories, please coordinate with the *MRtrix3* core development
    team.
 
-## Pull Requests
+### Pull Requests
 
 Once you are content with the additions / modifications that you have made
 to the repository content, the next step is to propose that those changes be
@@ -267,7 +270,9 @@ this may indeed include yourself in the future). Simply including the text
 Pull Request) will result in GitHub automatically creating bi-directional
 hyperinks between the relevant pages.
 
-### Coding conventions
+-----
+
+## Coding conventions
 
 While we do not have strict enforced coding conventions in *MRtrix3*, the
 accepted conventions should be self-evident from the code itself. So while
