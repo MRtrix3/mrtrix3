@@ -102,9 +102,9 @@ to be provided in subsequent sections of this document.
    this new derived branch should be based depends on the nature of the
    proposed change:
 
-   -  If your changes involve [fixing a bug](#fixing-a-bug) in
-      existing *MRtrix3* functionality, then your code should be based
-      on the "`master`" branch:
+   -  If your changes involve *fixing a bug* in existing *MRtrix3*
+      functionality, then your code should be based on the "`master`"
+      branch:
 
       ```
       $ git checkout master
@@ -113,8 +113,8 @@ to be provided in subsequent sections of this document.
 
       (name your new branch appropriately)
 
-   -  If your changes involve [adding or altering features](#adding-or-altering-features),
-      then your code should be based on the "`dev`" branch:
+   -  If your changes involve *adding or altering features*, then your
+      code should be based on the "`dev`" branch:
 
       ```
       $ git checkout dev
@@ -123,9 +123,9 @@ to be provided in subsequent sections of this document.
 
       (name your new branch appropriately)
 
-   -  If only making changes to the *MRtrix3* [documentation](#documentation),
-      then the appropriate base branch will depend upon the nature of the
-      changes being proposed and the urgency of the update. In this scenario,
+   -  If only making changes to the *MRtrix3* *documentation*, then the
+      appropriate base branch will depend upon the nature of the changes
+      being proposed and the urgency of the update. In this scenario,
       please generate an [Issue](https://github.com/MRtrix3/mrtrix3/issues)
       to facilitate communication with the core development team.
 
@@ -215,7 +215,7 @@ to be provided in subsequent sections of this document.
    -  Demonstrate appropriate behaviour of novel functionality;
 
    -  Prove that a demonstrable error with existing code is resolved
-      with the revised code (i.e. [fixing a bug](#fixing-a-bug));
+      with the revised code (i.e. *fixing a bug*);
 
    -  Preclude regression of the behaviour of that code in the future
       (which can in some instances occur with changes to seemingly
@@ -234,15 +234,15 @@ to the repository content, the next step is to propose that those changes be
 merged into the main *MRtrix3* repository. This involves setting up a
 "Pull Request", which proposes merging the changes that you have made in your
 repository fork into the relevant branch of the main *MRtrix3* repository.
-It additionally enables both discussion with the core development team regarding
-those changes, and explicit code review.
+It additionally enables both discussion with the core development team
+regarding those changes, and explicit code review.
 
 The "*head*" branch of the Pull Request should be the Git branch on your
 fork of the repository within which you have performed the relevant changes.
 The "*base*" *repository* should be the main *MRtrix3* repository; however,
 the base *branch* will depend on the nature of the contribution:
 
--  If [fixing a bug](#fixing-a-bug), then the base branch should be "`master`"
+-  If *fixing a bug*, then the base branch should be "`master`"
    (just as was used when first constructing the branch in your fork).
 
    Once merged, such code becomes immediately available to any user who
@@ -251,9 +251,9 @@ the base *branch* will depend on the nature of the contribution:
    updating their code. It will additionally be included in the next tag
    release of *MRtrix3*, including "*macro*" releases, i.e. "`3.0.x`".
 
--  If [adding or altering features](#adding-or-altering-features), then the
-   base branch should be "`dev`" (just as was used when first constructing
-   the branch in your fork).
+-  If *adding or altering features*, then the base branch should be
+   "`dev`" (just as was used when first constructing the branch in your
+   fork).
 
    Once merged, such code will only become visible to users who elect to
    explicitly check out the code on the "`dev`" branch when building
@@ -262,9 +262,9 @@ the base *branch* will depend on the nature of the contribution:
    release of *MRtrix3*, i.e. "`3.x.0`"; *macro* releases, i.e. "`3.0.x`",
    do *not* include changes that have been merged onto the "`dev`" branch.
 
--  If making changes to the *MRtrix3* [documentation](#documentation), then
-   the base branch should be the same branch as was used when first
-   constructing the branch on your fork.
+-  If making changes to the *MRtrix3* *documentation*, then the base
+   branch should be the same branch as was used when first constructing
+   the working branch on your fork.
 
 In the initial post of your Pull Request, you should include in your text
 references to any other Issues or Pull Requests that you consider relevant
