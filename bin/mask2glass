@@ -15,14 +15,15 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+import warnings
 
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Remika Mito (remika.mito@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Create a glass brain from mask input')
-  #cmdline.add_description('The output of this command is a 4D image, where '
-  #                        'each volume corresponds to a b-value shell (in order of increasing b-value), and '
-  #                        'the intensities within each volume correspond to the chosen statistic having been computed from across the DWI volumes belonging to that b-value shell.')
+  cmdline.add_description('The output of this command is a glass brain image, which can be viewed '
+                         'using the volume render option in mrview, and used for visualisation purposes to view results in 3D. '
+                         'This script takes either a binary mask image or floating point image (e.g. a mean mask image computed using mrmath) as input.')
   cmdline.add_argument('input', help='The input mask image')
   cmdline.add_argument('output', help='The output glass brain image')
   cmdline.add_argument('-scale', type=float, default=2.0, help='Provide resolution usscaling value; default = 2.0')
@@ -33,12 +34,16 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
-  ### something here to check mask; if not convert to mask?? ###
   app.check_output_path(app.ARGS.output)
 
   # import data to scratch directory
   app.make_scratch_dir()
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif') + ' -datatype bit')
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif'))
+
+  result_stat = image.statistics('in.mif')
+  if result_stat.min < 0 or result_stat.max > 1:
+      app.warn('Input image is not a binary mask and will be thresholded at 0.5')
+
   app.goto_scratch_dir()
 
   scale_option = ' -scale ' + str(app.ARGS.scale)
