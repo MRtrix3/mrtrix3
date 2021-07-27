@@ -15,8 +15,6 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import warnings
-
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Remika Mito (remika.mito@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Create a glass brain from mask input')
