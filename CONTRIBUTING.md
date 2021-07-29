@@ -104,7 +104,7 @@ to be provided in subsequent sections of this document.
 
    -  If your changes involve *fixing a bug* in existing *MRtrix3*
       functionality, then your code should be based on the "`master`"
-      branch:
+      branch (for release in the next [patch version](https://semver.org/)):
 
       ```
       $ git checkout master
@@ -114,7 +114,8 @@ to be provided in subsequent sections of this document.
       (name your new branch appropriately)
 
    -  If your changes involve *adding or altering features*, then your
-      code should be based on the "`dev`" branch:
+      code should be based on the "`dev`" branch (for release in the next 
+      [minor version](https://semver.org/)):
 
       ```
       $ git checkout dev
