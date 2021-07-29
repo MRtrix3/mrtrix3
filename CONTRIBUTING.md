@@ -249,18 +249,18 @@ the base *branch* will depend on the nature of the contribution:
    accesses *MRtrix3* by building the code from source via the default
    `master` branch, whether from freshly cloning that source code or from
    updating their code. It will additionally be included in the next tag
-   release of *MRtrix3*, including "*macro*" releases, i.e. "`3.0.x`".
+   release of *MRtrix3*, including "*patch*" releases, i.e. "`3.0.x`".
 
 -  If *adding or altering features*, then the base branch should be
    "`dev`" (just as was used when first constructing the branch in your
    fork).
 
-   Once merged, such code will only become visible to users who elect to
+   Once merged, such code will only be propagated to users who elect to
    explicitly check out the code on the "`dev`" branch when building
    *MRtrix3* from source, which will almost exclusively be the core
-   develompent team. It will additionally be included in the next *micro*
-   release of *MRtrix3*, i.e. "`3.x.0`"; *macro* releases, i.e. "`3.0.x`",
-   do *not* include changes that have been merged onto the "`dev`" branch.
+   development team. It will additionally be included in the next *minor*
+   release of *MRtrix3*, i.e. "`3.x.0`" (*patch* releases, i.e. "`3.0.x`",
+   do *not* include changes that have been merged onto the "`dev`" branch).
 
 -  If making changes to the *MRtrix3* *documentation*, then the base
    branch should be the same branch as was used when first constructing
