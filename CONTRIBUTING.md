@@ -104,7 +104,16 @@ to be provided in subsequent sections of this document.
 
    -  If your changes involve *fixing a bug* in existing *MRtrix3*
       functionality, then your code should be based on the "`master`"
-      branch (for release in the next [patch version](https://semver.org/)):
+      branch.
+
+      Once merged, these changes will become immediately available to any user
+      building *MRtrix3* from source via the default `master` branch, whether
+      from freshly cloning that source code or from updating their code. It
+      will additionally be included in the next tag release of *MRtrix3*,
+      including "*patch*" releases, i.e. "`3.0.x`" (see [this
+      page](https://semver.org/) for a full description of release versioning)
+
+      This can be done with the following commands:
 
       ```
       $ git checkout master
@@ -114,8 +123,18 @@ to be provided in subsequent sections of this document.
       (name your new branch appropriately)
 
    -  If your changes involve *adding or altering features*, then your
-      code should be based on the "`dev`" branch (for release in the next 
-      [minor version](https://semver.org/)):
+      code should be based on the "`dev`" branch. 
+
+      Once merged, such code will only be propagated to users who elect to
+      explicitly check out the code on the "`dev`" branch when building *MRtrix3*
+      from source, which will almost exclusively be the core development team.
+      It will additionally be included in the next *minor* release of
+      *MRtrix3*, i.e. "`3.x.0`" (*patch* releases, i.e. "`3.0.x`", do *not*
+      include changes that have been merged onto the "`dev`" branch). (see
+      [this page](https://semver.org/) for a full description of release
+      versioning)
+
+      This can be done with the following commands:
 
       ```
       $ git checkout dev
@@ -245,22 +264,9 @@ the base *branch* will depend on the nature of the contribution:
 -  If *fixing a bug*, then the base branch should be "`master`"
    (just as was used when first constructing the branch in your fork).
 
-   Once merged, such code becomes immediately available to any user who
-   accesses *MRtrix3* by building the code from source via the default
-   `master` branch, whether from freshly cloning that source code or from
-   updating their code. It will additionally be included in the next tag
-   release of *MRtrix3*, including "*patch*" releases, i.e. "`3.0.x`".
-
 -  If *adding or altering features*, then the base branch should be
    "`dev`" (just as was used when first constructing the branch in your
    fork).
-
-   Once merged, such code will only be propagated to users who elect to
-   explicitly check out the code on the "`dev`" branch when building
-   *MRtrix3* from source, which will almost exclusively be the core
-   development team. It will additionally be included in the next *minor*
-   release of *MRtrix3*, i.e. "`3.x.0`" (*patch* releases, i.e. "`3.0.x`",
-   do *not* include changes that have been merged onto the "`dev`" branch).
 
 -  If making changes to the *MRtrix3* *documentation*, then the base
    branch should be the same branch as was used when first constructing
