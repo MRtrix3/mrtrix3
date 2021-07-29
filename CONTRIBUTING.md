@@ -183,15 +183,15 @@ to be provided in subsequent sections of this document.
    passing existing tests, or introduce any other issues (unless otherwise
    specified, all files referenced below are in the *MRtrix3* root directory):
 
-   -  If adding or modifying C++ code, make sure that script "`check_syntax`"
+   -  If adding or modifying C++ code, make sure that script "`./check_syntax`"
       executes successfully.
 
    -  If adding or modifying Python code, make sure that script
-      "`run_pylint`" executes successfully.
+      "`./run_pylint`" executes successfully.
 
    -  If there is a chance of your modifications altering the observable
       behaviour of one or more existing commands, make sure that script
-      "`run_tests`" executes successfully. When running this script you
+      "`./run_tests`" executes successfully. When running this script you
       must specify the test(s) to be run: you can either specify an
       individual command or unit test, or execute tests for all
       "`binaries`" or all "`scripts`" (especially important if modifying
@@ -200,7 +200,7 @@ to be provided in subsequent sections of this document.
 
    -  If your changes involve the addition of one or more novel commands,
       or the modification of help page information of an existing command,
-      then you will need to run script "`docs/generate_user_docs.sh`"
+      then you will need to run script "`./docs/generate_user_docs.sh`"
       and generate a commit that adds the resulting updates to the
       list of available commands and command documentation page(s).
 
