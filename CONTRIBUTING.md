@@ -150,17 +150,16 @@ to be provided in subsequent sections of this document.
       describes the change encapsulated within.
 
       If the change demands a longer description, then the commit message
-      should be broken into a synopsis (less than 80 characters) and message
-      body, separated by two newline characters (as this enables GitHub to
-      parse them appropriately).
+      should be broken into a synopsis (less than 72 characters, ideally less
+      than 50) and message body, separated by two newline characters (as this
+      enables GitHub to parse them appropriately). Please follow the
+      [suggestions on this page](https://chris.beams.io/posts/git-commit/) to
+      make your git commit messages as useful as possible.
 
-      This can be achieved at the command-line as follows (note use of
-      "`\n`" to introduce line breaks):
+      For single-line commits, this can be achieved at the command-line using
+      the `git commit -m` option:
 
-      `$ git commit -m $'Commit synopsis\n\nHere is a much longer and wordier description of my proposed changes that doesn\'t fit into 80 characters.\nI can even spread the message body across multiple lines.'`
-
-      (Note also the escape character "`\`" necessary for including an
-      apostrophe in the message text)
+      `$ git commit -m 'mrconvert: fix problem in datatype handling'`
 
    -  Where relevant, commit messages can also contain references to
       GitHub issues or pull requests (type the "`#`" character followed
