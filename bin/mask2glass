@@ -52,16 +52,16 @@ def execute(): #pylint: disable=unused-variable
   else:
     app.debug('Input image is not bitwise; checking distribution of image intensities')
     result_stat = image.statistics('in.mif')
-    if result_stat.min < 0.0 or result_stat.max > 1.0:
+    if not (result_stat.min == 0.0 and result_stat.max == 1.0):
       app.warn('Input image contains values outside of range [0.0, 1.0]; threshold will not be 0.5, but will instead be determined from the image data')
       threshold_option = ''
     else:
       app.debug('Input image values reside within [0.0, 1.0] range; fixed threshold of 0.5 will be used')
 
-  # run scaling step
+  # run upscaling step
   run.command('mrgrid in.mif regrid upsampled.mif' + scale_option)
 
-  # run upsampling step
+  # run smoothing step
   run.command('mrfilter upsampled.mif smooth upsampled_smooth.mif' + smooth_option)
 
   # threshold image
@@ -71,7 +71,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('maskfilter upsampled_smooth_thresh.mif dilate upsampled_smooth_thresh_dilate.mif' + dilate_option)
 
   # create border
-  run.command('mrcalc upsampled_smooth_thresh_dilate.mif upsampled_smooth_thresh.mif -subtract out.mif')
+  run.command('mrcalc upsampled_smooth_thresh_dilate.mif upsampled_smooth_thresh.mif -xor out.mif -datatype bit')
 
   # create output image
   run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output),
