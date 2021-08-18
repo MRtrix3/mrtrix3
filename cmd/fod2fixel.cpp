@@ -19,9 +19,8 @@
 
 #include "image.h"
 
-#include "fixel/keys.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/types.h"
 
 #include "math/SH.h"
 
@@ -66,6 +65,9 @@ void usage ()
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels";
+
+  DESCRIPTION
+  + Fixel::format_description;
 
   REFERENCES
     + "* Reference for the FOD segmentation method:\n"
@@ -201,6 +203,8 @@ void Segmented_FOD_receiver::commit ()
   fixel_data_header.ndim() = 3;
   fixel_data_header.size(0) = fixel_count;
   fixel_data_header.size(2) = 1;
+  fixel_data_header.transform().setIdentity();
+  fixel_data_header.spacing(0) = fixel_data_header.spacing(1) = fixel_data_header.spacing(2) = 1.0;
   fixel_data_header.datatype() = DataType::Float32;
   fixel_data_header.datatype().set_byte_order_native();
 

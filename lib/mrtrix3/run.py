@@ -13,16 +13,14 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading
-from distutils.spawn import find_executable
+import collections, itertools, os, shlex, shutil, signal, string, subprocess, sys, tempfile, threading
 from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
-from mrtrix3.utils import STRING_TYPES
 
 IOStream = collections.namedtuple('IOStream', 'handle filename')
 
 
 
-class Shared(object):
+class Shared:
 
   # A class for storing all information related to a running process
   # This includes:
@@ -184,7 +182,7 @@ shared = Shared() #pylint: disable=invalid-name
 
 class MRtrixCmdError(MRtrixBaseError):
   def __init__(self, cmd, code, stdout, stderr):
-    super(MRtrixCmdError, self).__init__('Command failed')
+    super().__init__('Command failed')
     self.command = cmd
     self.returncode = code
     self.stdout = stdout
@@ -194,7 +192,7 @@ class MRtrixCmdError(MRtrixBaseError):
 
 class MRtrixFnError(MRtrixBaseError):
   def __init__(self, fn, text):
-    super(MRtrixFnError, self).__init__('Function failed')
+    super().__init__('Function failed')
     self.function = fn
     self.errortext = text
   def __str__(self):
@@ -207,11 +205,11 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 
 def command(cmd, **kwargs): #pylint: disable=unused-variable
-  from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
+  from mrtrix3 import app #pylint: disable=import-outside-toplevel
   global shared #pylint: disable=invalid-name
 
   def quote_nonpipe(item):
-    return item if item == '|' else path.quote(item)
+    return item if item == '|' else shlex.quote(item)
 
   shell = kwargs.pop('shell', False)
   show = kwargs.pop('show', True)
@@ -237,11 +235,11 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     cmdstring = ''
     cmdsplit = []
     for entry in cmd:
-      if isinstance(entry, STRING_TYPES):
+      if isinstance(entry, str):
         cmdstring += (' ' if cmdstring else '') + quote_nonpipe(entry)
         cmdsplit.append(entry)
       elif isinstance(entry, list):
-        assert all(isinstance(item, STRING_TYPES) for item in entry)
+        assert all(isinstance(item, str) for item in entry)
         if len(entry) > 1:
           common_prefix = os.path.commonprefix(entry)
           common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
@@ -254,7 +252,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         cmdsplit.extend(entry)
       else:
         raise TypeError('When run.command() is provided with a list as input, entries in the list must be either strings or lists of strings')
-  elif isinstance(cmd, STRING_TYPES):
+  elif isinstance(cmd, str):
     cmdstring = cmd
     # Split the command string by spaces, preserving anything encased within quotation marks
     if os.sep == '/': # Cheap POSIX compliance check
@@ -343,7 +341,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
           # If a shebang is found, and this call is therefore invoking an
           #   interpreter, can't rely on the interpreter finding the script
           #   from PATH; need to find the full path ourselves.
-          line[0] = find_executable(line[0])
+          line[0] = shutil.which(line[0])
         for item in reversed(shebang):
           line.insert(0, item)
 
@@ -370,9 +368,8 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       # Set off the process
       try:
         this_process_list.append(shared.Process(to_execute, this_stdin, this_stdout, this_stderr, **subprocess_kwargs))
-      # FileNotFoundError not defined in Python 2.7
-      except OSError as exception:
-        raise MRtrixCmdError(cmdstring, 1, '', str(exception))
+      except FileNotFoundError as exception:
+        raise MRtrixCmdError(cmdstring, 1, '', str(exception)) from exception
 
   # End branching based on shell=True/False
 
@@ -474,7 +471,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   show = kwargs.pop('show', True)
 
   fnstring = fn_to_execute.__module__ + '.' + fn_to_execute.__name__ + \
-             '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, STRING_TYPES) else str(a) for a in args]) + \
+             '(' + ', '.join(['\'' + str(a) + '\'' if isinstance(a, str) else str(a) for a in args]) + \
              (', ' if (args and kwargs) else '') + \
              ', '.join([key+'='+str(value) for key, value in kwargs.items()]) + ')'
 
@@ -497,7 +494,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
     else:
       result = fn_to_execute(*args)
   except Exception as exception: # pylint: disable=broad-except
-    raise MRtrixFnError(fnstring, str(exception))
+    raise MRtrixFnError(fnstring, str(exception)) from exception
 
   # Only now do we append to the script log, since the function has completed successfully
   if shared.get_scratch_dir():
@@ -521,11 +518,11 @@ def exe_name(item):
     path = item
   elif os.path.isfile(os.path.join(BIN_PATH, item + '.exe')):
     path = item + '.exe'
-  elif find_executable(item) is not None:
+  elif shutil.which(item) is not None:
     path = item
-  elif find_executable(item + '.exe') is not None:
+  elif shutil.which(item + '.exe') is not None:
     path = item + '.exe'
-  # If it can't be found, return the item as-is; find_executable() fails to identify Python scripts
+  # If it can't be found, return the item as-is
   else:
     path = item
   app.debug(item + ' -> ' + path)
@@ -547,7 +544,7 @@ def version_match(item):
   if os.path.isfile(exe_path_manual):
     app.debug('Version-matched executable for ' + item + ': ' + exe_path_manual)
     return exe_path_manual
-  exe_path_sys = find_executable(exe_name(item))
+  exe_path_sys = shutil.which(exe_name(item))
   if exe_path_sys and os.path.isfile(exe_path_sys):
     app.debug('Using non-version-matched executable for ' + item + ': ' + exe_path_sys)
     return exe_path_sys
@@ -565,7 +562,7 @@ def _shebang(item):
   else:
     path = version_match(item)
     if path == item:
-      path = find_executable(exe_name(item))
+      path = shutil.which(exe_name(item))
   if not path:
     app.debug('File \"' + item + '\": Could not find file to query')
     return []
@@ -577,30 +574,31 @@ def _shebang(item):
     # Are there any non-text characters? If so, it's a binary file, so no need to looking for a shebang
     try:
       line = str(line.decode('utf-8'))
-    except:
+    except UnicodeDecodeError:
       app.debug('File \"' + item + '\": Not a text file')
       return []
     line = line.strip()
     if len(line) > 2 and line[0:2] == '#!':
       # Need to strip first in case there's a gap between the shebang symbol and the interpreter path
       shebang = line[2:].strip().split(' ')
-      # On Windows, /usr/bin/env can't be easily found, and any direct interpreter path will have a similar issue.
+      # On Windows, /usr/bin/env can't be easily found
       #   Instead, manually find the right interpreter to call using distutils
-      # Also if script is written in Python, try to execute it using the same interpreter as that currently running
+      # Also if script is written in Python, try to execute it using the same interpreter as that currently running,
+      #   as long as Python2 is not explicitly requested
       if os.path.basename(shebang[0]) == 'env':
         if len(shebang) < 2:
           app.warn('Invalid shebang in script file \"' + item + '\" (missing interpreter after \"env\")')
           return []
-        if shebang[1] == 'python':
+        if shebang[1] == 'python' or shebang[1] == 'python3':
           if not sys.executable:
             app.warn('Unable to self-identify Python interpreter; file \"' + item + '\" not guaranteed to execute on same version')
             return []
           shebang = [ sys.executable ] + shebang[2:]
           app.debug('File \"' + item + '\": Using current Python interpreter')
         elif utils.is_windows():
-          shebang = [ os.path.abspath(find_executable(exe_name(shebang[1]))) ] + shebang[2:]
+          shebang = [ os.path.abspath(shutil.which(exe_name(shebang[1]))) ] + shebang[2:]
       elif utils.is_windows():
-        shebang = [ os.path.abspath(find_executable(exe_name(os.path.basename(shebang[0])))) ] + shebang[1:]
+        shebang = [ os.path.abspath(shutil.which(exe_name(os.path.basename(shebang[0])))) ] + shebang[1:]
       app.debug('File \"' + item + '\": string \"' + line + '\": ' + str(shebang))
       return shebang
   app.debug('File \"' + item + '\": No shebang found')

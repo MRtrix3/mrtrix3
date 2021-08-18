@@ -38,11 +38,12 @@ namespace MR {
       void NBS::operator() (in_column_type in, const value_type T, out_column_type out) const
       {
         out.setZero();
+        BitSet visited (in.size());
 
         for (ssize_t seed = 0; seed != in.size(); ++seed) {
           if (std::isfinite (in[seed]) && in[seed] >= T && !out[seed]) {
 
-            BitSet visited (in.size());
+            visited.clear();
             visited[seed] = true;
             vector<size_t> to_expand (1, seed);
             size_t cluster_size = 0;

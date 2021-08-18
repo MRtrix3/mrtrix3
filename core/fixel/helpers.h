@@ -22,8 +22,7 @@
 #include "image_diff.h"
 #include "image_helpers.h"
 #include "algo/loop.h"
-#include "fixel/keys.h"
-#include "fixel/types.h"
+#include "fixel/fixel.h"
 #include "formats/mrtrix_utils.h"
 
 

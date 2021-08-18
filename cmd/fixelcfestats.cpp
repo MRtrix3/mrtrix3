@@ -20,11 +20,10 @@
 #include "thread_queue.h"
 #include "transform.h"
 #include "algo/loop.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/index_remapper.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 #include "fixel/filter/smooth.h"
 #include "math/stats/fwe.h"
 #include "math/stats/glm.h"
@@ -74,7 +73,9 @@ void usage ()
     "outside the processing mask will immediately disappear from view as soon as any data-file-based fixel colouring or "
     "thresholding is applied."
 
-  + Math::Stats::GLM::column_ones_description;
+  + Math::Stats::GLM::column_ones_description
+
+  + Fixel::format_description;
 
   REFERENCES
   + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A. " // Internal
@@ -479,7 +480,7 @@ void run()
     for (size_t i = 0; i != num_hypotheses; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), mask, output_header);
       ++progress;
-      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), mask, output_header);
+      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_1mpvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), mask, output_header);
       ++progress;
       write_fixel_output (Path::join (output_fixel_directory, "null_contributions" + postfix(i) + ".mif"), null_contributions.col(i), mask, output_header);
       ++progress;

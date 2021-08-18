@@ -15,16 +15,14 @@ Usage
 
     maskfilter [ options ]  input filter output
 
--  *input*: the input image.
--  *filter*: the type of filter to be applied (clean, connect, dilate, erode, median)
--  *output*: the output image.
+-  *input*: the input mask.
+-  *filter*: the name of the filter to be applied; options are: clean, connect, dilate, erode, fill, median
+-  *output*: the output mask.
 
 Description
 -----------
 
-The available filters are: clean, connect, dilate, erode, median.
-
-Each filter has its own unique set of optional parameters.
+Many filters have their own unique set of optional parameters; see the option groups dedicated to each filter type.
 
 Options
 -------
@@ -47,6 +45,13 @@ Options for dilate / erode filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-npass value** the number of times to repeatedly apply the filter
+
+Options for interior-filling filter
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-axes axes** specify which axes should be included in the connected components. By default only the first 3 axes are included. The axes should be provided as a comma-separated list of values.
+
+-  **-connectivity** use 26-voxel-neighbourhood connectivity (Default: 6)
 
 Options for median filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -178,7 +178,7 @@ void usage ()
         "fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation. \n"
         "jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation "
         "to preserve the total intensity before and after the transformation.")
-    + Argument ("intensity modulation method").type_choice (modulation_choices)
+    + Argument ("method").type_choice (modulation_choices)
 
     + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation "
@@ -290,7 +290,6 @@ void run ()
       output_header.spacing(i) = template_header.spacing(i);
     }
     output_header.transform() = template_header.transform();
-    add_line (output_header.keyval()["comments"], std::string ("regridded to template image \"" + template_header.name() + "\""));
   }
 
   // Warp 5D warp
@@ -359,8 +358,9 @@ void run ()
 
   // Flip
   opt = get_options ("flip");
+  vector<int32_t> axes;
   if (opt.size()) {
-    vector<int32_t> axes = parse_ints<int32_t> (opt[0][0]);
+    axes = parse_ints<int32_t> (opt[0][0]);
     transform_type flip;
     flip.setIdentity();
     for (size_t i = 0; i < axes.size(); ++i) {
@@ -625,7 +625,6 @@ void run ()
         output_header.spacing(i) = warp.spacing(i);
       }
       output_header.transform() = warp.transform();
-      add_line (output_header.keyval()["comments"], std::string ("resliced using warp image \"" + warp.name() + "\""));
     }
 
     auto output = Image<float>::create(argument[1], output_header).with_direct_io();
@@ -665,7 +664,7 @@ void run ()
     DWI::export_grad_commandline (output);
 
   // No reslicing required, so just modify the header and do a straight copy of the data
-  } else {
+  } else if (linear || replace || axes.size()) {
 
     if (get_options ("midway").size())
       throw Exception ("midway option given but no template image defined");
@@ -696,6 +695,8 @@ void run ()
     }
 
     DWI::export_grad_commandline (output);
+  } else {
+    throw Exception ("No operation specified");
   }
 }
 

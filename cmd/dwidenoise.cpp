@@ -143,12 +143,22 @@ public:
                     Image<bool>& mask, Image<real_type>& noise,
                     Image<uint16_t>& rank, bool exp1, bool demean)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
-      m (ndwi), n (extent[0]*extent[1]*extent[2]),
-      r (std::min(m,n)), q (std::max(m,n)), q_offset (demean ? q-1 : q),
-      exp1(exp1), demean (demean),
-      X (m,n), Xm (VectorType::Zero (r)),
+      m (ndwi),
+      n (extent[0]*extent[1]*extent[2]),
+      r (std::min(m,n)),
+      q (std::max(m,n)),
+      q_offset (demean ? q-1 : q),
+      exp1 (exp1),
+      demean (demean),
+      X (m,n),
+      Xm (VectorType::Zero (r)),
+      XtX (r, r),
+      eig (r),
+      s (r),
       pos {{0, 0, 0}},
-      mask (mask), noise (noise), rankmap (rank)
+      mask (mask),
+      noise (noise),
+      rankmap (rank)
   { }
 
   template <typename ImageType>
@@ -165,7 +175,6 @@ public:
     load_data (dwi);
 
     // Compute Eigendecomposition:
-    MatrixType XtX (r,r);
     if (m <= n) {
       if (demean) {
         Xm = X.rowwise().mean();
@@ -179,9 +188,9 @@ public:
       }
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
     }
-    Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
+    eig.compute (XtX);
     // eigenvalues sorted in increasing order:
-    SValsType s = eig.eigenvalues().template cast<double>();
+    s = eig.eigenvalues().template cast<double>();
 
     // Marchenko-Pastur optimal threshold
     const double lam_r = std::max(s[0], 0.0) / q_offset;
@@ -237,6 +246,9 @@ private:
   const bool exp1, demean;
   MatrixType X;
   VectorType Xm;
+  MatrixType XtX;
+  Eigen::SelfAdjointEigenSolver<MatrixType> eig;
+  SValsType s;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
@@ -331,6 +343,11 @@ void run ()
   INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
   bool exp1 = get_option_value("estimator", 1) == 0;    // default: Exp2 (unbiased estimator)
+
+  if (std::min<uint32_t>(dwi.size(3), extent[0]*extent[1]*extent[2]) < 15) {
+    WARN("The number of volumes or the patch size is small. This may lead to discretisation effects "
+         "in the noise level and cause inconsistent denoising between adjacent voxels.");
+  }
 
   Image<real_type> noise;
   opt = get_options("noise");

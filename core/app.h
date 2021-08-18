@@ -442,8 +442,8 @@ namespace MR
 
 
     //! Returns the option value if set, and the default otherwise.
-    /*! Returns the value of (the first occurence of) option \c name
-     *  or the default value provided as second argument.
+    /*! Only be used for command-line options that do not specify
+     * .allow_multiple(), and that have only one associated Argument.
      *
      * Use:
      * \code
@@ -455,8 +455,15 @@ namespace MR
     inline T get_option_value (const std::string& name, const T default_value)
     {
       auto opt = get_options(name);
-      T r = (opt.size()) ? opt[0][0] : default_value;
-      return r;
+      switch (opt.size()) {
+        case 0: return default_value;
+        case 1:
+          if (opt[0].opt->size() == 1)
+            return opt[0][0];
+        default:
+          assert (false);
+          throw Exception ("Internal error parsing command-line option \"-" + name + "\"");
+      }
     }
 
 

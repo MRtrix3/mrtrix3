@@ -22,7 +22,7 @@
 
 #include "image.h"
 #include "types.h"
-#include "fixel/types.h"
+#include "fixel/fixel.h"
 
 namespace MR
 {

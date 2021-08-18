@@ -15,13 +15,12 @@
  */
 
 #include "command.h"
+#include "image.h"
 #include "progressbar.h"
 #include "algo/loop.h"
 
-#include "image.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
-#include "fixel/types.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
@@ -50,7 +49,9 @@ void usage ()
   SYNOPSIS = "Map fixel values to a track scalar file based on an input tractogram";
 
   DESCRIPTION
-  + "This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D.";
+  + "This command is useful for visualising all brain fixels (e.g. the output from fixelcfestats) in 3D."
+
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file (within the fixel directory)").type_image_in ()
