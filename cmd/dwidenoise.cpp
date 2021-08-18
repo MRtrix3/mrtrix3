@@ -47,7 +47,11 @@ void usage ()
 
     + "Note that this function does not correct for non-Gaussian noise biases present in "
       "magnitude-reconstructed MRI images. If available, including the MRI phase data can "
-      "reduce such non-Gaussian biases, and the command now supports complex input data.";
+      "reduce such non-Gaussian biases, and the command now supports complex input data."
+
+    + "If using this command to denoise non-DWI data, e.g. fMRI, it may be beneficial to use the -demean "
+      "option, which mitigates floating-point precision issues when the variance between image volumes is "
+      "small relative to the mean across volumes.";
 
   AUTHOR = "Daan Christiaens (daan.christiaens@kcl.ac.uk) & "
            "Jelle Veraart (jelle.veraart@nyumc.org) & "
@@ -97,7 +101,9 @@ void usage ()
     + Option ("estimator", "Select the noise level estimator (default = Exp2), either: \n"
                            "* Exp1: the original estimator used in Veraart et al. (2016), or \n"
                            "* Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).")
-    +   Argument ("Exp1/Exp2").type_choice(estimators);
+    +   Argument ("Exp1/Exp2").type_choice(estimators)
+
+    + Option ("demean", "Pre-allocate the mean signal in each voxel as a signal component");
 
 
   COPYRIGHT = "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
@@ -130,15 +136,18 @@ class DenoisingFunctor {
 public:
 
   using MatrixType = Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic>;
+  using VectorType = Eigen::Matrix<F, Eigen::Dynamic, 1>;
   using SValsType = Eigen::VectorXd;
 
   DenoisingFunctor (int ndwi, const vector<uint32_t>& extent,
                     Image<bool>& mask, Image<real_type>& noise,
-                    Image<uint16_t>& rank, bool exp1)
+                    Image<uint16_t>& rank, bool exp1, bool demean)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (ndwi), n (extent[0]*extent[1]*extent[2]),
-      r (std::min(m,n)), q (std::max(m,n)), exp1(exp1),
-      X (m,n), pos {{0, 0, 0}},
+      r (std::min(m,n)), q (std::max(m,n)), q_offset (demean ? q-1 : q),
+      exp1(exp1), demean (demean),
+      X (m,n), Xm (VectorType::Zero (r)),
+      pos {{0, 0, 0}},
       mask (mask), noise (noise), rankmap (rank)
   { }
 
@@ -157,22 +166,31 @@ public:
 
     // Compute Eigendecomposition:
     MatrixType XtX (r,r);
-    if (m <= n)
+    if (m <= n) {
+      if (demean) {
+        Xm = X.rowwise().mean();
+        X.colwise() -= Xm;
+      }
       XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
-    else
+    } else {
+      if (demean) {
+        Xm = X.colwise().mean();
+        X.rowwise() -= Xm.transpose();
+      }
       XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
+    }
     Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
     // eigenvalues sorted in increasing order:
     SValsType s = eig.eigenvalues().template cast<double>();
 
     // Marchenko-Pastur optimal threshold
-    const double lam_r = std::max(s[0], 0.0) / q;
+    const double lam_r = std::max(s[0], 0.0) / q_offset;
     double clam = 0.0;
     sigma2 = 0.0;
     ssize_t cutoff_p = 0;
     for (ssize_t p = 0; p < r; ++p)     // p+1 is the number of noise components
     {                                   // (as opposed to the paper where p is defined as the number of signal components)
-      double lam = std::max(s[p], 0.0) / q;
+      double lam = std::max(s[p], 0.0) / q_offset;
       clam += lam;
       double gam = double(p+1) / (exp1 ? q : q-(r-p-1));
       double sigsq1 = clam / double(p+1);
@@ -192,6 +210,8 @@ public:
         X.col (n/2) = eig.eigenvectors() * ( s.cast<F>().asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
       else
         X.col (n/2) = X * ( eig.eigenvectors() * ( s.cast<F>().asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
+      if (demean)
+        X.col (n/2).array() += Xm[n/2];
     }
 
     // Store output
@@ -206,16 +226,17 @@ public:
     // store rank map if requested:
     if (rankmap.valid()) {
       assign_pos_of(dwi, 0, 3).to(rankmap);
-      rankmap.value() = uint16_t (r - cutoff_p);
+      rankmap.value() = uint16_t (r - cutoff_p + (demean ? 1 : 0));
     }
 
   }
 
 private:
   const std::array<ssize_t, 3> extent;
-  const ssize_t m, n, r, q;
-  const bool exp1;
+  const ssize_t m, n, r, q, q_offset;
+  const bool exp1, demean;
   MatrixType X;
+  VectorType Xm;
   std::array<ssize_t, 3> pos;
   double sigma2;
   Image<bool> mask;
@@ -257,7 +278,7 @@ private:
 
 template <typename T>
 void process_image (Header& data, Image<bool>& mask, Image<real_type>& noise, Image<uint16_t>& rank,
-                    const std::string& output_name, const vector<uint32_t>& extent, bool exp1)
+                    const std::string& output_name, const vector<uint32_t>& extent, bool exp1, bool demean)
   {
     auto input = data.get_image<T>().with_direct_io(3);
     // create output
@@ -265,7 +286,7 @@ void process_image (Header& data, Image<bool>& mask, Image<real_type>& noise, Im
     header.datatype() = DataType::from<T>();
     auto output = Image<T>::create (output_name, header);
     // run
-    DenoisingFunctor<T> func (data.size(3), extent, mask, noise, rank, exp1);
+    DenoisingFunctor<T> func (data.size(3), extent, mask, noise, rank, exp1, demean);
     ThreadedLoop ("running MP-PCA denoising", data, 0, 3).run (func, input, output);
   }
 
@@ -330,24 +351,26 @@ void run ()
     rank = Image<uint16_t>::create (opt[0][0], header);
   }
 
+  const bool demean = get_options ("demean").size();
+
   int prec = get_option_value("datatype", 0);     // default: single precision
   if (dwi.datatype().is_complex()) prec += 2;     // support complex input data
   switch (prec) {
     case 0:
       INFO("select real float32 for processing");
-      process_image<float>(dwi, mask, noise, rank, argument[1], extent, exp1);
+      process_image<float>(dwi, mask, noise, rank, argument[1], extent, exp1, demean);
       break;
     case 1:
       INFO("select real float64 for processing");
-      process_image<double>(dwi, mask, noise, rank, argument[1], extent, exp1);
+      process_image<double>(dwi, mask, noise, rank, argument[1], extent, exp1, demean);
       break;
     case 2:
       INFO("select complex float32 for processing");
-      process_image<cfloat>(dwi, mask, noise, rank, argument[1], extent, exp1);
+      process_image<cfloat>(dwi, mask, noise, rank, argument[1], extent, exp1, demean);
       break;
     case 3:
       INFO("select complex float64 for processing");
-      process_image<cdouble>(dwi, mask, noise, rank, argument[1], extent, exp1);
+      process_image<cdouble>(dwi, mask, noise, rank, argument[1], extent, exp1, demean);
       break;
   }
 
