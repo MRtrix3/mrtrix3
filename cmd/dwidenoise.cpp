@@ -219,9 +219,10 @@ public:
         X.col (n/2) = eig.eigenvectors() * ( s.cast<F>().asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
       else
         X.col (n/2) = X * ( eig.eigenvectors() * ( s.cast<F>().asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
-      if (demean)
-        X.col (n/2).array() += Xm[n/2];
     }
+
+    if (demean)
+      X.col (n/2).array() += Xm[n/2];
 
     // Store output
     assign_pos_of(dwi).to(out);
