@@ -803,8 +803,8 @@ def execute(): #pylint: disable=unused-variable
     if app.ARGS.topup_options:
       topup_manual_options = ' ' + app.ARGS.topup_options.strip()
     topup_output = run.command(topup_cmd + ' --imain=topup_in.nii --datain=topup_datain.txt --out=field --fout=field_map' + fsl_suffix + ' --config=' + topup_config_path + ' --verbose' + topup_manual_options)
-    with open('topup_output.txt', 'w') as topup_output_file:
-      topup_output_file.write(topup_output.stdout + '\n' + topup_output.stderr)
+    with open('topup_output.txt', 'wb') as topup_output_file:
+      topup_output_file.write((topup_output.stdout + '\n' + topup_output.stderr + '\n').encode('utf-8', errors='replace'))
     if app.VERBOSITY > 1:
       app.console('Output of topup command:')
       sys.stderr.write(topup_output.stdout + '\n' + topup_output.stderr + '\n')
@@ -825,14 +825,19 @@ def execute(): #pylint: disable=unused-variable
     applytopup_image_list = [ ]
     index = 1
     applytopup_config = matrix.load_matrix('applytopup_config.txt')
-    for line in applytopup_config:
+    applytopup_indices = matrix.load_vector('applytopup_indices.txt', dtype=int)
+    applytopup_volumegroups = [ [ index for index, value in enumerate(applytopup_indices) if value == group ] for group in range(1, len(applytopup_config)+1) ]
+    app.debug('applytopup_config: ' + str(applytopup_config))
+    app.debug('applytopup_indices: ' + str(applytopup_indices))
+    app.debug('applytopup_volumegroups: ' + str(applytopup_volumegroups))
+    for index, group in enumerate(applytopup_volumegroups):
       prefix = os.path.splitext(dwi_path)[0] + '_pe_' + str(index)
       input_path = prefix + '.nii'
       json_path = prefix + '.json'
       temp_path = prefix + '_applytopup.nii'
       output_path = prefix + '_applytopup.mif'
-      run.command('dwiextract ' + dwi_path + import_dwi_pe_table_option + ' -pe ' + ','.join(str(value) for value in line) + ' - | mrconvert - ' + input_path + ' -strides -1,+2,+3,+4 -json_export ' + json_path)
-      run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index) + ' --topup=field --out=' + temp_path + ' --method=jac')
+      run.command('mrconvert ' + dwi_path + ' ' + input_path + ' -coord 3 ' + ','.join(str(value) for value in group) + ' -strides -1,+2,+3,+4 -json_export ' + json_path)
+      run.command(applytopup_cmd + ' --imain=' + input_path + ' --datain=applytopup_config.txt --inindex=' + str(index+1) + ' --topup=field --out=' + temp_path + ' --method=jac')
       app.cleanup(input_path)
       temp_path = fsl.find_image(temp_path)
       run.command('mrconvert ' + temp_path + ' ' + output_path + ' -json_import ' + json_path)
@@ -1044,7 +1049,7 @@ def execute(): #pylint: disable=unused-variable
         run.command('eddy_quad ' + eddyqc_prefix + eddyqc_options)
       except run.MRtrixCmdError as exception:
         with open('eddy_quad_failure_output.txt', 'wb') as eddy_quad_output_file:
-          eddy_quad_output_file.write(str(exception))
+          eddy_quad_output_file.write(str(exception).encode('utf-8', errors='replace'))
         app.debug(str(exception))
         app.warn('Error running automated EddyQC tool \'eddy_quad\'; QC data written to "' + eddyqc_path + '" will be files from "eddy" only')
         # Delete the directory if the script only made it partway through

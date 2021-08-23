@@ -104,7 +104,11 @@ void usage ()
     REFERENCES
     + "Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. " // Internal
     "Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. "
-    "In Proc. ISMRM, 2017, 26, 3541";
+    "In Proc. ISMRM, 2017, 26, 3541"
+    + "Dhollander, T.; Tabbara, R.; Rosnarho-Tornstrand, J.; Tournier, J.-D.; Raffelt, D. & Connelly, A. " // Internal
+    "Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. "
+    "In Proc. ISMRM, 2021, 29, 2472";
+;
 
 }
 
@@ -279,6 +283,15 @@ void load_data (Eigen::MatrixXd& data, const std::string& image_name, IndexType&
 
 
 
+inline bool lessthan_NaN (const double& a, const double& b) {
+  if (std::isnan (a))
+    return true;
+  if (std::isnan (b))
+    return false;
+  return a<b;
+}
+
+
 
 size_t detect_outliers (
     double outlier_range,
@@ -293,11 +306,11 @@ size_t detect_outliers (
   const size_t upper_quartile_idx = std::round (field.size() * 0.75);
 
   std::nth_element (summed_log_sorted.data(), summed_log_sorted.data() + lower_quartile_idx,
-      summed_log_sorted.data() + summed_log_sorted.size());
+      summed_log_sorted.data() + summed_log_sorted.size(), lessthan_NaN);
   double lower_quartile = summed_log_sorted[lower_quartile_idx];
 
   std::nth_element (summed_log_sorted.data(), summed_log_sorted.data() + upper_quartile_idx,
-      summed_log_sorted.data() + summed_log_sorted.size());
+      summed_log_sorted.data() + summed_log_sorted.size(), lessthan_NaN);
   double upper_quartile = summed_log_sorted[upper_quartile_idx];
 
   INFO ("  outlier rejection quartiles: [ " + str(lower_quartile) + " " + str(upper_quartile) + " ]");
@@ -336,7 +349,11 @@ void compute_balance_factors (
     const Eigen::VectorXd& weights,
     Eigen::VectorXd& balance_factors)
 {
-  Eigen::MatrixXd scaled_data = data.transpose().array().rowwise() * weights.cwiseQuotient (field).transpose().array();
+  Eigen::MatrixXd scaled_data = data.transpose().array().rowwise() / field.transpose().array();
+  for (ssize_t n = 0; n < scaled_data.cols(); ++n) {
+    if (!weights[n])
+      scaled_data.col(n).array() = 0.0;
+  }
   Eigen::MatrixXd HtH (data.cols(), data.cols());
   HtH.triangularView<Eigen::Lower>() = scaled_data * scaled_data.transpose();
   Eigen::LLT<Eigen::MatrixXd> llt;
@@ -481,8 +498,6 @@ void write_output (
 
 
 
-
-
 void run ()
 {
   if (argument.size() % 2)
@@ -521,6 +536,13 @@ void run ()
     if (Path::exists (argument[2*n+1]) && !App::overwrite_files)
       throw Exception ("Output file \"" + argument[2*n+1] + "\" already exists. (use -force option to force overwrite)");
     load_data (data, argument[2*n], index);
+  }
+
+  size_t num_non_finite = (!data.array().isFinite()).count();
+  if (num_non_finite > 0) {
+    WARN ("Input data contain " + str(num_non_finite) + " non-finite voxel" + ( num_non_finite > 1 ? "s" : "" ));
+    WARN ("  Results may be affected if the data contain many non-finite values");
+    WARN ("  Please refine your mask to avoid non-finite values if this is a problem");
   }
 
   auto basis = initialise_basis (index, num_voxels, order);
