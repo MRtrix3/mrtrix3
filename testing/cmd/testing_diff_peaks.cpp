@@ -68,7 +68,7 @@ void run ()
   .run ([&tol] (decltype(in1)& a, decltype(in2)& b)
   {
     for (size_t i = 0; i != size_t(a.size(3)); i += 3) {
-      Eigen::Vector3 veca, vecb;
+      Eigen::Vector3d veca, vecb;
       for (size_t axis = 0; axis != 3; ++axis) {
         a.index(3) = b.index(3) = i + axis;
         veca[axis] = a.value();
