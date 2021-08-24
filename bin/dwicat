@@ -53,12 +53,12 @@ def execute(): #pylint: disable=unused-variable
     try:
       if isinstance(dw_scheme[0], list):
         num_grad_lines = len(dw_scheme)
-      elif (isinstance(dw_scheme[0], int) or isinstance(dw_scheme[0], float)) and len(dw_scheme) >= 4:
+      elif (isinstance(dw_scheme[0], ( int, float))) and len(dw_scheme) >= 4:
         num_grad_lines = 1
       else:
         raise MRtrixError
     except (IndexError, MRtrixError):
-      raise ('Image "' + header.name() + '" contains gradient table of unknown format')
+      raise 'Image "' + header.name() + '" contains gradient table of unknown format'
     if len(header.size()) == 4:
       num_volumes = header.size()[3]
       if num_grad_lines != num_volumes:
