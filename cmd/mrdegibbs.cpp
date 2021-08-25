@@ -122,12 +122,12 @@ class ComputeSlice
       assign_pos_of (pos, outer_axes).to (in, out);
 
       for (auto l = Loop (slice_axes) (in); l; ++l)
-        im1 (in.index(X), in.index(Y)) = cdouble (in.value(), 0.0);
+        im1 (ssize_t(in.index(X)), ssize_t(in.index(Y))) = cdouble (in.value(), 0.0);
 
       unring_2d ();
 
       for (auto l = Loop (slice_axes) (out); l; ++l)
-        out.value() = im1 (out.index(X), out.index(Y)).real();
+        out.value() = im1 (ssize_t(out.index(X)), ssize_t(out.index(Y))).real();
     }
 
   private:
