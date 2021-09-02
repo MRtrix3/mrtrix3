@@ -40,10 +40,10 @@ WORKDIR /opt/art
 RUN curl -fsSL https://osf.io/73h5s/download \
     | tar xz --strip-components 1
 
-# Download minified ANTs (2.3.4).
+# Download minified ANTs (2.3.4-2).
 FROM base-builder as ants-installer
 WORKDIR /opt/ants
-RUN curl -fsSL https://osf.io/3ad69/download \
+RUN curl -fsSL https://osf.io/yswa4/download \
     | tar xz --strip-components 1
 
 # Download FreeSurfer files.
@@ -51,10 +51,11 @@ FROM base-builder as freesurfer-installer
 WORKDIR /opt/freesurfer
 RUN curl -fsSLO https://raw.githubusercontent.com/freesurfer/freesurfer/v7.1.1/distribution/FreeSurferColorLUT.txt
 
-# Download minified FSL (6.0.4)
+# Download minified FSL (6.0.4-2)
 FROM base-builder as fsl-installer
 WORKDIR /opt/fsl
-RUN curl -fsSL https://osf.io/dv258/download \
+COPY fslinstaller.py fslinstaller.py
+RUN curl -fsSL https://osf.io/bqrys/download \
     | tar xz --strip-components 1
 
 # Build final image.
@@ -84,6 +85,7 @@ COPY --from=ants-installer /opt/ants /opt/ants
 COPY --from=freesurfer-installer /opt/freesurfer /opt/freesurfer
 COPY --from=fsl-installer /opt/fsl /opt/fsl
 COPY --from=mrtrix3-builder /opt/mrtrix3 /opt/mrtrix3
+RUN rm /opt/fsl/fslinstaller.py
 
 ENV ANTSPATH="/opt/ants/bin" \
     ARTHOME="/opt/art" \

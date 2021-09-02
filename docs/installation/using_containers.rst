@@ -44,11 +44,14 @@ above, the following instruction can be run from a location in which the
 
     docker build --tag mrtrix3 .
     
-Set `DOCKER_BUILDKIT=1` to build parts of the Docker image in parallel,
+Set ``DOCKER_BUILDKIT=1`` to build parts of the Docker image in parallel,
 which can speed up build time.
-Use `--build-arg MAKE_JOBS=4` to build *MRtrix3* with 4 processors
+Use ``--build-arg MAKE_JOBS=4`` to build *MRtrix3* with 4 processors
 (can substitute this with any number of processors > 0); if omitted,
 *MRtrix3* will be built using a single thread only.
+You will need to `register <https://fsl.fmrib.ox.ac.uk/fsldownloads_registration>`_
+on the FSL website in order to obtain file ``fslinstaller.py``, which is a
+prerequisite for building the container.
 
 Using Singularity
 -----------------
@@ -60,6 +63,10 @@ The following instruction can be run from the location in which the
 *MRtrix3* source code has been cloned::
 
     singularity build MRtrix3.sif Singularity
+
+You will need to `register <https://fsl.fmrib.ox.ac.uk/fsldownloads_registration>`_
+on the FSL website in order to obtain file ``fslinstaller.py``, which is a
+prerequisite for building the container.
 
 Build container from DockerHub
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -90,5 +97,7 @@ Run GUI command
 The following usage has been shown to work on Linux::
 
     singularity exec -B /run MRtrix3.sif mrview
+
+
 
 

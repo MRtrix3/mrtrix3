@@ -24,11 +24,14 @@ Include: apt
     FSLTCLSH=/opt/fsl/bin/fsltclsh
     FSLWISH=/opt/fsl/bin/fslwish
     export FSLDIR FSLOUTPUTTYPE FSLMULTIFILEQUIT FSLTCLSH FSLWISH
-    
+
 # All
     LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/cuda/bin:/.singularity.d/libs:/usr/lib:/opt/fsl/lib:$LD_LIBRARY_PATH"
     PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:/usr/local/cuda/bin:$PATH"
     export LD_LIBRARY_PATH PATH
+
+%files
+    fslinstaller.py /opt/fsl/fslinstaller.py
 
 %post
 # Non-interactive installation of packages
@@ -47,12 +50,12 @@ Include: apt
 # Neuroimaging software / data dependencies
     # Download minified ART ACPCdetect (V2.0).
     mkdir -p /opt/art && curl -fsSL https://osf.io/73h5s/download | tar xz -C /opt/art --strip-components 1
-    # Download minified ANTs (2.3.4).
-    mkdir -p /opt/ants && curl -fsSL https://osf.io/3ad69/download | tar xz -C /opt/ants --strip-components 1
+    # Download minified ANTs (2.3.4-2).
+    mkdir -p /opt/ants && curl -fsSL https://osf.io/yswa4/download | tar xz -C /opt/ants --strip-components 1
     # Download FreeSurfer lookup table file (v7.1.1).
     mkdir -p /opt/freesurfer && curl -fsSL -o /opt/freesurfer/FreeSurferColorLUT.txt https://raw.githubusercontent.com/freesurfer/freesurfer/v7.1.1/distribution/FreeSurferColorLUT.txt
-    # Download minified FSL (6.0.4).
-    mkdir -p /opt/fsl && curl -fsSL https://osf.io/dv258/download | tar xz -C /opt/fsl --strip-components 1
+    # Download minified FSL (6.0.4-2).
+    mkdir -p /opt/fsl && curl -fsSL https://osf.io/bqrys/download | tar xz -C /opt/fsl --strip-components 1 && rm /opt/fsl/fslinstaller.py
 
 # Use Python3 for anything requesting Python, since Python2 is not installed
     ln -s /usr/bin/python3 /usr/bin/python
