@@ -147,8 +147,12 @@ void run ()
     Transform image_transform (index_image);
     for (auto i = Loop ("loading template fixel directions and positions", index_image, 0, 3)(index_image); i; ++i) {
       const Eigen::Vector3 vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
+      index_image.index(3) = 0;
+      index_type num = index_image.value();
       index_image.index(3) = 1;
       index_type offset = index_image.value();
+      if (offset + num > num_fixels)
+        throw Exception ("fixel index \"" + index_image.name() + "\" makes reference to out of bounds fixel!");
       index_type fixel_index = 0;
       for (auto f = Fixel::Loop (index_image) (directions_data); f; ++f, ++fixel_index) {
         directions[offset + fixel_index] = directions_data.row(1);
