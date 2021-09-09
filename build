@@ -95,7 +95,9 @@ OPTIONS
        jobs succeed.
 
     -timings
-       write compile times out to timings.log file.
+       write compile times and peak memory usage out to timings.log file. Note
+       that this requires the availability of the '/usr/bin/time' command as a
+       standalone executable (not the BASH built-in).
 
     -nopaginate
        do not feed error log to the paginator, even if running in a TTY
@@ -932,12 +934,10 @@ def execute (message, cmd, working_dir=None):
     return 0
 
   try:
-    start = timer()
+    if timingfile is not None:
+      cmd = [ '/usr/bin/time', '-v' ] + cmd
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ, cwd=working_dir) #pylint: disable=consider-using-with
     ( stdout, stderr ) = process.communicate()
-    end = timer()
-    if timingfile is not None:
-      logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
 
     if process.returncode != 0:
       error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
@@ -952,12 +952,21 @@ def execute (message, cmd, working_dir=None):
     if stderr:
       errstr += stderr.decode (errors='ignore') + '\n\n'
 
-    if errstr and not nowarnings:
+    if timingfile is not None:
+      for line in stderr.decode (errors='ignore').splitlines():
+        if 'Elapsed (wall clock) time' in line:
+          walltime = line.split()[-1]
+        elif 'Maximum resident set size' in line:
+          mem = line.split()[-1]
+      logtime (message.split()[-1] + " " + walltime + " " + mem + "\n")
+
+    elif errstr and not nowarnings:
       disp (errstr)
 
   except OSError:
     disp (cmd[0] + ': command not found')
     return 1
+
   return None
 
 
@@ -1116,7 +1125,8 @@ def build_next ():
       with lock:
         del todo[current]
 
-  except Exception:
+  except Exception as e:
+    print ("\n\nUnexpected error: " + str(e))
     stop = 2
     return
 
