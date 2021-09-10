@@ -100,19 +100,20 @@ def execute(): #pylint: disable=unused-variable
 
   app.goto_scratch_dir()
 
-  if app.ARGS.mask:
-    # Check that the brain mask is appropriate
-    mask_header = image.Header('mask.mif')
-    if mask_header.size()[:3] != image.Header('dwi.mif').size()[:3]:
-      raise MRtrixError('Dimensions of provided mask image do not match DWI')
-    if not (len(mask_header.size()) == 3 or (len(mask_header.size()) == 4 and mask_header.size()[3] == 1)):
-      raise MRtrixError('Provided mask image needs to be a 3D image')
-  else:
-    app.console('Computing brain mask (dwi2mask)...')
-    run.command('dwi2mask dwi.mif mask.mif', show=False)
+  if app.ARGS.algorithm != 'manual':
+    if app.ARGS.mask:
+      # Check that the brain mask is appropriate
+      mask_header = image.Header('mask.mif')
+      if mask_header.size()[:3] != image.Header('dwi.mif').size()[:3]:
+        raise MRtrixError('Dimensions of provided mask image do not match DWI')
+      if not (len(mask_header.size()) == 3 or (len(mask_header.size()) == 4 and mask_header.size()[3] == 1)):
+        raise MRtrixError('Provided mask image needs to be a 3D image')
+    else:
+      app.console('Computing brain mask (dwi2mask)...')
+      run.command('dwi2mask dwi.mif mask.mif', show=False)
 
-  if not image.statistics('mask.mif', mask='mask.mif').count:
-    raise MRtrixError(('Provided' if app.ARGS.mask else 'Generated') + ' mask image does not contain any voxels')
+    if not image.statistics('mask.mif', mask='mask.mif').count:
+      raise MRtrixError(('Provided' if app.ARGS.mask else 'Generated') + ' mask image does not contain any voxels')
 
   # From here, the script splits depending on what estimation algorithm is being used
   alg.execute()
