@@ -25,7 +25,7 @@ Description
 Reorientation is performed by transforming the vector representing the fixel direction with the Jacobian (local affine transform) computed at each voxel in the warp, then re-normalising the vector.
 
 Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.2/fixel_based_analysis/fixel_directory_format.html
+https://mrtrix.readthedocs.io/en/3.0.3/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
