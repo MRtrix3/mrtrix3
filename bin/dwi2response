@@ -100,7 +100,7 @@ def execute(): #pylint: disable=unused-variable
 
   app.goto_scratch_dir()
 
-  if app.ARGS.algorithm != 'manual':
+  if alg.supports_mask():
     if app.ARGS.mask:
       # Check that the brain mask is appropriate
       mask_header = image.Header('mask.mif')
