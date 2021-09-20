@@ -46,7 +46,7 @@ namespace MR
         fixel_positions.resize (matrix.size());
         const Transform transform (index_image);
         for (auto i = Loop (index_image, 0, 3) (index_image); i; ++i) {
-          const Eigen::Vector3 vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
+          const Eigen::Vector3d vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
           const Eigen::Vector3f scanner = (transform.voxel2scanner * vox).cast<float>();
           index_image.index(3) = 0;
           const index_type count = index_image.value();
