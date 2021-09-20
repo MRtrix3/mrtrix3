@@ -54,7 +54,7 @@ namespace MR {
           }
 
           size_t acq_dim[2], dim[2], series_num, instance, acq, sequence, echo_index;
-          Eigen::Vector3 position_vector, orientation_x, orientation_y, orientation_z, G;
+          Eigen::Vector3d position_vector, orientation_x, orientation_y, orientation_z, G;
           default_type distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
           size_t data, bits_alloc, data_size, frame_offset;
           std::string filename, image_type;
@@ -99,7 +99,7 @@ namespace MR {
             else {
               if (!orientation_x.allFinite() || !orientation_y.allFinite())
                 throw Exception ("slice orientation information missing from DICOM header!");
-              Eigen::Vector3 normal = orientation_x.cross (orientation_y);
+              Eigen::Vector3d normal = orientation_x.cross (orientation_y);
               if (normal.dot (orientation_z) < 0.0)
                 orientation_z = -normal;
               else
