@@ -50,7 +50,7 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 def supports_mask(): #pylint: disable=unused-variable
-  return True 
+  return True
 
 
 
