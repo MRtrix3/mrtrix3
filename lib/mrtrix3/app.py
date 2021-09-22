@@ -110,7 +110,7 @@ else:
 # , rather than executing this function directly
 def _execute(module): #pylint: disable=unused-variable
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
-  global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, EXEC_NAME, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY, WORKING_DIR
+  global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY
 
   # Set up signal handlers
   for sig in _SIGNALS:
@@ -270,7 +270,6 @@ def _execute(module): #pylint: disable=unused-variable
 
 
 def check_output_path(item): #pylint: disable=unused-variable
-  global ARGS, FORCE_OVERWRITE, WORKING_DIR
   if not item:
     return
   abspath = os.path.abspath(os.path.join(WORKING_DIR, item))
@@ -289,7 +288,7 @@ def check_output_path(item): #pylint: disable=unused-variable
 
 def make_scratch_dir(): #pylint: disable=unused-variable
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
-  global ARGS, CONTINUE_OPTION, EXEC_NAME, SCRATCH_DIR, WORKING_DIR
+  global SCRATCH_DIR
   if CONTINUE_OPTION:
     debug('Skipping scratch directory creation due to use of -continue option')
     return
@@ -311,7 +310,8 @@ def make_scratch_dir(): #pylint: disable=unused-variable
     outfile.write(WORKING_DIR + '\n')
   with io.open(os.path.join(SCRATCH_DIR, 'command.txt'), 'w', encoding='utf8') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
-  io.open(os.path.join(SCRATCH_DIR, 'log.txt'), 'w', encoding='utf8').close() # pylint: disable='consider-using-with'
+  with io.open(os.path.join(SCRATCH_DIR, 'log.txt'), 'w', encoding='utf8'):
+    pass
   # Also use this scratch directory for any piped images within run.command() calls,
   #   and for keeping a log of executed commands / functions
   run.shared.set_scratch_dir(SCRATCH_DIR)
@@ -319,7 +319,6 @@ def make_scratch_dir(): #pylint: disable=unused-variable
 
 
 def goto_scratch_dir(): #pylint: disable=unused-variable
-  global SCRATCH_DIR
   if not SCRATCH_DIR:
     raise Exception('No scratch directory location set')
   if VERBOSITY:
@@ -333,7 +332,6 @@ def goto_scratch_dir(): #pylint: disable=unused-variable
 #   all intermediates, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
 def cleanup(items): #pylint: disable=unused-variable
-  global DO_CLEANUP, VERBOSITY
   if not DO_CLEANUP:
     return
   if isinstance(items, list):
@@ -378,12 +376,10 @@ def cleanup(items): #pylint: disable=unused-variable
 
 # A set of functions and variables for printing various information at the command-line.
 def console(text): #pylint: disable=unused-variable
-  global VERBOSITY
   if VERBOSITY:
     sys.stderr.write(EXEC_NAME + ': ' + ANSI.console + text + ANSI.clear + '\n')
 
 def debug(text): #pylint: disable=unused-variable
-  global EXEC_NAME, VERBOSITY
   if VERBOSITY <= 2:
     return
   outer_frames = inspect.getouterframes(inspect.currentframe())
@@ -448,7 +444,6 @@ def var(*variables): #pylint: disable=unused-variable
     del calling_frame
 
 def warn(text): #pylint: disable=unused-variable
-  global EXEC_NAME
   sys.stderr.write(EXEC_NAME + ': ' + ANSI.warn + '[WARNING] ' + text + ANSI.clear + '\n')
 
 
@@ -520,7 +515,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
 
   def done(self, msg=None):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
-    global EXEC_NAME, VERBOSITY
+    global VERBOSITY
     self.iscomplete = True
     if msg is not None:
       self.message = msg
@@ -540,7 +535,6 @@ class ProgressBar(object): #pylint: disable=unused-variable
 
 
   def _update(self):
-    global EXEC_NAME
     assert not self.iscomplete
     if not self.orig_verbosity:
       return
@@ -572,7 +566,6 @@ class Parser(argparse.ArgumentParser):
 
   # pylint: disable=protected-access
   def __init__(self, *args_in, **kwargs_in):
-    global _DEFAULT_COPYRIGHT
     self._author = None
     self._citation_list = [ ]
     self._copyright = _DEFAULT_COPYRIGHT
@@ -660,7 +653,6 @@ class Parser(argparse.ArgumentParser):
   def print_citation_warning(self):
     # If a subparser has been invoked, the subparser's function should instead be called,
     #   since it might have had additional citations appended
-    global ARGS
     if self._subparsers:
       subparser = getattr(ARGS, self._subparsers._group_actions[0].dest)
       for alg in self._subparsers._group_actions[0].choices:
@@ -1118,7 +1110,6 @@ def add_dwgrad_import_options(cmdline): #pylint: disable=unused-variable
   cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
 def read_dwgrad_import_options(): #pylint: disable=unused-variable
   from mrtrix3 import path #pylint: disable=import-outside-toplevel
-  global ARGS
   assert ARGS
   if ARGS.grad:
     return ' -grad ' + path.from_user(ARGS.grad)
@@ -1126,14 +1117,19 @@ def read_dwgrad_import_options(): #pylint: disable=unused-variable
     return ' -fslgrad ' + path.from_user(ARGS.fslgrad[0]) + ' ' + path.from_user(ARGS.fslgrad[1])
   return ''
 
+
+
+
 def add_dwgrad_export_options(cmdline): #pylint: disable=unused-variable
   options = cmdline.add_argument_group('Options for exporting the diffusion gradient table')
   options.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
   options.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
   cmdline.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
+
+
+
 def read_dwgrad_export_options(): #pylint: disable=unused-variable
   from mrtrix3 import path #pylint: disable=import-outside-toplevel
-  global ARGS
   assert ARGS
   if ARGS.export_grad_mrtrix:
     check_output_path(path.from_user(ARGS.export_grad_mrtrix, False))
@@ -1152,7 +1148,7 @@ def read_dwgrad_export_options(): #pylint: disable=unused-variable
 # Handler function for dealing with system signals
 def handler(signum, _frame):
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
-  global _SIGNALS, EXEC_NAME, SCRATCH_DIR, WORKING_DIR
+  global SCRATCH_DIR
   # Terminate any child processes in the run module
   try:
     run.shared.terminate(signum)

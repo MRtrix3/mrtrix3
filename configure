@@ -816,30 +816,27 @@ if not noshared:
     bogus_cpp.fid.write ('int bogus() { return (1); }')
     bogus_cpp.fid.flush()
     bogus_cpp.fid.close()
-    with DeleteAfter (bogus_cpp.name[:-4] + '.o') as bogus_obj:
-      try:
+    try:
+      with DeleteAfter (bogus_cpp.name[:-4] + '.o') as bogus_obj:
         execute (fillin (cpp, {
             'CFLAGS': cpp_flags,
             'SRC': bogus_cpp.name,
             'OBJECT': bogus_obj.name }), CompileError)
-      except CompileError:
-        error ('compiler not found!' + configure_log_hint)
-      except Exception as e:
-        error ('unexpected exception of type ' + type(e).__name__ + ': ' + str(e) +  configure_log_hint)
-      with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
-        try:
+        with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
           execute (fillin (ld_lib, {
               'LINKLIB_FLAGS': ld_lib_flags,
               'OBJECTS': bogus_obj.name,
               'LIB': lib.name }), LinkError)
-        except LinkError:
-          error ('''linker not found!
+      report ('ok\n')
+    except CompileError:
+      error ('compiler not found!' + configure_log_hint)
+    except LinkError:
+      error ('''linker not found!
 
   MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LINKLIB_FLAGS', '"-L/usr/local/lib"', 'LINKLIB_ARGS', '"-shared LINKLIB_FLAGS OBJECTS -o LIB"'))
-        except Exception as e: # pylint: disable=unused-variable
-          error ('unexpected exception of type ' + type(e).__name__ + ': ' + str(e) +  configure_log_hint)
+    except Exception as excp_local:
+      error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) +  configure_log_hint)
 
-        report ('ok\n')
 
 
 
@@ -864,8 +861,8 @@ int main() {
     cpp_flags += [ '-DMRTRIX_WORD64' ]
   elif pointer_size != 4:
     error ('unexpected pointer size!')
-except Exception as e: # pylint: disable=unused-variable
-  error ('unexpected exception of type ' + type(e).__name__ + ': ' + str(e) +  configure_log_hint)
+except Exception as excp_local: # pylint: disable=unused-variable
+  error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) +  configure_log_hint)
 
 
 
@@ -1160,8 +1157,8 @@ if not nogui:
     error (''' Qt moc not found!
 
   MRtrix3 was unable to locate the Qt meta-object compiler 'moc'.''' + qt_path_hint)
-  except Exception as e: # pylint: disable=unused-variable
-    error ('unexpected exception of type ' + type(e).__name__ + ': ' + str(e) +  configure_log_hint)
+  except Exception as excp_local: # pylint: disable=unused-variable
+    error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) +  configure_log_hint)
 
   report ('Checking for Qt qmake: ')
   qmake = 'qmake'
@@ -1180,8 +1177,8 @@ if not nogui:
     error (''' Qt qmake not found!
 
   MRtrix3 was unable to locate the Qt command 'qmake'.''' + qt_path_hint)
-  except Exception as e: # pylint: disable=unused-variable
-    error ('unexpected exception of type ' + type(e).__name__ + ': ' + str(e) +  configure_log_hint)
+  except Exception as excp_local: # pylint: disable=unused-variable
+    error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) +  configure_log_hint)
 
 
 
@@ -1203,9 +1200,8 @@ if not nogui:
     error (''' Qt rcc not found!
 
   MRtrix3 was unable to locate the Qt command 'rcc'.''' + qt_path_hint)
-  except Exception as e: # pylint: disable=unused-variable
-    error ('unexpected exception of type ' + type(e).__name__ + ': ' + str(e) +  configure_log_hint)
-
+  except Exception as excp_local: # pylint: disable=unused-variable
+    error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) +  configure_log_hint)
 
 
 
@@ -1230,7 +1226,7 @@ class Foo: public QObject {
 '''
       log ('\nsource file "qt.h":\n---\n' + filetext + '---\n')
 
-      with open (os.path.join (qt_dir.name, 'qt.h'), 'wb') as f:
+      with io.open (os.path.join (qt_dir.name, 'qt.h'), 'wb') as f:
         f.write (filetext.encode ('utf8', errors='ignore'))
 
       filetext = '''#include <iostream>
@@ -1246,7 +1242,7 @@ int main() { Foo f; }
 '''
 
       log ('\nsource file "qt.cpp":\n---\n' + filetext + '---\n')
-      with open (os.path.join (qt_dir.name, 'qt.cpp'), 'wb') as f:
+      with io.open (os.path.join (qt_dir.name, 'qt.cpp'), 'wb') as f:
         f.write (filetext.encode ('utf8', errors='ignore'))
 
       filetext = 'CONFIG += c++11'
@@ -1258,7 +1254,7 @@ int main() { Foo f; }
         filetext += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = ' + macosx_version + '\n'
 
       log ('\nproject file "qt.pro":\n---\n' + filetext + '---\n')
-      with open (os.path.join (qt_dir.name, 'qt.pro'), 'wb') as f:
+      with io.open (os.path.join (qt_dir.name, 'qt.pro'), 'wb') as f:
         f.write (filetext.encode ('utf8', errors='ignore'))
 
       qmake_cmd = [ qmake ]
@@ -1283,7 +1279,7 @@ int main() { Foo f; }
       for qt_makefile in [ 'Makefile', 'Makefile.Release' ]:
         try:
           log ("reading Qt parameters from file '" + qt_makefile + "'... ")
-          with io.open (os.path.join (qt_dir.name, qt_makefile), 'r', encoding='utf-8') as f:
+          with io.open (os.path.join (qt_dir.name, qt_makefile), 'r', encoding='utf8') as f:
             for line in f:
               line = line.strip()
               if line.startswith ('DEFINES'):
@@ -1359,8 +1355,8 @@ int main() { Foo f; }
     error ('error running Qt application!' + configure_log_hint)
   except OSError as e: # pylint: disable=unused-variable
     error ('unexpected error: ' + str(e) + configure_log_hint)
-  except Exception as e: # pylint: disable=unused-variable
-    error ('unexpected exception of type ' + type(e).__name__ + ': ' + str(e) +  configure_log_hint)
+  except Exception as excp_local: # pylint: disable=unused-variable
+    error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) +  configure_log_hint)
 
 
 
@@ -1436,7 +1432,7 @@ with open (config_filename, 'wb') as config_file:
   # autogenerated by MRtrix configure script
   #
   # configure output:
-  """.encode('utf-8', errors='replace'))
+  """.encode('utf8', errors='replace'))
   for line in config_report.splitlines():
     config_file.write (('# ' + line + '\n').encode('utf-8', errors='replace'))
   config_file.write ('\n\n'.encode('utf-8'))
