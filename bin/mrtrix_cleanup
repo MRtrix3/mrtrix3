@@ -120,7 +120,7 @@ def execute(): #pylint: disable=unused-variable
     if except_list:
       app.console(str(len(files_to_delete) + len(dirs_to_delete) - len(except_list)) + ' of ' + str(len(files_to_delete) + len(dirs_to_delete)) + ' items erased' + print_freed())
       if app.ARGS.failed:
-        with open(app.ARGS.failed, 'w') as outfile:
+        with open(app.ARGS.failed, 'w', encoding='utf-8') as outfile:
           for item in except_list:
             outfile.write(item + '\n')
         app.console('List of items script failed to erase written to file "' + app.ARGS.failed + '"')

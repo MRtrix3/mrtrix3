@@ -1093,13 +1093,13 @@ def execute(): #pylint: disable=unused-variable
         for eddy_filename in eddyqc_files:
           if os.path.isfile('dwi_post_eddy.' + eddy_filename):
             if slice_padded and eddy_filename in [ 'eddy_outlier_map', 'eddy_outlier_n_sqr_stdev_map', 'eddy_outlier_n_stdev_map' ]:
-              with open('dwi_post_eddy.' + eddy_filename, 'r') as f_eddyfile:
+              with open('dwi_post_eddy.' + eddy_filename, 'r', encoding='utf-8') as f_eddyfile:
                 eddy_data = f_eddyfile.readlines()
               eddy_data_header = eddy_data[0]
               eddy_data = eddy_data[1:]
               for line in eddy_data:
                 line = ' '.join(line.strip().split(' ')[:-1])
-              with open('dwi_post_eddy_unpad.' + eddy_filename, 'w') as f_eddyfile:
+              with open('dwi_post_eddy_unpad.' + eddy_filename, 'w', encoding='utf-8') as f_eddyfile:
                 f_eddyfile.write(eddy_data_header + '\n')
                 f_eddyfile.write('\n'.join(eddy_data) + '\n')
             elif eddy_filename.endswith('.nii.gz'):
@@ -1377,7 +1377,7 @@ def execute(): #pylint: disable=unused-variable
     keys_to_remove.extend([ 'PhaseEncodingDirection', 'TotalReadoutTime', 'pe_scheme' ])
   # Get the header key-value entries from the input DWI, remove those we don't wish to keep, and
   #   export the result to a new JSON file so that they can be inserted into the output header
-  with open('dwi.json', 'r') as input_json_file:
+  with open('dwi.json', 'r', encoding='utf-8') as input_json_file:
     keyval = json.load(input_json_file)
   for key in keys_to_remove:
     keyval.pop(key, None)
@@ -1389,7 +1389,7 @@ def execute(): #pylint: disable=unused-variable
   #   for e.g. tracking for different volumes, or performing any geometric corrections
   if execute_applytopup:
     keyval['prior_pe_scheme'] = dwi_manual_pe_scheme if dwi_manual_pe_scheme else dwi_pe_scheme
-  with open('output.json', 'w') as output_json_file:
+  with open('output.json', 'w', encoding='utf-8') as output_json_file:
     json.dump(keyval, output_json_file)
 
 
