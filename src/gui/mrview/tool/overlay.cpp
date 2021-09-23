@@ -624,14 +624,16 @@ namespace MR
           int num_lower_threshold = 0, num_upper_threshold = 0;
           int colourmap_index = -2;
           int num_interp = 0;
+          int num_inverted = 0;
           for (int i = 0; i < indices.size(); ++i) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             if (colourmap_index != int(overlay->colourmap)) {
               if (colourmap_index == -2)
                 colourmap_index = overlay->colourmap;
               else
-                colourmap_index = -1;
+                colourmap_index = -1;                
             }
+            num_inverted += overlay->scale_inverted();
             rate += overlay->scaling_rate();
             min_val += overlay->scaling_min();
             max_val += overlay->scaling_max();
@@ -678,6 +680,7 @@ namespace MR
           }
 
           colourmap_button->set_colourmap_index(colourmap_index);
+          colourmap_button->set_scale_inverted (num_inverted > indices.size()/2);
           opacity_slider->setValue (1.0e3f * opacity);
           if (num_interp == 0)
             interpolate_check_box->setCheckState (Qt::Unchecked);

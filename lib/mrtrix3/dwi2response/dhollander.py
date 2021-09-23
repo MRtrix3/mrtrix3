@@ -251,7 +251,7 @@ def execute(): #pylint: disable=unused-variable
       isiso = [ lm == 0 for lm in sfwm_lmax ]
     else:
       isiso = [ bv < bzero_threshold for bv in bvalues ]
-    with open('ewmrf.txt', 'w') as ewr:
+    with open('ewmrf.txt', 'w', encoding='utf-8') as ewr:
       for iis in isiso:
         if iis:
           ewr.write("%s 0 0 0\n" % refwmcoef)

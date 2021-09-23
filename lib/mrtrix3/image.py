@@ -38,10 +38,10 @@ class Header:
     if result:
       raise MRtrixError('Could not access header information for image \'' + image_path + '\'')
     try:
-      with open(filename, 'r') as json_file:
+      with open(filename, 'r', encoding='utf-8') as json_file:
         data = json.load(json_file)
     except UnicodeDecodeError:
-      with open(filename, 'r') as json_file:
+      with open(filename, 'r', encoding='utf-8') as json_file:
         data = json.loads(json_file.read().decode('utf-8', errors='replace'))
     os.remove(filename)
     try:

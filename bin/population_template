@@ -471,7 +471,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
   inputs = []
   def paths_to_file_uids(paths, prefix, postfix):
     """ strip pre and postfix from filename, replace whitespace characters """
-    uid_path = dict()
+    uid_path = {}
     uids = []
     for path in paths:
       uid = re.sub(re.escape(postfix)+'$', '', re.sub('^'+re.escape(prefix), '', os.path.split(path)[1]))
@@ -548,10 +548,10 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
   if f_agg_weight:
     import csv  # pylint: disable=import-outside-toplevel
     try:
-      with open(f_agg_weight, 'r') as fweights:
+      with open(f_agg_weight, 'r', encoding='utf-8') as fweights:
         agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in csv.reader(fweights, delimiter=',', quotechar='#'))
     except UnicodeDecodeError:
-      with open(f_agg_weight, 'r') as fweights:
+      with open(f_agg_weight, 'r', encoding='utf-8') as fweights:
         reader = csv.reader(fweights.read().decode('utf-8', errors='replace'), delimiter=',', quotechar='#')
         agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in reader)
     pref = '^' + re.escape(get_common_prefix(list(agg_weights.keys())))
@@ -1009,7 +1009,7 @@ def execute(): #pylint: disable=unused-variable
 
     if not dolinear:
       for inp in ins:
-        with open(os.path.join('linear_transforms_initial', inp.uid + '.txt'), 'w') as fout:
+        with open(os.path.join('linear_transforms_initial', inp.uid + '.txt'), 'w', encoding='utf-8') as fout:
           fout.write('1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n')
 
     run.function(copy, 'average_header' + cns.suff[0] + '.mif', 'average_header.mif')
@@ -1399,7 +1399,7 @@ def execute(): #pylint: disable=unused-variable
       keyval = image.Header(os.path.join('warps', inp.uid + '.mif')).keyval()
       keyval = dict((k, keyval[k]) for k in ('linear1', 'linear2'))
       json_path = os.path.join('warps', inp.uid + '.json')
-      with open(json_path, 'w') as json_file:
+      with open(json_path, 'w', encoding='utf-8') as json_file:
         json.dump(keyval, json_file)
       run.command('mrconvert ' + os.path.join('warps', inp.uid + '.mif') + ' ' +
                   shlex.quote(os.path.join(warp_path, xcontrast_xsubject_pre_postfix[0] +

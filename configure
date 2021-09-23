@@ -236,21 +236,19 @@ config_report = ''
 
 
 def log (message):
-  global logfile
   logfile.write (message.encode (errors='ignore'))
   if verbose:
     sys.stdout.write (message)
     sys.stdout.flush()
 
 def report (message):
-  global config_report, logfile
+  global config_report
   config_report += message
   sys.stdout.write (message)
   sys.stdout.flush()
   logfile.write (('\nREPORT: ' + message.rstrip() + '\n').encode (errors='ignore'))
 
 def error (message):
-  global logfile
   logfile.write (('\nERROR: ' + message.rstrip() + '\n\n').encode (errors='ignore'))
   sys.stdout.write ('\nERROR: ' + message.rstrip() + '\n\n')
   sys.stdout.flush()
@@ -520,11 +518,11 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
       log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
 
-  except OSError as excp: # pylint: disable=redefined-outer-name
-    log ('error invoking command "' + cmd[0] + '": ' + excp.strerror + '\n>>\n\n')
-    raise exception from e
-  except Exception as excp: # pylint: disable=redefined-outer-name
-    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
+  except OSError as excp_local:
+    log ('error invoking command "' + cmd[0] + '": ' + excp_local.strerror + '\n>>\n\n')
+    raise exception from excp_local
+  except Exception as excp_local:
+    error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) + configure_log_hint)
   else:
     if raise_on_non_zero_exit_code and process.returncode != 0:
       raise exception (stderr)
@@ -535,7 +533,6 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
 
 
 def compile (source, compiler_flags, linker_flags): # pylint: disable=redefined-builtin
-  global cpp, ld
   with TempFile ('.cpp') as srcfile:
     log ('\nCOMPILE ' + srcfile.name + ':\n---\n' + source + '\n---\n')
     srcfile.fid.write (source)
@@ -576,7 +573,7 @@ def get_flags (default=None, env=None, pkg_config_flags=None):
   Otherwise it returns the contents of 'default'.
   """
   if env:
-    if env in os.environ.keys():
+    if env in os.environ:
       return shlex.split (os.environ[env])
   if pkg_config_flags:
     try:
@@ -727,25 +724,25 @@ elif system == 'darwin':
 
 # set CPP compiler:
 ld_cmdline = None
-if 'CXX' in os.environ.keys():
+if 'CXX' in os.environ:
   cxx_env = os.environ['CXX']
   if not conda and 'conda' in cxx_env:
     report ('WARNING: anaconda/miniconda compiler set by CXX environment variable - ignored to avoid conflicts\n')
     issue_conda_warning = True
   else:
     cxx = shlex.split (cxx_env)
-if 'CXX_ARGS' in os.environ.keys():
+if 'CXX_ARGS' in os.environ:
   cxx_args = shlex.split (os.environ['CXX_ARGS'])
-if 'LINK' in os.environ.keys():
+if 'LINK' in os.environ:
   ld_env = os.environ['LINK']
   if not conda and 'conda' in ld_env:
     report ('WARNING: anaconda/miniconda linker set by LINK environment variable - ignored to avoid conflicts\n')
     issue_conda_warning = True
   else:
     ld_cmdline = shlex.split (ld_env)
-if 'LINK_ARGS' in os.environ.keys():
+if 'LINK_ARGS' in os.environ:
   ld_args = shlex.split (os.environ['LINK_ARGS'])
-if 'LINKLIB_ARGS' in os.environ.keys():
+if 'LINKLIB_ARGS' in os.environ:
   ld_lib_args = shlex.split (os.environ['LINKLIB_ARGS'])
 
 
@@ -761,7 +758,7 @@ if issue_conda_warning:
 
 report ('Detecting OS: ' + system + '\n')
 
-if 'ARCH' in os.environ.keys():
+if 'ARCH' in os.environ:
   march = os.environ['ARCH']
   if march:
     report ('Machine architecture set by ARCH environment variable to: ' + march + '\n')
@@ -771,12 +768,12 @@ if 'ARCH' in os.environ.keys():
 
 # CPP flags:
 
-if 'CFLAGS' in os.environ.keys():
+if 'CFLAGS' in os.environ:
   cpp_flags += shlex.split (os.environ['CFLAGS'])
-if 'LINKFLAGS' in os.environ.keys():
+if 'LINKFLAGS' in os.environ:
   ld_flags += shlex.split (os.environ['LINKFLAGS'])
 ld_lib_flags += ld_flags
-if 'LINKLIB_FLAGS' in os.environ.keys():
+if 'LINKLIB_FLAGS' in os.environ:
   ld_lib_flags += shlex.split (os.environ['LINKLIB_FLAGS'])
 
 for candidate in cxx:
@@ -830,30 +827,27 @@ if not noshared:
     bogus_cpp.fid.write ('int bogus() { return (1); }')
     bogus_cpp.fid.flush()
     bogus_cpp.fid.close()
-    with DeleteAfter (bogus_cpp.name[:-4] + '.o') as bogus_obj:
-      try:
+    try:
+      with DeleteAfter (bogus_cpp.name[:-4] + '.o') as bogus_obj:
         execute (fillin (cpp, {
             'CFLAGS': cpp_flags,
             'SRC': bogus_cpp.name,
             'OBJECT': bogus_obj.name }), CompileError)
-      except CompileError:
-        error ('compiler not found!' + configure_log_hint)
-      except Exception as excp:
-        error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
-      with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
-        try:
+        with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
           execute (fillin (ld_lib, {
               'LINKLIB_FLAGS': ld_lib_flags,
               'OBJECTS': bogus_obj.name,
               'LIB': lib.name }), LinkError)
-        except LinkError:
-          error ('''linker not found!
+      report ('ok\n')
+    except CompileError:
+      error ('compiler not found!' + configure_log_hint)
+    except LinkError:
+      error ('''linker not found!
 
   MRtrix3 was unable to employ the linker program for shared library generation.''' + compiler_hint ('shared library linker', 'LINKLIB_FLAGS', '"-L/usr/local/lib"', 'LINKLIB_ARGS', '"-shared LINKLIB_FLAGS OBJECTS -o LIB"'))
-        except Exception as excp:
-          error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
+    except Exception as excp:
+      error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
-        report ('ok\n')
 
 
 
@@ -878,7 +872,7 @@ int main() {
     cpp_flags += [ '-DMRTRIX_WORD64' ]
   elif pointer_size != 4:
     error ('unexpected pointer size!')
-except Exception as excp:
+except Exception as excp: # pylint: disable=unused-variable
   error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
@@ -1167,7 +1161,7 @@ if not nogui:
 
   report ('Checking for Qt moc: ')
   moc = 'moc'
-  if 'MOC' in os.environ.keys():
+  if 'MOC' in os.environ:
     moc = os.environ['MOC']
   try:
     moc_version = get_qt_version([ moc, '-v' ], OSError)
@@ -1181,12 +1175,12 @@ if not nogui:
     error (''' Qt moc not found!
 
   MRtrix3 was unable to locate the Qt meta-object compiler 'moc'.''' + qt_path_hint)
-  except Exception as excp:
+  except Exception as excp: # pylint: disable=unused-variable
     error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
   report ('Checking for Qt qmake: ')
   qmake = 'qmake'
-  if 'QMAKE' in os.environ.keys():
+  if 'QMAKE' in os.environ:
     qmake = os.environ['QMAKE']
   try:
     qmake_version = get_qt_version([ qmake, '-v' ], OSError)
@@ -1200,7 +1194,7 @@ if not nogui:
     error (''' Qt qmake not found!
 
   MRtrix3 was unable to locate the Qt command 'qmake'.''' + qt_path_hint)
-  except Exception as excp:
+  except Exception as excp: # pylint: disable=unused-variable
     error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
@@ -1208,7 +1202,7 @@ if not nogui:
   report ('Checking for Qt rcc: ')
   rcc = 'rcc'
 
-  if 'RCC' in os.environ.keys():
+  if 'RCC' in os.environ:
     rcc = os.environ['RCC']
   try:
     rcc_version = get_qt_version([ rcc, '-v' ], OSError)
@@ -1222,7 +1216,7 @@ if not nogui:
     error (''' Qt rcc not found!
 
   MRtrix3 was unable to locate the Qt command 'rcc'.''' + qt_path_hint)
-  except Exception as excp:
+  except Exception as excp: # pylint: disable=unused-variable
     error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
@@ -1248,7 +1242,7 @@ class Foo: public QObject {
 '''
       log ('\nsource file "qt.h":\n---\n' + filetext + '---\n')
 
-      with open (os.path.join (qt_dir.name, 'qt.h'), 'w') as f:
+      with open (os.path.join (qt_dir.name, 'qt.h'), 'w', encoding='utf-8') as f:
         f.write (filetext)
 
       filetext = '''#include <iostream>
@@ -1264,7 +1258,7 @@ int main() { Foo f; }
 '''
 
       log ('\nsource file "qt.cpp":\n---\n' + filetext + '---\n')
-      with open (os.path.join (qt_dir.name, 'qt.cpp'), 'w') as f:
+      with open (os.path.join (qt_dir.name, 'qt.cpp'), 'w', encoding='utf-8') as f:
         f.write (filetext)
 
       filetext = 'CONFIG += c++11'
@@ -1276,7 +1270,7 @@ int main() { Foo f; }
         filetext += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = ' + macosx_version + '\n'
 
       log ('\nproject file "qt.pro":\n---\n' + filetext + '---\n')
-      with open (os.path.join (qt_dir.name, 'qt.pro'), 'w') as f:
+      with open (os.path.join (qt_dir.name, 'qt.pro'), 'w', encoding='utf-8') as f:
         f.write (filetext)
 
       qmake_cmd = [ qmake ]
@@ -1300,7 +1294,7 @@ int main() { Foo f; }
       for qt_makefile in [ 'Makefile', 'Makefile.Release' ]:
         try:
           log ("reading Qt parameters from file '" + qt_makefile + "'... ")
-          with open (os.path.join (qt_dir.name, qt_makefile)) as fd:
+          with open (os.path.join (qt_dir.name, qt_makefile), encoding='utf-8') as fd:
             for line in fd:
               line = line.strip()
               if line.startswith ('DEFINES'):
@@ -1380,7 +1374,7 @@ int main() { Foo f; }
     error ('Qt version is too old! (require >= 5.5)' + configure_log_hint)
   except OSError as e:
     error ('unexpected error: ' + str(e) + configure_log_hint)
-  except Exception as excp:
+  except Exception as excp: # pylint: disable=unused-variable
     error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
 
 
@@ -1451,7 +1445,7 @@ config_filename = os.path.join (os.path.dirname(sys.argv[0]), 'config')
 
 sys.stdout.write ('\nwriting configuration to file \'' + config_filename + '\': ')
 
-with open (config_filename, 'w') as config_file:
+with open (config_filename, 'w', encoding='utf-8') as config_file:
 
   config_file.write ("""#!/usr/bin/python
   #
