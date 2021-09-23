@@ -545,7 +545,7 @@ def execute(): #pylint: disable=unused-variable
     acpcdetect_input_header = image.Header(acpcdetect_input_image)
     acpcdetect_output_path = os.path.splitext(acpcdetect_input_image)[0] + '_ACPC.txt'
     app.cleanup(acpcdetect_input_image)
-    with open(acpcdetect_output_path, 'r') as acpc_file:
+    with open(acpcdetect_output_path, 'r', encoding='utf-8') as acpc_file:
       acpcdetect_output_data = acpc_file.read().splitlines()
     app.cleanup(glob.glob(os.path.splitext(acpcdetect_input_image)[0] + "*"))
     # Need to scan through the contents of this file,

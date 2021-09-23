@@ -222,7 +222,6 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 def command(cmd, **kwargs): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  global shared #pylint: disable=invalid-name
 
   def quote_nonpipe(item):
     return item if item == '|' else shlex.quote(item)
@@ -467,7 +466,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   #   other flags may potentially change if this file is eventually used to resume the script
   if shared.get_scratch_dir():
     with shared.lock:
-      with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a') as outfile:
+      with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a', encoding='utf-8') as outfile:
         outfile.write(cmdstring + '\n')
 
   return CommandReturn(return_stdout, return_stderr)
@@ -512,7 +511,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   # Only now do we append to the script log, since the function has completed successfully
   if shared.get_scratch_dir():
     with shared.lock:
-      with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a') as outfile:
+      with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a', encoding='utf-8') as outfile:
         outfile.write(fnstring + '\n')
 
   return result

@@ -142,7 +142,7 @@ def execute(): #pylint: disable=unused-variable
 
           # Create the gradient table file
           grad_path = 'grad' + suffix + '.b'
-          with open(grad_path, 'w') as grad_file:
+          with open(grad_path, 'w', encoding='utf-8') as grad_file:
             for line in grad:
               grad_file.write (','.join([str(v) for v in line]) + '\n')
 
@@ -158,7 +158,7 @@ def execute(): #pylint: disable=unused-variable
           grad = [ grad[permutation[0]], grad[permutation[1]], grad[permutation[2]] ]
 
           grad_path = 'bvecs' + suffix
-          with open(grad_path, 'w') as bvecs_file:
+          with open(grad_path, 'w', encoding='utf-8') as bvecs_file:
             for line in grad:
               bvecs_file.write (' '.join([str(v) for v in line]) + '\n')
 
