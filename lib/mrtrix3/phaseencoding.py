@@ -125,7 +125,7 @@ def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
     else:
       header['command_history'] = COMMAND_HISTORY_STRING
 
-  with open(filename, 'w') as outfile:
+  with open(filename, 'w', encoding='utf-8') as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
         outfile.write('# ' + key + ': ' + line + '\n')

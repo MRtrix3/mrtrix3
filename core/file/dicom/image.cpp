@@ -30,212 +30,108 @@ namespace MR {
 
       void Image::parse_item (Element& item, const std::string& dirname)
       {
-        // is this tag top-level or per-frame:
-        bool is_toplevel = (item.level() == 0);
-        for (size_t n = 0; n < item.level(); ++n) {
-          if (item.parents[n].group == 0x5200U && (
-                item.parents[n].element == 0x9230U ||  // per-frame tag
-                item.parents[n].element == 0x9229U)) { // shared across frames tag
-            is_toplevel = true;
-            break;
-          }
+
+        for (const auto& seq : item.parents) {
+          // ignore anything within IconImageSequence:
+          if (seq.group ==  0x0088U && seq.element == 0x0200U)
+            return;
         }
-
-
-
-        // process image-specific or per-frame items here:
-        if (is_toplevel) {
-          switch (item.group) {
-            case 0x0008U:
-              switch (item.element) {
-                case 0x0008U:
-                  image_type = join (item.get_string(), " ");
-                  return;
-                case 0x0032U:
-                  acquisition_time = item.get_time();
-                  return;
-                default:
-                  return;
-              }
-
-            case 0x0018U:
-              switch (item.element) {
-                case 0x0024U:
-                  sequence_name = item.get_string (0);
-                  if (!sequence_name.size())
-                    return;
-                  {
-                    int c = sequence_name.size()-1;
-                    if (!isdigit (sequence_name[c]))
-                      return;
-                    while (c >= 0 && isdigit (sequence_name[c]))
-                      --c;
-                    if (c >= 0 && sequence_name[c] != '#') {
-                      sequence = 0;
-                      return;
-                    }
-                    sequence = to<size_t> (sequence_name.substr (++c));
-                  }
-                  return;
-                case 0x0050U:
-                  slice_thickness = item.get_float (0, slice_thickness);
-                  return;
-                case 0x0080U:
-                  repetition_time = item.get_float (0, repetition_time);
-                  return;
-                case 0x0081U:
-                  echo_time = item.get_float (0, echo_time);
-                  return;
-                case 0x0082U:
-                  inversion_time = item.get_float (0, inversion_time);
-                  return;
-                case 0x0088U:
-                  slice_spacing = item.get_float (0, slice_spacing);
-                  return;
-                case 0x0091U:
-                  echo_train_length = item.get_int (0, echo_train_length);
-                  return;
-                case 0x0095U:
-                  pixel_bandwidth = item.get_float (0, pixel_bandwidth);
-                  return;
-                case 0x1310U:
-                  {
-                    auto d = item.get_uint();
-                    item.check_size (d, 4);
-                    acq_dim[0] = std::max (d[0], d[1]);
-                    acq_dim[1] = std::max (d[2], d[3]);
-                    if (d[0] == 0 && d[3] == 0)
-                      std::swap (acq_dim[0], acq_dim[1]);
-                  }
-                  return;
-                case 0x1312U:
-                  if (item.get_string (0) == "ROW")
-                    pe_axis = 0;
-                  else if (item.get_string (0) == "COL")
-                    pe_axis = 1;
-                  return;
-                case 0x1314U:
-                  flip_angle = item.get_float (0, flip_angle);
-                  return;
-                case 0x9087U:
-                  bvalue = item.get_float (0, bvalue);
-                  return;
-                case 0x9089U:
-                  G[0] = item.get_float (0, G[0]);
-                  G[1] = item.get_float (1, G[1]);
-                  G[2] = item.get_float (2, G[2]);
-              }
-              return;
-            case 0x0020U:
-              switch (item.element) {
-                case 0x0011U:
-                  series_num = item.get_uint (0, series_num);
-                  return;
-                case 0x0012U:
-                  acq = item.get_uint (0, acq);
-                  return;
-                case 0x0013U:
-                  instance = item.get_uint (0, instance);
-                  return;
-                case 0x0032U:
-                  {
-                    auto d = item.get_float();
-                    item.check_size (d, 3);
-                    position_vector[0] = d[0];
-                    position_vector[1] = d[1];
-                    position_vector[2] = d[2];
-                  }
-                  return;
-                case 0x0037U:
-                  {
-                    auto d = item.get_float();
-                    item.check_size (d, 6);
-                    orientation_x[0] = d[0];
-                    orientation_x[1] = d[1];
-                    orientation_x[2] = d[2];
-                    orientation_y[0] = d[3];
-                    orientation_y[1] = d[4];
-                    orientation_y[2] = d[5];
-                    orientation_x.normalize();
-                    orientation_y.normalize();
-                  }
-                  return;
-                case 0x9157U:
-                  index = item.get_uint();
-                  if (frame_dim.size() < index.size())
-                    frame_dim.resize (index.size());
-                  for (size_t n = 0; n < index.size(); ++n)
-                    if (frame_dim[n] < index[n])
-                      frame_dim[n] = index[n];
-                  return;
-              }
-              return;
-            case 0x0028U:
-              switch (item.element) {
-                case 0x0010U:
-                  dim[1] = item.get_uint (0, dim[1]);
-                  return;
-                case 0x0011U:
-                  dim[0] = item.get_uint (0, dim[0]);
-                  return;
-                case 0x0030U:
-                  {
-                    auto d = item.get_float();
-                    item.check_size (d, 2);
-                    pixel_size[0] = d[0];
-                    pixel_size[1] = d[1];
-                  }
-                  return;
-                case 0x0100U:
-                  bits_alloc = item.get_uint (0, bits_alloc);
-                  return;
-                case 0x1052U:
-                  scale_intercept = item.get_float (0, scale_intercept);
-                  return;
-                case 0x1053U:
-                  scale_slope = item.get_float (0, scale_slope);
-                  return;
-              }
-              return;
-            case 0xFFFEU:
-              switch (item.element) {
-                case 0xE000U:
-                  if (item.parents.size() &&
-                      item.parents.back().group ==  0x5200U &&
-                      item.parents.back().element == 0x9230U) { // multi-frame item
-                    if (in_frames) {
-                      calc_distance();
-                      frames.push_back (std::shared_ptr<Frame> (new Frame (*this)));
-                      frame_offset += dim[0] * dim[1] * (bits_alloc/8);
-                    }
-                    else
-                      in_frames = true;
-                  }
-                  return;
-              }
-              return;
-            case 0x7FE0U:
-              if (item.element == 0x0010U) {
-                data = item.offset (item.data);
-                data_size = item.size;
-                is_BE = item.is_big_endian();
-                return;
-              }
-              return;
-
-          }
-
-        }
-
-
-
-
-        // process more non-specific stuff here:
 
         switch (item.group) {
           case 0x0008U:
-            if (item.element == 0x0070U)
-              manufacturer = item.get_string()[0];
+            switch (item.element) {
+              case 0x0070U:
+                manufacturer = item.get_string()[0];
+                return;
+              case 0x0008U:
+                image_type = join (item.get_string(), " ");
+                return;
+              case 0x0032U:
+                acquisition_time = item.get_time();
+                return;
+              default:
+                return;
+            }
+
+          case 0x0018U:
+            switch (item.element) {
+              case 0x0024U:
+                sequence_name = item.get_string (0);
+                if (!sequence_name.size())
+                  return;
+                {
+                  int c = sequence_name.size()-1;
+                  if (!isdigit (sequence_name[c]))
+                    return;
+                  while (c >= 0 && isdigit (sequence_name[c]))
+                    --c;
+                  if (c >= 0 && sequence_name[c] != '#') {
+                    sequence = 0;
+                    return;
+                  }
+                  sequence = to<size_t> (sequence_name.substr (++c));
+                }
+                return;
+              case 0x0050U:
+                slice_thickness = item.get_float (0, slice_thickness);
+                return;
+              case 0x0080U:
+                repetition_time = item.get_float (0, repetition_time);
+                return;
+              case 0x0081U:
+                echo_time = item.get_float (0, echo_time);
+                return;
+              case 0x0082U:
+                inversion_time = item.get_float (0, inversion_time);
+                return;
+              case 0x0086U:
+                echo_index = item.get_int (0, echo_index);
+                return;
+              case 0x0088U:
+                slice_spacing = item.get_float (0, slice_spacing);
+                return;
+              case 0x0091U:
+                echo_train_length = item.get_int (0, echo_train_length);
+                return;
+              case 0x0095U:
+                pixel_bandwidth = item.get_float (0, pixel_bandwidth);
+                return;
+              case 0x1310U:
+                {
+                  auto d = item.get_uint();
+                  item.check_size (d, 4);
+                  acq_dim[0] = std::max (d[0], d[1]);
+                  acq_dim[1] = std::max (d[2], d[3]);
+                  if (d[0] == 0 && d[3] == 0)
+                    std::swap (acq_dim[0], acq_dim[1]);
+                }
+                return;
+              case 0x1312U:
+                if (item.get_string (0) == "ROW")
+                  pe_axis = 0;
+                else if (item.get_string (0) == "COL")
+                  pe_axis = 1;
+                return;
+              case 0x1314U:
+                flip_angle = item.get_float (0, flip_angle);
+                return;
+              case 0x9087U:
+                { // ugly hack to handle badly formatted Philips data:
+                  default_type v = item.get_float (0, bvalue);
+                  if (v < 1.0e10)
+                    bvalue = v;
+                }
+                return;
+              case 0x9089U:
+                { // ugly hack to handle badly formatted Philips data:
+                  default_type v = item.get_float (0, G[0]);
+                  if (v < 1.0e10) {
+                    G[0] = v;
+                    G[1] = item.get_float (1, G[1]);
+                    G[2] = item.get_float (2, G[2]);
+                  }
+                }
+            }
             return;
           case 0x0019U:
             switch (item.element) { // GE DW encoding info:
@@ -260,6 +156,77 @@ namespace MR {
                     G[2] = d[2];
                   }
                 }
+                return;
+            }
+            return;
+          case 0x0020U:
+            switch (item.element) {
+              case 0x0011U:
+                series_num = item.get_uint (0, series_num);
+                return;
+              case 0x0012U:
+                acq = item.get_uint (0, acq);
+                return;
+              case 0x0013U:
+                instance = item.get_uint (0, instance);
+                return;
+              case 0x0032U:
+                {
+                  auto d = item.get_float();
+                  item.check_size (d, 3);
+                  position_vector[0] = d[0];
+                  position_vector[1] = d[1];
+                  position_vector[2] = d[2];
+                }
+                return;
+              case 0x0037U:
+                {
+                  auto d = item.get_float();
+                  item.check_size (d, 6);
+                  orientation_x[0] = d[0];
+                  orientation_x[1] = d[1];
+                  orientation_x[2] = d[2];
+                  orientation_y[0] = d[3];
+                  orientation_y[1] = d[4];
+                  orientation_y[2] = d[5];
+                  orientation_x.normalize();
+                  orientation_y.normalize();
+                }
+                return;
+              case 0x9157U:
+                index = item.get_uint();
+                if (frame_dim.size() < index.size())
+                  frame_dim.resize (index.size());
+                for (size_t n = 0; n < index.size(); ++n)
+                  if (frame_dim[n] < index[n])
+                    frame_dim[n] = index[n];
+                return;
+            }
+            return;
+          case 0x0028U:
+            switch (item.element) {
+              case 0x0010U:
+                dim[1] = item.get_uint (0, dim[1]);
+                return;
+              case 0x0011U:
+                dim[0] = item.get_uint (0, dim[0]);
+                return;
+              case 0x0030U:
+                {
+                  auto d = item.get_float();
+                  item.check_size (d, 2);
+                  pixel_size[0] = d[0];
+                  pixel_size[1] = d[1];
+                }
+                return;
+              case 0x0100U:
+                bits_alloc = item.get_uint (0, bits_alloc);
+                return;
+              case 0x1052U:
+                scale_intercept = item.get_float (0, scale_intercept);
+                return;
+              case 0x1053U:
+                scale_slope = item.get_float (0, scale_slope);
                 return;
             }
             return;
@@ -294,6 +261,31 @@ namespace MR {
                 return;
               case 0x10B2U:
                 G[2] = item.get_float (0, G[2]);
+                return;
+            }
+            return;
+          case 0x7FE0U:
+            if (item.element == 0x0010U) {
+              data = item.offset (item.data);
+              data_size = item.size;
+              is_BE = item.is_big_endian();
+              return;
+            }
+            return;
+          case 0xFFFEU:
+            switch (item.element) {
+              case 0xE000U:
+                if (item.parents.size() &&
+                    item.parents.back().group ==  0x5200U &&
+                    item.parents.back().element == 0x9230U) { // multi-frame item
+                  if (in_frames) {
+                    calc_distance();
+                    frames.push_back (std::shared_ptr<Frame> (new Frame (*this)));
+                    frame_offset += dim[0] * dim[1] * (bits_alloc/8);
+                  }
+                  else
+                    in_frames = true;
+                }
                 return;
             }
             return;
@@ -341,22 +333,22 @@ namespace MR {
 
       namespace {
         template <typename T, class Functor>
-        void phoenix_scalar (const KeyValues& keyval, const std::string& key, const Functor& functor, T& field) {
-          const auto it = keyval.find (key);
-          if (it == keyval.end())
-            return;
-          field = functor (it->second);
-        }
-        template <typename T>
-        void phoenix_vector (const KeyValues& keyval, const std::string& key, vector<T>& data) {
-          data.clear();
-          for (size_t index = 0; ; ++index) {
-            const auto it = keyval.find (key + "[" + str(index) + "]");
+          void phoenix_scalar (const KeyValues& keyval, const std::string& key, const Functor& functor, T& field) {
+            const auto it = keyval.find (key);
             if (it == keyval.end())
               return;
-            data.push_back (to<T> (it->second));
+            field = functor (it->second);
           }
-        }
+        template <typename T>
+          void phoenix_vector (const KeyValues& keyval, const std::string& key, vector<T>& data) {
+            data.clear();
+            for (size_t index = 0; ; ++index) {
+              const auto it = keyval.find (key + "[" + str(index) + "]");
+              if (it == keyval.end())
+                return;
+              data.push_back (to<T> (it->second));
+            }
+          }
       }
 
 
@@ -395,29 +387,29 @@ namespace MR {
             const vector<std::string> phoenix = entry.get_string();
             const auto keyval = read_csa_ascii (phoenix);
             phoenix_scalar (keyval,
-                            "sDiffusion.dsScheme",
-                            [] (const std::string& value) -> size_t { return to<size_t> (value); },
-                            bipolar_flag);
+                "sDiffusion.dsScheme",
+                [] (const std::string& value) -> size_t { return to<size_t> (value); },
+                bipolar_flag);
             phoenix_scalar (keyval,
-                            "sKSpace.ucPhasePartialFourier",
-                            [] (const std::string& value) -> default_type
-                            {
-                              switch (to<size_t> (value)) {
-                                case 1: return 0.5;
-                                case 2: return 0.675;
-                                case 4: return 0.75;
-                                case 8: return 0.875;
-                                default: return NaN;
-                              }
-                            },
-                            partial_fourier);
+                "sKSpace.ucPhasePartialFourier",
+                [] (const std::string& value) -> default_type
+                {
+                switch (to<size_t> (value)) {
+                case 1: return 0.5;
+                case 2: return 0.675;
+                case 4: return 0.75;
+                case 8: return 0.875;
+                default: return NaN;
+                }
+                },
+                partial_fourier);
             phoenix_scalar (keyval,
-                            "ucReadOutMode",
-                            [] (const std::string& value) -> size_t { return to<size_t> (value); },
-                            readoutmode_flag);
+                "ucReadOutMode",
+                [] (const std::string& value) -> size_t { return to<size_t> (value); },
+                readoutmode_flag);
             phoenix_vector (keyval,
-                            "adFlipAngleDegree",
-                            flip_angles);
+                "adFlipAngleDegree",
+                flip_angles);
 
           }
           else if (strcmp ("NumberOfImagesInMosaic", entry.key()) == 0)
@@ -634,9 +626,9 @@ namespace MR {
           add_line (dw_scheme, str(g[0]) + "," + str(g[1]) + "," + str(g[2]) + "," + str(g[3]));
         }
 
-        if (report_negative_bvalues) {
+        if (report_negative_bvalues)
           WARN ("Input DICOM data contain negative b-values; clamped to zero in output");
-        }
+
         return dw_scheme;
       }
 

@@ -1,50 +1,38 @@
-.. _dwigradcheck:
+.. _mask2glass:
 
-dwigradcheck
-============
+mask2glass
+==========
 
 Synopsis
 --------
 
-Check the orientation of the diffusion gradient table
+Create a glass brain from mask input
 
 Usage
 -----
 
 ::
 
-    dwigradcheck input [ options ]
+    mask2glass input output [ options ]
 
--  *input*: The input DWI series to be checked
+-  *input*: The input mask image
+-  *output*: The output glass brain image
 
 Description
 -----------
 
-Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.
+The output of this command is a glass brain image, which can be viewed using the volume render option in mrview, and used for visualisation purposes to view results in 3D.
 
-Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. More information on mask derivation from DWI data can be found at the following link: 
-https://mrtrix.readthedocs.io/en/3.0.3/dwi_preprocessing/masking.html
+While the name of this script indicates that a binary mask image is required as input, it can also operate on a floating-point image. One way in which this can be exploited is to compute the mean of all subject masks within template space, in which case this script will produce a smoother result than if a binary template mask were to be used as input.
 
 Options
 -------
 
-- **-mask image** Provide a mask image within which to seed & constrain tracking
+- **-dilate** Provide number of passes for dilation step; default = 2
 
-- **-number** Set the number of tracks to generate for each test
+- **-scale** Provide resolution upscaling value; default = 2.0
 
-Options for importing the diffusion gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-grad** Provide the diffusion gradient table in MRtrix format
-
-- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
-
-Options for exporting the diffusion gradient table
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-- **-export_grad_mrtrix grad** Export the final gradient table in MRtrix format
-
-- **-export_grad_fsl bvecs bvals** Export the final gradient table in FSL bvecs/bvals format
+- **-smooth** Provide standard deviation of smoothing (in mm); default = 1.0
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -77,15 +65,13 @@ Standard options
 References
 ^^^^^^^^^^
 
-* Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962
-
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
 --------------
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Remika Mito (remika.mito@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
 

@@ -118,8 +118,8 @@ namespace MR
               im1_update.row(3) = 0.0;
               im2_update.row(3) = 0.0;
             } else {
-              im1_update.row(3) = Eigen::Vector3 (speed * grad.array() / denominator);
-              im2_update.row(3) = -Eigen::Vector3 (im1_update.row(3));
+              im1_update.row(3) = Eigen::Vector3d (speed * grad.array() / denominator);
+              im2_update.row(3) = -Eigen::Vector3d (im1_update.row(3));
             }
           }
 
