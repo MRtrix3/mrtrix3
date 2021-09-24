@@ -85,6 +85,9 @@ namespace MR {
           }
         }
 
+        if (!frames.size())
+          throw Exception ("no DICOM frames found!");
+
         auto dim = Frame::count (frames);
 
         if (dim[0]*dim[1]*dim[2] < frames.size())
