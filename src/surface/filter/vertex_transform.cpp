@@ -93,7 +93,7 @@ namespace MR
           case transform_t::FS2REAL:
             vector<size_t> axes( 3 );
             auto M = File::NIfTI::adjust_transform( header, axes );
-            Eigen::Vector3 cras( 3, 1 );
+            Eigen::Vector3d cras( 3, 1 );
             for ( size_t i = 0; i < 3; i++ )
             {
               cras[ i ] = M( i, 3 );

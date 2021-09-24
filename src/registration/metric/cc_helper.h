@@ -45,7 +45,7 @@ namespace MR
           int nmax = extent[0] * extent[1] * extent[2];
           Eigen::VectorXd n1 = Eigen::VectorXd(nmax);
           Eigen::VectorXd n2 = Eigen::VectorXd(nmax);
-          Eigen::Vector3 pos;
+          Eigen::Vector3d pos;
           for (auto l = Loop("precomputing cross correlation values") (im1_image); l; ++l) {
             pos[0] = im1_image.index(0);
             pos[1] = im1_image.index(1);
