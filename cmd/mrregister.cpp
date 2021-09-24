@@ -368,7 +368,7 @@ void run () {
   bool init_rigid_matrix_set = false;
   if (opt.size()) {
     init_rigid_matrix_set = true;
-    Eigen::Vector3 centre;
+    Eigen::Vector3d centre;
     transform_type rigid_transform = load_transform (opt[0][0], centre);
     rigid.set_transform (rigid_transform);
     if (!std::isfinite(centre(0))) {
@@ -518,7 +518,7 @@ void run () {
       throw Exception ("you cannot initialise with -affine_init_matrix since a rigid registration is being performed");
 
     init_affine_matrix_set = true;
-    Eigen::Vector3 centre;
+    Eigen::Vector3d centre;
     transform_type affine_transform = load_transform (opt[0][0], centre);
     affine.set_transform (affine_transform);
     if (!std::isfinite(centre(0))) {

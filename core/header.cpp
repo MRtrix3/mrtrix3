@@ -727,8 +727,8 @@ namespace MR
     //   header, that's also necessary to update here
     auto slice_encoding_it = keyval().find ("SliceEncodingDirection");
     if (slice_encoding_it != keyval().end()) {
-      const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
-      Eigen::Vector3 new_dir;
+      const Eigen::Vector3d orig_dir (Axes::id2dir (slice_encoding_it->second));
+      Eigen::Vector3d new_dir;
       for (size_t axis = 0; axis != 3; ++axis)
         new_dir[axis] = orig_dir[realign_perm_[axis]] * (realign_flip_[realign_perm_[axis]] ? -1.0 : 1.0);
       slice_encoding_it->second = Axes::dir2id (new_dir);

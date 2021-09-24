@@ -452,8 +452,8 @@ namespace MR
       if (!dimensions_match(in1, in2, 0, 3))
         return false;
 
-      const Eigen::Vector3 vs1 (in1.spacing(0), in1.spacing(1), in1.spacing(2));
-      const Eigen::Vector3 vs2 (in2.spacing(0), in2.spacing(1), in2.spacing(2));
+      const Eigen::Vector3d vs1 (in1.spacing(0), in1.spacing(1), in1.spacing(2));
+      const Eigen::Vector3d vs2 (in2.spacing(0), in2.spacing(1), in2.spacing(2));
 
       Eigen::MatrixXd voxel_coord = Eigen::MatrixXd::Zero(4,4);
       voxel_coord.row(3).fill(1.0);

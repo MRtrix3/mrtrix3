@@ -281,8 +281,8 @@ void permute_slice_direction (Header& H, const vector<int>& axes)
   auto it = H.keyval().find ("SliceEncodingDirection");
   if (it == H.keyval().end())
     return;
-  const Eigen::Vector3 orig_dir = Axes::id2dir (it->second);
-  const Eigen::Vector3 new_dir (orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
+  const Eigen::Vector3d orig_dir = Axes::id2dir (it->second);
+  const Eigen::Vector3d new_dir (orig_dir[axes[0]], orig_dir[axes[1]], orig_dir[axes[2]]);
   it->second = Axes::dir2id (new_dir);
 }
 

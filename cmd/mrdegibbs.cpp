@@ -122,12 +122,12 @@ class ComputeSlice
       assign_pos_of (pos, outer_axes).to (in, out);
 
       for (auto l = Loop (slice_axes) (in); l; ++l)
-        im1 (in.index(X), in.index(Y)) = cdouble (in.value(), 0.0);
+        im1 (ssize_t(in.index(X)), ssize_t(in.index(Y))) = cdouble (in.value(), 0.0);
 
       unring_2d ();
 
       for (auto l = Loop (slice_axes) (out); l; ++l)
-        out.value() = im1 (out.index(X), out.index(Y)).real();
+        out.value() = im1 (ssize_t(out.index(X)), ssize_t(out.index(Y))).real();
     }
 
   private:
@@ -331,7 +331,7 @@ void run ()
   auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
     try {
-      const Eigen::Vector3 slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
+      const Eigen::Vector3d slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
       vector<size_t> auto_slice_axes = { 0, 0 };
       if (slice_encoding_axis_onehot[0])
         auto_slice_axes = { 1, 2 };

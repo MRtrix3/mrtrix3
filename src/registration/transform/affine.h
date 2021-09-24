@@ -110,9 +110,9 @@ namespace MR
             this->optimiser_weights << weights, weights, weights;
           }
 
-          Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params (const Eigen::Vector3& p) const ;
+          Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params (const Eigen::Vector3d& p) const ;
 
-          Eigen::MatrixXd get_jacobian_wrt_params (const Eigen::Vector3& p) const ;
+          Eigen::MatrixXd get_jacobian_wrt_params (const Eigen::Vector3d& p) const ;
 
           void set_parameter_vector (const Eigen::Matrix<ParameterType, Eigen::Dynamic, 1>& param_vector);
 

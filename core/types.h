@@ -322,11 +322,6 @@ namespace std
 
 }
 
-namespace Eigen {
-  using Vector3 = Matrix<MR::default_type, 3, 1>;
-  using Vector4 = Matrix<MR::default_type, 4, 1>;
-}
-
 #endif
 
 

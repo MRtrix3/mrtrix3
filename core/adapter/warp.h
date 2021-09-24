@@ -90,7 +90,7 @@ namespace MR
 
 
         value_type value () {
-          Eigen::Vector3 pos = get_position();
+          Eigen::Vector3d pos = get_position();
           if (std::isnan(pos[0]) || std::isnan(pos[1]) || std::isnan(pos[2]))
             return value_when_out_of_bounds;
           interp.scanner (pos);

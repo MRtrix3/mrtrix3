@@ -141,7 +141,7 @@ struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
 
   const int n_basis_vecs;
 
-  FORCE_INLINE Eigen::VectorXd operator () (const Eigen::Vector3& pos) const {
+  FORCE_INLINE Eigen::VectorXd operator () (const Eigen::Vector3d& pos) const {
     double x = pos[0];
     double y = pos[1];
     double z = pos[2];
@@ -231,8 +231,8 @@ Eigen::MatrixXd initialise_basis (IndexType& index, size_t num_voxels, int order
       const uint32_t idx = index.value();
       if (idx != std::numeric_limits<uint32_t>::max()) {
         assert (idx < basis.rows());
-        Eigen::Vector3 vox (index.index(0), index.index(1), index.index(2));
-        Eigen::Vector3 pos = transform.voxel2scanner * vox;
+        Eigen::Vector3d vox (index.index(0), index.index(1), index.index(2));
+        Eigen::Vector3d pos = transform.voxel2scanner * vox;
         basis.row(idx) = basis_function (pos);
       }
     }
@@ -413,8 +413,8 @@ ImageType compute_full_field (int order, const Eigen::VectorXd& field_coeffs, co
 
   struct FieldWriter { NOMEMALIGN
     void operator() (ImageType& field) const {
-      Eigen::Vector3 vox (field.index(0), field.index(1), field.index(2));
-      Eigen::Vector3 pos = transform.voxel2scanner * vox;
+      Eigen::Vector3d vox (field.index(0), field.index(1), field.index(2));
+      Eigen::Vector3d pos = transform.voxel2scanner * vox;
       field.value() = std::exp (basis_function (pos).dot (field_coeffs));
     }
 

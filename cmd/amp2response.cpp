@@ -82,7 +82,7 @@ void usage ()
 
 
 
-Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix (const Eigen::Vector3& dir)
+Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix (const Eigen::Vector3d& dir)
 {
   static Math::RNG::Normal<default_type> rng;
   // Generates a matrix that will rotate a unit vector into a new frame of reference,
@@ -91,11 +91,11 @@ Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix (const Eigen::Vector3& dir
   // Here the other two axes are determined at random (but both are orthogonal to the FOD peak direction)
   Eigen::Matrix<default_type, 3, 3> R;
   R (2, 0) = dir[0]; R (2, 1) = dir[1]; R (2, 2) = dir[2];
-  Eigen::Vector3 vec2 (rng(), rng(), rng());
+  Eigen::Vector3d vec2 (rng(), rng(), rng());
   vec2 = dir.cross (vec2);
   vec2.normalize();
   R (0, 0) = vec2[0]; R (0, 1) = vec2[1]; R (0, 2) = vec2[2];
-  Eigen::Vector3 vec3 = dir.cross (vec2);
+  Eigen::Vector3d vec3 = dir.cross (vec2);
   vec3.normalize();
   R (1, 0) = vec3[0]; R (1, 1) = vec3[1]; R (1, 2) = vec3[2];
   return R;
@@ -155,7 +155,7 @@ class Accumulator { MEMALIGN(Accumulator)
         ++count;
 
         // Grab the fibre direction
-        Eigen::Vector3 fibre_dir;
+        Eigen::Vector3d fibre_dir;
         for (dir_image.index(3) = 0; dir_image.index(3) != 3; ++dir_image.index(3))
           fibre_dir[dir_image.index(3)] = dir_image.value();
         fibre_dir.normalize();

@@ -56,9 +56,9 @@ namespace MR
 
         template <class Params>
           default_type operator() (Params& params,
-                                   const Eigen::Vector3& im1_point,
-                                   const Eigen::Vector3& im2_point,
-                                   const Eigen::Vector3& midway_point,
+                                   const Eigen::Vector3d& im1_point,
+                                   const Eigen::Vector3d& im2_point,
+                                   const Eigen::Vector3d& midway_point,
                                    Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient);
 
       protected:

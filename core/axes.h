@@ -36,8 +36,8 @@ namespace MR
        *  phase-encoding direction between a 3-vector (e.g.
        *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
        */
-    std::string    dir2id (const Eigen::Vector3&);
-    Eigen::Vector3 id2dir (const std::string&);
+    std::string    dir2id (const Eigen::Vector3d&);
+    Eigen::Vector3d id2dir (const std::string&);
 
 
 

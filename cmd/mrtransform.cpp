@@ -471,7 +471,7 @@ void run ()
                 "therefore should not be used to reorient directions / diffusion gradients");
         }
         for (ssize_t n = 0; n < grad.rows(); ++n) {
-          Eigen::Vector3 grad_vector = grad.block<1,3>(n,0);
+          Eigen::Vector3d grad_vector = grad.block<1,3>(n,0);
           grad.block<1,3>(n,0) = rotation * grad_vector;
         }
         DWI::set_DW_scheme (output_header, grad);
@@ -507,13 +507,13 @@ void run ()
           }
           if (result.cols() == 2) {
             Eigen::Matrix<default_type, 2, 1> azel (v.data());
-            Eigen::Vector3 dir;
+            Eigen::Vector3d dir;
             Math::Sphere::spherical2cartesian (azel, dir);
             dir = rotation * dir;
             Math::Sphere::cartesian2spherical (dir, azel);
             result.row (l) = azel;
           } else {
-            const Eigen::Vector3 dir = rotation * Eigen::Vector3 (v.data());
+            const Eigen::Vector3d dir = rotation * Eigen::Vector3d (v.data());
             result.row (l) = dir;
           }
           std::stringstream s;

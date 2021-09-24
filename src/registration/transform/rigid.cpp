@@ -234,14 +234,14 @@ namespace MR
        */
 
 
-          Eigen::Matrix<default_type, 4, 1> Rigid::get_jacobian_vector_wrt_params (const Eigen::Vector3& p) const {
+          Eigen::Matrix<default_type, 4, 1> Rigid::get_jacobian_vector_wrt_params (const Eigen::Vector3d& p) const {
             Eigen::Matrix<default_type, 4, 1> jac;
             jac.head(3) = p - centre;
             jac(3) = 1.0;
             return jac;
           }
 
-          Eigen::MatrixXd Rigid::get_jacobian_wrt_params (const Eigen::Vector3& p) const {
+          Eigen::MatrixXd Rigid::get_jacobian_wrt_params (const Eigen::Vector3d& p) const {
             Eigen::MatrixXd jacobian (3, 12);
             jacobian.setZero();
             const auto v = get_jacobian_vector_wrt_params(p);

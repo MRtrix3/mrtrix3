@@ -150,7 +150,7 @@ void run ()
       Transform transform (out);
       Interp::Nearest<decltype(in_spine)> nearest (in_spine);
       for (auto l = Loop (out) (out); l; ++l) {
-        Eigen::Vector3 p (out.index (0), out.index (1), out.index (2));
+        Eigen::Vector3d p (out.index (0), out.index (1), out.index (2));
         p = transform.voxel2scanner * p;
         if (nearest.scanner (p) && nearest.value())
           out.value() = spine_index;

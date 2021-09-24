@@ -92,13 +92,13 @@ namespace MR
             assert ((value <= 0.0 && neg) || (value >= 0.0 && !neg));
             mask[bin] = true;
             values[bin] = value;
-            const Eigen::Vector3& dir = mask.get_dirs()[bin];
+            const Eigen::Vector3d& dir = mask.get_dirs()[bin];
             const default_type multiplier = (mean_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
             mean_dir += dir * multiplier * abs(value) * weight;
             integral += abs (value * weight);
           }
 
-          void revise_peak (const size_t index, const Eigen::Vector3& revised_peak_dir, const default_type revised_peak_value)
+          void revise_peak (const size_t index, const Eigen::Vector3d& revised_peak_dir, const default_type revised_peak_value)
           {
             assert (!neg);
             assert (index < num_peaks());
@@ -142,8 +142,8 @@ namespace MR
           const Eigen::Array<default_type, Eigen::Dynamic, 1>& get_values() const { return values; }
           default_type get_max_peak_value() const { return max_peak_value; }
           size_t num_peaks() const { return peak_dirs.size(); }
-          const Eigen::Vector3& get_peak_dir (const size_t i) const { assert (i < num_peaks()); return peak_dirs[i]; }
-          const Eigen::Vector3& get_mean_dir() const { return mean_dir; }
+          const Eigen::Vector3d& get_peak_dir (const size_t i) const { assert (i < num_peaks()); return peak_dirs[i]; }
+          const Eigen::Vector3d& get_mean_dir() const { return mean_dir; }
           default_type get_integral() const { return integral; }
           bool is_negative() const { return neg; }
 
@@ -152,8 +152,8 @@ namespace MR
           DWI::Directions::Mask mask;
           Eigen::Array<default_type, Eigen::Dynamic, 1> values;
           default_type max_peak_value;
-          vector<Eigen::Vector3> peak_dirs;
-          Eigen::Vector3 mean_dir;
+          vector<Eigen::Vector3d> peak_dirs;
+          Eigen::Vector3d mean_dir;
           default_type integral;
           bool neg;
 

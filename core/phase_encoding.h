@@ -116,7 +116,7 @@ namespace MR
         erase ("TotalReadoutTime");
       } else {
         erase ("pe_scheme");
-        const Eigen::Vector3 dir { PE(0, 0), PE(0, 1), PE(0, 2) };
+        const Eigen::Vector3d dir { PE(0, 0), PE(0, 1), PE(0, 2) };
         header.keyval()["PhaseEncodingDirection"] = Axes::dir2id (dir);
         if (PE.cols() >= 4)
           header.keyval()["TotalReadoutTime"] = str(PE(0, 3), 3);

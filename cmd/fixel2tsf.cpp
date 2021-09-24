@@ -101,7 +101,7 @@ void run ()
   DWI::Tractography::TrackScalar<float> scalars;
 
   const Transform transform (in_index_image);
-  Eigen::Vector3 voxel_pos;
+  Eigen::Vector3d voxel_pos;
 
   while (reader (tck)) {
     SetVoxelDir dixels;

@@ -144,7 +144,7 @@ namespace MR
             if (wrt_scanner) {
               Transform transform (in);
               for (auto l = Loop(0,3) (out); l; ++l)
-                out.row(3) = transform.image2scanner.linear() * Eigen::Vector3 (out.row(3));
+                out.row(3) = transform.image2scanner.linear() * Eigen::Vector3d (out.row(3));
             }
           }
         }

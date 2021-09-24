@@ -37,7 +37,7 @@ namespace MR
         template <class ImageType, class ValueType>
           void get_geometric_centre (const ImageType& image, Eigen::Matrix<ValueType, 3, 1>& centre)
           {
-            Eigen::Vector3 centre_voxel;
+            Eigen::Vector3d centre_voxel;
             centre_voxel[0] = (static_cast<default_type>(image.size(0)) / 2.0) - 1.0;
             centre_voxel[1] = (static_cast<default_type>(image.size(1)) / 2.0) - 1.0;
             centre_voxel[2] = (static_cast<default_type>(image.size(2)) / 2.0) - 1.0;
@@ -47,7 +47,7 @@ namespace MR
 
         void get_centre_of_mass (Image<default_type>& im,
                                  Image<default_type>& mask,
-                                 Eigen::Vector3& centre_of_mass,
+                                 Eigen::Vector3d& centre_of_mass,
                                  const vector<MultiContrastSetting>& contrast_settings);
 
         bool get_sorted_eigen_vecs_vals (const Eigen::Matrix<default_type, 3, 3>& mat,
@@ -132,7 +132,7 @@ namespace MR
             Image<default_type>& mask1;
             Image<default_type>& mask2;
             const vector<MultiContrastSetting>& contrast_settings;
-            Eigen::Vector3 im1_centre, im2_centre;
+            Eigen::Vector3d im1_centre, im2_centre;
             Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
             Eigen::Matrix<default_type, 3, 3> im1_covariance_matrix, im2_covariance_matrix;
             Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> im1_evec, im2_evec;

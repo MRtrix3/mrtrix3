@@ -27,7 +27,7 @@ namespace MR
 
 
 
-    std::string dir2id (const Eigen::Vector3& axis)
+    std::string dir2id (const Eigen::Vector3d& axis)
     {
       if (axis[0] == -1) {
         assert (!axis[1]); assert (!axis[2]); return "i-";
@@ -48,7 +48,7 @@ namespace MR
 
 
 
-    Eigen::Vector3 id2dir (const std::string& id)
+    Eigen::Vector3d id2dir (const std::string& id)
     {
       if (id == "i-")
         return { -1,  0,  0 };

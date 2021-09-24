@@ -86,7 +86,7 @@ void run ()
 {
   Header H_in = Header::open (argument[0]);
   const ColourMap::Entry colourmap = ColourMap::maps[argument[1]];
-  Eigen::Vector3 fixed_colour (NaN, NaN, NaN);
+  Eigen::Vector3d fixed_colour (NaN, NaN, NaN);
   if (colourmap.is_colour) {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))
       throw Exception ("For applying a fixed colour, command expects a 3D image as input");
@@ -96,7 +96,7 @@ void run ()
     const auto values = parse_floats (opt[0][0]);
     if (values.size() != 3)
       throw Exception ("Target colour must be specified as a comma-separated list of three values");
-    fixed_colour = Eigen::Vector3 (values.data());
+    fixed_colour = Eigen::Vector3d (values.data());
     if (fixed_colour.minCoeff() < 0.0)
       throw Exception ("Values for fixed colour provided via -colour option cannot be negative");
   } else if (colourmap.is_rgb) {

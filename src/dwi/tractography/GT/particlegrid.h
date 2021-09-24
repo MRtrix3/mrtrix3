@@ -53,7 +53,7 @@ namespace MR {
             
             // Initialise scanner-to-grid transform
             Eigen::DiagonalMatrix<default_type, 3> newspacing (2.0*Particle::L, 2.0*Particle::L, 2.0*Particle::L);
-            Eigen::Vector3 shift (image.spacing(0)/2.0 - Particle::L,
+            Eigen::Vector3d shift (image.spacing(0)/2.0 - Particle::L,
                                   image.spacing(1)/2.0 - Particle::L,
                                   image.spacing(2)/2.0 - Particle::L);
             T_s2g = image.transform() * newspacing;
