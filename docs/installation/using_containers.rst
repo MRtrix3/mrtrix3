@@ -9,6 +9,17 @@ of all *MRtrix3* commands (including those that possess dependencies on
 other neuroimaging software packages) without necessitating any software
 installation on the user system.
 
+FSL registration
+----------------
+
+The *MRtrix3* containers include within them a subset of those commands
+that are part of `FSL <https://www.fmrib.ox.ac.uk/fsl>`_, as they are
+utilised within specific *MRtrix3* Python scripts. Obtaining the FSL
+software typically necessitates `registration <https://fsl.fmrib.ox.ac.uk/fsldownloads_registration>`_.
+We therefore request that any users of *MRtrix3* containers who have not
+previously registered as a user of the FSL software complete that process,
+as recognition of utilisation of their software.
+
 Using Docker
 ------------
 
@@ -49,9 +60,6 @@ which can speed up build time.
 Use ``--build-arg MAKE_JOBS=4`` to build *MRtrix3* with 4 processors
 (can substitute this with any number of processors > 0); if omitted,
 *MRtrix3* will be built using a single thread only.
-You will need to `register <https://fsl.fmrib.ox.ac.uk/fsldownloads_registration>`_
-on the FSL website in order to obtain file ``fslinstaller.py``, which is a
-prerequisite for building the container.
 
 Using Singularity
 -----------------
@@ -63,10 +71,6 @@ The following instruction can be run from the location in which the
 *MRtrix3* source code has been cloned::
 
     singularity build MRtrix3.sif Singularity
-
-You will need to `register <https://fsl.fmrib.ox.ac.uk/fsldownloads_registration>`_
-on the FSL website in order to obtain file ``fslinstaller.py``, which is a
-prerequisite for building the container.
 
 Build container from DockerHub
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -97,7 +101,3 @@ Run GUI command
 The following usage has been shown to work on Linux::
 
     singularity exec -B /run MRtrix3.sif mrview
-
-
-
-

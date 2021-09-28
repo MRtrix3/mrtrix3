@@ -30,9 +30,6 @@ Include: apt
     PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:/usr/local/cuda/bin:$PATH"
     export LD_LIBRARY_PATH PATH
 
-%files
-    fslinstaller.py /opt/fsl/fslinstaller.py
-
 %post
 # Non-interactive installation of packages
     export DEBIAN_FRONTEND=noninteractive
@@ -55,7 +52,7 @@ Include: apt
     # Download FreeSurfer lookup table file (v7.1.1).
     mkdir -p /opt/freesurfer && curl -fsSL -o /opt/freesurfer/FreeSurferColorLUT.txt https://raw.githubusercontent.com/freesurfer/freesurfer/v7.1.1/distribution/FreeSurferColorLUT.txt
     # Download minified FSL (6.0.4-2).
-    mkdir -p /opt/fsl && curl -fsSL https://osf.io/bqrys/download | tar xz -C /opt/fsl --strip-components 1 && rm /opt/fsl/fslinstaller.py
+    mkdir -p /opt/fsl && curl -fsSL https://osf.io/dtep4/download | tar xz -C /opt/fsl --strip-components 1
 
 # Use Python3 for anything requesting Python, since Python2 is not installed
     ln -s /usr/bin/python3 /usr/bin/python

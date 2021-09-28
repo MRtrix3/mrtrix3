@@ -54,8 +54,7 @@ RUN curl -fsSLO https://raw.githubusercontent.com/freesurfer/freesurfer/v7.1.1/d
 # Download minified FSL (6.0.4-2)
 FROM base-builder as fsl-installer
 WORKDIR /opt/fsl
-COPY fslinstaller.py fslinstaller.py
-RUN curl -fsSL https://osf.io/bqrys/download \
+RUN curl -fsSL https://osf.io/dtep4/download \
     | tar xz --strip-components 1
 
 # Build final image.
