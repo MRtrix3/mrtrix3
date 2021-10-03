@@ -25,6 +25,21 @@ namespace MR
 
 
 
+      const char* const mask_posthoc_description = 
+          "When performing statistical inference, there is a subtle difference between operation of the -mask and "
+          "-posthoc options. Elements excluded from the former will be excluded from intermediate outputs, will "
+          "not contribute to statistical enhancement, and will therefore not contribute to construction of the null "
+          "distribution(s) and will not be assigned corrected p-values. On the other hand, elements excluded "
+          "from the latter will still contribute to statistical enhancement, and will instead only be excluded from "
+          "construction of the null distribution(s) and calculation of p-values. The latter is intended to be used "
+          "in post hoc statistical tests, where a prior inference step has identified a subset of statistically "
+          "significant elements and one seeks to isolate the contributing factors; within such a step, elements for "
+          "which statistical significance was not assigned should nevertheless still contribute to statistical "
+          "enhancement as they did in the prior inference.";
+
+
+
+
       PreProcessor::PreProcessor (const std::unique_ptr<Math::Stats::GLM::TestBase>& stats_calculator,
                                   const std::shared_ptr<EnhancerBase> enhancer,
                                   const default_type skew,
@@ -99,6 +114,7 @@ namespace MR
                             const std::shared_ptr<EnhancerBase> enhancer,
                             const matrix_type& empirical_enhanced_statistics,
                             const matrix_type& default_enhanced_statistics,
+                            const mask_type& mask,
                             matrix_type& perm_dist,
                             count_matrix_type& perm_dist_contributions,
                             count_matrix_type& global_uncorrected_pvalue_counter) :
@@ -106,6 +122,7 @@ namespace MR
           enhancer (enhancer),
           empirical_enhanced_statistics (empirical_enhanced_statistics),
           default_enhanced_statistics (default_enhanced_statistics),
+          mask (mask),
           statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           zstatistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
@@ -126,6 +143,7 @@ namespace MR
           enhancer (that.enhancer),
           empirical_enhanced_statistics (that.empirical_enhanced_statistics),
           default_enhanced_statistics (that.default_enhanced_statistics),
+          mask (that.mask),
           statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           zstatistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
@@ -162,19 +180,19 @@ namespace MR
 
         if (null_dist.cols() == 1) { // strong fwe control
           ssize_t max_element, max_hypothesis;
-          null_dist(shuffle.index, 0) = enhanced_statistics.maxCoeff (&max_element, &max_hypothesis);
+          null_dist(shuffle.index, 0) = (enhanced_statistics.array().colwise() * mask.cast<matrix_type::Scalar>()).maxCoeff (&max_element, &max_hypothesis);
           null_dist_contribution_counter(max_element, max_hypothesis)++;
         } else { // weak fwe control
           ssize_t max_index;
           for (ssize_t ih = 0; ih != enhanced_statistics.cols(); ++ih) {
-            null_dist(shuffle.index, ih) = enhanced_statistics.col (ih).maxCoeff (&max_index);
+            null_dist(shuffle.index, ih) = (enhanced_statistics.col (ih).array() * mask.cast<matrix_type::Scalar>()).maxCoeff (&max_index);
             null_dist_contribution_counter(max_index, ih)++;
           }
         }
 
         for (ssize_t ih = 0; ih != enhanced_statistics.cols(); ++ih) {
           for (ssize_t ie = 0; ie != enhanced_statistics.rows(); ++ie) {
-            if (default_enhanced_statistics(ie, ih) > enhanced_statistics(ie, ih))
+            if (mask[ie] && default_enhanced_statistics(ie, ih) > enhanced_statistics(ie, ih))
               uncorrected_pvalue_counter(ie, ih)++;
           }
         }
@@ -250,11 +268,13 @@ namespace MR
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
                              const bool fwe_strong,
+                             const mask_type& mask,
                              matrix_type& null_dist,
                              count_matrix_type& null_dist_contributions,
                              matrix_type& uncorrected_pvalues)
       {
         assert (stats_calculator);
+        assert (stats_calculator->num_elements() == mask.size());
         Math::Stats::Shuffler shuffler (stats_calculator->num_inputs(), false, "Running permutations");
         null_dist.resize (shuffler.size(), fwe_strong ? 1 : stats_calculator->num_hypotheses());
         null_dist_contributions = count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
@@ -264,6 +284,7 @@ namespace MR
           Processor processor (stats_calculator, enhancer,
                                empirical_enhanced_statistic,
                                default_enhanced_statistics,
+                               mask,
                                null_dist,
                                null_dist_contributions,
                                global_uncorrected_pvalue_count);

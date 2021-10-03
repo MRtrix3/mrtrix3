@@ -55,6 +55,7 @@ void usage ()
   SYNOPSIS = "Voxel-based analysis using permutation testing and threshold-free cluster enhancement";
 
   DESCRIPTION
+      + MR::Stats::PermTest::mask_posthoc_description
       + Math::Stats::GLM::column_ones_description;
 
   REFERENCES
@@ -81,6 +82,11 @@ void usage ()
 
 
   OPTIONS
+
+  + OptionGroup("Options for constraining analysis to specific fixels")
+  + Option("posthoc", "provide a mask image of those voxels to contribute to statistical inference (see Description)")
+  + Argument ("file").type_image_in()
+
   + Math::Stats::shuffle_options (true, DEFAULT_EMPIRICAL_SKEW)
 
   + Stats::TFCE::Options (DEFAULT_TFCE_DH, DEFAULT_TFCE_E, DEFAULT_TFCE_H)
@@ -107,11 +113,27 @@ template <class VectorType>
 void write_output (const VectorType& data,
                    const Voxel2Vector& v2v,
                    const std::string& path,
-                   const Header& header) {
+                   const Header& header)
+{
   auto image = Image<float>::create (path, header);
   for (size_t i = 0; i != v2v.size(); i++) {
     assign_pos_of (v2v[i]).to (image);
     image.value() = data[i];
+  }
+}
+
+template <class VectorType>
+void write_output (const VectorType& data,
+                   const Voxel2Vector& v2v,
+                   Image<bool> mask,
+                   const std::string& path,
+                   const Header& header) 
+{
+  auto image = Image<float>::create (path, header);
+  for (size_t i = 0; i != v2v.size(); i++) {
+    assign_pos_of (v2v[i]).to (image, mask);
+    if (mask.value())
+      image.value() = data[i];
   }
 }
 
@@ -200,6 +222,42 @@ void run() {
   connector.adjacency.set_26_adjacency (do_26_connectivity);
   connector.adjacency.initialise (mask_header, *v2v);
   const size_t num_voxels = v2v->size();
+  CONSOLE ("Number of voxels in mask: " + str(num_voxels));
+
+  // Posthoc analysis mask
+  Image<bool> posthoc_image;
+  Stats::PermTest::mask_type posthoc_mask (num_voxels);
+  size_t posthoc_voxels = 0;
+  auto opt = get_options ("posthoc");
+  if (opt.size()) {
+    const std::string posthoc_path = opt[0][0];
+    Image<bool> posthoc_image;
+    posthoc_image = Image<bool>::open (posthoc_path);
+    if (!(posthoc_image.ndim() == 3 || (posthoc_image.ndim() == 4 && posthoc_image.size(3) == 1)))
+      throw Exception ("Post-hoc mask image \"" + posthoc_path + "\" is not 3D");
+    if (!dimensions_match (mask_header, posthoc_image, 0, 3))
+      throw Exception ("Post-hoc image \"" + posthoc_path + "\" does not match mask image");
+    size_t posthoc_mismatch_count = 0;
+    for (auto l = Loop(mask_header) (mask_image, posthoc_image); l; ++l) {
+      if (posthoc_image.value()) {
+        std::array<ssize_t, 3> pos {posthoc_image.index(0), posthoc_image.index(1), posthoc_image.index(2)};
+        const Voxel2Vector::index_t index = (*v2v) (pos);
+        posthoc_mask[index] = true;
+        ++posthoc_voxels;
+        if (!mask_image.value())
+          ++posthoc_mismatch_count;
+      }
+    }
+    CONSOLE ("Number of voxels in post-hoc analysis: " + str(posthoc_voxels));
+    if (posthoc_mismatch_count) {
+      WARN ("There are " + str(posthoc_mismatch_count) + " voxels in the post-hoc mask that are absent from the processing mask; "
+            "post-hoc inference cannot be performed in those voxels");
+    }
+  } else {
+    posthoc_mask = Stats::PermTest::mask_type::Ones (num_voxels);
+    posthoc_voxels = num_voxels;
+    copy (mask_image, posthoc_image);
+  }
 
   // Read file names and check files exist
   CohortDataImport importer;
@@ -220,7 +278,7 @@ void run() {
   // TODO Functionalise this
   vector<CohortDataImport> extra_columns;
   bool nans_in_columns = false;
-  auto opt = get_options ("column");
+  opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
     extra_columns[i].initialise<SubjectVoxelImport> (opt[i][0]);
@@ -376,7 +434,7 @@ void run() {
     matrix_type null_distribution, uncorrected_pvalue;
     count_matrix_type null_contributions;
 
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, default_enhanced, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, default_enhanced, fwe_strong, posthoc_mask,
                                        null_distribution, null_contributions, uncorrected_pvalue);
 
     ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
@@ -394,11 +452,11 @@ void run() {
     const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
-      write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);
+      write_output (fwe_pvalue_output.col(i), *v2v, posthoc_image, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
-      write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_1mpvalue" + postfix(i) + ".mif", output_header);
+      write_output (uncorrected_pvalue.col(i), *v2v, posthoc_image, prefix + "uncorrected_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
-      write_output (null_contributions.col(i), *v2v, prefix + "null_contributions" + postfix(i) + ".mif", output_header);
+      write_output (null_contributions.col(i), *v2v, posthoc_image, prefix + "null_contributions" + postfix(i) + ".mif", output_header);
       ++progress;
     }
 

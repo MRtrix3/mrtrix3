@@ -71,6 +71,9 @@ void usage ()
     "algorithm and the NBS method) can vary markedly for even small changes to "
     "enhancement parameters. Therefore the specificity of results obtained using "
     "either of these methods should be interpreted with caution."
+
+  + MR::Stats::PermTest::mask_posthoc_description
+
   + Math::Stats::GLM::column_ones_description;
 
 
@@ -88,6 +91,16 @@ void usage ()
 
 
   OPTIONS
+
+  + OptionGroup("Options for constraining analysis to specific edges")
+
+  // TODO Implement
+  // Note that if GLM is modified to receive a mask, no modification of enhancer will be required
+  //+ Option ("mask", "provide a matrix file containing a mask of those edges to contribute to processing")
+  //+ Argument ("file").type_file_in()
+
+  + Option("posthoc", "provide a matrix file containing a mask of those edges to contribute to statistical inference (see Description)")
+  + Argument ("file").type_file_in()
 
   + Math::Stats::shuffle_options (true, EMPIRICAL_SKEW_DEFAULT)
 
@@ -217,6 +230,16 @@ void run()
   const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", EMPIRICAL_SKEW_DEFAULT);
 
+  // Load post-hoc mask
+  Stats::PermTest::mask_type posthoc (Stats::PermTest::mask_type::Ones (num_edges));
+  auto opt = get_options ("posthoc");
+  if (opt.size()) {
+    const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> posthoc_matrix (load_matrix<bool> (opt[0][0]));
+    Connectome::check (posthoc_matrix, num_nodes);
+    mat2vec.M2V (posthoc_matrix, posthoc);
+    CONSOLE ("Number of edges in posthoc analysis: " + str(posthoc.count()) + " / " + str(num_edges));
+  }
+
   // Load design matrix
   const matrix_type design = load_matrix (argument[2]);
   if (size_t(design.rows()) != importer.size())
@@ -226,7 +249,7 @@ void run()
   //   additional design matrix columns coming from edge-wise subject data
   vector<CohortDataImport> extra_columns;
   bool nans_in_columns = false;
-  auto opt = get_options ("column");
+  opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
     extra_columns[i].initialise<SubjectConnectomeImport> (opt[i][0]);
@@ -358,7 +381,7 @@ void run()
 
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic, default_enhanced, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic, default_enhanced, fwe_strong, posthoc,
                                        null_distribution, null_contributions, uncorrected_pvalues);
     if (fwe_strong) {
       save_vector (null_distribution.col(0), output_prefix + "null_dist.txt");

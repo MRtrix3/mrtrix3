@@ -48,6 +48,13 @@ void usage ()
     "statistical enhancement that occurs between the data; however family-wise error control "
     "will be used."
 
+  + "Unlike other statistical inference commands, vectorstats does not provide separate "
+    "command-line options for masking those elements to contribute to processing versus "
+    "those elements that contribute to statistical inference (i.e. a post-hoc mask). This is "
+    "because the difference between these two constructs is whether or not any particular "
+    "element will or will not contribute to statistical enhancement, yet the defining feature "
+    "of vectorstats is that no statistical enhancement is performed."
+
   + Math::Stats::GLM::column_ones_description;
 
 
@@ -62,6 +69,10 @@ void usage ()
 
 
   OPTIONS
+  + OptionGroup("Options for constraining analysis to specific elements")
+  + Option ("mask", "provide a vector file specifying a mask of those elements to contribute to processing")
+  + Argument ("file").type_file_in()
+
   + Math::Stats::shuffle_options (false)
 
   + Math::Stats::GLM::glm_options ("element");
@@ -150,6 +161,16 @@ void run()
   CONSOLE ("Number of subjects: " + str(num_inputs));
   CONSOLE ("Number of elements: " + str(num_elements));
 
+  // Load analysis mask
+  Stats::PermTest::mask_type mask (Stats::PermTest::mask_type::Ones (num_elements));
+  auto opt = get_options ("mask");
+  if (opt.size()) {
+    mask = load_vector<bool> (opt[0][0]);
+    if (size_t(mask.size()) != num_elements)
+      throw Exception ("Length of mask (" + str(mask.size()) + ") does not match number of elements in data matrix (" + str(num_elements) + ")");
+    CONSOLE ("Number of elements included in mask: " + str(mask.count()));
+  }
+
   // Load design matrix
   const matrix_type design = load_matrix (argument[1]);
   if (size_t(design.rows()) != num_inputs)
@@ -159,7 +180,7 @@ void run()
   //   additional design matrix columns coming from element-wise subject data
   vector<CohortDataImport> extra_columns;
   bool nans_in_columns = false;
-  auto opt = get_options ("column");
+  opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
     extra_columns[i].initialise<SubjectVectorImport> (opt[i][0]);
@@ -218,23 +239,25 @@ void run()
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv");
+        save_vector (abs_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(), output_prefix + "abs_effect" + postfix(i) + ".csv");
         ++progress;
         if (num_vgs == 1)
-          save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv");
+          save_vector (std_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(), output_prefix + "std_effect" + postfix(i) + ".csv");
       } else {
         ++progress;
       }
       ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
-      save_vector (cond, output_prefix + "cond.csv");
+      save_vector (cond * mask.cast<matrix_type::Scalar>(), output_prefix + "cond.csv");
       ++progress;
     }
-    if (num_vgs == 1)
-      save_vector (stdev.row(0), output_prefix + "std_dev.csv");
-    else
+    if (num_vgs == 1) {
+      save_vector (stdev.array().row(0) * mask.transpose().cast<matrix_type::Scalar>(), output_prefix + "std_dev.csv");
+    } else {
+      stdev = stdev.array().colwise() * mask.cast<matrix_type::Scalar>();
       save_matrix (stdev, output_prefix + "std_dev.csv");
+    }
   }
 
   // Construct the class for performing the initial statistical tests
@@ -259,8 +282,8 @@ void run()
   matrix_type default_statistic, default_zstat;
   (*glm_test) (default_shuffle, default_statistic, default_zstat);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    save_matrix (default_statistic.col(i), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
-    save_matrix (default_zstat.col(i), output_prefix + "Zstat" + postfix(i) + ".csv");
+    save_vector (default_statistic.array().col(i) * mask.cast<matrix_type::Scalar>(), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    save_vector (default_zstat.array().col(i) * mask.cast<matrix_type::Scalar>(), output_prefix + "Zstat" + postfix(i) + ".csv");
   }
 
   // Perform permutation testing
@@ -275,7 +298,7 @@ void run()
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
     matrix_type empirical_distribution; // unused
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution, default_zstat, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution, default_zstat, fwe_strong, mask,
                                        null_distribution, null_contributions, uncorrected_pvalues);
     if (fwe_strong) {
       save_vector (null_distribution.col(0), output_prefix + "null_dist.csv");
@@ -283,7 +306,8 @@ void run()
       for (size_t i = 0; i != num_hypotheses; ++i)
         save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
     }
-    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_zstat);
+    matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_zstat);
+    fwe_pvalues = fwe_pvalues.array().colwise() * mask.cast<matrix_type::Scalar>();
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_vector (fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");
