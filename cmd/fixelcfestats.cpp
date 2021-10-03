@@ -271,6 +271,7 @@ void run()
   } else {
     posthoc = Image<bool>::scratch (fixel_mask_header, "scratch fixel post-hoc mask");
     copy (mask, posthoc);
+    mask.reset(); posthoc.reset();
     posthoc_fixels = num_fixels;
   }
 
@@ -478,7 +479,7 @@ void run()
   }
 
   // Perform permutation testing
-  if (get_options ("notest").size()) {
+  if (!get_options ("notest").size()) {
 
     if (get_options("posthoc").size()) {
       WARN ("-posthoc option has no effect if -notest is also specified");

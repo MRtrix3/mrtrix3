@@ -254,7 +254,9 @@ void run() {
   } else {
     posthoc_mask = Stats::PermTest::mask_type::Ones (num_voxels);
     posthoc_voxels = num_voxels;
+    posthoc_image = Image<bool>::scratch (mask_header, "scratch posthoc mask image");
     copy (mask_image, posthoc_image);
+    mask_image.reset(); posthoc_image.reset();
   }
 
   // Read file names and check files exist
