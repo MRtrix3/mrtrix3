@@ -63,8 +63,6 @@ void usage ()
 
   + Argument ("design", "the design matrix").type_file_in ()
 
-  + Argument ("contrast", "the contrast matrix").type_file_in ()
-
   + Argument ("output", "the filename prefix for all output").type_text();
 
 
@@ -203,7 +201,7 @@ void run()
     CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
+  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (num_factors);
   const size_t num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     throw Exception ("The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
@@ -211,7 +209,7 @@ void run()
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
-  const std::string output_prefix = argument[3];
+  const std::string output_prefix = argument[2];
 
   const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {

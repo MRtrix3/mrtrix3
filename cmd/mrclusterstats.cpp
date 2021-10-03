@@ -74,8 +74,6 @@ void usage ()
 
   + Argument ("design", "the design matrix").type_file_in()
 
-  + Argument ("contrast", "the contrast matrix").type_file_in()
-
   + Argument ("mask", "a mask used to define voxels included in the analysis.").type_image_in()
 
   + Argument ("output", "the filename prefix for all output.").type_text();
@@ -213,7 +211,7 @@ void run() {
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
   // Load analysis mask and compute adjacency
-  auto mask_header = Header::open (argument[3]);
+  auto mask_header = Header::open (argument[2]);
   check_effective_dimensionality (mask_header, 3);
   auto mask_image = mask_header.get_image<bool>();
   std::shared_ptr<Voxel2Vector> v2v = make_shared<Voxel2Vector> (mask_image, mask_header);
@@ -301,12 +299,8 @@ void run() {
     CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
+  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (num_factors);
   const size_t num_hypotheses = hypotheses.size();
-  if (hypotheses[0].cols() != num_factors)
-    throw Exception ("The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
-                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
-                     + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   matrix_type data (importer.size(), num_voxels);
@@ -339,7 +333,7 @@ void run() {
     output_header.keyval()["threshold"] = str(cluster_forming_threshold);
   }
 
-  const std::string prefix (argument[4]);
+  const std::string prefix (argument[3]);
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&] (const size_t i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };

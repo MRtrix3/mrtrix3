@@ -101,8 +101,6 @@ void usage ()
 
   + Argument ("design", "the design matrix").type_file_in ()
 
-  + Argument ("contrast", "the contrast matrix, specified as rows of weights").type_file_in ()
-
   // .type_various() rather than .type_directory_in() to catch people trying to
   //   pass a track file, and give a more informative error message
   + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_various ()
@@ -333,19 +331,15 @@ void run()
     CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
+  const vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (num_factors);
   const size_t num_hypotheses = hypotheses.size();
-  if (hypotheses[0].cols() != num_factors)
-    throw Exception ("The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
-                     + (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "")
-                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
   CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   // Load fixel-fixel connectivity matrix
   // This is based on the processing mask, *not* the post-hoc mask
-  Fixel::Matrix::Reader matrix (argument[4], mask);
+  Fixel::Matrix::Reader matrix (argument[3], mask);
 
-  const std::string output_fixel_directory = argument[5];
+  const std::string output_fixel_directory = argument[4];
   Fixel::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
 
   // Do we still want to check whether or not there are any disconnected fixels?

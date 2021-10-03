@@ -46,7 +46,8 @@ namespace MR
             "experimental design. Hence, in MRtrix3 statistical inference commands, "
             "it is up to the user to determine whether or not this column of ones should "
             "be included in their design matrix, and add it explicitly if necessary. "
-            "The contrast matrix must also reflect the presence of this additional column.";
+            "Matrices specified for t-tests and F-tests must also reflect the presence of "
+            "this additional column.";
 
 
         App::OptionGroup glm_options (const std::string& element_name)
@@ -54,16 +55,18 @@ namespace MR
           using namespace App;
           OptionGroup result = OptionGroup ("Options related to the General Linear Model (GLM)")
 
+            + Option ("ttests", "perform one or more t-tests; input matrix text file should contain one row for each hypothesis, "
+                                "with each row performing a dot product with the GLM beta coefficients to form a contrast "
+                                "of interest")
+              + Argument ("path").type_file_in()
+
+            + Option ("ftest", "perform an F-test; input matrix text file should contain one or more rows, with each row "
+                               "specifying an undirected contrast to contribute to the F-test").allow_multiple()
+              + Argument ("path").type_file_in()
+
             + Option ("variance", "define variance groups for the G-statistic; "
                                   "measurements for which the expected variance is equivalent should contain the same index")
               + Argument ("file").type_file_in()
-
-            + Option ("ftests", "perform F-tests; input text file should contain, for each F-test, a row containing "
-                                "ones and zeros, where ones indicate the rows of the contrast matrix to be included "
-                                "in the F-test.")
-              + Argument ("path").type_file_in()
-
-            + Option ("fonly", "only assess F-tests; do not perform statistical inference on entries in the contrast matrix")
 
             + Option ("column", "add a column to the design matrix corresponding to subject " + element_name + "-wise values "
                                 "(note that the contrast matrix must include an additional column for each use of this option); "
@@ -138,39 +141,26 @@ namespace MR
 
 
 
-        vector<Hypothesis> load_hypotheses (const std::string& file_path)
+        vector<Hypothesis> load_hypotheses (const ssize_t num_factors)
         {
           vector<Hypothesis> hypotheses;
-          const matrix_type contrast_matrix = load_matrix (file_path);
-          for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
-            hypotheses.emplace_back (Hypothesis (contrast_matrix.row (row), row));
-          auto opt = App::get_options ("ftests");
+          auto opt = App::get_options ("ttests");
           if (opt.size()) {
-            const matrix_type ftest_matrix = load_matrix (opt[0][0]);
-            if (ftest_matrix.cols() != contrast_matrix.rows())
-              throw Exception ("Number of columns in F-test matrix (" + str(ftest_matrix.cols()) + ") does not match number of rows in contrast matrix (" + str(contrast_matrix.rows()) + ")");
-            if (!((ftest_matrix.array() == 0.0) + (ftest_matrix.array() == 1.0)).all())
-              throw Exception ("F-test array must contain ones and zeros only");
-            for (ssize_t ftest_index = 0; ftest_index != ftest_matrix.rows(); ++ftest_index) {
-              if (!ftest_matrix.row (ftest_index).count())
-                throw Exception ("Row " + str(ftest_index+1) + " of F-test matrix does not contain any ones");
-              matrix_type this_f_matrix (ftest_matrix.row (ftest_index).count(), contrast_matrix.cols());
-              ssize_t ftest_row = 0;
-              for (ssize_t contrast_row = 0; contrast_row != contrast_matrix.rows(); ++contrast_row) {
-                if (ftest_matrix (ftest_index, contrast_row))
-                  this_f_matrix.row (ftest_row++) = contrast_matrix.row (contrast_row);
-              }
-              hypotheses.emplace_back (Hypothesis (this_f_matrix, ftest_index));
-            }
-            if (App::get_options ("fonly").size()) {
-              vector<Hypothesis> new_hypotheses;
-              for (size_t index = contrast_matrix.rows(); index != hypotheses.size(); ++index)
-                new_hypotheses.push_back (std::move (hypotheses[index]));
-              std::swap (hypotheses, new_hypotheses);
-            }
-          } else if (App::get_options ("fonly").size()) {
-            throw Exception ("Cannot perform F-tests exclusively (-fonly option): No F-test matrix was provided (-ftests option)");
+            const matrix_type contrast_matrix = load_matrix (opt[0][0]);
+            if (contrast_matrix.cols() != num_factors)
+              throw Exception ("Number of columns in T-test matrix file \"" + opt[0][0] + "\" (" + str(contrast_matrix.cols()) + ") does not match number of model factors (" + str(num_factors) + ")");
+            for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
+              hypotheses.emplace_back (Hypothesis (contrast_matrix.row (row), row));
           }
+          opt = App::get_options ("ftest");
+          for (size_t i = 0; i != opt.size(); ++i) {
+            const matrix_type ftest_matrix = load_matrix (opt[i][0]);
+            if (ftest_matrix.cols() != num_factors)
+              throw Exception ("Number of columns in F-test matrix \"" + opt[i][0] + "\" (" + str(ftest_matrix.cols()) + ") does not match number of model factors (" + str(num_factors) + ")");
+            hypotheses.emplace_back (Hypothesis (ftest_matrix, i));
+          }
+          if (hypotheses.empty())
+            throw Exception ("No hypotheses specified; must use at least one of the -ttests or -ftest options");
           return hypotheses;
         }
 
@@ -738,7 +728,7 @@ namespace MR
             inputs_per_vg (num_vgs, 0),
             Rnn_sums (vector_type::Zero (num_vgs))
         {
-          for (size_t input = 0; input != measurements.rows(); ++input) {
+          for (size_t input = 0; input != size_t(measurements.rows()); ++input) {
             inputs_per_vg[variance_groups[input]]++;
             Rnn_sums[variance_groups[input]] += Rm.diagonal()[input];
           }
@@ -952,7 +942,7 @@ namespace MR
         {
           element_mask.clear (true);
           if (s.nans_in_data) {
-            for (ssize_t row = 0; row != num_inputs(); ++row) {
+            for (size_t row = 0; row != num_inputs(); ++row) {
               if (!std::isfinite (y (row, ie)))
                 element_mask[row] = false;
             }
@@ -1094,7 +1084,7 @@ namespace MR
           zstats.resize (num_elements(), num_hypotheses());
 
           // Let's loop over elements first, then hypotheses in the inner loop
-          for (ssize_t ie = 0; ie != num_elements(); ++ie) {
+          for (size_t ie = 0; ie != num_elements(); ++ie) {
 
             // For each element (row in y), need to load the additional data for that element
             //   for all subjects in order to construct the design matrix
@@ -1300,9 +1290,9 @@ namespace MR
           stats.resize (num_elements(), num_hypotheses());
           zstats.resize (num_elements(), num_hypotheses());
 
-          for (ssize_t ie = 0; ie != num_elements(); ++ie) {
+          for (size_t ie = 0; ie != num_elements(); ++ie) {
             // Common ground to the TestVariableHomoscedastic case
-            for (ssize_t col = 0; col != ssize_t(S().importers.size()); ++col)
+            for (size_t col = 0; col != S().importers.size(); ++col)
               extra_column_data.col (col) = S().importers[col] (ie);
             set_mask (S(), ie);
             const size_t finite_count = element_mask.count();
