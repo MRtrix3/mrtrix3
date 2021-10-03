@@ -479,7 +479,7 @@ void run()
   }
 
   // Perform permutation testing
-  if (!get_options ("notest").size()) {
+  if (get_options ("notest").size()) {
 
     if (get_options("posthoc").size()) {
       WARN ("-posthoc option has no effect if -notest is also specified");
