@@ -483,44 +483,45 @@ void run()
 
     if (get_options("posthoc").size()) {
       WARN ("-posthoc option has no effect if -notest is also specified");
-    } else {
+    }
 
-      const bool fwe_strong = get_options("strong").size();
-      if (fwe_strong && num_hypotheses == 1) {
-        WARN("Option -strong has no effect when testing a single hypothesis only");
-      }
+  } else {
 
-      Stats::PermTest::mask_type posthoc_mask (num_fixels);
-      for (auto l = Loop(0) (posthoc); l; ++l)
-        posthoc_mask[posthoc.index(0)] = posthoc.value();
+    const bool fwe_strong = get_options("strong").size();
+    if (fwe_strong && num_hypotheses == 1) {
+      WARN("Option -strong has no effect when testing a single hypothesis only");
+    }
 
-      matrix_type null_distribution, uncorrected_pvalues;
-      count_matrix_type null_contributions;
-      Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic, default_enhanced, fwe_strong, posthoc_mask,
-                                         null_distribution, null_contributions, uncorrected_pvalues);
+    Stats::PermTest::mask_type posthoc_mask (num_fixels);
+    for (auto l = Loop(0) (posthoc); l; ++l)
+      posthoc_mask[posthoc.index(0)] = posthoc.value();
 
-      ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
+    matrix_type null_distribution, uncorrected_pvalues;
+    count_matrix_type null_contributions;
+    Stats::PermTest::run_permutations (glm_test, cfe_integrator, empirical_cfe_statistic, default_enhanced, fwe_strong, posthoc_mask,
+                                        null_distribution, null_contributions, uncorrected_pvalues);
 
-      if (fwe_strong) {
-        save_vector (null_distribution.col(0), Path::join (output_fixel_directory, "null_dist.txt"));
-        ++progress;
-      } else {
-        for (size_t i = 0; i != num_hypotheses; ++i) {
-          save_vector (null_distribution.col(i), Path::join (output_fixel_directory, "null_dist" + postfix(i) + ".txt"));
-          ++progress;
-        }
-      }
+    ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
 
-      const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
+    if (fwe_strong) {
+      save_vector (null_distribution.col(0), Path::join (output_fixel_directory, "null_dist.txt"));
       ++progress;
+    } else {
       for (size_t i = 0; i != num_hypotheses; ++i) {
-        write_fixel_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), posthoc, output_header);
-        ++progress;
-        write_fixel_output (Path::join (output_fixel_directory, "uncorrected_1mpvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), posthoc, output_header);
-        ++progress;
-        write_fixel_output (Path::join (output_fixel_directory, "null_contributions" + postfix(i) + ".mif"), null_contributions.col(i), posthoc, output_header);
+        save_vector (null_distribution.col(i), Path::join (output_fixel_directory, "null_dist" + postfix(i) + ".txt"));
         ++progress;
       }
+    }
+
+    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
+    ++progress;
+    for (size_t i = 0; i != num_hypotheses; ++i) {
+      write_fixel_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), posthoc, output_header);
+      ++progress;
+      write_fixel_output (Path::join (output_fixel_directory, "uncorrected_1mpvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), posthoc, output_header);
+      ++progress;
+      write_fixel_output (Path::join (output_fixel_directory, "null_contributions" + postfix(i) + ".mif"), null_contributions.col(i), posthoc, output_header);
+      ++progress;
     }
   }
 }
