@@ -251,6 +251,7 @@ void run() {
       WARN ("There are " + str(posthoc_mismatch_count) + " voxels in the post-hoc mask that are absent from the processing mask; "
             "post-hoc inference cannot be performed in those voxels");
     }
+    mask_image.reset(); posthoc_image.reset();
   } else {
     posthoc_mask = Stats::PermTest::mask_type::Ones (num_voxels);
     posthoc_voxels = num_voxels;
