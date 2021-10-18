@@ -147,7 +147,7 @@ namespace MR
             bool operator() (const DWI::Tractography::Streamline<>& tck,
                              vector<index_type>& out) const
             {
-              using direction_type = Eigen::Vector3;
+              using direction_type = Eigen::Vector3d;
               using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
               SetVoxelDir in;

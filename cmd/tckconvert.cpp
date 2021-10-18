@@ -331,7 +331,7 @@ class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
       }
 
       // calculate centroid
-      Eigen::Vector3 centroid(coord.row(0).mean(), coord.row(1).mean(), coord.row(2).mean());
+      Eigen::Vector3d centroid(coord.row(0).mean(), coord.row(1).mean(), coord.row(2).mean());
 
       // subtract centroid
       coord.row(0).array() -= centroid(0);

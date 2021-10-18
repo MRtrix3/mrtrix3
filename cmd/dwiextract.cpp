@@ -67,6 +67,8 @@ void usage ()
 void run()
 {
   auto input_image = Image<float>::open (argument[0]);
+  if (input_image.ndim() < 4)
+    throw Exception ("Epected input image to contain more than three dimensions");
   auto grad = DWI::get_DW_scheme (input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction

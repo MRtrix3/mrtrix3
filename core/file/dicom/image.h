@@ -33,7 +33,7 @@ namespace MR {
       class Frame { MEMALIGN(Frame)
         public:
           Frame () {
-            acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = series_num = acq = sequence = UINT_MAX;
+            acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance = series_num = acq = sequence = echo_index = UINT_MAX;
             position_vector[0] = position_vector[1] = position_vector[2] = NaN;
             orientation_x[0] = orientation_x[1] = orientation_x[2] = NaN;
             orientation_y[0] = orientation_y[1] = orientation_y[2] = NaN;
@@ -53,8 +53,8 @@ namespace MR {
             bipolar_flag = readoutmode_flag = 0;
           }
 
-          size_t acq_dim[2], dim[2], series_num, instance, acq, sequence;
-          Eigen::Vector3 position_vector, orientation_x, orientation_y, orientation_z, G;
+          size_t acq_dim[2], dim[2], series_num, instance, acq, sequence, echo_index;
+          Eigen::Vector3d position_vector, orientation_x, orientation_y, orientation_z, G;
           default_type distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
           size_t data, bits_alloc, data_size, frame_offset;
           std::string filename, image_type;
@@ -80,6 +80,10 @@ namespace MR {
             for (size_t n = index.size(); n--;)
               if (index[n] != frame.index[n])
                 return index[n] < frame.index[n];
+            if (echo_index != frame.echo_index)
+              return echo_index < frame.echo_index;
+            if (std::isfinite (echo_time) && echo_time != frame.echo_time)
+              return echo_time < frame.echo_time;
             if (sequence != frame.sequence)
               return sequence < frame.sequence;
             if (instance != frame.instance)
@@ -95,7 +99,7 @@ namespace MR {
             else {
               if (!orientation_x.allFinite() || !orientation_y.allFinite())
                 throw Exception ("slice orientation information missing from DICOM header!");
-              Eigen::Vector3 normal = orientation_x.cross (orientation_y);
+              Eigen::Vector3d normal = orientation_x.cross (orientation_y);
               if (normal.dot (orientation_z) < 0.0)
                 orientation_z = -normal;
               else

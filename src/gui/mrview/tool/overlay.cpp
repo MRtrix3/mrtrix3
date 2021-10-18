@@ -196,9 +196,13 @@ namespace MR
           if (overlay_names.empty())
             return;
           vector<std::unique_ptr<MR::Header>> list;
-          for (size_t n = 0; n < overlay_names.size(); ++n)
-            list.push_back (make_unique<MR::Header> (MR::Header::open (overlay_names[n])));
-
+          for (size_t n = 0; n < overlay_names.size(); ++n) {
+            try {
+              list.push_back (make_unique<MR::Header> (MR::Header::open (overlay_names[n])));
+            } catch (Exception& e) {
+              e.display();
+            }
+          }
           add_images (list);
         }
 
@@ -237,6 +241,7 @@ namespace MR
             }
             if (list.size())
               add_images (list);
+            event->acceptProposedAction();
           }
         }
 
@@ -619,14 +624,16 @@ namespace MR
           int num_lower_threshold = 0, num_upper_threshold = 0;
           int colourmap_index = -2;
           int num_interp = 0;
+          int num_inverted = 0;
           for (int i = 0; i < indices.size(); ++i) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             if (colourmap_index != int(overlay->colourmap)) {
               if (colourmap_index == -2)
                 colourmap_index = overlay->colourmap;
               else
-                colourmap_index = -1;
+                colourmap_index = -1;                
             }
+            num_inverted += overlay->scale_inverted();
             rate += overlay->scaling_rate();
             min_val += overlay->scaling_min();
             max_val += overlay->scaling_max();
@@ -657,9 +664,9 @@ namespace MR
             for (size_t d = 3; d < overlay->image.ndim(); ++d) {
               SpinBox* vol_index = new SpinBox (this);
               vol_index->setMinimum (0);
+              vol_index->setMaximum (overlay->image.size(d) - 1);
               vol_index->setPrefix (qstr(str(d+1) + ": "));
               vol_index->setValue (overlay->image.index(d));
-              vol_index->setMaximum (overlay->image.size(d) - 1);
               vol_index->setEnabled (overlay->image.size(d) > 1);
               volume_index_layout->addWidget (vol_index, volume_index_layout->count()/3, volume_index_layout->count()%3);
               connect (vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex()));
@@ -673,6 +680,7 @@ namespace MR
           }
 
           colourmap_button->set_colourmap_index(colourmap_index);
+          colourmap_button->set_scale_inverted (num_inverted > indices.size()/2);
           opacity_slider->setValue (1.0e3f * opacity);
           if (num_interp == 0)
             interpolate_check_box->setCheckState (Qt::Unchecked);
