@@ -166,7 +166,7 @@ namespace MR
               int LOD;
               matrix_t transform;
               Shapes::HalfSphere half_sphere;
-              GL::VertexBuffer surface_buffer;
+              GL::VertexBuffer surface_buffer, colour_buffer;
               GL::VertexArrayObject VAO;
 
               void update_transform (const vector<Shapes::HalfSphere::Vertex>&, int);

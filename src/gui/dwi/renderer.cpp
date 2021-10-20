@@ -125,6 +125,7 @@ namespace MR
           source +=
           "layout(location = 0) in vec3 vertex;\n"
           "layout(location = 1) in vec3 r_del_daz;\n";
+          "layout(location = 2) in float colour;\n";
         } else if (mode_ == mode_t::TENSOR) {
           source +=
           "layout(location = 0) in vec3 vertex;\n";
@@ -153,7 +154,7 @@ namespace MR
         if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
           source +=
           "out vec3 vertex_position, vertex_color, vertex_normal;\n"
-          "out float amplitude;\n";
+          "out float amplitude, colour_out;\n";
         } else if (mode_ == mode_t::DIXEL) {
           source +=
           "out vec3 vertex_orig_direction, vertex_orig_position, vertex_orig_color;\n"
@@ -296,7 +297,7 @@ namespace MR
         source +=
           "uniform float ambient, diffuse, specular, shine;\n"
           "uniform vec3 light_pos;\n"
-          "in float amplitude;\n"
+          "in float amplitude, colour_out;\n"
           "in vec3 vertex_position, vertex_color, vertex_normal;\n"
           "out vec3 final_color;\n"
           "void main() {\n"
@@ -347,6 +348,7 @@ namespace MR
         half_sphere.vertex_buffer.clear();
         half_sphere.index_buffer.clear();
         surface_buffer.clear();
+        colour_buffer.clear();
         VAO.clear();
       }
 
@@ -356,6 +358,7 @@ namespace MR
         GL::Context::Grab context (parent.context_);
         half_sphere.vertex_buffer.gen();
         surface_buffer.gen();
+        colour_buffer.gen();
         half_sphere.index_buffer.gen();
         VAO.gen();
         VAO.bind();
@@ -367,6 +370,10 @@ namespace MR
         surface_buffer.bind (gl::ARRAY_BUFFER);
         gl::EnableVertexAttribArray (1);
         gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
+
+        colour_buffer.bind (gl::ARRAY_BUFFER);
+        gl::EnableVertexAttribArray (2);
+        gl::VertexAttribPointer (2, 1, gl::FLOAT, gl::FALSE_, sizeof(GLfloat), (void*)0);
 
         half_sphere.index_buffer.bind();
         GL_CHECK_ERROR;
@@ -384,6 +391,11 @@ namespace MR
         surface_buffer.bind (gl::ARRAY_BUFFER);
         gl::BufferData (gl::ARRAY_BUFFER, r_del_daz.size()*sizeof(float), &r_del_daz[0], gl::STREAM_DRAW);
         gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
+
+
+        colour_buffer.bind (gl::ARRAY_BUFFER);
+        gl::BufferData (gl::ARRAY_BUFFER, colour.size()*sizeof(float), &colour[0], gl::STREAM_DRAW);
+        gl::VertexAttribPointer (2, 1, gl::FLOAT, gl::FALSE_, 1*sizeof(GLfloat), (void*)0);
       }
 
       void Renderer::SH::update_mesh (const size_t lod, const int lmax)
