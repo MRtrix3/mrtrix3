@@ -224,7 +224,7 @@ void run() {
 
   // Posthoc analysis mask
   Image<bool> posthoc_image;
-  Stats::PermTest::mask_type posthoc_mask (num_voxels);
+  mask_type posthoc_mask (num_voxels);
   size_t posthoc_voxels = 0;
   auto opt = get_options ("posthoc");
   if (opt.size()) {
@@ -251,14 +251,13 @@ void run() {
       WARN ("There are " + str(posthoc_mismatch_count) + " voxels in the post-hoc mask that are absent from the processing mask; "
             "post-hoc inference cannot be performed in those voxels");
     }
-    mask_image.reset(); posthoc_image.reset();
   } else {
     posthoc_mask = Stats::PermTest::mask_type::Ones (num_voxels);
     posthoc_voxels = num_voxels;
     posthoc_image = Image<bool>::scratch (mask_header, "scratch posthoc mask image");
     copy (mask_image, posthoc_image);
-    mask_image.reset(); posthoc_image.reset();
   }
+  mask_image.reset(); posthoc_image.reset();
 
   // Read file names and check files exist
   CohortDataImport importer;
@@ -446,7 +445,7 @@ void run() {
       }
     }
 
-    const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
+    const matrix_type fwe_pvalue_output = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_enhanced, posthoc_mask);
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
       write_output (fwe_pvalue_output.col(i), *v2v, posthoc_image, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);

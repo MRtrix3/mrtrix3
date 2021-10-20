@@ -36,6 +36,7 @@ using namespace App;
 using namespace MR::Math::Stats;
 using namespace MR::Math::Stats::GLM;
 
+using Math::Stats::mask_type;
 using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
@@ -229,7 +230,7 @@ void run()
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", EMPIRICAL_SKEW_DEFAULT);
 
   // Load post-hoc mask
-  Stats::PermTest::mask_type posthoc (Stats::PermTest::mask_type::Ones (num_edges));
+  mask_type posthoc (mask_type::Ones (num_edges));
   auto opt = get_options ("posthoc");
   if (opt.size()) {
     const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> posthoc_matrix (load_matrix<bool> (opt[0][0]));
@@ -383,7 +384,7 @@ void run()
       for (size_t i = 0; i != num_hypotheses; ++i)
         save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".txt");
     }
-    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
+    const matrix_type pvalue_output = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_enhanced, posthoc);
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_matrix (mat2vec.V2M (pvalue_output.col(i)),       output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       save_matrix (mat2vec.V2M (uncorrected_pvalues.col(i)), output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");

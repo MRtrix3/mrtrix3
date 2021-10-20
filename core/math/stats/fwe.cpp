@@ -26,63 +26,65 @@ namespace MR
   {
     namespace Stats
     {
-
-
-
-      // FIXME Jump based on non-initialised value in the sort
-      // Pre-fill the null distribution / stats matrices with NaNs, detect when it's not overwritten
-      matrix_type fwe_pvalue (const matrix_type& null_distributions, const matrix_type& statistics)
+      namespace PermTest
       {
-        assert (null_distributions.cols() == 1 || null_distributions.cols() == statistics.cols());
-        matrix_type pvalues (statistics.rows(), statistics.cols());
 
-        auto s2p = [] (const vector<value_type>& null_dist, const matrix_type::ConstColXpr in, matrix_type::ColXpr out)
+
+
+        // FIXME Jump based on non-initialised value in the sort
+        // Pre-fill the null distribution / stats matrices with NaNs, detect when it's not overwritten
+        matrix_type fwe_pvalue (const matrix_type& null_distributions, const matrix_type& statistics, const mask_type& mask)
         {
-          for (ssize_t element = 0; element != in.size(); ++element) {
-            if (in[element] > 0.0) {
-              value_type pvalue = 1.0;
-              for (size_t j = 0; j < size_t(null_dist.size()); ++j) {
-                if (in[element] < null_dist[j]) {
-                  pvalue = value_type(j) / value_type(null_dist.size());
-                  break;
+          assert (null_distributions.cols() == 1 || null_distributions.cols() == statistics.cols());
+          matrix_type pvalues (statistics.rows(), statistics.cols());
+
+          auto s2p = [] (const vector<value_type>& null_dist, const matrix_type::ConstColXpr in, const mask_type& mask, matrix_type::ColXpr out)
+          {
+            for (ssize_t element = 0; element != in.size(); ++element) {
+              if (mask[element] && in[element] > 0.0) {
+                value_type pvalue = 1.0;
+                for (size_t j = 0; j < size_t(null_dist.size()); ++j) {
+                  if (in[element] < null_dist[j]) {
+                    pvalue = value_type(j) / value_type(null_dist.size());
+                    break;
+                  }
                 }
+                out[element] = pvalue;
+              } else {
+                out[element] = 0.0;
               }
-              out[element] = pvalue;
-            } else {
-              out[element] = 0.0;
             }
-          }
-        };
+          };
 
-        if (null_distributions.cols() == 1) { // strong fwe control
+          if (null_distributions.cols() == 1) { // strong fwe control
 
-          vector<value_type> sorted_null_dist;
-          sorted_null_dist.reserve (null_distributions.rows());
-          for (ssize_t shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
-            sorted_null_dist.push_back (null_distributions (shuffle, 0));
-          std::sort (sorted_null_dist.begin(), sorted_null_dist.end());
-          for (ssize_t hypothesis = 0; hypothesis != statistics.cols(); ++hypothesis)
-            s2p (sorted_null_dist, statistics.col (hypothesis), pvalues.col (hypothesis));
-
-        } else { // weak fwe control
-
-          for (ssize_t hypothesis = 0; hypothesis != statistics.cols(); ++hypothesis) {
             vector<value_type> sorted_null_dist;
             sorted_null_dist.reserve (null_distributions.rows());
             for (ssize_t shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
-              sorted_null_dist.push_back (null_distributions (shuffle, hypothesis));
+              sorted_null_dist.push_back (null_distributions (shuffle, 0));
             std::sort (sorted_null_dist.begin(), sorted_null_dist.end());
-            s2p (sorted_null_dist, statistics.col (hypothesis), pvalues.col (hypothesis));
+            for (ssize_t hypothesis = 0; hypothesis != statistics.cols(); ++hypothesis)
+              s2p (sorted_null_dist, statistics.col (hypothesis), mask, pvalues.col (hypothesis));
+
+          } else { // weak fwe control
+
+            for (ssize_t hypothesis = 0; hypothesis != statistics.cols(); ++hypothesis) {
+              vector<value_type> sorted_null_dist;
+              sorted_null_dist.reserve (null_distributions.rows());
+              for (ssize_t shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
+                sorted_null_dist.push_back (null_distributions (shuffle, hypothesis));
+              std::sort (sorted_null_dist.begin(), sorted_null_dist.end());
+              s2p (sorted_null_dist, statistics.col (hypothesis), mask, pvalues.col (hypothesis));
+            }
+
           }
 
+          return pvalues;
         }
 
-        return pvalues;
+
+
       }
-
-
-
-
     }
   }
 }

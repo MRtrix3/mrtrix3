@@ -34,6 +34,7 @@ namespace MR
       using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
       using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
       using index_array_type = Eigen::Array<size_t, Eigen::Dynamic, 1>;
+      using mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
 
 
 

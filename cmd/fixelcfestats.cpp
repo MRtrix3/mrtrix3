@@ -40,6 +40,7 @@ using namespace MR;
 using namespace App;
 
 using Fixel::index_type;
+using Math::Stats::mask_type;
 using Math::Stats::matrix_type;
 using Math::Stats::value_type;
 using Math::Stats::vector_type;
@@ -271,9 +272,9 @@ void run()
   } else {
     posthoc = Image<bool>::scratch (fixel_mask_header, "scratch fixel post-hoc mask");
     copy (mask, posthoc);
-    mask.reset(); posthoc.reset();
     posthoc_fixels = num_fixels;
   }
+  mask.reset(); posthoc.reset();
 
   // Read file names and check files exist
   // Preference for finding files relative to input template fixel directory
@@ -492,7 +493,7 @@ void run()
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
 
-    Stats::PermTest::mask_type posthoc_mask (num_fixels);
+    mask_type posthoc_mask (num_fixels);
     for (auto l = Loop(0) (posthoc); l; ++l)
       posthoc_mask[posthoc.index(0)] = posthoc.value();
 
@@ -513,7 +514,7 @@ void run()
       }
     }
 
-    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
+    const matrix_type pvalue_output = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_enhanced, posthoc_mask);
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), posthoc, output_header);

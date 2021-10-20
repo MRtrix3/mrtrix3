@@ -27,13 +27,16 @@ namespace MR
   {
     namespace Stats
     {
+      namespace PermTest
+      {
 
 
 
-      matrix_type fwe_pvalue (const matrix_type& null_dist, const matrix_type& stats);
+        matrix_type fwe_pvalue (const matrix_type& null_dist, const matrix_type& stats, const mask_type& mask);
 
 
 
+      }
     }
   }
 }

@@ -54,7 +54,7 @@ namespace MR
       using vector_type = Math::Stats::vector_type;
       using matrix_type = Math::Stats::matrix_type;
       using count_matrix_type = Eigen::Array<uint32_t, Eigen::Dynamic, Eigen::Dynamic>;
-      using mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
+      using mask_type = Math::Stats::mask_type;
 
 
 

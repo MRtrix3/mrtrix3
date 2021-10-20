@@ -304,8 +304,7 @@ void run()
       for (size_t i = 0; i != num_hypotheses; ++i)
         save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
     }
-    matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_zstat);
-    fwe_pvalues = fwe_pvalues.array().colwise() * mask.cast<matrix_type::Scalar>();
+    matrix_type fwe_pvalues = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_zstat, mask);
     for (size_t i = 0; i != num_hypotheses; ++i) {
       save_vector (fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");
