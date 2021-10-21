@@ -25,10 +25,10 @@
 #include "fixel/helpers.h"
 
 #include "fixel/filter/base.h"
+#include "fixel/filter/cfe.h"
 #include "fixel/filter/connect.h"
 #include "fixel/filter/smooth.h"
 #include "fixel/matrix.h"
-#include "stats/cfe.h"
 
 
 
@@ -36,7 +36,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Fixel;
 
-const char* const filters[] = { "connect", "smooth", nullptr };
+const char* const filters[] = { "cfe", "connect", "smooth", nullptr };
 
 void usage ()
 {
@@ -60,6 +60,8 @@ void usage ()
   OPTIONS
   + Option ("matrix", "provide a fixel-fixel connectivity matrix for filtering operations that require it").required()
     + Argument ("file").type_directory_in()
+
+  + Fixel::Filter::cfe_options
 
   + OptionGroup ("Options specific to the \"connect\" filter")
   + Option ("threshold_value", "specify a threshold for the input fixel data file values "
@@ -134,6 +136,21 @@ void run()
     switch (int(argument[1])) {
       case 0:
       {
+        const value_type cfe_dh = get_option_value ("cfe_dh", Fixel::Filter::cfe_default_dh);
+        const value_type cfe_e = get_option_value ("cfe_e", Fixel::Filter::cfe_default_e);
+        const value_type cfe_h = get_option_value ("cfe_h", Fixel::Filter::cfe_default_h);
+        const value_type cfe_c = get_option_value ("cfe_c", Fixel::Filter::cfe_default_c);
+        const bool cfe_legacy = get_options ("cfe_legacy").size();
+        filter.reset (new Fixel::Filter::CFE (matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
+        option_list.erase ("cfe_dh");
+        option_list.erase ("cfe_e");
+        option_list.erase ("cfe_h");
+        option_list.erase ("cfe_c");
+        option_list.erase ("cfe_legacy");
+      }
+      break;
+      case 1:
+      {
         const float value = get_option_value ("threshold_value", float(DEFAULT_FIXEL_CONNECT_VALUE_THRESHOLD));
         const float connect = get_option_value ("threshold_connectivity", float(DEFAULT_FIXEL_CONNECT_CONNECTIVITY_THRESHOLD));
         filter.reset (new Fixel::Filter::Connect (matrix, value, connect));
@@ -142,8 +159,8 @@ void run()
         option_list.erase ("threshold_value");
         option_list.erase ("threshold_connectivity");
       }
-        break;
-      case 1:
+      break;
+      case 2:
       {
         const float fwhm = get_option_value ("fwhm", float(DEFAULT_FIXEL_SMOOTHING_FWHM));
         const float threshold = get_option_value ("minweight", float(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT));
@@ -158,7 +175,7 @@ void run()
         option_list.erase ("minweight");
         option_list.erase ("mask");
       }
-        break;
+      break;
       default:
         assert (0);
     }

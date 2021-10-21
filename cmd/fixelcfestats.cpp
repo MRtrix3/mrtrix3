@@ -24,13 +24,12 @@
 #include "fixel/helpers.h"
 #include "fixel/index_remapper.h"
 #include "fixel/loop.h"
-#include "fixel/filter/smooth.h"
+#include "fixel/filter/cfe.h"
 #include "math/stats/fwe.h"
 #include "math/stats/glm.h"
 #include "math/stats/import.h"
 #include "math/stats/shuffle.h"
 #include "math/stats/typedefs.h"
-#include "stats/cfe.h"
 #include "stats/enhance.h"
 #include "stats/permtest.h"
 
@@ -44,14 +43,6 @@ using Math::Stats::value_type;
 using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
 
-#define DEFAULT_ANGLE_THRESHOLD 45.0
-#define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
-#define DEFAULT_SMOOTHING_FWHM 10.0
-
-#define DEFAULT_CFE_DH 0.1
-#define DEFAULT_CFE_E 2.0
-#define DEFAULT_CFE_H 3.0
-#define DEFAULT_CFE_C 0.5
 #define DEFAULT_EMPIRICAL_SKEW 1.0 // TODO Update from experience
 
 void usage ()
@@ -116,21 +107,7 @@ void usage ()
 
   + Math::Stats::shuffle_options (true, DEFAULT_EMPIRICAL_SKEW)
 
-  + OptionGroup ("Parameters for the Connectivity-based Fixel Enhancement algorithm")
-
-  + Option ("cfe_dh", "the height increment used in the cfe integration (default: " + str(DEFAULT_CFE_DH, 2) + ")")
-  + Argument ("value").type_float (0.001, 1.0)
-
-  + Option ("cfe_e", "cfe extent exponent (default: " + str(DEFAULT_CFE_E, 2) + ")")
-  + Argument ("value").type_float (0.0, 100.0)
-
-  + Option ("cfe_h", "cfe height exponent (default: " + str(DEFAULT_CFE_H, 2) + ")")
-  + Argument ("value").type_float (0.0, 100.0)
-
-  + Option ("cfe_c", "cfe connectivity exponent (default: " + str(DEFAULT_CFE_C, 2) + ")")
-  + Argument ("value").type_float (0.0, 100.0)
-
-  + Option ("cfe_legacy", "use the legacy (non-normalised) form of the cfe equation")
+  + Fixel::Filter::cfe_options
 
   + Math::Stats::GLM::glm_options ("fixel");
 
@@ -206,10 +183,10 @@ void run()
                      "data must be pre-smoothed. Please check command / pipeline documentation "
                      "specific to this software version.");
 
-  const value_type cfe_dh = get_option_value ("cfe_dh", DEFAULT_CFE_DH);
-  const value_type cfe_h = get_option_value ("cfe_h", DEFAULT_CFE_H);
-  const value_type cfe_e = get_option_value ("cfe_e", DEFAULT_CFE_E);
-  const value_type cfe_c = get_option_value ("cfe_c", DEFAULT_CFE_C);
+  const value_type cfe_dh = get_option_value ("cfe_dh", Fixel::Filter::cfe_default_dh);
+  const value_type cfe_e = get_option_value ("cfe_e", Fixel::Filter::cfe_default_e);
+  const value_type cfe_h = get_option_value ("cfe_h", Fixel::Filter::cfe_default_h);
+  const value_type cfe_c = get_option_value ("cfe_c", Fixel::Filter::cfe_default_c);
   const bool cfe_legacy = get_options ("cfe_legacy").size();
 
   const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
@@ -428,7 +405,7 @@ void run()
   }
 
   // Construct the class for performing fixel-based statistical enhancement
-  std::shared_ptr<Stats::EnhancerBase> cfe_integrator (new Stats::CFE (matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
+  std::shared_ptr<Stats::EnhancerBase> cfe_integrator (new Fixel::Filter::CFE (matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   matrix_type empirical_cfe_statistic;

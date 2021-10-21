@@ -16,7 +16,7 @@ Usage
     fixelfilter [ options ]  input filter output
 
 -  *input*: the input: either a fixel data file, or a fixel directory (see Description)
--  *filter*: the filtering operation to perform; options are: connect, smooth
+-  *filter*: the filtering operation to perform; options are: cfe, connect, smooth
 -  *output*: the output: either a fixel data file, or a fixel directory (see Description)
 
 Description
@@ -31,6 +31,19 @@ Options
 -------
 
 -  **-matrix file** provide a fixel-fixel connectivity matrix for filtering operations that require it
+
+Parameters for the Connectivity-based Fixel Enhancement (CFE) algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-cfe_dh value** the height increment used in the cfe integration (default: 0.1)
+
+-  **-cfe_e value** cfe extent exponent (default: 2)
+
+-  **-cfe_h value** cfe height exponent (default: 3)
+
+-  **-cfe_c value** cfe connectivity exponent (default: 0.5)
+
+-  **-cfe_legacy** use the legacy (non-normalised) form of the cfe equation
 
 Options specific to the "connect" filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
