@@ -12,14 +12,17 @@ The instructions below describe the process of compiling and installing
   These instructions are for more advanced users who wish to install very
   specific versions of *MRtrix3*, or make their own modifications. Most
   users will find it much easier to install one of the `pre-compiled packages
-  available for their platform from the main MRtrix website` <https://www.mrtrix.org/download/>`__.
+  available for their platform from the main MRtrix3 website <https://www.mrtrix.org/download/>`__.
+
+
+----
 
 
 Install Dependencies
 --------------------
 
 To install *MRtrix3*, you will need to have a number of dependencies
-available on your system -- these are listed below. These can be installed in a
+available on your system, listed below. These can be installed in a
 number of ways, depending on your specific platform. We provide specific
 instructions for doing so for GNU/Linux, macOS and Microsoft Windows in the
 subsequent sections.
@@ -27,18 +30,19 @@ subsequent sections.
 Required dependencies:
 
 -  a `C++11 <https://en.wikipedia.org/wiki/C%2B%2B11>`__ compliant
-   compiler (GCC version >= 4.9, clang)
--  `Python <https://www.python.org/>`__ version >= 2.7
--  The `zlib <http://www.zlib.net/>`__ compression library
--  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2
--  `Qt <http://www.qt.io/>`__ version >= 4.7 *[GUI components only]*
+   compiler (GCC version >= 5, clang);
+-  `Python <https://www.python.org/>`__ version >= 2.7 (>= 3 strongly recommended
+   due to `deprecation of Python2 <https://www.python.org/doc/sunset-python-2/>`__);
+-  The `zlib <http://www.zlib.net/>`__ compression library;
+-  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2 (>= 3.3 recommended);
+-  `Qt <http://www.qt.io/>`__ version >= 5.5 (but *not* Qt 6) *[GUI components only]*;
 
 and optionally:
 
-- `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support)
+- `libTIFF <http://www.libtiff.org/>`__ version >= 4.0 (for TIFF support);
 - `FFTW <http://www.fftw.org/>`__ version >= 3.0 (for improved performance in
-  certain applications, currently only ``mrdegibbs``)
-- `libpng <http://www.libpng.org>`__ (for PNG support)
+  certain applications, currently only ``mrdegibbs``);
+- `libpng <http://www.libpng.org>`__ (for PNG support).
 
 The instructions below list the most common ways to install these dependencies 
 on Linux, macOS, and Windows platforms.
@@ -46,36 +50,47 @@ on Linux, macOS, and Windows platforms.
 .. WARNING::
 
     To run the GUI components of *MRtrix3* (``mrview`` &
-    ``shview``), you will also need:
-
-    -  an `OpenGL <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and corresponding software driver
+    ``shview``), you will also need an `OpenGL
+    <https://en.wikipedia.org/wiki/OpenGL>`__ 3.3 compliant graphics card and
+    corresponding software driver.
 
     Note that this implies you *cannot run the GUI components over a remote
     X11 connection*, since it can't support OpenGL 3.3+ rendering. The
     most up-to-date recommendations in this context can be found in the
     `relevant Wiki entry <http://community.mrtrix.org/t/remote-display-issues/2547>`__
-    on the `*MRtrix3* community forum <http://community.mrtrix.org>`__.
+    on the `MRtrix3 community forum <http://community.mrtrix.org>`__.
 
 Linux
 ^^^^^
 
 The installation procedure will depend on your system. Package names may
 changes between distributions, and between different releases of the
-same distribution. The commands below are suggestions based on what has
-been reported to work in the past, but may need to be amended. See below
-for hints on how to proceed in this case.
+same distribution. We provide commands to install the required dependencies on
+some of the most common Linux distributions below.
+
+.. WARNING::
+
+    The commands below are **suggestions** based on what has been reported to work
+    in the past, but may need to be tailored for your specific distribution.
+    See below for hints on how to proceed in this case.
 
 -  Ubuntu Linux (and derivatives, e.g. Linux Mint)::
 
-       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev libpng-dev
+       sudo apt-get install git g++ python libeigen3-dev zlib1g-dev libqt5opengl5-dev libqt5svg5-dev libgl1-mesa-dev libfftw3-dev libtiff5-dev libpng-dev
+
+   .. NOTE::
+
+         On Ubuntu 20.04 and newer, you'll to replace ``python`` in the line
+         above with ``python-is-python3`` (or ``python-is-python2`` if you're
+         still using version 2.7, which is now *very* deprecated).
 
 -  RPM-based distros (Fedora, CentOS)::
 
-       sudo yum install git g++ python eigen3-devel zlib-devel libqt4-devel libgl1-mesa-dev fftw-devel libtiff-devel libpng-devel
+       sudo yum install git g++ python eigen3-devel zlib-devel libqt5-devel libgl1-mesa-dev fftw-devel libtiff-devel libpng-devel
 
-   on Fedora 24, this is reported to work::
+   On Fedora 24, this is reported to work::
 
-           sudo yum install git gcc-c++ python eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel libpng-devel
+       sudo yum install git gcc-c++ python eigen3-devel zlib-devel qt-devel mesa-libGL-devel fftw-devel libtiff-devel libpng-devel
 
 -  Arch Linux::
 
@@ -87,45 +102,63 @@ listed, or that the subsequent steps fail due to missing dependencies
 to search the package database and find the correct names for these
 packages:
 
--  git
+-  ``git``;
 
--  your compiler (gcc 4.9 or above, or clang)
+-  an appropriate C++ compiler (e.g. GCC 5 or above, or clang);
 
--  Python version >2.7
+-  Python version >= 2.7 (version >= 3.0 strongly recommended);
 
--  the zlib compression library and its corresponding development
-   header/include files
+-  the ``zlib`` compression library and its corresponding development
+   header/include files;
 
 -  the Eigen template library (only consists of development header/include files);
 
--  Qt version >4.7, its corresponding development header/include files,
-   and the executables required to compile the code. Note this will most
-   likely be broken up into several packages, depending on how your
+-  Qt version >= 5.5, its corresponding development
+   header/include files, and the executables required to compile the code.
+   Note that this can be broken up into several packages, depending on how your
    distribution has chosen to distribute this. You will need to get
    those that provide these Qt modules: Core, GUI, OpenGL, SVG, and the
-   qmake, rcc & moc executables (note these will probably be included in
-   one of the other packages).
+   ``qmake``, ``rcc`` & ``moc`` executables (note these will probably be included in
+   one of the other packages);
+
+-  *[optional]* the TIFF library and utilities version >= 4.0, and its
+   corresponding development header/include files;
+
+-  *[optional]* the FFTW library version >= 3.0, and its corresponding development
+   header/include files;
+
+-  *[optional]* the PNG library and its corresponding development
+   header/include files.
 
 .. WARNING::
-   The compiler included in Ubuntu 12.04 and other older distributions is no
-   longer capable of compiling *MRtrix3*, as it now requires C++11 support.
-   The solution is to use a newer compiler as provided by the `Ubuntu
-   toolchain PPA
-   <https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test>`__ -
-   follow the link for instructions on how to add the PPA. Once the PPA has
-   been added, you'll need to issue a ``sudo apt-get update``, followed by
-   ``sudo apt-get install g++-4.9``. You will probably also need to tell
-   ``./configure`` to use this compiler (see ``./configure -help`` for further
-   options)::
+   Compilers included in older distributions, e.g. Ubuntu 12.04, may not be
+   capable of compiling *MRtrix3*, as it requires C++11 support.
+   A solution is to install a newer compiler as provided by an optional addon
+   package repository, e.g. the `Ubuntu toolchain PPA
+   <https://launchpad.net/~ubuntu-toolchain-r/+archive/ubuntu/test>`__. Once the
+   relevant repository has been added to the distribution's package manager,
+   you'll need to update the local list of available packages (e.g.
+   ``sudo apt-get update``), followed by explicit installation of the newer
+   version of the compiler (e.g. ``sudo apt-get install g++-7``).
 
-        CXX=g++-4.9 ./configure
-
+.. NOTE::
+   In many instances where *MRtrix3* dependencies are installed in some
+   non-standard fashion, the *MRtrix3* ``configure`` script will not be able
+   to automatically identify the location and/or appropriate configuration
+   of those dependencies. In such cases, the *MRtrix3* ``configure`` script
+   provides a range of environment variables that can be set by the user in
+   order to provide this information. Executing ``configure -help`` provides
+   a list of such environment variables; in addition, if the script is unable
+   to detect or utilise a particular dependency properly, it will also provide a
+   suggestion of which environment variable may need to be set in a manner
+   tailored for your particular system in order to provide it with the
+   information it needs to locate that dependency.
 
 .. SEEALSO::
    If for whatever reasons you need to install *MRtrix3* on a system with
    older dependencies, and you are unable to update the software (e.g. you
    want to run *MRtrix3* on a centrally-managed HPC cluster), you can as a
-   last resort use the `procedures described on this post
+   last resort use the `procedures described in this community forum post
    <https://community.mrtrix.org/t/standalone-installation-on-linux/3549>`__. 
 
 
@@ -133,10 +166,10 @@ packages:
 macOS
 ^^^^^
 
-1. Update macOS to version 10.10 (Yosemite) or higher - OpenGL 3.3 will
-   typically not work on older versions
+1. Update macOS to version 10.10 (Yosemite) or higher (OpenGL 3.3 will
+   typically not work on older versions);
 
-2. Install XCode from the Apple Store
+2. Install XCode from the `App Store <https://apps.apple.com/us/app/xcode/id497799835?mt=12>`__;
 
 3. Install Eigen3 and Qt5. 
 
@@ -152,52 +185,55 @@ macOS
    recommend you stick with it, and consult the `community forum
    <http://community.mrtrix.org>`__ if needed for advice and troubleshooting. 
 
-   - With `Homebrew <http://brew.sh/>`__:
+   -  With `Homebrew <http://brew.sh/>`__:
 
-       - Install Eigen3: ``brew install eigen``
-       - Install Qt5: ``brew install qt5``
-       - Install pkg-config: ``brew install pkg-config``
-       - Add Qt's binaries to your path: ``export PATH=`brew --prefix`/opt/qt5/bin:$PATH``
+       -  Install Eigen3: ``brew install eigen``
+       -  Install Qt5: ``brew install qt5``
+       -  Install pkg-config: ``brew install pkg-config``
+       -  Add Qt's binaries to your path: ``export PATH=`brew --prefix`/opt/qt5/bin:$PATH``
       
-   - With `MacPorts <http://macports.org/>`__:
+   -  With `MacPorts <http://macports.org/>`__:
 
-       - Install Eigen3: ``port install eigen3``
-       - Install Qt5: ``port install qt5``
-       - Install pkg-config: ``port install pkgconfig``
-       - Add Qt's binaries to your path: ``export PATH=/opt/local/libexec/qt5/bin:$PATH`` 
+       -  Install Eigen3: ``port install eigen3``
+       -  Install Qt5: ``port install qt5``
+       -  Install pkg-config: ``port install pkgconfig``
+       -  Add Qt's binaries to your path: ``export PATH=/opt/local/libexec/qt5/bin:$PATH``
    
-   - As a last resort, you can manually install Eigen3 and Qt5:
-     You can use this procedure if you have good reasons to avoid the other options, or if for some reason 
-     you cannot get either `Homebrew <http://brew.sh/>`__ or `MacPorts <http://macports.org/>`__ to work.
+   -  As a last resort, you can manually install Eigen3 and Qt5:
+      You can use this procedure if you have good reasons to avoid the other options, or if for some reason
+      you cannot get either `Homebrew <http://brew.sh/>`__ or `MacPorts <http://macports.org/>`__ to work.
 
-       - Install Eigen3: download and extract the source code from `eigen.tuxfamily.org <http://eigen.tuxfamily.org/>`__ 
-       - Install Qt5: download and install the latest version from `<http://download.qt.io/official_releases/qt/>`__ 
-           You need to select the file labelled ``qt-opensource-mac-x64-clang-5.X.X.dmg``.
-           Note that you need to use at least Qt 5.1, since earlier versions
-           don't support OpenGL 3.3. We advise you to use the latest version
-           (5.7.0 as of the last update). You can choose to install it
-           system-wide or just in your home folder, whichever suits - just
-           remember where you installed it. 
-       - Make sure Qt5 tools are in your PATH
-           (edit as appropriate) ``export PATH=/path/to/Qt5/5.X.X/clang_64/bin:$PATH``
-       - Set the CFLAG variable for eigen
-           (edit as appropriate) ``export EIGEN_CFLAGS="-isystem /where/you/extracted/eigen"``
-           Make sure *not* to include the final ``/Eigen`` folder in the path
-           name - use the folder in which it resides instead!
+      -  Install Eigen3: download and extract the source code from
+         `eigen.tuxfamily.org <http://eigen.tuxfamily.org/>`__
+
+      -  Install Qt5: download and install the latest version from
+         `<http://download.qt.io/official_releases/qt/>`__
+
+         You need to select the file labelled ``qt-opensource-mac-x64-clang-5.X.X.dmg``.
+         You can choose to install it system-wide or just in your home folder,
+         whichever suits; just remember where you installed it.
+
+      -  Make sure Qt5 tools are in your PATH (edit as appropriate):
+         ``export PATH=/path/to/Qt5/5.X.X/clang_64/bin:$PATH``
+
+      -  Set the CFLAG variable for Eigen (edit as appropriate):
+         ``export EIGEN_CFLAGS="-isystem /where/you/extracted/eigen"``
+         Make sure *not* to include the final ``/Eigen`` folder in the path
+         name: use the folder in which it resides instead!
 
 4. Install TIFF, FFTW and PNG libraries.
 
-   - With `Homebrew <http://brew.sh/>`__:
+   -  With `Homebrew <http://brew.sh/>`__:
 
-       - Install TIFF: ``brew install libtiff``
-       - Install FFTW: ``brew install fftw``
-       - Install PNG:  ``brew install libpng``
+      -  Install TIFF: ``brew install libtiff``
+      -  Install FFTW: ``brew install fftw``
+      -  Install PNG:  ``brew install libpng``
       
-   - With `MacPorts <http://macports.org/>`__:
+   -  With `MacPorts <http://macports.org/>`__:
 
-       - Install TIFF: ``port install tiff``
-       - Install FFTW: ``port install fftw-3``
-       - Install PNG:  ``port install libpng``
+      -  Install TIFF: ``port install tiff``
+      -  Install FFTW: ``port install fftw-3``
+      -  Install PNG:  ``port install libpng``
 
 
 
@@ -209,7 +245,8 @@ All of these dependencies are installed below by the MSYS2 package manager.
 .. WARNING:: 
 
     When following the instructions below, use the **'MinGW-w64 Win64 shell'**;
-    'MSYS2 shell' and 'MinGW-w64 Win32 shell' should be avoided.
+    'MSYS2 shell' and 'MinGW-w64 Win32 shell' *must* be avoided, as they will
+    yield erroneous behaviour that is difficult to diagnose if used accidentally.
 
 .. WARNING::
     At time of writing, this MSYS2 system update will give a number of
@@ -235,7 +272,7 @@ All of these dependencies are installed below by the MSYS2 package manager.
 
 4. From the **'MinGW-w64 Win64 Shell'** run::
 
-        pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-libpng
+       pacman -S git python pkg-config mingw-w64-x86_64-gcc mingw-w64-x86_64-eigen3 mingw-w64-x86_64-qt5 mingw-w64-x86_64-fftw mingw-w64-x86_64-libtiff mingw-w64-x86_64-libpng
     
    Sometimes ``pacman`` may fail to find a particular package from any of
    the available mirrors. If this occurs, you can download the relevant
@@ -259,6 +296,8 @@ All of these dependencies are installed below by the MSYS2 package manager.
    ``pacman`` has completed the installation, should solve the problem.
 
 
+----
+
 
 Git setup
 ---------
@@ -266,6 +305,9 @@ Git setup
 If you intend to contribute to the development of *MRtrix3*, set up your git
 environment as per the `Git instructions page
 <https://help.github.com/articles/set-up-git/#setting-up-git>`__
+
+
+----
 
 
 .. _build_mrtrix3:
@@ -292,6 +334,10 @@ Build *MRtrix3*
 3. Build the binaries::
 
        ./build
+
+
+----
+
 
 Set up *MRtrix3*
 ----------------
@@ -323,6 +369,10 @@ Set up *MRtrix3*
     file, for example ``~/.bash_profile`` or ``~/.profile``, e.g. as follows::
 
       ./set_path ~/.bash_profile
+
+
+----
+
 
 Keeping *MRtrix3* up to date
 ----------------------------

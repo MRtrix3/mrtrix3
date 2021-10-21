@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
+#include <QDebug>
 #include "app.h"
 #include "timer.h"
 #include "file/config.h"
@@ -56,6 +56,15 @@ namespace MR
       bool Window::tools_floating = false;
 
       namespace {
+
+        template <class Event> inline QPoint position (Event* event) { return event->pos(); }
+        template <> inline QPoint position (QWheelEvent* event) {
+#if QT_VERSION >= 0x050E00 // translates to 5.14.0
+          return event->position().toPoint();
+#else
+          return event->pos();
+#endif
+        }
 
         Qt::KeyboardModifiers get_modifier (const char* key, Qt::KeyboardModifiers default_key) {
           std::string value = lowercase (MR::File::Config::get (key));
@@ -109,7 +118,7 @@ namespace MR
           setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
           grabGesture (Qt::PinchGesture);
-          grabGesture (Qt::PanGesture);
+          // grabGesture (Qt::PanGesture); // deactivated to prevent sticky pan: https://github.com/MRtrix3/mrtrix3/issues/761
           QFont font_ = font();
           //CONF option: FontSize
           //CONF The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
@@ -127,9 +136,9 @@ namespace MR
         //CONF Initial window size of MRView in pixels.
         //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
-        vector<int> init_window_size;
+        vector<uint32_t> init_window_size;
         if (init_size_string.length())
-          init_window_size = parse_ints(init_size_string);
+          init_window_size = parse_ints<uint32_t> (init_size_string);
         if (init_window_size.size() == 2)
           return QSize (init_window_size[0], init_window_size[1]);
         else
@@ -159,6 +168,7 @@ namespace MR
           }
           if (list.size())
             main->add_images (list);
+          event->acceptProposedAction();
         }
       }
 
@@ -1622,7 +1632,7 @@ namespace MR
         buttons_ = event->buttons();
         modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         mouse_displacement_ = QPoint (0,0);
-        mouse_position_ = event->pos();
+        mouse_position_ = position (event);
         mouse_position_.setY (glarea->height() - mouse_position_.y());
       }
 
@@ -1630,7 +1640,7 @@ namespace MR
       template <class Event> void Window::update_mouse_state (Event* event)
       {
         mouse_displacement_ = mouse_position_;
-        mouse_position_ = event->pos();
+        mouse_position_ = position (event);
         mouse_position_.setY (glarea->height() - mouse_position_.y());
         mouse_displacement_ = mouse_position_ - mouse_displacement_;
       }
@@ -1803,11 +1813,8 @@ namespace MR
         if (!image())
           return true;
 
-        if (QGesture* pan = event->gesture(Qt::PanGesture)) {
-          QPanGesture* e = static_cast<QPanGesture*> (pan);
-          mouse_displacement_ = QPoint (e->delta().x(), -e->delta().y());
-          mode->pan_event();
-        }
+        if (log_level > 2)
+          qDebug() << event;
 
         if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
           QPinchGesture* e = static_cast<QPinchGesture*> (pinch);
@@ -1848,7 +1855,7 @@ namespace MR
 
       void Window::register_camera_interactor (Tool::CameraInteractor* agent)
       {
-        if (camera_interactor)
+        if (camera_interactor && camera_interactor != agent)
           camera_interactor->deactivate();
         camera_interactor = agent;
       }
@@ -1886,7 +1893,7 @@ namespace MR
           }
 
           if (opt.opt->is ("size")) {
-            vector<int> glsize = parse_ints (opt[0]);
+            vector<uint32_t> glsize = parse_ints<uint32_t> (opt[0]);
             if (glsize.size() != 2)
               throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
             if (glsize[0] < 1 || glsize[1] < 1)
@@ -1952,9 +1959,9 @@ namespace MR
 
           if (opt.opt->is ("volume")) {
             if (image()) {
-              auto pos = parse_ints (opt[0]);
+              auto pos = parse_ints<uint32_t> (opt[0]);
               for (size_t n = 0; n < std::min (pos.size(), image()->image.ndim()); ++n) {
-                if (pos[n] < 0 || pos[n] >= image()->image.size(n+3))
+                if (pos[n] >= image()->image.size(n+3))
                   throw Exception ("volume index outside of image dimensions");
                 set_image_volume (n+3, pos[n]);
                 set_image_navigation_menu();
@@ -2037,7 +2044,7 @@ namespace MR
           }
 
           if (opt.opt->is ("position")) {
-            vector<int> pos = opt[0];
+            vector<int> pos = parse_ints<int> (opt[0]);
             if (pos.size() != 2)
               throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
             move (pos[0], pos[1]);
@@ -2159,10 +2166,10 @@ namespace MR
           + Option ("focus", "Either set the position of the crosshairs in scanner coordinates, "
               "with the new position supplied as a comma-separated list of floating-point values or "
               "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
-          +   Argument ("x,y,z or boolean")
+          +   Argument ("x,y,z or boolean").type_various()
 
           + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
-              "that will appear at the centre of the viewing window")
+              "that will appear at the centre of the viewing window").allow_multiple()
           +   Argument ("x,y,z").type_sequence_float()
 
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "

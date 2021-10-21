@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -154,9 +154,9 @@ namespace MR
             stage.optimiser_last = type;
         }
 
-        void set_stage_iterations (const vector<int>& it) {
+        void set_stage_iterations (const vector<uint32_t>& it) {
           for (size_t i = 0; i < it.size (); ++i)
-            if (it[i] <= 0)
+            if (!it[i])
               throw Exception ("the number of stage iterations must be positive");
           if (it.size() == stages.size()) {
             for (size_t i = 0; i < stages.size (); ++i)
@@ -174,10 +174,7 @@ namespace MR
           }
         }
 
-        void set_max_iter (const vector<int>& maxiter) {
-          for (size_t i = 0; i < maxiter.size (); ++i)
-            if (maxiter[i] < 0)
-              throw Exception ("the number of iterations must be non-negative");
+        void set_max_iter (const vector<uint32_t>& maxiter) {
           if (maxiter.size() == stages.size()) {
             for (size_t i = 0; i < stages.size (); ++i)
               stages[i].gd_max_iter = maxiter[i];
@@ -194,10 +191,10 @@ namespace MR
           do_reorientation = true;
         }
 
-        void set_lmax (const vector<int>& lmax) {
+        void set_lmax (const vector<uint32_t>& lmax) {
           for (size_t i = 0; i < lmax.size (); ++i)
-            if (lmax[i] < 0 || lmax[i] % 2)
-              throw Exception ("the input lmax must be positive and even");
+            if (lmax[i] % 2)
+              throw Exception ("the input lmax must be even");
           if (lmax.size() == stages.size()) {
             for (size_t i = 0; i < stages.size (); ++i)
               stages[i].fod_lmax = lmax[i];
@@ -445,7 +442,7 @@ namespace MR
 
               // set control point coordinates inside +-1/3 of the midway_image size
               {
-                Eigen::Vector3 ext (midway_image_header.spacing(0) / 6.0,
+                Eigen::Vector3d ext (midway_image_header.spacing(0) / 6.0,
                                     midway_image_header.spacing(1) / 6.0,
                                     midway_image_header.spacing(2) / 6.0);
                 for (size_t i = 0; i<3; ++i)

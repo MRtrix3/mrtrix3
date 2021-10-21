@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -51,7 +51,7 @@ namespace MR
               void update_UI();
               void set_scaling(default_type min, default_type max);
               void set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max);
-
+              void set_colourmap (int colourmap_index);
 
             public slots:
               bool open_intensity_track_scalar_file_slot ();
@@ -69,6 +69,7 @@ namespace MR
               void threshold_upper_value_changed ();
               void invert_colourmap_slot ();
               void reset_intensity_slot ();
+            
 
             protected:
               Tractography* tool;

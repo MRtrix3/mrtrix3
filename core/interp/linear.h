@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -107,7 +107,7 @@ namespace MR
 
       protected:
         const coef_type zero, eps;
-        Eigen::Vector3 P;
+        Eigen::Vector3d P;
 
         ssize_t clamp (ssize_t x, ssize_t dim) const {
           if (x < 0) return 0;
@@ -148,7 +148,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos);
+          Eigen::Vector3d f = Base<ImageType>::intravoxel_offset (pos);
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;
@@ -276,7 +276,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
+          Eigen::Vector3d f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;
@@ -436,7 +436,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
+          Eigen::Vector3d f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;

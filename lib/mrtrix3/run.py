@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,6 +55,14 @@ class Shared(object):
     if self.env.get('SGE_ROOT') and self.env.get('JOB_ID'):
       del self.env['SGE_ROOT']
 
+    # If environment variable is set, should apply to invoked script,
+    #   but not to any underlying invoked commands
+    try:
+      self.env.pop('MRTRIX_QUIET')
+    except KeyError:
+      pass
+    self.env['MRTRIX_LOGLEVEL'] = 1
+
     # Flagged by calling the set_continue() function;
     #   run.command() and run.function() calls will be skipped until one of the inputs to
     #   these functions matches the given string
@@ -71,7 +79,7 @@ class Shared(object):
     self.process_lists = [ ]
 
     self._scratch_dir = None
-    self.verbosity = 0
+    self.verbosity = 1
 
   # Acquire a unique index
   # This ensures that if command() is executed in parallel using different threads, they will
@@ -144,6 +152,14 @@ class Shared(object):
   def set_scratch_dir(self, path):
     self.env['MRTRIX_TMPFILE_DIR'] = path
     self._scratch_dir = path
+
+  # Controls verbosity of invoked MRtrix3 commands, as well as whether or not the
+  #   stderr outputs of invoked commands are propagated to the terminal instantly or
+  #   instead written to a temporary file for read on completion
+  def set_verbosity(self, verbosity):
+    assert isinstance(verbosity, int)
+    self.verbosity = verbosity
+    self.env['MRTRIX_LOGLEVEL'] = str(max(1, verbosity-1))
 
   # Terminate any and all running processes, and delete any associated temporary files
   def terminate(self, signum): #pylint: disable=unused-variable
@@ -241,7 +257,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         cmdstring += (' ' if cmdstring else '') + quote_nonpipe(entry)
         cmdsplit.append(entry)
       elif isinstance(entry, list):
-        assert all([ isinstance(item, STRING_TYPES) for item in entry ])
+        assert all(isinstance(item, STRING_TYPES) for item in entry)
         if len(entry) > 1:
           common_prefix = os.path.commonprefix(entry)
           common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
@@ -330,9 +346,6 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         line[0] = version_match(line[0])
         if shared.get_num_threads() is not None:
           line.extend( [ '-nthreads', str(shared.get_num_threads()) ] )
-        # Get MRtrix3 binaries to output additional INFO-level information if script running in debug mode
-        if shared.verbosity == 3 and not any(entry in line for entry in ['-info', '-debug']):
-          line.append('-info')
         if force:
           line.append('-force')
       else:

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -226,7 +226,7 @@ def execute(): #pylint: disable=unused-variable
       hipp_subfield_paired_images.append(lh_filename[1:])
   # Choose which of these image pairs we are going to use
   for code in [ '.CA.', '.FS60.' ]:
-    if any([ code in filename for filename in hipp_subfield_paired_images ]):
+    if any(code in filename for filename in hipp_subfield_paired_images):
       hipp_subfield_image_suffix = [ filename for filename in hipp_subfield_paired_images if code in filename ][0]
       have_hipp_subfields = True
       break

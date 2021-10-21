@@ -1,12 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
@@ -42,7 +45,7 @@ namespace MR
           int nmax = extent[0] * extent[1] * extent[2];
           Eigen::VectorXd n1 = Eigen::VectorXd(nmax);
           Eigen::VectorXd n2 = Eigen::VectorXd(nmax);
-          Eigen::Vector3 pos;
+          Eigen::Vector3d pos;
           for (auto l = Loop("precomputing cross correlation values") (im1_image); l; ++l) {
             pos[0] = im1_image.index(0);
             pos[1] = im1_image.index(1);

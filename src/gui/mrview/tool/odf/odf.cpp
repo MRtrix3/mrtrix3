@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -94,6 +94,9 @@ namespace MR
             image_list_view->setDragEnabled (true);
             image_list_view->viewport()->setAcceptDrops (true);
             image_list_view->setDropIndicatorShown (true);
+            image_list_view->setGridSize (QSize (200, 56));
+            image_list_view->setResizeMode(QListView::Adjust);
+            image_list_view->setTextElideMode (Qt::ElideLeft);
 
             image_list_model = new ODF_Model (this);
             image_list_view->setModel (image_list_model);

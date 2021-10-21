@@ -64,7 +64,7 @@ There is however no strict requirement for the final set of response functions t
 ^^^^^^^^^^^^^^^^^^^^^^^
 Upsampling DWI data *before* computing FODs increases anatomical contrast and improves downstream template building, registration, tractography and statistics. We recommend upsampling to an isotropic voxel size of 1.25 mm for human brains (if your original resolution is already higher, you can skip this step)::
 
-    for_each * : mrresize IN/dwi_denoised_unringed_preproc_unbiased.mif -vox 1.25 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
+    for_each * : mrgrid IN/dwi_denoised_unringed_preproc_unbiased.mif regrid -vox 1.25 IN/dwi_denoised_unringed_preproc_unbiased_upsampled.mif
 
 
 6. Compute upsampled brain mask images

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -293,7 +293,7 @@ namespace MR
             warn_attribute = true;
 
           triangles.push_back ( vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
-          const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
+          const Eigen::Vector3d computed_normal = Surface::normal (*this, triangles.back());
           if (computed_normal.dot (normal.cast<default_type>()) < 0.0)
             warn_right_hand_rule = true;
           if (abs (computed_normal.dot (normal.cast<default_type>())) < 0.99)
@@ -357,7 +357,7 @@ namespace MR
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": facet ended with " + str(vertex_index) + " vertices");
             triangles.push_back ( vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
             vertex_index = 0;
-            const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
+            const Eigen::Vector3d computed_normal = Surface::normal (*this, triangles.back());
             if (computed_normal.dot (normal) < 0.0)
               warn_right_hand_rule = true;
             if (abs (computed_normal.dot (normal)) < 0.99)
@@ -720,7 +720,7 @@ namespace MR
         out.write (reinterpret_cast<const char*>(&count), sizeof(uint32_t));
         const uint16_t attribute_byte_count = 0;
         for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
-          const Eigen::Vector3 n (normal (*this, *i));
+          const Eigen::Vector3d n (normal (*this, *i));
           const float n_temp[3] { float(n[0]), float(n[1]), float(n[2]) };
           out.write (reinterpret_cast<const char*>(&n_temp[0]), 3 * sizeof(float));
           for (size_t v = 0; v != 3; ++v) {
@@ -737,7 +737,7 @@ namespace MR
         File::OFStream out (path);
         out << "solid \n";
         for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
-          const Eigen::Vector3 n (normal (*this, *i));
+          const Eigen::Vector3d n (normal (*this, *i));
           out << "facet normal " << str (n[0]) << " " << str (n[1]) << " " << str (n[2]) << "\n";
           out << "    outer loop\n";
           for (size_t v = 0; v != 3; ++v) {

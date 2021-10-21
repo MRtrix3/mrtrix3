@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -108,7 +108,7 @@ void usage ()
              "nodes 1 and 2 in this example), and writes the result to a single output track file.")
 
   + Example ("Extract the streamlines connecting node 15 to all other nodes in the parcellation, with one track file for each edge",
-             "tck2connectome tracks.tck assignments.txt from_15_to_ -nodes 15 -keep_self",
+             "connectome2tck tracks.tck assignments.txt from_15_to_ -nodes 15 -keep_self",
              "The command will generate the same number of track files as there are nodes in the parcellation: "
              "one each for the streamlines connecting node 15 to every other node; i.e. "
              "\"from_15_to_1.tck\", \"from_15_to_2.tck\", \"from_15_to_3.tck\", etc.. "
@@ -135,7 +135,7 @@ void usage ()
              "for which at least one of the two endpoints was not successfully assigned to a node.")
 
   + Example ("Generate a single track file containing edge exemplar trajectories",
-             "tck2connectome tracks.tck assignments.txt exemplars.tck -files single -exemplars nodes.mif",
+             "connectome2tck tracks.tck assignments.txt exemplars.tck -files single -exemplars nodes.mif",
              "This produces the track file that is required as input when attempting to display "
              "connectome edges using the streamlines or streamtubes geometries within the meview "
              "connectome tool.");
@@ -222,14 +222,14 @@ void run ()
   bool manual_node_list = false;
   if (opt.size()) {
     manual_node_list = true;
-    vector<int> data = parse_ints (opt[0][0]);
+    const auto data = parse_ints<node_t> (opt[0][0]);
     bool zero_in_list = false;
-    for (vector<int>::const_iterator i = data.begin(); i != data.end(); ++i) {
-      if (size_t(*i) > max_node_index) {
-        WARN ("Node of interest " + str(*i) + " is above the maximum detected node index of " + str(max_node_index));
+    for (auto i : data) {
+      if (i > max_node_index) {
+        WARN ("Node of interest " + str(i) + " is above the maximum detected node index of " + str(max_node_index));
       } else {
-        nodes.push_back (node_t (*i));
-        if (!*i)
+        nodes.push_back (i);
+        if (!i)
           zero_in_list = true;
       }
     }
