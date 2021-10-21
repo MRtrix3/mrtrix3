@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -48,18 +48,18 @@ namespace MR
             Matrix_list_model (Connectome* parent);
 
             QVariant data (const QModelIndex& index, int role) const override {
-              if (!index.isValid()) return QVariant();
-              if (role != Qt::DisplayRole) return QVariant();
+              if (!index.isValid()) return {};
+              if (role != Qt::DisplayRole) return {};
               return qstr (shorten (items[index.row()].get_name().toStdString(), 35, 0));
             }
 
             Qt::ItemFlags flags (const QModelIndex& index) const override {
-              if (!index.isValid()) return 0;
+              if (!index.isValid()) return {};
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
             }
 
             QModelIndex parent (const QModelIndex&) const override {
-              return QModelIndex();
+              return {};
             }
 
             int rowCount (const QModelIndex& parent = QModelIndex()) const override {

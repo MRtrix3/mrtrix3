@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -184,8 +184,8 @@ namespace MR
     return split (string, "\n", ignore_empty_fields, num);
   }
 
-  vector<default_type> parse_floats (const std::string& spec);
-  vector<int> parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
+
+
 
   /*
   inline int round (default_type x)
@@ -199,6 +199,48 @@ namespace MR
 
 
 
+  //! match a dash or any Unicode character that looks like one
+  /*! \note This returns the number of bytes taken up by the matched UTF8
+   * character, zero if no match. */
+  inline size_t char_is_dash (const char* arg)
+  {
+    assert (arg != nullptr);
+    if (arg[0] == '-')
+     return 1;
+    if (arg[0] == '\0' || arg[1] == '\0' || arg[2] == '\0')
+      return 0;
+    const unsigned char* uarg = reinterpret_cast<const unsigned char*> (arg);
+    if (uarg[0] == 0xE2 && uarg[1] == 0x80 && ( uarg[2] >= 0x90 && uarg[2] <= 0x95 ))
+      return 3;
+    if (uarg[0] == 0xEF) {
+     if (uarg[1] == 0xB9 && ( uarg[2] == 0x98 || uarg[2] == 0xA3))
+       return 3;
+     if (uarg[1] == 0xBC && uarg[2] == 0x8D)
+       return 3;
+    }
+    return 0;
+  }
+
+  //! match whole string to a dash or any Unicode character that looks like one
+  inline size_t is_dash (const std::string& arg)
+  {
+    size_t nbytes = char_is_dash (arg.c_str());
+    return nbytes != 0 && nbytes == arg.size();
+  }
+
+
+  //! match current character to a dash or any Unicode character that looks like one
+  /*! \note If a match is found, this also advances the \a arg pointer to the next
+   * character in the string, which could be one or several bytes along depending on
+   * the width of the UTF8 character identified. */
+  inline bool consume_dash (const char*& arg)
+  {
+    size_t nbytes = char_is_dash (arg);
+    arg += nbytes;
+    return nbytes != 0;
+  }
+
+
 
 
 
@@ -206,9 +248,9 @@ namespace MR
   {
     std::ostringstream stream;
     if (precision)
-        stream.precision (precision);
+      stream.precision (precision);
     else if (max_digits<T>::value())
-        stream.precision (max_digits<T>::value());
+      stream.precision (max_digits<T>::value());
     stream << value;
     if (stream.fail())
       throw Exception (std::string("error converting type \"") + typeid(T).name() + "\" value to string");
@@ -364,6 +406,86 @@ namespace MR
         throw Exception ("error converting string \"" + string + "\" to complex double (ambiguity in imaginary component)");
     }
     return candidates[0];
+  }
+
+
+
+
+
+
+
+  vector<default_type> parse_floats (const std::string& spec);
+
+
+
+  template <typename IntType>
+  vector<IntType> parse_ints (const std::string& spec, const IntType last = std::numeric_limits<IntType>::max())
+  {
+    typedef typename std::make_signed<IntType>::type SignedIntType;
+    if (!spec.size()) throw Exception ("integer sequence specifier is empty");
+
+    auto to_unsigned = [&] (const SignedIntType value)
+    {
+      if (std::is_unsigned<IntType>::value && value < 0)
+        throw Exception ("Impermissible negative value present in sequence \"" + spec + "\"");
+      return IntType(value);
+    };
+
+    vector<IntType> V;
+    std::string::size_type start = 0, end;
+    std::array<SignedIntType, 3> num;
+    size_t i = 0;
+    try {
+      do {
+        start = spec.find_first_not_of (" \t", start);
+        if (start == std::string::npos)
+          break;
+        end = spec.find_first_of (" \t,:", start);
+        std::string token (strip (spec.substr (start, end-start)));
+        if (lowercase (token) == "end") {
+          if (last == std::numeric_limits<IntType>::max())
+            throw Exception ("value of \"end\" is not known in number sequence \"" + spec + "\"");
+          num[i] = SignedIntType(last);
+        }
+        else num[i] = to<SignedIntType> (spec.substr (start, end-start));
+
+        end = spec.find_first_not_of (" \t", end);
+        char last_char = end < spec.size() ? spec[end] : '\0';
+        if (last_char == ':') {
+          ++i;
+          ++end;
+          if (i > 2) throw Exception ("invalid number range in number sequence \"" + spec + "\"");
+        } else {
+          if (i) {
+            SignedIntType inc, last;
+            if (i == 2) {
+              inc = num[1];
+              last = num[2];
+            }
+            else {
+              inc = 1;
+              last = num[1];
+            }
+            if (inc * (last - num[0]) < 0)
+              inc = -inc;
+            for (; (inc > 0 ? num[0] <= last : num[0] >= last) ; num[0] += inc)
+              V.push_back (to_unsigned(num[0]));
+          }
+          else V.push_back (to_unsigned(num[0]));
+          i = 0;
+        }
+
+        start = end;
+        if (last_char == ',')
+          ++start;
+      }
+      while (end < spec.size());
+    }
+    catch (Exception& E) {
+      throw Exception (E, "can't parse integer sequence specifier \"" + spec + "\"");
+    }
+
+    return (V);
   }
 
 

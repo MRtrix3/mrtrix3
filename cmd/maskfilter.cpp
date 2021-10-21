@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -183,7 +183,7 @@ void run () {
     Filter::Median filter (input_image, std::string("applying median filter to image ") + Path::basename (argument[0]));
     auto opt = get_options ("extent");
     if (opt.size())
-      filter.set_extent (parse_ints (opt[0][0]));
+      filter.set_extent (parse_ints<uint32_t> (opt[0][0]));
 
     Stride::set_from_command_line (filter);
     filter.datatype() = DataType::Bit;

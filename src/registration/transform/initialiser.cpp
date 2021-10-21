@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,8 +36,8 @@ namespace MR
           const vector<MultiContrastSetting>& contrast_settings) {
 
           CONSOLE ("initialising centre of rotation using centre of mass");
-          Eigen::Vector3 im1_centre_mass, im2_centre_mass;
-          Eigen::Vector3 im1_centre_mass_transformed, im2_centre_mass_transformed;
+          Eigen::Vector3d im1_centre_mass, im2_centre_mass;
+          Eigen::Vector3d im1_centre_mass_transformed, im2_centre_mass_transformed;
 
           Image<default_type> bogus_mask;
 
@@ -47,7 +47,7 @@ namespace MR
           transform.transform_half_inverse (im1_centre_mass_transformed, im1_centre_mass);
           transform.transform_half (im2_centre_mass_transformed, im2_centre_mass);
 
-          Eigen::Vector3 centre = (im1_centre_mass + im2_centre_mass) * 0.5;
+          Eigen::Vector3d centre = (im1_centre_mass + im2_centre_mass) * 0.5;
           DEBUG("centre: " + str(centre.transpose()));
           transform.set_centre_without_transform_update (centre);
         }
@@ -61,13 +61,13 @@ namespace MR
           Registration::Transform::Init::LinearInitialisationParams& init) {
 
           CONSOLE ("initialising centre of rotation using geometric centre");
-          Eigen::Vector3 im1_centre_scanner;
+          Eigen::Vector3d im1_centre_scanner;
           get_geometric_centre (im1, im1_centre_scanner);
 
-          Eigen::Vector3 im2_centre_scanner;
+          Eigen::Vector3d im2_centre_scanner;
           get_geometric_centre (im2, im2_centre_scanner);
 
-          Eigen::Vector3 centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
+          Eigen::Vector3d centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
           DEBUG("centre: " + str(centre.transpose()));
           transform.set_centre_without_transform_update (centre);
         }
@@ -82,14 +82,14 @@ namespace MR
           Registration::Transform::Init::LinearInitialisationParams& init) {
 
           CONSOLE ("initialising centre of rotation and translation using geometric centre");
-          Eigen::Vector3 im1_centre_scanner;
+          Eigen::Vector3d im1_centre_scanner;
           get_geometric_centre (im1, im1_centre_scanner);
 
-          Eigen::Vector3 im2_centre_scanner;
+          Eigen::Vector3d im2_centre_scanner;
           get_geometric_centre (im2, im2_centre_scanner);
 
-          Eigen::Vector3 translation = im1_centre_scanner - im2_centre_scanner;
-          Eigen::Vector3 centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
+          Eigen::Vector3d translation = im1_centre_scanner - im2_centre_scanner;
+          Eigen::Vector3d centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
           transform.set_centre (centre);
           transform.set_translation (translation);
         }

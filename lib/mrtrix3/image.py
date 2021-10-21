@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2021 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -150,9 +150,8 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
   command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field ]
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result, dummy_err = proc.communicate()
-  result = result.rstrip().decode('utf-8')
+  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None) #pylint: disable=consider-using-with
+  result = proc.communicate()[0].rstrip().decode('utf-8')
   if app.VERBOSITY > 1:
     app.console('Result: ' + result)
   # Don't exit on error; let the calling function determine whether or not
@@ -240,14 +239,19 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
 
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
+  try:
+    from subprocess import DEVNULL #pylint: disable=import-outside-toplevel
+  except ImportError:
+    DEVNULL = open(os.devnull, 'wb')
+  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=DEVNULL) #pylint: disable=consider-using-with
   stdout = proc.communicate()[0]
   if proc.returncode:
     raise MRtrixError('Error trying to calculate statistics from image \'' + image_path + '\'')
+
   stdout_lines = [ line.strip() for line in stdout.decode('cp437').splitlines() ]
   result = [ ]
   for line in stdout_lines:
-    line = line.split()
+    line = line.replace('N/A', 'nan').split()
     assert len(line) == len(IMAGE_STATISTICS)
     result.append(ImageStatistics(float(line[0]), float(line[1]), float(line[2]), float(line[3]), float(line[4]), float(line[5]), int(line[6])))
   if len(result) == 1:

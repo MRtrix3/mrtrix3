@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -297,7 +297,7 @@ class ASCIIWriter: public WriterInterface<float> { MEMALIGN(ASCIIWriter)
 
   private:
     File::NameParser parser;
-    vector<int> count;
+    vector<uint32_t> count;
 
 };
 
@@ -331,7 +331,7 @@ class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
       }
 
       // calculate centroid
-      Eigen::Vector3 centroid(coord.row(0).mean(), coord.row(1).mean(), coord.row(2).mean());
+      Eigen::Vector3d centroid(coord.row(0).mean(), coord.row(1).mean(), coord.row(2).mean());
 
       // subtract centroid
       coord.row(0).array() -= centroid(0);

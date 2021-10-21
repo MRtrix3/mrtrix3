@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -104,7 +104,11 @@ void usage ()
     REFERENCES
     + "Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. " // Internal
     "Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. "
-    "In Proc. ISMRM, 2017, 26, 3541";
+    "In Proc. ISMRM, 2017, 26, 3541"
+    + "Dhollander, T.; Tabbara, R.; Rosnarho-Tornstrand, J.; Tournier, J.-D.; Raffelt, D. & Connelly, A. " // Internal
+    "Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. "
+    "In Proc. ISMRM, 2021, 29, 2472";
+;
 
 }
 
@@ -137,7 +141,7 @@ struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
 
   const int n_basis_vecs;
 
-  FORCE_INLINE Eigen::VectorXd operator () (const Eigen::Vector3& pos) const {
+  FORCE_INLINE Eigen::VectorXd operator () (const Eigen::Vector3d& pos) const {
     double x = pos[0];
     double y = pos[1];
     double z = pos[2];
@@ -227,8 +231,8 @@ Eigen::MatrixXd initialise_basis (IndexType& index, size_t num_voxels, int order
       const uint32_t idx = index.value();
       if (idx != std::numeric_limits<uint32_t>::max()) {
         assert (idx < basis.rows());
-        Eigen::Vector3 vox (index.index(0), index.index(1), index.index(2));
-        Eigen::Vector3 pos = transform.voxel2scanner * vox;
+        Eigen::Vector3d vox (index.index(0), index.index(1), index.index(2));
+        Eigen::Vector3d pos = transform.voxel2scanner * vox;
         basis.row(idx) = basis_function (pos);
       }
     }
@@ -279,6 +283,15 @@ void load_data (Eigen::MatrixXd& data, const std::string& image_name, IndexType&
 
 
 
+inline bool lessthan_NaN (const double& a, const double& b) {
+  if (std::isnan (a))
+    return true;
+  if (std::isnan (b))
+    return false;
+  return a<b;
+}
+
+
 
 size_t detect_outliers (
     double outlier_range,
@@ -293,11 +306,11 @@ size_t detect_outliers (
   const size_t upper_quartile_idx = std::round (field.size() * 0.75);
 
   std::nth_element (summed_log_sorted.data(), summed_log_sorted.data() + lower_quartile_idx,
-      summed_log_sorted.data() + summed_log_sorted.size());
+      summed_log_sorted.data() + summed_log_sorted.size(), lessthan_NaN);
   double lower_quartile = summed_log_sorted[lower_quartile_idx];
 
   std::nth_element (summed_log_sorted.data(), summed_log_sorted.data() + upper_quartile_idx,
-      summed_log_sorted.data() + summed_log_sorted.size());
+      summed_log_sorted.data() + summed_log_sorted.size(), lessthan_NaN);
   double upper_quartile = summed_log_sorted[upper_quartile_idx];
 
   INFO ("  outlier rejection quartiles: [ " + str(lower_quartile) + " " + str(upper_quartile) + " ]");
@@ -336,7 +349,11 @@ void compute_balance_factors (
     const Eigen::VectorXd& weights,
     Eigen::VectorXd& balance_factors)
 {
-  Eigen::MatrixXd scaled_data = data.transpose().array().rowwise() * weights.cwiseQuotient (field).transpose().array();
+  Eigen::MatrixXd scaled_data = data.transpose().array().rowwise() / field.transpose().array();
+  for (ssize_t n = 0; n < scaled_data.cols(); ++n) {
+    if (!weights[n])
+      scaled_data.col(n).array() = 0.0;
+  }
   Eigen::MatrixXd HtH (data.cols(), data.cols());
   HtH.triangularView<Eigen::Lower>() = scaled_data * scaled_data.transpose();
   Eigen::LLT<Eigen::MatrixXd> llt;
@@ -396,8 +413,8 @@ ImageType compute_full_field (int order, const Eigen::VectorXd& field_coeffs, co
 
   struct FieldWriter { NOMEMALIGN
     void operator() (ImageType& field) const {
-      Eigen::Vector3 vox (field.index(0), field.index(1), field.index(2));
-      Eigen::Vector3 pos = transform.voxel2scanner * vox;
+      Eigen::Vector3d vox (field.index(0), field.index(1), field.index(2));
+      Eigen::Vector3d pos = transform.voxel2scanner * vox;
       field.value() = std::exp (basis_function (pos).dot (field_coeffs));
     }
 
@@ -481,12 +498,12 @@ void write_output (
 
 
 
-
-
 void run ()
 {
   if (argument.size() % 2)
     throw Exception ("The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
+  if (argument.size() == 2)
+    WARN("Only one contrast provided. If multi-tissue CSD was performed, provide all components to mtnormalise.");
 
   const int order = get_option_value<int> ("order", DEFAULT_POLY_ORDER);
   const float reference_value = get_option_value ("reference", DEFAULT_REFERENCE_VALUE);
@@ -496,12 +513,12 @@ void run ()
   size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
   auto opt = get_options ("niter");
   if (opt.size()) {
-    vector<int> num = opt[0][0];
+    vector<size_t> num = parse_ints<size_t> (opt[0][0]);
     if (num.size() < 1 && num.size() > 2)
-      throw Exception ("unexpected number of entries provided to option \"niter\"");
-    for (const int n : num)
-      if (n < 1)
-        throw Exception ("number of iterations must be positive");
+      throw Exception ("unexpected number of entries provided to option \"-niter\"");
+    for (auto n : num)
+      if (!n)
+        throw Exception ("number of iterations must be nonzero");
 
     max_iter = num[0];
     if (num.size() > 1)
@@ -519,6 +536,13 @@ void run ()
     if (Path::exists (argument[2*n+1]) && !App::overwrite_files)
       throw Exception ("Output file \"" + argument[2*n+1] + "\" already exists. (use -force option to force overwrite)");
     load_data (data, argument[2*n], index);
+  }
+
+  size_t num_non_finite = (!data.array().isFinite()).count();
+  if (num_non_finite > 0) {
+    WARN ("Input data contain " + str(num_non_finite) + " non-finite voxel" + ( num_non_finite > 1 ? "s" : "" ));
+    WARN ("  Results may be affected if the data contain many non-finite values");
+    WARN ("  Please refine your mask to avoid non-finite values if this is a problem");
   }
 
   auto basis = initialise_basis (index, num_voxels, order);

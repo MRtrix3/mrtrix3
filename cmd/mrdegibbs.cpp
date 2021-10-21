@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -122,12 +122,12 @@ class ComputeSlice
       assign_pos_of (pos, outer_axes).to (in, out);
 
       for (auto l = Loop (slice_axes) (in); l; ++l)
-        im1 (in.index(X), in.index(Y)) = cdouble (in.value(), 0.0);
+        im1 (ssize_t(in.index(X)), ssize_t(in.index(Y))) = cdouble (in.value(), 0.0);
 
       unring_2d ();
 
       for (auto l = Loop (slice_axes) (out); l; ++l)
-        out.value() = im1 (out.index(X), out.index(Y)).real();
+        out.value() = im1 (ssize_t(out.index(X)), ssize_t(out.index(Y))).real();
     }
 
   private:
@@ -318,7 +318,7 @@ void run ()
   auto opt = get_options ("axes");
   const bool axes_set_manually = opt.size();
   if (opt.size()) {
-    vector<int> axes = opt[0][0];
+    vector<uint32_t> axes = parse_ints<uint32_t> (opt[0][0]);
     if (axes.size() != 2)
       throw Exception ("slice axes must be specified as a comma-separated 2-vector");
     if (size_t(std::max (axes[0], axes[1])) >= header.ndim())
@@ -331,7 +331,7 @@ void run ()
   auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
     try {
-      const Eigen::Vector3 slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
+      const Eigen::Vector3d slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
       vector<size_t> auto_slice_axes = { 0, 0 };
       if (slice_encoding_axis_onehot[0])
         auto_slice_axes = { 1, 2 };

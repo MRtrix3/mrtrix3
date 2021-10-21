@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -100,12 +100,12 @@ namespace MR
       try {
         const auto opt_table = get_options ("import_pe_table");
         if (opt_table.size())
-          result = load (opt_table[0][0]);
+          result = load (opt_table[0][0], header);
         const auto opt_eddy = get_options ("import_pe_eddy");
         if (opt_eddy.size()) {
           if (opt_table.size())
             throw Exception ("Phase encoding table can be provided using either -import_pe_table or -import_pe_eddy option, but NOT both");
-          result = load_eddy (opt_eddy[0][0], opt_eddy[0][1]);
+          result = load_eddy (opt_eddy[0][0], opt_eddy[0][1], header);
         }
         if (!opt_table.size() && !opt_eddy.size())
           result = parse_scheme (header);
@@ -154,28 +154,14 @@ namespace MR
 
       auto opt = get_options ("export_pe_table");
       if (opt.size())
-        save (check (scheme), opt[0][0]);
+        save (check (scheme), header, opt[0][0]);
 
       opt = get_options ("export_pe_eddy");
       if (opt.size())
-        save_eddy (check (scheme), opt[0][0], opt[0][1]);
+        save_eddy (check (scheme), header, opt[0][0], opt[0][1]);
     }
 
 
-
-    Eigen::MatrixXd load (const std::string& path)
-    {
-      const Eigen::MatrixXd result = load_matrix (path);
-      check (result);
-      return result;
-    }
-
-    Eigen::MatrixXd load_eddy (const std::string& config_path, const std::string& index_path)
-    {
-      const Eigen::MatrixXd config = load_matrix (config_path);
-      const Eigen::Array<int, Eigen::Dynamic, 1> indices = load_vector<int> (index_path);
-      return eddy2scheme (config, indices);
-    }
 
 
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2021 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -216,11 +216,18 @@ namespace MR
         uint64_t as_uint () const { return uint64_t (as_int()); }
         default_type as_float () const;
 
-        vector<int> as_sequence_int () const {
+        vector<int32_t> as_sequence_int () const {
           assert (arg->type == IntSeq);
-          try { return parse_ints (p); }
+          try { return parse_ints<int32_t> (p); }
           catch (Exception& e) { error (e); }
-          return vector<int>();
+          return vector<int32_t>();
+        }
+
+        vector<uint32_t> as_sequence_uint () const {
+          assert (arg->type == IntSeq);
+          try { return parse_ints<uint32_t> (p); }
+          catch (Exception& e) { error (e); }
+          return vector<uint32_t>();
         }
 
         vector<default_type> as_sequence_float () const {
@@ -239,7 +246,8 @@ namespace MR
         operator long long unsigned int () const { return as_uint(); }
         operator float () const { return as_float(); }
         operator double () const { return as_float(); }
-        operator vector<int> () const { return as_sequence_int(); }
+        operator vector<int32_t> () const { return as_sequence_int(); }
+        operator vector<uint32_t> () const { return as_sequence_uint(); }
         operator vector<default_type> () const { return as_sequence_float(); }
 
         const char* c_str () const { return p; }
@@ -281,13 +289,23 @@ namespace MR
             opt (option), args (arguments)
         {
           for (size_t i = 0; i != option->size(); ++i) {
-            if (arguments[i][0] == '-' &&
-                !(((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && !strcmp(arguments[i], std::string("-").c_str())) &&
-                !((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq || (*option)[i].type == FloatSeq || (*option)[i].type == Various)) {
-              WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
-                    ((option->size() == 1) ? "the expected argument" : ("one of the " + str(option->size()) + " expected arguments")) +
-                    " for option \"-" + option->id + "\"; is this what you intended?");
-            }
+            const char* p = arguments[i];
+            if (!consume_dash (p))
+              continue;
+            if (( (*option)[i].type == ImageIn || (*option)[i].type == ImageOut ) && is_dash (arguments[i]))
+              continue;
+            if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
+                (*option)[i].type == FloatSeq || (*option)[i].type == Various)
+              continue;
+            WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
+                ((option->size() == 1) ?
+                 "the expected argument " :
+                 ("one of the " + str(option->size()) + " expected arguments ")) +
+                "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
+                "the requisite input" +
+                ((option->size() == 1) ? " " : "s ") +
+                "to command-line option \"-" + option->id + "\" may have been erroneously omitted, which may cause " +
+                "other command-line parsing errors");
           }
         }
 
