@@ -768,7 +768,7 @@ def execute(): #pylint: disable=unused-variable
           app.cleanup(se_epi_path)
           se_epi_path = new_se_epi_path
           new_dwi_path = os.path.splitext(dwi_path)[0] + '_pad' + str(axis) + '.mif'
-          run.command('mrconvert ' + dwi_path + ' -coord ' + str(axis) + ' ' + str(axis_size-1) + ' - | mrcat ' + dwi_path + ' - ' + new_dwi_path + ' -axis ' + str(axis))
+          run.command('mrconvert ' + dwi_path + ' -coord ' + str(axis) + ' ' + str(axis_size-1) + ' -clear dw_scheme - | mrcat ' + dwi_path + ' - ' + new_dwi_path + ' -axis ' + str(axis))
           app.cleanup(dwi_path)
           dwi_path = new_dwi_path
           dwi_post_eddy_crop_option += ' -coord ' + str(axis) + ' 0:' + str(axis_size-1)
