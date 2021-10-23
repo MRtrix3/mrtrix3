@@ -60,6 +60,11 @@ void usage ()
   OPTIONS
   + Option ("matrix", "provide a fixel-fixel connectivity matrix for filtering operations that require it").required()
     + Argument ("file").type_directory_in()
+  // TODO Move -mask option from smoothing filter to general options;
+  //   remove separated constructors for smoothing operator to make mask handling intrinsic to Matrix::Reader only
+  + Option ("mask", "constrain the filter to operate within a specified binary fixel mask")
+    + Argument ("image").type_image_in()
+
 
   + Fixel::Filter::cfe_options
 
@@ -77,10 +82,8 @@ void usage ()
     + Argument ("value").type_float (0.0)
   + Option ("minweight", "apply a minimum threshold to smoothing weights "
                          "(default = " + str(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT) + ")")
-    + Argument ("value").type_float (0.0)
-  + Option ("mask", "only perform smoothing within a specified binary fixel mask")
-    + Argument ("image").type_image_in();
-
+    + Argument ("value").type_float (0.0);
+  
 }
 
 
@@ -92,11 +95,15 @@ using value_type = float;
 void run()
 {
 
-  std::set<std::string> option_list { "threhsold_value",
+  std::set<std::string> option_list { "cfe_dh",
+                                      "cfe_e", 
+                                      "cfe_h", 
+                                      "cfe_c", 
+                                      "cfe_legacy",
+                                      "threhsold_value",
                                       "threshold_connectivity",
                                       "fwhm",
-                                      "minweight",
-                                      "mask" };
+                                      "minweight" };
 
   Image<float> single_file;
   vector<Header> multiple_files;
@@ -125,11 +132,27 @@ void run()
     if (single_file.valid() && !Fixel::fixels_match (index_header, single_file))
       throw Exception ("File \"" + argument[0] + "\" is not a valid fixel data file (does not match corresponding index image)");
 
-    auto opt = get_options ("matrix");
-    Fixel::Matrix::Reader matrix (opt[0][0]);
-
     Image<index_type> index_image = index_header.get_image<index_type>();
     const size_t nfixels = Fixel::get_number_of_fixels (index_image);
+
+    auto opt = get_options ("mask");
+    Image<bool> mask;
+    if (opt.size()) {
+      mask = Image<bool>::open (opt[0][0]);
+      MR::Fixel::check_data_file (mask);
+      if (mask.size(1) != 1)
+        throw Exception ("Fixel mask must be a 1D image");
+      if (size_t(mask.size(0)) != nfixels)
+        throw Exception ("Number of fixels in mask image (" + str(mask.size(0)) + ") does not match number of fixels in index image (" + str(nfixels) + ")");
+    } else {
+      mask = Image<bool>::scratch (MR::Fixel::data_header_from_index (index_image), "scratch true-filled fixel mask");
+      for (auto l = Loop(0) (mask); l; ++l)
+        mask.value() = true;
+      mask.reset();
+    }
+
+    opt = get_options ("matrix");
+    Fixel::Matrix::Reader matrix (opt[0][0], mask);
     if (nfixels != matrix.size())
       throw Exception ("Number of fixels in input (" + str(nfixels) + ") does not match number of fixels in connectivity matrix (" + str(matrix.size()) + ")");
 
@@ -164,16 +187,9 @@ void run()
       {
         const float fwhm = get_option_value ("fwhm", float(DEFAULT_FIXEL_SMOOTHING_FWHM));
         const float threshold = get_option_value ("minweight", float(DEFAULT_FIXEL_SMOOTHING_MINWEIGHT));
-        opt = get_options ("mask");
-        if (opt.size()) {
-          Image<bool> mask_image = Image<bool>::open (opt[0][0]);
-          filter.reset (new Fixel::Filter::Smooth (index_image, matrix, mask_image, fwhm, threshold));
-        } else {
-          filter.reset (new Fixel::Filter::Smooth (index_image, matrix, fwhm, threshold));
-        }
+        filter.reset (new Fixel::Filter::Smooth (index_image, matrix, fwhm, threshold));
         option_list.erase ("fwhm");
         option_list.erase ("minweight");
-        option_list.erase ("mask");
       }
       break;
       default:

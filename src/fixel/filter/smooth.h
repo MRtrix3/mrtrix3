@@ -41,8 +41,9 @@ namespace MR
        * Typical usage:
        * \code
        * auto fixel_index = Image<index_type>::open (index_image_path);
+       * auto fixel_mask = Image<bool>::open (mask_path);
        * auto fixel_data_in = Image<float>::open (fixel_data_path);
-       * auto fixel_matrix = Fixel::Matrix::Reader (fixel_matrix_path);
+       * auto fixel_matrix = Fixel::Matrix::Reader (fixel_matrix_path, fixel_mask);
        * Fixel::Filter::Smooth smooth_filter (fixel_index, fixel_matrix);
        * auto fixel_data_out = Image::create<float> (fixel_data_out, fixel_data_in);
        * smooth_filter (fixel_data_in, fixel_data_out);
@@ -53,21 +54,14 @@ namespace MR
       class Smooth : public Base
       { MEMALIGN (Smooth)
 
+        // TODO Fixel mask handling is deferred to Matrix::Reader;
+        //   can remove from here entirely I think
+
         public:
           Smooth (Image<index_type> index_image,
                   const Matrix::Reader& matrix,
-                  const Image<bool>& mask_image,
-                  const float smoothing_fwhm,
-                  const float smoothing_threshold);
-          Smooth (Image<index_type> index_image,
-                  const Matrix::Reader& matrix,
-                  const Image<bool>& mask_image);
-          Smooth (Image<index_type> index_image,
-                  const Matrix::Reader& matrix,
-                  const float smoothing_fwhm,
-                  const float smoothing_threshold);
-          Smooth (Image<index_type> index_image,
-                  const Matrix::Reader& matrix);
+                  const float smoothing_fwhm = DEFAULT_FIXEL_SMOOTHING_FWHM,
+                  const float smoothing_threshold = DEFAULT_FIXEL_SMOOTHING_MINWEIGHT);
 
           void set_fwhm (const float fwhm);
 
