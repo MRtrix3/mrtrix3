@@ -84,7 +84,7 @@ class RMSErrorFunctor {
       // Calculate slice error
       value_type e = 0.0;
       int n = 0;
-      Eigen::Vector3 pos;
+      Eigen::Vector3d pos;
       for (auto l = Loop(0,2) (data, pred); l; l++) {
         if (mask.valid()) {
           assign_pos_of(data, 0, 3).to(pos);

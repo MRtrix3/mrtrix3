@@ -89,7 +89,7 @@ class FieldUnwarp {
       size_t v = out.index(3), z = out.index(2);
       transform_type Ts2r = Tf * get_Ts2r(v, z);
       dinterp.index(3) = v;
-      Eigen::Vector3 vox, pos, RdB0;
+      Eigen::Vector3d vox, pos, RdB0;
       Eigen::RowVector3f dB0;
       value_type B0, jac = 1.0;
       for (auto l = Loop(0,2)(out); l; l++) {
