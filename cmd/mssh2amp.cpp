@@ -57,15 +57,15 @@ class MSSH2Amp { MEMALIGN(MSSH2Amp)
   public:
     template <class MatrixType>
     MSSH2Amp (const MatrixType& dirs, const size_t lmax, const vector<size_t>& idx, bool nonneg) :
-      transformer (dirs.template cast<value_type>(), lmax),
+      SHT ( Math::SH::init_transform_cart(dirs.template cast<value_type>(), lmax) ),
       bidx (idx),
       nonnegative (nonneg),
-      sh (transformer.n_SH()),
-      amp (transformer.n_amp()) { }
+      sh (SHT.cols()),
+      amp (SHT.rows()) { }
     
     void operator() (Image<value_type>& in, Image<value_type>& out) {
       sh = in.row (4);
-      transformer.SH2A(amp, sh);
+      amp = SHT * sh;
       if (nonnegative)
         amp = amp.cwiseMax(value_type(0.0));
       for (size_t j = 0; j < amp.size(); j++) {
@@ -75,7 +75,7 @@ class MSSH2Amp { MEMALIGN(MSSH2Amp)
     }
 
   private:
-    const Math::SH::Transform<value_type> transformer;
+    const Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> SHT;
     const vector<size_t>& bidx;
     const bool nonnegative;
     Eigen::Matrix<value_type, Eigen::Dynamic, 1> sh, amp;
@@ -103,6 +103,12 @@ void run ()
 
   Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
   grad = load_matrix(argument[1]).leftCols<4>();
+  // copied from core/dwi/gradient.cpp; refactor upon merge
+  Eigen::Array<default_type, Eigen::Dynamic, 1> squared_norms = grad.leftCols(3).rowwise().squaredNorm();
+  for (ssize_t row = 0; row != grad.rows(); ++row) {
+    if (squared_norms[row])
+      grad.row(row).template head<3>().array() /= std::sqrt(squared_norms[row]);
+  }
 
   // Apply rigid rotation to gradient table.
   transform_type T;
@@ -128,7 +134,10 @@ void run ()
     auto idx = get_indices(grad.col(3), bvals[k]);
     if (idx.empty())
       continue;
-    auto directions = DWI::gen_direction_matrix (grad, idx);
+    Eigen::MatrixXd directions (idx.size(), 3);
+    for (size_t i = 0; i < idx.size(); i++) {
+      directions.row(i) = grad.row(idx[i]).template head<3>();
+    }
     MSSH2Amp mssh2amp (directions, Math::SH::LforN (mssh.size(4)),
                        idx, get_options("nonnegative").size());
     ThreadedLoop("computing amplitudes", mssh, 0, 3, 2).run(mssh2amp, mssh, amp_data);
