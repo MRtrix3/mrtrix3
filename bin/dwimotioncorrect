@@ -30,7 +30,7 @@ DEFAULT_CONFIG = """{
     "rec-iter": 3,
     "reg-iter": 10,
     "reg-scale": 1.0,
-    "lbreg": 0.0
+    "lbreg": 0.001
   },
   "epochs": [
     {
