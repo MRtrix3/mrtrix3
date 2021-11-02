@@ -139,7 +139,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Image dimensions
     dims = list(map(int, header.size()))
-    vox = list(map(float, header.spacing()))
+    vox = list(map(float, header.spacing()[:3]))
     vu = round((vox[0]+vox[1])/2., 1)
     shells = [s.split('.')[0] for s in image.mrinfo('in.mif', 'shell_bvalues').split()]
 
