@@ -24,6 +24,10 @@
 using namespace MR;
 using namespace App;
 
+
+
+const char* modes[] = { "2d", "3d", nullptr };
+
 void usage ()
 {
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be) & J-Donald Tournier (jdtournier@gmail.com)";
@@ -33,7 +37,7 @@ void usage ()
   DESCRIPTION
     + "This application attempts to remove Gibbs ringing artefacts from MRI images using the method "
     "of local subvoxel-shifts proposed by Kellner et al. (see reference below for details). By default, "
-    "the original 2D slice-wise version is used. If the -3d option is provided, the program will run "
+    "the original 2D slice-wise version is used. If the -mode 3d option is provided, the program will run "
     "the 3D version as proposed by Bautista et al. (also in the reference list below)."
 
     + "This command is designed to run on data directly after it has been reconstructed by the scanner, "
@@ -54,14 +58,18 @@ void usage ()
 
 
   OPTIONS
-  + Option ("volume",
-            "perform the correction using the 3D volume-wise extension proposed by Bautista et al. "
-            "(see references below). This is appropriate for images acquired using 3D Fourier encoding, "
-            "rather than 2D multi-slice.")
+  + Option ("mode",
+            "specify the mode of operation. Valid choices are: 2d, 3d (default: "
+            "2d). The 2d mode corresponds to the original slice-wise approach as "
+            "propoosed by Kellner et al., appropriate for images acquired using "
+            "2D muli-slice approaches. The 3d mode corresponds to the 3D "
+            "volume-wise extension proposed by Bautista et al., which is "
+            "appropriate for images acquired using 3D Fourier encoding.")
+  +   Argument ("type").type_choice (modes)
 
   + Option ("axes",
             "select the slice axes (default: 0,1 - i.e. x-y). Select all 3 spatial axes for 3D operation, "
-            "i.e. 0:2 or 0,1,2.")
+            "i.e. 0:2 or 0,1,2 (this is equivalent to '-mode 3d').")
   +   Argument ("list").type_sequence_int ()
 
   + Option ("nshifts", "discretization of subpixel spacing (default: 20).")
@@ -106,7 +114,7 @@ void run ()
   header.datatype() = DataType::from_command_line (header.datatype().is_complex() ? DataType::CFloat32 : DataType::Float32);
   auto out = Image<Degibbs::value_type>::create (argument[1], header);
 
-  bool run_3D = get_options ("volume").size();
+  int mode = get_option_value ("mode", 0);
 
 
   vector<size_t> slice_axes = { 0, 1 };
@@ -115,7 +123,7 @@ void run ()
   if (opt.size()) {
     vector<uint32_t> axes = parse_ints<uint32_t> (opt[0][0]);
     if (axes == vector<uint32_t> ({ 0, 1, 2 })) {
-      run_3D = true;
+      mode = 1;
     }
     else {
       if (axes.size() != 2)
@@ -130,9 +138,9 @@ void run ()
 
   auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
-    if (run_3D) {
+    if (mode == 1) {
       WARN ("running 3D volume-wise unringing, but image header contains \"SliceEncodingDirection\" field");
-      WARN ("If data were acquired using multi-slice encoding, run without \"-volume\" option.");
+      WARN ("If data were acquired using multi-slice encoding, run in default 2D mode.");
     }
     else {
       try {
@@ -167,7 +175,7 @@ void run ()
   }
 
 
-  if (run_3D) {
+  if (mode == 1) {
     Degibbs::unring3D (in, out, minW, maxW, nshifts);
     return;
   }
@@ -182,7 +190,7 @@ void run ()
     outer_axes.erase (it);
   }
 
-  ThreadedLoop ("performing Gibbs ringing removal", in, outer_axes, slice_axes)
+  ThreadedLoop ("performing 2D Gibbs ringing removal", in, outer_axes, slice_axes)
     .run_outer (Degibbs::Unring2DFunctor (outer_axes, slice_axes, nshifts, minW, maxW, in, out));
 }
 
