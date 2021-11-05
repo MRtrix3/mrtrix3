@@ -331,6 +331,7 @@ namespace MR
                 load (list);
                 in_insert_mode = false;
             }
+            event->acceptProposedAction();
           }
         }
 

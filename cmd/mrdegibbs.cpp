@@ -144,7 +144,7 @@ void run ()
     }
     else {
       try {
-        const Eigen::Vector3 slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
+        const Eigen::Vector3d slice_encoding_axis_onehot = Axes::id2dir (slice_encoding_it->second);
         vector<size_t> auto_slice_axes = { 0, 0 };
         if (slice_encoding_axis_onehot[0])
           auto_slice_axes = { 1, 2 };

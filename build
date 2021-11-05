@@ -152,7 +152,7 @@ stop = False
 error_stream = None
 main_cindex = 0
 
-logfile = open ('build.log', 'wb')
+logfile = open ('build.log', 'wb') #pylint: disable=consider-using-with
 timingfile = None
 
 
@@ -184,9 +184,9 @@ bcolors = {
 def colorize(s):
   out = ''
   for l in s.splitlines():
-    for st in bcolors:
-      if st in l:
-        l = l.replace (st, bcolors[st] + st) + '\033[0m'
+    for key, value in bcolors.items():
+      if key in l:
+        l = l.replace (key, value + key) + '\033[0m'
         break
     out += l + '\n'
   return out
@@ -195,64 +195,55 @@ def colorize(s):
 
 
 def pipe_errors_to_less_handler():
-  global error_stream
   if error_stream:
-    [ fid, name ] = tempfile.mkstemp()
-    fid = os.fdopen (fid, 'wb')
-    fid.write (colorize(error_stream).encode (errors='ignore'))
-    fid.close()
-    os.system ("less -RX " + name)
-    os.unlink (name)
-
+    with tempfile.NamedTemporaryFile() as tf:
+      tf.write (colorize(error_stream).encode (errors='ignore'))
+      tf.flush()
+      os.system ("less -RX " + tf.name)
 
 
 
 
 
 def disp (msg):
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  sys.stdout.write (msg)
-  sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    sys.stdout.write (msg)
+    sys.stdout.flush()
 
 
 def log (msg):
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  if verbose:
-    sys.stdout.write (msg)
-    sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    if verbose:
+      sys.stdout.write (msg)
+      sys.stdout.flush()
 
 
 
 def logtime (msg):
-  print_lock.acquire()
-  timingfile.write (msg.encode (errors='ignore'))
-  timingfile.flush()
-  print_lock.release()
+  with print_lock:
+    timingfile.write (msg.encode (errors='ignore'))
+    timingfile.flush()
 
 
 
 def error (msg):
   global error_stream
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  if error_stream is not None:
-    error_stream += msg
-  else:
-    sys.stdout.write (msg)
-    sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    if error_stream is not None:
+      error_stream += msg
+    else:
+      sys.stdout.write (msg)
+      sys.stdout.flush()
 
 
 def fail (msg):
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  sys.stdout.write (msg)
-  sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    sys.stdout.write (msg)
+    sys.stdout.flush()
   sys.exit (1)
 
 
@@ -298,10 +289,10 @@ def list_unexpected_bin_files (exe_suffix, cmd_directory=cmd_dir, bin_directory=
 
 
 def list_untracked_bin_files (directory = '.'):
-  process = subprocess.Popen ([ 'git', '-C', directory, 'ls-files', '-x', '.*', '-o', bin_dir ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  filelist = process.communicate()[0]
-  if process.returncode == 0:
-    return filelist.decode(errors='ignore').splitlines()
+  with subprocess.Popen ([ 'git', '-C', directory, 'ls-files', '-x', '.*', '-o', bin_dir ], stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
+    filelist = process.communicate()[0]
+    if process.returncode == 0:
+      return filelist.decode(errors='ignore').splitlines()
   return []
 
 
@@ -324,7 +315,7 @@ def is_likely_text(filename, nbytes=1024):
 
     try:
       chunk.decode('utf-8')
-      log('is_likely_text: ' + filename + 'utf-8 encoded \n')
+      log('is_likely_text: ' + filename + ': utf-8 encoded \n')
       return True
     except UnicodeDecodeError:
       pass
@@ -383,7 +374,7 @@ for arg in sys.argv[1:]:
   elif '-tree'.startswith(arg):
     dep_recursive = True
   elif '-timings'.startswith(arg):
-    timingfile = open ('timings.log', 'wb')
+    timingfile = open ('timings.log', 'wb') #pylint: disable=consider-using-with
   elif '-nopaginate'.startswith(arg):
     paginate = False
   elif arg[0] == '-':
@@ -396,7 +387,6 @@ for arg in sys.argv[1:]:
     targets = [ 'clean' ]
   else:
     targets.append(arg)
-
 
 
 
@@ -544,7 +534,7 @@ cpp = cpp_flags = ld = ld_flags = ld_lib = ld_lib_flags = eigen_cflags = qt_cfla
 
 try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
-  exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used
+  exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used,consider-using-with
 except IOError:
   fail ('''no configuration file found!
 please run "./configure" prior to invoking this script
@@ -604,19 +594,19 @@ if 'clean' in targets:
         disp ('delete directory: ' + dirname + '\n')
         try:
           os.rmdir (dirname)
-        except OSError as excp:
+        except OSError as excp: # pylint: disable=unused-variable
           disp ('error deleting folder "' + dirname + '": ' + os.strerror (excp.errno))
     disp ('delete directory: ' + f + '\n')
     try:
       os.rmdir (f)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=unused-variable
       disp ('error deleting folder "' + f + '": ' + os.strerror (excp.errno))
 
   for filename in list_expected_bin_files(exe_suffix):
     disp ('delete file: ' + filename + '\n')
     try:
       os.remove (filename)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=unused-variable
       disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   for filepath in list_unexpected_bin_files(exe_suffix):
@@ -628,7 +618,7 @@ if 'clean' in targets:
     disp ('WARNING: moving unexpected file ' + filepath + ' to ' + move_to + '\n')
     try:
       shutil.move(filepath, move_to)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=unused-variable
       disp ('error moving file "' + filepath + '": ' + os.strerror (excp.errno))
 
   for filename in glob.glob (os.path.join ('lib', 'libmrtrix*')):
@@ -636,7 +626,7 @@ if 'clean' in targets:
       disp ('delete file: ' + filename + '\n')
       try:
         os.remove (filename)
-      except OSError as excp:
+      except OSError as excp: # pylint: disable=unused-variable
         disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   sys.exit (0)
@@ -685,7 +675,7 @@ for filepath in list_unexpected_bin_files(exe_suffix):
   disp ('WARNING: moving unexpected binary file ' + filepath + ' to ' + move_to + '\n')
   try:
     shutil.move(filepath, move_to)
-  except OSError as excp:
+  except OSError as excp: # pylint: disable=unused-variable
     disp ('error moving file "' + filepath + '": ' + os.strerror (excp.errno))
 
 
@@ -698,7 +688,6 @@ class TargetException (Exception):
 
 class Entry:
   def __init__ (self, name):
-    global todo
     name = os.path.normpath (name)
     if name in todo:
       return
@@ -728,8 +717,8 @@ class Entry:
 
 
     [ Entry(item) for item in self.deps ] # pylint: disable=expression-not-assigned
-    dep_timestamp = [ todo[item].timestamp for item in todo if item in self.deps and not is_library(item) ]
-    dep_timestamp += [ todo[item].dep_timestamp for item in todo if item in self.deps and not is_library(item) ]
+    dep_timestamp = [ item.timestamp for name, item in todo.items() if name in self.deps and not is_library(name) ]
+    dep_timestamp += [ item.dep_timestamp for name, item in todo.items() if name in self.deps and not is_library(name) ]
     if dep_timestamp:
       self.dep_timestamp = max(dep_timestamp)
 
@@ -946,15 +935,15 @@ def execute (message, cmd, working_dir=None):
 
   try:
     start = timer()
-    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ, cwd=working_dir)
-    ( stdout, stderr ) = process.communicate()
-    end = timer()
-    if timingfile is not None:
-      logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
+    with subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ, cwd=working_dir) as process:
+      ( stdout, stderr ) = process.communicate()
+      end = timer()
+      if timingfile is not None:
+        logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
 
-    if process.returncode != 0:
-      error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
-      return 1
+      if process.returncode != 0:
+        error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
+        return 1
 
     errstr = None
     if stdout or stderr:
@@ -1003,7 +992,6 @@ def is_GUI_target (current_file):
 
 
 def list_headers (current_file):
-  global headers, file_flags
   current_file = os.path.normpath (current_file)
 
   if current_file not in headers.keys():
@@ -1052,7 +1040,6 @@ def list_headers (current_file):
 
 
 def list_cmd_deps (file_cc):
-  global object_deps, file_flags
   file_cc = os.path.normpath (file_cc)
 
   if file_cc not in object_deps.keys():
@@ -1091,7 +1078,7 @@ def list_lib_deps ():
 
 
 def build_next ():
-  global todo, lock, stop, main_cindex
+  global stop, main_cindex
   total_count = len(todo)
   cindex = 0
   formatstr = '({:>'+str(len(str(total_count)))+'}/'+str(total_count)+') [{}] {}'
@@ -1099,21 +1086,20 @@ def build_next ():
   try:
     while not stop:
       current = None
-      lock.acquire()
-      if todo:
-        for item in todo:
-          if todo[item].currently_being_processed:
-            continue
-          unsatisfied_deps = set(todo[item].deps).intersection (todo.keys())
-          if not unsatisfied_deps:
-            todo[item].currently_being_processed = True
-            current = item
-            main_cindex+=1
-            cindex = main_cindex
-            break
-      else:
-        stop = max (stop, 1)
-      lock.release()
+      with lock:
+        if todo:
+          for label, item in todo.items():
+            if item.currently_being_processed:
+              continue
+            unsatisfied_deps = set(item.deps).intersection (todo.keys())
+            if not unsatisfied_deps:
+              item.currently_being_processed = True
+              current = label
+              main_cindex+=1
+              cindex = main_cindex
+              break
+        else:
+          stop = max (stop, 1)
 
       if stop:
         return
@@ -1127,9 +1113,8 @@ def build_next ():
         stop = 2
         return
 
-      lock.acquire()
-      del todo[current]
-      lock.release()
+      with lock:
+        del todo[current]
 
   except Exception:
     stop = 2
@@ -1154,7 +1139,7 @@ def build_next ():
 def version_from_git (folder):
   try:
     log ('fetching version information from git in folder "' + folder + '": ')
-    with open (os.devnull) as devnull:
+    with open (os.devnull, encoding='ascii') as devnull:
       tag = subprocess.check_output ([ 'git', 'describe', '--abbrev=0' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip() #pylint: disable=unexpected-keyword-arg
       commit = subprocess.check_output ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip() #pylint: disable=unexpected-keyword-arg
     log (tag + ', ' + commit + '\n')
@@ -1168,7 +1153,7 @@ def version_from_git (folder):
 def version_from_file (version_file, version_macro):
   log ('fetching version information from "' + version_macro + '" in "' + version_file + '": ')
   try:
-    with open (version_file) as fd:
+    with open (version_file, 'r', encoding='utf-8') as fd:
       for line in fd:
         line = line.split ("//")[0]
         if version_macro in line:
@@ -1264,7 +1249,7 @@ def update_version (version, version_file, template):
   version_file_contents = template.replace ('%%%', version or "unknown")
 
   try:
-    with open (version_file) as fd:
+    with open (version_file, 'r', encoding='utf-8') as fd:
       current_version_file_contents = fd.read()
     if ( version is None ) or ( version_file_contents == current_version_file_contents ):
       log ('version file "' + version_file + '" is up to date\n')
@@ -1273,7 +1258,7 @@ def update_version (version, version_file, template):
     pass
 
   log ('version file "' + version_file + '" is out of date - updating\n')
-  with open (version_file, 'w') as fd:
+  with open (version_file, 'w', encoding='utf-8') as fd:
     fd.write (version_file_contents)
 
 
@@ -1355,7 +1340,7 @@ def update_user_docs ():
 #                              SCRIPT VERSION                             #
 ###########################################################################
 
-with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
+with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w', encoding='utf-8') as vfile:
   vfile.write('__version__ = "'+ mrtrix_version() +'" #pylint: disable=unused-variable\n')
   vfile.write('__tag__ = "'+ mrtrix_tag() +'" #pylint: disable=unused-variable\n')
 
@@ -1415,7 +1400,7 @@ compiling TODO list...
 ''')
 try:
   [ Entry(item) for item in targets ] # pylint: disable=expression-not-assigned
-except TargetException as excp:
+except TargetException as excp: # pylint: disable=unused-variable
   fail ('ERROR: ' + str(excp) + '\n')
 
 
@@ -1429,9 +1414,9 @@ if nogui:
   targets = nogui_targets
 
   nogui_todo = {}
-  for item in todo:
-    if not is_GUI_target (todo[item].name):
-      nogui_todo[item] = todo[item]
+  for label, item in todo.items():
+    if not is_GUI_target (item.name):
+      nogui_todo[label] = item
   todo = nogui_todo
 
 
@@ -1454,14 +1439,14 @@ elif dependencies==2:
 Printing dependencies for all files:
 
 ''')
-  for entry in todo:
-    todo[entry].display()
+  for entry in todo.values():
+    entry.display()
   sys.exit (0)
 
 todo_tmp = {}
-for item in todo:
-  if todo[item].action != '--' and todo[item].need_rebuild():
-    todo_tmp[item] = todo[item]
+for label, item in todo.items():
+  if item.action != '--' and item.need_rebuild():
+    todo_tmp[label] = item
 todo = todo_tmp
 
 log ('TODO list contains ' + str(len(todo)) + ''' items

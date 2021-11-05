@@ -442,7 +442,7 @@ namespace MR
 
               // set control point coordinates inside +-1/3 of the midway_image size
               {
-                Eigen::Vector3 ext (midway_image_header.spacing(0) / 6.0,
+                Eigen::Vector3d ext (midway_image_header.spacing(0) / 6.0,
                                     midway_image_header.spacing(1) / 6.0,
                                     midway_image_header.spacing(2) / 6.0);
                 for (size_t i = 0; i<3; ++i)

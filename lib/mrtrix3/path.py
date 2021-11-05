@@ -32,7 +32,7 @@ def all_in_dir(directory, **kwargs): #pylint: disable=unused-variable
   def is_hidden(directory, filename):
     if utils.is_windows():
       try:
-        attrs = ctypes.windll.kernel32.GetFileAttributesW(u"%s" % str(os.path.join(directory, filename)))
+        attrs = ctypes.windll.kernel32.GetFileAttributesW("%s" % str(os.path.join(directory, filename)))
         assert attrs != -1
         return bool(attrs & 2)
       except (AttributeError, AssertionError):
@@ -89,7 +89,8 @@ def make_temporary(suffix): #pylint: disable=unused-variable
       if is_directory:
         os.makedirs(temp_path)
       else:
-        open(temp_path, 'a').close()
+        with open(temp_path, 'a', encoding='utf-8'):
+          pass
       app.debug(temp_path)
       return temp_path
     except OSError as exception:

@@ -144,7 +144,7 @@ def execute(): #pylint: disable=unused-variable
 
     if app.ARGS.ants_options:
       if os.path.isfile('ants_options.txt'):
-        with open('ants_options.txt', 'r') as ants_options_file:
+        with open('ants_options.txt', 'r', encoding='utf-8') as ants_options_file:
           ants_options = ants_options_file.readlines()
         ants_options = ' '.join(line.lstrip().rstrip('\n \\') for line in ants_options if line.strip() and not line.lstrip()[0] == '#')
       else:

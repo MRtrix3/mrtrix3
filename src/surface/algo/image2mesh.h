@@ -122,7 +122,7 @@ namespace MR
                     const auto existing = vox2vertindex.find (voxels[in_vertex]);
                     if (existing == vox2vertindex.end()) {
                       triangle_vertices[out_vertex] = vertices.size();
-                      Eigen::Vector3 pos_voxelspace (default_type(voxels[in_vertex][0]) - 0.5, default_type(voxels[in_vertex][1]) - 0.5, default_type(voxels[in_vertex][2]) - 0.5);
+                      Eigen::Vector3d pos_voxelspace (default_type(voxels[in_vertex][0]) - 0.5, default_type(voxels[in_vertex][1]) - 0.5, default_type(voxels[in_vertex][2]) - 0.5);
                       vertices.push_back (transform.voxel2scanner * pos_voxelspace);
                     } else {
                       triangle_vertices[out_vertex] = existing->second;
