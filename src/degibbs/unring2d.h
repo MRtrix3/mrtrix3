@@ -152,12 +152,12 @@ namespace MR {
           assign_pos_of (pos, outer_axes).to (in, out);
 
           for (auto l = Loop (slice_axes) (in); l; ++l)
-            slice (in.index(X), in.index(Y)) = in.value();
+            slice (ssize_t(in.index(X)), ssize_t(in.index(Y))) = in.value();
 
           unring2d (slice);
 
           for (auto l = Loop (slice_axes) (out); l; ++l)
-            out.value() = slice (out.index(X), out.index(Y));
+            out.value() = slice (ssize_t(out.index(X)), ssize_t(out.index(Y)));
         }
 
 

@@ -23,6 +23,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app, _version #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Check the orientation of the diffusion gradient table')
+  cmdline.add_description('Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.')
   cmdline.add_description('Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to '
                           'derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. '
                           'More information on mask derivation from DWI data can be found at the following link: \n'
@@ -141,7 +142,7 @@ def execute(): #pylint: disable=unused-variable
 
           # Create the gradient table file
           grad_path = 'grad' + suffix + '.b'
-          with open(grad_path, 'w') as grad_file:
+          with open(grad_path, 'w', encoding='utf-8') as grad_file:
             for line in grad:
               grad_file.write (','.join([str(v) for v in line]) + '\n')
 
@@ -157,7 +158,7 @@ def execute(): #pylint: disable=unused-variable
           grad = [ grad[permutation[0]], grad[permutation[1]], grad[permutation[2]] ]
 
           grad_path = 'bvecs' + suffix
-          with open(grad_path, 'w') as bvecs_file:
+          with open(grad_path, 'w', encoding='utf-8') as bvecs_file:
             for line in grad:
               bvecs_file.write (' '.join([str(v) for v in line]) + '\n')
 

@@ -399,16 +399,16 @@ class DEC_unit : protected Base
 
     void operator() (Image<index_type>& index, Image<float>& out)
     {
-      Eigen::Vector3 sum_dec = {0.0, 0.0, 0.0};
+      Eigen::Vector3d sum_dec = {0.0, 0.0, 0.0};
       if (vol.valid()) {
         for (auto f = Base::Loop (index) (data, vol, dir); f; ++f) {
           if (!f.padding())
-            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
+            sum_dec += Eigen::Vector3d (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
         }
       } else {
         for (auto f = Base::Loop (index) (data, dir); f; ++f) {
           if (!f.padding())
-            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
+            sum_dec += Eigen::Vector3d (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
         }
       }
       if ((sum_dec.array() != 0.0).any())
@@ -431,13 +431,13 @@ class DEC_scaled : protected Base
 
     void operator() (FixelIndexType& index, Image<float>& out)
     {
-      Eigen::Vector3 sum_dec = {0.0, 0.0, 0.0};
+      Eigen::Vector3d sum_dec = {0.0, 0.0, 0.0};
       default_type sum_value = 0.0;
       if (vol.valid()) {
         default_type sum_volume = 0.0;
         for (auto f = Base::Loop (index) (data, vol, dir); f; ++f) {
           if (!f.padding()) {
-            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
+            sum_dec += Eigen::Vector3d (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
             sum_volume += vol.value();
             sum_value += vol.value() * data.value();
           }
@@ -448,7 +448,7 @@ class DEC_scaled : protected Base
       } else {
         for (auto f = Base::Loop (index) (data, dir); f; ++f) {
           if (!f.padding()) {
-            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
+            sum_dec += Eigen::Vector3d (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
             sum_value += data.value();
           }
         }

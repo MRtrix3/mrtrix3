@@ -73,7 +73,7 @@ def execute(): #pylint: disable=unused-variable
       rf_in_path = 'init_RF.txt'
       mask_in_path = 'mask.mif'
       init_rf = '1 -1 1'
-      with open(rf_in_path, 'w') as init_rf_file:
+      with open(rf_in_path, 'w', encoding='utf-8') as init_rf_file:
         init_rf_file.write(init_rf)
       iter_lmax_option = ' -lmax 4'
     else:

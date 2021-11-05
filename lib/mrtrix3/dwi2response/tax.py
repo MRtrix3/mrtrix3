@@ -80,7 +80,7 @@ def execute(): #pylint: disable=unused-variable
       # Now produce the initial response function
       # Let's only do it to lmax 4
       init_rf = [ str(mean), str(-0.5*std), str(0.25*std*std/mean) ]
-      with open('init_RF.txt', 'w') as init_rf_file:
+      with open('init_RF.txt', 'w', encoding='utf-8') as init_rf_file:
         init_rf_file.write(' '.join(init_rf))
     else:
       rf_in_path = 'iter' + str(iteration-1) + '_RF.txt'
