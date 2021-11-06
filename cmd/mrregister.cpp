@@ -368,7 +368,7 @@ void run () {
   bool init_rigid_matrix_set = false;
   if (opt.size()) {
     init_rigid_matrix_set = true;
-    Eigen::Vector3 centre;
+    Eigen::Vector3d centre;
     transform_type rigid_transform = load_transform (opt[0][0], centre);
     rigid.set_transform (rigid_transform);
     if (!std::isfinite(centre(0))) {
@@ -518,7 +518,7 @@ void run () {
       throw Exception ("you cannot initialise with -affine_init_matrix since a rigid registration is being performed");
 
     init_affine_matrix_set = true;
-    Eigen::Vector3 centre;
+    Eigen::Vector3d centre;
     transform_type affine_transform = load_transform (opt[0][0], centre);
     affine.set_transform (affine_transform);
     if (!std::isfinite(centre(0))) {
@@ -758,8 +758,8 @@ void run () {
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception ("the -nl_lmax option has been set when no non-linear registration is requested");
-    if (input1[0].ndim() < 4)
-      throw Exception ("-nl_lmax option is not valid with 3D images");
+    if (max_mc_image_lmax == 0)
+      throw Exception ("-nl_lmax option is not valid if no input image is FOD image");
     nl_lmax = parse_ints<uint32_t> (opt[0][0]);
     nl_registration.set_lmax (nl_lmax);
     for (size_t i = 0; i < (nl_lmax).size (); ++i)

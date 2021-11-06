@@ -125,16 +125,20 @@ def execute(): #pylint: disable=unused-variable
           re_object = re.compile(exclude)
           regex_hits = [ ]
           for arg in inputs:
-            if re_object.search(arg).group():
+            search_result = re_object.search(arg)
+            if search_result and search_result.group():
               regex_hits.append(arg)
           if regex_hits:
+            app.debug('Inputs excluded via regex "' + exclude + '": ' + str(regex_hits))
             to_exclude.extend(regex_hits)
           else:
+            app.debug('Compiled exclude regex "' + exclude + '" had no hits')
             exclude_unmatched.append(exclude)
-        except Exception:
+        except re.error:
+          app.debug('Exclude string "' + exclude + '" did not compile as regex')
           exclude_unmatched.append(exclude)
     if exclude_unmatched:
-      app.warn('Item' + ('s' if len(exclude_unmatched) > 1 else '') + ' specified via -exclude did not appear in input list: ' + str('\'' + exclude_unmatched[0] + '\'' if len(exclude_unmatched) == 1 else exclude_unmatched))
+      app.warn('Item' + ('s' if len(exclude_unmatched) > 1 else '') + ' specified via -exclude did not result in item exclusion, whether by direct match or compilation as regex: ' + str('\'' + exclude_unmatched[0] + '\'' if len(exclude_unmatched) == 1 else exclude_unmatched))
     inputs = [ arg for arg in inputs if arg not in to_exclude ]
     if not inputs:
       raise MRtrixError('No inputs remaining after application of exclusion criteri' + ('on' if len(app.ARGS.exclude) == 1 else 'a'))
@@ -252,7 +256,7 @@ def execute(): #pylint: disable=unused-variable
 
   progress.done()
 
-  assert all( job.returncode is not None for job in jobs )
+  assert all(job.returncode is not None for job in jobs)
   fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
   if fail_count:
     app.warn(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')

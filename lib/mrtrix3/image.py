@@ -151,8 +151,7 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None) #pylint: disable=consider-using-with
-  result, dummy_err = proc.communicate()
-  result = result.rstrip().decode('utf-8')
+  result = proc.communicate()[0].rstrip().decode('utf-8')
   if app.VERBOSITY > 1:
     app.console('Result: ' + result)
   # Don't exit on error; let the calling function determine whether or not
@@ -240,10 +239,15 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
 
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None) #pylint: disable=consider-using-with
+  try:
+    from subprocess import DEVNULL #pylint: disable=import-outside-toplevel
+  except ImportError:
+    DEVNULL = open(os.devnull, 'wb') #pylint: disable=consider-using-with
+  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=DEVNULL) #pylint: disable=consider-using-with
   stdout = proc.communicate()[0]
   if proc.returncode:
     raise MRtrixError('Error trying to calculate statistics from image \'' + image_path + '\'')
+
   stdout_lines = [ line.strip() for line in stdout.decode('cp437').splitlines() ]
   result = [ ]
   for line in stdout_lines:
