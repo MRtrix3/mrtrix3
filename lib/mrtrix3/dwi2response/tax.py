@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import math, os, shutil
+import math, os, shutil, io
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, matrix, path, run
 
@@ -80,7 +80,7 @@ def execute(): #pylint: disable=unused-variable
       # Now produce the initial response function
       # Let's only do it to lmax 4
       init_rf = [ str(mean), str(-0.5*std), str(0.25*std*std/mean) ]
-      with open('init_RF.txt', 'w') as init_rf_file:
+      with io.open('init_RF.txt', 'w', encoding='utf8') as init_rf_file:
         init_rf_file.write(' '.join(init_rf))
     else:
       rf_in_path = 'iter' + str(iteration-1) + '_RF.txt'
@@ -112,7 +112,7 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(prefix + 'first_dir.mif')
 
     new_rf = matrix.load_vector(prefix + 'RF.txt')
-    progress.increment('Optimising (' + str(iteration+1) + ' iterations, ' + str(sf_voxel_count) + ' voxels, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_rf) + '] )')
+    progress.increment('Optimising (' + str(iteration+1) + ' iterations, ' + str(sf_voxel_count) + ' voxels, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_rf) + '] )') # pylint: disable=consider-using-f-string
 
     # Detect convergence
     # Look for a change > some percentage - don't bother looking at the masks

@@ -33,7 +33,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_citation('Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320', is_external=True)
   ants_options = parser.add_argument_group('Options for ANTs N4BiasFieldCorrection command')
   for key in sorted(OPT_N4_BIAS_FIELD_CORRECTION):
-    ants_options.add_argument('-ants.'+key, metavar=OPT_N4_BIAS_FIELD_CORRECTION[key][0], help='N4BiasFieldCorrection option -%s. %s' % (key,OPT_N4_BIAS_FIELD_CORRECTION[key][1]))
+    ants_options.add_argument('-ants.'+key, metavar=OPT_N4_BIAS_FIELD_CORRECTION[key][0], help='N4BiasFieldCorrection option -%s. %s' % (key,OPT_N4_BIAS_FIELD_CORRECTION[key][1])) # pylint: disable=consider-using-f-string
   parser.add_argument('input',  help='The input image series to be corrected')
   parser.add_argument('output', help='The output corrected image series')
 
@@ -58,7 +58,7 @@ def execute(): #pylint: disable=unused-variable
       val = getattr(app.ARGS, 'ants.' + key)
       if val is not None:
         OPT_N4_BIAS_FIELD_CORRECTION[key] = (val, 'user defined')
-  ants_options = ' '.join(['-%s %s' %(k, v[0]) for k, v in OPT_N4_BIAS_FIELD_CORRECTION.items()])
+  ants_options = ' '.join(['-%s %s' %(k, v[0]) for k, v in OPT_N4_BIAS_FIELD_CORRECTION.items()]) # pylint: disable=consider-using-f-string
 
   # Generate a mean b=0 image
   run.command('dwiextract in.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3')

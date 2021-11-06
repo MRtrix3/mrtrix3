@@ -13,7 +13,9 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
+# pylint: disable=global-variable-not-assigned
+
+import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, io
 import mrtrix3
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
@@ -200,7 +202,7 @@ def _execute(module): #pylint: disable=unused-variable
     return_code = exception.returncode if is_cmd else 1
     DO_CLEANUP = False
     if SCRATCH_DIR:
-      with open(os.path.join(SCRATCH_DIR, 'error.txt'), 'w') as outfile:
+      with io.open(os.path.join(SCRATCH_DIR, 'error.txt'), 'w', encoding='utf8') as outfile:
         outfile.write((exception.command if is_cmd else exception.function) + '\n\n' + str(exception) + '\n')
     exception_frame = inspect.getinnerframes(sys.exc_info()[2])[-2]
     try:
@@ -306,11 +308,11 @@ def make_scratch_dir(): #pylint: disable=unused-variable
     SCRATCH_DIR = os.path.join(dir_path, prefix + random_string) + os.sep
   os.makedirs(SCRATCH_DIR)
   console('Generated scratch directory: ' + SCRATCH_DIR)
-  with open(os.path.join(SCRATCH_DIR, 'cwd.txt'), 'w') as outfile:
+  with io.open(os.path.join(SCRATCH_DIR, 'cwd.txt'), 'w', encoding='utf8') as outfile:
     outfile.write(WORKING_DIR + '\n')
-  with open(os.path.join(SCRATCH_DIR, 'command.txt'), 'w') as outfile:
+  with io.open(os.path.join(SCRATCH_DIR, 'command.txt'), 'w', encoding='utf8') as outfile:
     outfile.write(' '.join(sys.argv) + '\n')
-  open(os.path.join(SCRATCH_DIR, 'log.txt'), 'w').close()
+  io.open(os.path.join(SCRATCH_DIR, 'log.txt'), 'w', encoding='utf8').close() # pylint: disable='consider-using-with'
   # Also use this scratch directory for any piped images within run.command() calls,
   #   and for keeping a log of executed commands / functions
   run.shared.set_scratch_dir(SCRATCH_DIR)
@@ -487,7 +489,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
     self.wrapon = '' if self.newline else ProgressBar.WRAPON
     VERBOSITY = run.shared.verbosity = VERBOSITY - 1 if VERBOSITY else 0
     if self.isatty:
-      sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
+      sys.stderr.write(self.wrapoff + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[0]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline) # pylint: disable=consider-using-f-string
     else:
       sys.stderr.write(EXEC_NAME + ': ' + self._get_message() + '... [' + self.newline)
     sys.stderr.flush()
@@ -537,7 +539,7 @@ class ProgressBar(object): #pylint: disable=unused-variable
     global EXEC_NAME
     assert not self.iscomplete
     if self.isatty:
-      sys.stderr.write(self.wrapoff + '\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline)
+      sys.stderr.write(self.wrapoff + '\r' + EXEC_NAME + ': ' + ANSI.execute + '[' + ('{0:>3}%'.format(self.value) if self.multiplier else ProgressBar.BUSY[self.counter%6]) + ']' + ANSI.clear + ' ' + ANSI.console + self._get_message() + '... ' + ANSI.clear + ANSI.lineclear + self.wrapon + self.newline) # pylint: disable=consider-using-f-string
     else:
       if self.newline:
         sys.stderr.write(EXEC_NAME + ': ' + self._get_message() + '... [' + ('=' * int(self.value/2)) + self.newline)
@@ -597,7 +599,7 @@ class Parser(argparse.ArgumentParser):
     module_file = inspect.getsourcefile(inspect.stack()[-1][0])
     self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
     try:
-      process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)), stdout=subprocess.PIPE, stderr=subprocess.PIPE) # pylint: disable=consider-using-with
       self._git_version = process.communicate()[0]
       self._git_version = str(self._git_version.decode(errors='ignore')).strip() if process.returncode == 0 else 'unknown'
     except OSError:
@@ -669,7 +671,7 @@ class Parser(argparse.ArgumentParser):
       console('')
 
   # Overloads argparse.ArgumentParser function to give a better error message on failed parsing
-  def error(self, text):
+  def error(self, message):
     for entry in sys.argv:
       if '-help'.startswith(entry):
         self.print_help()
@@ -683,7 +685,7 @@ class Parser(argparse.ArgumentParser):
         if alg == sys.argv[1]:
           usage = self._subparsers._group_actions[0].choices[alg].format_usage()
           continue
-    sys.stderr.write('\nError: %s\n' % text)
+    sys.stderr.write('\nError: %s\n' % message) # pylint: disable=consider-using-f-string
     sys.stderr.write('Usage: ' + usage + '\n')
     sys.stderr.write('       (Run ' + self.prog + ' -help for more information)\n\n')
     sys.stderr.flush()
@@ -814,7 +816,7 @@ class Parser(argparse.ArgumentParser):
         elif option.nargs:
           if isinstance(option.nargs, int):
             group_text += (' ' + option.dest.upper())*option.nargs
-          elif option.nargs == '+' or option.nargs == '*':
+          elif option.nargs in ('+', '*'):
             group_text += ' <space-separated list>'
           elif option.nargs == '?':
             group_text += ' <optional value>'
@@ -861,7 +863,7 @@ class Parser(argparse.ArgumentParser):
     command = CONFIG.get('HelpCommand', 'less -X')
     if command:
       try:
-        process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE)
+        process = subprocess.Popen(command.split(' '), stdin=subprocess.PIPE) # pylint: disable=consider-using-with
         process.communicate(text.encode())
       except:
         sys.stdout.write(text)

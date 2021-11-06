@@ -15,7 +15,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import sys, os.path
+import sys, os.path, io
 
 if len (sys.argv) != 3:
   sys.stderr.write("usage: convert_bruker 2dseq header.mih\n")
@@ -34,13 +34,13 @@ if not sys.argv[2].endswith ('.mih'):
 
 def main():
 
-  with open (os.path.join (os.path.dirname (sys.argv[1]), 'reco')) as file_reco:
+  with io.open (os.path.join (os.path.dirname (sys.argv[1]), 'reco'), 'r', encoding='utf8') as file_reco:
     lines = file_reco.read().split ('##$')
 
-  with open (os.path.join (os.path.dirname (sys.argv[1]), '../../acqp')) as file_acqp:
+  with io.open (os.path.join (os.path.dirname (sys.argv[1]), '../../acqp'), 'r', encoding='utf8') as file_acqp:
     lines += file_acqp.read().split ('##$')
 
-  with open (os.path.join (os.path.dirname (sys.argv[1]), '../../method')) as file_method:
+  with io.open (os.path.join (os.path.dirname (sys.argv[1]), '../../method'), 'r', encoding='utf8') as file_method:
     lines += file_method.read().split ('##$')
 
 
@@ -75,7 +75,7 @@ def main():
       print ('bvec', bvec)
 
 
-  with open (sys.argv[2], 'w') as file_out:
+  with io.open (sys.argv[2], 'w', encoding='utf8') as file_out:
     file_out.write ('mrtrix image\ndim: ' + mat_size[0] + ',' + mat_size[1])
     if len(mat_size) > 2:
       file_out.write (',' + str(mat_size[2]))

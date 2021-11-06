@@ -36,7 +36,7 @@ if not os.path.exists(OUTPUT_FOLDER):
 
 NUM_OUTPUT_FRAMES = len(FILE_LIST_1) + len(FILE_LIST_2) - NUM_OVERLAP
 for i in range(NUM_OUTPUT_FRAMES):
-  file_name = 'frame' + '%0*d' % (5, i) + '.png'
+  file_name = 'frame' + '%0*d' % (5, i) + '.png' # pylint: disable=consider-using-f-string
   if i <= len(FILE_LIST_1) - NUM_OVERLAP:
     os.system('cp -L ' + INPUT_FOLDER_1 + '/' + FILE_LIST_1[i] + ' ' + OUTPUT_FOLDER + '/' + file_name)
   if len(FILE_LIST_1) - NUM_OVERLAP < i < len(FILE_LIST_1):

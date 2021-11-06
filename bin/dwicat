@@ -17,7 +17,7 @@
 
 
 
-import json
+import json, io
 
 
 
@@ -125,10 +125,10 @@ def execute(): #pylint: disable=unused-variable
   # remove current contents of command_history, since there's no sensible
   #   way to choose from which input image the contents should be taken;
   #   we do however want to keep other contents of keyval (e.g. gradient table)
-  with open('result_init.json', 'r') as input_json_file:
+  with io.open('result_init.json', 'r', encoding='utf8') as input_json_file:
     keyval = json.load(input_json_file)
   keyval.pop('command_history', None)
-  with open('result_final.json', 'w') as output_json_file:
+  with io.open('result_final.json', 'w', encoding='utf8') as output_json_file:
     json.dump(keyval, output_json_file)
 
   run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval='result_final.json', force=app.FORCE_OVERWRITE)

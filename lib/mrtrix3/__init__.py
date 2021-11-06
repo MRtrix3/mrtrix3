@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import inspect, os, sys
+import inspect, os, sys, io
 from collections import namedtuple
 try:
   from shlex import quote
@@ -60,14 +60,14 @@ ANSI = ANSICodes('\033[0K', '', '', '', '', '', '') #pylint: disable=unused-vari
 for config_path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.sep, 'etc', 'mrtrix.conf')),
                      os.path.join(os.path.expanduser('~'), '.mrtrix.conf') ]:
   try:
-    f = open (config_path, 'r')
-    for line in f:
-      line = line.strip().split(': ')
-      if len(line) != 2:
-        continue
-      if line[0][0] == '#':
-        continue
-      CONFIG[line[0]] = line[1]
+    with io.open (config_path, 'r', encoding='utf8') as f:
+      for line in f:
+        line = line.strip().split(': ')
+        if len(line) != 2:
+          continue
+        if line[0][0] == '#':
+          continue
+        CONFIG[line[0]] = line[1]
   except IOError:
     pass
 
@@ -78,7 +78,7 @@ for config_path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.s
 
 # Set up terminal special characters now, since they may be dependent on the config file
 def setup_ansi():
-  global ANSI, CONFIG
+  global ANSI
   if sys.stderr.isatty() and not ('TerminalColor' in CONFIG and CONFIG['TerminalColor'].lower() in ['no', 'false', '0']):
     ANSI = ANSICodes('\033[0K', '\033[0m', '\033[03;32m', '\033[03;34m', '\033[01;31m', '\033[03;36m', '\033[00;31m') #pylint: disable=unused-variable
 setup_ansi()

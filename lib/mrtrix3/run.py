@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading
+import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading, io
 from distutils.spawn import find_executable
 from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
 from mrtrix3.utils import STRING_TYPES
@@ -208,7 +208,6 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 def command(cmd, **kwargs): #pylint: disable=unused-variable
   from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
-  global shared #pylint: disable=invalid-name
 
   def quote_nonpipe(item):
     return item if item == '|' else path.quote(item)
@@ -241,7 +240,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
         cmdstring += (' ' if cmdstring else '') + quote_nonpipe(entry)
         cmdsplit.append(entry)
       elif isinstance(entry, list):
-        assert all([ isinstance(item, STRING_TYPES) for item in entry ])
+        assert all( isinstance(item, STRING_TYPES) for item in entry )
         if len(entry) > 1:
           common_prefix = os.path.commonprefix(entry)
           common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
@@ -457,7 +456,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   #   other flags may potentially change if this file is eventually used to resume the script
   if shared.get_scratch_dir():
     with shared.lock:
-      with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a') as outfile:
+      with io.open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a', encoding='utf8') as outfile:
         outfile.write(cmdstring + '\n')
 
   return CommandReturn(return_stdout, return_stderr)
@@ -502,7 +501,7 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
   # Only now do we append to the script log, since the function has completed successfully
   if shared.get_scratch_dir():
     with shared.lock:
-      with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a') as outfile:
+      with io.open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a', encoding='utf8') as outfile:
         outfile.write(fnstring + '\n')
 
   return result

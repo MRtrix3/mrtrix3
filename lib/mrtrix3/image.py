@@ -19,7 +19,7 @@
 #   in Python.
 
 
-import json, math, os, subprocess
+import json, math, os, subprocess, io
 from collections import namedtuple
 from mrtrix3 import MRtrixError
 from mrtrix3.utils import STRING_TYPES
@@ -39,10 +39,10 @@ class Header(object):
     if result:
       raise MRtrixError('Could not access header information for image \'' + image_path + '\'')
     try:
-      with open(filename, 'r') as json_file:
+      with io.open(filename, 'r', encoding='utf8') as json_file:
         data = json.load(json_file)
     except UnicodeDecodeError:
-      with open(filename, 'r') as json_file:
+      with io.open(filename, 'r', encoding='utf8') as json_file:
         data = json.loads(json_file.read().decode('utf-8', errors='replace'))
     os.remove(filename)
     try:
@@ -150,7 +150,7 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
   command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field ]
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
+  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None) #pylint: disable=consider-using-with
   result, dummy_err = proc.communicate()
   result = result.rstrip().decode('utf-8')
   if app.VERBOSITY > 1:
@@ -240,7 +240,7 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
 
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
+  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None) #pylint: disable=consider-using-with
   stdout = proc.communicate()[0]
   if proc.returncode:
     raise MRtrixError('Error trying to calculate statistics from image \'' + image_path + '\'')

@@ -16,7 +16,7 @@
 # Functions relating to handling phase encoding information
 
 
-
+import io
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
 from mrtrix3.utils import STRING_TYPES
 
@@ -126,9 +126,9 @@ def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
     else:
       header['command_history'] = COMMAND_HISTORY_STRING
 
-  with open(filename, 'w') as outfile:
+  with io.open(filename, 'w', encoding='utf8') as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
         outfile.write('# ' + key + ': ' + line + '\n')
     for line in scheme:
-      outfile.write('{:.0f} {:.0f} {:.0f} {:.15g}\n'.format(*line))
+      outfile.write('{:.0f} {:.0f} {:.0f} {:.15g}\n'.format(*line)) #pylint: disable=consider-using-f-string

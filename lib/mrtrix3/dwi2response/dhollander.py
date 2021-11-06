@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import math, shutil
+import math, shutil, io
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, image, path, run
 
@@ -251,12 +251,12 @@ def execute(): #pylint: disable=unused-variable
       isiso = [ lm == 0 for lm in sfwm_lmax ]
     else:
       isiso = [ bv < bzero_threshold for bv in bvalues ]
-    with open('ewmrf.txt', 'w') as ewr:
+    with io.open('ewmrf.txt', 'w', encoding='utf8') as ewr:
       for iis in isiso:
         if iis:
-          ewr.write("%s 0 0 0\n" % refwmcoef)
+          ewr.write("%s 0 0 0\n" % refwmcoef) # pylint: disable=consider-using-f-string
         else:
-          ewr.write("%s -%s %s -%s\n" % (refwmcoef, refwmcoef, refwmcoef, refwmcoef))
+          ewr.write("%s -%s %s -%s\n" % (refwmcoef, refwmcoef, refwmcoef, refwmcoef)) # pylint: disable=consider-using-f-string
     run.command('dwi2fod msmt_csd dwi.mif ewmrf.txt abs_ewm2.mif response_csf.txt abs_csf2.mif -mask refined_wm.mif -lmax 2,0' + bvalues_option, show=False)
     run.command('mrconvert abs_ewm2.mif - -coord 3 0 | mrcalc - abs_csf2.mif -add abs_sum2.mif', show=False)
     run.command('sh2peaks abs_ewm2.mif - -num 1 -mask refined_wm.mif | peaks2amp - - | mrcalc - abs_sum2.mif -divide - | mrconvert - metric_sfwm2.mif -coord 3 0 -axes 0,1,2', show=False)

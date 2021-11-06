@@ -19,7 +19,7 @@
 
 
 
-import itertools, json, math, os, shutil, sys
+import itertools, json, math, os, shutil, sys, io
 from distutils.spawn import find_executable
 
 
@@ -141,7 +141,7 @@ def execute(): #pylint: disable=unused-variable
   if eddyqc_path:
     if os.path.exists(eddyqc_path):
       if os.path.isdir(eddyqc_path):
-        if any([ os.path.exists(os.path.join(eddyqc_path, filename)) for filename in eddyqc_files ]):
+        if any(os.path.exists(os.path.join(eddyqc_path, filename)) for filename in eddyqc_files):
           if app.FORCE_OVERWRITE:
             app.warn('Output eddy QC directory already contains relevant files; these will be overwritten on completion')
           else:
@@ -267,11 +267,11 @@ def execute(): #pylint: disable=unused-variable
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'unexpected data format')
       if isinstance(slice_timing[0], list):
-        if not all( [ len(entry) == 1 for entry in slice_timing ] ):
+        if not all( len(entry) == 1 for entry in slice_timing ):
           raise MRtrixError('Cannot use slice timing information in image header for slice-to-volume correction: '
                             'data do not appear to be 1D')
         slice_timing = [ entry[0] for entry in slice_timing ]
-      if not all( [ isinstance(entry, float) for entry in slice_timing ] ):
+      if not all( isinstance(entry, float) for entry in slice_timing ):
         try:
           slice_timing = [ float(entry) for entry in slice_timing ]
         except ValueError:
@@ -793,7 +793,7 @@ def execute(): #pylint: disable=unused-variable
     if app.ARGS.topup_options:
       topup_manual_options = ' ' + app.ARGS.topup_options.strip()
     topup_output = run.command(topup_cmd + ' --imain=topup_in.nii --datain=topup_datain.txt --out=field --fout=field_map' + fsl_suffix + ' --config=' + topup_config_path + ' --verbose' + topup_manual_options)
-    with open('topup_output.txt', 'w') as topup_output_file:
+    with io.open('topup_output.txt', 'w', encoding='utf8') as topup_output_file:
       topup_output_file.write(topup_output.stdout + '\n' + topup_output.stderr)
     if app.VERBOSITY > 1:
       app.console('Output of topup command:')
@@ -912,13 +912,13 @@ def execute(): #pylint: disable=unused-variable
     except run.MRtrixCmdError as exception_cuda:
       if not eddy_openmp_cmd:
         raise
-      with open('eddy_cuda_failure_output.txt', 'w') as eddy_output_file:
+      with io.open('eddy_cuda_failure_output.txt', 'w', encoding='utf8') as eddy_output_file:
         eddy_output_file.write(str(exception_cuda))
       app.console('CUDA version of \'eddy\' was not successful; attempting OpenMP version')
       try:
         eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
       except run.MRtrixCmdError as exception_openmp:
-        with open('eddy_openmp_failure_output.txt', 'w') as eddy_output_file:
+        with io.open('eddy_openmp_failure_output.txt', 'w', encoding='utf8') as eddy_output_file:
           eddy_output_file.write(str(exception_openmp))
         # Both have failed; want to combine error messages
         eddy_cuda_header = ('=' * len(eddy_cuda_cmd)) \
@@ -952,7 +952,7 @@ def execute(): #pylint: disable=unused-variable
 
   else:
     eddy_output = run.command(eddy_openmp_cmd + ' ' + eddy_all_options)
-  with open('eddy_output.txt', 'w') as eddy_output_file:
+  with io.open('eddy_output.txt', 'w', encoding='utf8') as eddy_output_file:
     eddy_output_file.write(eddy_output.stdout + '\n' + eddy_output.stderr + '\n')
   if app.VERBOSITY > 1:
     app.console('Output of eddy command:')
@@ -985,7 +985,7 @@ def execute(): #pylint: disable=unused-variable
       try:
         run.command('eddy_quad dwi_post_eddy' + eddyqc_options)
       except run.MRtrixCmdError as exception:
-        with open('eddy_quad_failure_output.txt', 'w') as eddy_quad_output_file:
+        with io.open('eddy_quad_failure_output.txt', 'w', encoding='utf8') as eddy_quad_output_file:
           eddy_quad_output_file.write(str(exception))
         app.debug(str(exception))
         app.warn('Error running automated EddyQC tool \'eddy_quad\'; QC data written to "' + eddyqc_path + '" will be files from "eddy" only')
@@ -1216,7 +1216,7 @@ def execute(): #pylint: disable=unused-variable
     keys_to_remove.extend([ 'PhaseEncodingDirection', 'TotalReadoutTime', 'pe_scheme' ])
   # Get the header key-value entries from the input DWI, remove those we don't wish to keep, and
   #   export the result to a new JSON file so that they can be inserted into the output header
-  with open('dwi.json', 'r') as input_json_file:
+  with io.open('dwi.json', 'r', encoding='utf8') as input_json_file:
     keyval = json.load(input_json_file)
   for key in keys_to_remove:
     keyval.pop(key, None)
@@ -1228,7 +1228,7 @@ def execute(): #pylint: disable=unused-variable
   #   for e.g. tracking for different volumes, or performing any geometric corrections
   if do_topup:
     keyval['prior_pe_scheme'] = dwi_manual_pe_scheme if dwi_manual_pe_scheme else dwi_pe_scheme
-  with open('output.json', 'w') as output_json_file:
+  with io.open('output.json', 'w', encoding='utf8') as output_json_file:
     json.dump(keyval, output_json_file)
 
 

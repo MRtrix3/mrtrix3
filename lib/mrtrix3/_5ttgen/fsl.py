@@ -83,7 +83,7 @@ def execute(): #pylint: disable=unused-variable
 
   t1_spacing = image.Header('input.mif').spacing()
   upsample_for_first = False
-  # If voxel size is 1.25mm or larger, make a guess that the user has erroneously re-gridded their data
+  # If voxel size is larger than 1.225mm, make a guess that the user has erroneously re-gridded their data
   if math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
     app.warn('Voxel size larger than expected for T1-weighted images (' + str(t1_spacing) + '); '
              'note that ACT does not require re-gridding of T1 image to DWI space, and indeed '

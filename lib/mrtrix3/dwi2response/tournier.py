@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os, shutil
+import os, shutil, io
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, matrix, path, run
 
@@ -73,7 +73,7 @@ def execute(): #pylint: disable=unused-variable
       rf_in_path = 'init_RF.txt'
       mask_in_path = 'mask.mif'
       init_rf = '1 -1 1'
-      with open(rf_in_path, 'w') as init_rf_file:
+      with io.open(rf_in_path, 'w', encoding='utf8') as init_rf_file:
         init_rf_file.write(init_rf)
       iter_lmax_option = ' -lmax 4'
     else:
@@ -108,7 +108,7 @@ def execute(): #pylint: disable=unused-variable
     app.cleanup(prefix + 'first_dir.mif')
 
     new_rf = matrix.load_vector(prefix + 'RF.txt')
-    progress.increment('Optimising (' + str(iteration+1) + ' iterations, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_rf) + '] )')
+    progress.increment('Optimising (' + str(iteration+1) + ' iterations, RF: [ ' + ', '.join('{:.3f}'.format(n) for n in new_rf) + '] )') # pylint: disable=consider-using-f-string
 
     # Should we terminate?
     if iteration > 0:

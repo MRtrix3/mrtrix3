@@ -52,7 +52,7 @@ def execute(): #pylint: disable=unused-variable
   # run per-shell operations
   files = []
   for index, bvalue in enumerate(image.mrinfo('in.mif', 'shell_bvalues').split()):
-    filename = 'shell-{:02d}.mif'.format(index)
+    filename = 'shell-{:02d}.mif'.format(index) # pylint: disable=consider-using-f-string
     run.command('dwiextract -shells ' + bvalue + ' in.mif - | mrmath -axis 3 - ' + app.ARGS.operation + ' ' + filename)
     files.append(filename)
   # concatenate to output file

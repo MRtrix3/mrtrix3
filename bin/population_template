@@ -17,7 +17,9 @@
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
 
-import collections, json, math, os, re, shutil, sys
+# pylint: disable=consider-using-f-string
+
+import collections, json, math, os, re, shutil, sys, io
 
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
 DEFAULT_RIGID_LMAX    = [2,2,2,4,4,4]
@@ -128,12 +130,12 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
   data = utils.load_keyval(transformation + 'decomp')
   run.function(os.remove, transformation + 'decomp')
   scaling = [float(value) for value in data['scaling']]
-  if any([a < 0 for a in scaling]) or any([a > (1 + max_scaling) for a in scaling]) or any(
-      [a < (1 - max_scaling) for a in scaling]):
+  if any(a < 0 for a in scaling) or any(a > (1 + max_scaling) for a in scaling) or any(
+      a < (1 - max_scaling) for a in scaling):
     app.warn("large scaling (" + str(scaling) + ") in " + transformation)
     good = False
   shear = [float(value) for value in data['shear']]
-  if any([abs(a) > max_shear for a in shear]):
+  if any(abs(a) > max_shear for a in shear):
     app.warn("large shear (" + str(shear) + ") in " + transformation)
     good = False
   rot_angle = float(data['angle_axis'][0])
@@ -190,7 +192,7 @@ def aggregate(inputs, output, contrast_idx, mode, force=True):
     run.command(['mrmath', images, 'median', '-keep_unary_axes', output], force=force)
   elif mode == 'weighted_mean':
     weights = [inp.aggregation_weight for inp in inputs]
-    assert not any([w is None for w in weights]), weights
+    assert not any(w is None for w in weights), weights
     wsum = sum([float(w) for w in weights])
     cmd = ['mrcalc']
     if wsum <= 0:
@@ -508,7 +510,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
   for cid, files in enumerate(in_files):
     c_uids.append([re.sub(re.escape(common_postfix[cid])+'$', '',
                           re.sub('^'+re.escape(common_prefix[cid]), '', fname)) for fname in files])
-    if not all([len(_uid) for _uid in c_uids[-1]]):
+    if not all(len(_uid) for _uid in c_uids[-1]):
       MRtrixError("No uniquely identifiable part of filename found in file :\n" + '""\n'.join(non_unique))
 
   for uids in c_uids:
@@ -546,10 +548,10 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
   if f_agg_weight:
     import csv  # pylint: disable=import-outside-toplevel
     try:
-      with open(f_agg_weight, 'r') as fweights:
+      with io.open(f_agg_weight, 'r', encoding='utf8') as fweights:
         agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in csv.reader(fweights, delimiter=',', quotechar='#'))
     except UnicodeDecodeError:
-      with open(f_agg_weight, 'r') as fweights:
+      with io.open(f_agg_weight, 'r', encoding='utf8') as fweights:
         reader = csv.reader(fweights.read().decode('utf-8', errors='replace'), delimiter=',', quotechar='#')
         agg_weights = dict((row[0].lstrip().rstrip(), row[1]) for row in reader)
     pref = '^' + re.escape(get_common_prefix(list(agg_weights.keys())))
@@ -565,7 +567,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None):
     weights = [float(inp.aggregation_weight) for inp in inputs if inp.aggregation_weight is not None]
     if sum(weights) <= 0:
       raise MRtrixError('Sum of aggregation weights is not positive: ' + str(weights))
-    if any([w < 0 for w in weights]):
+    if any(w < 0 for w in weights):
       app.warn('Negative aggregation weights: ' + str(weights))
 
   return inputs, xcontrast_xsubject_pre_postfix
@@ -1001,7 +1003,7 @@ def execute(): #pylint: disable=unused-variable
 
     if not dolinear:
       for inp in ins:
-        with open(os.path.join('linear_transforms_initial', inp.uid + '.txt'), 'w') as fout:
+        with io.open(os.path.join('linear_transforms_initial', inp.uid + '.txt'), 'w', encoding='utf8') as fout:
           fout.write('1 0 0 0\n0 1 0 0\n0 0 1 0\n0 0 0 1\n')
 
     run.function(copy, 'average_header' + cns.suff[0] + '.mif', 'average_header.mif')
@@ -1391,7 +1393,7 @@ def execute(): #pylint: disable=unused-variable
       keyval = image.Header(os.path.join('warps', inp.uid + '.mif')).keyval()
       keyval = dict((k, keyval[k]) for k in ('linear1', 'linear2'))
       json_path = os.path.join('warps', inp.uid + '.json')
-      with open(json_path, 'w') as json_file:
+      with io.open(json_path, 'w', encoding='utf8') as json_file:
         json.dump(keyval, json_file)
       run.command('mrconvert ' + os.path.join('warps', inp.uid + '.mif') + ' ' +
                   path.quote(os.path.join(warp_path, xcontrast_xsubject_pre_postfix[0] +

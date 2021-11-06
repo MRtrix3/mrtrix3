@@ -25,7 +25,7 @@
 
 
 
-import math, os
+import math, os, io
 
 
 
@@ -113,7 +113,7 @@ def execute(): #pylint: disable=unused-variable
   sgm_lut = {}
   sgm_lut_file_name = 'FreeSurferSGM.txt'
   sgm_lut_file_path = os.path.join(path.shared_data_path(), path.script_subdir_name(), sgm_lut_file_name)
-  with open(sgm_lut_file_path) as sgm_lut_file:
+  with io.open(sgm_lut_file_path, 'r', encoding='utf8') as sgm_lut_file:
     for line in sgm_lut_file:
       line = line.rstrip()
       if line and line[0]!='#':

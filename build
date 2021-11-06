@@ -15,7 +15,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-# pylint: disable=redefined-outer-name,invalid-name
+# pylint: disable=redefined-outer-name,invalid-name,consider-using-f-string,consider-using-with
 
 usage_string = '''
 USAGE
@@ -108,7 +108,7 @@ OPTIONS
 #                          COMMON DEFINITIONS                              #
 ############################################################################
 
-import atexit, codecs, copy, glob, os, platform, re, shutil, subprocess, sys, tempfile, time, threading
+import atexit, codecs, copy, glob, os, platform, re, shutil, subprocess, sys, tempfile, time, threading, io
 from timeit import default_timer as timer
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
@@ -182,9 +182,9 @@ bcolors = {
 def colorize(s):
   out = ''
   for l in s.splitlines():
-    for st in bcolors:
+    for st, bc in bcolors.items():
       if st in l:
-        l = l.replace (st, bcolors[st] + st) + '\033[0m'
+        l = l.replace (st, bc + st) + '\033[0m'
         break
     out += l + '\n'
   return out
@@ -193,7 +193,6 @@ def colorize(s):
 
 
 def pipe_errors_to_less_handler():
-  global error_stream
   if error_stream:
     [ fid, name ] = tempfile.mkstemp()
     fid = os.fdopen (fid, 'wb')
@@ -209,7 +208,7 @@ def pipe_errors_to_less_handler():
 
 def disp (msg):
   print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
+  logfile.write (msg.encode (errors='ignore')) # pylint:
   sys.stdout.write (msg)
   sys.stdout.flush()
   print_lock.release()
@@ -600,19 +599,19 @@ if 'clean' in targets:
         disp ('delete directory: ' + dirname + '\n')
         try:
           os.rmdir (dirname)
-        except OSError as excp:
+        except OSError as excp: # pylint: disable=unused-variable
           disp ('error deleting folder "' + dirname + '": ' + os.strerror (excp.errno))
     disp ('delete directory: ' + f + '\n')
     try:
       os.rmdir (f)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=unused-variable
       disp ('error deleting folder "' + f + '": ' + os.strerror (excp.errno))
 
   for filename in list_expected_bin_files(exe_suffix):
     disp ('delete file: ' + filename + '\n')
     try:
       os.remove (filename)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=unused-variable
       disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   for filepath in list_unexpected_bin_files(exe_suffix):
@@ -624,7 +623,7 @@ if 'clean' in targets:
     disp ('WARNING: moving unexpected file ' + filepath + ' to ' + move_to + '\n')
     try:
       shutil.move(filepath, move_to)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=unused-variable
       disp ('error moving file "' + filepath + '": ' + os.strerror (excp.errno))
 
   for filename in glob.glob (os.path.join ('lib', 'libmrtrix*')):
@@ -632,7 +631,7 @@ if 'clean' in targets:
       disp ('delete file: ' + filename + '\n')
       try:
         os.remove (filename)
-      except OSError as excp:
+      except OSError as excp: # pylint: disable=unused-variable
         disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   sys.exit (0)
@@ -681,7 +680,7 @@ for filepath in list_unexpected_bin_files(exe_suffix):
   disp ('WARNING: moving unexpected binary file ' + filepath + ' to ' + move_to + '\n')
   try:
     shutil.move(filepath, move_to)
-  except OSError as excp:
+  except OSError as excp: # pylint: disable=unused-variable
     disp ('error moving file "' + filepath + '": ' + os.strerror (excp.errno))
 
 
@@ -694,7 +693,6 @@ class TargetException (Exception):
 
 class Entry(object):
   def __init__ (self, name):
-    global todo
     name = os.path.normpath (name)
     if name in todo:
       return
@@ -724,8 +722,8 @@ class Entry(object):
 
 
     [ Entry(item) for item in self.deps ] # pylint: disable=expression-not-assigned
-    dep_timestamp = [ todo[item].timestamp for item in todo if item in self.deps and not is_library(item) ]
-    dep_timestamp += [ todo[item].dep_timestamp for item in todo if item in self.deps and not is_library(item) ]
+    dep_timestamp = [ td.timestamp for item, td in todo.items() if item in self.deps and not is_library(item) ]
+    dep_timestamp += [ td.dep_timestamp for item, td in todo.items() if item in self.deps and not is_library(item) ]
     if dep_timestamp:
       self.dep_timestamp = max(dep_timestamp)
 
@@ -999,7 +997,6 @@ def is_GUI_target (current_file):
 
 
 def list_headers (current_file):
-  global headers, file_flags
   current_file = os.path.normpath (current_file)
 
   if current_file not in headers.keys():
@@ -1048,7 +1045,6 @@ def list_headers (current_file):
 
 
 def list_cmd_deps (file_cc):
-  global object_deps, file_flags
   file_cc = os.path.normpath (file_cc)
 
   if file_cc not in object_deps.keys():
@@ -1087,7 +1083,7 @@ def list_lib_deps ():
 
 
 def build_next ():
-  global todo, lock, stop, main_cindex
+  global stop, main_cindex
   total_count = len(todo)
   cindex = 0
   formatstr = '({:>'+str(len(str(total_count)))+'}/'+str(total_count)+') [{}] {}'
@@ -1097,12 +1093,12 @@ def build_next ():
       current = None
       lock.acquire()
       if todo:
-        for item in todo:
-          if todo[item].currently_being_processed:
+        for item, td in todo.items():
+          if td.currently_being_processed:
             continue
-          unsatisfied_deps = set(todo[item].deps).intersection (todo.keys())
+          unsatisfied_deps = set(td.deps).intersection (todo.keys())
           if not unsatisfied_deps:
-            todo[item].currently_being_processed = True
+            td.currently_being_processed = True
             current = item
             main_cindex+=1
             cindex = main_cindex
@@ -1150,7 +1146,7 @@ def build_next ():
 def version_from_git (folder):
   try:
     log ('fetching version information from git in folder "' + folder + '": ')
-    with open (os.devnull) as devnull:
+    with io.open(os.devnull, 'w', encoding='utf8') as devnull:
       tag = subprocess.check_output ([ 'git', 'describe', '--abbrev=0' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip() #pylint: disable=unexpected-keyword-arg
       commit = subprocess.check_output ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip() #pylint: disable=unexpected-keyword-arg
     log (tag + ', ' + commit + '\n')
@@ -1164,7 +1160,7 @@ def version_from_git (folder):
 def version_from_file (version_file, version_macro):
   log ('fetching version information from "' + version_macro + '" in "' + version_file + '": ')
   try:
-    with open (version_file) as fd:
+    with io.open (version_file, 'r', encoding='utf8') as fd:
       for line in fd:
         line = line.split ("//")[0]
         if version_macro in line:
@@ -1244,7 +1240,7 @@ def update_version (version, version_file, template):
   version_file_contents = template.replace ('%%%', version or "unknown")
 
   try:
-    with open (version_file) as fd:
+    with io.open (version_file, 'r', encoding='utf8') as fd:
       current_version_file_contents = fd.read()
     if ( version is None ) or ( version_file_contents == current_version_file_contents ):
       log ('version file "' + version_file + '" is up to date\n')
@@ -1253,7 +1249,7 @@ def update_version (version, version_file, template):
     pass
 
   log ('version file "' + version_file + '" is out of date - updating\n')
-  with open (version_file, 'w') as fd:
+  with io.open (version_file, 'w', encoding='utf8') as fd:
     fd.write (version_file_contents)
 
 
@@ -1335,7 +1331,7 @@ def update_user_docs ():
 #                              SCRIPT VERSION                             #
 ###########################################################################
 
-with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
+with io.open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'), 'w', encoding='utf8') as vfile:
   vfile.write('__version__ = "'+ mrtrix_version() +'" #pylint: disable=unused-variable\n')
 
 
@@ -1394,7 +1390,7 @@ compiling TODO list...
 ''')
 try:
   [ Entry(item) for item in targets ] # pylint: disable=expression-not-assigned
-except TargetException as excp:
+except TargetException as excp: # pylint: disable=unused-variable
   fail ('ERROR: ' + str(excp) + '\n')
 
 
@@ -1408,9 +1404,9 @@ if nogui:
   targets = nogui_targets
 
   nogui_todo = {}
-  for item in todo:
-    if not is_GUI_target (todo[item].name):
-      nogui_todo[item] = todo[item]
+  for item, td in todo.items():
+    if not is_GUI_target (td.name):
+      nogui_todo[item] = td
   todo = nogui_todo
 
 
@@ -1433,14 +1429,14 @@ elif dependencies==2:
 Printing dependencies for all files:
 
 ''')
-  for entry in todo:
-    todo[entry].display()
+  for td in todo.values():
+    td.display()
   sys.exit (0)
 
 todo_tmp = {}
-for item in todo:
-  if todo[item].action != '--' and todo[item].need_rebuild():
-    todo_tmp[item] = todo[item]
+for item, td in todo.items():
+  if td.action != '--' and td.need_rebuild():
+    todo_tmp[item] = td
 todo = todo_tmp
 
 log ('TODO list contains ' + str(len(todo)) + ''' items

@@ -15,7 +15,7 @@
 
 
 
-import glob, os, re
+import glob, os, re, io
 from distutils.spawn import find_executable
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, fsl, image, path, run
@@ -226,7 +226,7 @@ def execute(): #pylint: disable=unused-variable
       hipp_subfield_paired_images.append(lh_filename[1:])
   # Choose which of these image pairs we are going to use
   for code in [ '.CA.', '.FS60.' ]:
-    if any([ code in filename for filename in hipp_subfield_paired_images ]):
+    if any( code in filename for filename in hipp_subfield_paired_images ):
       hipp_subfield_image_suffix = [ filename for filename in hipp_subfield_paired_images if code in filename ][0]
       have_hipp_subfields = True
       break
@@ -546,7 +546,7 @@ def execute(): #pylint: disable=unused-variable
     acpcdetect_input_header = image.Header(acpcdetect_input_image)
     acpcdetect_output_path = os.path.splitext(acpcdetect_input_image)[0] + '_ACPC.txt'
     app.cleanup(acpcdetect_input_image)
-    with open(acpcdetect_output_path, 'r') as acpc_file:
+    with io.open(acpcdetect_output_path, 'r', encoding='utf8') as acpc_file:
       acpcdetect_output_data = acpc_file.read().splitlines()
     app.cleanup(glob.glob(os.path.splitext(acpcdetect_input_image)[0] + "*"))
     # Need to scan through the contents of this file,

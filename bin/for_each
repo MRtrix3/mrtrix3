@@ -106,7 +106,6 @@ KEYLIST = [ 'IN', 'NAME', 'PRE', 'UNI' ]
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import ANSI, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, run #pylint: disable=no-name-in-module, import-outside-toplevel
-  global CMDSPLIT
 
   inputs = app.ARGS.inputs
   app.debug('All inputs: ' + str(inputs))
@@ -211,7 +210,6 @@ def execute(): #pylint: disable=unused-variable
   progress = app.ProgressBar(progress_string(), len(jobs))
 
   def execute_parallel():
-    global shared #pylint: disable=invalid-name
     while not shared.stop:
       my_job = shared.next(jobs)
       if not my_job:
@@ -254,7 +252,7 @@ def execute(): #pylint: disable=unused-variable
 
   progress.done()
 
-  assert all([ job.returncode is not None for job in jobs ])
+  assert all( job.returncode is not None for job in jobs )
   fail_count = sum([ 1 if job.returncode else 0 for job in jobs ])
   if fail_count:
     app.warn(str(fail_count) + ' of ' + str(len(jobs)) + ' jobs did not complete successfully')
