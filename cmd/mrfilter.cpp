@@ -156,7 +156,7 @@ void run () {
       //   convert between cfloat and cdouble...
       auto input = Image<cdouble>::open (argument[0]);
 
-      std::vector<size_t> axes = { 0, 1, 2 };
+      vector<size_t> axes = { 0, 1, 2 };
       auto opt = get_options ("axes");
       if (opt.size()) {
          axes = parse_ints<size_t> (opt[0][0]);
