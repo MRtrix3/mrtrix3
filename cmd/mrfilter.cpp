@@ -45,6 +45,8 @@ const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
 
   + Option ("magnitude", "output a magnitude image rather than a complex-valued image")
 
+  + Option ("rescale", "rescale values so that inverse FFT recovers original values")
+
   + Option ("centre_zero", "re-arrange the FFT results so that the zero-frequency component "
             "appears in the centre of the image, rather than at the edges");
 
@@ -172,9 +174,11 @@ void run () {
       Stride::set_from_command_line (header);
       header.datatype() = magnitude ? DataType::Float32 : DataType::CFloat64;
       auto output = Image<cdouble>::create (argument[2], header);
+      double scale = 1.0;
 
       Image<cdouble> in (input), out;
       for (size_t n = 0; n < axes.size(); ++n) {
+        scale *= in.size(axes[n]);
         if (n >= (axes.size()-1) && !magnitude) {
           out = output;
         }
@@ -192,6 +196,12 @@ void run () {
         ThreadedLoop (out).run (
             [](decltype(out)& a, decltype(output)& b) { a.value() = abs(cdouble (b.value())); },
             output, out);
+      }
+      if (get_options ("rescale").size()) {
+        scale = std::sqrt (scale);
+        ThreadedLoop (out).run (
+            [&scale](decltype(out)& a) { a.value() /= scale; },
+            output);
       }
 
       break;
