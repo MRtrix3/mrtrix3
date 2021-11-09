@@ -21,7 +21,7 @@ Usage
 Description
 -----------
 
-This application attempts to remove Gibbs ringing artefacts from MRI images using the method of local subvoxel-shifts proposed by Kellner et al. (see reference below for details). By default, the original 2D slice-wise version is used. If the -3d option is provided, the program will run the 3D version as proposed by Bautista et al. (also in the reference list below).
+This application attempts to remove Gibbs ringing artefacts from MRI images using the method of local subvoxel-shifts proposed by Kellner et al. (see reference below for details). By default, the original 2D slice-wise version is used. If the -mode 3d option is provided, the program will run the 3D version as proposed by Bautista et al. (also in the reference list below).
 
 This command is designed to run on data directly after it has been reconstructed by the scanner, before any interpolation of any kind has taken place. You should not run this command after any form of motion correction (e.g. not after dwifslpreproc). Similarly, if you intend running dwidenoise, you should run denoising before this command to not alter the noise structure, which would impact on dwidenoise's performance.
 
@@ -30,9 +30,9 @@ Note that this method is designed to work on images acquired with full k-space c
 Options
 -------
 
--  **-volume** perform the correction using the 3D volume-wise extension proposed by Bautista et al. (see references below). This is appropriate for images acquired using 3D Fourier encoding, rather than 2D multi-slice.
+-  **-mode type** specify the mode of operation. Valid choices are: 2d, 3d (default: 2d). The 2d mode corresponds to the original slice-wise approach as propoosed by Kellner et al., appropriate for images acquired using 2D muli-slice approaches. The 3d mode corresponds to the 3D volume-wise extension proposed by Bautista et al., which is appropriate for images acquired using 3D Fourier encoding.
 
--  **-axes list** select the slice axes (default: 0,1 - i.e. x-y). Select all 3 spatial axes for 3D operation, i.e. 0:2 or 0,1,2.
+-  **-axes list** select the slice axes (default: 0,1 - i.e. x-y). Select all 3 spatial axes for 3D operation, i.e. 0:2 or 0,1,2 (this is equivalent to '-mode 3d').
 
 -  **-nshifts value** discretization of subpixel spacing (default: 20).
 
