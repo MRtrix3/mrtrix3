@@ -18,8 +18,8 @@
 
 #include "command.h"
 #include "image.h"
+#include "math/fft.h"
 #include "filter/base.h"
-#include "filter/fft.h"
 #include "filter/gradient.h"
 #include "filter/normalise.h"
 #include "filter/median.h"
@@ -154,27 +154,46 @@ void run () {
     {
       // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
       //   convert between cfloat and cdouble...
-      auto input = Image<cdouble>::open (argument[0]).with_direct_io();
-      Filter::FFT filter (input, get_options ("inverse").size());
+      auto input = Image<cdouble>::open (argument[0]);
 
+      std::vector<size_t> axes = { 0, 1, 2 };
       auto opt = get_options ("axes");
-      if (opt.size())
-        filter.set_axes (parse_ints<uint32_t> (opt[0][0]));
-      filter.set_centre_zero (get_options ("centre_zero").size());
-      Stride::set_from_command_line (filter);
-      filter.set_message (std::string("applying FFT filter to image " + std::string(argument[0])));
-
-      if (get_options ("magnitude").size()) {
-        auto temp = Image<cdouble>::scratch (filter, "complex FFT result");
-        filter (input, temp);
-        filter.datatype() = DataType::Float32;
-        auto output = Image<float>::create (argument[2], filter);
-        for (auto l = Loop (output) (temp, output); l; ++l)
-          output.value() = abs (cdouble(temp.value()));
-      } else {
-        auto output = Image<cdouble>::create (argument[2], filter);
-        filter (input, output);
+      if (opt.size()) {
+         axes = parse_ints<size_t> (opt[0][0]);
+         for (const auto axis : axes)
+           if (axis >= input.ndim())
+             throw Exception ("axis provided with -axes option is out of range");
       }
+      const int direction = get_options ("inverse").size() ? FFTW_BACKWARD : FFTW_FORWARD;
+      const bool centre_FFT = get_options ("centre_zero").size();
+      const bool magnitude = get_options ("magnitude").size();
+
+      Header header = input;
+      Stride::set_from_command_line (header);
+      header.datatype() = magnitude ? DataType::Float32 : DataType::CFloat64;
+      auto output = Image<cdouble>::create (argument[2], header);
+
+      Image<cdouble> in (input), out;
+      for (size_t n = 0; n < axes.size(); ++n) {
+        if (n >= (axes.size()-1) && !magnitude) {
+          out = output;
+        }
+        else {
+          if (!out.valid())
+            out = Image<cdouble>::scratch (input);
+        }
+
+        Math::FFT (in, out, axes[n], direction, centre_FFT);
+
+        in = out;
+      }
+
+      if (magnitude) {
+        ThreadedLoop (out).run (
+            [](decltype(out)& a, decltype(output)& b) { a.value() = abs(cdouble (b.value())); },
+            output, out);
+      }
+
       break;
     }
 

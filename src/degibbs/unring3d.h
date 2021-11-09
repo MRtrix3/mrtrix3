@@ -225,8 +225,8 @@ namespace MR {
               // full 3D FFT of input:
               INFO ("performing initial 3D forward Fourier transform...");
               Math::FFT (input, vol_FT, 0, FFTW_FORWARD);
-              Math::FFT (vol_FT, 1, FFTW_FORWARD);
-              Math::FFT (vol_FT, 2, FFTW_FORWARD);
+              Math::FFT (vol_FT, vol_FT, 1, FFTW_FORWARD);
+              Math::FFT (vol_FT, vol_FT, 2, FFTW_FORWARD);
 
               for (int axis = 0; axis < 3; ++axis) {
 
@@ -236,9 +236,9 @@ namespace MR {
 
                 // then inverse FT back to image domain:
                 INFO ("applying 3D backward Fourier transform...");
-                Math::FFT (vol_filtered, 0, FFTW_BACKWARD);
-                Math::FFT (vol_filtered, 1, FFTW_BACKWARD);
-                Math::FFT (vol_filtered, 2, FFTW_BACKWARD);
+                Math::FFT (vol_filtered, vol_filtered, 0, FFTW_BACKWARD);
+                Math::FFT (vol_filtered, vol_filtered, 1, FFTW_BACKWARD);
+                Math::FFT (vol_filtered, vol_filtered, 2, FFTW_BACKWARD);
 
                 // apply unringing operation on desired axis:
                 INFO ("performing unringing along axis "+str(axis)+"...");
