@@ -15,7 +15,6 @@
  */
 
 #include <numeric>
-#include <unsupported/Eigen/FFT>
 
 #include "command.h"
 #include "degibbs/unring2d.h"
