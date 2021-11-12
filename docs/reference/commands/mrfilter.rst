@@ -40,6 +40,8 @@ Options for FFT filter
 
 -  **-magnitude** output a magnitude image rather than a complex-valued image
 
+-  **-rescale** rescale values so that inverse FFT recovers original values
+
 -  **-centre_zero** re-arrange the FFT results so that the zero-frequency component appears in the centre of the image, rather than at the edges
 
 Options for gradient filter
