@@ -125,7 +125,7 @@ namespace MR
               if (sum_weights) {
                 output.value() /= sum_weights;
               } else {
-                // Provide unsmoothed value if disconnected
+                // Provide unsmoothed value if disconnected / excluded from mask
                 input.index(0) = fixel;
                 output.value() = input.value();
               }

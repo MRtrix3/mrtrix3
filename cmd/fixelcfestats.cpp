@@ -203,13 +203,35 @@ void run()
   auto opt = get_options ("mask");
   index_type mask_fixels = 0;
   if (opt.size()) {
-    mask = Image<bool>::open (opt[0][0]);
-    Fixel::check_data_file (mask);
-    if (!Fixel::fixels_match (index_header, mask))
-      throw Exception ("Mask image provided using -mask option does not match fixel template");
-    for (auto l = Loop(0) (mask); l; ++l) {
-      if (mask.value())
-        ++mask_fixels;
+    Header mask_header = Header::open (opt[0][0]);
+    try {
+      Fixel::check_data_file (mask_header);
+      if (!Fixel::fixels_match (index_header, mask_header))
+        throw Exception ("Mask image provided using -mask option does not match fixel template");
+      mask = mask_header.get_image<bool>();
+      for (auto l = Loop(0) (mask); l; ++l) {
+        if (mask.value())
+          ++mask_fixels;
+      }
+    } catch (Exception& e) {
+      if (dimensions_match (index_header, mask_header, 0, 3) && (mask_header.ndim() == 3 || (mask_header.ndim() == 4 && mask_header.size(3) == 1))) {
+        CONSOLE ("Converting voxel mask \"" + mask_header.name() + "\" to fixel mask");
+        Image<bool> voxel_mask = mask_header.get_image<bool>();
+        mask_header = Fixel::data_header_from_index (index_header);
+        mask = Image<bool>::scratch (mask_header, "Fixel mask calculated from user-provided voxel mask");
+        for (auto l = Fixel::Loop (index_image) (index_image); l; ++l) {
+          assign_pos_of (index_image, 0, 3).to (voxel_mask);
+          if (voxel_mask.value()) {
+            for (size_t i = 0; i != l.num_fixels; ++i) {
+              mask.index(0) = l.offset + i;
+              mask.value() = true;
+              ++mask_fixels;
+            }
+          }
+        }
+      } else {
+        throw e;
+      }
     }
     CONSOLE ("Number of fixels in mask: " + str(mask_fixels));
   } else {
