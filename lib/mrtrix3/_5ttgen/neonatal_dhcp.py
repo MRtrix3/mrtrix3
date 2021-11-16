@@ -20,37 +20,31 @@ from mrtrix3 import app, image, path, run, utils
 
 
 
-DHCP_CGM = list(range(5, 40))
+DHCP_CGM = list(range(5, 17)) + list(range(20,40))
 DHCP_SGM = [17, 18]
 DHCP_WM = [19] + list(range(40, 49)) + list(range(51, 83)) + list(range(85, 88))
 DHCP_CSF = [49, 50, 83]
 DHCP_AMYG_HIPP = list(range(1, 5))
 
-MCRIB_CGM = list(range(1000, 1004)) + list(range(1005,1036)) + list(range(2000, 2004)) + list(range(2005,2036))
 MCRIB_SGM = [9, 11, 12, 13, 26, 48, 50, 51, 52, 58]
-MCRIB_WM = [2, 41, 75, 76, 90, 170, 192]
-MCRIB_CSF = [4, 14, 15, 24, 43]
-MCRIB_AMYG_HIPP = [17, 18, 53, 54]
-MCRIB_CEREBELLAR = [91, 93]
 
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('neonatal', parents=[base_parser])
+  parser = subparsers.add_parser('neonatal_dhcp', parents=[base_parser])
   parser.set_author('Manuel Blesa (manuel.blesa@ed.ac.uk), Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)')
-  parser.set_synopsis('Use ANTs commands and the M-CRIB atlas to generate the 5TT image of a neonatal subject based on a T1-weighted or T2-weighted image')
-  parser.add_description('When the -dhcp_path option is used, derivation of the 5TT image will be principally based on the segmentation already performed in the dHCP pipeline. The M-CRIB atlas will only be used to introduce additional sub-cortical grey matter parcels into the tissue segmentation. For this operation to be applicable, the dHCP pipeline must have been executed with the -additional command-line flag, and the modality of the input image must be T2-weighted. Use of this mode of operation is generally encouraged.')
+  parser.set_synopsis('Use ANTs commands, the output of the dHCP pipeline and the M-CRIB atlas to generate the 5TT image of a neonatal subject based on a T2-weighted image')
+  parser.add_description('Derivation of the 5TT image is principally based on the segmentation already performed in the dHCP pipeline. The M-CRIB atlas will only be used to introduce additional sub-cortical grey matter parcels into the tissue segmentation. For this operation to be applicable, the dHCP pipeline must have been executed with the -additional command-line flag, and the modality of the input image must be T2-weighted.')
   parser.add_citation('Blesa, M.; Galdi, P.; Cox, S.R.; Sullivan, G.; Stoye, D.Q.; Lamb, G.L.; Quigley, A.J.; Thrippleton, M.J.; Escudero, J.; Bastin, M.E.; Smith, K.M. & Boardman. J.P. Hierarchical complexity of the macro-scale neonatal brain. Cerebral Cortex, 2021, 4, 2071-2084', is_external=True)
   parser.add_citation('Avants, B.; Epstein, C.; Grossman, M. & Gee, J. Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain. 2008, Medical Image Analysis, 41, 12-26', is_external=True)
   parser.add_citation('Wang, H.; Suh, J.W.; Das, S.R.; Pluta, J.B.; Craige, C. & Yushkevich, P.A. Multi-atlas segmentation with joint label fusion. IEEE Trans Pattern Anal Mach Intell., 2013, 35, 611–623.', is_external=True)
   parser.add_citation('Alexander, B.; Murray, A.L.; Loh, W.Y.; Matthews, L.G.; Adamson, C.; Beare, R.; Chen, J.; Kelly, C.E.; Rees, S.; Warfield, S.K.; Anderson, P.J.; Doyle, L.W.; Spittle, A.J.; Cheong, J.L.Y; Seal, M.L. & Thompson, D.K. A new neonatal cortical and subcortical brain atlas: the Melbourne Children’s Regional Infant Brain (m-crib) atlas. NeuroImage, 2017, 852, 147-841.', is_external=True)
-  parser.add_citation('Makropoulos, A., Robinson, E.C., Schuh, A., Wright, R., Fitzgibbon, S., Bozek, J., Counsell, S.J., Steinweg, J., Vecchiato, K., Passerat-Palmbach, J., Lenz, G., Mortari, F., Tenev, T., Duff, E.P., Bastiani, M., Cordero-Grande, L., Hughes, E., Tusor, N., Tournier, J.D., Hutter, J., Price, A.N., Teixeira, R.P.A.G., Murgasova, M., Victor, S., Kelly, C., Rutherford, M.A., Smith, S.M., Edwards, A.D., Hajnal, J.V., Jenkinson, M. & Rueckert, D. The developing human connectome project: A minimal processing pipeline for neonatal cortical surface reconstruction. NeuroImage, 2018, 173, 88-112.', condition='If -dhcp_path option is used')   
+  parser.add_citation('Makropoulos, A., Robinson, E.C., Schuh, A., Wright, R., Fitzgibbon, S., Bozek, J., Counsell, S.J., Steinweg, J., Vecchiato, K., Passerat-Palmbach, J., Lenz, G., Mortari, F., Tenev, T., Duff, E.P., Bastiani, M., Cordero-Grande, L., Hughes, E., Tusor, N., Tournier, J.D., Hutter, J., Price, A.N., Teixeira, R.P.A.G., Murgasova, M., Victor, S., Kelly, C., Rutherford, M.A., Smith, S.M., Edwards, A.D., Hajnal, J.V., Jenkinson, M. & Rueckert, D. The developing human connectome project: A minimal processing pipeline for neonatal cortical surface reconstruction. NeuroImage, 2018, 173, 88-112.')   
   parser.add_argument('input',  help='The input structural image')
-  parser.add_argument('modality', choices=["t1w", "t2w"], help='Specify the modality of the input image, either "t1w" or "t2w"')
   parser.add_argument('output', help='The output 5TT image')
-  options = parser.add_argument_group('Options specific to the \'neonatal\' algorithm')
+  options = parser.add_argument_group('Options specific to the \'neonatal_dhcp\' algorithm')
   options.add_argument('-mask', type=str, help='Manually provide a brain mask, MANDATORY', required=True)
-  options.add_argument('-dhcp_path', type=str, help='Provide the path of the tissue probability maps (posteriors/) obtained by the dHCP pipeline (see Description)')
+  options.add_argument('-dhcp_path', type=str, help='Provide the path of the tissue probability maps (posteriors/) obtained by the dHCP pipeline (see Description), MANDATORY', required=True)
   options.add_argument('-mcrib_path', type=str, help='Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")')
   options.add_argument('-parcellation', type=str, help='Additionally export the M-CRIB parcellation warped to the subject data')
   options.add_argument('-quick', action="store_true", help='Specify the use of quick registration parameters')
@@ -64,9 +58,6 @@ def check_output_paths(): #pylint: disable=unused-variable
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  if app.ARGS.dhcp_path:
-    if app.ARGS.modality == "t1w":
-      raise MRtrixError('Modality has to be "t2w" for the dHCP option to work')
   if app.ARGS.mcrib_path:
     mcrib_dir = os.path.abspath(path.from_user(app.ARGS.mcrib_path, False))
   elif 'MCRIBPath' in CONFIG:
@@ -78,7 +69,7 @@ def get_inputs(): #pylint: disable=unused-variable
   run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit -strides -1,+2,+3')
   mcrib_import = utils.RunList('Importing M-CRIB data to scratch directory', 20)
   for i in range(1, 11):
-    mcrib_import.command(['mrconvert', os.path.join(mcrib_dir, ('M-CRIB_P%02d_' % i) + ('T1_registered_to_T2' if app.ARGS.modality == 't1w' else 'T2') + '.nii.gz'), path.to_scratch('template_%02d.nii' % i)])
+    mcrib_import.command(['mrconvert', os.path.join(mcrib_dir, 'M-CRIB_P%02d_T2.nii.gz' % i), path.to_scratch('template_%02d.nii' % i)])
     mcrib_import.command(['mrconvert', os.path.join(mcrib_dir, 'M-CRIB_orig_P%02d_parc.nii.gz' % i), path.to_scratch('template_labels_%02d.nii' % i, False)])
   if app.ARGS.dhcp_path:
     dhcp_dir = os.path.abspath(path.from_user(app.ARGS.dhcp_path, False))
@@ -115,36 +106,26 @@ def execute(): #pylint: disable=unused-variable
               + ' '.join('-g input_parcellation_template_%02d_%d_Warped.nii.gz -l input_parcellation_template_%02d_%d_WarpedLabels.nii.gz' % (i, i-1, i, i-1) for i in range(1, 11))
               + ' -o [input_parcellation_Labels.nii.gz,input_parcellation_Intensity.nii.gz,posterior%04d.nii.gz]')
 
-  if app.ARGS.dhcp_path:
-
-    for tissue, indices in { 'cGM': DHCP_CGM + ([] if app.ARGS.sgm_amyg_hipp else DHCP_AMYG_HIPP),
+  for tissue, indices in { 'cGM': DHCP_CGM + ([] if app.ARGS.sgm_amyg_hipp else DHCP_AMYG_HIPP),
                              'sGM': DHCP_SGM + (DHCP_AMYG_HIPP if app.ARGS.sgm_amyg_hipp else []),
                              'WM' : DHCP_WM,
-                             'CSF': DHCP_CSF }:
-      run.command(['mrmath', ['label_%d.mif' % i for i in indices], 'sum', 'Pmap-' + tissue + '.mif'])
+                             'CSF': DHCP_CSF }.items():
+    run.command(['mrmath', ['label_%d.mif' % i for i in indices], 'sum', 'Pmap-' + tissue + '.mif'])
 
-    # Uncompress just once, since we need to read multiple times
-    run.command('mrconvert input_parcellation_Labels.nii.gz input_parcellation_Labels.nii')
+  # Uncompress just once, since we need to read multiple times
+  run.command('mrconvert input_parcellation_Labels.nii.gz input_parcellation_Labels.nii')
 
-    #extract sGM from M-CRIB
-    run.command('mrcalc ' + ' '.join('input_parcellation_Labels.nii ' + str(i) + ' -eq' for i in MCRIB_SGM) + ' ' + ' '.join(['-add'] * (len(MCRIB_SGM) - 1)) + ' sGM_mcrib.mif')
+  #extract sGM from M-CRIB
+  run.command('mrcalc ' + ' '.join('input_parcellation_Labels.nii ' + str(i) + ' -eq' for i in MCRIB_SGM) + ' ' + ' '.join(['-add'] * (len(MCRIB_SGM) - 1)) + ' sGM_mcrib.mif')
 
-    #refine the WM
-    run.command('mrcalc sGM_mcrib.mif 0.5 -lt Pmap-WM.mif -mult Pmap-WM-corr.mif')
+  #refine the WM
+  run.command('mrcalc sGM_mcrib.mif 0.5 -lt Pmap-WM.mif -mult Pmap-WM-corr.mif')
 
-    #normalize 0-1 and combine
-    run.command('mrcalc Pmap-cGM.mif 0.01 -mult GM.nii.gz')
-    run.command('mrcalc Pmap-sGM.mif 0.01 -mult sGM_mcrib.mif -add sGM.nii.gz')
-    run.command('mrcalc Pmap-WM-corr.mif 0.01 -mult WM.nii.gz')
-    run.command('mrcalc Pmap-CSF.mif 0.01 -mult CSF.nii.gz')
-
-  else:
-
-    for tissue, indices in { 'cGM': MCRIB_CGM + ([] if app.ARGS.sgm_amyg_hipp else MCRIB_AMYG_HIPP),
-                             'sGM': MCRIB_SGM + MCRIB_CEREBELLAR + (MCRIB_AMYG_HIPP if app.ARGS.sgm_amyg_hipp else []),
-                             'WM' : MCRIB_WM,
-                             'CSF': MCRIB_CSF }.items():
-      run.command(['mrmath', ['posterior%04d.nii.gz' % i for i in indices], 'sum', tissue + '.mif'])
+  #normalize 0-1 and combine
+  run.command('mrcalc Pmap-cGM.mif 0.01 -mult cGM.mif')
+  run.command('mrcalc Pmap-sGM.mif 0.01 -mult sGM_mcrib.mif -add sGM.mif')
+  run.command('mrcalc Pmap-WM-corr.mif 0.01 -mult WM.mif')
+  run.command('mrcalc Pmap-CSF.mif 0.01 -mult CSF.mif')
 
   #Force normalization
   run.command('mrmath WM.mif cGM.mif sGM.mif CSF.mif sum tissue_sum.mif')
