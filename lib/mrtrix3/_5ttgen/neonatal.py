@@ -78,8 +78,8 @@ def get_inputs(): #pylint: disable=unused-variable
   run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit -strides -1,+2,+3')
   mcrib_import = utils.RunList('Importing M-CRIB data to scratch directory', 20)
   for i in range(1, 11):
-    mcrib_import.command(['mrconvert', os.path.join(mcrib_dir, ('M-CRIB_P%02d_' % i) + ('T1_registered_to_T2' if app.ARGS.modality == 't1w' else 'T2') + '.nii.gz'), path.to_scratch('template_%02d.mif' % i)])
-    mcrib_import.command(['mrconvert', os.path.join(mcrib_dir, 'M-CRIB_orig_P%02d_parc.nii.gz' % i), path.to_scratch('template_labels_%02d.mif' % i, False)])
+    mcrib_import.command(['mrconvert', os.path.join(mcrib_dir, ('M-CRIB_P%02d_' % i) + ('T1_registered_to_T2' if app.ARGS.modality == 't1w' else 'T2') + '.nii.gz'), path.to_scratch('template_%02d.nii' % i)])
+    mcrib_import.command(['mrconvert', os.path.join(mcrib_dir, 'M-CRIB_orig_P%02d_parc.nii.gz' % i), path.to_scratch('template_labels_%02d.nii' % i, False)])
   if app.ARGS.dhcp_path:
     dhcp_dir = os.path.abspath(path.from_user(app.ARGS.dhcp_path, False))
     dhcp_import = utils.RunList('Importing dHCP data to scratch directory', 87)
@@ -101,27 +101,18 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrconvert input.mif input.nii')
   run.command('mrconvert mask.mif mask.nii -datatype bit')
 
-  histmatch = utils.RunList('Histogram-matching template images to input image', 50)
-  for i in range(1, 11):
-    s = '%02d' % i
-    histmatch.command('mrthreshold template_%s.mif mask_template_%s.mif -abs 0.5' % (s, s))
-    histmatch.command('mrhistmatch -mask_input mask_template_%s.mif -mask_target mask.mif scale template_%s.mif input.mif template_hist_%s.mif' % (s, s, s))
-    histmatch.command('mrconvert template_hist_%s.mif template_hist_%s.nii' % (s, s))
-    histmatch.command('mrconvert mask_template_%s.mif mask_template_%s.nii' % (s, s))
-    histmatch.command('mrconvert template_labels_%s.mif template_labels_%s.nii' % (s, s))
-
   ants_options = ' -q {} -c {} -k 1'.format(1 if app.ARGS.quick else 0, app.ARGS.ants_parallel)
   if app.ARGS.ants_parallel == 2:
     ants_options += ' -j {}'.format(2 if app.ARGS.nthreads is None else app.ARGS.nthreads)
   app.debug('ANTs command-line options for JointLabelFusion: "' + ants_options + '"')
 
   run.command('antsJointLabelFusion.sh -d 3 -t input.nii -p posterior%04d.nii.gz '
-              + ' '.join('-g template_hist_%02d.nii -l template_labels_%02d.nii' % (i, i) for i in range(1, 11))
+              + ' '.join('-g template_%02d.nii -l template_labels_%02d.nii' % (i, i) for i in range(1, 11))
               + ' -o input_parcellation_'
               + ants_options)
   
   run.command('antsJointFusion -d 3 -t input.nii --verbose 1 '
-              + ' '.join('-g input_parcellation_template_hist_%02d_%d_Warped.nii.gz -l input_parcellation_template_hist_%02d_%d_WarpedLabels.nii.gz' % (i, i-1, i, i-1) for i in range(1, 11))
+              + ' '.join('-g input_parcellation_template_%02d_%d_Warped.nii.gz -l input_parcellation_template_%02d_%d_WarpedLabels.nii.gz' % (i, i-1, i, i-1) for i in range(1, 11))
               + ' -o [input_parcellation_Labels.nii.gz,input_parcellation_Intensity.nii.gz,posterior%04d.nii.gz]')
 
   if app.ARGS.dhcp_path:
