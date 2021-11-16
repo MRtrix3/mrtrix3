@@ -22,11 +22,11 @@ from mrtrix3 import app, image, path, run, utils
 
 DHCP_CGM = list(range(5, 40))
 DHCP_SGM = [17, 18]
-DHCP_WM = [19] + range(40, 49) + range(51, 83) + range(85, 88)
+DHCP_WM = [19] + list(range(40, 49)) + list(range(51, 83)) + list(range(85, 88))
 DHCP_CSF = [49, 50, 83]
 DHCP_AMYG_HIPP = list(range(1, 5))
 
-MCRIB_CGM = list(range(1000, 1036) + range(2000, 2036))
+MCRIB_CGM = list(range(1000, 1004)) + list(range(1005,1036)) + list(range(2000, 2004)) + list(range(2005,2036))
 MCRIB_SGM = [9, 11, 12, 13, 26, 48, 50, 51, 52, 58]
 MCRIB_WM = [2, 41, 75, 76, 90, 170, 192]
 MCRIB_CSF = [4, 14, 15, 24, 43]
@@ -121,7 +121,7 @@ def execute(): #pylint: disable=unused-variable
               + ants_options)
   
   run.command('antsJointFusion -d 3 -t input.nii --verbose 1 '
-              + ' '.join('-g input_parcellation_template_hist_%02d_%d_Warped.nii.gz -l input_parcellation_template_hist_%02d_%d_WarpedLabels.nii.gz' % (i, i-1) for i in range(1, 11))
+              + ' '.join('-g input_parcellation_template_hist_%02d_%d_Warped.nii.gz -l input_parcellation_template_hist_%02d_%d_WarpedLabels.nii.gz' % (i, i-1, i, i-1) for i in range(1, 11))
               + ' -o [input_parcellation_Labels.nii.gz,input_parcellation_Intensity.nii.gz,posterior%04d.nii.gz]')
 
   if app.ARGS.dhcp_path:
@@ -152,7 +152,7 @@ def execute(): #pylint: disable=unused-variable
     for tissue, indices in { 'cGM': MCRIB_CGM + ([] if app.ARGS.sgm_amyg_hipp else MCRIB_AMYG_HIPP),
                              'sGM': MCRIB_SGM + MCRIB_CEREBELLAR + (MCRIB_AMYG_HIPP if app.ARGS.sgm_amyg_hipp else []),
                              'WM' : MCRIB_WM,
-                             'CSF': MCRIB_CSF }:
+                             'CSF': MCRIB_CSF }.items():
       run.command(['mrmath', ['posterior%04d.nii.gz' % i for i in indices], 'sum', tissue + '.mif'])
 
   #Force normalization
