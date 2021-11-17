@@ -161,7 +161,7 @@ namespace MR
         if (useweights) {
           size_t j = 0;
           for (auto l = Loop() (source); l; l++, j++)
-            source.value() *= std::sqrt(W(source.index(2), source.index(3)) * Wvox[j]);
+            source.value() *= std::sqrt(W((size_t) source.index(2), (size_t) source.index(3)) * Wvox[j]);
         }
         INFO("Forward projection - regularisers");
         size_t nxyz = recon.size(0)*recon.size(1)*recon.size(2);
@@ -298,7 +298,7 @@ namespace MR
         if (useweights) {
           size_t j = 0;
           for (auto l = Loop() (source); l; l++, j++)
-            source.value() *= std::sqrt(recmat.W(source.index(2), source.index(3)) * recmat.Wvox[j]);
+            source.value() *= std::sqrt(recmat.W((size_t) source.index(2), (size_t) source.index(3)) * recmat.Wvox[j]);
         }
         map.y2x(recon, source);
         INFO("Transpose projection - regularisers");
