@@ -230,7 +230,7 @@ void run()
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", EMPIRICAL_SKEW_DEFAULT);
 
   // Load post-hoc mask
-  mask_type posthoc (mask_type::Ones (num_edges));
+  vector_type posthoc (vector_type::Ones (num_edges));
   auto opt = get_options ("posthoc");
   if (opt.size()) {
     const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> posthoc_matrix (load_matrix<bool> (opt[0][0]));

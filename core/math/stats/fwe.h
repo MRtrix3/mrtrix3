@@ -32,7 +32,7 @@ namespace MR
 
 
 
-        matrix_type fwe_pvalue (const matrix_type& null_dist, const matrix_type& stats, const mask_type& mask);
+        matrix_type fwe_pvalue (const matrix_type& null_dist, const matrix_type& stats, const vector_type& mask);
 
 
 

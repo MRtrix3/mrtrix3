@@ -224,7 +224,7 @@ void run() {
 
   // Posthoc analysis mask
   Image<bool> posthoc_image;
-  mask_type posthoc_mask (num_voxels);
+  vector_type posthoc_mask (num_voxels);
   size_t posthoc_voxels = 0;
   auto opt = get_options ("posthoc");
   if (opt.size()) {
@@ -240,7 +240,7 @@ void run() {
       if (posthoc_image.value()) {
         std::array<ssize_t, 3> pos {posthoc_image.index(0), posthoc_image.index(1), posthoc_image.index(2)};
         const Voxel2Vector::index_t index = (*v2v) (pos);
-        posthoc_mask[index] = true;
+        posthoc_mask[index] = 1.0;
         ++posthoc_voxels;
         if (!mask_image.value())
           ++posthoc_mismatch_count;
@@ -252,7 +252,7 @@ void run() {
             "post-hoc inference cannot be performed in those voxels");
     }
   } else {
-    posthoc_mask = Stats::PermTest::mask_type::Ones (num_voxels);
+    posthoc_mask = Stats::PermTest::vector_type::Ones (num_voxels);
     posthoc_voxels = num_voxels;
     posthoc_image = Image<bool>::scratch (mask_header, "scratch posthoc mask image");
     copy (mask_image, posthoc_image);

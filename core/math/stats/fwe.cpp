@@ -33,12 +33,12 @@ namespace MR
 
         // FIXME Jump based on non-initialised value in the sort
         // Pre-fill the null distribution / stats matrices with NaNs, detect when it's not overwritten
-        matrix_type fwe_pvalue (const matrix_type& null_distributions, const matrix_type& statistics, const mask_type& mask)
+        matrix_type fwe_pvalue (const matrix_type& null_distributions, const matrix_type& statistics, const vector_type& mask)
         {
           assert (null_distributions.cols() == 1 || null_distributions.cols() == statistics.cols());
           matrix_type pvalues (statistics.rows(), statistics.cols());
 
-          auto s2p = [] (const vector<value_type>& null_dist, const matrix_type::ConstColXpr in, const mask_type& mask, matrix_type::ColXpr out)
+          auto s2p = [] (const vector<value_type>& null_dist, const matrix_type::ConstColXpr in, const vector_type& mask, matrix_type::ColXpr out)
           {
             for (ssize_t element = 0; element != in.size(); ++element) {
               if (mask[element] && in[element] > 0.0) {

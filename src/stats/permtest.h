@@ -97,7 +97,7 @@ namespace MR
                      const std::shared_ptr<EnhancerBase> enhancer,
                      const matrix_type& empirical_enhanced_statistics,
                      const matrix_type& default_enhanced_statistics,
-                     const mask_type& mask,
+                     const vector_type& mask,
                      matrix_type& null_dist,
                      count_matrix_type& global_null_dist_contributions,
                      count_matrix_type& global_uncorrected_pvalue_counter);
@@ -113,7 +113,7 @@ namespace MR
           std::shared_ptr<EnhancerBase> enhancer;
           const matrix_type& empirical_enhanced_statistics;
           const matrix_type& default_enhanced_statistics;
-          const mask_type& mask;
+          const vector_type& mask;
           matrix_type statistics;
           matrix_type zstatistics;
           matrix_type enhanced_statistics;
@@ -153,7 +153,7 @@ namespace MR
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
                              const bool fwe_strong,
-                             const mask_type& mask,
+                             const vector_type& mask,
                              matrix_type& perm_dist,
                              count_matrix_type& perm_dist_contributions,
                              matrix_type& uncorrected_pvalues);

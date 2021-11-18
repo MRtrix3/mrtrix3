@@ -160,10 +160,10 @@ void run()
   CONSOLE ("Number of elements: " + str(num_elements));
 
   // Load analysis mask
-  Stats::PermTest::mask_type mask (Stats::PermTest::mask_type::Ones (num_elements));
+  Stats::PermTest::vector_type mask (Stats::PermTest::vector_type::Ones (num_elements));
   auto opt = get_options ("mask");
   if (opt.size()) {
-    mask = load_vector<bool> (opt[0][0]);
+    mask = load_vector<bool> (opt[0][0]).cast<vector_type::Scalar>();
     if (size_t(mask.size()) != num_elements)
       throw Exception ("Length of mask (" + str(mask.size()) + ") does not match number of elements in data matrix (" + str(num_elements) + ")");
     CONSOLE ("Number of elements included in mask: " + str(mask.count()));
@@ -237,23 +237,23 @@ void run()
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        save_vector (abs_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(), output_prefix + "abs_effect" + postfix(i) + ".csv");
+        save_vector (abs_effect_size.array().col(i) * mask, output_prefix + "abs_effect" + postfix(i) + ".csv");
         ++progress;
         if (num_vgs == 1)
-          save_vector (std_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(), output_prefix + "std_effect" + postfix(i) + ".csv");
+          save_vector (std_effect_size.array().col(i) * mask, output_prefix + "std_effect" + postfix(i) + ".csv");
       } else {
         ++progress;
       }
       ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
-      save_vector (cond * mask.cast<matrix_type::Scalar>(), output_prefix + "cond.csv");
+      save_vector (cond * mask, output_prefix + "cond.csv");
       ++progress;
     }
     if (num_vgs == 1) {
-      save_vector (stdev.array().row(0) * mask.transpose().cast<matrix_type::Scalar>(), output_prefix + "std_dev.csv");
+      save_vector (stdev.array().row(0) * mask.transpose(), output_prefix + "std_dev.csv");
     } else {
-      stdev = stdev.array().colwise() * mask.cast<matrix_type::Scalar>();
+      stdev = stdev.array().colwise() * mask;
       save_matrix (stdev, output_prefix + "std_dev.csv");
     }
   }
@@ -280,8 +280,8 @@ void run()
   matrix_type default_statistic, default_zstat;
   (*glm_test) (default_shuffle, default_statistic, default_zstat);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    save_vector (default_statistic.array().col(i) * mask.cast<matrix_type::Scalar>(), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
-    save_vector (default_zstat.array().col(i) * mask.cast<matrix_type::Scalar>(), output_prefix + "Zstat" + postfix(i) + ".csv");
+    save_vector (default_statistic.array().col(i) * mask, output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    save_vector (default_zstat.array().col(i) * mask, output_prefix + "Zstat" + postfix(i) + ".csv");
   }
 
   // Perform permutation testing

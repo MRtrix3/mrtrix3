@@ -493,7 +493,7 @@ void run()
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
 
-    mask_type posthoc_mask (num_fixels);
+    vector_type posthoc_mask (num_fixels);
     for (auto l = Loop(0) (posthoc); l; ++l)
       posthoc_mask[posthoc.index(0)] = posthoc.value();
 
