@@ -48,11 +48,9 @@ namespace MR {
       void TckFactor::set_reg_lambdas (const double lambda_tikhonov, const double lambda_tv)
       {
         assert (num_tracks());
-        double A = 0.0, sum_PM = 0.0;
-        for (size_t i = 1; i != fixels.size(); ++i) {
+        double A = 0.0;
+        for (size_t i = 1; i != fixels.size(); ++i)
           A += fixels[i].get_weight() * Math::pow2 (fixels[i].get_FOD());
-          sum_PM += fixels[i].get_weight();
-        }
         A /= double(num_tracks());
         INFO ("Constant A scaling regularisation terms to match data term is " + str(A));
         reg_multiplier_tikhonov = lambda_tikhonov * A;
