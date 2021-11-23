@@ -15,6 +15,8 @@
 
 # Functions relating to handling phase encoding information
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding,consider-using-f-string
 
 
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError

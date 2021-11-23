@@ -24,6 +24,9 @@
 #   derived from FIRST.
 
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding
+
 
 import math, os
 

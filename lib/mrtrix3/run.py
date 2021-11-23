@@ -13,6 +13,9 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding
+
 import collections, itertools, os, shlex, signal, string, subprocess, sys, tempfile, threading
 from distutils.spawn import find_executable
 from mrtrix3 import ANSI, BIN_PATH, COMMAND_HISTORY_STRING, EXE_LIST, MRtrixBaseError, MRtrixError
@@ -224,7 +227,6 @@ CommandReturn = collections.namedtuple('CommandReturn', 'stdout stderr')
 
 def command(cmd, **kwargs): #pylint: disable=unused-variable
   from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
-  global shared #pylint: disable=invalid-name
 
   def quote_nonpipe(item):
     return item if item == '|' else path.quote(item)
