@@ -17,6 +17,9 @@
 
 # pylint: disable=redefined-outer-name,invalid-name
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding,consider-using-dict-items,unused-variable,consider-using-f-string
+
 usage_string = '''
 USAGE
 
@@ -193,7 +196,6 @@ def colorize(s):
 
 
 def pipe_errors_to_less_handler():
-  global error_stream
   if error_stream:
     with tempfile.NamedTemporaryFile() as tf:
       tf.write (colorize(error_stream).encode (errors='ignore'))
@@ -533,7 +535,8 @@ cpp = cpp_flags = ld = ld_flags = ld_lib = ld_lib_flags = eigen_cflags = qt_cfla
 
 try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
-  exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used
+  with codecs.open (config_file, mode='r', encoding='utf-8') as f:
+    exec (f.read()) # pylint: disable=exec-used
 except IOError:
   fail ('''no configuration file found!
 please run "./configure" prior to invoking this script
@@ -685,7 +688,6 @@ class TargetException (Exception):
 
 class Entry(object):
   def __init__ (self, name):
-    global todo
     name = os.path.normpath (name)
     if name in todo:
       return
@@ -990,7 +992,6 @@ def is_GUI_target (current_file):
 
 
 def list_headers (current_file):
-  global headers, file_flags
   current_file = os.path.normpath (current_file)
 
   if current_file not in headers.keys():
@@ -1039,7 +1040,6 @@ def list_headers (current_file):
 
 
 def list_cmd_deps (file_cc):
-  global object_deps, file_flags
   file_cc = os.path.normpath (file_cc)
 
   if file_cc not in object_deps.keys():
@@ -1078,7 +1078,7 @@ def list_lib_deps ():
 
 
 def build_next ():
-  global todo, lock, stop, main_cindex
+  global stop, main_cindex
   total_count = len(todo)
   cindex = 0
   formatstr = '({:>'+str(len(str(total_count)))+'}/'+str(total_count)+') [{}] {}'
