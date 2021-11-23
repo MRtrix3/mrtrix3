@@ -18,7 +18,7 @@ from distutils.spawn import find_executable
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, image, path, run, utils
 
-
+# Labels 1004 and 2004 are not present in the M-CRIB atlas
 MCRIB_CGM = list(range(1000, 1004)) + list(range(1005,1036)) + list(range(2000, 2004)) + list(range(2005,2036))
 MCRIB_SGM = [9, 11, 12, 13, 26, 48, 50, 51, 52, 58]
 MCRIB_WM = [2, 41, 75, 76, 90, 170, 192]
@@ -28,7 +28,7 @@ MCRIB_CEREBELLAR = [91, 93]
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('neonatal_mcrib', parents=[base_parser])
+  parser = subparsers.add_parser('mcrib', parents=[base_parser])
   parser.set_author('Manuel Blesa (manuel.blesa@ed.ac.uk), Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use ANTs commands and the M-CRIB atlas to generate the 5TT image of a neonatal subject based on a T1-weighted or T2-weighted image')
   parser.add_description('This command creates the 5TT file for human neonatal subjects. The M-CRIB atlas is used to idenity the different tissues.')
@@ -39,7 +39,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input',  help='The input structural image')
   parser.add_argument('modality', choices=["t1w", "t2w"], help='Specify the modality of the input image, either "t1w" or "t2w"')
   parser.add_argument('output', help='The output 5TT image')
-  options = parser.add_argument_group('Options specific to the \'neonatal_mcrib\' algorithm')
+  options = parser.add_argument_group('Options specific to the \'mcrib\' algorithm')
   options.add_argument('-mask', type=str, help='Manually provide a brain mask, MANDATORY', required=True)
   options.add_argument('-mcrib_path', type=str, help='Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")')
   options.add_argument('-parcellation', type=str, help='Additionally export the M-CRIB parcellation warped to the subject data')

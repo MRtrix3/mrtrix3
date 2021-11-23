@@ -31,20 +31,18 @@ MCRIB_SGM = [9, 11, 12, 13, 26, 48, 50, 51, 52, 58]
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('neonatal_dhcp', parents=[base_parser])
+  parser = subparsers.add_parser('dhcp', parents=[base_parser])
   parser.set_author('Manuel Blesa (manuel.blesa@ed.ac.uk), Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use ANTs commands, the output of the dHCP pipeline and the M-CRIB atlas to generate the 5TT image of a neonatal subject based on a T2-weighted image')
-  parser.add_description('Derivation of the 5TT image is principally based on the segmentation already performed in the dHCP pipeline. The M-CRIB atlas will only be used to introduce additional sub-cortical grey matter parcels into the tissue segmentation. For this operation to be applicable, the dHCP pipeline must have been executed with the -additional command-line flag, and the modality of the input image must be T2-weighted.')
+  parser.add_description('Derivation of the 5TT image is principally based on the segmentation already performed in the dHCP pipeline. The M-CRIB atlas will only be used to introduce additional sub-cortical grey matter parcels into the tissue segmentation. For this operation to be applicable, the dHCP pipeline must have been executed with the -additional command-line flag.')
   parser.add_citation('Blesa, M.; Galdi, P.; Cox, S.R.; Sullivan, G.; Stoye, D.Q.; Lamb, G.L.; Quigley, A.J.; Thrippleton, M.J.; Escudero, J.; Bastin, M.E.; Smith, K.M. & Boardman. J.P. Hierarchical complexity of the macro-scale neonatal brain. Cerebral Cortex, 2021, 4, 2071-2084', is_external=True)
   parser.add_citation('Avants, B.; Epstein, C.; Grossman, M. & Gee, J. Symmetric diffeomorphic image registration with cross-correlation: evaluating automated labeling of elderly and neurodegenerative brain. 2008, Medical Image Analysis, 41, 12-26', is_external=True)
   parser.add_citation('Wang, H.; Suh, J.W.; Das, S.R.; Pluta, J.B.; Craige, C. & Yushkevich, P.A. Multi-atlas segmentation with joint label fusion. IEEE Trans Pattern Anal Mach Intell., 2013, 35, 611–623.', is_external=True)
   parser.add_citation('Alexander, B.; Murray, A.L.; Loh, W.Y.; Matthews, L.G.; Adamson, C.; Beare, R.; Chen, J.; Kelly, C.E.; Rees, S.; Warfield, S.K.; Anderson, P.J.; Doyle, L.W.; Spittle, A.J.; Cheong, J.L.Y; Seal, M.L. & Thompson, D.K. A new neonatal cortical and subcortical brain atlas: the Melbourne Children’s Regional Infant Brain (m-crib) atlas. NeuroImage, 2017, 852, 147-841.', is_external=True)
   parser.add_citation('Makropoulos, A., Robinson, E.C., Schuh, A., Wright, R., Fitzgibbon, S., Bozek, J., Counsell, S.J., Steinweg, J., Vecchiato, K., Passerat-Palmbach, J., Lenz, G., Mortari, F., Tenev, T., Duff, E.P., Bastiani, M., Cordero-Grande, L., Hughes, E., Tusor, N., Tournier, J.D., Hutter, J., Price, A.N., Teixeira, R.P.A.G., Murgasova, M., Victor, S., Kelly, C., Rutherford, M.A., Smith, S.M., Edwards, A.D., Hajnal, J.V., Jenkinson, M. & Rueckert, D. The developing human connectome project: A minimal processing pipeline for neonatal cortical surface reconstruction. NeuroImage, 2018, 173, 88-112.')   
-  parser.add_argument('input',  help='The input structural image')
+  parser.add_argument('input',  help='The input path of the derivates folder (anat/) obtained from the dHCP pipeline')
   parser.add_argument('output', help='The output 5TT image')
-  options = parser.add_argument_group('Options specific to the \'neonatal_dhcp\' algorithm')
-  options.add_argument('-mask', type=str, help='Manually provide a brain mask, MANDATORY', required=True)
-  options.add_argument('-dhcp_path', type=str, help='Provide the path of the tissue probability maps (posteriors/) obtained by the dHCP pipeline (see Description), MANDATORY', required=True)
+  options = parser.add_argument_group('Options specific to the \'dhcp\' algorithm')
   options.add_argument('-mcrib_path', type=str, help='Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")')
   options.add_argument('-parcellation', type=str, help='Additionally export the M-CRIB parcellation warped to the subject data')
   options.add_argument('-quick', action="store_true", help='Specify the use of quick registration parameters')
@@ -64,23 +62,37 @@ def get_inputs(): #pylint: disable=unused-variable
     mcrib_dir = CONFIG.get('MCRIBPath')
   else:
     raise MRtrixError('The MCRIB atlas path needs to be specified either in the config file ("MCRIBPath") or with the command-line option -mcrib_path')
-  image.check_3d_nonunity(path.from_user(app.ARGS.input, False))
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input_raw.mif'))
-  run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit -strides -1,+2,+3')
+
+  dhcp_dir = os.path.abspath(path.from_user(app.ARGS.input, False))
+
+  if os.path.isfile(glob.glob(os.path.join(dhcp_dir, '*_T2w_restore.nii.gz'))[0]):
+    run.command('mrconvert ' + glob.glob(os.path.join(dhcp_dir, '*_T2w_restore.nii.gz'))[0] + ' ' + path.to_scratch('input_raw.mif'))
+  elif os.path.isfile(glob.glob(os.path.join(dhcp_dir, '*restore_T2w.nii.gz'))[0]):
+    run.command('mrconvert ' + glob.glob(os.path.join(dhcp_dir, '*_restore_T2w.nii.gz'))[0] + ' ' + path.to_scratch('input_raw.mif'))
+  else:
+    raise MRtrixError('Could not find a T2w image in the dHCP folder; please check that the file exists')
+
+  if os.path.isfile(glob.glob(os.path.join(dhcp_dir, '*_brainmask_drawem.nii.gz'))[0]):
+    run.command('mrconvert ' + glob.glob(os.path.join(dhcp_dir, '*_brainmask_drawem.nii.gz'))[0] + ' ' + path.to_scratch('mask.mif') + ' -datatype bit -strides -1,+2,+3')
+  elif os.path.isfile(glob.glob(os.path.join(dhcp_dir, '*-brain_mask.nii.gz'))[0]):
+    run.command('mrconvert ' + glob.glob(os.path.join(dhcp_dir, '*-brain_mask.nii.gz'))[0] + ' ' + path.to_scratch('mask.mif') + ' -datatype bit -strides -1,+2,+3')
+  else:
+    raise MRtrixError('Could not find a brain mask in the dHCP folder; please check that the file exists')
+
   mcrib_import = utils.RunList('Importing M-CRIB data to scratch directory', 20)
   for i in range(1, 11):
     mcrib_import.command(['mrconvert', os.path.join(mcrib_dir, 'M-CRIB_P%02d_T2.nii.gz' % i), path.to_scratch('template_%02d.nii' % i)])
     mcrib_import.command(['mrconvert', os.path.join(mcrib_dir, 'M-CRIB_orig_P%02d_parc.nii.gz' % i), path.to_scratch('template_labels_%02d.nii' % i, False)])
-  if app.ARGS.dhcp_path:
-    dhcp_dir = os.path.abspath(path.from_user(app.ARGS.dhcp_path, False))
-    dhcp_import = utils.RunList('Importing dHCP data to scratch directory', 87)
-    for i in range(1, 88):
-      images = glob.glob(os.path.join(dhcp_dir, '*_drawem_seg%d.nii.gz' % i))
-      if not images:
-        raise MRtrixError('Unable to find dHCP image for parcel %d in location "' % i + dhcp_dir + '"')
-      if len(images) > 1:
-        raise MRtrixError('Multiple dHCP images found for parcel %d in location "' % i + dhcp_dir + '"')
-      dhcp_import.command(['mrconvert', images[0], path.to_scratch('label_%d.mif' % i, False)])
+
+  dhcp_import = utils.RunList('Importing dHCP data to scratch directory', 87)
+  dhcp_dir_posteriors = os.path.join(dhcp_dir, 'posteriors/')
+  for i in range(1, 88):
+    images = glob.glob(os.path.join(dhcp_dir_posteriors, '*_drawem_seg%d.nii.gz' % i))
+    if not images:
+      raise MRtrixError('Unable to find dHCP image for parcel %d in location "' % i + dhcp_dir_posteriors + '"')
+    if len(images) > 1:
+      raise MRtrixError('Multiple dHCP images found for parcel %d in location "' % i + dhcp_dir_posteriors + '"')
+    dhcp_import.command(['mrconvert', images[0], path.to_scratch('label_%d.mif' % i, False)])
 
 
 
@@ -102,9 +114,9 @@ def execute(): #pylint: disable=unused-variable
               + ' -o input_parcellation_'
               + ants_options)
   
-  run.command('antsJointFusion -d 3 -t input.nii --verbose 1 '
-              + ' '.join('-g input_parcellation_template_%02d_%d_Warped.nii.gz -l input_parcellation_template_%02d_%d_WarpedLabels.nii.gz' % (i, i-1, i, i-1) for i in range(1, 11))
-              + ' -o [input_parcellation_Labels.nii.gz,input_parcellation_Intensity.nii.gz,posterior%04d.nii.gz]')
+#  run.command('antsJointFusion -d 3 -t input.nii --verbose 1 '
+#              + ' '.join('-g input_parcellation_template_%02d_%d_Warped.nii.gz -l input_parcellation_template_%02d_%d_WarpedLabels.nii.gz' % (i, i-1, i, i-1) for i in range(1, 11))
+#              + ' -o [input_parcellation_Labels.nii.gz,input_parcellation_Intensity.nii.gz,posterior%04d.nii.gz]')
 
   for tissue, indices in { 'cGM': DHCP_CGM + ([] if app.ARGS.sgm_amyg_hipp else DHCP_AMYG_HIPP),
                              'sGM': DHCP_SGM + (DHCP_AMYG_HIPP if app.ARGS.sgm_amyg_hipp else []),
@@ -123,9 +135,13 @@ def execute(): #pylint: disable=unused-variable
 
   #normalize 0-1 and combine
   run.command('mrcalc Pmap-cGM.mif 0.01 -mult cGM.mif')
-  run.command('mrcalc Pmap-sGM.mif 0.01 -mult sGM_mcrib.mif -add sGM.mif')
+  run.command('mrcalc Pmap-sGM.mif 0.01 -mult sGM_mcrib.mif -add sGM_uncorrected.mif')
   run.command('mrcalc Pmap-WM-corr.mif 0.01 -mult WM.mif')
   run.command('mrcalc Pmap-CSF.mif 0.01 -mult CSF.mif')
+
+  #impose CSF of dHCP over sGM, every voxel with CSF > 0.5 will be removed from the sGM, to avoid issues later on at the normalization
+  run.command('mrthreshold CSF.mif -abs 0.5 -invert CSF_filter.mif')
+  run.command('mrcalc sGM_uncorrected.mif CSF_filter.mif -mult sGM.mif')
 
   #Force normalization
   run.command('mrmath WM.mif cGM.mif sGM.mif CSF.mif sum tissue_sum.mif')
@@ -144,7 +160,13 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrgrid combined_precrop.mif crop result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
-  
+  dhcp_dir = os.path.abspath(path.from_user(app.ARGS.input, False))
+  if os.path.isfile(glob.glob(os.path.join(dhcp_dir, '*_T2w_restore.nii.gz'))[0]):
+    file = glob.glob(os.path.join(dhcp_dir, '*_T2w_restore.nii.gz'))[0]
+  else:
+    file = glob.glob(os.path.join(dhcp_dir, '*_restore_T2w.nii.gz'))[0]
+
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(file, False), force=app.FORCE_OVERWRITE)
   if app.ARGS.parcellation:
-    run.command('mrconvert input_parcellation_Labels.nii.gz ' + path.from_user(app.ARGS.parcellation), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+    run.command('mrconvert input_parcellation_Labels.nii.gz ' + path.from_user(app.ARGS.parcellation), mrconvert_keyval=path.from_user(file, False), force=app.FORCE_OVERWRITE)
+
