@@ -34,7 +34,7 @@ Please provide the following information:
 **Advanced debugging information (if applicable)**
 
 -  In case of a critical error such as "segmentation fault", please generate
-   and report the backtrace as described [here](https://mrtrix.readthedocs.io/en/latest/troubleshooting/advanced_debugging.html).
+   and report the backtrace as described [here](https://community.mrtrix.org/t/advanced-debugging-of-mrtrix3-binaries).
 
 - For issues with `mrview`, please provide:
 
