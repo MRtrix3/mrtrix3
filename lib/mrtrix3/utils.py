@@ -112,7 +112,7 @@ def load_keyval(filename, **kwargs): #pylint: disable=unused-variable
         if len(line) < 2:
           continue
         name, var = line.rstrip().partition(":")[::2]
-        if name in res.keys():
+        if name in res:
           res[name].append(var.split())
         else:
           res[name] = var.split()
