@@ -145,9 +145,13 @@ to be provided in subsequent sections of this document.
 
    -  If only making changes to the *MRtrix3* *documentation*, then the
       appropriate base branch will depend upon the nature of the changes
-      being proposed and the urgency of the update. In this scenario,
-      please generate an [Issue](https://github.com/MRtrix3/mrtrix3/issues)
-      to facilitate communication with the core development team.
+      being proposed and the urgency of the update. If providing a minor
+      correction to spelling / grammar, then a direct merge to `master`
+      is appropriate. If however your changes are sufficiently complex that
+      they would require verification that the formatting of the online
+      documentation is correct, then this will require coordination with
+      the *MRtrix3* core development team; in this case, please generate an
+      [Issue](https://github.com/MRtrix3/mrtrix3/issues) to facilitate such.
 
 1. Generate one or more Git commits that apply your proposed changes to
    the repository.
