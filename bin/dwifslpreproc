@@ -17,6 +17,9 @@
 
 # Script for performing DWI pre-processing using FSL 5.0 (onwards) tools eddy / topup / applytopup
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding
+
 
 
 import itertools, json, math, os, shutil, sys
