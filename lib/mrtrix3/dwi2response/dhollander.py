@@ -13,6 +13,9 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding,consider-using-f-string
+
 import math, shutil
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, image, path, run
