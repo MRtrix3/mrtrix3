@@ -13,6 +13,9 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=consider-using-f-string
+
 from distutils.spawn import find_executable
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, path, run
