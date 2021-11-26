@@ -28,7 +28,7 @@ MCRIB_CEREBELLAR = [91, 93]
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('mcrib', parents=[base_parser])
+  parser = subparsers.add_parser('mcrib_binary', parents=[base_parser])
   parser.set_author('Manuel Blesa (manuel.blesa@ed.ac.uk), Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use ANTs commands and the M-CRIB atlas to generate the 5TT image of a neonatal subject based on a T1-weighted or T2-weighted image')
   parser.add_description('This command creates the 5TT file for human neonatal subjects. The M-CRIB atlas is used to idenity the different tissues.')
@@ -39,11 +39,12 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input',  help='The input structural image')
   parser.add_argument('modality', choices=["t1w", "t2w"], help='Specify the modality of the input image, either "t1w" or "t2w"')
   parser.add_argument('output', help='The output 5TT image')
-  options = parser.add_argument_group('Options specific to the \'mcrib\' algorithm')
+  options = parser.add_argument_group('Options specific to the \'mcrib_binary\' algorithm')
   options.add_argument('-mask', type=str, help='Manually provide a brain mask, MANDATORY', required=True)
   options.add_argument('-mcrib_path', type=str, help='Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")')
   options.add_argument('-parcellation', type=str, help='Additionally export the M-CRIB parcellation warped to the subject data')
   options.add_argument('-quick', action="store_true", help='Specify the use of quick registration parameters')
+  options.add_argument('-hard_segmentation', action="store_true", help='Specify the use of hard segmentation instead of the soft segmentation to generate the 5TT (NOTE: use of this option in this segmentation algorithm is not recommended)')
   options.add_argument('-ants_parallel', default=0, type=int, help='Control for parallel computation for antsJointLabelFusion (default 0) -- 0 == run serially,  1 == SGE qsub, 2 == use PEXEC (localhost), 3 == Apple XGrid, 4 == PBS qsub, 5 == SLURM.')
 
 
@@ -91,12 +92,16 @@ def execute(): #pylint: disable=unused-variable
               + ' '.join('-g input_parcellation_template_%02d_%d_Warped.nii.gz -l input_parcellation_template_%02d_%d_WarpedLabels.nii.gz' % (i, i-1, i, i-1) for i in range(1, 11))
               + ' -o [input_parcellation_Labels.nii.gz,input_parcellation_Intensity.nii.gz,posterior%04d.nii.gz]')
 
-
   for tissue, indices in { 'cGM': MCRIB_CGM + ([] if app.ARGS.sgm_amyg_hipp else MCRIB_AMYG_HIPP),
                            'sGM': MCRIB_SGM + MCRIB_CEREBELLAR + (MCRIB_AMYG_HIPP if app.ARGS.sgm_amyg_hipp else []),
                            'WM' : MCRIB_WM,
                            'CSF': MCRIB_CSF }.items():
-    run.command(['mrmath', ['posterior%04d.nii.gz' % i for i in indices], 'sum', tissue + '.mif'])
+
+    if app.ARGS.hard_segmentation:
+      run.command('mrcalc ' + ' '.join('input_parcellation_Labels.nii.gz ' + str(i) + ' -eq' for i in indices) + ' ' + ' '.join(['-add'] * (len(indices) - 1)) + ' ' + tissue + '.mif')
+    else:
+      run.command(['mrmath', ['posterior%04d.nii.gz' % i for i in indices], 'sum', tissue + '.mif'])
+
 
   #Force normalization
   run.command('mrmath WM.mif cGM.mif sGM.mif CSF.mif sum tissue_sum.mif')
