@@ -67,16 +67,18 @@ def get_inputs(): #pylint: disable=unused-variable
   dhcp_dir = os.path.abspath(path.from_user(app.ARGS.input, False))
 
   T2_file = glob.glob(os.path.join(dhcp_dir, '*_T2w_restore.nii.gz')) + glob.glob(os.path.join(dhcp_dir, '*restore_T2w.nii.gz'))
-  if T2_file:
-    run.command('mrconvert ' + T2_file[0] + ' ' + path.to_scratch('input_raw.mif'))
-  else:
+  if not T2_file:
     raise MRtrixError('Could not find a T2w image in the dHCP folder; please check that the file exists')
+  if len(T2_file) > 1:
+    raise MRtrixError('Multiple candidate T2w images in the dHCP folder; please check directory contents')
+  run.command('mrconvert ' + T2_file[0] + ' ' + path.to_scratch('input_raw.mif'))
 
   MASK_file = glob.glob(os.path.join(dhcp_dir, '*_brainmask_drawem.nii.gz')) + glob.glob(os.path.join(dhcp_dir, '**-brain_mask.nii.gz'))
-  if MASK_file:
-    run.command('mrconvert ' + MASK_file[0] + ' ' + path.to_scratch('mask.mif') + ' -datatype bit -strides -1,+2,+3')
-  else:
+  if not MASK_file:
     raise MRtrixError('Could not find a brain mask in the dHCP folder; please check that the file exists')
+  if len(MASK_file) > 1:
+    raise MRtrixError('Multiple candidate brain mask image in the dHCP folder; please check directory contents')
+  run.command('mrconvert ' + MASK_file[0] + ' ' + path.to_scratch('mask.mif') + ' -datatype bit -strides -1,+2,+3')
 
   mcrib_import = utils.RunList('Importing M-CRIB data to scratch directory', 20)
   for i in range(1, 11):
@@ -93,10 +95,11 @@ def get_inputs(): #pylint: disable=unused-variable
     use_hard_segmentation = True
   if use_hard_segmentation:
     Labels = glob.glob(os.path.join(dhcp_dir, '*_drawem_all_labels.nii.gz')) + glob.glob(os.path.join(dhcp_dir, '*-drawem87*.nii.gz'))
-    if Labels:
-      dhcp_import.command('mrconvert ' + Labels[0] + ' ' + path.to_scratch('all_labels_dHCP.mif') + ' -strides -1,+2,+3')
-    else:
+    if not Labels:
       raise MRtrixError('Could not find a binary segmentation in the dHCP folder; please check that the file exists')
+    if len(Labels) > 1:
+      raise MRtrixError('Multiple candidate binary segmentations in the dHCP folder; please check directory contents')
+    dhcp_import.command('mrconvert ' + Labels[0] + ' ' + path.to_scratch('all_labels_dHCP.mif') + ' -strides -1,+2,+3')
   else:
     for i in range(1, 88):
       images = glob.glob(os.path.join(dhcp_dir_posteriors, '*_drawem_seg%d.nii.gz' % i))
@@ -112,18 +115,9 @@ def execute(): #pylint: disable=unused-variable
   if not find_executable('antsJointLabelFusion.sh'):
     raise MRtrixError('Could not find ANTS script antsJointLabelFusion.sh; please check installation')
 
-  dhcp_dir = os.path.abspath(path.from_user(app.ARGS.input, False))
-  dhcp_dir_posteriors = os.path.join(dhcp_dir, 'posteriors/')
   run.command('mrcalc input_raw.mif mask.mif -mul input.mif')
   run.command('mrconvert input.mif input.nii')
   run.command('mrconvert mask.mif mask.nii -datatype bit')
-
-  use_hard_segmentation = False
-  if app.ARGS.hard_segmentation:
-    use_hard_segmentation = True
-  elif not dhcp_dir_posteriors:
-    app.warn('No tissue posteriors found (-additional flag not used in the dHCP pipeline); output will be hard segmentation')
-    use_hard_segmentation = True
 
   ants_options = ' -q {} -c {} -k 1'.format(1 if app.ARGS.quick else 0, app.ARGS.ants_parallel)
   if app.ARGS.ants_parallel == 2:
@@ -139,33 +133,28 @@ def execute(): #pylint: disable=unused-variable
               + ' '.join('-g input_parcellation_template_%02d_%d_Warped.nii.gz -l input_parcellation_template_%02d_%d_WarpedLabels.nii.gz' % (i, i-1, i, i-1) for i in range(1, 11))
               + ' -o [input_parcellation_Labels.nii.gz,input_parcellation_Intensity.nii.gz,posterior%04d.nii.gz]')
 
+  use_hard_segmentation = os.path.isfile('all_labels_dHCP.mif')
   if use_hard_segmentation:
-    for tissue, indices in { 'cGM': DHCP_CGM + ([] if app.ARGS.sgm_amyg_hipp else DHCP_AMYG_HIPP),
-                             'sGM': DHCP_SGM + (DHCP_AMYG_HIPP if app.ARGS.sgm_amyg_hipp else []),
-                             'WM' : DHCP_WM,
-                             'CSF': DHCP_CSF }.items():
-      run.command('mrcalc ' + ' '.join('all_labels_dHCP.mif ' + str(i) + ' -eq' for i in indices) + ' ' + ' '.join(['-add'] * (len(indices) - 1)) + ' Pmap-' + tissue + '.mif')
-  # Uncompress just once, since we need to read multiple times
+    # Uncompress just once, since we need to read multiple times in the following command
     run.command('mrconvert input_parcellation_Labels.nii.gz input_parcellation_Labels.nii')
-  #extract sGM from M-CRIB
+    #extract sGM from M-CRIB
     run.command('mrcalc ' + ' '.join('input_parcellation_Labels.nii ' + str(i) + ' -eq' for i in MCRIB_SGM) + ' ' + ' '.join(['-add'] * (len(MCRIB_SGM) - 1)) + ' sGM_mcrib.mif')
-  #refine the WM
-    run.command('mrcalc sGM_mcrib.mif 0.5 -lt Pmap-WM.mif -mult Pmap-WM-corr.mif')
   else:
-    for tissue, indices in { 'cGM': DHCP_CGM + ([] if app.ARGS.sgm_amyg_hipp else DHCP_AMYG_HIPP),
-                             'sGM': DHCP_SGM + (DHCP_AMYG_HIPP if app.ARGS.sgm_amyg_hipp else []),
-                             'WM' : DHCP_WM,
-                             'CSF': DHCP_CSF }.items():
-      run.command(['mrmath', ['label_%d.mif' % i for i in indices], 'sum', 'Pmap-' + tissue + '.mif'])
-  # Uncompress just once, since we need to read multiple times
-    run.command('mrconvert input_parcellation_Labels.nii.gz input_parcellation_Labels.nii')
-  #extract sGM from M-CRIB
+    #extract sGM from M-CRIB
     run.command(['mrmath', ['posterior%04d.nii.gz' % i for i in MCRIB_SGM], 'sum', 'sGM_mcrib.mif'])
-  #refine the WM
-    run.command('mrcalc sGM_mcrib.mif 0.1 -lt Pmap-WM.mif -mult Pmap-WM-corr.mif')
+
+  for tissue, indices in { 'cGM': DHCP_CGM + ([] if app.ARGS.sgm_amyg_hipp else DHCP_AMYG_HIPP),
+                           'sGM': DHCP_SGM + (DHCP_AMYG_HIPP if app.ARGS.sgm_amyg_hipp else []),
+                           'WM' : DHCP_WM,
+                           'CSF': DHCP_CSF }.items():
+    if use_hard_segmentation:
+      run.command('mrcalc ' + ' '.join('all_labels_dHCP.mif ' + str(i) + ' -eq' for i in indices) + ' ' + ' '.join(['-add'] * (len(indices) - 1)) + ' Pmap-' + tissue + '.mif')
+    else:
+      run.command(['mrmath', ['label_%d.mif' % i for i in indices], 'sum', 'Pmap-' + tissue + '.mif'])
+    #refine the WM
+    run.command('mrcalc sGM_mcrib.mif ' + ('0.5' if use_hard_segmentation else '0.1') + ' -lt Pmap-WM.mif -mult Pmap-WM-corr.mif')
 
   #normalize 0-1 and combine
-  
   run.command('mrcalc Pmap-cGM.mif 0.01 -mult cGM.mif')
   run.command('mrcalc Pmap-sGM.mif 0.01 -mult sGM_mcrib.mif -add sGM_uncorrected.mif')
   run.command('mrcalc Pmap-WM-corr.mif 0.01 -mult WM.mif')
@@ -192,6 +181,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrgrid combined_precrop.mif crop result.mif -mask -')
 
+  dhcp_dir = os.path.abspath(path.from_user(app.ARGS.input, False))
   T2_file = glob.glob(os.path.join(dhcp_dir, '*_T2w_restore.nii.gz')) + glob.glob(os.path.join(dhcp_dir, '*restore_T2w.nii.gz'))
   run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(T2_file[0], False), force=app.FORCE_OVERWRITE)
   if app.ARGS.parcellation:
