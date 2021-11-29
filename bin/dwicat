@@ -58,7 +58,7 @@ def execute(): #pylint: disable=unused-variable
       else:
         raise MRtrixError
     except (IndexError, MRtrixError):
-      raise MRtrixError('Image "' + header.name() + '" contains gradient table of unknown format')
+      raise MRtrixError('Image "' + header.name() + '" contains gradient table of unknown format') # pylint: disable=raise-missing-from
     if len(header.size()) == 4:
       num_volumes = header.size()[3]
       if num_grad_lines != num_volumes:
