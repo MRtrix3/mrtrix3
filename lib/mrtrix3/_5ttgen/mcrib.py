@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import glob, math, os
+import os
 from distutils.spawn import find_executable
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, image, path, run, utils
@@ -87,7 +87,7 @@ def execute(): #pylint: disable=unused-variable
               + ' '.join('-g template_%02d.nii -l template_labels_%02d.nii' % (i, i) for i in range(1, 11))
               + ' -o input_parcellation_'
               + ants_options)
-  
+
   run.command('antsJointFusion -d 3 -t input.nii --verbose 1 '
               + ' '.join('-g input_parcellation_template_%02d_%d_Warped.nii.gz -l input_parcellation_template_%02d_%d_WarpedLabels.nii.gz' % (i, i-1, i, i-1) for i in range(1, 11))
               + ' -o [input_parcellation_Labels.nii.gz,input_parcellation_Intensity.nii.gz,posterior%04d.nii.gz]')
@@ -121,6 +121,6 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrgrid combined_precrop.mif crop result.mif -mask -')
 
   run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
-  
+
   if app.ARGS.parcellation:
     run.command('mrconvert input_parcellation_Labels.nii.gz ' + path.from_user(app.ARGS.parcellation), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
