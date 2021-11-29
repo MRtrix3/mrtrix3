@@ -31,7 +31,7 @@ MCRIB_SGM = [9, 11, 12, 13, 26, 48, 50, 51, 52, 58]
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('dhcp_binary', parents=[base_parser])
+  parser = subparsers.add_parser('dhcp', parents=[base_parser])
   parser.set_author('Manuel Blesa (manuel.blesa@ed.ac.uk), Paola Galdi (paola.galdi@ed.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use ANTs commands, the output of the dHCP pipeline and the M-CRIB atlas to generate the 5TT image of a neonatal subject based on a T2-weighted image')
   parser.add_description('Derivation of the 5TT image is principally based on the segmentation already performed in the dHCP pipeline. The M-CRIB atlas will only be used to introduce additional sub-cortical grey matter parcels into the tissue segmentation. By default, the algorithm will use the tissue probability maps obtained from the dHCP. However, if the pipeline was executed without the -additional command-line flag, the algorithm will use the hard segmentation.')
@@ -42,7 +42,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_citation('Makropoulos, A., Robinson, E.C., Schuh, A., Wright, R., Fitzgibbon, S., Bozek, J., Counsell, S.J., Steinweg, J., Vecchiato, K., Passerat-Palmbach, J., Lenz, G., Mortari, F., Tenev, T., Duff, E.P., Bastiani, M., Cordero-Grande, L., Hughes, E., Tusor, N., Tournier, J.D., Hutter, J., Price, A.N., Teixeira, R.P.A.G., Murgasova, M., Victor, S., Kelly, C., Rutherford, M.A., Smith, S.M., Edwards, A.D., Hajnal, J.V., Jenkinson, M. & Rueckert, D. The developing human connectome project: A minimal processing pipeline for neonatal cortical surface reconstruction. NeuroImage, 2018, 173, 88-112.')   
   parser.add_argument('input',  help='The input path of the derivates folder (anat/) obtained from the dHCP pipeline')
   parser.add_argument('output', help='The output 5TT image')
-  options = parser.add_argument_group('Options specific to the \'dhcp_binary\' algorithm')
+  options = parser.add_argument_group('Options specific to the \'dhcp\' algorithm')
   options.add_argument('-mcrib_path', type=str, help='Provide the path of the M-CRIB atlas (note: this can alternatively be specified in the MRtrix config file as "MCRIBPath")')
   options.add_argument('-parcellation', type=str, help='Additionally export the M-CRIB parcellation warped to the subject data')
   options.add_argument('-quick', action="store_true", help='Specify the use of quick registration parameters')
