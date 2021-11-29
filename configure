@@ -520,9 +520,10 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
 
   except OSError as excp_local:
     log ('error invoking command "' + cmd[0] + '": ' + excp_local.strerror + '\n>>\n\n')
-    raise exception
+    raise exception from excp_local
   except Exception as excp_local:
     error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) +  configure_log_hint)
+    raise exception from excp_local
   else:
     if raise_on_non_zero_exit_code and process.returncode != 0:
       raise exception (stderr)
