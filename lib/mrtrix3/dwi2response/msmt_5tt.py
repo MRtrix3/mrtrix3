@@ -61,6 +61,11 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 
+def supports_mask(): #pylint: disable=unused-variable
+  return True
+
+
+
 def execute(): #pylint: disable=unused-variable
   # Ideally want to use the oversampling-based regridding of the 5TT image from the SIFT model, not mrtransform
   # May need to commit 5ttregrid...

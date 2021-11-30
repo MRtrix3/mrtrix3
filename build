@@ -534,7 +534,8 @@ cpp = cpp_flags = ld = ld_flags = ld_lib = ld_lib_flags = eigen_cflags = qt_cfla
 
 try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
-  exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used,consider-using-with
+  with codecs.open (config_file, mode='r', encoding='utf-8') as f:
+    exec (f.read()) # pylint: disable=exec-used
 except IOError:
   fail ('''no configuration file found!
 please run "./configure" prior to invoking this script

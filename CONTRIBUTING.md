@@ -145,9 +145,17 @@ to be provided in subsequent sections of this document.
 
    -  If only making changes to the *MRtrix3* *documentation*, then the
       appropriate base branch will depend upon the nature of the changes
-      being proposed and the urgency of the update. In this scenario,
-      please generate an [Issue](https://github.com/MRtrix3/mrtrix3/issues)
-      to facilitate communication with the core development team.
+      being proposed and the urgency of the update. For instance, if providing
+      a minor correction to spelling / grammar, or fixing an erroneous
+      hyperlink, then a direct merge to `master` is likely appropriate.
+      Conversely, if the changes are non-trivial, and it makes more sense for
+      the changes to be made as part of an *MRtrix3* update rather than
+      immediately, then `dev` may be the more appropriate base branch. If
+      the answer to this question in the context of your proposed changes is
+      unclear to you, then please generate an [Issue](https://github.com/MRtrix3/mrtrix3/issues)
+      to facilitate direct discussion with the *MRtrix3* core development
+      team (ideally before commencing the implementation of changes, as
+      incorrect selection can sometimes be laborious to resolve later).
 
 1. Generate one or more Git commits that apply your proposed changes to
    the repository.
