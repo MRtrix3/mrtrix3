@@ -52,6 +52,11 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 
+def supports_mask(): #pylint: disable=unused-variable
+  return False
+
+
+
 def execute(): #pylint: disable=unused-variable
   shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
 

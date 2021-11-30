@@ -49,6 +49,11 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 
+def supports_mask(): #pylint: disable=unused-variable
+  return True
+
+
+
 def execute(): #pylint: disable=unused-variable
   lmax_option = ''
   if app.ARGS.lmax:

@@ -25,6 +25,7 @@ set -e
   git pull
   git rm -rf *
   cp -r ../devdoc/* .
+  touch .nojekyll
   git add .
   git commit -a -m "automatic update of dev doc"
   git push

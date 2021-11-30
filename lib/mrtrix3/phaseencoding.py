@@ -16,7 +16,6 @@
 # Functions relating to handling phase encoding information
 
 
-
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
 
 
