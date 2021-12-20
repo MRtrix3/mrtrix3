@@ -21,6 +21,7 @@
 #include <string>
 
 #include "timer.h"
+#include "file/json.h"
 #include "file/ofstream.h"
 
 #include "dwi/tractography/file.h"
@@ -83,6 +84,24 @@ namespace MR
             if (output_seeds) {
               (*output_seeds) << "\n";
               output_seeds->close();
+            }
+            auto opt = App::get_options ("output_stats");
+            if (opt.size()) {
+              nlohmann::json data;
+              data["Command"] = MR::App::command_history_string;
+              data["Generation"]["Seeds"] = seeds;
+              data["Generation"]["Streamlines"] = streamlines;
+              data["Generation"]["Selected"] = selected;
+              for (size_t i = 1; i != TERMINATION_REASON_COUNT; ++i) {
+                if (S.termination_relevant (term_t(i)))
+                  data["Terminations"][termination_strings[i]] = S.termination_count (term_t(i));
+              }
+              for (size_t i = 0; i != REJECTION_REASON_COUNT; ++i) {
+                if (S.rejection_relevant (reject_t(i)))
+                  data["Rejections"][rejection_strings[i]] = S.rejection_count (reject_t(i));
+              }
+              File::OFStream outfile (opt[0][0]);
+              outfile << data.dump (4);
             }
 
           }

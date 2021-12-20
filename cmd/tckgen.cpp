@@ -216,6 +216,12 @@ void usage ()
   + DWI::Tractography::Algorithms::iFODOptions
   + DWI::Tractography::Algorithms::iFOD2Options
 
+  + OptionGroup("Options for additional data export")
+    + Option ("output_seeds", "output the seed location of all successful streamlines to a text file")
+      + Argument ("path").type_file_out()
+    + Option ("output_stats", "output statistics on streamline generation to a JSON file")
+      + Argument ("path").type_file_out()
+
   + DWI::GradImportOptions();
 
 }
@@ -235,9 +241,6 @@ void run ()
   auto opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
-
-
-
   ACT::load_act_properties (properties);
 
   Seeding::load_seed_mechanisms (properties);
@@ -248,6 +251,9 @@ void run ()
   if (algorithm == 2)
     Algorithms::load_iFOD2_options (properties);
 
+  opt = get_options ("output_seeds");
+  if (opt.size())
+    properties["seed_output"] = std::string (opt[0][0]);
 
   //load ROIs and tractography specific options
   //NB must occur before seed check below due to -select option override

@@ -69,7 +69,7 @@ namespace MR
                   if (rk4)
                     throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
-                  set_step_and_angle (Defaults::stepsize_voxels_ifod2, Defaults::angle_ifod2, true);
+                  set_step_and_angle (Defaults::stepsize_voxels_ifod2, Defaults::angle_ifod2, true, true);
                   sin_max_angle_ho = std::sin (max_angle_ho);
                   set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
