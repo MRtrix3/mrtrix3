@@ -27,7 +27,7 @@ List of MRtrix3 configuration file options
 
 .. option:: BZeroThreshold
 
-    *default: 10.0*
+    *default: 22.5*
 
      Specifies the b-value threshold for determining those image
      volumes that correspond to b=0.
