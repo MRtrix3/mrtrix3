@@ -145,7 +145,7 @@ class Processor { MEMALIGN(Processor)
 
       /* input dt */
       Eigen::Matrix<double, 6, 1> dt;
-      for (auto l = Loop (3) (dt_img); l; ++l)
+      for (dt_img.index(3) = 0; dt_img.index(3) < 6; ++dt_img.index(3))
         dt[dt_img.index(3)] = dt_img.value();
 
       /* output adc */
