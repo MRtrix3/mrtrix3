@@ -275,6 +275,9 @@ void run ()
 {
   auto dt_img = Image<value_type>::open (argument[0]);
   Header header (dt_img);
+  if (header.ndim() != 4 || header.size(3) !=6) {
+    throw Exception("input tensor image is not a valid tensor.");
+  }
 
   auto mask_img = Image<bool>();
   auto opt = get_options ("mask");
