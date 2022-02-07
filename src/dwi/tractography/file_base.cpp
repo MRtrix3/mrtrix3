@@ -36,6 +36,8 @@ namespace MR {
           if (key == "roi" || key == "prior_roi") {
             try {
               vector<std::string> V (split (kv.value(), " \t", true, 2));
+              if (V.size() < 2)
+                V.push_back (std::string());
               properties.prior_rois.insert (std::pair<std::string,std::string> (V[0], V[1]));
             }
             catch (...) {
