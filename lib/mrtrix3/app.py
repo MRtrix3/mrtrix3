@@ -1087,7 +1087,7 @@ class Parser(argparse.ArgumentParser):
     sys.stdout.flush()
 
   def _get_ungrouped_options(self):
-    return next((group for group in self._action_groups if group.title == 'optional arguments'), None)
+    return next((group for group in self._action_groups if group.title in ( 'options', 'optional arguments') ), None)
 
   def _is_option_group(self, group):
     # * Don't display empty groups
@@ -1098,7 +1098,7 @@ class Parser(argparse.ArgumentParser):
            not (len(group._group_actions) == 1 and \
            isinstance(group._group_actions[0], argparse._SubParsersAction)) and \
            not group == self._positionals and \
-           group.title != 'optional arguments'
+           group.title not in ( 'options', 'optional arguments' )
 
 
 
