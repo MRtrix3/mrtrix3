@@ -308,13 +308,6 @@ namespace MR {
               slices_timing_str.push_back (temp);
             }
           }
-        } else if (std::isfinite (frame.time_after_start)) {
-          DEBUG ("Taking slice timing information from CSA TimeAfterStart field");
-          default_type min_time_after_start = std::numeric_limits<default_type>::infinity();
-          for (size_t n = 0; n != dim[1]; ++n)
-            min_time_after_start = std::min (min_time_after_start, frames[n]->time_after_start);
-          for (size_t n = 0; n != dim[1]; ++n)
-            slices_timing_float.push_back (frames[n]->time_after_start - min_time_after_start);
         } else if (std::isfinite (static_cast<default_type>(frame.acquisition_time))) {
           DEBUG ("Estimating slice timing from DICOM AcquisitionTime field");
           default_type min_acquisition_time = std::numeric_limits<default_type>::infinity();
@@ -322,6 +315,13 @@ namespace MR {
             min_acquisition_time = std::min (min_acquisition_time, default_type(frames[n]->acquisition_time));
           for (size_t n = 0; n != dim[1]; ++n)
             slices_timing_float.push_back (default_type(frames[n]->acquisition_time) - min_acquisition_time);
+        } else if (std::isfinite (frame.time_after_start)) {
+          DEBUG ("Taking slice timing information from CSA TimeAfterStart field");
+          default_type min_time_after_start = std::numeric_limits<default_type>::infinity();
+          for (size_t n = 0; n != dim[1]; ++n)
+            min_time_after_start = std::min (min_time_after_start, frames[n]->time_after_start);
+          for (size_t n = 0; n != dim[1]; ++n)
+            slices_timing_float.push_back (frames[n]->time_after_start - min_time_after_start);
         }
         if (slices_timing_float.size()) {
           const size_t slices_acquired_at_zero = std::count (slices_timing_float.begin(), slices_timing_float.end(), 0.0f);
