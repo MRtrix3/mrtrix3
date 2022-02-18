@@ -64,7 +64,7 @@ class Shared(object):
       self.env.pop('MRTRIX_QUIET')
     except KeyError:
       pass
-    self.env['MRTRIX_LOGLEVEL'] = 1
+    self.env['MRTRIX_LOGLEVEL'] = '1'
 
     # Flagged by calling the set_continue() function;
     #   run.command() and run.function() calls will be skipped until one of the inputs to
