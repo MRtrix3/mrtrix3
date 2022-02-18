@@ -273,8 +273,10 @@ class Processor { MEMALIGN(Processor)
 
 void run ()
 {
-  auto dt_img = Image<value_type>::open (argument[0]);
-  Header header (dt_img);
+  Header H_in (Header::open (argument[0]));
+  if (!(H_in.ndim() == 4 && H_in.size(3) == 6) && H_in.datatype().is_floating_point() && !H_in.datatype().is_complex())
+    throw Exception ("Input does not look like a pre-calculated tensor image");
+  auto dt_img = H_in.get_image<value_type>();
 
   auto mask_img = Image<bool>();
   auto opt = get_options ("mask");
@@ -284,6 +286,7 @@ void run ()
   }
 
   size_t metric_count = 0;
+  Header header (H_in);
 
   auto adc_img = Image<value_type>();
   opt = get_options ("adc");
