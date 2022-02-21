@@ -303,15 +303,10 @@ void run ()
 
   // Read input data to vector (this enforces positive strides!)
   Eigen::VectorXf y (R.rows()); y.setZero();
-  size_t j = 0, v = 0;
-  for (auto lv = Loop("loading image data", 3)(dwisub); lv; lv++, v++) {
-    size_t z = 0;
-    for (auto lz = Loop(2)(dwisub); lz; lz++, z++) {
-      float ww = std::sqrt(Wsub(z,v));
-      for (auto lxy = Loop({0,1})(dwisub); lxy; lxy++, j++) {
-        y[j] = ww * std::sqrt(Wvox[j]) * dwisub.value();
-      }
-    }
+  size_t j = 0;
+  for (auto lv = Loop("loading image data", {0, 1, 2, 3})(dwisub); lv; lv++, j++) {
+      float w = Wsub(size_t(dwisub.index(2)), size_t(dwisub.index(3))) * Wvox[j];
+      y[j] = std::sqrt(w) * dwisub.value();
   }
 
   // Fit scattered data in basis...
