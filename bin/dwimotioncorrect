@@ -195,8 +195,8 @@ def execute(): #pylint: disable=unused-variable
     # Force max no. threads
     nthr = ''
     if app.ARGS.nthreads:
-        nthr = ' -nthreads ' + app.ARGS.nthreads
-
+        nthr = ' -nthreads ' + str(app.ARGS.nthreads)
+        
     # Set multiband factor
     mb = 1
     if app.ARGS.mb:
