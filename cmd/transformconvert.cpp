@@ -17,11 +17,11 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <algorithm>
 #include "command.h"
-#include "math/math.h"
 #include "image.h"
-#include "file/nifti_utils.h"
 #include "transform.h"
 #include "file/key_value.h"
+#include "file/matrix.h"
+#include "file/nifti_utils.h"
 
 using namespace MR;
 using namespace App;
@@ -183,7 +183,7 @@ void run ()
     case 0: { // flirt_import
       if (num_inputs != 3)
         throw Exception ("flirt_import requires 3 inputs");
-      transform_type transform = load_transform (argument[0]);
+      transform_type transform = File::Matrix::load_transform (argument[0]);
       auto src_header = Header::open (argument[1]); // -in
       auto dest_header = Header::open (argument[2]); // -ref
 
@@ -198,7 +198,7 @@ void run ()
       transform_type forward_transform = dest_flirt_to_scanner * transform * src_flirt_to_scanner.inverse();
       if (((forward_transform.matrix().array() != forward_transform.matrix().array())).any())
         WARN ("NAN in transformation.");
-      save_transform (forward_transform.inverse(), output_path);
+      File::Matrix::save_transform (forward_transform.inverse(), output_path);
       break;
     }
     case 1: { // ITK import
@@ -222,7 +222,7 @@ void run ()
       if (((transform.matrix().array() != transform.matrix().array())).any())
         WARN ("NAN in transformation.");
 
-      save_transform (transform, output_path);
+      File::Matrix::save_transform (transform, output_path);
       break;
     }
     default: assert (0);

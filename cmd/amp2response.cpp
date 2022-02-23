@@ -23,6 +23,7 @@
 #include "types.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "file/matrix.h"
 #include "math/constrained_least_squares.h"
 #include "math/rng.h"
 #include "math/sphere.h"
@@ -216,7 +217,7 @@ void run ()
 
   auto opt = get_options ("directions");
   if (opt.size()) {
-    dirs_azel.push_back (load_matrix (opt[0][0]));
+    dirs_azel.push_back (File::Matrix::load_matrix (opt[0][0]));
     volumes.push_back (all_volumes (dirs_azel.size()));
   } else {
     auto hit = header.keyval().find ("directions");
@@ -376,5 +377,5 @@ void run ()
       line += "," + str<int>((*shells)[i].get_mean());
     keyvals["Shells"] = line;
   }
-  save_matrix (responses, argument[3], keyvals);
+  File::Matrix::save_matrix (responses, argument[3], keyvals);
 }

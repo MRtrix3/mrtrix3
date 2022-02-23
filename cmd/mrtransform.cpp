@@ -17,6 +17,7 @@
 #include "command.h"
 #include "progressbar.h"
 #include "image.h"
+#include "file/matrix.h"
 #include "math/math.h"
 #include "math/sphere.h"
 #include "interp/nearest.h"
@@ -251,7 +252,7 @@ void run ()
   auto opt = get_options ("linear");
   if (opt.size()) {
     linear = true;
-    linear_transform = load_transform (opt[0][0]);
+    linear_transform = File::Matrix::load_transform (opt[0][0]);
   }
 
   // Replace
@@ -264,7 +265,7 @@ void run ()
       linear_transform = template_header.transform();
     } catch (...) {
       try {
-        linear_transform = load_transform (opt[0][0]);
+        linear_transform = File::Matrix::load_transform (opt[0][0]);
       } catch (...) {
         throw Exception ("Unable to extract transform matrix from -replace file \"" + str(opt[0][0]) + "\"");
       }
@@ -404,7 +405,7 @@ void run ()
     Eigen::MatrixXd directions_az_el;
     opt = get_options ("directions");
     if (opt.size())
-      directions_az_el = load_matrix (opt[0][0]);
+      directions_az_el = File::Matrix::load_matrix (opt[0][0]);
     else
       directions_az_el = DWI::Directions::electrostatic_repulsion_300();
     Math::Sphere::spherical2cartesian (directions_az_el, directions_cartesian);

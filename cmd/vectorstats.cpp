@@ -18,6 +18,7 @@
 #include "progressbar.h"
 #include "types.h"
 
+#include "file/matrix.h"
 #include "file/path.h"
 #include "math/stats/fwe.h"
 #include "math/stats/glm.h"
@@ -89,7 +90,7 @@ class SubjectVectorImport : public SubjectDataImportBase
   public:
     SubjectVectorImport (const std::string& path) :
         SubjectDataImportBase (path),
-        data (load_vector (path)) { }
+        data (File::Matrix::load_vector (path)) { }
 
     void operator() (matrix_type::RowXpr row) const override
     {
@@ -135,7 +136,7 @@ void run()
       (*importer[subject]) (data.row(subject));
   } catch (Exception& e_asfilelist) {
     try {
-      data = load_matrix (argument[0]);
+      data = File::Matrix::load_matrix (argument[0]);
       num_inputs = data.rows();
       num_elements = data.cols();
     } catch (Exception& e_asmatrix) {
@@ -151,7 +152,7 @@ void run()
   CONSOLE ("Number of elements: " + str(num_elements));
 
   // Load design matrix
-  const matrix_type design = load_matrix (argument[1]);
+  const matrix_type design = File::Matrix::load_matrix (argument[1]);
   if (size_t(design.rows()) != num_inputs)
     throw Exception ("Number of subjects (" + str(num_inputs) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
@@ -214,27 +215,27 @@ void run()
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
     ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", 2 + (2 * num_hypotheses) + (nans_in_data || extra_columns.size() ? 1 : 0));
-    save_matrix (betas, output_prefix + "betas.csv");
+    File::Matrix::save_matrix (betas, output_prefix + "betas.csv");
     ++progress;
     for (size_t i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv");
+        File::Matrix::save_vector (abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv");
         ++progress;
         if (num_vgs == 1)
-          save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv");
+          File::Matrix::save_vector (std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv");
       } else {
         ++progress;
       }
       ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
-      save_vector (cond, output_prefix + "cond.csv");
+      File::Matrix::save_vector (cond, output_prefix + "cond.csv");
       ++progress;
     }
     if (num_vgs == 1)
-      save_vector (stdev.row(0), output_prefix + "std_dev.csv");
+      File::Matrix::save_vector (stdev.row(0), output_prefix + "std_dev.csv");
     else
-      save_matrix (stdev, output_prefix + "std_dev.csv");
+      File::Matrix::save_matrix (stdev, output_prefix + "std_dev.csv");
   }
 
   // Construct the class for performing the initial statistical tests
@@ -259,8 +260,8 @@ void run()
   matrix_type default_statistic, default_zstat;
   (*glm_test) (default_shuffle, default_statistic, default_zstat);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    save_matrix (default_statistic.col(i), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
-    save_matrix (default_zstat.col(i), output_prefix + "Zstat" + postfix(i) + ".csv");
+    File::Matrix::save_matrix (default_statistic.col(i), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    File::Matrix::save_matrix (default_zstat.col(i), output_prefix + "Zstat" + postfix(i) + ".csv");
   }
 
   // Perform permutation testing
@@ -278,16 +279,16 @@ void run()
     Stats::PermTest::run_permutations (glm_test, enhancer, empirical_distribution, default_zstat, fwe_strong,
                                        null_distribution, null_contributions, uncorrected_pvalues);
     if (fwe_strong) {
-      save_vector (null_distribution.col(0), output_prefix + "null_dist.csv");
+      File::Matrix::save_vector (null_distribution.col(0), output_prefix + "null_dist.csv");
     } else {
       for (size_t i = 0; i != num_hypotheses; ++i)
-        save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
+        File::Matrix::save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
     }
     const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue (null_distribution, default_zstat);
     for (size_t i = 0; i != num_hypotheses; ++i) {
-      save_vector (fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
-      save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");
-      save_vector (null_contributions.col(i), output_prefix + "null_contributions" + postfix(i) + ".csv");
+      File::Matrix::save_vector (fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
+      File::Matrix::save_vector (uncorrected_pvalues.col(i), output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");
+      File::Matrix::save_vector (null_contributions.col(i), output_prefix + "null_contributions" + postfix(i) + ".csv");
     }
 
   }

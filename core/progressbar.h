@@ -22,12 +22,12 @@
 #include <mutex>
 #include <condition_variable>
 #include <chrono>
+#include <thread>
 
-
+#include "app.h"
 #include "mrtrix.h"
 #include "timer.h"
 #include "types.h"
-#include "math/math.h"
 #include "debug.h"
 
 #define BUSY_INTERVAL 0.1

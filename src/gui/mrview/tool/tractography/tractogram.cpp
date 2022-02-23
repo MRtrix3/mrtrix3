@@ -15,6 +15,7 @@
  */
 
 #include "progressbar.h"
+#include "file/matrix.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
@@ -744,7 +745,7 @@ namespace MR
               load_intensity_scalars_onto_GPU (buffer, tck_count);
             file.close();
           } else {
-            const Eigen::VectorXf scalars = MR::load_vector<float> (filename);
+            const Eigen::VectorXf scalars = File::Matrix::load_vector<float> (filename);
             size_t total_num_tracks = 0;
             for (vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
               total_num_tracks += *i;
@@ -839,7 +840,7 @@ namespace MR
               load_threshold_scalars_onto_GPU (buffer, tck_count);
             file.close();
           } else {
-            const Eigen::VectorXf scalars = MR::load_vector<float> (filename);
+            const Eigen::VectorXf scalars = File::Matrix::load_vector<float> (filename);
             size_t total_num_tracks = 0;
             for (vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
               total_num_tracks += *i;

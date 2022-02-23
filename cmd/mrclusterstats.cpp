@@ -19,6 +19,7 @@
 #include "types.h"
 
 #include "algo/loop.h"
+#include "file/matrix.h"
 #include "file/path.h"
 
 #include "math/stats/fwe.h"
@@ -211,7 +212,7 @@ void run() {
   CONSOLE ("Number of inputs: " + str(importer.size()));
 
   // Load design matrix
-  const matrix_type design = load_matrix<value_type> (argument[1]);
+  const matrix_type design = File::Matrix::load_matrix<value_type> (argument[1]);
   if (design.rows() != (ssize_t)importer.size())
     throw Exception ("Number of input files does not match number of rows in design matrix");
 
@@ -382,11 +383,11 @@ void run() {
     ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
 
     if (fwe_strong) {
-      save_vector (null_distribution.col(0), prefix + "null_dist.txt");
+      File::Matrix::save_vector (null_distribution.col(0), prefix + "null_dist.txt");
       ++progress;
     } else {
       for (size_t i = 0; i != num_hypotheses; ++i) {
-        save_vector (null_distribution.col(i), prefix + "null_dist" + postfix(i) + ".txt");
+        File::Matrix::save_vector (null_distribution.col(i), prefix + "null_dist" + postfix(i) + ".txt");
         ++progress;
       }
     }

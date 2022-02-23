@@ -18,6 +18,7 @@
 
 #include "debug.h"
 #include "thread_queue.h"
+#include "file/matrix.h"
 #include "math/betainc.h"
 #include "math/erfinv.h"
 #include "math/welch_satterthwaite.h"
@@ -110,7 +111,7 @@ namespace MR
           if (!opt.size())
             return index_array_type();
           try {
-            auto data = load_vector<size_t> (opt[0][0]);
+            auto data = File::Matrix::load_vector<size_t> (opt[0][0]);
             if (size_t(data.size()) != num_inputs)
               throw Exception ("Number of entries in variance group file \"" + std::string(opt[0][0]) + "\" (" + str(data.size()) + ") does not match number of inputs (" + str(num_inputs) + ")");
             const size_t min_coeff = data.minCoeff();
@@ -142,12 +143,12 @@ namespace MR
         vector<Hypothesis> load_hypotheses (const std::string& file_path)
         {
           vector<Hypothesis> hypotheses;
-          const matrix_type contrast_matrix = load_matrix (file_path);
+          const matrix_type contrast_matrix = File::Matrix::load_matrix (file_path);
           for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
             hypotheses.emplace_back (Hypothesis (contrast_matrix.row (row), row));
           auto opt = App::get_options ("ftests");
           if (opt.size()) {
-            const matrix_type ftest_matrix = load_matrix (opt[0][0]);
+            const matrix_type ftest_matrix = File::Matrix::load_matrix (opt[0][0]);
             if (ftest_matrix.cols() != contrast_matrix.rows())
               throw Exception ("Number of columns in F-test matrix (" + str(ftest_matrix.cols()) + ") does not match number of rows in contrast matrix (" + str(contrast_matrix.rows()) + ")");
             if (!((ftest_matrix.array() == 0.0) + (ftest_matrix.array() == 1.0)).all())

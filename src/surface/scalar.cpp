@@ -16,7 +16,7 @@
 
 #include "surface/scalar.h"
 
-#include "math/math.h"
+#include "file/matrix.h"
 
 #include "surface/freesurfer.h"
 
@@ -32,7 +32,7 @@ namespace MR
     {
       DEBUG ("Attempting to load surface scalar file \"" + path + "\"...");
       try {
-        load_vector (path);
+        File::Matrix::load_vector (path);
       } catch (Exception& e) {
         DEBUG (e[0]);
         try {
@@ -56,7 +56,7 @@ namespace MR
 
     void Scalar::save (const std::string& path) const
     {
-      save_vector (*this, path);
+      File::Matrix::save_vector (*this, path);
     }
 
 
