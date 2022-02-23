@@ -149,7 +149,7 @@ namespace MR
         void save_matrix (const MatrixType& M, const std::string& filename, const KeyValues& keyvals = KeyValues(), const bool add_to_command_history = true)
         {
           if (Path::has_suffix (filename, {"npy", ".NPY"}))
-            throw Exception ("NPY format not yet supported for 2D matrix data");
+            File::NPY::save_matrix (M, filename);
           else
             save_matrix_text<MatrixType> (M, filename, keyvals, add_to_command_history);
         }
@@ -159,7 +159,7 @@ namespace MR
         Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename)
         {
           if (Path::has_suffix (filename, {"npy", ".NPY"}))
-            throw Exception ("NPY format not yet supported for 2D matrix data");
+            return File::NPY::load_matrix<ValueType> (filename);
           else
             return load_matrix_text<ValueType> (filename);
         }
@@ -253,8 +253,7 @@ namespace MR
         void save_vector (const VectorType& V, const std::string& filename, const KeyValues& keyvals = KeyValues(), const bool add_to_command_history = true)
         {
           if (Path::has_suffix (filename, {".npy", ".NPY"}))
-            throw Exception ("Currently bypassing NPY vector save due to vector<> vs. Eigen<> template support");
-            //File::NPY::save_vector (V, filename);
+            File::NPY::save_vector (V, filename);
           else
             save_vector_text (V, filename, keyvals, add_to_command_history);
         }

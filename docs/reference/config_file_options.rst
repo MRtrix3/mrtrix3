@@ -548,6 +548,14 @@ List of MRtrix3 configuration file options
      qform matrix. The default is to use the sform matrix;
      set to 0 / false to override and instead use the qform.
 
+.. option:: NPYFloatMaxSavePrecision
+
+    *default: 64*
+
+     When exporting floating-point data to NumPy .npy format, do not
+     use a precision any greater than this value in bits (used to
+     minimise file size). Must be equal to either 16, 32 or 64.
+
 .. option:: NeedOpenGLCoreProfile
 
     *default: 1 (true)*
