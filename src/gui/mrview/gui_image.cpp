@@ -495,7 +495,7 @@ namespace MR
             using MR::Image<cfloat>::buffer;
 
             WithType (const MR::Image<cfloat>& source) : MR::Image<cfloat> (source) {
-              __set_fetch_store_functions (fetch_func, store_func, buffer->datatype());
+              __set_fetch_store_scale_functions (fetch_func, store_func, buffer->datatype());
             }
             FORCE_INLINE ValueType value () const {
               ssize_t nseg = data_offset / buffer->get_io()->segment_size();

@@ -15,8 +15,9 @@
  */
 
 #include "dwi/gradient.h"
-#include "file/nifti_utils.h"
 #include "dwi/shells.h"
+#include "file/matrix.h"
+#include "file/nifti_utils.h"
 
 namespace MR
 {
@@ -102,7 +103,7 @@ namespace MR
       const auto it = header.keyval().find ("dw_scheme");
       if (it != header.keyval().end()) {
         try {
-          G = parse_matrix (it->second);
+          G = MR::parse_matrix (it->second);
         } catch (Exception& e) {
           throw Exception (e, "malformed DW scheme in image \"" + header.name() + "\"");
         }
@@ -117,8 +118,8 @@ namespace MR
     {
       Eigen::MatrixXd bvals, bvecs;
       try {
-        bvals = load_matrix<> (bvals_path);
-        bvecs = load_matrix<> (bvecs_path);
+        bvals = File::Matrix::load_matrix<> (bvals_path);
+        bvecs = File::Matrix::load_matrix<> (bvecs_path);
       } catch (Exception& e) {
         throw Exception (e, "Unable to import files \"" + bvecs_path + "\" and \"" + bvals_path + "\" as FSL bvecs/bvals pair");
       }
@@ -200,8 +201,8 @@ namespace MR
       if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
 
-      save_matrix (bvecs, bvecs_path, KeyValues(), false);
-      save_matrix (bvals, bvals_path, KeyValues(), false);
+      File::Matrix::save_matrix (bvecs, bvecs_path, KeyValues(), false);
+      File::Matrix::save_matrix (bvals, bvals_path, KeyValues(), false);
     }
 
 
@@ -224,7 +225,7 @@ namespace MR
       // check whether the DW scheme has been provided via the command-line:
       const auto opt_mrtrix = get_options ("grad");
       if (opt_mrtrix.size())
-        grad = load_matrix<> (opt_mrtrix[0][0]);
+        grad = File::Matrix::load_matrix<> (opt_mrtrix[0][0]);
 
       const auto opt_fsl = get_options ("fslgrad");
       if (opt_fsl.size()) {
@@ -318,7 +319,7 @@ namespace MR
 
       auto opt = get_options ("export_grad_mrtrix");
       if (opt.size())
-        save_matrix (parse_DW_scheme (check (header)), opt[0][0]);
+        File::Matrix::save_matrix (parse_DW_scheme (check (header)), opt[0][0]);
 
       opt = get_options ("export_grad_fsl");
       if (opt.size())

@@ -20,6 +20,7 @@
 #include "image.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "file/matrix.h"
 #include "math/sphere.h"
 #include "math/SH.h"
 
@@ -161,7 +162,7 @@ void run ()
   }
   catch (Exception& E) {
     try {
-      directions = load_matrix<double> (argument[1]);
+      directions = File::Matrix::load_matrix<double> (argument[1]);
       if (directions.cols() < 4)
         throw ("unable to interpret file \"" + std::string(argument[1]) + "\" as a directions or gradient file");
     }

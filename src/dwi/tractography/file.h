@@ -24,6 +24,7 @@
 #include "memory.h"
 #include "file/config.h"
 #include "file/key_value.h"
+#include "file/matrix.h"
 #include "file/ofstream.h"
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
@@ -69,7 +70,7 @@ namespace MR
             open (file, "tracks", properties);
             auto opt = App::get_options ("tck_weights_in");
             if (opt.size())
-              weights = load_vector<ValueType> (opt[0][0]);
+              weights = File::Matrix::load_vector<ValueType> (opt[0][0]);
           }
 
 

@@ -15,6 +15,7 @@
  */
 
 #include "app.h"
+#include "file/matrix.h"
 #include "file/path.h"
 #include "gui/shview/render_window.h"
 #include "gui/dwi/render_frame.h"
@@ -354,7 +355,7 @@ namespace MR
       void Window::set_values (const std::string& filename)
       {
         try {
-          values = MR::load_matrix<float> (filename);
+          values = File::Matrix::load_matrix<float> (filename);
           if (values.cols() == 0 || values.rows() == 0)
             throw Exception ("invalid matrix of SH coefficients");
 

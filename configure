@@ -344,8 +344,8 @@ class TempFile:
   def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError as excp: # pylint: disable=redefined-outer-name
-      log ('error deleting temporary file "' + self.name + '": ' + excp.strerror)
+    except OSError as excp_local:
+      log ('error deleting temporary file "' + self.name + '": ' + excp_local.strerror)
 
 
 
@@ -359,8 +359,8 @@ class DeleteAfter:
   def __exit__(self, exception_type, value, traceback):
     try:
       os.unlink (self.name)
-    except OSError as excp: # pylint: disable=redefined-outer-name
-      log ('error deleting temporary file "' + self.name + '": ' + excp.strerror)
+    except OSError as excp_local:
+      log ('error deleting temporary file "' + self.name + '": ' + excp_local.strerror)
 
 
 class TempDir:
@@ -380,8 +380,8 @@ class TempDir:
           os.unlink (fullpath)
       os.rmdir (self.name)
 
-    except OSError as excp: # pylint: disable=redefined-outer-name
-      log ('error deleting temporary folder "' + self.name + '": ' + excp.strerror)
+    except OSError as excp_local:
+      log ('error deleting temporary folder "' + self.name + '": ' + excp_local.strerror)
 
 
 
@@ -522,7 +522,8 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
     log ('error invoking command "' + cmd[0] + '": ' + excp_local.strerror + '\n>>\n\n')
     raise exception from excp_local
   except Exception as excp_local:
-    error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) + configure_log_hint)
+    error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) +  configure_log_hint)
+    raise exception from excp_local
   else:
     if raise_on_non_zero_exit_code and process.returncode != 0:
       raise exception (stderr)
@@ -663,8 +664,8 @@ def compile_check (full_name, name, cflags, ldflags, code, cflags_env=None, cfla
     error ('''runtime error!
 
    Unable to configure ''' + name + configure_log_hint)
-  except Exception as excp: # pylint: disable=redefined-outer-name
-    error ('unexpected exception of type ' + type(excp).__name__ + ': ' + str(excp) +  configure_log_hint)
+  except Exception as excp_local:
+    error ('unexpected exception of type ' + type(excp_local).__name__ + ': ' + str(excp_local) +  configure_log_hint)
 
 
 

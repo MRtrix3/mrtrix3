@@ -24,7 +24,7 @@ namespace MR {
 
       Eigen::MatrixXd load_spherical (const std::string& filename)
       {
-        auto directions = load_matrix<> (filename);
+        auto directions = File::Matrix::load_matrix<> (filename);
         if (directions.cols() == 2)
           return directions;
         if (directions.cols() != 3)
@@ -39,7 +39,7 @@ namespace MR {
 
       Eigen::MatrixXd load_cartesian (const std::string& filename)
       {
-        auto directions = load_matrix<> (filename);
+        auto directions = File::Matrix::load_matrix<> (filename);
         if (directions.cols() == 2)
           directions = Math::Sphere::spherical2cartesian (directions);
         else {
