@@ -285,7 +285,7 @@ namespace MR
       void save_vector (const ContType& data, const std::string& path)
       {
         using ValueType = typename container_value_type<ContType>::type;
-        const WriteInfo info = prepare_ND_write<ValueType> (path, {data.size(), 0});
+        const WriteInfo info = prepare_ND_write<ValueType> (path, {size_t(data.size()), 0});
         auto store_func = __set_store_function<ValueType> (info.data_type, info.write_float16);
         for (size_t i = 0; i != size_t(data.size()); ++i)
           store_func (data[i], info.mmap->address(), i);
