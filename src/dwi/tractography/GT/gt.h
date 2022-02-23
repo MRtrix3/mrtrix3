@@ -22,12 +22,14 @@
 #define FRAC_PHASEOUT 10
 
 #include <iostream>
+#include <fstream>
 #include <mutex>
 
 #include <Eigen/Dense>
 
 #include "progressbar.h"
 #include "types.h"
+#include "math/math.h"
 
 
 namespace MR {

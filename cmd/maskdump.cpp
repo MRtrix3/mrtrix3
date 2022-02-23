@@ -17,6 +17,7 @@
 #include "command.h"
 #include "image.h"
 #include "algo/loop.h"
+#include "file/matrix.h"
 
 using namespace MR;
 using namespace App;
@@ -58,7 +59,7 @@ void run ()
     prettyprint.row (row) = std::move (locations[row]);
   INFO ("Printing locations of " + str(prettyprint.rows()) + " non-zero voxels");
   if (argument.size() == 2)
-    save_matrix (prettyprint, argument[1]);
+    File::Matrix::save_matrix (prettyprint, argument[1]);
   else
     std::cout << prettyprint;
 }

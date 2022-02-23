@@ -20,8 +20,8 @@
 #include <algorithm>
 #include <random>
 
+#include "file/matrix.h"
 #include "math/factorial.h"
-#include "math/math.h"
 
 namespace MR
 {
@@ -383,7 +383,7 @@ namespace MR
 
       index_array_type Shuffler::load_blocks (const std::string& filename, const bool equal_sizes)
       {
-        index_array_type data = load_vector<size_t> (filename).array();
+        index_array_type data = File::Matrix::load_vector<size_t> (filename).array();
         if (size_t(data.size()) != rows)
           throw Exception ("Number of entries in file \"" + filename + "\" (" + str(data.size()) + ") does not match number of inputs (" + str(rows) + ")");
         const size_t min_coeff = data.minCoeff();
@@ -600,7 +600,7 @@ namespace MR
 
       void Shuffler::load_permutations (const std::string& filename)
       {
-        vector<vector<size_t> > temp = load_matrix_2D_vector<size_t> (filename);
+        vector<vector<size_t> > temp = File::Matrix::load_matrix_2D_vector<size_t> (filename);
         if (!temp.size())
           throw Exception ("no data found in permutations file: " + str(filename));
 
