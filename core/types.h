@@ -26,6 +26,8 @@
 #include <iostream>
 #include <vector>
 
+#include "half.hpp"
+
 
 #define NOMEMALIGN
 
@@ -207,6 +209,14 @@ inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<
     static_assert ( (alignof(__VA_ARGS__) <= ::MR::malloc_align) || __has_custom_new_operator<__VA_ARGS__>::value, \
         "class requires over-alignment, but no operator new defined! Please insert MEMALIGN() into class definition.")
 
+
+
+namespace std
+{
+  template <> struct is_floating_point<half_float::half> : std::true_type { NOMEMALIGN };
+  template <> struct is_arithmetic<half_float::half> : std::true_type { NOMEMALIGN };
+  template <> struct is_integral<half_float::half> : std::false_type { NOMEMALIGN };
+}
 
 
 namespace MR

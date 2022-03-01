@@ -18,6 +18,7 @@
 #define __data_type_h__
 
 #include "cmdline_option.h"
+#include "half.hpp"
 
 #ifdef Complex
 # undef Complex
@@ -86,7 +87,7 @@ namespace MR
       }
       bool is_floating_point () const {
         const uint8_t type = dt & Type;
-        return ((type == Float32) || (type == Float64));
+        return ((type == Float16) || (type == Float32) || (type == Float64));
       }
       void set_floating_point () {
         if (!is_floating_point()) {
@@ -144,8 +145,9 @@ namespace MR
       static constexpr uint8_t     UInt16        = 0x03U;
       static constexpr uint8_t     UInt32        = 0x04U;
       static constexpr uint8_t     UInt64        = 0x05U;
-      static constexpr uint8_t     Float32       = 0x06U;
-      static constexpr uint8_t     Float64       = 0x07U;
+      static constexpr uint8_t     Float16       = 0x06U;
+      static constexpr uint8_t     Float32       = 0x07U;
+      static constexpr uint8_t     Float64       = 0x08U;
 
 
       static constexpr uint8_t     Int8          = UInt8  | Signed;
@@ -164,10 +166,15 @@ namespace MR
       static constexpr uint8_t     UInt64LE      = UInt64 | LittleEndian;
       static constexpr uint8_t     Int64BE       = UInt64 | Signed | BigEndian;
       static constexpr uint8_t     UInt64BE      = UInt64 | BigEndian;
+      static constexpr uint8_t     Float16LE     = Float16 | LittleEndian;
+      static constexpr uint8_t     Float16BE     = Float16 | BigEndian;
       static constexpr uint8_t     Float32LE     = Float32 | LittleEndian;
       static constexpr uint8_t     Float32BE     = Float32 | BigEndian;
       static constexpr uint8_t     Float64LE     = Float64 | LittleEndian;
       static constexpr uint8_t     Float64BE     = Float64 | BigEndian;
+      static constexpr uint8_t     CFloat16      = Complex | Float16;
+      static constexpr uint8_t     CFloat16LE    = Complex | Float16 | LittleEndian;
+      static constexpr uint8_t     CFloat16BE    = Complex | Float16 | BigEndian;
       static constexpr uint8_t     CFloat32      = Complex | Float32;
       static constexpr uint8_t     CFloat32LE    = Complex | Float32 | LittleEndian;
       static constexpr uint8_t     CFloat32BE    = Complex | Float32 | BigEndian;
@@ -232,6 +239,10 @@ namespace MR
   template <> inline DataType DataType::from<uint64_t> ()
   {
     return DataType::native (DataType::UInt64);
+  }
+  template <> inline DataType DataType::from<half_float::half> ()
+  {
+    return DataType::native (DataType::Float16);
   }
   template <> inline DataType DataType::from<float> ()
   {

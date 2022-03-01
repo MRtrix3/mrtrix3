@@ -26,7 +26,6 @@
 #include "file/mmap.h"
 #include "file/ofstream.h"
 #include "file/utils.h"
-#include "math/half.hpp"
 #include "math/math.h"
 
 
@@ -43,10 +42,6 @@ namespace MR
 
 
 
-      using half_float::half;
-
-
-
       constexpr unsigned char magic_string[] = "\x93NUMPY";
       constexpr size_t alignment = 16;
 
@@ -57,12 +52,6 @@ namespace MR
       std::string datatype2descr (const DataType);
       size_t float_max_save_precision();
       KeyValues parse_header (std::string);
-
-
-
-      template <typename ValueType>
-      std::function<ValueType(void*, size_t)> __get_float16_fetch_func (const bool is_little_endian);
-
 
 
 
@@ -120,23 +109,12 @@ namespace MR
         const std::string shape_str = shape_ptr->second;
 
         DataType data_type;
-        bool is_float16 = false;
-        std::function<ValueType(void*, size_t)> fetch_func;
         try {
           data_type = descr2datatype (descr);
-          fetch_func = __set_fetch_function<ValueType> (data_type);
         } catch (Exception& e) {
-          bool is_little_endian;
-          if (descr_is_half (descr, is_little_endian)) {
-            // TODO These will not incorporate proper rounding if loading from float16 into integer;
-            //   may be preferable to add float16 to DataType and initialise in fetch_store()
-            fetch_func = __get_float16_fetch_func<ValueType> (is_little_endian);
-            is_float16 = true;
-          } else {
-            throw Exception (e, "Error determining data type for NumPy file \"" + path + "\"");
-          }
+          throw Exception (e, "Error parsing header of NumPy file \"" + path + "\"");
         }
-        const size_t bytes = is_float16 ? 2 : data_type.bytes();
+        const std::function<ValueType(void*, size_t)> fetch_func (__set_fetch_function<ValueType> (data_type));
 
         // Deal with scale
         // Strip the brackets and split by commas
@@ -153,7 +131,7 @@ namespace MR
         const size_t num_elements = size[0] * size[1];
         const size_t predicted_data_size = (data_type == DataType::Bit) ? 
                                            ((num_elements+7) / 8) :
-                                           (num_elements * bytes);
+                                           (num_elements * data_type.bytes());
         const int64_t data_offset = in.tellg();
         if (data_offset + predicted_data_size != file_size)
           throw Exception ("Size of NumPy file \"" + path + "\" (" + str(file_size) + ") does not meet expectations given "
@@ -162,7 +140,7 @@ namespace MR
                            + "(" + str(size[0]) + "x" + str(size[1]) + " = " + str(num_elements) + ") "
                            + (data_type == DataType::Bit ?
                               ("bits = " + str((num_elements+7)/8) + " bytes)") :
-                              ("values x " + str(bytes) + " bytes per value = " + str(num_elements * bytes) + " bytes)")));
+                              ("values x " + str(data_type.bytes()) + " bytes per value = " + str(num_elements * data_type.bytes()) + " bytes)")));
         
         // Memory-map the remaining content of the file
         in.close();
@@ -186,9 +164,6 @@ namespace MR
       }
 
 
-      // TODO Provide separate functions for saving matrices vs. vectors,
-      //   since the latter applies to std::vector<> also
-      //
       // TODO For now, ignore 'fortran_order' field; it could however be utilised down the track
       //   if the function were to be given the capability to write to file using a File::MMap & memcpy()
       //   in cases where data type matches, but need to branch based on Eigen's major format for those particular data
@@ -201,7 +176,6 @@ namespace MR
         struct WriteInfo {
           std::unique_ptr<MMap> mmap;
           DataType data_type;
-          bool write_float16;
         };
 
         template <typename ValueType>
@@ -209,13 +183,12 @@ namespace MR
         {
           WriteInfo info;
           info.data_type = DataType::from<ValueType>();
-          info.write_float16 = false;
           if (info.data_type.is_floating_point()) {
             const size_t max_precision = float_max_save_precision();
             if (max_precision < info.data_type.bits()) {
               INFO ("Precision of floating-point NumPy file \"" + path + "\" decreased from native " + str(info.data_type.bits()) + " bits to " + str(max_precision));
               if (max_precision == 16)
-                info.write_float16 = true;
+                info.data_type = DataType::native (DataType::Float16);
               else
                 info.data_type = DataType::native (DataType::Float32);
             }
@@ -223,7 +196,7 @@ namespace MR
           
           // Need to construct the header string in order to discover its length
           std::string header (std::string ("{'descr': '")
-                              + (info.write_float16 ? (std::string(MRTRIX_IS_BIG_ENDIAN ? ">" : "<") + "f2") : datatype2descr (info.data_type))
+                              + datatype2descr (info.data_type)
                               + "', 'fortran_order': False, 'shape': (" + str(size[0]) + "," + (size[1] ? (" " + str(size[1])) : "") + "), }");
           // Pad with spaces so that, for version 1, upon adding a newline at the end, the file size (i.e. eventual offset to the data) is a multiple of alignment (16)
           uint32_t space_count = alignment - ((header.size() + 11) % alignment); // 11 = 6 magic number + 2 version + 2 header length + 1 newline for header
@@ -258,23 +231,10 @@ namespace MR
           const size_t num_elements = size[0] * (size[1] ? size[1] : 1);
           const size_t data_size = (info.data_type == DataType::Bit) ?
                                    ((num_elements + 7) / 8) :
-                                   (num_elements * (info.write_float16 ? 2 : info.data_type.bytes()));
+                                   (num_elements * info.data_type.bytes());
           File::resize (path, leadin_size + data_size);
           info.mmap.reset (new File::MMap ({path, leadin_size}, true, false));
           return info;
-        }
-
-
-        template <typename ValueType>
-        std::function<void(ValueType, void*, size_t)> __set_store_function (const DataType data_type, const bool write_float16)
-        {
-          if (write_float16) {
-            return [] (ValueType value, void* addr, size_t i) -> void {
-              reinterpret_cast<half*>(addr)[i] = value;
-            };
-          } else {
-            return MR::__set_store_function<ValueType> (data_type);
-          }
         }
 
       }
@@ -286,7 +246,7 @@ namespace MR
       {
         using ValueType = typename container_value_type<ContType>::type;
         const WriteInfo info = prepare_ND_write<ValueType> (path, {size_t(data.size()), 0});
-        auto store_func = __set_store_function<ValueType> (info.data_type, info.write_float16);
+        auto store_func = __set_store_function<ValueType> (info.data_type);
         for (size_t i = 0; i != size_t(data.size()); ++i)
           store_func (data[i], info.mmap->address(), i);
       }
@@ -298,7 +258,7 @@ namespace MR
       {
         using ValueType = typename ContType::Scalar;
         const WriteInfo info = prepare_ND_write<ValueType> (path, {size_t(data.rows()), size_t(data.cols())});
-        auto store_func = __set_store_function<ValueType> (info.data_type, info.write_float16);
+        auto store_func = __set_store_function<ValueType> (info.data_type);
         size_t i = 0;
         for (ssize_t row = 0; row != data.rows(); ++row) {
           for (ssize_t col = 0; col != data.cols(); ++col, ++i)

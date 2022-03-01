@@ -15,6 +15,9 @@
  */
 
 #include "fetch_store.h"
+#include "types.h"
+
+
 
 namespace MR
 {
@@ -29,14 +32,14 @@ namespace MR
     template <typename TypeOUT, typename TypeIN>
       inline typename std::enable_if<std::is_floating_point<TypeOUT>::value, TypeOUT>::type
       round_func (TypeIN in, typename std::enable_if<std::is_arithmetic<TypeIN>::value>::type* = nullptr) {
-        return in;
+        return TypeOUT(in);
       }
 
     // integer -> integer
     template <typename TypeOUT, typename TypeIN>
       inline typename std::enable_if<std::is_integral<TypeOUT>::value, TypeOUT>::type
       round_func (TypeIN in, typename std::enable_if<std::is_integral<TypeIN>::value>::type* = nullptr) {
-        return in;
+        return TypeOUT(in);
       }
 
     // floating-point -> integer
@@ -204,6 +207,10 @@ namespace MR
         return __fetch_BE<ValueType,int64_t>;
       case DataType::UInt64BE:
         return __fetch_BE<ValueType,uint64_t>;
+      case DataType::Float16LE:
+        return __fetch_LE<ValueType,half_float::half>;
+      case DataType::Float16BE:
+        return __fetch_BE<ValueType,half_float::half>;
       case DataType::Float32LE:
         return __fetch_LE<ValueType,float>;
       case DataType::Float32BE:
@@ -261,6 +268,10 @@ namespace MR
         return __store_BE<ValueType,int64_t>;
       case DataType::UInt64BE:
         return __store_BE<ValueType,uint64_t>;
+      case DataType::Float16LE:
+        return __store_LE<ValueType,half_float::half>;
+      case DataType::Float16BE:
+        return __store_BE<ValueType,half_float::half>;
       case DataType::Float32LE:
         return __store_LE<ValueType,float>;
       case DataType::Float32BE:
@@ -352,6 +363,14 @@ namespace MR
           fetch_func = __fetch_scale_BE<ValueType,uint64_t>;
           store_func = __scale_store_BE<ValueType,uint64_t>;
           return;
+        case DataType::Float16LE:
+          fetch_func = __fetch_scale_LE<ValueType,half_float::half>;
+          store_func = __scale_store_LE<ValueType,half_float::half>;
+          return;
+        case DataType::Float16BE:
+          fetch_func = __fetch_scale_BE<ValueType,half_float::half>;
+          store_func = __scale_store_BE<ValueType,half_float::half>;
+          return;
         case DataType::Float32LE:
           fetch_func = __fetch_scale_LE<ValueType,float>;
           store_func = __scale_store_LE<ValueType,float>;
@@ -407,6 +426,7 @@ namespace MR
   __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(int32_t);
   __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(uint64_t);
   __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(int64_t);
+  __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(half_float::half);
   __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(float);
   __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(double);
   __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(cfloat);
