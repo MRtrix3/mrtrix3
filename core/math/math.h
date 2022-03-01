@@ -108,7 +108,7 @@ namespace MR
   template <class Cont>
   class is_eigen_type { NOMEMALIGN
     typedef char yes[1], no[2];
-    template<typename C> static yes& test(typename Cont::Scalar);
+    template<typename C> static yes& test(typename C::Scalar);
     template<typename C> static no&  test(...);
     public:
     static const bool value = sizeof(test<Cont>(0)) == sizeof(yes);
