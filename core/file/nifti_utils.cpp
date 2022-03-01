@@ -670,6 +670,9 @@ namespace MR
           if (!File::Config::get_bool ("NIfTIAllowBitwise", false))
             H.datatype() = DataType::UInt8;
 
+        if ((H.datatype()() & DataType::Type) == DataType::Float16)
+          H.datatype() = (DataType::Float32 & DataType::Type) | (H.datatype()() & DataType::Attributes);
+
         return true;
       }
 

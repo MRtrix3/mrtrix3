@@ -96,17 +96,20 @@ namespace MR
               case 8: data_type = DataType::UInt64; break;
               default: throw Exception ("Unexpected bit width (" + str(bytes) + ") for unsigned integer data");
             }
+            break;
           case 'e':
-            throw Exception ("Unsupported half-precision floating-point data");
+            data_type = DataType::Float16;
+            break;
           case 'f':
             switch (bytes) {
-              case 2: throw Exception ("Unsupported half-precision floating-point data");
+              case 2: data_type = DataType::Float16; break;
               case 4: data_type = DataType::Float32; break;
               case 8: data_type = DataType::Float64; break;
               default: throw Exception ("Unexpected bit width (" + str(bytes) + ") for floating-point data");
             }
+            break;
           default:
-            throw Exception (std::string ("Unsupported data type indicator \"") + s[type_offset] + "\"");
+            throw Exception (std::string ("Unsupported data type indicator \'") + s[type_offset] + "\'");
         }
         if (data_type.bytes() != 1 && expect_one_byte_width)
           throw Exception ("Inconsistency in byte width specification (expected one byte; got " + str(data_type.bytes()) + ')');
@@ -117,48 +120,6 @@ namespace MR
         }
         return data_type;
       }
-
-
-
-      bool descr_is_half (const std::string& s, bool &is_little_endian)
-      {
-        size_t type_offset = 0;
-        is_little_endian = true;
-        bool issue_endianness_warning = false;
-        if (s[0] == '<') {
-          type_offset = 1;
-        } else if (s[0] == '>') {
-          is_little_endian = false;
-          type_offset = 1;
-        } else if (s[0] == '|') {
-          return false;
-        } else {
-          issue_endianness_warning = true;
-        }
-        size_t bytes = 0;
-        if (s.size() > type_offset + 1) {
-          try {
-            bytes = to<size_t> (s.substr (type_offset+1));
-          } catch (Exception& e) {
-            throw Exception ("Invalid byte width specifier \"" + s.substr (type_offset+1) + "\"");
-          }
-        }
-        switch (s[type_offset]) {
-          case 'e':
-            if (bytes && bytes != 2)
-              throw Exception ("Unexpected bit width (" + str(bytes) + ") for half-precision floating-point data");
-            break;
-          case 'f':
-            if (bytes != 2)
-              return false;
-            break;
-        }
-        if (issue_endianness_warning) {
-          WARN (std::string ("NumPy file does not indicate data endianness; assuming ") + (MRTRIX_IS_BIG_ENDIAN ? "big" : "little") + "-endian (same as system)");
-        }
-        return true;
-      }
-
 
 
 
@@ -202,46 +163,6 @@ namespace MR
 
 
 
-      template <typename ValueType>
-      std::function<ValueType(void*, size_t)> __get_float16_fetch_func (const bool is_little_endian)
-      {
-        if (is_little_endian) {
-          return [] (void* addr, size_t i) -> ValueType {
-#if MRTRIX_IS_BIG_ENDIAN
-            uint16_t data = reinterpret_cast<uint16_t*>(addr)[i];
-            data = ByteOrder::swap (data);
-            return *reinterpret_cast<half*> (&data);
-#else
-            return reinterpret_cast<half*>(addr)[i];
-#endif
-          };
-        } else {
-          return [] (void* addr, size_t i) -> ValueType {
-#if MRTRIX_IS_BIG_ENDIAN
-            return reinterpret_cast<half*>(addr)[i];
-#else
-            uint16_t data = reinterpret_cast<uint16_t*>(addr)[i];
-            data = ByteOrder::swap (data);
-            return *reinterpret_cast<half*> (&data);
-#endif
-          };
-        }
-      }
-      template std::function<bool(void*, size_t)> __get_float16_fetch_func (const bool);
-      template std::function<uint8_t(void*, size_t)> __get_float16_fetch_func (const bool);
-      template std::function<int8_t(void*, size_t)> __get_float16_fetch_func (const bool);
-      template std::function<uint16_t(void*, size_t)> __get_float16_fetch_func (const bool);
-      template std::function<int16_t(void*, size_t)> __get_float16_fetch_func (const bool);
-      template std::function<uint32_t(void*, size_t)> __get_float16_fetch_func (const bool);
-      template std::function<int32_t(void*, size_t)> __get_float16_fetch_func (const bool);
-      template std::function<uint64_t(void*, size_t)> __get_float16_fetch_func (const bool);
-      template std::function<int64_t(void*, size_t)> __get_float16_fetch_func (const bool);
-      template std::function<float(void*, size_t)> __get_float16_fetch_func (const bool);
-      template std::function<double(void*, size_t)> __get_float16_fetch_func (const bool);
-
-
-
-
       KeyValues parse_header (std::string s)
       {
         if (s[s.size()-1] == '\n')
@@ -256,7 +177,7 @@ namespace MR
         std::string current, key;
         KeyValues keyval;
         for (const auto c : s) {
-          std::cerr << "Openers: [" << join(openers, ",") << "]; prev_was_escape = " << str(prev_was_escape) << "; current: " << current << "; key: " << key << "\n";
+          //std::cerr << "Openers: [" << join(openers, ",") << "]; prev_was_escape = " << str(prev_was_escape) << "; current: " << current << "; key: " << key << "\n";
           if (prev_was_escape) {
             current.push_back (c);
             prev_was_escape = false;
