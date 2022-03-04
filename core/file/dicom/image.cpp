@@ -259,6 +259,10 @@ namespace MR {
               case 0x10B2U:
                 G[2] = item.get_float (0, G[2]);
                 return;
+              case 0x1413:
+                if (sequence == UINT_MAX)
+                    sequence = item.get_int()[0];
+                return;
             }
             return;
           case 0x7FE0U:
