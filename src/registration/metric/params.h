@@ -148,7 +148,7 @@ namespace MR
           template <class OptimiserType>
             void optimiser_update (OptimiserType& optim, const ssize_t overlap_count) {
               DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
-              if (!is_finite(optim.state())) {
+              if (!optim.state().allFinite()) {
                 CONSOLE ("last valid transformation:");
                 transformation.debug();
                 CONSOLE ("last optimisation step ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
