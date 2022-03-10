@@ -260,8 +260,7 @@ namespace MR {
                 G[2] = item.get_float (0, G[2]);
                 return;
               case 0x1413:
-                if (sequence == UINT_MAX)
-                    sequence = item.get_int()[0];
+                grad_number = item.get_int()[0];
                 return;
             }
             return;
