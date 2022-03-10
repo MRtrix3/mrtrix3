@@ -49,6 +49,7 @@ namespace MR {
             transfer_syntax_supported = true;
             pe_axis = 3;
             pe_sign = 0;
+            philips_orientation = '\0';
             pixel_bandwidth = bandwidth_per_pixel_phase_encode = echo_time = inversion_time = repetition_time = flip_angle = partial_fourier = time_after_start = NaN;
             echo_train_length = 0;
             bipolar_flag = readoutmode_flag = 0;
@@ -62,6 +63,7 @@ namespace MR {
           bool DW_scheme_wrt_image, transfer_syntax_supported;
           size_t pe_axis;
           int pe_sign;
+          char philips_orientation;
           Time acquisition_time;
           default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time, inversion_time, repetition_time, flip_angle, partial_fourier, time_after_start;
           size_t echo_train_length;
@@ -114,6 +116,12 @@ namespace MR {
 
             orientation_z.normalize();
             distance = orientation_z.dot (position_vector);
+          }
+
+          bool is_philips_iso () const {
+            if (philips_orientation == '\0')
+              return false;
+            return (philips_orientation == 'I' && bvalue > 0.0);
           }
 
           static vector<size_t> count (const vector<Frame*>& frames);
