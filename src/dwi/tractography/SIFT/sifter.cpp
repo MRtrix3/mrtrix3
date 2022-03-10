@@ -144,8 +144,8 @@ namespace MR
               if (App::log_level)
                 fprintf (stderr, "\n");
               output_filtered_tracks (tck_file_path, prefix + "_tracks.tck");
-              if (output_debug)
-                output_all_debug_images (prefix);
+              if (debug_dir.size())
+                output_all_debug_images (debug_dir, prefix);
               INFO ("\nProportionality coefficient at " + str (tracks_remaining) + " streamlines is " + str (mu()));
               output_at_counts.pop_back();
             }
@@ -359,14 +359,14 @@ namespace MR
 
 
 
-      void SIFTer::set_regular_outputs (const vector<uint32_t>& in, const bool b)
+      void SIFTer::set_regular_outputs (const vector<uint32_t>& in, const std::string& dirpath)
       {
         for (auto i : in) {
           if (i > 0 && i <= contributions.size())
             output_at_counts.push_back (i);
         }
         sort (output_at_counts.begin(), output_at_counts.end());
-        output_debug = b;
+        debug_dir = dirpath;
       }
 
 
