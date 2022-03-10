@@ -245,8 +245,14 @@ namespace MR {
             }
             return;
           case 0x2001U: // Philips DW encoding info:
-            if (item.element == 0x1003)
-              bvalue = item.get_float (0, bvalue);
+            switch (item.element) {
+              case 0x100:
+                bvalue = item.get_float (0, bvalue);
+                return;
+              case 0x1004:
+                philips_orientation = item.get_string(0, "\0\0")[0];
+                return;
+            }
             return;
           case 0x2005U: // Philips DW encoding info:
             switch (item.element) {
