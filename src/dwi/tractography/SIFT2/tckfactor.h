@@ -102,6 +102,8 @@ namespace MR {
 
           void estimate_factors();
 
+          void report_entropy() const;
+
           void output_factors (const std::string&) const;
           void output_coefficients (const std::string&) const;
 
