@@ -299,20 +299,36 @@ namespace MR
       return header;
     }
 
-    //! Generate a header for a sparse data file (Nx1x1) using an index image as a template
-    template <class IndexHeaderType>
-    FORCE_INLINE Header data_header_from_index (IndexHeaderType& index) {
-      Header header (index);
+    //! Generate a header for a sparse data file (Nx1x1)
+    FORCE_INLINE Header data_header_from_nfixels (const size_t nfixels) {
+      Header header;
       header.ndim() = 3;
-      header.size(0) = get_number_of_fixels (index);
+      header.size(0) = nfixels;
       header.size(1) = 1;
       header.size(2) = 1;
       header.stride(0) = 1;
       header.stride(1) = 2;
       header.stride(2) = 3;
-      header.transform() = transform_type::Identity();
-      header.datatype() = DataType::Float32;
-      header.datatype().set_byte_order_native();
+      header.spacing(0) = header.spacing(1) = header.spacing(2) = 1.0;
+      header.transform().setIdentity();
+      header.datatype() = DataType::native (DataType::Float32);
+      return header;
+    }
+
+    //! Generate a header for a sparse data file (Nx1x1) using an index image as a template
+    template <class IndexHeaderType>
+    FORCE_INLINE Header data_header_from_index (IndexHeaderType& index) {
+      Header header (data_header_from_nfixels (get_number_of_fixels (index)));
+      header.keyval() = index.keyval();
+      return header;
+    }
+
+    //! Generate a header for a fixel directions data file (Nx3x1) based on knowledge of the number of fixels
+    FORCE_INLINE Header directions_header_from_nfixels (const size_t nfixels) {
+      Header header = data_header_from_nfixels (nfixels);
+      header.size(1) = 3;
+      header.stride(0) = 2;
+      header.stride(1) = 1;
       return header;
     }
 
@@ -321,6 +337,8 @@ namespace MR
     FORCE_INLINE Header directions_header_from_index (IndexHeaderType& index) {
       Header header = data_header_from_index (index);
       header.size(1) = 3;
+      header.stride(0) = 2;
+      header.stride(1) = 1;
       return header;
     }
 

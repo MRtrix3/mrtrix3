@@ -164,23 +164,24 @@ void run ()
 
   TckFactor tckfactor (in_dwi, dirs);
 
-  const bool output_debug = get_options ("output_debug").size();
-
-  if (output_debug)
-    tckfactor.output_proc_mask ("proc_mask.mif");
-
   tckfactor.perform_FOD_segmentation (in_dwi);
   tckfactor.scale_FDs_by_GM();
 
-  tckfactor.map_streamlines (argument[0]);
+  std::string debug_path = get_option_value<std::string> ("output_debug", "");
+  if (debug_path.size()) {
+    tckfactor.initialise_debug_image_output (debug_path);
+    tckfactor.output_proc_mask (Path::join(debug_path, "proc_mask.mif"));
+  }
 
+  tckfactor.map_streamlines (argument[0]);
   tckfactor.store_orig_TDs();
 
-  const float min_td_frac = get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT);
-  tckfactor.remove_excluded_fixels (min_td_frac);
+  tckfactor.remove_excluded_fixels (get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT));
 
-  if (output_debug)
-    tckfactor.output_all_debug_images ("before");
+  if (debug_path.size()) {
+    tckfactor.output_TD_images (debug_path, "origTD_voxel.mif", "count_voxel.mif");
+    tckfactor.output_all_debug_images (debug_path, "before");
+  }
 
   if (get_options ("linear").size()) {
 
@@ -231,8 +232,8 @@ void run ()
   if (opt.size())
     tckfactor.output_coefficients (opt[0][0]);
 
-  if (output_debug)
-    tckfactor.output_all_debug_images ("after");
+  if (debug_path.size())
+    tckfactor.output_all_debug_images (debug_path, "after");
 
   opt = get_options ("out_mu");
   if (opt.size()) {

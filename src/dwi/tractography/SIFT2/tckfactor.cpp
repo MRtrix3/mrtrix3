@@ -230,7 +230,7 @@ namespace MR {
         unsigned int iter = 0;
 
         auto display_func = [&](){ return printf("    %5u        %3.3f%%         %2.3f%%        %u", iter, 100.0 * cf_data / init_cf, 100.0 * cf_reg / init_cf, nonzero_streamlines); };
-        CONSOLE ("  Iteration     CF (data)      CF (reg)     Streamlines");
+        CONSOLE ("         Iteration     CF (data)       CF (reg)    Streamlines");
         ProgressBar progress ("");
 
         // Keep track of total exclusions, not just how many are removed in each iteration
@@ -336,8 +336,6 @@ namespace MR {
 
           // Leaving out testing the fixel exclusion mask criterion; doesn't converge, and results in CF increase
         } while (((new_cf - prev_cf < required_cf_change) || (iter < min_iters) /* || !fixels_to_exclude.empty() */ ) && (iter < max_iters));
-
-        progress.done();
       }
 
 
@@ -368,17 +366,36 @@ namespace MR {
 
 
 
-      void TckFactor::output_all_debug_images (const std::string& prefix) const
+
+
+      void TckFactor::output_TD_images (const std::string& dirpath, const std::string& TD_path, const std::string& count_path) const
+      {
+        Header H (MR::Fixel::data_header_from_nfixels (fixels.size()));
+        Header H_count;
+        H_count.datatype() = DataType::native (DataType::UInt32);
+        Image<float>    TD_image    (Image<float>   ::create (Path::join (dirpath, TD_path), H));
+        Image<uint32_t> count_image (Image<uint32_t>::create (Path::join (dirpath, count_path), H));
+        for (auto l = Loop(0) (TD_image, count_image); l; ++l) {
+          const size_t index = count_image.index(0);
+          TD_image.value() = fixels[index].get_orig_TD();
+          count_image.value() = fixels[index].get_count();
+        }
+      }
+
+
+
+
+      void TckFactor::output_all_debug_images (const std::string& dirpath, const std::string& prefix) const
       {
 
-        Model<Fixel>::output_all_debug_images (prefix);
+        Model<Fixel>::output_all_debug_images (dirpath, prefix);
 
         if (!coefficients.size())
           return;
 
-        vector<double> mins   (fixels.size(), 100.0);
+        vector<double> mins   (fixels.size(), std::numeric_limits<double>::infinity());
         vector<double> stdevs (fixels.size(), 0.0);
-        vector<double> maxs   (fixels.size(), -100.0);
+        vector<double> maxs   (fixels.size(), -std::numeric_limits<double>::infinity());
         vector<size_t> zeroed (fixels.size(), 0);
 
         {
@@ -403,65 +420,34 @@ namespace MR {
         }
 
         for (size_t i = 1; i != fixels.size(); ++i) {
-          if (mins[i] == 100.0)
-            mins[i] = 0.0;
+          if (!std::isfinite (mins[i]))
+            mins[i] = std::numeric_limits<double>::quiet_NaN();
           stdevs[i] = (fixels[i].get_count() > 1) ? (std::sqrt (stdevs[i] / float(fixels[i].get_count() - 1))) : 0.0;
-          if (maxs[i] == -100.0)
-            maxs[i] = 0.0;
+          if (!std::isfinite (maxs[i]))
+            maxs[i] = std::numeric_limits<double>::quiet_NaN();
         }
 
-        using MR::Fixel::Legacy::FixelMetric;
-        Header H_fixel (Fixel_map<Fixel>::header());
-        H_fixel.datatype() = DataType::UInt64;
-        H_fixel.datatype().set_byte_order_native();
-        H_fixel.keyval()[MR::Fixel::Legacy::name_key] = str(typeid(FixelMetric).name());
-        H_fixel.keyval()[MR::Fixel::Legacy::size_key] = str(sizeof(FixelMetric));
+        Header H (MR::Fixel::data_header_from_nfixels (fixels.size()));
+        Header H_excluded (H);
+        H_excluded.datatype() = DataType::Bit;
+        Image<float> min_image      (Image<float>::create (Path::join (dirpath, prefix + "_coeff_min.mif"), H));
+        Image<float> mean_image     (Image<float>::create (Path::join (dirpath, prefix + "_coeff_mean.mif"), H));
+        Image<float> stdev_image    (Image<float>::create (Path::join (dirpath, prefix + "_coeff_stdev.mif"), H));
+        Image<float> max_image      (Image<float>::create (Path::join (dirpath, prefix + "_coeff_max.mif"), H));
+        Image<float> zeroed_image   (Image<float>::create (Path::join (dirpath, prefix + "_coeff_zeroed.mif"), H));
+        Image<bool>  excluded_image (Image<bool> ::create (Path::join (dirpath, prefix + "_excluded.mif"), H_excluded));
 
-        MR::Fixel::Legacy::Image<FixelMetric> count_image    (prefix + "_count.msf",        H_fixel);
-        MR::Fixel::Legacy::Image<FixelMetric> min_image      (prefix + "_coeff_min.msf",    H_fixel);
-        MR::Fixel::Legacy::Image<FixelMetric> mean_image     (prefix + "_coeff_mean.msf",   H_fixel);
-        MR::Fixel::Legacy::Image<FixelMetric> stdev_image    (prefix + "_coeff_stdev.msf",  H_fixel);
-        MR::Fixel::Legacy::Image<FixelMetric> max_image      (prefix + "_coeff_max.msf",    H_fixel);
-        MR::Fixel::Legacy::Image<FixelMetric> zeroed_image   (prefix + "_coeff_zeroed.msf", H_fixel);
-        MR::Fixel::Legacy::Image<FixelMetric> excluded_image (prefix + "_excluded.msf",     H_fixel);
-
-        VoxelAccessor v (accessor());
-        for (auto l = Loop(v) (v, count_image, min_image, mean_image, stdev_image, max_image, zeroed_image, excluded_image); l; ++l) {
-          if (v.value()) {
-
-            count_image   .value().set_size ((*v.value()).num_fixels());
-            min_image     .value().set_size ((*v.value()).num_fixels());
-            mean_image    .value().set_size ((*v.value()).num_fixels());
-            stdev_image   .value().set_size ((*v.value()).num_fixels());
-            max_image     .value().set_size ((*v.value()).num_fixels());
-            zeroed_image  .value().set_size ((*v.value()).num_fixels());
-            excluded_image.value().set_size ((*v.value()).num_fixels());
-
-            size_t index = 0;
-            for (typename Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
-              const size_t fixel_index = size_t(iter);
-              FixelMetric fixel_metric (iter().get_dir().cast<float>(), iter().get_FOD(), iter().get_count());
-              count_image   .value()[index] = fixel_metric;
-              fixel_metric.value = mins[fixel_index];
-              min_image     .value()[index] = fixel_metric;
-              fixel_metric.value = iter().get_mean_coeff();
-              mean_image    .value()[index] = fixel_metric;
-              fixel_metric.value = stdevs[fixel_index];
-              stdev_image   .value()[index] = fixel_metric;
-              fixel_metric.value = maxs[fixel_index];
-              max_image     .value()[index] = fixel_metric;
-              fixel_metric.value = zeroed[fixel_index];
-              zeroed_image  .value()[index] = fixel_metric;
-              fixel_metric.value = iter().is_excluded() ? 0.0 : 1.0;
-              excluded_image.value()[index] = fixel_metric;
-            }
-
-          }
+        for (auto l = Loop(0) (min_image, mean_image, stdev_image, max_image, zeroed_image, excluded_image); l; ++l) {
+          const size_t index = min_image.index(0);
+          min_image.value() = mins[index];
+          mean_image.value() = fixels[index].get_mean_coeff();
+          stdev_image.value() = stdevs[index];
+          max_image.value() = maxs[index];
+          zeroed_image.value() = zeroed[index];
+          excluded_image.value() = fixels[index].is_excluded();
         }
+
       }
-
-
-
 
 
 
