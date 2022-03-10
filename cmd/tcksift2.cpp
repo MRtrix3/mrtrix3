@@ -226,6 +226,8 @@ void run ()
 
   }
 
+  tckfactor.report_entropy();
+
   tckfactor.output_factors (argument[2]);
 
   auto opt = get_options ("out_coeffs");
