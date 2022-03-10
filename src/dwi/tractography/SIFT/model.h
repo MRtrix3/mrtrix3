@@ -326,9 +326,9 @@ namespace MR
         using void_t = void;
 
         template <typename T, typename = void>
-        struct has_add_TD_function : std::false_type {};
+        struct has_add_TD_function : std::false_type { NOMEMALIGN };
         template <typename T>
-        struct has_add_TD_function<T, decltype (std::declval<T>().add_TD(0.0, 0))> : std::true_type {};
+        struct has_add_TD_function<T, decltype (std::declval<T>().add_TD(0.0, 0))> : std::true_type { NOMEMALIGN };
 
         template <typename FixelType>
         typename std::enable_if<has_add_TD_function<FixelType>::value, void>::type increment (FixelType& fixel, const double length, const track_t count) {
