@@ -319,6 +319,8 @@ namespace MR
     template <class IndexHeaderType>
     FORCE_INLINE Header data_header_from_index (IndexHeaderType& index) {
       Header header (data_header_from_nfixels (get_number_of_fixels (index)));
+      for (size_t axis = 0; axis != 3; ++axis)
+        header.spacing (axis) = index.spacing (axis);
       header.keyval() = index.keyval();
       return header;
     }
@@ -336,6 +338,8 @@ namespace MR
     template <class IndexHeaderType>
     FORCE_INLINE Header directions_header_from_index (IndexHeaderType& index) {
       Header header = data_header_from_index (index);
+      for (size_t axis = 0; axis != 3; ++axis)
+        header.spacing (axis) = index.spacing (axis);
       header.size(1) = 3;
       header.stride(0) = 2;
       header.stride(1) = 1;
