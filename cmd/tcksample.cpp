@@ -103,7 +103,6 @@ void usage ()
 
 
 using value_type = float;
-using fqNaN = std::numeric_limits<value_type>::quiet_NaN();
 using vector_type = Eigen::VectorXf;
 using matrix_type = Eigen::MatrixXf;
 
@@ -191,7 +190,7 @@ class SamplerNonPrecise
         if (interp.scanner (tck[i]))
           out[i] = interp.value();
         else
-          out[i] = fqNaN;
+          out[i] = NAN;
       }
       return true;
     }
@@ -206,7 +205,7 @@ class SamplerNonPrecise
           for (auto l = Loop(3) (interp); l; ++l)
             out(i, interp.index(3)) = interp.value();
         } else {
-          out.row(i).setConstant (fqNaN);
+          out.row(i).setConstant (NAN);
         }
       }
       return true;
@@ -257,7 +256,7 @@ class SamplerNonPrecise
               sum_weights += weights[i];
             }
           }
-          return sum_weights ? (integral / sum_weights) : fqNaN;
+          return sum_weights ? (integral / sum_weights) : NAN;
         }
         case stat_tck::MEDIAN: {
           // Don't bother with a weighted median here
@@ -267,7 +266,7 @@ class SamplerNonPrecise
             if (!std::isnan (data[i]))
               finite_data.push_back (data[i]);
           }
-          return finite_data.size() ? Math::median (finite_data) : fqNaN;
+          return finite_data.size() ? Math::median (finite_data) : NAN;
         }
         break;
         case stat_tck::MIN: {
@@ -279,7 +278,7 @@ class SamplerNonPrecise
               cast_to_nan = false;
             }
           }
-          return cast_to_nan ? fqNaN : value;
+          return cast_to_nan ? NAN : value;
         }
         break;
         case stat_tck::MAX: {
@@ -291,7 +290,7 @@ class SamplerNonPrecise
               cast_to_nan = false;
             }
           }
-          return cast_to_nan ? fqNaN : value;
+          return cast_to_nan ? NAN : value;
         }
         break;
         default: assert (0); return std::numeric_limits<value_type>::signaling_NaN();
@@ -366,7 +365,7 @@ class SamplerPrecise
               sum_lengths += v.get_length();
             }
           }
-          return sum_lengths ? (integral / sum_lengths) : fqNaN;
+          return sum_lengths ? (integral / sum_lengths) : NAN;
         }
         case stat_tck::MEDIAN: {
           // Should be a weighted median...
@@ -390,7 +389,7 @@ class SamplerPrecise
             }
           }
           if (!data.size())
-            return fqNaN;
+            return NAN;
           std::sort (data.begin(), data.end());
           const value_type target_length = 0.5 * sum_lengths;
           sum_lengths = value_type(0);
@@ -414,7 +413,7 @@ class SamplerPrecise
               cast_to_nan = false;
             }
           }
-          return cast_to_nan ? fqNaN : minvalue;
+          return cast_to_nan ? NAN : minvalue;
         }
         case stat_tck::MAX: {
           value_type maxvalue = -std::numeric_limits<value_type>::infinity();
@@ -427,7 +426,7 @@ class SamplerPrecise
               cast_to_nan = false;
             }
           }
-          return cast_to_nan ? fqNaN : maxvalue;
+          return cast_to_nan ? NAN : maxvalue;
         }
         default:
           assert (0);
