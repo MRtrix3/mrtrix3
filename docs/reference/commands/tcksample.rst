@@ -22,7 +22,9 @@ Usage
 Description
 -----------
 
-By default, the value of the underlying image at each point along the track is written to either an ASCII file (with all values for each track on the same line), or a track scalar file (.tsf). Alternatively, some statistic can be taken from the values along each streamline and written to a vector file.
+By default, the value of the underlying image at each point along the track is written to either an ASCII file (with all values for each track on the same line), or a track scalar file (.tsf). Alternatively, some statistic can be taken from the values along each streamline and written to a vector file, which can either be in the NumPy .npy format or a numerical text file.
+
+In the circumstance where a per-streamline statistic is requested, the input image can be 4D rather than 3D; in that circumstance, each volume will be sampled independently, and the output (whether in .npy or text format) will be a matrix, with one row per streamline and one column per metric.
 
 Options
 -------
