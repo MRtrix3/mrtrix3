@@ -246,7 +246,7 @@ namespace MR {
             return;
           case 0x2001U: // Philips DW encoding info:
             switch (item.element) {
-              case 0x100:
+              case 0x1003:
                 bvalue = item.get_float (0, bvalue);
                 return;
               case 0x1004:
