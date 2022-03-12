@@ -256,7 +256,7 @@ namespace MR
         std::string current, key;
         KeyValues keyval;
         for (const auto c : s) {
-          std::cerr << "Openers: [" << join(openers, ",") << "]; prev_was_escape = " << str(prev_was_escape) << "; current: " << current << "; key: " << key << "\n";
+          //std::cerr << "Openers: [" << join(openers, ",") << "]; prev_was_escape = " << str(prev_was_escape) << "; current: " << current << "; key: " << key << "\n";
           if (prev_was_escape) {
             current.push_back (c);
             prev_was_escape = false;
@@ -276,7 +276,7 @@ namespace MR
           if (openers.size()) {
             if (c == pairs.find(openers.back())->second)
               openers.pop_back();
-            // If final opener is a string quote, and it's now being closed, 
+            // If final opener is a string quote, and it's now being closed,
             //   want to capture anything until the corresponding close,
             //   regardless of whether or not it is itself an opener
             // For other openers, a new opener can stack, and so we
