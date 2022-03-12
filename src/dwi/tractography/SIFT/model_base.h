@@ -188,7 +188,6 @@ namespace MR
             void output_errors_fixel (const std::string&, const std::string&, const std::string&) const;
             void output_scatterplot (const std::string&) const;
             void output_fixel_count_image (const std::string&) const;
-            void output_untracked_fixels (const std::string&, const std::string&, const std::string&) const;
 
         };
 
@@ -401,7 +400,6 @@ namespace MR
           output_errors_fixel (dirpath, prefix + "_diff_fixel.mif", prefix + "_cost_fixel.mif");
 #endif
           output_scatterplot (Path::join (dirpath, prefix + "_scatterplot.csv"));
-          output_untracked_fixels (dirpath, prefix + "_untracked_count.mif", prefix + "_untracked_amps.mif");
         }
 
 

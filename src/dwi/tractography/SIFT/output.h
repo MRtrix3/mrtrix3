@@ -251,33 +251,6 @@ namespace MR
         }
       }
 
-      template <class Fixel>
-      void ModelBase<Fixel>::output_untracked_fixels (const std::string& dirpath, const std::string& path_count, const std::string& path_amps) const
-      {
-        Header H_uint8_t (Fixel_map<Fixel>::header());
-        H_uint8_t.datatype() = DataType::UInt8;
-        auto out_count = Image<uint8_t>::create (Path::join (dirpath, path_count), H_uint8_t);
-        auto out_amps = Image<float>::create (Path::join (dirpath, path_amps), Fixel_map<Fixel>::header());
-        VoxelAccessor v (accessor());
-        for (auto l = Loop (v) (v, out_count, out_amps); l; ++l) {
-          if (v.value()) {
-            uint8_t count = 0;
-            default_type sum = 0.0;
-            for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
-              if (!i().get_TD()) {
-                ++count;
-                sum += i().get_FOD();
-              }
-            }
-            out_count.value() = count;
-            out_amps .value() = sum;
-          } else {
-            out_count.value() = 0;
-            out_amps .value() = NaN;
-          }
-        }
-      }
-
 
 
       }
