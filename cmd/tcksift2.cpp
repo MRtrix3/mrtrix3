@@ -179,7 +179,7 @@ void run ()
   tckfactor.remove_excluded_fixels (get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT));
 
   if (debug_path.size()) {
-    tckfactor.output_TD_images (debug_path, "origTD_voxel.mif", "count_voxel.mif");
+    tckfactor.output_TD_images (debug_path, "origTD_fixel.mif", "trackcount_fixel.mif");
     tckfactor.output_all_debug_images (debug_path, "before");
   }
 

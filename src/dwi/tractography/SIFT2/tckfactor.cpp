@@ -398,16 +398,16 @@ namespace MR {
 
 
 
-      void TckFactor::output_TD_images (const std::string& dirpath, const std::string& TD_path, const std::string& count_path) const
+      void TckFactor::output_TD_images (const std::string& dirpath, const std::string& origTD_path, const std::string& count_path) const
       {
         Header H (MR::Fixel::data_header_from_nfixels (fixels.size()));
         Header H_count;
         H_count.datatype() = DataType::native (DataType::UInt32);
-        Image<float>    TD_image    (Image<float>   ::create (Path::join (dirpath, TD_path), H));
-        Image<uint32_t> count_image (Image<uint32_t>::create (Path::join (dirpath, count_path), H));
-        for (auto l = Loop(0) (TD_image, count_image); l; ++l) {
+        Image<float>    origTD_image (Image<float>   ::create (Path::join (dirpath, origTD_path), H));
+        Image<uint32_t> count_image  (Image<uint32_t>::create (Path::join (dirpath, count_path), H));
+        for (auto l = Loop(0) (origTD_image, count_image); l; ++l) {
           const size_t index = count_image.index(0);
-          TD_image.value() = fixels[index].get_orig_TD();
+          origTD_image.value() = fixels[index].get_orig_TD();
           count_image.value() = fixels[index].get_count();
         }
       }
@@ -465,7 +465,7 @@ namespace MR {
         Image<float> stdev_image    (Image<float>::create (Path::join (dirpath, prefix + "_coeff_stdev.mif"), H));
         Image<float> max_image      (Image<float>::create (Path::join (dirpath, prefix + "_coeff_max.mif"), H));
         Image<float> zeroed_image   (Image<float>::create (Path::join (dirpath, prefix + "_coeff_zeroed.mif"), H));
-        Image<bool>  excluded_image (Image<bool> ::create (Path::join (dirpath, prefix + "_excluded.mif"), H_excluded));
+        Image<bool>  excluded_image (Image<bool> ::create (Path::join (dirpath, prefix + "_excludedfixels.mif"), H_excluded));
 
         for (auto l = Loop(0) (min_image, mean_image, stdev_image, max_image, zeroed_image, excluded_image); l; ++l) {
           const size_t index = min_image.index(0);
