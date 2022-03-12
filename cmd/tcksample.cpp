@@ -53,7 +53,13 @@ void usage ()
   + "By default, the value of the underlying image at each point along the track "
     "is written to either an ASCII file (with all values for each track on the same "
     "line), or a track scalar file (.tsf). Alternatively, some statistic can be "
-    "taken from the values along each streamline and written to a vector file.";
+    "taken from the values along each streamline and written to a vector file, "
+    "which can either be in the NumPy .npy format or a numerical text file."
+
+  + "In the circumstance where a per-streamline statistic is requested, the input "
+    "image can be 4D rather than 3D; in that circumstance, each volume will be sampled "
+    "independently, and the output (whether in .npy or text format) will be a matrix, "
+    "with one row per streamline and one column per metric.";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file").type_tracks_in()
@@ -97,7 +103,19 @@ void usage ()
 
 
 using value_type = float;
+using fqNaN = std::numeric_limits<value_type>::quiet_NaN();
 using vector_type = Eigen::VectorXf;
+using matrix_type = Eigen::MatrixXf;
+
+
+struct Statistic3D { NOMEMALIGN
+  value_type value;
+  size_t index;
+};
+struct Statistics4D { MEMALIGN(Statistics4D)
+  vector_type values;
+  size_t index;
+};
 
 
 
@@ -140,55 +158,32 @@ class SamplerNonPrecise
         mapper->set_use_precise_mapping (false);
     }
 
-    bool operator() (DWI::Tractography::Streamline<value_type>& tck, std::pair<size_t, value_type>& out)
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck, Statistics4D& out)
     {
       assert (statistic != stat_tck::NONE);
-      out.first = tck.get_index();
-
-      DWI::Tractography::TrackScalar<value_type> values;
+      out.index = tck.get_index();
+      matrix_type values;
       (*this) (tck, values);
-
-      if (statistic == MEAN) {
-        // Take distance between points into account in mean calculation
-        //   (Should help down-weight endpoints)
-        value_type integral = value_type(0), sum_lengths = value_type(0);
-        for (size_t i = 0; i != tck.size(); ++i) {
-          value_type length = value_type(0);
-          if (i)
-            length += (tck[i] - tck[i-1]).norm();
-          if (i < tck.size() - 1)
-            length += (tck[i+1] - tck[i]).norm();
-          length *= 0.5;
-          integral += values[i] * length;
-          sum_lengths += length;
-        }
-        out.second = sum_lengths ? (integral / sum_lengths) : 0.0;
-      } else {
-        if (statistic == MEDIAN) {
-          // Don't bother with a weighted median here
-          vector<value_type> data;
-          data.assign (values.data(), values.data() + values.size());
-          out.second = Math::median (data);
-        } else if (statistic == MIN) {
-          out.second = std::numeric_limits<value_type>::infinity();
-          for (size_t i = 0; i != tck.size(); ++i)
-            out.second = std::min (out.second, values[i]);
-        } else if (statistic == MAX) {
-          out.second = -std::numeric_limits<value_type>::infinity();
-          for (size_t i = 0; i != tck.size(); ++i)
-            out.second = std::max (out.second, values[i]);
-        } else {
-          assert (0);
-        }
-      }
-
-      if (!std::isfinite (out.second))
-        out.second = NaN;
-
+      vector<value_type> weights (statistic == stat_tck::MEAN ? compute_weights (tck) : vector<value_type>());
+      out.values.resize (interp.size(3));
+      for (size_t i = 0; i != interp.size(3); ++i)
+        out.values[i] = compute_statistic (values.col(i), weights);
       return true;
     }
 
-    bool operator() (const DWI::Tractography::Streamline<value_type>& tck, DWI::Tractography::TrackScalar<value_type>& out)
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck, Statistic3D& out)
+    {
+      assert (statistic != stat_tck::NONE);
+      out.index = tck.get_index();
+      DWI::Tractography::TrackScalar<value_type> values;
+      (*this) (tck, values);
+      vector<value_type> weights (statistic == stat_tck::MEAN ? compute_weights (tck) : vector<value_type>());
+      out.value = compute_statistic (values, weights);
+      return true;
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     DWI::Tractography::TrackScalar<value_type>& out)
     {
       out.set_index (tck.get_index());
       out.resize (tck.size());
@@ -196,7 +191,23 @@ class SamplerNonPrecise
         if (interp.scanner (tck[i]))
           out[i] = interp.value();
         else
-          out[i] = value_type(0);
+          out[i] = fqNaN;
+      }
+      return true;
+    }
+
+    bool operator() (const DWI::Tractography::Streamline<value_type>& tck,
+                     matrix_type& out)
+    {
+      assert (interp.ndim() == 4);
+      out.resize (tck.size(), interp.size(3));
+      for (size_t i = 0; i != tck.size(); ++i) {
+        if (interp.scanner (tck[i])) {
+          for (auto l = Loop(3) (interp); l; ++l)
+            out(i, interp.index(3)) = interp.value();
+        } else {
+          out.row(i).setConstant (fqNaN);
+        }
       }
       return true;
     }
@@ -216,6 +227,79 @@ class SamplerNonPrecise
       return v.get_length() / tdi.value();
     }
 
+    // Take distance between points into account in mean calculation
+    //   (Should help down-weight endpoints)
+    vector<value_type> compute_weights (const DWI::Tractography::Streamline<value_type>& tck)
+    {
+      vector<value_type> weights;
+      weights.reserve (tck.size());
+      for (size_t i = 0; i != tck.size(); ++i) {
+        value_type length = value_type(0);
+        if (i)
+          length += (tck[i] - tck[i-1]).norm();
+        if (i < tck.size() - 1)
+          length += (tck[i+1] - tck[i]).norm();
+        weights.push_back (0.5 * length);
+      }
+      return weights;
+    }
+
+
+    template <class VectorType>
+    value_type compute_statistic (const VectorType& data, const vector<value_type>& weights) const
+    {
+      switch (statistic) {
+        case stat_tck::MEAN: {
+          value_type integral = value_type(0), sum_weights = value_type(0);
+          for (size_t i = 0; i != data.size(); ++i) {
+            if (!std::isnan (data[i])) {
+              integral += data[i] * weights[i];
+              sum_weights += weights[i];
+            }
+          }
+          return sum_weights ? (integral / sum_weights) : fqNaN;
+        }
+        case stat_tck::MEDIAN: {
+          // Don't bother with a weighted median here
+          vector<value_type> finite_data;
+          finite_data.reserve (data.size());
+          for (size_t i = 0; i != data.size(); ++i) {
+            if (!std::isnan (data[i]))
+              finite_data.push_back (data[i]);
+          }
+          return finite_data.size() ? Math::median (finite_data) : fqNaN;
+        }
+        break;
+        case stat_tck::MIN: {
+          value_type value = std::numeric_limits<value_type>::infinity();
+          bool cast_to_nan = true;
+          for (size_t i = 0; i != data.size(); ++i) {
+            if (!std::isnan (data[i])) {
+              value = std::min (value, data[i]);
+              cast_to_nan = false;
+            }
+          }
+          return cast_to_nan ? fqNaN : value;
+        }
+        break;
+        case stat_tck::MAX: {
+          value_type value = -std::numeric_limits<value_type>::infinity();
+          bool cast_to_nan = true;
+          for (size_t i = 0; i != data.size(); ++i) {
+            if (!std::isnan (data[i])) {
+              value = std::max (value, data[i]);
+              cast_to_nan = false;
+            }
+          }
+          return cast_to_nan ? fqNaN : value;
+        }
+        break;
+        default: assert (0); return std::numeric_limits<value_type>::signaling_NaN();
+      }
+    }
+
+
+
 };
 
 
@@ -233,71 +317,23 @@ class SamplerPrecise
       mapper->set_use_precise_mapping (true);
     }
 
-    bool operator() (DWI::Tractography::Streamline<value_type>& tck, std::pair<size_t, value_type>& out)
+    bool operator() (DWI::Tractography::Streamline<value_type>& tck, Statistics4D& out)
     {
-      out.first = tck.get_index();
-      value_type sum_lengths = value_type(0);
-
+      out.index = tck.get_index();
       DWI::Tractography::Mapping::SetVoxel voxels;
       (*mapper) (tck, voxels);
+      out.values.resize (image.size(3));
+      for (auto l = Loop(3) (image); l; ++l)
+        out.values[image.index(3)] = compute_statistic (voxels);
+      return true;
+    }
 
-      if (statistic == MEAN) {
-        value_type integral = value_type(0.0);
-        for (const auto& v : voxels) {
-          assign_pos_of (v).to (image);
-          integral += v.get_length() * (image.value() * get_tdi_multiplier (v));
-          sum_lengths += v.get_length();
-        }
-        out.second = integral / sum_lengths;
-      } else if (statistic == MEDIAN) {
-        // Should be a weighted median...
-        // Just use the n.log(n) algorithm
-        class WeightSort { NOMEMALIGN
-          public:
-            WeightSort (const DWI::Tractography::Mapping::Voxel& voxel, const value_type value) :
-              value (value),
-              length (voxel.get_length()) { }
-            bool operator< (const WeightSort& that) const { return value < that.value; }
-            value_type value, length;
-        };
-        vector<WeightSort> data;
-        for (const auto& v : voxels) {
-          assign_pos_of (v).to (image);
-          data.push_back (WeightSort (v, (image.value() * get_tdi_multiplier (v))));
-          sum_lengths += v.get_length();
-        }
-        std::sort (data.begin(), data.end());
-        const value_type target_length = 0.5 * sum_lengths;
-        sum_lengths = value_type(0.0);
-        value_type prev_value = data.front().value;
-        for (const auto& d : data) {
-          if ((sum_lengths += d.length) > target_length) {
-            out.second = prev_value;
-            break;
-          }
-          prev_value = d.value;
-        }
-      } else if (statistic == MIN) {
-        out.second = std::numeric_limits<value_type>::infinity();
-        for (const auto& v : voxels) {
-          assign_pos_of (v).to (image);
-          out.second = std::min (out.second, value_type (image.value() * get_tdi_multiplier (v)));
-          sum_lengths += v.get_length();
-        }
-      } else if (statistic == MAX) {
-        out.second = -std::numeric_limits<value_type>::infinity();
-        for (const auto& v : voxels) {
-          assign_pos_of (v).to (image);
-          out.second = std::max (out.second, value_type (image.value() * get_tdi_multiplier (v)));
-          sum_lengths += v.get_length();
-        }
-      } else {
-        assert (0);
-      }
-
-      if (!std::isfinite (out.second))
-        out.second = NaN;
-
+    bool operator() (DWI::Tractography::Streamline<value_type>& tck, Statistic3D& out)
+    {
+      out.index = tck.get_index();
+      DWI::Tractography::Mapping::SetVoxel voxels;
+      (*mapper) (tck, voxels);
+      out.value = compute_statistic (voxels);
       return true;
     }
 
@@ -315,6 +351,88 @@ class SamplerPrecise
       assign_pos_of (v).to (tdi);
       assert (!is_out_of_bounds (tdi));
       return v.get_length() / tdi.value();
+    }
+
+    value_type compute_statistic (const DWI::Tractography::Mapping::SetVoxel& voxels)
+    {
+      switch (statistic) {
+        case stat_tck::MEAN: {
+          value_type integral = value_type(0), sum_lengths = value_type(0);
+          for (const auto& v : voxels) {
+            assign_pos_of (v, 0, 3).to (image);
+            const value_type value = image.value();
+            if (std::isfinite (value)) {
+              integral += v.get_length() * (value * get_tdi_multiplier (v));
+              sum_lengths += v.get_length();
+            }
+          }
+          return sum_lengths ? (integral / sum_lengths) : fqNaN;
+        }
+        case stat_tck::MEDIAN: {
+          // Should be a weighted median...
+          // Just use the n.log(n) algorithm
+          class WeightSort { NOMEMALIGN
+            public:
+              WeightSort (const DWI::Tractography::Mapping::Voxel& voxel, const value_type value) :
+                value (value),
+                length (voxel.get_length()) { }
+              bool operator< (const WeightSort& that) const { return value < that.value; }
+              value_type value, length;
+          };
+          vector<WeightSort> data;
+          value_type sum_lengths (value_type(0));
+          for (const auto& v : voxels) {
+            assign_pos_of (v).to (image);
+            const value_type value = image.value();
+            if (std::isfinite (value)) {
+              data.push_back (WeightSort (v, (image.value() * get_tdi_multiplier (v))));
+              sum_lengths += v.get_length();
+            }
+          }
+          if (!data.size())
+            return fqNaN;
+          std::sort (data.begin(), data.end());
+          const value_type target_length = 0.5 * sum_lengths;
+          sum_lengths = value_type(0);
+          value_type prev_value = data.front().value;
+          for (const auto& d : data) {
+            if ((sum_lengths += d.length) > target_length)
+              return prev_value;
+            prev_value = d.value;
+          }
+          assert (0);
+          return std::numeric_limits<value_type>::signaling_NaN();
+        }
+        case stat_tck::MIN: {
+          value_type minvalue = std::numeric_limits<value_type>::infinity();
+          bool cast_to_nan = true;
+          for (const auto& v : voxels) {
+            assign_pos_of (v).to (image);
+            const value_type value = image.value();
+            if (!std::isnan (value)) {
+              minvalue = std::min (minvalue, value * get_tdi_multiplier (v));
+              cast_to_nan = false;
+            }
+          }
+          return cast_to_nan ? fqNaN : minvalue;
+        }
+        case stat_tck::MAX: {
+          value_type maxvalue = -std::numeric_limits<value_type>::infinity();
+          bool cast_to_nan = true;
+          for (const auto& v : voxels) {
+            assign_pos_of (v).to (image);
+            const value_type value = image.value();
+            if (!std::isnan (value)) {
+              maxvalue = std::max (maxvalue, value * get_tdi_multiplier (v));
+              cast_to_nan = false;
+            }
+          }
+          return cast_to_nan ? fqNaN : maxvalue;
+        }
+        default:
+          assert (0);
+          return std::numeric_limits<value_type>::signaling_NaN();
+      }
     }
 
 };
@@ -350,27 +468,52 @@ class ReceiverBase { MEMALIGN(ReceiverBase)
 };
 
 
-class Receiver_Statistic : private ReceiverBase { MEMALIGN(Receiver_Statistic)
+class Receiver_Statistic3D : private ReceiverBase { MEMALIGN(Receiver_Statistic3D)
   public:
-    Receiver_Statistic (const size_t num_tracks) :
+    Receiver_Statistic3D (const size_t num_tracks) :
         ReceiverBase (num_tracks),
-        vector_data (vector_type::Zero (num_tracks)) { }
-    Receiver_Statistic (const Receiver_Statistic&) = delete;
+        data (vector_type::Zero (num_tracks)) { }
+    Receiver_Statistic3D (const Receiver_Statistic3D&) = delete;
 
-    bool operator() (std::pair<size_t, value_type>& in) {
-      if (in.first >= size_t(vector_data.size()))
-        vector_data.conservativeResizeLike (vector_type::Zero (in.first + 1));
-      vector_data[in.first] = in.second;
+    bool operator() (Statistic3D& in) {
+      if (in.index >= size_t(data.size()))
+        data.conservativeResizeLike (vector_type::Zero (in.index + 1));
+      data[in.index] = in.value;
       ++(*this);
       return true;
     }
 
     void save (const std::string& path) {
-      MR::save_vector (vector_data, path);
+      MR::save_vector (data, path);
     }
 
   private:
-    vector_type vector_data;
+    vector_type data;
+};
+
+
+class Receiver_Statistics4D : private ReceiverBase { MEMALIGN(Receiver_Statistics4D)
+  public:
+    Receiver_Statistics4D (const size_t num_tracks, const size_t num_metrics) :
+        ReceiverBase (num_tracks),
+        data (matrix_type::Zero (num_tracks, num_metrics)) { }
+    Receiver_Statistics4D (const Receiver_Statistics4D&) = delete;
+
+    bool operator() (Statistics4D& in) {
+      // TODO Chance that this will be prohibitively slow if count is not indicated in track file header
+      if (in.index >= size_t(data.rows()))
+        data.conservativeResizeLike (matrix_type::Zero (in.index + 1, data.cols()));
+      data.row(in.index) = in.values;
+      ++(*this);
+      return true;
+    }
+
+    void save (const std::string& path) {
+      MR::save_matrix (data, path);
+    }
+
+  private:
+    matrix_type data;
 };
 
 
@@ -443,13 +586,24 @@ void execute (DWI::Tractography::Reader<value_type>& reader,
               const std::string& path)
 {
   SamplerType sampler (image, statistic, tdi);
-  Receiver_Statistic receiver (num_tracks);
-  Thread::run_ordered_queue (reader,
-                             Thread::batch (DWI::Tractography::Streamline<value_type>()),
-                             Thread::multi (sampler),
-                             Thread::batch (std::pair<size_t, value_type>()),
-                             receiver);
-  receiver.save (path);
+  const size_t num_metrics = image.ndim() == 4 ? image.size(3) : 1;
+  if (num_metrics == 1) {
+    Receiver_Statistic3D receiver (num_tracks);
+    Thread::run_ordered_queue (reader,
+                              Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                              Thread::multi (sampler),
+                              Thread::batch (Statistic3D()),
+                              receiver);
+    receiver.save (path);
+  } else {
+    Receiver_Statistics4D receiver (num_tracks, num_metrics);
+    Thread::run_ordered_queue (reader,
+                              Thread::batch (DWI::Tractography::Streamline<value_type>()),
+                              Thread::multi (sampler),
+                              Thread::batch (Statistics4D()),
+                              receiver);
+    receiver.save (path);
+  }
 }
 
 
@@ -459,10 +613,15 @@ void run ()
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<value_type> reader (argument[0], properties);
   auto H = Header::open (argument[1]);
-  auto image = H.get_image<value_type>();
 
   auto opt = get_options ("stat_tck");
   const stat_tck statistic = opt.size() ? stat_tck(int(opt[0][0])) : stat_tck::NONE;
+  if (H.ndim() == 4 && H.size(3) != 1 && statistic != stat_tck::NONE) {
+    INFO ("Input image is 4D; output will be 2D matrix");
+  } else if (H.ndim() != 3) {
+    throw Exception ("Input image is of unsupported dimensionality");
+  }
+
   const bool nointerp = get_options ("nointerp").size();
   const bool precise = get_options ("precise").size();
   if (nointerp && precise)
@@ -491,6 +650,7 @@ void run ()
                        tdi_fill);
   }
 
+  auto image = H.get_image<value_type>();
   if (statistic == stat_tck::NONE) {
     switch (interp) {
       case interp_type::NEAREST:
