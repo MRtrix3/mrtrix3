@@ -151,19 +151,19 @@ namespace MR
           throw Exception ("Cannot query size of NumPy file \"" + path + "\": " + strerror (errno));
         const size_t file_size = sbuf.st_size;
         const size_t num_elements = size[0] * size[1];
-        const size_t predicted_data_size = (data_type == DataType::Bit) ? 
+        const size_t predicted_data_size = (data_type == DataType::Bit) ?
                                            ((num_elements+7) / 8) :
                                            (num_elements * bytes);
         const int64_t data_offset = in.tellg();
         if (data_offset + predicted_data_size != file_size)
           throw Exception ("Size of NumPy file \"" + path + "\" (" + str(file_size) + ") does not meet expectations given "
                            + "total header size (" + str(data_offset) + ") "
-                           + "and predicted data size (" 
+                           + "and predicted data size ("
                            + "(" + str(size[0]) + "x" + str(size[1]) + " = " + str(num_elements) + ") "
                            + (data_type == DataType::Bit ?
                               ("bits = " + str((num_elements+7)/8) + " bytes)") :
                               ("values x " + str(bytes) + " bytes per value = " + str(num_elements * bytes) + " bytes)")));
-        
+
         // Memory-map the remaining content of the file
         in.close();
         File::MMap mmap ({path, data_offset}, false);
@@ -194,7 +194,7 @@ namespace MR
       //   in cases where data type matches, but need to branch based on Eigen's major format for those particular data
       //   (also may need to be mindful of data alignment...)
 
-      
+
       namespace
       {
 
@@ -220,7 +220,7 @@ namespace MR
                 info.data_type = DataType::native (DataType::Float32);
             }
           }
-          
+
           // Need to construct the header string in order to discover its length
           std::string header (std::string ("{'descr': '")
                               + (info.write_float16 ? (std::string(MRTRIX_IS_BIG_ENDIAN ? ">" : "<") + "f2") : datatype2descr (info.data_type))
@@ -239,7 +239,7 @@ namespace MR
             out.write (reinterpret_cast<const char*>(&minor_version), 1);
             space_count = alignment - ((header.size() + 13) % alignment); // 13 = 6 magic number + 2 version + 4 header length + 1 newline for header
             padded_header_length = header.size() + space_count + 1;
-            uint32_t padded_header_length = ByteOrder::LE (padded_header_length);
+            padded_header_length = ByteOrder::LE (padded_header_length);
             out.write (reinterpret_cast<const char*>(&padded_header_length), 4);
           } else {
             const unsigned char major_version = '\x01';
