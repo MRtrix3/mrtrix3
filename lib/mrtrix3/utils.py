@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -112,7 +112,7 @@ def load_keyval(filename, **kwargs): #pylint: disable=unused-variable
         if len(line) < 2:
           continue
         name, var = line.rstrip().partition(":")[::2]
-        if name in res.keys():
+        if name in res:
           res[name].append(var.split())
         else:
           res[name] = var.split()

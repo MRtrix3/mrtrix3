@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,9 @@
 #   calling the relevant MRtrix3 binaries in order to parse image headers / process image
 #   data, rather than trying to duplicate support for all possible image formats natively
 #   in Python.
+
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding
 
 
 import json, math, os, subprocess
@@ -242,7 +245,7 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   try:
     from subprocess import DEVNULL #pylint: disable=import-outside-toplevel
   except ImportError:
-    DEVNULL = open(os.devnull, 'wb')
+    DEVNULL = open(os.devnull, 'wb') #pylint: disable=consider-using-with
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=DEVNULL) #pylint: disable=consider-using-with
   stdout = proc.communicate()[0]
   if proc.returncode:
