@@ -271,7 +271,7 @@ void run()
       ++progress;
     }
   }
-  const bool nans_in_data = data.allFinite();
+  const bool nans_in_data = !data.allFinite();
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&] (const size_t i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
