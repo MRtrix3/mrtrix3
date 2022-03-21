@@ -35,6 +35,9 @@ namespace MR {
           // ignore anything within IconImageSequence:
           if (seq.group ==  0x0088U && seq.element == 0x0200U)
             return;
+          // ignore anything within sequences with unknown (private) group:
+          if (seq.group & 1U)
+            return;
         }
 
         switch (item.group) {
