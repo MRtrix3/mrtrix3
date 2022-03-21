@@ -250,7 +250,7 @@ namespace MR {
                 bvalue = item.get_float (0, bvalue);
                 return;
               case 0x1004:
-                philips_orientation = item.get_string(0, "\0\0")[0];
+                philips_orientation = item.get_string(0, "\0")[0];
                 return;
             }
             return;
