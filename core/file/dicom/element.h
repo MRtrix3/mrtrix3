@@ -143,6 +143,8 @@ namespace MR {
             return VR == VR_SQ || ( group == GROUP_DATA && element == ELEMENT_DATA && size == LENGTH_UNDEFINED );
           }
 
+          bool ignore_when_parsing () const;
+
           Type type () const;
           vector<int32_t> get_int () const;
           vector<uint32_t> get_uint () const;
