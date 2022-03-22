@@ -27,18 +27,10 @@ namespace MR {
     namespace Dicom {
 
 
-
       void Image::parse_item (Element& item, const std::string& dirname)
       {
-
-        for (const auto& seq : item.parents) {
-          // ignore anything within IconImageSequence:
-          if (seq.group ==  0x0088U && seq.element == 0x0200U)
-            return;
-          // ignore anything within sequences with unknown (private) group:
-          if (seq.group & 1U)
-            return;
-        }
+        if (item.ignore_when_parsing())
+          return;
 
         switch (item.group) {
           case 0x0008U:
