@@ -97,7 +97,7 @@ void run ()
 
   // Build the mapping from input to output indices
   const auto mapping = get_lut_mapping (lut_in, lut_out);
-  if (!*std::max_element (mapping.begin(), mapping.end()))
+  if (*std::max_element (mapping.begin(), mapping.end()) == 0)
     throw Exception ("Mapping between input and output LUTs is empty, i.e. no common node names between these two LUTs");
 
   // Modify the header for the output file
