@@ -60,10 +60,10 @@ class RunList(object): #pylint: disable=unused-variable
       raise TypeError('Construction of RunList class expects either an '
                       'integer (number of commands/functions to run), or a '
                       'list of command strings to execute')
-  def command(self, cmd):
+  def command(self, cmd, **kwargs):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     assert self.valid
-    run.command(cmd)
+    run.command(cmd, **kwargs)
     self._increment()
   def function(self, func, *args, **kwargs):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
