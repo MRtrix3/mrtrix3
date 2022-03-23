@@ -27,15 +27,10 @@ namespace MR {
     namespace Dicom {
 
 
-
       void Image::parse_item (Element& item, const std::string& dirname)
       {
-
-        for (const auto& seq : item.parents) {
-          // ignore anything within IconImageSequence:
-          if (seq.group ==  0x0088U && seq.element == 0x0200U)
-            return;
-        }
+        if (item.ignore_when_parsing())
+          return;
 
         switch (item.group) {
           case 0x0008U:
@@ -245,8 +240,14 @@ namespace MR {
             }
             return;
           case 0x2001U: // Philips DW encoding info:
-            if (item.element == 0x1003)
-              bvalue = item.get_float (0, bvalue);
+            switch (item.element) {
+              case 0x1003:
+                bvalue = item.get_float (0, bvalue);
+                return;
+              case 0x1004:
+                philips_orientation = item.get_string(0, "\0")[0];
+                return;
+            }
             return;
           case 0x2005U: // Philips DW encoding info:
             switch (item.element) {
@@ -258,6 +259,9 @@ namespace MR {
                 return;
               case 0x10B2U:
                 G[2] = item.get_float (0, G[2]);
+                return;
+              case 0x1413:
+                grad_number = item.get_int()[0];
                 return;
             }
             return;
