@@ -84,7 +84,6 @@ COPY --from=ants-installer /opt/ants /opt/ants
 COPY --from=freesurfer-installer /opt/freesurfer /opt/freesurfer
 COPY --from=fsl-installer /opt/fsl /opt/fsl
 COPY --from=mrtrix3-builder /opt/mrtrix3 /opt/mrtrix3
-RUN rm /opt/fsl/fslinstaller.py
 
 ENV ANTSPATH="/opt/ants/bin" \
     ARTHOME="/opt/art" \
