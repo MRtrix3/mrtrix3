@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,9 @@
 # For more details, see http://www.mrtrix.org/.
 
 # Generates an unbiased group-average template via image registration of images to a midway space.
+
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding,consider-using-f-string
 
 import json, math, os, re, shutil, sys
 
@@ -477,7 +480,7 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
   inputs = []
   def paths_to_file_uids(paths, prefix, postfix):
     """ strip pre and postfix from filename, replace whitespace characters """
-    uid_path = dict()
+    uid_path = {}
     uids = []
     for path in paths:
       uid = re.sub(re.escape(postfix)+'$', '', re.sub('^'+re.escape(prefix), '', os.path.split(path)[1]))

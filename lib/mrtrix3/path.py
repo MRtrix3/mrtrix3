@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,9 @@
 # For more details, see http://www.mrtrix.org/.
 
 # Collection of convenience functions for manipulating filesystem paths
+
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding,redundant-u-string-prefix,consider-using-f-string
 
 
 
@@ -97,7 +100,8 @@ def make_temporary(suffix): #pylint: disable=unused-variable
       if is_directory:
         os.makedirs(temp_path)
       else:
-        open(temp_path, 'a').close()
+        with open(temp_path, 'a'):
+          pass
       app.debug(temp_path)
       return temp_path
     except OSError as exception:

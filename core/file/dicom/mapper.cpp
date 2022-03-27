@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,6 +35,23 @@ namespace MR {
 
       std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper (MR::Header& H, vector<std::shared_ptr<Series>>& series)
       {
+        //ENVVAR name: MRTRIX_PRESERVE_PHILIPS_ISO
+        //ENVVAR Do not remove the synthetic isotropically-weighted diffusion
+        //ENVVAR image often added at the end of the series on Philips
+        //ENVVAR scanners. By default, these images are removed from the series
+        //ENVVAR to prevent errors in downstream processing. If this
+        //ENVVAR environment variable is set, these images will be preserved in
+        //ENVVAR the output.
+        //ENVVAR
+        //ENVVAR Note that it can be difficult to ascertain which volume is the
+        //ENVVAR synthetic isotropically-weighed image, since its DW encoding
+        //ENVVAR will normally have been modified from its initial value
+        //ENVVAR (e.g. [ 0 0 0 1000 ] for a b=1000 acquisition) to b=0 due to
+        //ENVVAR b-value scaling.
+        bool preserve_philips_iso = ( getenv ("MRTRIX_PRESERVE_PHILIPS_ISO") != nullptr );
+
+
+
         assert (series.size() > 0);
         std::unique_ptr<MR::ImageIO::Base> io_handler;
 
@@ -77,11 +94,13 @@ namespace MR {
               std::sort (image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());
               for (auto frame_it : image_it->frames)
                 if (frame_it->image_type == series_it->image_type)
-                  frames.push_back (frame_it.get());
+                  if (!frame_it->is_philips_iso() || preserve_philips_iso)
+                    frames.push_back (frame_it.get());
             }
             // otherwise add image frame:
             else
-              frames.push_back (image_it.get());
+              if (!image_it->is_philips_iso() || preserve_philips_iso)
+                frames.push_back (image_it.get());
           }
         }
 
