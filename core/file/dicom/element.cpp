@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -278,6 +278,24 @@ namespace MR {
 
 
 
+
+
+      bool Element::ignore_when_parsing () const
+      {
+        for (const auto& seq : parents) {
+          // ignore anything within IconImageSequence:
+          if (seq.group ==  0x0088U && seq.element == 0x0200U)
+            return true;
+          // allow Philips PrivatePerFrameSq:
+          if (seq.group == 0x2005U && seq.element == 0x140FU)
+            continue;
+          // ignore anything within sequences with unknown (private) group:
+          if (seq.group & 1U)
+            return true;
+        }
+
+        return false;
+      }
 
 
 
