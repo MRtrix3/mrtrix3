@@ -68,7 +68,7 @@ def get_inputs(): #pylint: disable=unused-variable
         if len(candidate_files) > 1:
           raise MRtrixError('Multiple candidate VTK files for structure "' + first_sgm + '" in directory "' + first_path + '"')
         vtk_filelist.append(candidate_files[0])
-      if not all(os.path.basename(vtk_file.split('-')[0]) == os.path.basename(vtk_filelist[0]).split('-')[0] for vtk_file in vtk_filelist[1:]):
+      if not all(os.path.basename(vtk_file).split('-')[0] == os.path.basename(vtk_filelist[0]).split('-')[0] for vtk_file in vtk_filelist[1:]):
         raise MRtrixError('VTK files in FIRST directory "' + first_path + '" do not all possess same prefix')
       # TODO Also need a template image in order to convert the VTKs
       firstseg_image = glob.glob(os.path.join(first_path, '*_all_*_firstseg.nii*'))
