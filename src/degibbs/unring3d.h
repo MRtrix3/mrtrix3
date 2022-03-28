@@ -228,9 +228,15 @@ namespace MR {
               Math::FFT (vol_FT, vol_FT, 1, FFTW_FORWARD);
               Math::FFT (vol_FT, vol_FT, 2, FFTW_FORWARD);
 
-              for (int axis = 0; axis < 3; ++axis) {
+              Header H (output);
+              H.ndim() = 4;
+              H.size(3) = 3;
+              Image<typename VolumeOut::value_type> buffer (Image<typename VolumeOut::value_type>::scratch (H, "Reconstructed volume per axis"));
 
-                // filter along x:
+              for (int axis = 0; axis < 3; ++axis) {
+                buffer.index(3) = axis;
+
+                // filter along one axis:
                 INFO ("filtering for axis "+str(axis)+"...");
                 ThreadedLoop(vol_FT).run (Filter(axis), vol_FT, vol_filtered);
 
@@ -243,10 +249,21 @@ namespace MR {
                 // apply unringing operation on desired axis:
                 INFO ("performing unringing along axis "+str(axis)+"...");
                 ThreadedLoop (vol_filtered, strides_for_axis (axis))
-                  .run_outer (LineProcessor<VolumeOut> (axis, vol_filtered, output, minW, maxW, num_shifts));
+                  .run_outer (LineProcessor<VolumeOut> (axis, vol_filtered, buffer, minW, maxW, num_shifts));
 
                 ++progress;
               }
+
+              for (auto l_outer = Loop(output, 0, 3) (buffer, output); l_outer; ++l_outer) {
+                typename value_type::value_type sum_mag = 0.0;
+                value_type sum_complex = 0.0;
+                for (auto l_inner = Loop(3) (buffer); l_inner; ++l_inner) {
+                  sum_mag += std::abs (value_type(buffer.value()));
+                  sum_complex += value_type(buffer.value());
+                }
+                output.value() = sum_complex * sum_mag / std::abs (sum_complex);
+              }
+
 
             }
 
@@ -285,8 +302,8 @@ namespace MR {
         // loop over all volumes in input dataset:
         for (auto l = Loop (3, input.ndim())(input, output); l; l++) {
 
-            std::string vol_idx;
-            for (size_t n = 3; n < input.ndim(); ++n)
+          std::string vol_idx;
+          for (size_t n = 3; n < input.ndim(); ++n)
             vol_idx += str(input.index(n)) + " ";
           if (vol_idx.size())
             INFO ("processing volume [ " + vol_idx + "]");
