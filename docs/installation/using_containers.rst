@@ -101,3 +101,8 @@ Run GUI command
 The following usage has been shown to work on Linux::
 
     singularity exec -B /run MRtrix3.sif mrview
+
+If you experience difficulties here with ``mrview``, you may have better
+success if the Singularity container is built directly from the *MRtrix3*
+source code using the definition file "``Singularity``" rather than
+converting from a Docker container or using a custom definition file.

@@ -73,6 +73,7 @@ RUN apt-get -qq update \
         libqt5core5a \
         libqt5gui5 \
         libqt5network5 \
+        libqt5svg5 \
         libqt5widgets5 \
         libquadmath0 \
         libtiff5 \
