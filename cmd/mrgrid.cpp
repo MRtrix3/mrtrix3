@@ -76,7 +76,9 @@ void usage ()
   OPTIONS
   + OptionGroup ("Regridding options (involves image interpolation, applied to spatial axes only)")
     + Option   ("template", "match the input image grid (voxel spacing, image size, header transformation) to that of a reference image. "
-                 "The image resolution relative to the template image can be changed with one of -size, -voxel, -scale." )
+                 "The image resolution relative to the template image can be changed with one of -size, -voxel, -scale. "
+                 "This option will not influence the axis data strides of the output image; these are determined based on the input image, "
+                 "or the input to the -strides option.")
     + Argument ("image").type_image_in ()
 
     + Option   ("size", "define the size (number of voxels) in each spatial dimension for the output image. "
@@ -227,6 +229,13 @@ void run () {
 
     Header output_header (regrid_filter);
     Stride::set_from_command_line (output_header);
+    if (get_options ("template").size() && !get_options ("strides").size()) {
+      if (!Stride::spatial_stride_order_matches(template_header, output_header))
+        WARN("image stride order of the spatial dimensions do not match between template "
+              "and output image. Provide the -stride option with the template image as argument for "
+              "compatibility with other software.");
+    }
+
     if (interp == 0)
       output_header.datatype() = DataType::from_command_line (input_header.datatype());
     else
