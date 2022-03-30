@@ -29,8 +29,8 @@ namespace MR {
 
       class Study : public vector<std::shared_ptr<Series>> { NOMEMALIGN
         public:
-          Study (Patient* parent, const std::string& study_name, const std::string& study_ID = "",
-              const std::string& study_UID = "", const std::string& study_date = "", const std::string& study_time = "") :
+          Study (Patient* parent, const std::string& study_name, const std::string& study_ID,
+              const std::string& study_UID, const std::string& study_date, const std::string& study_time) :
         patient (parent), name (study_name), ID (study_ID),
         UID (study_UID), date (study_date), time (study_time) { }
 
@@ -39,8 +39,8 @@ namespace MR {
 
           std::shared_ptr<Series> find (const std::string& series_name, size_t series_number,
               const std::string& image_type, const std::string& series_ref_UID,
-              const std::string& series_modality = "", const std::string& series_date = "",
-              const std::string& series_time = "");
+              const std::string& series_modality, const std::string& series_date,
+              const std::string& series_time);
 
           bool operator< (const Study& s) const {
             if (date != s.date)

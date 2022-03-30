@@ -284,10 +284,10 @@ namespace MR {
       {
         for (const auto& seq : parents) {
           // ignore anything within IconImageSequence:
-          if (seq.group ==  0x0088U && seq.element == 0x0200U)
+          if (seq.is (0x0088U, 0x0200U))
             return true;
           // allow Philips PrivatePerFrameSq:
-          if (seq.group == 0x2005U && seq.element == 0x140FU)
+          if (seq.is (0x2005U, 0x140FU))
             continue;
           // ignore anything within sequences with unknown (private) group:
           if (seq.group & 1U)
@@ -301,6 +301,15 @@ namespace MR {
 
 
 
+      bool Element::is_in_series_ref_sequence () const
+      {
+        // required to group together series exported using
+        // Siemens XA10A in Interoperability mode
+        for (const auto& seq : parents)
+          if (seq.is (0x0008U, 0x1250U))
+            return true;
+        return false;
+      }
 
 
 

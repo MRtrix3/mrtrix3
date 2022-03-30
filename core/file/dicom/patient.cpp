@@ -49,7 +49,7 @@ namespace MR {
               if (study_UID.size() && (*this)[n]->UID.size()) {
                 if (study_UID == (*this)[n]->UID) {
                   if (!mismatched_UID_time_warning_issued) {
-                    WARN ("found data with matching study UID but mismatched study times");
+                    WARN ("mismatched study time and UID - this may cause problems with series grouping");
                     mismatched_UID_time_warning_issued = true;
                   }
                   match = true;
