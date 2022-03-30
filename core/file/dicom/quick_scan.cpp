@@ -67,6 +67,7 @@ namespace MR {
                 else if (item.is (0x0010U, 0x0020U)) patient_ID = item.get_string (0);
                 else if (item.is (0x0010U, 0x0030U)) patient_DOB = item.get_string (0);
                 else if (item.is (0x0018U, 0x0024U)) sequence = item.get_string (0);
+                else if (item.is (0x0020U, 0x000DU)) study_UID = item.get_string (0);
                 else if (item.is (0x0020U, 0x0010U)) study_ID = item.get_string (0);
                 else if (item.is (0x0020U, 0x0011U)) series_number = item.get_uint (0);
                 else if (item.is (0x0028U, 0x0010U)) dim[1] = item.get_uint (0);
