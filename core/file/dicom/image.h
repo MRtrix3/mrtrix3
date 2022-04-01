@@ -47,6 +47,7 @@ namespace MR {
             data = bits_alloc = data_size = frame_offset = 0;
             DW_scheme_wrt_image = false;
             transfer_syntax_supported = true;
+            ignore_series_num = false;
             pe_axis = 3;
             pe_sign = 0;
             philips_orientation = '\0';
@@ -60,7 +61,7 @@ namespace MR {
           default_type distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
           size_t data, bits_alloc, data_size, frame_offset;
           std::string filename, image_type;
-          bool DW_scheme_wrt_image, transfer_syntax_supported;
+          bool DW_scheme_wrt_image, transfer_syntax_supported, ignore_series_num;
           size_t pe_axis;
           int pe_sign;
           char philips_orientation;
@@ -72,7 +73,7 @@ namespace MR {
           vector<default_type> flip_angles;
 
           bool operator< (const Frame& frame) const {
-            if (series_num != frame.series_num)
+            if (!ignore_series_num && series_num != frame.series_num)
               return series_num < frame.series_num;
             if (image_type != frame.image_type)
               return image_type < frame.image_type;

@@ -153,6 +153,9 @@ namespace MR {
             return;
           case 0x0020U:
             switch (item.element) {
+              case 0x000EU:
+                ignore_series_num = item.is_in_series_ref_sequence();
+                return;
               case 0x0011U:
                 series_num = item.get_uint (0, series_num);
                 return;
@@ -537,7 +540,7 @@ namespace MR {
         for (auto frame_it = frames.cbegin()+1; frame_it != frames.cend(); ++frame_it) {
           const Frame& frame (**frame_it);
 
-          if (frame.series_num != previous->series_num ||
+          if ((!frame.ignore_series_num && frame.series_num != previous->series_num ) ||
               frame.acq != previous->acq)
             update_count (2, dim, index);
           else if (frame.distance != previous->distance)

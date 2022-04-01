@@ -35,6 +35,12 @@ namespace MR {
           Sequence (uint16_t group, uint16_t element, uint8_t* end) : group (group), element (element), end (end) { }
           uint16_t group, element;
           uint8_t* end;
+
+          bool is (uint16_t Group, uint16_t Element) const {
+            if (group != Group)
+              return false;
+            return element == Element;
+          }
       };
 
       class Date { NOMEMALIGN
@@ -144,6 +150,7 @@ namespace MR {
           }
 
           bool ignore_when_parsing () const;
+          bool is_in_series_ref_sequence () const;
 
           Type type () const;
           vector<int32_t> get_int () const;
