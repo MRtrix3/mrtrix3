@@ -97,5 +97,4 @@ ENV ANTSPATH="/opt/ants/bin" \
     LD_LIBRARY_PATH="/opt/fsl/lib:$LD_LIBRARY_PATH" \
     PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:$PATH"
 
-WORKDIR /work
 CMD ["/bin/bash"]
