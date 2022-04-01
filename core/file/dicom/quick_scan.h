@@ -31,8 +31,8 @@ namespace MR {
 
           std::string filename, modality;
           std::string patient, patient_ID, patient_DOB;
-          std::string study, study_ID, study_date, study_time;
-          std::string series, series_date, series_time, sequence;
+          std::string study, study_ID, study_UID, study_date, study_time;
+          std::string series, series_ref_UID, series_date, series_time, sequence;
           std::map<std::string, size_t> image_type;
           size_t series_number, bits_alloc, dim[2], data;
           bool transfer_syntax_supported;
