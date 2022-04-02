@@ -43,7 +43,7 @@ Run GUI command
 The following instructions have been shown to work on Linux::
 
     xhost +local:root
-    docker run --rm -it --device /dev/dri/ -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR -u $UID mrtrix3 mrview
+    docker run --rm -it --device /dev/dri/ -v /run:/run -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR -u $UID mrtrix3 mrview
     xhost -local:root  # Run this when finished.
 
 It may however be possible that you will need to modify these commands
