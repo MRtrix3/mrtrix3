@@ -26,8 +26,8 @@ Include: apt
     export FSLDIR FSLOUTPUTTYPE FSLMULTIFILEQUIT FSLTCLSH FSLWISH
 
 # All
-    LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/cuda/bin:/.singularity.d/libs:/usr/lib:/opt/fsl/lib:$LD_LIBRARY_PATH"
-    PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:/usr/local/cuda/bin:$PATH"
+    LD_LIBRARY_PATH="/.singularity.d/libs:/usr/lib:/opt/fsl/lib:$LD_LIBRARY_PATH"
+    PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:$PATH"
     export LD_LIBRARY_PATH PATH
 
 %post
@@ -39,7 +39,7 @@ Include: apt
     apt-get update && apt-get upgrade -y
 
 # Runtime requirements
-    apt-get update && apt-get install -y --no-install-recommends dc less libfftw3-bin liblapack3 libpng16-16 libqt5network5 libqt5widgets5 libtiff5 python3 python3-distutils zlib1g
+    apt-get update && apt-get install -y --no-install-recommends dbus dc less libfftw3-bin liblapack3 libpng16-16 libqt5network5 libqt5widgets5 libtiff5 python3 python3-distutils zlib1g
 
 # Build requirements
     apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates curl git libeigen3-dev libfftw3-dev libgl1-mesa-dev libpng-dev libqt5opengl5-dev libqt5svg5-dev libtiff5-dev qt5-qmake qtbase5-dev-tools wget zlib1g-dev
@@ -63,6 +63,9 @@ Include: apt
 
 # apt cleanup to recover as much space as possible
     apt-get remove -y build-essential ca-certificates curl git libeigen3-dev libfftw3-dev libgl1-mesa-dev libpng-dev libqt5opengl5-dev libqt5svg5-dev libtiff5-dev qt5-qmake qtbase5-dev-tools wget zlib1g-dev && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Configure DBus to facilitate mrview execution
+    dbus-uuidgen
 
 %runscript
     exec "$@"

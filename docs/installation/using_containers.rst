@@ -43,8 +43,11 @@ Run GUI command
 The following instructions have been shown to work on Linux::
 
     xhost +local:root
-    docker run --rm -it -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY mrtrix3 mrview
+    docker run --rm -it --device /dev/dri/ -v /run:/run -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -e XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR -u $UID mrtrix3 mrview
     xhost -local:root  # Run this when finished.
+
+It may however be possible that you will need to modify these commands
+in order to operate without warning / error on your system.
 
 Explicitly build image locally
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -98,6 +101,35 @@ along with any arguments / options to be provided to it)
 Run GUI command
 ^^^^^^^^^^^^^^^
 
-The following usage has been shown to work on Linux::
+The following basic usage has been shown to work on Linux::
 
-    singularity exec -B /run MRtrix3.sif mrview
+    singularity run -B /run MRtrix3.sif mrview
+
+If you wish to utilise a _clean environment_ when executing ``mrview``,
+you will likely find that it is necessary to explicitly set the ``DISPLAY``
+and ``XDG_RUNTIME_DIR`` environment variables. This could be done in a
+few different ways:
+
+1.  Set environment variables that will be added to the clean
+    environment of the container::
+
+        export SINGULARITYENV_DISPLAY=$DISPLAY
+        export SINGULARITYENV_XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR
+        singularity run --cleanenv -B /run MRtrix3.sif mrview
+
+1.  Explicitly set those envvars during invocation
+    (requires a relatively up-to-date Singularity)::
+
+        singularity run --cleanenv --env DISPLAY=$DISPLAY,XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR -B /run MRtrix3.sif mrview
+
+1.  Create a text file that specifies the environment variables to be set,
+    and provide the path to that file at the command-line
+    (requires a relatively up-to-date Singularity)::
+
+        echo $'DISPLAY=$DISPLAY\nXDG_RUNTIME_DIR=$XDG_RUNTIME_DIR' > ~/.mrview.conf
+        singularity run --cleanenv --env-file ~/.singularity/mrview.conf -B /run MRtrix3.sif mrview
+
+If you experience difficulties here with ``mrview``, you may have better
+success if the Singularity container is built directly from the *MRtrix3*
+source code using the definition file "``Singularity``" rather than
+converting from a Docker container or using a custom definition file.
