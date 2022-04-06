@@ -73,6 +73,7 @@ RUN apt-get -qq update \
         libqt5core5a \
         libqt5gui5 \
         libqt5network5 \
+        libqt5svg5 \
         libqt5widgets5 \
         libquadmath0 \
         libtiff5 \
@@ -96,5 +97,8 @@ ENV ANTSPATH="/opt/ants/bin" \
     LD_LIBRARY_PATH="/opt/fsl/lib:$LD_LIBRARY_PATH" \
     PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:$PATH"
 
-WORKDIR /work
+# Fix "Singularity container cannot load libQt5Core.so.5" on CentOS 7
+RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
+RUN ldconfig
+
 CMD ["/bin/bash"]
