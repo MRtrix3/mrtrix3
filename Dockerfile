@@ -63,6 +63,7 @@ FROM base AS final
 # Install runtime system dependencies.
 RUN apt-get -qq update \
     && apt-get install -yq --no-install-recommends \
+        binutils \
         dc \
         less \
         libfftw3-3 \
@@ -98,7 +99,8 @@ ENV ANTSPATH="/opt/ants/bin" \
     PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:$PATH"
 
 # Fix "Singularity container cannot load libQt5Core.so.5" on CentOS 7
-RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5
-RUN ldconfig
+RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5 \
+    && ldconfig \
+    && apt-get remote -yq --purge binutils
 
 CMD ["/bin/bash"]
