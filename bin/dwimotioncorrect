@@ -66,7 +66,7 @@ def usage(cmdline): #pylint: disable=unused-variable
     options = cmdline.add_argument_group('Options for the dwimotioncorrect script')
     options.add_argument('-mask', help='Manually provide a mask image for motion correction')
     options.add_argument('-lmax', help='SH basis order per shell (default = 0,4,4,...)')
-    options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 2,2,0)')
+    options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 4,2,0 or lower if needed)')
     options.add_argument('-reg', help='Regularization for dwirecon (overrides config; default = 0.005)')
     options.add_argument('-zreg', help='Regularization for dwirecon (overrides config; default = 0.001)')
     options.add_argument('-setup', help='Configuration setup file (json structured)')
@@ -150,7 +150,7 @@ def execute(): #pylint: disable=unused-variable
     if len(lmax) != len(shells):
         raise MRtrixError('No. lmax must match no. shells.')
 
-    rlmax = [2,2,0]
+    rlmax = [min(r,max(l-2,0)) for r, l in zip([4,2,0], sorted(lmax, reverse=True))]
     if app.ARGS.rlmax:
         rlmax = [int(l) for l in app.ARGS.rlmax.split(',')]
     if len(rlmax) > len(lmax) or max(rlmax) > max(lmax):
