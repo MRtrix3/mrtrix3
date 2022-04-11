@@ -201,8 +201,8 @@ void run ()
     auto mssh2x = x2mssh.fullPivHouseholderQr();
     for (auto l = Loop("loading initialisation", 0, 3) (init, recon); l; l++) {
       size_t k = 0;
-      for (auto l2 = Loop({4,3})(init); l2; l2++) {
-        if (init.index(4) < Math::SH::NforL(lmax))
+      for (auto l2 = Loop(3)(init); l2; l2++) {
+        for (init.index(4) = 0; init.index(4) < Math::SH::NforL(lmax); init.index(4)++)
           c[k++] = std::isfinite((float) init.value()) ? init.value() : 0.0f;
       }
       r = mssh2x.solve(c);

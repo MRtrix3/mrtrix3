@@ -147,7 +147,7 @@ namespace MR
           value_type value () {
             value_type res = 0;
             for (int z = -ssp.size(); z <= ssp.size(); z++) {
-              Eigen::Vector3 pr = Ts2r * Eigen::Vector3 (x[0], x[1], x[2] + z);
+              Eigen::Vector3d pr = Ts2r * Eigen::Vector3d (x[0], x[1], x[2] + z);
               for (int k = 0; k < 3; k++) pr[k] = clampdim(pr[k], k);
               interp.voxel (pr);
               res += ssp(z) * interp.value();
@@ -157,7 +157,7 @@ namespace MR
 
           void adjoint_add (value_type val) {
             for (int z = -ssp.size(); z <= ssp.size(); z++) {
-              Eigen::Vector3 pr = Ts2r * Eigen::Vector3 (x[0], x[1], x[2] + z);
+              Eigen::Vector3d pr = Ts2r * Eigen::Vector3d (x[0], x[1], x[2] + z);
               for (int k = 0; k < 3; k++) pr[k] = clampdim(pr[k], k);
               interp.voxel (pr);
               interp.adjoint_add(ssp(z) * val);

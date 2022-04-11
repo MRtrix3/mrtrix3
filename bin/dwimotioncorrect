@@ -30,7 +30,7 @@ DEFAULT_CONFIG = """{
     "rec-iter": 3,
     "reg-iter": 10,
     "reg-scale": 1.0,
-    "lbreg": 0.0
+    "lbreg": 0.001
   },
   "epochs": [
     {
@@ -90,6 +90,10 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
+    try:
+        import scipy
+    except ImportError:
+        raise MRtrixError('SciPy required: https://www.scipy.org/install.html')
     # import metadata
     grad_import_option = app.read_dwgrad_import_options()
     pe_import_option = ''
@@ -136,7 +140,7 @@ def execute(): #pylint: disable=unused-variable
 
     # Image dimensions
     dims = list(map(int, header.size()))
-    vox = list(map(float, header.spacing()))
+    vox = list(map(float, header.spacing()[:3]))
     vu = round((vox[0]+vox[1])/2., 1)
     shells = [s.split('.')[0] for s in image.mrinfo('in.mif', 'shell_bvalues').split()]
 
@@ -192,8 +196,8 @@ def execute(): #pylint: disable=unused-variable
     # Force max no. threads
     nthr = ''
     if app.ARGS.nthreads:
-        nthr = ' -nthreads ' + app.ARGS.nthreads
-
+        nthr = ' -nthreads ' + str(app.ARGS.nthreads)
+        
     # Set multiband factor
     mb = 1
     if app.ARGS.mb:
@@ -314,7 +318,7 @@ def execute(): #pylint: disable=unused-variable
 
     #   __________ Copy outputs __________
 
-    run.command('mrconvert recon-'+str(nepochs)+'.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
+    run.command('mrconvert recon-'+str(nepochs)+'.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval='recon-'+str(nepochs)+'.mif', force=app.FORCE_OVERWRITE)
     if app.ARGS.export_motion:
         run.command('cp motion.txt ' + path.from_user(app.ARGS.export_motion, True))
     if app.ARGS.export_weights:
