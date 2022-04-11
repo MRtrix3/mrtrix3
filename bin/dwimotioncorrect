@@ -81,6 +81,7 @@ def usage(cmdline): #pylint: disable=unused-variable
     options.add_argument('-priorweights', help='Import prior slice weights')
     options.add_argument('-fixedweights', help='Import fixed slice weights')
     options.add_argument('-fixedmotion', help='Import fixed motion traces')
+    options.add_argument('-driftfilter', action='store_true', help='Filter motion for drift')
     options.add_argument('-voxelweights', help='Import fixed voxel weights')
     options.add_argument('-export_motion', help='Export rigid motion parameters')
     options.add_argument('-export_weights', help='Export slice weights')
@@ -207,6 +208,8 @@ def execute(): #pylint: disable=unused-variable
     if app.ARGS.sorder:
         p,s = app.ARGS.sorder.split(',')
         motfilt_option += ' -packs ' + p + ' -shift ' + s
+    if app.ARGS.driftfilter:
+        motfilt_option += ' -driftfilt'
 
     # Import fixed slice weights
     if app.ARGS.priorweights:
