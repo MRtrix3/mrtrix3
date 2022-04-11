@@ -65,7 +65,7 @@ def usage(cmdline): #pylint: disable=unused-variable
     # options
     options = cmdline.add_argument_group('Options for the dwimotioncorrect script')
     options.add_argument('-mask', help='Manually provide a mask image for motion correction')
-    options.add_argument('-lmax', help='SH basis order per shell (default = 0,4,4,...)')
+    options.add_argument('-lmax', help='SH basis order per shell (default = maximum with at least 30% oversampling)')
     options.add_argument('-rlmax', help='Reduced basis order per component for registration (default = 4,2,0 or lower if needed)')
     options.add_argument('-reg', help='Regularization for dwirecon (overrides config; default = 0.005)')
     options.add_argument('-zreg', help='Regularization for dwirecon (overrides config; default = 0.001)')
@@ -142,14 +142,21 @@ def execute(): #pylint: disable=unused-variable
     vox = list(map(float, header.spacing()[:3]))
     vu = round((vox[0]+vox[1])/2., 1)
     shells = [s.split('.')[0] for s in image.mrinfo('in.mif', 'shell_bvalues').split()]
+    shell_sizes = [s.split('.')[0] for s in image.mrinfo('in.mif', 'shell_sizes').split()]
 
     # Set lmax
-    lmax = [0,] + [4,]*(len(shells)-1)
+    def get_max_sh_degree(N, oversampling_factor=1.3):
+        for l in range(0,10,2):
+            if (l+3)*(l+4)/2 * oversampling_factor > N:
+                return l
+ 
+    lmax = [(b>10) * get_max_sh_degree(n) for b, n in zip(shells, shell_sizes)]
     if app.ARGS.lmax:
         lmax = [int(l) for l in app.ARGS.lmax.split(',')]
     if len(lmax) != len(shells):
         raise MRtrixError('No. lmax must match no. shells.')
 
+    # Set rlmax
     rlmax = [min(r,max(l-2,0)) for r, l in zip([4,2,0], sorted(lmax, reverse=True))]
     if app.ARGS.rlmax:
         rlmax = [int(l) for l in app.ARGS.rlmax.split(',')]
