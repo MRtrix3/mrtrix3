@@ -146,15 +146,9 @@ namespace MR
         case 1:
           throw Exception ("Cannot generate PNG image with only 1 axis");
         case 2:
-          if (H.ndim() == 3) {
-            // Which axis do we remove?
-            // If axis 0 or 1 is size 1, then let's leave the header as 3D
-            // If however all 3 axes are greater than 1, we're going to remove
-            //   the final axis, which will then be looped over via the NameParser
-            if (H.size(0) > 1 && H.size(1) > 1)
-              H.ndim() = 2;
-          }
-          break;
+          if (H.ndim() == 2)
+            break;
+          // otherwise proceed to case 3:
         case 3:
           if (H.size(1) == 1) {
             axis_to_zero = 1;
