@@ -101,6 +101,7 @@ namespace MR {
             FLOAT,
             DATE,
             TIME,
+            DATETIME,
             STRING,
             SEQ,
             OTHER
@@ -158,6 +159,7 @@ namespace MR {
           vector<default_type> get_float () const;
           Date get_date () const;
           Time get_time () const;
+          std::pair<Date,Time> get_datetime () const;
           vector<std::string> get_string () const;
 
           int32_t     get_int (size_t idx, int32_t default_value = 0)                    const { auto v (get_int());    return check_get (idx, v.size()) ? v[idx] : default_value; }
