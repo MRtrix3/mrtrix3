@@ -110,6 +110,9 @@ namespace MR {
               case 0x9074U:
                 acquisition_time = item.get_datetime().second;
                 return;
+              case 0x9082U:
+                echo_time = item.get_float (0, echo_time);
+                return;
               case 0x9087U:
                 { // ugly hack to handle badly formatted Philips data:
                   default_type v = item.get_float (0, bvalue);
