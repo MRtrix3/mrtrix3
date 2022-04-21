@@ -547,7 +547,7 @@ namespace MR {
           const Frame& frame (**frame_it);
 
           if ((!frame.ignore_series_num && frame.series_num != previous->series_num ) ||
-              frame.acq != previous->acq)
+              frame.acq != previous->acq || frame.distance < previous->distance)
             update_count (2, dim, index);
           else if (frame.distance != previous->distance)
             update_count (1, dim, index);
