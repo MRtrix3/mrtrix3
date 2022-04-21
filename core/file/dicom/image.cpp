@@ -206,6 +206,9 @@ namespace MR {
             return;
           case 0x0028U:
             switch (item.element) {
+              case 0x0002U:
+                samples_per_pixel = item.get_uint (0, samples_per_pixel);
+                return;
               case 0x0010U:
                 dim[1] = item.get_uint (0, dim[1]);
                 return;
@@ -291,7 +294,7 @@ namespace MR {
                   if (in_frames) {
                     calc_distance();
                     frames.push_back (std::shared_ptr<Frame> (new Frame (*this)));
-                    frame_offset += dim[0] * dim[1] * (bits_alloc/8);
+                    frame_offset += dim[0] * dim[1] * (bits_alloc/8) * samples_per_pixel;
                   }
                   else
                     in_frames = true;
