@@ -62,7 +62,7 @@ Include: apt
     cd /opt/mrtrix3 && ./configure && ./build -persistent -nopaginate && rm -rf testing/ tmp/ && cd ../../
 
 # apt cleanup to recover as much space as possible
-    apt-get remove -y build-essential ca-certificates curl git libeigen3-dev libfftw3-dev libgl1-mesa-dev libpng-dev libqt5opengl5-dev libqt5svg5-dev libtiff5-dev qt5-qmake qtbase5-dev-tools wget zlib1g-dev && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    apt-get remove -y build-essential ca-certificates curl git libeigen3-dev libfftw3-dev libgl1-mesa-dev libpng-dev libqt5opengl5-dev libqt5svg5-dev libtiff5-dev qt5-qmake qtbase5-dev-tools wget zlib1g-dev && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Configure DBus to facilitate mrview execution
     dbus-uuidgen
