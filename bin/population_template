@@ -585,7 +585,12 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError, app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import MRtrixError, app, image, matrix, path, run, EXE_LIST #pylint: disable=no-name-in-module, import-outside-toplevel
+
+  expected_commands = ['mrgrid', 'mrregister', 'mrtransform', 'mraverageheader', 'mrconvert', 'mrmath', 'transformcalc', 'mrfilter']
+  for cmd in expected_commands:
+    if cmd not in EXE_LIST :
+      raise MRtrixError("Could not find " + cmd + " in bin/. Binary commands not compiled?")
 
   if not app.ARGS.type in REGISTRATION_MODES:
     raise MRtrixError("registration type must be one of %s. provided: %s" % (str(REGISTRATION_MODES), app.ARGS.type))
