@@ -151,8 +151,9 @@ def execute(): #pylint: disable=unused-variable
       run.command('mrcalc ' + ' '.join('all_labels_dHCP.mif ' + str(i) + ' -eq' for i in indices) + ' ' + ' '.join(['-add'] * (len(indices) - 1)) + ' Pmap-' + tissue + '.mif')
     else:
       run.command(['mrmath', ['label_%d.mif' % i for i in indices], 'sum', 'Pmap-' + tissue + '.mif'])
-    #refine the WM
-    run.command('mrcalc sGM_mcrib.mif ' + ('0.5' if use_hard_segmentation else '0.1') + ' -lt Pmap-WM.mif -mult Pmap-WM-corr.mif')
+  
+  #refine the WM
+  run.command('mrcalc sGM_mcrib.mif ' + ('0.5' if use_hard_segmentation else '0.1') + ' -lt Pmap-WM.mif -mult Pmap-WM-corr.mif')
 
   #normalize 0-1 and combine
   run.command('mrcalc Pmap-cGM.mif 0.01 -mult cGM.mif')
