@@ -14,7 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "file/path.h"
 #include "colourmap.h"
+#include "math/math.h"
+
+#include "debug.h"
+
+#define MRTRIX_COLOURMAP_FOLDER ".mrtrix/colourmaps"
 
 
 namespace MR
@@ -25,6 +31,19 @@ namespace MR
 
     namespace {
       float clamp (const float i) { return std::max (0.0f, std::min (1.0f, i)); }
+
+      Eigen::Array3f custom_mapper (float amplitude, const Eigen::MatrixXd& M)
+      {
+        Eigen::Array3f color = { M(0,1), M(0,2), M(0,3) };
+        for (size_t n = 1; n < M.rows(); ++n) {
+          if (amplitude < M(n,0)) {
+            float d = (amplitude - M(n-1,0)) / (M(n,0)-M(n-1,0));
+            color = (d*M.row(n).tail(3) + (1.0-d)*M.row(n-1).tail(3) ).array().cast<float>();
+            return color;
+          }
+        }
+        return { M(M.rows()-1,1), M(M.rows()-1,2), M(M.rows()-1,3) };
+      }
     }
 
 
@@ -126,6 +145,47 @@ namespace MR
               clamp (2.0f * (0.25f - abs (amplitude - 0.25f))) + clamp (2.0f * amplitude - 1.0f),
               1.0f - (clamp (1.0f - 2.0f * amplitude) + clamp (1.0f - 4.0f * abs (amplitude - 0.75f)))); }
           });
+
+
+      const std::string custom_colourmap_folder = Path::join (Path::home(), MRTRIX_COLOURMAP_FOLDER);
+      if (Path::is_dir (custom_colourmap_folder)) {
+        Path::Dir folder (custom_colourmap_folder);
+        std::string cmap_name;
+        while ((cmap_name = folder.read_name()).size()) {
+          DEBUG ("loading custom colourmap \"" + cmap_name + "\"...");
+          try {
+            const auto M = load_matrix (Path::join (custom_colourmap_folder, cmap_name));
+            if (M.rows() < 2 || M.cols() != 4)
+              throw Exception ("colourmap file should have 4 columns and at least two rows");
+          std::string shader = MR::printf ("if (amplitude <=0) color.rgb = vec3(%f,%f,%f);\n",
+              M(0,1), M(0,2), M(0,3));
+          for (size_t n = 1; n < M.rows(); ++n) {
+            shader += MR::printf("else if (amplitude <= %f) {\n"
+                "float d=(amplitude-%f)/(%f-%f);\n"
+                "color.rgb = d*vec3(%f,%f,%f)+(1.0-d)*vec3(%f,%f,%f);\n}\n",
+                M(n,0), M(n-1,0), M(n,0), M(n-1,0),
+                M(n,1), M(n,2), M(n,3),
+                M(n-1,1), M(n-1,2), M(n-1,3));
+          }
+          shader += MR::printf ("else color.rgb = vec3(%f,%f,%f);\n",
+                 M(M.rows()-1,1), M(M.rows()-1,2), M(M.rows()-1,3));
+
+          maps.push_back ({
+              cmap_name,
+              shader,
+              std::bind (&custom_mapper, std::placeholders::_1, M)
+              });
+          }
+          catch (Exception& excp) {
+            excp.push_back ("error loading custom colourmap \"" + cmap_name + "\" - ignored");
+            excp.display();
+          }
+
+
+        }
+      }
+
+
 
       maps.push_back ({
           "Colour",
