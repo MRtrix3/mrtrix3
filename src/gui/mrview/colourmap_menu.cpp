@@ -30,19 +30,22 @@ namespace MR
                                   QMenu* menu, QAction** & actions,
                                   bool create_shortcuts, bool use_special)
       {
+        ColourMap::initialise();
+
         group = new QActionGroup (parent);
         group->setExclusive (true);
         actions = new QAction* [ColourMap::num()];
         bool in_scalar_section = true;
 
-        for (size_t n = 0; ColourMap::maps[n].name; ++n) {
-          if (ColourMap::maps[n].special && !use_special)
+        for (size_t n = 0; n < ColourMap::num(); ++n) {
+          const auto& entry (ColourMap::maps[n]);
+          if (entry.special && !use_special)
             continue;
-          QAction* action = new QAction (ColourMap::maps[n].name, parent);
+          QAction* action = new QAction (QString::fromStdString (entry.name), parent);
           action->setCheckable (true);
           group->addAction (action);
 
-          if (ColourMap::maps[n].special && in_scalar_section) {
+          if (entry.special && in_scalar_section) {
             menu->addSeparator();
             in_scalar_section = false;
           }

@@ -145,7 +145,7 @@ namespace MR
           if (header().size(3) == 3)
             map = "RGB";
         }
-        for (size_t n = 0; ColourMap::maps[n].name; ++n)
+        for (size_t n = 0; n < ColourMap::num(); ++n)
           if (ColourMap::maps[n].name == map)
             return n;
         return 0;

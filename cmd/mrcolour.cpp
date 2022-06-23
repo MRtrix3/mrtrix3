@@ -35,13 +35,12 @@ vector<const char*> colourmap_choices_cstr;
 
 void usage ()
 {
+  ColourMap::initialise();
 
-  const ColourMap::Entry* entry = ColourMap::maps;
-  do {
-    if (strcmp(entry->name, "Complex"))
-      colourmap_choices_std.push_back (lowercase (entry->name));
-    ++entry;
-  } while (entry->name);
+  for (const auto& entry : ColourMap::maps)
+    if (entry.name != "Complex")
+      colourmap_choices_std.push_back (lowercase (entry.name));
+
   colourmap_choices_cstr.reserve (colourmap_choices_std.size() + 1);
   for (const auto& s : colourmap_choices_std)
     colourmap_choices_cstr.push_back (s.c_str());
@@ -85,7 +84,7 @@ void usage ()
 void run ()
 {
   Header H_in = Header::open (argument[0]);
-  const ColourMap::Entry colourmap = ColourMap::maps[argument[1]];
+  const ColourMap::Entry& colourmap (ColourMap::maps[argument[1]]);
   Eigen::Vector3d fixed_colour (NaN, NaN, NaN);
   if (colourmap.is_colour) {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))

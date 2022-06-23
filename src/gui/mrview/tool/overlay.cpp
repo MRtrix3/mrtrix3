@@ -631,7 +631,7 @@ namespace MR
               if (colourmap_index == -2)
                 colourmap_index = overlay->colourmap;
               else
-                colourmap_index = -1;                
+                colourmap_index = -1;
             }
             num_inverted += overlay->scale_inverted();
             rate += overlay->scaling_rate();
@@ -771,7 +771,7 @@ namespace MR
           if (opt.opt->is ("overlay.colourmap")) {
             try {
               int n = opt[0];
-              if (n < 0 || !ColourMap::maps[n].name)
+              if (n < 0 || n >= ColourMap::num())
                 throw Exception ("invalid overlay colourmap index \"" + std::string (opt[0]) + "\" for -overlay.colourmap option");
               colourmap_button->set_colourmap_index(n);
             }
