@@ -157,24 +157,30 @@ namespace MR
             const auto M = load_matrix (Path::join (custom_colourmap_folder, cmap_name));
             if (M.rows() < 2 || M.cols() != 4)
               throw Exception ("colourmap file should have 4 columns and at least two rows");
-          std::string shader = MR::printf ("if (amplitude <=0) color.rgb = vec3(%f,%f,%f);\n",
-              M(0,1), M(0,2), M(0,3));
-          for (ssize_t n = 1; n < M.rows(); ++n) {
-            shader += MR::printf("else if (amplitude <= %f) {\n"
-                "float d=(amplitude-%f)/(%f-%f);\n"
-                "color.rgb = d*vec3(%f,%f,%f)+(1.0-d)*vec3(%f,%f,%f);\n}\n",
-                M(n,0), M(n-1,0), M(n,0), M(n-1,0),
-                M(n,1), M(n,2), M(n,3),
-                M(n-1,1), M(n-1,2), M(n-1,3));
-          }
-          shader += MR::printf ("else color.rgb = vec3(%f,%f,%f);\n",
-                 M(M.rows()-1,1), M(M.rows()-1,2), M(M.rows()-1,3));
+            if ((M.array()<0.0).any() || (M.array()>1.0).any())
+              throw Exception ("colourmap file should contain values between 0 and 1");
+            if (M(0,0) != 0.0 || M(M.rows()-1,0) != 1.0)
+              throw Exception ("colourmap file should have 0 & 1 as the first and last control points respectively");
+            if (((M.col(0).tail(M.cols()-1)-M.col(0).head(M.cols()-1)).array()<0).any())
+              throw Exception ("colourmap control points (first column) should increase monotonically");
+            std::string shader = MR::printf ("if (amplitude <=0) color.rgb = vec3(%f,%f,%f);\n",
+                M(0,1), M(0,2), M(0,3));
+            for (ssize_t n = 1; n < M.rows(); ++n) {
+              shader += MR::printf("else if (amplitude <= %f) {\n"
+                  "float d=(amplitude-%f)/(%f-%f);\n"
+                  "color.rgb = d*vec3(%f,%f,%f)+(1.0-d)*vec3(%f,%f,%f);\n}\n",
+                  M(n,0), M(n-1,0), M(n,0), M(n-1,0),
+                  M(n,1), M(n,2), M(n,3),
+                  M(n-1,1), M(n-1,2), M(n-1,3));
+            }
+            shader += MR::printf ("else color.rgb = vec3(%f,%f,%f);\n",
+                M(M.rows()-1,1), M(M.rows()-1,2), M(M.rows()-1,3));
 
-          maps.push_back ({
-              cmap_name,
-              shader,
-              std::bind (&custom_mapper, std::placeholders::_1, M)
-              });
+            maps.push_back ({
+                cmap_name,
+                shader,
+                std::bind (&custom_mapper, std::placeholders::_1, M)
+                });
           }
           catch (Exception& excp) {
             excp.push_back ("error loading custom colourmap \"" + cmap_name + "\" - ignored");
