@@ -203,7 +203,15 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
 
 
 
-
+template <class T> void loadLines(int64_t* lines, std::ifstream& input, int number_of_line_indices) {
+  T* buffer = new T [number_of_line_indices];
+  input.read((char*) buffer, number_of_line_indices * sizeof(int) );
+  // swap from big endian
+  for ( int i = 0; i < number_of_line_indices; i++ ) {
+      lines[i] = (int64_t) Raw::fetch_BE<T>(buffer, i);
+  }
+  delete [] buffer;
+}
 
 class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
   public:
@@ -231,11 +239,11 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
           continue;
         } else {
           if ( sscanf ( line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices ) == 2) {
-            lines = new int[number_of_line_indices];
-            input.read((char*) lines, number_of_line_indices * sizeof(int) );
-            // swap
-            for ( int i = 0; i < number_of_line_indices; i++ ) {
-              lines[i] = Raw::fetch_BE<int>(lines, i);
+            lines = new int64_t [number_of_line_indices];
+            if ( line.find ("vtktypeint64") != std::string::npos ) {
+                loadLines<int64_t> (lines, input, number_of_line_indices);
+            } else {
+                loadLines<int32_t> (lines, input, number_of_line_indices);
             }
             // We can safely break
             break;
@@ -269,7 +277,7 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
 
   private:
     float *points;
-    int *lines;
+    int64_t *lines;
     int lineIdx;
     int number_of_lines;
     int number_of_line_indices;
