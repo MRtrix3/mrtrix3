@@ -60,7 +60,9 @@ Options for both PLY and RIB writer
 Options specific to VTK writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-ascii** write an ASCII VTK file (binary by default)
+-  **-ascii** write an ASCII VTK file (this is the default)
+
+-  **-binary** write a binary VTK file
 
 Standard options
 ^^^^^^^^^^^^^^^^
