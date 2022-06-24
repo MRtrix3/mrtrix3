@@ -96,7 +96,8 @@ void usage ()
 
     + OptionGroup ("Options specific to VTK writer")
 
-    + Option ("ascii", "write an ASCII VTK file (binary by default)");
+    + Option ("ascii", "write an ASCII VTK file (this is the default)")
+    + Option ("binary", "write a binary VTK file");
 
 }
 
@@ -108,7 +109,7 @@ void usage ()
 
 class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
   public:
-    VTKWriter(const std::string& file, bool write_ascii = false) : VTKout (file, std::ios::binary ), write_ascii(write_ascii){
+    VTKWriter(const std::string& file, bool write_ascii = true) : VTKout (file, std::ios::binary ), write_ascii(write_ascii){
       // create and write header of VTK output file:
       VTKout <<
         "# vtk DataFile Version 3.0\n"
@@ -752,7 +753,7 @@ void run ()
     writer.reset( new Writer<float>(argument[1], properties) );
   }
   else if (Path::has_suffix(argument[1], ".vtk")) {
-      auto write_ascii = get_options("ascii").size();
+      bool write_ascii = !get_options("binary").size();
     writer.reset( new VTKWriter(argument[1], write_ascii));
   }
   else if (Path::has_suffix(argument[1], ".ply")) {
