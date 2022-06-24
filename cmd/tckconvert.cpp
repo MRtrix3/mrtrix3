@@ -109,7 +109,8 @@ void usage ()
 
 class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
   public:
-    VTKWriter(const std::string& file, bool write_ascii = true) : VTKout (file, std::ios::binary ), write_ascii(write_ascii){
+    VTKWriter(const std::string& file, bool write_ascii = true) :
+      VTKout (file, std::ios::binary ), write_ascii(write_ascii) {
       // create and write header of VTK output file:
       VTKout <<
         "# vtk DataFile Version 3.0\n"
@@ -204,44 +205,44 @@ class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
 
 
 
-template <class T> void loadLines(int64_t* lines, std::ifstream& input, int number_of_line_indices) {
-  T* buffer = new T [number_of_line_indices];
-  input.read((char*) buffer, number_of_line_indices * sizeof(int) );
+template <class T> void loadLines(vector<int64_t>& lines, std::ifstream& input, int number_of_line_indices)
+{
+  vector<T> buffer (number_of_line_indices);
+  input.read((char*) &buffer[0], number_of_line_indices * sizeof(T));
+  lines.resize (number_of_line_indices);
   // swap from big endian
-  for ( int i = 0; i < number_of_line_indices; i++ ) {
-      lines[i] = (int64_t) Raw::fetch_BE<T>(buffer, i);
-  }
-  delete [] buffer;
+  for (int i = 0; i < number_of_line_indices; i++)
+    lines[i] = int64_t (ByteOrder::BE (buffer[i]));
 }
+
+
 
 class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
   public:
     VTKReader(const std::string& file) {
-      points = NULL;
-      lines = NULL;
       std::ifstream input (file, std::ios::binary );
       std::string line;
       int number_of_points = 0;
       number_of_lines = 0;
       number_of_line_indices = 0;
-      while ( std::getline(input,line) ) {
-        if ( line.find ( "ASCII" ) == 0 ) {
+
+      while (std::getline(input,line)) {
+        if (line.find ("ASCII") == 0)
           throw Exception("VTK Reader only supports BINARY input");
-        }
-        if ( sscanf ( line.c_str(), "POINTS %d float", &number_of_points ) == 1) {
-          points = new float[3*number_of_points];
-          input.read((char*) points, 3*number_of_points * sizeof(float) );
+
+        if (sscanf (line.c_str(), "POINTS %d float", &number_of_points) == 1) {
+          points.resize (3*number_of_points);
+          input.read ((char*) &points[0], 3*number_of_points * sizeof(float));
 
           // swap
-          for ( int i = 0; i < 3*number_of_points; i++ ) {
-            points[i] = Raw::fetch_BE<float>(points, i);
-          }
+          for (int i = 0; i < 3*number_of_points; i++)
+            points[i] = ByteOrder::BE (points[i]);
 
           continue;
-        } else {
-          if ( sscanf ( line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices ) == 2) {
-            lines = new int64_t [number_of_line_indices];
-            if ( line.find ("vtktypeint64") != std::string::npos ) {
+        }
+        else {
+          if (sscanf (line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices) == 2) {
+            if (line.find ("vtktypeint64") != std::string::npos) {
                 loadLines<int64_t> (lines, input, number_of_line_indices);
             } else {
                 loadLines<int32_t> (lines, input, number_of_line_indices);
@@ -257,12 +258,12 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
 
     bool operator() (Streamline<float>& tck) {
       tck.clear();
-      if ( lineIdx < number_of_line_indices ) {
+      if (lineIdx < number_of_line_indices) {
         int count = lines[lineIdx];
         lineIdx++;
         for ( int i = 0; i < count; i++ ) {
           int idx = lines[lineIdx];
-          Eigen::Vector3f f ( points[idx*3], points[idx*3+1], points[idx*3+2] );
+          Eigen::Vector3f f (points[idx*3], points[idx*3+1], points[idx*3+2]);
           tck.push_back(f);
           lineIdx++;
         }
@@ -271,14 +272,9 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
       return false;
     }
 
-    ~VTKReader() {
-      if ( points != NULL ) { delete[] points; }
-      if ( lines != NULL ) { delete[] lines; }
-    }
-
   private:
-    float *points;
-    int64_t *lines;
+    vector<float> points;
+    vector<int64_t> lines;
     int lineIdx;
     int number_of_lines;
     int number_of_line_indices;
