@@ -9,7 +9,7 @@ echo 1 2 3 > tmp.txt && tckconvert -force -quiet tmp.txt tmp.tck && tckconvert -
 tckconvert -force -quiet tckconvert/empty.vtk tmp.tck
 
 # convert tck -> vtk -> txt and compare to tck -> txt
-tckconvert tracks.tck tmp.vtk -force -quiet && tckconvert tmp.vtk tmp-vtk-streamlines-[].txt -force && cat tmp-vtk-streamlines-*.txt > tmp-vtk-all.txt && tckconvert tracks.tck tmp-mrtrix-streamlines-[].txt -force -quiet && cat tmp-mrtrix-streamlines-*.txt > tmp-mrtrix-all.txt && testing_diff_matrix tmp-vtk-all.txt tmp-mrtrix-all.txt
+tckconvert tracks.tck tmp.vtk -binary -force -quiet && tckconvert tmp.vtk tmp-vtk-streamlines-[].txt -force && cat tmp-vtk-streamlines-*.txt > tmp-vtk-all.txt && tckconvert tracks.tck tmp-mrtrix-streamlines-[].txt -force -quiet && cat tmp-mrtrix-streamlines-*.txt > tmp-mrtrix-all.txt && testing_diff_matrix tmp-vtk-all.txt tmp-mrtrix-all.txt
 
 # convert tck -> vtk -> txt and compare to tck -> vtk -> tck -> txt
-tckconvert tracks.tck tmp.vtk -force -quiet && tckconvert tmp.vtk tmp-roundtrip.tck -force && tckconvert tmp-roundtrip.tck tmp-roundtrip-streamlines-[].txt -force && cat tmp-roundtrip-streamlines-*.txt > tmp-roundtrip-all.txt && tckconvert tracks.tck tmp-mrtrix-streamlines-[].txt -force -quiet && cat tmp-mrtrix-streamlines-*.txt > tmp-mrtrix-all.txt && testing_diff_matrix tmp-roundtrip-all.txt tmp-mrtrix-all.txt
+tckconvert tracks.tck tmp.vtk -binary -force -quiet && tckconvert tmp.vtk tmp-roundtrip.tck -force && tckconvert tmp-roundtrip.tck tmp-roundtrip-streamlines-[].txt -force && cat tmp-roundtrip-streamlines-*.txt > tmp-roundtrip-all.txt && tckconvert tracks.tck tmp-mrtrix-streamlines-[].txt -force -quiet && cat tmp-mrtrix-streamlines-*.txt > tmp-mrtrix-all.txt && testing_diff_matrix tmp-roundtrip-all.txt tmp-mrtrix-all.txt
