@@ -34,7 +34,7 @@ namespace MR
 
       Eigen::Array3f custom_mapper (float amplitude, const Eigen::MatrixXd& M)
       {
-        Eigen::Array3f color = { M(0,1), M(0,2), M(0,3) };
+        Eigen::Array3f color = { float(M(0,1)), float(M(0,2)), float(M(0,3)) };
         for (size_t n = 1; n < M.rows(); ++n) {
           if (amplitude < M(n,0)) {
             float d = (amplitude - M(n-1,0)) / (M(n,0)-M(n-1,0));
@@ -42,7 +42,7 @@ namespace MR
             return color;
           }
         }
-        return { M(M.rows()-1,1), M(M.rows()-1,2), M(M.rows()-1,3) };
+        return { float(M(M.rows()-1,1)), float(M(M.rows()-1,2)), float(M(M.rows()-1,3)) };
       }
     }
 
@@ -159,7 +159,7 @@ namespace MR
               throw Exception ("colourmap file should have 4 columns and at least two rows");
           std::string shader = MR::printf ("if (amplitude <=0) color.rgb = vec3(%f,%f,%f);\n",
               M(0,1), M(0,2), M(0,3));
-          for (size_t n = 1; n < M.rows(); ++n) {
+          for (ssize_t n = 1; n < M.rows(); ++n) {
             shader += MR::printf("else if (amplitude <= %f) {\n"
                 "float d=(amplitude-%f)/(%f-%f);\n"
                 "color.rgb = d*vec3(%f,%f,%f)+(1.0-d)*vec3(%f,%f,%f);\n}\n",

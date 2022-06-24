@@ -771,7 +771,7 @@ namespace MR
           if (opt.opt->is ("overlay.colourmap")) {
             try {
               int n = opt[0];
-              if (n < 0 || n >= ColourMap::num())
+              if (n < 0 || n >= int (ColourMap::num()))
                 throw Exception ("invalid overlay colourmap index \"" + std::string (opt[0]) + "\" for -overlay.colourmap option");
               colourmap_button->set_colourmap_index(n);
             }

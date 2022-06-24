@@ -958,7 +958,7 @@ namespace MR
           {
             try {
               int n = opt[0];
-              if (n < 0 || n >= ColourMap::num())
+              if (n < 0 || n >= int(ColourMap::num()))
                 throw Exception ("invalid overlay colourmap index \"" + std::string (opt[0]) + "\" for -tractography.tsf_colourmap option");
 		// help needed here !
 		// scalar_file_options->set_track_colormap(n) ?
