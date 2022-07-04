@@ -496,12 +496,12 @@ class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
           isFirst = false;
         }
         if ( isLast ) {
-          // faceOF << "Writing end cap, num_vertices = " << num_vertices << "\n";
           for ( auto sideIdx = 2; sideIdx <= nSides - 1; ++sideIdx ) {
             faceOF << "3"
-              << " " << num_vertices
+              << " " << num_vertices + sideIdx - 1
               << " " << num_vertices + sideIdx
-              << " " << num_vertices + sideIdx - 1 << "\n";
+              << " " << num_vertices
+              << "\n";
           }
           num_faces += nSides - 2;
         }
@@ -522,6 +522,7 @@ class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
           "format ascii 1.0\n"
           "comment written by tckconvert v" << App::mrtrix_version << "\n"
           "comment part of the mtrix3 suite of tools (http://www.mrtrix.org/)\n"
+          "comment the coordinate system and scale is taken from directly from the input and is not adjusted\n"
           "element vertex " << num_vertices << "\n"
           "property float32 x\n"
           "property float32 y\n"
