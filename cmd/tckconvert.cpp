@@ -234,7 +234,7 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
 
         if (sscanf (line.c_str(), "POINTS %d float", &number_of_points) == 1) {
           points.resize (3*number_of_points);
-          input.read ((char*) &points[0], 3*number_of_points * sizeof(float));
+          input.read ((char*) points.data(), 3*number_of_points * sizeof(float));
 
           // swap
           for (int i = 0; i < 3*number_of_points; i++)
