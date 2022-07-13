@@ -42,6 +42,15 @@ namespace MR
 
 
 
+        bool Seed_coordinates::get_seed (Eigen::Vector3f& p) const
+        {
+          int coordinate_index = std::uniform_int_distribution<> (0, seed_cds.rows()-1)(rng);
+          p = seed_cds.row(coordinate_index);
+          return true;
+        }
+
+
+
 
         bool SeedMask::get_seed (Eigen::Vector3f& p) const
         {
@@ -56,8 +65,6 @@ namespace MR
           p = (*mask.voxel2scanner) * p;
           return true;
         }
-
-
 
 
 
@@ -94,10 +101,6 @@ namespace MR
           p = (*mask.voxel2scanner) * p;
           return true;
         }
-
-
-
-
 
 
 

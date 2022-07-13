@@ -38,6 +38,10 @@ namespace MR
       + Option ("seed_image", "seed streamlines entirely at random within a mask image ").allow_multiple()
         + Argument ("image").type_image_in()
 
+      + Option ("seed_coordinates", "seed from coordinates provided in a file as space-separated Mx3 matrix "
+                                    "(XYZ per row), must not provide any other seeding mechanism")
+        + Argument ("cds_path").type_text()
+
       + Option ("seed_sphere", "spherical seed as four comma-separated values (XYZ position and radius)").allow_multiple()
         + Argument ("spec").type_sequence_float()
 
@@ -119,6 +123,14 @@ namespace MR
         auto opt = get_options ("seed_image");
         for (size_t i = 0; i < opt.size(); ++i) {
           SeedMask* seed = new SeedMask (opt[i][0]);
+          list.add (seed);
+        }
+
+        opt = get_options ("seed_coordinates"); 
+        if (opt.size()) {
+          if (list.num_seeds())
+            throw Exception ("If seeding from coordinates, cannot specify any other type of seed!");
+          Seed_coordinates* seed = new Seed_coordinates (opt[0][0]);
           list.add (seed);
         }
 

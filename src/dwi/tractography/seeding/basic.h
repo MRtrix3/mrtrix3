@@ -59,7 +59,29 @@ namespace MR
             Eigen::Vector3f pos;
             float rad;
 
+        };    
+
+
+
+        class Seed_coordinates : public Base
+        { MEMALIGN(Seed_coordinates)
+
+          public:
+            Seed_coordinates (const std::string& in) :
+              Base (in, "coordinate matrix", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
+                seed_cds = load_matrix<float> (in);
+                if (seed_cds.cols() != 3)
+                  throw Exception ("Could not parse file \"" + in + "\" as a coordinate input; needs to have 3 columns"); 
+                volume = 0.0;               
+              }
+
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
+
+          private:
+            Eigen::MatrixXf seed_cds;
+
         };
+
 
 
         class SeedMask : public Base
