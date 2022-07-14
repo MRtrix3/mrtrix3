@@ -1390,19 +1390,8 @@ except TargetException as excp:
 
 # for nogui config, remove GUI elements from targets and todo list:
 if nogui:
-  nogui_targets = []
-  for entry in targets:
-    if not is_GUI_target (entry):
-      nogui_targets.append (entry)
-  targets = nogui_targets
-
-  nogui_todo = {}
-  for item in todo:
-    if not is_GUI_target (todo[item].name):
-      nogui_todo[item] = todo[item]
-  todo = nogui_todo
-
-
+  targets = [ entry for entry in targets if not is_GUI_target (entry) ]
+  todo = { name:entry for name, entry in todo.items() if not is_GUI_target (name) }
 
 
 
@@ -1426,11 +1415,10 @@ Printing dependencies for all files:
     todo[entry].display()
   sys.exit (0)
 
-todo_tmp = {}
-for item in todo:
-  if todo[item].action != '--' and todo[item].need_rebuild():
-    todo_tmp[item] = todo[item]
-todo = todo_tmp
+
+
+# remove todo items that don't need rebuild:
+todo = { name:entry for name, entry in todo.items() if entry.action != '--' and entry.need_rebuild() }
 
 log ('TODO list contains ' + str(len(todo)) + ''' items
 
