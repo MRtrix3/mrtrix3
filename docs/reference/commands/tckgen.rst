@@ -78,8 +78,6 @@ Tractography seeding mechanisms; at least one must be provided
 
 -  **-seed_image image** *(multiple uses permitted)* seed streamlines entirely at random within a mask image 
 
--  **-seed_coordinates cds_path** seed from coordinates provided in a file as space-separated Mx3 matrix (XYZ per row), must not provide any other seeding mechanism.
-
 -  **-seed_sphere spec** *(multiple uses permitted)* spherical seed as four comma-separated values (XYZ position and radius)
 
 -  **-seed_random_per_voxel image num_per_voxel** *(multiple uses permitted)* seed a fixed number of streamlines per voxel in a mask image; random placement of seeds in each voxel
@@ -91,6 +89,10 @@ Tractography seeding mechanisms; at least one must be provided
 -  **-seed_gmwmi image** *(multiple uses permitted)* seed from the grey matter - white matter interface (only valid if using ACT framework). Input image should be a 3D seeding volume; seeds drawn within this image will be optimised to the interface using the 5TT image provided using the -act option.
 
 -  **-seed_dynamic fod_image** determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, it should NOT be used as a substitute for the SIFT method itself.
+
+-  **-seed_coordinates_fixed cds_path num_per_coordinate** *(multiple uses permitted)* provide coordinates in a space-separated Mx3 matrix (XYZ per row) and seed a fixed number of streamlines per coordinate
+
+-  **-seed_coordinates_global cds_path** provide coordinates in a space-separated Mx3 matrix (XYZ per row) and seed until global seed/streamline target is met (must not provide any other seeding mechanism). The matrix may optionally contain a fourth column with non-negative weights 
 
 Tractography seeding options and parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

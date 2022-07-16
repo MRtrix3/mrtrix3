@@ -42,16 +42,6 @@ namespace MR
 
 
 
-        bool Seed_coordinates::get_seed (Eigen::Vector3f& p) const
-        {
-          int coordinate_index = std::uniform_int_distribution<> (0, seed_cds.rows()-1)(rng);
-          p = seed_cds.row(coordinate_index);
-          return true;
-        }
-
-
-
-
         bool SeedMask::get_seed (Eigen::Vector3f& p) const
         {
          auto seed = mask;
@@ -237,6 +227,58 @@ namespace MR
 
 
 
+        bool Coordinates_fixed::get_seed (Eigen::Vector3f& p) const
+        {
+
+          std::lock_guard<std::mutex> lock (mutex);
+
+          if (expired)
+              return false;
+
+          if (num_at_coord == nsl) {
+            num_at_coord = 0;
+            current_coord++;            
+          }
+
+          if (current_coord == nr) {
+            expired = true;
+            return false;
+          }
+          
+          p = coords.row(current_coord);  
+          num_at_coord++;
+
+          return true;
+
+        }
+
+
+
+
+        bool Coordinates_global::get_seed (Eigen::Vector3f& p) const
+        {
+
+          if (nc == 3) {
+
+            int coordinate_index = std::uniform_int_distribution<> (0, nr - 1)(rng);
+            p = coords.row(coordinate_index);
+
+          } else {
+
+            std::uniform_real_distribution<float> uniform;
+            float thr = uniform(rng);
+
+            for (size_t i = 0; i < nr; ++i) {
+              if (thr < cumsum_weights(i)){
+                p = coords.row(i);
+                break;
+              }
+            }
+          }        
+
+          return true;
+
+        }
       }
     }
   }

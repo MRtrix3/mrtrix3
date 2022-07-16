@@ -38,10 +38,6 @@ namespace MR
       + Option ("seed_image", "seed streamlines entirely at random within a mask image ").allow_multiple()
         + Argument ("image").type_image_in()
 
-      + Option ("seed_coordinates", "seed from coordinates provided in a file as space-separated Mx3 matrix "
-                                    "(XYZ per row), must not provide any other seeding mechanism")
-        + Argument ("cds_path").type_text()
-
       + Option ("seed_sphere", "spherical seed as four comma-separated values (XYZ position and radius)").allow_multiple()
         + Argument ("spec").type_sequence_float()
 
@@ -65,7 +61,17 @@ namespace MR
       + Option ("seed_dynamic", "determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). "
                                 "Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, "
                                 "it should NOT be used as a substitute for the SIFT method itself.") // Don't allow multiple
-        + Argument ("fod_image").type_image_in();
+        + Argument ("fod_image").type_image_in() 
+
+      + Option ("seed_coordinates_fixed", "provide coordinates in a space-separated Mx3 matrix (XYZ per row) and seed a fixed number "
+                                          "of streamlines per coordinate").allow_multiple()
+        + Argument ("cds_path").type_file_in()
+        + Argument ("num_per_coordinate").type_integer (1)
+
+      + Option ("seed_coordinates_global", "provide coordinates in a space-separated Mx3 matrix (XYZ per row) and seed until global seed/streamline "
+                                           "target is met (must not provide any other seeding mechanism). The matrix may optionally contain a fourth "
+                                           "column with non-negative weights ") // Don't allow multiple
+        + Argument ("cds_path").type_file_in();
 
 
 
@@ -126,14 +132,6 @@ namespace MR
           list.add (seed);
         }
 
-        opt = get_options ("seed_coordinates"); 
-        if (opt.size()) {
-          if (list.num_seeds())
-            throw Exception ("If seeding from coordinates, cannot specify any other type of seed!");
-          Seed_coordinates* seed = new Seed_coordinates (opt[0][0]);
-          list.add (seed);
-        }
-
         opt = get_options ("seed_sphere");
         for (size_t i = 0; i < opt.size(); ++i) {
           Sphere* seed = new Sphere (opt[i][0]);
@@ -169,6 +167,22 @@ namespace MR
           }
         }
 
+        opt = get_options ("seed_coordinates_fixed"); 
+        for (size_t i = 0; i < opt.size(); ++i) {          
+          Coordinates_fixed* seed = new Coordinates_fixed (str(opt[i][0]), opt[i][1]);
+          list.add (seed);
+        }
+
+        // those exclusive of other seeding mechanisms go to the end, with dynamic seeder last
+
+        opt = get_options ("seed_coordinates_global");
+        if (opt.size()) { 
+          if (list.num_seeds())
+            throw Exception ("If seeding from coordinates to a global target, cannot specify any other type of seed!");
+          Coordinates_global* seed = new Coordinates_global (str(opt[0][0]));
+          list.add (seed);
+        }    
+
         // Can't instantiate the dynamic seeder here; internal FMLS segmenter has to use the same Directions::Set as TrackMapperDixel
         opt = get_options ("seed_dynamic");
         if (opt.size()) {
@@ -177,7 +191,8 @@ namespace MR
           properties["seed_dynamic"] = str(opt[0][0]);
         } else if (!list.num_seeds()) {
           throw Exception ("Must provide at least one source of streamline seeds!");
-        }
+        }             
+
       }
 
 
