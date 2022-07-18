@@ -57,7 +57,7 @@ above, the following instruction can be run from a location in which the
 *MRtrix3* source code has been cloned::
 
     docker build --tag mrtrix3 .
-    
+
 Set ``DOCKER_BUILDKIT=1`` to build parts of the Docker image in parallel,
 which can speed up build time.
 Use ``--build-arg MAKE_JOBS=4`` to build *MRtrix3* with 4 processors
@@ -82,7 +82,7 @@ This command converts the Docker image as stored on DockerHub into a
 Singularity container stored on the user's local system::
 
     singularity build MRtrix3.sif docker://mrtrix/mrtrix3:<version>
-    
+
 (Replace "``<version>``" with the specific version tag of *MRtrix3*
 desired)
 
@@ -133,3 +133,11 @@ If you experience difficulties here with ``mrview``, you may have better
 success if the Singularity container is built directly from the *MRtrix3*
 source code using the definition file "``Singularity``" rather than
 converting from a Docker container or using a custom definition file.
+
+If *not* using a clean environment, and you see the specific error::
+
+    Qt: Session management error: None of the authentication protocols specified are supported
+
+This can be resolved by running::
+
+    unset SESSION_MANAGER
