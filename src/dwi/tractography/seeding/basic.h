@@ -187,18 +187,17 @@ namespace MR
 
           public:
 
-            Coordinates_fixed (const std::string& in, const size_t n_streamlines) :
+            Coordinates_fixed (const std::string& in, const size_t n_streamlines) :              
               Base (in, "coordinate seeding fixed", MAX_TRACKING_SEED_ATTEMPTS_FIXED), 
-              Coordinate_parser(in) {
+              Coordinate_parser(in),               
+              current_coord(0),
+              num_at_coord(0),
+              expired(false),              
+              nsl(n_streamlines) {
 
                 if (nc != 3)
-                  throw Exception ("Number of columns in \"" + in + "\" must equal 3!");   
-                if (n_streamlines == 0)
-                  throw Exception ("Number of streamlines to be generated per coordinate must be a positive integer!");             
-                current_coord = 0;
-                num_at_coord = 0;
-                expired = false;
-                nsl = n_streamlines;
+                  throw Exception ("Number of columns in \"" + in + "\" must equal 3!"); 
+                
                 count = nr * nsl;
 
               }
@@ -210,7 +209,7 @@ namespace MR
             mutable size_t current_coord;
             mutable size_t num_at_coord;
             mutable bool expired;   
-            size_t nsl;            
+            const size_t nsl; 
 
         };
 
@@ -229,34 +228,20 @@ namespace MR
 
                   throw Exception ("Number of columns in \"" + in + "\" must equal 3 or 4!"); 
 
-                if (nc == 4) {
+                if (nc == 3) {
+
+                  weights = Eigen::MatrixXf::Constant(nr, 1, 1);
+
+                } else {
 
                   if (coords.col(3).minCoeff() < 0)
                     throw Exception ("The seeding weights must be non-negative!");
 
-                  sorted_weights = coords.col(3);
-                  std::sort(sorted_weights.data(), sorted_weights.data() + nr);
-
-                  visited = Eigen::MatrixXf::Zero(nr, 1);
-                  sorted = Eigen::MatrixXf::Zero(nr, nc);
-
-                  for (size_t sw_idx = 0; sw_idx < nr; ++sw_idx){
-                    for (size_t c_idx = 0; c_idx < nr; ++c_idx){    
-                      if (coords.col(3)(c_idx) == sorted_weights(sw_idx) && visited(c_idx) == 0) {
-                        sorted.row(sw_idx) = coords.row(c_idx);
-                        visited(c_idx) = 1;
-                        break;
-                      }
-                    }
-                  }
-
-                  coords = sorted.block(0, 0, nr, 3);
-
-                  cumsum_weights = Eigen::MatrixXf::Zero(sorted_weights.size() + 1, 1);
-                  cumsum_weights.tail(sorted_weights.size()) = sorted_weights.array() / sorted_weights.sum();
-
-                  for(int j = 1; j < cumsum_weights.size(); ++j)
-                    cumsum_weights(j) += cumsum_weights(j - 1);
+                  if (coords.col(3).maxCoeff() == 0)
+                    throw Exception ("At least one of the weights must be positive!");
+                 
+                  weights = coords.col(3).array() / coords.col(3).maxCoeff();
+                  coords = coords.block(0, 0, nr, 3);                  
 
                 }
 
@@ -268,10 +253,7 @@ namespace MR
             
           private:
 
-            Eigen::MatrixXf sorted;
-            Eigen::VectorXf sorted_weights;
-            Eigen::VectorXf visited;    
-            Eigen::VectorXf cumsum_weights;
+            mutable Eigen::VectorXf weights;
 
         };
 

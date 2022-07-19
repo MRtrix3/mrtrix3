@@ -178,7 +178,7 @@ namespace MR
         opt = get_options ("seed_coordinates_global");
         if (opt.size()) { 
           if (list.num_seeds())
-            throw Exception ("If seeding from coordinates to a global target, cannot specify any other type of seed!");
+            throw Exception ("If seeding from pre-specified coordinates with no fixed number of streamlines per coordinate, cannot specify any other type of seed!");
           Coordinates_global* seed = new Coordinates_global (str(opt[0][0]));
           list.add (seed);
         }    
