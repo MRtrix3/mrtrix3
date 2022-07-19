@@ -262,11 +262,12 @@ namespace MR
 
           if (nc == 4) {
 
+              std::uniform_real_distribution<float> uniform;
               float selector = uniform (rng);
+
               do {
                 coordinate_index = std::uniform_int_distribution<> (0, nr - 1) (rng);            
               } while (weights(coordinate_index) < selector);
-
           }
 
           p = coords.row(coordinate_index);
