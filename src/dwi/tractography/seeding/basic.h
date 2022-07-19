@@ -225,14 +225,9 @@ namespace MR
               Coordinate_parser(in) {
 
                 if (nc < 3 && nc > 4)
-
                   throw Exception ("Number of columns in \"" + in + "\" must equal 3 or 4!"); 
 
-                if (nc == 3) {
-
-                  weights = Eigen::MatrixXf::Constant(nr, 1, 1);
-
-                } else {
+                if (nc == 4) {
 
                   if (coords.col(3).minCoeff() < 0)
                     throw Exception ("The seeding weights must be non-negative!");

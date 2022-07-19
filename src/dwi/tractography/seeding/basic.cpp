@@ -258,13 +258,16 @@ namespace MR
         bool Coordinates_global::get_seed (Eigen::Vector3f& p) const
         {
 
-          std::uniform_real_distribution<float> uniform;
-          float selector = uniform (rng);
-          long coordinate_index = std::uniform_int_distribution<> (0, nr - 1) (rng);
+          long coordinate_index = std::uniform_int_distribution<> (0, nr - 1) (rng);          
 
-          do {
-            coordinate_index = std::uniform_int_distribution<> (0, nr - 1) (rng);            
-          } while (weights(coordinate_index) < selector);
+          if (nc == 4) {
+
+              float selector = uniform (rng);
+              do {
+                coordinate_index = std::uniform_int_distribution<> (0, nr - 1) (rng);            
+              } while (weights(coordinate_index) < selector);
+
+          }
 
           p = coords.row(coordinate_index);
 
