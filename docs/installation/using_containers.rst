@@ -24,7 +24,7 @@ along with any arguments / options to be provided to it)
 
 If an *MRtrix3* image has not been built on the local system, the
 most recent *MRtrix3* Docker image will be automatically downloaded from
-[DockerHub](https://hub.docker.com/r/mrtrix3/mrtrix3).
+[DockerHub](https://hub.docker.com/repository/docker/mrtrix3/mrtrix3).
 
 Run GUI command
 ^^^^^^^^^^^^^^^
@@ -67,7 +67,7 @@ Build container from DockerHub
 This command converts the Docker image as stored on DockerHub into a
 Singularity container stored on the user's local system::
 
-    singularity build MRtrix3.sif docker://mrtrix/mrtrix3:<version>
+    singularity build MRtrix3.sif docker://mrtrix3/mrtrix3:<version>
     
 (Replace "``<version>``" with the specific version tag of *MRtrix3*
 desired)
