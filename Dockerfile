@@ -101,6 +101,6 @@ ENV ANTSPATH="/opt/ants/bin" \
 # Fix "Singularity container cannot load libQt5Core.so.5" on CentOS 7
 RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5 \
     && ldconfig \
-    && apt-get remote -yq --purge binutils
+    && apt-get purge -yq binutils
 
 CMD ["/bin/bash"]
