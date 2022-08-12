@@ -277,6 +277,12 @@ namespace MR {
               case 0x1413:
                 grad_number = item.get_int()[0];
                 return;
+              case 0x100DU:
+                scale_intercept = item.get_float (0, scale_intercept);
+                return;
+              case 0x100EU:
+                scale_slope = 1.0 / item.get_float (0, scale_slope);
+                return;
             }
             return;
           case 0x7FE0U:
