@@ -68,6 +68,34 @@ namespace MR
         return med_val;
     }
 
+    template <class Container>
+    inline typename Container::value_type quantile (Container& list, default_type quantile)
+    {
+        size_t num = list.size();
+        // remove NaNs:
+        for (size_t n = 0; n < num; ++n) {
+          while (not_a_number (list[n]) && n < num) {
+            --num;
+            //std::swap (list[n], list[num]);
+            // Commented std::swap to provide bool compatibility
+            typename Container::value_type temp = list[num]; list[num] = list[n]; list[n] = temp;
+          }
+        }
+        if (!num)
+          return std::numeric_limits<typename Container::value_type>::quiet_NaN();
+
+        default_type f;
+        default_type t = std::modf(num * quantile, &f);
+        size_t loc = size_t(f);
+        std::nth_element (list.begin(), list.begin()+loc, list.begin()+loc);
+        typename Container::value_type val0 = list[loc];
+        std::nth_element (list.begin(), list.begin()+loc, list.begin()+loc+1);
+        typename Container::value_type val1 = list[loc+1];
+        typename Container::value_type val = (1-t)*val0 + t*val1;
+
+        return val;
+    }
+
 
     // Weiszfeld median
     template <class MatrixType = Eigen::Matrix<default_type, 3, Eigen::Dynamic>, class  VectorType = Eigen::Matrix<default_type, 3, 1>>
