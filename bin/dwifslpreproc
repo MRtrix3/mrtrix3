@@ -1028,7 +1028,7 @@ def execute(): #pylint: disable=unused-variable
           if sum(slice_encoding_direction) < 0:
             slice_groups = [ [ index-1 for index in group if index ] for group in slice_groups ]
           else:
-            slice_groups = [ [ index for index in group if index != slice_to_remove_from_slspec ] for group in slice_groups ]
+            slice_groups = [ [ index for index in group if index != dwi_num_slices-1 ] for group in slice_groups ]
           eddyqc_slspec = 'slspec_unpad.txt'
           app.debug('Slice groups after removal: ' + str(slice_groups))
           try:
