@@ -1024,10 +1024,10 @@ def execute(): #pylint: disable=unused-variable
         if eddy_mporder and slice_padded:
           # Remove padded slice from slice_groups, write new slspec
           slice_groups = [ [ index for index in group if index != dwi_num_slices-1 ] for group in slice_groups ]
-          # After this removal, slspec should now be a square matrix
-          assert all(len(group) == len(slice_groups[0]) for group in slice_groups[1:])
           eddyqc_slspec = 'slspec_unpad.txt'
           matrix.save_matrix(eddyqc_slspec, slice_groups, add_to_command_history=False, fmt='%d')
+          # After this removal, slspec should now be a square matrix
+          assert all(len(group) == len(slice_groups[0]) for group in slice_groups[1:])
 
         run.command('mrconvert eddy_mask.nii eddy_mask_unpad.nii' + dwi_post_eddy_crop_option)
         eddyqc_mask = 'eddy_mask_unpad.nii'
