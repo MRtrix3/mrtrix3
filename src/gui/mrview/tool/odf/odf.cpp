@@ -131,7 +131,7 @@ namespace MR
             lmax_label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (lmax_label, 0, 2);
             lmax_selector = new SpinBox (this);
-            lmax_selector->setMinimum (2);
+            lmax_selector->setMinimum (0);
             lmax_selector->setMaximum (16);
             lmax_selector->setSingleStep (2);
             lmax_selector->setValue (8);
