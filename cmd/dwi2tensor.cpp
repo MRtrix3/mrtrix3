@@ -139,6 +139,11 @@ class Processor { MEMALIGN(Processor)
 
         double small_intensity = 1.0e-6 * dwi.maxCoeff();
         for (int i = 0; i < dwi.rows(); i++) {
+          if (std::isnan(dwi[i])) {
+            dwi[i] = 1.0;
+            w[i] = 0.0;
+            continue;
+          }
           if (dwi[i] < small_intensity)
             dwi[i] = small_intensity;
           w[i] = ( ols ? 1.0 : dwi[i] );
