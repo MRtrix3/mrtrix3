@@ -124,7 +124,12 @@ void usage ()
    + "* IWLS:\n"
      "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. " // Internal
      "Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. "
-     "NeuroImage, 2013, 81, 335-346";
+     "NeuroImage, 2013, 81, 335-346"
+  
+   + "* any of above with constraints:\n"
+     "Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B " // Internal
+     "Optimal experimental design and estimation for q-space trajectory imaging. "
+     "Human Brain Mapping, In press";
 }
 
 
