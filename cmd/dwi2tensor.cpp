@@ -127,7 +127,7 @@ void usage ()
      "NeuroImage, 2013, 81, 335-346"
   
    + "* any of above with constraints:\n"
-     "Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B " // Internal
+     "Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. " // Internal
      "Optimal experimental design and estimation for q-space trajectory imaging. "
      "Human Brain Mapping, In press";
 }
