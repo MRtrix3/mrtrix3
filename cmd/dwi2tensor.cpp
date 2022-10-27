@@ -49,10 +49,6 @@ void usage ()
 
   SYNOPSIS = "Diffusion (kurtosis) tensor estimation";
 
-  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
-
-  SYNOPSIS = "Diffusion (kurtosis) tensor estimation";
-
   DESCRIPTION
   + "By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted to "
     "the log-signal in two steps: firstly, using weighted least-squares (WLS) with "
@@ -82,7 +78,7 @@ void usage ()
 
   + "* Non-negative apparent kurtosis (when the -dkt option is provided)."
 
-  + "* Non-monotonic signal decay in the b = [0 b_max] range (when the -dkt option is provided)."
+  + "* Monotonic signal decay in the b = [0 b_max] range (when the -dkt option is provided)."
 
     + encoding_description;
 
