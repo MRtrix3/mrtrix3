@@ -33,7 +33,7 @@ By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted 
 
 * Non-negative apparent kurtosis (when the -dkt option is provided).
 
-* Non-monotonic signal decay in the b = [0 b_max] range (when the -dkt option is provided).
+* Monotonic signal decay in the b = [0 b_max] range (when the -dkt option is provided).
 
 The tensor coefficients are stored in the output image as follows: |br|
 volumes 0-5: D11, D22, D33, D12, D13, D23
