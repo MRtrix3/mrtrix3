@@ -1166,9 +1166,12 @@ def handler(signum, _frame):
   if os.getcwd() != WORKING_DIR:
     os.chdir(WORKING_DIR)
   if SCRATCH_DIR:
-    try:
-      shutil.rmtree(SCRATCH_DIR)
-    except OSError:
-      pass
-    SCRATCH_DIR = ''
+    if DO_CLEANUP:
+      try:
+        shutil.rmtree(SCRATCH_DIR)
+      except OSError:
+        pass
+      SCRATCH_DIR = ''
+    else:
+      sys.stderr.write(EXEC_NAME + ': ' + ANSI.console + 'Scratch directory retained; location: ' + SCRATCH_DIR + ANSI.clear + '\n')
   os._exit(signum) # pylint: disable=protected-access
