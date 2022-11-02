@@ -615,20 +615,25 @@ namespace MR {
 
         for (size_t n = 0; n < nDW; ++n) {
           const Frame& frame (*frames[n*nslices]);
-          std::array<default_type,4> g = {{ 0.0, 0.0, 0.0, frame.bvalue }};
-          if (g[3]) {
+          Eigen::Vector3d g = Eigen::Vector3d::Zero();
+          if (frame.bvalue) {
            if (frame.G.allFinite()) {
               g[0] = -frame.G[0];
               g[1] = -frame.G[1];
               g[2] =  frame.G[2];
            }
            else if (frame.G_prs.allFinite()) {
-              g[0] = image_transform(0,0)*frame.G_prs[0] + image_transform(0,1)*frame.G_prs[1] - image_transform(0,2)*frame.G_prs[2];
-              g[1] = image_transform(1,0)*frame.G_prs[0] + image_transform(1,1)*frame.G_prs[1] - image_transform(1,2)*frame.G_prs[2];
-              g[2] = image_transform(2,0)*frame.G_prs[0] + image_transform(2,1)*frame.G_prs[1] - image_transform(2,2)*frame.G_prs[2];
+             Eigen::Matrix<double,3,3> T = image_transform.matrix().leftCols(3);
+             T.col(2) *= -1.0;
+             // if PE direction along x, need to switch X & Y:
+             if (frame.pe_axis == 0) {
+               T.col(0).swap (T.col(1));
+               T.col(0) *= -1.0;
+             }
+             g = T * frame.G_prs;
             }
           }
-          add_line (dw_scheme, str(g[0]) + "," + str(g[1]) + "," + str(g[2]) + "," + str(g[3]));
+          add_line (dw_scheme, str(g[0]) + "," + str(g[1]) + "," + str(g[2]) + "," + str(frame.bvalue));
         }
 
         return dw_scheme;
