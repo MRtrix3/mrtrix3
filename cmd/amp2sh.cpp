@@ -71,6 +71,12 @@ void usage ()
   + Option ("rician", "correct for Rician noise induced bias, using noise map supplied")
   +   Argument ("noise").type_image_in()
 
+  + Option ("niter", "number of iterations to use for the Rician bias correction (default: 3)")
+  +   Argument ("num").type_integer (1, 100)
+
+  + Option ("signal", "output the image of signals corrected for Rician bias")
+  +   Argument ("image").type_image_out()
+
   + DWI::GradImportOptions()
   + DWI::ShellsOption
   + Stride::Options;
@@ -89,18 +95,21 @@ class Amp2SHCommon { MEMALIGN(Amp2SHCommon)
       Amp2SHCommon (const MatrixType& sh2amp,
           const vector<size_t>& bzeros,
           const vector<size_t>& dwis,
-          bool normalise_to_bzero) :
+          bool normalise_to_bzero,
+          int niter) :
         sh2amp (sh2amp),
         amp2sh (Math::pinv (sh2amp)),
         bzeros (bzeros),
         dwis (dwis),
-        normalise (normalise_to_bzero) { }
+        normalise (normalise_to_bzero),
+        niter (niter) { }
 
 
     Eigen::MatrixXd sh2amp, amp2sh;
     const vector<size_t>& bzeros;
     const vector<size_t>& dwis;
     bool normalise;
+    int niter;
 };
 
 
@@ -111,7 +120,6 @@ class Amp2SH { MEMALIGN(Amp2SH)
     Amp2SH (const Amp2SHCommon& common) :
       C (common),
       a (common.amp2sh.cols()),
-      s (common.amp2sh.rows()),
       c (common.amp2sh.rows()) { }
 
     template <class SHImageType, class AmpImageType>
@@ -125,74 +133,67 @@ class Amp2SH { MEMALIGN(Amp2SH)
 
 
     // Rician-corrected version:
-    template <class SHImageType, class AmpImageType, class NoiseImageType>
-      void operator() (SHImageType& SH, AmpImageType& amp, const NoiseImageType& noise)
+    template <class SHImageType, class AmpImageType, class NoiseImageType, class SignalImageType>
+      void operator() (SHImageType& SH, AmpImageType& amp, const NoiseImageType& noise, SignalImageType& sigout)
       {
         w = Eigen::VectorXd::Ones (C.sh2amp.rows());
 
         get_amps (amp);
         c = C.amp2sh * a;
 
-        for (size_t iter = 0; iter < 20; ++iter) {
-          sh2amp = C.sh2amp;
-          if (get_rician_bias (sh2amp, noise.value()))
-            break;
-          for (ssize_t n = 0; n < sh2amp.rows(); ++n)
-            sh2amp.row (n).array() *= w[n];
+        const default_type sigma = noise.value();
 
-          s.noalias() = sh2amp.transpose() * ap;
-          Q.triangularView<Eigen::Lower>() = sh2amp.transpose() * sh2amp;
-          llt.compute (Q);
-          c = llt.solve (s);
+        for (size_t iter = 0; iter < C.niter; ++iter) {
+          ap = C.sh2amp * c;
+
+          for (ssize_t n = 0; n < ap.size() ; ++n) {
+            ap[n] = std::max (ap[n], default_type(0.0));
+            default_type t = std::pow (ap[n]/sigma, default_type(RICIAN_POWER));
+            default_type sd = (t + 1.7)/(t + 1.12);
+            default_type diff = a[n] - sigma * std::pow (t + 1.65, 1.0/RICIAN_POWER);
+            ap[n] += diff ;
+          }
+
+          c = C.amp2sh * ap;
         }
 
         write_SH (SH);
+        if (sigout.valid())
+          write_signals (sigout);
       }
 
   protected:
     const Amp2SHCommon& C;
-    Eigen::VectorXd a, s, c, w, ap;
+    Eigen::VectorXd a, c, w, ap;
     Eigen::MatrixXd Q, sh2amp;
     Eigen::LLT<Eigen::MatrixXd> llt;
 
     template <class AmpImageType>
       void get_amps (AmpImageType& amp) {
-        double norm = 1.0;
-        if (C.normalise) {
-          for (size_t n = 0; n < C.bzeros.size(); n++) {
-            amp.index(3) = C.bzeros[n];
-            norm += amp.value ();
-          }
-          norm = C.bzeros.size() / norm;
-        }
-
         for (ssize_t n = 0; n < a.size(); n++) {
           amp.index(3) = C.dwis.size() ? C.dwis[n] : n;
-          a[n] = amp.value() * norm;
+          a[n] = amp.value();
         }
       }
 
     template <class SHImageType>
       void write_SH (SHImageType& SH) {
+        double norm = 1.0;
+        if (C.normalise) {
+          for (size_t n = 0; n < C.bzeros.size(); n++)
+            norm += a[C.bzeros[n]];
+          c *= C.bzeros.size() / norm;
+        }
+
         for (auto l = Loop(3) (SH); l; ++l)
           SH.value() = c[SH.index(3)];
       }
 
-    bool get_rician_bias (const Eigen::MatrixXd& sh2amp, default_type noise) {
-      ap = sh2amp * c;
-      default_type norm_diff = 0.0;
-      default_type norm_amp = 0.0;
-      for (ssize_t n = 0; n < ap.size() ; ++n) {
-        ap[n] = std::max (ap[n], default_type(0.0));
-        default_type t = std::pow (ap[n]/noise, default_type(RICIAN_POWER));
-        w[n] = Math::pow2 ((t + 1.7)/(t + 1.12));
-        default_type diff = a[n] - noise * std::pow (t + 1.65, 1.0/RICIAN_POWER);
-        norm_diff += Math::pow2 (diff);
-        norm_amp += Math::pow2 (a[n]);
-        ap[n] += diff;
+    template <class SignalImageType>
+      void write_signals (SignalImageType& sig) {
+        for (auto l = Loop(3) (sig); l; ++l)
+          sig.value() = ap[sig.index(3)];
       }
-      return norm_diff/norm_amp < 1.0e-8;
-    }
 };
 
 
@@ -248,18 +249,28 @@ void run ()
   if (normalise && !bzeros.size())
     throw Exception ("the normalise option is only available if the input data contains b=0 images.");
 
+  int niter = get_option_value ("niter", 3);
+
+
 
   header.size (3) = sh2amp.cols();
   Stride::set_from_command_line (header);
   auto SH = Image<value_type>::create (argument[1], header);
 
-  Amp2SHCommon common (sh2amp, bzeros, dwis, normalise);
+  opt = get_options ("signal");
+  Image<value_type> sigout;
+  if (opt.size()) {
+    header.size(3) = sh2amp.rows();
+    sigout = Image<value_type>::create (opt[0][0], header);
+  }
+
+  Amp2SHCommon common (sh2amp, bzeros, dwis, normalise, niter);
 
   opt = get_options ("rician");
   if (opt.size()) {
     auto noise = Image<value_type>::open (opt[0][0]).with_direct_io();
     ThreadedLoop ("mapping amplitudes to SH coefficients", amp, 0, 3)
-      .run (Amp2SH (common), SH, amp, noise);
+      .run (Amp2SH (common), SH, amp, noise, sigout);
   }
   else {
     ThreadedLoop ("mapping amplitudes to SH coefficients", amp, 0, 3)
