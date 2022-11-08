@@ -151,7 +151,7 @@ class Amp2SH { MEMALIGN(Amp2SH)
             default_type t = std::pow (ap[n]/sigma, default_type(RICIAN_POWER));
             default_type sd = (t + 1.7)/(t + 1.12);
             default_type diff = a[n] - sigma * std::pow (t + 1.65, 1.0/RICIAN_POWER);
-            ap[n] += diff ;
+            ap[n] += diff * sd;
           }
 
           c = C.amp2sh * ap;

@@ -21,6 +21,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 
+#define RICIAN_POWER 2.25
 
 using namespace MR;
 using namespace App;
@@ -94,7 +95,12 @@ void usage ()
     + Option ("estimator", "Select the noise level estimator (default = Exp2), either: \n"
                            "* Exp1: the original estimator used in Veraart et al. (2016), or \n"
                            "* Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).")
-    +   Argument ("Exp1/Exp2").type_choice(estimators);
+    +   Argument ("Exp1/Exp2").type_choice(estimators)
+
+    + Option ("rician", "Apply Rician bias correction")
+
+    + Option ("niter", "number of iterations to apply for Rician bias correction (default = 3)")
+    +   Argument ("num").type_integer (1, 100);
 
 
   COPYRIGHT = "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
@@ -130,13 +136,16 @@ public:
   using SValsType = Eigen::VectorXd;
 
   DenoisingFunctor (int ndwi, const vector<uint32_t>& extent,
-                    Image<bool>& mask, Image<real_type>& noise, bool exp1)
+                    Image<bool>& mask, Image<real_type>& noise, bool exp1, int rician_niter)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
       m (ndwi), n (extent[0]*extent[1]*extent[2]),
-      r (std::min(m,n)), q (std::max(m,n)), exp1(exp1),
-      X (m,n), pos {{0, 0, 0}},
+      r (std::min(m,n)), q (std::max(m,n)), exp1(exp1), rician_niter (rician_niter),
+      X (m,n), XtX (r,r), pos {{0, 0, 0}},
       mask (mask), noise (noise)
-  { }
+  {
+    if (rician_niter > 0)
+      X_orig.resizeLike (X);
+  }
 
   template <typename ImageType>
   void operator () (ImageType& dwi, ImageType& out)
@@ -151,44 +160,61 @@ public:
     // Load data in local window
     load_data (dwi);
 
-    // Compute Eigendecomposition:
-    MatrixType XtX (r,r);
-    if (m <= n)
-      XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
-    else
-      XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
-    Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
-    // eigenvalues sorted in increasing order:
-    SValsType s = eig.eigenvalues().template cast<double>();
+    double sigma2;
+    int iter = 0;
 
-    // Marchenko-Pastur optimal threshold
-    const double lam_r = std::max(s[0], 0.0) / q;
-    double clam = 0.0;
-    sigma2 = 0.0;
-    ssize_t cutoff_p = 0;
-    for (ssize_t p = 0; p < r; ++p)     // p+1 is the number of noise components
-    {                                   // (as opposed to the paper where p is defined as the number of signal components)
-      double lam = std::max(s[p], 0.0) / q;
-      clam += lam;
-      double gam = double(p+1) / (exp1 ? q : q-(r-p-1));
-      double sigsq1 = clam / double(p+1);
-      double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
-      // sigsq2 > sigsq1 if signal else noise
-      if (sigsq2 < sigsq1) {
-        sigma2 = sigsq1;
-        cutoff_p = p+1;
-      }
-    }
-
-    if (cutoff_p > 0) {
-      // recombine data using only eigenvectors above threshold:
-      s.head (cutoff_p).setZero();
-      s.tail (r-cutoff_p).setOnes();
+    do {
+      // Compute Eigendecomposition:
       if (m <= n)
-        X.col (n/2) = eig.eigenvectors() * ( s.cast<F>().asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
+        XtX.template triangularView<Eigen::Lower>() = X * X.adjoint();
       else
-        X.col (n/2) = X * ( eig.eigenvectors() * ( s.cast<F>().asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
-    }
+        XtX.template triangularView<Eigen::Lower>() = X.adjoint() * X;
+      Eigen::SelfAdjointEigenSolver<MatrixType> eig (XtX);
+      // eigenvalues sorted in increasing order:
+      SValsType s = eig.eigenvalues().template cast<double>();
+
+      // Marchenko-Pastur optimal threshold
+      const double lam_r = std::max(s[0], 0.0) / q;
+      double clam = 0.0;
+      sigma2 = 0.0;
+      ssize_t cutoff_p = 0;
+      for (ssize_t p = 0; p < r; ++p)     // p+1 is the number of noise components
+      {                                   // (as opposed to the paper where p is defined as the number of signal components)
+        double lam = std::max(s[p], 0.0) / q;
+        clam += lam;
+        double gam = double(p+1) / (exp1 ? q : q-(r-p-1));
+        double sigsq1 = clam / double(p+1);
+        double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
+        // sigsq2 > sigsq1 if signal else noise
+        if (sigsq2 < sigsq1) {
+          sigma2 = sigsq1;
+          cutoff_p = p+1;
+        }
+      }
+
+      if (cutoff_p > 0) {
+        // recombine data using only eigenvectors above threshold:
+        s.head (cutoff_p).setZero();
+        s.tail (r-cutoff_p).setOnes();
+
+        if (iter >= rician_niter) {
+          // only compute central voxel if final iteration:
+          if (m <= n)
+            X.col (n/2) = eig.eigenvectors() * ( s.cast<F>().asDiagonal() * ( eig.eigenvectors().adjoint() * X.col(n/2) ));
+          else
+            X.col (n/2) = X * ( eig.eigenvectors() * ( s.cast<F>().asDiagonal() * eig.eigenvectors().adjoint().col(n/2) ));
+          break;
+        }
+
+        if (m <= n)
+          X = eig.eigenvectors() * ( s.cast<F>().asDiagonal() * ( eig.eigenvectors().adjoint() * X ));
+        else
+          X = X * ( eig.eigenvectors() * ( s.cast<F>().asDiagonal() * eig.eigenvectors().adjoint() ));
+
+        // Rician correction:
+        rician_correct<F>(sigma2);
+      }
+    } while (iter++ < rician_niter);
 
     // Store output
     assign_pos_of(dwi).to(out);
@@ -205,33 +231,36 @@ private:
   const std::array<ssize_t, 3> extent;
   const ssize_t m, n, r, q;
   const bool exp1;
-  MatrixType X;
+  const int rician_niter;
+  MatrixType X, X_orig, XtX;
   std::array<ssize_t, 3> pos;
-  double sigma2;
   Image<bool> mask;
   Image<real_type> noise;
 
   template <typename ImageType>
-  void load_data (ImageType& dwi) {
-    pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
-    // fill patch
-    X.setZero();
-    size_t k = 0;
-    for (int z = -extent[2]; z <= extent[2]; z++) {
-      dwi.index(2) = wrapindex(z, 2, dwi.size(2));
-      for (int y = -extent[1]; y <= extent[1]; y++) {
-        dwi.index(1) = wrapindex(y, 1, dwi.size(1));
-        for (int x = -extent[0]; x <= extent[0]; x++, k++) {
-          dwi.index(0) = wrapindex(x, 0, dwi.size(0));
-          X.col(k) = dwi.row(3);
+    void load_data (ImageType& dwi) {
+      pos[0] = dwi.index(0); pos[1] = dwi.index(1); pos[2] = dwi.index(2);
+      // fill patch
+      X.setZero();
+      size_t k = 0;
+      for (int z = -extent[2]; z <= extent[2]; z++) {
+        dwi.index(2) = wrapindex(z, 2, dwi.size(2));
+        for (int y = -extent[1]; y <= extent[1]; y++) {
+          dwi.index(1) = wrapindex(y, 1, dwi.size(1));
+          for (int x = -extent[0]; x <= extent[0]; x++, k++) {
+            dwi.index(0) = wrapindex(x, 0, dwi.size(0));
+            X.col(k) = dwi.row(3);
+          }
         }
       }
+      // reset image position
+      dwi.index(0) = pos[0];
+      dwi.index(1) = pos[1];
+      dwi.index(2) = pos[2];
+
+      if (rician_niter > 0)
+        X_orig = X;
     }
-    // reset image position
-    dwi.index(0) = pos[0];
-    dwi.index(1) = pos[1];
-    dwi.index(2) = pos[2];
-  }
 
   inline size_t wrapindex(int r, int axis, int max) const {
     // patch handling at image edges
@@ -241,12 +270,33 @@ private:
     return rr;
   }
 
+  template<typename ValueType> void rician_correct (double sigma2) {
+    double sigma = std::sqrt(sigma2);
+    for (int j = 0; j < X.cols(); ++j) {
+      for (int i = 0; i < X.rows(); ++i) {
+        X(i,j) = std::max (X(i,j), ValueType(0.0));
+        ValueType t = std::pow (X(i,j)/sigma, ValueType(RICIAN_POWER));
+        ValueType sd = (t + 1.7)/(t + 1.12);
+        ValueType diff = X_orig(i,j) - sigma * std::pow (t + 1.65, 1.0/RICIAN_POWER);
+        X(i,j) += diff * sd;
+      }
+    }
+  }
+
+  // disable Rician bias correction for complex types:
+  template<> void rician_correct<cfloat> (double sigma2) { }
+  template<> void rician_correct<cdouble> (double sigma2) { }
 };
 
 
 template <typename T>
-void process_image (Header& data, Image<bool>& mask, Image<real_type> noise,
-                    const std::string& output_name, const vector<uint32_t>& extent, bool exp1)
+void process_image (Header& data,
+                    Image<bool>& mask,
+                    Image<real_type> noise,
+                    const std::string& output_name,
+                    const vector<uint32_t>& extent,
+                    bool exp1,
+                    int rician_niter = 0)
   {
     auto input = data.get_image<T>().with_direct_io(3);
     // create output
@@ -254,7 +304,7 @@ void process_image (Header& data, Image<bool>& mask, Image<real_type> noise,
     header.datatype() = DataType::from<T>();
     auto output = Image<T>::create (output_name, header);
     // run
-    DenoisingFunctor<T> func (data.size(3), extent, mask, noise, exp1);
+    DenoisingFunctor<T> func (data.size(3), extent, mask, noise, exp1, rician_niter);
     ThreadedLoop ("running MP-PCA denoising", data, 0, 3).run (func, input, output);
   }
 
@@ -310,15 +360,21 @@ void run ()
   }
 
   int prec = get_option_value("datatype", 0);     // default: single precision
-  if (dwi.datatype().is_complex()) prec += 2;     // support complex input data
+  int rician_niter = get_options ("rician").size() ? get_option_value ("niter", 3) : 0;
+  if (dwi.datatype().is_complex()) {
+    if (rician_niter > 0)
+      WARN ("-rician option only applies to magnitude data - ignored");
+    prec += 2;     // support complex input data
+  }
+
   switch (prec) {
     case 0:
       INFO("select real float32 for processing");
-      process_image<float>(dwi, mask, noise, argument[1], extent, exp1);
+      process_image<float>(dwi, mask, noise, argument[1], extent, exp1, rician_niter);
       break;
     case 1:
       INFO("select real float64 for processing");
-      process_image<double>(dwi, mask, noise, argument[1], extent, exp1);
+      process_image<double>(dwi, mask, noise, argument[1], extent, exp1, rician_niter);
       break;
     case 2:
       INFO("select complex float32 for processing");
