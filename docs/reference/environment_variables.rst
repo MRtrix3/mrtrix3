@@ -53,6 +53,21 @@ List of MRtrix3 environment variables
      :option:`NumberOfThreads` setting in the configuration file, but
      will be overridden by the ENVVAR ``-nthreads`` command-line option.
 
+.. envvar:: MRTRIX_PRESERVE_PHILIPS_ISO
+
+     Do not remove the synthetic isotropically-weighted diffusion
+     image often added at the end of the series on Philips
+     scanners. By default, these images are removed from the series
+     to prevent errors in downstream processing. If this
+     environment variable is set, these images will be preserved in
+     the output.
+     
+     Note that it can be difficult to ascertain which volume is the
+     synthetic isotropically-weighed image, since its DW encoding
+     will normally have been modified from its initial value
+     (e.g. [ 0 0 0 1000 ] for a b=1000 acquisition) to b=0 due to
+     b-value scaling.
+
 .. envvar:: MRTRIX_QUIET
 
      Do not display information messages or progress status. This has
