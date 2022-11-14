@@ -1022,12 +1022,22 @@ def execute(): #pylint: disable=unused-variable
           progress.increment()
 
         if eddy_mporder and slice_padded:
+          app.debug('Current slice groups: ' + str(slice_groups))
+          app.debug('Slice encoding direction: ' + str(slice_encoding_direction))
           # Remove padded slice from slice_groups, write new slspec
-          slice_groups = [ [ index for index in group if index != dwi_num_slices-1 ] for group in slice_groups ]
-          # After this removal, slspec should now be a square matrix
-          assert all(len(group) == len(slice_groups[0]) for group in slice_groups[1:])
+          if sum(slice_encoding_direction) < 0:
+            slice_groups = [ [ index-1 for index in group if index ] for group in slice_groups ]
+          else:
+            slice_groups = [ [ index for index in group if index != dwi_num_slices-1 ] for group in slice_groups ]
           eddyqc_slspec = 'slspec_unpad.txt'
-          matrix.save_matrix(eddyqc_slspec, slice_groups, add_to_command_history=False, fmt='%d')
+          app.debug('Slice groups after removal: ' + str(slice_groups))
+          try:
+            # After this removal, slspec should now be a square matrix
+            assert all(len(group) == len(slice_groups[0]) for group in slice_groups[1:])
+            matrix.save_matrix(eddyqc_slspec, slice_groups, add_to_command_history=False, fmt='%d')
+          except AssertionError:
+            matrix.save_numeric(eddyqc_slspec, slice_groups, add_to_command_history=False, fmt='%d')
+            raise
 
         run.command('mrconvert eddy_mask.nii eddy_mask_unpad.nii' + dwi_post_eddy_crop_option)
         eddyqc_mask = 'eddy_mask_unpad.nii'
