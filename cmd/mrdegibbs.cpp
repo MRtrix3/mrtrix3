@@ -71,6 +71,11 @@ void usage ()
             "i.e. 0:2 or 0,1,2 (this is equivalent to '-mode 3d').")
   +   Argument ("list").type_sequence_int ()
 
+  + Option ("interp", 
+            "specify the type of interpolation to be applied to the shifted data to resample back on the original grid; "
+            "options are: " + join(MR::Degibbs::interp_types, ",") + " (note: currently applies to 3d mode only)")
+    + Argument ("type").type_choice (MR::Degibbs::interp_types)
+
   + Option ("nshifts", "discretization of subpixel spacing (default: 20).")
   +   Argument ("value").type_integer (8, 128)
 
@@ -175,7 +180,10 @@ void run ()
 
 
   if (mode == 1) {
-    Degibbs::unring3D (in, out, minW, maxW, nshifts);
+    // Default to linear complex, which was prior behaviour
+    // TODO More advanced selection of default interpolation based on datatype of input image
+    const MR::Degibbs::interp_t interp = MR::Degibbs::interp_t (get_option_value ("interp", 1));
+    Degibbs::unring3D (in, out, interp, minW, maxW, nshifts);
     return;
   }
 

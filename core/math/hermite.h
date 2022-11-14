@@ -17,14 +17,22 @@
 #ifndef __math_hermite_h__
 #define __math_hermite_h__
 
-#include <limits>
+#include <array>
 
+#include "debug.h"
 #include "types.h"
 
 namespace MR
 {
   namespace Math
   {
+
+    namespace
+    {
+      // TODO Use SFINAE to define a type that corresponds to the scalar of a complex number, or
+      //   the type itself if already scalar
+      // When done, remove the templating of Hermite::set()
+    }
 
     template <typename T> class Hermite
     { NOMEMALIGN
@@ -33,9 +41,11 @@ namespace MR
 
         Hermite (value_type tension = 0.0) : t (T (0.5) *tension) { }
 
-        void set (value_type position) {
-          value_type p2 = position*position;
-          value_type p3 = position*p2;
+        template <typename Scalar>
+        void set (const Scalar position) {
+          assert (position >= Scalar(0) && position <= Scalar(1));
+          const Scalar p2 = position*position;
+          const Scalar p3 = position*p2;
           w[0] = (T (0.5)-t) * (T (2.0) *p2  - p3 - position);
           w[1] = T (1.0) + (T (1.5) +t) *p3 - (T (2.5) +t) *p2;
           w[2] = (T (2.0) +T (2.0) *t) *p2 + (T (0.5)-t) *position - (T (1.5) +t) *p3;
@@ -57,8 +67,8 @@ namespace MR
         }
 
       private:
-        value_type w[4];
-        value_type t;
+        std::array<value_type, 4> w;
+        const value_type t;
     };
 
   }
