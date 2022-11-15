@@ -186,7 +186,7 @@ def aggregate(inputs, output, contrast_idx, mode, force=True):
   elif mode == 'weighted_mean':
     weights = [inp.aggregation_weight for inp in inputs]
     assert not any(w is None for w in weights), weights
-    wsum = sum([float(w) for w in weights])
+    wsum = sum(float(w) for w in weights)
     cmd = ['mrcalc']
     if wsum <= 0:
       raise MRtrixError("the sum of aggregetion weights has to be positive")
