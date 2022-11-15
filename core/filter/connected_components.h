@@ -234,7 +234,7 @@ namespace MR
             enabled_axes (ndim(), true),
             largest_only (false),
             do_26_connectivity (false),
-            minsize (std::numeric_limits<uint32_t>::max())
+            minsize (0)
         {
           if (this->ndim() > 4)
             throw Exception ("Cannot run connected components analysis with more than 4 dimensions");
