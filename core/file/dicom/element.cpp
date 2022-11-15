@@ -280,9 +280,36 @@ namespace MR {
 
 
 
+      bool Element::ignore_when_parsing () const
+      {
+        for (const auto& seq : parents) {
+          // ignore anything within IconImageSequence:
+          if (seq.is (0x0088U, 0x0200U))
+            return true;
+          // allow Philips PrivatePerFrameSq:
+          if (seq.is (0x2005U, 0x140FU))
+            continue;
+          // ignore anything within sequences with unknown (private) group:
+          if (seq.group & 1U)
+            return true;
+        }
+
+        return false;
+      }
 
 
 
+
+
+      bool Element::is_in_series_ref_sequence () const
+      {
+        // required to group together series exported using
+        // Siemens XA10A in Interoperability mode
+        for (const auto& seq : parents)
+          if (seq.is (0x0008U, 0x1250U))
+            return true;
+        return false;
+      }
 
 
 
@@ -296,8 +323,9 @@ namespace MR {
         if (VR == VR_SQ) return SEQ;
         if (VR == VR_DA) return DATE;
         if (VR == VR_TM) return TIME;
+        if (VR == VR_DT) return DATETIME;
         if (VR == VR_AE || VR == VR_AS || VR == VR_CS ||
-            VR == VR_DS || VR == VR_DT || VR == VR_IS || VR == VR_LO ||
+            VR == VR_DS || VR == VR_IS || VR == VR_LO ||
             VR == VR_LT || VR == VR_PN || VR == VR_SH || VR == VR_ST ||
             VR == VR_UI || VR == VR_UT || VR == VR_AT) return STRING;
         return OTHER;
@@ -387,6 +415,20 @@ namespace MR {
       {
         assert (type() == TIME);
         return Time (std::string (reinterpret_cast<const char*> (data), size));
+      }
+
+
+
+
+      std::pair<Date,Time> Element::get_datetime () const
+      {
+        assert (type() == DATETIME);
+        if (size < 21)
+          throw Exception ("malformed DateTime entry");
+        return {
+          Date (std::string (reinterpret_cast<const char*> (data), 8)),
+          Time (std::string (reinterpret_cast<const char*> (data+8), 13))
+        };
       }
 
 
