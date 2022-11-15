@@ -13,8 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os
-from distutils.spawn import find_executable
+import os, shutil
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, path, run
 
@@ -61,7 +60,7 @@ def execute(): #pylint: disable=unused-variable
   if not ants_path:
     raise MRtrixError('Environment variable ANTSPATH is not set; '
                       'please appropriately confirure ANTs software')
-  if not find_executable(ANTS_BRAIN_EXTRACTION_CMD):
+  if not shutil.which(ANTS_BRAIN_EXTRACTION_CMD):
     raise MRtrixError('Unable to find command "'
                       + ANTS_BRAIN_EXTRACTION_CMD
                       + '"; please check ANTs installation')
