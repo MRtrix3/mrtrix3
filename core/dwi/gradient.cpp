@@ -263,7 +263,8 @@ namespace MR
         }
         // modulate verbosity of message & whether or not header is modified
         // based on magnitude of effect of normalisation
-        const default_type max_log_scaling_factor = squared_norms.log().abs().maxCoeff();
+        const default_type max_log_scaling_factor = squared_norms.unaryExpr ([](double v) {
+            return v > 0.0 ? abs(log(v)) : 0.0; }).maxCoeff();
         const default_type max_scaling_factor = std::exp (max_log_scaling_factor);
         const bool exceeds_single_precision = max_log_scaling_factor > 1e-5;
         const bool requires_bvalue_scaling = max_log_scaling_factor > 0.01;

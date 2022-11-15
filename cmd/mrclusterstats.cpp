@@ -320,7 +320,7 @@ void run() {
       write_output (stdev.row(0), *v2v, prefix + "std_dev.mif", output_header);
     } else {
       for (size_t i = 0; i != num_vgs; ++i) {
-        write_output (stdev.row(i), *v2v, prefix + "std_dev.mif", output_header);
+        write_output (stdev.row(i), *v2v, prefix + "std_dev" + str(i) + ".mif", output_header);
         ++progress;
       }
     }

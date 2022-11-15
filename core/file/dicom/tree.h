@@ -31,8 +31,8 @@ namespace MR {
         public:
           std::string description;
           void read (const std::string& filename);
-          std::shared_ptr<Patient> find (const std::string& patient_name, const std::string& patient_ID = "",
-              const std::string& patient_DOB = "");
+          std::shared_ptr<Patient> find (const std::string& patient_name, const std::string& patient_ID,
+              const std::string& patient_DOB);
 
           void sort() {
             std::sort (begin(), end(), compare_ptr_contents());
