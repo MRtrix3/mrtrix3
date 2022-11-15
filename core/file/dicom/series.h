@@ -31,14 +31,13 @@ namespace MR {
       class Series : public vector<std::shared_ptr<Image>> { NOMEMALIGN
         public:
           Series (Study* parent, const std::string& series_name, size_t series_number, const std::string& image_type,
-              const std::string& series_modality = "", const std::string& series_date = "", const std::string& series_time = "") :
-            study (parent), name (series_name), image_type (image_type), modality (series_modality),
-            date (series_date), time (series_time) {
-              number = series_number;
-            }
+              const std::string& series_ref_UID, const std::string& series_modality,
+              const std::string& series_date, const std::string& series_time) :
+            study (parent), name (series_name), image_type (image_type), series_ref_UID (series_ref_UID),
+                  number (series_number), modality (series_modality), date (series_date), time (series_time) { }
 
           Study* study;
-          std::string name, image_type;
+          std::string name, image_type, series_ref_UID;
           size_t number;
           std::string modality;
           std::string date;
