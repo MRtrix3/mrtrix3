@@ -736,7 +736,6 @@ class Entry:
 
 
   def execute (self):
-    global formatstr
     folder = os.path.dirname (self.name)
     try:
       os.makedirs (folder)
@@ -870,7 +869,8 @@ class Entry:
     return self.timestamp == float("inf") or self.timestamp < self.dep_timestamp
 
   def display (self, indent=''):
-    show_rebuild = lambda x: x+' [REBUILD]' if todo[x].need_rebuild() else x
+    def show_rebuild(x):
+      return x+' [REBUILD]' if todo[x].need_rebuild() else x
     msg = indent + '[' + self.action + '] ' + show_rebuild (self.name) + ':\n'
     msg += indent + '  timestamp: ' + str(self.timestamp)
     if self.deps:
