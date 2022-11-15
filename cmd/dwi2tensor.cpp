@@ -137,16 +137,13 @@ class Processor { MEMALIGN(Processor)
         for (auto l = Loop (3) (dwi_image); l; ++l)
           dwi[dwi_image.index(3)] = dwi_image.value();
 
+        notnan = dwi.array().isFinite().template cast<double>();
+
         double small_intensity = 1.0e-6 * dwi.maxCoeff();
         for (int i = 0; i < dwi.rows(); i++) {
-          if (std::isnan(dwi[i])) {
-            dwi[i] = 1.0;
-            w[i] = 0.0;
-            continue;
-          }
-          if (dwi[i] < small_intensity)
+          if (notnan[i] == 0 || dwi[i] < small_intensity)
             dwi[i] = small_intensity;
-          w[i] = ( ols ? 1.0 : dwi[i] );
+          w[i] = notnan[i] * ( ols ? 1.0 : dwi[i] );
           dwi[i] = std::log (dwi[i]);
         }
 
@@ -155,7 +152,7 @@ class Processor { MEMALIGN(Processor)
           work.selfadjointView<Eigen::Lower>().rankUpdate (b.transpose()*w.asDiagonal());
           p = llt.compute (work.selfadjointView<Eigen::Lower>()).solve(b.transpose()*w.asDiagonal()*w.asDiagonal()*dwi);
           if (maxit > 1)
-            w = (b*p).array().exp();
+            w = (b*p).array().exp() * notnan.array();
         }
 
         for (auto l = Loop(3)(dt_image); l; ++l) {
@@ -193,6 +190,7 @@ class Processor { MEMALIGN(Processor)
     Eigen::VectorXd dwi;
     Eigen::VectorXd p;
     Eigen::VectorXd w;
+    Eigen::VectorXd notnan;
     Eigen::MatrixXd work;
     Eigen::LLT<Eigen::MatrixXd> llt;
     const Eigen::MatrixXd& b;
