@@ -43,7 +43,7 @@ def dot(input_a, input_b): #pylint: disable=unused-variable
     raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
   if len(input_a) != len(input_b):
     raise MRtrixError('Dimension mismatch (' + str(len(input_a)) + ' vs. ' + str(len(input_b)) + ')')
-  return sum([ x*y for x,y in zip(input_a, input_b) ])
+  return sum(x*y for x,y in zip(input_a, input_b))
 
 
 

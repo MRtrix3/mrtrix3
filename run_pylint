@@ -33,7 +33,7 @@ if [ $# == 0 ]; then
     fi
   done
   for bin_path in bin/*; do
-    if [ -f ${bin_path} ] && $(head -n1 ${bin_path} | grep -q "#!\/usr\/bin\/python3"); then
+    if [ -f ${bin_path} ] && $(head -n1 ${bin_path} | grep -q "#!/usr/bin/python3"); then
       tests="$tests $bin_path"
     fi
   done
