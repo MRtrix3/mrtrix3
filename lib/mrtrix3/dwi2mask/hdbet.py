@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from distutils.spawn import find_executable
+import shutil
 from mrtrix3 import MRtrixError
 from mrtrix3 import app, run
 
@@ -40,7 +40,7 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  hdbet_cmd = find_executable('hd-bet')
+  hdbet_cmd = shutil.which('hd-bet')
   if not hdbet_cmd:
     raise MRtrixError('Unable to locate "hd-bet" executable; check installation')
 

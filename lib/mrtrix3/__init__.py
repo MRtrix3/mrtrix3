@@ -84,4 +84,4 @@ setup_ansi()
 # Execute a command
 def execute(): #pylint: disable=unused-variable
   from . import app #pylint: disable=import-outside-toplevel
-  app._execute(inspect.getmodule(inspect.stack()[-1][0])) # pylint: disable=protected-access
+  app._execute(inspect.getmodule(inspect.stack()[1][0])) # pylint: disable=protected-access

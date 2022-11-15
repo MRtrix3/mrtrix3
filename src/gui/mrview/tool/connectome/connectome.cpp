@@ -2485,7 +2485,8 @@ namespace MR
 
               std::map<float, size_t> node_ordering;
               for (size_t i = 1; i <= num_nodes(); ++i)
-                node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
+                if (nodes[i].get_volume() > 0)
+                  node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
 
               for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
                 const Node& node (nodes[it->second]);
