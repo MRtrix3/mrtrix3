@@ -35,6 +35,23 @@ namespace MR {
 
       std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper (MR::Header& H, vector<std::shared_ptr<Series>>& series)
       {
+        //ENVVAR name: MRTRIX_PRESERVE_PHILIPS_ISO
+        //ENVVAR Do not remove the synthetic isotropically-weighted diffusion
+        //ENVVAR image often added at the end of the series on Philips
+        //ENVVAR scanners. By default, these images are removed from the series
+        //ENVVAR to prevent errors in downstream processing. If this
+        //ENVVAR environment variable is set, these images will be preserved in
+        //ENVVAR the output.
+        //ENVVAR
+        //ENVVAR Note that it can be difficult to ascertain which volume is the
+        //ENVVAR synthetic isotropically-weighed image, since its DW encoding
+        //ENVVAR will normally have been modified from its initial value
+        //ENVVAR (e.g. [ 0 0 0 1000 ] for a b=1000 acquisition) to b=0 due to
+        //ENVVAR b-value scaling.
+        bool preserve_philips_iso = ( getenv ("MRTRIX_PRESERVE_PHILIPS_ISO") != nullptr );
+
+
+
         assert (series.size() > 0);
         std::unique_ptr<MR::ImageIO::Base> io_handler;
 
@@ -77,11 +94,13 @@ namespace MR {
               std::sort (image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());
               for (auto frame_it : image_it->frames)
                 if (frame_it->image_type == series_it->image_type)
-                  frames.push_back (frame_it.get());
+                  if (!frame_it->is_philips_iso() || preserve_philips_iso)
+                    frames.push_back (frame_it.get());
             }
             // otherwise add image frame:
             else
-              frames.push_back (image_it.get());
+              if (!image_it->is_philips_iso() || preserve_philips_iso)
+                frames.push_back (image_it.get());
           }
         }
 
@@ -189,9 +208,14 @@ namespace MR {
             H.keyval()["FlipAngle"] = join (frame.flip_angles, ",");
         }
 
-        size_t nchannels = image.frames.size() ? 1 : image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
-        if (nchannels > 1)
-          INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
+        size_t nchannels = image.samples_per_pixel;
+        if (nchannels == 1 && !image.frames.size()) {
+          // only guess number of samples per pixel if not explicitly set in
+          // DICOM and not using multi-frame:
+          nchannels = image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
+          if (nchannels > 1)
+            INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
+        }
 
         H.ndim() = 3 + (dim[0]*dim[2]>1) + (nchannels>1);
 

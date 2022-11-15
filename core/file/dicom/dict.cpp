@@ -161,7 +161,7 @@ namespace MR {
           { 0x00081198UL, "SQFailedSOPSequence" },
           { 0x00081199UL, "SQReferencedSOPSequence" },
           { 0x00081200UL, "SQStudiesContainingOtherReferencedInstancesSequence" },
-          { 0x00081250UL, "SQRelatedSeriesSequenceired" },
+          { 0x00081250UL, "SQRelatedSeriesSequence" },
           { 0x00082111UL, "STDerivationDescription" },
           { 0x00082112UL, "SQSourceImageSequence" },
           { 0x00082120UL, "SHStageName" },

@@ -38,6 +38,7 @@ namespace MR {
         study_ID.clear();
         study_time.clear();
         series.clear();
+        series_ref_UID.clear();
         image_type.clear();
         series_date.clear();
         series_time.clear();
@@ -53,30 +54,35 @@ namespace MR {
             bool in_frames = false;
 
             while (item.read()) {
-              if      (item.is (0x0008U, 0x0008U)) current_image_type = join (item.get_string(), " ");
-              else if (item.is (0x0008U, 0x0020U)) study_date = item.get_string (0);
-              else if (item.is (0x0008U, 0x0021U)) series_date = item.get_string (0);
-              else if (item.is (0x0008U, 0x0030U)) study_time = item.get_string (0);
-              else if (item.is (0x0008U, 0x0031U)) series_time = item.get_string (0);
-              else if (item.is (0x0008U, 0x0060U)) modality = item.get_string (0);
-              else if (item.is (0x0008U, 0x1030U)) study = item.get_string (0);
-              else if (item.is (0x0008U, 0x103EU)) series = item.get_string (0);
-              else if (item.is (0x0010U, 0x0010U)) patient = item.get_string (0);
-              else if (item.is (0x0010U, 0x0020U)) patient_ID = item.get_string (0);
-              else if (item.is (0x0010U, 0x0030U)) patient_DOB = item.get_string (0);
-              else if (item.is (0x0018U, 0x0024U)) sequence = item.get_string (0);
-              else if (item.is (0x0020U, 0x0010U)) study_ID = item.get_string (0);
-              else if (item.is (0x0020U, 0x0011U)) series_number = item.get_uint (0);
-              else if (item.is (0x0028U, 0x0010U)) dim[1] = item.get_uint (0);
-              else if (item.is (0x0028U, 0x0011U)) dim[0] = item.get_uint (0);
-              else if (item.is (0x0028U, 0x0100U)) bits_alloc = item.get_uint (0);
-              else if (item.is (0x7FE0U, 0x0010U)) data = item.offset (item.data);
-              else if (item.is (0xFFFEU, 0xE000U)) {
-                if (item.parents.size() &&
-                    item.parents.back().group ==  0x5200U &&
-                    item.parents.back().element == 0x9230U) { // multi-frame item
-                  if (in_frames) ++image_type[current_image_type];
-                  else in_frames = true;
+              if (!item.ignore_when_parsing()) {
+
+                if      (item.is (0x0008U, 0x0008U)) current_image_type = join (item.get_string(), " ");
+                else if (item.is (0x0008U, 0x0020U)) study_date = item.get_string (0);
+                else if (item.is (0x0008U, 0x0021U)) series_date = item.get_string (0);
+                else if (item.is (0x0008U, 0x0030U)) study_time = item.get_string (0);
+                else if (item.is (0x0008U, 0x0031U)) series_time = item.get_string (0);
+                else if (item.is (0x0008U, 0x0060U)) modality = item.get_string (0);
+                else if (item.is (0x0008U, 0x1030U)) study = item.get_string (0);
+                else if (item.is (0x0008U, 0x103EU)) series = item.get_string (0);
+                else if (item.is (0x0010U, 0x0010U)) patient = item.get_string (0);
+                else if (item.is (0x0010U, 0x0020U)) patient_ID = item.get_string (0);
+                else if (item.is (0x0010U, 0x0030U)) patient_DOB = item.get_string (0);
+                else if (item.is (0x0018U, 0x0024U)) sequence = item.get_string (0);
+                else if (item.is (0x0020U, 0x000DU)) study_UID = item.get_string (0);
+                else if (item.is (0x0020U, 0x000EU)) { if (item.is_in_series_ref_sequence()) series_ref_UID = item.get_string(0); }
+                else if (item.is (0x0020U, 0x0010U)) study_ID = item.get_string (0);
+                else if (item.is (0x0020U, 0x0011U)) series_number = item.get_uint (0);
+                else if (item.is (0x0028U, 0x0010U)) dim[1] = item.get_uint (0);
+                else if (item.is (0x0028U, 0x0011U)) dim[0] = item.get_uint (0);
+                else if (item.is (0x0028U, 0x0100U)) bits_alloc = item.get_uint (0);
+                else if (item.is (0x7FE0U, 0x0010U)) data = item.offset (item.data);
+                else if (item.is (0xFFFEU, 0xE000U)) {
+                  if (item.parents.size() &&
+                      item.parents.back().group ==  0x5200U &&
+                      item.parents.back().element == 0x9230U) { // multi-frame item
+                    if (in_frames) ++image_type[current_image_type];
+                    else in_frames = true;
+                  }
                 }
               }
 
