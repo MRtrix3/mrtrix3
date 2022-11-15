@@ -31,7 +31,7 @@ _SUFFIX = ''
 def check_first(prefix, structures): #pylint: disable=unused-variable
   from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
-  existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
+  existing_file_count = sum(os.path.exists(filename) for filename in vtk_files)
   if existing_file_count != len(vtk_files):
     if 'SGE_ROOT' in os.environ and os.environ['SGE_ROOT']:
       app.console('FSL FIRST job may have been run via SGE; awaiting completion')
