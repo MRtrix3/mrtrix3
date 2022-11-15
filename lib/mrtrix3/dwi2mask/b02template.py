@@ -14,7 +14,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 import os, shutil
-from distutils.spawn import find_executable
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import app, fsl, path, run
 
@@ -137,7 +136,7 @@ def execute(): #pylint: disable=unused-variable
   if reg_software.startswith('ants'):
 
     def check_ants_executable(cmdname):
-      if not find_executable(cmdname):
+      if not shutil.which(cmdname):
         raise MRtrixError('Unable to find ANTs command "' + cmdname + '"; please check ANTs installation')
     check_ants_executable(ANTS_REGISTERFULL_CMD if reg_software == 'antsfull' else ANTS_REGISTERQUICK_CMD)
     check_ants_executable(ANTS_TRANSFORM_CMD)

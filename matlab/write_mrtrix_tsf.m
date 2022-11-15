@@ -38,7 +38,9 @@ for i=1:size(names)
   if strcmpi (names{i}, 'data'), continue; end
   if strcmpi (names{i}, 'count'), continue; end
   if strcmpi (names{i}, 'datatype'), continue; end
-  fprintf (f, '%s: %s\n', names{i}, getfield(tsf, names{i}));
+  if iscell  (tracks.(names{i}))
+      fprintf (f, '%s: %s\n', names{i}, strjoin(tracks.(names{i}), '\n'));
+  else fprintf (f, '%s: %s\n', names{i}, tracks.(names{i})); end
 end
 data_offset = ftell (f) + 20;
 data_offset=data_offset+mod((4-mod(data_offset,4)),4);

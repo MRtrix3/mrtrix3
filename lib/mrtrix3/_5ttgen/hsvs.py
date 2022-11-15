@@ -433,7 +433,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mesh2voxel ' + bs_smoothed_mesh_path + ' ' + template_image + ' brain_stem.mif')
   app.cleanup(bs_smoothed_mesh_path)
   progress.increment()
-  fourthventricle_zmin = min([ int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines() ])
+  fourthventricle_zmin = min(int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines())
   if fourthventricle_zmin:
     bs_cropmask_path = 'brain_stem_crop.mif'
     run.command('mredit brain_stem.mif - ' + ' '.join([ '-plane 2 ' + str(index) + ' 0' for index in range(0, fourthventricle_zmin) ]) + ' | '
