@@ -113,7 +113,7 @@ void usage ()
 
   + Option ("rk_ndirs",
             "specify the number of points over which to calculate radial kurtosis "
-            "(by default, 300 directions are used).")
+            "(by default, " + str(DEFAULT_RK_NDIRS) + " directions are used).")
   +   Argument ("integer").type_integer (0, 1000)
 
   + Option ("mask",
