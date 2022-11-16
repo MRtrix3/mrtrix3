@@ -49,36 +49,36 @@ namespace MR
 
       Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> bmat (grad.rows(), (dki ? 22 : 7));
       for (ssize_t i = 0; i < grad.rows(); ++i) {
-        T x = grad(i,0);
-        T y = grad(i,1);
-        T z = grad(i,2);
-        T b = (grad.cols() > 3) ? grad(i,3) : T(1.0);
+        const T x = grad(i,0);
+        const T y = grad(i,1);
+        const T z = grad(i,2);
+        const T b = (grad.cols() > 3) ? grad(i,3) : T(1.0);
 
-        bmat (i,0)  = T(-1.0);
+        bmat(i,0)  = T(-1.0);
 
-        bmat (i,1)  = b * x * x * T(1.0);
-        bmat (i,2)  = b * y * y * T(1.0);
-        bmat (i,3)  = b * z * z * T(1.0);
-        bmat (i,4)  = b * x * y * T(2.0);
-        bmat (i,5)  = b * x * z * T(2.0);
-        bmat (i,6)  = b * y * z * T(2.0);
+        bmat(i,1)  = b * x * x * T(1.0);
+        bmat(i,2)  = b * y * y * T(1.0);
+        bmat(i,3)  = b * z * z * T(1.0);
+        bmat(i,4)  = b * x * y * T(2.0);
+        bmat(i,5)  = b * x * z * T(2.0);
+        bmat(i,6)  = b * y * z * T(2.0);
 
         if (dki) {
-          bmat (i, 7) = -b * b * x * x * x * x * T( 1.0)/T(6.0);
-          bmat (i, 8) = -b * b * y * y * y * y * T( 1.0)/T(6.0);
-          bmat (i, 9) = -b * b * z * z * z * z * T( 1.0)/T(6.0);
-          bmat (i,10) = -b * b * x * x * x * y * T( 4.0)/T(6.0);
-          bmat (i,11) = -b * b * x * x * x * z * T( 4.0)/T(6.0);
-          bmat (i,12) = -b * b * x * y * y * y * T( 4.0)/T(6.0);
-          bmat (i,13) = -b * b * x * z * z * z * T( 4.0)/T(6.0);
-          bmat (i,14) = -b * b * y * y * y * z * T( 4.0)/T(6.0);
-          bmat (i,15) = -b * b * y * z * z * z * T( 4.0)/T(6.0);
-          bmat (i,16) = -b * b * x * x * y * y * T( 6.0)/T(6.0);
-          bmat (i,17) = -b * b * x * x * z * z * T( 6.0)/T(6.0);
-          bmat (i,18) = -b * b * y * y * z * z * T( 6.0)/T(6.0);
-          bmat (i,19) = -b * b * x * x * y * z * T(12.0)/T(6.0);
-          bmat (i,20) = -b * b * x * y * y * z * T(12.0)/T(6.0);
-          bmat (i,21) = -b * b * x * y * z * z * T(12.0)/T(6.0);
+          bmat(i, 7) = -b * b * x * x * x * x * T( 1.0)/T(6.0);
+          bmat(i, 8) = -b * b * y * y * y * y * T( 1.0)/T(6.0);
+          bmat(i, 9) = -b * b * z * z * z * z * T( 1.0)/T(6.0);
+          bmat(i,10) = -b * b * x * x * x * y * T( 4.0)/T(6.0);
+          bmat(i,11) = -b * b * x * x * x * z * T( 4.0)/T(6.0);
+          bmat(i,12) = -b * b * x * y * y * y * T( 4.0)/T(6.0);
+          bmat(i,13) = -b * b * x * z * z * z * T( 4.0)/T(6.0);
+          bmat(i,14) = -b * b * y * y * y * z * T( 4.0)/T(6.0);
+          bmat(i,15) = -b * b * y * z * z * z * T( 4.0)/T(6.0);
+          bmat(i,16) = -b * b * x * x * y * y * T( 6.0)/T(6.0);
+          bmat(i,17) = -b * b * x * x * z * z * T( 6.0)/T(6.0);
+          bmat(i,18) = -b * b * y * y * z * z * T( 6.0)/T(6.0);
+          bmat(i,19) = -b * b * x * x * y * z * T(12.0)/T(6.0);
+          bmat(i,20) = -b * b * x * y * y * z * T(12.0)/T(6.0);
+          bmat(i,21) = -b * b * x * y * z * z * T(12.0)/T(6.0);
         }
       }
       return bmat;
@@ -90,8 +90,7 @@ namespace MR
       using T = typename VectorTypeIn::Scalar;
       for (ssize_t i = 0; i < dwi.size(); ++i)
         dwi[i] = dwi[i] > T(0.0) ? -std::log (dwi[i]) : T(0.0);
-      VectorTypeOut b0dt = binv * dwi;
-      dt = b0dt.segment(1,6);
+      dt = binv.template middleRows<6>(1) * dwi;
     }
 
 
