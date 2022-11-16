@@ -28,6 +28,7 @@ using namespace App;
 
 using value_type = float;
 const char* modulate_choices[] = { "none", "fa", "eigval", NULL };
+#define DEFAULT_RK_NDIRS 300
 
 void usage ()
 {
@@ -84,7 +85,7 @@ void usage ()
   + Option ("mk",
             "compute the mean kurtosis (MK) of the kurtosis tensor.")
   + Argument ("image").type_image_out()
-
+  
   + Option ("ak",
             "compute the axial kurtosis (AK) of the kurtosis tensor.")
   + Argument ("image").type_image_out()
@@ -103,6 +104,17 @@ void usage ()
             "specify how to modulate the magnitude of the eigenvectors. Valid choices "
             "are: none, FA, eigval (default = FA).")
   + Argument ("choice").type_choice (modulate_choices)
+
+  + Option ("mk_dirs",
+            "specify the directions over which to calculate mean kurtosis "
+            "(by default, the built-in 300 direction set is used). These should be "
+            "supplied as a text file containing [ az el ] pairs for the directions.")
+  + Argument ("file").type_file_in()
+
+  + Option ("rk_ndirs",
+            "specify the number of points over which to calculate radial kurtosis "
+            "(by default, 300 directions are used).")
+  +   Argument ("integer").type_integer (0, 1000)
 
   + Option ("mask",
             "only perform computation within the specified binary brain mask image.")
@@ -138,7 +150,9 @@ class Processor { MEMALIGN(Processor)
         Image<value_type>& ak_img,
         Image<value_type>& rk_img,
         vector<uint32_t>& vals,
-        int modulate) :
+        int modulate,
+        Eigen::MatrixXd mk_dirs,
+        int rk_ndirs) :
       mask_img (mask_img),
       adc_img (adc_img),
       fa_img (fa_img),
@@ -154,7 +168,9 @@ class Processor { MEMALIGN(Processor)
       ak_img (ak_img),
       rk_img (rk_img),
       vals (vals),
-      modulate (modulate) {
+      modulate (modulate),
+      mk_dirs(mk_dirs),
+      rk_ndirs(rk_ndirs) {
         for (auto& n : this->vals)
           --n;
       }
@@ -285,8 +301,7 @@ class Processor { MEMALIGN(Processor)
 
       /* output mk */
       if (mk_img.valid()) {
-        Eigen::MatrixXd dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
-        Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (dirs, true);
+        Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (mk_dirs, true);
         Eigen::VectorXd D = tmp.block(0,1,tmp.rows(),6)*dt;
         Eigen::VectorXd Dsquared = D.array()*D.array();
         Eigen::VectorXd DsquaredK = -6.0*tmp.block(0,7,tmp.rows(),15)*dkt;
@@ -310,14 +325,13 @@ class Processor { MEMALIGN(Processor)
 
       /* output rk */
       if (rk_img.valid()) {
-        int k = 300;
-        Eigen::MatrixXd dirs(k,3);
+        Eigen::MatrixXd dirs(rk_ndirs,3);
         Eigen::Matrix3d eigvec = es.eigenvectors();
         Eigen::Vector3d dir1 = eigvec.col(ith_eig[0]);
         Eigen::Vector3d dir2 = eigvec.col(ith_eig[1]);
-        double delta = Math::pi/k;
+        double delta = Math::pi/rk_ndirs;
         double a = 0;
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < rk_ndirs; i++) {
           dirs.row(i) = Eigen::AngleAxisd(a, dir1)*dir2;
           a+=delta;
         }
@@ -349,6 +363,8 @@ class Processor { MEMALIGN(Processor)
     Image<value_type> rk_img;
     vector<uint32_t> vals;
     int modulate;
+    Eigen::MatrixXd mk_dirs;
+    int rk_ndirs;
 };
 
 
@@ -500,6 +516,13 @@ void run ()
     dki_metric_count++;
   }
 
+  Eigen::MatrixXd mk_dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+  opt = get_options ("mk_dirs");
+  if (opt.size())
+    mk_dirs = load_matrix (opt[0][0]);
+
+  auto rk_ndirs = get_option_value ("rk_ndirs", DEFAULT_RK_NDIRS);
+
   if (dki_metric_count && !dkt_img.valid()) {
     throw Exception ("Cannot calculate diffusion kurtosis metrics; must provide the kurtosis tensor using the -dkt input option");
   }
@@ -508,5 +531,5 @@ void run ()
     throw Exception ("No output specified; must request at least one metric of interest using the available command-line options");
 
   ThreadedLoop (std::string("computing metric") + (metric_count > 1 ? "s" : ""), dt_img, 0, 3)
-    .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, dkt_img, mk_img, ak_img, rk_img, vals, modulate), dt_img);
+    .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, dkt_img, mk_img, ak_img, rk_img, vals, modulate, mk_dirs, rk_ndirs), dt_img);
 }

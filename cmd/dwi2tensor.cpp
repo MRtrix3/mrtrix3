@@ -95,6 +95,12 @@ void usage ()
 
     + Option ("constrain", "constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).")
 
+    + Option ("directions",
+              "specify the directions over which to apply the constraints "
+              "(by default, the built-in 300 direction set is used). These should be "
+              "supplied as a text file containing [ az el ] pairs for the directions.")
+      + Argument ("file").type_file_in()
+
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
 
@@ -290,10 +296,13 @@ void run ()
 
   Eigen::MatrixXd Aneq;
   if (constrain) {
-    auto maxb = grad.col(3).maxCoeff();
     Eigen::MatrixXd constr_dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+    opt = get_options ("directions");
+    if (opt.size())
+      constr_dirs = load_matrix (opt[0][0]);
     Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (constr_dirs, dki);
     if (dki) {
+      auto maxb = grad.col(3).maxCoeff();
       Aneq = Eigen::MatrixXd::Zero(tmp.rows()*2,tmp.cols());
       //Aneq.block(tmp.rows()*0,1,tmp.rows(), 6) =                tmp.block(0,1,tmp.rows(), 6); --> redundant constraint
       Aneq.block(tmp.rows()*0,7,tmp.rows(),15) =           -6.0*tmp.block(0,7,tmp.rows(),15);
