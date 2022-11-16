@@ -20,6 +20,11 @@ Usage
 Options
 -------
 
+-  **-mask image** only perform computation within the specified binary brain mask image.
+
+Diffusion Tensor Imaging
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-adc image** compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor. (sometimes also referred to as the mean diffusivity (MD))
 
 -  **-fa image** compute the fractional anisotropy (FA) of the diffusion tensor.
@@ -28,15 +33,22 @@ Options
 
 -  **-rd image** compute the radial diffusivity (RD) of the diffusion tensor. (equivalent to the mean of the two non-principal eigenvalues)
 
+-  **-value image** compute the selected eigenvalue(s) of the diffusion tensor.
+
+-  **-vector image** compute the selected eigenvector(s) of the diffusion tensor.
+
+-  **-num sequence** specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues can be specified as a number sequence. For example, '1,3' specifies the principal (1) and minor (3) eigenvalues/eigenvectors (default = 1).
+
+-  **-modulate choice** specify how to modulate the magnitude of the eigenvectors. Valid choices are: none, FA, eigval (default = FA).
+
 -  **-cl image** compute the linearity metric of the diffusion tensor. (one of the three Westin shape metrics)
 
 -  **-cp image** compute the planarity metric of the diffusion tensor. (one of the three Westin shape metrics)
 
 -  **-cs image** compute the sphericity metric of the diffusion tensor. (one of the three Westin shape metrics)
 
--  **-value image** compute the selected eigenvalue(s) of the diffusion tensor.
-
--  **-vector image** compute the selected eigenvector(s) of the diffusion tensor.
+Diffusion Kurtosis Imaging
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-dkt image** input diffusion kurtosis tensor.
 
@@ -46,15 +58,9 @@ Options
 
 -  **-rk image** compute the radial kurtosis (RK) of the kurtosis tensor.
 
--  **-num sequence** specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues can be specified as a number sequence. For example, '1,3' specifies the principal (1) and minor (3) eigenvalues/eigenvectors (default = 1).
-
--  **-modulate choice** specify how to modulate the magnitude of the eigenvectors. Valid choices are: none, FA, eigval (default = FA).
-
 -  **-mk_dirs file** specify the directions used to numerically calculate mean kurtosis (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az el ] pairs for the directions.
 
 -  **-rk_ndirs integer** specify the number of directions used to numerically calculate radial kurtosis (by default, 300 directions are used).
-
--  **-mask image** only perform computation within the specified binary brain mask image.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -88,7 +94,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be), J-Donald Tournier (jdtournier@gmail.com) & Thijs Dhollander (thijs.dhollander@gmail.com)
+**Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be), Thijs Dhollander (thijs.dhollander@gmail.com) & J-Donald Tournier (jdtournier@gmail.com)
 
 **Copyright:** Copyright (c) 2008-2022 the MRtrix3 contributors.
 
