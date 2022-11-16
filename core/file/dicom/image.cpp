@@ -110,6 +110,12 @@ namespace MR {
               case 0x1314U:
                 flip_angle = item.get_float (0, flip_angle);
                 return;
+              case 0x9034U:
+                if (item.get_string (0) == "LINEAR")
+                  pe_sign = -1;
+                else if (item.get_string (0) == "REVERSE_LINEAR")
+                  pe_sign = 1;
+                return;
               case 0x9074U:
                 acquisition_time = item.get_datetime().second;
                 return;
