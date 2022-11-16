@@ -85,7 +85,7 @@ void usage ()
   + Option ("mk",
             "compute the mean kurtosis (MK) of the kurtosis tensor.")
   + Argument ("image").type_image_out()
-  
+
   + Option ("ak",
             "compute the axial kurtosis (AK) of the kurtosis tensor.")
   + Argument ("image").type_image_out()
@@ -120,7 +120,7 @@ void usage ()
             "only perform computation within the specified binary brain mask image.")
   + Argument ("image").type_image_in();
 
-  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be), J-Donald Tournier (jdtournier@gmail.com) & Thijs Dhollander (thijs.dhollander@gmail.com)";
+  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be), Thijs Dhollander (thijs.dhollander@gmail.com) & J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Generate maps of tensor-derived parameters";
 
@@ -170,7 +170,11 @@ class Processor { MEMALIGN(Processor)
       vals (vals),
       modulate (modulate),
       mk_dirs(mk_dirs),
-      rk_ndirs(rk_ndirs) {
+      rk_ndirs(rk_ndirs),
+      need_eigenvalues (value_img.valid() || vector_img.valid() || ad_img.valid() || rd_img.valid() ||
+          cl_img.valid() || cp_img.valid() || cs_img.valid() || ak_img.valid() || rk_img.valid()),
+      need_eigenvectors (vector_img.valid() || ak_img.valid() || rk_img.valid()),
+      need_dkt (dkt_img.valid() || mk_img.valid() || ak_img.valid() || rk_img.valid()) {
         for (auto& n : this->vals)
           --n;
       }
@@ -204,9 +208,6 @@ class Processor { MEMALIGN(Processor)
         assign_pos_of (dt_img, 0, 3).to (fa_img);
         fa_img.value() = fa;
       }
-
-      bool need_eigenvalues = value_img.valid() || vector_img.valid() || ad_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid() || ak_img.valid() || rk_img.valid() ;
-      bool need_eigenvectors = vector_img.valid() || ak_img.valid() || rk_img.valid();
 
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
       if (need_eigenvalues || vector_img.valid()) {
@@ -293,7 +294,7 @@ class Processor { MEMALIGN(Processor)
       /* input dkt */
       Eigen::Matrix<double, 15, 1> dkt;
       if (dkt_img.valid()) {
-        double adc_sq = (dt[0]+dt[1]+dt[2])*(dt[0]+dt[1]+dt[2])/9.0;
+        double adc_sq = Math::pow2 (DWI::tensor2ADC(dt));
         assign_pos_of (dt_img, 0, 3).to (dkt_img);
         for (auto l = Loop (3) (dkt_img); l; ++l)
           dkt[dkt_img.index(3)] = dkt_img.value()*adc_sq;
@@ -362,9 +363,12 @@ class Processor { MEMALIGN(Processor)
     Image<value_type> ak_img;
     Image<value_type> rk_img;
     vector<uint32_t> vals;
-    int modulate;
+    const int modulate;
     Eigen::MatrixXd mk_dirs;
-    int rk_ndirs;
+    const int rk_ndirs;
+    const bool need_eigenvalues;
+    const bool need_eigenvectors;
+    const bool need_dkt;
 };
 
 
