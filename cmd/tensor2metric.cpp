@@ -112,7 +112,7 @@ void usage ()
   + Argument ("file").type_file_in()
 
   + Option ("rk_ndirs",
-            "specify the number of points over which to calculate radial kurtosis "
+            "specify the number of directions over which to calculate radial kurtosis "
             "(by default, " + str(DEFAULT_RK_NDIRS) + " directions are used).")
   +   Argument ("integer").type_integer (0, 1000)
 
