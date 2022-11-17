@@ -1307,12 +1307,15 @@ int main() { Foo f; }
                 qt_defines = shlex.split (line[line.find('=')+1:].strip())
               elif line.startswith ('INCPATH'):
                 qt_includes = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('LFLAGS'):
+                qt_ldflags = [ entry for entry in shlex.split (line[line.find('=')+1:].strip()) if not entry.startswith('$') ]
               elif line.startswith ('LIBS'):
                 qt_libs = shlex.split (line[line.find('=')+1:].strip())
           if qt_defines or qt_includes or qt_libs:
             log ('ok\n')
             log ('  qt_defines: ' + str(qt_defines) + '\n')
             log ('  qt_includes: ' + str(qt_includes) + '\n')
+            log ('  qt_ldflags: ' + str(qt_ldflags) + '\n')
             log ('  qt_libs: ' + str(qt_libs) + '\n')
             break
         except OSError:
@@ -1336,7 +1339,6 @@ int main() { Foo f; }
           else:
             qt_cflags += [ entry ]
 
-      qt_ldflags = []
       for entry in qt_libs:
         if entry[0] != '$':
           qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
