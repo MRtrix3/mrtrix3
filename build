@@ -79,7 +79,11 @@ else
   curl -s -O http://www.fftw.org/${FNAME}
   tar xf ${FNAME}
   cd ${DNAME}
-  ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking
+  if [ "$(arch)" != "arm64" ]; then
+    ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking --enable-sse2 --enable-avx --enable-avx2
+  else
+    ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking
+  fi
   make install > /dev/null
   cd ..
   rm -r ${FNAME} ${DNAME}
