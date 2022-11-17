@@ -274,7 +274,7 @@ namespace MR {
                     return;
                   }
                   auto pe_polarity = Raw::fetch<int16_t> (item.data+header_offset+0x0030, false) | 0x0004;
-                  pe_sign = pe_polarity ? 1 : -1;
+                  pe_sign = pe_polarity ? -1 : 1;
                 }
                 return;
             }
