@@ -80,7 +80,7 @@ else
   curl -s -O http://www.fftw.org/${FNAME}
   tar xf ${FNAME}
   cd ${DNAME}
-  ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking --enable-sse2 --enable-avx
+  ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking
   make install > /dev/null
   cd ..
   rm -r ${FNAME} ${DNAME}
@@ -93,6 +93,8 @@ else
   curl -s -O http://ftp1.nluug.nl/languages/qt/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/${FNAME}
   tar xf ${FNAME}
   cd ${DNAME}
+  curl -s -O https://raw.githubusercontent.com/wrobelda/vcpkg/99582d154236b0e7af70cadef8420c4f25829f61/ports/qt5-base/patches/cocoa.patch
+  patch -p1 < cocoa.patch
   ./configure -opensource -confirm-license -release -no-dbus -no-openssl -no-harfbuzz -no-freetype  -no-cups -no-framework -nomake examples -prefix ${PREFIX}
   make -j ${THREADS} > /dev/null
   make install > /dev/null
