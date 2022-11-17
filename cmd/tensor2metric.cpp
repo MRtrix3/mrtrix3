@@ -106,13 +106,13 @@ void usage ()
   + Argument ("choice").type_choice (modulate_choices)
 
   + Option ("mk_dirs",
-            "specify the directions over which to calculate mean kurtosis "
+            "specify the directions used to numerically calculate mean kurtosis "
             "(by default, the built-in 300 direction set is used). These should be "
             "supplied as a text file containing [ az el ] pairs for the directions.")
   + Argument ("file").type_file_in()
 
   + Option ("rk_ndirs",
-            "specify the number of directions over which to calculate radial kurtosis "
+            "specify the number of directions used to numerically calculate radial kurtosis "
             "(by default, " + str(DEFAULT_RK_NDIRS) + " directions are used).")
   +   Argument ("integer").type_integer (0, 1000)
 

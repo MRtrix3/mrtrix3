@@ -96,7 +96,7 @@ void usage ()
     + Option ("constrain", "constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).")
 
     + Option ("directions",
-              "specify the directions over which to apply the constraints "
+              "specify the directions along which to apply the constraints "
               "(by default, the built-in 300 direction set is used). These should be "
               "supplied as a text file containing [ az el ] pairs for the directions.")
       + Argument ("file").type_file_in()
