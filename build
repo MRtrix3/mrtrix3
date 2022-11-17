@@ -15,8 +15,7 @@ if [ -f "${PREFIX}-build-deps.tar.gz" ]; then
   tar xfz ${PREFIX}-build-deps.tar.gz
 else
   # Grab latest versions from git
-  EIGEN_VERSION=$(git ls-remote --tags https://gitlab.com/libeigen/eigen.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep -v starting | grep -v '-' | sort -V | tail -1)
-  EIGEN_VERSION=${EIGEN_VERSION#*/*/}
+  EIGEN_VERSION=3.4.0
   echo "Using eigen ${EIGEN_VERSION}"
 
   TIFF_VERSION=$(git ls-remote --tags https://gitlab.com/libtiff/libtiff.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep v.* | sort -V | tail -1)
