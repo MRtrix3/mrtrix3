@@ -181,6 +181,12 @@ class Processor { MEMALIGN(Processor)
       need_dkt (dkt_img.valid() || mk_img.valid() || ak_img.valid() || rk_img.valid()) {
         for (auto& n : this->vals)
           --n;
+        if (mk_img.valid())
+          mk_bmat = DWI::grad2bmatrix<double> (mk_dirs, true);
+        if (rk_img.valid()) {
+          rk_dirs.resize (rk_ndirs,3);
+          rk_bmat.resize (rk_ndirs,22);
+        }
       }
 
     void operator() (Image<value_type>& dt_img)
@@ -306,47 +312,30 @@ class Processor { MEMALIGN(Processor)
 
       /* output mk */
       if (mk_img.valid()) {
-        Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (mk_dirs, true);
-        Eigen::VectorXd D = tmp.block(0,1,tmp.rows(),6)*dt;
-        Eigen::VectorXd Dsquared = D.array()*D.array();
-        Eigen::VectorXd DsquaredK = -6.0*tmp.block(0,7,tmp.rows(),15)*dkt;
-        Eigen::VectorXd K = DsquaredK.array()/Dsquared.array();
         assign_pos_of (dt_img, 0, 3).to (mk_img);
-        mk_img.value() = K.mean();
+        mk_img.value() = kurtosis (mk_bmat, dt, dkt);
       }
 
       /* output ak */
       if (ak_img.valid()) {
-        Eigen::Matrix3d eigvec = es.eigenvectors();
-        Eigen::MatrixXd dirs = eigvec.col(ith_eig[0]).transpose();
-        Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (dirs, true);
-        Eigen::VectorXd D = tmp.block(0,1,tmp.rows(),6)*dt;
-        Eigen::VectorXd Dsquared = D.array()*D.array();
-        Eigen::VectorXd DsquaredK = -6.0*tmp.block(0,7,tmp.rows(),15)*dkt;
-        Eigen::VectorXd K = DsquaredK.array()/Dsquared.array();
+        Eigen::Matrix<double,1,22> ak_bmat = DWI::grad2bmatrix<double> (es.eigenvectors().col(ith_eig[0]).transpose(), true);
         assign_pos_of (dt_img, 0, 3).to (ak_img);
-        ak_img.value() = K.mean();
+        ak_img.value() = kurtosis (ak_bmat, dt, dkt);
       }
 
       /* output rk */
       if (rk_img.valid()) {
-        Eigen::MatrixXd dirs(rk_ndirs,3);
-        Eigen::Matrix3d eigvec = es.eigenvectors();
-        Eigen::Vector3d dir1 = eigvec.col(ith_eig[0]);
-        Eigen::Vector3d dir2 = eigvec.col(ith_eig[1]);
-        double delta = Math::pi/rk_ndirs;
+        Eigen::Vector3d dir1 = es.eigenvectors().col(ith_eig[0]);
+        Eigen::Vector3d dir2 = es.eigenvectors().col(ith_eig[1]);
+        const double delta = Math::pi/rk_ndirs;
         double a = 0;
         for (int i = 0; i < rk_ndirs; i++) {
-          dirs.row(i) = Eigen::AngleAxisd(a, dir1)*dir2;
-          a+=delta;
+          rk_dirs.row(i) = Eigen::AngleAxisd(a, dir1)*dir2;
+          a += delta;
         }
-        Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (dirs, true);
-        Eigen::VectorXd D = tmp.block(0,1,tmp.rows(),6)*dt;
-        Eigen::VectorXd Dsquared = D.array()*D.array();
-        Eigen::VectorXd DsquaredK = -6.0*tmp.block(0,7,tmp.rows(),15)*dkt;
-        Eigen::VectorXd K = DsquaredK.array()/Dsquared.array();
+        rk_bmat.noalias() = DWI::grad2bmatrix<double> (rk_dirs, true);
         assign_pos_of (dt_img, 0, 3).to (rk_img);
-        rk_img.value() = K.mean();
+        rk_img.value() = kurtosis (rk_bmat, dt, dkt);
       }
 
     }
@@ -369,10 +358,20 @@ class Processor { MEMALIGN(Processor)
     vector<uint32_t> vals;
     const int modulate;
     Eigen::MatrixXd mk_dirs;
+    Eigen::MatrixXd mk_bmat, rk_bmat;
+    Eigen::MatrixXd rk_dirs;
     const int rk_ndirs;
     const bool need_eigenvalues;
     const bool need_eigenvectors;
     const bool need_dkt;
+
+
+    template <class BMatType, class DTType, class DKTType>
+      double kurtosis (const BMatType& bmat, const DTType& dt, const DKTType& dkt) {
+        return -6.0 * ( (bmat.template middleCols<15>(7) * dkt).array() / (bmat.template middleCols<6>(1) * dt).array().square() ).mean();
+      }
+
+
 };
 
 
