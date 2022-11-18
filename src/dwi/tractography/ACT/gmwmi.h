@@ -48,7 +48,7 @@ namespace MR
 
 
         class GMWMI_finder
-        { MEMALIGN(GMWMI_finder)
+        { 
 
           protected:
             using Interp = Interp::Linear<Image<float>>;

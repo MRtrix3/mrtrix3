@@ -61,7 +61,7 @@ void usage ()
 using value_type = float;
 
 
-class SConvFunctor { MEMALIGN(SConvFunctor)
+class SConvFunctor { 
   public:
   SConvFunctor (const vector<Eigen::MatrixXd>& responses, vector<Image<value_type>>& inputs) :
     responses (responses),

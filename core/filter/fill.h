@@ -44,7 +44,7 @@ namespace MR
      *
      * \endcode
      */
-    class Fill : public Base { MEMALIGN(Fill)
+    class Fill : public Base { 
 
       public:
         template <class HeaderType>

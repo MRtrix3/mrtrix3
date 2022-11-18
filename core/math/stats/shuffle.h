@@ -52,7 +52,7 @@ namespace MR
 
 
       class Shuffle
-      { NOMEMALIGN
+      { 
         public:
           size_t index;
           matrix_type data;
@@ -61,7 +61,7 @@ namespace MR
 
 
       class Shuffler
-      { NOMEMALIGN
+      { 
         public:
           typedef vector<size_t> PermuteLabels;
           enum class error_t { EE, ISE, BOTH };

@@ -29,7 +29,7 @@ namespace MR
     template <class ImageType>
         class Median :
           public Base<Median<ImageType>,ImageType>
-      { MEMALIGN(Median<ImageType>)
+      { 
       public:
 
           using base_type = Base<Median<ImageType>, ImageType>;

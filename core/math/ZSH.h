@@ -102,7 +102,7 @@ namespace MR
 
 
       template <typename ValueType>
-      class Transform { MEMALIGN (Transform<ValueType>)
+      class Transform { 
         public:
           using matrix_type = Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>;
 

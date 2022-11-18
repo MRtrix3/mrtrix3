@@ -46,7 +46,7 @@ using TrackType = Tractography::Streamline<value_type>;
 
 
 
-class Loader { MEMALIGN(Loader)
+class Loader { 
   public:
     Loader (const std::string& file) : reader (file, properties) {}
 
@@ -61,7 +61,7 @@ class Loader { MEMALIGN(Loader)
 
 
 
-class Warper { MEMALIGN(Warper)
+class Warper { 
   public:
     Warper (const Image<value_type>& warp) :
       interp (warp) { }
@@ -95,7 +95,7 @@ class Warper { MEMALIGN(Warper)
 
 
 
-class Writer { MEMALIGN(Writer)
+class Writer { 
   public:
     Writer (const std::string& file, const Tractography::Properties& properties) :
         progress ("applying spatial transformation to tracks",

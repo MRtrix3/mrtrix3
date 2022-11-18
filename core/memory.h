@@ -19,8 +19,6 @@
 
 #include <memory>
 
-#define NOMEMALIGN
-
 /** \defgroup Memory Memory management
  * \brief Classes & functions to ease memory management. */
 
@@ -29,7 +27,7 @@ namespace MR
 
   template<class T, class Deleter = std::default_delete<T>>
     class copy_ptr : public std::unique_ptr<T, Deleter>
-  { NOMEMALIGN
+  {
     public:
       constexpr copy_ptr () noexcept : std::unique_ptr<T,Deleter>() { }
       constexpr copy_ptr (std::nullptr_t) noexcept : std::unique_ptr<T,Deleter>() { }
@@ -42,7 +40,7 @@ namespace MR
       copy_ptr& operator=(const copy_ptr& u) { this->reset (u ? new T (*u) : nullptr); return *this; }
   };
 
-  struct compare_ptr_contents { NOMEMALIGN
+  struct compare_ptr_contents {
     template <class X>
       bool operator() (const X& a, const X& b) const { return *a < *b; }
     template <class X>

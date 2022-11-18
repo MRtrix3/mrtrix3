@@ -131,7 +131,7 @@ void write_output (const VectorType& data,
 //   are initialised in the CohortDataImport class).
 //
 class SubjectVoxelImport : public SubjectDataImportBase
-{ MEMALIGN(SubjectVoxelImport)
+{ 
   public:
     SubjectVoxelImport (const std::string& path) :
         SubjectDataImportBase (path),

@@ -53,7 +53,7 @@ namespace MR
      *
      * \endcode
      */
-    class MaskClean : public Base { MEMALIGN(MaskClean)
+    class MaskClean : public Base { 
 
       public:
         template <class HeaderType>

@@ -93,7 +93,7 @@ namespace MR
 
   //! convenience functions for SFINAE on std:: / Eigen containers
   template <class Cont>
-  class is_eigen_type { NOMEMALIGN
+  class is_eigen_type { 
     typedef char yes[1], no[2];
     template<typename C> static yes& test(typename Cont::Scalar);
     template<typename C> static no&  test(...);
@@ -103,12 +103,12 @@ namespace MR
 
   //! Get the underlying scalar value type for both std:: containers and Eigen
   template <class Cont, typename ReturnType = int>
-  class container_value_type { NOMEMALIGN
+  class container_value_type { 
     public:
      using type = typename Cont::value_type;
   };
   template <class Cont>
-  class container_value_type <Cont, typename std::enable_if<is_eigen_type<Cont>::value, int>::type> { NOMEMALIGN
+  class container_value_type <Cont, typename std::enable_if<is_eigen_type<Cont>::value, int>::type> { 
     public:
       using type = typename Cont::Scalar;
   };

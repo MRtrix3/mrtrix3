@@ -111,7 +111,7 @@ namespace MR
             previous_context.first->makeCurrent (previous_context.second);
         }
 
-        struct Grab { NOMEMALIGN
+        struct Grab { 
           decltype (current()) previous_context;
           Grab (QWidget* window = nullptr) : previous_context (makeCurrent (window ? window : GL::glwidget)) {
             assert_context_is_current (window);
@@ -120,13 +120,13 @@ namespace MR
         };
 
 #ifndef NDEBUG
-        struct Checker { NOMEMALIGN
+        struct Checker { 
           decltype (current()) original_context;
           void set () { original_context = current(); }
           void operator() () const { assert (current() == original_context); }
         };
 #else
-        struct Checker { NOMEMALIGN
+        struct Checker { 
           void set () { }
           void operator() () const { }
         };
@@ -135,7 +135,7 @@ namespace MR
 
 
 
-      class Texture { NOMEMALIGN
+      class Texture { 
         public:
           Texture () : id (0), tex_type (0) { }
           ~Texture () { clear(); }
@@ -190,7 +190,7 @@ namespace MR
       };
 
 
-      class VertexBuffer { NOMEMALIGN
+      class VertexBuffer { 
         public:
           VertexBuffer () : id (0) { }
           ~VertexBuffer () { clear(); }
@@ -225,7 +225,7 @@ namespace MR
       };
 
 
-      class VertexArrayObject { NOMEMALIGN
+      class VertexArrayObject { 
         public:
           VertexArrayObject () : id (0) { }
           ~VertexArrayObject () { clear(); }
@@ -259,7 +259,7 @@ namespace MR
       };
 
 
-      class IndexBuffer { NOMEMALIGN
+      class IndexBuffer { 
         public:
           IndexBuffer () : id (0) { }
           ~IndexBuffer () { clear(); }
@@ -295,7 +295,7 @@ namespace MR
 
 
 
-      class FrameBuffer { NOMEMALIGN
+      class FrameBuffer { 
         public:
           FrameBuffer () : id (0) { }
           ~FrameBuffer () { clear(); }

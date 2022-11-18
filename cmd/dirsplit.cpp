@@ -49,7 +49,7 @@ using value_type = double;
 using vector3_type = Eigen::Vector3d;
 
 
-class Shared { MEMALIGN(Shared)
+class Shared { 
   public:
     Shared (const Eigen::MatrixXd& directions, size_t num_subsets, size_t target_num_permutations) :
       directions (directions), subset (num_subsets),
@@ -111,7 +111,7 @@ class Shared { MEMALIGN(Shared)
 
 
 
-class EnergyCalculator { MEMALIGN(EnergyCalculator)
+class EnergyCalculator { 
   public:
     EnergyCalculator (Shared& shared) : shared (shared), subset (shared.get_init_subset()) { }
 

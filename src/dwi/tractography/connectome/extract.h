@@ -37,7 +37,7 @@ namespace Connectome {
 
 
 class Selector
-{ MEMALIGN(Selector)
+{ 
   public:
     Selector (const node_t node, const bool keep_self = true) :
       list (1, node),
@@ -72,7 +72,7 @@ class Selector
 
 
 class WriterExemplars
-{ MEMALIGN(WriterExemplars)
+{ 
   public:
     WriterExemplars (const Tractography::Properties&, const vector<node_t>&, const bool, const node_t, const vector<Eigen::Vector3f>&);
 
@@ -101,7 +101,7 @@ class WriterExemplars
 
 
 class WriterExtraction
-{ MEMALIGN(WriterExtraction)
+{ 
 
   public:
     WriterExtraction (const Tractography::Properties&, const vector<node_t>&, const bool, const bool);

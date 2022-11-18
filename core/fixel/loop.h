@@ -26,25 +26,25 @@ namespace MR
 
 
     namespace {
-      struct set_offset { NOMEMALIGN
+      struct set_offset { 
         FORCE_INLINE set_offset (index_type offset) : offset (offset) { }
         template <class DataType>
           FORCE_INLINE void operator() (DataType& data) { data.index(0) = offset; }
         index_type offset;
       };
 
-      struct inc_fixel { NOMEMALIGN
+      struct inc_fixel { 
         template <class DataType>
           FORCE_INLINE void operator() (DataType& data) { ++data.index(0); }
       };
     }
 
-    struct LoopFixelsInVoxel { NOMEMALIGN
+    struct LoopFixelsInVoxel { 
       const index_type num_fixels;
       const index_type offset;
 
       template <class... DataType>
-      struct Run { NOMEMALIGN
+      struct Run { 
         const index_type num_fixels;
         const index_type offset;
         index_type fixel_index;

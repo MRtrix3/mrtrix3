@@ -46,7 +46,7 @@ namespace MR {
 
 
         class MapWriterBase
-        { MEMALIGN(MapWriterBase)
+        { 
 
           public:
             MapWriterBase (const Header& header, const std::string& name, const vox_stat_t s = V_SUM, const writer_dim t = GREYSCALE) :
@@ -100,7 +100,7 @@ namespace MR {
 
         template <typename value_type>
           class MapWriter : public MapWriterBase
-        { MEMALIGN(MapWriter<value_type>)
+        { 
 
           public:
           MapWriter (const Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :

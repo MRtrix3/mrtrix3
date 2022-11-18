@@ -55,7 +55,7 @@ namespace MR
      *
      * \endcode
      */
-    class Resize : public Base { MEMALIGN(Resize)
+    class Resize : public Base { 
 
       public:
         template <class HeaderType>

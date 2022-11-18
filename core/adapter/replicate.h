@@ -29,7 +29,7 @@ namespace MR
     template <class ImageType>
       class Replicate :
         public Base<Replicate<ImageType>,ImageType>
-    { MEMALIGN(Replicate<ImageType>)
+    { 
       public:
 
         using base_type = Base<Replicate<ImageType>, ImageType>;

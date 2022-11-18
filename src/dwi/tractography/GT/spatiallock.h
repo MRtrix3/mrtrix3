@@ -33,7 +33,7 @@ namespace MR {
          */
         template <typename T = float >
         class SpatialLock
-        { MEMALIGN(SpatialLock)
+        { 
         public:
           using value_type = T;
           using point_type = Eigen::Matrix<value_type, 3, 1>;
@@ -58,7 +58,7 @@ namespace MR {
 
 
           struct Guard
-          { NOMEMALIGN
+          { 
           public:
             Guard(SpatialLock& l) : lock(l), idx(-1) { }
 

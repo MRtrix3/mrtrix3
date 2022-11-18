@@ -105,7 +105,7 @@ namespace MR
                            ") does not match fixel connectivity matrix (" + str(matrix.size()) + ")");
 
         class Source
-        { NOMEMALIGN
+        { 
           public:
             Source (const size_t N) :
                 number (N),
@@ -123,7 +123,7 @@ namespace MR
         };
 
         class Worker
-        { MEMALIGN(Worker)
+        { 
           public:
             Worker (const Smooth& master, const Image<float>& input, const Image<float>& output) :
                 master (master),

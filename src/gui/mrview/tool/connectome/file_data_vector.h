@@ -32,7 +32,7 @@ namespace MR
 
       // Vector that stores the name of the file imported, so it can be displayed in the GUI
       class FileDataVector : public Eigen::VectorXf
-      { MEMALIGN(FileDataVector)
+      { 
         public:
           using base_t = Eigen::VectorXf;
           FileDataVector ();

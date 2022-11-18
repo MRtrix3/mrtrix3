@@ -113,9 +113,9 @@ vector<size_t> all_volumes (const size_t num)
 
 
 
-class Accumulator { MEMALIGN(Accumulator)
+class Accumulator { 
   public:
-    class Shared { MEMALIGN(Shared)
+    class Shared { 
       public:
         Shared (int lmax, const vector<size_t>& volumes, const Eigen::MatrixXd& dirs) :
           lmax (lmax),

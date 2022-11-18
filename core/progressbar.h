@@ -55,7 +55,7 @@ namespace MR
    * Other implementations can be created by overriding the display_func() and
    * done_func() static functions. These functions will then be used throughout
    * the application.  */
-  class ProgressBar { NOMEMALIGN
+  class ProgressBar { 
     public:
 
       //! Create an unusable ProgressBar.
@@ -145,7 +145,7 @@ namespace MR
       template <class ThreadType>
         void run_update_thread (const ThreadType& threads) const;
 
-      struct SwitchToMultiThreaded { NOMEMALIGN
+      struct SwitchToMultiThreaded { 
         SwitchToMultiThreaded ();
         ~SwitchToMultiThreaded ();
       };

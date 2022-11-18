@@ -64,7 +64,7 @@ namespace MR
         }
     }
 
-    struct MultiContrastSetting { NOMEMALIGN
+    struct MultiContrastSetting { 
       size_t start; // index to volume in image holding all tissue contrasts
       size_t nvols; // number of volumes preloaded into image holding all tissue contrasts
       ssize_t lmax;  // maximum requested lmax

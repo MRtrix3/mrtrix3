@@ -135,7 +135,7 @@ int num_basis_vec_for_order  (int order)
 
 
 // Struct to get user specified number of basis functions
-struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
+struct PolyBasisFunction { 
   PolyBasisFunction(const int order) :
     n_basis_vecs (num_basis_vec_for_order (order)) { };
 
@@ -221,7 +221,7 @@ IndexType index_mask_voxels (size_t& num_voxels)
 
 Eigen::MatrixXd initialise_basis (IndexType& index, size_t num_voxels, int order)
 {
-  struct BasisInitialiser { NOMEMALIGN
+  struct BasisInitialiser { 
     BasisInitialiser (const Transform& transform, const PolyBasisFunction& basis_function, Eigen::MatrixXd& basis) :
       basis_function (basis_function),
       transform (transform),
@@ -264,7 +264,7 @@ void load_data (Eigen::MatrixXd& data, const std::string& image_name, IndexType&
   auto in = ImageType::open (image_name);
   check_dimensions (index, in, 0, 3);
 
-  struct Loader { NOMEMALIGN
+  struct Loader { 
     public:
       Loader (Eigen::MatrixXd& data, int num) : data (data), num (num) { }
 
@@ -318,7 +318,7 @@ size_t detect_outliers (
   double lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
   double upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
 
-  struct SetWeight { NOMEMALIGN
+  struct SetWeight { 
     size_t& changed;
     const double lower_outlier_threshold, upper_outlier_threshold;
 
@@ -379,7 +379,7 @@ void update_field (
     Eigen::VectorXd& field_coeffs,
     Eigen::VectorXd& field)
 {
-  struct LogWeight { NOMEMALIGN
+  struct LogWeight { 
     double operator() (double sum, double weight) const {
       return sum > 0.0 ? weight * (std::log(sum) - log_norm_value) : 0.0;
     }
@@ -411,7 +411,7 @@ ImageType compute_full_field (int order, const Eigen::VectorXd& field_coeffs, co
   auto out = ImageType::scratch (header, "full field");
   Transform transform (out);
 
-  struct FieldWriter { NOMEMALIGN
+  struct FieldWriter { 
     void operator() (ImageType& field) const {
       Eigen::Vector3d vox (field.index(0), field.index(1), field.index(2));
       Eigen::Vector3d pos = transform.voxel2scanner * vox;
@@ -443,7 +443,7 @@ void write_weights (const Eigen::VectorXd& data, IndexType& index, const std::st
 
   auto out = ImageType::create (output_file_name, header);
 
-  struct Write { NOMEMALIGN
+  struct Write { 
     void operator() (ImageType& out, IndexType& index) const {
       const uint32_t idx = index.value();
       if (idx != std::numeric_limits<uint32_t>::max()) {
@@ -468,7 +468,7 @@ void write_output (
 {
   using ReplicatorType = Adapter::Replicate<ImageType>;
 
-  struct Scaler { NOMEMALIGN
+  struct Scaler { 
     void operator() (ImageType& original, ImageType& corrected, ReplicatorType& field) const {
       corrected.value() = balance_factor * original.value() / field.value();
     }
@@ -547,7 +547,7 @@ void run ()
 
   auto basis = initialise_basis (index, num_voxels, order);
 
-  struct finite_and_positive { NOMEMALIGN double operator() (double v) const { return std::isfinite(v) && v > 0.0; } };
+  struct finite_and_positive {  double operator() (double v) const { return std::isfinite(v) && v > 0.0; } };
   Eigen::VectorXd weights = data.rowwise().sum().unaryExpr (finite_and_positive());
 
   Eigen::VectorXd field = Eigen::VectorXd::Ones (num_voxels);

@@ -39,7 +39,7 @@ namespace MR
         * Sends and receives information from other MRView processes
         */
         class InterprocessCommunicator : public QObject
-        { NOMEMALIGN
+        { 
           Q_OBJECT
 
         public:

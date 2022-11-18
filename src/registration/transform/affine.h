@@ -32,7 +32,7 @@ namespace MR
     {
       enum TransformProjectionType {rigid_nonsym, affine, affine_nonsym, none};
 
-      class AffineUpdate { MEMALIGN(AffineUpdate)
+      class AffineUpdate { 
         public:
           AffineUpdate (): use_convergence_check (false), projection_type (TransformProjectionType::affine) { }
 
@@ -72,7 +72,7 @@ namespace MR
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_control_points_vec;
       };
 
-      class AffineRobustEstimator { MEMALIGN(AffineRobustEstimator)
+      class AffineRobustEstimator { 
         public:
           inline bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -88,7 +88,7 @@ namespace MR
       /*! A 3D affine transformation class for registration.
        *
        */
-      class Affine : public Base  { MEMALIGN(Affine)
+      class Affine : public Base  { 
         public:
 
           using ParameterType = typename Base::ParameterType;

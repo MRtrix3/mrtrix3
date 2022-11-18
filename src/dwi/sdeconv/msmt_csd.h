@@ -41,10 +41,10 @@ namespace MR
 
       extern const App::OptionGroup MSMT_CSD_options;
 
-      class MSMT_CSD { MEMALIGN(MSMT_CSD)
+      class MSMT_CSD { 
         public:
 
-          class Shared { MEMALIGN(Shared)
+          class Shared { 
             public:
               Shared (const Header& dwi_header) :
                   grad (DWI::get_DW_scheme (dwi_header)),

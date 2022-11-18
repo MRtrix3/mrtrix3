@@ -107,7 +107,7 @@ void usage ()
 
 
 
-class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
+class Segmented_FOD_receiver { 
 
   public:
     Segmented_FOD_receiver (const Header& header, const index_type maxnum = 0, bool dir_from_peak = false) :
@@ -127,7 +127,7 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 
   private:
 
-    struct Primitive_FOD_lobe { MEMALIGN (Primitive_FOD_lobe)
+    struct Primitive_FOD_lobe { 
       Eigen::Vector3f dir;
       float integral;
       float max_peak_amp;
@@ -136,7 +136,7 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
     };
 
 
-    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { MEMALIGN (Primitive_FOD_lobes)
+    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { 
       public:
         Primitive_FOD_lobes (const FOD_lobes& in, const index_type maxcount, bool dir_from_peak) :
             vox (in.vox)

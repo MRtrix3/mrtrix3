@@ -128,7 +128,7 @@ namespace MR
         if (abs(x) > max_remaining)
           max_remaining = abs(x);
 
-      struct FindStride { NOMEMALIGN
+      struct FindStride { 
         FindStride (List::value_type value) : x (abs(value)) { }
         bool operator() (List::value_type a) { return abs (a) == x; }
         const List::value_type x;

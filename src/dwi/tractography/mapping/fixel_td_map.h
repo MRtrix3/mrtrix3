@@ -37,7 +37,7 @@ namespace MR
 
       template <class Fixel>
       class Fixel_TD_map : public Fixel_map<Fixel>
-      { MEMALIGN(Fixel_TD_map<Fixel>)
+      { 
 
           using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
           using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;

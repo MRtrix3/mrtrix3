@@ -25,7 +25,7 @@ namespace MR
     namespace Metric
     {
 
-    class LinearBase { MEMALIGN(LinearBase)
+    class LinearBase { 
 
       public:
         LinearBase ( ) : weighted (false) {}

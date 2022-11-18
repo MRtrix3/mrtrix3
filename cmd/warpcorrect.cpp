@@ -50,7 +50,7 @@ void usage ()
 
 using value_type = float;
 
-class BoundsCheck { MEMALIGN(BoundsCheck)
+class BoundsCheck { 
   public:
     BoundsCheck (value_type tolerance, const Eigen::Matrix<value_type, 3, 1>& marker, size_t& total_count):
      precision (tolerance),

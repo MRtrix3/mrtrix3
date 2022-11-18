@@ -40,9 +40,9 @@ namespace MR
 
     using namespace MR::DWI::Tractography::Tracking;
 
-    class iFOD1 : public MethodBase { MEMALIGN(iFOD1)
+    class iFOD1 : public MethodBase { 
       public:
-      class Shared : public SharedBase { MEMALIGN(Shared)
+      class Shared : public SharedBase { 
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
@@ -258,7 +258,7 @@ namespace MR
 
 
       class Calibrate
-      { MEMALIGN (Calibrate)
+      { 
         public:
           Calibrate (iFOD1& method) :
             P (method),

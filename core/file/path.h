@@ -176,7 +176,7 @@ namespace MR
       return home;
     }
 
-    class Dir { NOMEMALIGN
+    class Dir { 
       public:
         Dir (const std::string& name) :
           p (opendir (name.size() ? name.c_str() : ".")) {

@@ -29,7 +29,7 @@
 namespace MR
 {
   class InvalidFixelDirectoryException : public Exception
-  { NOMEMALIGN
+  { 
     public:
       InvalidFixelDirectoryException (const std::string& msg) : Exception(msg) {}
       InvalidFixelDirectoryException (const Exception& previous_exception, const std::string& msg)

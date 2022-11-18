@@ -26,7 +26,7 @@ namespace MR
     @{ */
 
   //! a dummy image to iterate over, useful for multi-threaded looping.
-  class Iterator { NOMEMALIGN
+  class Iterator { 
     public:
       Iterator() = delete;
       template <class InfoType>

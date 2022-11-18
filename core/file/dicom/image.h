@@ -30,7 +30,7 @@ namespace MR {
       class Series;
       class Element;
 
-      class Frame { MEMALIGN(Frame)
+      class Frame { 
         public:
           Frame () {
             acq_dim[0] = acq_dim[1] = dim[0] = dim[1] = instance =
@@ -144,7 +144,7 @@ namespace MR {
 
 
 
-      class Image : public Frame { MEMALIGN(Image)
+      class Image : public Frame { 
 
         public:
           Image (Series* parent = nullptr) :

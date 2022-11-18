@@ -28,7 +28,7 @@ namespace MR
       namespace Tool
       {
         class Image4D : public FixelType<FixelImage4DType>
-        { MEMALIGN (Image4D)
+        { 
           public:
             Image4D (const std::string& filename, Fixel& fixel_tool) :
               FixelType (filename, fixel_tool), tracking (false)

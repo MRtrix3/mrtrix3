@@ -48,7 +48,7 @@ constexpr node_t node_count_ram_limit = 1024;
 
 template <typename T>
 class Matrix
-{ MEMALIGN(Matrix)
+{ 
 
   public:
     using vector_type = Eigen::Matrix<T, Eigen::Dynamic, 1>;

@@ -29,7 +29,7 @@ namespace MR
     template <class WarpType>
       class Jacobian : 
         public Base<Jacobian<WarpType>,WarpType> 
-    { MEMALIGN (Jacobian<WarpType>)
+    { 
         public:
 
           using base_type = Base<Jacobian<WarpType>, WarpType>;

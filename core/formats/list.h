@@ -20,7 +20,7 @@
 #include "header.h"
 
 #define DECLARE_IMAGEFORMAT(format, desc) \
-  class format : public Base { NOMEMALIGN \
+  class format : public Base {  \
     public:  \
       format () : Base (desc) { } \
       virtual std::unique_ptr<ImageIO::Base> read (Header& H) const; \
@@ -39,7 +39,7 @@ namespace MR
     /*! All image formats supported by %MRtrix are handled by a class derived
      * from the Formats::Base. An instance of each of these classes is
      * added to the list in the file list.cpp. */
-    class Base { NOMEMALIGN
+    class Base { 
       public:
         Base (const char* desc) : description (desc) { }
         virtual ~Base() { }

@@ -51,7 +51,7 @@ namespace MR
        */
 
       class Smooth : public Base
-      { MEMALIGN (Smooth)
+      { 
 
         public:
           Smooth (Image<index_type> index_image,

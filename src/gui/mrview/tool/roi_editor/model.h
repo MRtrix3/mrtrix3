@@ -36,7 +36,7 @@ namespace MR
 
 
         class ROI_Model : public ListModelBase
-        { MEMALIGN(ROI_Model)
+        { 
           public:
             ROI_Model (QObject* parent) : 
               ListModelBase (parent) { }

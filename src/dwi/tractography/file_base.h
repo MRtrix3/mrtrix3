@@ -39,7 +39,7 @@ namespace MR
 
       //! \cond skip
       class __ReaderBase__
-      { NOMEMALIGN
+      { 
         public:
             __ReaderBase__() : current_index (0) { }
           ~__ReaderBase__ () {
@@ -60,7 +60,7 @@ namespace MR
 
       template <typename ValueType = float>
         class __WriterBase__
-        { NOMEMALIGN
+        { 
           public:
             using value_type = ValueType;
 

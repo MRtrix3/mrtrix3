@@ -353,7 +353,7 @@ namespace MR
         // Construct class functors necessary to calculate, for each voxel intersected by the
         //   surface, the partial volume fraction
         class Source
-        { MEMALIGN(Source)
+        { 
           public:
             Source (const Vox2Poly& data) :
                 data (data),
@@ -374,7 +374,7 @@ namespace MR
         };
 
         class Pipe
-        { NOMEMALIGN
+        { 
           public:
             Pipe (const Mesh& mesh, const vector<Eigen::Vector3d>& polygon_normals) :
                 mesh (mesh),
@@ -523,7 +523,7 @@ namespace MR
         };
 
         class Sink
-        { MEMALIGN(Sink)
+        { 
           public:
             Sink (Image<float>& image, const size_t voxel_count) :
                 image (image),

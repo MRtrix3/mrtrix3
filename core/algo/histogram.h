@@ -36,7 +36,7 @@ namespace MR
 
 
       class Calibrator
-      { MEMALIGN (Calibrator)
+      { 
 
         public:
           Calibrator (const size_t number_of_bins = 0, const bool ignorezero = false) :
@@ -92,7 +92,7 @@ namespace MR
 
 
       class Data
-      { MEMALIGN (Data)
+      { 
         public:
 
           using vector_type = Eigen::Array<size_t, Eigen::Dynamic, 1>;
@@ -214,7 +214,7 @@ namespace MR
 
 
       class Matcher
-      { MEMALIGN (Matcher)
+      { 
 
           using vector_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 

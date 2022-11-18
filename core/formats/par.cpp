@@ -38,7 +38,7 @@ namespace MR
   {
 
 
-    typedef struct { NOMEMALIGN
+    typedef struct { 
       int sl, ec, dyn, ph, ty, seq, ang, pos, b, grad, asl, ri, rs, ss, pix, size, vox, thick, gap;
     } ParCols;
 
@@ -66,7 +66,7 @@ namespace MR
 
 
 
-    typedef struct { NOMEMALIGN
+    typedef struct { 
       int sl, ec, dyn, ph, ty, seq, asl, pix, size[2];
       float b, grad[3], ri, rs, ss, ang[3], pos[3], vox[2], thick, gap;
     } SliceData;

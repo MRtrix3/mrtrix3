@@ -28,7 +28,7 @@ namespace MR {
       class Study;
       class Image;
 
-      class Series : public vector<std::shared_ptr<Image>> { NOMEMALIGN
+      class Series : public vector<std::shared_ptr<Image>> { 
         public:
           Series (Study* parent, const std::string& series_name, size_t series_number, const std::string& image_type,
               const std::string& series_ref_UID, const std::string& series_modality,

@@ -45,7 +45,7 @@ namespace MR
 
 
         class EarlyExit
-        { NOMEMALIGN
+        { 
           public:
             EarlyExit (const SharedBase& shared) :
               max_num_seeds (shared.max_num_seeds),
