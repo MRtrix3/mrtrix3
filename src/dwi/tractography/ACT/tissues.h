@@ -34,7 +34,7 @@ namespace MR
       {
 
 
-        class Tissues { MEMALIGN(Tissues)
+        class Tissues { 
 
           public:
             Tissues () : cgm (0.0), sgm (0.0), wm (0.0), csf (0.0), path (0.0), is_valid (false) { }

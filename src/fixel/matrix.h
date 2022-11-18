@@ -43,7 +43,7 @@ namespace MR
       // Classes for dealing with dynamic multi-threaded construction of the
       //   fixel-fixel connectivity matrix
       class InitElement
-      { NOMEMALIGN
+      { 
         public:
           using ValueType = fixel_index_type;
           InitElement() :
@@ -69,7 +69,7 @@ namespace MR
 
 
       class InitFixel : public vector<InitElement>
-      { MEMALIGN(InitFixel)
+      { 
         public:
           using ElementType = InitElement;
           using BaseType = vector<InitElement>;
@@ -87,7 +87,7 @@ namespace MR
       // A class to store fixel index / connectivity value pairs
       //   only after the connectivity matrix has been thresholded / normalised
       class NormElement
-      { NOMEMALIGN
+      { 
         public:
           using ValueType = connectivity_value_type;
           NormElement (const index_type fixel_index,
@@ -109,7 +109,7 @@ namespace MR
       // With the internally normalised CFE expression, want to store a
       //   multiplicative factor per fixel
       class NormFixel : public vector<NormElement>
-      { MEMALIGN(NormFixel)
+      { 
         public:
           using ElementType = NormElement;
           using BaseType = vector<NormElement>;
@@ -191,7 +191,7 @@ namespace MR
 
       // Wrapper class for reading the connectivity matrix from the filesystem
       class Reader
-      { MEMALIGN(Reader)
+      { 
 
         public:
           Reader (const std::string& path, const Image<bool>& mask);

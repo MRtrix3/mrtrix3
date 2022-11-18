@@ -44,7 +44,7 @@ namespace MR
     {
 
       class Renderer
-      { MEMALIGN(Renderer)
+      { 
 
           using matrix_t = Eigen::MatrixXf;
           using vector_t = Eigen::VectorXf;
@@ -100,7 +100,7 @@ namespace MR
           float object_color[3];
           mutable GLuint reverse_ID, origin_ID;
 
-          class Shader : public GL::Shader::Program { NOMEMALIGN
+          class Shader : public GL::Shader::Program { 
             public:
               Shader () : mode_ (mode_t::SH), use_lighting_ (true), colour_by_direction_ (true), hide_neg_values_ (true), orthographic_ (false) { }
               void start (mode_t mode, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic, bool colour_relative_to_projection);
@@ -120,7 +120,7 @@ namespace MR
 
         private:
           class ModeBase
-          { NOMEMALIGN
+          { 
             public:
               ModeBase (Renderer& parent) : parent (parent) { }
               virtual ~ModeBase() { }
@@ -136,7 +136,7 @@ namespace MR
 
         public:
           class SH : public ModeBase
-          { MEMALIGN(SH)
+          { 
             public:
               SH (Renderer& parent) : ModeBase (parent), LOD (0) { }
               ~SH();
@@ -175,7 +175,7 @@ namespace MR
 
 
           class Tensor : public ModeBase
-          { MEMALIGN(Tensor)
+          { 
             public:
               Tensor (Renderer& parent) : ModeBase (parent), LOD (0) { }
               ~Tensor();
@@ -200,7 +200,7 @@ namespace MR
 
 
           class Dixel : public ModeBase
-          { MEMALIGN (Dixel)
+          { 
 
               using dir_t = MR::DWI::Directions::index_type;
 

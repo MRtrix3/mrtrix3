@@ -34,7 +34,7 @@ namespace MR
     inline QString qstr (const std::string& s) { return QString::fromUtf8 (s.c_str()); }
 
 
-    class App : public QApplication { NOMEMALIGN
+    class App : public QApplication { 
 
       public:
         App (int& cmdline_argc, char** cmdline_argv);

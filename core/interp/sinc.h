@@ -68,7 +68,7 @@ namespace MR
      */
 
     template <class ImageType> class Sinc : public Base<ImageType>
-    { MEMALIGN(Sinc<ImageType>)
+    { 
       public:
         using typename Base<ImageType>::value_type;
         using Base<ImageType>::out_of_bounds;

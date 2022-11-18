@@ -399,7 +399,7 @@ namespace MR
     void Mesh::load_obj (const std::string& path)
     {
 
-      struct FaceData { NOMEMALIGN
+      struct FaceData { 
           uint32_t vertex, texture, normal;
       };
 

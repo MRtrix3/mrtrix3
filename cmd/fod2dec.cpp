@@ -87,7 +87,7 @@ using value_type = float;
 const value_type UNIT = 1.0 / std::sqrt(3.0);  // component of 3D unit vector wrt L2-norm
 
 
-class DecTransform { MEMALIGN(DecTransform)
+class DecTransform { 
 
   public:
 
@@ -102,7 +102,7 @@ class DecTransform { MEMALIGN(DecTransform)
 
 };
 
-class DecComputer { MEMALIGN(DecComputer)
+class DecComputer { 
 
   private:
 
@@ -160,7 +160,7 @@ class DecComputer { MEMALIGN(DecComputer)
 
 };
 
-class DecWeighter { MEMALIGN(DecWeighter)
+class DecWeighter { 
 
   private:
 

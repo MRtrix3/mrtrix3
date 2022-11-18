@@ -39,7 +39,7 @@ namespace MR
         class ROI_Item;
 
 
-        struct ROI_UndoEntry { MEMALIGN(ROI_UndoEntry)
+        struct ROI_UndoEntry { 
 
           ROI_UndoEntry (ROI_Item&, int, int);
           ROI_UndoEntry (const ROI_UndoEntry&) = delete;
@@ -64,7 +64,7 @@ namespace MR
           vector<GLubyte> before, after;
 
           class Shared
-          { MEMALIGN(Shared)
+          { 
             public:
               Shared();
               ~Shared();

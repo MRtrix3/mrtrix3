@@ -30,7 +30,7 @@ namespace MR
     default_type erfinv (const default_type p)
     {
       class Shared
-      { MEMALIGN(Shared)
+      { 
         public:
           Shared() :
               m_Y (0.0891314744949340820313)
@@ -72,7 +72,7 @@ namespace MR
     default_type erfcinv (const default_type q)
     {
       class Shared
-      { MEMALIGN(Shared)
+      { 
         public:
           Shared() :
               N (6),

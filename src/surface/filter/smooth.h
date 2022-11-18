@@ -36,7 +36,7 @@ namespace MR
 
 
       class Smooth : public Base
-      { MEMALIGN (Smooth)
+      { 
         public:
           Smooth () :
               Base (),

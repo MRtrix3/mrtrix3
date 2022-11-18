@@ -34,7 +34,7 @@ namespace MR {
       using index_type = unsigned int;
 
 
-      class Set { MEMALIGN(Set)
+      class Set { 
 
         public:
 
@@ -152,7 +152,7 @@ namespace MR {
 
 
 
-      class FastLookupSet : public Set { MEMALIGN(FastLookupSet)
+      class FastLookupSet : public Set { 
 
         public:
 

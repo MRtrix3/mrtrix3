@@ -72,7 +72,7 @@ namespace MR
 
 
     class Shell
-    { NOMEMALIGN
+    { 
 
       public:
 
@@ -111,7 +111,7 @@ namespace MR
 
 
     class Shells
-    { NOMEMALIGN
+    { 
       public:
         Shells (const Eigen::MatrixXd& grad);
 

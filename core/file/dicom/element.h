@@ -30,7 +30,7 @@ namespace MR {
     namespace Dicom {
 
 
-      class Sequence { NOMEMALIGN
+      class Sequence { 
         public:
           Sequence (uint16_t group, uint16_t element, uint8_t* end) : group (group), element (element), end (end) { }
           uint16_t group, element;
@@ -43,7 +43,7 @@ namespace MR {
           }
       };
 
-      class Date { NOMEMALIGN
+      class Date { 
         public:
           Date (const std::string& entry) :
             year(0), month(0), day(0) {
@@ -59,7 +59,7 @@ namespace MR {
           friend std::ostream& operator<< (std::ostream& stream, const Date& item);
       };
 
-      class Time { NOMEMALIGN
+      class Time { 
         public:
           Time (const std::string& entry) : Time() {
             if (entry.size() < 6)
@@ -92,7 +92,7 @@ namespace MR {
 
 
 
-      class Element { NOMEMALIGN
+      class Element { 
         public:
           typedef enum _Type {
             INVALID,

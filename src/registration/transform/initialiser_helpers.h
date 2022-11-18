@@ -54,7 +54,7 @@ namespace MR
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& eigenvectors,
           Eigen::Matrix<default_type, Eigen::Dynamic, 1>& eigenvals);
 
-        class FODInitialiser { MEMALIGN(FODInitialiser)
+        class FODInitialiser { 
           public:
             FODInitialiser (Image<default_type>& image1,
                                 Image<default_type>& image2,
@@ -99,7 +99,7 @@ namespace MR
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh1, sh2;
         };
 
-        class MomentsInitialiser { MEMALIGN(MomentsInitialiser)
+        class MomentsInitialiser { 
           public:
             MomentsInitialiser (Image<default_type>& image1,
                                 Image<default_type>& image2,

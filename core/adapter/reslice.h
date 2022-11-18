@@ -109,7 +109,7 @@ namespace MR
     template <template <class ImageType> class Interpolator, class ImageType>
       class Reslice :
         public ImageBase<Reslice<Interpolator,ImageType>,typename ImageType::value_type>
-    { MEMALIGN (Reslice<Interpolator, ImageType>)
+    { 
       public:
 
         using value_type = typename ImageType::value_type;

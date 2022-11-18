@@ -30,7 +30,7 @@ namespace MR {
 
 
         class Downsampler : public BaseCRTP<Downsampler>
-        { MEMALIGN(Downsampler)
+        { 
 
           public:
             Downsampler () : ratio (0) { }

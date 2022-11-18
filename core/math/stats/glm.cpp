@@ -348,7 +348,7 @@ namespace MR
           }
 
           class Source
-          { NOMEMALIGN
+          { 
             public:
               Source (const size_t num_elements) :
                   num_elements (num_elements),
@@ -372,7 +372,7 @@ namespace MR
           };
 
           class Functor
-          { MEMALIGN(Functor)
+          { 
             public:
               Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_data, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                        vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :

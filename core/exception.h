@@ -77,7 +77,7 @@ namespace MR
 
 
 
-  class Exception { NOMEMALIGN
+  class Exception { 
     public:
       Exception () { }
 
@@ -112,7 +112,7 @@ namespace MR
       vector<std::string> description;
   };
 
-  class InvalidImageException : public Exception { NOMEMALIGN
+  class InvalidImageException : public Exception { 
     public:
       InvalidImageException (const std::string& msg) : Exception(msg) {}
       InvalidImageException (const Exception& previous_exception, const std::string& msg)
@@ -120,7 +120,7 @@ namespace MR
   };
 
 
-  class CancelException : public Exception { NOMEMALIGN
+  class CancelException : public Exception { 
     public:
       CancelException () : Exception ("operation cancelled by user") { }
   };
@@ -131,7 +131,7 @@ namespace MR
 
 
 
-  class LogLevelLatch { NOMEMALIGN
+  class LogLevelLatch { 
     public:
       LogLevelLatch (const int new_level) :
           prev_level (App::log_level)

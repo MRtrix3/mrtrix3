@@ -26,7 +26,7 @@ namespace MR
     namespace GL
     {
 
-      class Font { NOMEMALIGN
+      class Font { 
         public:
           Font (const QFont font) :
             metric (font),

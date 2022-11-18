@@ -87,7 +87,7 @@ using value_type = float;
 
 
 
-class SH2Amp { MEMALIGN(SH2Amp)
+class SH2Amp { 
   public:
     SH2Amp (const Eigen::MatrixXd& transform, bool nonneg) :
       transform (transform),
@@ -112,7 +112,7 @@ class SH2Amp { MEMALIGN(SH2Amp)
 
 
 
-class SH2AmpMultiShell { MEMALIGN(SH2AmpMultiShell)
+class SH2AmpMultiShell { 
   public:
     SH2AmpMultiShell (const vector<Eigen::MatrixXd>& dirs, const DWI::Shells& shells, bool nonneg) :
       transforms (dirs),
