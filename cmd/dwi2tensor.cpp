@@ -127,7 +127,7 @@ void usage ()
      "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. " // Internal
      "Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. "
      "NeuroImage, 2013, 81, 335-346"
-  
+
    + "* any of above with constraints:\n"
      "Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. " // Internal
      "Optimal experimental design and estimation for q-space trajectory imaging. "
@@ -204,7 +204,7 @@ class Processor { MEMALIGN(Processor)
 
         if (dkt_image.valid()) {
           assign_pos_of (dwi_image, 0, 3).to (dkt_image);
-          double adc_sq = (x[1]+x[2]+x[3])*(x[1]+x[2]+x[3])/9.0;
+          double adc_sq = Math::pow2(x[1]+x[2]+x[3])/9.0 + 1e-18;
           for (auto l = Loop(3)(dkt_image); l; ++l) {
             dkt_image.value() = x[dkt_image.index(3)+7]/adc_sq;
           }
