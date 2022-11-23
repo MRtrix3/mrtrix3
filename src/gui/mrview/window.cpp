@@ -679,7 +679,7 @@ namespace MR
 
           // Tool menu:
           tool_group = new QActionGroup (this);
-          tool_group->setExclusionPolicy (QActionGroup::ExclusionPolicy::None);
+          tool_group->setExclusive (false);
           connect (tool_group, SIGNAL (triggered (QAction*)), this, SLOT (select_tool_slot (QAction*)));
 
           menu = new QMenu (tr ("Tools"), this);
