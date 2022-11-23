@@ -306,7 +306,7 @@ log ('PATH set to: ' + path)
 
 
 cpp_std = 'c++11'
-if 'CXXSTD' in os.environ.keys():
+if 'CXXSTD' in os.environ:
   std = os.environ['CXXSTD']
   if std:
     cpp_std = std
