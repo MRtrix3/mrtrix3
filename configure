@@ -1284,6 +1284,7 @@ int main() { Foo f; }
       else:
         filetext += '\nQT += core gui opengl svg network\n'
       filetext += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
+      filetext += 'QMAKE_CXX = ' + cpp[0] + '\nQMAKE_LINK = ' + ld[0] + '\n'
       if system == "darwin":
         filetext += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = ' + macosx_version + '\n'
 
@@ -1319,12 +1320,15 @@ int main() { Foo f; }
                 qt_defines = shlex.split (line[line.find('=')+1:].strip())
               elif line.startswith ('INCPATH'):
                 qt_includes = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('LFLAGS'):
+                qt_ldflags = [ entry for entry in shlex.split (line[line.find('=')+1:].strip()) if not entry.startswith('$') and not entry.startswith ('-flto=') ]
               elif line.startswith ('LIBS'):
                 qt_libs = shlex.split (line[line.find('=')+1:].strip())
           if qt_defines or qt_includes or qt_libs:
             log ('ok\n')
             log ('  qt_defines: ' + str(qt_defines) + '\n')
             log ('  qt_includes: ' + str(qt_includes) + '\n')
+            log ('  qt_ldflags: ' + str(qt_ldflags) + '\n')
             log ('  qt_libs: ' + str(qt_libs) + '\n')
             break
         except OSError:
@@ -1348,7 +1352,6 @@ int main() { Foo f; }
           else:
             qt_cflags += [ entry ]
 
-      qt_ldflags = []
       for entry in qt_libs:
         if entry[0] != '$':
           qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
@@ -1362,7 +1365,7 @@ int main() { Foo f; }
       execute ([ cpp[0], '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ], \
           CompileError, cwd=qt_dir.name)
 
-      execute ([ cpp[0] ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags, \
+      execute ([ ld[0] ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags, \
           LinkError, cwd=qt_dir.name)
 
       qt_stdout = execute ([ os.path.join(qt_dir.name, 'qt') ], RunError)[1]
