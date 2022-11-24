@@ -4,7 +4,7 @@ TAGNAME="$1"
 
 PATH=/bin:/sbin:/usr/bin:/usr/sbin
 export PATH
-MACOSX_DEPLOYMENT_TARGET=10.13
+MACOSX_DEPLOYMENT_TARGET=10.14
 export MACOSX_DEPLOYMENT_TARGET
 PLD=$(pwd)
 THREADS=$(sysctl -n hw.ncpu)
@@ -14,25 +14,59 @@ if [ -f "${PREFIX}-build-deps.tar.gz" ]; then
   echo "Reusing previously built dependencies"
   tar xfz ${PREFIX}-build-deps.tar.gz
 else
-  # Grab latest versions from git
   EIGEN_VERSION=3.4.0
   echo "Using eigen ${EIGEN_VERSION}"
 
-  TIFF_VERSION=$(git ls-remote --tags https://gitlab.com/libtiff/libtiff.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep v.* | sort -V | tail -1)
-  TIFF_VERSION=${TIFF_VERSION#*/*/v}
+  TIFF_VERSION=4.4.0
   echo "Using tiff ${TIFF_VERSION}"
 
-  PNG_VERSION=$(git ls-remote --tags https://github.com/glennrp/libpng.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep v.* | sort -V | tail -1)
-  PNG_VERSION=${PNG_VERSION#*/*/v}
+  PNG_VERSION=1.6.38
   echo "Using png ${PNG_VERSION}"
 
-  FFTW_VERSION=$(git ls-remote --tags https://github.com/FFTW/fftw3.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep 'fftw-3' | sort -V | tail -1)
-  FFTW_VERSION=${FFTW_VERSION#*/*/fftw-}
+  FFTW_VERSION=3.3.10
   echo "Using fftw ${FFTW_VERSION}"
 
-  QT_VERSION=$(git ls-remote --tags https://code.qt.io/qt/qt5.git | awk '{print $2}' | grep -v '\^{}$' | grep -v alpha | grep -v beta | grep -v rc | grep -v '-' | grep '5.' | sort -V | tail -1)
-  QT_VERSION=${QT_VERSION#*/*/v}
+  QT_VERSION=6.4.1
   echo "Using qt ${QT_VERSION}"
+
+  # TIFF
+  SECONDS=0
+  DNAME=tiff-${TIFF_VERSION}
+  FNAME=${DNAME}.tar.gz
+  curl -s -O -L http://download.osgeo.org/libtiff/${FNAME}
+  tar xf ${FNAME}
+  cd ${DNAME}
+  CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --enable-shared=NO --without-x --disable-jpeg --disable-old-jpeg --disable-lzma --disable-zstd --disable-webp
+  make install > /dev/null
+  cd ..
+  rm -r ${FNAME} ${DNAME}
+  TIFF_SECONDS=${SECONDS}
+
+  # PNG
+  SECONDS=0
+  DNAME=libpng-${PNG_VERSION}
+  FNAME=${DNAME}.tar.xz
+  curl -s -O -L https://ftp.osuosl.org/pub/blfs/conglomeration/libpng/${FNAME}
+  tar xf ${FNAME}
+  cd ${DNAME}
+  CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --enable-shared=NO
+  make install > /dev/null
+  cd ..
+  rm -r ${FNAME} ${DNAME}
+  PNG_SECONDS=${SECONDS}
+
+  # FFTW
+  SECONDS=0
+  DNAME=fftw-${FFTW_VERSION}
+  FNAME=${DNAME}.tar.gz
+  curl -s -O http://www.fftw.org/${FNAME}
+  tar xf ${FNAME}
+  cd ${DNAME}
+  CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking
+  make install > /dev/null
+  cd ..
+  rm -r ${FNAME} ${DNAME}
+  FFTW_SECONDS=${SECONDS}
 
   # EIGEN
   SECONDS=0
@@ -46,76 +80,23 @@ else
   rm -r ${FNAME} ${DNAME}
   EIGEN_SECONDS=${SECONDS}
 
-  # TIFF
-  SECONDS=0
-  DNAME=tiff-${TIFF_VERSION}
-  FNAME=${DNAME}.tar.gz
-  curl -s -O -L http://download.osgeo.org/libtiff/${FNAME}
-  tar xf ${FNAME}
-  cd ${DNAME}
-  ./configure -q -prefix ${PREFIX} --enable-shared=NO --without-x --disable-jpeg --disable-old-jpeg --disable-lzma --disable-zstd --disable-webp
-  make install > /dev/null
-  cd ..
-  rm -r ${FNAME} ${DNAME}
-  TIFF_SECONDS=${SECONDS}
-
-  # PNG
-  SECONDS=0
-  DNAME=libpng-${PNG_VERSION}
-  FNAME=${DNAME}.tar.xz
-  curl -s -O -L https://ftp.osuosl.org/pub/blfs/conglomeration/libpng/${FNAME}
-  tar xf ${FNAME}
-  cd ${DNAME}
-  ./configure -q -prefix ${PREFIX} --enable-shared=NO
-  make install > /dev/null
-  cd ..
-  rm -r ${FNAME} ${DNAME}
-  PNG_SECONDS=${SECONDS}
-
-  # FFTW
-  SECONDS=0
-  DNAME=fftw-${FFTW_VERSION}
-  FNAME=${DNAME}.tar.gz
-  curl -s -O http://www.fftw.org/${FNAME}
-  tar xf ${FNAME}
-  cd ${DNAME}
-  if [ "$(arch)" != "arm64" ]; then
-    ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking --enable-sse2 --enable-avx --enable-avx2
-  else
-    ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking
-  fi
-  make install > /dev/null
-  cd ..
-  rm -r ${FNAME} ${DNAME}
-  FFTW_SECONDS=${SECONDS}
-
   # QT5 BASE
   SECONDS=0
-  DNAME=qtbase-everywhere-src-${QT_VERSION}
-  FNAME=${DNAME}.tar.xz
-  curl -s -O http://ftp1.nluug.nl/languages/qt/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/${FNAME}
-  tar xf ${FNAME}
-  cd ${DNAME}
-  curl -s -O https://raw.githubusercontent.com/wrobelda/vcpkg/99582d154236b0e7af70cadef8420c4f25829f61/ports/qt5-base/patches/cocoa.patch
-  patch -p1 < cocoa.patch
-  ./configure -opensource -confirm-license -release -no-dbus -no-openssl -no-harfbuzz -no-freetype  -no-cups -no-framework -nomake examples -prefix ${PREFIX}
-  make -j ${THREADS} > /dev/null
-  make install > /dev/null
-  cd ..
+  DNAME=${QT_VERSION}
+  FNAME=${QT_VERSION}-0-202211101256qtbase-MacOS-MacOS_12-Clang-MacOS-MacOS_12-X86_64-ARM64.7z
+  curl -s -O https://ftp1.nluug.nl/languages/qt/online/qtsdkrepository/mac_x64/desktop/qt6_641/qt.qt6.641.clang_64/${FNAME}
+  /opt/homebrew/bin/7zz x ${FNAME}
+  cp -r 6.4.1/macos/* ${PREFIX}/
   rm -r ${FNAME} ${DNAME}
   QTBASE_SECONDS=${SECONDS}
 
   # QT5 SVG
   SECONDS=0
-  DNAME=qtsvg-everywhere-src-${QT_VERSION}
-  FNAME=${DNAME}.tar.xz
-  curl -s -O http://ftp1.nluug.nl/languages/qt/archive/qt/${QT_VERSION%.*}/${QT_VERSION}/submodules/${FNAME}
-  tar xf ${FNAME}
-  cd ${DNAME}
-  ${PREFIX}/bin/qmake
-  make -j ${THREADS} > /dev/null
-  make install > /dev/null
-  cd ..
+  DNAME=${QT_VERSION}
+  FNAME=${QT_VERSION}-0-202211101256qtsvg-MacOS-MacOS_12-Clang-MacOS-MacOS_12-X86_64-ARM64.7z
+  curl -s -O https://ftp1.nluug.nl/languages/qt/online/qtsdkrepository/mac_x64/desktop/qt6_641/qt.qt6.641.clang_64/${FNAME}
+  /opt/homebrew/bin/7zz x ${FNAME}
+  cp -r 6.4.1/macos/* ${PREFIX}/
   rm -r ${FNAME} ${DNAME}
   QTSVG_SECONDS=${SECONDS}
 
@@ -127,7 +108,7 @@ SECONDS=0
 git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${TAGNAME}
 cd ${PREFIX}-src
 MRTRIX_VERSION=$(git describe --abbrev=8 | tr '-' '_')
-CFLAGS="-I${PREFIX}/include" LINKFLAGS="-L${PREFIX}/lib" TIFF_LINKFLAGS="-ltiff" PATH=${PREFIX}/bin:${PATH} ./configure
+CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -I${PREFIX}/include" LINKFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -L${PREFIX}/lib" TIFF_LINKFLAGS="-ltiff" PATH=${PREFIX}/libexec:${PREFIX}/bin:${PATH} CXXSTD=c++17 ./configure
 NUMBER_OF_PROCESSORS=${THREADS} ./build
 cd ..
 MRTRIX_SECONDS=${SECONDS}
@@ -140,7 +121,11 @@ cp -R ${PREFIX}-src/lib    ${PREFIX}
 cp -R ${PREFIX}-src/share  ${PREFIX}
 cp -R ${PREFIX}-src/matlab ${PREFIX}
 rm -rf ${PREFIX}-src
-cp -a ${PREFIX}_dep/lib/libQt5{Core,Gui,OpenGL,PrintSupport,Network,Svg,Widgets}.*.dylib ${PREFIX}/lib
+cp -a ${PREFIX}_dep/lib/Qt{Core,Gui,OpenGL,PrintSupport,Network,Svg,Widgets,OpenGLWidgets,DBus}.framework ${PREFIX}/lib
+find ${PREFIX}/lib -name Headers -print0 | xargs -0 rm -rf
+find ${PREFIX}/lib -name Current -print0 | xargs -0 rm -rf
+rm -r ${PREFIX}/lib/*.framework/Qt*
+rm -r ${PREFIX}/lib/*.framework/Resources
 mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats,styles}
 cp -a ${PREFIX}_dep/plugins/platforms/libqcocoa.dylib  ${PREFIX}/bin/plugins/platforms
 cp -a ${PREFIX}_dep/plugins/imageformats/libqsvg.dylib ${PREFIX}/bin/plugins/imageformats
