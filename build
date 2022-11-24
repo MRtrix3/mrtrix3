@@ -21,9 +21,6 @@ else
   TIFF_VERSION=4.4.0
   echo "Using tiff ${TIFF_VERSION}"
 
-  PNG_VERSION=1.6.38
-  echo "Using png ${PNG_VERSION}"
-
   FFTW_VERSION=3.3.10
   echo "Using fftw ${FFTW_VERSION}"
 
@@ -42,19 +39,6 @@ else
   cd ..
   rm -r ${FNAME} ${DNAME}
   TIFF_SECONDS=${SECONDS}
-
-  # PNG
-  SECONDS=0
-  DNAME=libpng-${PNG_VERSION}
-  FNAME=${DNAME}.tar.xz
-  curl -s -O -L https://ftp.osuosl.org/pub/blfs/conglomeration/libpng/${FNAME}
-  tar xf ${FNAME}
-  cd ${DNAME}
-  CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --enable-shared=NO
-  make install > /dev/null
-  cd ..
-  rm -r ${FNAME} ${DNAME}
-  PNG_SECONDS=${SECONDS}
 
   # FFTW
   SECONDS=0
@@ -88,7 +72,7 @@ else
   mv 7zz ${PREFIX}/bin/
   rm ${FNAME}
 
-  # QT5 BASE
+  # QT6 BASE
   SECONDS=0
   DNAME=${QT_VERSION}
   FNAME=${QT_VERSION}-0-202211101256qtbase-MacOS-MacOS_12-Clang-MacOS-MacOS_12-X86_64-ARM64.7z
@@ -98,7 +82,7 @@ else
   rm -r ${FNAME} ${DNAME}
   QTBASE_SECONDS=${SECONDS}
 
-  # QT5 SVG
+  # QT6 SVG
   SECONDS=0
   DNAME=${QT_VERSION}
   FNAME=${QT_VERSION}-0-202211101256qtsvg-MacOS-MacOS_12-Clang-MacOS-MacOS_12-X86_64-ARM64.7z
@@ -116,7 +100,7 @@ SECONDS=0
 git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${TAGNAME}
 cd ${PREFIX}-src
 MRTRIX_VERSION=$(git describe --abbrev=8 | tr '-' '_')
-CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -I${PREFIX}/include" LINKFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -L${PREFIX}/lib" TIFF_LINKFLAGS="-ltiff" PATH=${PREFIX}/libexec:${PREFIX}/bin:${PATH} CXXSTD=c++17 ./configure
+CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -I${PREFIX}/include" LINKFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -L${PREFIX}/lib" PNG_CFLAGS="-I${PREFIX}/include/QtPng" PNG_LINKFLAGS="-lQt6BundledLibpng"  TIFF_LINKFLAGS="-ltiff" PATH=${PREFIX}/libexec:${PREFIX}/bin:${PATH} CXXSTD=c++17 ./configure
 NUMBER_OF_PROCESSORS=${THREADS} ./build
 cd ..
 MRTRIX_SECONDS=${SECONDS}
@@ -158,7 +142,6 @@ TOTAL_SECONDS=$((EIGEN_SECONDS + TIFF_SECONDS + PNG_SECONDS + FFTW_SECONDS + QTB
 if [[ ! -n "$DEPCACHE" ]]; then
   echo "eigen ${EIGEN_VERSION}: ${EIGEN_SECONDS} s"
   echo "tiff ${TIFF_VERSION}: ${TIFF_SECONDS} s"
-  echo "png ${PNG_VERSION}: ${PNG_SECONDS} s"
   echo "fftw ${FFTW_VERSION}: ${FFTW_SECONDS} s"
   echo "qtbase ${QT_VERSION}: ${QTBASE_SECONDS} s"
   echo "qtsvg ${QT_VERSION}: ${QTSVG_SECONDS} s"
