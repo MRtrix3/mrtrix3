@@ -81,12 +81,19 @@ else
   rm -r ${FNAME} ${DNAME}
   EIGEN_SECONDS=${SECONDS}
 
+  # 7Z
+  FNAME=7z2107-mac.tar.xz
+  curl -s -O https://www.7-zip.org/a/${FNAME}
+  tar xvfz ${FNAME} 7zz
+  mv 7zz ${PREFIX}/bin/
+  rm ${FNAME}
+
   # QT5 BASE
   SECONDS=0
   DNAME=${QT_VERSION}
   FNAME=${QT_VERSION}-0-202211101256qtbase-MacOS-MacOS_12-Clang-MacOS-MacOS_12-X86_64-ARM64.7z
   curl -s -O https://ftp1.nluug.nl/languages/qt/online/qtsdkrepository/mac_x64/desktop/qt6_641/qt.qt6.641.clang_64/${FNAME}
-  /opt/homebrew/bin/7zz x ${FNAME}
+  ${PREFIX}/bin/7zz x ${FNAME}
   cp -r 6.4.1/macos/* ${PREFIX}/
   rm -r ${FNAME} ${DNAME}
   QTBASE_SECONDS=${SECONDS}
@@ -96,7 +103,7 @@ else
   DNAME=${QT_VERSION}
   FNAME=${QT_VERSION}-0-202211101256qtsvg-MacOS-MacOS_12-Clang-MacOS-MacOS_12-X86_64-ARM64.7z
   curl -s -O https://ftp1.nluug.nl/languages/qt/online/qtsdkrepository/mac_x64/desktop/qt6_641/qt.qt6.641.clang_64/${FNAME}
-  /opt/homebrew/bin/7zz x ${FNAME}
+  ${PREFIX}/bin/7zz x ${FNAME}
   cp -r 6.4.1/macos/* ${PREFIX}/
   rm -r ${FNAME} ${DNAME}
   QTSVG_SECONDS=${SECONDS}
