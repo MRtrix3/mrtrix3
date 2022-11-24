@@ -2,6 +2,7 @@
 
 TAGNAME="$1"
 
+ARCHS="-arch x86_64 -arch arm64"
 PATH=/bin:/sbin:/usr/bin:/usr/sbin
 export PATH
 MACOSX_DEPLOYMENT_TARGET=10.14
@@ -36,7 +37,7 @@ else
   curl -s -O -L http://download.osgeo.org/libtiff/${FNAME}
   tar xf ${FNAME}
   cd ${DNAME}
-  CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --enable-shared=NO --without-x --disable-jpeg --disable-old-jpeg --disable-lzma --disable-zstd --disable-webp
+  CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --enable-shared=NO --without-x --disable-jpeg --disable-old-jpeg --disable-lzma --disable-zstd --disable-webp
   make install > /dev/null
   cd ..
   rm -r ${FNAME} ${DNAME}
@@ -49,7 +50,7 @@ else
   curl -s -O -L https://ftp.osuosl.org/pub/blfs/conglomeration/libpng/${FNAME}
   tar xf ${FNAME}
   cd ${DNAME}
-  CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --enable-shared=NO
+  CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --enable-shared=NO
   make install > /dev/null
   cd ..
   rm -r ${FNAME} ${DNAME}
@@ -62,7 +63,7 @@ else
   curl -s -O http://www.fftw.org/${FNAME}
   tar xf ${FNAME}
   cd ${DNAME}
-  CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking
+  CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking
   make install > /dev/null
   cd ..
   rm -r ${FNAME} ${DNAME}
@@ -108,7 +109,7 @@ SECONDS=0
 git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${TAGNAME}
 cd ${PREFIX}-src
 MRTRIX_VERSION=$(git describe --abbrev=8 | tr '-' '_')
-CFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -I${PREFIX}/include" LINKFLAGS="-arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -L${PREFIX}/lib" TIFF_LINKFLAGS="-ltiff" PATH=${PREFIX}/libexec:${PREFIX}/bin:${PATH} CXXSTD=c++17 ./configure
+CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -I${PREFIX}/include" LINKFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -L${PREFIX}/lib" TIFF_LINKFLAGS="-ltiff" PATH=${PREFIX}/libexec:${PREFIX}/bin:${PATH} CXXSTD=c++17 ./configure
 NUMBER_OF_PROCESSORS=${THREADS} ./build
 cd ..
 MRTRIX_SECONDS=${SECONDS}
