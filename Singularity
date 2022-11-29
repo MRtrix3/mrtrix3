@@ -26,8 +26,8 @@ Include: apt
     export FSLDIR FSLOUTPUTTYPE FSLMULTIFILEQUIT FSLTCLSH FSLWISH
     
 # All
-    LD_LIBRARY_PATH="/usr/local/cuda/lib64:/usr/local/cuda/bin:/.singularity.d/libs:/usr/lib:/opt/fsl/lib:$LD_LIBRARY_PATH"
-    PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:/usr/local/cuda/bin:$PATH"
+    LD_LIBRARY_PATH="/usr/local/cuda-9.1/lib64:/usr/local/cuda-9.1/bin:/.singularity.d/libs:/usr/lib:/opt/fsl/lib:$LD_LIBRARY_PATH"
+    PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:/usr/local/cuda-9.1/bin:$PATH"
     export LD_LIBRARY_PATH PATH
 
 %post
@@ -44,6 +44,25 @@ Include: apt
 # Build requirements
     apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates curl git libeigen3-dev libfftw3-dev libgl1-mesa-dev libpng-dev libqt5opengl5-dev libqt5svg5-dev libtiff5-dev qt5-qmake qtbase5-dev-tools wget zlib1g-dev
 
+# Add CUDA 9.1 support for eddy (based on https://gist.github.com/DaneGardner/accd6fd330348543167719002a661bd5#install-cuda-toolkit)
+    # Create tmp directory for CUDA installers
+	mkdir /cuda_tmp && cd /cuda_tmp
+	curl -LO https://developer.nvidia.com/compute/cuda/9.1/Prod/local_installers/cuda_9.1.85_387.26_linux
+	curl -LO https://developer.nvidia.com/compute/cuda/9.1/Prod/patches/1/cuda_9.1.85.1_linux
+	curl -LO https://developer.nvidia.com/compute/cuda/9.1/Prod/patches/2/cuda_9.1.85.2_linux
+	curl -LO https://developer.nvidia.com/compute/cuda/9.1/Prod/patches/3/cuda_9.1.85.3_linux
+
+	# Only install CUDA 9.1 toolkit
+	sh cuda_9.1.85_387.26_linux --silent --override --toolkit
+
+	# Install patches
+	sh cuda_9.1.85.1_linux --silent --accept-eula
+	sh cuda_9.1.85.2_linux --silent --accept-eula
+	sh cuda_9.1.85.3_linux --silent --accept-eula
+
+	# Clean up
+	cd && rm -r /cuda_tmp
+	
 # Neuroimaging software / data dependencies
     # Download minified ART ACPCdetect (V2.0).
     mkdir -p /opt/art && curl -fsSL https://osf.io/73h5s/download | tar xz -C /opt/art --strip-components 1
@@ -62,7 +81,7 @@ Include: apt
     cd /opt/mrtrix3 && ./configure && ./build -persistent -nopaginate && rm -rf testing/ tmp/ && cd ../../
 
 # apt cleanup to recover as much space as possible
-    apt-get remove -y build-essential ca-certificates curl git libeigen3-dev libfftw3-dev libgl1-mesa-dev libpng-dev libqt5opengl5-dev libqt5svg5-dev libtiff5-dev qt5-qmake qtbase5-dev-tools wget zlib1g-dev && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    apt-get remove -y build-essential ca-certificates curl git libeigen3-dev libfftw3-dev libgl1-mesa-dev libpng-dev libqt5opengl5-dev libqt5svg5-dev libtiff5-dev qt5-qmake qtbase5-dev-tools wget zlib1g-dev && apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* #/tmp/* #/var/tmp/*
 
 %runscript
     exec /usr/bin/bash -c "$@"
