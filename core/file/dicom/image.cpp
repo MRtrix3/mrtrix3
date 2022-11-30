@@ -107,6 +107,12 @@ namespace MR {
               case 0x1314U:
                 flip_angle = item.get_float (0, flip_angle);
                 return;
+              case 0x9074U:
+                acquisition_time = item.get_datetime().second;
+                return;
+              case 0x9082U:
+                echo_time = item.get_float (0, echo_time);
+                return;
               case 0x9087U:
                 { // ugly hack to handle badly formatted Philips data:
                   default_type v = item.get_float (0, bvalue);
@@ -153,6 +159,9 @@ namespace MR {
             return;
           case 0x0020U:
             switch (item.element) {
+              case 0x000EU:
+                ignore_series_num = item.is_in_series_ref_sequence();
+                return;
               case 0x0011U:
                 series_num = item.get_uint (0, series_num);
                 return;
@@ -197,6 +206,9 @@ namespace MR {
             return;
           case 0x0028U:
             switch (item.element) {
+              case 0x0002U:
+                samples_per_pixel = item.get_uint (0, samples_per_pixel);
+                return;
               case 0x0010U:
                 dim[1] = item.get_uint (0, dim[1]);
                 return;
@@ -282,7 +294,7 @@ namespace MR {
                   if (in_frames) {
                     calc_distance();
                     frames.push_back (std::shared_ptr<Frame> (new Frame (*this)));
-                    frame_offset += dim[0] * dim[1] * (bits_alloc/8);
+                    frame_offset += dim[0] * dim[1] * (bits_alloc/8) * samples_per_pixel;
                   }
                   else
                     in_frames = true;
@@ -537,8 +549,8 @@ namespace MR {
         for (auto frame_it = frames.cbegin()+1; frame_it != frames.cend(); ++frame_it) {
           const Frame& frame (**frame_it);
 
-          if (frame.series_num != previous->series_num ||
-              frame.acq != previous->acq)
+          if ((!frame.ignore_series_num && frame.series_num != previous->series_num ) ||
+              frame.acq != previous->acq || frame.distance < previous->distance)
             update_count (2, dim, index);
           else if (frame.distance != previous->distance)
             update_count (1, dim, index);

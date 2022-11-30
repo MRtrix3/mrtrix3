@@ -24,15 +24,28 @@ namespace MR {
 
       namespace {
         bool series_time_mismatch_warning_issued = false;
+        bool series_number_UID_mismatch_warning_issued = false;
       }
 
-      std::shared_ptr<Series> Study::find (const std::string& series_name, size_t series_number, const std::string& image_type,
+      std::shared_ptr<Series> Study::find (const std::string& series_name, size_t series_number,
+          const std::string& image_type, const std::string& series_ref_UID,
           const std::string& series_modality, const std::string& series_date, const std::string& series_time)
       {
         for (size_t n = 0; n < size(); n++) {
           bool match = true;
           if (series_name == (*this)[n]->name) {
-            if (series_number == (*this)[n]->number) {
+            match = (series_number == (*this)[n]->number);
+            if (!match && series_ref_UID.size() && (*this)[n]->series_ref_UID.size()) {
+              if (series_ref_UID == (*this)[n]->series_ref_UID) {
+                if (!series_number_UID_mismatch_warning_issued) {
+                  series_number_UID_mismatch_warning_issued = true;
+                  WARN ("mismatched series number and UID - this may cause problems with series grouping");
+                }
+                match = true;
+              }
+            }
+
+            if (match) {
               if (image_type != (*this)[n]->image_type)
                 match = false;
               if (series_modality.size() && (*this)[n]->modality.size())
@@ -54,7 +67,7 @@ namespace MR {
                 }
                 if (stime != stime_ref) {
                   if (!series_time_mismatch_warning_issued) {
-                    INFO ("WARNING: series times do not match - this may cause problem with series grouping");
+                    INFO ("WARNING: series times do not match - this may cause problems with series grouping");
                     series_time_mismatch_warning_issued = true;
                   }
                   if (stime < stime_ref)
@@ -67,7 +80,7 @@ namespace MR {
           }
         }
 
-        push_back (std::shared_ptr<Series> (new Series (this, series_name, series_number, image_type, series_modality, series_date, series_time)));
+        push_back (std::shared_ptr<Series> (new Series (this, series_name, series_number, image_type, series_ref_UID, series_modality, series_date, series_time)));
         return back();
       }
 

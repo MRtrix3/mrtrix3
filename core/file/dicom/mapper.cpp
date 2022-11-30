@@ -208,9 +208,14 @@ namespace MR {
             H.keyval()["FlipAngle"] = join (frame.flip_angles, ",");
         }
 
-        size_t nchannels = image.frames.size() ? 1 : image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
-        if (nchannels > 1)
-          INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
+        size_t nchannels = image.samples_per_pixel;
+        if (nchannels == 1 && !image.frames.size()) {
+          // only guess number of samples per pixel if not explicitly set in
+          // DICOM and not using multi-frame:
+          nchannels = image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
+          if (nchannels > 1)
+            INFO ("data segment is larger than expected from image dimensions - interpreting as multi-channel data");
+        }
 
         H.ndim() = 3 + (dim[0]*dim[2]>1) + (nchannels>1);
 
