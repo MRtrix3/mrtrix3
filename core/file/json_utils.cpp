@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -160,8 +160,8 @@ namespace MR
         auto slice_encoding_it = header.keyval().find ("SliceEncodingDirection");
         if (slice_encoding_it != header.keyval().end()) {
           if (do_realign) {
-            const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
-            Eigen::Vector3 new_dir;
+            const Eigen::Vector3d orig_dir (Axes::id2dir (slice_encoding_it->second));
+            Eigen::Vector3d new_dir;
             for (size_t axis = 0; axis != 3; ++axis)
               new_dir[axis] = flip[perm[axis]] ? -orig_dir[perm[axis]] : orig_dir[perm[axis]];
             slice_encoding_it->second = Axes::dir2id (new_dir);
@@ -293,8 +293,8 @@ namespace MR
         }
         auto slice_encoding_it = H_adj.keyval().find ("SliceEncodingDirection");
         if (slice_encoding_it != H_adj.keyval().end()) {
-          const Eigen::Vector3 orig_dir (Axes::id2dir (slice_encoding_it->second));
-          Eigen::Vector3 new_dir;
+          const Eigen::Vector3d orig_dir (Axes::id2dir (slice_encoding_it->second));
+          Eigen::Vector3d new_dir;
           for (size_t axis = 0; axis != 3; ++axis)
             new_dir[axis] = flip[axis] ? orig_dir[order[axis]] : -orig_dir[order[axis]];
           slice_encoding_it->second = Axes::dir2id (new_dir);

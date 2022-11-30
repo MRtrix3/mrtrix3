@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,9 @@
 # For more details, see http://www.mrtrix.org/.
 
 # pylint: disable=redefined-outer-name,invalid-name
+
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding,consider-using-dict-items,unused-variable,consider-using-f-string
 
 usage_string = '''
 USAGE
@@ -144,11 +147,13 @@ targets = []
 
 
 todo, headers, object_deps, file_flags = {}, {}, {}, {}
+formatstr=''
 lock = threading.Lock()
 print_lock = threading.Lock()
+index_lock = threading.Lock()
 stop = False
 error_stream = None
-main_cindex = 0
+todo_index = 0
 
 logfile = open ('build.log', 'wb') #pylint: disable=consider-using-with
 timingfile = None
@@ -193,7 +198,6 @@ def colorize(s):
 
 
 def pipe_errors_to_less_handler():
-  global error_stream
   if error_stream:
     with tempfile.NamedTemporaryFile() as tf:
       tf.write (colorize(error_stream).encode (errors='ignore'))
@@ -533,7 +537,8 @@ cpp = cpp_flags = ld = ld_flags = ld_lib = ld_lib_flags = eigen_cflags = qt_cfla
 
 try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
-  exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used
+  with codecs.open (config_file, mode='r', encoding='utf-8') as f:
+    exec (f.read()) # pylint: disable=exec-used
 except IOError:
   fail ('''no configuration file found!
 please run "./configure" prior to invoking this script
@@ -683,9 +688,16 @@ for filepath in list_unexpected_bin_files(exe_suffix):
 class TargetException (Exception):
   pass
 
+
+def next_index ():
+  global todo_index
+  with index_lock:
+    todo_index+=1
+    return todo_index
+
+
 class Entry(object):
   def __init__ (self, name):
-    global todo
     name = os.path.normpath (name)
     if name in todo:
       return
@@ -722,7 +734,8 @@ class Entry(object):
 
 
 
-  def execute (self, cindex, formatstr):
+  def execute (self):
+    global formatstr
     folder = os.path.dirname (self.name)
     try:
       os.makedirs (folder)
@@ -739,7 +752,7 @@ class Entry(object):
             fd.write ('<file>' + entry + '</file>\n')
         fd.write ('</qresource>\n</RCC>\n')
     if self.cmd:
-      return execute (formatstr.format (cindex, self.action, self.name), self.cmd)
+      return execute (formatstr.format (next_index(), self.action, self.name), self.cmd)
     return None
 
 
@@ -990,7 +1003,6 @@ def is_GUI_target (current_file):
 
 
 def list_headers (current_file):
-  global headers, file_flags
   current_file = os.path.normpath (current_file)
 
   if current_file not in headers.keys():
@@ -1039,7 +1051,6 @@ def list_headers (current_file):
 
 
 def list_cmd_deps (file_cc):
-  global object_deps, file_flags
   file_cc = os.path.normpath (file_cc)
 
   if file_cc not in object_deps.keys():
@@ -1078,25 +1089,21 @@ def list_lib_deps ():
 
 
 def build_next ():
-  global todo, lock, stop, main_cindex
-  total_count = len(todo)
-  cindex = 0
-  formatstr = '({:>'+str(len(str(total_count)))+'}/'+str(total_count)+') [{}] {}'
+  global stop, formatstr
+  formatstr = '({:>'+str(len(str(initial_num_todo)))+'}/'+str(initial_num_todo)+') [{}] {}'
 
   try:
     while not stop:
       current = None
       with lock:
         if todo:
-          for item in todo:
-            if todo[item].currently_being_processed:
+          for name,entry in todo.items():
+            if entry.currently_being_processed:
               continue
-            unsatisfied_deps = set(todo[item].deps).intersection (todo.keys())
+            unsatisfied_deps = set(entry.deps).intersection (todo.keys())
             if not unsatisfied_deps:
-              todo[item].currently_being_processed = True
-              current = item
-              main_cindex+=1
-              cindex = main_cindex
+              entry.currently_being_processed = True
+              current = name
               break
         else:
           stop = max (stop, 1)
@@ -1108,7 +1115,7 @@ def build_next ():
         continue
 
       target = todo[current]
-      if target.execute(cindex, formatstr):
+      if target.execute():
         target.currently_being_processed = False
         stop = 2
         return
@@ -1116,7 +1123,8 @@ def build_next ():
       with lock:
         del todo[current]
 
-  except Exception:
+  except Exception as excp:
+    disp (str(excp))
     stop = 2
     return
 
@@ -1390,19 +1398,8 @@ except TargetException as excp:
 
 # for nogui config, remove GUI elements from targets and todo list:
 if nogui:
-  nogui_targets = []
-  for entry in targets:
-    if not is_GUI_target (entry):
-      nogui_targets.append (entry)
-  targets = nogui_targets
-
-  nogui_todo = {}
-  for item in todo:
-    if not is_GUI_target (todo[item].name):
-      nogui_todo[item] = todo[item]
-  todo = nogui_todo
-
-
+  targets = [ entry for entry in targets if not is_GUI_target (entry) ]
+  todo = { name:entry for name, entry in todo.items() if not is_GUI_target (name) }
 
 
 
@@ -1426,11 +1423,10 @@ Printing dependencies for all files:
     todo[entry].display()
   sys.exit (0)
 
-todo_tmp = {}
-for item in todo:
-  if todo[item].action != '--' and todo[item].need_rebuild():
-    todo_tmp[item] = todo[item]
-todo = todo_tmp
+
+
+# remove todo items that don't need rebuild:
+todo = { name:entry for name, entry in todo.items() if entry.action != '--' and entry.need_rebuild() }
 
 log ('TODO list contains ' + str(len(todo)) + ''' items
 
@@ -1446,18 +1442,19 @@ except (KeyError, TypeError):
     num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
   except ValueError:
     num_processors = 1
+log ('''
+
+Build will use ''' + str(num_processors) + ''' threads
+
+''')
+
 
 while todo:
 
   stop = False
-  main_cindex = 0
   num_todo_previous = len(todo)
-
-  log ('''
-
-  launching ''' + str(num_processors) + ''' threads
-
-  ''')
+  initial_num_todo = len(todo)
+  todo_index = 0
 
   threads = []
   for i in range (1, num_processors): # pylint: disable=unused-variable

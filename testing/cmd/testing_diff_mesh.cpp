@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -84,12 +84,12 @@ void run ()
 
   for (size_t i = 0; i != in1.num_triangles(); ++i) {
     // Explicitly load the vertex data
-    std::array<Eigen::Vector3, 3> v1;
+    std::array<Eigen::Vector3d, 3> v1;
     for (size_t vertex = 0; vertex != 3; ++vertex)
       v1[vertex] = in1.vert(in1.tri(i)[vertex]);
     bool match_found = false;
     for (size_t j = 0; j != in2.num_triangles() && !match_found; ++j) {
-      std::array<Eigen::Vector3, 3> v2;
+      std::array<Eigen::Vector3d, 3> v2;
       for (size_t vertex = 0; vertex != 3; ++vertex)
         v2[vertex] = in2.vert (in2.tri(j)[vertex]);
       bool all_vertices_matched = true;
@@ -111,12 +111,12 @@ void run ()
   }
 
   for (size_t i = 0; i != in1.num_quads(); ++i) {
-    std::array<Eigen::Vector3, 4> v1;
+    std::array<Eigen::Vector3d, 4> v1;
     for (size_t vertex = 0; vertex != 4; ++vertex)
       v1[vertex] = in1.vert (in1.quad(i)[vertex]);
     bool match_found = false;
     for (size_t j = 0; j != in2.num_quads() && !match_found; ++j) {
-      std::array<Eigen::Vector3, 4> v2;
+      std::array<Eigen::Vector3d, 4> v2;
       for (size_t vertex = 0; vertex != 4; ++vertex)
         v2[vertex] = in2.vert (in2.quad(j)[vertex]);
       bool all_vertices_matched = true;

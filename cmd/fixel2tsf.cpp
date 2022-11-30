@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -101,7 +101,7 @@ void run ()
   DWI::Tractography::TrackScalar<float> scalars;
 
   const Transform transform (in_index_image);
-  Eigen::Vector3 voxel_pos;
+  Eigen::Vector3d voxel_pos;
 
   while (reader (tck)) {
     SetVoxelDir dixels;

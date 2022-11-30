@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,7 +45,7 @@ namespace MR {
               dirs (directions) { }
             DixelMappingPlugin (const DixelMappingPlugin& that) :
               dirs (that.dirs) { }
-            DWI::Directions::index_type operator() (const Eigen::Vector3& d) const { return dirs.select_direction (d); }
+            DWI::Directions::index_type operator() (const Eigen::Vector3d& d) const { return dirs.select_direction (d); }
           private:
             const DWI::Directions::FastLookupSet& dirs;
         };

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -131,7 +131,7 @@ namespace MR
             lmax_label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (lmax_label, 0, 2);
             lmax_selector = new SpinBox (this);
-            lmax_selector->setMinimum (2);
+            lmax_selector->setMinimum (0);
             lmax_selector->setMaximum (16);
             lmax_selector->setSingleStep (2);
             lmax_selector->setValue (8);

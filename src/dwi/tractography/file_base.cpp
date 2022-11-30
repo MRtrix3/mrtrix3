@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,6 +36,8 @@ namespace MR {
           if (key == "roi" || key == "prior_roi") {
             try {
               vector<std::string> V (split (kv.value(), " \t", true, 2));
+              if (V.size() != 2)
+                throw 1;
               properties.prior_rois.insert (std::pair<std::string,std::string> (V[0], V[1]));
             }
             catch (...) {

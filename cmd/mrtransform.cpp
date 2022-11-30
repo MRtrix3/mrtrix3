@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -471,7 +471,7 @@ void run ()
                 "therefore should not be used to reorient directions / diffusion gradients");
         }
         for (ssize_t n = 0; n < grad.rows(); ++n) {
-          Eigen::Vector3 grad_vector = grad.block<1,3>(n,0);
+          Eigen::Vector3d grad_vector = grad.block<1,3>(n,0);
           grad.block<1,3>(n,0) = rotation * grad_vector;
         }
         DWI::set_DW_scheme (output_header, grad);
@@ -507,13 +507,13 @@ void run ()
           }
           if (result.cols() == 2) {
             Eigen::Matrix<default_type, 2, 1> azel (v.data());
-            Eigen::Vector3 dir;
+            Eigen::Vector3d dir;
             Math::Sphere::spherical2cartesian (azel, dir);
             dir = rotation * dir;
             Math::Sphere::cartesian2spherical (dir, azel);
             result.row (l) = azel;
           } else {
-            const Eigen::Vector3 dir = rotation * Eigen::Vector3 (v.data());
+            const Eigen::Vector3d dir = rotation * Eigen::Vector3d (v.data());
             result.row (l) = dir;
           }
           std::stringstream s;
@@ -613,6 +613,8 @@ void run ()
 
     if (modulate_jac)
       apply_linear_jacobian (output, linear_transform);
+
+    DWI::export_grad_commandline (output);
 
   } else if (warp.valid()) {
 
