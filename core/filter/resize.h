@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -78,7 +78,7 @@ namespace MR
           if (voxel_size.size() != 3)
             throw Exception ("the voxel size must be defined using a value for all three dimensions.");
 
-          Eigen::Vector3 original_extent;
+          Eigen::Vector3d original_extent;
           for (size_t j = 0; j < 3; ++j) {
             if (voxel_size[j] <= 0.0)
               throw Exception ("the voxel size must be larger than zero");

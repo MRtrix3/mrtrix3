@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -59,18 +59,18 @@ void run ()
     check_dimensions (image, mask);
   }
 
-  Eigen::Vector3 com (0.0, 0.0, 0.0);
+  Eigen::Vector3d com (0.0, 0.0, 0.0);
   default_type mass = 0.0;
   if (mask.valid()) {
     for (auto l = Loop(image) (image, mask); l; ++l) {
       if (mask.value()) {
-        com += Eigen::Vector3 (image.index(0), image.index(1), image.index(2)) * image.value();
+        com += Eigen::Vector3d (image.index(0), image.index(1), image.index(2)) * image.value();
         mass += image.value();
       }
     }
   } else {
     for (auto l = Loop(image) (image); l; ++l) {
-      com += Eigen::Vector3 (image.index(0), image.index(1), image.index(2)) * image.value();
+      com += Eigen::Vector3d (image.index(0), image.index(1), image.index(2)) * image.value();
       mass += image.value();
     }
   }

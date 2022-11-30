@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@ using namespace App;
 class TransformBase { MEMALIGN(TransformBase)
   public:
     virtual ~TransformBase(){}
-    virtual Eigen::Vector3 transform_point (const Eigen::Vector3& input) = 0;
+    virtual Eigen::Vector3d transform_point (const Eigen::Vector3d& input) = 0;
 };
 
 
@@ -34,8 +34,8 @@ class Warp : public TransformBase { MEMALIGN(Warp)
   public:
     Warp (Image<default_type>& in) : interp (in) {}
 
-    Eigen::Vector3 transform_point (const Eigen::Vector3 &input) {
-      Eigen::Vector3 output;
+    Eigen::Vector3d transform_point (const Eigen::Vector3d &input) {
+      Eigen::Vector3d output;
       if (interp.scanner (input))
         output = interp.row(3);
       else
@@ -52,8 +52,8 @@ class Linear : public TransformBase { MEMALIGN(Linear)
   public:
     Linear (const transform_type& transform) : transform (transform) {}
 
-    Eigen::Vector3 transform_point (const Eigen::Vector3 &input) {
-       Eigen::Vector3 output = transform * input;
+    Eigen::Vector3d transform_point (const Eigen::Vector3d &input) {
+       Eigen::Vector3d output = transform * input;
        return output;
     }
 
@@ -158,11 +158,11 @@ void run ()
 
     Transform template_transform (output);
     for (auto i = Loop ("composing transformations", output, 0, 3) (output); i ; ++i) {
-      Eigen::Vector3 voxel ((default_type) output.index(0),
+      Eigen::Vector3d voxel ((default_type) output.index(0),
                             (default_type) output.index(1),
                             (default_type) output.index(2));
 
-      Eigen::Vector3 position = template_transform.voxel2scanner * voxel;
+      Eigen::Vector3d position = template_transform.voxel2scanner * voxel;
       ssize_t index = transform_list.size() - 1;
       while (index >= 0) {
         position = transform_list[index]->transform_point (position);

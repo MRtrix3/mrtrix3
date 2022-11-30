@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -97,9 +97,10 @@ namespace MR {
         }
 
         std::shared_ptr<Patient> patient = find (reader.patient, reader.patient_ID, reader.patient_DOB);
-        std::shared_ptr<Study> study = patient->find (reader.study, reader.study_ID, reader.study_date, reader.study_time);
+        std::shared_ptr<Study> study = patient->find (reader.study, reader.study_ID, reader.study_UID, reader.study_date, reader.study_time);
         for (const auto& image_type : reader.image_type) {
-          std::shared_ptr<Series> series = study->find (reader.series, reader.series_number, image_type.first, reader.modality, reader.series_date, reader.series_time);
+          std::shared_ptr<Series> series = study->find (reader.series, reader.series_number, image_type.first,
+              reader.series_ref_UID,  reader.modality, reader.series_date, reader.series_time);
 
           std::shared_ptr<Image> image (new Image);
           image->filename = filename;

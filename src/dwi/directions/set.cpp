@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -103,7 +103,7 @@ namespace MR {
             Vertex (const Set& set, const index_type index, const bool inverse) :
                 dir (set[index] * (inverse ? -1.0 : 1.0)),
                 index (index) { }
-            const Eigen::Vector3 dir;
+            const Eigen::Vector3d dir;
             const index_type index; // Indexes the underlying direction set
         };
 
@@ -115,7 +115,7 @@ namespace MR {
                 dist (std::max ( { vertices[one].dir.dot (normal), vertices[two].dir.dot (normal), vertices[three].dir.dot (normal) } ) ) { }
             bool includes (const index_type i) const { return (indices[0] == i || indices[1] == i || indices[2] == i); }
             const std::array<index_type,3> indices; // Indexes the vertices vector
-            const Eigen::Vector3 normal;
+            const Eigen::Vector3d normal;
             const default_type dist;
         };
 
@@ -327,7 +327,7 @@ namespace MR {
 
 
 
-      index_type FastLookupSet::select_direction (const Eigen::Vector3& p) const
+      index_type FastLookupSet::select_direction (const Eigen::Vector3d& p) const
       {
 
         const size_t grid_index = dir2gridindex (p);
@@ -349,7 +349,7 @@ namespace MR {
 
 
 
-      index_type FastLookupSet::select_direction_slow (const Eigen::Vector3& p) const
+      index_type FastLookupSet::select_direction_slow (const Eigen::Vector3d& p) const
       {
 
         index_type dir = 0;
@@ -417,7 +417,7 @@ namespace MR {
               case 3: el += el_grid_step; break;
             }
 
-            const Eigen::Vector3 p (cos(az) * sin(el), sin(az) * sin(el), cos (el));
+            const Eigen::Vector3d p (cos(az) * sin(el), sin(az) * sin(el), cos (el));
             const index_type nearest_dir = select_direction_slow (p);
             bool dir_present = false;
             for (vector<index_type>::const_iterator d = grid_lookup[i].begin(); !dir_present && d != grid_lookup[i].end(); ++d)
@@ -453,7 +453,7 @@ namespace MR {
 
 
 
-      size_t FastLookupSet::dir2gridindex (const Eigen::Vector3& p) const
+      size_t FastLookupSet::dir2gridindex (const Eigen::Vector3d& p) const
       {
 
         const default_type azimuth   = atan2(p[1], p[0]);
@@ -477,7 +477,7 @@ namespace MR {
         size_t error_count = 0;
         const size_t checks = 1000000;
         for (size_t i = 0; i != checks; ++i) {
-          Eigen::Vector3 p (normal(rng), normal(rng), normal(rng));
+          Eigen::Vector3d p (normal(rng), normal(rng), normal(rng));
           p.normalize();
           if (select_direction (p) != select_direction_slow (p))
             ++error_count;

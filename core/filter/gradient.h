@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -144,7 +144,7 @@ namespace MR
             if (wrt_scanner) {
               Transform transform (in);
               for (auto l = Loop(0,3) (out); l; ++l)
-                out.row(3) = transform.image2scanner.linear() * Eigen::Vector3 (out.row(3));
+                out.row(3) = transform.image2scanner.linear() * Eigen::Vector3d (out.row(3));
             }
           }
         }

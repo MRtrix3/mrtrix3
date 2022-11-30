@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,7 +46,7 @@ namespace MR
         fixel_positions.resize (matrix.size());
         const Transform transform (index_image);
         for (auto i = Loop (index_image, 0, 3) (index_image); i; ++i) {
-          const Eigen::Vector3 vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
+          const Eigen::Vector3d vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
           const Eigen::Vector3f scanner = (transform.voxel2scanner * vox).cast<float>();
           index_image.index(3) = 0;
           const index_type count = index_image.value();

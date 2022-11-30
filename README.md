@@ -1,6 +1,7 @@
 # MRtrix
 
 [![Build Status](https://github.com/MRtrix3/mrtrix3/workflows/checks/badge.svg)](https://github.com/MRtrix3/mrtrix3/actions)
+[![@MRtrix3](http://img.shields.io/twitter/follow/MRtrix3.svg?style=social)](https://twitter.com/MRtrix3)
 
 *MRtrix3* can be installed / run through multiple avenues:
 - [Direct download](https://www.mrtrix.org/download/) through mechanisms tailored for different OS platforms;

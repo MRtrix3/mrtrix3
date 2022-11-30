@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -60,10 +60,10 @@ class RunList(object): #pylint: disable=unused-variable
       raise TypeError('Construction of RunList class expects either an '
                       'integer (number of commands/functions to run), or a '
                       'list of command strings to execute')
-  def command(self, cmd):
+  def command(self, cmd, **kwargs):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     assert self.valid
-    run.command(cmd)
+    run.command(cmd, **kwargs)
     self._increment()
   def function(self, func, *args, **kwargs):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
@@ -112,7 +112,7 @@ def load_keyval(filename, **kwargs): #pylint: disable=unused-variable
         if len(line) < 2:
           continue
         name, var = line.rstrip().partition(":")[::2]
-        if name in res.keys():
+        if name in res:
           res[name].append(var.split())
         else:
           res[name] = var.split()
