@@ -29,47 +29,56 @@ namespace MR
     template <typename T, class MatrixType>
       inline Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> grad2bmatrix (const MatrixType& grad, bool dki = false)
     {
-      std::unique_ptr<DWI::Shells> shells;
-      try {
-        shells.reset (new DWI::Shells (grad));
-      } catch (...) {
-        WARN ("Unable to separate diffusion gradient table into shells; tensor estimation success uncertain");
-      }
-      if (shells) {
-        if (dki) {
-          if (shells->count() < 3)
-            throw Exception ("Kurtosis tensor estimation requires at least 3 b-value shells");
-        } else {
-          if (shells->count() < 2)
-            throw Exception ("Tensor estimation requires at least 2 b-values");
+      if (grad.cols() > 3) {
+        std::unique_ptr<DWI::Shells> shells;
+        try {
+          shells.reset (new DWI::Shells (grad));
+        } catch (...) {
+          WARN ("Unable to separate diffusion gradient table into shells; tensor estimation success uncertain");
+        }
+        if (shells) {
+          if (dki) {
+            if (shells->count() < 3)
+              throw Exception ("Kurtosis tensor estimation requires at least 3 b-value shells");
+          } else {
+            if (shells->count() < 2)
+              throw Exception ("Tensor estimation requires at least 2 b-values");
+          }
         }
       }
 
       Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> bmat (grad.rows(), (dki ? 22 : 7));
       for (ssize_t i = 0; i < grad.rows(); ++i) {
-        bmat (i,0)  = grad(i,3) *  grad(i,0) * grad(i,0);
-        bmat (i,1)  = grad(i,3) *  grad(i,1) * grad(i,1);
-        bmat (i,2)  = grad(i,3) *  grad(i,2) * grad(i,2);
-        bmat (i,3)  = grad(i,3) *  grad(i,0) * grad(i,1) * T(2.0);
-        bmat (i,4)  = grad(i,3) *  grad(i,0) * grad(i,2) * T(2.0);
-        bmat (i,5)  = grad(i,3) *  grad(i,1) * grad(i,2) * T(2.0);
-        bmat (i,6)  = T(-1.0);
+        const T x = grad(i,0);
+        const T y = grad(i,1);
+        const T z = grad(i,2);
+        const T b = (grad.cols() > 3) ? grad(i,3) : T(1.0);
+
+        bmat(i,0)  = T(-1.0);
+
+        bmat(i,1)  = b * x * x * T(1.0);
+        bmat(i,2)  = b * y * y * T(1.0);
+        bmat(i,3)  = b * z * z * T(1.0);
+        bmat(i,4)  = b * x * y * T(2.0);
+        bmat(i,5)  = b * x * z * T(2.0);
+        bmat(i,6)  = b * y * z * T(2.0);
+
         if (dki) {
-          bmat (i,7)  = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,0) * T(1.0)/T(6.0);
-          bmat (i,8)  = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,1) * T(1.0)/T(6.0);
-          bmat (i,9)  = -grad(i,3) * grad(i,3) * grad(i,2) * grad(i,2) * grad(i,2) * grad(i,2) * T(1.0)/T(6.0);
-          bmat (i,10) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,1) * T(2.0)/T(3.0);
-          bmat (i,11) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,2) * T(2.0)/T(3.0);
-          bmat (i,12) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,1) * T(2.0)/T(3.0);
-          bmat (i,13) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,2) * grad(i,2) * grad(i,2) * T(2.0)/T(3.0);
-          bmat (i,14) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,2) * T(2.0)/T(3.0);
-          bmat (i,15) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,2) * grad(i,2) * grad(i,2) * T(2.0)/T(3.0);
-          bmat (i,16) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,1) * grad(i,1);
-          bmat (i,17) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,2) * grad(i,2);
-          bmat (i,18) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,2) * grad(i,2);
-          bmat (i,19) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,1) * grad(i,2) * T(2.0);
-          bmat (i,20) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,2) * T(2.0);
-          bmat (i,21) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,2) * grad(i,2) * T(2.0);
+          bmat(i, 7) = -b * b * x * x * x * x * T( 1.0)/T(6.0);
+          bmat(i, 8) = -b * b * y * y * y * y * T( 1.0)/T(6.0);
+          bmat(i, 9) = -b * b * z * z * z * z * T( 1.0)/T(6.0);
+          bmat(i,10) = -b * b * x * x * x * y * T( 4.0)/T(6.0);
+          bmat(i,11) = -b * b * x * x * x * z * T( 4.0)/T(6.0);
+          bmat(i,12) = -b * b * x * y * y * y * T( 4.0)/T(6.0);
+          bmat(i,13) = -b * b * x * z * z * z * T( 4.0)/T(6.0);
+          bmat(i,14) = -b * b * y * y * y * z * T( 4.0)/T(6.0);
+          bmat(i,15) = -b * b * y * z * z * z * T( 4.0)/T(6.0);
+          bmat(i,16) = -b * b * x * x * y * y * T( 6.0)/T(6.0);
+          bmat(i,17) = -b * b * x * x * z * z * T( 6.0)/T(6.0);
+          bmat(i,18) = -b * b * y * y * z * z * T( 6.0)/T(6.0);
+          bmat(i,19) = -b * b * x * x * y * z * T(12.0)/T(6.0);
+          bmat(i,20) = -b * b * x * y * y * z * T(12.0)/T(6.0);
+          bmat(i,21) = -b * b * x * y * z * z * T(12.0)/T(6.0);
         }
       }
       return bmat;
@@ -81,7 +90,7 @@ namespace MR
       using T = typename VectorTypeIn::Scalar;
       for (ssize_t i = 0; i < dwi.size(); ++i)
         dwi[i] = dwi[i] > T(0.0) ? -std::log (dwi[i]) : T(0.0);
-      dt = binv * dwi;
+      dt = binv.template middleRows<6>(1) * dwi;
     }
 
 

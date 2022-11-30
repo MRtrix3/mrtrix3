@@ -21,12 +21,14 @@
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
 #include <Eigen/Eigenvalues>
+#include "dwi/directions/predefined.h"
 
 using namespace MR;
 using namespace App;
 
 using value_type = float;
 const char* modulate_choices[] = { "none", "fa", "eigval", NULL };
+#define DEFAULT_RK_NDIRS 300
 
 void usage ()
 {
@@ -34,6 +36,12 @@ void usage ()
   + Argument ("tensor", "the input tensor image.").type_image_in ();
 
   OPTIONS
+  + Option ("mask",
+            "only perform computation within the specified binary brain mask image.")
+  + Argument ("image").type_image_in()
+
+  + OptionGroup ("Diffusion Tensor Imaging")
+
   + Option ("adc",
             "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor. "
             "(sometimes also referred to as the mean diffusivity (MD))")
@@ -51,21 +59,6 @@ void usage ()
   + Option ("rd",
             "compute the radial diffusivity (RD) of the diffusion tensor. "
             "(equivalent to the mean of the two non-principal eigenvalues)")
-  + Argument ("image").type_image_out()
-
-  + Option ("cl",
-            "compute the linearity metric of the diffusion tensor. "
-            "(one of the three Westin shape metrics)")
-  + Argument ("image").type_image_out()
-
-  + Option ("cp",
-            "compute the planarity metric of the diffusion tensor. "
-            "(one of the three Westin shape metrics)")
-  + Argument ("image").type_image_out()
-
-  + Option ("cs",
-            "compute the sphericity metric of the diffusion tensor. "
-            "(one of the three Westin shape metrics)")
   + Argument ("image").type_image_out()
 
   + Option ("value",
@@ -87,11 +80,51 @@ void usage ()
             "are: none, FA, eigval (default = FA).")
   + Argument ("choice").type_choice (modulate_choices)
 
-  + Option ("mask",
-            "only perform computation within the specified binary brain mask image.")
-  + Argument ("image").type_image_in();
+  + Option ("cl",
+            "compute the linearity metric of the diffusion tensor. "
+            "(one of the three Westin shape metrics)")
+  + Argument ("image").type_image_out()
 
-  AUTHOR = "Thijs Dhollander (thijs.dhollander@gmail.com) & Ben Jeurissen (ben.jeurissen@uantwerpen.be) & J-Donald Tournier (jdtournier@gmail.com)";
+  + Option ("cp",
+            "compute the planarity metric of the diffusion tensor. "
+            "(one of the three Westin shape metrics)")
+  + Argument ("image").type_image_out()
+
+  + Option ("cs",
+            "compute the sphericity metric of the diffusion tensor. "
+            "(one of the three Westin shape metrics)")
+  + Argument ("image").type_image_out()
+
+  + OptionGroup ("Diffusion Kurtosis Imaging")
+
+  + Option ("dkt",
+            "input diffusion kurtosis tensor.")
+  + Argument ("image").type_image_in()
+
+  + Option ("mk",
+            "compute the mean kurtosis (MK) of the kurtosis tensor.")
+  + Argument ("image").type_image_out()
+
+  + Option ("ak",
+            "compute the axial kurtosis (AK) of the kurtosis tensor.")
+  + Argument ("image").type_image_out()
+
+  + Option ("rk",
+            "compute the radial kurtosis (RK) of the kurtosis tensor.")
+  + Argument ("image").type_image_out()
+
+  + Option ("mk_dirs",
+            "specify the directions used to numerically calculate mean kurtosis "
+            "(by default, the built-in 300 direction set is used). These should be "
+            "supplied as a text file containing [ az el ] pairs for the directions.")
+  + Argument ("file").type_file_in()
+
+  + Option ("rk_ndirs",
+            "specify the number of directions used to numerically calculate radial kurtosis "
+            "(by default, " + str(DEFAULT_RK_NDIRS) + " directions are used).")
+  +   Argument ("integer").type_integer (0, 1000);
+
+  AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be), Thijs Dhollander (thijs.dhollander@gmail.com) & J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Generate maps of tensor-derived parameters";
 
@@ -116,8 +149,14 @@ class Processor { MEMALIGN(Processor)
         Image<value_type>& cs_img,
         Image<value_type>& value_img,
         Image<value_type>& vector_img,
+        Image<value_type>& dkt_img,
+        Image<value_type>& mk_img,
+        Image<value_type>& ak_img,
+        Image<value_type>& rk_img,
         vector<uint32_t>& vals,
-        int modulate) :
+        int modulate,
+        Eigen::MatrixXd mk_dirs,
+        int rk_ndirs) :
       mask_img (mask_img),
       adc_img (adc_img),
       fa_img (fa_img),
@@ -128,10 +167,26 @@ class Processor { MEMALIGN(Processor)
       cs_img (cs_img),
       value_img (value_img),
       vector_img (vector_img),
+      dkt_img (dkt_img),
+      mk_img (mk_img),
+      ak_img (ak_img),
+      rk_img (rk_img),
       vals (vals),
-      modulate (modulate) {
+      modulate (modulate),
+      mk_dirs(mk_dirs),
+      rk_ndirs(rk_ndirs),
+      need_eigenvalues (value_img.valid() || vector_img.valid() || ad_img.valid() || rd_img.valid() ||
+          cl_img.valid() || cp_img.valid() || cs_img.valid() || ak_img.valid() || rk_img.valid()),
+      need_eigenvectors (vector_img.valid() || ak_img.valid() || rk_img.valid()),
+      need_dkt (dkt_img.valid() || mk_img.valid() || ak_img.valid() || rk_img.valid()) {
         for (auto& n : this->vals)
           --n;
+        if (mk_img.valid())
+          mk_bmat = DWI::grad2bmatrix<double> (mk_dirs, true);
+        if (rk_img.valid()) {
+          rk_dirs.resize (rk_ndirs,3);
+          rk_bmat.resize (rk_ndirs,22);
+        }
       }
 
     void operator() (Image<value_type>& dt_img)
@@ -164,8 +219,6 @@ class Processor { MEMALIGN(Processor)
         fa_img.value() = fa;
       }
 
-      bool need_eigenvalues = value_img.valid() || vector_img.valid() || ad_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid();
-
       Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
       if (need_eigenvalues || vector_img.valid()) {
         Eigen::Matrix3d M;
@@ -175,7 +228,7 @@ class Processor { MEMALIGN(Processor)
         M (0,1) = M (1,0) = dt[3];
         M (0,2) = M (2,0) = dt[4];
         M (1,2) = M (2,1) = dt[5];
-        es = Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d>(M, vector_img.valid() ? Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly);
+        es = Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d>(M, need_eigenvectors ? Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly);
       }
 
       Eigen::Vector3d eigval;
@@ -247,6 +300,44 @@ class Processor { MEMALIGN(Processor)
           vector_img.value() = eigvec(2,ith_eig[vals[i]])*fact; l++;
         }
       }
+
+      /* input dkt */
+      Eigen::Matrix<double, 15, 1> dkt;
+      if (dkt_img.valid()) {
+        double adc_sq = Math::pow2 (DWI::tensor2ADC(dt));
+        assign_pos_of (dt_img, 0, 3).to (dkt_img);
+        for (auto l = Loop (3) (dkt_img); l; ++l)
+          dkt[dkt_img.index(3)] = dkt_img.value()*adc_sq;
+      }
+
+      /* output mk */
+      if (mk_img.valid()) {
+        assign_pos_of (dt_img, 0, 3).to (mk_img);
+        mk_img.value() = kurtosis (mk_bmat, dt, dkt);
+      }
+
+      /* output ak */
+      if (ak_img.valid()) {
+        Eigen::Matrix<double,1,22> ak_bmat = DWI::grad2bmatrix<double> (es.eigenvectors().col(ith_eig[0]).transpose(), true);
+        assign_pos_of (dt_img, 0, 3).to (ak_img);
+        ak_img.value() = kurtosis (ak_bmat, dt, dkt);
+      }
+
+      /* output rk */
+      if (rk_img.valid()) {
+        Eigen::Vector3d dir1 = es.eigenvectors().col(ith_eig[0]);
+        Eigen::Vector3d dir2 = es.eigenvectors().col(ith_eig[1]);
+        const double delta = Math::pi/rk_ndirs;
+        double a = 0;
+        for (int i = 0; i < rk_ndirs; i++) {
+          rk_dirs.row(i) = Eigen::AngleAxisd(a, dir1)*dir2;
+          a += delta;
+        }
+        rk_bmat.noalias() = DWI::grad2bmatrix<double> (rk_dirs, true);
+        assign_pos_of (dt_img, 0, 3).to (rk_img);
+        rk_img.value() = kurtosis (rk_bmat, dt, dkt);
+      }
+
     }
 
   private:
@@ -260,8 +351,27 @@ class Processor { MEMALIGN(Processor)
     Image<value_type> cs_img;
     Image<value_type> value_img;
     Image<value_type> vector_img;
+    Image<value_type> dkt_img;
+    Image<value_type> mk_img;
+    Image<value_type> ak_img;
+    Image<value_type> rk_img;
     vector<uint32_t> vals;
-    int modulate;
+    const int modulate;
+    Eigen::MatrixXd mk_dirs;
+    Eigen::MatrixXd mk_bmat, rk_bmat;
+    Eigen::MatrixXd rk_dirs;
+    const int rk_ndirs;
+    const bool need_eigenvalues;
+    const bool need_eigenvectors;
+    const bool need_dkt;
+
+
+    template <class BMatType, class DTType, class DKTType>
+      double kurtosis (const BMatType& bmat, const DTType& dt, const DKTType& dkt) {
+        return -6.0 * ( (bmat.template middleCols<15>(7) * dkt).array() / (bmat.template middleCols<6>(1) * dt).array().square() ).mean();
+      }
+
+
 };
 
 
@@ -287,6 +397,7 @@ void run ()
   }
 
   size_t metric_count = 0;
+  size_t dki_metric_count = 0;
 
   auto adc_img = Image<value_type>();
   opt = get_options ("adc");
@@ -378,9 +489,54 @@ void run ()
     metric_count++;
   }
 
+  auto dkt_img = Image<value_type>();
+  opt = get_options ("dkt");
+  if (opt.size()) {
+    dkt_img = Image<value_type>::open (opt[0][0]);
+    check_dimensions (dt_img, dkt_img, 0, 3);
+  }
+
+  auto mk_img = Image<value_type>();
+  opt = get_options ("mk");
+  if (opt.size()) {
+    header.ndim() = 3;
+    mk_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
+    dki_metric_count++;
+  }
+
+  auto ak_img = Image<value_type>();
+  opt = get_options ("ak");
+  if (opt.size()) {
+    header.ndim() = 3;
+    ak_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
+    dki_metric_count++;
+  }
+
+  auto rk_img = Image<value_type>();
+  opt = get_options ("rk");
+  if (opt.size()) {
+    header.ndim() = 3;
+    rk_img = Image<value_type>::create (opt[0][0], header);
+    metric_count++;
+    dki_metric_count++;
+  }
+
+  Eigen::MatrixXd mk_dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+  opt = get_options ("mk_dirs");
+  if (opt.size())
+    mk_dirs = load_matrix (opt[0][0]);
+
+  auto rk_ndirs = get_option_value ("rk_ndirs", DEFAULT_RK_NDIRS);
+
+  if (dki_metric_count && !dkt_img.valid()) {
+    throw Exception ("Cannot calculate diffusion kurtosis metrics; must provide the kurtosis tensor using the -dkt input option");
+  }
+
   if (!metric_count)
     throw Exception ("No output specified; must request at least one metric of interest using the available command-line options");
 
   ThreadedLoop (std::string("computing metric") + (metric_count > 1 ? "s" : ""), dt_img, 0, 3)
-    .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, vals, modulate), dt_img);
+    .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, dkt_img, mk_img, ak_img, rk_img, vals, modulate, mk_dirs, rk_ndirs), dt_img);
 }
