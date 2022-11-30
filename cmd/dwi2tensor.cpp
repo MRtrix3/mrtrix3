@@ -21,6 +21,8 @@
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
+#include "dwi/directions/predefined.h"
+#include "math/constrained_least_squares.h"
 
 using namespace MR;
 using namespace App;
@@ -48,7 +50,7 @@ void usage ()
   SYNOPSIS = "Diffusion (kurtosis) tensor estimation";
 
   DESCRIPTION
-  + "By default, the diffusion tensor (and optionally its kurtosis) is fitted to "
+  + "By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted to "
     "the log-signal in two steps: firstly, using weighted least-squares (WLS) with "
     "weights based on the empirical signal intensities; secondly, by further iterated weighted "
     "least-squares (IWLS) with weights determined by the signal predictions from the "
@@ -64,6 +66,20 @@ void usage ()
     "fitting step only: either WLS by default, or OLS if the -ols option is used in conjunction "
     "with -iter 0."
 
+  + "By default, the diffusion tensor (and optionally the kurtosis tensor) is fitted using "
+    "unconstrained optimization. This can result in unexpected diffusion parameters, "
+    "e.g. parameters that represent negative apparent diffusivities or negative apparent kurtoses, "
+    "or parameters that correspond to non-monotonic decay of the predicted signal. "
+    "By supplying the -constrain option, constrained optimization is performed instead "
+    "and such physically implausible parameters can be avoided. Depending on the presence "
+    " of the -dkt option, the -constrain option will enforce the following constraints:"
+
+  + "* Non-negative apparent diffusivity (always)."
+
+  + "* Non-negative apparent kurtosis (when the -dkt option is provided)."
+
+  + "* Monotonic signal decay in the b = [0 b_max] range (when the -dkt option is provided)."
+
     + encoding_description;
 
   ARGUMENTS
@@ -73,6 +89,18 @@ void usage ()
   OPTIONS
     + Option ("ols", "perform initial fit using an ordinary least-squares (OLS) fit (see Description).")
 
+    + Option ("iter","number of iterative reweightings for IWLS algorithm (default: "
+              + str(DEFAULT_NITER) + ") (see Description).")
+    +   Argument ("integer").type_integer (0, 10)
+
+    + Option ("constrain", "constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).")
+
+    + Option ("directions",
+              "specify the directions along which to apply the constraints "
+              "(by default, the built-in 300 direction set is used). These should be "
+              "supplied as a text file containing [ az el ] pairs for the directions.")
+      + Argument ("file").type_file_in()
+
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
 
@@ -81,10 +109,6 @@ void usage ()
 
     + Option ("dkt", "the output dkt image.")
     +   Argument ("image").type_image_out()
-
-    + Option ("iter","number of iterative reweightings for IWLS algorithm (default: "
-              + str(DEFAULT_NITER) + ") (see Description).")
-    +   Argument ("integer").type_integer (0, 10)
 
     + Option ("predicted_signal", "the predicted dwi image.")
     +   Argument ("image").type_image_out()
@@ -102,31 +126,38 @@ void usage ()
    + "* IWLS:\n"
      "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. " // Internal
      "Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. "
-     "NeuroImage, 2013, 81, 335-346";
+     "NeuroImage, 2013, 81, 335-346"
+
+   + "* any of above with constraints:\n"
+     "Morez, J.; Szczepankiewicz, F; den Dekker, A. J.; Vanhevel, F.; Sijbers, J. &  Jeurissen, B. " // Internal
+     "Optimal experimental design and estimation for q-space trajectory imaging. "
+     "Human Brain Mapping, In press";
 }
 
 
 
-template <class MASKType, class B0Type, class DKTType, class PredictType>
+template <class MASKType, class B0Type, class DTType, class DKTType, class PredictType>
 class Processor { MEMALIGN(Processor)
   public:
-    Processor (const Eigen::MatrixXd& b, const bool ols, const int iter,
-        const MASKType& mask_image, const B0Type& b0_image, const DKTType& dkt_image, const PredictType& predict_image) :
+    Processor (const Eigen::MatrixXd& A, const Eigen::MatrixXd& Aneq, const bool ols, const int iter,
+        const MASKType& mask_image, const B0Type& b0_image, const DTType& dt_image, const DKTType& dkt_image, const PredictType& predict_image) :
       mask_image (mask_image),
       b0_image (b0_image),
+      dt_image (dt_image),
       dkt_image (dkt_image),
       predict_image (predict_image),
-      dwi(b.rows()),
-      p(b.cols()),
-      w(Eigen::VectorXd::Ones (b.rows())),
-      work(b.cols(),b.cols()),
+      dwi(A.rows()),
+      x(A.cols()),
+      w(Eigen::VectorXd::Ones (A.rows())),
+      work(A.cols(),A.cols()),
       llt(work.rows()),
-      b(b),
+      A(A),
+      Aneq(Aneq),
       ols (ols),
       maxit(iter) { }
 
-    template <class DWIType, class DTType>
-      void operator() (DWIType& dwi_image, DTType& dt_image)
+    template <class DWIType>
+      void operator() (DWIType& dwi_image)
       {
         if (mask_image.valid()) {
           assign_pos_of (dwi_image, 0, 3).to (mask_image);
@@ -146,33 +177,42 @@ class Processor { MEMALIGN(Processor)
         }
 
         for (int it = 0; it <= maxit; it++) {
-          work.setZero();
-          work.selfadjointView<Eigen::Lower>().rankUpdate (b.transpose()*w.asDiagonal());
-          p = llt.compute (work.selfadjointView<Eigen::Lower>()).solve(b.transpose()*w.asDiagonal()*w.asDiagonal()*dwi);
+          if (Aneq.rows() > 0) {
+            auto problem = Math::ICLS::Problem<double> (w.asDiagonal()*A, Aneq);
+            Math::ICLS::Solver<double> solver (problem);
+            solver (x, w.asDiagonal()*dwi);
+          } else {
+            work.setZero();
+            work.selfadjointView<Eigen::Lower>().rankUpdate (A.transpose()*w.asDiagonal());
+            x = llt.compute (work.selfadjointView<Eigen::Lower>()).solve(A.transpose()*w.asDiagonal()*w.asDiagonal()*dwi);
+          }
           if (maxit > 1)
-            w = (b*p).array().exp();
-        }
-
-        for (auto l = Loop(3)(dt_image); l; ++l) {
-          dt_image.value() = p[dt_image.index(3)];
+            w = (A*x).array().exp();
         }
 
         if (b0_image.valid()) {
           assign_pos_of (dwi_image, 0, 3).to (b0_image);
-          b0_image.value() = exp(p[6]);
+          b0_image.value() = exp(x[0]);
+        }
+
+        if (dt_image.valid()) {
+          assign_pos_of (dwi_image, 0, 3).to (dt_image);
+          for (auto l = Loop(3)(dt_image); l; ++l) {
+            dt_image.value() = x[dt_image.index(3)+1];
+          }
         }
 
         if (dkt_image.valid()) {
           assign_pos_of (dwi_image, 0, 3).to (dkt_image);
-          double adc_sq = (p[0]+p[1]+p[2])*(p[0]+p[1]+p[2])/9.0;
+          double adc_sq = Math::pow2(x[1]+x[2]+x[3])/9.0 + 1e-18;
           for (auto l = Loop(3)(dkt_image); l; ++l) {
-            dkt_image.value() = p[dkt_image.index(3)+7]/adc_sq;
+            dkt_image.value() = x[dkt_image.index(3)+7]/adc_sq;
           }
         }
 
         if (predict_image.valid()) {
           assign_pos_of (dwi_image, 0, 3).to (predict_image);
-          dwi = (b*p).array().exp();
+          dwi = (A*x).array().exp();
           for (auto l = Loop(3)(predict_image); l; ++l) {
             predict_image.value() = dwi[predict_image.index(3)];
           }
@@ -183,21 +223,23 @@ class Processor { MEMALIGN(Processor)
   private:
     MASKType mask_image;
     B0Type b0_image;
+    DTType dt_image;
     DKTType dkt_image;
     PredictType predict_image;
     Eigen::VectorXd dwi;
-    Eigen::VectorXd p;
+    Eigen::VectorXd x;
     Eigen::VectorXd w;
     Eigen::MatrixXd work;
     Eigen::LLT<Eigen::MatrixXd> llt;
-    const Eigen::MatrixXd& b;
+    const Eigen::MatrixXd& A;
+    const Eigen::MatrixXd& Aneq;
     const bool ols;
     const int maxit;
 };
 
-template <class MASKType, class B0Type, class DKTType, class PredictType>
-inline Processor<MASKType, B0Type, DKTType, PredictType> processor (const Eigen::MatrixXd& b, const bool ols, const int iter, const MASKType& mask_image, const B0Type& b0_image, const DKTType& dkt_image, const PredictType& predict_image) {
-  return { b, ols, iter, mask_image, b0_image, dkt_image, predict_image };
+template <class MASKType, class B0Type, class DTType, class DKTType, class PredictType>
+inline Processor<MASKType, B0Type, DTType, DKTType, PredictType> processor (const Eigen::MatrixXd& A, const Eigen::MatrixXd& Aneq, const bool ols, const int iter, const MASKType& mask_image, const B0Type& b0_image, const DTType& dt_image, const DKTType& dkt_image, const PredictType& predict_image) {
+  return { A, Aneq, ols, iter, mask_image, b0_image, dt_image, dkt_image, predict_image };
 }
 
 void run ()
@@ -240,14 +282,37 @@ void run ()
 
   Image<value_type> dkt;
   opt = get_options ("dkt");
-  if (opt.size()) {
+  bool dki = opt.size()>0;
+
+  if (dki) {
     header.ndim() = 4;
     header.size(3) = 15;
     dkt = Image<value_type>::create (opt[0][0], header);
   }
 
-  Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad, opt.size()>0);
+  Eigen::MatrixXd A = -DWI::grad2bmatrix<double> (grad, dki);
 
-  ThreadedLoop("computing tensors", dwi, 0, 3).run (processor (b, ols, iter, mask, b0, dkt, predict), dwi, dt);
+  bool constrain = get_options ("constrain").size();
+
+  Eigen::MatrixXd Aneq;
+  if (constrain) {
+    Eigen::MatrixXd constr_dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+    opt = get_options ("directions");
+    if (opt.size())
+      constr_dirs = load_matrix (opt[0][0]);
+    Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (constr_dirs, dki);
+    if (dki) {
+      auto maxb = grad.col(3).maxCoeff();
+      Aneq = Eigen::MatrixXd::Zero(tmp.rows()*2,tmp.cols());
+      //Aneq.block(tmp.rows()*0,1,tmp.rows(), 6) =                tmp.block(0,1,tmp.rows(), 6); --> redundant constraint
+      Aneq.block(tmp.rows()*0,7,tmp.rows(),15) =           -6.0*tmp.block(0,7,tmp.rows(),15);
+      Aneq.block(tmp.rows()*1,1,tmp.rows(), 6) =                tmp.block(0,1,tmp.rows(), 6);
+      Aneq.block(tmp.rows()*1,7,tmp.rows(),15) = (maxb/3.0)*6.0*tmp.block(0,7,tmp.rows(),15);
+    } else {
+      Aneq = Eigen::MatrixXd::Zero(tmp.rows()*1,tmp.cols());
+      Aneq.block(tmp.rows()*0,1,tmp.rows(), 6) =                tmp.block(0,1,tmp.rows(), 6);
+    }
+  }
+
+  ThreadedLoop("computing tensors", dwi, 0, 3).run (processor (A, Aneq, ols, iter, mask, b0, dt, dkt, predict), dwi);
 }
-
