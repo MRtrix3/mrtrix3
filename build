@@ -1375,7 +1375,7 @@ def update_app_bundles ():
 
     os.symlink(os.path.relpath('lib',os.path.join('bin','MRView.app','Contents')),os.path.join('bin','MRView.app','Contents','lib'),target_is_directory=True)
 
-    with open (os.path.join('bin','mrview'), 'w') as fd:
+    with open (os.path.join('bin','mrview'), 'w', encoding='utf-8') as fd:
       fd.write ('''#!/bin/bash
 f="${BASH_SOURCE}"
 while [[ -L "${f}" ]]; do
@@ -1403,7 +1403,7 @@ f=$(dirname "${f}")
 
     os.symlink(os.path.relpath('lib',os.path.join('bin','SHView.app','Contents')),os.path.join('bin','SHView.app','Contents','lib'),target_is_directory=True)
 
-    with open (os.path.join('bin','shview'), 'w') as fd:
+    with open (os.path.join('bin','shview'), 'w', encoding='utf-8') as fd:
       fd.write ('''#!/bin/bash
 f="${BASH_SOURCE}"
 while [[ -L "${f}" ]]; do
