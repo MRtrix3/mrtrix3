@@ -170,13 +170,11 @@ void run ()
         properties.prior_rois.insert (i);
     }
 
-    size_t this_count = 0, this_total_count = 0;
+    size_t this_count = 0;
 
     for (const auto& i : p) {
       if (i.first == "count") {
         this_count = to<float> (i.second);
-      } else if (i.first == "total_count") {
-        this_total_count += to<float> (i.second);
       } else {
         auto existing = properties.find (i.first);
         if (existing == properties.end())
