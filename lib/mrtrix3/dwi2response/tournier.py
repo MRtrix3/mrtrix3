@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,6 +49,11 @@ def needs_single_shell(): #pylint: disable=unused-variable
 
 
 
+def supports_mask(): #pylint: disable=unused-variable
+  return True
+
+
+
 def execute(): #pylint: disable=unused-variable
   lmax_option = ''
   if app.ARGS.lmax:
@@ -73,7 +78,7 @@ def execute(): #pylint: disable=unused-variable
       rf_in_path = 'init_RF.txt'
       mask_in_path = 'mask.mif'
       init_rf = '1 -1 1'
-      with open(rf_in_path, 'w') as init_rf_file:
+      with open(rf_in_path, 'w', encoding='utf-8') as init_rf_file:
         init_rf_file.write(init_rf)
       iter_lmax_option = ' -lmax 4'
     else:

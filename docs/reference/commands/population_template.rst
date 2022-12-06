@@ -57,6 +57,8 @@ Input, output and general options
 
 - **-copy_input** Copy input images and masks into local scratch directory.
 
+- **-delete_temporary_files** Delete temporary files from scratch directory during template creation.
+
 Options for the non-linear registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -76,6 +78,8 @@ Options for the linear registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-linear_no_pause** Do not pause the script if a linear registration seems implausible
+
+- **-linear_no_drift_correction** Deactivate correction of template appearance (scale and shear) over iterations
 
 - **-linear_estimator** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: None (no robust estimator used)
 
@@ -141,7 +145,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2022 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

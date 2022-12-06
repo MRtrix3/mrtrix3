@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,7 @@
 #ifndef __fixel_loop_h__
 #define __fixel_loop_h__
 
-#include "fixel/types.h"
+#include "fixel/fixel.h"
 #include "formats/mrtrix_utils.h"
 
 namespace MR

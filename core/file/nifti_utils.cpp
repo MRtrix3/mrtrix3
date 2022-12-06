@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -582,17 +582,21 @@ namespace MR
 
 
 
-
+      void axes_on_write (const Header& H, vector<size_t>& order, vector<bool>& flip)
+      {
+        Stride::List strides = Stride::get (H);
+        strides.resize (3);
+        order = Stride::order (strides);
+        flip = { strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0 };
+      }
 
 
 
 
       transform_type adjust_transform (const Header& H, vector<size_t>& axes)
       {
-        Stride::List strides = Stride::get (H);
-        strides.resize (3);
-        axes = Stride::order (strides);
-        bool flip[] = { strides[axes[0]] < 0, strides[axes[1]] < 0, strides[axes[2]] < 0 };
+        vector<bool> flip;
+        axes_on_write (H, axes, flip);
 
         if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 &&
             !flip[0] && !flip[1] && !flip[2])
@@ -695,7 +699,8 @@ namespace MR
             std::unique_ptr<ImageIO::Default> handler (new ImageIO::Default (H));
             handler->files.push_back (File::Entry (H.name(), ( single_file ? data_offset : 0 )));
             return std::move (handler);
-          } catch (...) {
+          } catch (Exception& e) {
+            e.display();
             return std::unique_ptr<ImageIO::Base>();
           }
         }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -204,7 +204,7 @@ class Tck2nodes_forwardsearch : public Tck2nodes_base
     const default_type max_dist;
     const default_type angle_limit;
 
-    default_type get_cf (const Eigen::Vector3&, const Eigen::Vector3&, const voxel_type&) const;
+    default_type get_cf (const Eigen::Vector3d&, const Eigen::Vector3d&, const voxel_type&) const;
 
 };
 

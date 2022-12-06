@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,6 @@
 #include "app.h"
 #include "thread_queue.h"
 #include "types.h"
-#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "fixel/helpers.h"
@@ -147,7 +146,7 @@ namespace MR
             bool operator() (const DWI::Tractography::Streamline<>& tck,
                              vector<index_type>& out) const
             {
-              using direction_type = Eigen::Vector3;
+              using direction_type = Eigen::Vector3d;
               using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
               SetVoxelDir in;
@@ -265,84 +264,77 @@ namespace MR
         index_header.keyval() = keyvals;
         index_header.keyval()["nfixels"] = str(matrix.size());
         index_header.datatype() = DataType::from<index_image_type>();
-        Image<index_image_type> index_image = Image<index_image_type>::create (Path::join (path, "index.mif"), index_header);
+        
+        index_type num_connections = 0;
+        {
+          ProgressBar progress ("Computing number of fixels in output", matrix.size());
+          
+          for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
+            const connectivity_value_type normalisation_factor = connectivity_value_type(1) / connectivity_value_type (matrix[fixel_index].count());
+            for (auto& it : matrix[fixel_index]) {
+              const connectivity_value_type connectivity = normalisation_factor * it.value();
+              if (connectivity >= threshold)
+                ++num_connections;
+            }
+            ++progress;
+          }
+        }
 
-        // Can't use function write_mrtrix_header() as the file offset of the
-        //   first entry of the "dim" field needs to be known
-        //   (and enough space needs to be left to fill in a large number upon completion)
-        File::OFStream fixel_stream (Path::join (path, "fixels.mif"), std::ios_base::out | std::ios_base::binary);
-        File::OFStream value_stream (Path::join (path, "values.mif"), std::ios_base::out | std::ios_base::binary);
+        Header fixel_header;
+        fixel_header.ndim() = 3;
+        fixel_header.size(0) = num_connections;
+        fixel_header.size(1) = 1;
+        fixel_header.size(2) = 1;
+        fixel_header.stride(0) = 1;
+        fixel_header.stride(1) = 2;
+        fixel_header.stride(2) = 3;
+        fixel_header.spacing(0) = fixel_header.spacing(1) = fixel_header.spacing(2) = 1.0;
+        fixel_header.transform() = transform_type::Identity();
+        fixel_header.keyval() = keyvals;
+        fixel_header.keyval()["nfixels"] = str(matrix.size());
+        fixel_header.datatype() = DataType::from<index_type>();
+        fixel_header.datatype().set_byte_order_native();
+        Header value_header (fixel_header);
+        value_header.datatype() = DataType::from<connectivity_value_type>();
+        value_header.datatype().set_byte_order_native();
 
-        const std::string leadin = "mrtrix image\ndim: ";
-        // Need enough space for the largest possible 64-bit unsigned integer,
-        //   plus ",1,1" for the two dummy axes
-        const size_t dim_padding = std::log10 (std::numeric_limits<size_t>::max()) + 4;
+        Image<index_image_type> index_image;
+        Image<index_type> fixel_image;
+        Image<connectivity_value_type> value_image;
 
-        Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\ntransform: ", "", "", "\ntransform: ", "");
-
-        for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
-          File::OFStream& stream (stream_index ? value_stream : fixel_stream);
-          stream << leadin << std::string (dim_padding, ' ') << "\n";
-          stream << "vox: 1,1,1\n";
-          stream << "layout: +0,+1,+2\n";
-          stream << "datatype: ";
-          if (stream_index)
-            stream << DataType::from<connectivity_value_type>().specifier();
-          else
-            stream << DataType::from<index_type>().specifier();
-          stream << transform_type::Identity().matrix().topLeftCorner(3,4).format(fmt) << "\n";
-          stream << "scaling: 0,1\n";
-          stream << "nfixels: " + str(matrix.size()) + "\n";
-          File::KeyValue::write (stream, keyvals, "", true);
-          stream << "file: ";
-          uint64_t offset = uint64_t(stream.tellp()) + 18;
-          offset += ((4 - (offset % 4)) % 4);
-          stream << ". " << offset << "\nEND\n";
-          stream << std::string (offset - uint64_t(stream.tellp()), '\0');
+        try {
+          index_image = Image<index_image_type>::create (Path::join (path, "index.mif"), index_header);
+          fixel_image = Image<index_type>::create (Path::join (path, "fixels.mif"), fixel_header);
+          value_image = Image<connectivity_value_type>::create (Path::join (path, "values.mif"), value_header);
+        } catch (Exception& e) {
+          throw Exception (e, "Unable to allocate space on filesystem for fixel-fixel connectivity matrix data");
         }
 
         ProgressBar progress ("Normalising and writing fixel-fixel connectivity matrix to directory \"" + path + "\"", matrix.size());
-        size_t data_count = 0;
-        vector<index_type> fixel_buffer;
-        vector<connectivity_value_type> value_buffer;
         for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
 
-          fixel_buffer.clear();
-          value_buffer.clear();
-          fixel_buffer.reserve (matrix[fixel_index].size());
-          value_buffer.reserve (matrix[fixel_index].size());
-
+          const ssize_t connection_offset = fixel_image.index(0);
+          index_type connection_count = 0;
           const connectivity_value_type normalisation_factor = connectivity_value_type(1) / connectivity_value_type (matrix[fixel_index].count());
           for (auto& it : matrix[fixel_index]) {
             const connectivity_value_type connectivity = normalisation_factor * it.value();
             if (connectivity >= threshold) {
-              fixel_buffer.push_back (it.index());
-              value_buffer.push_back (connectivity);
+              ++connection_count;
+              fixel_image.value() = it.index();
+              ++fixel_image.index(0);
+              value_image.value() = connectivity;
+              ++value_image.index(0);
             }
           }
 
           index_image.index (0) = fixel_index;
-          index_image.index (3) = 0; index_image.value() = uint64_t(fixel_buffer.size());
-          index_image.index (3) = 1; index_image.value() = fixel_buffer.size() ? data_count : uint64_t(0);
-
-          fixel_stream.write (reinterpret_cast<const char*>(fixel_buffer.data()), fixel_buffer.size() * sizeof (index_type));
-          value_stream.write (reinterpret_cast<const char*>(value_buffer.data()), value_buffer.size() * sizeof (connectivity_value_type));
-
-          data_count += fixel_buffer.size();
+          index_image.index (3) = 0; index_image.value() = uint64_t(connection_count);
+          index_image.index (3) = 1; index_image.value() = connection_count ? connection_offset : uint64_t(0);
 
           // Force deallocation of memory used for this fixel in the generated matrix
           InitFixel().swap (matrix[fixel_index]);
 
           ++progress;
-        }
-
-        // Update headers to reflect the number of fixel-fixel connections
-        std::string dim_string = str(data_count) + ",1,1";
-        dim_string += std::string (dim_padding - dim_string.size(), ' ');
-        for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
-          File::OFStream& stream (stream_index ? value_stream : fixel_stream);
-          stream.seekp (leadin.size());
-          stream << dim_string;
         }
 
       }

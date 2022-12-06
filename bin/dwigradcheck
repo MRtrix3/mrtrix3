@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,12 +20,17 @@ import copy, numbers, os, shutil, sys
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, _version #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Check the orientation of the diffusion gradient table')
+  cmdline.add_description('Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.')
+  cmdline.add_description('Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to '
+                          'derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. '
+                          'More information on mask derivation from DWI data can be found at the following link: \n'
+                          'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/dwi_preprocessing/masking.html')
   cmdline.add_citation('Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962')
   cmdline.add_argument('input', help='The input DWI series to be checked')
-  cmdline.add_argument('-mask', metavar='image', help='Provide a brain mask image')
+  cmdline.add_argument('-mask', metavar='image', help='Provide a mask image within which to seed & constrain tracking')
   cmdline.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
 
   app.add_dwgrad_export_options(cmdline)
@@ -35,7 +40,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   image_dimensions = image.Header(path.from_user(app.ARGS.input, False)).size()
@@ -87,7 +92,7 @@ def execute(): #pylint: disable=unused-variable
   # Note that gradient table must be explicitly loaded, since there may not
   #   be one in the image header (user may be relying on -grad or -fslgrad input options)
   if not os.path.exists('mask.mif'):
-    run.command('dwi2mask data.mif mask.mif -grad grad.b')
+    run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' data.mif mask.mif -grad grad.b')
 
   # How many tracks are we going to generate?
   number_option = ' -select ' + str(app.ARGS.number)
@@ -137,7 +142,7 @@ def execute(): #pylint: disable=unused-variable
 
           # Create the gradient table file
           grad_path = 'grad' + suffix + '.b'
-          with open(grad_path, 'w') as grad_file:
+          with open(grad_path, 'w', encoding='utf-8') as grad_file:
             for line in grad:
               grad_file.write (','.join([str(v) for v in line]) + '\n')
 
@@ -153,7 +158,7 @@ def execute(): #pylint: disable=unused-variable
           grad = [ grad[permutation[0]], grad[permutation[1]], grad[permutation[2]] ]
 
           grad_path = 'bvecs' + suffix
-          with open(grad_path, 'w') as bvecs_file:
+          with open(grad_path, 'w', encoding='utf-8') as bvecs_file:
             for line in grad:
               bvecs_file.write (' '.join([str(v) for v in line]) + '\n')
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,11 +17,10 @@
 #include "command.h"
 #include "image.h"
 #include "algo/threaded_loop.h"
-#include "image.h"
 #include "adapter/jacobian.h"
 #include "registration/warp/helpers.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
 
 using namespace MR;
@@ -33,6 +32,9 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Compute fixel-wise or voxel-wise metrics from a 4D deformation field";
+
+  DESCRIPTION
+  + Fixel::format_description;
 
   REFERENCES
   + "Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A." // Internal

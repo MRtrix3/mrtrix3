@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,9 +55,14 @@ def execute(): #pylint: disable=unused-variable
     filename = 'shell-{:02d}.mif'.format(index)
     run.command('dwiextract -shells ' + bvalue + ' in.mif - | mrmath -axis 3 - ' + app.ARGS.operation + ' ' + filename)
     files.append(filename)
-  # concatenate to output file
-  run.command('mrcat -axis 3 ' + ' '.join(files) + ' out.mif')
-  run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+  if len(files) > 1:
+    # concatenate to output file
+    run.command('mrcat -axis 3 ' + ' '.join(files) + ' out.mif')
+    run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+  else:
+    # make a 4D image with one volume
+    app.warn('Only one unique b-value present in DWI data; command mrmath with -axis 3 option may be preferable')
+    run.command('mrconvert ' + files[0] + ' ' + path.from_user(app.ARGS.output) + ' -axes 0,1,2,-1', mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
 
 
 # Execute the script

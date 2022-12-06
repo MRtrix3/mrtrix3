@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ namespace MR
 
     std::unique_ptr<ImageIO::Base> Pipe::read (Header& H) const
     {
-      if (H.name() == "-") {
+      if (is_dash (H.name())) {
         std::string name;
         getline (std::cin, name);
         H.name() = name;
@@ -60,7 +60,7 @@ namespace MR
 
     bool Pipe::check (Header& H, size_t num_axes) const
     {
-      if (H.name() != "-")
+      if (!is_dash (H.name()))
         return false;
 
       if (isatty (STDOUT_FILENO))

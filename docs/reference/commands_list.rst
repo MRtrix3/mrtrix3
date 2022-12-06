@@ -62,6 +62,7 @@ List of MRtrix3 commands
     commands/labelconvert
     commands/labelsgmfix
     commands/labelstats
+    commands/mask2glass
     commands/maskdump
     commands/maskfilter
     commands/mesh2voxel
@@ -162,7 +163,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`dirstat`, "Report statistics on a direction set"
     |cpp.png|, :ref:`dwi2adc`, "Convert mean dwi (trace-weighted) images to mean ADC maps"
     |cpp.png|, :ref:`dwi2fod`, "Estimate fibre orientation distributions from diffusion data using spherical deconvolution"
-    |cpp.png|, :ref:`dwi2mask`, "Generates a whole brain mask from a DWI image"
+    |python.png|, :ref:`dwi2mask`, "Generate a binary mask from DWI data"
     |python.png|, :ref:`dwi2response`, "Estimate response function(s) for spherical deconvolution"
     |cpp.png|, :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     |python.png|, :ref:`dwibiascorrect`, "Perform B1 field inhomogeneity correction for a DWI volume series"
@@ -192,6 +193,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
     |python.png|, :ref:`labelsgmfix`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
     |cpp.png|, :ref:`labelstats`, "Compute statistics of parcels within a label image"
+    |python.png|, :ref:`mask2glass`, "Create a glass brain from mask input"
     |cpp.png|, :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     |cpp.png|, :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
     |cpp.png|, :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"

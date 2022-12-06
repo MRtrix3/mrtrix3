@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,7 +46,7 @@ namespace MR
 
       // Output functions - non-essential, mostly debugging outputs
       template <class Fixel>
-      void ModelBase<Fixel>::output_target_image (const std::string& path) const
+      void ModelBase<Fixel>::output_target_voxel (const std::string& path) const
       {
         auto out = Image<float>::create (path, Fixel_map<Fixel>::header());
         VoxelAccessor v (accessor());
@@ -63,7 +63,7 @@ namespace MR
       }
 
       template <class Fixel>
-      void ModelBase<Fixel>::output_target_image_sh (const std::string& path) const
+      void ModelBase<Fixel>::output_target_sh (const std::string& path) const
       {
         const size_t L = 8;
         const size_t N = Math::SH::NforL (L);
@@ -95,30 +95,16 @@ namespace MR
       }
 
       template <class Fixel>
-      void ModelBase<Fixel>::output_target_image_fixel (const std::string& path) const
+      void ModelBase<Fixel>::output_target_fixel (const std::string& path) const
       {
-        using MR::Fixel::Legacy::FixelMetric;
-        Header H_fixel (Fixel_map<Fixel>::header());
-        H_fixel.datatype() = DataType::UInt64;
-        H_fixel.datatype().set_byte_order_native();
-        H_fixel.keyval()[MR::Fixel::Legacy::name_key] = str(typeid(FixelMetric).name());
-        H_fixel.keyval()[MR::Fixel::Legacy::size_key] = str(sizeof(FixelMetric));
-        MR::Fixel::Legacy::Image<FixelMetric> out (path, H_fixel);
-        VoxelAccessor v (accessor());
-        for (auto l = Loop (out) (out, v); l; ++l) {
-          if (v.value()) {
-            out.value().set_size ((*v.value()).num_fixels());
-            size_t index = 0;
-            for (typename Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
-              FixelMetric fixel (iter().get_dir().template cast<float>(), iter().get_FOD(), iter().get_FOD());
-              out.value()[index] = fixel;
-            }
-          }
-        }
+        Header H (MR::Fixel::data_header_from_nfixels (fixels.size()));
+        Image<float> image (Image<float>::create (path, H));
+        for (auto l = Loop(0) (image); l; ++l)
+          image.value() = fixels[image.index(0)].get_FOD();
       }
 
       template <class Fixel>
-      void ModelBase<Fixel>::output_tdi (const std::string& path) const
+      void ModelBase<Fixel>::output_tdi_voxel (const std::string& path) const
       {
         const default_type current_mu = mu();
         auto out = Image<float>::create (path, Fixel_map<Fixel>::header());
@@ -191,34 +177,19 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_tdi_fixel (const std::string& path) const
       {
-        using MR::Fixel::Legacy::FixelMetric;
-        const default_type current_mu = mu();
-        Header H_fixel (Fixel_map<Fixel>::header());
-        H_fixel.datatype() = DataType::UInt64;
-        H_fixel.datatype().set_byte_order_native();
-        H_fixel.keyval()[MR::Fixel::Legacy::name_key] = str(typeid(FixelMetric).name());
-        H_fixel.keyval()[MR::Fixel::Legacy::size_key] = str(sizeof(FixelMetric));
-        MR::Fixel::Legacy::Image<FixelMetric> out (path, H_fixel);
-        VoxelAccessor v (accessor());
-        for (auto l = Loop (out) (out, v); l; ++l) {
-          if (v.value()) {
-            out.value().set_size ((*v.value()).num_fixels());
-            size_t index = 0;
-            for (typename Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
-              FixelMetric fixel (iter().get_dir().template cast<float>(), iter().get_FOD(), current_mu * iter().get_TD());
-              out.value()[index] = fixel;
-            }
-          }
-        }
+        Header H (MR::Fixel::data_header_from_nfixels (fixels.size()));
+        Image<float> image (Image<float>::create (path, H));
+        for (auto l = Loop(0) (image); l; ++l)
+          image.value() = fixels[image.index(0)].get_TD();
       }
 
       template <class Fixel>
-      void ModelBase<Fixel>::output_error_images (const std::string& max_abs_diff_path, const std::string& diff_path, const std::string& cost_path) const
+      void ModelBase<Fixel>::output_errors_voxel (const std::string& dirpath, const std::string& max_abs_diff_path, const std::string& diff_path, const std::string& cost_path) const
       {
         const default_type current_mu = mu();
-        auto out_max_abs_diff = Image<float>::create (max_abs_diff_path, Fixel_map<Fixel>::header());
-        auto out_diff = Image<float>::create (diff_path, Fixel_map<Fixel>::header());
-        auto out_cost = Image<float>::create (cost_path, Fixel_map<Fixel>::header());
+        auto out_max_abs_diff = Image<float>::create (Path::join (dirpath, max_abs_diff_path), Fixel_map<Fixel>::header());
+        auto out_diff = Image<float>::create (Path::join (dirpath, diff_path), Fixel_map<Fixel>::header());
+        auto out_cost = Image<float>::create (Path::join (dirpath, cost_path), Fixel_map<Fixel>::header());
         VoxelAccessor v (accessor());
         for (auto l = Loop (v) (v, out_max_abs_diff, out_diff, out_cost); l; ++l) {
           if (v.value()) {
@@ -241,30 +212,15 @@ namespace MR
       }
 
       template <class Fixel>
-      void ModelBase<Fixel>::output_error_fixel_images (const std::string& diff_path, const std::string& cost_path) const
+      void ModelBase<Fixel>::output_errors_fixel (const std::string& dirpath, const std::string& diff_path, const std::string& cost_path) const
       {
-        using MR::Fixel::Legacy::FixelMetric;
         const default_type current_mu = mu();
-        Header H_fixel (Fixel_map<Fixel>::header());
-        H_fixel.datatype() = DataType::UInt64;
-        H_fixel.datatype().set_byte_order_native();
-        H_fixel.keyval()[MR::Fixel::Legacy::name_key] = str(typeid(FixelMetric).name());
-        H_fixel.keyval()[MR::Fixel::Legacy::size_key] = str(sizeof(FixelMetric));
-        MR::Fixel::Legacy::Image<FixelMetric> out_diff (diff_path, H_fixel);
-        MR::Fixel::Legacy::Image<FixelMetric> out_cost (cost_path, H_fixel);
-        VoxelAccessor v (accessor());
-        for (auto l = Loop (v) (v, out_diff, out_cost); l; ++l) {
-          if (v.value()) {
-            out_diff.value().set_size ((*v.value()).num_fixels());
-            out_cost.value().set_size ((*v.value()).num_fixels());
-            size_t index = 0;
-            for (typename Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
-              FixelMetric fixel_diff (iter().get_dir().template cast<float>(), iter().get_FOD(), iter().get_diff (current_mu));
-              out_diff.value()[index] = fixel_diff;
-              FixelMetric fixel_cost (iter().get_dir().template cast<float>(), iter().get_FOD(), iter().get_cost (current_mu));
-              out_cost.value()[index] = fixel_cost;
-            }
-          }
+        Header H (MR::Fixel::data_header_from_nfixels (fixels.size()));
+        Image<float> image_diff (Image<float>::create (Path::join (dirpath, diff_path), H));
+        Image<float> image_cost (Image<float>::create (Path::join (dirpath, cost_path), H));
+        for (auto l = Loop(0) (image_diff, image_cost); l; ++l) {
+          image_diff.value() = fixels[image_diff.index(0)].get_diff (current_mu);
+          image_cost.value() = fixels[image_cost.index(0)].get_cost (current_mu);
         }
       }
 
@@ -292,33 +248,6 @@ namespace MR
             out.value() = (*v.value()).num_fixels();
           else
             out.value() = 0;
-        }
-      }
-
-      template <class Fixel>
-      void ModelBase<Fixel>::output_untracked_fixels (const std::string& path_count, const std::string& path_amps) const
-      {
-        Header H_uint8_t (Fixel_map<Fixel>::header());
-        H_uint8_t.datatype() = DataType::UInt8;
-        auto out_count = Image<uint8_t>::create (path_count, H_uint8_t);
-        auto out_amps = Image<float>::create (path_amps, Fixel_map<Fixel>::header());
-        VoxelAccessor v (accessor());
-        for (auto l = Loop (v) (v, out_count, out_amps, v); l; ++l) {
-          if (v.value()) {
-            uint8_t count = 0;
-            default_type sum = 0.0;
-            for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
-              if (!i().get_TD()) {
-                ++count;
-                sum += i().get_FOD();
-              }
-            }
-            out_count.value() = count;
-            out_amps .value() = sum;
-          } else {
-            out_count.value() = 0;
-            out_amps .value() = NaN;
-          }
         }
       }
 

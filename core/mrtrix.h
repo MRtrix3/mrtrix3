@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -199,6 +199,48 @@ namespace MR
 
 
 
+  //! match a dash or any Unicode character that looks like one
+  /*! \note This returns the number of bytes taken up by the matched UTF8
+   * character, zero if no match. */
+  inline size_t char_is_dash (const char* arg)
+  {
+    assert (arg != nullptr);
+    if (arg[0] == '-')
+     return 1;
+    if (arg[0] == '\0' || arg[1] == '\0' || arg[2] == '\0')
+      return 0;
+    const unsigned char* uarg = reinterpret_cast<const unsigned char*> (arg);
+    if (uarg[0] == 0xE2 && uarg[1] == 0x80 && ( uarg[2] >= 0x90 && uarg[2] <= 0x95 ))
+      return 3;
+    if (uarg[0] == 0xEF) {
+     if (uarg[1] == 0xB9 && ( uarg[2] == 0x98 || uarg[2] == 0xA3))
+       return 3;
+     if (uarg[1] == 0xBC && uarg[2] == 0x8D)
+       return 3;
+    }
+    return 0;
+  }
+
+  //! match whole string to a dash or any Unicode character that looks like one
+  inline size_t is_dash (const std::string& arg)
+  {
+    size_t nbytes = char_is_dash (arg.c_str());
+    return nbytes != 0 && nbytes == arg.size();
+  }
+
+
+  //! match current character to a dash or any Unicode character that looks like one
+  /*! \note If a match is found, this also advances the \a arg pointer to the next
+   * character in the string, which could be one or several bytes along depending on
+   * the width of the UTF8 character identified. */
+  inline bool consume_dash (const char*& arg)
+  {
+    size_t nbytes = char_is_dash (arg);
+    arg += nbytes;
+    return nbytes != 0;
+  }
+
+
 
 
 
@@ -206,9 +248,9 @@ namespace MR
   {
     std::ostringstream stream;
     if (precision)
-        stream.precision (precision);
+      stream.precision (precision);
     else if (max_digits<T>::value())
-        stream.precision (max_digits<T>::value());
+      stream.precision (max_digits<T>::value());
     stream << value;
     if (stream.fail())
       throw Exception (std::string("error converting type \"") + typeid(T).name() + "\" value to string");

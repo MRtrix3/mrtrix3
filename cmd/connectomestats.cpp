@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -271,7 +271,7 @@ void run()
       ++progress;
     }
   }
-  const bool nans_in_data = data.allFinite();
+  const bool nans_in_data = !data.allFinite();
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&] (const size_t i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
@@ -293,24 +293,24 @@ void run()
     }
     for (size_t i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        save_matrix (mat2vec.V2M (abs_effect_size.col(i)), "abs_effect" + postfix(i) + ".csv");
+        save_matrix (mat2vec.V2M (abs_effect_size.col(i)), output_prefix + "abs_effect" + postfix(i) + ".csv");
         ++progress;
         if (num_vgs == 1)
-          save_matrix (mat2vec.V2M (std_effect_size.col(i)), "std_effect" + postfix(i) + ".csv");
+          save_matrix (mat2vec.V2M (std_effect_size.col(i)), output_prefix + "std_effect" + postfix(i) + ".csv");
       } else {
         ++progress;
       }
       ++progress;
     }
     if (nans_in_data || extra_columns.size()) {
-      save_matrix (mat2vec.V2M (cond), "cond.csv");
+      save_matrix (mat2vec.V2M (cond), output_prefix + "cond.csv");
       ++progress;
     }
     if (num_vgs == 1) {
-      save_matrix (mat2vec.V2M (stdev.row(0)), "std_dev.csv");
+      save_matrix (mat2vec.V2M (stdev.row(0)), output_prefix + "std_dev.csv");
     } else {
       for (size_t i = 0; i != num_vgs; ++i) {
-        save_matrix (mat2vec.V2M (stdev.row(i)), "std_dev" + str(i) + ".csv");
+        save_matrix (mat2vec.V2M (stdev.row(i)), output_prefix + "std_dev" + str(i) + ".csv");
         ++progress;
       }
     }

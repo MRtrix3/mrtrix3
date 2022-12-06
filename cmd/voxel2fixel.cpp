@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,10 +19,9 @@
 #include "algo/loop.h"
 #include "image.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
@@ -37,7 +36,8 @@ void usage ()
   SYNOPSIS = "Map the scalar value in each voxel to all fixels within that voxel";
 
   DESCRIPTION
-  + "This command is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures.";
+  + "This command is designed to enable CFE-based statistical analysis to be performed on voxel-wise measures."
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("image_in", "the input image.").type_image_in()

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,6 +34,7 @@ namespace MR
     {
       extern bool right_left_warning_issued;
 
+      void axes_on_write (const Header& H, vector<size_t>& order, vector<bool>& flip);
       transform_type adjust_transform (const Header& H, vector<size_t>& order);
 
       bool check (int VERSION, Header& H, const size_t num_axes, const vector<std::string>& suffixes);

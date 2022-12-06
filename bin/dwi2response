@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,12 +18,18 @@
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import algorithm, app #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import algorithm, app, _version #pylint: disable=no-name-in-module, import-outside-toplevel
 
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Thijs Dhollander (thijs.dhollander@gmail.com)')
   cmdline.set_synopsis('Estimate response function(s) for spherical deconvolution')
   cmdline.add_description('dwi2response offers different algorithms for performing various types of response function estimation. The name of the algorithm must appear as the first argument on the command-line after \'dwi2response\'. The subsequent arguments and options depend on the particular algorithm being invoked.')
   cmdline.add_description('Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the \'fa\' algorithm, type \'dwi2response fa\'.')
+  cmdline.add_description('More information on response function estimation for spherical deconvolution can be found at the following link: \n'
+                          'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/constrained_spherical_deconvolution/response_function_estimation.html')
+  cmdline.add_description('Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to '
+                          'derive an initial voxel exclusion mask. '
+                          'More information on mask derivation from DWI data can be found at: '
+                          'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/dwi_preprocessing/masking.html')
 
   # General options
   common_options = cmdline.add_argument_group('General dwi2response options')
@@ -42,7 +48,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import algorithm, app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Find out which algorithm the user has requested
@@ -97,19 +103,20 @@ def execute(): #pylint: disable=unused-variable
 
   app.goto_scratch_dir()
 
-  if app.ARGS.mask:
-    # Check that the brain mask is appropriate
-    mask_header = image.Header('mask.mif')
-    if mask_header.size()[:3] != image.Header('dwi.mif').size()[:3]:
-      raise MRtrixError('Dimensions of provided mask image do not match DWI')
-    if not (len(mask_header.size()) == 3 or (len(mask_header.size()) == 4 and mask_header.size()[3] == 1)):
-      raise MRtrixError('Provided mask image needs to be a 3D image')
-  else:
-    app.console('Computing brain mask (dwi2mask)...')
-    run.command('dwi2mask dwi.mif mask.mif', show=False)
+  if alg.supports_mask():
+    if app.ARGS.mask:
+      # Check that the brain mask is appropriate
+      mask_header = image.Header('mask.mif')
+      if mask_header.size()[:3] != image.Header('dwi.mif').size()[:3]:
+        raise MRtrixError('Dimensions of provided mask image do not match DWI')
+      if not (len(mask_header.size()) == 3 or (len(mask_header.size()) == 4 and mask_header.size()[3] == 1)):
+        raise MRtrixError('Provided mask image needs to be a 3D image')
+    else:
+      app.console('Computing brain mask (dwi2mask)...')
+      run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' dwi.mif mask.mif', show=False)
 
-  if not image.statistics('mask.mif', mask='mask.mif').count:
-    raise MRtrixError(('Provided' if app.ARGS.mask else 'Generated') + ' mask image does not contain any voxels')
+    if not image.statistics('mask.mif', mask='mask.mif').count:
+      raise MRtrixError(('Provided' if app.ARGS.mask else 'Generated') + ' mask image does not contain any voxels')
 
   # From here, the script splits depending on what estimation algorithm is being used
   alg.execute()

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,9 +18,8 @@
 #include "progressbar.h"
 #include "algo/loop.h"
 #include "image.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
-#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
@@ -37,7 +36,9 @@ void usage ()
 
   DESCRIPTION
   + "It is assumed that the subject image has already been spatially normalised and is aligned with the template. "
-    "The output fixel image will have the same fixels (and directions) of the template.";
+    "The output fixel image will have the same fixels (and directions) of the template."
+
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("subject_data", "the input subject fixel data file. This should be a file inside the fixel directory").type_image_in ()

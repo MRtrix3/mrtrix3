@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,8 +45,8 @@ namespace MR
 
             QVariant data (const QModelIndex& index, int role) const {
               if (!index.isValid()) return {};
-              if (role != Qt::DisplayRole) return {};
-              return qstr (shorten (items[index.row()]->image.get_filename(), 35, 0));
+              if (role != Qt::DisplayRole && role != Qt::ToolTipRole) return {};
+              return qstr (items[index.row()]->image.get_filename());
             }
 
             bool setData (const QModelIndex& index, const QVariant& value, int role) {

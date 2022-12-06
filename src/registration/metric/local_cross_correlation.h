@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,7 @@ namespace MR
         void operator() (MaskType& mask, ImageType3& out) {
           if (!mask.value())
             return;
-          Eigen::Vector3 pos (mask.index(0), mask.index(1), mask.index(2));
+          Eigen::Vector3d pos (mask.index(0), mask.index(1), mask.index(2));
           out.index(0) = pos[0];
           out.index(1) = pos[1];
           out.index(2) = pos[2];
@@ -237,7 +237,7 @@ namespace MR
                   return 0.0;
                 }
 
-                const Eigen::Vector3 pos = Eigen::Vector3(default_type(iter.index(0)), default_type(iter.index(0)), default_type(iter.index(0)));
+                const Eigen::Vector3d pos = Eigen::Vector3d(default_type(iter.index(0)), default_type(iter.index(0)), default_type(iter.index(0)));
                 params.processed_image_interp->voxel(pos);
                 typename Params::Im1ValueType val1;
                 typename Params::Im2ValueType val2;
@@ -266,9 +266,9 @@ namespace MR
 
                 // ITK:
                 // derivWRTImage[dim] = 2.0 * sFixedMoving / (sFixedFixed_sMovingMoving) * (fixedI - sFixedMoving / sMovingMoving * movingI) * movingImageGradient[dim];
-                Eigen::Vector3 derivWRTImage = - A_BC * ((val2 - A/B * val1) * grad1 - 0.0 * (val1 - A/C * val2) * grad2);
+                Eigen::Vector3d derivWRTImage = - A_BC * ((val2 - A/B * val1) * grad1 - 0.0 * (val1 - A/C * val2) * grad2);
 
-                const Eigen::Vector3 midway_point = midway_v2s * pos;
+                const Eigen::Vector3d midway_point = midway_v2s * pos;
                 const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params (midway_point);
                 gradient.segment<4>(0) += derivWRTImage(0) * jacobian_vec;
                 gradient.segment<4>(4) += derivWRTImage(1) * jacobian_vec;

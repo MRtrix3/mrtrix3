@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -458,7 +458,7 @@ namespace MR
         throw Exception ("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
 
       // try to dump file to mrtrix format if possible (direct IO)
-      if (filename == "-")
+      if (is_dash (filename))
         filename = File::create_tempfile (0, "mif");
 
       DEBUG ("dumping image \"" + name() + "\" to file \"" + filename + "\"...");

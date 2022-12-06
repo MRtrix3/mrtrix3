@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -57,7 +57,6 @@ namespace MR
         public:
         SIFTer (Image<float>& i, const DWI::Directions::FastLookupSet& d) :
             MapType (i, d),
-            output_debug (false),
             term_number (0),
             term_ratio (0.0),
             term_mu (0.0),
@@ -79,7 +78,7 @@ namespace MR
         void set_term_mu     (const float i)        { term_mu = i; }
         void set_csv_path    (const std::string& i) { csv_path = i; }
 
-        void set_regular_outputs (const vector<uint32_t>&, const bool);
+        void set_regular_outputs (const vector<uint32_t>&, const std::string&);
 
 
         // DEBUGGING
@@ -98,7 +97,7 @@ namespace MR
 
         // User-controllable settings
         vector<track_t> output_at_counts;
-        bool    output_debug;
+        std::string     debug_dir;
         track_t term_number;
         float   term_ratio;
         double  term_mu;

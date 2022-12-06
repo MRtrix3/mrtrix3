@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -289,13 +289,23 @@ namespace MR
             opt (option), args (arguments)
         {
           for (size_t i = 0; i != option->size(); ++i) {
-            if (arguments[i][0] == '-' &&
-                !(((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && !strcmp(arguments[i], std::string("-").c_str())) &&
-                !((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq || (*option)[i].type == FloatSeq || (*option)[i].type == Various)) {
-              WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
-                    ((option->size() == 1) ? "the expected argument" : ("one of the " + str(option->size()) + " expected arguments")) +
-                    " for option \"-" + option->id + "\"; is this what you intended?");
-            }
+            const char* p = arguments[i];
+            if (!consume_dash (p))
+              continue;
+            if (( (*option)[i].type == ImageIn || (*option)[i].type == ImageOut ) && is_dash (arguments[i]))
+              continue;
+            if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
+                (*option)[i].type == FloatSeq || (*option)[i].type == Various)
+              continue;
+            WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
+                ((option->size() == 1) ?
+                 "the expected argument " :
+                 ("one of the " + str(option->size()) + " expected arguments ")) +
+                "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
+                "the requisite input" +
+                ((option->size() == 1) ? " " : "s ") +
+                "to command-line option \"-" + option->id + "\" may have been erroneously omitted, which may cause " +
+                "other command-line parsing errors");
           }
         }
 

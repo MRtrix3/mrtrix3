@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,26 +24,39 @@ namespace MR {
 
       namespace {
         bool series_time_mismatch_warning_issued = false;
+        bool series_number_UID_mismatch_warning_issued = false;
       }
 
-      std::shared_ptr<Series> Study::find (const std::string& series_name, size_t series_number, const std::string& image_type,
+      std::shared_ptr<Series> Study::find (const std::string& series_name, size_t series_number,
+          const std::string& image_type, const std::string& series_ref_UID,
           const std::string& series_modality, const std::string& series_date, const std::string& series_time)
       {
         for (size_t n = 0; n < size(); n++) {
           bool match = true;
           if (series_name == (*this)[n]->name) {
-            if (series_number == (*this)[n]->number) {
+            match = (series_number == (*this)[n]->number);
+            if (!match && series_ref_UID.size() && (*this)[n]->series_ref_UID.size()) {
+              if (series_ref_UID == (*this)[n]->series_ref_UID) {
+                if (!series_number_UID_mismatch_warning_issued) {
+                  series_number_UID_mismatch_warning_issued = true;
+                  WARN ("mismatched series number and UID - this may cause problems with series grouping");
+                }
+                match = true;
+              }
+            }
+
+            if (match) {
               if (image_type != (*this)[n]->image_type)
                 match = false;
-              if (series_modality.size() && (*this)[n]->modality.size()) 
-                if (series_modality != (*this)[n]->modality) 
+              if (series_modality.size() && (*this)[n]->modality.size())
+                if (series_modality != (*this)[n]->modality)
                   match = false;
               if (match) {
-                if (series_date.size() && (*this)[n]->date.size()) 
-                  if (series_date != (*this)[n]->date) 
+                if (series_date.size() && (*this)[n]->date.size())
+                  if (series_date != (*this)[n]->date)
                     match = false;
               }
-              if (match && !series_time_mismatch_warning_issued) {
+              if (match) {
                 float stime = NaN, stime_ref = NaN;
                 try {
                   stime = to<float> (series_time);
@@ -53,8 +66,12 @@ namespace MR {
                   INFO ("error reading DICOM series time - field does not exist or is empty?");
                 }
                 if (stime != stime_ref) {
-                  INFO ("WARNING: series times do not match - this may cause problem with series grouping");
-                  series_time_mismatch_warning_issued = true;
+                  if (!series_time_mismatch_warning_issued) {
+                    INFO ("WARNING: series times do not match - this may cause problems with series grouping");
+                    series_time_mismatch_warning_issued = true;
+                  }
+                  if (stime < stime_ref)
+                    (*this)[n]->time = series_time;
                 }
               }
               if (match)
@@ -63,7 +80,7 @@ namespace MR {
           }
         }
 
-        push_back (std::shared_ptr<Series> (new Series (this, series_name, series_number, image_type, series_modality, series_date, series_time)));
+        push_back (std::shared_ptr<Series> (new Series (this, series_name, series_number, image_type, series_ref_UID, series_modality, series_date, series_time)));
         return back();
       }
 
@@ -81,13 +98,13 @@ namespace MR {
 
       std::ostream& operator<< (std::ostream& stream, const Study& item)
       {
-        stream << MR::printf ("    %-30s %-16s %10s %8s\n", 
-              item.name.c_str(), 
+        stream << MR::printf ("    %-30s %-16s %10s %8s\n",
+              item.name.c_str(),
               format_ID(item.ID).c_str(),
               format_date(item.date).c_str(),
               format_time(item.time).c_str() );
 
-        for (size_t n = 0; n < item.size(); n++) 
+        for (size_t n = 0; n < item.size(); n++)
           stream << *item[n];
 
         return stream;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -144,8 +144,8 @@ namespace MR
               if (App::log_level)
                 fprintf (stderr, "\n");
               output_filtered_tracks (tck_file_path, prefix + "_tracks.tck");
-              if (output_debug)
-                output_all_debug_images (prefix);
+              if (debug_dir.size())
+                output_all_debug_images (debug_dir, prefix);
               INFO ("\nProportionality coefficient at " + str (tracks_remaining) + " streamlines is " + str (mu()));
               output_at_counts.pop_back();
             }
@@ -254,8 +254,8 @@ namespace MR
                   if (enforce_quantisation && (term_number || term_ratio || term_mu)) {
                     if (App::log_level)
                       fprintf (stderr, "\n");
-                    WARN ("filtering has reached quantisation error but desired termination criterion has not been met;");
-                    WARN ("  disabling cost function quantisation check");
+                    CONSOLE ("filtering has reached quantisation error, but user's desired termination criterion has not yet been met;");
+                    CONSOLE ("  disabling cost function quantisation check and continuing filtering to try to satisfy user's request");
                     enforce_quantisation = false;
                   } else {
                     // Filtering completed to convergence
@@ -359,14 +359,14 @@ namespace MR
 
 
 
-      void SIFTer::set_regular_outputs (const vector<uint32_t>& in, const bool b)
+      void SIFTer::set_regular_outputs (const vector<uint32_t>& in, const std::string& dirpath)
       {
         for (auto i : in) {
           if (i > 0 && i <= contributions.size())
             output_at_counts.push_back (i);
         }
         sort (output_at_counts.begin(), output_at_counts.end());
-        output_debug = b;
+        debug_dir = dirpath;
       }
 
 

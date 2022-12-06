@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -90,11 +90,13 @@ vector<size_t> optimise (const Eigen::MatrixXd& directions, const size_t first_v
 
 value_type calc_cost (const Eigen::MatrixXd& directions, const vector<size_t>& order)
 {
-  value_type cost = value_type(0);
   const size_t start = Math::SH::NforL (2);
+  if (size_t(directions.rows()) <= start)
+    return value_type(0);
   Eigen::MatrixXd subset (start, 3);
   for (size_t i = 0; i != start; ++i)
     subset.row(i) = directions.row(order[i]);
+  value_type cost = value_type(0);
   for (size_t N = start+1; N < size_t(directions.rows()); ++N) {
     // Don't include condition numbers where precisely the number of coefficients
     //   for that spherical harmonic degree are included, as these tend to
@@ -115,10 +117,19 @@ void run ()
 {
   auto directions = DWI::Directions::load_cartesian (argument[0]);
 
+  size_t last_candidate_first_volume = directions.rows();
+  if (size_t(directions.rows()) <= Math::SH::NforL (2)) {
+    WARN ("Very few directions in input ("
+          + str(directions.rows())
+          + "); selection of first direction cannot be optimised"
+          + " (first direction in input will be first direction in output)");
+    last_candidate_first_volume = 1;
+  }
+
   value_type min_cost = std::numeric_limits<value_type>::infinity();
   vector<size_t> best_order;
   ProgressBar progress ("Determining best reordering", directions.rows());
-  for (size_t first_volume = 0; first_volume != size_t(directions.rows()); ++first_volume) {
+  for (size_t first_volume = 0; first_volume != last_candidate_first_volume; ++first_volume) {
     const vector<size_t> order = optimise (directions, first_volume);
     const value_type cost = calc_cost (directions, order);
     if (cost < min_cost) {

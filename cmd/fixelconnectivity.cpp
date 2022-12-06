@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 
 #include "command.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/index_remapper.h"
 #include "fixel/matrix.h"
@@ -37,7 +38,9 @@ void usage ()
   DESCRIPTION
   + "This command will generate a directory containing three images, which encodes the "
     "fixel-fixel connectivity matrix. Documentation regarding this format and how to "
-    "use it will come in the future.";
+    "use it will come in the future."
+
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("fixel_directory", "the directory containing the fixels between which connectivity will be quantified").type_directory_in()

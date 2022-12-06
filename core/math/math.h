@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -90,23 +90,6 @@ namespace MR
 
     /** @} */
   }
-
-  /** @defgroup elfun Eigen helper functions
-      @{ */
-  //! check if all elements of an Eigen MatrixBase object are finite
-  template<typename Derived>
-  inline bool is_finite(const Eigen::MatrixBase<Derived>& x)
-  {
-     return ( (x - x).array() == (x - x).array()).all();
-  }
-
-  //! check if all elements of an Eigen MatrixBase object are a number
-  template<typename Derived>
-  inline bool is_nan(const Eigen::MatrixBase<Derived>& x)
-  {
-     return ((x.array() == x.array())).all();
-  }
-  /** @} */
 
   //! convenience functions for SFINAE on std:: / Eigen containers
   template <class Cont>

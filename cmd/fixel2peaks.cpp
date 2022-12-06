@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,10 +21,9 @@
 #include "adapter/subset.h"
 #include "algo/loop.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
@@ -43,7 +42,9 @@ void usage ()
   + "If a fixel data file is provided as input, then the 3-vectors in the "
     "output image will be scaled based on the data in that file. If the input "
     "is instead the fixel directory, or the index or directions file, then "
-    "all output 3-vectors will possess unit norm.";
+    "all output 3-vectors will possess unit norm."
+
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("in",  "the input fixel information").type_various ()

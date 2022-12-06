@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,8 +81,7 @@ void usage ()
 void run ()
 {
 
-  auto opt = get_options ("output_debug");
-  const bool out_debug = opt.size();
+  const std::string debug_path = get_option_value<std::string> ("output_debug", "");
 
   auto in_dwi = Image<float>::open (argument[1]);
   Math::SH::check (in_dwi);
@@ -90,10 +89,11 @@ void run ()
 
   SIFTer sifter (in_dwi, dirs);
 
-  if (out_debug) {
-    sifter.output_proc_mask ("proc_mask.mif");
+  if (debug_path.size()) {
+    sifter.initialise_debug_image_output (debug_path);
+    sifter.output_proc_mask (Path::join (debug_path, "proc_mask.mif"));
     if (get_options("act").size())
-      sifter.output_5tt_image ("5tt.mif");
+      sifter.output_5tt_image (Path::join (debug_path, "5tt.mif"));
   }
 
   sifter.perform_FOD_segmentation (in_dwi);
@@ -101,15 +101,14 @@ void run ()
 
   sifter.map_streamlines (argument[0]);
 
-  if (out_debug)
-    sifter.output_all_debug_images ("before");
+  if (debug_path.size())
+    sifter.output_all_debug_images (debug_path, "before");
 
   sifter.remove_excluded_fixels ();
 
-  opt = get_options ("nofilter");
-  if (!opt.size()) {
+  if (!get_options ("nofilter").size()) {
 
-    opt = get_options ("term_number");
+    auto opt = get_options ("term_number");
     if (opt.size())
       sifter.set_term_number (int(opt[0][0]));
     opt = get_options ("term_ratio");
@@ -124,13 +123,13 @@ void run ()
     opt = get_options ("output_at_counts");
     if (opt.size()) {
       vector<uint32_t> counts = parse_ints<uint32_t> (opt[0][0]);
-      sifter.set_regular_outputs (counts, out_debug);
+      sifter.set_regular_outputs (counts, debug_path);
     }
 
     sifter.perform_filtering();
 
-    if (out_debug)
-      sifter.output_all_debug_images ("after");
+    if (debug_path.size())
+      sifter.output_all_debug_images (debug_path, "after");
 
     sifter.output_filtered_tracks (argument[0], argument[2]);
 
@@ -140,7 +139,7 @@ void run ()
 
   }
 
-  opt = get_options ("out_mu");
+  auto opt = get_options ("out_mu");
   if (opt.size()) {
     File::OFStream out_mu (opt[0][0]);
     out_mu << sifter.mu();

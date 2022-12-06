@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -113,7 +113,7 @@ def execute(): #pylint: disable=unused-variable
   sgm_lut = {}
   sgm_lut_file_name = 'FreeSurferSGM.txt'
   sgm_lut_file_path = os.path.join(path.shared_data_path(), path.script_subdir_name(), sgm_lut_file_name)
-  with open(sgm_lut_file_path) as sgm_lut_file:
+  with open(sgm_lut_file_path, encoding='utf-8') as sgm_lut_file:
     for line in sgm_lut_file:
       line = line.rstrip()
       if line and line[0]!='#':
