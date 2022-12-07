@@ -24,7 +24,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang-8 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
 
     - name: configure
       run: ./configure -assert || { cat configure.log; false; }
@@ -161,7 +161,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install pylint3 python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip
+         sudo apt-get install pylint python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip
          pip3 install sphinx-notfound-page
 
 
@@ -180,7 +180,7 @@ jobs:
       run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
 
     - name: install build dependencies
-      run: sudo apt-get install clang-8 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
+      run: sudo apt-get install python2 clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
 
     - name: check configure with Python 2
       run: python2 ./configure || { cat configure.log; false; }
