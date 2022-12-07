@@ -735,7 +735,6 @@ class Entry(object):
 
 
   def execute (self):
-    global formatstr
     folder = os.path.dirname (self.name)
     try:
       os.makedirs (folder)
@@ -1005,7 +1004,7 @@ def is_GUI_target (current_file):
 def list_headers (current_file):
   current_file = os.path.normpath (current_file)
 
-  if current_file not in headers.keys():
+  if current_file not in headers:
     headers[current_file] = set()
 
     if current_file not in file_flags:
@@ -1053,7 +1052,7 @@ def list_headers (current_file):
 def list_cmd_deps (file_cc):
   file_cc = os.path.normpath (file_cc)
 
-  if file_cc not in object_deps.keys():
+  if file_cc not in object_deps:
     object_deps[file_cc] = set([ modify_path (file_cc, tmp=True, strip=cpp_suffix, add=obj_suffix) ])
     for entry in list_headers (file_cc):
       if os.path.abspath(entry).startswith(os.path.abspath(lib_dir)):
