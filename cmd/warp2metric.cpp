@@ -87,11 +87,6 @@ void run ()
       Fixel::copy_directions_file (template_fixel_directory, output_fixel_directory);
     }
 
-    uint32_t num_fixels = 0;
-    fixel_template_index.index(0) = 0;
-    for (auto l = Loop (fixel_template_index, 0, 3) (fixel_template_index); l; ++l)
-      num_fixels += fixel_template_index.value();
-
     fc_output_data = Image<value_type>::create (Path::join (output_fixel_directory, opt[0][2]), Fixel::data_header_from_index (fixel_template_index));
   }
 
