@@ -190,6 +190,11 @@ void run ()
 
   DEBUG ("estimated number of input tracks: " + str(count));
 
+  // Remove keyval "total_count", as there is ambiguity about what _should_ be
+  //   contained in that field upon editing one or more existing tractograms
+  //   (it has a specific interpretation in the context of streamline generation only)
+  erase_if_present (properties, "total_count");
+
   load_rois (properties);
   properties.compare_stepsize_rois();
 
