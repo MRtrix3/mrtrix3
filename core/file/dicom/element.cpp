@@ -423,11 +423,11 @@ namespace MR {
       std::pair<Date,Time> Element::get_datetime () const
       {
         assert (type() == DATETIME);
-        if (size < 21)
+        if (size < 14)
           throw Exception ("malformed DateTime entry");
         return {
           Date (std::string (reinterpret_cast<const char*> (data), 8)),
-          Time (std::string (reinterpret_cast<const char*> (data+8), 13))
+          Time (std::string (reinterpret_cast<const char*> (data+8), std::min(size-8,13U)))
         };
       }
 
@@ -470,6 +470,8 @@ namespace MR {
               return str(get_date());
             case Element::TIME:
               return str(get_time());
+            case Element::DATETIME:
+              return str(get_datetime().first) + " " + str(get_datetime().second);
             case Element::STRING:
               if (group == GROUP_DATA && element == ELEMENT_DATA) {
                 return "(data)";
