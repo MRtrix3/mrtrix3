@@ -27,6 +27,8 @@ Important note: image denoising must be performed as the first step of the image
 
 Note that this function does not correct for non-Gaussian noise biases present in magnitude-reconstructed MRI images. If available, including the MRI phase data can reduce such non-Gaussian biases, and the command now supports complex input data.
 
+If using this command to denoise non-DWI data, e.g. fMRI, it may be beneficial to use the -demean option, which mitigates floating-point precision issues when the variance between image volumes is small relative to the mean across volumes.
+
 Options
 -------
 
@@ -43,6 +45,8 @@ Options
 -  **-estimator Exp1/Exp2** Select the noise level estimator (default = Exp2), either:  |br|
    * Exp1: the original estimator used in Veraart et al. (2016), or  |br|
    * Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).
+
+-  **-demean** Pre-allocate the mean signal in each voxel as a signal component
 
 Standard options
 ^^^^^^^^^^^^^^^^
