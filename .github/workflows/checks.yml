@@ -162,8 +162,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install pylint python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip
-         pip3 install sphinx-notfound-page
+         sudo apt-get install pylint python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip python3-sphinx-notfound-page
 
     - name: check syntax
       run: ./check_syntax || { cat syntax.log; false; }
