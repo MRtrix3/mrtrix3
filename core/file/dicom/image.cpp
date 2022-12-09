@@ -149,9 +149,9 @@ namespace MR {
                 {
                   auto d = item.get_float();
                   if (d.size() >= 3) {
-                    G_prs[0] = d[0];
-                    G_prs[1] = d[1];
-                    G_prs[2] = d[2];
+                    G[0] = d[0];
+                    G[1] = d[1];
+                    G[2] = d[2];
                   }
                 }
                 return;
