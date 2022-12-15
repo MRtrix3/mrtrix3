@@ -8,7 +8,7 @@ pkgrel=1
 arch=('x86_64')
 pkgdesc="Tools for the analysis of diffusion MRI data (mingw-w64)"
 depends=("python"
-         "${MINGW_PACKAGE_PREFIX}-qt5"
+         "${MINGW_PACKAGE_PREFIX}-qt5-svg"
          "${MINGW_PACKAGE_PREFIX}-fftw"
          "${MINGW_PACKAGE_PREFIX}-libtiff"
          "${MINGW_PACKAGE_PREFIX}-zlib")
@@ -16,7 +16,7 @@ makedepends=("git"
              "python"
              "pkg-config"
              "${MINGW_PACKAGE_PREFIX}-gcc"
-             "${MINGW_PACKAGE_PREFIX}-qt5-mrtrix"
+             "${MINGW_PACKAGE_PREFIX}-qt5-svg"
              "${MINGW_PACKAGE_PREFIX}-eigen3"
              "${MINGW_PACKAGE_PREFIX}-fftw"
              "${MINGW_PACKAGE_PREFIX}-libtiff"
