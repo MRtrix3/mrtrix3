@@ -596,7 +596,7 @@ class Parser(argparse.ArgumentParser):
       script_options.add_argument('-nocleanup', action='store_true', help='do not delete intermediate files during script execution, and do not delete scratch directory at script completion.')
       script_options.add_argument('-scratch', metavar='/path/to/scratch/', help='manually specify the path in which to generate the scratch directory.')
       script_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<ScratchDir>', '<LastFile>'), help='continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.')
-    module_file = inspect.getsourcefile(inspect.stack()[-1][0])
+    module_file = os.path.realpath (inspect.getsourcefile(inspect.stack()[-1][0]))
     self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
     try:
       process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)), stdout=subprocess.PIPE, stderr=subprocess.PIPE) #pylint: disable=consider-using-with
