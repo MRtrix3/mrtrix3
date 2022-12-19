@@ -132,6 +132,16 @@ namespace MR
       if (H.ndim() == 4 && H.size(3) > 4)
         throw Exception ("A 4D image written to PNG must have between one and four volumes (requested: " + str(H.size(3)) + ")");
 
+      // TODO After looping over axes via square-bracket notation,
+      //   there needs to be at least two axes with size greater than one
+      size_t unity_axes = 0;
+      for (size_t axis = 0; axis != H.ndim(); ++axis) {
+        if (H.size (axis) == 1)
+          ++unity_axes;
+      }
+      if (unity_axes - (H.ndim() - num_axes) < 2)
+        throw Exception ("Too few (non-unity) image axes to support PNG export");
+
       // For 4D images, can support:
       // - 1 volume (just greyscale)
       // - 2 volumes (save as greyscale & alpha)

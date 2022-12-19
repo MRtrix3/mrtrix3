@@ -23,7 +23,7 @@ Description
 This script serves as an interface for many different algorithms that generate a binary mask from DWI data in different ways. Each algorithm available has its own help page, including necessary references; e.g. to see the help page of the 'fslbet' algorithm, type 'dwi2mask fslbet'.
 
 More information on mask derivation from DWI data can be found at the following link: 
-https://mrtrix.readthedocs.io/en/3.0.3/dwi_preprocessing/masking.html
+https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
 
 Options
 -------
