@@ -40,7 +40,7 @@ namespace MR
        *
        */
       class Base
-      { MEMALIGN (Base)
+      { 
         public:
           Base (const std::string& s) :
               message (s) { }

@@ -34,7 +34,7 @@ namespace MR
     {
 
       class Reader
-      { MEMALIGN(Reader)
+      { 
         public:
           Reader (const std::string& filename);
           ~Reader();
@@ -67,7 +67,7 @@ namespace MR
 
 
       class Writer
-      { MEMALIGN(Writer)
+      { 
         public:
           Writer (const Header&, const std::string&);
           ~Writer();

@@ -37,7 +37,7 @@ namespace MR
     {
 
       class RenderFrame : public GL::Area
-      { MEMALIGN(RenderFrame)
+      { 
           Q_OBJECT
 
           using mode_t = Renderer::mode_t;

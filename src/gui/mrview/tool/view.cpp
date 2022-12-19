@@ -56,7 +56,7 @@ namespace MR
 
 
         class View::ClipPlaneModel : public QAbstractItemModel
-        { MEMALIGN(View::ClipPlaneModel)
+        { 
           public:
 
             ClipPlaneModel (QObject* parent) :

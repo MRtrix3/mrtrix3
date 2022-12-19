@@ -29,7 +29,7 @@ namespace MR {
 
 
         // Also handles resampling along a fixed line
-        class Arc : public BaseCRTP<Arc> { MEMALIGN(Arc)
+        class Arc : public BaseCRTP<Arc> { 
 
             using value_type = float;
             using point_type = Eigen::Vector3f;
@@ -37,7 +37,7 @@ namespace MR {
             enum class state_t { BEFORE_START, AFTER_START, BEFORE_END, AFTER_END };
 
           private:
-            class Plane { MEMALIGN(Plane)
+            class Plane { 
               public:
                 Plane (const point_type& pos, const point_type& dir) :
                     n (dir)

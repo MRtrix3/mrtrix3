@@ -33,7 +33,7 @@ namespace MR
       namespace Tool
       {
         class Fixel : public Base, public ColourMapButtonObserver, public DisplayableVisitor
-        { MEMALIGN (Fixel)
+        { 
             Q_OBJECT
 
           public:

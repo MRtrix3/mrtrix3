@@ -37,7 +37,7 @@ namespace MR
 
 
         class ODF_Model : public QAbstractItemModel
-        { MEMALIGN(ODF_Model)
+        { 
           public:
 
             ODF_Model (QObject* parent) :

@@ -27,7 +27,7 @@ namespace MR
     template <class ImageType>
       class Gaussian1D : 
         public Base<Gaussian1D<ImageType>,ImageType> 
-    { MEMALIGN (Gaussian1D<ImageType>) 
+    {  
       public:
 
         using base_type = Base<Gaussian1D<ImageType>, ImageType>;

@@ -45,11 +45,11 @@ namespace MR
 
   template <typename ValueType> class Image;
 
-  class Header { MEMALIGN (Header)
+  class Header {
     public:
 
       //! a class to hold attributes about each axis
-      class Axis { NOMEMALIGN
+      class Axis {
         public:
           Axis () noexcept : size (1), spacing (std::numeric_limits<default_type>::quiet_NaN()), stride (0) { }
           ssize_t size;
@@ -212,7 +212,7 @@ namespace MR
       //! get information on how the transform was modified on image load
       void realignment (std::array<size_t, 3>& perm, std::array<bool, 3>& flip) const { perm = realign_perm_; flip = realign_flip_; }
 
-      class NDimProxy { NOMEMALIGN
+      class NDimProxy {
         public:
           NDimProxy (vector<Axis>& axes) : axes (axes) { }
           NDimProxy (NDimProxy&&) = default;
@@ -250,7 +250,7 @@ namespace MR
       //! get/set the stride between adjacent voxels along axis
       ssize_t& stride (size_t axis);
 
-      class DataTypeProxy : public DataType { NOMEMALIGN
+      class DataTypeProxy : public DataType {
         public:
           DataTypeProxy (Header& H) : DataType (H.datatype_), H (H) { }
           DataTypeProxy (DataTypeProxy&&) = default;
@@ -389,8 +389,6 @@ namespace MR
         Stride::actualise (*this);
       }
   };
-
-  CHECK_MEM_ALIGN (Header);
 
 
 

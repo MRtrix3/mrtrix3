@@ -60,7 +60,7 @@ namespace MR
 
 
         class Tractography::Model : public ListModelBase
-        { MEMALIGN(Tractography::Model)
+        { 
 
           public:
             Model (QObject* parent) :

@@ -94,7 +94,7 @@ using value_type = float;
 
 
 
-class Direction { MEMALIGN(Direction)
+class Direction { 
   public:
     Direction () : a (NaN) { }
     Direction (const Direction& d) : a (d.a), v (d.v) { }
@@ -109,7 +109,7 @@ class Direction { MEMALIGN(Direction)
 
 
 
-class Item { MEMALIGN(Item)
+class Item { 
   public:
     Eigen::VectorXf data;
     ssize_t pos[3];
@@ -119,7 +119,7 @@ class Item { MEMALIGN(Item)
 
 
 
-class DataLoader { MEMALIGN(DataLoader)
+class DataLoader { 
   public:
     DataLoader (Image<value_type>& sh_data,
                 const Image<bool>& mask_data) :
@@ -161,7 +161,7 @@ class DataLoader { MEMALIGN(DataLoader)
 
 
 
-class Processor { MEMALIGN(Processor)
+class Processor { 
   public:
     Processor (Image<value_type>& dirs_data,
                Eigen::Matrix<value_type, Eigen::Dynamic, 2>& directions,

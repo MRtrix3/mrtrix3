@@ -32,7 +32,7 @@ namespace MR {
           // Base class to handle case where the factor contributed by the streamline varies along its length
           //   (currently only occurs when the track-wise statistic is Gaussian)
           class VoxelAddon
-          { NOMEMALIGN
+          { 
             public:
               VoxelAddon() : sum_factors (0.0) { }
               VoxelAddon (const default_type v) : sum_factors (v) { }
@@ -50,7 +50,7 @@ namespace MR {
 
 
           class Voxel : public Mapping::Voxel, public VoxelAddon
-          { MEMALIGN(Voxel)
+          { 
 
             using Base = Mapping::Voxel;
 
@@ -73,7 +73,7 @@ namespace MR {
 
 
           class VoxelDEC : public Mapping::VoxelDEC, public VoxelAddon
-          { MEMALIGN(VoxelDEC)
+          { 
 
             using Base = Mapping::VoxelDEC;
 
@@ -98,7 +98,7 @@ namespace MR {
 
 
           class Dixel : public Mapping::Dixel, public VoxelAddon
-          { MEMALIGN(Dixel)
+          { 
 
             using Base = Mapping::Dixel;
 
@@ -123,7 +123,7 @@ namespace MR {
 
 
           class VoxelTOD : public Mapping::VoxelTOD, public VoxelAddon
-          { MEMALIGN(VoxelTOD)
+          { 
 
             using Base = Mapping::VoxelTOD;
 
@@ -156,7 +156,7 @@ namespace MR {
           // However, it's handy from a code perspective to still use the same base class
           /*
              class SetVoxelExtras
-             { MEMALIGN(SetVoxelExtras)
+             { 
              public:
              size_t index;
              float weight;
@@ -168,7 +168,7 @@ namespace MR {
 
 
           class SetVoxel : public std::set<Voxel>, public Mapping::SetVoxelExtras
-          { MEMALIGN(SetVoxel)
+          { 
             public:
 
               using VoxType = Voxel;
@@ -186,7 +186,7 @@ namespace MR {
 
 
           class SetVoxelDEC : public std::set<VoxelDEC>, public Mapping::SetVoxelExtras
-          { MEMALIGN(SetVoxelDEC)
+          { 
             public:
 
               using VoxType = VoxelDEC;
@@ -204,7 +204,7 @@ namespace MR {
 
 
           class SetDixel : public std::set<Dixel>, public Mapping::SetVoxelExtras
-          { MEMALIGN(SetDixel)
+          { 
             public:
 
               using VoxType = Dixel;
@@ -223,7 +223,7 @@ namespace MR {
 
 
           class SetVoxelTOD : public std::set<VoxelTOD>, public Mapping::SetVoxelExtras
-          { MEMALIGN(SetVoxelTOD)
+          { 
             public:
 
               using VoxType = VoxelTOD;

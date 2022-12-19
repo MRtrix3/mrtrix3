@@ -29,7 +29,7 @@ namespace MR {
 
 
         class FixedStepSize : public BaseCRTP<FixedStepSize>
-        { MEMALIGN(FixedStepSize)
+        { 
 
           public:
             FixedStepSize () :

@@ -47,7 +47,7 @@
 #define SECTION_TITLE(TITLE)
 
 #define UNARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
-  class Op_##OPTION : public OpUnary { NOMEMALIGN \
+  class Op_##OPTION : public OpUnary {  \
     public: \
       Op_##OPTION () : OpUnary (FEEDBACK, FLAGS & COMPLEX_MAPS_TO_REAL, FLAGS & REAL_MAPS_TO_COMPLEX) { } \
       complex_type R (real_type v) const REAL_OPERATION \
@@ -55,7 +55,7 @@
   };
 
 #define BINARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
-  class Op_##OPTION : public OpBinary { NOMEMALIGN \
+  class Op_##OPTION : public OpBinary {  \
     public: \
       Op_##OPTION () : OpBinary (FEEDBACK, FLAGS & COMPLEX_MAPS_TO_REAL, FLAGS & REAL_MAPS_TO_COMPLEX) { } \
       complex_type R (real_type a, real_type b) const REAL_OPERATION \
@@ -63,7 +63,7 @@
   };
 
 #define TERNARY_OP(OPTION,FEEDBACK,FLAGS,DESCRIPTION,REAL_OPERATION,COMPLEX_OPERATION) \
-  class Op_##OPTION : public OpTernary { NOMEMALIGN \
+  class Op_##OPTION : public OpTernary {  \
     public: \
       Op_##OPTION () : OpTernary (FEEDBACK, FLAGS & COMPLEX_MAPS_TO_REAL, FLAGS & REAL_MAPS_TO_COMPLEX) { } \
       complex_type R (real_type a, real_type b, real_type c) const REAL_OPERATION \
@@ -276,19 +276,19 @@ OPTIONS
 class Evaluator;
 
 
-class Chunk : public vector<complex_type> { NOMEMALIGN
+class Chunk : public vector<complex_type> { 
   public:
     complex_type value;
 };
 
 
-class ThreadLocalStorageItem { NOMEMALIGN
+class ThreadLocalStorageItem { 
   public:
     Chunk chunk;
     copy_ptr<Image<complex_type>> image;
 };
 
-class ThreadLocalStorage : public vector<ThreadLocalStorageItem> { NOMEMALIGN
+class ThreadLocalStorage : public vector<ThreadLocalStorageItem> { 
   public:
 
       void load (Chunk& chunk, Image<complex_type>& image) {
@@ -324,7 +324,7 @@ class ThreadLocalStorage : public vector<ThreadLocalStorageItem> { NOMEMALIGN
 
 
 
-class LoadedImage { NOMEMALIGN
+class LoadedImage { 
   public:
     LoadedImage (std::shared_ptr<Image<complex_type>>& i, const bool c) :
         image (i),
@@ -336,7 +336,7 @@ class LoadedImage { NOMEMALIGN
 
 
 
-class StackEntry { NOMEMALIGN
+class StackEntry { 
   public:
 
     StackEntry (const char* entry) :
@@ -407,7 +407,7 @@ class StackEntry { NOMEMALIGN
 std::map<std::string, LoadedImage> StackEntry::image_list;
 
 
-class Evaluator { NOMEMALIGN
+class Evaluator { 
   public:
     Evaluator (const std::string& name, const char* format_string, bool complex_maps_to_real = false, bool real_maps_to_complex = false) :
       id (name),
@@ -519,7 +519,7 @@ std::string operation_string (const StackEntry& entry)
 
 
 template <class Operation>
-class UnaryEvaluator : public Evaluator { NOMEMALIGN
+class UnaryEvaluator : public Evaluator { 
   public:
     UnaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand) :
       Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
@@ -547,7 +547,7 @@ class UnaryEvaluator : public Evaluator { NOMEMALIGN
 
 
 template <class Operation>
-class BinaryEvaluator : public Evaluator { NOMEMALIGN
+class BinaryEvaluator : public Evaluator { 
   public:
     BinaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2) :
       Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
@@ -580,7 +580,7 @@ class BinaryEvaluator : public Evaluator { NOMEMALIGN
 
 
 template <class Operation>
-class TernaryEvaluator : public Evaluator { NOMEMALIGN
+class TernaryEvaluator : public Evaluator { 
   public:
     TernaryEvaluator (const std::string& name, Operation operation, const StackEntry& operand1, const StackEntry& operand2, const StackEntry& operand3) :
       Evaluator (name, operation.format, operation.ZtoR, operation.RtoZ),
@@ -740,7 +740,7 @@ void get_header (const StackEntry& entry, Header& header)
 
 
 
-class ThreadFunctor { NOMEMALIGN
+class ThreadFunctor { 
   public:
     ThreadFunctor (
         const vector<size_t>& inner_axes,
@@ -851,7 +851,7 @@ void run_operations (const vector<StackEntry>& stack)
         OPERATIONS BASIC FRAMEWORK:
 **********************************************************************/
 
-class OpBase { NOMEMALIGN
+class OpBase { 
   public:
     OpBase (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
       format (format_string),
@@ -861,7 +861,7 @@ class OpBase { NOMEMALIGN
     const bool ZtoR, RtoZ;
 };
 
-class OpUnary : public OpBase { NOMEMALIGN
+class OpUnary : public OpBase { 
   public:
     OpUnary (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
       OpBase (format_string, complex_maps_to_real, real_map_to_complex) { }
@@ -870,7 +870,7 @@ class OpUnary : public OpBase { NOMEMALIGN
 };
 
 
-class OpBinary : public OpBase { NOMEMALIGN
+class OpBinary : public OpBase { 
   public:
     OpBinary (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
       OpBase (format_string, complex_maps_to_real, real_map_to_complex) { }
@@ -878,7 +878,7 @@ class OpBinary : public OpBase { NOMEMALIGN
     complex_type Z (complex_type a, complex_type b) const { throw Exception ("operation not supported!"); return a; }
 };
 
-class OpTernary : public OpBase { NOMEMALIGN
+class OpTernary : public OpBase { 
   public:
     OpTernary (const char* format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false) :
       OpBase (format_string, complex_maps_to_real, real_map_to_complex) { }

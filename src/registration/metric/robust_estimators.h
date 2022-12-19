@@ -29,7 +29,7 @@ namespace MR
   {
     namespace Metric
     {
-      class L1 { NOMEMALIGN
+      class L1 { 
         public:
           void operator() (const default_type& x,
                            default_type& residual,
@@ -50,7 +50,7 @@ namespace MR
           }
       };
 
-      class L2 { NOMEMALIGN
+      class L2 { 
         public:
           void operator() (const default_type& x,
                            default_type& residual,
@@ -68,7 +68,7 @@ namespace MR
       };
 
       // least powers: residual = |x|^power with power between 1 and 2
-      class LP { NOMEMALIGN
+      class LP { 
         public:
           LP (const default_type p) : power(p) {assert (power>=1.0 && power <= 2.0);}
           LP () : power(1.2) {}

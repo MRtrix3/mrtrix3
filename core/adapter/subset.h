@@ -27,7 +27,7 @@ namespace MR
     template <class ImageType>
       class Subset :
         public Base<Subset<ImageType>,ImageType>
-    { MEMALIGN(Subset<ImageType>)
+    { 
       public:
 
         using base_type = Base<Subset<ImageType>, ImageType>;

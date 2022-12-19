@@ -29,7 +29,7 @@ namespace MR {
     namespace {
 
       template <class Item>
-        class __Ordered { MEMALIGN(__Ordered<Item>)
+        class __Ordered { 
           public:
             __Ordered () = default;
             __Ordered (const Item& item) : item (item) { }
@@ -38,7 +38,7 @@ namespace MR {
             size_t index;
         };
 
-        struct CompareItems { NOMEMALIGN
+        struct CompareItems { 
           template <class Item>
             bool operator() (const __Ordered<Item>* a, const __Ordered<Item>* b) const { return a->index < b->index; }
         };
@@ -46,11 +46,11 @@ namespace MR {
 
 
 
-      template <class JobType> struct job_is_single_threaded : std::true_type { NOMEMALIGN };
-      template <class JobType> struct job_is_single_threaded< __Multi<JobType>> : std::false_type { NOMEMALIGN };
+      template <class JobType> struct job_is_single_threaded : std::true_type {  };
+      template <class JobType> struct job_is_single_threaded< __Multi<JobType>> : std::false_type {  };
 
 
-       template <class Item> struct __batch_size <__Ordered<__Batch<Item>>> { NOMEMALIGN
+       template <class Item> struct __batch_size <__Ordered<__Batch<Item>>> { 
          __batch_size (const __Ordered<__Batch<Item>>& item) : n (item.item.num) { }
          operator size_t () const { return n; }
          const size_t n;
@@ -64,7 +64,7 @@ namespace MR {
        ***********************************************************************/
 
 
-       template <class Item> struct Type<__Ordered<Item>> { NOMEMALIGN
+       template <class Item> struct Type<__Ordered<Item>> { 
          using item = Item;
          using queue = Queue<__Ordered<Item>>;
          using reader = typename queue::Reader;
@@ -76,7 +76,7 @@ namespace MR {
 
        template <class Item, class Functor>
          struct __Source<__Ordered<Item>,Functor> {
-           MEMALIGN(__Source<__Ordered<Item>,Functor>)
+           
 
            using queued_t = __Ordered<Item>;
            using queue_t = typename Type<queued_t>::queue;
@@ -111,7 +111,7 @@ namespace MR {
 
        template <class Item1, class Functor, class Item2>
          struct __Pipe<__Ordered<Item1>,Functor,__Ordered<Item2>> {
-           MEMALIGN(__Pipe<__Ordered<Item1>,Functor,__Ordered<Item2>>)
+           
 
            using queued1_t = __Ordered<Item1>;
            using queued2_t = __Ordered<Item2>;
@@ -152,7 +152,7 @@ namespace MR {
 
        template <class Item, class Functor>
          struct __Sink<__Ordered<Item>,Functor> {
-           MEMALIGN(__Sink<__Ordered<Item>,Functor>)
+           
 
            using queued_t = __Ordered<Item>;
            using queue_t = typename Type<queued_t>::queue;
@@ -200,7 +200,7 @@ namespace MR {
        *        Source/Pipe/Sink for BATCHED ordered queue                 *
        ***********************************************************************/
 
-       template <class Item> struct Type<__Ordered<__Batch<Item>>> { NOMEMALIGN
+       template <class Item> struct Type<__Ordered<__Batch<Item>>> { 
          using item = Item;
          using queue = Queue<__Ordered<vector<Item>>>;
          using reader = typename queue::Reader;
@@ -213,7 +213,7 @@ namespace MR {
 
        template <class Item, class Functor>
          struct __Source<__Ordered<__Batch<Item>>,Functor> {
-           MEMALIGN(__Source<__Ordered<__Batch<Item>>,Functor>)
+           
 
            using queued_t = __Ordered<vector<Item>>;
            using passed_t = __Ordered<__Batch<Item>>;
@@ -256,7 +256,7 @@ namespace MR {
 
        template <class Item1, class Functor, class Item2>
          struct __Pipe<__Ordered<__Batch<Item1>>,Functor,__Ordered<__Batch<Item2>>> {
-           MEMALIGN(__Pipe<__Ordered<__Batch<Item1>>,Functor,__Ordered<__Batch<Item2>>>)
+           
 
            using queued1_t = __Ordered<vector<Item1>>;
            using queued2_t = __Ordered<vector<Item2>>;
@@ -304,7 +304,7 @@ namespace MR {
 
        template <class Item, class Functor>
          struct __Sink<__Ordered<__Batch<Item>>,Functor> {
-           MEMALIGN(__Sink<__Ordered<__Batch<Item>>,Functor>)
+           
 
            using queued_t = __Ordered<vector<Item>>;
            using queue_t = typename Type<queued_t>::queue;

@@ -46,7 +46,7 @@ namespace MR
 
         // Private functor for performing ACT image regridding
         class ResampleFunctor
-        { MEMALIGN(ResampleFunctor)
+        { 
 
             using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
 

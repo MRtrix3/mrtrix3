@@ -157,7 +157,7 @@ namespace MR {
 
 
 
-      class Max_abs { NOMEMALIGN
+      class Max_abs { 
         public:
           bool operator() (const default_type& a, const default_type& b) const { return (abs (a) > abs (b)); }
       };

@@ -30,7 +30,7 @@ namespace MR
 
          class UnitTest
          {
-            MEMALIGN(UnitTest)
+            
          public:
             UnitTest(string unit_name_arg) {
                unit_name = unit_name_arg;

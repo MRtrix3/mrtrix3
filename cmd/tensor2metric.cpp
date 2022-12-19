@@ -137,7 +137,7 @@ void usage ()
     "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
 }
 
-class Processor { MEMALIGN(Processor)
+class Processor { 
   public:
     Processor (Image<bool>& mask_img,
         Image<value_type>& adc_img,

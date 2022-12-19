@@ -152,7 +152,7 @@ namespace MR {
         }
 
         class Functor
-        { NOMEMALIGN
+        { 
           public:
             Functor (TckFactor& master) :
                 master (master),

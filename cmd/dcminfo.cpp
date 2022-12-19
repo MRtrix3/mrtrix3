@@ -47,7 +47,7 @@ void usage ()
 }
 
 
-class Tag { NOMEMALIGN
+class Tag { 
   public:
     uint16_t group, element;
     std::string value;

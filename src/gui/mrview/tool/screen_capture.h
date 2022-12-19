@@ -38,7 +38,7 @@ namespace MR
 
 
         class Capture : public Base
-        { MEMALIGN(Capture)
+        { 
           Q_OBJECT
           public:
             Capture (Dock* parent);
@@ -84,7 +84,7 @@ namespace MR
 
             bool is_playing;
 
-            class CaptureState { MEMALIGN(CaptureState)
+            class CaptureState { 
               public:
                 Eigen::Quaternionf orientation;
                 Eigen::Vector3f focus, target;

@@ -28,7 +28,7 @@ namespace MR
     template <class ImageType>
       class Normalise3D :
         public Base<Normalise3D<ImageType>,ImageType>
-    { MEMALIGN(Normalise3D<ImageType>)
+    { 
       public:
 
         using base_type = Base<Normalise3D<ImageType>, ImageType>;

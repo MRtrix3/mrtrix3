@@ -27,7 +27,7 @@ namespace MR {
 
 
     class Unring1D
-    { MEMALIGN (Unring1D)
+    { 
       public:
         Unring1D (Math::FFT1D& fft, const int nsh, const int minW, const int maxW) :
           nsh (nsh),

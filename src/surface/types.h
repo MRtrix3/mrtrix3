@@ -37,7 +37,7 @@ namespace MR
     using QuadList = vector<Quad>;
 
     class Vox : public Eigen::Array3i
-    { MEMALIGN (Vox)
+    { 
       public:
         using Eigen::Array3i::Array3i;
         Vox () : Eigen::Array3i (-1, -1, -1) { }

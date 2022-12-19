@@ -25,7 +25,7 @@ namespace MR
     //! \cond skip
     namespace {
       template <class ImageType>
-      class __MinMax { NOMEMALIGN
+      class __MinMax { 
         public:
           using value_type = typename ImageType::value_type;
 

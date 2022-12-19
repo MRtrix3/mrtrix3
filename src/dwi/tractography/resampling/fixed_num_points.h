@@ -29,7 +29,7 @@ namespace MR {
 
 
         class FixedNumPoints : public BaseCRTP<FixedNumPoints>
-        { NOMEMALIGN
+        { 
 
           public:
             FixedNumPoints () :

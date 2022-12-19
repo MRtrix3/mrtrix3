@@ -36,7 +36,7 @@ namespace MR {
 //   to construct a Min_mem_array<>
 
 template <class T>
-class Min_mem_array { MEMALIGN(Min_mem_array<T>)
+class Min_mem_array { 
 
   public:
     Min_mem_array () :

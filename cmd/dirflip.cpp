@@ -57,7 +57,7 @@ using value_type = double;
 using vector3_type = Eigen::Vector3d;
 
 
-class Shared { MEMALIGN(Shared)
+class Shared { 
   public:
     Shared (const Eigen::MatrixXd& directions, size_t target_num_permutations) :
       directions (directions), target_num_permutations (target_num_permutations), num_permutations(0),
@@ -107,7 +107,7 @@ class Shared { MEMALIGN(Shared)
 
 
 
-class Processor { MEMALIGN(Processor)
+class Processor { 
   public:
     Processor (Shared& shared) :
       shared (shared),

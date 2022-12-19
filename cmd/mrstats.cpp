@@ -59,7 +59,7 @@ using complex_type = Stats::complex_type;
 
 
 class Volume_loop
-{ NOMEMALIGN
+{ 
   public:
     Volume_loop (Image<complex_type>& in) :
         image (in),

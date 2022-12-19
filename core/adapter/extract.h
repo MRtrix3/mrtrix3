@@ -27,7 +27,7 @@ namespace MR
     template <class ImageType>
       class Extract1D :
         public Base<Extract1D<ImageType>,ImageType>
-    { MEMALIGN (Extract1D<ImageType>)
+    { 
       public:
 
         using base_type = Base<Extract1D<ImageType>, ImageType>;
@@ -112,7 +112,7 @@ namespace MR
     template <class ImageType>
       class Extract :
         public Base<Extract<ImageType>,ImageType>
-    { MEMALIGN (Extract<ImageType>)
+    { 
       public:
 
         using base_type = Base<Extract<ImageType>, ImageType>;

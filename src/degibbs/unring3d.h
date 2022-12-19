@@ -49,7 +49,7 @@ namespace MR {
 
       // perform filtering along required axis:
       class Filter
-      { MEMALIGN (Filter)
+      { 
         public:
           Filter(size_t axis) : axis(axis){}
           void operator() (ImageType& in, ImageType& out){
@@ -76,7 +76,7 @@ namespace MR {
 
       template <class OutputImageType>
       class LineProcessor
-      { MEMALIGN (LineProcessor<OutputImageType>)
+      { 
         public:
           LineProcessor (size_t axis, ImageType& input, OutputImageType& output, const int minW, const int maxW, const int num_shifts) :
             axis (axis),
@@ -208,7 +208,7 @@ namespace MR {
 
 
       class Unring3DFunctor
-      { MEMALIGN (Unring3DFunctor)
+      { 
         public:
           Unring3DFunctor (Header header, const int minW = 1, const int maxW = 3, const int num_shifts = 20) :
             minW (minW), maxW (maxW), num_shifts (num_shifts) {
@@ -268,7 +268,7 @@ namespace MR {
         ProgressBar progress ("performing 3D Gibbs ringing removal", 3*nvol);
 
         // need a quick adapter to fool FFT into operating on single volume:
-        class Volume : public ImageType { MEMALIGN (Volume)
+        class Volume : public ImageType { 
           public:
             Volume (const ImageType& parent) : ImageType (parent) { }
             size_t ndim () const { return 3; }

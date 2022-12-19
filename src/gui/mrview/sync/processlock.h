@@ -36,7 +36,7 @@ namespace MR
         * not, then call Release when done.
         */
         class ProcessLock
-        { NOMEMALIGN
+        { 
 
         public:
           ProcessLock(const QString& key);

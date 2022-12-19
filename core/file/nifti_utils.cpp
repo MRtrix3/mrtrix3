@@ -33,7 +33,7 @@ namespace MR
     {
 
       namespace {
-        template <class NiftiHeader> struct Type { NOMEMALIGN
+        template <class NiftiHeader> struct Type { 
           using code_type = int16_t;
           using float_type = float32;
           using dim_type = int16_t;
@@ -49,7 +49,7 @@ namespace MR
           static char* regular (NiftiHeader& NH) { return &NH.regular; }
         };
 
-        template <> struct Type<nifti_2_header> { NOMEMALIGN
+        template <> struct Type<nifti_2_header> { 
           using code_type = int32_t;
           using float_type = float64;
           using dim_type = int64_t;
@@ -675,8 +675,8 @@ namespace MR
 
 
       namespace {
-        template <int VERSION> struct Get { NOMEMALIGN using type = nifti_1_header; };
-        template <> struct Get<2> { NOMEMALIGN using type = nifti_2_header; };
+        template <int VERSION> struct Get {  using type = nifti_1_header; };
+        template <> struct Get<2> {  using type = nifti_2_header; };
       }
 
 

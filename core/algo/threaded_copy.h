@@ -25,7 +25,7 @@ namespace MR
   //! \cond skip
   namespace {
 
-    struct __copy_func { NOMEMALIGN
+    struct __copy_func { 
       template <class InputImageType, class OutputImageType>
         FORCE_INLINE void operator() (InputImageType& in, OutputImageType& out) const {
           out.value() = in.value();

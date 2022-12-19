@@ -42,7 +42,7 @@ namespace MR
 
 
 
-      class ColourBars { NOMEMALIGN
+      class ColourBars { 
         public:
 
           enum Position {

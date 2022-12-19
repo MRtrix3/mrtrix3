@@ -74,7 +74,7 @@ using value_type = float;
 
 
 class Worker
-{ NOMEMALIGN
+{ 
   public:
     Worker (const std::unique_ptr<Resampling::Base>& in) :
         resampler (in->clone()) { }
@@ -94,7 +94,7 @@ class Worker
 
 
 class Receiver
-{ NOMEMALIGN
+{ 
   public:
     Receiver (const std::string& path, const Properties& properties) :
         writer (path, properties),

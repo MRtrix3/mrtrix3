@@ -36,7 +36,7 @@ namespace MR
         * Auto reads data from its local socket when data arrives, and fires an event with that data attached
         */
         class LocalSocketReader : public QObject
-        { NOMEMALIGN
+        { 
           Q_OBJECT
 
         public:

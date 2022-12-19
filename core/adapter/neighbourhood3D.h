@@ -27,7 +27,7 @@ namespace MR
     template <class ImageType>
       class NeighbourhoodCoord : 
         public Base<NeighbourhoodCoord<ImageType>,ImageType>
-    { MEMALIGN (NeighbourhoodCoord<ImageType>)
+    { 
       public:
 
         using base_type = Base<NeighbourhoodCoord<ImageType>, ImageType>;
