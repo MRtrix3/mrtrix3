@@ -7,7 +7,7 @@ FROM buildpack-deps:buster AS base-builder
 FROM base-builder AS mrtrix3-builder
 
 # Git commitish from which to build MRtrix3.
-ARG MRTRIX3_GIT_COMMITISH="3.0.4"
+ARG MRTRIX3_GIT_COMMITISH="master"
 # Command-line arguments for `./configure`
 ARG MRTRIX3_CONFIGURE_FLAGS=""
 # Command-line arguments for `./build`
