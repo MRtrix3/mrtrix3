@@ -70,7 +70,7 @@ namespace MR
 
     template <typename ValueType>
     class QuadraticLineSearch
-    { MEMALIGN(QuadraticLineSearch<ValueType>)
+    { 
 
       public:
 

@@ -74,7 +74,7 @@ void usage ()
 
 
 // Store length and weight of each streamline
-class LW { NOMEMALIGN
+class LW { 
   public:
     LW (const float l, const float w) : length (l), weight (w) { }
     LW () : length (NaN), weight (NaN) { }

@@ -75,7 +75,7 @@ void usage ()
 
 
 class Vox : public Eigen::Array3i
-{ MEMALIGN (Vox)
+{ 
   public:
     using Eigen::Array3i::Array3i;
     Vox (const Eigen::Vector3d& p) :

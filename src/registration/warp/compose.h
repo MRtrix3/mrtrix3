@@ -32,7 +32,7 @@ namespace MR
     namespace Warp
     {
 
-        class ComposeLinearDeformKernel { MEMALIGN(ComposeLinearDeformKernel)
+        class ComposeLinearDeformKernel { 
           public:
             ComposeLinearDeformKernel (const transform_type& transform) :
                                        transform (transform) {}
@@ -48,7 +48,7 @@ namespace MR
         };
 
 
-        class ComposeLinearDispKernel { MEMALIGN(ComposeLinearDispKernel)
+        class ComposeLinearDispKernel { 
           public:
             template<class DisplacementFieldType>
             ComposeLinearDispKernel (const transform_type& linear_transform, const DisplacementFieldType& disp_in) :
@@ -67,7 +67,7 @@ namespace MR
             MR::Transform image_transform;
         };
 
-        class ComposeDispKernel { MEMALIGN(ComposeDispKernel)
+        class ComposeDispKernel { 
           public:
             ComposeDispKernel (Image<default_type>& disp_input1, Image<default_type>& disp_input2, default_type step) :
                                disp1_transform (disp_input1), disp2_interp (disp_input2), step (step) {}
@@ -95,7 +95,7 @@ namespace MR
 
 
         template <class DeformationField1Type, class DeformationField2Type>
-        class ComposeHalfwayKernel { MEMALIGN(ComposeHalfwayKernel<DeformationField1Type,DeformationField2Type>)
+        class ComposeHalfwayKernel { 
           public:
             ComposeHalfwayKernel (const transform_type& linear1, DeformationField1Type& deform1,
                                   DeformationField2Type& deform2, const transform_type& linear2) :

@@ -34,7 +34,7 @@ namespace MR
       //! \cond skip
       namespace {
 
-          class MeanStdFunctor { NOMEMALIGN
+          class MeanStdFunctor { 
             public:
               MeanStdFunctor (double& overall_sum, double& overall_sum_sqr, size_t& overall_count) :
                 overall_sum (overall_sum), overall_sum_sqr (overall_sum_sqr), overall_count (overall_count),
@@ -79,7 +79,7 @@ namespace MR
           };
           std::mutex MeanStdFunctor::mutex;
 
-          class CorrelationFunctor { NOMEMALIGN
+          class CorrelationFunctor { 
             public:
               CorrelationFunctor (double threshold, double& overall_sum, double& overall_mean_xy) :
                 threshold (threshold), overall_sum (overall_sum), overall_mean_xy (overall_mean_xy),
@@ -130,7 +130,7 @@ namespace MR
 
 
       template <class ImageType, class MaskType>
-        class ImageCorrelationCostFunction { NOMEMALIGN
+        class ImageCorrelationCostFunction { 
 
           public:
             using value_type = typename ImageType::value_type;
@@ -236,7 +236,7 @@ namespace MR
        *
        * \endcode
        */
-      class OptimalThreshold : public Base { MEMALIGN(OptimalThreshold)
+      class OptimalThreshold : public Base { 
         public:
           OptimalThreshold (const Header& H) :
               Base (H)

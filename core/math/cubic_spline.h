@@ -29,7 +29,7 @@ namespace MR
 
 
     template <typename T> class CubicSpline
-    { MEMALIGN(CubicSpline<T>)
+    { 
       public:
         using BasisMatrix = Eigen::Matrix<T, 4, 4>;
         using WeightVector = Eigen::Matrix<T, 1, 4>;
@@ -90,7 +90,7 @@ namespace MR
 
     // Hermite spline implementation
     template <typename T> class HermiteSpline :
-    public CubicSpline<T> { MEMALIGN(HermiteSpline<T>)
+    public CubicSpline<T> { 
       public:
         using BasisMatrix = typename CubicSpline<T>::BasisMatrix;
         static const BasisMatrix hermite_basis_mtrx;
@@ -103,7 +103,7 @@ namespace MR
 
     // Uniform bspline implementation
     template <typename T> class UniformBSpline :
-    public CubicSpline<T> { MEMALIGN(UniformBSpline<T>)
+    public CubicSpline<T> { 
       public:
         using BasisMatrix = typename CubicSpline<T>::BasisMatrix;
         static const BasisMatrix uniform_bspline_basis_mtrx;

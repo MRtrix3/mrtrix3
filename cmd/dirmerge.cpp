@@ -54,7 +54,7 @@ using Direction = Eigen::Matrix<value_type,3,1>;
 using DirectionSet = vector<Direction>;
 
 
-struct OutDir { MEMALIGN(OutDir)
+struct OutDir { 
   Direction d;
   size_t b;
   size_t pe;

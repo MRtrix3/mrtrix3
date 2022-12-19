@@ -35,7 +35,7 @@ namespace MR
 
 
       class VertexTransform : public Base
-      { MEMALIGN (VertexTransform)
+      { 
         public:
           enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL };
 

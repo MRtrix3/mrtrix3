@@ -33,7 +33,7 @@ namespace MR
 
 
     class Crosshair
-    { NOMEMALIGN
+    { 
       public:
           Crosshair() { }
           void render (const Eigen::Vector3f& focus,

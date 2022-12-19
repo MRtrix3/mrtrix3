@@ -29,7 +29,7 @@ namespace MR {
 
 
         class Endpoints : public BaseCRTP<Endpoints>
-        { NOMEMALIGN
+        { 
 
           public:
             Endpoints() { }

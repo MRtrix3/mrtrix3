@@ -35,7 +35,7 @@ namespace MR
 
     template <int N, class Functor, class... ImageType>
       struct StochasticThreadedLoopRunInner
-      { MEMALIGN(StochasticThreadedLoopRunInner<N,Functor,ImageType...>)
+      { 
         const vector<size_t>& outer_axes;
         decltype (Loop (outer_axes)) loop;
         typename std::remove_reference<Functor>::type func;
@@ -68,7 +68,7 @@ namespace MR
 
     template <class Functor, class... ImageType>
       struct StochasticThreadedLoopRunInner<0,Functor,ImageType...>
-      { MEMALIGN(StochasticThreadedLoopRunInner<0, Functor,ImageType...>)
+      { 
         const vector<size_t>& outer_axes;
         decltype (Loop (outer_axes)) loop;
         typename std::remove_reference<Functor>::type func;
@@ -98,7 +98,7 @@ namespace MR
 
 
     template <class OuterLoopType>
-      struct StochasticThreadedLoopRunOuter { MEMALIGN(StochasticThreadedLoopRunOuter<OuterLoopType>)
+      struct StochasticThreadedLoopRunOuter { 
         Iterator iterator;
         OuterLoopType outer_loop;
         vector<size_t> inner_axes;
@@ -115,7 +115,7 @@ namespace MR
               return;
             }
 
-            struct Shared { MEMALIGN(Shared)
+            struct Shared { 
               Iterator& iterator;
               decltype (outer_loop (iterator)) loop;
               std::mutex mutex;
@@ -130,7 +130,7 @@ namespace MR
               }
             } shared = { iterator, outer_loop (iterator) };
 
-            struct PerThread { MEMALIGN(PerThread)
+            struct PerThread { 
               Shared& shared;
               typename std::remove_reference<Functor>::type func;
               void execute () {

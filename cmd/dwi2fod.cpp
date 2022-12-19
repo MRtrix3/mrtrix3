@@ -117,7 +117,7 @@ void usage ()
 
 
 
-class CSD_Processor { MEMALIGN(CSD_Processor)
+class CSD_Processor { 
   public:
     CSD_Processor (const DWI::SDeconv::CSD::Shared& shared, Image<bool>& mask) :
       sdeconv (shared),
@@ -178,7 +178,7 @@ class CSD_Processor { MEMALIGN(CSD_Processor)
 
 
 
-class MSMT_Processor { MEMALIGN (MSMT_Processor)
+class MSMT_Processor { 
   public:
     MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image,
       vector< Image<float> > odf_images, Image<float> dwi_modelled = Image<float>()) :

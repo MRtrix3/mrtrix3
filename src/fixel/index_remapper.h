@@ -32,7 +32,7 @@ namespace MR
 
 
     class IndexRemapper
-    { NOMEMALIGN
+    { 
       public:
         IndexRemapper () : mapping_is_default (true) { }
         IndexRemapper (const index_type num_fixels);

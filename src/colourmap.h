@@ -26,7 +26,7 @@ namespace MR
   namespace ColourMap
   {
 
-    class Entry { MEMALIGN(Entry)
+    class Entry { 
       public:
 
         using basic_map_fn = std::function< Eigen::Array3f (float) >;

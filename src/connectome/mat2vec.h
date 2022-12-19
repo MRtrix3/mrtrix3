@@ -33,7 +33,7 @@ namespace MR {
 
 
     class Mat2Vec
-    { NOMEMALIGN
+    { 
 
       public:
         Mat2Vec (const node_t i) : dim (i) { }

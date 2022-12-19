@@ -65,7 +65,7 @@ namespace MR
      */
 
     template <class ImageType>
-      class Nearest : public Base<ImageType> { MEMALIGN(Nearest<ImageType>)
+      class Nearest : public Base<ImageType> { 
       public:
         using typename Base<ImageType>::value_type;
 
