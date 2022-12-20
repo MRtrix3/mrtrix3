@@ -45,7 +45,7 @@ namespace MR
 
 
 
-    class Mesh { MEMALIGN(Mesh)
+    class Mesh { 
 
       public:
         Mesh (const std::string&);

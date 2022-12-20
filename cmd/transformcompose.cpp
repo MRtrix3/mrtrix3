@@ -23,14 +23,14 @@ using namespace MR;
 using namespace App;
 
 
-class TransformBase { MEMALIGN(TransformBase)
+class TransformBase { 
   public:
     virtual ~TransformBase(){}
     virtual Eigen::Vector3d transform_point (const Eigen::Vector3d& input) = 0;
 };
 
 
-class Warp : public TransformBase { MEMALIGN(Warp)
+class Warp : public TransformBase { 
   public:
     Warp (Image<default_type>& in) : interp (in) {}
 
@@ -48,7 +48,7 @@ class Warp : public TransformBase { MEMALIGN(Warp)
 };
 
 
-class Linear : public TransformBase { MEMALIGN(Linear)
+class Linear : public TransformBase { 
   public:
     Linear (const transform_type& transform) : transform (transform) {}
 

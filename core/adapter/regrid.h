@@ -28,7 +28,7 @@ namespace MR
     template <class ImageType>
       class Regrid :
         public Base<Regrid<ImageType>,ImageType>
-    { MEMALIGN(Regrid<ImageType>)
+    { 
       public:
 
         using base_type = Base<Regrid<ImageType>, ImageType>;

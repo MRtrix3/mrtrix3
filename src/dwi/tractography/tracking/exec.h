@@ -54,7 +54,7 @@ namespace MR
 
         // TODO Try having ACT as a template boolean; allow compiler to optimise out branch statements
 
-        template <class Method> class Exec { MEMALIGN(Exec<Method>)
+        template <class Method> class Exec { 
 
           public:
 

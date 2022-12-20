@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env xdg-open
 
 # Copyright (c) 2008-2022 the MRtrix3 contributors.
 #
@@ -14,13 +14,14 @@
 # See the Mozilla Public License v. 2.0 for more details.
 #
 # For more details, see http://www.mrtrix.org/.
-
-for s in 16 32 48 64 128; do
-  xdg-icon-resource install --context apps --size $s icons/desktop/${s}x${s}/mrtrix.png application-x-mrtrix
-  xdg-icon-resource install --context mimetypes --size $s icons/desktop/${s}x${s}/mrtrix.png x-mrtrix
-done
-
-xdg-mime install mrtrix-mime.xml
-sed s^Exec=mrview^Exec=$(pwd)/bin/mrview^ < mrview.desktop > mrtrix-mrview.desktop
-xdg-desktop-menu install mrtrix-mrview.desktop
-
+[Desktop Entry]
+Value=1.0
+Type=Application
+Terminal=false
+Name=MRView
+GenericName=Medical image viewer
+Comment=The MRtrix image viewer
+Icon=application-x-mrtrix
+Exec=mrview %F
+Categories=Science;Development;Education;MedicalSoftware
+MimeType=application/x-mrtrix;application/x-mrtrix-gz;application/x-nifti;application/x-nifti-gz;application/x-image-mgh;application/x-image-mgz;application/x-image-analyze;

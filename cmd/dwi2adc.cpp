@@ -47,7 +47,7 @@ using value_type = float;
 
 
 
-class DWI2ADC { MEMALIGN(DWI2ADC)
+class DWI2ADC { 
   public:
     DWI2ADC (const Eigen::MatrixXd& binv, size_t dwi_axis) :
       dwi (binv.cols()),

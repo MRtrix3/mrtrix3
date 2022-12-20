@@ -71,13 +71,13 @@ namespace MR
 
     template <class C>
     struct value_type_of
-    { NOMEMALIGN
+    { 
       using type = C;
     };
 
     template <class X>
     struct value_type_of<std::complex<X>>
-    { NOMEMALIGN
+    { 
       using type = X;
     };
 
@@ -94,7 +94,7 @@ namespace MR
     // which we store in LinearInterpBase
 
     template <class ImageType, LinearInterpProcessingType PType>
-    class LinearInterpBase : public Base<ImageType> { MEMALIGN(LinearInterpBase<ImageType, PType>)
+    class LinearInterpBase : public Base<ImageType> { 
       public:
         using typename Base<ImageType>::value_type;
         using coef_type = typename value_type_of<value_type>::type;
@@ -118,7 +118,7 @@ namespace MR
 
 
     template <class ImageType, LinearInterpProcessingType PType>
-    class LinearInterp : public LinearInterpBase <ImageType, PType> { MEMALIGN(LinearInterp<ImageType,PType>)
+    class LinearInterp : public LinearInterpBase <ImageType, PType> { 
       private:
         LinearInterp ();
     };
@@ -129,7 +129,7 @@ namespace MR
     template <class ImageType>
     class LinearInterp<ImageType, LinearInterpProcessingType::Value> :
         public LinearInterpBase<ImageType, LinearInterpProcessingType::Value>
-    { MEMALIGN(LinearInterp<ImageType,LinearInterpProcessingType::Value>)
+    { 
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Value>;
 
@@ -255,7 +255,7 @@ namespace MR
     template <class ImageType>
     class LinearInterp<ImageType, LinearInterpProcessingType::Derivative> :
         public LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>
-    { MEMALIGN(LinearInterp<ImageType,LinearInterpProcessingType::Derivative>)
+    { 
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>;
 
@@ -404,7 +404,7 @@ namespace MR
     template <class ImageType>
     class LinearInterp<ImageType, LinearInterpProcessingType::ValueAndDerivative> :
         public LinearInterpBase <ImageType, LinearInterpProcessingType::ValueAndDerivative>
-    { MEMALIGN(LinearInterp<ImageType,LinearInterpProcessingType::ValueAndDerivative>)
+    { 
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::ValueAndDerivative>;
 

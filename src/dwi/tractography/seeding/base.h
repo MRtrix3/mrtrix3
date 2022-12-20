@@ -94,7 +94,7 @@ namespace MR
 
 
       // Common interface for providing streamline seeds
-      class Base { MEMALIGN(Base)
+      class Base { 
 
         public:
           Base (const std::string& in, const std::string& desc, const size_t attempts) :

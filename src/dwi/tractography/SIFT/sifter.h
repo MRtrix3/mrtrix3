@@ -46,7 +46,7 @@ namespace MR
 
 
       class SIFTer : public Model<Fixel>
-      { MEMALIGN(SIFTer)
+      { 
 
         protected:
         using MapType = Model<Fixel>;
@@ -113,7 +113,7 @@ namespace MR
 
         // For calculating the streamline removal gradients in a multi-threaded fashion
         class TrackGradientCalculator
-        { MEMALIGN(TrackGradientCalculator)
+        { 
           public:
             TrackGradientCalculator (const SIFTer& sifter, vector<Cost_fn_gradient_sort>& v, const double mu, const double r) :
                 master (sifter), gradient_vector (v), current_mu (mu), current_roc_cost (r) { }

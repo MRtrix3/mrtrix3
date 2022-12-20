@@ -106,7 +106,7 @@ void usage ()
 
 
 
-class VTKWriter: public WriterInterface<float> { MEMALIGN(VTKWriter)
+class VTKWriter: public WriterInterface<float> { 
   public:
     VTKWriter(const std::string& file, bool write_ascii = true) :
       VTKout (file, std::ios::binary), write_ascii(write_ascii) {
@@ -218,7 +218,7 @@ template <class T> void loadLines(vector<int64_t>& lines, std::ifstream& input, 
 
 
 
-class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
+class VTKReader: public ReaderInterface<float> { 
   public:
     VTKReader (const std::string& file) {
       std::ifstream input (file, std::ios::binary);
@@ -287,7 +287,7 @@ class VTKReader: public ReaderInterface<float> { MEMALIGN(VTKReader)
 
 
 
-class ASCIIReader: public ReaderInterface<float> { MEMALIGN(ASCIIReader)
+class ASCIIReader: public ReaderInterface<float> { 
   public:
     ASCIIReader(const std::string& file) {
       auto num = list.parse_scan_check(file);
@@ -319,7 +319,7 @@ class ASCIIReader: public ReaderInterface<float> { MEMALIGN(ASCIIReader)
 
 
 
-class ASCIIWriter: public WriterInterface<float> { MEMALIGN(ASCIIWriter)
+class ASCIIWriter: public WriterInterface<float> { 
   public:
     ASCIIWriter(const std::string& file) {
       count.push_back(0);
@@ -353,7 +353,7 @@ class ASCIIWriter: public WriterInterface<float> { MEMALIGN(ASCIIWriter)
 
 
 
-class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
+class PLYWriter: public WriterInterface<float> { 
   public:
     PLYWriter(const std::string& file, int increment = 1, float radius = 0.1, int sides = 5) :
       out(file), increment(increment),
@@ -619,7 +619,7 @@ class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
 
 
 
-class RibWriter: public WriterInterface<float> { MEMALIGN(RibWriter)
+class RibWriter: public WriterInterface<float> { 
   public:
     RibWriter(const std::string& file, float radius = 0.1, bool dec = false) :
       out(file), writeDEC(dec), radius(radius),

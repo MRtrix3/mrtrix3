@@ -19,12 +19,10 @@
 
 #include <chrono>
 
-#define NOMEMALIGN
-
 namespace MR
 {
 
-  class Timer { NOMEMALIGN
+  class Timer {
     public:
       Timer () {
         start();
@@ -49,7 +47,7 @@ namespace MR
 
 
   // a class to help perform operations at given time intervals
-  class IntervalTimer : protected Timer { NOMEMALIGN
+  class IntervalTimer : protected Timer {
     public:
       //! by default, fire at ~30 Hz - most monitors are 60Hz
       IntervalTimer (double time_interval = 0.0333333) :
@@ -61,7 +59,7 @@ namespace MR
        * false until another interval has elapsed. */
       operator bool() {
         auto now = std::chrono::high_resolution_clock::now();
-        if (now < next_time) 
+        if (now < next_time)
           return false;
         from = now;
         next_time += interval;

@@ -27,7 +27,7 @@ namespace MR
   {
 
     class VariableScaling : public Base
-    { NOMEMALIGN
+    { 
       public:
         VariableScaling (const Header& header) :
           Base (header) { }
@@ -35,7 +35,7 @@ namespace MR
         VariableScaling (VariableScaling&&) noexcept = default;
         VariableScaling& operator=(VariableScaling&&) = delete;
 
-        class ScaleFactor { NOMEMALIGN
+        class ScaleFactor { 
           public:
             default_type offset, scale;
         };

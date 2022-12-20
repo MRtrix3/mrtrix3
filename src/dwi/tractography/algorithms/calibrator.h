@@ -55,7 +55,7 @@ namespace MR {
       }
 
       namespace {
-        class Pair { NOMEMALIGN
+        class Pair { 
           public:
             Pair (float elevation, float amplitude) : el (elevation), amp (amplitude) { }
             float el, amp;

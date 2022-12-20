@@ -42,7 +42,7 @@ namespace MR
         extern const char* tractogram_geometry_types[];
 
         class Tractography : public Base
-        { MEMALIGN(Tractography)
+        { 
             Q_OBJECT
 
           public:

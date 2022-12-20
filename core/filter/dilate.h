@@ -46,7 +46,7 @@ namespace MR
      *
      * \endcode
      */
-    class Dilate : public Base { MEMALIGN(Dilate)
+    class Dilate : public Base { 
 
       public:
         template <class HeaderType>

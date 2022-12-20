@@ -30,7 +30,7 @@ namespace MR
     namespace Transform
     {
 
-      class RigidLinearNonSymmetricUpdate { MEMALIGN (RigidLinearNonSymmetricUpdate)
+      class RigidLinearNonSymmetricUpdate { 
         public:
           RigidLinearNonSymmetricUpdate ( ):
             use_convergence_check (false) {  }
@@ -66,7 +66,7 @@ namespace MR
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_control_points_vec;
       };
 
-      class RigidRobustEstimator { MEMALIGN(RigidRobustEstimator)
+      class RigidRobustEstimator { 
         public:
           inline bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -82,7 +82,7 @@ namespace MR
       /*! A 3D rigid transformation class for registration.
        *
        */
-      class Rigid : public Base  { MEMALIGN(Rigid)
+      class Rigid : public Base  { 
         public:
 
           using ParameterType = typename Base::ParameterType;

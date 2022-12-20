@@ -56,7 +56,7 @@ namespace MR
 
       template <class Fixel>
       class Model : public ModelBase<Fixel>
-      { MEMALIGN(Model<Fixel>)
+      { 
 
         protected:
           using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
@@ -106,7 +106,7 @@ namespace MR
         private:
           // Some member classes to support multi-threaded processes
           class TrackMappingWorker
-          { MEMALIGN(TrackMappingWorker)
+          { 
             public:
               TrackMappingWorker (Model& i, const default_type upsample_ratio) :
                   master (i),
@@ -138,7 +138,7 @@ namespace MR
           };
 
           class FixelRemapper
-          { MEMALIGN(FixelRemapper)
+          { 
             public:
               FixelRemapper (Model& i, vector<size_t>& r) :
                 master   (i),
@@ -326,9 +326,9 @@ namespace MR
         using void_t = void;
 
         template <typename T, typename = void>
-        struct has_add_TD_function : std::false_type { NOMEMALIGN };
+        struct has_add_TD_function : std::false_type {  };
         template <typename T>
-        struct has_add_TD_function<T, decltype (std::declval<T>().add_TD(0.0, 0))> : std::true_type { NOMEMALIGN };
+        struct has_add_TD_function<T, decltype (std::declval<T>().add_TD(0.0, 0))> : std::true_type {  };
 
         template <typename FixelType>
         typename std::enable_if<has_add_TD_function<FixelType>::value, void>::type increment (FixelType& fixel, const double length, const track_t count) {

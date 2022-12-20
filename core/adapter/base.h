@@ -35,7 +35,7 @@ namespace MR
     template <class AdapterType, class ImageType> 
       class Base : 
         public ImageBase<AdapterType, typename ImageType::value_type> 
-    { MEMALIGN (Base<AdapterType,ImageType>)
+    { 
       public:
 
         using value_type = typename ImageType::value_type;

@@ -129,7 +129,7 @@ namespace MR
           const float angular_threshold)
       {
 
-        class TrackProcessor { MEMALIGN(TrackProcessor)
+        class TrackProcessor { 
 
           public:
             TrackProcessor (const DWI::Tractography::Mapping::TrackMapperBase& mapper,

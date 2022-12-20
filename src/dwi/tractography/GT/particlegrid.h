@@ -37,7 +37,7 @@ namespace MR {
          * @brief The ParticleGrid class
          */
         class ParticleGrid
-        { MEMALIGN(ParticleGrid)
+        { 
         public:
           
           using ParticleVectorType = vector<Particle*>;

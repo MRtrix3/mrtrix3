@@ -28,7 +28,7 @@ namespace MR
     namespace Metric
     {
       template<class Estimator = L2>
-        class DifferenceRobust : public LinearBase { MEMALIGN(DifferenceRobust<Estimator>)
+        class DifferenceRobust : public LinearBase { 
           public:
             DifferenceRobust () = delete;
             DifferenceRobust (Estimator est) : estimator(est) {}
@@ -69,7 +69,7 @@ namespace MR
         };
 
       template<class Im1Type, class Im2Type, class Estimator = L2>
-        class DifferenceRobust4D : public LinearBase { MEMALIGN(DifferenceRobust4D<Im1Type,Im2Type,Estimator>)
+        class DifferenceRobust4D : public LinearBase { 
           public:
             DifferenceRobust4D () = delete;
             DifferenceRobust4D (const Im1Type& im1, const Im2Type& im2, const Estimator& est) :
