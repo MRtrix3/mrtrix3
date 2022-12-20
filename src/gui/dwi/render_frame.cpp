@@ -16,7 +16,7 @@
 
 #include <fstream>
 
-#include <QGLWidget>
+#include <QOpenGLWidget>
 
 #include "app.h"
 #include "gui/dwi/render_frame.h"
@@ -61,7 +61,7 @@ namespace MR
         glfont (get_font (parent)), projection (this, glfont),
         orientation (DefaultOrientation),
         focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
-        renderer ((QGLWidget*)this)
+        renderer ((QOpenGLWidget*)this)
       {
         setMinimumSize (128, 128);
         lighting = new GL::Lighting (this);
@@ -309,7 +309,7 @@ namespace MR
             orientation = rot * orientation;
             update();
           }
-          else if (event->buttons() == Qt::MidButton) {
+          else if (event->buttons() == Qt::MiddleButton) {
             focus += projection.screen_to_model_direction (QPoint (dx, -dy), focus);
             update();
           }
@@ -396,4 +396,3 @@ namespace MR
     }
   }
 }
-

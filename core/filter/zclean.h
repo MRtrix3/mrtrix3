@@ -37,7 +37,7 @@ namespace MR
 
 
 
-    class ZClean : public Base { MEMALIGN(ZClean)
+    class ZClean : public Base { 
 
       public:
         template <class HeaderType>

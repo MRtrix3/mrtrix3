@@ -30,7 +30,7 @@ namespace MR
     {
 
       class AdjustButton : public QLineEdit
-      { NOMEMALIGN
+      { 
         Q_OBJECT
 
         public:

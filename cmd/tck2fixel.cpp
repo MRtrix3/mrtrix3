@@ -36,7 +36,7 @@ using Fixel::index_type;
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 
 
-class TrackProcessor { MEMALIGN (TrackProcessor)
+class TrackProcessor { 
 
  public:
 

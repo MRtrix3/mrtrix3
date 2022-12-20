@@ -37,7 +37,7 @@ namespace MR
 
 
         class Fixel::Model : public ListModelBase
-        { MEMALIGN (Fixel::Model)
+        { 
 
           public:
             Model (QObject* parent) :

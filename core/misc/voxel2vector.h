@@ -37,7 +37,7 @@ namespace MR
   // A class to achieve a mapping from a voxel position in an image
   //   with any number of axes, to an index within a 1D vector of data.
   class Voxel2Vector
-  { MEMALIGN(Voxel2Vector)
+  { 
     public:
 
       typedef uint32_t index_t;

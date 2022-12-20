@@ -51,7 +51,7 @@ namespace MR
 
 
 
-       class ROI_Item : public Volume { MEMALIGN(ROI_Item)
+       class ROI_Item : public Volume { 
           public:
             ROI_Item (MR::Header&&);
 

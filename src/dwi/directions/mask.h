@@ -32,7 +32,7 @@ namespace MR {
 
 
 
-      class Mask : public BitSet { NOMEMALIGN
+      class Mask : public BitSet { 
 
         public:
           Mask (const Set& master, const bool allocator = false) :

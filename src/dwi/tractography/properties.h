@@ -42,7 +42,7 @@ namespace MR
 
 
 
-      class Properties : public KeyValues { MEMALIGN(Properties)
+      class Properties : public KeyValues { 
         public:
 
           Properties () {

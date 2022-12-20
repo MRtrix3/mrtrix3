@@ -21,7 +21,7 @@ namespace MR
   namespace Registration
   {
 
-    class CopyFunctor4D { NOMEMALIGN
+    class CopyFunctor4D { 
     public:
       CopyFunctor4D (size_t out_start_vol, size_t nvols) :
         start_vol (out_start_vol),
@@ -42,7 +42,7 @@ namespace MR
     };
 
 
-    class CopyFunctor3D { NOMEMALIGN
+    class CopyFunctor3D { 
     public:
       CopyFunctor3D (size_t out_start_vol) :
         start_vol (out_start_vol) { }

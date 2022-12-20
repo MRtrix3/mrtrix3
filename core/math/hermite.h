@@ -27,7 +27,7 @@ namespace MR
   {
 
     template <typename T> class Hermite
-    { NOMEMALIGN
+    { 
       public:
         using value_type = T;
 

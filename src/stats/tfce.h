@@ -42,7 +42,7 @@ namespace MR
 
 
       class EnhancerBase : public Stats::EnhancerBase
-      { MEMALIGN (EnhancerBase)
+      { 
         public:
           virtual ~EnhancerBase() { }
         protected:
@@ -56,7 +56,7 @@ namespace MR
 
 
       class Wrapper : public Stats::EnhancerBase
-      { MEMALIGN (Wrapper)
+      { 
         public:
           Wrapper (const std::shared_ptr<TFCE::EnhancerBase> base) : enhancer (base), dH (NaN), E (NaN), H (NaN) { }
           Wrapper (const std::shared_ptr<TFCE::EnhancerBase> base, const default_type dh, const default_type e, const default_type h) : enhancer (base), dH (dh), E (e), H (h) { }

@@ -39,7 +39,7 @@ namespace MR
 
 
         class GMWMI_5TT_Wrapper
-        { MEMALIGN(GMWMI_5TT_Wrapper)
+        { 
           public:
             GMWMI_5TT_Wrapper (const std::string& path) :
                 anat_data (Image<float>::open (path)) { }
@@ -48,7 +48,7 @@ namespace MR
 
 
         class GMWMI : public Base, private GMWMI_5TT_Wrapper, private ACT::GMWMI_finder
-        { MEMALIGN(GMWMI)
+        { 
 
           public:
             using ACT::GMWMI_finder::Interp;

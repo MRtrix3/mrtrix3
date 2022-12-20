@@ -45,7 +45,7 @@ namespace MR
 
 
       class WriteKernel
-      { MEMALIGN(WriteKernel)
+      { 
         public:
 
           WriteKernel (const SharedBase& shared,
