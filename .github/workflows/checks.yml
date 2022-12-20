@@ -9,6 +9,7 @@ on:
 
 
 
+
 jobs:
   linux-clang-build:
 
@@ -24,7 +25,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang-8 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
 
     - name: configure
       run: ./configure -assert || { cat configure.log; false; }
@@ -161,8 +162,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip python3-setuptools
-         pip3 install pylint sphinx-notfound-page
+         sudo apt-get install pylint python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip python3-sphinx-notfound-page
 
     - name: check syntax
       run: ./check_syntax || { cat syntax.log; false; }
@@ -177,4 +177,3 @@ jobs:
 
     - name: check building of documentation
       run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
-

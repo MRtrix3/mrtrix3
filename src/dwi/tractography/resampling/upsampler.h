@@ -29,7 +29,7 @@ namespace MR {
 
 
         class Upsampler : public BaseCRTP<Upsampler>
-        { MEMALIGN(Upsampler)
+        { 
 
           public:
             Upsampler () :

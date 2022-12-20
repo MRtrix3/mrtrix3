@@ -125,7 +125,7 @@ using real_type = float;
 
 template <typename F = float>
 class DenoisingFunctor {
-  MEMALIGN(DenoisingFunctor)
+  
 
 public:
 

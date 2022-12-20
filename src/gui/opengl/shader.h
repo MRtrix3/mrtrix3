@@ -34,7 +34,7 @@ namespace MR
         class Program;
 
         template <GLint TYPE> class Object
-        { NOMEMALIGN
+        { 
           public:
             Object () : index_ (0) { }
             Object (const std::string& source) : index_ (0) { if(!source.empty()) compile (source); }
@@ -95,7 +95,7 @@ namespace MR
 
 
         class Program
-        { NOMEMALIGN
+        { 
           public:
             Program () : index_ (0) { }
             Program (Program&& other) : index_ (other.index_) { other.index_ = 0; }

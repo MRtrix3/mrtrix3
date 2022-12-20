@@ -31,7 +31,7 @@ namespace MR {
      * The \a direction parameter should be either FFTW_FORWARD or
      * FFTW_BACKWARD */
     class FFT1D
-    { MEMALIGN (FFT1D)
+    { 
       public:
         FFT1D (size_t N, int direction) :
           _data (N),
@@ -87,7 +87,7 @@ namespace MR {
     template <class ImageTypeIn, class ImageTypeOut>
       inline void FFT (ImageTypeIn& in, ImageTypeOut& out, size_t axis, int direction, bool centre_FFT = false)
       {
-        class FFTFunctor { MEMALIGN (FFTFunctor)
+        class FFTFunctor { 
           public:
             FFTFunctor (const ImageTypeIn& in, const ImageTypeOut& out, size_t axis, int direction, bool centre_FFT) :
               in (in),

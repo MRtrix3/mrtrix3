@@ -47,7 +47,7 @@ namespace MR
 
 
 
-        class SharedBase { MEMALIGN(SharedBase)
+        class SharedBase { 
 
           public:
 

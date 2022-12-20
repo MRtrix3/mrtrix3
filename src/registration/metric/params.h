@@ -45,10 +45,6 @@ namespace MR
                 class ProcMaskType = Image<bool>,
                 class ProcessedMaskInterpolatorType = Interp::Nearest<Image<bool>>>
       class Params {
-        MEMALIGN (Params<TransformType,Im1ImageType,Im2ImageType,MidwayImageType,
-            Im1MaskType,Im2MaskType,Im1ImageInterpType,Im2ImageInterpType,
-            Im1MaskInterpolatorType,Im2MaskInterpolatorType,ProcImageType,ProcImageInterpolatorType,
-            ProcMaskType,ProcessedMaskInterpolatorType>)
         public:
 
           using TransformParamType = typename TransformType::ParameterType;

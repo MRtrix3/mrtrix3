@@ -100,7 +100,7 @@ using DWI::Tractography::SIFT::FixelBase;
 
 
 class AFDConnFixel : public FixelBase
-{ MEMALIGN(AFDConnFixel)
+{ 
   public:
     AFDConnFixel () : FixelBase (), length (0.0) { }
     AFDConnFixel (const FMLS::FOD_lobe& lobe) : FixelBase (lobe), length (0.0) { }
@@ -121,7 +121,7 @@ class AFDConnFixel : public FixelBase
 
 
 class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<AFDConnFixel>
-{ MEMALIGN(AFDConnectivity)
+{ 
   public:
     AFDConnectivity (Image<value_type>& fod_buffer, const DWI::Directions::FastLookupSet& dirs, const std::string& tck_path, const std::string& wbft_path) :
         DWI::Tractography::SIFT::ModelBase<AFDConnFixel> (fod_buffer, dirs),

@@ -31,7 +31,7 @@ namespace MR
     void MeshMulti::load (const std::string& path)
     {
 
-      struct FaceData { NOMEMALIGN
+      struct FaceData { 
           uint32_t vertex, texture, normal;
       };
 

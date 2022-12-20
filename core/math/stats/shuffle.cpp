@@ -21,7 +21,7 @@
 #include <random>
 
 #include "math/factorial.h"
-#include "math/math.h"
+#include "math/rng.h"
 
 namespace MR
 {
@@ -444,6 +444,8 @@ namespace MR
                                                    const bool include_default,
                                                    const bool permit_duplicates)
       {
+        Math::RNG rng;
+
         permutations.clear();
         permutations.reserve (num_perms);
 
@@ -462,7 +464,7 @@ namespace MR
           for (; p != num_perms; ++p) {
             PermuteLabels permuted_labelling (default_labelling);
             do {
-              std::random_shuffle (permuted_labelling.begin(), permuted_labelling.end());
+              std::shuffle (permuted_labelling.begin(), permuted_labelling.end(), rng);
             } while (!permit_duplicates && is_duplicate (permuted_labelling));
             permutations.push_back (permuted_labelling);
           }
@@ -481,7 +483,7 @@ namespace MR
               // Random permutation within each block independently
               for (size_t ib = 0; ib != blocks.size(); ++ib) {
                 vector<size_t> permuted_block (blocks[ib]);
-                std::random_shuffle (permuted_block.begin(), permuted_block.end());
+                std::shuffle (permuted_block.begin(), permuted_block.end(), rng);
                 for (size_t i = 0; i != permuted_block.size(); ++i)
                   permuted_labelling[blocks[ib][i]] = permuted_block[i];
               }
@@ -505,7 +507,7 @@ namespace MR
             // Randomly order a list corresponding to the block indices, and then
             //   generate the full permutation label listing accordingly
             PermuteLabels permuted_blocks (default_blocks);
-            std::random_shuffle (permuted_blocks.begin(), permuted_blocks.end());
+            std::shuffle (permuted_blocks.begin(), permuted_blocks.end(), rng);
             for (size_t ib = 0; ib != num_blocks; ++ib) {
               for (size_t i = 0; i != block_size; ++i)
                 permuted_labelling[blocks[ib][i]] = blocks[permuted_blocks[ib]][i];

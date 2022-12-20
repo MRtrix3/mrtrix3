@@ -38,7 +38,7 @@ namespace MR
     //   everything being ASCII as in .obj)
 
     class MeshMulti : public vector<Mesh>
-    { MEMALIGN (MeshMulti)
+    { 
       public:
         using vector<Mesh>::vector;
 

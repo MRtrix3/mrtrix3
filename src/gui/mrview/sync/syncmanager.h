@@ -37,7 +37,7 @@ namespace MR
         * IPC=InterprocessCommunicator
         */
         class SyncManager : public QObject
-        { MEMALIGN(SyncManager)
+        { 
           Q_OBJECT
 
         public:

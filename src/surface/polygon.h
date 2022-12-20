@@ -32,7 +32,7 @@ namespace MR
 
     template <uint32_t vertices = 3>
     class Polygon
-    { MEMALIGN (Polygon<vertices>)
+    {
 
       public:
 

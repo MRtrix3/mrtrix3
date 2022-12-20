@@ -111,27 +111,27 @@ using FixelDataType = Image<float>;
 
 
 
-struct set_offset { NOMEMALIGN
+struct set_offset { 
   FORCE_INLINE set_offset (index_type offset) : offset (offset) { }
   template <class DataType>
     FORCE_INLINE void operator() (DataType& data) { data.index(0) = offset; }
   index_type offset;
 };
 
-struct inc_fixel { NOMEMALIGN
+struct inc_fixel { 
   template <class DataType>
     FORCE_INLINE void operator() (DataType& data) { ++data.index(0); }
 };
 
 
 
-struct LoopFixelsInVoxelWithMax { NOMEMALIGN
+struct LoopFixelsInVoxelWithMax { 
   const index_type num_fixels;
   const index_type max_fixels;
   const index_type offset;
 
   template <class... DataType>
-  struct Run { NOMEMALIGN
+  struct Run { 
     const index_type num_fixels;
     const index_type max_fixels;
     const index_type offset;
@@ -139,10 +139,10 @@ struct LoopFixelsInVoxelWithMax { NOMEMALIGN
     const std::tuple<DataType&...> data;
     FORCE_INLINE Run (const index_type num_fixels, const index_type max_fixels, const index_type offset, const std::tuple<DataType&...>& data) :
       num_fixels (num_fixels), max_fixels (max_fixels), offset (offset), fixel_index (0), data (data) {
-      apply (set_offset (offset), data);
+        MR::apply (set_offset (offset), data);
     }
     FORCE_INLINE operator bool() const { return max_fixels ? (fixel_index < max_fixels) : (fixel_index < num_fixels); }
-    FORCE_INLINE void operator++() { if (!padding()) apply (inc_fixel (), data); ++fixel_index; }
+    FORCE_INLINE void operator++() { if (!padding()) MR::apply (inc_fixel (), data); ++fixel_index; }
     FORCE_INLINE void operator++(int) { operator++(); }
     FORCE_INLINE bool padding() const { return (max_fixels && fixel_index >= num_fixels); }
     FORCE_INLINE index_type count() const { return max_fixels ? max_fixels : num_fixels; }
@@ -156,7 +156,7 @@ struct LoopFixelsInVoxelWithMax { NOMEMALIGN
 
 
 class Base
-{ NOMEMALIGN
+{ 
   public:
     Base (FixelDataType& data, const index_type max_fixels, const bool pad = false, const float pad_value = 0.0) :
         data (data),
@@ -183,7 +183,7 @@ class Base
 
 
 class Mean : protected Base
-{ MEMALIGN (Mean)
+{ 
   public:
     Mean (FixelDataType& data, const index_type max_fixels, FixelDataType& vol) :
         Base (data, max_fixels),
@@ -217,7 +217,7 @@ class Mean : protected Base
 
 
 class Sum : protected Base
-{ MEMALIGN (Sum)
+{ 
   public:
     Sum (FixelDataType& data, const index_type max_fixels, FixelDataType& vol) :
         Base (data, max_fixels),
@@ -243,7 +243,7 @@ class Sum : protected Base
 
 
 class Product : protected Base
-{ MEMALIGN (Product)
+{ 
   public:
     Product (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -270,7 +270,7 @@ class Product : protected Base
 
 
 class Min : protected Base
-{ MEMALIGN (Min)
+{ 
   public:
     Min (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -288,7 +288,7 @@ class Min : protected Base
 
 
 class Max : protected Base
-{ MEMALIGN (Max)
+{ 
   public:
     Max (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -306,7 +306,7 @@ class Max : protected Base
 
 
 class AbsMax : protected Base
-{ MEMALIGN (AbsMax)
+{ 
   public:
     AbsMax (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -324,7 +324,7 @@ class AbsMax : protected Base
 
 
 class MagMax : protected Base
-{ MEMALIGN (MagMax)
+{ 
   public:
     MagMax (FixelDataType& data, const index_type num_fixels) :
         Base (data, num_fixels) { }
@@ -342,7 +342,7 @@ class MagMax : protected Base
 
 
 class Complexity : protected Base
-{ MEMALIGN (Complexity)
+{ 
   public:
     Complexity (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -370,7 +370,7 @@ class Complexity : protected Base
 
 
 class SF : protected Base
-{ MEMALIGN (SF)
+{ 
   public:
     SF (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -391,7 +391,7 @@ class SF : protected Base
 
 
 class DEC_unit : protected Base
-{ MEMALIGN (DEC_unit)
+{ 
   public:
     DEC_unit (FixelDataType& data, const index_type max_fixels, FixelDataType& vol, Image<float>& dir) :
         Base (data, max_fixels),
@@ -423,7 +423,7 @@ class DEC_unit : protected Base
 
 
 class DEC_scaled : protected Base
-{ MEMALIGN (DEC_scaled)
+{ 
   public:
     DEC_scaled (FixelDataType& data, const index_type max_fixels, FixelDataType& vol, Image<float>& dir) :
         Base (data, max_fixels),
@@ -466,7 +466,7 @@ class DEC_scaled : protected Base
 
 
 class None : protected Base
-{ MEMALIGN (None)
+{ 
   public:
     None (FixelDataType& data, const index_type max_fixels, const float fill_value) :
         Base (data, max_fixels, true, fill_value) { }

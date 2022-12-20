@@ -26,35 +26,35 @@ namespace MR
 
 
     namespace {
-      struct set_offset { NOMEMALIGN
+      struct set_offset { 
         FORCE_INLINE set_offset (index_type offset) : offset (offset) { }
         template <class DataType>
           FORCE_INLINE void operator() (DataType& data) { data.index(0) = offset; }
         index_type offset;
       };
 
-      struct inc_fixel { NOMEMALIGN
+      struct inc_fixel { 
         template <class DataType>
           FORCE_INLINE void operator() (DataType& data) { ++data.index(0); }
       };
     }
 
-    struct LoopFixelsInVoxel { NOMEMALIGN
+    struct LoopFixelsInVoxel { 
       const index_type num_fixels;
       const index_type offset;
 
       template <class... DataType>
-      struct Run { NOMEMALIGN
+      struct Run { 
         const index_type num_fixels;
         const index_type offset;
         index_type fixel_index;
         const std::tuple<DataType&...> data;
         FORCE_INLINE Run (const index_type num_fixels, const index_type offset, const std::tuple<DataType&...>& data) :
           num_fixels (num_fixels), offset (offset), fixel_index (0), data (data) {
-          apply (set_offset (offset), data);
+            MR::apply (set_offset (offset), data);
         }
         FORCE_INLINE operator bool() const { return fixel_index < num_fixels; }
-        FORCE_INLINE void operator++() { apply (inc_fixel (), data); fixel_index++; }
+        FORCE_INLINE void operator++() { MR::apply (inc_fixel (), data); fixel_index++; }
         FORCE_INLINE void operator++(int) const { operator++(); }
       };
 

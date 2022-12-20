@@ -38,7 +38,7 @@ namespace MR
     namespace Legacy
     {
       template <typename DataType>
-        class Value { MEMALIGN (Value<DataType>)
+        class Value { 
           public:
             Value (::MR::Image<uint64_t>& offsets, ImageIO::SparseLegacy& io) : offsets (offsets), io (io) { }
 
@@ -97,7 +97,7 @@ namespace MR
       // A convenience class for wrapping access to sparse images
       template <typename DataType>
         class Image : public ::MR::Image<uint64_t>
-      { MEMALIGN (Image<DataType>)
+      { 
         public:
           Image (const std::string& image_name) :
             ::MR::Image<uint64_t> (::MR::Image<uint64_t>::open (image_name)), io (nullptr) { check(); }

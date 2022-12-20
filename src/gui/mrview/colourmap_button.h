@@ -32,7 +32,7 @@ namespace MRView
 class ColourMapButton;
 
 class ColourMapButtonObserver
-{ NOMEMALIGN
+{ 
 public:
     virtual void selected_colourmap(size_t, const ColourMapButton&) {}
     virtual void selected_custom_colour(const QColor&, const ColourMapButton&) {}
@@ -43,7 +43,7 @@ public:
 
 
 class ColourMapButton : public QToolButton
-{ MEMALIGN(ColourMapButton)
+{ 
     Q_OBJECT
 public:
     ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs,

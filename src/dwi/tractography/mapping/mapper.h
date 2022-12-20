@@ -53,7 +53,7 @@ namespace MR {
 
 
         class TrackMapperBase
-        { MEMALIGN(TrackMapperBase)
+        { 
 
           public:
             template <class HeaderType>
@@ -356,7 +356,7 @@ namespace MR {
 
 
         class TrackMapperTWI : public TrackMapperBase
-        { MEMALIGN(TrackMapperTWI)
+        { 
           public:
             template <class HeaderType>
             TrackMapperTWI (const HeaderType& template_image, const contrast_t c, const tck_stat_t s) :

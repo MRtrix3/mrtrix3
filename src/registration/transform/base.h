@@ -83,7 +83,7 @@ namespace MR
        * The translation also should be initialised as image1 image centre minus the image2 image centre.
        *
        */
-      class Base  { MEMALIGN(Base)
+      class Base  { 
         public:
 
           using ParameterType = default_type;

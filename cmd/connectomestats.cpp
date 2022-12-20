@@ -132,7 +132,7 @@ void load_tfce_parameters (Stats::TFCE::Wrapper& enhancer)
 //   specific subject based on the string path to the image file for
 //   that subject
 class SubjectConnectomeImport : public SubjectDataImportBase
-{ MEMALIGN(SubjectConnectomeImport)
+{ 
   public:
     SubjectConnectomeImport (const std::string& path) :
         SubjectDataImportBase (path)

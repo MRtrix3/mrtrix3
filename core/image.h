@@ -38,7 +38,7 @@ namespace MR
   template <typename ValueType>
     class Image :
       public ImageBase<Image<ValueType>, ValueType>
-  { MEMALIGN (Image<ValueType>)
+  {
       public:
         using value_type = ValueType;
         class Buffer;
@@ -209,7 +209,6 @@ namespace MR
         size_t data_offset;
     };
 
-  CHECK_MEM_ALIGN (Image<float>);
 
 
 
@@ -217,7 +216,7 @@ namespace MR
 
 
   template <typename ValueType>
-    class Image<ValueType>::Buffer : public Header { MEMALIGN (Image<ValueType>::Buffer)
+    class Image<ValueType>::Buffer : public Header {
       public:
         Buffer() {} // TODO: delete this line! Only for testing memory alignment issues.
         //! construct a Buffer object to access the data in the image specified
@@ -253,7 +252,6 @@ namespace MR
         }
     };
 
-  CHECK_MEM_ALIGN (Image<float>::Buffer);
 
 
 
@@ -275,7 +273,7 @@ namespace MR
     template <typename ValueType>
       struct TmpImage :
         public ImageBase<TmpImage<ValueType>, ValueType>
-    { MEMALIGN (TmpImage<ValueType>)
+    {
         using value_type = ValueType;
 
       TmpImage (const typename Image<ValueType>::Buffer& b, void* const data,
@@ -301,7 +299,6 @@ namespace MR
         FORCE_INLINE void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
       };
 
-    CHECK_MEM_ALIGN (TmpImage<float>);
 
   }
 

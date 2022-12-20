@@ -32,34 +32,34 @@ namespace MR
       //! \cond skip
       namespace {
         template<class T>
-        struct Void2 { NOMEMALIGN
+        struct Void2 { 
           using type = void;
         };
 
         template <class MetricType, typename U = void>
-        struct metric_requires_precompute { NOMEMALIGN
+        struct metric_requires_precompute { 
           using no = int;
         };
 
         template <class MetricType>
-        struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> { NOMEMALIGN
+        struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> { 
           using yes = int;
         };
 
         template <class MetricType, typename U = void>
-        struct metric_requires_initialisation { NOMEMALIGN
+        struct metric_requires_initialisation { 
           using no = int;
         };
 
         template <class MetricType>
-        struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> { NOMEMALIGN
+        struct metric_requires_initialisation<MetricType, typename Void2<typename MetricType::requires_initialisation>::type> { 
           using yes = int;
         };
       }
       //! \endcond
 
       template <class MetricType, class ParamType>
-        class Evaluate { MEMALIGN(Evaluate<MetricType,ParamType>)
+        class Evaluate { 
           public:
 
             using TransformParamType = typename ParamType::TransformParamType;

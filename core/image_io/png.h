@@ -28,7 +28,7 @@ namespace MR
   {
 
     class PNG : public Base
-    { MEMALIGN (PNG)
+    { 
       public:
         PNG (const Header& header) : Base (header) { }
 

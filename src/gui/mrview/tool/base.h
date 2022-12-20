@@ -44,7 +44,7 @@ namespace MR
 
 
         class CameraInteractor
-        { NOMEMALIGN
+        { 
           public:
             CameraInteractor () : _active (false) { }
             bool active () const { return _active; }
@@ -62,7 +62,7 @@ namespace MR
 
 
         class Dock : public QDockWidget
-        { NOMEMALIGN
+        { 
           public:
             Dock (const QString& name, bool floating) :
               QDockWidget (name, Window::main), tool (nullptr) {
@@ -81,7 +81,7 @@ namespace MR
 
 
 
-        class Base : public QFrame { NOMEMALIGN
+        class Base : public QFrame { 
           public:
             Base (Dock* parent);
             Window& window () const { return *Window::main; }
@@ -104,7 +104,7 @@ namespace MR
               }
             }
 
-            class HBoxLayout : public QHBoxLayout { NOMEMALIGN
+            class HBoxLayout : public QHBoxLayout { 
               public:
                 HBoxLayout () : QHBoxLayout () { init(); }
                 HBoxLayout (QWidget* parent) : QHBoxLayout (parent) { init(); }
@@ -115,7 +115,7 @@ namespace MR
                 }
             };
 
-            class VBoxLayout : public QVBoxLayout { NOMEMALIGN
+            class VBoxLayout : public QVBoxLayout { 
               public:
                 VBoxLayout () : QVBoxLayout () { init(); }
                 VBoxLayout (QWidget* parent) : QVBoxLayout (parent) { init(); }
@@ -126,7 +126,7 @@ namespace MR
                 }
             };
 
-            class GridLayout : public QGridLayout { NOMEMALIGN
+            class GridLayout : public QGridLayout { 
               public:
                 GridLayout () : QGridLayout () { init(); }
                 GridLayout (QWidget* parent) : QGridLayout (parent) { init(); }
@@ -138,7 +138,7 @@ namespace MR
             };
 
 
-            class FormLayout : public QFormLayout { NOMEMALIGN
+            class FormLayout : public QFormLayout { 
               public:
                 FormLayout () : QFormLayout () { init(); }
                 FormLayout (QWidget* parent) : QFormLayout (parent) { init(); }
@@ -185,7 +185,8 @@ namespace MR
 
 
         class __Action__ : public QAction
-        { NOMEMALIGN
+        { 
+          Q_OBJECT
           public:
             __Action__ (QActionGroup* parent,
                         const char* const name,
@@ -202,6 +203,9 @@ namespace MR
 
             virtual Dock* create (bool floating) = 0;
             Dock* dock;
+
+            public slots:
+              void visibility_slot (bool);
         };
         //! \endcond
 
@@ -219,7 +223,7 @@ namespace MR
 
         template <class T>
           class Action : public __Action__
-        { NOMEMALIGN
+        { 
           public:
             Action (QActionGroup* parent,
                 const char* const name,

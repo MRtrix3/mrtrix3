@@ -44,7 +44,7 @@ namespace MR {
 
 
         class Base
-        { NOMEMALIGN
+        { 
           public:
             Base() { }
             virtual ~Base() { }
@@ -57,7 +57,7 @@ namespace MR {
 
         template <class Derived>
         class BaseCRTP : public Base
-        { NOMEMALIGN
+        { 
           public:
             virtual Base* clone() const {
               return new Derived(static_cast<Derived const&>(*this));

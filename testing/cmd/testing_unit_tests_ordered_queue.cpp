@@ -62,7 +62,7 @@ const size_t sample_size = 1e6;
 size_t sample_size_received, out_of_order;
 
 
-struct SourceFunctor { NOMEMALIGN
+struct SourceFunctor { 
   SourceFunctor () : count (0), value (0) { }
   ~SourceFunctor () { std::cerr << "source sent " << count << " items\n"; }
   bool operator() (Item& item) {
@@ -75,14 +75,14 @@ struct SourceFunctor { NOMEMALIGN
   size_t value;
 };
 
-struct PipeFunctor { NOMEMALIGN
+struct PipeFunctor { 
   bool operator() (const Item& in, Item& out) {
     out = in;
     return true;
   }
 };
 
-struct SinkFunctor { NOMEMALIGN
+struct SinkFunctor { 
   SinkFunctor () : value (0) { sample_size_received = 0; out_of_order = 0; }
   ~SinkFunctor () { std::cerr << "received " << sample_size_received << " items with " << out_of_order << " items out of order\n"; }
   bool operator() (const Item& item) {

@@ -33,7 +33,7 @@ namespace MR
 
 
         class Transform : public Base, public Tool::CameraInteractor
-        { MEMALIGN(Transform)
+        { 
           Q_OBJECT
           public:
             Transform (Dock* parent);

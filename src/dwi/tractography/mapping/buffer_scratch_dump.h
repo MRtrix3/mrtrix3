@@ -35,7 +35,7 @@ namespace MR {
 
         template <typename value_type>
           class BufferScratchDump : public Image<value_type>
-        { MEMALIGN(BufferScratchDump)
+        { 
 
           public:
             template <class Template>

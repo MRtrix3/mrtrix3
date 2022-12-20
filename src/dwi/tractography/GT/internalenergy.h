@@ -34,7 +34,7 @@ namespace MR {
       namespace GT {
         
         class InternalEnergyComputer : public EnergyComputer 
-        { MEMALIGN(InternalEnergyComputer)
+        { 
         public:
           
           InternalEnergyComputer(Stats& s, ParticleGrid& pgrid)

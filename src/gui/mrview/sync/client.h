@@ -34,7 +34,7 @@ namespace MR
         Sends data to another process
         */
         class Client
-        { NOMEMALIGN
+        { 
 
         public:
           Client();

@@ -28,7 +28,7 @@ namespace MR
         enum FixelColourType { Direction, CValue };
         enum FixelScaleType { Unity, Value };
 
-        struct FixelValue { MEMALIGN (FixelValue)
+        struct FixelValue { 
           bool loaded = false;
           float value_min = std::numeric_limits<float>::max ();
           float value_max = std::numeric_limits<float>::min ();

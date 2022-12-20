@@ -40,7 +40,7 @@ namespace MR {
 
       // This should be possible to use for any domain of inference
       class PassThrough : public Stats::EnhancerBase
-      { MEMALIGN (PassThrough)
+      { 
         public:
           PassThrough() { }
           virtual ~PassThrough() { }
@@ -53,7 +53,7 @@ namespace MR {
 
 
       class NBS : public Stats::TFCE::EnhancerBase
-      { MEMALIGN (NBS)
+      { 
         public:
 
           NBS () = delete;

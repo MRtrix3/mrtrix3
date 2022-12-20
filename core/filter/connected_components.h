@@ -37,7 +37,7 @@ namespace MR
 
 
     class Connector
-    { NOMEMALIGN
+    { 
 
       public:
 
@@ -49,7 +49,7 @@ namespace MR
         //   class, to define the volumes on the fourth axis that
         //   correspond to neighbouring directions using a Directions::Set.
         class Adjacency
-        { NOMEMALIGN
+        { 
           public:
             typedef Voxel2Vector::index_t index_t;
 
@@ -93,7 +93,7 @@ namespace MR
 
 
         class Cluster
-        { NOMEMALIGN
+        { 
           public:
             Cluster (const uint32_t l) :
                 label (l),
@@ -225,7 +225,7 @@ namespace MR
      *
      * \endcode
      */
-    class ConnectedComponents : public Base { MEMALIGN(ConnectedComponents)
+    class ConnectedComponents : public Base { 
       public:
 
         template <class HeaderType>

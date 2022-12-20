@@ -51,7 +51,7 @@ namespace MR
        */
 
       class Connect : public Base
-      { MEMALIGN (Connect)
+      { 
 
         public:
           Connect (const Fixel::Matrix::Reader& matrix,

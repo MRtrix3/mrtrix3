@@ -490,7 +490,7 @@ namespace MR
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
         {
-          struct WithType : public MR::Image<cfloat> { NOMEMALIGN
+          struct WithType : public MR::Image<cfloat> { 
             using MR::Image<cfloat>::data_offset;
             using MR::Image<cfloat>::buffer;
 

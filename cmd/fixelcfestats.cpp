@@ -155,7 +155,7 @@ void write_fixel_output (const std::string& filename,
 //   specific subject based on the string path to the image file for
 //   that subject
 class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
-{ MEMALIGN(SubjectFixelImport)
+{ 
   public:
     SubjectFixelImport (const std::string& path) :
         Math::Stats::SubjectDataImportBase (path),

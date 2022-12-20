@@ -267,7 +267,7 @@ void run () {
         bounds[axis][1] = 0;
       }
 
-      struct BoundsCheck { NOMEMALIGN
+      struct BoundsCheck { 
         vector<vector<ssize_t>>& overall_bounds;
         vector<vector<ssize_t>> bounds;
         BoundsCheck (vector<vector<ssize_t>>& overall_bounds) : overall_bounds (overall_bounds), bounds (overall_bounds) { }

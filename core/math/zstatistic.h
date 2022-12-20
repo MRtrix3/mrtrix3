@@ -36,7 +36,7 @@ namespace MR
 
 
     class Zstatistic
-    { MEMALIGN(Zstatistic)
+    { 
       public:
         Zstatistic() { }
 
@@ -61,7 +61,7 @@ namespace MR
       protected:
 
         class LookupBase
-        { MEMALIGN(LookupBase)
+        { 
           public:
             virtual ~LookupBase() { }
             using array_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
@@ -79,7 +79,7 @@ namespace MR
         };
 
         class Lookup_t2z : public LookupBase
-        { MEMALIGN(Lookup_t2z)
+        { 
           public:
             Lookup_t2z (const size_t dof);
             default_type operator() (const default_type) const override;
@@ -91,7 +91,7 @@ namespace MR
         };
 
         class Lookup_F2z : public LookupBase
-        { MEMALIGN(Lookup_F2z)
+        { 
           public:
             Lookup_F2z (const size_t rank, const size_t dof);
             default_type operator() (const default_type) const override;

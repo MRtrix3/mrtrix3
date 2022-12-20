@@ -34,7 +34,7 @@ namespace MR
 
 
 
-        class Overlay::Item : public Image { MEMALIGN(Overlay::Item)
+        class Overlay::Item : public Image { 
           public:
             Item (MR::Header&& H) : Image (std::move (H)) { }
             Mode::Slice::Shader slice_shader;
@@ -42,7 +42,7 @@ namespace MR
 
 
         class Overlay::Model : public ListModelBase
-        { MEMALIGN(Overlay::Model)
+        { 
           public:
             Model (QObject* parent) :
               ListModelBase (parent) { }

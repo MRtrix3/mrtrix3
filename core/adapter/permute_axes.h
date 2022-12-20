@@ -27,7 +27,7 @@ namespace MR
     template <class ImageType>
       class PermuteAxes :
         public Base<PermuteAxes<ImageType>,ImageType>
-    { MEMALIGN (PermuteAxes<ImageType>)
+    { 
         public:
 
         using base_type = Base<PermuteAxes<ImageType>, ImageType>;

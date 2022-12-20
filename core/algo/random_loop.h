@@ -29,7 +29,7 @@ namespace MR
 {
 
  template <class ImageType, class RandomEngine>
-  class Random_loop { NOMEMALIGN
+  class Random_loop { 
     public:
       Random_loop (ImageType& in,
         RandomEngine& random_engine,
@@ -86,7 +86,7 @@ namespace MR
 
   // Random_sparse_loop: ok for VERY sparse loops, slows down significantly at higher density (>5%)
   template <class ImageType>
-    class Random_sparse_loop { NOMEMALIGN
+    class Random_sparse_loop { 
       public:
         Random_sparse_loop (ImageType& in,
           const size_t& axis = 0,
@@ -165,7 +165,7 @@ namespace MR
    };
 
   template <class ImageType, class IterType>
-    class Iterator_loop { NOMEMALIGN
+    class Iterator_loop { 
       public:
         Iterator_loop (ImageType& in,
           IterType first,
