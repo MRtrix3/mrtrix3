@@ -73,7 +73,7 @@ namespace MR
     // @{
 
     //! vector of strings to hold more comprehensive command description
-    class Description : public vector<const char*> { NOMEMALIGN
+    class Description : public vector<const char*> { 
       public:
         Description& operator+ (const char* text) {
           push_back (text);
@@ -92,7 +92,7 @@ namespace MR
 
 
     //! object for storing a single example command usage
-    class Example { NOMEMALIGN
+    class Example { 
       public:
         Example (const std::string& title,
                  const std::string& code,
@@ -107,7 +107,7 @@ namespace MR
     };
 
     //! a class to hold the list of Example's
-    class ExampleList : public vector<Example> { NOMEMALIGN
+    class ExampleList : public vector<Example> { 
       public:
         ExampleList& operator+ (const Example& example) {
           push_back (example);
@@ -121,7 +121,7 @@ namespace MR
 
 
     //! a class to hold the list of Argument's
-    class ArgumentList : public vector<Argument> { NOMEMALIGN
+    class ArgumentList : public vector<Argument> { 
       public:
         ArgumentList& operator+ (const Argument& argument) {
           push_back (argument);
@@ -136,7 +136,7 @@ namespace MR
 
 
     //! a class to hold the list of option groups
-    class OptionList : public vector<OptionGroup> { NOMEMALIGN
+    class OptionList : public vector<OptionGroup> { 
       public:
         OptionList& operator+ (const OptionGroup& option_group) {
           push_back (option_group);
@@ -206,7 +206,7 @@ namespace MR
 
 
 
-    class ParsedArgument { NOMEMALIGN
+    class ParsedArgument { 
       public:
         operator std::string () const { return p; }
 
@@ -283,7 +283,7 @@ namespace MR
     //! object storing information about option parsed from command-line
     /*! this is the object stored in the App::options vector, and the type
      * returned by App::get_options(). */
-    class ParsedOption { NOMEMALIGN
+    class ParsedOption { 
       public:
         ParsedOption (const Option* option, const char* const* arguments) :
             opt (option), args (arguments)

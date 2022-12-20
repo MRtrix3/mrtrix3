@@ -37,7 +37,7 @@ namespace MR
            */
            class ROIUnitTests : MR::Testing::UnitTests::UnitTest
            {
-              MEMALIGN(ROIUnitTests)
+              
 
 
 

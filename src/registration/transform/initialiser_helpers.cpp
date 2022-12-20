@@ -63,7 +63,7 @@ namespace MR
         }
 
         template <class ImageType, class MaskType>
-          class WeightedMomentsFunctor { MEMALIGN(WeightedMomentsFunctor)
+          class WeightedMomentsFunctor { 
           public:
             WeightedMomentsFunctor (const ImageType& image,
                                     const MaskType& mask,
@@ -215,7 +215,7 @@ namespace MR
         }
 
         template <class ImageType, class MaskType>
-        class WeightedMassFunctor { MEMALIGN(WeightedMassFunctor)
+        class WeightedMassFunctor { 
         public:
           WeightedMassFunctor (const ImageType& image,
             const MaskType& mask,

@@ -27,7 +27,7 @@ namespace MR
     template <class ImageType>
       class Gradient1D : 
         public Base<Gradient1D<ImageType>, ImageType> 
-    { MEMALIGN (Gradient1D<ImageType>)
+    { 
       public:
 
         using base_type = Base<Gradient1D<ImageType>, ImageType>;

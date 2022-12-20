@@ -36,7 +36,7 @@ namespace MR
     using complex_type = cdouble;
 
 
-    class Stats { NOMEMALIGN
+    class Stats { 
       public:
         Stats (const bool is_complex = false, const bool ignorezero = false) :
             mean (0.0, 0.0),

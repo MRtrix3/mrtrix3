@@ -27,7 +27,7 @@ namespace MR
   {
 
     class Default : public Base
-    { NOMEMALIGN
+    { 
       public:
         Default (const Header& header) :
           Base (header),

@@ -71,7 +71,7 @@ namespace MR
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           tex_width += metric.width (c) + 2;
 #else
-          tex_width += metric.horizontalAdvance (c) + 2;
+          tex_width += metric.horizontalAdvance (QChar(c)) + 2;
 #endif
 
         QImage pixmap (max_font_width, font_height, QImage::Format_ARGB32);
@@ -90,11 +90,11 @@ namespace MR
         int current_x = 0;
         for (int c = first_char; c <= last_char; ++c) {
           pixmap.fill (0);
-          painter.drawText (1, metric.ascent() + 1, QString(c));
+          painter.drawText (1, metric.ascent() + 1, QString(QChar(c)));
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
           font_width[c] = metric.width (c);
 #else
-          font_width[c] = metric.horizontalAdvance (c);
+          font_width[c] = metric.horizontalAdvance (QChar(c));
 #endif
           const int current_font_width = font_width[c] + 2;
 
@@ -244,5 +244,3 @@ namespace MR
       }
     }
   }
-
-

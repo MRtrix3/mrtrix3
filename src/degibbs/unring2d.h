@@ -33,7 +33,7 @@ namespace MR {
 
 
     class Unring2D
-    { MEMALIGN (Unring2D)
+    { 
       public:
         Unring2D (size_t nrows, size_t ncols,
             const int nsh, const int minW, const int maxW) :
@@ -129,7 +129,7 @@ namespace MR {
 
 
     class Unring2DFunctor
-    { MEMALIGN (Unring2DFunctor)
+    { 
       public:
         Unring2DFunctor (const vector<size_t>& outer_axes,
             const vector<size_t>& slice_axes,

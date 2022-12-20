@@ -33,7 +33,7 @@ namespace MR
 
 
       class Permutation
-      { MEMALIGN (Permutation)
+      { 
         public:
           size_t index;
           vector<size_t> data;
@@ -41,7 +41,7 @@ namespace MR
 
 
       class PermutationStack 
-      { MEMALIGN (PermutationStack)
+      { 
         public:
           PermutationStack (const size_t num_permutations, const size_t num_samples, const std::string msg, const bool include_default = true);
 

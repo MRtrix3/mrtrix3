@@ -33,7 +33,7 @@ namespace MR
 
 
 
-      class Reader { NOMEMALIGN
+      class Reader { 
         public:
           Reader () { }
           Reader (const std::string& file, const char* first_line = nullptr) {

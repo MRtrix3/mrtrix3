@@ -34,7 +34,7 @@ namespace MR
 
 
       class NodeSelectionSettings : public QObject
-      { MEMALIGN(NodeSelectionSettings)
+      { 
 
           Q_OBJECT
 
@@ -122,7 +122,7 @@ namespace MR
 
 
       class NodeSelectionSettingsFrame : public QFrame
-      { NOMEMALIGN
+      { 
           Q_OBJECT
 
         public:
@@ -211,7 +211,7 @@ namespace MR
 
 
       class NodeSelectionSettingsDialog : public QDialog
-      { NOMEMALIGN
+      { 
         public:
           NodeSelectionSettingsDialog (QWidget* parent, const std::string& message, NodeSelectionSettings& settings);
 

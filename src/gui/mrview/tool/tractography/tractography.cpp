@@ -60,7 +60,7 @@ namespace MR
 
 
         class Tractography::Model : public ListModelBase
-        { MEMALIGN(Tractography::Model)
+        { 
 
           public:
             Model (QObject* parent) :
@@ -954,32 +954,28 @@ namespace MR
           }
 
 
-	if (opt.opt->is ("tractography.tsf_colourmap"))
-          {
+          if (opt.opt->is ("tractography.tsf_colourmap")) {
             try {
               int n = opt[0];
               if (n < 0 || !ColourMap::maps[n].name)
-                throw Exception ("invalid overlay colourmap index \"" + std::string (opt[0]) + "\" for -tractography.tsf_colourmap option");
-		// help needed here !
-		// scalar_file_options->set_track_colormap(n) ?
-            }
-	    catch (Exception& e) { e.display(); }
-
-	    if (process_commandline_option_tsf_check_tracto_loaded()) {
+                throw Exception ("invalid tsf colourmap index \"" + std::string (opt[0]) + "\" for -tractography.tsf_colourmap option");
+              if (process_commandline_option_tsf_check_tracto_loaded()) {
                 // get list of selected tractograms:
                 QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
                 if (indices.size() != 1)
                   throw Exception ("-tractography.tsf_colourmap option requires one tractogram to be selected");
+
                 // get pointer to tractogram:
                 Tractogram* tractogram = tractogram_list_model->get_tractogram (indices[0]);
-                // check tractogram has a scalar file attached and prepare the scalar_file_options object:
-                if (tractogram->get_color_type() == TrackColourType::ScalarFile){
-                  scalar_file_options->set_tractogram (tractogram);
-                  // invoke member function (which needs to be added - see below):
-                  scalar_file_options->set_colourmap (opt[0]);
-               }
 
-             }
+                // check tractogram has a scalar file attached and prepare the scalar_file_options object:
+                if (tractogram->get_color_type() == TrackColourType::ScalarFile) {
+                  scalar_file_options->set_tractogram (tractogram);
+                  scalar_file_options->set_colourmap (opt[0]);
+                }
+              }
+            } catch (Exception& e) { e.display(); }
+            return true;
           }
 
 

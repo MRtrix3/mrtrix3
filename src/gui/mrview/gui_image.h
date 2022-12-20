@@ -48,7 +48,7 @@ namespace MR
 
 
       class ImageBase : public Volume
-      { MEMALIGN(ImageBase)
+      { 
         public:
           ImageBase (MR::Header&&);
           virtual ~ImageBase();
@@ -73,7 +73,7 @@ namespace MR
 
 
       class Image : public ImageBase
-      { MEMALIGN(Image)
+      { 
         public:
           Image (MR::Header&&);
 
@@ -95,7 +95,7 @@ namespace MR
 
         protected:
 
-          struct CachedTexture { MEMALIGN(CachedTexture)
+          struct CachedTexture { 
             GL::Texture tex;
             float value_min, value_max;
           };

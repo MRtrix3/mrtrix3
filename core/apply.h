@@ -26,7 +26,7 @@ namespace MR {
   namespace {
 
     template<size_t N>
-      struct Apply { NOMEMALIGN
+      struct Apply { 
         template<typename F, typename T>
           static FORCE_INLINE void apply (F && f, T && t)
           {
@@ -36,7 +36,7 @@ namespace MR {
       };
 
     template<>
-      struct Apply<0> { NOMEMALIGN
+      struct Apply<0> { 
         template<typename F, typename T>
           static FORCE_INLINE void apply (F && f, T && t)
           {
@@ -48,7 +48,7 @@ namespace MR {
 
 
     template<size_t N>
-      struct Unpack { NOMEMALIGN
+      struct Unpack { 
         template<typename F, typename T, typename... A>
           static FORCE_INLINE auto unpack (F && f, T && t, A &&... a)
           -> decltype(Unpack<N-1>::unpack (
@@ -63,7 +63,7 @@ namespace MR {
       };
 
     template<>
-      struct Unpack<0> { NOMEMALIGN
+      struct Unpack<0> { 
         template<typename F, typename T, typename... A>
           static FORCE_INLINE auto unpack (F && f, T &&, A &&... a)
           -> decltype(::std::forward<F>(f)(::std::forward<A>(a)...))
@@ -79,7 +79,7 @@ namespace MR {
 
   //! invoke \c f(x) for each entry in \c t
   template <class F, class T>
-    FORCE_INLINE void apply (F && f, T && t) 
+    FORCE_INLINE void apply (F && f, T && t)
     {
       Apply< ::std::tuple_size<
         typename ::std::decay<T>::type

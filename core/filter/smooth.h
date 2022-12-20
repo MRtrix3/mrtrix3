@@ -45,7 +45,7 @@ namespace MR
      */
 
     class Smooth : public Base
-    { MEMALIGN (Smooth)
+    { 
 
       public:
         template <class HeaderType>
@@ -187,7 +187,7 @@ namespace MR
         bool zero_boundary;
 
         template <class ImageType>
-          class SmoothFunctor1D { MEMALIGN (SmoothFunctor1D)
+          class SmoothFunctor1D { 
           public:
             SmoothFunctor1D (ImageType& image,
                            default_type stdev_in = 1.0,

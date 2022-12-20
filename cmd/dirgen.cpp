@@ -78,7 +78,7 @@ void usage ()
 
 
 // constrain directions to remain unit length:
-class ProjectedUpdate { MEMALIGN(ProjectedUpdate)
+class ProjectedUpdate { 
   public:
     bool operator() (
         Eigen::VectorXd& newx,
@@ -98,7 +98,7 @@ class ProjectedUpdate { MEMALIGN(ProjectedUpdate)
 
 
 
-class Energy { MEMALIGN(Energy)
+class Energy { 
   public:
     Energy (ProgressBar& progress) :
       progress (progress),

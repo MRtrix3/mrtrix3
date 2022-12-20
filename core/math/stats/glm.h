@@ -55,11 +55,11 @@ namespace MR
         //   a t-test and an F-test for the sake of signedness (and taking the square root);
         //   this is managed by having two separate constructor templates
         class Hypothesis
-        { MEMALIGN(Hypothesis)
+        { 
           public:
 
             class Partition
-            { MEMALIGN (Partition)
+            { 
               public:
                 Partition (const matrix_type& x, const matrix_type& z) :
                     X (x),
@@ -210,7 +210,7 @@ namespace MR
 
         // Define a base class for GLM tests
         class TestBase
-        { MEMALIGN(TestBase)
+        { 
           public:
             TestBase (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
                 y (measurements),
@@ -271,7 +271,7 @@ namespace MR
          *     equivalent across all inputs.
          */
         class TestFixedHomoscedastic : public TestBase
-        { MEMALIGN(TestFixedHomoscedastic)
+        { 
           public:
             /*!
              * @param measurements a matrix storing the measured data across subjects in each column
@@ -313,7 +313,7 @@ namespace MR
          *     all observations can be considered to have the same variance.
          */
         class TestFixedHeteroscedastic : public TestFixedHomoscedastic
-        { MEMALIGN(TestFixedHeteroscedastic)
+        { 
           public:
             /*!
              * @param measurements a matrix storing the measured data across subjects in each column
@@ -371,7 +371,7 @@ namespace MR
          *     equivalent across all inputs.
          */
         class TestVariableHomoscedastic : public TestBase
-        { MEMALIGN(TestVariableHomoscedastic)
+        { 
           public:
             TestVariableHomoscedastic (const vector<CohortDataImport>& importers,
                                        const matrix_type& measurements,
@@ -425,7 +425,7 @@ namespace MR
          *     all observations can be considered to have the same variance.
          */
         class TestVariableHeteroscedastic : public TestVariableHomoscedastic
-        { MEMALIGN(TestVariableHeteroscedastic)
+        { 
           public:
             TestVariableHeteroscedastic (const vector<CohortDataImport>& importers,
                                          const matrix_type& measurements,
