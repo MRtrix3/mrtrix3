@@ -35,7 +35,7 @@ namespace MR
 
 
     class ModelViewProjection
-    { NOMEMALIGN
+    { 
       public:
         void set_viewport (int x, int y, int w, int h) {
           viewport[0] = x;
@@ -170,7 +170,7 @@ namespace MR
 
 
     class Projection : public ModelViewProjection
-    { NOMEMALIGN
+    { 
       public:
         Projection (GL::Area* parent, const GL::Font& font) :
             glarea (parent),

@@ -34,7 +34,7 @@ namespace MR
 
 
 
-    class CFE : public Stats::EnhancerBase { MEMALIGN (CFE)
+    class CFE : public Stats::EnhancerBase { 
       public:
         CFE (const Fixel::Matrix::Reader& connectivity_matrix,
              const value_type dh, const value_type E, const value_type H, const value_type C,

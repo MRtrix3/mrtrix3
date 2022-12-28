@@ -27,7 +27,7 @@ namespace MR
     {
 
       class Lighting : public QObject
-      { MEMALIGN(Lighting)
+      { 
         Q_OBJECT
 
         public:

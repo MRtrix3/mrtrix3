@@ -21,7 +21,7 @@
 
 namespace MR
 {
-  class Transform { MEMALIGN(Transform)
+  class Transform { 
     public:
 
       //! An object for transforming between voxel, scanner and image coordinate spaces

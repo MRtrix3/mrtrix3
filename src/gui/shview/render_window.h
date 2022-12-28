@@ -30,11 +30,11 @@ namespace MR
     {
 
       class Window : public QMainWindow 
-      { MEMALIGN(Window)
+      { 
           Q_OBJECT
 
           class RenderFrame : public DWI::RenderFrame
-          { MEMALIGN(RenderFrame)
+          { 
             public:
               using DWI::RenderFrame::RenderFrame;
               void set_colour (const QColor& c) {

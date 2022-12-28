@@ -46,7 +46,7 @@ namespace MR
      *
      * \endcode
      */
-    class Erode : public Base { MEMALIGN(Erode)
+    class Erode : public Base { 
 
       public:
         template <class HeaderType>

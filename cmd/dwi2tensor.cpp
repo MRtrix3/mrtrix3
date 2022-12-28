@@ -137,7 +137,7 @@ void usage ()
 
 
 template <class MASKType, class B0Type, class DTType, class DKTType, class PredictType>
-class Processor { MEMALIGN(Processor)
+class Processor {
   public:
     Processor (const Eigen::MatrixXd& A, const Eigen::MatrixXd& Aneq, const bool ols, const int iter,
         const MASKType& mask_image, const B0Type& b0_image, const DTType& dt_image, const DKTType& dkt_image, const PredictType& predict_image) :
@@ -168,11 +168,13 @@ class Processor { MEMALIGN(Processor)
         for (auto l = Loop (3) (dwi_image); l; ++l)
           dwi[dwi_image.index(3)] = dwi_image.value();
 
+        notnan = dwi.array().isFinite().template cast<double>();
+
         double small_intensity = 1.0e-6 * dwi.maxCoeff();
         for (int i = 0; i < dwi.rows(); i++) {
-          if (dwi[i] < small_intensity)
+          if (notnan[i] == 0 || dwi[i] < small_intensity)
             dwi[i] = small_intensity;
-          w[i] = ( ols ? 1.0 : dwi[i] );
+          w[i] = notnan[i] * ( ols ? 1.0 : dwi[i] );
           dwi[i] = std::log (dwi[i]);
         }
 
@@ -187,7 +189,7 @@ class Processor { MEMALIGN(Processor)
             x = llt.compute (work.selfadjointView<Eigen::Lower>()).solve(A.transpose()*w.asDiagonal()*w.asDiagonal()*dwi);
           }
           if (maxit > 1)
-            w = (A*x).array().exp();
+            w = (A*x).array().exp() * notnan.array();
         }
 
         if (b0_image.valid()) {
@@ -229,6 +231,7 @@ class Processor { MEMALIGN(Processor)
     Eigen::VectorXd dwi;
     Eigen::VectorXd x;
     Eigen::VectorXd w;
+    Eigen::VectorXd notnan;
     Eigen::MatrixXd work;
     Eigen::LLT<Eigen::MatrixXd> llt;
     const Eigen::MatrixXd& A;

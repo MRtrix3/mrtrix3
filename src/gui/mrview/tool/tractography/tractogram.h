@@ -36,7 +36,7 @@ namespace MR
       namespace Tool
       {
         class Tractogram : public Displayable
-        { MEMALIGN(Tractogram)
+        { 
           Q_OBJECT
 
           public:
@@ -96,7 +96,7 @@ namespace MR
             std::string intensity_scalar_filename;
             std::string threshold_scalar_filename;
 
-            class Shader : public Displayable::Shader { MEMALIGN(Shader)
+            class Shader : public Displayable::Shader { 
               public:
                 Shader () :
                     do_crop_to_slab (false),

@@ -30,7 +30,7 @@ namespace MR
       {
 
         class Ortho : public Slice
-        { MEMALIGN(Ortho)
+        { 
             Q_OBJECT
 
           public:

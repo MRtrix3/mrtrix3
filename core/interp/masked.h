@@ -40,7 +40,7 @@ namespace MR
      * one non-NaN & non-zero value in the voxel)
      */
     template <class InterpType>
-    class Masked : public InterpType { MEMALIGN(Masked<InterpType>)
+    class Masked : public InterpType { 
       public:
         using typename InterpType::value_type;
 

@@ -85,7 +85,7 @@ using Stats::PermTest::count_matrix_type;
 //   already in a vectorised form.
 
 class SubjectVectorImport : public SubjectDataImportBase
-{ MEMALIGN(SubjectVectorImport)
+{ 
   public:
     SubjectVectorImport (const std::string& path) :
         SubjectDataImportBase (path),

@@ -29,7 +29,7 @@ namespace MR
   namespace File
   {
 
-    class MMap : protected Entry { NOMEMALIGN
+    class MMap : protected Entry { 
       public:
         //! create a new memory-mapping to file in \a entry
         /*! map file in \a entry at the offset in \a entry. By default, the

@@ -31,7 +31,7 @@ namespace MR
 
 
     class Sphere
-    { MEMALIGN(Sphere)
+    { 
       public:
         // TODO Initialise sphere & buffers at construction;
         //   currently it doesn't seem to work as a GL context has not yet been
@@ -45,7 +45,7 @@ namespace MR
         GL::IndexBuffer index_buffer;
 
 
-        class Vertex { NOMEMALIGN
+        class Vertex { 
           public:
             Vertex () { }
             Vertex (const float x[3]) { p[0] = x[0]; p[1] = x[1]; p[2] = x[2]; }

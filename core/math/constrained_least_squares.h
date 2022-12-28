@@ -71,7 +71,7 @@ namespace MR
     namespace ICLS {
 
       template <typename ValueType>
-        class Problem { MEMALIGN(Problem<ValueType>)
+        class Problem { 
           public:
 
             using value_type = ValueType;
@@ -215,7 +215,7 @@ namespace MR
 
 
       template <typename ValueType>
-        class Solver { MEMALIGN(Solver<ValueType>)
+        class Solver { 
           public:
 
             using value_type = ValueType;
