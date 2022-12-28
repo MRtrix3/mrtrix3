@@ -15,7 +15,7 @@ Usage
 
     dwi2mask algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: 3dautomask, ants, b02template, consensus, fslbet, hdbet, legacy, mean, trace
+-  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: 3dautomask, ants, b02template, consensus, fslbet, hdbet, iterative, legacy, mean, trace
 
 Description
 -----------
@@ -669,6 +669,102 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
+
+**Copyright:** Copyright (c) 2008-2022 the MRtrix3 contributors.
+
+This Source Code Form is subject to the terms of the Mozilla Public
+License, v. 2.0. If a copy of the MPL was not distributed with this
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+Covered Software is provided under this License on an "as is"
+basis, without warranty of any kind, either expressed, implied, or
+statutory, including, without limitation, warranties that the
+Covered Software is free of defects, merchantable, fit for a
+particular purpose or non-infringing.
+See the Mozilla Public License v. 2.0 for more details.
+
+For more details, see http://www.mrtrix.org/.
+
+.. _dwi2mask_iterative:
+
+dwi2mask iterative
+==================
+
+Synopsis
+--------
+
+Iteratively perform masking, RF estimation, CSD, bias field removal, and mask revision to derive a DWI brain mask
+
+Usage
+-----
+
+::
+
+    dwi2mask iterative input output [ options ]
+
+-  *input*: The input DWI series
+-  *output*: The output mask image
+
+Description
+-----------
+
+DWI brain masking may be inaccurate due to residual bias field. This script first derives an initial brain mask using the legacy MRtrix3 dwi2mask heuristic (based on thresholded trace images), and then performs response function estimation, multi-tissue CSD (with a lower lmax than the dwi2fod default, for higher speed), and mtnormalise to remove any bias field, before the DWI brain mask is recalculated. These steps are performed iteratively, since each step may influence the others.
+
+Options
+-------
+
+Options specific to the "iterative" algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-max_iters** the maximum number of iterations. The default is 2iterations since for some problematic data more iterations may lead to the masks diverging, but more iterations can lead to a better mask.
+
+- **-lmax** the maximum spherical harmonic order for the output FODs. The value is passed to the dwi2fod command and should be provided in the format which it expects (Default is "4,0,0" for multi-shell and "4,0" for single-shell data)
+
+Options for importing the diffusion gradient table
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-grad** Provide the diffusion gradient table in MRtrix format
+
+- **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
+
+Additional standard options for Python scripts
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nocleanup** do not delete intermediate files during script execution, and do not delete scratch directory at script completion.
+
+- **-scratch /path/to/scratch/** manually specify the path in which to generate the scratch directory.
+
+- **-continue <ScratchDir> <LastFile>** continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.
+
+Standard options
+^^^^^^^^^^^^^^^^
+
+- **-info** display information messages.
+
+- **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
+
+- **-debug** display debugging messages.
+
+- **-force** force overwrite of output files.
+
+- **-nthreads number** use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).
+
+- **-config key value**  *(multiple uses permitted)* temporarily set the value of an MRtrix config file entry.
+
+- **-help** display this information page and exit.
+
+- **-version** display version information and exit.
+
+References
+^^^^^^^^^^
+
+Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
+--------------
+
+
+
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)
 
 **Copyright:** Copyright (c) 2008-2022 the MRtrix3 contributors.
 
