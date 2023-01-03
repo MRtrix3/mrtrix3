@@ -41,6 +41,8 @@ Options for connected-component filter
 
 -  **-connectivity** use 26-voxel-neighbourhood connectivity (Default: 6)
 
+-  **-minsize value** impose minimum size of segmented components (Default: select all components)
+
 Options for dilate / erode filters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
