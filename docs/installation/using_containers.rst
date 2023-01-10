@@ -104,7 +104,9 @@ Run GUI command
 The following basic usage has been shown to work on Linux::
 
     singularity run -B /run MRtrix3.sif mrview
-
+      OR (if using NVIDIA graphics drivers)
+    singularity run --nv /run MRtrix3.sif mrview
+    
 If you wish to utilise a *clean environment* when executing ``mrview``,
 you will likely find that it is necessary to explicitly set the ``DISPLAY``
 and ``XDG_RUNTIME_DIR`` environment variables. This could be done in a
