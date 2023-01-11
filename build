@@ -18,7 +18,7 @@ else
   EIGEN_VERSION=3.4.0
   echo "Using eigen ${EIGEN_VERSION}"
 
-  TIFF_VERSION=4.4.0
+  TIFF_VERSION=4.5.0
   echo "Using tiff ${TIFF_VERSION}"
 
   FFTW_VERSION=3.3.10
@@ -34,9 +34,11 @@ else
   curl -s -O -L http://download.osgeo.org/libtiff/${FNAME}
   tar xf ${FNAME}
   cd ${DNAME}
-  CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --enable-shared=NO --without-x --disable-jpeg --disable-old-jpeg --disable-lzma --disable-zstd --disable-webp
+  CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --enable-shared=NO --without-x --disable-jpeg --disable-old-jpeg --disable-lzma --disable-zstd --disable-webp --disable-cxx
   make install > /dev/null
-  cd ..
+  rm -r ${PREFIX}/{bin,share}
+  rm -r ${PREFIX}/lib/{pkgconfig,*.la}
+    cd ..
   rm -r ${FNAME} ${DNAME}
   TIFF_SECONDS=${SECONDS}
 
@@ -45,12 +47,24 @@ else
   DNAME=fftw-${FFTW_VERSION}
   FNAME=${DNAME}.tar.gz
   curl -s -O http://www.fftw.org/${FNAME}
-  tar xf ${FNAME}
-  cd ${DNAME}
-  CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --enable-threads --disable-dependency-tracking
-  make install > /dev/null
-  cd ..
-  rm -r ${FNAME} ${DNAME}
+  for ARCH in x86_64 arm64; do
+    echo "building FFTW for ${ARCH}"
+    SIMD=""
+    if [ "${ARCH}" = "x86_64" ]; then
+      SIMD="--enable-sse2 --enable-avx --enable-avx2"
+    fi
+    tar xf ${FNAME}
+    mv ${DNAME} ${DNAME}-${ARCH}
+    cd ${DNAME}-${ARCH}
+    CFLAGS="-arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX}-${ARCH} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD}
+    make install > /dev/null
+    cd ..
+    rm -r ${DNAME}-${ARCH}
+  done
+  cp ${PREFIX}-x86_64/include/fftw3.h ${PREFIX}/include/fftw3.h
+  libtool -static ${PREFIX}-*/lib/libfftw3.a -o ${PREFIX}/lib/libfftw3.a
+  rm -r ${PREFIX}-*/
+  rm ${FNAME}
   FFTW_SECONDS=${SECONDS}
 
   # EIGEN
@@ -69,6 +83,7 @@ else
   FNAME=7z2107-mac.tar.xz
   curl -s -O https://www.7-zip.org/a/${FNAME}
   tar xvfz ${FNAME} 7zz
+  mkdir -p ${PREFIX}/bin
   mv 7zz ${PREFIX}/bin/
   rm ${FNAME}
 
@@ -77,7 +92,7 @@ else
   DNAME=${QT_VERSION}
   FNAME=${QT_VERSION}-0-202211101256qtbase-MacOS-MacOS_12-Clang-MacOS-MacOS_12-X86_64-ARM64.7z
   curl -s -O https://ftp1.nluug.nl/languages/qt/online/qtsdkrepository/mac_x64/desktop/qt6_641/qt.qt6.641.clang_64/${FNAME}
-  ${PREFIX}/bin/7zz x ${FNAME}
+  ${PREFIX}/bin/7zz x ${FNAME} > /dev/null
   cp -r 6.4.1/macos/* ${PREFIX}/
   rm -r ${FNAME} ${DNAME}
   QTBASE_SECONDS=${SECONDS}
@@ -87,7 +102,7 @@ else
   DNAME=${QT_VERSION}
   FNAME=${QT_VERSION}-0-202211101256qtsvg-MacOS-MacOS_12-Clang-MacOS-MacOS_12-X86_64-ARM64.7z
   curl -s -O https://ftp1.nluug.nl/languages/qt/online/qtsdkrepository/mac_x64/desktop/qt6_641/qt.qt6.641.clang_64/${FNAME}
-  ${PREFIX}/bin/7zz x ${FNAME}
+  ${PREFIX}/bin/7zz x ${FNAME} > /dev/null
   cp -r 6.4.1/macos/* ${PREFIX}/
   rm -r ${FNAME} ${DNAME}
   QTSVG_SECONDS=${SECONDS}
