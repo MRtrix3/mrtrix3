@@ -87,27 +87,19 @@ else
   mv 7zz ${PREFIX}/bin/
   rm ${FNAME}
 
-  # QT6 GENERIC
+  # QT6
+  SECONDS=0
   QT_MIRROR=https://ftp1.nluug.nl/languages/qt
   QT_URL=${QT_MIRROR}/online/qtsdkrepository/mac_x64/desktop/qt6_${QT_VERSION//./}/qt.qt6.${QT_VERSION//./}.clang_64/
-
-  # QT6 BASE
-  SECONDS=0
-  FNAME=$(curl -s -L ${QT_URL} | grep -o -E "[[:alnum:]_.\-]*7z" | grep qtbase | tail -1)
-  curl -s -O ${QT_URL}/${FNAME}
-  ${PREFIX}/bin/7zz x ${FNAME} > /dev/null
+  for QT_COMPONENT in qtbase qtsvg; do
+    FNAME=$(curl -s -L ${QT_URL} | grep -o -E "[[:alnum:]_.\-]*7z" | grep ${QT_COMPONENT} | tail -1)
+    curl -s -O ${QT_URL}/${FNAME}
+    ${PREFIX}/bin/7zz x ${FNAME} > /dev/null
+    rm ${FNAME}
+  done
   cp -r ${QT_VERSION}/macos/* ${PREFIX}/
-  rm -r ${FNAME} ${QT_VERSION}
-  QTBASE_SECONDS=${SECONDS}
-
-  # QT6 SVG
-  SECONDS=0
-  FNAME=$(curl -s -L ${QT_URL} | grep -o -E "[[:alnum:]_.\-]*7z" | grep qtsvg | tail -1)
-  curl -s -O ${QT_URL}/${FNAME}
-  ${PREFIX}/bin/7zz x ${FNAME} > /dev/null
-  cp -r ${QT_VERSION}/macos/* ${PREFIX}/
-  rm -r ${FNAME} ${QT_VERSION}
-  QTSVG_SECONDS=${SECONDS}
+  rm -r ${QT_VERSION}
+  QT_SECONDS=${SECONDS}
 
   tar cpfz ${PREFIX}-build-deps.tar.gz mrtrix3
 fi
@@ -155,13 +147,12 @@ cd ${PREFIX}/..
 tar cfz mrtrix3-macos-${TAGNAME}.tar.gz mrtrix3
 rm -rf ${PREFIX}
 
-TOTAL_SECONDS=$((EIGEN_SECONDS + TIFF_SECONDS + PNG_SECONDS + FFTW_SECONDS + QTBASE_SECONDS + QTSVG_SECONDS + MRTRIX_SECONDS))
+TOTAL_SECONDS=$((EIGEN_SECONDS + TIFF_SECONDS + FFTW_SECONDS + QT_SECONDS + MRTRIX_SECONDS))
 if [[ ! -n "$DEPCACHE" ]]; then
   echo "eigen ${EIGEN_VERSION}: ${EIGEN_SECONDS} s"
   echo "tiff ${TIFF_VERSION}: ${TIFF_SECONDS} s"
   echo "fftw ${FFTW_VERSION}: ${FFTW_SECONDS} s"
-  echo "qtbase ${QT_VERSION}: ${QTBASE_SECONDS} s"
-  echo "qtsvg ${QT_VERSION}: ${QTSVG_SECONDS} s"
+  echo "qt ${QT_VERSION}: ${QT_SECONDS} s"
 fi
 echo "mrtrix ${MRTRIX_VERSION}: ${MRTRIX_SECONDS} s"
 echo "total : ${TOTAL_SECONDS} s"
