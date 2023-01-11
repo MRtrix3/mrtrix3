@@ -87,24 +87,26 @@ else
   mv 7zz ${PREFIX}/bin/
   rm ${FNAME}
 
+  # QT6 GENERIC
+  QT_MIRROR=https://ftp1.nluug.nl/languages/qt
+  QT_URL=${QT_MIRROR}/online/qtsdkrepository/mac_x64/desktop/qt6_${QT_VERSION//./}/qt.qt6.${QT_VERSION//./}.clang_64/
+
   # QT6 BASE
   SECONDS=0
-  DNAME=${QT_VERSION}
-  FNAME=${QT_VERSION}-0-202211101256qtbase-MacOS-MacOS_12-Clang-MacOS-MacOS_12-X86_64-ARM64.7z
-  curl -s -O https://ftp1.nluug.nl/languages/qt/online/qtsdkrepository/mac_x64/desktop/qt6_641/qt.qt6.641.clang_64/${FNAME}
+  FNAME=$(curl -s -L ${QT_URL} | grep -o -E "[[:alnum:]_.\-]*7z" | grep qtbase | tail -1)
+  curl -s -O ${QT_URL}/${FNAME}
   ${PREFIX}/bin/7zz x ${FNAME} > /dev/null
-  cp -r 6.4.1/macos/* ${PREFIX}/
-  rm -r ${FNAME} ${DNAME}
+  cp -r ${QT_VERSION}/macos/* ${PREFIX}/
+  rm -r ${FNAME} ${QT_VERSION}
   QTBASE_SECONDS=${SECONDS}
 
   # QT6 SVG
   SECONDS=0
-  DNAME=${QT_VERSION}
-  FNAME=${QT_VERSION}-0-202211101256qtsvg-MacOS-MacOS_12-Clang-MacOS-MacOS_12-X86_64-ARM64.7z
-  curl -s -O https://ftp1.nluug.nl/languages/qt/online/qtsdkrepository/mac_x64/desktop/qt6_641/qt.qt6.641.clang_64/${FNAME}
+  FNAME=$(curl -s -L ${QT_URL} | grep -o -E "[[:alnum:]_.\-]*7z" | grep qtsvg | tail -1)
+  curl -s -O ${QT_URL}/${FNAME}
   ${PREFIX}/bin/7zz x ${FNAME} > /dev/null
-  cp -r 6.4.1/macos/* ${PREFIX}/
-  rm -r ${FNAME} ${DNAME}
+  cp -r ${QT_VERSION}/macos/* ${PREFIX}/
+  rm -r ${FNAME} ${QT_VERSION}
   QTSVG_SECONDS=${SECONDS}
 
   tar cpfz ${PREFIX}-build-deps.tar.gz mrtrix3
