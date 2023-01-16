@@ -72,7 +72,7 @@ namespace MR
 
             // Additional members for ACT
             bool is_act() const { return bool (act_shared_additions); }
-            const ACT::ACT_Shared_additions& act() const { return *act_shared_additions; }
+            ACT::ACT_Shared_additions& act() const { return *act_shared_additions; }
 
             float vox () const
             {

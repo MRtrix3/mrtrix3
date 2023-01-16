@@ -40,7 +40,7 @@ namespace MR
       {
 
 
-      using namespace MR::DWI::Tractography::Tracking;
+        using namespace MR::DWI::Tractography::Tracking;
 
         class ACT_Method_additions { 
 

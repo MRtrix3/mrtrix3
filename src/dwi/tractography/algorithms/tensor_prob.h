@@ -40,8 +40,12 @@ namespace MR
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                   Tensor_Det::Shared (diff_path, property_set) {
 
-                    if (is_act() && act().backtrack())
-                      throw Exception ("Sorry, backtracking not currently enabled for TensorProb algorithm");
+                    if (is_act()) {
+                      if (act().backtrack())
+                        throw Exception ("Sorry, backtracking not currently enabled for TensorProb algorithm");
+                      if (property_set.find ("sgm_truncation") == property_set.end())
+                        act().set_sgm_trunc (ACT::sgm_trunc_enum::ROULETTE);
+                    }
 
                     properties["method"] = "TensorProb";
 

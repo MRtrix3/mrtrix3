@@ -52,7 +52,6 @@ namespace MR
               dir (0.0, 0.0, 1.0),
               S (that.S),
               act_method_additions (S.is_act() ? new ACT::ACT_Method_additions (that.act()) : nullptr),
-              uniform (that.uniform),
               values (that.values.size()) { }
 
 
@@ -84,6 +83,7 @@ namespace MR
             ACT::ACT_Method_additions& act() const { return *act_method_additions; }
 
             Eigen::Vector3f pos, dir;
+            std::uniform_real_distribution<float> uniform;
 
 
           private:
@@ -92,7 +92,6 @@ namespace MR
 
 
           protected:
-            std::uniform_real_distribution<float> uniform;
             Eigen::VectorXf values;
 
             Eigen::Vector3f random_direction ();

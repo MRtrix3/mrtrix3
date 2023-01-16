@@ -48,6 +48,8 @@ namespace MR
                               rk4);
           set_num_points();
           set_cutoff (0.0f);
+          if (is_act() && property_set.find ("sgm_truncation") == property_set.end())
+            act().set_sgm_trunc (ACT::sgm_trunc_enum::RANDOM);
           sin_max_angle_1o = std::sin (max_angle_1o);
           properties["method"] = "Nulldist1";
         }
@@ -96,6 +98,8 @@ namespace MR
           iFOD2::Shared (diff_path, property_set)
         {
           set_cutoff (0.0f);
+          if (is_act() && property_set.find ("sgm_truncation") == property_set.end())
+            act().set_sgm_trunc (ACT::sgm_trunc_enum::RANDOM);
           properties["method"] = "Nulldist2";
         }
       };
