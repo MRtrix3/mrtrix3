@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,9 +44,8 @@ namespace MR {
             pixel_size[0] = pixel_size[1] = slice_thickness = slice_spacing = NaN;
             scale_intercept = 0.0;
             scale_slope = 1.0;
-            bvalue = G[0] = G[1] = G[2] = NaN;
+            bvalue = G[0] = G[1] = G[2] = G_prs[0] = G_prs[1] = G_prs[2] = NaN;
             data = bits_alloc = data_size = frame_offset = 0;
-            DW_scheme_wrt_image = false;
             transfer_syntax_supported = true;
             ignore_series_num = false;
             pe_axis = 3;
@@ -58,7 +57,7 @@ namespace MR {
           }
 
           size_t acq_dim[2], dim[2], series_num, instance, acq, sequence, echo_index, grad_number, samples_per_pixel;
-          Eigen::Vector3d position_vector, orientation_x, orientation_y, orientation_z, G;
+          Eigen::Vector3d position_vector, orientation_x, orientation_y, orientation_z, G, G_prs;
           default_type distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
           size_t data, bits_alloc, data_size, frame_offset;
           std::string filename, image_type;

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2022 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -91,4 +91,4 @@ setup_ansi()
 # Execute a command
 def execute(): #pylint: disable=unused-variable
   from . import app #pylint: disable=import-outside-toplevel
-  app._execute(inspect.getmodule(inspect.stack()[-1][0])) # pylint: disable=protected-access
+  app._execute(inspect.getmodule(inspect.stack()[1][0])) # pylint: disable=protected-access

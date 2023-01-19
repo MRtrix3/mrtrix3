@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -119,10 +119,10 @@ namespace MR {
       void Tree::read (const std::string& filename)
       {
         description = filename;
-        ProgressBar progress ("scanning DICOM folder \"" + shorten (filename) + "\"", 0);
-        if (Path::is_dir (filename))
+        if (Path::is_dir (filename)) {
+          ProgressBar progress ("scanning folder \"" + shorten (filename) + "\" for DICOM data", 0);
           read_dir (filename, progress);
-        else {
+        } else {
           try {
             read_file (filename);
           }
@@ -130,10 +130,8 @@ namespace MR {
           }
         }
 
-        if (size() > 0)
-          return;
-
-        throw Exception ("no DICOM images found in \"" + filename + "\"");
+        if (!size())
+          throw Exception ("no DICOM images found in \"" + filename + "\"");
       }
 
 

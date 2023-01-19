@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2008-2022 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -1003,7 +1003,7 @@ def execute(): #pylint: disable=unused-variable
     if use_masks:
       progress = app.ProgressBar('Reslicing input masks to average header', len(ins))
       for inp in ins:
-        run.command('mrtransform ' + inp.ims_path[cid] + ' ' + inp.msk_transformed + ' ' +
+        run.command('mrtransform ' + inp.msk_path + ' ' + inp.msk_transformed + ' ' +
                     '-interp nearest -template ' + cns.templates[0] + ' ' +
                     datatype_option)
         progress.increment()

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -134,13 +134,13 @@ namespace MR {
           case 0x0019U:
             switch (item.element) { // GE DW encoding info:
               case 0x10BBU:
-                G[0] = item.get_float (0, G[0]);
+                G_prs[0] = item.get_float (0, G[0]);
                 return;
               case 0x10BCU:
-                G[1] = item.get_float (0, G[1]);
+                G_prs[1] = item.get_float (0, G[1]);
                 return;
               case 0x10BDU:
-                G[2] = item.get_float (0, G[2]);
+                G_prs[2] = item.get_float (0, G[2]);
                 return;
               case 0x100CU: //Siemens private DW encoding tags:
                 bvalue = item.get_float (0, bvalue);
@@ -248,7 +248,6 @@ namespace MR {
             if (item.element == 0x1039U) {
               if (item.get_int().size())
                 bvalue = item.get_int()[0];
-              DW_scheme_wrt_image = true;
             }
             return;
           case 0x2001U: // Philips DW encoding info:
@@ -614,24 +613,27 @@ namespace MR {
         std::string dw_scheme;
         const size_t nDW = frames.size() / nslices;
 
-        const bool rotate_DW_scheme = frames[0]->DW_scheme_wrt_image;
         for (size_t n = 0; n < nDW; ++n) {
           const Frame& frame (*frames[n*nslices]);
-          std::array<default_type,4> g = {{ 0.0, 0.0, 0.0, frame.bvalue }};
-          if (g[3] && std::isfinite (frame.G[0]) && std::isfinite (frame.G[1]) && std::isfinite (frame.G[2])) {
-
-            if (rotate_DW_scheme) {
-              g[0] = image_transform(0,0)*frame.G[0] + image_transform(0,1)*frame.G[1] - image_transform(0,2)*frame.G[2];
-              g[1] = image_transform(1,0)*frame.G[0] + image_transform(1,1)*frame.G[1] - image_transform(1,2)*frame.G[2];
-              g[2] = image_transform(2,0)*frame.G[0] + image_transform(2,1)*frame.G[1] - image_transform(2,2)*frame.G[2];
-            } else {
+          Eigen::Vector3d g = Eigen::Vector3d::Zero();
+          if (frame.bvalue) {
+           if (frame.G.allFinite()) {
               g[0] = -frame.G[0];
               g[1] = -frame.G[1];
               g[2] =  frame.G[2];
+           }
+           else if (frame.G_prs.allFinite()) {
+             Eigen::Matrix<double,3,3> T = image_transform.matrix().leftCols(3);
+             T.col(2) *= -1.0;
+             // if PE direction along x, need to switch X & Y:
+             if (frame.pe_axis == 0) {
+               T.col(0).swap (T.col(1));
+               T.col(0) *= -1.0;
+             }
+             g = T * frame.G_prs;
             }
-
           }
-          add_line (dw_scheme, str(g[0]) + "," + str(g[1]) + "," + str(g[2]) + "," + str(g[3]));
+          add_line (dw_scheme, str(g[0]) + "," + str(g[1]) + "," + str(g[2]) + "," + str(frame.bvalue));
         }
 
         return dw_scheme;
