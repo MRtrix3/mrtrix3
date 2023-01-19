@@ -272,7 +272,7 @@ void run () {
   vector<default_type> voxel_size = get_option_value ("vox", vector<default_type>());
 
   if (voxel_size.size() == 1)
-    voxel_size.assign (3, voxel_size.front());
+    voxel_size.resize (3, voxel_size.front());
   else if (!voxel_size.empty() && voxel_size.size() != 3)
     throw Exception ("voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
