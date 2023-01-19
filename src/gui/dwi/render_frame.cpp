@@ -288,14 +288,24 @@ namespace MR
 
       void RenderFrame::mousePressEvent (QMouseEvent* event)
       {
+#if QT_VERSION >= 0x060000
         last_pos = event->position();
+#else
+	last_pos = event->pos();
+#endif
       }
 
       void RenderFrame::mouseMoveEvent (QMouseEvent* event)
       {
+#if QT_VERSION >= 0x060000
         int dx = event->position().x() - last_pos.x();
         int dy = event->position().y() - last_pos.y();
         last_pos = event->position();
+#else
+        int dx = event->pos().x() - last_pos.x();
+        int dy = event->pos().y() - last_pos.y();
+        last_pos = event->pos();
+#endif
         if (dx == 0 && dy == 0) return;
 
         if (event->modifiers() == Qt::NoModifier) {
