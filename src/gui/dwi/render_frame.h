@@ -140,7 +140,7 @@ namespace MR
           bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_values, color_by_dir, use_lighting, normalise;
           std::unique_ptr<MR::DWI::Directions::Set> dirs;
 
-          QPoint last_pos;
+          QPointF last_pos;
           GL::Font glfont;
           Projection projection;
           Eigen::Quaternionf orientation;
