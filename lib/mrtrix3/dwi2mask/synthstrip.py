@@ -27,7 +27,7 @@ SYNTHSTRIP='mri_synthstrip'
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('synthstrip', parents=[base_parser])
-  parser.set_author('Ruobing Chen(chrc@student.unimelb.edu.au)')
+  parser.set_author('Ruobing Chen (chrc@student.unimelb.edu.au)')
   parser.set_synopsis('Use the Synthstrip heuristic (based on skull-stripping method)')
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
