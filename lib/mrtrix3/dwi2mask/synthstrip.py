@@ -14,7 +14,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 import shutil
-import argparse
 import os
 import warnings
 from mrtrix3 import MRtrixError
@@ -52,13 +51,13 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  
 
-  
+
+
   synthstrip_cmd = shutil.which(SYNTHSTRIP_CMD)
   if not synthstrip_cmd:
     raise MRtrixError('Unable to locate "Synthstrip" executable; please check installation')
-  
+
   cmd_string =SYNTHSTRIP_CMD+ ' -i bzero.nii -m synthstrip_mask.nii'
   output_file='synthstrip_mask.mif'
   #current_path=os.path.abspath('input.mif')
@@ -68,13 +67,14 @@ def execute(): #pylint: disable=unused-variable
 
   if app.ARGS.h:
     cmd_string=SYNTHSTRIP_CMD +' -h'
+    output_file='input.mif'
     warnings.warn('Displaying help message will not produce any desired files,the output of this command only produce the original input file with desired output file name, if need files, please rerun the command without -h syntax')
   if app.ARGS.s:
     cmd_string+=' -o '+ father_path+'/stripped.nii'
     warnings.warn('The stripped file will be saved in mrtrix3/lib/mrtrix3/dwi2mask')
   if app.ARGS.g:
     cmd_string+=' -g'
-    
+
   if app.ARGS.nocsf:
     cmd_string+=' --no-csf'
 
@@ -84,15 +84,19 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.mo:
     cmd_string+= ' --model' + father_path + ' -model.nii'
 
+  run.command(cmd_string)
+  run.command('mrconvert synthstrip_mask.nii synthstrip_mask.mif -datatype bit')
+  app.cleanup('synthstrip_mask.nii')
+  return output_file
 
-  if app.ARGS.h:
-    run.command(cmd_string)
-    return 'input.mif'
-  else:
-    run.command(cmd_string)
-    run.command('mrconvert synthstrip_mask.nii synthstrip_mask.mif -datatype bit')
-    
-  
-    app.cleanup('synthstrip_mask.nii')
-  
-    return output_file
+  #if app.ARGS.h:
+  #  run.command(cmd_string)
+  #  return 'input.mif'
+  #else:
+  #  run.command(cmd_string)
+  #  run.command('mrconvert synthstrip_mask.nii synthstrip_mask.mif -datatype bit')
+
+
+#    app.cleanup('synthstrip_mask.nii')
+
+#    return output_file
