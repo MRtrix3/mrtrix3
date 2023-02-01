@@ -53,7 +53,7 @@ namespace MR
 
       + Option ("angle",
             "set the maximum angle in degrees between successive steps (defaults: "
-            + str(Defaults::angle_deterministic) + " for deterministic algorithms; "
+            + str(Defaults::angle_deterministic) + " for deterministic algorithms & BallSticks; "
             + str(Defaults::angle_ifod1) + " for iFOD1 / nulldist1; "
             + str(Defaults::angle_ifod2) + " for iFOD2 / nulldist2)")
           + Argument ("theta").type_float (0.0)
@@ -72,6 +72,7 @@ namespace MR
       + Option ("cutoff",
             "set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks "
             "(defaults: " +
+            str(Defaults::cutoff_volfrac, 2) + " volume fraction for BallSticks; " +
             str(Defaults::cutoff_fod, 2) + " for FOD-based algorithms; " +
             str(Defaults::cutoff_fixel, 2) + " for fixel-based algorithms; " +
             str(Defaults::cutoff_fa, 2) + " for tensor-based algorithms; " +
@@ -85,8 +86,8 @@ namespace MR
           + Argument ("number").type_integer (1)
 
       + Option ("noprecomputed",
-            "do NOT pre-compute legendre polynomial values. Warning: "
-            "this will slow down the algorithm by a factor of approximately 4.")
+            "do NOT pre-compute legendre polynomial values for FOD amplitude sampling. "
+            "Warning: this will slow down the algorithm by a factor of approximately 4.")
 
       + Option ("rk4", "use 4th-order Runge-Kutta integration "
                        "(slower, but eliminates curvature overshoot in 1st-order deterministic methods)")

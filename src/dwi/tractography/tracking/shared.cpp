@@ -29,7 +29,7 @@ namespace MR
 
 
         SharedBase::SharedBase (const std::string& diff_path, Properties& property_set) :
-            source (Image<float>::open (diff_path).with_direct_io (3)),
+            source (diff_path.size() ? Image<float>::open (diff_path).with_direct_io (3) : Image<float>()),
             properties (property_set),
             init_dir ({ NaN, NaN, NaN }),
             min_num_points_preds (0),
@@ -63,7 +63,8 @@ namespace MR
           properties.set (rk4, "rk4");
           properties.set (stop_on_all_include, "stop_on_all_include");
 
-          properties["source"] = source.name();
+          if (diff_path.size())
+            properties["source"] = source.name();
 
           max_num_seeds = Defaults::seed_to_select_ratio * max_num_tracks;
           properties.set (max_num_seeds, "max_num_seeds");

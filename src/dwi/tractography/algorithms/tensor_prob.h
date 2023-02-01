@@ -17,9 +17,9 @@
 #ifndef __dwi_tractography_algorithms_tensor_prob_h__
 #define __dwi_tractography_algorithms_tensor_prob_h__
 
-#include "dwi/bootstrap.h"
-#include "dwi/tractography/algorithms/tensor_det.h"
+#include "dwi/tractography/bootstrap.h"
 #include "dwi/tractography/rng.h"
+#include "dwi/tractography/algorithms/tensor_det.h"
 
 
 namespace MR
@@ -59,12 +59,12 @@ namespace MR
             Tensor_Prob (const Shared& shared) :
               Tensor_Det (shared),
               S (shared),
-              source (Bootstrap<Image<float>,WildBootstrap> (S.source, WildBootstrap (S.Hat))) { }
+              source (BootstrapGenerate<Image<float>,WildBootstrap> (S.source, WildBootstrap (S.Hat))) { }
 
             Tensor_Prob (const Tensor_Prob& F) :
               Tensor_Det (F.S),
               S (F.S),
-              source (Bootstrap<Image<float>,WildBootstrap> (S.source, WildBootstrap (S.Hat))) { }
+              source (BootstrapGenerate<Image<float>,WildBootstrap> (S.source, WildBootstrap (S.Hat))) { }
 
 
 
@@ -116,10 +116,10 @@ namespace MR
             };
 
 
-            class Interp : public Interpolator<Bootstrap<Image<float>,WildBootstrap>>::type { 
+            class Interp : public Interpolator<BootstrapGenerate<Image<float>,WildBootstrap>>::type {
               public:
-                Interp (const Bootstrap<Image<float>,WildBootstrap>& bootstrap_vox) :
-                    Interpolator<Bootstrap<Image<float>,WildBootstrap> >::type (bootstrap_vox)
+                Interp (const BootstrapGenerate<Image<float>,WildBootstrap>& bootstrap_vox) :
+                    Interpolator<BootstrapGenerate<Image<float>,WildBootstrap> >::type (bootstrap_vox)
                 {
                   for (size_t i = 0; i < 8; ++i)
                     raw_signals.push_back (Eigen::VectorXf (size(3)));

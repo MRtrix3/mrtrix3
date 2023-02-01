@@ -41,16 +41,17 @@ namespace MR
           constexpr size_t seed_to_select_ratio = 1000;
           constexpr size_t max_attempts_per_seed = 1000;
 
-          constexpr float cutoff_fod = 0.10f;
-          constexpr float cutoff_fixel = 0.10f;
           constexpr float cutoff_fa = 0.10f;
+          constexpr float cutoff_fixel = 0.10f;
+          constexpr float cutoff_fod = 0.10f;
+          constexpr float cutoff_volfrac = 0.01f;
           constexpr float cutoff_act_multiplier = 0.5f;
 
           constexpr size_t max_trials_per_step = 1000;
 
           constexpr float stepsize_voxels_firstorder = 0.1f;
-          constexpr float stepsize_voxels_rk4 = 0.25f;
           constexpr float stepsize_voxels_ifod2 = 0.5f;
+          constexpr float stepsize_voxels_rk4 = 0.25f;
 
           constexpr float angle_deterministic = 60.0f;
           constexpr float angle_ifod1 = 15.0f;

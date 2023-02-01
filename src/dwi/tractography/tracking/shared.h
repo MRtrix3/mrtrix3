@@ -76,6 +76,7 @@ namespace MR
 
             float vox () const
             {
+              assert (source.valid());
               return std::pow (source.spacing(0)*source.spacing(1)*source.spacing(2), float (1.0/3.0));
             }
 

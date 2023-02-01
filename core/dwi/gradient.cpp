@@ -143,11 +143,12 @@ namespace MR
       if (size_t(bvals.cols()) != num_volumes)
         throw Exception ("bvecs and bvals files must have same number of diffusion directions as DW-image (gradients: " + str(bvecs.cols()) + ", image: " + str(num_volumes) + ")");
 
-      // bvecs format actually assumes a LHS coordinate system even if image is
-      // stored using RHS - x axis is flipped to make linear 3x3 part of
-      // transform have negative determinant:
       vector<size_t> order;
       auto adjusted_transform = File::NIfTI::adjust_transform (header, order);
+
+      // bvecs format actually assumes a LHS coordinate system even if image is
+      // stored using RHS - i axis is flipped to make linear 3x3 part of
+      // transform have negative determinant:
       if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
 
