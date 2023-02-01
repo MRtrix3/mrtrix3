@@ -36,14 +36,15 @@ void usage ()
   DESCRIPTION
   + "By default, the command will estimate the Apparent Diffusion Coefficient (ADC) "
     "using the isotropic mono-exponential model: S(b) = S(0) * exp(-D * b). "
-    "The output consists of 2 volumes, i.e., S(0) and D."
+    "The output consists of 2 volumes, respectively S(0) and D."
 
   + "When using the -ivim option, the command will additionally estimate the "
     "Intra-Voxel Incoherent Motion (IVIM) parameters f and D', i.e., the perfusion "
     "fraction and the pseudo-diffusion coefficient. IVIM assumes a bi-exponential "
     "model: S(b) = S(0) * ((1-f) * exp(-D * b) + f * exp(-D' * b)). This command "
     "adopts a 2-stage fitting strategy, in which the ADC is first estimated based on "
-    "the DWI data with b > cutoff, and the other parameters are estimated subsequently."
+    "the DWI data with b > cutoff, and the other parameters are estimated subsequently. "
+    "The output consists of 4 volumes, respectively S(0), D, f, and D'."
     
   + "Note that this command ignores the gradient orientation entirely. This approach is "
     "therefore only suited for mean DWI (trace-weighted) images or for DWI data collected "
