@@ -144,7 +144,7 @@ class DWI2ADC {
   protected:
     Eigen::VectorXd bvals, dwi, dwisub, adc;
     Eigen::MatrixXd binv, bsubinv;
-    std::vector<size_t> idx;
+    vector<size_t> idx;
     const size_t dwi_axis;
     const bool ivim;
     const int cutoff;
