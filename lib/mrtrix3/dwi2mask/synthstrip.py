@@ -84,11 +84,7 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.mo:
     cmd_string+= ' --model' + father_path + ' -model.nii'
 
-  #try:
-  #  #run.command( 'mri_synthstip -i 3dbzero.nii -o' + str(app.ARGS.o)+ '-m' + str(app.ARGS.m)+'-no-csf'+str(app.ARGS.no-csf)+'-b'+str(app.ARGS.b))
-  #  run.command( 'mri_synthstrip -i 3dbzero.nii -o stripped.nii -m synthstrip_mask.nii')
-  #except run.MRtrixError:
-  #  app.warn('The input image may have more than 1 frames.')
+
   if app.ARGS.h:
     run.command(cmd_string)
     return 'input.mif'
