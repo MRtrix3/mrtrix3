@@ -21,13 +21,13 @@ from mrtrix3 import MRtrixError
 from mrtrix3 import app, run
 
 
-DEFAULT_CLEAN_SCALE = 2
-SYNTHSTRIP='mri_synthstrip'
+
+SYNTHSTRIP_CMD='mri_synthstrip'
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('synthstrip', parents=[base_parser])
-  parser.set_author('Ruobing Chen(chrc@student.unimelb.edu.au)')
+  parser.set_author('Ruobing Chen (chrc@student.unimelb.edu.au)')
   parser.set_synopsis('Use the Synthstrip heuristic (based on skull-stripping method)')
   parser.add_argument('input',  help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
@@ -38,13 +38,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-mo',action='store_true',default=False,help='Alternative model weights')
   options.add_argument('-nocsf',action='store_true', default=False, help='Compute the immediate boundary of brain matter excluding surrounding CSF')
   options.add_argument('-b', type=int,help='Control the boundary distance from the brain')
-  parser.add_argument('-clean_scale',
-                      type=int,
-                      default=DEFAULT_CLEAN_SCALE,
-                      help='the maximum scale used to cut bridges. A certain maximum scale cuts '
-                           'bridges up to a width (in voxels) of 2x the provided scale. Setting '
-                           'this to 0 disables the mask cleaning step. (Default: ' + str(DEFAULT_CLEAN_SCALE) + ')')
-  
+
 
 
 def get_inputs(): #pylint: disable=unused-variable
@@ -59,19 +53,13 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   
-  run.command('dwiextract input.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3')
+
   
-  run.command('mrconvert mean_bzero.mif 3dbzero.mif -axes 0,1,2')
-  app.cleanup('mean_bzero.mif')
-  run.command('mrconvert 3dbzero.mif 3dbzero.nii')
-  app.cleanup('3dbzero.mif')
-  
-  
-  synthstrip_cmd = shutil.which("mri_synthstrip")
+  synthstrip_cmd = shutil.which(SYNTHSTRIP_CMD)
   if not synthstrip_cmd:
     raise MRtrixError('Unable to locate "Synthstrip" executable; please check installation')
   
-  cmd_string =SYNTHSTRIP + ' -i' +' 3dbzero.nii' + ' -m' +' synthstrip_mask.nii'
+  cmd_string =SYNTHSTRIP_CMD+ ' -i bzero.nii -m synthstrip_mask.nii'
   output_file='synthstrip_mask.mif'
   #current_path=os.path.abspath('input.mif')
   current_path=os.path.abspath(__file__)
@@ -79,7 +67,7 @@ def execute(): #pylint: disable=unused-variable
 
 
   if app.ARGS.h:
-    cmd_string=SYNTHSTRIP +' -h'
+    cmd_string=SYNTHSTRIP_CMD +' -h'
     warnings.warn('Displaying help message will not produce any desired files,the output of this command only produce the original input file with desired output file name, if need files, please rerun the command without -h syntax')
   if app.ARGS.s:
     cmd_string+=' -o '+ father_path+'/stripped.nii'
@@ -107,7 +95,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command(cmd_string)
     run.command('mrconvert synthstrip_mask.nii synthstrip_mask.mif -datatype bit')
-    app.cleanup('3dbzero.nii')
+    
   
     app.cleanup('synthstrip_mask.nii')
   
