@@ -40,7 +40,7 @@ void usage ()
   OPTIONS
     + Option ("ivim", "also estimate IVIM parameters in 2-stage fit.")
 
-    + Option ("cutoff", "minimum b-value for ADC estimation in IVIM fit (default = 120 s/mm^2).")
+    + Option ("cutoff", "minimum b-value for ADC estimation in segmented IVIM fit (default = 120 s/mm^2).")
     +   Argument ("bval").type_integer (0, 1000)
 
     + DWI::GradImportOptions();
@@ -55,6 +55,7 @@ using value_type = float;
 class DWI2ADC { 
   public:
     DWI2ADC (const Eigen::VectorXd& bvals, size_t dwi_axis, bool ivim, int cutoff) :
+      bvals (bvals),
       dwi (bvals.size()),
       adc (2),
       dwi_axis (dwi_axis),
@@ -68,7 +69,13 @@ class DWI2ADC {
       }
       binv = Math::pinv(b);
       if (ivim) {
-        INFO ("IVIM not yet implemented");
+        // select volumes with b-value > cutoff
+        for (size_t j = 0; j < bvals.size(); j++) {
+          if (bvals[j] > cutoff)
+            idx.push_back(j);
+        }
+        Eigen::MatrixXd bsub = b(idx, Eigen::all);
+        bsubinv = Math::pinv(bsub);
       }
     }
 
@@ -79,17 +86,38 @@ class DWI2ADC {
           dwi[dwi_image.index (dwi_axis)] = val > 1.0e-12 ? std::log (val) : 1.0e-12;
         }
 
-        adc = binv * dwi;
+        if (ivim) {
+          dwisub = dwi(idx);
+          adc = bsubinv * dwisub;
+        }
+        else {
+          adc = binv * dwi;
+        }
 
-        adc_image.index(3) = 0;
-        adc_image.value() = std::exp (adc[0]);
-        adc_image.index(3) = 1;
-        adc_image.value() = adc[1];
+        adc_image.index(3) = 0; adc_image.value() = std::exp (adc[0]);
+        adc_image.index(3) = 1; adc_image.value() = adc[1];
+
+        if (ivim) {
+          double A = std::exp (adc[0]);
+          double D = adc[1];
+          Eigen::VectorXd logS = adc[0] - D * bvals.array();
+          Eigen::VectorXd logdiff = (dwi.array() > logS.array()).select(dwi, logS);
+          logdiff.array() += Eigen::log(1 - Eigen::exp(-(dwi-logS).array().abs()));
+          adc = binv * logdiff;
+          double C = std::exp (adc[0]);
+          double Dstar = adc[1];
+          double S0 = A + C;
+          double f = C / S0;
+          adc_image.index(3) = 0; adc_image.value() = S0;
+          adc_image.index(3) = 2; adc_image.value() = f;
+          adc_image.index(3) = 3; adc_image.value() = Dstar;
+        }
       }
 
   protected:
-    Eigen::VectorXd dwi, adc;
-    Eigen::MatrixXd binv;
+    Eigen::VectorXd bvals, dwi, dwisub, adc;
+    Eigen::MatrixXd binv, bsubinv;
+    std::vector<size_t> idx;
     const size_t dwi_axis;
     const bool ivim;
     const int cutoff;
