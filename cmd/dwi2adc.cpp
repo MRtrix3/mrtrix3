@@ -60,6 +60,16 @@ void usage ()
     +   Argument ("bval").type_integer (0, 1000)
 
     + DWI::GradImportOptions();
+  
+  REFERENCES
+  + "Le Bihan, D.; Breton, E.; Lallemand, D.; Aubin, M.L.; Vignaud, J.; Laval-Jeantet, M. "
+    "Separation of diffusion and perfusion in intravoxel incoherent motion MR imaging. "
+    "Radiology, 1988, 168, 497–505."
+    
+  + "Jalnefjord, O.; Andersson, M.; Montelius; M.; Starck, G.; Elf, A.; Johanson, V.; Svensson, J.; Ljungberg, M. "
+    "Comparison of methods for estimation of the intravoxel incoherent motion (IVIM) "
+    "diffusion coefficient (D) and perfusion fraction (f). "
+    "Magn Reson Mater Phy, 2018, 31, 715–723.";
 }
 
 
