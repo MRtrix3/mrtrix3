@@ -2089,12 +2089,12 @@ namespace MR
             return;
           }
 
-          if (opt.opt->is ("orientationlabel")) {
+          if (opt.opt->is ("orientlabel")) {
             try {
               show_orientation_labels_action->setChecked (to<bool> (opt[0]));
             }
             catch (Exception& E) {
-              throw Exception ("-orientationlabel option expects a boolean");
+              throw Exception ("-orientlabel option expects a boolean");
             }
             glarea->update();
             return;
@@ -2214,7 +2214,7 @@ namespace MR
           + Option ("voxelinfo", "Show or hide voxel information overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("orientationlabel", "Show or hide orientation label overlay.").allow_multiple()
+          + Option ("orientlabel", "Show or hide orientation label overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
           + Option ("colourbar", "Show or hide colourbar overlay.").allow_multiple()
