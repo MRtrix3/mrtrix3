@@ -122,7 +122,7 @@ def _execute(module): #pylint: disable=unused-variable
     module.usage(CMDLINE)
   except AttributeError:
     CMDLINE = None
-    raise
+    raise 
 
   ########################################################################################################################
   # Note that everything after this point will only be executed if the script is designed to operate against the library #
@@ -1101,6 +1101,88 @@ class Parser(argparse.ArgumentParser):
            not group == self._positionals and \
            group.title not in ( 'options', 'optional arguments' )
 
+  class TypeBoolean:
+    def __call__(self, input_value):
+      true_var = "True"
+      false_var = "False"
+      converted_value = None
+      if input_value.lower() == true_var.lower():
+        converted_value = True
+      elif input_value.lower() == false_var.lower():
+        converted_value = False
+      else:
+        raise argparse.ArgumentTypeError('Entered value is not of type boolean')
+      return converted_value
+
+  class TypeIntegerSequence:
+    def __call__(self, input_value):
+      seq_elements = input_value.split(',')
+      int_list = []
+      for i in seq_elements:
+        try:
+          converted_value = int(i)
+          int_list.append(converted_value)
+        except:
+          raise argparse.ArgumentTypeError('Entered value is not an integer sequence')
+      return int_list
+  
+  class TypeFloatSequence:
+    def __call__(self, input_value):
+      seq_elements = input_value.split(',')
+      float_list = []
+      for i in seq_elements:
+        try:
+          converted_value = float(i)
+          float_list.append(converted_value)
+        except:
+          argparse.ArgumentTypeError('Entered value is not a float sequence')
+      return float_list
+
+  class TypeInputDirectory:
+    def __call__(self, input_value):
+      if not os.path.exists(input_value):
+        raise argparse.ArgumentTypeError(input_value + ' does not exist')
+      elif not os.path.isdir(input_value):
+        raise argparse.ArgumentTypeError(input_value + ' is not a directory')
+      else:
+        return input_value
+
+  class TypeOutputDirectory:
+    def __call__(self, input_value):
+      return input_value
+
+  class TypeInputFile:
+    def __call__(self, input_value):
+      if not os.path.exists(input_value):
+        raise argparse.ArgumentTypeError(input_value + ' path does not exist')
+      elif not os.path.isfile(input_value):
+        raise argparse.ArgumentTypeError(input_value + ' is not a file')
+      else:
+        return input_value
+
+  class TypeOutputFile:
+    def __call__(self, input_value):
+      return input_value
+
+  class TypeInputImage:
+    def __call__(self, input_value):
+      return input_value
+
+  class TypeOutputImage:
+    def __call__(self, input_value):
+      return input_value
+
+  class TypeInputTractogram:
+    def __call__(self, input_value):
+      if not input_value.endsWith('.tck'):
+        raise argparse.ArgumentTypeError(input_value + ' is not a valid track file')
+      return input_value 
+
+  class TypeOutputTractogram:
+    def __call__(self, input_value):
+      if not input_value.endsWith('.tck'):
+        raise argparse.ArgumentTypeError(input_value + ' must use the .tck suffix')
+      return input_value          
 
 
 
