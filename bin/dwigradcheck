@@ -29,8 +29,8 @@ def usage(cmdline): #pylint: disable=unused-variable
                           'More information on mask derivation from DWI data can be found at the following link: \n'
                           'https://mrtrix.readthedocs.io/en/' + _version.__tag__ + '/dwi_preprocessing/masking.html')
   cmdline.add_citation('Jeurissen, B.; Leemans, A.; Sijbers, J. Automated correction of improperly rotated diffusion gradient orientations in diffusion weighted MRI. Medical Image Analysis, 2014, 18(7), 953-962')
-  cmdline.add_argument('input', type=app.Parser().TypeInputImage(), help='The input DWI series to be checked')
-  cmdline.add_argument('-mask', metavar='image', type=app.Parser().TypeInputImage(), help='Provide a mask image within which to seed & constrain tracking')
+  cmdline.add_argument('input', type=app.Parser.TypeInputImage(), help='The input DWI series to be checked')
+  cmdline.add_argument('-mask', metavar='image', type=app.Parser.TypeInputImage(), help='Provide a mask image within which to seed & constrain tracking')
   cmdline.add_argument('-number', type=int, default=10000, help='Set the number of tracks to generate for each test')
 
   app.add_dwgrad_export_options(cmdline)
