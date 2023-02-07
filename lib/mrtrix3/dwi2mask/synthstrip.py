@@ -57,23 +57,23 @@ def execute(): #pylint: disable=unused-variable
   stripped_file = 'stripped.nii'
   cmd_string = SYNTHSTRIP_CMD + ' -i bzero.nii -m ' + output_file
 
-  if app.ARGS.s:
+  if app.ARGS.stripped:
     cmd_string += ' -o ' + stripped_file
-  if app.ARGS.g:
+  if app.ARGS.gpu:
     cmd_string += ' -g'
 
   if app.ARGS.nocsf:
     cmd_string += ' --no-csf'
 
-  if app.ARGS.b is not None:
-    cmd_string += ' -b' + ' ' + str(app.ARGS.b)
+  if app.ARGS.border is not None:
+    cmd_string += ' -b' + ' ' + str(app.ARGS.border)
 
   if app.ARGS.model:
     cmd_string += ' --model' + path.from_user(app.ARGS.model)
 
   run.command(cmd_string)
-  if app.ARGS.s:
-    run.command('mrconvert ' + stripped_file + ' ' + path.from_user(app.ARGS.s),
+  if app.ARGS.stripped:
+    run.command('mrconvert ' + stripped_file + ' ' + path.from_user(app.ARGS.stripped),
                 mrconvert_keyval=path.from_user(app.ARGS.input, False),
                 force=app.FORCE_OVERWRITE)
   return output_file
