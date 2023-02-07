@@ -1113,26 +1113,20 @@ class Parser(argparse.ArgumentParser):
 
   class TypeIntegerSequence:
     def __call__(self, input_value):
-      seq_elements = input_value.split(',')
       int_list = []
-      for i in seq_elements:
-        try:
-          converted_value = int(i)
-          int_list.append(converted_value)
-        except:
-          raise argparse.ArgumentTypeError('Entered value is not an integer sequence')
+      try:
+        int_list = [int(i) for i in input_value.split(',')]
+      except (ValueError, NameError) as e:
+        raise argparse.ArgumentTypeError('Entered value is not an integer sequence')
       return int_list
   
   class TypeFloatSequence:
     def __call__(self, input_value):
-      seq_elements = input_value.split(',')
       float_list = []
-      for i in seq_elements:
-        try:
-          converted_value = float(i)
-          float_list.append(converted_value)
-        except:
-          argparse.ArgumentTypeError('Entered value is not a float sequence')
+      try:
+        float_list = [float(i) for i in input_value.split(',')]
+      except (ValueError, NameError) as e:
+        raise argparse.ArgumentTypeError('Entered value is not a float sequence')
       return float_list
 
   class TypeInputDirectory:
