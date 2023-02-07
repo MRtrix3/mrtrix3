@@ -1103,16 +1103,13 @@ class Parser(argparse.ArgumentParser):
 
   class TypeBoolean:
     def __call__(self, input_value):
-      true_var = "True"
-      false_var = "False"
-      converted_value = None
-      if input_value.lower() == true_var.lower():
-        converted_value = True
-      elif input_value.lower() == false_var.lower():
-        converted_value = False
+      processed_value = input_value.lower().strip()
+      if processed_value.lower() == 'true' or processed_value == 'yes':
+        return True
+      elif processed_value.lower() == 'false' or processed_value == 'no':
+        return False
       else:
         raise argparse.ArgumentTypeError('Entered value is not of type boolean')
-      return converted_value
 
   class TypeIntegerSequence:
     def __call__(self, input_value):
@@ -1174,15 +1171,21 @@ class Parser(argparse.ArgumentParser):
 
   class TypeInputTractogram:
     def __call__(self, input_value):
-      if not input_value.endsWith('.tck'):
+      if not os.path.exists(input_value):
+        raise argparse.ArgumentTypeError(input_value + ' path does not exist')
+      elif not os.path.isfile(input_value):
+        raise argparse.ArgumentTypeError(input_value + ' is not a file')
+      elif not input_value.endsWith('.tck'):
         raise argparse.ArgumentTypeError(input_value + ' is not a valid track file')
-      return input_value 
+      else:
+        return input_value 
 
   class TypeOutputTractogram:
     def __call__(self, input_value):
       if not input_value.endsWith('.tck'):
         raise argparse.ArgumentTypeError(input_value + ' must use the .tck suffix')
-      return input_value          
+      else:
+        return input_value          
 
 
 
