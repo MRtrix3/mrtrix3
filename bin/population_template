@@ -35,12 +35,13 @@ AGGREGATION_MODES = ["mean", "median"]
 IMAGEEXT = 'mif nii mih mgh mgz img hdr'.split()
 
 def usage(cmdline): #pylint: disable=unused-variable
+  from mrtrix3 import app
   cmdline.set_author('David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)')
 
   cmdline.set_synopsis('Generates an unbiased group-average template from a series of images')
   cmdline.add_description('First a template is optimised with linear registration (rigid and/or affine, both by default), then non-linear registration is used to optimise the template further.')
-  cmdline.add_argument("input_dir", nargs='+', help='Input directory containing all images used to build the template')
-  cmdline.add_argument("template", help='Corresponding output template image. For multi-contrast registration, provide multiple paired input_dir and template arguments. Example: WM_dir WM_template.mif GM_dir GM_template.mif')
+  cmdline.add_argument("input_dir", nargs='+', type=app.Parser().TypeInputDirectory(), help='Input directory containing all images used to build the template')
+  cmdline.add_argument("template", type=app.Parser().TypeOutputImage(), help='Corresponding output template image. For multi-contrast registration, provide multiple paired input_dir and template arguments. Example: WM_dir WM_template.mif GM_dir GM_template.mif')
 
   options = cmdline.add_argument_group('Multi-contrast options')
   options.add_argument('-mc_weight_initial_alignment', help='Weight contribution of each contrast to the initial alignment. Comma separated, default: 1.0')
