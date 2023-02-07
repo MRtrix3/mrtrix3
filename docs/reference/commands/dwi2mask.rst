@@ -885,22 +885,18 @@ Usage
 Options
 -------
 
-- **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
+Options specific to the 'Synthstrip' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Options specific to the ' Synthstrip 'algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- **-stripped** The output stripped image
 
-- **-s** The output stripped image
+- **-gpu** Use the GPU
 
-- **-h** The help messeage of Synthstrip algorithm
-
-- **-g** Use the GPU
-
-- **-mo** Alternative model weights
+- **-model file** Alternative model weights
 
 - **-nocsf** Compute the immediate boundary of brain matter excluding surrounding CSF
 
-- **-b** Control the boundary distance from the brain
+- **-border** Control the boundary distance from the brain
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -946,7 +942,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Ruobing Chen(chrc@student.unimelb.edu.au)
+**Author:** Ruobing Chen (chrc@student.unimelb.edu.au)
 
 **Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
 

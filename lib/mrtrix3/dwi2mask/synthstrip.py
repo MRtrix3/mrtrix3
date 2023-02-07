@@ -14,10 +14,8 @@
 # For more details, see http://www.mrtrix.org/.
 
 import shutil
-import os
-import warnings
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, run
+from mrtrix3 import app, path, run
 
 
 
@@ -28,15 +26,14 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('synthstrip', parents=[base_parser])
   parser.set_author('Ruobing Chen (chrc@student.unimelb.edu.au)')
   parser.set_synopsis('Use the Synthstrip heuristic (based on skull-stripping method)')
-  parser.add_argument('input',  help='The input DWI series')
+  parser.add_argument('input', help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
-  options=parser.add_argument_group('Options specific to the \' Synthstrip \'algorithm')
-  options.add_argument('-s', action='store_true', default=False, help='The output stripped image')
-  options.add_argument('-h', action='store_true',default=False, help='The help messeage of Synthstrip algorithm')
-  options.add_argument('-g', action='store_true',default=False, help='Use the GPU')
-  options.add_argument('-mo',action='store_true',default=False,help='Alternative model weights')
-  options.add_argument('-nocsf',action='store_true', default=False, help='Compute the immediate boundary of brain matter excluding surrounding CSF')
-  options.add_argument('-b', type=int,help='Control the boundary distance from the brain')
+  options=parser.add_argument_group('Options specific to the \'Synthstrip\' algorithm')
+  options.add_argument('-stripped', help='The output stripped image')
+  options.add_argument('-gpu', action='store_true', default=False, help='Use the GPU')
+  options.add_argument('-model', metavar='file', help='Alternative model weights')
+  options.add_argument('-nocsf', action='store_true', default=False, help='Compute the immediate boundary of brain matter excluding surrounding CSF')
+  options.add_argument('-border', type=int, help='Control the boundary distance from the brain')
 
 
 
@@ -52,51 +49,31 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
 
-
-
   synthstrip_cmd = shutil.which(SYNTHSTRIP_CMD)
   if not synthstrip_cmd:
     raise MRtrixError('Unable to locate "Synthstrip" executable; please check installation')
 
-  cmd_string =SYNTHSTRIP_CMD+ ' -i bzero.nii -m synthstrip_mask.nii'
-  output_file='synthstrip_mask.mif'
-  #current_path=os.path.abspath('input.mif')
-  current_path=os.path.abspath(__file__)
-  father_path=os.path.abspath(os.path.dirname(current_path))
+  output_file = 'synthstrip_mask.nii'
+  stripped_file = 'stripped.nii'
+  cmd_string = SYNTHSTRIP_CMD + ' -i bzero.nii -m ' + output_file
 
-
-  if app.ARGS.h:
-    cmd_string=SYNTHSTRIP_CMD +' -h'
-    output_file='input.mif'
-    warnings.warn('Displaying help message will not produce any desired files,the output of this command only produce the original input file with desired output file name, if need files, please rerun the command without -h syntax')
   if app.ARGS.s:
-    cmd_string+=' -o '+ father_path+'/stripped.nii'
-    warnings.warn('The stripped file will be saved in mrtrix3/lib/mrtrix3/dwi2mask')
+    cmd_string += ' -o ' + stripped_file
   if app.ARGS.g:
-    cmd_string+=' -g'
+    cmd_string += ' -g'
 
   if app.ARGS.nocsf:
-    cmd_string+=' --no-csf'
+    cmd_string += ' --no-csf'
 
   if app.ARGS.b is not None:
-    cmd_string += ' -b' + ' '+str(app.ARGS.b)
+    cmd_string += ' -b' + ' ' + str(app.ARGS.b)
 
-  if app.ARGS.mo:
-    cmd_string+= ' --model' + father_path + ' -model.nii'
+  if app.ARGS.model:
+    cmd_string += ' --model' + path.from_user(app.ARGS.model)
 
   run.command(cmd_string)
-  run.command('mrconvert synthstrip_mask.nii synthstrip_mask.mif -datatype bit')
-  app.cleanup('synthstrip_mask.nii')
+  if app.ARGS.s:
+    run.command('mrconvert ' + stripped_file + ' ' + path.from_user(app.ARGS.s),
+                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                force=app.FORCE_OVERWRITE)
   return output_file
-
-  #if app.ARGS.h:
-  #  run.command(cmd_string)
-  #  return 'input.mif'
-  #else:
-  #  run.command(cmd_string)
-  #  run.command('mrconvert synthstrip_mask.nii synthstrip_mask.mif -datatype bit')
-
-
-#    app.cleanup('synthstrip_mask.nii')
-
-#    return output_file
