@@ -94,7 +94,8 @@ def execute(): #pylint: disable=unused-variable
               + ' |'
               + ' mrconvert - '
               + path.from_user(app.ARGS.output)
-              + ' -strides ' + ','.join(str(value) for value in strides),
+              + ' -strides ' + ','.join(str(value) for value in strides)
+              + ' -datatype bit',
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
               force=app.FORCE_OVERWRITE)
 
