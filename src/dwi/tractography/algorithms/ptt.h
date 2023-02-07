@@ -56,18 +56,18 @@ namespace MR
                 nsamples (4)
             {
               try {
-                Math::SH::check(source);
+                Math::SH::check (source);
               } catch (Exception &e) {
                 e.display();
-                throw Exception("Algorithm SD_STREAM expects as input a spherical harmonic (SH) image");
+                throw Exception ("Algorithm SD_STREAM expects as input a spherical harmonic (SH) image");
               }
 
               if (rk4)
-                throw Exception("4th-order Runge-Kutta integration not valid for PTT algorithm");
+                throw Exception ("4th-order Runge-Kutta integration not valid for PTT algorithm");
 
-              set_step_and_angle(0.025f, 90.0f, false);
+              set_step_and_angle (0.025f, 90.0f, false);
               set_num_points();
-              set_cutoff(Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
+              set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
               properties["method"] = "PTT";
               downsampler.set_ratio (20);
@@ -77,10 +77,9 @@ namespace MR
               if (precomputed)
                 precomputer = new Math::SH::PrecomputedAL<float>(lmax);
 
-              // TODO Is this the correct interpretation of t?
-              ts.reserve(nsamples);
+              ts.reserve (nsamples);
               for (size_t i = 0; i != nsamples; ++i)
-                ts.push_back(step_size * float(i) / float(nsamples));
+                ts.push_back (step_size * float(i) / float(nsamples));
             }
 
             ~Shared()
@@ -142,6 +141,8 @@ namespace MR
           {
             if (!get_data (source))
               return EXIT_IMAGE;
+
+            orthonormalize();
 
             const f_and_kpair sample = rejection_sample<false>();
             if (!std::isfinite (sample.f))
@@ -273,12 +274,7 @@ namespace MR
           {
             // TODO For now, we are not making any attempt at producing the cylindrical representation;
             //   just produce the line path
-            // TODO Not yet 100% confident how parameter "t" should be used for the samples within a step
-            // I _think_ that dt = 1 corresponds to the difference between segments;
-            //   the within-segment vertices therefore use 0 < dt < 1
-            // These fractions are now being pre-computed within Shared
             // TODO Can the scale of computations be reduced here in order to only yield position & direction and ignore K#?
-            // TODO Surely step size should be in here somewhere?
             Eigen::Matrix<float, 4, 4> propagator;
             probe[0] = F;
             for (size_t v = 1; v != S.nsamples; ++v)
@@ -295,12 +291,15 @@ namespace MR
             //   path probabilities
             // Also, ideally they should not have to be recalculated, but should be carried over from the previous segment calculation
             // TODO May want to transition to sum of logs; especially if iFOD2-style sharing of first & last vertices is used
-            float support = 1.0f;
+            //   (this would also facilitate dividing logs by number of samples, rather than taking an (nsamples)-th root)
+            // TODO Trying sum of amplitudes rather than product;
+            //   try contrasting the two, potentially even make command-line option
+            float support = 0.0f;
             for (const auto &frame : probe) {
               const float amplitude = FOD (frame);
               if (amplitude < S.threshold)
                 return 0.0f;
-              support *= amplitude;
+              support += amplitude;
             }
             support /= S.nsamples;
             return support;
@@ -316,20 +315,16 @@ namespace MR
             F.x (pos);
             F.T (random_direction());
             F.K1 (random_direction());
-            F.K2 (F.T().cross (F.K1()));
+            orthonormalize();
             const f_and_kpair trial = random_next();
             return trial;
           }
 
-
-
-          // Eigen::Matrix<float, 4, 4> A (const float k1, const float k2) const
-          // {
-          //   Eigen::Matrix<float, 4, 4> result = Eigen::Matrix<float, 4, 4>::Zero();
-          //   result.col(1) << 1.0f, 0.0f, -k1, -k2;
-          //   result.row(1) << 0.0f, 0.0f,  k1,  k2;
-          //   return result;
-          // }
+          void orthonormalize()
+          {
+            F.K2 (F.T().cross (F.K1()).normalized());
+            F.K1 (F.K2().cross (F.T()).normalized());
+          }
 
 
 
