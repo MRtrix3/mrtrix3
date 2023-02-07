@@ -23,10 +23,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('trace', parents=[base_parser])
   parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('A method to generate a brain mask from trace images of b-value shells')
-  parser.add_argument('input',  help='The input DWI series')
-  parser.add_argument('output', help='The output mask image')
+  parser.add_argument('input', type=app.Parser.TypeInputImage(), help='The input DWI series')
+  parser.add_argument('output', type=app.Parser.TypeOutputImage(), help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'trace\' algorithm')
-  options.add_argument('-shells', help='Comma separated list of shells used to generate trace-weighted images for masking')
+  options.add_argument('-shells', type=app.Parser.TypeFloatSequence(), help='Comma-separated list of shells used to generate trace-weighted images for masking')
   options.add_argument('-clean_scale',
                        type=int,
                        default=DEFAULT_CLEAN_SCALE,
