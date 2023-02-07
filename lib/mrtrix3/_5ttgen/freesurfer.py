@@ -23,10 +23,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('freesurfer', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate the 5TT image based on a FreeSurfer parcellation image')
-  parser.add_argument('input',  help='The input FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
-  parser.add_argument('output', help='The output 5TT image')
+  parser.add_argument('input', type=app.Parser.TypeInputImage(), help='The input FreeSurfer parcellation image (any image containing \'aseg\' in its name)')
+  parser.add_argument('output', type=app.Parser.TypeOutputImage(), help='The output 5TT image')
   options = parser.add_argument_group('Options specific to the \'freesurfer\' algorithm')
-  options.add_argument('-lut', help='Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)')
+  options.add_argument('-lut', type=app.Parser.TypeInputFile(), help='Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)')
 
 
 

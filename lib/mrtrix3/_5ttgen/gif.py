@@ -23,8 +23,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('gif', parents=[base_parser])
   parser.set_author('Matteo Mancini (m.mancini@ucl.ac.uk)')
   parser.set_synopsis('Generate the 5TT image based on a Geodesic Information Flow (GIF) segmentation image')
-  parser.add_argument('input',  help='The input Geodesic Information Flow (GIF) segmentation image')
-  parser.add_argument('output', help='The output 5TT image')
+  parser.add_argument('input', type=app.Parser.TypeInputImage(), help='The input Geodesic Information Flow (GIF) segmentation image')
+  parser.add_argument('output', type=app.Parser.TypeOutputImage(), help='The output 5TT image')
 
 
 def check_output_paths(): #pylint: disable=unused-variable
