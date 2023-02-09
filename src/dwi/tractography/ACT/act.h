@@ -47,7 +47,7 @@ namespace MR
       namespace ACT
       {
 
-        const char* sgm_trunc_choices[] = { "entry", "exit", "minimum", "random", "roulette" };
+        extern const char* sgm_trunc_choices[];
         enum class sgm_trunc_enum { DEFAULT, ENTRY, EXIT, MINIMUM, RANDOM, ROULETTE };
 
         extern const App::OptionGroup ACTOption;

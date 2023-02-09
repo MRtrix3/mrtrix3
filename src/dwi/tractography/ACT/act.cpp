@@ -31,6 +31,8 @@ namespace MR
 
         using namespace App;
 
+        const char* sgm_trunc_choices[] = { "entry", "exit", "minimum", "random", "roulette", nullptr };
+
         const OptionGroup ACTOption = OptionGroup ("Anatomically-Constrained Tractography options")
 
           + Option ("act", "use the Anatomically-Constrained Tractography framework during tracking; "
