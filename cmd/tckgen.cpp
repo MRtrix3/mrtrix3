@@ -226,6 +226,7 @@ void usage ()
 
   + DWI::Tractography::Algorithms::FODOptions
   + DWI::Tractography::Algorithms::SecondOrderOptions
+  + DWI::Tractography::Algorithms::PTTOptions
 
   + DWI::GradImportOptions();
 
@@ -258,7 +259,8 @@ void run ()
     Algorithms::load_FOD_options (properties);
   if (algorithm == 2 || algorithm == 3)
     Algorithms::load_2ndorder_options (properties);
-
+  if (algorithm == 3)
+    Algorithms::load_PTT_options (properties);
 
   //load ROIs and tractography specific options
   //NB must occur before seed check below due to -select option override

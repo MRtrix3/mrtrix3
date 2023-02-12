@@ -48,7 +48,7 @@ namespace MR
 
           constexpr size_t max_trials_per_step = 1000;
 
-
+          constexpr float probelength_voxels_ptt = 0.25f;
           constexpr float stepsize_voxels_firstorder = 0.1f;
           constexpr float stepsize_voxels_ifod2 = 0.5f;
           constexpr float stepsize_voxels_ptt = 0.025f;

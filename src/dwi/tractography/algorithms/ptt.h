@@ -36,6 +36,8 @@ namespace MR
 
 
         using namespace MR::DWI::Tractography::Tracking;
+        extern const App::OptionGroup PTTOptions;
+        void load_PTT_options (Tractography::Properties&);
 
 
 
@@ -53,7 +55,8 @@ namespace MR
                 max_trials_calibration_seeding (1000),
                 max_trials_sampling (Defaults::max_trials_per_step),
                 kmax (2.0f / vox()),
-                nsamples (Defaults::secondorder_nsamples)
+                nsamples (Defaults::secondorder_nsamples),
+                probe_length (Defaults::probelength_voxels_ptt * vox())
             {
               try {
                 Math::SH::check (source);
@@ -78,7 +81,7 @@ namespace MR
               // TODO In addition this needs to properly deal with potential differences between step size and probe length
 
               set_step_and_angle (Defaults::stepsize_voxels_ptt, Defaults::angle_ptt, true);
-
+              properties.set (probe_length, "probe_length");
               set_num_points();
 
               set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
@@ -95,9 +98,9 @@ namespace MR
                 precomputer = new Math::SH::PrecomputedAL<float>(lmax);
 
               properties.set (nsamples, "samples_per_step");
-              ts.reserve (nsamples);
+              probe_t.reserve (nsamples);
               for (size_t i = 0; i != nsamples; ++i)
-                ts.push_back (step_size * float(i) / float(nsamples));
+                probe_t.push_back (probe_length * float(i) / float(nsamples-1));
 
             }
 
@@ -114,7 +117,8 @@ namespace MR
             size_t max_trials_calibration_tracking, max_trials_calibration_seeding, max_trials_sampling;
             float kmax;
             size_t nsamples;
-            vector<float> ts;
+            float probe_length;
+            vector<float> probe_t;
             Math::SH::PrecomputedAL<float> *precomputer;
           };
 
@@ -176,7 +180,8 @@ namespace MR
             if (!std::isfinite (sample.f))
               return MODEL;
 
-            F = probe.back();
+            const Eigen::Matrix<float, 4, 4> propagator = P (sample.k1, sample.k2, S.step_size);
+            F = propagator * F;
             pos = F.x();
             dir = F.T();
             return CONTINUE;
@@ -308,7 +313,7 @@ namespace MR
             probe[0] = F;
             for (size_t v = 1; v != S.nsamples; ++v)
             {
-              propagator = P (k1, k2, S.ts[v]);
+              propagator = P (k1, k2, S.probe_t[v]);
               probe[v].noalias() = propagator * F;
             }
           }
