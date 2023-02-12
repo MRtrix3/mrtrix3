@@ -35,14 +35,12 @@ namespace MR
       namespace Algorithms
       {
 
-        extern const App::OptionGroup iFODOptions;
-        void load_iFOD_options (Tractography::Properties&);
 
     using namespace MR::DWI::Tractography::Tracking;
 
-    class iFOD1 : public MethodBase { 
+    class iFOD1 : public MethodBase {
       public:
-      class Shared : public SharedBase { 
+      class Shared : public SharedBase {
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
@@ -258,7 +256,7 @@ namespace MR
 
 
       class Calibrate
-      { 
+      {
         public:
           Calibrate (iFOD1& method) :
             P (method),

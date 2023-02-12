@@ -48,38 +48,57 @@ namespace MR
             Shared (const std::string &diff_path, DWI::Tractography::Properties &property_set) :
                 SharedBase (diff_path, property_set),
                 lmax (Math::SH::LforN (source.size(3))),
-                // TODO Provide command-line interface
+                // TODO Provide command-line interfaces
                 max_trials_calibration_tracking (20),
                 max_trials_calibration_seeding (1000),
-                max_trials_sampling (1000),
+                max_trials_sampling (Defaults::max_trials_per_step),
                 kmax (2.0f / vox()),
-                nsamples (4)
+                nsamples (Defaults::secondorder_nsamples)
             {
               try {
                 Math::SH::check (source);
               } catch (Exception &e) {
                 e.display();
-                throw Exception ("Algorithm SD_STREAM expects as input a spherical harmonic (SH) image");
+                throw Exception ("Algorithm PTT expects as input a spherical harmonic (SH) image");
               }
 
               if (rk4)
                 throw Exception ("4th-order Runge-Kutta integration not valid for PTT algorithm");
 
-              set_step_and_angle (0.025f, 90.0f, false);
+              properties["method"] = "PTT";
+
+              // TODO Compute appropriate combination of angle and kmax
+              // Don't think that angle should actually be that consequential,
+              //   since it's ultimately kmax that controls maximum curvature of calculated trajectories;
+              // however if the user manually specifies an angle, then technically kmax should be
+              //   being computed from that
+              // TODO Think that some of the calculations in set_step_and_angle() may be based on a
+              //   fixed chord length rather than fixed arc length;
+              //   this will be the case for set_num_points() as well
+              // TODO In addition this needs to properly deal with potential differences between step size and probe length
+
+              set_step_and_angle (Defaults::stepsize_voxels_ptt, Defaults::angle_ptt, true);
+
               set_num_points();
+
               set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
-              properties["method"] = "PTT";
-              downsampler.set_ratio (20);
+              // Determine the downsampling factor required such that the exported step size is
+              //   no larger than this number of voxels
+              downsampler.set_ratio (std::floor (Defaults::downsample_stepsize_voxels_ptt / step_size));
+
+              properties.set (max_trials_sampling, "max_trials");
 
               bool precomputed = true;
-              properties.set(precomputed, "sh_precomputed");
+              properties.set (precomputed, "sh_precomputed");
               if (precomputed)
                 precomputer = new Math::SH::PrecomputedAL<float>(lmax);
 
+              properties.set (nsamples, "samples_per_step");
               ts.reserve (nsamples);
               for (size_t i = 0; i != nsamples; ++i)
                 ts.push_back (step_size * float(i) / float(nsamples));
+
             }
 
             ~Shared()
@@ -90,9 +109,10 @@ namespace MR
 
             size_t lmax;
             // TODO Homogenize support for trial count selection across algorithms
+            // ("max_trials_sampling" now reads from same command-line option and default value as iFOD#;
+            //   calibrators may change implementation in the future)
             size_t max_trials_calibration_tracking, max_trials_calibration_seeding, max_trials_sampling;
             float kmax;
-            // TODO Homogenize support for nsamples between iFOD2 and PTT
             size_t nsamples;
             vector<float> ts;
             Math::SH::PrecomputedAL<float> *precomputer;
@@ -121,6 +141,15 @@ namespace MR
 
 
 
+          // TODO Currently, the PTT algorithm as published generates an entire segment from the seed point
+          //   in order to generate the PTF just at the seed point; but that segment is then discarded.
+          //   This differs from iFOD2, which just looks for a supra-threshold FOD amplitude at the seed point and
+          //   doesn't consider any higher-order / non-local effects.
+          // Possible options:
+          //   - Do similar for PTT, with random initialisation of K1 & K2.
+          //   - Generate that initial segment, but additionally buffer it so that it is used to form the first
+          //     segment upon the first call to next()
+          //   - Ignore, and just accept that there's a single redundant segment calculated from the seed point
           bool init() override
           {
             F = F_seed = Eigen::Matrix<float, 4, 3>::Zero();
@@ -130,8 +159,7 @@ namespace MR
             if (!get_data(source))
               return (false);
 
-            F.x (pos);
-            const f_and_kpair start = initialize();
+            const f_and_kpair start = initialize (pos);
             dir = F.T();
             F_seed = F;
             return std::isfinite (start.f);
@@ -231,6 +259,7 @@ namespace MR
 
           // TODO This serves a similar purpose to the iFOD* calibrator;
           //   may prefer to make use of the calibrator class in the future
+          // TODO Would this be possible / applicable with the use of non-zero radius?
           template <bool seed>
           f_and_kpair rejection_sample()
           {
@@ -243,7 +272,7 @@ namespace MR
             if (!fmax)
               return {NaN, NaN, NaN};
             fmax *= 2;
-            for (size_t i = 0; i != S.max_trials_sampling; ++i)
+            for (size_t i = 0; i != (seed ? S.max_seed_attempts : S.max_trials_sampling); ++i)
             {
               const f_and_kpair trial = seed ? random_init() : random_next();
               if (uniform_real (rng) < (trial.f / fmax))
@@ -305,8 +334,9 @@ namespace MR
             return support;
           }
 
-          f_and_kpair initialize()
+          f_and_kpair initialize (const Eigen::Vector3f& seed)
           {
+            F.x (seed);
             return rejection_sample<true>();
           }
 

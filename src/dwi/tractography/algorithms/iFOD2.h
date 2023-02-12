@@ -38,20 +38,17 @@ namespace MR
       namespace Algorithms
       {
 
-        extern const App::OptionGroup iFOD2Options;
-        void load_iFOD2_options (Tractography::Properties&);
-
         using namespace MR::DWI::Tractography::Tracking;
 
-        class iFOD2 : public MethodBase { 
+        class iFOD2 : public MethodBase {
           public:
 
-            class Shared : public SharedBase { 
+            class Shared : public SharedBase {
               public:
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                     SharedBase (diff_path, property_set),
                     lmax (Math::SH::LforN (source.size(3))),
-                    num_samples (Defaults::ifod2_nsamples),
+                    num_samples (Defaults::secondorder_nsamples),
                     max_trials (Defaults::max_trials_per_step),
                     sin_max_angle_ho (NaN),
                     mean_samples (0.0),
@@ -453,7 +450,7 @@ end_init:
 
           private:
             class Calibrate
-            { 
+            {
               public:
                 Calibrate (iFOD2& method) :
                   P (method),

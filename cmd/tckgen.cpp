@@ -30,6 +30,7 @@
 #include "dwi/tractography/algorithms/iFOD1.h"
 #include "dwi/tractography/algorithms/iFOD2.h"
 #include "dwi/tractography/algorithms/nulldist.h"
+#include "dwi/tractography/algorithms/options.h"
 #include "dwi/tractography/algorithms/ptt.h"
 #include "dwi/tractography/algorithms/sd_stream.h"
 #include "dwi/tractography/algorithms/seedtest.h"
@@ -223,8 +224,8 @@ void usage ()
 
   + DWI::Tractography::ACT::ACTOption
 
-  + DWI::Tractography::Algorithms::iFODOptions
-  + DWI::Tractography::Algorithms::iFOD2Options
+  + DWI::Tractography::Algorithms::FODOptions
+  + DWI::Tractography::Algorithms::SecondOrderOptions
 
   + DWI::GradImportOptions();
 
@@ -254,9 +255,9 @@ void run ()
   Seeding::load_seed_parameters (properties);
 
   if (algorithm == 1 || algorithm == 2)
-    Algorithms::load_iFOD_options (properties);
-  if (algorithm == 2)
-    Algorithms::load_iFOD2_options (properties);
+    Algorithms::load_FOD_options (properties);
+  if (algorithm == 2 || algorithm == 3)
+    Algorithms::load_2ndorder_options (properties);
 
 
   //load ROIs and tractography specific options
