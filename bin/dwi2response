@@ -62,7 +62,7 @@ def execute(): #pylint: disable=unused-variable
   # Sanitise some inputs, and get ready for data import
   if app.ARGS.lmax:
     try:
-      lmax = [ int(x) for x in app.ARGS.lmax.split(',') ]
+      lmax = app.ARGS.lmax
       if any(lmax_value%2 for lmax_value in lmax):
         raise MRtrixError('Value of lmax must be even')
     except ValueError as exception:
@@ -72,7 +72,7 @@ def execute(): #pylint: disable=unused-variable
   shells_option = ''
   if app.ARGS.shells:
     try:
-      shells_values = [ int(round(float(x))) for x in app.ARGS.shells.split(',') ]
+      shells_values = [ int(round(x)) for x in app.ARGS.shells ]
     except ValueError as exception:
       raise MRtrixError('-shells option should provide a comma-separated list of b-values') from exception
     if alg.needs_single_shell() and not len(shells_values) == 1:

@@ -67,7 +67,7 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.bet_r is not None:
     cmd_string += ' -r ' + str(app.ARGS.bet_r)
   if app.ARGS.bet_c is not None:
-    cmd_string += ' -c ' + ' '.join(app.ARGS.bet_c)
+    cmd_string += ' -c ' + str(app.ARGS.bet_c)
 
   # Running BET command
   run.command(cmd_string)
