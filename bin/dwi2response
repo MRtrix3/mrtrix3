@@ -33,10 +33,10 @@ def usage(cmdline): #pylint: disable=unused-variable
 
   # General options
   common_options = cmdline.add_argument_group('General dwi2response options')
-  common_options.add_argument('-mask', type=app.Parser.TypeInputImage(), metavar='image', help='Provide an initial mask for response voxel selection')
-  common_options.add_argument('-voxels', type=app.Parser.TypeOutputImage(), metavar='image', help='Output an image showing the final voxel selection(s)')
-  common_options.add_argument('-shells', type=app.Parser.TypeFloatSequence(), help='The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)')
-  common_options.add_argument('-lmax', type=app.Parser.TypeIntegerSequence(), help='The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)')
+  common_options.add_argument('-mask', type=app.Parser.ImageIn(), metavar='image', help='Provide an initial mask for response voxel selection')
+  common_options.add_argument('-voxels', type=app.Parser.ImageOut(), metavar='image', help='Output an image showing the final voxel selection(s)')
+  common_options.add_argument('-shells', type=app.Parser.FloatSeq(), help='The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)')
+  common_options.add_argument('-lmax', type=app.Parser.IntSeq(), help='The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)')
   app.add_dwgrad_import_options(cmdline)
 
   # Import the command-line settings for all algorithms found in the relevant directory

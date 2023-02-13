@@ -27,8 +27,8 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_description('Example usage: ' + os.path.basename(sys.argv[0]) + ' input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt')
   cmdline.add_description('All response function files provided must contain the same number of unique b-values (lines), as well as the same number of coefficients per line.')
   cmdline.add_description('As long as the number of unique b-values is identical across all input files, the coefficients will be averaged. This is performed on the assumption that the actual acquired b-values are identical. This is however impossible for the ' + os.path.basename(sys.argv[0]) + ' command to determine based on the data provided; it is therefore up to the user to ensure that this requirement is satisfied.')
-  cmdline.add_argument('inputs', type=app.Parser.TypeInputFile(), help='The input response function files', nargs='+')
-  cmdline.add_argument('output', type=app.Parser.TypeOutputFile(), help='The output mean response function file')
+  cmdline.add_argument('inputs', type=app.Parser.ArgFileIn(), help='The input response function files', nargs='+')
+  cmdline.add_argument('output', type=app.Parser.ArgFileOut(), help='The output mean response function file')
   cmdline.add_argument('-legacy', action='store_true', help='Use the legacy behaviour of former command \'average_response\': average response function coefficients directly, without compensating for global magnitude differences between input files')
 
 

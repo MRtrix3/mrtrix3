@@ -1111,7 +1111,7 @@ class Parser(argparse.ArgumentParser):
       else:
         raise argparse.ArgumentTypeError('Entered value is not of type boolean')
 
-  class TypeIntegerSequence:
+  class IntSeq:
     def __call__(self, input_value):
       int_list = []
       try:
@@ -1120,7 +1120,7 @@ class Parser(argparse.ArgumentParser):
         raise argparse.ArgumentTypeError('Entered value is not an integer sequence')
       return int_list
   
-  class TypeFloatSequence:
+  class FloatSeq:
     def __call__(self, input_value):
       float_list = []
       try:
@@ -1129,7 +1129,7 @@ class Parser(argparse.ArgumentParser):
         raise argparse.ArgumentTypeError('Entered value is not a float sequence')
       return float_list
 
-  class TypeInputDirectory:
+  class ArgDirectoryIn:
     def __call__(self, input_value):
       if not os.path.exists(input_value):
         raise argparse.ArgumentTypeError(input_value + ' does not exist')
@@ -1138,11 +1138,11 @@ class Parser(argparse.ArgumentParser):
       else:
         return input_value
 
-  class TypeOutputDirectory:
+  class ArgDirectoryOut:
     def __call__(self, input_value):
       return input_value
 
-  class TypeInputFile:
+  class ArgFileIn:
     def __call__(self, input_value):
       if not os.path.exists(input_value):
         raise argparse.ArgumentTypeError(input_value + ' path does not exist')
@@ -1151,19 +1151,19 @@ class Parser(argparse.ArgumentParser):
       else:
         return input_value
 
-  class TypeOutputFile:
+  class ArgFileOut:
     def __call__(self, input_value):
       return input_value
 
-  class TypeInputImage:
+  class ImageIn:
     def __call__(self, input_value):
       return input_value
 
-  class TypeOutputImage:
+  class ImageOut:
     def __call__(self, input_value):
       return input_value
 
-  class TypeInputTractogram:
+  class TracksIn:
     def __call__(self, input_value):
       if not os.path.exists(input_value):
         raise argparse.ArgumentTypeError(input_value + ' path does not exist')
@@ -1174,7 +1174,7 @@ class Parser(argparse.ArgumentParser):
       else:
         return input_value 
 
-  class TypeOutputTractogram:
+  class TracksOut:
     def __call__(self, input_value):
       if not input_value.endsWith('.tck'):
         raise argparse.ArgumentTypeError(input_value + ' must use the .tck suffix')

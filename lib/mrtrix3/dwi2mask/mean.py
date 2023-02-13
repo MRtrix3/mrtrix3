@@ -21,8 +21,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('mean', parents=[base_parser])
   parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au)')
   parser.set_synopsis('Generate a mask based on simply averaging all volumes in the DWI series')
-  parser.add_argument('input', type=app.Parser.TypeInputImage(), help='The input DWI series')
-  parser.add_argument('output', type=app.Parser.TypeOutputImage(), help='The output mask image')
+  parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI series')
+  parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'mean\' algorithm')
   options.add_argument('-shells', help='Comma separated list of shells to be included in the volume averaging')
   options.add_argument('-clean_scale',

@@ -23,8 +23,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('legacy', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use the legacy MRtrix3 dwi2mask heuristic (based on thresholded trace images)')
-  parser.add_argument('input', type=app.Parser.TypeInputImage(), help='The input DWI series')
-  parser.add_argument('output', type=app.Parser.TypeOutputImage(), help='The output mask image')
+  parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI series')
+  parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
   parser.add_argument('-clean_scale',
                       type=int,
                       default=DEFAULT_CLEAN_SCALE,

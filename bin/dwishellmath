@@ -26,9 +26,9 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_description('The output of this command is a 4D image, where '
                           'each volume corresponds to a b-value shell (in order of increasing b-value), and '
                           'the intensities within each volume correspond to the chosen statistic having been computed from across the DWI volumes belonging to that b-value shell.')
-  cmdline.add_argument('input', type=app.Parser.TypeInputImage(), help='The input diffusion MRI series')
+  cmdline.add_argument('input', type=app.Parser.ImageIn(), help='The input diffusion MRI series')
   cmdline.add_argument('operation', choices=SUPPORTED_OPS, help='The operation to be applied to each shell; this must be one of the following: ' + ', '.join(SUPPORTED_OPS))
-  cmdline.add_argument('output', type=app.Parser.TypeOutputImage(), help='The output image series')
+  cmdline.add_argument('output', type=app.Parser.ImageOut(), help='The output image series')
   cmdline.add_example_usage('To compute the mean diffusion-weighted signal in each b-value shell',
                             'dwishellmath dwi.mif mean shellmeans.mif')
   app.add_dwgrad_import_options(cmdline)

@@ -34,8 +34,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   ants_options = parser.add_argument_group('Options for ANTs N4BiasFieldCorrection command')
   for key in sorted(OPT_N4_BIAS_FIELD_CORRECTION):
     ants_options.add_argument('-ants.'+key, metavar=OPT_N4_BIAS_FIELD_CORRECTION[key][0], help='N4BiasFieldCorrection option -%s. %s' % (key,OPT_N4_BIAS_FIELD_CORRECTION[key][1]))
-  parser.add_argument('input', type=app.Parser.TypeInputImage(), help='The input image series to be corrected')
-  parser.add_argument('output', type=app.Parser.TypeOutputImage(), help='The output corrected image series')
+  parser.add_argument('input', type=app.Parser.ImageIn(), help='The input image series to be corrected')
+  parser.add_argument('output', type=app.Parser.ImageOut(), help='The output corrected image series')
 
 
 
