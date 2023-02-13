@@ -25,11 +25,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.set_synopsis('Performs a global DWI intensity normalisation on a group of subjects using the median b=0 white matter value as the reference')
   parser.add_description('The white matter mask is estimated from a population average FA template then warped back to each subject to perform the intensity normalisation. Note that bias field correction should be performed prior to this step.')
   parser.add_description('All input DWI files must contain an embedded diffusion gradient table; for this reason, these images must all be in either .mif or .mif.gz format.')
-  parser.add_argument('input_dir', type=app.Parser.TypeInputDirectory(), help='The input directory containing all DWI images')
-  parser.add_argument('mask_dir', type=app.Parser.TypeInputDirectory(), help='Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)')
-  parser.add_argument('output_dir', type=app.Parser.TypeOutputDirectory(), help='The output directory containing all of the intensity normalised DWI images')
-  parser.add_argument('fa_template', type=app.Parser.TypeOutputImage(), help='The output population-specific FA template, which is thresholded to estimate a white matter mask')
-  parser.add_argument('wm_mask', type=app.Parser.TypeOutputImage(), help='The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation')
+  parser.add_argument('input_dir', type=app.Parser.ArgDirectoryIn(), help='The input directory containing all DWI images')
+  parser.add_argument('mask_dir', type=app.Parser.ArgDirectoryIn(), help='Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)')
+  parser.add_argument('output_dir', type=app.Parser.ArgDirectoryOut(), help='The output directory containing all of the intensity normalised DWI images')
+  parser.add_argument('fa_template', type=app.Parser.ImageOut(), help='The output population-specific FA template, which is thresholded to estimate a white matter mask')
+  parser.add_argument('wm_mask', type=app.Parser.ImageOut(), help='The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation')
   parser.add_argument('-fa_threshold', default='0.4', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)')
 
 

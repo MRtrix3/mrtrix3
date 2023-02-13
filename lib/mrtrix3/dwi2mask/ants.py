@@ -26,10 +26,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Use ANTs Brain Extraction to derive a DWI brain mask')
   parser.add_citation('B. Avants, N.J. Tustison, G. Song, P.A. Cook, A. Klein, J.C. Jee. A reproducible evaluation of ANTs similarity metric performance in brain image registration. NeuroImage, 2011, 54, 2033-2044', is_external=True)
-  parser.add_argument('input', type=app.Parser.TypeInputImage(), help='The input DWI series')
-  parser.add_argument('output', type=app.Parser.TypeOutputImage(), help='The output mask image')
+  parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI series')
+  parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
   options = parser.add_argument_group('Options specific to the "ants" algorithm')
-  options.add_argument('-template', type=app.Parser.TypeInputImage(), metavar=('TemplateImage', 'MaskImage'), nargs=2, help='Provide the template image and corresponding mask for antsBrainExtraction.sh to use; the template image should be T2-weighted.')
+  options.add_argument('-template', type=app.Parser.ImageIn(), metavar=('TemplateImage', 'MaskImage'), nargs=2, help='Provide the template image and corresponding mask for antsBrainExtraction.sh to use; the template image should be T2-weighted.')
 
 
 

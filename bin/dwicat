@@ -31,9 +31,9 @@ def usage(cmdline): #pylint: disable=unused-variable
                           'This intensity scaling is corrected by determining scaling factors that will '
                           'make the overall image intensities in the b=0 volumes of each series approximately '
                           'equivalent.')
-  cmdline.add_argument('inputs', nargs='+', type=app.Parser.TypeInputImage(), help='Multiple input diffusion MRI series')
-  cmdline.add_argument('output', type=app.Parser.TypeOutputImage(), help='The output image series (all DWIs concatenated)')
-  cmdline.add_argument('-mask', metavar='image', type=app.Parser.TypeInputImage(), help='Provide a binary mask within which image intensities will be matched')
+  cmdline.add_argument('inputs', nargs='+', type=app.Parser.ImageIn(), help='Multiple input diffusion MRI series')
+  cmdline.add_argument('output', type=app.Parser.ImageOut(), help='The output image series (all DWIs concatenated)')
+  cmdline.add_argument('-mask', metavar='image', type=app.Parser.ImageIn(), help='Provide a binary mask within which image intensities will be matched')
 
 
 
