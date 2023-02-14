@@ -1101,7 +1101,7 @@ class Parser(argparse.ArgumentParser):
            not group == self._positionals and \
            group.title not in ( 'options', 'optional arguments' )
 
-  class TypeBoolean:
+  class Boolean:
     def __call__(self, input_value):
       processed_value = input_value.lower().strip()
       if processed_value.lower() == 'true' or processed_value == 'yes':
@@ -1163,13 +1163,10 @@ class Parser(argparse.ArgumentParser):
     def __call__(self, input_value):
       return input_value
 
-  class TracksIn:
+  class TracksIn(ArgFileIn):
     def __call__(self, input_value):
-      if not os.path.exists(input_value):
-        raise argparse.ArgumentTypeError(input_value + ' path does not exist')
-      elif not os.path.isfile(input_value):
-        raise argparse.ArgumentTypeError(input_value + ' is not a file')
-      elif not input_value.endsWith('.tck'):
+      super().__call__(input_value)
+      if not input_value.endswith('.tck'):
         raise argparse.ArgumentTypeError(input_value + ' is not a valid track file')
       else:
         return input_value 
