@@ -77,7 +77,7 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError('-shells option should provide a comma-separated list of b-values') from exception
     if alg.needs_single_shell() and not len(shells_values) == 1:
       raise MRtrixError('Can only specify a single b-value shell for single-shell algorithms')
-    shells_option = ' -shells ' + app.ARGS.shells
+    shells_option = ' -shells ' + ','.join(str(item) for item in app.ARGS.shells)
   singleshell_option = ''
   if alg.needs_single_shell():
     singleshell_option = ' -singleshell -no_bzero'

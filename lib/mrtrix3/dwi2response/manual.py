@@ -63,7 +63,7 @@ def execute(): #pylint: disable=unused-variable
   # Get lmax information (if provided)
   lmax = [ ]
   if app.ARGS.lmax:
-    lmax = [ int(x.strip()) for x in app.ARGS.lmax.split(',') ]
+    lmax = app.ARGS.lmax
     if not len(lmax) == len(shells):
       raise MRtrixError('Number of manually-defined lmax\'s (' + str(len(lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
     for shell_l in lmax:

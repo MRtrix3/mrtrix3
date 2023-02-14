@@ -54,7 +54,7 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
 
   if app.ARGS.shells:
-    run.command('dwiextract input.mif input_shells.mif -shells ' + app.ARGS.shells)
+    run.command('dwiextract input.mif input_shells.mif -shells ' + ','.join(str(item) for item in app.ARGS.shells))
     run.command('dwishellmath input_shells.mif mean shell_traces.mif')
   else:
     run.command('dwishellmath input.mif mean shell_traces.mif')

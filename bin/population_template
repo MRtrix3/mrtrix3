@@ -641,7 +641,7 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.voxel_size:
     voxel_size = app.ARGS.voxel_size
     if len(voxel_size) not in [1, 3]:
-      raise MRtrixError('Voxel size needs to be a single or three comma-separated floating point numbers; received: ' + ','.join(str(item for item in voxel_size)))
+      raise MRtrixError('Voxel size needs to be a single or three comma-separated floating point numbers; received: ' + ','.join(str(item) for item in voxel_size))
 
   agg_measure = 'mean'
   if app.ARGS.aggregate is not None:

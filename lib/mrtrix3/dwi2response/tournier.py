@@ -57,7 +57,7 @@ def supports_mask(): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
   lmax_option = ''
   if app.ARGS.lmax:
-    lmax_option = ' -lmax ' + app.ARGS.lmax
+    lmax_option = ' -lmax ' + ','.join(str(item) for item in app.ARGS.lmax)
 
   if app.ARGS.max_iters < 2:
     raise MRtrixError('Number of iterations must be at least 2')

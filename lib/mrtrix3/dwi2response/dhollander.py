@@ -85,7 +85,7 @@ def execute(): #pylint: disable=unused-variable
   # Get lmax information (if provided).
   sfwm_lmax = [ ]
   if app.ARGS.lmax:
-    sfwm_lmax = [ int(x.strip()) for x in app.ARGS.lmax.split(',') ]
+    sfwm_lmax = app.ARGS.lmax
     if not len(sfwm_lmax) == len(bvalues):
       raise MRtrixError('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
     for sfl in sfwm_lmax:
