@@ -60,7 +60,7 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError('Need at least 2 unique b-values (including b=0).')
   lmax_option = ''
   if app.ARGS.lmax:
-    lmax_option = ' -lmax ' + app.ARGS.lmax
+    lmax_option = ' -lmax ' + ','.join(str(item) for item in app.ARGS.lmax)
   if not app.ARGS.mask:
     run.command('maskfilter mask.mif erode mask_eroded.mif -npass ' + str(app.ARGS.erode))
     mask_path = 'mask_eroded.mif'

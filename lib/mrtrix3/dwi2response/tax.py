@@ -56,7 +56,7 @@ def supports_mask(): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
   lmax_option = ''
   if app.ARGS.lmax:
-    lmax_option = ' -lmax ' + app.ARGS.lmax
+    lmax_option = ' -lmax ' + ','.join(str(item) for item in app.ARGS.lmax)
 
   convergence_change = 0.01 * app.ARGS.convergence
 
