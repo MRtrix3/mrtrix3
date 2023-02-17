@@ -3,9 +3,11 @@ name: checks
 on:
   pull_request:
     types: [opened, synchronize]
-    branches:
-      - master
-      - dev
+    branches: [ master, dev ]
+  merge_group:
+    types: [checks_requested]
+    branches: [ master ]
+
 
 
 
