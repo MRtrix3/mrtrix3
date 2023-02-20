@@ -35,7 +35,7 @@ If a full DW encoding is provided, the number of shells needs to match those fou
 If the input image contains multiple shells (its size along the 5th dimension is greater than one), the program will expect the direction set to contain multiple shells, which can only be provided as a full DW encodings (the last two options in the list above).
 
 The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.4/concepts/spherical_harmonics.html
+https://mrtrix.readthedocs.io/en/3.0.3/concepts/spherical_harmonics.html
 
 Options
 -------
