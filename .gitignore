@@ -56,3 +56,9 @@ testing/src/project_version.h
 .__tmp.log
 .check_syntax.tmp
 .check_syntax2.tmp
+playground/5tt.py
+playground/bias.py
+.gitignore
+playground/norm.py
+playground/iter.py
+playground/mask.py
