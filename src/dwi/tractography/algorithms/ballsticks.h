@@ -269,8 +269,6 @@ namespace MR
         };
 
 
-        const BallSticks::Fixel BallSticks::Fixel::invalid {{NaN, NaN, NaN}, NaN};
-
 
       }
     }
