@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2022 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,6 +72,8 @@ namespace MR
                   set_step_and_angle (Defaults::stepsize_voxels_ifod2, Defaults::angle_ifod2, true);
                   sin_max_angle_ho = std::sin (max_angle_ho);
                   set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
+                  if (is_act() && property_set.find ("sgm_truncation") == property_set.end())
+                    act().set_sgm_trunc (ACT::sgm_trunc_enum::ROULETTE);
 
                   properties["method"] = "iFOD2";
                   properties.set (lmax, "lmax");
