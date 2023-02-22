@@ -6,31 +6,36 @@ dwibiasnormmask
 Synopsis
 --------
 
-Iteratively perform masking, RF estimation, CSD, bias field removal, and mask revision on a DWI series
+Perform a combination of bias field correction, intensity normalisation, and mask derivation, for DWI data
 
 Usage
 -----
 
 ::
 
-    dwibiasnormmask input output [ options ]
+    dwibiasnormmask input output_dwi output_mask [ options ]
 
 -  *input*: The input DWI series to be corrected
--  *output*: The output corrected image series
+-  *output_dwi*: The output corrected DWI series
+-  *output_mask*: The output DWI mask
 
 Description
 -----------
 
-DWI brain masking, response function estimation and bias field correction are inter-related steps and errors in each may influence other steps. This script first derives a brain mask (either with a provided algorithm  or by thresholding a balanced tissue sum image), and then performs response function estimation, multi-tissue CSD (with a lower lmax than the dwi2fod default, for speed), and mtnormalise to remove bias field, before the DWI brain mask is recalculated. These steps are performed iteratively until either a maximum number of iterations or until the brain masks converge. If SynthStrip is installed, it will be used to derive brain masks.
+DWI bias field correction, intensity normalisation and masking are inter-related steps, and errors in each may influence other steps. This script is designed to perform all of these steps in an integrated iterative fashion, with the intention of making all steps more robust.
+
+The operation of the algorithm is as follows. An initial mask is defined, either using the default dwi2mask algorithm or as provided by the user. Based on this mask, a sequence of response function estimation, multi-shell multi-tissue CSD, bias field correction (using the mtnormalise command), and intensity normalisation is performed. The default dwi2mask algorithm is then re-executed on the bias-field-corrected DWI series. This sequence of steps is then repeated based on the revised mask, until either a convergence criterion or some number of maximum iterations is reached.
+
+The MRtrix3 mtnormalise command is used to estimate information relating to bias field and intensity normalisation. However its usage in this context is different to its conventional usage. Firstly, while the corrected ODF images are typically used directly following invocation of this command, here the estimated bias field and scaling factors are instead used to apply the relevant corrections to the originating DWI data. Secondly, the global intensity scaling that is calculated and applied is typically based on achieving close to a unity sum of tissue signal fractions throughout the masked region. Here, it is instead the b=0 signal in CSF that forms the reference for this global intensity scaling; this is calculated based on the estimated CSF response function and the tissue-specific intensity scaling (this is calculated internally by mtnormalise as part of its optimisation process, but typically subsequently discarded in favour of a single scaling factor for all tissues)
+
+The ODFs estimated within this optimisation procedure are by default of lower maximal spherical harmonic degree than what would be advised for analysis. This is done for computational efficiency. This behaviour can be modified through the -lmax command-line option.
+
+By default, the optimisation procedure will terminate after only two iterations. This is done because it has been observed for some data / configurations that additional iterations can lead to unstable divergence and erroneous results for bias field estimation and masking. For other configurations, it may be preferable to use a greater number of iterations, and allow the iterative algorithm to converge to a stable solution. This can be controlled via the -max_iters command-line option.
+
+Within the optimisation algorithm, derivation of the mask may potentially be performed differently to a conventional mask derivation that is based on a DWI series (where, in many instances, it is actually only the mean b=0 image that is used). Here, the image corresponding to the sum of tissue signal fractions following spherical deconvolution / bias field correction / intensity normalisation is also available, and this can potentially be used for mask derivation. Available options are as follows. "dwi2mask": Use the MRtrix3 command dwi2mask on the bias-field-corrected DWI series (ie. do not use the ODF tissue sum image for mask derivation); the algorithm to be invoked can be controlled by the user via the MRtrix config file entry "Dwi2maskAlgorithm". "fslbet": Invoke the FSL command "bet". "hdbet": Invoke the HD-BET command. "mrthreshold": Invoke the MRtrix3 command "mrthreshold", where an appropriate threshold value will be determined automatically  (and some heuristic cleanup of the resulting mask will be performed). "synthstrip": Invoke the FreeSurfer SynthStrip method. "threshold": Apply a fixed partial volume threshold of 0.5 to the tissue ODF sum image  (and some heuristic cleanup of the resulting mask will be performed).
 
 Options
 -------
-
-- **-output_mask** Output the final brain mask to the specified file
-
-- **-max_iters** The maximum number of iterations. The default is 2iterations. More iterations may lead to a better mask, but for some problematic data this may lead to the masks diverging (in which case a warning is issued).
-
-- **-lmax** The maximum spherical harmonic order for the output FODs. the value is passed to the dwi2fod command and should be provided in the format which it expects (the default value is "4,0,0" for multi-shell and "4,0" for single-shell data)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -39,12 +44,27 @@ Options for importing the diffusion gradient table
 
 - **-fslgrad bvecs bvals** Provide the diffusion gradient table in FSL bvecs/bvals format
 
-Options to specify an initial mask or tissue sum image threshold in the iterative algorithm
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Options relevant to the internal optimisation procedure
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-threshold** Threshold on the total tissue density image used to derive the brain mask. the default is 0.5
+- **-dice value** Set the Dice coefficient threshold for similarity of masks between sequential iterations that will result in termination due to convergence; default = 0.999
 
-- **-mask_init image** Provide an initial mask to the algorithm and skip the initial masking
+- **-init_mask image** Provide an initial mask for the first iteration of the algorithm (if not provided, the default dwi2mask algorithm will be used)
+
+- **-max_iters count** The maximum number of iterations (see Description); default is 2; set to 0 to proceed until convergence
+
+- **-mask_algo algorithm** The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description); default: threshold
+
+- **-lmax value** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data)
+
+Options that modulate the outputs of the script
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-output_bias image** Export the final estimated bias field to an image
+
+- **-output_tissuesum image** Export the tissue sum image that was used to generate the final mask
+
+- **-reference value** Set the target CSF b=0 intensity in the output DWI series (default: 1000.0)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
