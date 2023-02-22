@@ -281,7 +281,7 @@ Description
 -----------
 
 This script first performs response function estimation and multi-tissue CSD within a provided brain mask(with a lower lmax than the dwi2fod default, for higher speed) before using the global scaling factor derived by mtnormalise to scale the intensity of the DWI series such that the mean b=0 CSF signal intensity is approximately close to some reference value (by default 1000).Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive a mask that will be passed to the relevant bias field estimation command. More information on mask derivation from DWI data can be found at the following link: 
-https://mrtrix.readthedocs.io/en/3.0.3/dwi_preprocessing/masking.html
+https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
 
 Options
 -------
