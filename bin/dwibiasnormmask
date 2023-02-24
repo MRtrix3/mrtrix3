@@ -364,7 +364,7 @@ def execute(): #pylint: disable=unused-variable
 
     if new_dice_coefficient > app.ARGS.dice:
       progress.done()
-      app.console('Exiting loop after %d iterations due to mask convergence (Dice coefficient = %f)' % iteration, new_dice_coefficient)
+      app.console('Exiting loop after %d iterations due to mask convergence (Dice coefficient = %f)' % (iteration, new_dice_coefficient)
       app.cleanup(old_dwi_image)
       app.cleanup(old_dwi_mask_image)
       app.cleanup(old_tissue_sum_image)
