@@ -974,7 +974,7 @@ dwi2mask mtnorm
 Synopsis
 --------
 
-Derives a DWI brain mask by calculating and then thresholding a tissue density image
+Derives a DWI brain mask by calculating and then thresholding a sum-of-tissue-densities image
 
 Usage
 -----
@@ -989,7 +989,11 @@ Usage
 Description
 -----------
 
-This script first derives an initial brain mask using the legacy MRtrix3 dwi2mask heuristic (based on thresholded trace images), and then performs response function estimation and multi-tissue CSD (with a lower lmax than the dwi2fod default, for higher speed), before summing the derived tissue ODFs and thresholding the resulting tissue density image to derive a DWI brain mask.
+This script attempts to identify brain voxels based on the total density of macroscopic tissues as estimated through multi-tissue deconvolution. Following response function estimation and multi-tissue deconvolution, the sum of tissue densities is thresholded at a fixed value (default is 0.5), and subsequent mask image cleaning operations are performed.
+
+The operation of this script is a subset of that performed by the script "dwibiasnormmask". Many users may find that comprehensive solution preferable; this dwi2mask algorithm is nevertheless provided to demonstrate specifically the mask estimation portion of that command.
+
+The ODFs estimated within this optimisation procedure are by default of lower maximal spherical harmonic degree than what would be advised for analysis. This is done for computational efficiency. This behaviour can be modified through the -lmax command-line option.
 
 Options
 -------
@@ -997,9 +1001,13 @@ Options
 Options specific to the "mtnorm" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-threshold** the threshold on the total tissue density sum image used to derive the brain mask. the default is 0.5
+- **-init_mask image** Provide an initial brain mask, which will constrain the response function estimation (if omitted, the default dwi2mask algorithm will be used)
 
-- **-lmax** the maximum spherical harmonic order for the output FODs. The value is passed to the dwi2fod command and should be provided in the format which it expects (Default is "4,0,0" for multi-shell and "4,0" for single-shell data)
+- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data)
+
+- **-threshold value** the threshold on the total tissue density sum image used to derive the brain mask; default is 0.5
+
+- **-tissuesum image** Export the tissue sum image that was used to generate the mask
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
