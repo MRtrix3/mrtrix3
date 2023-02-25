@@ -76,9 +76,14 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_argument('output_dwi', help='The output corrected DWI series')
   cmdline.add_argument('output_mask', help='The output DWI mask')
   output_options = cmdline.add_argument_group('Options that modulate the outputs of the script')
-  output_options.add_argument('-output_bias', metavar='image', help='Export the final estimated bias field to an image')
-  output_options.add_argument('-output_tissuesum', metavar='image', help='Export the tissue sum image that was used to generate the final mask')
-  output_options.add_argument('-reference', type=float, metavar='value', default=REFERENCE_INTENSITY, help='Set the target CSF b=0 intensity in the output DWI series (default: ' + str(REFERENCE_INTENSITY) + ')')
+  output_options.add_argument('-output_bias', metavar='image',
+                              help='Export the final estimated bias field to an image')
+  output_options.add_argument('-output_scale', metavar='file',
+                              help='Write the scaling factor applied to the DWI series to a text file')
+  output_options.add_argument('-output_tissuesum', metavar='image',
+                              help='Export the tissue sum image that was used to generate the final mask')
+  output_options.add_argument('-reference', type=float, metavar='value', default=REFERENCE_INTENSITY,
+                              help='Set the target CSF b=0 intensity in the output DWI series (default: ' + str(REFERENCE_INTENSITY) + ')')
   internal_options = cmdline.add_argument_group('Options relevant to the internal optimisation procedure')
   internal_options.add_argument('-dice', type=float, default=DICE_COEFF_DEFAULT, metavar='value',
                                 help='Set the Dice coefficient threshold for similarity of masks between sequential iterations that will '
@@ -87,13 +92,13 @@ def usage(cmdline): #pylint: disable=unused-variable
                                  help='Provide an initial mask for the first iteration of the algorithm '
                                       '(if not provided, the default dwi2mask algorithm will be used)')
   internal_options.add_argument('-max_iters', type=int, default=DWIBIASCORRECT_MAX_ITERS, metavar='count',
-                       help='The maximum number of iterations (see Description); default is ' + str(DWIBIASCORRECT_MAX_ITERS) + '; '
-                            'set to 0 to proceed until convergence')
+                                help='The maximum number of iterations (see Description); default is ' + str(DWIBIASCORRECT_MAX_ITERS) + '; '
+                                     'set to 0 to proceed until convergence')
   internal_options.add_argument('-mask_algo', choices=MASK_ALGOS, default=MASK_ALGO_DEFAULT, metavar='algorithm',
-                       help='The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description); default: ' + MASK_ALGO_DEFAULT) 
-  internal_options.add_argument('-lmax', metavar='value',
-                       help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
-                            'defaults are "' + ','.join(str(item) for item in LMAXES_MULTI) + '" for multi-shell and "' + ','.join(str(item) for item in LMAXES_SINGLE) + '" for single-shell data)')
+                                help='The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description); default: ' + MASK_ALGO_DEFAULT)
+  internal_options.add_argument('-lmax', metavar='values',
+                                help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
+                                     'defaults are "' + ','.join(str(item) for item in LMAXES_MULTI) + '" for multi-shell and "' + ','.join(str(item) for item in LMAXES_SINGLE) + '" for single-shell data)')
   app.add_dwgrad_import_options(cmdline)
 
 
@@ -109,14 +114,16 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.lmax:
     try:
       lmax = [int(i) for i in app.ARGS.lmax.split(',')]
-    except ValueError:
-      raise MRtrixError('Values provided to -lmax option must be a comma-separated list of integers')
+    except ValueError as exc:
+      raise MRtrixError('Values provided to -lmax option must be a comma-separated list of integers') from exc
     if any(value < 0 or value % 2 for value in lmax):
       raise MRtrixError('lmax values must be non-negative even integers')
     if len(lmax) not in [2, 3]:
       raise MRtrixError('Length of lmax vector expected to be either 2 or 3')
   if app.ARGS.dice <= 0.0 or app.ARGS.dice > 1.0:
     raise MRtrixError('Dice coefficient for convergence detection must lie in the range (0.0, 1.0]')
+  if app.ARGS.reference <= 0.0:
+    raise MRtrixError('Reference intensity must be positive')
 
   # Check mask algorithm, including availability of external software if necessary
   for mask_algo, software, command in [('fslbet', 'FSL', 'bet'), ('hdbet', 'HD-BET', 'hd-bet'), ('synthstrip', 'FreeSurfer', 'mri_synthstrip')]:
@@ -196,6 +203,7 @@ def execute(): #pylint: disable=unused-variable
   iteration = 0
   step = 'initialisation'
   prev_dice_coefficient = 0.0
+  total_scaling_factor = 1.0
 
   def msg():
     return 'Iteration {0}; {1} step; previous Dice coefficient {2}' \
@@ -368,6 +376,7 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup(old_dwi_image)
       app.cleanup(old_dwi_mask_image)
       app.cleanup(old_tissue_sum_image)
+      total_scaling_factor *= scale_multiplier
       break
 
     if new_dice_coefficient < prev_dice_coefficient:
@@ -388,10 +397,12 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup(old_dwi_image)
       app.cleanup(old_dwi_mask_image)
       app.cleanup(old_tissue_sum_image)
+      total_scaling_factor *= scale_multiplier
       break
 
     iteration += 1
     prev_dice_coefficient = new_dice_coefficient
+
 
   run.command(['mrconvert', dwi_image, path.from_user(app.ARGS.output_dwi, False)],
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
@@ -402,10 +413,14 @@ def execute(): #pylint: disable=unused-variable
                 mrconvert_keyval=path.from_user(app.ARGS.input, False),
                 force=app.FORCE_OVERWRITE)
 
+  if app.ARGS.output_scale:
+    matrix.save_vector(path.from_user(app.ARGS.output_scale, False), [total_scaling_factor])
+
   if app.ARGS.output_tissuesum:
     run.command(['mrconvert', tissue_sum_image, path.from_user(app.ARGS.output_tissuesum, False)],
                 mrconvert_keyval=path.from_user(app.ARGS.input, False),
                 force=app.FORCE_OVERWRITE)
+
 
 
 # Execute the script

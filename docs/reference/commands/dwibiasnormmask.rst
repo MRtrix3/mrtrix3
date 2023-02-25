@@ -55,12 +55,14 @@ Options relevant to the internal optimisation procedure
 
 - **-mask_algo algorithm** The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description); default: threshold
 
-- **-lmax value** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data)
+- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data)
 
 Options that modulate the outputs of the script
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-output_bias image** Export the final estimated bias field to an image
+
+- **-output_scale file** Write the scaling factor applied to the DWI series to a text file
 
 - **-output_tissuesum image** Export the tissue sum image that was used to generate the final mask
 
