@@ -304,7 +304,7 @@ dwibiascorrect mtnorm
 Synopsis
 --------
 
-Performs DWI bias field correction
+Perform DWI bias field correction using the "mtnormalise" command
 
 Usage
 -----
@@ -319,7 +319,11 @@ Usage
 Description
 -----------
 
-This script first performs response function estimation and multi-tissue CSD within a provided or derived brain mask (with a lower lmax than the dwi2fod default, for higher speed) before calling mtnormalise and utilizing the final estimated spatially varying intensity level used for normalisation to correct bias fields
+This algorithm bases its operation almost entirely on the utilisation of multi-tissue decomposition information to estimate an underlying B1 receive field, as is implemented in the MRtrix3 command "mtnormalise". Its typical usage is however slightly different, in that the primary output of the command is not the bias-field-corrected FODs, but a bias-field-corrected version of the DWI series.
+
+The operation of this script is a subset of that performed by the script "dwibiasnormmask". Many users may find that comprehensive solution preferable; this dwibiascorrect algorithm is nevertheless provided to demonstrate specifically the bias field correction portion of that command.
+
+The ODFs estimated within this optimisation procedure are by default of lower maximal spherical harmonic degree than what would be advised for analysis. This is done for computational efficiency. This behaviour can be modified through the -lmax command-line option.
 
 Options
 -------
@@ -327,7 +331,7 @@ Options
 Options specific to the "mtnorm" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-lmax** the maximum spherical harmonic order for the output FODs. The value is passed to the dwi2fod command and should be provided in the format which it expects (Default is "4,0,0" for multi-shell and "4,0" for single-shell data)
+- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

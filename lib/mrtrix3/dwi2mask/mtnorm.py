@@ -14,34 +14,54 @@
 # For more details, see http://www.mrtrix.org/.
 
 import math
-from mrtrix3 import app, run, image
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, path, run
 
-LMAXES_MULTI = '4,0,0'
-LMAXES_SINGLE = '4,0'
+
+LMAXES_MULTI = [4, 0, 0]
+LMAXES_SINGLE = [4, 0]
+THRESHOLD_DEFAULT = 0.5
+
+
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('mtnorm', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)')
-  parser.set_synopsis('Derives a DWI brain mask by calculating and then thresholding a tissue density image')
-  parser.add_description('This script first derives an initial brain mask using the legacy MRtrix3 dwi2mask heuristic '
-                         '(based on thresholded trace images), and then performs response function estimation and multi-tissue CSD '
-                         '(with a lower lmax than the dwi2fod default, for higher speed), before summing the derived tissue ODFs and '
-                         'thresholding the resulting tissue density image to derive a DWI brain mask.')
-  parser.add_argument('input',  help='The input DWI series')
+  parser.set_synopsis('Derives a DWI brain mask by calculating and then thresholding a sum-of-tissue-densities image')
+  parser.add_description('This script attempts to identify brain voxels based on the total density of macroscopic '
+                         'tissues as estimated through multi-tissue deconvolution. Following response function '
+                         'estimation and multi-tissue deconvolution, the sum of tissue densities is thresholded at a '
+                         'fixed value (default is ' + str(THRESHOLD_DEFAULT) + '), and subsequent mask image cleaning '
+                         'operations are performed.')
+  parser.add_description('The operation of this script is a subset of that performed by the script "dwibiasnormmask". '
+                         'Many users may find that comprehensive solution preferable; this dwi2mask algorithm is nevertheless '
+                         'provided to demonstrate specifically the mask estimation portion of that command.')
+  parser.add_description('The ODFs estimated within this optimisation procedure are by default of lower maximal spherical harmonic '
+                         'degree than what would be advised for analysis. This is done for computational efficiency. This '
+                         'behaviour can be modified through the -lmax command-line option.')
+  parser.add_argument('input', help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
+  options.add_argument('-init_mask',
+                       metavar='image',
+                       help='Provide an initial brain mask, which will constrain the response function estimation '
+                            '(if omitted, the default dwi2mask algorithm will be used)')
+  options.add_argument('-lmax',
+                       metavar='values',
+                       help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
+                            'defaults are "' + ','.join(str(item) for item in LMAXES_MULTI) + '" for multi-shell and "' + ','.join(str(item) for item in LMAXES_SINGLE) + '" for single-shell data)')
   options.add_argument('-threshold',
                        type=float,
-                       default=0.5,
-                       help='the threshold on the total tissue density sum image used to derive the brain mask. the default is 0.5')
-  options.add_argument('-lmax',
-                       type=str,
-                       help='the maximum spherical harmonic order for the output FODs. The value is passed to '
-                            'the dwi2fod command and should be provided in the format which it expects '
-                            '(Default is "' + str(LMAXES_MULTI) + '" for multi-shell and "' + str(LMAXES_SINGLE) + '" for single-shell data)')
+                       metavar='value',
+                       default=THRESHOLD_DEFAULT,
+                       help='the threshold on the total tissue density sum image used to derive the brain mask; default is ' + str(THRESHOLD_DEFAULT))
+  options.add_argument('-tissuesum', metavar='image', help='Export the tissue sum image that was used to generate the mask')
+
+
 
 def get_inputs(): #pylint: disable=unused-variable
-  pass
+  if app.ARGS.init_mask:
+    run.command(['mrconvert', path.from_user(app.ARGS.init_mask, False), path.to_scratch('init_mask.mif', False), '-datatype', 'bit'])
 
 
 def needs_mean_bzero(): #pylint: disable=unused-variable
@@ -49,19 +69,32 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
+
+  # Verify user inputs
+  lmax = None
+  if app.ARGS.lmax:
+    try:
+      lmax = [int(i) for i in app.ARGS.lmax.split(',')]
+    except ValueError as exc:
+      raise MRtrixError('Values provided to -lmax option must be a comma-separated list of integers') from exc
+    if any(value < 0 or value % 2 for value in lmax):
+      raise MRtrixError('lmax values must be non-negative even integers')
+    if len(lmax) not in [2, 3]:
+      raise MRtrixError('Length of lmax vector expected to be either 2 or 3')
+  if app.ARGS.threshold <= 0.0 or app.ARGS.threshold >= 1.0:
+    raise MRtrixError('Tissue density sum threshold must lie within the range (0.0, 1.0)')
+
   # Determine whether we are working with single-shell or multi-shell data
   bvalues = [
       int(round(float(value)))
       for value in image.mrinfo('input.mif', 'shell_bvalues') \
                                .strip().split()]
   multishell = (len(bvalues) > 2)
+  if lmax is None:
+    lmax = LMAXES_MULTI if multishell else LMAXES_SINGLE
+  elif len(lmax) == 3 and not multishell:
+    raise MRtrixError('User specified 3 lmax values for three-tissue decomposition, but input DWI is not multi-shell')
 
-  # Step 1: Initial DWI brain mask
-  dwi_mask_image = 'dwi_mask_init.mif'
-  app.debug('Performing intial DWI brain masking with the legacy MRtrix3 algorithm')
-  run.command('dwi2mask legacy input.mif ' + dwi_mask_image)
-
-  # Step 2: RF estimation / CSD / mtnormalise / mask revision
   class Tissue(object): #pylint: disable=useless-object-inheritance
     def __init__(self, name):
       self.name = name
@@ -71,54 +104,51 @@ def execute(): #pylint: disable=unused-variable
   dwi_image = 'input.mif'
   tissues = [Tissue('WM'), Tissue('GM'), Tissue('CSF')]
 
-  app.debug('Estimating response function using initial brain mask...')
   run.command('dwi2response dhollander '
               + dwi_image
-              + ' -mask '
-              + dwi_mask_image
+              + (' -mask init_mask.mif' if app.ARGS.init_mask else '')
               + ' '
               + ' '.join(tissue.tissue_rf for tissue in tissues))
 
-  # Remove GM if we can't deal with it
-  if app.ARGS.lmax:
-    lmaxes = app.ARGS.lmax
-  else:
-    lmaxes = LMAXES_MULTI
-    if not multishell:
-      app.cleanup(tissues[1].tissue_rf)
-      tissues = tissues[::2]
-      lmaxes = LMAXES_SINGLE
+  # Immediately remove GM if we can't deal with it
+  if not multishell:
+    app.cleanup(tissues[1].tissue_rf)
+    tissues = tissues[::2]
 
-  app.debug('FOD estimation with lmaxes ' + lmaxes + '...')
   run.command('dwi2fod msmt_csd '
               + dwi_image
-              + ' -lmax ' + lmaxes
+              + ' -lmax ' + ','.join(str(item) for item in lmax)
               + ' '
               + ' '.join(tissue.tissue_rf + ' ' + tissue.fod
-                          for tissue in tissues))
+                         for tissue in tissues))
 
-  app.debug('Deriving final brain mask by thresholding tissue sum image...')
-  new_dwi_mask_image = 'dwi_mask' + '.mif'
-
-  tissuesum_threshold = app.ARGS.threshold / math.sqrt(4.0 * math.pi)
-
+  tissue_sum_image = 'tissuesum.mif'
   run.command('mrconvert '
-              + tissues[0].fod
-              + ' -coord 3 0 - |'
-              + ' mrmath - '
-              + ' '.join(tissue.fod for tissue in tissues[1:])
-              + ' sum - |'
-              + ' mrthreshold - -abs '
-              + str(tissuesum_threshold)
+                + tissues[0].fod
+                + ' -coord 3 0 - |'
+                + ' mrmath - '
+                + ' '.join(tissue.fod for tissue in tissues[1:])
+                + ' sum - | '
+                + 'mrcalc - ' + str(math.sqrt(4.0 * math.pi)) + ' -mult '
+                + tissue_sum_image)
+
+  mask_image = 'mask.mif'
+  run.command('mrthreshold '
+              + tissue_sum_image
+              + ' -abs '
+              + str(app.ARGS.threshold)
               + ' - |'
               + ' maskfilter - connect -largest - |'
               + ' mrcalc 1 - -sub - -datatype bit |'
               + ' maskfilter - connect -largest - |'
               + ' mrcalc 1 - -sub - -datatype bit |'
-              + ' maskfilter - clean - |'
-              + ' mrcalc - input_pos_mask.mif -mult '
-              + new_dwi_mask_image
-              + ' -datatype bit')
+              + ' maskfilter - clean '
+              + mask_image)
   app.cleanup([tissue.fod for tissue in tissues])
 
-  return dwi_mask_image
+  if app.ARGS.tissuesum:
+    run.command(['mrconvert', tissue_sum_image, path.from_user(app.ARGS.tissuesum, False)],
+                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                force=app.FORCE_OVERWRITE)
+
+  return mask_image

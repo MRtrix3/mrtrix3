@@ -13,42 +13,72 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import app, run, image, path
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, path, run
 
-LMAXES_MULTI = '4,0,0'
-LMAXES_SINGLE = '4,0'
+
+LMAXES_MULTI = [4, 0, 0]
+LMAXES_SINGLE = [4, 0]
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('mtnorm', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)')
-  parser.set_synopsis('Performs DWI bias field correction')
-  parser.add_description('This script first performs response function estimation and multi-tissue CSD within a provided or derived '
-                         'brain mask (with a lower lmax than the dwi2fod default, for higher speed) before calling mtnormalise and '
-                         'utilizing the final estimated spatially varying intensity level used for normalisation to correct bias fields')
-  parser.add_argument('input',  help='The input image series to be corrected')
+  parser.set_synopsis('Perform DWI bias field correction using the "mtnormalise" command')
+  parser.add_description('This algorithm bases its operation almost entirely on the utilisation of multi-tissue '
+                         'decomposition information to estimate an underlying B1 receive field, as is implemented '
+                         'in the MRtrix3 command "mtnormalise". Its typical usage is however slightly different, '
+                         'in that the primary output of the command is not the bias-field-corrected FODs, but a '
+                         'bias-field-corrected version of the DWI series.')
+  parser.add_description('The operation of this script is a subset of that performed by the script "dwibiasnormmask". '
+                         'Many users may find that comprehensive solution preferable; this dwibiascorrect algorithm is '
+                         'nevertheless provided to demonstrate specifically the bias field correction portion of that command.')
+  parser.add_description('The ODFs estimated within this optimisation procedure are by default of lower maximal spherical harmonic '
+                         'degree than what would be advised for analysis. This is done for computational efficiency. This '
+                         'behaviour can be modified through the -lmax command-line option.')
+  parser.add_argument('input', help='The input image series to be corrected')
   parser.add_argument('output', help='The output corrected image series')
   options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
   options.add_argument('-lmax',
-                       type=str,
-                       help='the maximum spherical harmonic order for the output FODs. The value is passed to '
-                            'the dwi2fod command and should be provided in the format which it expects '
-                            '(Default is "' + str(LMAXES_MULTI) + '" for multi-shell and "' + str(LMAXES_SINGLE) + '" for single-shell data)')
+                       metavar='values',
+                       help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
+                            'defaults are "' + ','.join(str(item) for item in LMAXES_MULTI) + '" for multi-shell and "' + ','.join(str(item) for item in LMAXES_SINGLE) + '" for single-shell data)')
+
 
 
 def check_output_paths(): #pylint: disable=unused-variable
   pass
 
+
+
 def get_inputs(): #pylint: disable=unused-variable
   pass
 
 
+
 def execute(): #pylint: disable=unused-variable
+
+  # Verify user inputs
+  lmax = None
+  if app.ARGS.lmax:
+    try:
+      lmax = [int(i) for i in app.ARGS.lmax.split(',')]
+    except ValueError as exc:
+      raise MRtrixError('Values provided to -lmax option must be a comma-separated list of integers') from exc
+    if any(value < 0 or value % 2 for value in lmax):
+      raise MRtrixError('lmax values must be non-negative even integers')
+    if len(lmax) not in [2, 3]:
+      raise MRtrixError('Length of lmax vector expected to be either 2 or 3')
+
   # Determine whether we are working with single-shell or multi-shell data
   bvalues = [
       int(round(float(value)))
       for value in image.mrinfo('in.mif', 'shell_bvalues') \
                                .strip().split()]
   multishell = (len(bvalues) > 2)
+  if lmax is None:
+    lmax = LMAXES_MULTI if multishell else LMAXES_SINGLE
+  elif len(lmax) == 3 and not multishell:
+    raise MRtrixError('User specified 3 lmax values for three-tissue decomposition, but input DWI is not multi-shell')
 
   # RF estimation and multi-tissue CSD
   class Tissue(object): #pylint: disable=useless-object-inheritance
@@ -60,35 +90,24 @@ def execute(): #pylint: disable=unused-variable
 
   tissues = [Tissue('WM'), Tissue('GM'), Tissue('CSF')]
 
-  app.debug('Estimating response function using brain mask...')
-  run.command('dwi2response dhollander '
-              + 'in.mif '
-              + '-mask mask.mif '
+  run.command('dwi2response dhollander in.mif'
+              + (' -mask mask.mif' if app.ARGS.mask else '')
+              + ' '
               + ' '.join(tissue.tissue_rf for tissue in tissues))
 
-  # Remove GM if we can't deal with it
-  if app.ARGS.lmax:
-    lmaxes = app.ARGS.lmax
-  else:
-    lmaxes = LMAXES_MULTI
-    if not multishell:
-      app.cleanup(tissues[1].tissue_rf)
-      tissues = tissues[::2]
-      lmaxes = LMAXES_SINGLE
+  # Immediately remove GM if we can't deal with it
+  if not multishell:
+    app.cleanup(tissues[1].tissue_rf)
+    tissues = tissues[::2]
 
-  app.debug('FOD estimation with lmaxes ' + lmaxes + '...')
-  run.command('dwi2fod msmt_csd '
-              + 'in.mif'
-              + ' -lmax ' + lmaxes
+  run.command('dwi2fod msmt_csd in.mif'
+              + ' -lmax ' + ','.join(str(item) for item in lmax)
               + ' '
               + ' '.join(tissue.tissue_rf + ' ' + tissue.fod
-                          for tissue in tissues))
+                         for tissue in tissues))
 
-  app.debug('correcting bias field...')
-  run.command('maskfilter'
-              + ' mask.mif'
-              + ' erode - |'
-              + ' mtnormalise -mask - -balanced'
+  run.command('maskfilter mask.mif erode - | '
+              + 'mtnormalise -mask - -balanced'
               + ' -check_norm field.mif '
               + ' '.join(tissue.fod + ' ' + tissue.fod_norm
                           for tissue in tissues))
@@ -96,14 +115,12 @@ def execute(): #pylint: disable=unused-variable
   app.cleanup([tissue.fod_norm for tissue in tissues])
   app.cleanup([tissue.tissue_rf for tissue in tissues])
 
-  run.command('mrcalc '
-              + 'in.mif '
-              + 'field.mif '
-              + '-div '
-              + path.from_user(app.ARGS.output),
+  run.command('mrcalc in.mif field.mif -div - | '
+              'mrconvert - '+ path.from_user(app.ARGS.output),
+              mrconvert_keyval=path.from_user(app.ARGS.input, False),
               force=app.FORCE_OVERWRITE)
 
   if app.ARGS.bias:
-    run.command('mrconvert field.mif '
-                + path.from_user(app.ARGS.bias),
-                mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+    run.command('mrconvert field.mif ' + path.from_user(app.ARGS.bias),
+                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                force=app.FORCE_OVERWRITE)

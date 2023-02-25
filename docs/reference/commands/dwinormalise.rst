@@ -265,23 +265,26 @@ dwinormalise mtnorm
 Synopsis
 --------
 
-Performs a global DWI intensity normalisation, normalising mean b=0 CSF signal intensity
+Normalise a DWI series to the estimated b=0 CSF intensity
 
 Usage
 -----
 
 ::
 
-    dwinormalise mtnorm input_dwi output [ options ]
+    dwinormalise mtnorm input output [ options ]
 
--  *input_dwi*: The input DWI series
+-  *input*: The input DWI series
 -  *output*: The normalised DWI series
 
 Description
 -----------
 
-This script first performs response function estimation and multi-tissue CSD within a provided brain mask(with a lower lmax than the dwi2fod default, for higher speed) before using the global scaling factor derived by mtnormalise to scale the intensity of the DWI series such that the mean b=0 CSF signal intensity is approximately close to some reference value (by default 1000).Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive a mask that will be passed to the relevant bias field estimation command. More information on mask derivation from DWI data can be found at the following link:
-https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
+This algorithm determines an appropriate global scaling factor to apply to a DWI series such that after the scaling is applied, the b=0 CSF intensity corresponds to some reference value (1000 by default).
+
+The operation of this script is a subset of that performed by the script "dwibiasnormmask". Many users may find that comprehensive solution preferable; this dwinormalise algorithm is nevertheless provided to demonstrate specifically the global intensituy normalisation portion of that command.
+
+The ODFs estimated within this optimisation procedure are by default of lower maximal spherical harmonic degree than what would be advised for analysis. This is done for computational efficiency. This behaviour can be modified through the -lmax command-line option.
 
 Options
 -------
@@ -296,11 +299,13 @@ Options for importing the diffusion gradient table
 Options specific to the "mtnorm" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-target** the threshold on the balanced tissue sum image used to derive the brain mask. the default is 0.5
+- **-lmax values** The maximum spherical harmonic degree for the estimated FODs (see Description); defaults are "4,0,0" for multi-shell and "4,0" for single-shell data)
 
-- **-lmax** the maximum spherical harmonic order for the output FODs. The value is passed to the dwi2fod command and should be provided in the format which it expects (Default is "4,0,0" for multi-shell and "4,0" for single-shell data)
+- **-mask image** Provide a mask image for relevant calculations (if not provided, the default dwi2mask algorithm will be used)
 
-- **-mask image** Manually provide a mask image for normalisation
+- **-reference value** Set the target CSF b=0 intensity in the output DWI series (default: 1000)
+
+- **-scale file** Write the scaling factor applied to the DWI series to a text file
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
