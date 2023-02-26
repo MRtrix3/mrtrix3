@@ -39,6 +39,12 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_description('The ODFs estimated within this optimisation procedure are by default of lower maximal spherical harmonic '
                          'degree than what would be advised for analysis. This is done for computational efficiency. This '
                          'behaviour can be modified through the -lmax command-line option.')
+  parser.add_citation('Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. '
+                      'Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. '
+                      'NeuroImage, 2014, 103, 411-426')
+  parser.add_citation('Dhollander, T.; Raffelt, D. & Connelly, A. '
+                      'Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. '
+                      'ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5')
   parser.add_argument('input', help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
