@@ -72,6 +72,18 @@ def usage(cmdline): #pylint: disable=unused-variable
                           '"synthstrip": Invoke the FreeSurfer SynthStrip method. '
                           '"threshold": Apply a fixed partial volume threshold of 0.5 to the tissue ODF sum image '
                           ' (and some heuristic cleanup of the resulting mask will be performed).')
+  cmdline.add_citation('Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. '
+                       'Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. '
+                       'NeuroImage, 2014, 103, 411-426')
+  cmdline.add_citation('Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. '
+                       'Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. '
+                       'In Proc. ISMRM, 2017, 26, 3541')
+  cmdline.add_citation('Dhollander, T.; Raffelt, D. & Connelly, A. '
+                       'Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. '
+                       'ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5')
+  cmdline.add_citation('Dhollander, T.; Tabbara, R.; Rosnarho-Tornstrand, J.; Tournier, J.-D.; Raffelt, D. & Connelly, A. '
+                       'Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. '
+                       'In Proc. ISMRM, 2021, 29, 2472')
   cmdline.add_argument('input', help='The input DWI series to be corrected')
   cmdline.add_argument('output_dwi', help='The output corrected DWI series')
   cmdline.add_argument('output_mask', help='The output DWI mask')
