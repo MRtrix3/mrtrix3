@@ -1,4 +1,7 @@
 # .git-blame-ignore-revs
+# If you want this file to be utilised whener you utilise "git blame" on your local instance of the repository,
+#   run the following command from its root directory:
+# git config blame.ignoreRevsFile .git-blame-ignore-revs
 
 9268f0874fc8b2c3af0a090b8084bd91707a115e
 #Author: Daan Christiaens <daan.christiaens@gmail.com>
@@ -79,3 +82,8 @@ e8edf6d946822c8ec23d077c2b1e9eef471b2539
 #Author: Thijs Dhollander <thijs.dhollander@gmail.com>
 #Date:   Tue May 9 09:09:51 2017 +1000
 #    docs update
+
+1eb36099870a0fffbc307ac40523dd8b6e35436f
+#Author: Thijs Dhollander <thijs.dhollander@gmail.com>
+#Date:   Thu Feb 2 12:26:20 2017 +1100
+#    standardise number of blank lines between copyright header and the rest of a file (was getting a bit out of hand for some files; now it's 2 blank lines for all)
