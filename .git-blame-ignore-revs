@@ -87,3 +87,13 @@ e8edf6d946822c8ec23d077c2b1e9eef471b2539
 #Author: Thijs Dhollander <thijs.dhollander@gmail.com>
 #Date:   Thu Feb 2 12:26:20 2017 +1100
 #    standardise number of blank lines between copyright header and the rest of a file (was getting a bit out of hand for some files; now it's 2 blank lines for all)
+
+e8edf6d946822c8ec23d077c2b1e9eef471b2539
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Tue Jan 3 13:41:40 2023 +0100
+#    Update copyright notice
+
+aad44d847ac48d02bb7f8badf801dbfaa0ccdac0
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Tue Jan 3 13:42:58 2023 +0100
+#    Update Copyright notice in command docs
