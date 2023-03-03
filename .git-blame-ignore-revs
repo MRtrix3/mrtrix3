@@ -1,0 +1,99 @@
+# .git-blame-ignore-revs
+# If you want this file to be utilised whener you utilise "git blame" on your local instance of the repository,
+#   run the following command from its root directory:
+# git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+9268f0874fc8b2c3af0a090b8084bd91707a115e
+#Author: Daan Christiaens <daan.christiaens@gmail.com>
+#Date:   Fri Dec 11 14:41:03 2015 +0100
+#   Update copyright header in all source files, as discussed in #9 and #31.
+
+3024a116078eabd3b1353fc8329a73144632c86c
+#Author: Thijs Dhollander <thijs.dhollander@gmail.com>
+#Date:   Thu Nov 22 17:01:59 2018 +1100
+#    Copyright message update for next release (probably 2019-ish)
+#    Also updated the warranty statement: it appears this was still a formulation left over from the previous GPL license. The new formulation comes directly from the MPL 2.0, but is also more comprehensive; I'm more comfortable with having this more comprehensive.  Furthermore, apart from it apparently being quite important to have a warranty statement at the top of source code files, it's apparently also of little value if it's not either very comprehensive, or it also directly refers to the license where the full text can be found.  Hence, I added that as a sentence.
+#    Finally, also of note (and TODO) would be to add the copyright statement and a copy of the license somewhere on our (mrtrix.org) website. The final link is otherwise relatively useless in the context of the copyright and license statement.
+
+6c6c553ed9e9004ca8495ece436fec4db465d82b
+#Author: Thijs Dhollander <thijs.dhollander@gmail.com>
+#Date:   Wed Dec 13 15:09:37 2017 +1100
+#    Copyright update for upcoming RC which will probably end up around New Year's
+#    Also includes a change of mention of MRtrix to MRtrix3, in line with the phrase MRtrix3 developers, which was already in there/
+#    Also includes removal of 2 .s, because they hindered clickability of the links in certain environments.
+
+654b7281c953f1068142d1f8a152f786862d8876
+#Author: Thijs Dhollander <thijs.dhollander@gmail.com>
+#Date:   Wed Jan 25 17:57:11 2017 +1100
+#    header files
+
+b623e418e36de6884511d9c233b04392ecce89bb
+#Author: Thijs Dhollander <thijs.dhollander@gmail.com>
+#Date:   Wed Jan 25 17:06:35 2017 +1100
+#    Copyright for 2017 in headers
+
+95b144df3d9eb837fae08129cc292c3fb8490eac
+#Author: Robert Smith <robert.smith@florey.edu.au>
+#Date:   Tue Oct 8 14:33:10 2019 +1100
+#    Add copyright notice to non-CPP files   
+#    Also includes some line ending conversions and indentation changes.
+
+be9a46286a9053fd1c1951fe5394206a95b61bfa
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Thu May 14 11:30:13 2020 +1000
+#    Initial commit of "update_copyright" changes
+
+5e3112eae6ba4027aba854b3385f032c67dbfedf
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Mon Feb 7 16:48:14 2022 +0000
+#    update copyright notice and corresponding docs
+
+e8edf6d946822c8ec23d077c2b1e9eef471b2539
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Tue Jan 3 13:41:40 2023 +0100
+#    Update copyright notice
+
+74ff7cf0b76e2c9595b1341a7e4a49fa5491ce2f
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Wed Jan 6 12:50:54 2021 +0000
+#    Update copyright notice
+
+65b3ea5e549f3f66a9e3c5d9ebdabb2a9bb462b4
+#Author: Thijs Dhollander <thijs.dhollander@gmail.com>
+#Date:   Thu Nov 22 17:30:36 2018 +1100
+#    Fixed typo in copyright/warranty statement.
+
+729dd6cfc1a773f0f16592b8533c6e9d89d03ac3
+#Author: Thijs Dhollander <thijs.dhollander@gmail.com>
+#Date:   Mon May 15 10:33:05 2017 +1000
+#    copyright update and cleanup
+
+76ad4fbb3ea60ea56ec94e3debfce1b7a35a9535
+#Author: rtabbara <rtabbara@gmail.com>
+#Date:   Thu Feb 18 11:55:53 2016 +1100
+#    User docs: Update commands list with new copyright
+
+6552f6ebe4f9fda441255063230ef9f8d9912591
+#Author: J-Donald Tournier <jdtournier@gmail.com>
+#Date:   Wed Feb 5 12:50:53 2020 +0000
+#    remove carriage returns
+
+811361d3af3ecfec03e20c2ee0f342634810a9c2
+#Author: Thijs Dhollander <thijs.dhollander@gmail.com>
+#Date:   Tue May 9 09:09:51 2017 +1000
+#    docs update
+
+1eb36099870a0fffbc307ac40523dd8b6e35436f
+#Author: Thijs Dhollander <thijs.dhollander@gmail.com>
+#Date:   Thu Feb 2 12:26:20 2017 +1100
+#    standardise number of blank lines between copyright header and the rest of a file (was getting a bit out of hand for some files; now it's 2 blank lines for all)
+
+e8edf6d946822c8ec23d077c2b1e9eef471b2539
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Tue Jan 3 13:41:40 2023 +0100
+#    Update copyright notice
+
+aad44d847ac48d02bb7f8badf801dbfaa0ccdac0
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Tue Jan 3 13:42:58 2023 +0100
+#    Update Copyright notice in command docs
