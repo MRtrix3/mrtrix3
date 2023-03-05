@@ -233,7 +233,7 @@ namespace MR
                 }
               }
               if (vertex_count != 3 && vertex_count != 4)
-                throw Exception ("Could not parse file \"" + path + "\": only suppport 3- and 4-vertex polygons");
+                throw Exception ("Could not parse file \"" + path + "\": only support 3- and 4-vertex polygons");
 
               vector<unsigned int> t (vertex_count, 0);
 
@@ -263,14 +263,23 @@ namespace MR
         }
       }
 
-      if (change_endianness) {
-        INFO ("File \"" + path + "\" is stored as " +
 #if MRTRIX_IS_BIG_ENDIAN
-          "little"
+      if (change_endianness) {
+        WARN("File \"" + path + "\" is little-endian, so is not format-compliant (may have been generated using an older MRtrix3 version); "
+             "imported contents will be converted to system big-endian");
+      } else {
+        INFO("File \"" + path + "\" is big-endian; no format conversion required as executing on big-endian system");
+      }
 #else
-          "big"
+      if (change_endianness) {
+        INFO("Converting imported contents of file \"" + path + "\" to native little-endian");
+      } else {
+        WARN("File \"" + path + "\" already in native little-endian format, so no endianness conversion required; "
+             "but file is therefore not format-compliant (may have been generated using an older MRtrix3 version)");
+      }
 #endif
-          + " endian; swapping memory contents to match system");
+
+      if (change_endianness) {
         for (auto& v : vertices) {
           for (size_t i = 0; i != 3; ++i)
             v[i] = ByteOrder::swap (v[i]);
