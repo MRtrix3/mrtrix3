@@ -695,12 +695,12 @@ namespace MR
 
         out.close();
         out.open (path, std::ios_base::out | std::ios_base::app | std::ios_base::binary);
-        const std::string points_header ("POINTS " + str(vertices.size()) + " double\n");
+        const std::string points_header ("POINTS " + str(vertices.size()) + " float\n");
         out.write (points_header.c_str(), points_header.size());
-        std::array<double, 3> temp_vertex;
+        std::array<float, 3> temp_vertex;
         for (const auto& v : vertices) {
-          temp_vertex = { ByteOrder::BE (double(v[0])), ByteOrder::BE (double(v[1])), ByteOrder::BE (double(v[2])) };
-          out.write (reinterpret_cast<const char*>(&temp_vertex), 3 * sizeof(double));
+          temp_vertex = { ByteOrder::BE (float(v[0])), ByteOrder::BE (float(v[1])), ByteOrder::BE (float(v[2])) };
+          out.write (reinterpret_cast<const char*>(&temp_vertex), 3 * sizeof(float));
           ++progress;
         }
         const std::string polygons_header ("POLYGONS " + str(triangles.size() + quads.size()) + " " + str(4*triangles.size() + 5*quads.size()) + "\n");
