@@ -98,7 +98,7 @@ namespace MR
       {
         out.reserve (num_vertices);
         Eigen::Matrix<T, 3, 1> v;
-        for (int i = 0; i != num_vertices; ++i) {
+        for (size_t i = 0; i != num_vertices; ++i) {
           in.read (reinterpret_cast<char*>(v.data()), 3 * sizeof (T));
           out.push_back (v);
         }
