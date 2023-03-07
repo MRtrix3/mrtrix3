@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os
+import os, psutil
 from distutils.spawn import find_executable
 from mrtrix3 import MRtrixError
 
@@ -26,21 +26,50 @@ _SUFFIX = ''
 
 # Functions that may be useful for scripts that interface with FMRIB FSL tools
 
-# FSL's run_first_all script can be difficult to wrap, since it does not provide
-#   a meaningful return code, and may run via SGE, which then requires waiting for
-#   the output files to appear.
-def check_first(prefix, structures): #pylint: disable=unused-variable
+# Check the results of having executed "run_first_all"
+# - Script may return zero even though the processing jobs have not yet completed,
+#   as execution may have been deferred to SGE
+# - A subset of the structures to be segmented may have failed, resulting in missing .vtk files
+# - run_first_all may quote the final PID on stdout, allowing us to wait for completion of that process
+def check_first(prefix, structures=[], first_stdout=None): #pylint: disable=unused-variable
   from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
+  pid = None
+  if first_stdout:
+    try:
+      pid = int(first_stdout.rstrip().splitlines()[-1])
+    except ValueError:
+      pass
+  if pid is not None:
+    app.debug('FIRST PID reported as ' + str(pid))
+    try:
+      process = psutil.Process(pid)
+      processes = [process.children(recursive=True), process]
+      app.debug('Awaiting completion of ' + str(len(processes)) + ' processes')
+      psutil.wait_procs(processes)
+    except psutil.NoSuchProcess:
+      app.debug('FIRST PID no longer exists')
+    except psutil.AccessDenied:
+      app.debug('Inadequate credentials to query status of FIRST PID')
+      pid = None
+  else:
+    app.debug('No FIRST PID found')
+  if not structures:
+    app.warn('No way to verify up-front whether FSL FIRST was successful')
+    app.warn('Execution will continue, but script may subsequently fail if an expected structure was not segmented')
+    return
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
   existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
-  if existing_file_count != len(vtk_files):
-    if 'SGE_ROOT' in os.environ and os.environ['SGE_ROOT']:
-      app.console('FSL FIRST job may have been run via SGE; awaiting completion')
-      app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
-      path.wait_for(vtk_files)
-    else:
-      app.DO_CLEANUP = False
-      raise MRtrixError('FSL FIRST has failed; ' + ('only ' if existing_file_count else '') + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.to_scratch('first.logs', False) + ')')
+  if existing_file_count == len(vtk_files):
+    app.debug('All ' + str(existing_file_count) + ' expected FIRST .vtk files found')
+    return
+  if pid is None and 'SGE_ROOT' in os.environ and os.environ['SGE_ROOT']:
+    app.console('FSL FIRST job PID not found, but job may nevertheless complete later via SGE')
+    app.console('Script will wait to see if the expected .vtk files are generated later')
+    app.console('(note however that FIRST may fail silently, and hence this script may hang indefinitely)')
+    path.wait_for(vtk_files)
+  else:
+    app.DO_CLEANUP = False
+    raise MRtrixError('FSL FIRST has failed; ' + ('only ' if existing_file_count else '') + str(existing_file_count) + ' of ' + str(len(vtk_files)) + ' structures were segmented successfully (check ' + path.to_scratch('first.logs', False) + ')')
 
 
 
