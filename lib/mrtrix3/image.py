@@ -30,7 +30,7 @@ class Header:
   def __init__(self, image_path):
     from mrtrix3 import app, path, run #pylint: disable=import-outside-toplevel
     filename = path.name_temporary('json')
-    command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename ]
+    command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename, '-nodelete' ]
     if app.VERBOSITY > 1:
       app.console('Loading header for image file \'' + image_path + '\'')
     app.debug(str(command))
@@ -146,7 +146,7 @@ def check_3d_nonunity(image_in): #pylint: disable=unused-variable
 #   form is not performed by this function.
 def mrinfo(image_path, field): #pylint: disable=unused-variable
   from mrtrix3 import app, run #pylint: disable=import-outside-toplevel
-  command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field ]
+  command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field, '-nodelete' ]
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
   with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None) as proc:

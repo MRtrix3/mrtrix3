@@ -79,6 +79,8 @@ class Shared:
     self._scratch_dir = None
     self.verbosity = 1
 
+    self.env['MRTRIX_DELETE_TMPFILE'] = 'no'
+
   # Acquire a unique index
   # This ensures that if command() is executed in parallel using different threads, they will
   #   not interfere with one another; but terminate() will also have access to all relevant data

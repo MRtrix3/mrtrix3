@@ -135,9 +135,25 @@ namespace MR
 
     void mark_file_for_deletion (const std::string& filename)
     {
-      while (!flag.test_and_set());
-      marked_files.push_back (filename);
-      flag.clear();
+      //ENVVAR name: MRTRIX_DELETE_TMPFILE
+      //ENVVAR This variable decides whether the temporary piped image
+      //ENVVAR should be deleted or retained for further processing.
+      //ENVVAR For example, in case of piped commands from Python API, 
+      //ENVVAR it is necessary to retain the temp files until all
+      //ENVVAR the piped commands are executed.
+      char* MRTRIX_DELETE_TMPFILE = getenv("MRTRIX_DELETE_TMPFILE");
+      if (MRTRIX_DELETE_TMPFILE != NULL) {
+        if(strcmp(MRTRIX_DELETE_TMPFILE,"no") != 0) {
+          while (!flag.test_and_set());
+          marked_files.push_back (filename);
+          flag.clear();
+        }
+      }
+      else{
+        while (!flag.test_and_set());
+        marked_files.push_back (filename);
+        flag.clear();
+      }  
     }
 
     void unmark_file_for_deletion (const std::string& filename)
