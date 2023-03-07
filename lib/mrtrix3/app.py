@@ -1157,6 +1157,11 @@ class Parser(argparse.ArgumentParser):
 
   class ImageIn:
     def __call__(self, input_value):
+      if(input_value == '-'):
+        if not sys.stdin.isatty():
+          input_value = sys.stdin.read().strip()
+        else:
+          raise argparse.ArgumentTypeError('Input unavailable in stdin from command before pipe.')
       return input_value
 
   class ImageOut:
