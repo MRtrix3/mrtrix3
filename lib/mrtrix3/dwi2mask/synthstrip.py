@@ -20,6 +20,7 @@ from mrtrix3 import app, path, run
 
 
 SYNTHSTRIP_CMD='mri_synthstrip'
+SYNTHSTRIP_SINGULARITY='sythstrip-singularity'
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
@@ -51,7 +52,9 @@ def execute(): #pylint: disable=unused-variable
 
   synthstrip_cmd = shutil.which(SYNTHSTRIP_CMD)
   if not synthstrip_cmd:
-    raise MRtrixError('Unable to locate "Synthstrip" executable; please check installation')
+    synthstrip_cmd=shutil.which(SYNTHSTRIP_SINGULARITY)
+    if not synthstrip_cmd:
+      raise MRtrixError('Unable to locate "Synthstrip" executable; please check installation')
 
   output_file = 'synthstrip_mask.nii'
   stripped_file = 'stripped.nii'
