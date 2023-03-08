@@ -27,6 +27,9 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('synthstrip', parents=[base_parser])
   parser.set_author('Ruobing Chen (chrc@student.unimelb.edu.au)')
   parser.set_synopsis('Use the Synthstrip heuristic (based on skull-stripping method)')
+  parser.add_description('This scrip assumes that this system has Freesufer 7.3.2 or later version installed in it.'
+                         'The Synthstrip algorithm uses mean b=0 DWI input with skull-stripping based method to generate a mask.')
+  parser.add_citation('A. Hoopes, J. S. Mora, A. V. Dalca, B. Fischl*, M. Hoffmann* (*equal contribution)', is_external=True)
   parser.add_argument('input', help='The input DWI series')
   parser.add_argument('output', help='The output mask image')
   options=parser.add_argument_group('Options specific to the \'Synthstrip\' algorithm')
