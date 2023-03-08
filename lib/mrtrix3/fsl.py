@@ -13,7 +13,12 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os, psutil
+import os
+_HAVE_PSUTIL = True
+try:
+  import psutil
+except ImportError:
+  _HAVE_PSUTIL = False
 from distutils.spawn import find_executable
 from mrtrix3 import MRtrixError
 
@@ -31,31 +36,34 @@ _SUFFIX = ''
 #   as execution may have been deferred to SGE
 # - A subset of the structures to be segmented may have failed, resulting in missing .vtk files
 # - run_first_all may quote the final PID on stdout, allowing us to wait for completion of that process
-def check_first(prefix, structures=[], first_stdout=None): #pylint: disable=unused-variable
+def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=unused-variable
   from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
   pid = None
-  if first_stdout:
-    try:
-      pid = int(first_stdout.rstrip().splitlines()[-1])
-    except ValueError:
-      pass
-  if pid is not None:
-    app.debug('FIRST PID reported as ' + str(pid))
-    try:
-      process = psutil.Process(pid)
-      processes = [process.children(recursive=True), process]
-      app.debug('Awaiting completion of ' + str(len(processes)) + ' processes')
-      psutil.wait_procs(processes)
-    except psutil.NoSuchProcess:
-      app.debug('FIRST PID no longer exists')
-    except psutil.AccessDenied:
-      app.debug('Inadequate credentials to query status of FIRST PID')
-      pid = None
+  if _HAVE_PSUTIL:
+    if first_stdout:
+      try:
+        pid = int(first_stdout.rstrip().splitlines()[-1])
+      except ValueError:
+        pass
+    if pid is not None:
+      app.debug('FIRST PID reported as ' + str(pid))
+      try:
+        process = psutil.Process(pid)
+        processes = [process.children(recursive=True), process]
+        app.debug('Awaiting completion of ' + str(len(processes)) + ' processes')
+        psutil.wait_procs(processes)
+      except psutil.NoSuchProcess:
+        app.debug('FIRST PID no longer exists')
+      except psutil.AccessDenied:
+        app.debug('Inadequate credentials to query status of FIRST PID')
+        pid = None
+    else:
+      app.debug('No FIRST PID found')
   else:
-    app.debug('No FIRST PID found')
+    app.warn('Python psutil module not loaded; cannot check FIRST completion via process ID')
   if not structures:
-    app.warn('No way to verify up-front whether FSL FIRST was successful')
-    app.warn('Execution will continue, but script may subsequently fail if an expected structure was not segmented')
+    app.warn('No way to verify up-front whether FSL FIRST was successful due to no knowledge of set of structures to be segmented')
+    app.warn('Execution will continue, but script may subsequently fail if an expected structure was not segmented successfully')
     return
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
   existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
