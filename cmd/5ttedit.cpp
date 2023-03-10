@@ -74,10 +74,10 @@ void usage ()
 
 
 class Modifier
-{ 
+{
   public:
     Modifier (Image<float>& input_image, Image<float>& output_image) :
-        v_in  (input_image),
+        v_in (input_image),
         v_out (output_image),
         excess_volume_count (0),
         inadequate_volume_count (0) { }
@@ -137,7 +137,7 @@ class Modifier
 
 bool Modifier::operator() (const Iterator& pos)
 {
-  assign_pos_of (pos, 0, 3).to (v_out);
+  assign_pos_of (pos, 0, 3).to (v_in, v_out);
   bool voxel_nulled = false;
   if (none.valid()) {
     assign_pos_of (pos, 0, 3).to (none);
@@ -161,7 +161,7 @@ bool Modifier::operator() (const Iterator& pos)
       }
     }
     if (sum_user) {
-      if (float(sum_user) > 1.0) {
+      if (float(sum_user) > 1.0f) {
         // Erroneous input from user;
         //   we can rescale so that the sum of partial volume fractions is one,
         //   but we should also warn the user about the bad input
@@ -175,31 +175,56 @@ bool Modifier::operator() (const Iterator& pos)
           if (!buffers[v_in.index(3)].valid() || !buffers[v_in.index(3)].value())
             sum_unmodified += v_in.value();
         }
+        default_type multiplier = std::numeric_limits<default_type>::quiet_NaN();
         if (sum_unmodified) {
           // Scale all of these so that after the requested tissue overrides,
           //   inclusion of the unmodified tissues still results in a partial volume sum of one
-          const default_type unmodified_multiplier = sum_unmodified ?
-                                                      (1.0 / sum_unmodified) :
-                                                      0.0;
+          multiplier = sum_unmodified ? ((1.0 - sum_user) / sum_unmodified) : 0.0;
           for (auto i = Loop(3) (v_in, v_out); i; ++i)
-            v_out.value() = (buffers[v_in.index(3)].valid() && buffers[v_in.index(3)].value()) ? 
+            v_out.value() = (buffers[v_in.index(3)].valid() && buffers[v_in.index(3)].value()) ?
                             buffers[v_in.index(3)].value() :
-                            unmodified_multiplier * v_in.value();
+                            multiplier * v_in.value();
         } else {
           // Voxel is zero-filled in input image;
           //   ideally the user will have provided a unity sum of volume fractions as their input
-          if (float(sum_user) < 1.0) {
-            const float multiplier = 1.0 / sum_user;
-            for (auto i = Loop(3) (v_out); i; ++i)
-              v_out.value() = buffers[v_in.index(3)].valid() ?
-                              (buffers[v_in.index(3)].valid() * multiplier) :
-                              0.0;
+          multiplier = 1.0f;
+          if (float(sum_user) < 1.0f) {
+            multiplier = 1.0 / sum_user;
             ++inadequate_volume_count;
           }
+          for (auto i = Loop(3) (v_out); i; ++i)
+            v_out.value() = buffers[v_out.index(3)].valid() ?
+                            (buffers[v_out.index(3)].value() * multiplier) :
+                            0.0;
         }
+#ifndef NDEBUG
+        default_type sum_result = 0.0;
+        for (auto i = Loop(3) (v_out); i; ++i)
+          sum_result += v_out.value();
+        if (std::abs (sum_result - 1.0) > 1e-5) {
+          std::cerr << "[" << str(pos.index(0)) << "," << str(pos.index(1)) << "," << str(pos.index(2)) << "]\n";
+          std::cerr << "Input image values: ";
+          for (auto i = Loop(3) (v_in); i; ++i)
+            std::cerr << str(v_in.value()) << " ";
+          std::cerr << "\n";
+          std::cerr << "User modification values: ";
+          for (size_t tissue = 0; tissue != 5; ++tissue) {
+            if (buffers[tissue].valid()) {
+              std::cerr << str<float>(buffers[tissue].value()) << " ";
+            } else {
+              std::cerr << "<> ";
+            }
+          }
+          std::cerr << "\n";
+          std::cerr << "Output image values: ";
+          for (auto i = Loop(3) (v_out); i; ++i)
+            std::cerr << str(v_out.value()) << " ";
+          std::cerr << "\n";
+          std::cerr << "sum_user=" << str<float>(sum_user) << "; sum_unmodified=" << str<float>(sum_unmodified) << "; multiplier=" << str<float>(multiplier) << "\n";
+        }
+#endif
       }
     } else {
-      assign_pos_of (pos, 0, 3).to (v_in);
       for (auto i = Loop(3) (v_in, v_out); i; ++i)
         v_out.value() = v_in.value();
     }
