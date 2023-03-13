@@ -870,7 +870,7 @@ dwi2mask synthstrip
 Synopsis
 --------
 
-Use the Synthstrip heuristic (based on skull-stripping method)
+Use the FreeSurfer Synthstrip method on the mean b=0 image
 
 Usage
 -----
@@ -881,6 +881,11 @@ Usage
 
 -  *input*: The input DWI series
 -  *output*: The output mask image
+
+Description
+-----------
+
+This algorithm requires that the SynthStrip method be installed and available via PATH; this could be via Freesufer 7.3.0 or later, or the dedicated Singularity container.
 
 Options
 -------
@@ -935,6 +940,8 @@ Standard options
 
 References
 ^^^^^^^^^^
+
+* A. Hoopes, J. S. Mora, A. V. Dalca, B. Fischl, M. Hoffmann. SynthStrip: Skull-Stripping for Any Brain Image. NeuroImage, 2022, 260, 119474
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
