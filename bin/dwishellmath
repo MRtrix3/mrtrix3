@@ -37,6 +37,8 @@ def usage(cmdline): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
+  import sys
+  
   # check inputs and outputs
   dwi_header = image.Header(path.from_user(app.ARGS.input, False))
   if len(dwi_header.size()) != 4:
@@ -63,6 +65,9 @@ def execute(): #pylint: disable=unused-variable
     # make a 4D image with one volume
     app.warn('Only one unique b-value present in DWI data; command mrmath with -axis 3 option may be preferable')
     run.command('mrconvert ' + files[0] + ' ' + path.from_user(app.ARGS.output) + ' -axes 0,1,2,-1', mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+  
+  if('mrtrix-tmp-' in app.ARGS.output):
+    sys.stdout.write(app.ARGS.output)
 
 
 # Execute the script

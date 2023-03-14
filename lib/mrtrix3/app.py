@@ -1166,6 +1166,9 @@ class Parser(argparse.ArgumentParser):
 
   class ImageOut:
     def __call__(self, input_value):
+      if(input_value == '-'):
+        result_str = ''.join(random.choice(string.ascii_letters) for i in range(6))
+        input_value = 'mrtrix-tmp-' + result_str + '.mif'
       return input_value
 
   class TracksIn(ArgFileIn):
