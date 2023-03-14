@@ -178,6 +178,8 @@ namespace MR
     {
       const auto grad = parse_DW_scheme (header);
 
+      size_t bval_zeroed_count = 0;
+
       // rotate vectors from scanner space to image space
       Eigen::MatrixXd G = grad.leftCols<3>() * header.transform().rotation();
 
@@ -191,7 +193,12 @@ namespace MR
         bvecs(0,n) = header.stride(order[0]) > 0 ? G(n,order[0]) : -G(n,order[0]);
         bvecs(1,n) = header.stride(order[1]) > 0 ? G(n,order[1]) : -G(n,order[1]);
         bvecs(2,n) = header.stride(order[2]) > 0 ? G(n,order[2]) : -G(n,order[2]);
-        bvals(0,n) = grad(n,3);
+        if (!G.row(n).squaredNorm() && grad(n, 3) && grad(n, 3) <= MR::DWI::bzero_threshold()) {
+          ++bval_zeroed_count;
+          bvals(0,n) = 0.0;
+        } else {
+          bvals(0,n) = grad(n,3);
+        }
       }
 
       // bvecs format actually assumes a LHS coordinate system even if image is
@@ -199,6 +206,11 @@ namespace MR
       // transform have negative determinant:
       if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
+
+      if (bval_zeroed_count) {
+        WARN("For image \"" + header.name() + "\", " + str(bval_zeroed_count) + " volumes had zero gradient direction vector, but 0.0 < b-value <= BZeroThreshold; "
+             "these are clamped to zero in bvals file \"" + bvals_path + "\" for compatibility with external software");
+      }
 
       save_matrix (bvecs, bvecs_path, KeyValues(), false);
       save_matrix (bvals, bvals_path, KeyValues(), false);
