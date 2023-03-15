@@ -58,10 +58,10 @@ def execute(): #pylint: disable=unused-variable
     grad_option = ' -grad ' + path.from_user(app.ARGS.grad)
   elif app.ARGS.fslgrad:
     grad_option = ' -fslgrad ' + path.from_user(app.ARGS.fslgrad[0]) + ' ' + path.from_user(app.ARGS.fslgrad[1])
-  
+
   app.make_scratch_dir()
   app.goto_scratch_dir()
-  
+
   run.command('mrconvert '
               + path.from_user(app.ARGS.input_dwi)
               + ' '
@@ -93,7 +93,7 @@ def execute(): #pylint: disable=unused-variable
       self.fod_norm = 'FODnorm_' + name + '.mif'
 
   tissues = [Tissue('WM'), Tissue('GM'), Tissue('CSF')]
-  
+
   app.debug('Estimating response function using initial brain mask...')
   run.command('dwi2response dhollander '
               + 'input.mif '
@@ -143,9 +143,3 @@ def execute(): #pylint: disable=unused-variable
               + ' -mult '
               + path.from_user(app.ARGS.output),
               force=app.FORCE_OVERWRITE)
-
-
-
-
-
-
