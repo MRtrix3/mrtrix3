@@ -70,7 +70,7 @@ def execute(): #pylint: disable=unused-variable
 
   dwi_image = 'input.mif'
   tissues = [Tissue('WM'), Tissue('GM'), Tissue('CSF')]
-  
+
   app.debug('Estimating response function using initial brain mask...')
   run.command('dwi2response dhollander '
               + dwi_image
@@ -100,7 +100,7 @@ def execute(): #pylint: disable=unused-variable
   app.debug('Deriving final brain mask by thresholding tissue sum image...')
   new_dwi_mask_image = 'dwi_mask' + '.mif'
 
-  TISSUESUM_THRESHOLD = app.ARGS.threshold / math.sqrt(4.0 * math.pi)
+  tissuesum_threshold = app.ARGS.threshold / math.sqrt(4.0 * math.pi)
 
   run.command('mrconvert '
               + tissues[0].fod
@@ -109,7 +109,7 @@ def execute(): #pylint: disable=unused-variable
               + ' '.join(tissue.fod for tissue in tissues[1:])
               + ' sum - |'
               + ' mrthreshold - -abs '
-              + str(TISSUESUM_THRESHOLD)
+              + str(tissuesum_threshold)
               + ' - |'
               + ' maskfilter - connect -largest - |'
               + ' mrcalc 1 - -sub - -datatype bit |'
@@ -122,4 +122,3 @@ def execute(): #pylint: disable=unused-variable
   app.cleanup([tissue.fod for tissue in tissues])
 
   return dwi_mask_image
-

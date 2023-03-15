@@ -13,9 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import math
 from mrtrix3 import app, run, image, path
-
 
 LMAXES_MULTI = '4,0,0'
 LMAXES_SINGLE = '4,0'
@@ -61,7 +59,7 @@ def execute(): #pylint: disable=unused-variable
       self.fod_norm = 'FODnorm_' + name + '.mif'
 
   tissues = [Tissue('WM'), Tissue('GM'), Tissue('CSF')]
-  
+
   app.debug('Estimating response function using brain mask...')
   run.command('dwi2response dhollander '
               + 'in.mif '
@@ -85,7 +83,7 @@ def execute(): #pylint: disable=unused-variable
               + ' '
               + ' '.join(tissue.tissue_rf + ' ' + tissue.fod
                           for tissue in tissues))
-  
+
   app.debug('correcting bias field...')
   run.command('maskfilter'
               + ' mask.mif'

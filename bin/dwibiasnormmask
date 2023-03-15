@@ -41,7 +41,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                             'this may lead to the masks diverging (in which case a warning is issued).')
   cmdline.add_argument('-lmax', type=str,
                        help='The maximum spherical harmonic order for the output FODs. the value is passed to the dwi2fod command '
-                            'and should be provided in the format which it expects (the default value is "' + str(LMAXES_MULTI) + 
+                            'and should be provided in the format which it expects (the default value is "' + str(LMAXES_MULTI) +
                             '" for multi-shell and "' + str(LMAXES_SINGLE) + '" for single-shell data)')
   mask_options = cmdline.add_argument_group('Options to specify an initial mask or tissue sum image threshold in the iterative algorithm')
   mask_options.add_argument('-threshold', type=float, default=0.5,
@@ -54,7 +54,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import CONFIG, MRtrixError  #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, run, image, matrix, path  #pylint: disable=no-name-in-module, import-outside-toplevel
-  
+
   app.check_output_path(app.ARGS.output)
   app.make_scratch_dir()
 
@@ -133,8 +133,8 @@ def execute(): #pylint: disable=unused-variable
   dice_coefficient = 0.0
 
   def msg():
-      return 'Iteration {0}; {1} step; previous Dice coefficient {2}' \
-              .format(iteration, step, dice_coefficient)
+    return 'Iteration {0}; {1} step; previous Dice coefficient {2}' \
+            .format(iteration, step, dice_coefficient)
   progress = app.ProgressBar(msg)
 
   for iteration in range(0, app.ARGS.max_iters):
@@ -142,7 +142,7 @@ def execute(): #pylint: disable=unused-variable
     tissues = [Tissue('WM', iteration),
                Tissue('GM', iteration),
                Tissue('CSF', iteration)]
-        
+
     step = 'dwi2response'
     progress.increment()
     run.command('dwi2response dhollander '
@@ -174,12 +174,12 @@ def execute(): #pylint: disable=unused-variable
                 + ' '
                 + ' '.join(tissue.tissue_rf + ' ' + tissue.fod_init
                            for tissue in tissues))
-    
+
     step = 'mtnormalise'
     progress.increment()
     field_path = 'field' + iter_string + '.mif'
     factors_path = 'factors' + iter_string + '.txt'
-    
+
     # It might not be nescessary to erode the mask if masking is already restrictive
     if synthstrip_cmd:
       app.debug('Masking is likely restrictive enough, not eroding mask')
@@ -239,11 +239,11 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup('tissue.nii')
       app.cleanup('dwi_mask_temp.nii')
     else:
-      TISSUESUM_THRESHOLD = app.ARGS.threshold / math.sqrt(4.0 * math.pi)
-      run.command('mrthreshold ' 
+      tissuesum_threshold = app.ARGS.threshold / math.sqrt(4.0 * math.pi)
+      run.command('mrthreshold '
                   + tissue_sum_image
                   + ' -abs '
-                  + str(TISSUESUM_THRESHOLD)
+                  + str(tissuesum_threshold)
                   + ' - |'
                   + ' maskfilter - connect -largest - |'
                   + ' mrcalc 1 - -sub - -datatype bit |'
@@ -279,7 +279,7 @@ def execute(): #pylint: disable=unused-variable
     mask_overlap_count = image.statistics(dwi_mask_overlap_image,
                                           mask=dwi_mask_overlap_image).count
     app.debug('Mask overlap: ' + str(mask_overlap_count))
-    
+
     # Break if either the mask has converged properly, or if it starts to diverge after some convergence
     old_dice_coefficient = dice_coefficient
     dice_coefficient = 2.0 * mask_overlap_count / \
