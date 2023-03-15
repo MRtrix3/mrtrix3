@@ -38,12 +38,12 @@
 //   (note: only applies if function reject_small_shells() is called explicitly)
 #define DWI_SHELLS_MIN_DIRECTIONS 6
 // Default b-value threshold for a shell to be classified as "b=0"
-#define DWI_SHELLS_BZERO_THREHSOLD 10.0
+#define DWI_SHELLS_BZERO_THREHSOLD 22.5
 
 
 
 //CONF option: BZeroThreshold
-//CONF default: 10.0
+//CONF default: 22.5
 //CONF Specifies the b-value threshold for determining those image
 //CONF volumes that correspond to b=0.
 
