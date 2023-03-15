@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,6 +52,7 @@ namespace MR
               dir (0.0, 0.0, 1.0),
               S (that.S),
               act_method_additions (S.is_act() ? new ACT::ACT_Method_additions (that.act()) : nullptr),
+              uniform (that.uniform),
               values (that.values.size()) { }
 
 
@@ -83,7 +84,6 @@ namespace MR
             ACT::ACT_Method_additions& act() const { return *act_method_additions; }
 
             Eigen::Vector3f pos, dir;
-            std::uniform_real_distribution<float> uniform;
 
 
           private:
@@ -92,6 +92,7 @@ namespace MR
 
 
           protected:
+            std::uniform_real_distribution<float> uniform;
             Eigen::VectorXf values;
 
             Eigen::Vector3f random_direction ();

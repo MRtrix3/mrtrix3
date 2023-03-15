@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,12 +40,8 @@ namespace MR
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                   Tensor_Det::Shared (diff_path, property_set) {
 
-                    if (is_act()) {
-                      if (act().backtrack())
-                        throw Exception ("Sorry, backtracking not currently enabled for TensorProb algorithm");
-                      if (property_set.find ("sgm_truncation") == property_set.end())
-                        act().set_sgm_trunc (ACT::sgm_trunc_enum::ROULETTE);
-                    }
+                    if (is_act() && act().backtrack())
+                      throw Exception ("Sorry, backtracking not currently enabled for TensorProb algorithm");
 
                     properties["method"] = "TensorProb";
 

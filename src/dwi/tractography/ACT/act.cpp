@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,11 +27,7 @@ namespace MR
       namespace ACT
       {
 
-
-
         using namespace App;
-
-        const char* sgm_trunc_choices[] = { "entry", "exit", "minimum", "random", "roulette", nullptr };
 
         const OptionGroup ACTOption = OptionGroup ("Anatomically-Constrained Tractography options")
 
@@ -41,10 +37,7 @@ namespace MR
 
           + Option ("backtrack", "allow tracks to be truncated and re-tracked if a poor structural termination is encountered")
 
-          + Option ("crop_at_gmwmi", "crop streamline endpoints more precisely as they cross the GM-WM interface")
-
-          + Option ("sgm_truncation", "control how truncation of streamlines is performed if they attempt to enter and then exit sub-cortical grey matter; options are: " + join(sgm_trunc_choices, ","))
-            + Argument ("choice").type_choice (sgm_trunc_choices);
+          + Option ("crop_at_gmwmi", "crop streamline endpoints more precisely as they cross the GM-WM interface");
 
 
 
@@ -60,9 +53,6 @@ namespace MR
             opt = get_options ("crop_at_gmwmi");
             if (opt.size())
               properties["crop_at_gmwmi"] = "1";
-            opt = get_options ("sgm_truncation");
-            if (opt.size())
-              properties["sgm_truncation"] = std::string (opt[0][0]);
 
           } else {
 
@@ -70,8 +60,6 @@ namespace MR
               WARN ("ignoring -backtrack option - only valid if using ACT");
             if (get_options ("crop_at_gmwmi").size())
               WARN ("ignoring -crop_at_gmwmi option - only valid if using ACT");
-            if (get_options ("sgm_truncation").size())
-              WARN ("ignoring -sgm_truncation option - only valid if using ACT");
 
           }
 

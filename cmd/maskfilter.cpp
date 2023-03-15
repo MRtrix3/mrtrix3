@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,10 +50,7 @@ const OptionGroup ConnectOption = OptionGroup ("Options for connected-component 
 
 + Option ("largest", "only retain the largest connected component")
 
-+ Option ("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)")
-
-+ Option ("minsize", "impose minimum size of segmented components (Default: select all components)")
-  + Argument ("value").type_integer (1, 1e6);
++ Option ("connectivity", "use 26-voxel-neighbourhood connectivity (Default: 6)");
 
 
 
@@ -146,9 +143,6 @@ void run () {
     opt = get_options ("connectivity");
     if (opt.size())
       filter.set_26_connectivity (true);
-    opt = get_options ("minsize");
-    if (opt.size())
-      filter.set_minsize (opt[0][0]);
 
     Stride::set_from_command_line (filter);
 

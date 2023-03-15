@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,6 @@
 #ifndef __dwi_tractography_tracking_exec_h__
 #define __dwi_tractography_tracking_exec_h__
 
-#include <list>
 
 #include "thread.h"
 #include "thread_queue.h"
@@ -35,8 +34,6 @@
 #include "dwi/tractography/mapping/voxel.h"
 
 #include "dwi/tractography/seeding/dynamic.h"
-
-#include "dwi/tractography/ACT/act.h"
 
 
 #define MAX_NUM_SEED_ATTEMPTS 100000
@@ -456,71 +453,19 @@ namespace MR
 
             void truncate_exit_sgm (vector<Eigen::Vector3f>& tck)
             {
-              switch (S.act().sgm_trunc()) {
-                case ACT::sgm_trunc_enum::DEFAULT:
-                  throw Exception ("Default SGM truncation mechanism not defined");
-                case ACT::sgm_trunc_enum::ENTRY:
-                  tck.resize (tck.size() - method.act().sgm_depth);
-                  return;
-                case ACT::sgm_trunc_enum::EXIT:
-                  // Do nothing
-                  return;
-                case ACT::sgm_trunc_enum::MINIMUM:
-                  {
-                    const size_t sgm_start = tck.size() - method.act().sgm_depth;
-                    assert (sgm_start >= 0 && sgm_start < tck.size());
-                    size_t best_termination = tck.size() - 1;
-                    float min_value = std::numeric_limits<float>::infinity();
-                    for (size_t i = sgm_start; i != tck.size(); ++i) {
-                      const Eigen::Vector3f direction = (tck[i] - tck[i-1]).normalized();
-                      const float this_value = method.get_metric (tck[i], direction);
-                      if (this_value < min_value) {
-                        min_value = this_value;
-                        best_termination = i;
-                      }
-                    }
-                    tck.resize (best_termination + 1);
-                  }
-                  return;
-                case ACT::sgm_trunc_enum::RANDOM:
-                  tck.resize (tck.size() - size_t(std::round (method.act().sgm_depth * method.uniform (rng))));
-                  return;
-                case ACT::sgm_trunc_enum::ROULETTE:
-                  {
-                    const size_t sgm_start = tck.size() - method.act().sgm_depth;
-                    default_type total_sum = 0.0;
-                    class IndexAndValue
-                    {
-                      public:
-                        IndexAndValue (const size_t index, const float value) : i (index), v (value) { }
-                        size_t index() const { return i; }
-                        float value() const { return v; }
-                      private:
-                        const size_t i;
-                        const float v;
-                    };
-                    std::list<IndexAndValue> vertices;
-                    for (size_t i = sgm_start; i != tck.size(); ++i) {
-                      const Eigen::Vector3f direction = (tck[i] - tck[i-1]).normalized();
-                      const float this_value = method.get_metric (tck[i], direction);
-                      total_sum += this_value;
-                      vertices.emplace_back (IndexAndValue (i, this_value));
-                    }
-                    while (vertices.size() > 1) {
-                      const default_type sample = method.uniform (rng) * total_sum;
-                      default_type cumulative_sum = 0.0;
-                      for (auto vertex = vertices.begin(); vertex != vertices.end(); ++vertex) {
-                        if ((cumulative_sum += vertex->value()) > sample) {
-                          total_sum -= vertex->value();
-                          vertices.erase (vertex);
-                          break;
-                        }
-                      }
-                    }
-                    tck.resize (vertices.front().index() + 1);
-                  }
-                  return;
+              const size_t sgm_start = tck.size() - method.act().sgm_depth;
+              assert (sgm_start >= 0 && sgm_start < tck.size());
+              size_t best_termination = tck.size() - 1;
+              float min_value = std::numeric_limits<float>::infinity();
+              for (size_t i = sgm_start; i != tck.size(); ++i) {
+                const Eigen::Vector3f direction = (tck[i] - tck[i-1]).normalized();
+                const float this_value = method.get_metric (tck[i], direction);
+                if (this_value < min_value) {
+                  min_value = this_value;
+                  best_termination = i;
+                }
               }
+              tck.erase (tck.begin() + best_termination + 1, tck.end());
             }
 
 

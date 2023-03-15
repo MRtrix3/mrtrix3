@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2022 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,12 +46,8 @@ class SDStream : public MethodBase {
             throw Exception ("Algorithm SD_STREAM expects as input a spherical harmonic (SH) image");
           }
 
-          if (is_act()) {
-            if (act().backtrack())
-              throw Exception ("Backtracking not valid for deterministic algorithms");
-            if (property_set.find ("sgm_truncation") == property_set.end())
-              act().set_sgm_trunc (ACT::sgm_trunc_enum::MINIMUM);
-          }
+          if (is_act() && act().backtrack())
+            throw Exception ("Backtracking not valid for deterministic algorithms");
 
           set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                               Defaults::angle_deterministic,
@@ -59,6 +55,7 @@ class SDStream : public MethodBase {
           dot_threshold = std::cos (max_angle_1o);
           set_num_points();
           set_cutoff (Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
+
           properties["method"] = "SDStream";
 
           bool precomputed = true;
