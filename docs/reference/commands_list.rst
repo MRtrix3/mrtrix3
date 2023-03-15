@@ -146,7 +146,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`5tt2gmwmi`, "Generate a mask image appropriate for seeding streamlines on the grey matter-white matter interface"
     |cpp.png|, :ref:`5tt2vis`, "Generate an image for visualisation purposes from an ACT 5TT segmented anatomical image"
     |cpp.png|, :ref:`5ttcheck`, "Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format"
-    |cpp.png|, :ref:`5ttedit`, "Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image"
+    |cpp.png|, :ref:`5ttedit`, "Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images"
     |python.png|, :ref:`5ttgen`, "Generate a 5TT image suitable for ACT"
     |cpp.png|, :ref:`afdconnectivity`, "Obtain an estimate of fibre connectivity between two regions using AFD and streamlines tractography"
     |cpp.png|, :ref:`amp2response`, "Estimate response function coefficients based on the DWI signal in single-fibre voxels"
