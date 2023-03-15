@@ -1,0 +1,339 @@
+#!/usr/bin/python3
+
+# Copyright (c) 2008-2022 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import math
+
+DWIBIASCORRECT_MAX_ITERS = 2
+LMAXES_MULTI = '4,0,0'
+LMAXES_SINGLE = '4,0'
+
+
+def usage(cmdline): #pylint: disable=unused-variable
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
+  cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)')
+  cmdline.set_synopsis('Iteratively perform masking, RF estimation, CSD, bias field removal, and mask revision on a DWI series')
+  cmdline.add_description('DWI brain masking, response function estimation and bias field correction are inter-related steps and errors '
+                          'in each may influence other steps. This script first derives a brain mask (either with a provided algorithm '
+                          ' or by thresholding a balanced tissue sum image), and then performs response function estimation, multi-tissue '
+                          'CSD (with a lower lmax than the dwi2fod default, for speed), and mtnormalise to remove bias field, before the '
+                          'DWI brain mask is recalculated. These steps are performed iteratively until either a maximum number of iterations '
+                          'or until the brain masks converge.')
+  cmdline.add_argument('input',  help='The input DWI series to be corrected')
+  cmdline.add_argument('output', help='The output corrected image series')
+  cmdline.add_argument('-output_mask', help='Output the final brain mask to the specified file')
+  cmdline.add_argument('-max_iters', type=int, default=DWIBIASCORRECT_MAX_ITERS,
+                       help='The maximum number of iterations. The default is ' + str(DWIBIASCORRECT_MAX_ITERS) +
+                            'iterations. More iterations may lead to a better mask, but for some problematic data '
+                            'this may lead to the masks diverging (in which case a warning is issued).')
+  cmdline.add_argument('-lmax', type=str,
+                       help='The maximum spherical harmonic order for the output FODs. the value is passed to the dwi2fod command '
+                            'and should be provided in the format which it expects (the default value is "' + str(LMAXES_MULTI) + 
+                            '" for multi-shell and "' + str(LMAXES_SINGLE) + '" for single-shell data)')
+  loop_mask_options = cmdline.add_argument_group('Options to specify masking algorithms or tissue sum image threshold in the iterative algorithm')
+  loop_mask_options.add_argument('-mask_algo',
+                                 help='Use a specific dwi2mask algorithm. The default is to use the legacy algorithm or the one specified in the config file.')
+  loop_mask_options.add_argument('-mask_algo_options', help='Options to pass to the selected dwi2mask masking algorithm')
+  loop_mask_options.add_argument('-tissue_sum', help='Use a threshold on the balanced tissue sum image instead of a dwi2mask algorithm')
+  loop_mask_options.add_argument('-threshold', type=float, default=0.5,
+                                 help='Threshold on the total tissue density image used to derive the brain mask. the default is 0.5')
+  init_mask_options = cmdline.add_argument_group('Options to specify initial masking algorithm')
+  init_mask_options.add_argument('-mask_init', metavar='image',
+                                 help='Provide an initial mask to the algorithm and skip the initial masking')  
+  init_mask_options.add_argument('-mask_init_algo',
+                                 help='Use a specific dwi2mask algorithm for the initial mask. The default is to use the legacy algorithm or the one specified in the config file.')
+  init_mask_options.add_argument('-mask_init_options', help='Options to pass to the selected dwi2mask masking algorithm for initial masking')
+  cmdline.flag_mutually_exclusive_options( [ 'mask_algo', 'tissue_sum' ] )
+  cmdline.flag_mutually_exclusive_options( [ 'mask_algo', 'threshold' ] )
+  cmdline.flag_mutually_exclusive_options( [ 'mask_algo_options', 'tissue_sum' ] )
+  cmdline.flag_mutually_exclusive_options( [ 'mask_algo_options', 'threshold' ] )
+  cmdline.flag_mutually_exclusive_options( [ 'mask_init', 'mask_init_algo' ] )
+  cmdline.flag_mutually_exclusive_options( [ 'mask_init', 'mask_init_options' ] )
+  app.add_dwgrad_import_options(cmdline)
+
+
+def execute(): #pylint: disable=unused-variable
+  from mrtrix3 import CONFIG, MRtrixError  #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, run, image, matrix, path  #pylint: disable=no-name-in-module, import-outside-toplevel
+  
+  app.check_output_path(app.ARGS.output)
+  app.make_scratch_dir()
+
+  grad_import_option = app.read_dwgrad_import_options()
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' '
+              + path.to_scratch('input.mif') + grad_import_option)
+
+  if app.ARGS.mask_init:
+    run.command('mrconvert ' + path.from_user(app.ARGS.mask_init) + ' '
+                + path.to_scratch('dwi_mask_init.mif') + ' -datatype bit')
+
+  app.goto_scratch_dir()
+
+
+  # Function to get the appropriate masking command syntax (initial mask or in the loop)
+  def mask(image, mask, context):
+    if (context == 'tissue') and app.ARGS.tissue_sum:
+      TISSUESUM_THRESHOLD = app.ARGS.threshold / math.sqrt(4.0 * math.pi)
+      syntax = ('mrthreshold ' 
+                + image
+                + ' -abs '
+                + str(TISSUESUM_THRESHOLD)
+                + ' - |'
+                + ' maskfilter - connect -largest - |'
+                + ' mrcalc 1 - -sub - -datatype bit |'
+                + ' maskfilter - connect -largest - |'
+                + ' mrcalc 1 - -sub - -datatype bit |'
+                + ' maskfilter - clean - |'
+                + ' mrcalc - input_pos_mask.mif -mult '
+                + mask
+                + ' -datatype bit')
+    elif (context == 'initial') and app.ARGS.mask_init_algo:
+      syntax = ('dwi2mask '
+                + app.ARGS.mask_init_algo
+                + ((' ' + app.ARGS.mask_init_options) if app.ARGS.mask_init_options else '')
+                + ' ' + image + ' ' + mask)
+    else:
+      syntax = ('dwi2mask '
+                + (app.ARGS.mask_algo if app.ARGS.mask_algo else CONFIG.get('Dwi2maskAlgorithm', 'legacy'))
+                + ((' ' + app.ARGS.mask_algo_options) if app.ARGS.mask_algo_options else '')
+                + ' ' + image + ' ' + mask)
+    return syntax
+
+  # Check inputs
+  # Make sure it's actually a DWI that's been passed
+  dwi_header = image.Header('input.mif')
+  if len(dwi_header.size()) != 4:
+    raise MRtrixError('Input image must be a 4D image')
+  if 'dw_scheme' not in dwi_header.keyval():
+    raise MRtrixError('No valid DW gradient scheme provided or present in image header')
+  if len(dwi_header.keyval()['dw_scheme']) != dwi_header.size()[3]:
+    raise MRtrixError('DW gradient scheme contains different number of entries ('
+                      + str(len(dwi_header.keyval()['dw_scheme']))
+                      + ' to number of volumes in DWIs (' + dwi_header.size()[3] + ')')
+
+  # Determine whether we are working with single-shell or multi-shell data
+  bvalues = [
+      int(round(float(value)))
+      for value in image.mrinfo('input.mif', 'shell_bvalues') \
+                                .strip().split()]
+  multishell = (len(bvalues) > 2)
+
+
+  # Generate an initial brain mask if required, or check the initial mask if provided by the user
+  if app.ARGS.mask_init:
+    if not image.match('input.mif', 'dwi_mask_init.mif', up_to_dim=3):
+      raise MRtrixError('Provided mask image does not match input DWI')
+  else:
+    app.debug('Performing intial DWI brain masking')
+    mask_script = mask('input.mif', 'dwi_mask_init.mif', 'initial')
+    run.command(mask_script)
+
+  dwi_mask_image = 'dwi_mask_init.mif'
+  
+
+  # Step 2: Combined RF estimation / CSD / mtnormalise / mask revision
+  class Tissue(object): #pylint: disable=useless-object-inheritance
+    def __init__(self, name, index):
+      self.name = name
+      iter_string = '_iter' + str(index)
+      self.tissue_rf = 'response_' + name + iter_string + '.txt'
+      self.fod_init = 'FODinit_' + name + iter_string + '.mif'
+      self.fod_norm = 'FODnorm_' + name + iter_string + '.mif'
+
+
+  app.console('Commencing iterative DWI bias field correction and brain masking '
+              'with a maximum of ' + str(app.ARGS.max_iters) + ' iterations')
+
+  dwi_image = 'input.mif'
+  iteration = 0
+  step = 'initialisation'
+  dice_coefficient = 0.0
+
+  def msg():
+      return 'Iteration {0}; {1} step; previous Dice coefficient {2}' \
+              .format(iteration, step, dice_coefficient)
+  progress = app.ProgressBar(msg)
+
+  for iteration in range(0, app.ARGS.max_iters):
+    iter_string = '_iter' + str(iteration+1)
+    tissues = [Tissue('WM', iteration),
+               Tissue('GM', iteration),
+               Tissue('CSF', iteration)]
+        
+    step = 'dwi2response'
+    progress.increment()
+    run.command('dwi2response dhollander '
+                + dwi_image
+                + ' -mask '
+                + dwi_mask_image
+                + ' '
+                + ' '.join(tissue.tissue_rf for tissue in tissues))
+
+
+    # Determine the lmax values to use for the CSD, also remove GM if we can't deal with it
+    if multishell:
+      lmaxes = LMAXES_MULTI
+    else:
+      lmaxes = LMAXES_SINGLE
+      app.cleanup(tissues[1].tissue_rf)
+      tissues = tissues[::2]
+    if app.ARGS.lmax:
+      lmaxes = app.ARGS.lmax
+      if (lmaxes.count(",") + 1) != len(tissues):
+        raise MRtrixError('Number of lmax values provided is not appropriate for number of shells')
+
+    step = 'dwi2fod'
+    progress.increment()
+    app.debug('Performing CSD with lmax values: ' + lmaxes)
+    run.command('dwi2fod msmt_csd '
+                + dwi_image
+                + ' -lmax ' + lmaxes
+                + ' '
+                + ' '.join(tissue.tissue_rf + ' ' + tissue.fod_init
+                           for tissue in tissues))
+    
+    step = 'mtnormalise'
+    progress.increment()
+    field_path = 'field' + iter_string + '.mif'
+    factors_path = 'factors' + iter_string + '.txt'
+    
+    # It might not be nescessary to erode the mask if masking is already restrictive
+    if 'synthstrip' in mask_script:
+      b = float(mask_script.strip().split()[mask_script.strip().split().index('-b') + 1])
+      if b > 0:
+        app.debug('Masking is likely restrictive enough, not eroding mask')
+        run.command('maskfilter ' + dwi_mask_image + ' erode temp_mask.mif')
+        temp_mask = 'temp_mask.mif'
+      else:
+        app.debug('Masking may not be restrictive enough, eroding mask')
+        temp_mask = dwi_mask_image
+
+    run.command('mtnormalise -mask ' + temp_mask + ' -balanced'
+                + ' -check_norm ' + field_path
+                + ' -check_factors ' + factors_path
+                + ' '
+                + ' '.join(tissue.fod_init + ' ' + tissue.fod_norm
+                           for tissue in tissues))
+    app.cleanup([tissue.fod_init for tissue in tissues])
+    app.cleanup(temp_mask)
+
+    app.console('Iteration ' + str(iteration+1) + ', '
+                + 'applying estimated bias field and appropiate scaling factor...')
+    csf_rf = matrix.load_matrix(tissues[-1].tissue_rf)
+    csf_rf_bzero_lzero = csf_rf[0][0]
+    app.cleanup([tissue.tissue_rf for tissue in tissues])
+    balance_factors = matrix.load_vector(factors_path)
+    csf_balance_factor = balance_factors[-1]
+    app.cleanup(factors_path)
+    scale_multiplier = (1000.0 * math.sqrt(4.0*math.pi)) / \
+                       (csf_rf_bzero_lzero / csf_balance_factor)
+    new_dwi_image = 'dwi' + iter_string + '.mif'
+    run.command('mrcalc ' + dwi_image + ' '
+                + field_path + ' -div '
+                + str(scale_multiplier) + ' -mult '
+                + new_dwi_image)
+    app.cleanup(field_path)
+
+    old_dwi_image = dwi_image
+    dwi_image = new_dwi_image
+
+    tissue_sum_image = 'tissue_sum' + iter_string + '.mif'
+
+    app.console('Iteration ' + str(iteration+1) + ', '
+                + 'revising brain mask...')
+    new_dwi_mask_image = 'dwi_mask' + iter_string + '.mif'
+    run.command('mrconvert '
+                + tissues[0].fod_norm
+                + ' -coord 3 0 - |'
+                + ' mrmath - '
+                + ' '.join(tissue.fod_norm for tissue in tissues[1:])
+                + ' sum '
+                + tissue_sum_image)
+
+    mask_script = mask(tissue_sum_image, new_dwi_mask_image, 'tissue')
+    run.command(mask_script)
+    app.cleanup([tissue.fod_norm for tissue in tissues])
+
+    step = 'mrcalc_mask'
+    progress.increment()
+    dwi_old_mask_count = image.statistics(dwi_mask_image,
+                                          mask=dwi_mask_image).count
+    dwi_new_mask_count = image.statistics(new_dwi_mask_image,
+                                          mask=new_dwi_mask_image).count
+    app.debug('Old mask: ' + str(dwi_old_mask_count))
+    app.debug('New mask: ' + str(dwi_new_mask_count))
+    dwi_mask_overlap_image = 'dwi_mask_overlap' + iter_string + '.mif'
+    run.command('mrcalc '
+                + dwi_mask_image
+                + ' '
+                + new_dwi_mask_image
+                + ' -mult '
+                + dwi_mask_overlap_image)
+
+    old_dwi_mask_image = dwi_mask_image
+    dwi_mask_image = new_dwi_mask_image
+
+    mask_overlap_count = image.statistics(dwi_mask_overlap_image,
+                                          mask=dwi_mask_overlap_image).count
+    app.debug('Mask overlap: ' + str(mask_overlap_count))
+    
+    # Break if either the mask has converged properly, or if it starts to diverge after some convergence
+    old_dice_coefficient = dice_coefficient
+    dice_coefficient = 2.0 * mask_overlap_count / \
+                       (dwi_old_mask_count + dwi_new_mask_count)
+
+    if dice_coefficient > (1.0 - 1e-3):
+      app.console('Exiting iterative loop due to mask convergence. Iteration: ' + str(iteration + 1))
+      app.cleanup(old_dwi_image)
+      app.cleanup(old_dwi_mask_image)
+      break
+
+    if (dice_coefficient < old_dice_coefficient) and (old_dice_coefficient > (1.0 - 1e-2)):
+      app.console('[WARNING] Mask divergence at iteration: ' + str(iteration + 1)
+      + ' using previous mask with dice coefficient: ' + str(old_dice_coefficient))
+      app.cleanup(dwi_mask_image)
+      app.cleanup(dwi_image)
+      dwi_image = old_dwi_image
+      dwi_mask_image = old_dwi_mask_image
+      break
+
+    if iteration == (DWIBIASCORRECT_MAX_ITERS - 1):
+      app.console('[WARNING] Maximum iterations without convergence. Final dice coefficient: '
+      + str(dice_coefficient))
+      app.cleanup(old_dwi_image)
+      app.cleanup(old_dwi_mask_image)
+
+
+  # Processing completed; export
+  app.console('Processing completed after '
+              + str(iteration + 1)
+              + ' iterations, writing results to output directory')
+
+  run.command('mrconvert '
+              + dwi_image
+              + path.from_user(app.ARGS.output),
+              force=app.FORCE_OVERWRITE)
+
+  if app.ARGS.output_mask:
+    run.command('mrconvert '
+                + dwi_mask_image
+                + path.from_user(app.ARGS.output_mask),
+                force=app.FORCE_OVERWRITE)
+
+
+# Execute the script
+import mrtrix3 #pylint: disable=wrong-import-position
+mrtrix3.execute() #pylint: disable=no-member
