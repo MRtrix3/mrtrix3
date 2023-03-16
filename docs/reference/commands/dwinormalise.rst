@@ -15,7 +15,7 @@ Usage
 
     dwinormalise algorithm [ options ] ...
 
--  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: group, individual, mtnorm
+-  *algorithm*: Select the algorithm to be used to complete the script operation; additional details and options become available once an algorithm is nominated. Options are: group, manual, mtnorm
 
 Description
 -----------
@@ -168,22 +168,22 @@ See the Mozilla Public License v. 2.0 for more details.
 
 For more details, see http://www.mrtrix.org/.
 
-.. _dwinormalise_individual:
+.. _dwinormalise_manual:
 
-dwinormalise individual
-=======================
+dwinormalise manual
+===================
 
 Synopsis
 --------
 
-Intensity normalise a DWI series based on the b=0 signal within a supplied mask
+Intensity normalise a DWI series based on the b=0 signal within a manually-supplied supplied mask
 
 Usage
 -----
 
 ::
 
-    dwinormalise individual input_dwi input_mask output_dwi [ options ]
+    dwinormalise manual input_dwi input_mask output_dwi [ options ]
 
 -  *input_dwi*: The input DWI series
 -  *input_mask*: The mask within which a reference b=0 intensity will be sampled
