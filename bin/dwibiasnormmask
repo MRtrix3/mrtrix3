@@ -21,7 +21,6 @@ DWIBIASCORRECT_MAX_ITERS = 2
 LMAXES_MULTI = [4,0,0]
 LMAXES_SINGLE = [4,0]
 REFERENCE_INTENSITY = 1000.0
-# TODO Add config file entry to specify user preferred default
 MASK_ALGOS = ['dwi2mask', 'fslbet', 'hdbet', 'mrthreshold', 'synthstrip', 'threshold']
 MASK_ALGO_DEFAULT = 'threshold'
 DICE_COEFF_DEFAULT = 1.0 - 1e-3
@@ -65,12 +64,13 @@ def usage(cmdline): #pylint: disable=unused-variable
                           '"dwi2mask": Use the MRtrix3 command dwi2mask on the bias-field-corrected DWI series '
                           '(ie. do not use the ODF tissue sum image for mask derivation); '
                           'the algorithm to be invoked can be controlled by the user via the MRtrix config file entry "Dwi2maskAlgorithm". '
-                          '"fslbet": Invoke the FSL command "bet". '
-                          '"hdbet": Invoke the HD-BET command. '
-                          '"mrthreshold": Invoke the MRtrix3 command "mrthreshold", where an appropriate threshold value will be determined automatically '
-                          ' (and some heuristic cleanup of the resulting mask will be performed). '
-                          '"synthstrip": Invoke the FreeSurfer SynthStrip method. '
-                          '"threshold": Apply a fixed partial volume threshold of 0.5 to the tissue ODF sum image '
+                          '"fslbet": Invoke the FSL command "bet" on the ODF tissue sum image. '
+                          '"hdbet": Invoke the HD-BET command on the ODF tissue sum image. '
+                          '"mrthreshold": Invoke the MRtrix3 command "mrthreshold" on the ODF tissue sum image, '
+                          'where an appropriate threshold value will be determined automatically '
+                          '(and some heuristic cleanup of the resulting mask will be performed). '
+                          '"synthstrip": Invoke the FreeSurfer SynthStrip method on the ODF tissue sum image. '
+                          '"threshold": Apply a fixed partial volume threshold of 0.5 to the ODF tissue sum image '
                           ' (and some heuristic cleanup of the resulting mask will be performed).')
   cmdline.add_citation('Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A & Sijbers, J. '
                        'Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data. '
@@ -106,7 +106,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   internal_options.add_argument('-max_iters', type=int, default=DWIBIASCORRECT_MAX_ITERS, metavar='count',
                                 help='The maximum number of iterations (see Description); default is ' + str(DWIBIASCORRECT_MAX_ITERS) + '; '
                                      'set to 0 to proceed until convergence')
-  internal_options.add_argument('-mask_algo', choices=MASK_ALGOS, default=MASK_ALGO_DEFAULT, metavar='algorithm',
+  internal_options.add_argument('-mask_algo', choices=MASK_ALGOS, metavar='algorithm',
                                 help='The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description); default: ' + MASK_ALGO_DEFAULT)
   internal_options.add_argument('-lmax', metavar='values',
                                 help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
@@ -136,6 +136,18 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError('Dice coefficient for convergence detection must lie in the range (0.0, 1.0]')
   if app.ARGS.reference <= 0.0:
     raise MRtrixError('Reference intensity must be positive')
+
+  # Check what masking agorithm is going to be used
+  mask_algo = MASK_ALGO_DEFAULT
+  if app.ARGS.mask_algo:
+    mask_algo = app.ARGS.mask_algo
+  elif 'DwibiasnormmaskMaskAlgorithm' in CONFIG:
+    mask_algo = CONFIG['DwibiasnormmaskMaskAlgorithm']
+    if not mask_algo in MASK_ALGOS:
+      raise MRtrixError('Invalid masking algorithm selection "%s" in MRtrix config file' % mask_algo)
+    app.console('"%s" algorithm will be used for brain masking during iteration as specified in config file' % mask_algo)
+  else:
+    app.console('Default "%s" algorithm will be used for brain masking during iteration' % MASK_ALGO_DEFAULT)
 
   # Check mask algorithm, including availability of external software if necessary
   for mask_algo, software, command in [('fslbet', 'FSL', 'bet'), ('hdbet', 'HD-BET', 'hd-bet'), ('synthstrip', 'FreeSurfer', 'mri_synthstrip')]:
@@ -194,7 +206,6 @@ def execute(): #pylint: disable=unused-variable
     run.command('dwi2mask '
                 + CONFIG.get('Dwi2maskAlgorithm', 'legacy')
                 + ' input.mif dwi_mask_init.mif')
-
 
   # Combined RF estimation / CSD / mtnormalise / mask revision
   class Tissue(object): #pylint: disable=useless-object-inheritance
@@ -315,18 +326,18 @@ def execute(): #pylint: disable=unused-variable
     new_dwi_mask_image = 'dwi_mask' + iter_string + '.mif'
     tissue_sum_image_nii = None
     new_dwi_mask_image_nii = None
-    if app.ARGS.mask_algo in ['fslbet', 'hdbet', 'synthstrip']:
+    if mask_algo in ['fslbet', 'hdbet', 'synthstrip']:
       tissue_sum_image_nii = os.path.splitext(tissue_sum_image)[0] + '.nii'
       run.command('mrconvert ' + tissue_sum_image + ' ' + tissue_sum_image_nii)
       new_dwi_mask_image_nii = os.path.splitext(new_dwi_mask_image)[0] + '.nii'
-    if app.ARGS.mask_algo == 'dwi2mask':
+    if mask_algo == 'dwi2mask':
       run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' ' + new_dwi_image + ' ' + new_dwi_mask_image)
-    elif app.ARGS.mask_algo == 'fslbet':
+    elif mask_algo == 'fslbet':
       run.command('bet ' + tissue_sum_image_nii + ' ' + new_dwi_mask_image_nii + ' -R -m')
       app.cleanup(fsl.find_image(os.path.splitext(new_dwi_mask_image_nii)[0]))
       new_dwi_mask_image_nii = fsl.find_image(os.path.splitext(new_dwi_mask_image_nii)[0] + '_mask')
       run.command('mrcalc ' + new_dwi_mask_image_nii + ' input_pos_mask.mif -mult ' + new_dwi_mask_image)
-    elif app.ARGS.mask_algo == 'hdbet':
+    elif mask_algo == 'hdbet':
       try:
         run.command('hd-bet -i ' + tissue_sum_image_nii)
       except run.MRtrixCmdError as e_gpu:
@@ -336,8 +347,8 @@ def execute(): #pylint: disable=unused-variable
           raise run.MRtrixCmdError('hd-bet', 1, e_gpu.stdout + e_cpu.stdout, e_gpu.stderr + e_cpu.stderr)
       new_dwi_mask_image_nii = os.path.splitext(tissue_sum_image)[0] + '_bet_mask.nii.gz'
       run.command('mrcalc ' + new_dwi_mask_image_nii + ' input_pos_mask.mif -mult ' + new_dwi_mask_image)
-    elif app.ARGS.mask_algo in ['mrthreshold', 'threshold']:
-      mrthreshold_abs_option = ' -abs 0.5' if app.ARGS.mask_algo == 'threshold' else ''
+    elif mask_algo in ['mrthreshold', 'threshold']:
+      mrthreshold_abs_option = ' -abs 0.5' if mask_algo == 'threshold' else ''
       run.command('mrthreshold '
                   + tissue_sum_image
                   + mrthreshold_abs_option
@@ -350,7 +361,7 @@ def execute(): #pylint: disable=unused-variable
                   + ' mrcalc - input_pos_mask.mif -mult '
                   + new_dwi_mask_image
                   + ' -datatype bit')
-    elif app.ARGS.mask_algo == 'synthstrip':
+    elif mask_algo == 'synthstrip':
       run.command('mri_synthstrip -i ' + tissue_sum_image_nii + ' --mask ' + new_dwi_mask_image_nii)
       run.command('mrcalc ' + new_dwi_mask_image_nii + ' input_pos_mask.mif -mult ' + new_dwi_mask_image)
     else:

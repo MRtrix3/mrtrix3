@@ -71,6 +71,26 @@
 //CONF Dwi2maskTemplate is set to "fsl"), specify the configuration
 //CONF file to be provided to the FSL command fnirt.
 
+//CONF option: DwibiasnormmaskMaskAlgorithm
+//CONF default: threshold
+//CONF For the "dwibiasnormmask" command, specify the algorithm that
+//CONF will be used for brain masking across the iterative process.
+//CONF Note that the image data that are used to derive the mask
+//CONF may be different between the various options.
+//CONF Available options are as follows.
+//CONF dwi2mask: Invoke the MRtrix3 command dwi2mask using the
+//CONF bias-field-corrected DWI series, using whatever algorithm has
+//CONF been specified as the default for that command
+//CONF (see config file option Dwi2maskAlgorithm).
+//CONF fslbet: Use FSL command "bet" on the ODF tissue sum image.
+//CONF hdbet: Use HD-BET on the ODF tissue sum image.
+//CONF mrthreshold: Use MRtrix3 command "mrthreshold" on the ODF tissue
+//CONF sum image, allowing it to determine the appropriate threshold
+//CONF automatically; some mask cleanup operations will additionally be used.
+//CONF synthstrip: Use FreeSurfer's SynthStrip on the ODF tissue sum image.
+//CONF threshold: Apply a 0.5 threshold to the ODF tissue sum image;
+//CONF some mask cleanup operations will additionally be used.
+
 //CONF option: ScriptScratchDir
 //CONF default: `.`
 //CONF The location in which to generate the scratch directories to be
