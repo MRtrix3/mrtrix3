@@ -42,8 +42,11 @@ BIN_PATH = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.
 EXE_LIST = [ os.path.splitext(name)[0] for name in os.listdir(BIN_PATH) ] #pylint: disable=unused-variable
 
 
-# - 'CONFIG' is a directory containing those entries present in the MRtrix config files
-CONFIG = { }
+# 'CONFIG' is a dictionary containing those entries present in the MRtrix config files
+# Can add default values here that would otherwise appear in multiple locations
+CONFIG = {
+  'Dwi2maskAlgorithm': 'legacy'
+}
 
 
 # Codes for printing information to the terminal

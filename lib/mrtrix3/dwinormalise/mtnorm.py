@@ -112,7 +112,7 @@ def execute(): #pylint: disable=unused-variable
     if not image.match('input.mif', 'mask.mif', up_to_dim=3):
       raise MRtrixError('Provided mask image does not match input DWI')
   else:
-    run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' input.mif mask.mif')
+    run.command('dwi2mask ' + CONFIG['Dwi2maskAlgorithm'] + ' input.mif mask.mif')
 
   # Determine whether we are working with single-shell or multi-shell data
   bvalues = [
