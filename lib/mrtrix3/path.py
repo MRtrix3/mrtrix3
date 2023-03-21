@@ -212,7 +212,7 @@ def wait_for(paths): #pylint: disable=unused-variable
     # A fatal error will result in a non-zero code -> in_use() = False, so wait_for() can return
     return not subprocess.call(['fuser', '-s', path], shell=False, stdin=None, stdout=None, stderr=None)
 
-  def num_exit(data):
+  def num_exist(data):
     count = 0
     for entry in data:
       if os.path.exists(entry):
@@ -244,21 +244,21 @@ def wait_for(paths): #pylint: disable=unused-variable
   app.debug(str(paths))
 
   # Wait until all files exist
-  num_exist = num_exit(paths)
-  if num_exist != len(paths):
+  current_num_exist = num_exist(paths)
+  if current_num_exist != len(paths):
     progress = app.ProgressBar('Waiting for creation of ' + (('new item \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new items')), len(paths))
-    for _ in range(num_exist):
+    for _ in range(current_num_exist):
       progress.increment()
     delay = 1.0/1024.0
-    while not num_exist == len(paths):
+    while not current_num_exist == len(paths):
       time.sleep(delay)
-      new_num_exist = num_exit(paths)
-      if new_num_exist == num_exist:
+      new_num_exist = num_exist(paths)
+      if new_num_exist == current_num_exist:
         delay = max(60.0, delay*2.0)
-      elif new_num_exist > num_exist:
-        for _ in range(new_num_exist - num_exist):
+      elif new_num_exist > current_num_exist:
+        for _ in range(new_num_exist - current_num_exist):
           progress.increment()
-        num_exist = new_num_exist
+        current_num_exist = new_num_exist
         delay = 1.0/1024.0
     progress.done()
   else:
