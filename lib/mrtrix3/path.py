@@ -264,28 +264,28 @@ def wait_for(paths): #pylint: disable=unused-variable
     return
 
   # Can we query the in-use status of any of these paths
-  num_in_use = num_in_use(paths)
-  if num_in_use is None:
+  num_currently_in_use = num_in_use(paths)
+  if num_currently_in_use is None:
     app.debug('Unable to test for finalization of new files')
     return
 
   # Wait until all files are not in use
-  if not num_in_use:
+  if not num_currently_in_use:
     app.debug('Item' + ('s' if len(paths) > 1 else '') + ' immediately ready')
     return
 
   progress = app.ProgressBar('Waiting for finalization of ' + (('new file \"' + paths[0] + '\"') if len(paths) == 1 else (str(len(paths)) + ' new files')))
-  for _ in range(len(paths) - num_in_use):
+  for _ in range(len(paths) - num_currently_in_use):
     progress.increment()
   delay = 1.0/1024.0
-  while num_in_use:
+  while num_currently_in_use:
     time.sleep(delay)
     new_num_in_use = num_in_use(paths)
-    if new_num_in_use == num_in_use:
+    if new_num_in_use == num_currently_in_use:
       delay = max(60.0, delay*2.0)
     elif new_num_in_use < num_in_use:
-      for _ in range(num_in_use - new_num_in_use):
+      for _ in range(num_currently_in_use - new_num_in_use):
         progress.increment()
-      num_in_use = new_num_in_use
+      num_currently_in_use = new_num_in_use
       delay = 1.0/1024.0
   progress.done()
