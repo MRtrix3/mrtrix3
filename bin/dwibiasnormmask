@@ -204,7 +204,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     app.debug('Performing intial DWI brain masking')
     run.command('dwi2mask '
-                + CONFIG.get('Dwi2maskAlgorithm', 'legacy')
+                + CONFIG['Dwi2maskAlgorithm']
                 + ' input.mif dwi_mask_init.mif')
 
   # Combined RF estimation / CSD / mtnormalise / mask revision
