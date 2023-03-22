@@ -43,14 +43,14 @@ def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=un
   job_id = None
   if first_stdout:
     try:
-      job_id = int(first_stdout)
+      job_id = int(first_stdout.rstrip().splitlines()[-1])
     except ValueError:
       app.debug('Unable to convert FIRST stdout contents to integer job ID')
   execution_verified = False
   if job_id:
     # Eventually modify on dev to reflect Python3 prerequisite
     try:
-      return_code = subprocess.call('fsl_sub', '-j', str(job_id))
+      return_code = subprocess.call(['fsl_sub', '-j', str(job_id)])
       if return_code:
         app.debug('fsl_sub executed successfully, but returned error code ' + str(return_code))
       else:
