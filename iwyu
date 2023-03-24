@@ -1,0 +1,87 @@
+import os, subprocess, copy
+
+mrtrix_dir = [ '.' ]
+extra_flags = ['-Isrc', '-I./core', '-Icmd']
+# iwyu_flags = ['include-what-you-use', '-c']
+iwyu_flags = ['include-what-you-use']
+config_file = None
+cpp_flags = []
+eigen_cflags = []
+filelist = []
+qt_cflags = []
+
+def run_iwyu(filelist):
+    with open(config_file) as f:
+       for line in f:
+          if line.startswith("cpp_flags = "):
+            cpp_flags=line[12:]
+            cpp_flags = eval(cpp_flags)
+          if line.startswith("eigen_cflags = "):
+            eigen_cflags = line[15:]
+            eigen_cflags = eval(eigen_cflags)
+          if line.startswith("qt_cflags = "):
+            qt_cflags = line[12:]
+            qt_cflags = eval(qt_cflags) 
+
+    # form flags for compile
+    command = iwyu_flags + cpp_flags + eigen_cflags + extra_flags
+
+    for files in filelist:
+        
+        print("The current file is: " + files)
+
+        if 'gui' in files:
+           gui_command = copy.deepcopy(qt_cflags)
+           gui_command.append(files)
+           runCommand(gui_command)
+        else:
+          current_command = copy.deepcopy(command)
+          current_command.append(files)
+          runCommand(current_command)
+        
+        
+
+def runCommand(commandLine):
+  #print("++++++++++++++++++++++++++++++++++++++++++++") 
+  print("The current command is: ")
+  print(commandLine)
+  #print("++++++++++++++++++++++++++++++++++++++++++++") 
+  print("Start IWYU: ")
+  proc = subprocess.Popen(commandLine, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  output, error = proc.communicate()
+
+  # Print the output and error messages
+  print(output.decode())
+  print(error.decode())
+
+
+    
+def findF(path, list):
+    for files in os.listdir(path):
+      tmpPath = os.path.join(path, files)  
+      if os.path.isdir(tmpPath): #recurse the function if the path is a directory
+        findF(tmpPath, list)
+      elif os.path.isfile(tmpPath): # find the cpp and h file
+          if tmpPath.endswith('.cpp')|tmpPath.endswith('.h'):
+            rel_path = os.path.relpath(tmpPath)
+            if 'gui' in rel_path:
+               list.append(rel_path)
+            #list.append(rel_path)
+
+
+
+
+
+
+#######################################################################################################################################################################################
+#                                                                            the start of compilation                                                                                 #
+#######################################################################################################################################################################################
+if config_file is None:
+   config_file = os.path.normpath (os.path.join (mrtrix_dir[-1], 'config')) 
+findF(os.getcwd(), filelist)
+run_iwyu(filelist)
+
+
+############
+         
+ 
