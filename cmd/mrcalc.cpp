@@ -723,7 +723,7 @@ void get_header (const StackEntry& entry, Header& header)
   for (size_t n = 0; n < std::min<size_t> (header.ndim(), entry.image->ndim()); ++n) {
     if (header.size(n) > 1 && entry.image->size(n) > 1 && header.size(n) != entry.image->size(n))
       throw Exception ("dimensions of input images do not match - aborting");
-    if (!voxel_grids_match_in_scanner_space (header, *(entry.image), 1.0e-4) && !transform_mis_match_reported) {
+    if (!transform_mis_match_reported && !voxel_grids_match_in_scanner_space (header, *(entry.image))) {
       WARN ("header transformations of input images do not match");
       transform_mis_match_reported = true;
     }
