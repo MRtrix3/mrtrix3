@@ -49,15 +49,32 @@ def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=un
   execution_verified = False
   if job_id:
     # Eventually modify on dev to reflect Python3 prerequisite
+    # Create dummy fsl_sub job, use to monitor for completion
+    flag_file = path.name_temporary('txt')
     try:
-      return_code = subprocess.call(['fsl_sub', '-j', str(job_id)])
-      if return_code:
-        app.debug('fsl_sub executed successfully, but returned error code ' + str(return_code))
+      proc = subprocess.Popen(['fsl_sub',
+                               '-j', str(job_id),
+                               '-T', '1',
+                               'touch', flag_file],
+                              stdout=subprocess.PIPE)
+      (fslsub_stdout, _) = proc.communicate()
+      if proc.returncode:
+        app.debug('fsl_sub executed successfully, but returned error code ' + str(proc.returncode))
       else:
-        app.debug('fsl_sub successfully used to wait for all jobs to complete')
+        app.debug('fsl_sub successfully executed; awaiting completion flag')
+        path.wait_for(flag_file)
         execution_verified = True
+        app.debug('Flag file identified indicating completion of all run_first_all tasks')
+      try:
+        flag_jobid = int(fslsub_stdout.rstrip().splitlines()[-1])
+        app.var(['touch.%s%d' % (stream, flag_jobid) for stream in ['o', 'e']])
+        app.cleanup(['touch.%s%d' % (stream, flag_jobid) for stream in ['o', 'e']])
+      except ValueError:
+        app.debug('Unable to parse Job ID for fsl_sub "touch" job; could not erase stream files')
     except OSError:
       app.debug('Unable to execute fsl_sub to check status of FIRST execution')
+    finally:
+      app.cleanup(flag_file)
   if not structures:
     app.warn('No way to verify up-front whether FSL FIRST was successful due to no knowledge of set of structures to be segmented')
     app.warn('Execution will continue, but script may subsequently fail if an expected structure was not segmented successfully')
