@@ -52,14 +52,15 @@ def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=un
     # Create dummy fsl_sub job, use to monitor for completion
     flag_file = path.name_temporary('txt')
     try:
-      proc = subprocess.Popen(['fsl_sub',
-                               '-j', str(job_id),
-                               '-T', '1',
-                               'touch', flag_file],
-                              stdout=subprocess.PIPE)
-      (fslsub_stdout, _) = proc.communicate()
-      if proc.returncode:
-        app.debug('fsl_sub executed successfully, but returned error code ' + str(proc.returncode))
+      with subprocess.Popen(['fsl_sub',
+                             '-j', str(job_id),
+                             '-T', '1',
+                             'touch', flag_file],
+                            stdout=subprocess.PIPE) as proc:
+        (fslsub_stdout, _) = proc.communicate()
+        returncode = proc.returncode
+      if returncode:
+        app.debug('fsl_sub executed successfully, but returned error code ' + str(returncode))
       else:
         app.debug('fsl_sub successfully executed; awaiting completion flag')
         path.wait_for(flag_file)
@@ -67,8 +68,7 @@ def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=un
         app.debug('Flag file identified indicating completion of all run_first_all tasks')
       try:
         flag_jobid = int(fslsub_stdout.rstrip().splitlines()[-1])
-        app.var(['touch.%s%d' % (stream, flag_jobid) for stream in ['o', 'e']])
-        app.cleanup(['touch.%s%d' % (stream, flag_jobid) for stream in ['o', 'e']])
+        app.cleanup(['touch.' + stream + str(flag_jobid) for stream in ['o', 'e']])
       except ValueError:
         app.debug('Unable to parse Job ID for fsl_sub "touch" job; could not erase stream files')
     except OSError:
