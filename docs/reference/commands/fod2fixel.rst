@@ -21,14 +21,13 @@ Usage
 Description
 -----------
 
-Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
+The fixel directions can be determined in one of three ways. By default, the direction is calculated as the weighted mean of all amplitude samples that contributed to the formation of that fixel. One alternative is to instead use the direction of the maximal peak amplitude of the lobe using "-fixel-dirs peak". Another is to use a least-squares solution for the spherical average of the lobe (though this comes at a slight computational cost, and is typically not substantially different to the default mean direction) using "-fixel_dirs lsq".
 
 Options
 -------
 
-Metric values for fixel-based sparse output images
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Quantitative fixel-wise metric values to save as fixel data files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-afd image** output the total Apparent Fibre Density per fixel (integral of FOD lobe)
 
@@ -47,16 +46,21 @@ FOD FMLS segmenter options
 
 -  **-fmls_lobe_merge_ratio value** Specify the ratio between a given FOD amplitude sample between two lobes, and the smallest peak amplitude of the adjacent lobes, above which those lobes will be merged. This is the amplitude of the FOD at the 'bridge' point between the two lobes, divided by the peak amplitude of the smaller of the two adjoining lobes. A value of 1.0 will never merge two lobes into one; a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing. Default: 1.
 
-Other options for fod2fixel
+Input options for fod2fixel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-mask image** only perform computation within the specified binary brain mask image.
 
+Options to modulate outputs of fod2fixel
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-maxnum number** maximum number of fixels to output for any particular voxel (default: no limit)
 
--  **-nii** output the directions and index file in nii format (instead of the default mif)
+-  **-nii** output the directions and index file in NIfTI format (instead of the default .mif)
 
--  **-dirpeak** define the fixel direction as that of the lobe's maximal peak as opposed to its weighted mean direction (the default)
+-  **-fixel_dirs choice** choose what will be used to define the direction of each fixel; options are: mean,peak,lsq
+
+-  **-nolookup** do not export the lookup table image
 
 Standard options
 ^^^^^^^^^^^^^^^^

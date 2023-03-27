@@ -29,7 +29,7 @@
 namespace MR
 {
   class InvalidFixelDirectoryException : public Exception
-  { 
+  {
     public:
       InvalidFixelDirectoryException (const std::string& msg) : Exception(msg) {}
       InvalidFixelDirectoryException (const Exception& previous_exception, const std::string& msg)
@@ -58,7 +58,7 @@ namespace MR
     {
       for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
            it != supported_sparse_formats.end(); ++it) {
-        if (Path::basename (path) == "index" + *it)
+        if (Path::basename (path) == Fixel::basename_index + *it)
           return true;
       }
       return false;
@@ -90,7 +90,7 @@ namespace MR
     {
       for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
            it != supported_sparse_formats.end(); ++it) {
-        if (Path::basename (path) == "directions" + *it)
+        if (Path::basename (path) == Fixel::basename_directions + *it)
           return true;
       }
       return false;
@@ -217,7 +217,7 @@ namespace MR
 
       for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
            it !=supported_sparse_formats.end(); ++it) {
-        std::string full_path = Path::join (fixel_directory_path, "index" + *it);
+        std::string full_path = Path::join (fixel_directory_path, Fixel::basename_index + *it);
         if (Path::exists(full_path)) {
           if (header.valid())
             throw InvalidFixelDirectoryException ("Multiple index images found in directory " + fixel_directory_path);

@@ -39,19 +39,38 @@ Fixel format file types
 
 Index File
 ...............
--  4D image (i x j x k x 2).
+-  4D image (*i* x *j* x *k* x 2).
 -  The index file is required, with fixed naming (``index.nii`` or ``index.mif``).
 -  The first 3D volume in the 4th dimension stores the *number of elements (fixels)* per voxel.
 -  The second volume in the 4th dimension stores the *index of the first element (fixel)* in that voxel; indices for the subsequent elements in each voxel are inferred to be sequential.
 
+Fixel Directions File
+.....................
+-   **All fixel-based DWI models must specify the direction of each fixel**.
+-   Directions for each fixel must be saved within a single file named either ``directions.nii`` or ``directions.mif``.
+-   This can be considered as a special type of fixel data file, with dimensions (*n* x 3 x 1).
+-   Directions must be specified with respect to the *scanner coordinate frame*, in *cartesian coordinates*.
+
+Lookup Table File
+.................
+-   4D image (*i* X *j* X *k* X *d*).
+-   The lookup table file is optional, but requires a fixed naming of ``lookup.nii`` or ``lookup.mif``.
+-   *d* corresponds to the number of unique directions in a dense set of directions on the unit hemisphere (see :ref:`fixels_dixels`).
+-   For a given voxel, each of the *d* values contains the index of the fixel (relative to the index of the first fixel in that voxel) to which that direction should be attributed.
+-   Where a given direction should not be attributed to any fixel within the voxel, the value stored will be equal to the number of fixels in that voxel.
+-   The direction set must be provided along with the lookup table.
+    For `.mif` files, this can be embedded within the image header as key-value entry ``"directions"``.
+    Alternatively, they can be provided in a sidecar text file named ``lookup.\*``, where "``\*``" corresponds to a file extension corresponding to some supported text file format.
+    In both cases, each direction must be specified as a unit 3-vector with respect to the scanner coordinate frame, as is required for the fixel directions file (see above).
+
 Fixel Data File
 .................
--  3D image (n x p x 1) where n is the total number of elements in the image, and p is the number of parameters per element (e.g. 3 for direction.nii, 1 for volume.nii, or 6 for a multi-tensor model).
+-  3D image (*n* x *p* x 1) where *n* is the total number of elements in the image, and *p* is the number of parameters per element (e.g. 3 for ``direction.nii``, 1 for ``volume.nii``, or 6 for a multi-tensor model).
 -  For each voxel, data for the elements within that voxel must be stored within sequential indices in the first dimension.
 -  Easily identified as a data file type because the size of the image is 1 in the 3rd dimension
 -  Any number of Fixel Data File types may be present in the directory. In the example image above, the volume fraction and fanning angle parameters have been saved as separate files; however the format is flexible and allows for multiple parameters, p, per element.
 -  Any naming convention can be used for Fixel Data Files, with the exception of:
-   - The directions file (see below).
+   - The directions file (see above).
    - If a particular set of commands expect to write and subsequently read one or more data files with a fixed name, then manually renaming such files may prevent the operation of that set of commands.
 
 .. NOTE::
@@ -60,13 +79,6 @@ Fixel Data File
   restricts the total number of voxels along any dimension of the image to
   65,535. This is why either `NIfTI-2 <_nifti_format>`__ or
   :ref:`mrtrix_image_formats` must be used.
-
-Fixel Direction File
-......................
-* **All fixel-based DWI models must specify the direction of each fixel**.
-* Directions for each fixel must be saved within a single file named either ``directions.nii`` or ``directions.mif``.
-* This can be considered as a special type of fixel data file, with dimensions (n x 3 x 1).
-* Directions must be specified with respect to the *scanner coordinate frame*, in *cartesian coordinates*.
 
 Voxel Data File
 ................
