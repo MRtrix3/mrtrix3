@@ -622,6 +622,11 @@ Usage
 Options
 -------
 
+Options specific to the 'hdbet' algorithm
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- **-nogpu** Do not attempt to run on the GPU
+
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
