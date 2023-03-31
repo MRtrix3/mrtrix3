@@ -52,12 +52,12 @@ def execute(): #pylint: disable=unused-variable
 
   # GPU version is not guaranteed to work;
   #   attempt CPU version if that is the case
-  e_gpu = None
+  e_gpu = None #pylint: disable=unused-variable
   if not app.ARGS.nogpu:
     try:
       run.command('hd-bet -i bzero.nii')
       return OUTPUT_IMAGE_PATH
-    except run.MRtrixCmdError as e_gpu:
+    except run.MRtrixCmdError as e_gpu: #pylint: disable=unused-variable
       app.warn('HD-BET failed when running on GPU; attempting on CPU')
   try:
     run.command('hd-bet -i bzero.nii -device cpu -mode fast -tta 0')
