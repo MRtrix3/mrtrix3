@@ -110,6 +110,12 @@ namespace MR {
               case 0x1314U:
                 flip_angle = item.get_float (0, flip_angle);
                 return;
+              case 0x9034U:
+                if (item.get_string (0) == "LINEAR")
+                  pe_sign = -1;
+                else if (item.get_string (0) == "REVERSE_LINEAR")
+                  pe_sign = 1;
+                return;
               case 0x9074U:
                 acquisition_time = item.get_datetime().second;
                 return;
@@ -247,10 +253,30 @@ namespace MR {
               decode_csa (item.data, item.data + item.size);
             }
             return;
-          case 0x0043U: // GEMS_PARMS_01 block
-            if (item.element == 0x1039U) {
-              if (item.get_int().size())
-                bvalue = item.get_int()[0];
+          case 0x0043U:
+            switch (item.element) {
+              // GEMS_PARMS_01 block
+              case 0x1039U:
+                if (item.get_int().size())
+                  bvalue = item.get_int()[0];
+                return;
+                // GE UserDefinedData
+              case 0x102AU:
+                // very heavily inspired by dcm2nii:
+                // https://github.com/rordenlab/dcm2niix/blob/bb3a6c35d2bbac6ed95acb2cd0df65f35e79b5fb/console/nii_dicom.cpp#L6819
+                if (item.size < 26) {
+                  DEBUG ("GE header too small to be valid - ignored");
+                }
+                else {
+                  auto header_offset = Raw::fetch<int16_t> (item.data+24, false);
+                  if (header_offset+0x0030+sizeof(int16_t) > item.size) {
+                    DEBUG ("GE header too small to be valid - ignored");
+                    return;
+                  }
+                  auto pe_polarity = Raw::fetch<int16_t> (item.data+header_offset+0x0030, false) | 0x0004;
+                  pe_sign = pe_polarity ? -1 : 1;
+                }
+                return;
             }
             return;
           case 0x2001U: // Philips DW encoding info:
