@@ -222,6 +222,7 @@ def execute(): #pylint: disable=unused-variable
 
   dwi_image = 'input.mif'
   dwi_mask_image = 'dwi_mask_init.mif'
+  bias_field_image = None
   tissue_sum_image = None
   iteration = 0
   step = 'initialisation'
@@ -272,12 +273,13 @@ def execute(): #pylint: disable=unused-variable
 
     step = 'mtnormalise'
     progress.increment()
-    field_path = 'field' + iter_string + '.mif'
+    old_bias_field_image = bias_field_image
+    bias_field_image = 'field' + iter_string + '.mif'
     factors_path = 'factors' + iter_string + '.txt'
 
     run.command('mtnormalise -balanced'
                 + ' -mask ' + eroded_mask
-                + ' -check_norm ' + field_path
+                + ' -check_norm ' + bias_field_image
                 + ' -check_factors ' + factors_path
                 + ' '
                 + ' '.join(tissue.fod_init + ' ' + tissue.fod_norm
@@ -297,10 +299,9 @@ def execute(): #pylint: disable=unused-variable
                        (csf_rf_bzero_lzero / csf_balance_factor)
     new_dwi_image = 'dwi' + iter_string + '.mif'
     run.command('mrcalc ' + dwi_image + ' '
-                + field_path + ' -div '
+                + bias_field_image + ' -div '
                 + str(scale_multiplier) + ' -mult '
                 + new_dwi_image)
-    app.cleanup(field_path)
 
     old_dwi_image = dwi_image
     dwi_image = new_dwi_image
@@ -366,13 +367,12 @@ def execute(): #pylint: disable=unused-variable
       run.command('mrcalc ' + new_dwi_mask_image_nii + ' input_pos_mask.mif -mult ' + new_dwi_mask_image)
     else:
       assert False
-    app.cleanup(tissue_sum_image)
     if tissue_sum_image_nii:
       app.cleanup(tissue_sum_image_nii)
     if new_dwi_mask_image_nii:
       app.cleanup(new_dwi_mask_image_nii)
 
-    step = 'mask_comparison'
+    step = 'mask comparison'
     progress.increment()
     dwi_old_mask_count = image.statistics(dwi_mask_image,
                                           mask=dwi_mask_image).count
@@ -393,11 +393,22 @@ def execute(): #pylint: disable=unused-variable
     new_dice_coefficient = 2.0 * mask_overlap_count / \
                            (dwi_old_mask_count + dwi_new_mask_count)
 
+    if iteration == app.ARGS.max_iters:
+      progress.done()
+      app.console('Terminating due to reaching maximum %d iterations; final Dice coefficient = %f' % (iteration, new_dice_coefficient))
+      app.cleanup(old_dwi_image)
+      app.cleanup(old_dwi_mask_image)
+      app.cleanup(old_bias_field_image)
+      app.cleanup(old_tissue_sum_image)
+      total_scaling_factor *= scale_multiplier
+      break
+
     if new_dice_coefficient > app.ARGS.dice:
       progress.done()
       app.console('Exiting loop after %d iterations due to mask convergence (Dice coefficient = %f)' % (iteration, new_dice_coefficient))
       app.cleanup(old_dwi_image)
       app.cleanup(old_dwi_mask_image)
+      app.cleanup(old_bias_field_image)
       app.cleanup(old_tissue_sum_image)
       total_scaling_factor *= scale_multiplier
       break
@@ -408,19 +419,12 @@ def execute(): #pylint: disable=unused-variable
                + ' using mask from previous iteration')
       app.cleanup(dwi_image)
       app.cleanup(dwi_mask_image)
+      app.cleanup(bias_field_image)
       app.cleanup(tissue_sum_image)
       dwi_image = old_dwi_image
       dwi_mask_image = old_dwi_mask_image
+      bias_field_image = old_bias_field_image
       tissue_sum_image = old_tissue_sum_image
-      break
-
-    if iteration == app.ARGS.max_iters:
-      progress.done()
-      app.console('Terminating due to reaching maximum %d iterations; final Dice coefficient = %f' % (iteration, new_dice_coefficient))
-      app.cleanup(old_dwi_image)
-      app.cleanup(old_dwi_mask_image)
-      app.cleanup(old_tissue_sum_image)
-      total_scaling_factor *= scale_multiplier
       break
 
     iteration += 1
@@ -431,13 +435,20 @@ def execute(): #pylint: disable=unused-variable
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
               force=app.FORCE_OVERWRITE)
 
+  if app.ARGS.output_bias:
+    run.command(['mrconvert', bias_field_image, path.from_user(app.ARGS.output_bias, False)],
+                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                force=app.FORCE_OVERWRITE)
+
   if app.ARGS.output_mask:
     run.command(['mrconvert', dwi_mask_image, path.from_user(app.ARGS.output_mask, False)],
                 mrconvert_keyval=path.from_user(app.ARGS.input, False),
                 force=app.FORCE_OVERWRITE)
 
   if app.ARGS.output_scale:
-    matrix.save_vector(path.from_user(app.ARGS.output_scale, False), [total_scaling_factor])
+    matrix.save_vector(path.from_user(app.ARGS.output_scale, False),
+                       [total_scaling_factor],
+                       force=app.FORCE_OVERWRITE)
 
   if app.ARGS.output_tissuesum:
     run.command(['mrconvert', tissue_sum_image, path.from_user(app.ARGS.output_tissuesum, False)],
