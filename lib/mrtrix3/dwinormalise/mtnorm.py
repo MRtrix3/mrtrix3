@@ -164,7 +164,7 @@ def execute(): #pylint: disable=unused-variable
   balance_factors = matrix.load_vector('factors.txt')
   app.cleanup('factors.txt')
   csf_balance_factor = balance_factors[-1]
-  scale_multiplier = (1000.0 * math.sqrt(4.0*math.pi)) / (csf_rf_bzero_lzero / csf_balance_factor)
+  scale_multiplier = (app.ARGS.reference * math.sqrt(4.0*math.pi)) / (csf_rf_bzero_lzero / csf_balance_factor)
 
   run.command('mrcalc input.mif ' + str(scale_multiplier) + ' -mult - | '
               + 'mrconvert - ' + path.from_user(app.ARGS.output),
