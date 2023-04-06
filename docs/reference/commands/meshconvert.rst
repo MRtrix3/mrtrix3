@@ -6,7 +6,7 @@ meshconvert
 Synopsis
 --------
 
-Convert meshes between different formats, and apply transformations
+Transform a mesh between different formats and apply transformations, or apply a non-linear transformation to a mesh
 
 Usage
 --------
@@ -23,7 +23,7 @@ Options
 
 -  **-binary** write the output mesh file in binary format (if supported)
 
--  **-transform mode image** transform vertices from one coordinate space to another, based on a template image; options are: first2real, real2first, voxel2real, real2voxel, fs2real
+-  **-transform mode image** either transform vertices from one coordinate space to another (based on a template image), or apply a spatial transformation to them with the 'warp' mode (using a warp image). From a full warp obtained by an image1->image2 registration, for example, a warp from the space of image2 to image1 for the 'warp' mode of this command can be obtained using 'warpconvert <fullwarp> warpfull2deformation warp.mif -template <image2> -from 1'. options are: first2real, real2first, voxel2real, real2voxel, fs2real, warp
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -53,7 +53,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Robert E. Smith (robert.smith@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au) and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)
 
 **Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
 
