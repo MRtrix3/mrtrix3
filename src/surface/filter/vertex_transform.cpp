@@ -16,9 +16,33 @@
 
 #include "surface/filter/vertex_transform.h"
 #include "file/nifti_utils.h"
-
+#include "interp/linear.h"
 #include "exception.h"
+#include "math/SH.h"
+#include "image.h"
+#include "image_helpers.h"
 
+class Warper {
+public:
+  Warper(const MR::Image<float>& warp_image)
+      : interp(warp_image) {}
+
+  Eigen::Vector3f pos(const Eigen::Vector3f& x) {
+    Eigen::Vector3f p;
+    if (interp.scanner(x.cast<double>())) {
+      interp.index(3) = 0;
+      p[0] = interp.value();
+      interp.index(3) = 1;
+      p[1] = interp.value();
+      interp.index(3) = 2;
+      p[2] = interp.value();
+    }
+    return p;
+  }
+
+private:
+  MR::Interp::Linear<MR::Image<float>> interp;
+};
 
 namespace MR
 {
@@ -30,12 +54,20 @@ namespace MR
 
 
       void VertexTransform::operator() (const Mesh& in, Mesh& out) const
-      {
+      { 
         VertexList vertices, normals;
         const size_t V = in.num_vertices();
         vertices.reserve (V);
         if (in.have_normals())
           normals.reserve (V);
+        
+        // Initialization of variables outside the switch statement
+        vector<size_t> axes(3);
+        Eigen::Vector3d cras(3, 1);
+        Eigen::Transform<double, 3, 18>* M_ptr = nullptr;
+        std::unique_ptr<Interp::Linear<Image<float>>> interp_ptr;
+
+
         switch (mode) {
 
           case transform_t::UNDEFINED:
@@ -91,33 +123,43 @@ namespace MR
             break;
 
           case transform_t::FS2REAL:
-            vector<size_t> axes( 3 );
-            auto M = File::NIfTI::adjust_transform( header, axes );
-            Eigen::Vector3d cras( 3, 1 );
-            for ( size_t i = 0; i < 3; i++ )
             {
-              cras[ i ] = M( i, 3 );
-              for ( size_t j = 0; j < 3; j++ )
-              {
-                cras[ i ] += 0.5 * header.size( axes[ j ] )
-                                 * header.spacing( axes[ j ] ) * M( i, j );
+              Eigen::Transform<double, 3, 18> M = File::NIfTI::adjust_transform(header, axes);
+              M_ptr = &M;
+              for (size_t i = 0; i < 3; i++) {
+                cras[i] = (*M_ptr)(i, 3);
+                for (size_t j = 0; j < 3; j++) {
+                  cras[i] += 0.5 * header.size(axes[j]) * header.spacing(axes[j]) * (*M_ptr)(i, j);
+                }
               }
-            }
-            for ( size_t i = 0; i != V; ++i )
-            {
-              vertices.push_back ( in.vert(i) + cras );
+              for (size_t i = 0; i != V; ++i) {
+                vertices.push_back(in.vert(i) + cras);
+              }
             }
             break;
 
-        }
+          case transform_t::WARP:
+            {
+              Warper warper(warp_image);
 
+              for (size_t i = 0; i != V; ++i) {
+                Vertex v = in.vert(i);
+                auto warped_vertex = warper.pos(v.cast<float>());
+                if (warped_vertex.allFinite()) {
+                  vertices.push_back(warped_vertex.cast<double>());
+                }
+              }
+            }
+            break;
+
+          default:
+            break;
+        }
+        
         out.load (vertices, normals, in.get_triangles(), in.get_quads());
       }
-
 
 
     }
   }
 }
-
-

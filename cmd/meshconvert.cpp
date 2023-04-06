@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "header.h"
+#include "image.h"
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
 #include "surface/filter/vertex_transform.h"
@@ -28,16 +29,16 @@ using namespace MR::Surface;
 
 
 
-const char* transform_choices[] = { "first2real", "real2first", "voxel2real", "real2voxel", "fs2real", nullptr };
+const char* transform_choices[] = { "first2real", "real2first", "voxel2real", "real2voxel", "fs2real", "warp", nullptr };
 
 
 
 void usage ()
 {
 
-  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au) and Arshiya Sangchooli (asangchooli@student.unimelb.edu.au)";
 
-  SYNOPSIS = "Convert meshes between different formats, and apply transformations";
+  SYNOPSIS = "Transform a mesh between different formats and apply transformations, or apply a non-linear transformation to a mesh";
 
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()
@@ -46,8 +47,11 @@ void usage ()
   OPTIONS
   + Option ("binary", "write the output mesh file in binary format (if supported)")
 
-  + Option ("transform", "transform vertices from one coordinate space to another, based on a template image; "
-                         "options are: " + join(transform_choices, ", "))
+  + Option ("transform", "either transform vertices from one coordinate space to another (based on a template image), "
+            "or apply a spatial transformation to them with the 'warp' mode (using a warp image). From a full warp "
+            "obtained by an image1->image2 registration, for example, a warp from the space of image2 to image1 for "
+            "the 'warp' mode of this command can be obtained using "
+            "'warpconvert <fullwarp> warpfull2deformation warp.mif -template <image2> -from 1'. options are: " + join(transform_choices, ", "))
     + Argument ("mode").type_choice (transform_choices)
     + Argument ("image").type_image_in();
 
@@ -81,6 +85,10 @@ void run ()
       case 2: transform->set_voxel2real(); break;
       case 3: transform->set_real2voxel(); break;
       case 4: transform->set_fs2real   (); break;
+      case 5:
+        transform->set_warp();
+        transform->set_warp_image(Image<float>::open(opt[0][1]));
+        break;
       default: throw Exception ("Unexpected mode for spatial transformation of vertices");
     }
     MeshMulti temp;
