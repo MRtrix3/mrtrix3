@@ -129,44 +129,15 @@ namespace MR
             sum_terminations += terminations[i];
           INFO ("Total number of track terminations: " + str (sum_terminations));
           INFO ("Termination reason probabilities:");
-          for (size_t i = 0; i != TERMINATION_REASON_COUNT; ++i) {
-            std::string term_type;
-            bool to_print = false;
-            switch (i) {
-              case CONTINUE:             term_type = "Unknown";                       to_print = false;    break;
-              case ENTER_CGM:            term_type = "Entered cortical grey matter";  to_print = is_act(); break;
-              case CALIBRATOR:           term_type = "Calibrator sub-threshold";      to_print = true;     break;
-              case EXIT_IMAGE:           term_type = "Exited image";                  to_print = true;     break;
-              case ENTER_CSF:            term_type = "Entered CSF";                   to_print = is_act(); break;
-              case MODEL:                term_type = "Diffusion model sub-threshold"; to_print = true;     break;
-              case HIGH_CURVATURE:       term_type = "Excessive curvature";           to_print = true;     break;
-              case LENGTH_EXCEED:        term_type = "Max length exceeded";           to_print = true;     break;
-              case TERM_IN_SGM:          term_type = "Terminated in subcortex";       to_print = is_act(); break;
-              case EXIT_SGM:             term_type = "Exiting sub-cortical GM";       to_print = is_act(); break;
-              case EXIT_MASK:            term_type = "Exited mask";                   to_print = properties.mask.size(); break;
-              case ENTER_EXCLUDE:        term_type = "Entered exclusion region";      to_print = properties.exclude.size(); break;
-              case TRAVERSE_ALL_INCLUDE: term_type = "Traversed all include regions"; to_print = stop_on_all_include; break;
-            }
-            if (to_print)
-              INFO ("  " + term_type + ": " + str (100.0 * terminations[i] / (double)sum_terminations, 3) + "\%");
+          for (size_t i = 1; i != TERMINATION_REASON_COUNT; ++i) {
+            if (termination_relevant (term_t(i)))
+              INFO ("  " + termination_strings[i] + ": " + str (100.0 * terminations[i] / (double)sum_terminations, 3) + "\%");
           }
 
           INFO ("Track rejection counts:");
           for (size_t i = 0; i != REJECTION_REASON_COUNT; ++i) {
-            std::string reject_type;
-            bool to_print = false;
-            switch (i) {
-              case INVALID_SEED:              reject_type = "Invalid seed point";              to_print = true;     break;
-              case NO_PROPAGATION_FROM_SEED:  reject_type = "No propagation from seed";        to_print = true;     break;
-              case TRACK_TOO_SHORT:           reject_type = "Shorter than minimum length";     to_print = true;     break;
-              case TRACK_TOO_LONG:            reject_type = "Longer than maximum length";      to_print = is_act(); break;
-              case ENTER_EXCLUDE_REGION:      reject_type = "Entered exclusion region";        to_print = properties.exclude.size(); break;
-              case MISSED_INCLUDE_REGION:     reject_type = "Missed inclusion region";         to_print = properties.include.size(); break;
-              case ACT_POOR_TERMINATION:      reject_type = "Poor structural termination";     to_print = is_act(); break;
-              case ACT_FAILED_WM_REQUIREMENT: reject_type = "Failed to traverse white matter"; to_print = is_act(); break;
-            }
-            if (to_print)
-              INFO ("  " + reject_type + ": " + str (rejections[i]));
+            if (rejection_relevant (reject_t(i)))
+              INFO ("  " + rejection_strings[i] + ": " + str (rejections[i]));
           }
 
 #ifdef DEBUG_TERMINATIONS
@@ -179,7 +150,7 @@ namespace MR
 
 
 
-        void SharedBase::set_step_and_angle (const float voxel_frac, const float angle, const bool is_higher_order)
+        void SharedBase::set_step_and_angle (const float voxel_frac, const float angle, const bool is_higher_order, const bool curvature_constrained)
         {
           step_size = voxel_frac * vox();
           properties.set (step_size, "step_size");
@@ -213,6 +184,11 @@ namespace MR
             cos_max_angle_1o = 0.0f;
           }
 
+          // If the curvature constraint gets applied implicitly during path propagation, rather than
+          //   having the orientation determined and then checked against the curvature constraint,
+          //   then it is impossible for a streamline to be terminated specifically due to a curvature
+          //   constraint; this should therefore be omitted from reporting of termination statistics
+          implicit_constrain_curvature = curvature_constrained;
         }
 
 
@@ -301,6 +277,46 @@ namespace MR
             image.value() += 1;
         }
 #endif
+
+
+
+        bool SharedBase::termination_relevant (const term_t i) const
+        {
+          switch (i) {
+            case CONTINUE:             return false;
+            case ENTER_CGM:            return is_act();
+            case CALIBRATOR:           return true;
+            case EXIT_IMAGE:           return true;
+            case ENTER_CSF:            return is_act();
+            case MODEL:                return true;
+            case HIGH_CURVATURE:       return !implicit_constrain_curvature;
+            case LENGTH_EXCEED:        return true;
+            case TERM_IN_SGM:          return is_act();
+            case EXIT_SGM:             return is_act();
+            case EXIT_MASK:            return properties.mask.size();
+            case ENTER_EXCLUDE:        return properties.exclude.size();
+            case TRAVERSE_ALL_INCLUDE: return stop_on_all_include;
+          }
+          return false;
+        }
+
+
+        bool SharedBase::rejection_relevant (const reject_t i) const
+        {
+          switch (i) {
+            case INVALID_SEED:              return true;
+            case NO_PROPAGATION_FROM_SEED:  return true;
+            case TRACK_TOO_SHORT:           return true;
+            case TRACK_TOO_LONG:            return is_act();
+            case ENTER_EXCLUDE_REGION:      return properties.exclude.size();
+            case MISSED_INCLUDE_REGION:     return properties.include.size();
+            case ACT_POOR_TERMINATION:      return is_act();
+            case ACT_FAILED_WM_REQUIREMENT: return is_act();
+          }
+          return false;
+        }
+
+
 
 
 

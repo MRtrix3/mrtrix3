@@ -54,7 +54,7 @@ namespace MR
           if (rk4)
             throw Exception ("4th-order Runge-Kutta integration not valid for FACT algorithm");
 
-          set_step_and_angle (Defaults::stepsize_voxels_firstorder, Defaults::angle_deterministic, false);
+          set_step_and_angle (Defaults::stepsize_voxels_firstorder, Defaults::angle_deterministic, false, false);
           set_num_points();
           set_cutoff (Defaults::cutoff_fixel * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
           dot_threshold = std::cos (max_angle_1o);

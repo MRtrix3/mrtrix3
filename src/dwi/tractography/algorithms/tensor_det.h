@@ -58,7 +58,8 @@ namespace MR
 
           set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                               Defaults::angle_deterministic,
-                              rk4);
+                              rk4,
+                              false);
           set_num_points();
           set_cutoff (Defaults::cutoff_fa * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 

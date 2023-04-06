@@ -101,10 +101,9 @@ namespace MR
 
       + Option ("seed_direction","specify a seeding direction for the tracking (this should be "
                                  "supplied as a vector of 3 comma-separated values.")
-        + Argument ("dir").type_sequence_float()
+        + Argument ("dir").type_sequence_float();
 
-      + Option ("output_seeds", "output the seed location of all successful streamlines to a file")
-        + Argument ("path").type_file_out();
+      
 
 
 
@@ -186,9 +185,6 @@ namespace MR
 
         opt = get_options ("seed_direction");
         if (opt.size()) properties["init_direction"] = std::string (opt[0][0]);
-
-        opt = get_options ("output_seeds");
-        if (opt.size()) properties["seed_output"] = std::string (opt[0][0]);
       }
 
 

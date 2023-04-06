@@ -64,7 +64,8 @@ namespace MR
 
           set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                               Defaults::angle_ifod1,
-                              rk4);
+                              rk4,
+                              true);
 
           // max_angle_1o needs to be set because it influences the cone in which FOD amplitudes are sampled
           if (rk4) {

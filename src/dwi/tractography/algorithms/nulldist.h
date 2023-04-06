@@ -45,7 +45,8 @@ namespace MR
         {
           set_step_and_angle (rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                               Defaults::angle_ifod1,
-                              rk4);
+                              rk4,
+                              true);
           set_num_points();
           set_cutoff (0.0f);
           sin_max_angle_1o = std::sin (max_angle_1o);

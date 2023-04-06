@@ -67,7 +67,7 @@ namespace MR
             float max_angle_1o, max_angle_ho, cos_max_angle_1o, cos_max_angle_ho;
             float step_size, min_radius, threshold, init_threshold;
             size_t max_seed_attempts;
-            bool unidirectional, rk4, stop_on_all_include, implicit_max_num_seeds;
+            bool unidirectional, rk4, implicit_constrain_curvature, stop_on_all_include, implicit_max_num_seeds;
             DWI::Tractography::Resampling::Downsampler downsampler;
 
             // Additional members for ACT
@@ -79,7 +79,7 @@ namespace MR
               return std::pow (source.spacing(0)*source.spacing(1)*source.spacing(2), float (1.0/3.0));
             }
 
-            void set_step_and_angle (const float stepsize, const float angle, bool is_higher_order);
+            void set_step_and_angle (const float stepsize, const float angle, const bool is_higher_order, const bool curvature_constrained);
             void set_num_points();
             void set_num_points (const float angle_minradius_preds, const float max_step_postds);
             void set_cutoff (float cutoff);
@@ -97,6 +97,12 @@ namespace MR
 #ifdef DEBUG_TERMINATIONS
             void add_termination (const term_t i, const Eigen::Vector3f& p) const;
 #endif
+
+            size_t termination_count (const term_t i) const { return terminations[i].load (std::memory_order_seq_cst); }
+            size_t rejection_count (const reject_t i) const { return rejections[i].load (std::memory_order_seq_cst); }
+
+            bool termination_relevant (const term_t i) const;
+            bool rejection_relevant (const reject_t i) const;
 
 
           private:
