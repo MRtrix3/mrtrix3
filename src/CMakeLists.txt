@@ -2,6 +2,7 @@ file(GLOB_RECURSE MAIN_SOURCES *.h *.cpp)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets OpenGL Network REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(Threads REQUIRED)
 
 add_library(mrtrix-main ${MAIN_SOURCES})
 add_library(mrtrix::main ALIAS mrtrix-main)
@@ -13,6 +14,7 @@ target_link_libraries(mrtrix-main PUBLIC
     Qt5::OpenGL
     Qt5::Network
     mrtrix::core
+    Threads::Threads
     ${OPENGL_LIBRARIES}
 )
 
