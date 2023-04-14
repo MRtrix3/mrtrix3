@@ -1,4 +1,4 @@
-# Instruction to build mrtrix with CMake
+# Instructions to build mrtrix with CMake
 
 1. Install CMake. Current minimum version required is 3.19. If you have an older version, you can use `pip install cmake` to install the latest version (note that you can use `pip show cmake` to figure out where pip has installed the executable).
 
