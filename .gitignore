@@ -15,7 +15,7 @@
 *.mri
 *.img
 *.hdr
-*.qrc
+# *.qrc
 *.rste
 config
 build.*
@@ -57,3 +57,5 @@ testing/src/project_version.h
 .check_syntax.tmp
 .check_syntax2.tmp
 vcpkg/
+cmake-build/
+Installation/
