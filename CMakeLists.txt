@@ -39,3 +39,10 @@ foreach(CMD ${CMD_SRCS})
     get_filename_component(CMD_NAME ${CMD} NAME_WE)
     install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/Installation/bin)
 endforeach(CMD)
+
+# Copy python files to bin
+file(GLOB_RECURSE PYTHON_FILES ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+
+foreach(PYTHON_CMD ${PYTHON_FILES})
+    install(TARGETS ${PYTHON_CMD} RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/Installation/bin)
+endforeach(PYTHON_CMD)
