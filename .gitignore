@@ -40,7 +40,7 @@ build.*
 .pydevproject
 *.config
 *.creator
-*.txt
+# *.txt
 *.log
 *.creator.user
 *.files
