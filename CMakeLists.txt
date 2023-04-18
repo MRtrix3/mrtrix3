@@ -43,7 +43,7 @@ foreach(CMD ${CMD_SRCS})
 endforeach(CMD)
 
 # Copy python files to bin
-file(GLOB_RECURSE PYTHON_FILES ${CMAKE_CURRENT_SOURCE_DIR}/bin)
+file(GLOB_RECURSE PYTHON_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Installation/bin)
 
 foreach(PYTHON_CMD ${PYTHON_FILES})
     install(TARGETS ${PYTHON_CMD} RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/Installation/bin)
