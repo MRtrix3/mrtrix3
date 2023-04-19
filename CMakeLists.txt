@@ -21,6 +21,7 @@ project(mrtrix3)
 add_compile_definitions(
     MRTRIX_BUILD_TYPE="release" #TODO: Use CMAKE_BUILD_TYPE
     $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
+    $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOS>
 )
 
 add_subdirectory(core)
