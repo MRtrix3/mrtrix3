@@ -1,3 +1,6 @@
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
 file(GLOB_RECURSE MAIN_SOURCES *.h *.cpp)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets OpenGL Network REQUIRED)
