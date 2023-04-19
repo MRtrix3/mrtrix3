@@ -35,11 +35,6 @@ foreach(CMD ${CMD_SRCS})
     get_filename_component(CMD_NAME ${CMD} NAME_WE)
     add_executable(${CMD_NAME} ${CMD})
     target_link_libraries(${CMD_NAME} PRIVATE mrtrix::main)
-endforeach(CMD)
-
-# Install the commands in the bin folder
-foreach(CMD ${CMD_SRCS})
-    get_filename_component(CMD_NAME ${CMD} NAME_WE)
     install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/Installation/bin)
 endforeach(CMD)
 
