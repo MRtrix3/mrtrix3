@@ -68,6 +68,7 @@ List of MRtrix3 commands
     commands/mesh2voxel
     commands/meshconvert
     commands/meshfilter
+    commands/meshsample
     commands/mraverageheader
     commands/mrcalc
     commands/mrcat
@@ -199,6 +200,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"
     |cpp.png|, :ref:`meshconvert`, "Convert meshes between different formats, and apply transformations"
     |cpp.png|, :ref:`meshfilter`, "Apply filter operations to meshes"
+    |cpp.png|, :ref:`meshsample`, "Sample the values of an image the vertex locations of a surface mesh"
     |cpp.png|, :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
     |cpp.png|, :ref:`mrcalc`, "Apply generic voxel-wise mathematical operations to images"
     |cpp.png|, :ref:`mrcat`, "Concatenate several images into one"
