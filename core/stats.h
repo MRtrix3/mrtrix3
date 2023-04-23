@@ -90,6 +90,7 @@ namespace MR
               else if (fields[n] == "median") std::cout << ( values.size() > 0 ? str(Math::median (values)) : "N/A" ) << " ";
               else if (fields[n] == "std") std::cout << ( count > 1 ? str(std) : "N/A" ) << " ";
               else if (fields[n] == "std_rv") std::cout << ( count > 1 ? str(std_rv) : "N/A" ) << " ";
+              else if (fields[n] == "iqr") std::cout << ( values.size() > 0 ? str(Math::quantile (values, 0.75) - Math::quantile (values, 0.25)) : "N/A" ) << " ";
               else if (fields[n] == "min") std::cout << str(min) << " ";
               else if (fields[n] == "max") std::cout << str(max) << " ";
               else if (fields[n] == "count") std::cout << count << " ";
