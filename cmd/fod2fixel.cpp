@@ -23,6 +23,7 @@
 #include "fixel/helpers.h"
 
 #include "math/SH.h"
+#include "math/sphere.h"
 
 #include "thread_queue.h"
 
@@ -258,9 +259,13 @@ void Segmented_FOD_receiver::commit ()
     lut_header.datatype().set_byte_order_native();
     // Add directions set to lut image header.
     std::stringstream dir_stream;
-    for (ssize_t d = 0; d < directions.size() - 1; ++d)
-      dir_stream << directions[d](0) << "," << directions[d](1) << "," << directions[d](2) << "\n";
-    dir_stream << directions[directions.size() - 1](0) << "," << directions[directions.size() - 1](1) << "," << directions[directions.size() - 1](2);
+    Eigen::Vector3d az_el_r;
+    for (ssize_t d = 0; d < directions.size() - 1; ++d) {
+      Math::Sphere::cartesian2spherical(directions[d], az_el_r);
+      dir_stream << az_el_r(0) << "," << az_el_r(1) << "\n";
+    }
+    Math::Sphere::cartesian2spherical(directions[directions.size() - 1], az_el_r);
+    dir_stream << az_el_r(0) << "," << az_el_r(1);
     lut_header.keyval()["directions"] = dir_stream.str();
     lut_image = make_unique<LutImage> (LutImage::create (Path::join(fixel_directory_path, lut_path), lut_header));
   }
