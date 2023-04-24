@@ -167,7 +167,18 @@ void run ()
     }
     catch (Exception& E) {
       auto header = Header::open (argument[1]);
-      directions = DWI::get_DW_scheme (header);
+      try {
+        directions = DWI::get_DW_scheme (header);
+      }
+      catch (Exception& E) {
+        auto it = header.keyval().find ("directions");
+        if (it != header.keyval().end()) {
+          try { directions = parse_matrix (it->second); }
+          catch (Exception& e) {
+            throw Exception (e, "unable to parse directions entry in image \"" + header.name() + "\"");
+          }
+        }
+      }
     }
   }
 
