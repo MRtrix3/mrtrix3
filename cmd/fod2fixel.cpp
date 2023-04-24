@@ -54,6 +54,10 @@ const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sp
 
   + Option ("disp",
             "output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude")
+    + Argument ("image").type_image_out()
+
+  + Option ("lut",
+            "output the voxel-wise directions lookup table from FMLS process")
     + Argument ("image").type_image_out();
 
 
@@ -107,7 +111,7 @@ void usage ()
 
 
 
-class Segmented_FOD_receiver { 
+class Segmented_FOD_receiver {
 
   public:
     Segmented_FOD_receiver (const Header& header, const index_type maxnum = 0, bool dir_from_peak = false) :
@@ -121,13 +125,15 @@ class Segmented_FOD_receiver {
     void set_afd_output (const std::string& path) { afd_path = path; }
     void set_peak_amp_output (const std::string& path) { peak_amp_path = path; }
     void set_disp_output (const std::string& path) { disp_path = path; }
+    void set_lut_output (const std::string& path) { lut_path = path; }
+    void set_dirs (const vector<Eigen::Vector3d> dirs) { directions = dirs; }
 
     bool operator() (const FOD_lobes&);
 
 
   private:
 
-    struct Primitive_FOD_lobe { 
+    struct Primitive_FOD_lobe {
       Eigen::Vector3f dir;
       float integral;
       float max_peak_amp;
@@ -136,10 +142,10 @@ class Segmented_FOD_receiver {
     };
 
 
-    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { 
+    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> {
       public:
         Primitive_FOD_lobes (const FOD_lobes& in, const index_type maxcount, bool dir_from_peak) :
-            vox (in.vox)
+            vox (in.vox), lut (in.lut)
         {
           const index_type N = maxcount ? std::min (index_type(in.size()), maxcount) : in.size();
           for (index_type i = 0; i != N; ++i) {
@@ -151,14 +157,16 @@ class Segmented_FOD_receiver {
           }
         }
         Eigen::Array3i vox;
+        vector<uint8_t> lut;
     };
 
     Header H;
-    std::string fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path;
+    std::string fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path, lut_path;
     vector<Primitive_FOD_lobes> lobes;
     index_type fixel_count;
     index_type max_per_voxel;
     bool dir_from_peak;
+    vector<Eigen::Vector3d> directions;
 };
 
 
@@ -182,6 +190,7 @@ void Segmented_FOD_receiver::commit ()
 
   using DataImage = Image<float>;
   using IndexImage = Image<index_type>;
+  using LutImage = Image<uint8_t>;
 
   const auto index_filepath = Path::join (fixel_directory_path, index_path);
 
@@ -190,6 +199,7 @@ void Segmented_FOD_receiver::commit ()
   std::unique_ptr<DataImage> afd_image;
   std::unique_ptr<DataImage> peak_amp_image;
   std::unique_ptr<DataImage> disp_image;
+  std::unique_ptr<LutImage> lut_image;
 
   auto index_header (H);
   index_header.keyval()[Fixel::n_fixels_key] = str(fixel_count);
@@ -240,8 +250,22 @@ void Segmented_FOD_receiver::commit ()
     Fixel::check_fixel_size (*index_image, *disp_image);
   }
 
-  size_t offset (0), lobe_index (0);
+  if (lut_path.size()) {
+    auto lut_header (H);
+    lut_header.ndim() = 4;
+    lut_header.size(3) = directions.size();
+    lut_header.datatype() = DataType::UInt8;
+    lut_header.datatype().set_byte_order_native();
+    // Add directions set to lut image header.
+    std::stringstream dir_stream;
+    for (ssize_t d = 0; d < directions.size() - 1; ++d)
+      dir_stream << directions[d](0) << "," << directions[d](1) << "," << directions[d](2) << "\n";
+    dir_stream << directions[directions.size() - 1](0) << "," << directions[directions.size() - 1](1) << "," << directions[directions.size() - 1](2);
+    lut_header.keyval()["directions"] = dir_stream.str();
+    lut_image = make_unique<LutImage> (LutImage::create (Path::join(fixel_directory_path, lut_path), lut_header));
+  }
 
+  size_t offset (0), lobe_index (0);
 
   for (const auto& vox_fixels : lobes) {
     size_t n_vox_fixels = vox_fixels.size();
@@ -282,6 +306,14 @@ void Segmented_FOD_receiver::commit ()
       }
     }
 
+    if (lut_image) {
+      assign_pos_of (vox_fixels.vox).to (*lut_image);
+      for (size_t i = 0; i < vox_fixels.lut.size(); ++i) {
+        lut_image->index(3) = i;
+        lut_image->value() = vox_fixels.lut[i];
+      }
+    }
+
     offset += n_vox_fixels;
     lobe_index ++;
   }
@@ -319,6 +351,7 @@ void run ()
   opt = get_options ("afd");      if (opt.size()) receiver.set_afd_output      (opt[0][0]);
   opt = get_options ("peak_amp"); if (opt.size()) receiver.set_peak_amp_output (opt[0][0]);
   opt = get_options ("disp");     if (opt.size()) receiver.set_disp_output     (opt[0][0]);
+  opt = get_options ("lut");      if (opt.size()) receiver.set_lut_output      (opt[0][0]);
 
   opt = get_options ("mask");
   Image<float> mask;
@@ -333,6 +366,8 @@ void run ()
   FMLS::FODQueueWriter writer (fod_data, mask);
 
   const DWI::Directions::FastLookupSet dirs (1281);
+  opt = get_options ("lut");     if (opt.size()) receiver.set_dirs(dirs.get_dirs());
+
   Segmenter fmls (dirs, Math::SH::LforN (H.size(3)));
   load_fmls_thresholds (fmls);
 
