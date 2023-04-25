@@ -1,4 +1,5 @@
 file(GLOB CMD_SRCS *.cpp)
+file(GLOB BIN_SCRIPTS ${CMAKE_SOURCE_DIR}/bin/*)
 
 foreach(CMD ${CMD_SRCS})
     # Extract the filename without an extension (NAME_WE)
@@ -8,9 +9,5 @@ foreach(CMD ${CMD_SRCS})
     install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/Installation/bin)
 endforeach(CMD)
 
-# Copy python files to bin
-file(GLOB_RECURSE PYTHON_FILES ${CMAKE_SOURCE_DIR}/bin)
 
-foreach(PYTHON_CMD ${PYTHON_FILES})
-    install(TARGETS ${PYTHON_CMD} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/Installation/bin)
-endforeach(PYTHON_CMD)
+install(FILES ${BIN_SCRIPTS} DESTINATION ${CMAKE_SOURCE_DIR}/Installation/bin)
