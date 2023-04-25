@@ -13,9 +13,7 @@ endif()
 target_link_libraries(mrtrix-core PUBLIC
     Eigen3::Eigen
     ZLIB::ZLIB
-    $<$<PLATFORM_ID:Windows>:FFTW3::fftw3>
-    $<$<PLATFORM_ID:Linux>:fftw3>
+    $<IF:$<PLATFORM_ID:Windows>,FFTW3::fftw3,fftw3>
 )
 
-message("PLATFORM_ID : ${PLATFORM_ID}")
 target_include_directories(mrtrix-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
