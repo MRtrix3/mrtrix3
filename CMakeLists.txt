@@ -25,21 +25,4 @@ add_compile_definitions(
 
 add_subdirectory(core)
 add_subdirectory(src)
-
-# TODO: Should commands be built in a separate project or subdirectory?
-file(GLOB_RECURSE CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/cmd/*.cpp)
-
-foreach(CMD ${CMD_SRCS})
-    # Extract the filename without an extension (NAME_WE)
-    get_filename_component(CMD_NAME ${CMD} NAME_WE)
-    add_executable(${CMD_NAME} ${CMD})
-    target_link_libraries(${CMD_NAME} PRIVATE mrtrix::main)
-    install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/Installation/bin)
-endforeach(CMD)
-
-# Copy python files to bin
-file(GLOB_RECURSE PYTHON_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Installation/bin)
-
-foreach(PYTHON_CMD ${PYTHON_FILES})
-    install(TARGETS ${PYTHON_CMD} RUNTIME DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/Installation/bin)
-endforeach(PYTHON_CMD)
+add_subdirectory(cmd)
