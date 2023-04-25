@@ -1,6 +1,6 @@
 file(GLOB_RECURSE CORE_SRCS *.cpp *.h)
 
-add_library(mrtrix-core ${CORE_SRCS})
+add_library(mrtrix-core OBJECT ${CORE_SRCS})
 add_library(mrtrix::core ALIAS mrtrix-core)
 
 find_package(Eigen3 REQUIRED)
