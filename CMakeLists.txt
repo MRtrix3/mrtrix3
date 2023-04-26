@@ -28,7 +28,7 @@ file(RELATIVE_PATH relDir
     ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
 )
 
-set(CMAKE_INSTALL_RPATH $base $base/${relDir})
+set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
 add_compile_definitions(
     MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
