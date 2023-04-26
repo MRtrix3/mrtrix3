@@ -19,7 +19,7 @@ project(mrtrix3)
 # If not, we shouldn't add them globally
 
 add_compile_definitions(
-    MRTRIX_BUILD_TYPE="release" #TODO: Use CMAKE_BUILD_TYPE
+    MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
     $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
     $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOS>
 )
