@@ -18,4 +18,7 @@ target_link_libraries(mrtrix-core PUBLIC
 
 target_include_directories(mrtrix-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-install(TARGETS mrtrix-core DESTINATION ${CMAKE_SOURCE_DIR}/Installation/bin)
+install(TARGETS mrtrix-core 
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
