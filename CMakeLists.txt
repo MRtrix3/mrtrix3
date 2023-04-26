@@ -34,7 +34,7 @@ include(FindFFTW)
 add_compile_definitions(
     MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
     $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
-    $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOS>
+    $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOSX>
 )
 
 add_subdirectory(core)
