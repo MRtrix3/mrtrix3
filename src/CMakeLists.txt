@@ -9,7 +9,7 @@ find_package(Threads REQUIRED)
 
 qt5_add_resources(RCC_SOURCES ${CMAKE_SOURCE_DIR}/icons/icons.qrc)
 
-add_library(mrtrix-main SHARED ${MAIN_SOURCES} ${RCC_SOURCES})
+add_library(mrtrix-main STATIC ${MAIN_SOURCES} ${RCC_SOURCES})
 add_library(mrtrix::main ALIAS mrtrix-main)
 
 target_link_libraries(mrtrix-main PUBLIC
@@ -26,5 +26,3 @@ target_link_libraries(mrtrix-main PUBLIC
 target_include_directories(mrtrix-main PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
-
-install(TARGETS mrtrix-main DESTINATION ${CMAKE_SOURCE_DIR}/Installation/bin)
