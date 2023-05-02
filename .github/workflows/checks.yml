@@ -18,6 +18,8 @@ jobs:
     env:
       CFLAGS: -Werror
       QT_SELECT: qt5
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
 
     steps:
     - uses: actions/checkout@v1
@@ -27,8 +29,14 @@ jobs:
          sudo apt-get update
          sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
 
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
+    
+    - name: Run sccache-stats
+      run: sccache --show-stats
+        
     - name: configure
-      run: ./configure -assert || { cat configure.log; false; }
+      run: COMPILER_PREFIX=sccache ./configure -assert || { cat configure.log; false; }
 
     - name: build
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
@@ -52,6 +60,8 @@ jobs:
       CXX: g++-9
       CFLAGS: -Werror
       QT_SELECT: qt5
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
 
     steps:
     - uses: actions/checkout@v1
@@ -61,12 +71,17 @@ jobs:
          sudo apt-get update
          sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
 
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
+    
+    - name: Run sccache-stats
+      run: sccache --show-stats
+      
     - name: configure
-      run: ./configure -nooptim || { cat configure.log; false; }
+      run: COMPILER_PREFIX=sccache ./configure -nooptim || { cat configure.log; false; }
 
     - name: build
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
-
 
 
 
