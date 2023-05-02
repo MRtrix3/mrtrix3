@@ -1,6 +1,10 @@
 name: checks
 
 on:
+  push:
+    branches:
+      - compilercaching
+      
   pull_request:
     types: [opened, synchronize]
     branches:
