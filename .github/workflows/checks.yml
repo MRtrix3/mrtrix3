@@ -104,8 +104,14 @@ jobs:
          brew install $PACKAGES || brew install $PACKAGES
          brew link --force qt5
 
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
+    
+    - name: Run sccache-stats
+      run: sccache --show-stats
+
     - name: configure
-      run: ./configure -assert || { cat configure.log; false; }
+      run: COMPILER_PREFIX=sccache ./configure -assert || { cat configure.log; false; }
 
     - name: build
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
