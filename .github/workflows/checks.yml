@@ -20,6 +20,7 @@ jobs:
       QT_SELECT: qt5
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
+      COMPILER_PREFIX: sccache
 
     steps:
     - uses: actions/checkout@v1
@@ -36,7 +37,7 @@ jobs:
       run: sccache --show-stats
         
     - name: configure
-      run: COMPILER_PREFIX=sccache ./configure -assert || { cat configure.log; false; }
+      run: ./configure -assert || { cat configure.log; false; }
 
     - name: build
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
@@ -62,6 +63,7 @@ jobs:
       QT_SELECT: qt5
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
+      COMPILER_PREFIX: sccache
 
     steps:
     - uses: actions/checkout@v1
@@ -78,7 +80,7 @@ jobs:
       run: sccache --show-stats
       
     - name: configure
-      run: COMPILER_PREFIX=sccache ./configure -nooptim || { cat configure.log; false; }
+      run: ./configure -nooptim || { cat configure.log; false; }
 
     - name: build
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
@@ -94,7 +96,10 @@ jobs:
     env:
       CFLAGS: -Werror
       PACKAGES: "qt5 eigen pkg-config fftw libpng"
-
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+      COMPILER_PREFIX: sccache
+      
     steps:
     - uses: actions/checkout@v1
 
@@ -111,7 +116,7 @@ jobs:
       run: sccache --show-stats
 
     - name: configure
-      run: COMPILER_PREFIX=sccache ./configure -assert || { cat configure.log; false; }
+      run: ./configure -assert || { cat configure.log; false; }
 
     - name: build
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
