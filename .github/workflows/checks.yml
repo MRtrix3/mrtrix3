@@ -32,9 +32,6 @@ jobs:
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
-    
-    - name: Run sccache-stats
-      run: sccache --show-stats
         
     - name: configure
       run: ./configure -assert || { cat configure.log; false; }
@@ -42,6 +39,9 @@ jobs:
     - name: build
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
 
+    - name: Run sccache-stats
+      run: sccache --show-stats
+      
     - name: unit tests
       run: ./run_tests units || { cat testing_units.log; false; }
 
@@ -75,9 +75,6 @@ jobs:
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
-    
-    - name: Run sccache-stats
-      run: sccache --show-stats
       
     - name: configure
       run: ./configure -nooptim || { cat configure.log; false; }
@@ -85,8 +82,8 @@ jobs:
     - name: build
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
 
-
-
+    - name: Run sccache-stats
+      run: sccache --show-stats
 
 
   macos-build:
@@ -99,7 +96,7 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
       COMPILER_PREFIX: sccache
-      
+
     steps:
     - uses: actions/checkout@v1
 
@@ -111,15 +108,15 @@ jobs:
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
-    
-    - name: Run sccache-stats
-      run: sccache --show-stats
 
     - name: configure
       run: ./configure -assert || { cat configure.log; false; }
 
     - name: build
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+
+    - name: Run sccache-stats
+      run: sccache --show-stats
 
     - name: unit tests
       run: ./run_tests units || { cat testing_units.log; false; }
