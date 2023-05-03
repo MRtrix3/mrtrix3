@@ -20,7 +20,7 @@ jobs:
       QT_SELECT: qt5
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
-      COMPILER_PREFIX: sccache
+      CXX_COMPILER_LAUNCHER: sccache
 
     steps:
     - uses: actions/checkout@v1
@@ -41,7 +41,7 @@ jobs:
 
     - name: Run sccache-stats
       run: sccache --show-stats
-      
+
     - name: unit tests
       run: ./run_tests units || { cat testing_units.log; false; }
 
@@ -63,7 +63,7 @@ jobs:
       QT_SELECT: qt5
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
-      COMPILER_PREFIX: sccache
+      CXX_COMPILER_LAUNCHER: sccache
 
     steps:
     - uses: actions/checkout@v1
@@ -95,7 +95,7 @@ jobs:
       PACKAGES: "qt5 eigen pkg-config fftw libpng"
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
-      COMPILER_PREFIX: sccache
+      CXX_COMPILER_LAUNCHER: sccache
 
     steps:
     - uses: actions/checkout@v1
