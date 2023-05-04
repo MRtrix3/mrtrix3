@@ -129,7 +129,7 @@ namespace MR
           const float angular_threshold)
       {
 
-        class TrackProcessor { 
+        class TrackProcessor {
 
           public:
             TrackProcessor (const DWI::Tractography::Mapping::TrackMapperBase& mapper,
@@ -262,13 +262,13 @@ namespace MR
         index_header.spacing(0) = index_header.spacing(1) = index_header.spacing(2) = 1.0;
         index_header.transform() = transform_type::Identity();
         index_header.keyval() = keyvals;
-        index_header.keyval()["nfixels"] = str(matrix.size());
+        index_header.keyval()[Fixel::n_fixels_key] = str(matrix.size());
         index_header.datatype() = DataType::from<index_image_type>();
-        
+
         index_type num_connections = 0;
         {
           ProgressBar progress ("Computing number of fixels in output", matrix.size());
-          
+
           for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
             const connectivity_value_type normalisation_factor = connectivity_value_type(1) / connectivity_value_type (matrix[fixel_index].count());
             for (auto& it : matrix[fixel_index]) {
@@ -291,7 +291,7 @@ namespace MR
         fixel_header.spacing(0) = fixel_header.spacing(1) = fixel_header.spacing(2) = 1.0;
         fixel_header.transform() = transform_type::Identity();
         fixel_header.keyval() = keyvals;
-        fixel_header.keyval()["nfixels"] = str(matrix.size());
+        fixel_header.keyval()[Fixel::n_fixels_key] = str(matrix.size());
         fixel_header.datatype() = DataType::from<index_type>();
         fixel_header.datatype().set_byte_order_native();
         Header value_header (fixel_header);
@@ -303,9 +303,9 @@ namespace MR
         Image<connectivity_value_type> value_image;
 
         try {
-          index_image = Image<index_image_type>::create (Path::join (path, "index.mif"), index_header);
-          fixel_image = Image<index_type>::create (Path::join (path, "fixels.mif"), fixel_header);
-          value_image = Image<connectivity_value_type>::create (Path::join (path, "values.mif"), value_header);
+          index_image = Image<index_image_type>::create (Path::join (path, Matrix::basename_index + ".mif"), index_header);
+          fixel_image = Image<index_type>::create (Path::join (path, Matrix::basename_fixels + ".mif"), fixel_header);
+          value_image = Image<connectivity_value_type>::create (Path::join (path, Matrix::basename_values + ".mif"), value_header);
         } catch (Exception& e) {
           throw Exception (e, "Unable to allocate space on filesystem for fixel-fixel connectivity matrix data");
         }
@@ -356,13 +356,13 @@ namespace MR
           mask_image (mask)
       {
         try {
-          index_image = Image<index_image_type>::open (Path::join (directory, "index.mif"));
+          index_image = Image<index_image_type>::open (Path::join (directory, Matrix::basename_index + ".mif"));
           if (index_image.ndim() != 4)
             throw Exception ("Fixel-fixel connectivity matrix index image must be 4D");
           if (index_image.size (1) != 1 || index_image.size (2) != 1 || index_image.size (3) != 2)
             throw Exception ("Fixel-fixel connectivity matrix index image must have size Nx1x1x2");
-          fixel_image = Image<fixel_index_type>::open (Path::join (directory, "fixels.mif"));
-          value_image = Image<connectivity_value_type>::open (Path::join (directory, "values.mif"));
+          fixel_image = Image<fixel_index_type>::open (Path::join (directory, Matrix::basename_fixels + ".mif"));
+          value_image = Image<connectivity_value_type>::open (Path::join (directory, Matrix::basename_values + ".mif"));
           if (value_image.size (0) != fixel_image.size (0))
             throw Exception ("Number of fixels in value image (" + str(value_image.size (0)) + ") does not match number of fixels in fixel image (" + str(fixel_image.size (0)) + ")");
           if (mask_image.valid() && size_t(mask_image.size (0)) != size())
