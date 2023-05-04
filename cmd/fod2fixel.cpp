@@ -165,8 +165,6 @@ class Segmented_FOD_receiver {
     void set_afd_output (const std::string& path) { afd_path = path; }
     void set_peak_amp_output (const std::string& path) { peak_amp_path = path; }
     void set_disp_output (const std::string& path) { disp_path = path; }
-    //void set_lut_output (const std::string& path) { lut_path = path; }
-    //void set_dirs (const vector<Eigen::Vector3d> dirs) { directions = dirs; }
 
     bool operator() (const FOD_lobes&);
 
@@ -274,6 +272,7 @@ void Segmented_FOD_receiver::commit ()
     lookup_header.size(3) = dirs.size();
     lookup_header.datatype() = DataType::UInt8;
     lookup_header.stride(0) = 0;
+    // TODO Option to write directions as spherical vs cartesian
     Eigen::Matrix<float, Eigen::Dynamic, 3> directions_matrix = Eigen::Matrix<float, Eigen::Dynamic, 3>::Zero (dirs.size(), 3);
     for (size_t i = 0; i != dirs.size(); ++i)
       directions_matrix.row(i) = dirs[i].cast<float>();
@@ -308,27 +307,6 @@ void Segmented_FOD_receiver::commit ()
     disp_image = DataImage::create (Path::join(fixel_directory_path, disp_path), disp_header);
     disp_image.index(1) = 0;
   }
-
-/*
-  if (lut_path.size()) {
-    auto lut_header (H);
-    lut_header.ndim() = 4;
-    lut_header.size(3) = directions.size();
-    lut_header.datatype() = DataType::UInt8;
-    lut_header.datatype().set_byte_order_native();
-    // Add directions set to lut image header.
-    std::stringstream dir_stream;
-    Eigen::Vector3d az_el_r;
-    for (ssize_t d = 0; d < directions.size() - 1; ++d) {
-      Math::Sphere::cartesian2spherical(directions[d], az_el_r);
-      dir_stream << az_el_r(0) << "," << az_el_r(1) << "\n";
-    }
-    Math::Sphere::cartesian2spherical(directions[directions.size() - 1], az_el_r);
-    dir_stream << az_el_r(0) << "," << az_el_r(1);
-    lut_header.keyval()["directions"] = dir_stream.str();
-    lut_image = make_unique<LutImage> (LutImage::create (Path::join(fixel_directory_path, lut_path), lut_header));
-  }
-*/
 
   size_t offset = 0;
   for (const auto& vox_fixels : lobes) {
@@ -371,18 +349,7 @@ void Segmented_FOD_receiver::commit ()
       }
     }
 
-/*
-    if (lut_image) {
-      assign_pos_of (vox_fixels.vox).to (*lut_image);
-      for (size_t i = 0; i < vox_fixels.lut.size(); ++i) {
-        lut_image->index(3) = i;
-        lut_image->value() = vox_fixels.lut[i];
-      }
-    }
-*/
-
     offset += n_vox_fixels;
-    //lobe_index ++;
   }
 
   assert (offset == fixel_count);
@@ -407,7 +374,7 @@ void run ()
   switch (int(opt[0][0])) {
     case 0: fixel_directions = fixel_dir_t::MEAN; break;
     case 1: fixel_directions = fixel_dir_t::PEAK; break;
-    case 2: fixel_directions = fixel_dir_t::LSQ; break;
+    case 2: fixel_directions = fixel_dir_t::LSQ;  break;
     default: assert (false);
   }
 
@@ -421,7 +388,6 @@ void run ()
   opt = get_options ("afd");      if (opt.size()) receiver.set_afd_output      (opt[0][0]);
   opt = get_options ("peak_amp"); if (opt.size()) receiver.set_peak_amp_output (opt[0][0]);
   opt = get_options ("disp");     if (opt.size()) receiver.set_disp_output     (opt[0][0]);
-  //opt = get_options ("lut");      if (opt.size()) receiver.set_lut_output      (opt[0][0]);
 
   opt = get_options ("mask");
   Image<float> mask;
@@ -431,11 +397,6 @@ void run ()
       throw Exception ("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
   }
   FMLS::FODQueueWriter writer (fod_data, mask);
-
-/*
-  const DWI::Directions::FastLookupSet dirs (1281);
-  opt = get_options ("lut");     if (opt.size()) receiver.set_dirs(dirs.get_dirs());
-*/
 
   Segmenter fmls (dirs, Math::SH::LforN (H.size(3)));
   load_fmls_thresholds (fmls);
