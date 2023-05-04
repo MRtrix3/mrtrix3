@@ -373,11 +373,13 @@ void run ()
 
   auto opt = get_options ("fixel_dirs");
   fixel_dir_t fixel_directions = fixel_dir_t::MEAN;
-  switch (int(opt[0][0])) {
-    case 0: fixel_directions = fixel_dir_t::MEAN; break;
-    case 1: fixel_directions = fixel_dir_t::PEAK; break;
-    case 2: fixel_directions = fixel_dir_t::LSQ;  break;
-    default: assert (false);
+  if (opt.size()) {
+    switch (int(opt[0][0])) {
+      case 0: fixel_directions = fixel_dir_t::MEAN; break;
+      case 1: fixel_directions = fixel_dir_t::PEAK; break;
+      case 2: fixel_directions = fixel_dir_t::LSQ;  break;
+      default: assert (false);
+    }
   }
 
   Segmented_FOD_receiver receiver (H,
