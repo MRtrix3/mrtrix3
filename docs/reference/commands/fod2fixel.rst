@@ -38,8 +38,6 @@ Quantitative fixel-wise metric values to save as fixel data files
 
 -  **-disp image** output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude
 
--  **-lut image** output the voxel-wise directions lookup table from FMLS process
-
 FOD FMLS segmenter options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 

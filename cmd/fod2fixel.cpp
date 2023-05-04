@@ -61,10 +61,6 @@ const OptionGroup MetricOptions = OptionGroup ("Quantitative fixel-wise metric v
 
   + Option ("disp",
             "output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude")
-    + Argument ("image").type_image_out()
-
-  + Option ("lut",
-            "output the voxel-wise directions lookup table from FMLS process")
     + Argument ("image").type_image_out();
 
 
