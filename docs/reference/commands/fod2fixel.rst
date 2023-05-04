@@ -21,7 +21,10 @@ Usage
 Description
 -----------
 
-The fixel directions can be determined in one of three ways. By default, the direction is calculated as the weighted mean of all amplitude samples that contributed to the formation of that fixel. One alternative is to instead use the direction of the maximal peak amplitude of the lobe using "-fixel-dirs peak". Another is to use a least-squares solution for the spherical average of the lobe (though this comes at a slight computational cost, and is typically not substantially different to the default mean direction) using "-fixel_dirs lsq".
+The fixel directions can be determined in one of three ways. By default, the direction is calculated as the weighted mean of all amplitude samples that contributed to the formation of that fixel. One alternative is to instead use the direction of the maximal peak amplitude of the lobe using "-fixel_dirs peak". Another is to use a least-squares solution for the spherical average of the lobe (though this comes at a slight computational cost, and is typically not substantially different to the default mean direction) using "-fixel_dirs lsq".
+
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
@@ -90,7 +93,10 @@ References
   Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. SIFT: Spherical-deconvolution informed filtering of tractograms. NeuroImage, 2013, 67, 298-312 (Appendix 2)
 
 * Reference for Apparent Fibre Density (AFD): |br|
-  Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images.Neuroimage, 2012, 15;59(4), 3976-94
+  Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images. Neuroimage, 2012, 15;59(4), 3976-94
+
+* Reference for "dispersion" measure: |br|
+  Riffert, T.W.; Schreiber, J.; Anwander, A.; Knosche, T.R. Beyond Fractional Anisotropy: Extraction of Bundle-Specific Structural Metrics from Crossing Fiber Models. NeuroImage, 2014, 100, 176-191
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 

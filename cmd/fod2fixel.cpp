@@ -105,7 +105,7 @@ void usage ()
     "By default, the direction is calculated as the weighted mean of all amplitude samples "
     "that contributed to the formation of that fixel. "
     "One alternative is to instead use the direction of the maximal peak amplitude of the lobe "
-    "using \"-fixel-dirs peak\". "
+    "using \"-fixel_dirs peak\". "
     "Another is to use a least-squares solution for the spherical average of the lobe "
     "(though this comes at a slight computational cost, and is typically not substantially "
     "different to the default mean direction) using \"-fixel_dirs lsq\"."
@@ -120,8 +120,14 @@ void usage ()
 
     + "* Reference for Apparent Fibre Density (AFD):\n"
     "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. " // Internal
-    "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
-    "Neuroimage, 2012, 15;59(4), 3976-94";
+    "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images. "
+    "Neuroimage, 2012, 15;59(4), 3976-94"
+
+    + "* Reference for \"dispersion\" measure:\n"
+    "Riffert, T.W.; Schreiber, J.; Anwander, A.; Knosche, T.R. "
+    "Beyond Fractional Anisotropy: Extraction of Bundle-Specific Structural Metrics from Crossing Fiber Models. "
+    "NeuroImage, 2014, 100, 176-191";
+
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ()
