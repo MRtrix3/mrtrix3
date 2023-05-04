@@ -1,0 +1,103 @@
+#!/usr/bin/python3
+
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+# pylint: disable=redefined-outer-name,invalid-name,broad-except
+
+import os, codecs, re, glob
+
+include_folders = [ 'cmd', 'src' ]
+#include_folders += [ 'core' ]
+
+
+re_project_include = re.compile ('^ *\#include *\"([a-zA-Z/.]+)\"')
+re_system_include = re.compile ('^ *\#include *<([a-zA-Z/.]+)>')
+
+headers = dict()
+
+
+class HeaderList():
+  def __init__(self):
+    self.system = set()
+    self.project = set()
+    self.cpp_deps = set()
+
+
+
+def find_cpp (filename):
+  cpp = (filename.rstrip('.h') + '.cpp')
+  if cpp in headers:
+    return None
+
+  for folder in include_folders:
+    candidate = os.path.join (folder, cpp)
+    if os.path.isfile (candidate):
+      return candidate
+
+  return None
+
+
+
+def list_headers (filename):
+  global headers
+
+  if filename in headers.keys():
+    return
+
+  headers[filename] = HeaderList()
+  with codecs.open (filename, mode='r', encoding='utf-8') as f:
+    for line in f:
+      m = re_project_include.match (line)
+      if m:
+        header = m.groups()[0]
+        headers[filename].project.add (header)
+
+        cpp = find_cpp (header)
+        if cpp and cpp != filename:
+          headers[filename].cpp_deps.add (cpp)
+          list_headers (cpp)
+
+      else:
+        m = re_system_include.match (line)
+        if m:
+          headers[filename].system.add (m.groups()[0])
+
+
+def get_deps (deps, filename):
+  deps.add (filename)
+  for cpp in headers[filename].cpp_deps:
+    get_deps (deps, cpp)
+
+
+
+
+
+if __name__ == "__main__":
+  cmds = glob.glob (os.path.join ('cmd', '*.cpp'))
+  for cmd in cmds:
+    list_headers (cmd)
+    deps = set()
+    get_deps (deps, cmd)
+    print (cmd + ': ' + ' '.join (deps))
+
+
+  if False:
+    for (f, h) in headers.items():
+      print (f)
+      print ('  project: ' + ' '.join (h.project))
+      if len(h.system): print ('  system:  ' + ' '.join (h.system))
+      if len(h.cpp_deps): print ('  CPP deps: ' + ' '.join (h.cpp_deps))
+
