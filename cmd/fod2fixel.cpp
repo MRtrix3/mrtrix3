@@ -275,17 +275,14 @@ void Segmented_FOD_receiver::commit ()
     lookup_header.datatype() = DataType::UInt8;
     lookup_header.stride(0) = 0;
     // TODO Option to write directions as spherical vs cartesian
+    // Could this be a config file option?
     Eigen::Matrix<float, Eigen::Dynamic, 3> directions_matrix = Eigen::Matrix<float, Eigen::Dynamic, 3>::Zero (dirs.size(), 3);
     for (size_t i = 0; i != dirs.size(); ++i)
       directions_matrix.row(i) = dirs[i].cast<float>();
-    if (save_as_nifti) {
+    if (save_as_nifti)
       MR::save_matrix (directions_matrix, Path::join (fixel_directory_path, Fixel::basename_lookup + ".csv"));
-    } else {
-      Eigen::IOFormat format (Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
-      std::stringstream s;
-      s << std::fixed << directions_matrix.format (format);
-      lookup_header.keyval()["directions"] = s.str();
-    }
+    else
+      lookup_header.keyval()["directions"] = serialize_matrix (directions_matrix);
     lookup_image = LookupImage::create (Path::join (fixel_directory_path, Fixel::basename_lookup + base_extension), lookup_header);
   }
 

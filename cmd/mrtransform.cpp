@@ -28,6 +28,7 @@
 #include "algo/loop.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
+#include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
 #include "registration/transform/reorient.h"
@@ -180,10 +181,7 @@ void usage ()
         "to preserve the total intensity before and after the transformation.")
     + Argument ("method").type_choice (modulation_choices)
 
-    + Option ("directions",
-        "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation "
-        "(Default: 300 directions)")
-    + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
+    + DWI::Directions::directions_option ("defining the number and orientation of the apodised point spread functions used in FOD reorientation", "built-in 300-direction set")
 
     + Option ("reorient_fod",
         "specify whether to perform FOD reorientation. This is required if the number "

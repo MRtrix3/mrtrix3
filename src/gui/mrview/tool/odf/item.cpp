@@ -85,22 +85,8 @@ namespace MR
           auto entry = H.keyval().find ("directions");
           if (entry != H.keyval().end()) {
             try {
-              const auto lines = split_lines (entry->second);
-              if (lines.size() != size_t(H.size (3)))
-                throw Exception ("malformed directions field in image \"" + H.name() + "\" - incorrect number of rows");
-              for (size_t row = 0; row < lines.size(); ++row) {
-                const auto values = parse_floats (lines[row]);
-                if (!header_dirs.rows()) {
-                  if (values.size() != 2 && values.size() != 3)
-                    throw Exception ("malformed directions field in image \"" + H.name() + "\" - should have 2 or 3 columns");
-                  header_dirs.resize (lines.size(), values.size());
-                } else if (values.size() != size_t(header_dirs.cols())) {
-                  header_dirs.resize (0, 0);
-                  throw Exception ("malformed directions field in image \"" + H.name() + "\" - variable number of columns");
-                }
-                for (size_t col = 0; col < values.size(); ++col)
-                  header_dirs(row, col) = values[col];
-              }
+              header_dirs = deserialize_matrix<float> (entry->second);
+              Math::Sphere::check (header_dirs, H.size (3));
             } catch (Exception& e) {
               DEBUG (e[0]);
               header_dirs.resize (0, 0);

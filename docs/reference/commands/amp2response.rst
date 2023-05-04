@@ -13,17 +13,19 @@ Usage
 
 ::
 
-    amp2response [ options ]  amps mask directions response
+    amp2response [ options ]  amps mask orientations response
 
 -  *amps*: the amplitudes image
 -  *mask*: the mask containing the voxels from which to estimate the response function
--  *directions*: a 4D image containing the estimated fibre directions
+-  *orientations*: a 4D image containing the estimated fibre orientations
 -  *response*: the output zonal spherical harmonic coefficients
 
 Description
 -----------
 
 This command uses the image data from all selected single-fibre voxels concurrently, rather than simply averaging their individual spherical harmonic coefficients. It also ensures that the response function is non-negative, and monotonic (i.e. its amplitude must increase from the fibre direction out to the orthogonal plane).
+
+Where the user is permitted to provide a set of directions that is requisite for the relevant command operation (including as an alternative to data that may be already present in an input image header), there are a number of permissible inputs from which the user could choose, including: an integer value corresponding to a built-in direction set; a path to a text file containing directions (in either spherical, ie. [az el] pairs, or cartesian coordinates, ie. [x y z] triplets); a path to an image, where this set could be extracted from either key-value entry "directions" or from the diffusion gradient table.
 
 If multi-shell data are provided, and one or more b-value shells are not explicitly requested, the command will generate a response function for every b-value shell (including b=0 if present).
 
@@ -34,7 +36,7 @@ Options
 
 -  **-noconstraint** disable the non-negativity and monotonicity constraints
 
--  **-directions path** provide an external text file containing the directions along which the amplitudes are sampled
+-  **-directions spec** Specify a source of a basis direction set to be used interpreting input image amplitudes with respect to orientations on the sphere (see Description); default: inferred from input image header
 
 DW shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

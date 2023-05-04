@@ -26,6 +26,7 @@
 #include "math/SH.h"
 #include "math/ZSH.h"
 
+#include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
 
 #define DEFAULT_MSMTCSD_LMAX 8
@@ -41,10 +42,10 @@ namespace MR
 
       extern const App::OptionGroup MSMT_CSD_options;
 
-      class MSMT_CSD { 
+      class MSMT_CSD {
         public:
 
-          class Shared { 
+          class Shared {
             public:
               Shared (const Header& dwi_header) :
                   grad (DWI::get_DW_scheme (dwi_header)),
@@ -62,7 +63,7 @@ namespace MR
                   lmax = parse_ints<uint32_t> (opt[0][0]);
                 opt = get_options ("directions");
                 if (opt.size())
-                  HR_dirs = load_matrix (opt[0][0]);
+                  HR_dirs = Math::Sphere::to_spherical (DWI::Directions::load (std::string (opt[0][0]), true));
                 opt = get_options ("norm_lambda");
                 if (opt.size())
                   solution_min_norm_regularisation = opt[0][0];

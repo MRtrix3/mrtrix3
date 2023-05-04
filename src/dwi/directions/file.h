@@ -23,6 +23,8 @@ namespace MR {
   namespace DWI {
     namespace Directions {
 
+
+
       Eigen::MatrixXd load_spherical (const std::string& filename);
       Eigen::MatrixXd load_cartesian (const std::string& filename);
 
@@ -52,6 +54,7 @@ namespace MR {
           else
             save_spherical (directions, filename);
         }
+
 
 
     }

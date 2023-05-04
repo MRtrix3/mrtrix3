@@ -23,6 +23,7 @@
 #include "types.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "dwi/directions/directions.h"
 #include "math/constrained_least_squares.h"
 #include "math/rng.h"
 #include "math/sphere.h"
@@ -50,6 +51,8 @@ void usage ()
      "ensures that the response function is non-negative, and monotonic (i.e. its amplitude "
      "must increase from the fibre direction out to the orthogonal plane)."
 
+   + DWI::Directions::directions_description
+
    + "If multi-shell data are provided, and one or more b-value shells are not explicitly "
      "requested, the command will generate a response function for every b-value shell "
      "(including b=0 if present).";
@@ -57,7 +60,7 @@ void usage ()
   ARGUMENTS
     + Argument ("amps", "the amplitudes image").type_image_in()
     + Argument ("mask", "the mask containing the voxels from which to estimate the response function").type_image_in()
-    + Argument ("directions", "a 4D image containing the estimated fibre directions").type_image_in()
+    + Argument ("orientations", "a 4D image containing the estimated fibre orientations").type_image_in()
     + Argument ("response", "the output zonal spherical harmonic coefficients").type_file_out();
 
   OPTIONS
@@ -65,8 +68,7 @@ void usage ()
 
     + Option ("noconstraint", "disable the non-negativity and monotonicity constraints")
 
-    + Option ("directions", "provide an external text file containing the directions along which the amplitudes are sampled")
-      + Argument("path").type_file_in()
+    + DWI::Directions::directions_option ("interpreting input image amplitudes with respect to orientations on the sphere", "inferred from input image header")
 
     + DWI::ShellsOption
 
@@ -86,9 +88,9 @@ Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix (const Eigen::Vector3d& di
 {
   static Math::RNG::Normal<default_type> rng;
   // Generates a matrix that will rotate a unit vector into a new frame of reference,
-  //   where the peak direction of the FOD is aligned in Z (3rd dimension)
+  //   where the peak orientation of the FOD is aligned in Z (3rd dimension)
   // Previously this was done using the tensor eigenvectors
-  // Here the other two axes are determined at random (but both are orthogonal to the FOD peak direction)
+  // Here the other two axes are determined at random (but both are orthogonal to the FOD peak orientation)
   Eigen::Matrix<default_type, 3, 3> R;
   R (2, 0) = dir[0]; R (2, 1) = dir[1]; R (2, 2) = dir[2];
   Eigen::Vector3d vec2 (rng(), rng(), rng());
@@ -113,9 +115,9 @@ vector<size_t> all_volumes (const size_t num)
 
 
 
-class Accumulator { 
+class Accumulator {
   public:
-    class Shared { 
+    class Shared {
       public:
         Shared (int lmax, const vector<size_t>& volumes, const Eigen::MatrixXd& dirs) :
           lmax (lmax),
@@ -154,14 +156,14 @@ class Accumulator {
       if (mask.value()) {
         ++count;
 
-        // Grab the fibre direction
+        // Grab the fibre orientation
         Eigen::Vector3d fibre_dir;
         for (dir_image.index(3) = 0; dir_image.index(3) != 3; ++dir_image.index(3))
           fibre_dir[dir_image.index(3)] = dir_image.value();
         fibre_dir.normalize();
 
         // Rotate the directions into a new reference frame,
-        //   where the Z axis is defined by the specified direction
+        //   where the Z axis is defined by the specified orientation
         auto R = gen_rotation_matrix (fibre_dir);
         rotated_dirs_cartesian.transpose() = R * S.dirs.transpose();
 
@@ -214,32 +216,44 @@ void run ()
   vector<vector<size_t>> volumes;
   std::unique_ptr<DWI::Shells> shells;
 
+
+  auto process_dw_scheme = [&] (const Eigen::MatrixXd& grad)
+  {
+    shells.reset (new DWI::Shells (grad));
+    shells->select_shells (false, false, false);
+    for (size_t i = 0; i != shells->count(); ++i) {
+      volumes.push_back ((*shells)[i].get_volumes());
+      dirs_azel.push_back (DWI::gen_direction_matrix (grad, volumes.back()));
+    }
+  };
+
+
   auto opt = get_options ("directions");
   if (opt.size()) {
-    dirs_azel.push_back (load_matrix (opt[0][0]));
-    volumes.push_back (all_volumes (dirs_azel.size()));
+    auto data = DWI::Directions::load (std::string (opt[0][0]), false);
+    switch (data.cols()) {
+      case 2:
+      case 3:
+        dirs_azel.push_back (Math::Sphere::to_spherical (data));
+        volumes.push_back (all_volumes (dirs_azel.back().rows()));
+        break;
+      case 4:
+        process_dw_scheme (data);
+        break;
+      default:
+        assert (false);
+    }
   } else {
-    auto hit = header.keyval().find ("directions");
-    if (hit != header.keyval().end()) {
-      vector<default_type> dir_vector;
-      for (auto line : split_lines (hit->second)) {
-        auto v = parse_floats (line);
-        dir_vector.insert (dir_vector.end(), v.begin(), v.end());
-      }
-      Eigen::MatrixXd directions (dir_vector.size() / 2, 2);
-      for (size_t i = 0; i < dir_vector.size(); i += 2) {
-        directions (i/2, 0) = dir_vector[i];
-        directions (i/2, 1) = dir_vector[i+1];
-      }
-      dirs_azel.push_back (std::move (directions));
-      volumes.push_back (all_volumes (dirs_azel.size()));
-    } else {
+    auto directions_it = header.keyval().find ("directions");
+    if (directions_it == header.keyval().end()) {
       auto grad = DWI::get_DW_scheme (header);
-      shells.reset (new DWI::Shells (grad));
-      shells->select_shells (false, false, false);
-      for (size_t i = 0; i != shells->count(); ++i) {
-        volumes.push_back ((*shells)[i].get_volumes());
-        dirs_azel.push_back (DWI::gen_direction_matrix (grad, volumes.back()));
+      process_dw_scheme (grad);
+    } else {
+      try {
+        dirs_azel.push_back (Math::Sphere::to_spherical (deserialize_matrix<> (directions_it->second)));
+        volumes.push_back (all_volumes (dirs_azel.back().rows()));
+      } catch (Exception& e) {
+        throw Exception (e, "Corrupt direction set in header field of input image \"" + header.name() + "\"");
       }
     }
   }

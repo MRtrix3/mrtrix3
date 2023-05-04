@@ -102,7 +102,7 @@ namespace MR
       const auto it = header.keyval().find ("dw_scheme");
       if (it != header.keyval().end()) {
         try {
-          G = parse_matrix (it->second);
+          G = deserialize_matrix (it->second);
         } catch (Exception& e) {
           throw Exception (e, "malformed DW scheme in image \"" + header.name() + "\"");
         }

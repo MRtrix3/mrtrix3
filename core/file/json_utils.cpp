@@ -189,7 +189,7 @@ namespace MR
         bool attempt_matrix (const std::pair<std::string, std::string>& kv, nlohmann::json& json)
         {
           try {
-            auto M_float = parse_matrix<default_type> (kv.second);
+            auto M_float = deserialize_matrix<default_type> (kv.second);
             if (M_float.cols() == 1)
               M_float.transposeInPlace();
             nlohmann::json temp;
@@ -213,7 +213,7 @@ namespace MR
             } else {
               // No non-integer values found;
               // Write the data natively as integers
-              auto M_int = parse_matrix<int> (kv.second);
+              auto M_int = deserialize_matrix<int> (kv.second);
               if (M_int.cols() == 1)
                 M_int.transposeInPlace();
               temp[kv.first] = nlohmann::json({});

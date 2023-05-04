@@ -16,6 +16,8 @@
 
 #include "registration/linear.h"
 
+#include "dwi/directions/directions.h"
+
 namespace MR
 {
   namespace Registration
@@ -348,8 +350,7 @@ namespace MR
     const OptionGroup fod_options =
       OptionGroup ("FOD registration options")
 
-      + Option ("directions", "the directions used for FOD reorientation using apodised point spread functions (Default: 60 directions)")
-      + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in ()
+      + DWI::Directions::directions_option ("FOD reorientation using apodised point spread functions", "built-in 60 directions")
 
       + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
                                    "of volumes in the 4th dimension corresponds to the number of coefficients in an "

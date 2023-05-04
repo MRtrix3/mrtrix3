@@ -23,6 +23,23 @@ namespace MR {
 
 
 
+      Eigen::MatrixXd load (const size_t count)
+      {
+        switch (count) {
+          case 60:  return electrostatic_repulsion_60();
+          case 129: return tesselation_129();
+          case 300: return electrostatic_repulsion_300();
+          case 321: return tesselation_321();
+          case 469: return tesselation_469();
+          case 513: return tesselation_513();
+          case 1281: return tesselation_1281();
+          case 5000: return electrostatic_repulsion_5000();
+          default: throw Exception ("No in-built set of " + str(count) + " directions");
+        }
+      }
+
+
+
       const default_type electrostatic_repulsion_60_data[] = {
         2.101909835, 0.5787523099, 
         1.329393935, 0.9997406558, 

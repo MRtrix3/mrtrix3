@@ -22,6 +22,7 @@
 #include "dwi/gradient.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
+#include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
 #include "math/least_squares.h"
 
@@ -42,10 +43,10 @@ namespace MR
 
     extern const App::OptionGroup CSD_options;
 
-    class CSD { 
+    class CSD {
       public:
 
-        class Shared { 
+        class Shared {
           public:
 
             Shared (const Header& dwi_header) :
@@ -82,7 +83,7 @@ namespace MR
                 init_filter = load_vector (opt[0][0]);
               opt = get_options ("directions");
               if (opt.size())
-                HR_dirs = load_matrix (opt[0][0]);
+                HR_dirs = Math::Sphere::to_spherical (DWI::Directions::load (std::string (opt[0][0]), true));
               opt = get_options ("neg_lambda");
               if (opt.size())
                 neg_lambda = opt[0][0];

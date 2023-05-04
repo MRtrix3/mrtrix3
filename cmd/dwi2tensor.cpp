@@ -21,6 +21,7 @@
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
+#include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
 #include "math/constrained_least_squares.h"
 
@@ -95,11 +96,7 @@ void usage ()
 
     + Option ("constrain", "constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).")
 
-    + Option ("directions",
-              "specify the directions along which to apply the constraints "
-              "(by default, the built-in 300 direction set is used). These should be "
-              "supplied as a text file containing [ az el ] pairs for the directions.")
-      + Argument ("file").type_file_in()
+    + DWI::Directions::directions_option ("application of constraints", "built-in 300-direction set")
 
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
@@ -299,10 +296,10 @@ void run ()
 
   Eigen::MatrixXd Aneq;
   if (constrain) {
-    Eigen::MatrixXd constr_dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
     opt = get_options ("directions");
-    if (opt.size())
-      constr_dirs = load_matrix (opt[0][0]);
+    const Eigen::MatrixXd constr_dirs = opt.size() ?
+                                        DWI::Directions::load (std::string (opt[0][0]), true) :
+                                        Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300());
     Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (constr_dirs, dki);
     if (dki) {
       auto maxb = grad.col(3).maxCoeff();

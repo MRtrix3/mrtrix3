@@ -116,6 +116,97 @@ namespace MR
 
 
 
+      //! ensure that direction matrix is in spherical coordinates
+      template <class MatrixType>
+      inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
+      to_spherical (const MatrixType& data)
+      {
+        switch (data.cols()) {
+          case 2: return data;
+          case 3: return cartesian2spherical (data);
+          default: assert (false); throw Exception ("Unexpected " + str(data.cols()) + "-column matrix passed to Math::Sphere::to_spherical()"); return data;
+        }
+      }
+
+
+
+      //! ensure that direction matrix is in cartesian coordinates
+      template <class MatrixType>
+      inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
+      to_cartesian (const MatrixType& data)
+      {
+        switch (data.cols()) {
+          case 2: return spherical2cartesian (data);
+          case 3: return data;
+          default: assert (false); throw Exception ("Unexpected " + str(data.cols()) + "-column matrix passed to Math::Sphere::to_cartesian()"); return data;
+        }
+      }
+
+
+
+      //! check whether a direction matrix provided in spherical coordinates is valid
+      template <class MatrixType>
+      inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, void>::type
+      check_spherical (const MatrixType& M)
+      {
+        if (M.cols() != 2)
+          throw Exception ("Direction matrix is not stored in spherical coordinates");
+        const Eigen::Array<typename MatrixType::Scalar, 2, 1> min_values = M.colwise().minCoeff();
+        const Eigen::Array<typename MatrixType::Scalar, 2, 1> max_values = M.colwise().maxCoeff();
+        const typename MatrixType::Scalar az_range = max_values[0] - min_values[0];
+        const typename MatrixType::Scalar el_range = max_values[1] - min_values[1];
+        if (az_range < Math::pi || el_range < 0.5 * Math::pi || az_range > 2.0 * Math::pi || el_range > Math::pi) {
+          WARN ("Values in spherical coordinate direction matrix do not conform to expected range "
+                "(azimuth: [" + str(min_values[0]) + " - " + str(max_values[0]) + "]; elevation: [" + str(min_values[1]) + " - " + str(max_values[1]) + "])");
+        }
+      }
+
+
+
+      //! check whether a direction matrix provided in cartesian coordinates is valid
+      template <class MatrixType>
+      inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, void>::type
+      check_cartesian (const MatrixType& M)
+      {
+        if (M.cols() != 3)
+          throw Exception ("Direction matrix is not stored in cartesian coordinates");
+        auto norms = M.rowwise().norm();
+        const typename MatrixType::Scalar min_norm = norms.minCoeff();
+        const typename MatrixType::Scalar max_norm = norms.maxCoeff();
+        if (min_norm > typename MatrixType::Scalar(1) || max_norm < typename MatrixType::Scalar(1) || max_norm - min_norm > 128 * std::numeric_limits<typename MatrixType::Scalar>::epsilon()) {
+          WARN ("Values in cartesian coordinate direction matrix do not conform to expectations "
+                "(norms range from " + str(min_norm) + " to " + str(max_norm) + ")");
+        }
+      }
+
+
+
+      //! check whether a direction matrix is valid
+      template <class MatrixType>
+      inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, void>::type
+      check (const MatrixType& M)
+      {
+        switch (M.cols()) {
+          case 2: check_spherical (M); break;
+          case 3: check_cartesian (M); break;
+          default: throw Exception ("Unsupported number of columns (" + str(M.cols()) + ") in direction matrix");
+        }
+      }
+
+
+
+      //! check whether a direction matrix is valid and has the expected number of directions
+      template <class MatrixType>
+      inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, void>::type
+      check (const MatrixType& M, const size_t count)
+      {
+        if (M.rows() != count)
+          throw Exception ("Number of entries in direction matrix (" + str(M.rows()) + ") does not match required number (" + str(count) + ")");
+        check (M);
+      }
+
+
+
       //! normalise a set of Cartesian coordinates
       template <class MatrixType>
       inline void normalise_cartesian (MatrixType& cartesian)

@@ -93,7 +93,7 @@ namespace MR
 
   //! convenience functions for SFINAE on std:: / Eigen containers
   template <class Cont>
-  class is_eigen_type { 
+  class is_eigen_type {
     typedef char yes[1], no[2];
     template<typename C> static yes& test(typename Cont::Scalar);
     template<typename C> static no&  test(...);
@@ -103,12 +103,12 @@ namespace MR
 
   //! Get the underlying scalar value type for both std:: containers and Eigen
   template <class Cont, typename ReturnType = int>
-  class container_value_type { 
+  class container_value_type {
     public:
      using type = typename Cont::value_type;
   };
   template <class Cont>
-  class container_value_type <Cont, typename std::enable_if<is_eigen_type<Cont>::value, int>::type> { 
+  class container_value_type <Cont, typename std::enable_if<is_eigen_type<Cont>::value, int>::type> {
     public:
       using type = typename Cont::Scalar;
   };
@@ -187,24 +187,6 @@ namespace MR
           M(i,j) = V[i][j];
 
       DEBUG ("found " + str(M.rows()) + "x" + str(M.cols()) + " matrix in file \"" + filename + "\"");
-      return M;
-    }
-
-  //! read matrix data from a text string \a spec
-  template <class ValueType = default_type>
-    Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix (const std::string& spec)
-    {
-      Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M;
-      const auto lines = split_lines (spec);
-      for (size_t row = 0; row < lines.size(); ++row) {
-        const auto values = parse_floats (lines[row]);
-        if (M.cols() == 0)
-          M.resize (lines.size(), values.size());
-        else if (M.cols() != ssize_t (values.size()))
-          throw Exception ("error converting string to matrix - uneven number of entries per row");
-        for (size_t col = 0; col < values.size(); ++col)
-          M(row, col) = values[col];
-      }
       return M;
     }
 
@@ -315,6 +297,34 @@ namespace MR
       if (vec.rows() > 1)
         throw Exception ("file \"" + filename + "\" contains matrix, not vector");
       return vec.row(0);
+    }
+
+  //! read matrix data from a text string \a spec
+  template <class ValueType = default_type>
+    Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> deserialize_matrix (const std::string& spec)
+    {
+      Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M;
+      const auto lines = split_lines (spec);
+      for (size_t row = 0; row < lines.size(); ++row) {
+        const auto values = parse_floats (lines[row]);
+        if (M.cols() == 0)
+          M.resize (lines.size(), values.size());
+        else if (M.cols() != ssize_t (values.size()))
+          throw Exception ("error converting string to matrix - uneven number of entries per row");
+        for (size_t col = 0; col < values.size(); ++col)
+          M(row, col) = values[col];
+      }
+      return M;
+    }
+
+  //! write matrix data \a M to a text string
+  template <class T>
+    std::string serialize_matrix (const Eigen::MatrixBase<T>& M)
+    {
+      Eigen::IOFormat format (Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+      std::stringstream s;
+      s << std::fixed << M.format (format);
+      return s.str();
     }
 
 

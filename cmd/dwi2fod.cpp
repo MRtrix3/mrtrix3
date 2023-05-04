@@ -23,6 +23,7 @@
 #include "dwi/shells.h"
 #include "math/SH.h"
 
+#include "dwi/directions/directions.h"
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
 
@@ -37,11 +38,7 @@ const char* const algorithms[] = { "csd", "msmt_csd", NULL };
 
 OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
 
-    + Option ("directions",
-              "specify the directions over which to apply the non-negativity constraint "
-              "(by default, the built-in 300 direction set is used). These should be "
-              "supplied as a text file containing [ az el ] pairs for the directions.")
-      + Argument ("file").type_file_in()
+    + DWI::Directions::directions_option ("application of the non-negativity constraint", "built-in 300-direction set")
 
     + Option ("lmax",
               "the maximum spherical harmonic order for the output FOD(s)."
@@ -117,7 +114,7 @@ void usage ()
 
 
 
-class CSD_Processor { 
+class CSD_Processor {
   public:
     CSD_Processor (const DWI::SDeconv::CSD::Shared& shared, Image<bool>& mask) :
       sdeconv (shared),
@@ -178,7 +175,7 @@ class CSD_Processor {
 
 
 
-class MSMT_Processor { 
+class MSMT_Processor {
   public:
     MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image,
       vector< Image<float> > odf_images, Image<float> dwi_modelled = Image<float>()) :

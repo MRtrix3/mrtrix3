@@ -29,6 +29,7 @@
 #include "registration/metric/local_cross_correlation.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
+#include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
 #include "math/average_space.h"
 #include "math/SH.h"
@@ -208,7 +209,7 @@ void run () {
   Eigen::MatrixXd directions_cartesian;
   opt = get_options ("directions");
   if (opt.size())
-    directions_cartesian = Math::Sphere::spherical2cartesian (load_matrix (opt[0][0])).transpose();
+    directions_cartesian = Math::Sphere::to_cartesian (DWI::Directions::load (std::string (opt[0][0]), true));
 
   // check header transformations for equality
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();

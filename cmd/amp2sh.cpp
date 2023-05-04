@@ -23,6 +23,8 @@
 #include "dwi/shells.h"
 #include "math/SH.h"
 
+#include "dwi/directions/directions.h"
+
 
 using namespace MR;
 using namespace App;
@@ -38,13 +40,7 @@ void usage ()
   + "The spherical harmonic decomposition is calculated by least-squares linear fitting "
     "to the amplitude data."
 
-  + "The directions can be defined either as a DW gradient scheme (for example to compute "
-    "the SH representation of the DW signal), a set of [az el] pairs as output by the dirgen "
-    "command, or a set of [ x y z ] directions in Cartesian coordinates. The DW "
-    "gradient scheme or direction set can be supplied within the input image "
-    "header or using the -gradient or -directions option. Note that if a "
-    "direction set and DW gradient scheme can be found, the direction set "
-    "will be used by default."
+  + DWI::Directions::directions_description
 
   + Math::SH::encoding_description;
 
@@ -62,11 +58,7 @@ void usage ()
 
   + Option ("normalise", "normalise the DW signal to the b=0 image")
 
-  + Option ("directions", "the directions corresponding to the input amplitude image used to sample AFD. "
-                          "By default this option is not required providing the direction set is supplied "
-                          "in the amplitude image. This should be supplied as a list of directions [az el], "
-                          "as generated using the dirgen command, or as a list of [ x y z ] Cartesian coordinates.")
-  +   Argument ("file").type_file_in()
+  + DWI::Directions::directions_option ("associating input image amplitudes with directions to facilitate SH transformation", "Read from the input image header contents")
 
   + Option ("rician", "correct for Rician noise induced bias, using noise map supplied")
   +   Argument ("noise").type_image_in()
@@ -83,7 +75,7 @@ void usage ()
 
 using value_type = float;
 
-class Amp2SHCommon { 
+class Amp2SHCommon {
   public:
     template <class MatrixType>
       Amp2SHCommon (const MatrixType& sh2amp,
@@ -106,7 +98,7 @@ class Amp2SHCommon {
 
 
 
-class Amp2SH { 
+class Amp2SH {
   public:
     Amp2SH (const Amp2SHCommon& common) :
       C (common),
@@ -206,29 +198,24 @@ void run ()
 
   vector<size_t> bzeros, dwis;
   Eigen::MatrixXd dirs;
+
   auto opt = get_options ("directions");
   if (opt.size()) {
-    dirs = load_matrix (opt[0][0]);
-    if (dirs.cols() == 3)
-      dirs = Math::Sphere::cartesian2spherical (dirs);
-  }
-  else {
-    auto hit = header.keyval().find ("directions");
-    if (hit != header.keyval().end()) {
-      vector<default_type> dir_vector;
-      for (auto line : split_lines (hit->second)) {
-        auto v = parse_floats (line);
-        dir_vector.insert (dir_vector.end(), v.begin(), v.end());
-      }
-      dirs.resize(dir_vector.size() / 2, 2);
-      for (size_t i = 0; i < dir_vector.size(); i += 2) {
-        dirs(i/2, 0) = dir_vector[i];
-        dirs(i/2, 1) = dir_vector[i+1];
-      }
-      header.keyval()["basis_directions"] = hit->second;
-      header.keyval().erase (hit);
-    }
-    else {
+    if (get_options ("grad").size() || get_options ("fslgrad").size())
+      throw Exception ("Cannot use -directions in conjunction with -grad or -fslgrad; only one source of a direction set can be provided");
+    dirs = DWI::Directions::load (std::string (opt[0][0]), true);
+    if (dirs.cols() == 4)
+      throw Exception ("If importing a gradient table from an external file, use -grad command-line option rather than -directions");
+    if (dirs.rows() != header.size (3))
+      throw Exception ("Number of directions as imported via -directions option (" + str(dirs.rows()) + ") does not match number of input image volumes (" + str(header.size(3)) + ")");
+    dirs = Math::Sphere::to_spherical (dirs);
+    dwis.reserve (dirs.rows());
+    for (size_t i = 0; i != dirs.rows(); ++i)
+      dwis.push_back (i);
+  } else {
+    // Try loading the full gradient table first;
+    //   only revert to checking for "directions" within the input image header if we can't do so
+    try {
       auto grad = DWI::get_DW_scheme (amp);
       DWI::Shells shells (grad);
       shells.select_shells (true, false, false);
@@ -237,8 +224,21 @@ void run ()
       dwis = shells.largest().get_volumes();
       dirs = DWI::gen_direction_matrix (grad, dwis);
       DWI::stash_DW_scheme (header, grad);
+    } catch (Exception&) {
+      try {
+        auto directions_it = header.keyval().find ("directions");
+        if (directions_it != header.keyval().end()) {
+          dirs = deserialize_matrix (directions_it->second);
+          Math::Sphere::check (dirs, header.size (3));
+          header.keyval()["prior_directions"] = directions_it->second;
+          header.keyval().erase (directions_it);
+        }
+      } catch (Exception&) {
+        throw Exception ("Unable to locate any basis direction set with which to convert input amplitudes to SH");
+      }
     }
   }
+
   PhaseEncoding::clear_scheme (header);
 
   auto sh2amp = DWI::compute_SH2amp_mapping (dirs, true, 8);

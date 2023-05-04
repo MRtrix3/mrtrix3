@@ -22,6 +22,7 @@
 
 #include "progressbar.h"
 #include "types.h"
+#include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
 
 
@@ -29,9 +30,6 @@ namespace MR {
   namespace DWI {
     namespace Directions {
 
-
-
-      using index_type = unsigned int;
 
 
       class Set {
@@ -56,9 +54,7 @@ namespace MR {
               dir_mask_excess_bits (0),
               dir_mask_excess_bits_mask (0)
           {
-            Eigen::MatrixXd az_el_pairs;
-            load_predefined (az_el_pairs, d);
-            initialise (az_el_pairs);
+            initialise (Directions::load (d));
           }
 
           Set (const Set& that) = default;
@@ -116,7 +112,6 @@ namespace MR {
 
           Set ();
 
-          void load_predefined (Eigen::MatrixXd& az_el_pairs, const size_t);
           template <class MatrixType>
           void initialise (const Eigen::Matrix<MatrixType, Eigen::Dynamic, Eigen::Dynamic>&);
           void initialise_adjacency();

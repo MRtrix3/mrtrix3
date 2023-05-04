@@ -29,8 +29,6 @@ namespace MR {
 
 
 
-
-
       index_type Set::get_min_linkage (const index_type one, const index_type two) const
       {
         assert (one < size());
@@ -63,23 +61,6 @@ namespace MR {
 
 
 
-      void Set::load_predefined (Eigen::MatrixXd& az_el_pairs, const size_t i)
-      {
-        switch (i) {
-          case 60:   az_el_pairs = electrostatic_repulsion_60 (); return;
-          case 129:  az_el_pairs = tesselation_129 (); return;
-          case 300:  az_el_pairs = electrostatic_repulsion_300 (); return;
-          case 321:  az_el_pairs = tesselation_321 (); return;
-          case 469:  az_el_pairs = tesselation_469 (); return;
-          case 513:  az_el_pairs = tesselation_513 (); return;
-          case 1281: az_el_pairs = tesselation_1281 (); return;
-          case 5000: az_el_pairs = electrostatic_repulsion_5000 (); return;
-          default: throw Exception ("No pre-defined data set of " + str (i) + " directions");
-        }
-      }
-
-
-
       void Set::initialise_adjacency()
       {
         adj_dirs.assign (size(), vector<index_type>());
@@ -98,7 +79,7 @@ namespace MR {
         //   * Generate new triangles using this point, and the outer border of the planes
         //   * Append these to the list of planes to process
 
-        class Vertex { 
+        class Vertex {
           public:
             Vertex (const Set& set, const index_type index, const bool inverse) :
                 dir (set[index] * (inverse ? -1.0 : 1.0)),
@@ -107,7 +88,7 @@ namespace MR {
             const index_type index; // Indexes the underlying direction set
         };
 
-        class Plane { 
+        class Plane {
           public:
             Plane (const vector<Vertex>& vertices, const index_type one, const index_type two, const index_type three) :
                 indices {{ one, two, three }},
@@ -119,7 +100,7 @@ namespace MR {
             const default_type dist;
         };
 
-        class PlaneComp { 
+        class PlaneComp {
           public:
             bool operator() (const Plane& one, const Plane& two) const {
               return (one.dist < two.dist);
