@@ -17,87 +17,127 @@
 
 # pylint: disable=redefined-outer-name,invalid-name,broad-except
 
-import os, codecs, re, glob
+import os, codecs, re, glob, sys
 
-include_folders = [ 'cmd', 'src' ]
-#include_folders += [ 'core' ]
+include_folders = [ 'core', 'src', 'cmd' ]
 
 
-re_project_include = re.compile ('^ *\#include *\"([a-zA-Z/.]+)\"')
-re_system_include = re.compile ('^ *\#include *<([a-zA-Z/.]+)>')
+re_local_include = re.compile ('^ *\# *include *\"([a-zA-Z0-9/.]+)\"')
+re_system_include = re.compile ('^ *\# *include *<([a-zA-Z0-9/.]+)>')
 
-headers = dict()
+full_header_list = dict()
 
 
 class HeaderList():
   def __init__(self):
     self.system = set()
-    self.project = set()
-    self.cpp_deps = set()
+    self.local = set()
 
 
 
-def find_cpp (filename):
-  cpp = (filename.rstrip('.h') + '.cpp')
-  if cpp in headers:
-    return None
-
+def find_file (filename):
   for folder in include_folders:
-    candidate = os.path.join (folder, cpp)
+    candidate = os.path.join (folder, filename)
     if os.path.isfile (candidate):
       return candidate
 
+  print ('no file found for "' + filename + '"')
   return None
 
 
 
-def list_headers (filename):
-  global headers
+def update_header_list (filename):
+  global full_header_list
 
-  if filename in headers.keys():
+  if filename in full_header_list.keys():
     return
 
-  headers[filename] = HeaderList()
+  if '-debug' in sys.argv:
+    print ('listing headers for ' + filename)
+
+  full_header_list[filename] = HeaderList()
   with codecs.open (filename, mode='r', encoding='utf-8') as f:
     for line in f:
-      m = re_project_include.match (line)
+      m = re_local_include.match (line)
       if m:
-        header = m.groups()[0]
-        headers[filename].project.add (header)
-
-        cpp = find_cpp (header)
-        if cpp and cpp != filename:
-          headers[filename].cpp_deps.add (cpp)
-          list_headers (cpp)
+        header = find_file (m.groups()[0])
+        if not header:
+          raise OSError ('ERROR: header "' + m.groups()[0] + '" not found (from file "' + filename + '", with line "' + line.strip() + '")')
+        else:
+          full_header_list[filename].local.add (header)
+          update_header_list (header)
 
       else:
         m = re_system_include.match (line)
         if m:
-          headers[filename].system.add (m.groups()[0])
+          full_header_list[filename].system.add (m.groups()[0])
 
 
-def get_deps (deps, filename):
-  deps.add (filename)
-  for cpp in headers[filename].cpp_deps:
-    get_deps (deps, cpp)
+
+
+def list_all_local_headers_for (filename, headers):
+  for header in full_header_list[filename].local:
+    if header not in headers:
+      headers.add (header)
+      list_all_local_headers_for (header, headers)
+
+
+
+
+def get_link_deps (filename, cpp_deps, system_headers):
+  if filename in cpp_deps:
+    if '-debug' in sys.argv: print ('"' + filename + '": already processed')
+    return
+
+  cpp_deps.add (filename)
+  update_header_list (filename)
+
+  headers = set()
+  list_all_local_headers_for (filename, headers)
+
+  system_headers.update (full_header_list[filename].system)
+
+  if '-debug' in sys.argv: print ('"' + filename + '": local headers: ' + ' '.join (headers))
+
+  for header in headers:
+    system_headers.update (full_header_list[header].system)
+    cpp = header[:-1] + 'cpp'
+    if os.path.isfile (cpp):
+      if '-debug' in sys.argv: print ('"' + filename + '": relies on "' + cpp + '" - adding recursively')
+      get_link_deps (cpp, cpp_deps, system_headers)
+    else:
+      if '-debug' in sys.argv: print ('"' + filename + '": no file "' + cpp + '" - ignoring')
 
 
 
 
 
 if __name__ == "__main__":
-  cmds = glob.glob (os.path.join ('cmd', '*.cpp'))
+
+  cmds = [ arg for arg in sys.argv[1:] if not arg.startswith ('-') ]
+  if not len (cmds):
+    cmds = glob.glob (os.path.join ('cmd', '*.cpp'))
+
   for cmd in cmds:
-    list_headers (cmd)
-    deps = set()
-    get_deps (deps, cmd)
-    print (cmd + ': ' + ' '.join (deps))
+    cpp_deps, sys_headers = set(), set()
+    get_link_deps (cmd, cpp_deps, sys_headers)
+    core_cpp, other_cpp = [], []
+    for cpp in cpp_deps:
+      (core_cpp if cpp.startswith ('core/') else other_cpp).append (cpp)
+    if '-verbose' in sys.argv:
+      print (cmd + ':\n  core cpp deps: ' + ' '.join (core_cpp) + '\n  non-core cpp deps: ' + ' '.join (other_cpp) + '\n  system headers: ' + ' '.join (sys_headers))
+
+    print ('add_executable (' + os.path.basename (cmd[:-4]) + ' ' + ' '.join (other_cpp) + ')')
+    libs = []
+    if 'fftw3.h' in sys_headers:
+      libs.append ('FFTW3')
+    print ('target_link_libraries(' + os.path.basename (cmd[:-4]) + ' PRIVATE mrtrix::core ' + ' '.join (libs) + ')')
+    print ()
 
 
-  if False:
-    for (f, h) in headers.items():
+
+  if '-showdeps' in sys.argv:
+    for (f, h) in full_header_list.items():
       print (f)
-      print ('  project: ' + ' '.join (h.project))
+      print ('  local: ' + ' '.join (h.local))
       if len(h.system): print ('  system:  ' + ' '.join (h.system))
-      if len(h.cpp_deps): print ('  CPP deps: ' + ' '.join (h.cpp_deps))
-
