@@ -142,7 +142,7 @@ jobs:
       # CFLAGS: -Werror
       CHERE_INVOKING: enabled_from_arguments
       MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
-      SCCACHE_DIR: ~/.ccache/sccache
+      SCCACHE_DIR: ~/.cache/sccache
       CXX_COMPILER_LAUNCHER: sccache
 
     steps:
