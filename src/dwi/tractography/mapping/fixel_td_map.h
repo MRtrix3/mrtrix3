@@ -19,7 +19,7 @@
 
 
 #include "dwi/fixel_map.h"
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
 #include "dwi/tractography/mapping/voxel.h"
 
 namespace MR
@@ -37,13 +37,13 @@ namespace MR
 
       template <class Fixel>
       class Fixel_TD_map : public Fixel_map<Fixel>
-      { 
+      {
 
           using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
           using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
 
         public:
-          Fixel_TD_map (const Header& H, const DWI::Directions::FastLookupSet& directions) :
+          Fixel_TD_map (const Header& H, const DWI::Directions::CartesianWithAdjacency& directions) :
               Fixel_map<Fixel> (H),
               dirs (directions) { }
           Fixel_TD_map (const Fixel_TD_map&) = delete;
@@ -56,7 +56,7 @@ namespace MR
           using Fixel_map<Fixel>::accessor;
           using Fixel_map<Fixel>::fixels;
 
-          const DWI::Directions::FastLookupSet& dirs;
+          const DWI::Directions::CartesianWithAdjacency& dirs;
 
           size_t dixel2fixel (const Dixel&) const;
 

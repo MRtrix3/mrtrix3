@@ -598,7 +598,7 @@ namespace MR
         GL_CHECK_ERROR;
       }
 
-      void Renderer::Dixel::update_mesh (const MR::DWI::Directions::Set& dirs)
+      void Renderer::Dixel::update_mesh (const MR::DWI::Directions::CartesianWithAdjacency& dirs)
       {
         INFO ("updating ODF dixel renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
@@ -606,20 +606,20 @@ namespace MR
         QApplication::restoreOverrideCursor();
       }
 
-      void Renderer::Dixel::update_dixels (const MR::DWI::Directions::Set& dirs)
+      void Renderer::Dixel::update_dixels (const MR::DWI::Directions::CartesianWithAdjacency& dirs)
       {
         vector<Eigen::Vector3f> directions_data;
         vector<std::array<GLint,3>> indices_data;
 
         for (size_t i = 0; i != dirs.size(); ++i) {
           directions_data.push_back (dirs[i].cast<float>());
-          for (auto j : dirs.get_adj_dirs(i)) {
+          for (auto j : dirs.adjacency[i]) {
             if (j > i) {
-              for (auto k : dirs.get_adj_dirs(j)) {
+              for (auto k : dirs.adjacency[j]) {
                 if (k > j) {
 
                   // k's adjacent direction list MUST contain i!
-                  for (auto I : dirs.get_adj_dirs (k)) {
+                  for (auto I : dirs.adjacency[k]) {
                     if (I == i) {
 
                       // Invert a direction if required

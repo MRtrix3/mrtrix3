@@ -19,7 +19,6 @@
 #include "dwi/shells.h"
 
 #include "gui/lighting_dock.h"
-#include "dwi/directions/set.h"
 #include "gui/dialog/file.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"

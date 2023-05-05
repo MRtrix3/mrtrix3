@@ -20,7 +20,8 @@
 
 #include "math/SH.h"
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
+#include "dwi/directions/predefined.h"
 
 #include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/sift.h"
@@ -85,7 +86,7 @@ void run ()
 
   auto in_dwi = Image<float>::open (argument[1]);
   Math::SH::check (in_dwi);
-  DWI::Directions::FastLookupSet dirs (1281);
+  DWI::Directions::FastLookupSet dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
 
   SIFTer sifter (in_dwi, dirs);
 

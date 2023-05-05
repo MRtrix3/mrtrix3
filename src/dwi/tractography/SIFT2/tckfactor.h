@@ -25,7 +25,7 @@
 #include "image.h"
 #include "types.h"
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
 
 #include "dwi/tractography/SIFT/model.h"
 #include "dwi/tractography/SIFT/output.h"
@@ -57,7 +57,7 @@ namespace MR {
 
 
       class TckFactor : public SIFT::Model<Fixel>
-      { 
+      {
 
         public:
 

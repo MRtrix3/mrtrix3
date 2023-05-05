@@ -23,7 +23,7 @@
 #include "transform.h"
 #include "types.h"
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
 
 #include "dwi/tractography/resampling/upsampler.h"
 #include "dwi/tractography/streamline.h"
@@ -53,7 +53,7 @@ namespace MR {
 
 
         class TrackMapperBase
-        { 
+        {
 
           public:
             template <class HeaderType>
@@ -356,7 +356,7 @@ namespace MR {
 
 
         class TrackMapperTWI : public TrackMapperBase
-        { 
+        {
           public:
             template <class HeaderType>
             TrackMapperTWI (const HeaderType& template_image, const contrast_t c, const tck_stat_t s) :

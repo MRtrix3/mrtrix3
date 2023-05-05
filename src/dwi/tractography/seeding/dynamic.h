@@ -24,7 +24,7 @@
 #include "transform.h"
 #include "thread_queue.h"
 #include "dwi/fmls.h"
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
 #include "dwi/tractography/ACT/tissues.h"
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/mapping/voxel.h"
@@ -72,7 +72,7 @@ namespace MR
 
 
       class Fixel_TD_seed : public SIFT::FixelBase
-      { 
+      {
 
         public:
           Fixel_TD_seed (const FMLS::FOD_lobe& lobe) :
@@ -95,7 +95,7 @@ namespace MR
             old_prob (that.old_prob),
             applied_prob (that.applied_prob),
             track_count_at_last_update (that.track_count_at_last_update),
-            seed_count (that.seed_count) { 
+            seed_count (that.seed_count) {
               updating.clear();
             }
 
@@ -107,7 +107,7 @@ namespace MR
             old_prob (DYNAMIC_SEED_INITIAL_PROB),
             applied_prob (old_prob),
             track_count_at_last_update (0),
-            seed_count (0) { 
+            seed_count (0) {
               updating.clear();
             }
 
@@ -184,7 +184,7 @@ namespace MR
 
 
       class Dynamic_ACT_additions
-      { 
+      {
 
         public:
           Dynamic_ACT_additions (const std::string& path) :
@@ -205,7 +205,7 @@ namespace MR
 
 
       class Dynamic : public Base, public SIFT::ModelBase<Fixel_TD_seed>
-        { 
+        {
           private:
 
             using Fixel = Fixel_TD_seed;
@@ -215,7 +215,7 @@ namespace MR
 
 
         public:
-        Dynamic (const std::string&, Image<float>&, const size_t, const DWI::Directions::FastLookupSet&);
+        Dynamic (const std::string&, Image<float>&, const size_t, const DWI::Directions::CartesianWithAdjacency&);
         ~Dynamic();
 
         Dynamic (const Dynamic&) = delete;
@@ -283,7 +283,7 @@ namespace MR
 
 
       class WriteKernelDynamic : public Tracking::WriteKernel
-        { 
+        {
           public:
             WriteKernelDynamic (const Tracking::SharedBase& shared, const std::string& output_file, const Properties& properties) :
               Tracking::WriteKernel (shared, output_file, properties) { }

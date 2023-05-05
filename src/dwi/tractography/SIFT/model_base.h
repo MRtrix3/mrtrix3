@@ -29,7 +29,7 @@
 #include "dwi/fixel_map.h"
 #include "dwi/fmls.h"
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
 
 #include "dwi/tractography/file.h"
 

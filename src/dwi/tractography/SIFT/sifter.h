@@ -25,7 +25,7 @@
 #include "math/rng.h"
 
 #include "dwi/fixel_map.h"
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
 #include "dwi/tractography/SIFT/fixel.h"
 #include "dwi/tractography/SIFT/gradient_sort.h"
 #include "dwi/tractography/SIFT/model.h"
@@ -46,7 +46,7 @@ namespace MR
 
 
       class SIFTer : public Model<Fixel>
-      { 
+      {
 
         protected:
         using MapType = Model<Fixel>;
@@ -113,7 +113,7 @@ namespace MR
 
         // For calculating the streamline removal gradients in a multi-threaded fashion
         class TrackGradientCalculator
-        { 
+        {
           public:
             TrackGradientCalculator (const SIFTer& sifter, vector<Cost_fn_gradient_sort>& v, const double mu, const double r) :
                 master (sifter), gradient_vector (v), current_mu (mu), current_roc_cost (r) { }

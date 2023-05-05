@@ -298,8 +298,8 @@ void run () {
   vector<default_type> voxel_size = get_option_value ("vox", vector<default_type>());
 
   if (voxel_size.size() == 1) {
-    auto v = voxel_size.front();                                                                                          
-    voxel_size.assign (3, v);                                                                                             
+    auto v = voxel_size.front();
+    voxel_size.assign (3, v);
   } else if (!voxel_size.empty() && voxel_size.size() != 3)
     throw Exception ("voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
@@ -380,20 +380,16 @@ void run () {
     if (writer_type != GREYSCALE)
       throw Exception ("Options for setting output image dimensionality are mutually exclusive");
     writer_type = DIXEL;
-    if (Path::exists (opt[0][0]))
-      dirs.reset (new Directions::FastLookupSet (str(opt[0][0])));
-    else
-      dirs.reset (new Directions::FastLookupSet (to<size_t>(opt[0][0])));
+    dirs.reset (new Directions::FastLookupSet (Directions::load (std::string (opt[0][0]), true)));
     header.ndim() = 4;
     header.size(3) = dirs->size();
     header.sanitise();
     Stride::set (header, Stride::contiguous_along_axis (3, header));
     // Write directions to image header as diffusion encoding
+    // TODO Change this to write to "directions"
     Eigen::MatrixXd grad (dirs->size(), 4);
     for (size_t row = 0; row != dirs->size(); ++row) {
-      grad (row, 0) = ((*dirs)[row])[0];
-      grad (row, 1) = ((*dirs)[row])[1];
-      grad (row, 2) = ((*dirs)[row])[2];
+      grad.row (row).head<3>() = (*dirs)[row];
       grad (row, 3) = 1.0f;
     }
     set_DW_scheme (header, grad);

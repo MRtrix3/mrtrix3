@@ -28,12 +28,10 @@
 #include "thread_queue.h"
 
 #include "dwi/fmls.h"
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
+#include "dwi/directions/predefined.h"
 
 #include "file/path.h"
-
-
-#define DEFAULT_DIRECTION_SET 1281
 
 
 const char* fixel_direction_choices[] { "mean", "peak", "lsq", nullptr };
@@ -148,7 +146,7 @@ class Segmented_FOD_receiver {
 
   public:
     Segmented_FOD_receiver (const Header& header,
-                            const DWI::Directions::FastLookupSet& dirs,
+                            const DWI::Directions::CartesianWithAdjacency& dirs,
                             const std::string& directory,
                             const fixel_dir_t fixel_directions,
                             bool save_as_nifti = false,
@@ -203,7 +201,7 @@ class Segmented_FOD_receiver {
     };
 
     Header H;
-    const DWI::Directions::FastLookupSet& dirs;
+    const DWI::Directions::CartesianWithAdjacency& dirs;
     std::string fixel_directory_path, index_path, dir_path, lookup_path;
     std::string afd_path, peak_amp_path, disp_path;
     fixel_dir_t fixel_directions;
@@ -276,13 +274,10 @@ void Segmented_FOD_receiver::commit ()
     lookup_header.stride(0) = 0;
     // TODO Option to write directions as spherical vs cartesian
     // Could this be a config file option?
-    Eigen::Matrix<float, Eigen::Dynamic, 3> directions_matrix = Eigen::Matrix<float, Eigen::Dynamic, 3>::Zero (dirs.size(), 3);
-    for (size_t i = 0; i != dirs.size(); ++i)
-      directions_matrix.row(i) = dirs[i].cast<float>();
     if (save_as_nifti)
-      MR::save_matrix (directions_matrix, Path::join (fixel_directory_path, Fixel::basename_lookup + ".csv"));
+      MR::save_matrix (dirs.cast<float>(), Path::join (fixel_directory_path, Fixel::basename_lookup + ".csv"));
     else
-      lookup_header.keyval()["directions"] = serialize_matrix (directions_matrix);
+      lookup_header.keyval()["directions"] = serialize_matrix (dirs.cast<float>());
     lookup_image = LookupImage::create (Path::join (fixel_directory_path, Fixel::basename_lookup + base_extension), lookup_header);
   }
 
@@ -366,7 +361,7 @@ void run ()
   const std::string fixel_directory_path = argument[1];
   Fixel::check_fixel_directory (fixel_directory_path, true, true);
 
-  const DWI::Directions::FastLookupSet dirs (DEFAULT_DIRECTION_SET);
+  const DWI::Directions::FastLookupSet dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
 
   auto opt = get_options ("fixel_dirs");
   fixel_dir_t fixel_directions = fixel_dir_t::MEAN;

@@ -19,7 +19,7 @@
 
 #include "memory.h"
 #include "types.h"
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dwi/renderer.h"
 #include "gui/projection.h"
@@ -37,7 +37,7 @@ namespace MR
     {
 
       class RenderFrame : public GL::Area
-      { 
+      {
           Q_OBJECT
 
           using mode_t = Renderer::mode_t;
@@ -101,11 +101,11 @@ namespace MR
             lod_computed = lod;
             update();
           }
-          void set_dixels (const MR::DWI::Directions::Set& directions) {
+          void set_dixels (const MR::DWI::Directions::CartesianWithAdjacency& directions) {
             assert (mode == mode_t::DIXEL);
             if (dirs)
               delete dirs.release();
-            dirs.reset (new MR::DWI::Directions::Set (directions));
+            dirs.reset (new MR::DWI::Directions::CartesianWithAdjacency (directions));
             recompute_mesh = recompute_amplitudes = true;
             update();
           }
@@ -138,7 +138,7 @@ namespace MR
           int lmax_computed, lod_computed;
           mode_t mode;
           bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_values, color_by_dir, use_lighting, normalise;
-          std::unique_ptr<MR::DWI::Directions::Set> dirs;
+          std::unique_ptr<MR::DWI::Directions::CartesianWithAdjacency> dirs;
 
           QPointF last_pos;
           GL::Font glfont;

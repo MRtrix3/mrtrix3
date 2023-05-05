@@ -21,7 +21,8 @@
 
 #include "file/path.h"
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
+#include "dwi/directions/predefined.h"
 
 #include "dwi/tractography/mapping/fixel_td_map.h"
 
@@ -160,7 +161,7 @@ void run ()
 
   auto in_dwi = Image<float>::open (argument[1]);
 
-  DWI::Directions::FastLookupSet dirs (1281);
+  DWI::Directions::FastLookupSet dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
 
   TckFactor tckfactor (in_dwi, dirs);
 

@@ -17,13 +17,9 @@
 #ifndef __dwi_directions_set_h__
 #define __dwi_directions_set_h__
 
-
-#include <cstdint>
-
-#include "progressbar.h"
 #include "types.h"
-#include "dwi/directions/directions.h"
-#include "dwi/directions/predefined.h"
+
+#include "dwi/directions/adjacency.h"
 
 
 namespace MR {
@@ -32,132 +28,18 @@ namespace MR {
 
 
 
-      class Set {
+      class FastLookupSet : public CartesianWithAdjacency {
 
         public:
-
-          explicit Set (const std::string& path)
-          {
-            auto matrix = load_matrix (path);
-
-            if (matrix.cols() != 2 && matrix.cols() != 3)
-              throw Exception ("Text file \"" + path + "\"does not contain directions as either azimuth-elevation pairs or XYZ triplets");
-
-            initialise (matrix);
-          }
-
-          explicit Set (const size_t d)
-          {
-            initialise (Directions::load (d));
-          }
-
-          Set (const Set& that) = default;
-
-          Set (Set&& that) :
-              unit_vectors (std::move (that.unit_vectors)),
-              adj_dirs (std::move (that.adj_dirs)) { }
-
-          // TODO Want to generalise this template, but it was causing weird compilation issues
           template <class MatrixType>
-          explicit Set (const Eigen::Matrix<MatrixType, Eigen::Dynamic, Eigen::Dynamic>& m)
-          {
-            initialise (m);
-          }
-
-          size_t size () const { return unit_vectors.size(); }
-          const Eigen::Vector3d& get_dir (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
-          const vector<index_type>& get_adj_dirs (const size_t i) const { assert (i < size()); return adj_dirs[i]; }
-          bool dirs_are_adjacent (const index_type one, const index_type two) const {
-            assert (one < size());
-            assert (two < size());
-            for (const auto& i : adj_dirs[one]) {
-              if (i == two)
-                return true;
-            }
-            return false;
-          }
-
-          index_type get_min_linkage (const index_type one, const index_type two) const;
-
-          const vector<Eigen::Vector3d>& get_dirs() const { return unit_vectors; }
-          const Eigen::Vector3d& operator[] (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
-
-
-        protected:
-
-          vector<Eigen::Vector3d> unit_vectors;
-          vector< vector<index_type> > adj_dirs; // Note: not self-inclusive
-
-
-        private:
-
-          //friend class Mask;
-
-          Set ();
-
-          template <class MatrixType>
-          void initialise (const Eigen::Matrix<MatrixType, Eigen::Dynamic, Eigen::Dynamic>&);
-          void initialise_adjacency();
-
-      };
-
-
-
-      template <class MatrixType>
-      void Set::initialise (const Eigen::Matrix<MatrixType, Eigen::Dynamic, Eigen::Dynamic>& in)
-      {
-        unit_vectors.resize (in.rows());
-        if (in.cols() == 2) {
-          for (size_t i = 0; i != size(); ++i) {
-            const default_type azimuth   = in(i, 0);
-            const default_type elevation = in(i, 1);
-            const default_type sin_elevation = std::sin (elevation);
-            unit_vectors[i] = { std::cos (azimuth) * sin_elevation, std::sin (azimuth) * sin_elevation, std::cos (elevation) };
-          }
-        } else if (in.cols() == 3) {
-          for (size_t i = 0; i != size(); ++i)
-            unit_vectors[i] = { default_type(in(i,0)), default_type(in(i,1)), default_type(in(i,2)) };
-        } else {
-          assert (0);
-        }
-        initialise_adjacency();
-      }
-
-
-
-
-
-
-      class FastLookupSet : public Set {
-
-        public:
-
-          FastLookupSet (const std::string& path) :
-              Set (path)
+          FastLookupSet (const Eigen::MatrixBase<MatrixType>& dirs) :
+              CartesianWithAdjacency (dirs)
           {
             initialise();
           }
 
-          FastLookupSet (const size_t d) :
-              Set (d)
-          {
-            initialise();
-          }
-
-          FastLookupSet (FastLookupSet&& that) :
-              Set (std::move (that)),
-              grid_lookup (std::move (that.grid_lookup)),
-              num_az_grids (that.num_az_grids),
-              num_el_grids (that.num_el_grids),
-              total_num_angle_grids (that.total_num_angle_grids),
-              az_grid_step (that.az_grid_step),
-              el_grid_step (that.el_grid_step),
-              az_begin (that.az_begin),
-              el_begin (that.el_begin) { }
-
+          // TODO Change to operator overload
           index_type select_direction (const Eigen::Vector3d&) const;
-
-
 
         private:
 
@@ -165,8 +47,6 @@ namespace MR {
           unsigned int num_az_grids, num_el_grids, total_num_angle_grids;
           default_type az_grid_step, el_grid_step;
           default_type az_begin, el_begin;
-
-          FastLookupSet ();
 
           index_type select_direction_slow (const Eigen::Vector3d&) const;
 

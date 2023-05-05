@@ -21,7 +21,7 @@
 #include <Eigen/Eigenvalues>
 
 #include "gui/gui.h"
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
 #include "gui/shapes/halfsphere.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
@@ -44,7 +44,7 @@ namespace MR
     {
 
       class Renderer
-      { 
+      {
 
           using matrix_t = Eigen::MatrixXf;
           using vector_t = Eigen::VectorXf;
@@ -100,7 +100,7 @@ namespace MR
           float object_color[3];
           mutable GLuint reverse_ID, origin_ID;
 
-          class Shader : public GL::Shader::Program { 
+          class Shader : public GL::Shader::Program {
             public:
               Shader () : mode_ (mode_t::SH), use_lighting_ (true), colour_by_direction_ (true), hide_neg_values_ (true), orthographic_ (false) { }
               void start (mode_t mode, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic, bool colour_relative_to_projection);
@@ -120,7 +120,7 @@ namespace MR
 
         private:
           class ModeBase
-          { 
+          {
             public:
               ModeBase (Renderer& parent) : parent (parent) { }
               virtual ~ModeBase() { }
@@ -136,7 +136,7 @@ namespace MR
 
         public:
           class SH : public ModeBase
-          { 
+          {
             public:
               SH (Renderer& parent) : ModeBase (parent), LOD (0) { }
               ~SH();
@@ -175,7 +175,7 @@ namespace MR
 
 
           class Tensor : public ModeBase
-          { 
+          {
             public:
               Tensor (Renderer& parent) : ModeBase (parent), LOD (0) { }
               ~Tensor();
@@ -200,7 +200,7 @@ namespace MR
 
 
           class Dixel : public ModeBase
-          { 
+          {
 
               using dir_t = MR::DWI::Directions::index_type;
 
@@ -216,7 +216,7 @@ namespace MR
               void set_data (const vector_t&, int buffer_ID = 0) const override;
               GLuint num_indices() const override { return index_count; }
 
-              void update_mesh (const MR::DWI::Directions::Set&);
+              void update_mesh (const MR::DWI::Directions::CartesianWithAdjacency&);
 
             private:
               GL::VertexBuffer vertex_buffer, value_buffer;
@@ -224,7 +224,7 @@ namespace MR
               GL::VertexArrayObject VAO;
               GLuint vertex_count, index_count;
 
-              void update_dixels (const MR::DWI::Directions::Set&);
+              void update_dixels (const MR::DWI::Directions::CartesianWithAdjacency&);
 
           } dixel;
 

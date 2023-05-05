@@ -22,7 +22,7 @@
 
 #include "misc/bitset.h"
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
 
 
 
@@ -32,10 +32,11 @@ namespace MR {
 
 
 
-      class Mask : public BitSet { 
+      // TODO This class might go entirely; replace with vector<bool> and move erosion / dilation elsewhere
+      class Mask : public BitSet {
 
         public:
-          Mask (const Set& master, const bool allocator = false) :
+          Mask (const CartesianWithAdjacency& master, const bool allocator = false) :
               BitSet (master.size(), allocator),
               dirs (&master) { }
 
@@ -43,7 +44,7 @@ namespace MR {
               BitSet (that),
               dirs (that.dirs) { }
 
-          const Set& get_dirs() const { return *dirs; }
+          const CartesianWithAdjacency& get_dirs() const { return *dirs; }
 
           void erode  (const size_t iterations = 1);
           void dilate (const size_t iterations = 1);
@@ -52,7 +53,7 @@ namespace MR {
           size_t get_min_linkage (const Mask&);
 
         private:
-          const Set* dirs;
+          const CartesianWithAdjacency* dirs;
 
       };
 

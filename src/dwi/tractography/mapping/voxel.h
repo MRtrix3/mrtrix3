@@ -23,7 +23,7 @@
 
 #include "image.h"
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/directions.h"
 
 
 namespace MR {
@@ -36,7 +36,7 @@ namespace MR {
         // Helper functions; note that int[3] rather than Voxel is always used during the mapping itself
         template <typename T>
         inline Eigen::Vector3i round (const Eigen::Matrix<T, 3, 1>& p)
-        { 
+        {
           assert (p.allFinite());
           return { int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])) };
         }
@@ -56,7 +56,7 @@ namespace MR {
 
 
         class Voxel : public Eigen::Vector3i
-        { 
+        {
           public:
             Voxel (const int x, const int y, const int z) : Eigen::Vector3i (x,y,z), length (1.0f) { }
             Voxel (const Eigen::Vector3i& that) : Eigen::Vector3i (that), length (1.0f) { }
@@ -73,8 +73,8 @@ namespace MR {
 
 
 
-        class VoxelDEC : public Voxel 
-        { 
+        class VoxelDEC : public Voxel
+        {
 
           public:
             VoxelDEC () :
@@ -116,7 +116,7 @@ namespace MR {
         // Temporary fix for fixel stats branch
         // Stores precise direction through voxel rather than mapping to a DEC colour or a dixel
         class VoxelDir : public Voxel
-        { 
+        {
 
           public:
             VoxelDir () :
@@ -156,7 +156,7 @@ namespace MR {
 
         // Assumes tangent has been mapped to a hemisphere basis direction set
         class Dixel : public Voxel
-        { 
+        {
 
           public:
 
@@ -201,7 +201,7 @@ namespace MR {
         // TOD class: tore the SH coefficients in the voxel class so that aPSF generation can be multi-threaded
         // Provide a normalize() function to remove any length dependence, and have unary contribution per streamline
         class VoxelTOD : public Voxel
-        { 
+        {
 
           public:
 
@@ -268,7 +268,7 @@ namespace MR {
 
 
         class SetVoxelExtras
-        { 
+        {
           public:
             default_type factor; // For TWI, when contribution to the map is uniform along the length of the track
             size_t index; // Index of the track
@@ -283,7 +283,7 @@ namespace MR {
         // Set classes that give sensible behaviour to the insert() function depending on the base voxel class
 
         class SetVoxel : public std::set<Voxel>, public SetVoxelExtras
-        { 
+        {
           public:
             using VoxType = Voxel;
             inline void insert (const Voxel& v)
@@ -306,7 +306,7 @@ namespace MR {
 
 
         class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
-        { 
+        {
           public:
             using VoxType = VoxelDEC;
             inline void insert (const VoxelDEC& v)
@@ -333,7 +333,7 @@ namespace MR {
 
 
         class SetVoxelDir : public std::set<VoxelDir>, public SetVoxelExtras
-        { 
+        {
           public:
             using VoxType = VoxelDir;
             inline void insert (const VoxelDir& v)
@@ -358,7 +358,7 @@ namespace MR {
 
 
         class SetDixel : public std::set<Dixel>, public SetVoxelExtras
-        { 
+        {
           public:
 
             using VoxType = Dixel;
@@ -389,7 +389,7 @@ namespace MR {
 
 
         class SetVoxelTOD : public std::set<VoxelTOD>, public SetVoxelExtras
-        { 
+        {
           public:
 
             using VoxType = VoxelTOD;

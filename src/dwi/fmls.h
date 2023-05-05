@@ -21,8 +21,8 @@
 
 #include "memory.h"
 #include "math/SH.h"
-#include "dwi/directions/set.h"
 #include "dwi/directions/mask.h"
+#include "dwi/directions/set.h"
 #include "image.h"
 #include "algo/loop.h"
 
@@ -32,6 +32,7 @@
 #define FMLS_PEAK_VALUE_THRESHOLD_DEFAULT 0.1
 #define FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT 1.0 // By default, never perform merging of lobes generated from discrete peaks such that a single lobe contains multiple peaks
 
+#define FMLS_DEFAULT_DIRECTION_SET 1281
 
 
 namespace MR
@@ -57,11 +58,11 @@ namespace MR
       class FOD_lobe {
 
         public:
-          FOD_lobe (const DWI::Directions::Set& dirs, const index_type seed, const default_type value, const default_type weight) :
+          FOD_lobe (const DWI::Directions::CartesianWithAdjacency& dirs, const index_type seed, const default_type value, const default_type weight) :
               mask (dirs),
               values (Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero (dirs.size())),
               max_peak_value (abs (value)),
-              peak_dirs (1, dirs.get_dir (seed)),
+              peak_dirs (1, dirs[seed]),
               mean_dir (peak_dirs.front() * abs(value) * weight),
               lsq_dir (Eigen::Vector3d::Constant (std::numeric_limits<double>::quiet_NaN())),
               integral (abs (value * weight)),
@@ -213,7 +214,7 @@ namespace MR
       class IntegrationWeights
       {
         public:
-          IntegrationWeights (const DWI::Directions::Set& dirs);
+          IntegrationWeights (const Eigen::MatrixXd& dirs);
           default_type operator[] (const size_t i) { assert (i < size_t(data.size())); return data[i]; }
         private:
           Eigen::Array<default_type, Eigen::Dynamic, 1> data;

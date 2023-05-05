@@ -92,18 +92,11 @@ namespace MR {
 
 
 
-      IntegrationWeights::IntegrationWeights (const DWI::Directions::Set& dirs) :
+      IntegrationWeights::IntegrationWeights (const Eigen::MatrixXd& dirs) :
           data (dirs.size())
       {
-        // Calibrate weights
-        const size_t calibration_lmax = Math::SH::LforN (dirs.size()) + 2;
-        Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs (dirs.size(), 2);
-        for (size_t row = 0; row != dirs.size(); ++row) {
-          const auto d = dirs.get_dir (row);
-          az_el_pairs (row, 0) = std::atan2 (d[1], d[0]);
-          az_el_pairs (row, 1) = std::acos  (d[2]);
-        }
-        auto calibration_SH2A = Math::SH::init_transform (az_el_pairs, calibration_lmax);
+        const size_t calibration_lmax = Math::SH::LforN (dirs.rows()) + 2;
+        auto calibration_SH2A = Math::SH::init_transform (Math::Sphere::to_spherical (dirs), calibration_lmax);
         const size_t num_basis_fns = calibration_SH2A.cols();
 
         // Integrating an FOD with constant amplitude 1 (l=0 term = sqrt(4pi) should produce a value of 4pi
@@ -113,7 +106,7 @@ namespace MR {
 
         // Problem matrix: One row for each SH basis function, one column for each samping direction
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> A;
-        A.resize (num_basis_fns, dirs.size());
+        A.resize (num_basis_fns, dirs.rows());
 
         for (size_t basis_fn_index = 0; basis_fn_index != num_basis_fns; ++basis_fn_index) {
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> SH_in = Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (num_basis_fns);
@@ -136,23 +129,15 @@ namespace MR {
       Segmenter::Segmenter (const DWI::Directions::FastLookupSet& directions, const size_t lmax) :
           dirs                 (directions),
           lmax                 (lmax),
-          precomputer          (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
+          transform            (new Math::SH::Transform<default_type> (Math::Sphere::to_spherical (directions), lmax)),
+          precomputer          (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * directions.rows())),
+          weights              (new IntegrationWeights (directions)),
           max_num_fixels       (0),
           integral_threshold   (FMLS_INTEGRAL_THRESHOLD_DEFAULT),
           peak_value_threshold (FMLS_PEAK_VALUE_THRESHOLD_DEFAULT),
           lobe_merge_ratio     (FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT),
           calculate_lsq_dir    (false),
-          create_lookup_table  (true)
-      {
-        Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs (dirs.size(), 2);
-        for (size_t row = 0; row != dirs.size(); ++row) {
-          const auto d = dirs.get_dir (row);
-          az_el_pairs (row, 0) = std::atan2 (d[1], d[0]);
-          az_el_pairs (row, 1) = std::acos  (d[2]);
-        }
-        transform.reset (new Math::SH::Transform<default_type> (az_el_pairs, lmax));
-        weights.reset (new IntegrationWeights (dirs));
-      }
+          create_lookup_table  (true) {}
 
 
 
@@ -360,7 +345,7 @@ namespace MR {
           for (index_type d = 0; d != dirs.size(); ++d) {
             if (lobe.get_values()[d]) {
 
-              const Eigen::Vector3d& dir (dirs[d]);
+              const auto dir (dirs[d]);
 
               // Transform unit direction onto tangent plane defined by the current mean direction estimate
               Eigen::Vector3d p (dir[0]*Tx[0] + dir[1]*Tx[1] + dir[2]*Tx[2],

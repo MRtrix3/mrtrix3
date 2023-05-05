@@ -24,7 +24,7 @@
 
 #include "dwi/fixel_map.h"
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/adjacency.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -56,7 +56,7 @@ namespace MR
 
       template <class Fixel>
       class Model : public ModelBase<Fixel>
-      { 
+      {
 
         protected:
           using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
@@ -106,7 +106,7 @@ namespace MR
         private:
           // Some member classes to support multi-threaded processes
           class TrackMappingWorker
-          { 
+          {
             public:
               TrackMappingWorker (Model& i, const default_type upsample_ratio) :
                   master (i),
@@ -138,7 +138,7 @@ namespace MR
           };
 
           class FixelRemapper
-          { 
+          {
             public:
               FixelRemapper (Model& i, vector<size_t>& r) :
                 master   (i),

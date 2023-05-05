@@ -18,6 +18,7 @@
 #include "memory.h"
 #include "version.h"
 #include "dwi/fmls.h"
+#include "dwi/directions/predefined.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/mapping/loader.h"
@@ -100,7 +101,7 @@ using DWI::Tractography::SIFT::FixelBase;
 
 
 class AFDConnFixel : public FixelBase
-{ 
+{
   public:
     AFDConnFixel () : FixelBase (), length (0.0) { }
     AFDConnFixel (const FMLS::FOD_lobe& lobe) : FixelBase (lobe), length (0.0) { }
@@ -121,7 +122,7 @@ class AFDConnFixel : public FixelBase
 
 
 class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<AFDConnFixel>
-{ 
+{
   public:
     AFDConnectivity (Image<value_type>& fod_buffer, const DWI::Directions::FastLookupSet& dirs, const std::string& tck_path, const std::string& wbft_path) :
         DWI::Tractography::SIFT::ModelBase<AFDConnFixel> (fod_buffer, dirs),
@@ -302,7 +303,7 @@ void run ()
   auto opt = get_options ("wbft");
   const std::string wbft_path = opt.size() ? str(opt[0][0]) : "";
 
-  DWI::Directions::FastLookupSet dirs (1281);
+  const DWI::Directions::FastLookupSet dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
   auto fod = Image<value_type>::open (argument[0]);
   Math::SH::check (fod);
   check_3D_nonunity (fod);
