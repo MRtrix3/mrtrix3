@@ -170,8 +170,8 @@ jobs:
         run: echo "timestamp=$(date +%s)" >> $GITHUB_ENV
       
       - name: Create cache dir
-        run: make -p ${{ env.SCCACHE_DIR }}
-        
+        run: mkdir -p ${{ env.SCCACHE_DIR }}
+
       - name: Set sccache files
         uses: actions/cache@v3
         with:
