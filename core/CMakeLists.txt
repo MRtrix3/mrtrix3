@@ -3,7 +3,7 @@ file(GLOB_RECURSE CORE_SRCS *.cpp *.h)
 add_library(mrtrix-core SHARED ${CORE_SRCS})
 add_library(mrtrix::core ALIAS mrtrix-core)
 
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(ZLIB REQUIRED)
 find_package(FFTW REQUIRED)
 

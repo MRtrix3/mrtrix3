@@ -20,7 +20,8 @@
 import os, codecs, re, glob, sys
 
 
-cmake_filename = os.path.join ('cmd', 'targets.cmake')
+cmd_cmake_filename = os.path.join ('cmd', 'targets.cmake')
+src_cmake_filename = os.path.join ('src', 'objects.cmake')
 
 include_folders = [ 'core', 'src', 'cmd' ]
 
@@ -78,7 +79,8 @@ def update_header_list (filename):
 
 
 
-def list_all_local_headers_for (filename, headers):
+def list_all_local_headers_for (filename, headers, system_headers = set()):
+  system_headers.update (full_header_list[filename].system)
   for header in full_header_list[filename].local:
     if header not in headers:
       headers.add (header)
@@ -113,6 +115,22 @@ def get_link_deps (filename, cpp_deps, system_headers):
 
 
 
+def list_link_deps (cpp):
+  linked_cpp, headers, system_headers = set(), set(), set()
+
+  list_all_local_headers_for (cpp, headers, system_headers)
+  for f in headers:
+    if f.startswith ('src'):
+      c = f[:-1]+'cpp'
+      if os.path.isfile (c) and c != cpp:
+        linked_cpp.add (c)
+
+  return [ linked_cpp, system_headers ]
+
+
+def object_libname (cpp):
+  return '_'.join (cpp[:-4].split(os.path.sep)[1:])
+
 
 
 if __name__ == "__main__":
@@ -120,30 +138,38 @@ if __name__ == "__main__":
   cmds = [ arg for arg in sys.argv[1:] if not arg.startswith ('-') ]
   if not len (cmds):
     cmds = glob.glob (os.path.join ('cmd', '*.cpp'))
-  cmds = [ 'cmd/amp2sh.cpp', 'cmd/mrdegibbs.cpp' ]
+  cmds = [ 'cmd/amp2sh.cpp', 'cmd/mrdegibbs.cpp', 'cmd/dwi2fod.cpp' ]
 
 
-  cmake_contents = ''
+  cmd_cmake_contents = ''
+  src_cpp = set()
 
-  for cmd in cmds:
+  for cmd in sorted(cmds):
     cpp_deps, sys_headers = set(), set()
     get_link_deps (cmd, cpp_deps, sys_headers)
-    core_cpp, other_cpp = [], []
-    for cpp in cpp_deps:
-      (core_cpp if cpp.startswith ('core/') else other_cpp).append (cpp)
+    src_link_cpp = [ cpp for cpp in cpp_deps if cpp.startswith ('src'+os.path.sep) ]
+    src_cpp.update (src_link_cpp)
+
+    cmd_cmake_contents += 'add_executable ({} {})\n'.format (os.path.basename (cmd[:-4]), os.path.basename(cmd))
+    link_libs = [ '$<TARGET_OBJECTS:'+object_libname(c)+'>' for c in sorted(src_link_cpp) ]
+    cmd_cmake_contents += 'target_link_libraries(' + os.path.basename (cmd[:-4]) + ' PRIVATE ' + '\n    '.join([ 'mrtrix::core' ] + link_libs) + ')\n\n'
+
     if '-verbose' in sys.argv:
+      core_cpp, other_cpp = [], []
+      for cpp in cpp_deps:
+        (core_cpp if cpp.startswith ('core/') else other_cpp).append (cpp)
       print (cmd + ':\n  core cpp deps: ' + ' '.join (core_cpp) + '\n  non-core cpp deps: ' + ' '.join (other_cpp) + '\n  system headers: ' + ' '.join (sys_headers))
 
-    cmake_contents += 'add_executable (' + os.path.basename (cmd[:-4])
-    for c in other_cpp:
-      cmake_contents += ' ' + os.path.relpath(c, os.path.dirname (cmd))
-    cmake_contents += ')\n'
-
-    libs = ''
-    if 'fftw3.h' in sys_headers:
-      libs += ' fftw3'
-    cmake_contents += 'target_link_libraries (' + os.path.basename (cmd[:-4]) + ' PRIVATE mrtrix::core' + libs + ')\n'
-    cmake_contents += 'install (TARGETS ' + os.path.basename (cmd[:-4]) + ' RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})\n\n'
+  src_cmake_contents = ''
+  for cpp in sorted(src_cpp):
+    src_cmake_contents += 'add_library (' + object_libname (cpp) + ' OBJECT ' + os.path.relpath (cpp, 'src') + ')\n'
+    src_cmake_contents += 'target_include_directories(' + object_libname (cpp) + ' PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})\n'
+    [ link_libs, sys_headers ] = list_link_deps (cpp)
+    link_libs = [ 'mrtrix::core' ] + [ '$<TARGET_OBJECTS:'+object_libname(c)+'>' for c in sorted(link_libs) ]
+    if 'fftw3.h' in sys_headers: link_libs.append ('fftw3')
+    if len(link_libs):
+      src_cmake_contents += 'target_link_libraries(' + object_libname (cpp) + '\n    '.join ([ ' PUBLIC' ] + link_libs) + ')\n'
+    src_cmake_contents += '\n'
 
 
 
@@ -154,11 +180,18 @@ if __name__ == "__main__":
       if len(h.system): print ('  system:  ' + ' '.join (h.system))
 
   if len(sys.argv) == 1:
-    print ('updating "' + cmake_filename + '"...')
-    with codecs.open (cmake_filename, mode='w', encoding='utf-8') as f:
-      f.write (cmake_contents)
+    print ('updating "' + cmd_cmake_filename + '"...')
+    with codecs.open (cmd_cmake_filename, mode='w', encoding='utf-8') as f:
+      f.write (cmd_cmake_contents)
+    print ('updating "' + src_cmake_filename + '"...')
+    with codecs.open (src_cmake_filename, mode='w', encoding='utf-8') as f:
+      f.write (src_cmake_contents)
   else:
-    print ('contents of "' + cmake_filename + '":\n')
-    print (cmake_contents)
-    print ('running with arguments - file not updated')
+    print ('contents of "' + cmd_cmake_filename + '":\n')
+    print (cmd_cmake_contents)
+
+    print ('contents of "' + src_cmake_filename + '":\n')
+    print (src_cmake_contents)
+
+    print ('running with arguments - files not updated')
 
