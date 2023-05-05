@@ -142,7 +142,7 @@ jobs:
       # CFLAGS: -Werror
       CHERE_INVOKING: enabled_from_arguments
       MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
-      SCCACHE_DIR: ~/.cache/sccache
+      SCCACHE_DIR: sccache_dir
       CXX_COMPILER_LAUNCHER: sccache
 
     steps:
@@ -168,7 +168,10 @@ jobs:
       - name: Set timestamp
         id: current_timestamp
         run: echo "timestamp=$(date +%s)" >> $GITHUB_ENV
-
+      
+      - name: Create cache dir
+        run: make -p ${{ env.SCCACHE_DIR }}
+        
       - name: Set sccache files
         uses: actions/cache@v3
         with:
