@@ -153,6 +153,8 @@ jobs:
         with:
           msystem: UCRT64
           install: |
+            git
+            python
             ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
             ${{env.MINGW_PACKAGE_PREFIX}}-fftw
             ${{env.MINGW_PACKAGE_PREFIX}}-gcc
@@ -162,7 +164,6 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-qt5-svg
             ${{env.MINGW_PACKAGE_PREFIX}}-sccache
             ${{env.MINGW_PACKAGE_PREFIX}}-zlib
-            python
 
       - name: Set timestamp
         id: current_timestamp
