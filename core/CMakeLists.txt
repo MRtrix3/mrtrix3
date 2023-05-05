@@ -10,7 +10,6 @@ find_package(FFTW REQUIRED)
 target_link_libraries(mrtrix-core PUBLIC
     Eigen3::Eigen
     ZLIB::ZLIB
-    fftw3
 )
 
 target_include_directories(mrtrix-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

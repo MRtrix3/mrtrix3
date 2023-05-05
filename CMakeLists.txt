@@ -1,12 +1,6 @@
 # TODO: Figure what's the minimum CMake we want
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-if(NOT DEFINED ${CMAKE_TOOLCHAIN_FILE})
-    set(CMAKE_TOOLCHAIN_FILE 
-        ${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake
-        CACHE STRING "Vcpkg toolchain file")
-endif()
-
 project(mrtrix3)
 include(GNUInstallDirs)
 
@@ -37,6 +31,8 @@ add_compile_definitions(
     $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
     $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOSX>
 )
+
+include_directories (${CMAKE_SOURCE_DIR}/core ${CMAKE_SOURCE_DIR}/src)
 
 add_subdirectory(core)
 add_subdirectory(src)
