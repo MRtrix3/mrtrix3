@@ -294,14 +294,6 @@ namespace MR {
           std::sort (i.begin(), i.end());
       }
 
-      void Set::initialise_mask()
-      {
-        dir_mask_bytes = (size() + 7) / 8;
-        dir_mask_excess_bits = (8 * dir_mask_bytes) - size();
-        dir_mask_excess_bits_mask = 0xFF >> dir_mask_excess_bits;
-      }
-
-
 
 
 

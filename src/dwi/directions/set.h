@@ -36,10 +36,7 @@ namespace MR {
 
         public:
 
-          explicit Set (const std::string& path) :
-              dir_mask_bytes (0),
-              dir_mask_excess_bits (0),
-              dir_mask_excess_bits_mask (0)
+          explicit Set (const std::string& path)
           {
             auto matrix = load_matrix (path);
 
@@ -49,10 +46,7 @@ namespace MR {
             initialise (matrix);
           }
 
-          explicit Set (const size_t d) :
-              dir_mask_bytes (0),
-              dir_mask_excess_bits (0),
-              dir_mask_excess_bits_mask (0)
+          explicit Set (const size_t d)
           {
             initialise (Directions::load (d));
           }
@@ -61,20 +55,11 @@ namespace MR {
 
           Set (Set&& that) :
               unit_vectors (std::move (that.unit_vectors)),
-              adj_dirs (std::move (that.adj_dirs)),
-              dir_mask_bytes (that.dir_mask_bytes),
-              dir_mask_excess_bits (that.dir_mask_excess_bits),
-              dir_mask_excess_bits_mask (that.dir_mask_excess_bits_mask)
-          {
-            that.dir_mask_bytes = that.dir_mask_excess_bits = that.dir_mask_excess_bits_mask = 0;
-          }
+              adj_dirs (std::move (that.adj_dirs)) { }
 
           // TODO Want to generalise this template, but it was causing weird compilation issues
           template <class MatrixType>
-          explicit Set (const Eigen::Matrix<MatrixType, Eigen::Dynamic, Eigen::Dynamic>& m) :
-            dir_mask_bytes (0),
-            dir_mask_excess_bits (0),
-            dir_mask_excess_bits_mask (0)
+          explicit Set (const Eigen::Matrix<MatrixType, Eigen::Dynamic, Eigen::Dynamic>& m)
           {
             initialise (m);
           }
@@ -106,16 +91,13 @@ namespace MR {
 
         private:
 
-          size_t dir_mask_bytes, dir_mask_excess_bits;
-          uint8_t dir_mask_excess_bits_mask;
-          friend class Mask;
+          //friend class Mask;
 
           Set ();
 
           template <class MatrixType>
           void initialise (const Eigen::Matrix<MatrixType, Eigen::Dynamic, Eigen::Dynamic>&);
           void initialise_adjacency();
-          void initialise_mask();
 
       };
 
@@ -139,7 +121,6 @@ namespace MR {
           assert (0);
         }
         initialise_adjacency();
-        initialise_mask();
       }
 
 
