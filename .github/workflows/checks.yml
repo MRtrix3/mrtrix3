@@ -134,40 +134,61 @@ jobs:
   windows-build:
 
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
 
     env:
       CFLAGS: -Werror
-      MSYSTEM: MINGW64
-      MSYSCON: defterm
       CHERE_INVOKING: enabled_from_arguments
-      MSYS2_NOSTART: yes
+      MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
+      SCCACHE_DIR: ~/.ccache/sccache
+      CXX_COMPILER_LAUNCHER: sccache
 
     steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: dev
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          install: |
+            ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
+            ${{env.MINGW_PACKAGE_PREFIX}}-fftw
+            ${{env.MINGW_PACKAGE_PREFIX}}-gcc
+            ${{env.MINGW_PACKAGE_PREFIX}}-libtiff
+            ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt5-base
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt5-svg
+            ${{env.MINGW_PACKAGE_PREFIX}}-sccache
+            ${{env.MINGW_PACKAGE_PREFIX}}-zlib
+            python
 
-    - uses: actions/checkout@v1
+      - name: Set timestamp
+        id: current_timestamp
+        run: echo "timestamp=$(date +%s)" >> $GITHUB_ENV
 
-    - name: fetch and install MSYS2
-      run: bash -c 'curl -sL https://github.com/MRtrix3/MinGW/releases/download/1.0/msys2.tar.{0,1} | tar xf -'
+      - name: Set sccache files
+        uses: actions/cache@v3
+        with:
+          path: $SCCACHE_DIR
+          key: msys2-sccache-${{ runner.os }}-${{steps.current_timestamp.outputs.timestamp}}
+          restore-keys: msys2-sccache-${{ runner.os }}-
+            
+      - name: configure
+        run: ./configure -assert || { cat configure.log; false; }
 
-    - name: run qtbinpatcher
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "qtbinpatcher --qt-dir=$(dirname $(which qmake))"
+      - name: build
+        run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
 
-    - name: configure
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "./configure -assert || { cat configure.log; false; }"
+      - name: Run sccache-stats
+        run: sccache --show-stats
 
-    - name: build
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "./build -nowarnings -persistent -nopaginate || { cat build.log; false; }"
+      - name: unit tests
+        run: ./run_tests units || { cat testing_units.log; false; }
 
-    - name: unit tests
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "./run_tests units || { cat testing_units.log; false; }"
-
-    - name: binary tests
-      shell: cmd
-      run: msys64\msys2_shell.cmd -c "./run_tests binaries || { cat testing_binaries.log; false; }"
+      - name: binary tests
+        run: ./run_tests binaries || { cat testing_binaries.log; false; }
 
 
 
