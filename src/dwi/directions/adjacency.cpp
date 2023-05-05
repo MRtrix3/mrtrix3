@@ -44,7 +44,7 @@ namespace MR {
           ++min_linkage;
           vector<index_type> next_to_expand;
           for (const auto& i : to_expand) {
-            for (const auto& j : adjacency[i]) {
+            for (const auto& j : (*this)[i]) {
               if (j == two) {
                 return min_linkage;
               } else if (!processed[j]) {
@@ -63,7 +63,7 @@ namespace MR {
 
       void Adjacency::initialise (const Eigen::Matrix<default_type, Eigen::Dynamic, 3>& dirs)
       {
-        adjacency.assign (dirs.rows(), vector<index_type>());
+        assign (dirs.rows(), vector<index_type>());
 
         // New algorithm for determining direction adjacency
         // * Duplicate all directions to get a full spherical set
@@ -278,12 +278,12 @@ namespace MR {
               case 4: from = vertices[current.indices[0]].index; to = vertices[current.indices[2]].index; break;
               case 5: from = vertices[current.indices[2]].index; to = vertices[current.indices[0]].index; break;
             }
-            if (std::find (adjacency[from].begin(), adjacency[from].end(), to) != adjacency[from].end())
-              adjacency[from].push_back (to);
+            if (std::find ((*this)[from].begin(), (*this)[from].end(), to) != (*this)[from].end())
+              (*this)[from].push_back (to);
           }
         }
 
-        for (auto& i : adjacency)
+        for (auto& i : *this)
           std::sort (i.begin(), i.end());
       }
 

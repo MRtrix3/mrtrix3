@@ -30,8 +30,7 @@ namespace MR {
     namespace Directions {
 
 
-      // TODO Inherit from vector<vector<index_type>>
-      class Adjacency {
+      class Adjacency : public vector<vector<index_type>> {
 
         public:
 
@@ -41,19 +40,14 @@ namespace MR {
             initialise (Math::Sphere::to_cartesian (dirs));
           }
 
-          size_t size () const { return adjacency.size(); }
-          const vector<index_type>& operator[] (const size_t i) const { assert (i < size()); return adjacency[i]; }
+          // Are the directions corresponding to these two indices adjacent to one another?
           bool operator() (const index_type one, const index_type two) const {
             assert (one < size());
             assert (two < size());
-            return (std::find (adjacency[one].begin(), adjacency[one].end(), two) != adjacency[one].end());
+            return (std::find ((*this)[one].begin(), (*this)[one].end(), two) != (*this)[one].end());
           }
 
           index_type distance (const index_type one, const index_type two) const;
-
-
-        protected:
-          vector< vector<index_type> > adjacency; // Note: not self-inclusive
 
         private:
           void initialise (const Eigen::Matrix<default_type, Eigen::Dynamic, 3>& dirs); // Expects prior conversion to cartesian
