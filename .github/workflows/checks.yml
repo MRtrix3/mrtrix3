@@ -172,7 +172,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: $SCCACHE_DIR
-          key: msys2-sccache-${{ runner.os }}-${{steps.current_timestamp.outputs.timestamp}}
+          key: msys2-sccache-${{ runner.os }}-${{env.timestamp}}
           restore-keys: msys2-sccache-${{ runner.os }}-
             
       - name: configure
