@@ -168,7 +168,7 @@ void run ()
     }
 
     amp_header.ndim() = 4;
-    amp_header.keyval()["directions"] = serialize_matrix (directions);
+    amp_header.keyval()["directions"] = serialise_matrix (directions);
     auto amp_data = Image<value_type>::create (argument[2], amp_header);
     auto transform = Math::SH::init_transform (Math::Sphere::to_spherical (directions), lmax);
 

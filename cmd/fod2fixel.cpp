@@ -277,7 +277,7 @@ void Segmented_FOD_receiver::commit ()
     if (save_as_nifti)
       MR::save_matrix (dirs.cast<float>(), Path::join (fixel_directory_path, Fixel::basename_lookup + ".csv"));
     else
-      lookup_header.keyval()["directions"] = serialize_matrix (dirs.cast<float>());
+      lookup_header.keyval()["directions"] = serialise_matrix (dirs.cast<float>());
     lookup_image = LookupImage::create (Path::join (fixel_directory_path, Fixel::basename_lookup + base_extension), lookup_header);
   }
 

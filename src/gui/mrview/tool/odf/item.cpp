@@ -86,7 +86,7 @@ namespace MR
           auto entry = H.keyval().find ("directions");
           if (entry != H.keyval().end()) {
             try {
-              header_dirs = deserialize_matrix (entry->second);
+              header_dirs = deserialise_matrix (entry->second);
               Math::Sphere::check (header_dirs, H.size (3));
             } catch (Exception& e) {
               DEBUG (e[0]);

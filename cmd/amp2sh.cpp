@@ -228,7 +228,7 @@ void run ()
       try {
         auto directions_it = header.keyval().find ("directions");
         if (directions_it != header.keyval().end()) {
-          dirs = deserialize_matrix (directions_it->second);
+          dirs = deserialise_matrix (directions_it->second);
           Math::Sphere::check (dirs, header.size (3));
           header.keyval()["prior_directions"] = directions_it->second;
           header.keyval().erase (directions_it);

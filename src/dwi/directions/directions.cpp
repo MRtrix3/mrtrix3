@@ -123,7 +123,7 @@ namespace MR {
         auto directions_it = H.keyval().find ("directions");
         if (directions_it != H.keyval().end()) {
           try {
-            const Eigen::MatrixXd data = deserialize_matrix<> (directions_it->second);
+            const Eigen::MatrixXd data = deserialise_matrix<> (directions_it->second);
             DEBUG ("Loading " + str(data.rows()) + "-direction set from key-value entry \"directions\" in image \"" + H.name() + "\"");
             Math::Sphere::check (data);
             return data;

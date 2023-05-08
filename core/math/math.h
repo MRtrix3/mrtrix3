@@ -301,7 +301,7 @@ namespace MR
 
   //! read matrix data from a text string \a spec
   template <class ValueType = default_type>
-    Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> deserialize_matrix (const std::string& spec)
+    Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> deserialise_matrix (const std::string& spec)
     {
       Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M;
       const auto lines = split_lines (spec);
@@ -319,7 +319,7 @@ namespace MR
 
   //! write matrix data \a M to a text string
   template <class T>
-    std::string serialize_matrix (const Eigen::MatrixBase<T>& M)
+    std::string serialise_matrix (const Eigen::MatrixBase<T>& M)
     {
       Eigen::IOFormat format (Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
       std::stringstream s;
