@@ -25,7 +25,7 @@ namespace MR {
 
 
 
-      index_type FastLookupSet::select_direction (const Eigen::Vector3d& p) const
+      index_type FastLookupSet::operator() (const Eigen::Vector3d& p) const
       {
 
         const size_t grid_index = dir2gridindex (p);
@@ -47,7 +47,7 @@ namespace MR {
 
 
 
-      index_type FastLookupSet::select_direction_slow (const Eigen::Vector3d& p) const
+      index_type FastLookupSet::nearest_exhaustive (const Eigen::Vector3d& p) const
       {
 
         index_type dir = 0;
@@ -117,7 +117,7 @@ namespace MR {
 
             Eigen::Vector3d p;
             Math::Sphere::spherical2cartesian (Eigen::Vector2d({az, el}), p);
-            const index_type nearest_dir = select_direction_slow (p);
+            const index_type nearest_dir = nearest_exhaustive (p);
             bool dir_present = false;
             for (vector<index_type>::const_iterator d = grid_lookup[i].begin(); !dir_present && d != grid_lookup[i].end(); ++d)
               dir_present = (*d == nearest_dir);
@@ -176,12 +176,11 @@ namespace MR {
         for (size_t i = 0; i != checks; ++i) {
           Eigen::Vector3d p (normal(rng), normal(rng), normal(rng));
           p.normalize();
-          if (select_direction (p) != select_direction_slow (p))
+          if ((*this) (p) != nearest_exhaustive (p))
             ++error_count;
         }
         const default_type error_rate = default_type(error_count) / default_type(checks);
         VAR (error_rate);
-
       }
 
 

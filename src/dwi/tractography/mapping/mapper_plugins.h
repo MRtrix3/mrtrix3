@@ -41,13 +41,13 @@ namespace MR {
         class DixelMappingPlugin
         {
           public:
-            DixelMappingPlugin (const DWI::Directions::FastLookupSet& directions) :
-              dirs (directions) { }
+            DixelMappingPlugin (const DWI::Directions::FastLookupSet& dir2dixel) :
+              dir2dixel (dir2dixel) { }
             DixelMappingPlugin (const DixelMappingPlugin& that) :
-              dirs (that.dirs) { }
-            DWI::Directions::index_type operator() (const Eigen::Vector3d& d) const { return dirs.select_direction (d); }
+              dir2dixel (that.dir2dixel) { }
+            DWI::Directions::index_type operator() (const Eigen::Vector3d& d) const { return dir2dixel (d); }
           private:
-            const DWI::Directions::FastLookupSet& dirs;
+            const DWI::Directions::FastLookupSet& dir2dixel;
         };
 
 

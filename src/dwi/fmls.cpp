@@ -267,7 +267,7 @@ namespace MR {
                 if (nearest_original_peak == peak_index) {
 
                   // Needs to still lie within the lobe: Determined via mask
-                  const index_type newton_peak_closest_dir_index = dirs.select_direction (newton_peak_dir);
+                  const index_type newton_peak_closest_dir_index = dirs (newton_peak_dir);
                   if (i->get_mask()[newton_peak_closest_dir_index])
                     i->revise_peak (peak_index, newton_peak_dir, newton_peak_value);
 

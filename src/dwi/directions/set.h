@@ -38,8 +38,7 @@ namespace MR {
             initialise();
           }
 
-          // TODO Change to operator overload
-          index_type select_direction (const Eigen::Vector3d&) const;
+          index_type operator() (const Eigen::Vector3d&) const;
 
         private:
 
@@ -48,7 +47,7 @@ namespace MR {
           default_type az_grid_step, el_grid_step;
           default_type az_begin, el_begin;
 
-          index_type select_direction_slow (const Eigen::Vector3d&) const;
+          index_type nearest_exhaustive (const Eigen::Vector3d&) const;
 
           void initialise();
 
