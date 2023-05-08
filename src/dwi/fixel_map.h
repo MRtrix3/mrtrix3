@@ -22,7 +22,6 @@
 #include "image.h"
 #include "algo/loop.h"
 #include "dwi/fmls.h"
-#include "dwi/directions/mask.h"
 
 
 namespace MR
@@ -33,7 +32,7 @@ namespace MR
 
 
     template <class Fixel>
-    class Fixel_map { 
+    class Fixel_map {
 
       public:
         Fixel_map (const Header& H) :
@@ -82,7 +81,7 @@ namespace MR
         vector<Fixel> fixels;
 
       private:
-        const class HeaderHelper : public ::MR::Header { 
+        const class HeaderHelper : public ::MR::Header {
           public:
             HeaderHelper (const ::MR::Header& H) :
                 ::MR::Header (H)
@@ -101,7 +100,7 @@ namespace MR
 
     template <class Fixel>
     class Fixel_map<Fixel>::MapVoxel
-    { 
+    {
       public:
         MapVoxel (const FMLS::FOD_lobes& in, const size_t first) :
             first_fixel_index (first),
@@ -146,7 +145,7 @@ namespace MR
 
 
     template <class Fixel>
-    class Fixel_map<Fixel>::Iterator { 
+    class Fixel_map<Fixel>::Iterator {
         friend class Fixel_map<Fixel>::ConstIterator;
       public:
         Iterator (const MapVoxel* const voxel, Fixel_map<Fixel>& parent) :
@@ -164,7 +163,7 @@ namespace MR
     };
 
     template <class Fixel>
-    class Fixel_map<Fixel>::ConstIterator { 
+    class Fixel_map<Fixel>::ConstIterator {
       public:
         ConstIterator (const MapVoxel* const voxel, const Fixel_map& parent) :
             index     (voxel ? voxel->first_index() : 0),

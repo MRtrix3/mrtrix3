@@ -19,12 +19,12 @@
 
 #include <map> // Used for sorting FOD samples
 
-#include "memory.h"
-#include "math/SH.h"
-#include "dwi/directions/mask.h"
-#include "dwi/directions/set.h"
 #include "image.h"
+#include "memory.h"
 #include "algo/loop.h"
+#include "math/SH.h"
+#include "misc/bitset.h"
+#include "dwi/directions/set.h"
 
 
 
@@ -43,7 +43,6 @@ namespace MR
     {
 
 
-      using DWI::Directions::Mask;
       using DWI::Directions::index_type;
       using lookup_type = Eigen::Array<uint8_t, Eigen::Dynamic, 1>;
 
@@ -59,7 +58,7 @@ namespace MR
 
         public:
           FOD_lobe (const DWI::Directions::CartesianWithAdjacency& dirs, const index_type seed, const default_type value, const default_type weight) :
-              mask (dirs),
+              mask (dirs.size()),
               values (Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero (dirs.size())),
               max_peak_value (abs (value)),
               peak_dirs (1, dirs[seed]),
@@ -74,7 +73,7 @@ namespace MR
 
           // This is used for creating a `null lobe' i.e. an FOD lobe with zero size, containing all directions not
           //   assigned to any other lobe in the voxel
-          FOD_lobe (const DWI::Directions::Mask& i) :
+          FOD_lobe (const BitSet& i) :
               mask (i),
               values (Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero (i.size())),
               max_peak_value (0.0),
@@ -82,12 +81,12 @@ namespace MR
               neg (false) { }
 
 
-          void add (const index_type bin, const default_type value, const default_type weight)
+          void add (const DWI::Directions::CartesianWithAdjacency& dirs, const index_type bin, const default_type value, const default_type weight)
           {
             assert ((value <= 0.0 && neg) || (value >= 0.0 && !neg));
             mask[bin] = true;
             values[bin] = value;
-            const Eigen::Vector3d& dir = mask.get_dirs()[bin];
+            const Eigen::Vector3d& dir = dirs[bin];
             const default_type multiplier = (mean_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
             mean_dir += dir * multiplier * abs(value) * weight;
             integral += abs (value * weight);
@@ -127,7 +126,7 @@ namespace MR
 
           void set_lsq_dir (const Eigen::Vector3d& d) { lsq_dir = d; }
 
-          const DWI::Directions::Mask& get_mask() const { return mask; }
+          const BitSet& get_mask() const { return mask; }
           const Eigen::Array<default_type, Eigen::Dynamic, 1>& get_values() const { return values; }
           default_type get_max_peak_value() const { return max_peak_value; }
           size_t num_peaks() const { return peak_dirs.size(); }
@@ -139,7 +138,7 @@ namespace MR
 
 
         private:
-          DWI::Directions::Mask mask;
+          BitSet mask;
           Eigen::Array<default_type, Eigen::Dynamic, 1> values;
           default_type max_peak_value;
           vector<Eigen::Vector3d> peak_dirs;

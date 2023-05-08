@@ -177,7 +177,7 @@ namespace MR {
           for (uint32_t l = 0; l != out.size(); ++l) {
             if ((((i.first <= 0.0) &&  out[l].is_negative())
                   || ((i.first >  0.0) && !out[l].is_negative()))
-                && (out[l].get_mask().is_adjacent (i.second))) {
+                && (dirs.adjacency (l, i.second))) {
 
               adj_lobes.push_back (l);
 
@@ -190,7 +190,7 @@ namespace MR {
 
           } else if (adj_lobes.size() == 1) {
 
-            out[adj_lobes.front()].add (i.second, i.first, (*weights)[i.second]);
+            out[adj_lobes.front()].add (dirs, i.second, i.first, (*weights)[i.second]);
 
           } else {
 
@@ -202,7 +202,7 @@ namespace MR {
               std::sort (adj_lobes.begin(), adj_lobes.end());
               for (size_t j = 1; j != adj_lobes.size(); ++j)
                 out[adj_lobes[0]].merge (out[adj_lobes[j]]);
-              out[adj_lobes[0]].add (i.second, i.first, (*weights)[i.second]);
+              out[adj_lobes[0]].add (dirs, i.second, i.first, (*weights)[i.second]);
               for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
                 bool modified = false;
                 for (size_t k = 1; k != adj_lobes.size(); ++k) {
@@ -238,7 +238,7 @@ namespace MR {
         }
 
         for (const auto& i : retrospective_assignments)
-          out[i.second].add (i.first, values[i.first], (*weights)[i.first]);
+          out[i.second].add (dirs, i.first, values[i.first], (*weights)[i.first]);
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
 
@@ -301,7 +301,7 @@ namespace MR {
           out.lut = lookup_type::Constant (dirs.size(), out.size());
           size_t index = 0;
           for (auto i = out.begin(); i != out.end(); ++i, ++index) {
-            const DWI::Directions::Mask& this_mask (i->get_mask());
+            const BitSet& this_mask (i->get_mask());
             for (size_t d = 0; d != dirs.size(); ++d) {
               if (this_mask[d])
                 out.lut[d] = index;
