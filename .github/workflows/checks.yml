@@ -169,7 +169,7 @@ jobs:
 
       - name: configure
         run: |
-          CXX_COMPILER_LAUNCHER=$SCCACHE_PATH
+          export CXX_COMPILER_LAUNCHER=$SCCACHE_PATH
           ./configure -assert || { cat configure.log; false; }
 
       - name: build
