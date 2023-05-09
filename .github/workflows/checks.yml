@@ -147,8 +147,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          ref: dev
+      
       - uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
