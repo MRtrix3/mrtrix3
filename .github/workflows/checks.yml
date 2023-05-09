@@ -142,8 +142,8 @@ jobs:
       # CFLAGS: -Werror
       CHERE_INVOKING: enabled_from_arguments
       MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
-      SCCACHE_DIR: sccache_dir
-      CXX_COMPILER_LAUNCHER: sccache
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
 
     steps:
       - uses: actions/checkout@v3
@@ -162,31 +162,21 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
             ${{env.MINGW_PACKAGE_PREFIX}}-qt5-base
             ${{env.MINGW_PACKAGE_PREFIX}}-qt5-svg
-            ${{env.MINGW_PACKAGE_PREFIX}}-sccache
             ${{env.MINGW_PACKAGE_PREFIX}}-zlib
 
-      - name: Set timestamp
-        id: current_timestamp
-        run: echo "timestamp=$(date +%s)" >> $GITHUB_ENV
-      
-      - name: Create cache dir
-        run: mkdir -p ${{ env.SCCACHE_DIR }}
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
 
-      - name: Set sccache files
-        uses: actions/cache@v3
-        with:
-          path: $SCCACHE_DIR
-          key: msys2-sccache-${{ runner.os }}-${{env.timestamp}}
-          restore-keys: msys2-sccache-${{ runner.os }}-
-            
       - name: configure
-        run: ./configure -assert || { cat configure.log; false; }
+        run: |
+          CXX_COMPILER_LAUNCHER=$SCCACHE_PATH
+          ./configure -assert || { cat configure.log; false; }
 
       - name: build
         run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
 
       - name: Run sccache-stats
-        run: sccache --show-stats
+        run: $SCCACHE_PATH --show-stats
 
       - name: unit tests
         run: ./run_tests units || { cat testing_units.log; false; }
