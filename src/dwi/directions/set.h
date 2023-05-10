@@ -38,24 +38,24 @@ namespace MR {
             initialise();
           }
 
-          index_type operator() (const Eigen::Vector3d&) const;
+          index_type operator() (const Eigen::Vector3d& dir) const;
+          index_type operator() (const Eigen::Vector3d& dir, const index_type guess) const;
 
         private:
 
-          vector< vector<index_type> > grid_lookup;
-          unsigned int num_az_grids, num_el_grids, total_num_angle_grids;
+          Eigen::Array<index_type, Eigen::Dynamic, Eigen::Dynamic> grid_lookup;
           default_type az_grid_step, el_grid_step;
           default_type az_begin, el_begin;
 
-          index_type nearest_exhaustive (const Eigen::Vector3d&) const;
 
           void initialise();
-
-          size_t dir2gridindex (const Eigen::Vector3d&) const;
-
-          void test_lookup() const;
+          void test() const;
 
       };
+
+
+
+
 
 
 

@@ -25,158 +25,98 @@ namespace MR {
 
 
 
-      index_type FastLookupSet::operator() (const Eigen::Vector3d& p) const
+      index_type FastLookupSet::operator() (const Eigen::Vector3d& dir) const
       {
-
-        const size_t grid_index = dir2gridindex (p);
-
-        index_type best_dir = grid_lookup[grid_index].front();
-        default_type max_dp = abs (p.dot ((*this)[best_dir]));
-        for (size_t i = 1; i != grid_lookup[grid_index].size(); ++i) {
-          const index_type this_dir = (grid_lookup[grid_index])[i];
-          const default_type this_dp = abs (p.dot ((*this) [this_dir]));
-          if (this_dp > max_dp) {
-            max_dp = this_dp;
-            best_dir = this_dir;
-          }
-        }
-
-        return best_dir;
-
+        // TODO The purpose of this operation is to speed up assignment of directions to dixels,
+        //   yet it involves expensive trigonometric operations...
+        // TODO Alternative would be to construct lookup table in Euclidean space
+        Eigen::Vector2d azel;
+        Math::Sphere::cartesian2spherical (dir, azel);
+        const size_t az_index = std::floor ((azel[0] - az_begin) / az_grid_step);
+        const size_t el_index = std::floor ((azel[1] - el_begin) / el_grid_step);
+        return (*this) (dir, grid_lookup (az_index, el_index));
       }
 
 
 
-      index_type FastLookupSet::nearest_exhaustive (const Eigen::Vector3d& p) const
+      index_type FastLookupSet::operator() (const Eigen::Vector3d& dir, const index_type guess) const
       {
-
-        index_type dir = 0;
-        default_type max_dot_product = abs (p.dot ((*this)[0]));
-        for (size_t i = 1; i != size(); ++i) {
-          const default_type this_dot_product = abs (p.dot ((*this)[i]));
-          if (this_dot_product > max_dot_product) {
-            max_dot_product = this_dot_product;
-            dir = i;
+        index_type result (guess), previous (guess);
+        default_type max_dot_product = abs (dir.dot ((*this)[guess]));
+        do {
+          previous = result;
+          for (const auto& i : adjacency[previous]) {
+            const default_type this_dot_product = abs (dir.dot ((*this)[i]));
+            if (this_dot_product > max_dot_product) {
+              result = i;
+              max_dot_product = this_dot_product;
+            }
           }
-        }
-        return dir;
-
+        } while (result != previous);
+        return result;
       }
-
 
 
 
       void FastLookupSet::initialise()
       {
+        const size_t num_az_grids = std::ceil (std::sqrt (2.0 * size()));
+        const size_t num_el_grids = std::ceil (std::sqrt (0.5 * size()));
+        az_grid_step = 2.0 * Math::pi / default_type(num_az_grids);
+        el_grid_step =       Math::pi / default_type(num_el_grids);
 
-        default_type adj_dot_product_sum = 0.0;
-        size_t adj_dot_product_count = 0;
-        for (size_t i = 0; i != size(); ++i) {
-          for (const auto j : adjacency[i]) {
-            if (j > i) {
-              adj_dot_product_sum += abs ((*this)[i].dot ((*this)[j]));
-              ++adj_dot_product_count;
-            }
-          }
-        }
-
-        const default_type min_dp = adj_dot_product_sum / default_type(adj_dot_product_count);
-        const default_type max_angle_step = acos (min_dp);
-
-        num_az_grids = ceil (2.0 * Math::pi / max_angle_step);
-        num_el_grids = ceil (      Math::pi / max_angle_step);
-        total_num_angle_grids = num_az_grids * num_el_grids;
-
-        az_grid_step = 2.0 * Math::pi / default_type(num_az_grids - 1);
-        el_grid_step =       Math::pi / default_type(num_el_grids - 1);
-
+        // Grid elements are defined by their lower corners;
+        //   this will be reflected in std::floor() operations for allocation of az-el pairs to grid elements
         az_begin = -Math::pi;
         el_begin = 0.0;
 
-        grid_lookup.assign (total_num_angle_grids, vector<index_type>());
-        for (size_t i = 0; i != size(); ++i) {
-          const size_t grid_index = dir2gridindex ((*this)[i]);
-          grid_lookup[grid_index].push_back (i);
-        }
-
-        for (size_t i = 0; i != total_num_angle_grids; ++i) {
-
-          const size_t az_index = i / num_el_grids;
-          const size_t el_index = i - (az_index * num_el_grids);
-
-          for (size_t point_index = 0; point_index != 4; ++point_index) {
-
-            default_type az = az_begin + (az_index * az_grid_step);
-            default_type el = el_begin + (el_index * el_grid_step);
-            switch (point_index) {
-              case 0: break;
-              case 1: az += az_grid_step; break;
-              case 2: az += az_grid_step; el += el_grid_step; break;
-              case 3: el += el_grid_step; break;
-            }
-
+        // Rather than storing in a 1D vector, here we're going to construct a 2D matrix
+        grid_lookup = Eigen::Array<index_type, Eigen::Dynamic, Eigen::Dynamic>::Constant (num_az_grids, num_el_grids, size());
+        for (size_t az_index = 0; az_index != num_az_grids; ++az_index) {
+          const default_type az = az_begin + (az_index+0.5)*az_grid_step;
+          for (size_t el_index = 0; el_index != num_el_grids; ++el_index) {
+            const default_type el = el_begin + (el_index+0.5)*el_grid_step;
             Eigen::Vector3d p;
             Math::Sphere::spherical2cartesian (Eigen::Vector2d({az, el}), p);
-            const index_type nearest_dir = nearest_exhaustive (p);
-            bool dir_present = false;
-            for (vector<index_type>::const_iterator d = grid_lookup[i].begin(); !dir_present && d != grid_lookup[i].end(); ++d)
-              dir_present = (*d == nearest_dir);
-            if (!dir_present)
-              grid_lookup[i].push_back (nearest_dir);
-
+            const index_type nearest_dir = (*this) (p, 0);
+            grid_lookup (az_index, el_index) = nearest_dir;
           }
-
         }
 
-        for (size_t grid_index = 0; grid_index != total_num_angle_grids; ++grid_index) {
-          vector<index_type>& this_grid (grid_lookup[grid_index]);
-          const size_t num_to_expand = this_grid.size();
-          for (size_t index_to_expand = 0; index_to_expand != num_to_expand; ++index_to_expand) {
-            const index_type dir_to_expand = this_grid[index_to_expand];
-            for (vector<index_type>::const_iterator adj = adjacency[dir_to_expand].begin(); adj != adjacency[dir_to_expand].end(); ++adj) {
-              // Size of lookup tables could potentially be reduced by being more prohibitive of adjacent direction inclusion in the lookup table for this grid
-              bool is_present = false;
-              for (vector<index_type>::const_iterator i = this_grid.begin(); !is_present && i != this_grid.end(); ++i)
-                is_present = (*i == *adj);
-              if (!is_present)
-                this_grid.push_back (*adj);
-
-            }
-          }
-          std::sort (this_grid.begin(), this_grid.end());
-        }
-
+        DEBUG ("Lookup table from spherical coordinates to nearest of "
+               + str(size()) + "-direction set constructed using "
+               + str(num_az_grids) + " x " + str(num_el_grids) + " = " + str(num_az_grids * num_el_grids)
+               + " elements, with grid size " + str(az_grid_step) + " x " + str(el_grid_step));
+        //test();
       }
 
 
 
-      size_t FastLookupSet::dir2gridindex (const Eigen::Vector3d& p) const
-      {
-
-        const default_type azimuth   = atan2(p[1], p[0]);
-        const default_type elevation = acos (p[2]);
-
-        const size_t azimuth_grid   = std::floor (( azimuth  - az_begin) / az_grid_step);
-        const size_t elevation_grid = std::floor ((elevation - el_begin) / el_grid_step);
-        const size_t index = (azimuth_grid * num_el_grids) + elevation_grid;
-
-        return index;
-
-      }
-
-
-
-      void FastLookupSet::test_lookup() const
+      void FastLookupSet::test() const
       {
         Math::RNG rng;
         std::normal_distribution<> normal (0.0, 1.0);
+
+        auto exhaustive = [&] (const Eigen::Vector3d& dir) -> index_type
+        {
+          index_type result = 0;
+          default_type max_dot_product = abs (dir.dot ((*this)[result]));
+          for (index_type i = 1; i != size(); ++i) {
+            const default_type this_dot_product = abs (dir.dot ((*this)[i]));
+            if (this_dot_product > max_dot_product) {
+              max_dot_product = this_dot_product;
+              result = i;
+            }
+          }
+          return result;
+        };
 
         size_t error_count = 0;
         const size_t checks = 1000000;
         for (size_t i = 0; i != checks; ++i) {
           Eigen::Vector3d p (normal(rng), normal(rng), normal(rng));
           p.normalize();
-          if ((*this) (p) != nearest_exhaustive (p))
+          if ((*this) (p) != exhaustive (p))
             ++error_count;
         }
         const default_type error_rate = default_type(error_count) / default_type(checks);
