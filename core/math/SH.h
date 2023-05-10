@@ -186,7 +186,7 @@ namespace MR
         }
 
       template <typename ValueType>
-      class Transform { 
+      class Transform {
         public:
           using matrix_type = Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic>;
 
@@ -387,7 +387,7 @@ namespace MR
 
       //! used to speed up SH calculation
       template <typename ValueType> class PrecomputedFraction
-      { 
+      {
         public:
           PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
           ValueType f1, f2;
@@ -397,7 +397,7 @@ namespace MR
 
       //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
       template <typename ValueType> class PrecomputedAL
-      { 
+      {
         public:
           using value_type = ValueType;
 
@@ -601,7 +601,7 @@ namespace MR
             }
           }
 
-          amplitude = sh[0] * AL[0];
+          amplitude = sh[index (0, 0)] * AL[index_mpos (0, 0)];
           for (int l = 2; l <= (int) lmax; l+=2) {
             const value_type& v (sh[index (l,0)]);
             amplitude += v * AL[index_mpos (l,0)];
@@ -650,7 +650,7 @@ namespace MR
 
       //! a class to hold the coefficients for an apodised point-spread function.
       template <typename ValueType> class aPSF
-      { 
+      {
         public:
           aPSF (const size_t lmax) :
             lmax (lmax),
