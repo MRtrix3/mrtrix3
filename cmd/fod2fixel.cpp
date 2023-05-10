@@ -66,9 +66,9 @@ const OptionGroup MetricOptions = OptionGroup ("Quantitative fixel-wise metric v
 const OptionGroup InputOptions = OptionGroup ("Input options for fod2fixel")
 
   + Option ("mask", "only perform computation within the specified binary brain mask image.")
-    + Argument ("image").type_image_in();
+    + Argument ("image").type_image_in()
 
-  // TODO Add option to specify a different direction set for segmentation
+  + DWI::Directions::directions_option ("sampling FOD amplitudes for discrete segmentation", "built-in " + str(FMLS_DEFAULT_DIRECTION_SET) + "-direction set");
 
 
 
@@ -361,9 +361,12 @@ void run ()
   const std::string fixel_directory_path = argument[1];
   Fixel::check_fixel_directory (fixel_directory_path, true, true);
 
-  const DWI::Directions::FastLookupSet dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
+  auto opt = get_options ("directions");
+  const DWI::Directions::FastLookupSet dirs (opt.size() ?
+                                             DWI::Directions::load (std::string (opt[0][0]), true) :
+                                             DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
 
-  auto opt = get_options ("fixel_dirs");
+  opt = get_options ("fixel_dirs");
   fixel_dir_t fixel_directions = fixel_dir_t::MEAN;
   if (opt.size()) {
     switch (int(opt[0][0])) {

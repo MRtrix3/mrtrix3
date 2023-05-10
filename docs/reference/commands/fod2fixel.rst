@@ -54,6 +54,8 @@ Input options for fod2fixel
 
 -  **-mask image** only perform computation within the specified binary brain mask image.
 
+-  **-directions spec** Specify a source of a basis direction set to be used sampling FOD amplitudes for discrete segmentation (see Description); default: built-in 1281-direction set
+
 Options to modulate outputs of fod2fixel
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
