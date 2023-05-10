@@ -144,6 +144,7 @@ jobs:
       MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
 
     steps:
       - uses: actions/checkout@v3
