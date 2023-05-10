@@ -139,7 +139,7 @@ jobs:
         shell: msys2 {0}
 
     env:
-      # CFLAGS: -Werror
+      CFLAGS: -Werror
       CHERE_INVOKING: enabled_from_arguments
       MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
       SCCACHE_GHA_ENABLED: "true"
