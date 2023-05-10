@@ -50,13 +50,20 @@ void usage ()
 
 using value_type = float;
 
-class BoundsCheck { 
+class BoundsCheck {
   public:
     BoundsCheck (value_type tolerance, const Eigen::Matrix<value_type, 3, 1>& marker, size_t& total_count):
-     precision (tolerance),
-     vec (marker),
-     counter (total_count),
-     count (0) { }
+        precision (tolerance),
+        vec (marker),
+        counter (total_count),
+        count (0),
+        val ({NaN, NaN, NaN}) { }
+    BoundsCheck (const BoundsCheck& that) :
+        precision (that.precision),
+        vec (that.vec),
+        counter (that.counter),
+        count (0),
+        val ({NaN, NaN, NaN}) { }
     template <class ImageTypeIn, class ImageTypeOut>
       void operator() (ImageTypeIn& in, ImageTypeOut& out)
       {
