@@ -166,17 +166,22 @@ jobs:
 
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.3
-
+      
+      - name: export sccache to mys2 shell
+        run: |
+          export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
+          echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
+          
       - name: configure
         run: |
-          export CXX_COMPILER_LAUNCHER=$SCCACHE_PATH
+          export CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}}
           ./configure -assert || { cat configure.log; false; }
 
       - name: build
         run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
 
       - name: Run sccache-stats
-        run: $SCCACHE_PATH --show-stats
+        run: ${{env.SCCACHE_UNIX_PATH}} --show-stats
 
       - name: unit tests
         run: ./run_tests units || { cat testing_units.log; false; }
