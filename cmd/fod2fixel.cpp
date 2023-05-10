@@ -216,8 +216,8 @@ class Segmented_FOD_receiver {
 
 bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 {
-  assert (in.lut.size() == dirs.size());
   if (in.size()) {
+    assert (in.lut.size() == dirs.size());
     lobes.emplace_back (in, fixel_directions);
     fixel_count += lobes.back().size();
   }

@@ -278,7 +278,7 @@ namespace MR {
               case 4: from = vertices[current.indices[0]].index; to = vertices[current.indices[2]].index; break;
               case 5: from = vertices[current.indices[2]].index; to = vertices[current.indices[0]].index; break;
             }
-            if (std::find ((*this)[from].begin(), (*this)[from].end(), to) != (*this)[from].end())
+            if (std::find ((*this)[from].begin(), (*this)[from].end(), to) == (*this)[from].end())
               (*this)[from].push_back (to);
           }
         }
