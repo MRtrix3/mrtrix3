@@ -36,7 +36,7 @@ Options
 
 -  **-noconstraint** disable the non-negativity and monotonicity constraints
 
--  **-directions spec** Specify a source of a basis direction set to be used interpreting input image amplitudes with respect to orientations on the sphere (see Description); default: inferred from input image header
+-  **-directions spec** Specify a source of a basis direction set to be used when interpreting input image amplitudes with respect to orientations on the sphere (see Description); default: inferred from input image header
 
 DW shell selection options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -43,10 +43,12 @@ namespace MR {
           "a path to an image, where this set could be extracted from either key-value entry \"directions\" "
           "or from the diffusion gradient table.";
 
-      MR::App::Option directions_option (const std::string& purpose, const std::string& default_set)
+      MR::App::Option directions_option (const std::string& purpose, const bool ref_description, const std::string& default_set)
       {
-        MR::App::Option opt = MR::App::Option ("directions", "Specify a source of a basis direction set to be used " + purpose + " (see Description); "
-                                                             "default: " + default_set + "")
+        MR::App::Option opt = MR::App::Option ("directions", "Specify a source of a basis direction set to be used "
+                                                             + purpose
+                                                             + (ref_description ? " (see Description)" : "")
+                                                             + "; default: " + default_set + "")
             + MR::App::Argument ("spec").type_various();
         return opt;
       }

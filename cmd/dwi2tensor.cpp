@@ -96,7 +96,9 @@ void usage ()
 
     + Option ("constrain", "constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).")
 
-    + DWI::Directions::directions_option ("application of constraints", "built-in 300-direction set")
+    + DWI::Directions::directions_option ("in the application of constraints",
+                                          false,
+                                          "built-in 300-direction set")
 
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()

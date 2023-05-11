@@ -38,7 +38,9 @@ const char* const algorithms[] = { "csd", "msmt_csd", NULL };
 
 OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
 
-    + DWI::Directions::directions_option ("application of the non-negativity constraint", "built-in 300-direction set")
+    + DWI::Directions::directions_option ("for application of the non-negativity constraint",
+                                          false,
+                                          "built-in 300-direction set")
 
     + Option ("lmax",
               "the maximum spherical harmonic order for the output FOD(s)."

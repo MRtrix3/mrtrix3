@@ -58,7 +58,9 @@ void usage ()
 
   + Option ("normalise", "normalise the DW signal to the b=0 image")
 
-  + DWI::Directions::directions_option ("associating input image amplitudes with directions to facilitate SH transformation", "Read from the input image header contents")
+  + DWI::Directions::directions_option ("associating input image amplitudes with directions to facilitate SH transformation",
+                                        true,
+                                        "Read from the input image header contents")
 
   + Option ("rician", "correct for Rician noise induced bias, using noise map supplied")
   +   Argument ("noise").type_image_in()

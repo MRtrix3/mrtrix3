@@ -68,7 +68,9 @@ const OptionGroup InputOptions = OptionGroup ("Input options for fod2fixel")
   + Option ("mask", "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in()
 
-  + DWI::Directions::directions_option ("sampling FOD amplitudes for discrete segmentation", "built-in " + str(FMLS_DEFAULT_DIRECTION_SET) + "-direction set");
+  + DWI::Directions::directions_option ("to sample FOD amplitudes in the discrete segmentation process",
+                                        false,
+                                        "built-in " + str(FMLS_DEFAULT_DIRECTION_SET) + "-direction set");
 
 
 

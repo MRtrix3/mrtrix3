@@ -53,7 +53,7 @@ Options
 
 -  **-constrain** constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).
 
--  **-directions spec** Specify a source of a basis direction set to be used application of constraints (see Description); default: built-in 300-direction set
+-  **-directions spec** Specify a source of a basis direction set to be used in the application of constraints; default: built-in 300-direction set
 
 -  **-mask image** only perform computation within the specified binary brain mask image.
 

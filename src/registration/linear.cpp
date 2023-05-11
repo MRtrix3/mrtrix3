@@ -350,7 +350,9 @@ namespace MR
     const OptionGroup fod_options =
       OptionGroup ("FOD registration options")
 
-      + DWI::Directions::directions_option ("FOD reorientation using apodised point spread functions", "built-in 60 directions")
+      + DWI::Directions::directions_option ("of FOD reorientation using apodised point spread functions",
+                                            false,
+                                            "built-in 60 directions")
 
       + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
                                    "of volumes in the 4th dimension corresponds to the number of coefficients in an "

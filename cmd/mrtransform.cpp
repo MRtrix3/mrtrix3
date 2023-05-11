@@ -181,10 +181,12 @@ void usage ()
         "to preserve the total intensity before and after the transformation.")
     + Argument ("method").type_choice (modulation_choices)
 
-    + DWI::Directions::directions_option ("defining the number and orientation of the apodised point spread functions used in FOD reorientation", "built-in 300-direction set")
+    + DWI::Directions::directions_option ("of defining the number and orientation of the apodised point spread functions used in FOD reorientation",
+                                          false,
+                                          "built-in 300-direction set")
 
     + Option ("reorient_fod",
-        "specify whether to perform FOD reorientation. This is required if the number "
+        "specify whether to perform FOD reorientation; this is required if the number "
         "of volumes in the 4th dimension corresponds to the number of coefficients in an "
         "antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes).")
     + Argument ("boolean").type_bool()

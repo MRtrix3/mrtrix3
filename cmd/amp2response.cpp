@@ -68,7 +68,9 @@ void usage ()
 
     + Option ("noconstraint", "disable the non-negativity and monotonicity constraints")
 
-    + DWI::Directions::directions_option ("interpreting input image amplitudes with respect to orientations on the sphere", "inferred from input image header")
+    + DWI::Directions::directions_option ("when interpreting input image amplitudes with respect to orientations on the sphere",
+                                          true,
+                                          "inferred from input image header")
 
     + DWI::ShellsOption
 

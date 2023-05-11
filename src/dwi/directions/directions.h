@@ -32,7 +32,7 @@ namespace MR {
 
 
       extern const char* directions_description;
-      MR::App::Option directions_option (const std::string& purpose, const std::string& default_set);
+      MR::App::Option directions_option (const std::string& purpose, const bool ref_description, const std::string& default_set);
 
 
       Eigen::MatrixXd load (const std::string& spec, const bool force_singleshell);

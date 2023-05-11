@@ -59,7 +59,7 @@ DW shell selection options
 Options common to more than one algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-directions spec** Specify a source of a basis direction set to be used application of the non-negativity constraint (see Description); default: built-in 300-direction set
+-  **-directions spec** Specify a source of a basis direction set to be used for application of the non-negativity constraint; default: built-in 300-direction set
 
 -  **-lmax order** the maximum spherical harmonic order for the output FOD(s).For algorithms with multiple outputs, this should be provided as a comma-separated list of integers, one for each output image; for single-output algorithms, only a single integer should be provided. If omitted, the command will use the lmax of the corresponding response function (i.e based on its number of coefficients), up to a maximum of 8.
 
