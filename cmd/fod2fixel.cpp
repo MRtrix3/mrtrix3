@@ -364,7 +364,7 @@ void run ()
   Fixel::check_fixel_directory (fixel_directory_path, true, true);
 
   auto opt = get_options ("directions");
-  const DWI::Directions::FastLookupSet dirs (opt.size() ?
+  const DWI::Directions::Assigner dirs (opt.size() ?
                                              DWI::Directions::load (std::string (opt[0][0]), true) :
                                              DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
 

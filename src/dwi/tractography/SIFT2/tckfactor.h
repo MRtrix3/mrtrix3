@@ -61,7 +61,7 @@ namespace MR {
 
         public:
 
-          TckFactor (Image<float>& fod_image, const DWI::Directions::FastLookupSet& dirs) :
+          TckFactor (Image<float>& fod_image, const DWI::Directions::Assigner& dirs) :
               SIFT::Model<Fixel> (fod_image, dirs),
               reg_multiplier_tikhonov (0.0),
               reg_multiplier_tv (0.0),

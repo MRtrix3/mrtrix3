@@ -23,7 +23,7 @@
 #include "interp/linear.h"
 #include "math/SH.h"
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/assigner.h"
 
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/mapping/twi_stats.h"
@@ -41,13 +41,13 @@ namespace MR {
         class DixelMappingPlugin
         {
           public:
-            DixelMappingPlugin (const DWI::Directions::FastLookupSet& dir2dixel) :
+            DixelMappingPlugin (const DWI::Directions::Assigner& dir2dixel) :
               dir2dixel (dir2dixel) { }
             DixelMappingPlugin (const DixelMappingPlugin& that) :
               dir2dixel (that.dir2dixel) { }
             DWI::Directions::index_type operator() (const Eigen::Vector3d& d) const { return dir2dixel (d); }
           private:
-            const DWI::Directions::FastLookupSet& dir2dixel;
+            const DWI::Directions::Assigner& dir2dixel;
         };
 
 

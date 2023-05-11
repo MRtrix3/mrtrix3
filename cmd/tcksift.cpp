@@ -86,7 +86,7 @@ void run ()
 
   auto in_dwi = Image<float>::open (argument[1]);
   Math::SH::check (in_dwi);
-  DWI::Directions::FastLookupSet dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
+  DWI::Directions::Assigner dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
 
   SIFTer sifter (in_dwi, dirs);
 

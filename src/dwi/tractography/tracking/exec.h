@@ -81,7 +81,7 @@ namespace MR
                 using TckMapper = Mapping::TrackMapperBase;
                 using Writer = Seeding::WriteKernelDynamic;
 
-                DWI::Directions::FastLookupSet dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
+                DWI::Directions::Assigner dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
                 auto fod_data = Image<float>::open (fod_path);
                 Math::SH::check (fod_data);
                 Seeding::Dynamic* seeder = new Seeding::Dynamic (fod_path, fod_data, num_tracks, dirs);

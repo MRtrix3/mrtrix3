@@ -126,7 +126,7 @@ namespace MR {
 
 
 
-      Segmenter::Segmenter (const DWI::Directions::FastLookupSet& directions, const size_t lmax) :
+      Segmenter::Segmenter (const DWI::Directions::Assigner& directions, const size_t lmax) :
           dirs                 (directions),
           lmax                 (lmax),
           transform            (new Math::SH::Transform<default_type> (Math::Sphere::to_spherical (directions), lmax)),

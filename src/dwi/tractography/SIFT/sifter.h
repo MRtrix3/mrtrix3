@@ -55,7 +55,7 @@ namespace MR
 
 
         public:
-        SIFTer (Image<float>& i, const DWI::Directions::FastLookupSet& d) :
+        SIFTer (Image<float>& i, const DWI::Directions::Assigner& d) :
             MapType (i, d),
             term_number (0),
             term_ratio (0.0),

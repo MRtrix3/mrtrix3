@@ -374,13 +374,13 @@ void run () {
     Stride::set (header, Stride::contiguous_along_axis (3, header));
   }
 
-  std::unique_ptr<Directions::FastLookupSet> dirs;
+  std::unique_ptr<Directions::Assigner> dirs;
   opt = get_options ("dixel");
   if (opt.size()) {
     if (writer_type != GREYSCALE)
       throw Exception ("Options for setting output image dimensionality are mutually exclusive");
     writer_type = DIXEL;
-    dirs.reset (new Directions::FastLookupSet (Directions::load (std::string (opt[0][0]), true)));
+    dirs.reset (new Directions::Assigner (Directions::load (std::string (opt[0][0]), true)));
     header.ndim() = 4;
     header.size(3) = dirs->size();
     header.sanitise();

@@ -66,7 +66,7 @@ namespace MR {
                 upsampler     (1) { }
 
             template <class HeaderType>
-            TrackMapperBase (const HeaderType& template_image, const DWI::Directions::FastLookupSet& dirs) :
+            TrackMapperBase (const HeaderType& template_image, const DWI::Directions::Assigner& dirs) :
                 info          (template_image),
                 scanner2voxel (Transform(template_image).scanner2voxel.cast<float>()),
                 map_zero      (false),
@@ -95,7 +95,7 @@ namespace MR {
               ends_only = i;
             }
 
-            void create_dixel_plugin (const DWI::Directions::FastLookupSet& dirs)
+            void create_dixel_plugin (const DWI::Directions::Assigner& dirs)
             {
               assert (!dixel_plugin && !tod_plugin);
               dixel_plugin.reset (new DixelMappingPlugin (dirs));

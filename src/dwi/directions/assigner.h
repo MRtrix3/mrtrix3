@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_set_h__
-#define __dwi_directions_set_h__
+#ifndef __dwi_directions_assigner_h__
+#define __dwi_directions_assigner_h__
 
 #include "types.h"
 
@@ -28,11 +28,11 @@ namespace MR {
 
 
 
-      class FastLookupSet : public CartesianWithAdjacency {
+      class Assigner : public CartesianWithAdjacency {
 
         public:
           template <class MatrixType>
-          FastLookupSet (const Eigen::MatrixBase<MatrixType>& dirs) :
+          Assigner (const Eigen::MatrixBase<MatrixType>& dirs) :
               CartesianWithAdjacency (dirs)
           {
             initialise();

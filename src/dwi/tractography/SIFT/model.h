@@ -64,7 +64,7 @@ namespace MR
 
         public:
           template <class Set>
-          Model (Set& dwi, const DWI::Directions::FastLookupSet& dirs) :
+          Model (Set& dwi, const DWI::Directions::Assigner& dirs) :
               ModelBase<Fixel> (dwi, dirs)
           {
             Track_fixel_contribution::set_scaling (dwi);

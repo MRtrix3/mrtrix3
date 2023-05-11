@@ -124,7 +124,7 @@ class AFDConnFixel : public FixelBase
 class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<AFDConnFixel>
 {
   public:
-    AFDConnectivity (Image<value_type>& fod_buffer, const DWI::Directions::FastLookupSet& dirs, const std::string& tck_path, const std::string& wbft_path) :
+    AFDConnectivity (Image<value_type>& fod_buffer, const DWI::Directions::Assigner& dirs, const std::string& tck_path, const std::string& wbft_path) :
         DWI::Tractography::SIFT::ModelBase<AFDConnFixel> (fod_buffer, dirs),
         have_wbft (wbft_path.size()),
         all_fixels (false),
@@ -303,7 +303,7 @@ void run ()
   auto opt = get_options ("wbft");
   const std::string wbft_path = opt.size() ? str(opt[0][0]) : "";
 
-  const DWI::Directions::FastLookupSet dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
+  const DWI::Directions::Assigner dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
   auto fod = Image<value_type>::open (argument[0]);
   Math::SH::check (fod);
   check_3D_nonunity (fod);

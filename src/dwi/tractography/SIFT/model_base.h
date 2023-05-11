@@ -134,7 +134,7 @@ namespace MR
             using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
 
           public:
-            ModelBase (Image<float>& dwi, const DWI::Directions::FastLookupSet& dirs) :
+            ModelBase (Image<float>& dwi, const DWI::Directions::Assigner& dirs) :
                 Mapping::Fixel_TD_map<Fixel> (dwi, dirs),
                 proc_mask (Image<float>::scratch (Fixel_map<Fixel>::header(), "SIFT model processing mask")),
                 FOD_sum (0.0),

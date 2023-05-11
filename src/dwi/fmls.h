@@ -24,7 +24,7 @@
 #include "algo/loop.h"
 #include "math/SH.h"
 #include "misc/bitset.h"
-#include "dwi/directions/set.h"
+#include "dwi/directions/assigner.h"
 
 
 
@@ -225,7 +225,7 @@ namespace MR
       class Segmenter {
 
         public:
-          Segmenter (const DWI::Directions::FastLookupSet&, const size_t);
+          Segmenter (const DWI::Directions::Assigner&, const size_t);
 
           bool operator() (const SH_coefs&, FOD_lobes&) const;
 
@@ -244,10 +244,10 @@ namespace MR
 
         private:
 
-          // FastLookupSet is required for ensuring that when a peak direction is
+          // Assigner is required for ensuring that when a peak direction is
           //   revised using Newton optimisation, that direction is still reflective
           //   of the original peak; i.e. it hasn't 'leaped' across to a different peak
-          const DWI::Directions::FastLookupSet& dirs;
+          const DWI::Directions::Assigner& dirs;
 
           const size_t lmax;
 

@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/directions/set.h"
+#include "dwi/directions/assigner.h"
 
 #include "math/rng.h"
 
@@ -25,7 +25,7 @@ namespace MR {
 
 
 
-      index_type FastLookupSet::operator() (const Eigen::Vector3d& dir) const
+      index_type Assigner::operator() (const Eigen::Vector3d& dir) const
       {
         // TODO The purpose of this operation is to speed up assignment of directions to dixels,
         //   yet it involves expensive trigonometric operations...
@@ -39,7 +39,7 @@ namespace MR {
 
 
 
-      index_type FastLookupSet::operator() (const Eigen::Vector3d& dir, const index_type guess) const
+      index_type Assigner::operator() (const Eigen::Vector3d& dir, const index_type guess) const
       {
         index_type result (guess), previous (guess);
         default_type max_dot_product = abs (dir.dot ((*this)[guess]));
@@ -58,7 +58,7 @@ namespace MR {
 
 
 
-      void FastLookupSet::initialise()
+      void Assigner::initialise()
       {
         const size_t num_az_grids = std::ceil (std::sqrt (2.0 * size()));
         const size_t num_el_grids = std::ceil (std::sqrt (0.5 * size()));
@@ -92,7 +92,7 @@ namespace MR {
 
 
 
-      void FastLookupSet::test() const
+      void Assigner::test() const
       {
         Math::RNG rng;
         std::normal_distribution<> normal (0.0, 1.0);
