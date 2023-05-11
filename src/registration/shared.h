@@ -29,6 +29,8 @@ namespace MR
     using namespace MR;
     using namespace App;
 
+    constexpr size_t default_fod_reorientation_directions = 60;
+
     const OptionGroup multiContrastOptions =
       OptionGroup ("Multi-contrast options")
       + Option ("mc_weights", "relative weight of images used for multi-contrast registration. Default: 1.0 (equal weighting)")
@@ -37,9 +39,11 @@ namespace MR
     const OptionGroup fod_options =
           OptionGroup ("FOD registration options")
 
-          + DWI::Directions::directions_option ("FOD reorientation using apodised point spread functions", "built-in 60 direction set")
+          + DWI::Directions::directions_option ("of FOD reorientation using apodised point spread functions",
+                                                false,
+                                                "built-in " + str(default_fod_reorientation_directions) + "-direction set")
 
-          + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
+          + Option ("noreorientation", "turn off FOD reorientation; reorientation is on by default if the number "
                                        "of volumes in the 4th dimension corresponds to the number of coefficients in a real & "
                                        "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)");
   }

@@ -170,7 +170,7 @@ FOD registration options
 
 -  **-directions spec** Specify a source of a basis direction set to be used of FOD reorientation using apodised point spread functions; default: built-in 60-direction set
 
--  **-noreorientation** turn off FOD reorientation; reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
+-  **-noreorientation** turn off FOD reorientation; reorientation is on by default if the number of volumes in the 4th dimension corresponds to the number of coefficients in a real & antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)
 
 Multi-contrast options
 ^^^^^^^^^^^^^^^^^^^^^^

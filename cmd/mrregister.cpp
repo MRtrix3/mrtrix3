@@ -23,6 +23,7 @@
 #include "registration/multi_contrast.h"
 #include "registration/linear.h"
 #include "registration/nonlinear.h"
+#include "registration/shared.h"
 #include "registration/metric/demons.h"
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/difference_robust.h"

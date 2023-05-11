@@ -346,18 +346,6 @@ namespace MR
       + Option ("affine_log", "write gradient descent parameter evolution to log file")
       + Argument ("file").type_file_out ();
 
-
-    const OptionGroup fod_options =
-      OptionGroup ("FOD registration options")
-
-      + DWI::Directions::directions_option ("of FOD reorientation using apodised point spread functions",
-                                            false,
-                                            "built-in " + str(default_fod_reorientation_directions) + "-direction set")
-
-      + Option ("noreorientation", "turn off FOD reorientation; reorientation is on by default if the number "
-                                   "of volumes in the 4th dimension corresponds to the number of coefficients in an "
-                                   "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)");
-
   }
 }
 

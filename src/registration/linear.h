@@ -52,14 +52,13 @@ namespace MR
     extern const App::OptionGroup lin_stage_options;
     extern const App::OptionGroup rigid_options;
     extern const App::OptionGroup affine_options;
-    extern const App::OptionGroup fod_options;
     extern const char* optim_algo_names[];
 
     enum LinearMetricType {Diff, NCC};
     enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
     enum OptimiserAlgoType {bbgd, gd, none};
 
-    constexpr size_t default_fod_reorientation_directions = 60;
+
 
 
     struct StageSetting {
