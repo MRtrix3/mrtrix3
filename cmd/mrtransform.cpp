@@ -516,10 +516,7 @@ void run ()
             const Eigen::Vector3d dir = rotation * Eigen::Vector3d (v.data());
             result.row (l) = dir;
           }
-          std::stringstream s;
-          Eigen::IOFormat format (6, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
-          s << result.format (format);
-          output_header.keyval()["directions"] = s.str();
+          output_header.keyval()["directions"] = serialise_matrix<> (result);
         }
       } catch (Exception& e) {
         e.display (2);
