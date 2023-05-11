@@ -36,6 +36,9 @@ namespace MR {
       extern const default_type tesselation_469_data[];
       extern const default_type tesselation_513_data[];
       extern const default_type tesselation_1281_data[];
+      extern const default_type tesselation_1957_data[];
+      extern const default_type tesselation_2049_data[];
+      extern const default_type tesselation_5121_data[];
 
 
 
@@ -73,7 +76,14 @@ namespace MR {
       //! 4th-order tessellation of an icosahedron
       inline Eigen::MatrixXd tesselation_1281 () { return copy (tesselation_1281_data, 1281); }
 
+      //! 5th-order tessellation of a tetrahedron
+      inline Eigen::MatrixXd tesselation_1957 () { return copy (tesselation_1957_data, 1957); }
 
+      //! 5th-order tessellation of an octahedron
+      inline Eigen::MatrixXd tesselation_2049 () { return copy (tesselation_2049_data, 2049); }
+
+      //! 5th-order tessellation of an icosahedron
+      inline Eigen::MatrixXd tesselation_5121 () { return copy (tesselation_5121_data, 5121); }
 
     }
   }
