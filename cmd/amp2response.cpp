@@ -252,7 +252,9 @@ void run ()
       process_dw_scheme (grad);
     } else {
       try {
-        dirs_azel.push_back (Math::Sphere::to_spherical (deserialise_matrix<> (directions_it->second)));
+        const auto dirs_header = deserialise_matrix<> (directions_it->second);
+        Math::Sphere::check (dirs_header, header.size (3));
+        dirs_azel.push_back (Math::Sphere::to_spherical (dirs_header));
         volumes.push_back (all_volumes (dirs_azel.back().rows()));
       } catch (Exception& e) {
         throw Exception (e, "Corrupt direction set in header field of input image \"" + header.name() + "\"");

@@ -127,7 +127,7 @@ namespace MR {
           try {
             const Eigen::MatrixXd data = deserialise_matrix<> (directions_it->second);
             DEBUG ("Loading " + str(data.rows()) + "-direction set from key-value entry \"directions\" in image \"" + H.name() + "\"");
-            Math::Sphere::check (data);
+            Math::Sphere::check (data, H.size (3));
             return data;
           } catch (Exception&) {
             WARN ("Corrupt \"directions\" key-value field in image \"" + H.name() + "\" ignored");
