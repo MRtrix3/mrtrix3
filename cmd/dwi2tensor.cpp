@@ -31,6 +31,7 @@ using namespace App;
 using value_type = float;
 
 #define DEFAULT_NITER 2
+#define DEFAULT_CONSTRAINT_DIRECTIONS 300
 
 const char* const encoding_description[] = {
   "The tensor coefficients are stored in the output image as follows:\n"
@@ -98,7 +99,7 @@ void usage ()
 
     + DWI::Directions::directions_option ("in the application of constraints",
                                           false,
-                                          "built-in 300-direction set")
+                                          "built-in " + str(DEFAULT_CONSTRAINT_DIRECTIONS) + "-direction set")
 
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
@@ -301,7 +302,7 @@ void run ()
     opt = get_options ("directions");
     const Eigen::MatrixXd constr_dirs = opt.size() ?
                                         DWI::Directions::load (std::string (opt[0][0]), true) :
-                                        Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300());
+                                        Math::Sphere::spherical2cartesian (DWI::Directions::load (DEFAULT_CONSTRAINT_DIRECTIONS));
     Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (constr_dirs, dki);
     if (dki) {
       auto maxb = grad.col(3).maxCoeff();

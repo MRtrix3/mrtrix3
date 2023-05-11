@@ -20,11 +20,12 @@
 #include "app.h"
 #include "header.h"
 #include "dwi/gradient.h"
+#include "math/least_squares.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 #include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
-#include "math/least_squares.h"
+#include "dwi/sdeconv/sdeconv.h"
 
 #define NORM_LAMBDA_MULTIPLIER 0.0002
 
@@ -50,7 +51,7 @@ namespace MR
           public:
 
             Shared (const Header& dwi_header) :
-              HR_dirs (Directions::electrostatic_repulsion_300()),
+              HR_dirs (Directions::load (SDeconv::default_constraint_directions)),
               neg_lambda (DEFAULT_CSD_NEG_LAMBDA),
               norm_lambda (DEFAULT_CSD_NORM_LAMBDA),
               threshold (DEFAULT_CSD_THRESHOLD),

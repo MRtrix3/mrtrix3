@@ -47,6 +47,8 @@ using namespace App;
 const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", nullptr };
 const char* modulation_choices[] = { "fod", "jac", nullptr };
 
+#define DEFAULT_REORIENTATION_DIRECTIONS 300
+
 void usage ()
 {
 
@@ -183,7 +185,7 @@ void usage ()
 
     + DWI::Directions::directions_option ("of defining the number and orientation of the apodised point spread functions used in FOD reorientation",
                                           false,
-                                          "built-in 300-direction set")
+                                          "built-in " + str(DEFAULT_REORIENTATION_DIRECTIONS) + "-direction set")
 
     + Option ("reorient_fod",
         "specify whether to perform FOD reorientation; this is required if the number "
@@ -401,12 +403,10 @@ void run ()
   if (fod_reorientation && (linear || warp.valid() || template_header.valid()) && is_possible_fod_image) {
     CONSOLE ("performing apodised PSF reorientation");
 
-    Eigen::MatrixXd directions_az_el;
     opt = get_options ("directions");
-    if (opt.size())
-      directions_az_el = load_matrix (opt[0][0]);
-    else
-      directions_az_el = DWI::Directions::electrostatic_repulsion_300();
+    const Eigen::MatrixXd directions_az_el = opt.size() ?
+                                             DWI::Directions::load (std::string (opt[0][0]), true) :
+                                             DWI::Directions::load (DEFAULT_REORIENTATION_DIRECTIONS);
     Math::Sphere::spherical2cartesian (directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM

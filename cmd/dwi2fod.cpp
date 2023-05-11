@@ -26,6 +26,7 @@
 #include "dwi/directions/directions.h"
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
+#include "dwi/sdeconv/sdeconv.h"
 
 
 using namespace MR;
@@ -40,7 +41,7 @@ OptionGroup CommonOptions = OptionGroup ("Options common to more than one algori
 
     + DWI::Directions::directions_option ("for application of the non-negativity constraint",
                                           false,
-                                          "built-in 300-direction set")
+                                          "built-in " + str(DWI::SDeconv::default_constraint_directions) + "-direction set")
 
     + Option ("lmax",
               "the maximum spherical harmonic order for the output FOD(s)."

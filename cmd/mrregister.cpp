@@ -253,7 +253,7 @@ void run () {
         mc_params[i].do_reorientation = true;
         mc_params[i].image_lmax = Math::SH::LforN (nvols1);
         if (!directions_cartesian.cols())
-          directions_cartesian = Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60()).transpose();
+          directions_cartesian = Math::Sphere::spherical2cartesian (DWI::Directions::load (Registration::default_fod_reorientation_directions)).transpose();
       } else {
         CONSOLE ("4D scalar input pair "+input1[i].name()+", "+input2[i].name());
         mc_params[i].do_reorientation = false;

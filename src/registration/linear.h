@@ -59,8 +59,10 @@ namespace MR
     enum LinearRobustMetricEstimatorType {L1, L2, LP, None};
     enum OptimiserAlgoType {bbgd, gd, none};
 
+    constexpr size_t default_fod_reorientation_directions = 60;
 
-    struct StageSetting {  
+
+    struct StageSetting {
       StageSetting() :
         stage_iterations (1),
         gd_max_iter (500),
@@ -97,7 +99,7 @@ namespace MR
       vector<std::string> diagnostics_images;
     } ;
 
-    class Linear { 
+    class Linear {
 
       public:
 

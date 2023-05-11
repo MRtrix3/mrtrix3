@@ -28,6 +28,7 @@
 
 #include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
+#include "dwi/sdeconv/sdeconv.h"
 
 #define DEFAULT_MSMTCSD_LMAX 8
 #define DEFAULT_MSMTCSD_NORM_LAMBDA 1.0e-10
@@ -50,7 +51,7 @@ namespace MR
               Shared (const Header& dwi_header) :
                   grad (DWI::get_DW_scheme (dwi_header)),
                   shells (grad),
-                  HR_dirs (DWI::Directions::electrostatic_repulsion_300()),
+                  HR_dirs (DWI::Directions::load (SDeconv::default_constraint_directions)),
                   solution_min_norm_regularisation (DEFAULT_MSMTCSD_NORM_LAMBDA),
                   constraint_min_norm_regularisation (DEFAULT_MSMTCSD_NEG_LAMBDA) { shells.select_shells(false,false,false); }
 
