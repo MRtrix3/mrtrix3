@@ -177,7 +177,7 @@ namespace MR {
           for (uint32_t l = 0; l != out.size(); ++l) {
             if ((((i.first <= 0.0) &&  out[l].is_negative())
                   || ((i.first >  0.0) && !out[l].is_negative()))
-                && (dirs.adjacency (l, i.second))) {
+                  && (dirs.adjacency (out[l].get_mask(), i.second))) {
 
               adj_lobes.push_back (l);
 

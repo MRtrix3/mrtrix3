@@ -20,6 +20,7 @@
 
 #include "types.h"
 #include "math/sphere.h"
+#include "misc/bitset.h"
 
 #include "dwi/directions/directions.h"
 
@@ -41,10 +42,22 @@ namespace MR {
           }
 
           // Are the directions corresponding to these two indices adjacent to one another?
-          bool operator() (const index_type one, const index_type two) const {
+          bool operator() (const index_type one, const index_type two) const
+          {
             assert (one < size());
             assert (two < size());
             return (std::find ((*this)[one].begin(), (*this)[one].end(), two) != (*this)[one].end());
+          }
+          // Is this direction adjacent to a mask?
+          bool operator() (const BitSet& mask, const index_type index) const
+          {
+            assert (mask.size() == size());
+            assert (index < size());
+            for (const auto i : (*this)[index]) {
+              if (mask[i])
+                return true;
+            }
+            return false;
           }
 
           index_type distance (const index_type one, const index_type two) const;
