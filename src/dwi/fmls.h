@@ -25,6 +25,7 @@
 #include "math/SH.h"
 #include "misc/bitset.h"
 #include "dwi/directions/assigner.h"
+#include "dwi/directions/weights.h"
 
 
 
@@ -207,19 +208,6 @@ namespace MR
       };
 
 
-      // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
-      // These weights are applied to the amplitude along each direction as the integral for each lobe is summed,
-      //   in order to take into account the relative spacing between adjacent directions
-      class IntegrationWeights
-      {
-        public:
-          IntegrationWeights (const Eigen::MatrixXd& dirs);
-          default_type operator[] (const size_t i) { assert (i < size_t(data.size())); return data[i]; }
-        private:
-          Eigen::Array<default_type, Eigen::Dynamic, 1> data;
-      };
-
-
 
 
       class Segmenter {
@@ -253,7 +241,7 @@ namespace MR
 
           std::shared_ptr<Math::SH::Transform    <default_type>> transform;
           std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
-          std::shared_ptr<IntegrationWeights> weights;
+          std::shared_ptr<DWI::Directions::Weights> weights;
 
           size_t       max_num_fixels;       // Maximal number of fixels to keep in any voxel
           default_type integral_threshold;   // Integral of positive lobe must be at least this value

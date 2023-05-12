@@ -92,38 +92,6 @@ namespace MR {
 
 
 
-      IntegrationWeights::IntegrationWeights (const Eigen::MatrixXd& dirs) :
-          data (dirs.size())
-      {
-        const size_t calibration_lmax = Math::SH::LforN (dirs.rows()) + 2;
-        auto calibration_SH2A = Math::SH::init_transform (Math::Sphere::to_spherical (dirs), calibration_lmax);
-        const size_t num_basis_fns = calibration_SH2A.cols();
-
-        // Integrating an FOD with constant amplitude 1 (l=0 term = sqrt(4pi) should produce a value of 4pi
-        // Every other integral should produce zero
-        Eigen::Matrix<default_type, Eigen::Dynamic, 1> integral_results = Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (num_basis_fns);
-        integral_results[0] = 2.0 * sqrt(Math::pi);
-
-        // Problem matrix: One row for each SH basis function, one column for each samping direction
-        Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> A;
-        A.resize (num_basis_fns, dirs.rows());
-
-        for (size_t basis_fn_index = 0; basis_fn_index != num_basis_fns; ++basis_fn_index) {
-          Eigen::Matrix<default_type, Eigen::Dynamic, 1> SH_in = Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (num_basis_fns);
-          SH_in[basis_fn_index] = 1.0;
-          A.row (basis_fn_index) = calibration_SH2A * SH_in;
-        }
-
-        data = A.householderQr().solve (integral_results);
-      }
-
-
-
-
-
-
-
-
 
 
       Segmenter::Segmenter (const DWI::Directions::Assigner& directions, const size_t lmax) :
@@ -131,7 +99,7 @@ namespace MR {
           lmax                 (lmax),
           transform            (new Math::SH::Transform<default_type> (Math::Sphere::to_spherical (directions), lmax)),
           precomputer          (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * directions.rows())),
-          weights              (new IntegrationWeights (directions)),
+          weights              (new DWI::Directions::Weights (directions)),
           max_num_fixels       (0),
           integral_threshold   (FMLS_INTEGRAL_THRESHOLD_DEFAULT),
           peak_value_threshold (FMLS_PEAK_VALUE_THRESHOLD_DEFAULT),
