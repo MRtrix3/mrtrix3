@@ -38,6 +38,8 @@ Quantitative fixel-wise metric values to save as fixel data files
 
 -  **-disp image** output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude
 
+-  **-skew image** output a measure of FOD lobe skew as the angle between the mean and peak orientations
+
 FOD FMLS segmenter options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 

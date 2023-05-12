@@ -61,6 +61,10 @@ const OptionGroup MetricOptions = OptionGroup ("Quantitative fixel-wise metric v
 
   + Option ("disp",
             "output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude")
+    + Argument ("image").type_image_out()
+
+  + Option ("skew",
+            "output a measure of FOD lobe skew as the angle between the mean and peak orientations")
     + Argument ("image").type_image_out();
 
 
@@ -167,6 +171,7 @@ class Segmented_FOD_receiver {
     void set_afd_output (const std::string& path) { afd_path = path; }
     void set_peak_amp_output (const std::string& path) { peak_amp_path = path; }
     void set_disp_output (const std::string& path) { disp_path = path; }
+    void set_skew_output (const std::string& path) { skew_path = path; }
 
     bool operator() (const FOD_lobes&);
 
@@ -177,8 +182,9 @@ class Segmented_FOD_receiver {
       Eigen::Vector3f dir;
       float integral;
       float max_peak_amp;
-      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float max_peak_amp) :
-          dir (dir), integral (integral), max_peak_amp (max_peak_amp) {}
+      float skew;
+      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float max_peak_amp, float skew) :
+          dir (dir), integral (integral), max_peak_amp (max_peak_amp), skew (skew) {}
     };
 
 
@@ -195,7 +201,10 @@ class Segmented_FOD_receiver {
               case fixel_dir_t::PEAK: dir = lobe.get_peak_dir(0).cast<float>(); break;
               case fixel_dir_t::LSQ:  dir = lobe.get_lsq_dir () .cast<float>(); break;
             }
-            this->emplace_back (dir, lobe.get_integral(), lobe.get_max_peak_value());
+            this->emplace_back (dir,
+                                lobe.get_integral(),
+                                lobe.get_max_peak_value(),
+                                std::acos (abs (lobe.get_mean_dir().dot (lobe.get_peak_dir(0)))));
           }
         }
         Eigen::Array3i vox;
@@ -205,7 +214,7 @@ class Segmented_FOD_receiver {
     Header H;
     const DWI::Directions::FastLookupSet& dirs;
     std::string fixel_directory_path, index_path, dir_path, lookup_path;
-    std::string afd_path, peak_amp_path, disp_path;
+    std::string afd_path, peak_amp_path, disp_path, skew_path;
     fixel_dir_t fixel_directions;
     bool save_as_nifti, write_lookup;
 
@@ -246,6 +255,7 @@ void Segmented_FOD_receiver::commit ()
   DataImage afd_image;
   DataImage peak_amp_image;
   DataImage disp_image;
+  DataImage skew_image;
 
   auto index_header (H);
   index_header.keyval()[Fixel::n_fixels_key] = str(fixel_count);
@@ -310,6 +320,13 @@ void Segmented_FOD_receiver::commit ()
     disp_image.index(1) = 0;
   }
 
+  if (skew_path.size()) {
+    auto skew_header (fixel_data_header);
+    skew_header.size(1) = 1;
+    skew_image = DataImage::create (Path::join(fixel_directory_path, skew_path), skew_header);
+    skew_image.index(1) = 0;
+  }
+
   size_t offset = 0;
   for (const auto& vox_fixels : lobes) {
     size_t n_vox_fixels = vox_fixels.size();
@@ -348,6 +365,13 @@ void Segmented_FOD_receiver::commit ()
       for (size_t i = 0; i < n_vox_fixels; ++i) {
         disp_image.index(0) = offset + i;
         disp_image.value() = vox_fixels[i].integral / vox_fixels[i].max_peak_amp;
+      }
+    }
+
+    if (skew_image.valid()) {
+      for (size_t i = 0; i < n_vox_fixels; ++i) {
+        skew_image.index(0) = offset + i;
+        skew_image.value() = vox_fixels[i].skew;
       }
     }
 
@@ -392,6 +416,7 @@ void run ()
   opt = get_options ("afd");      if (opt.size()) receiver.set_afd_output      (opt[0][0]);
   opt = get_options ("peak_amp"); if (opt.size()) receiver.set_peak_amp_output (opt[0][0]);
   opt = get_options ("disp");     if (opt.size()) receiver.set_disp_output     (opt[0][0]);
+  opt = get_options ("skew");     if (opt.size()) receiver.set_skew_output     (opt[0][0]);
 
   opt = get_options ("mask");
   Image<float> mask;
