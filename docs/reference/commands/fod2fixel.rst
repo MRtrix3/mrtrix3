@@ -67,6 +67,8 @@ Options to modulate outputs of fod2fixel
 
 -  **-nolookup** do not export the lookup table image
 
+-  **-dixel_images** write a set of dixel images, where each encodes the FOD amplitudes for one fixel in each voxel
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

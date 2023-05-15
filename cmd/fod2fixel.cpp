@@ -15,17 +15,15 @@
  */
 
 #include "command.h"
-#include "progressbar.h"
-
 #include "image.h"
+#include "progressbar.h"
+#include "thread_queue.h"
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 
 #include "math/SH.h"
 #include "math/sphere.h"
-
-#include "thread_queue.h"
 
 #include "dwi/fmls.h"
 #include "dwi/directions/set.h"
@@ -34,6 +32,8 @@
 
 
 #define DEFAULT_DIRECTION_SET 1281
+
+#define DIXEL_IMAGE_PREFIX "fixel_dixels_"
 
 
 const char* fixel_direction_choices[] { "mean", "peak", "lsq", nullptr };
@@ -89,7 +89,9 @@ const OptionGroup OutputOptions = OptionGroup ("Options to modulate outputs of f
                           "options are: " + join(fixel_direction_choices, ","))
     + Argument ("choice").type_choice (fixel_direction_choices)
 
-  + Option ("nolookup", "do not export the lookup table image");
+  + Option ("nolookup", "do not export the lookup table image")
+
+  + Option ("dixel_images", "write a set of dixel images, where each encodes the FOD amplitudes for one fixel in each voxel");
 
 
 
@@ -152,6 +154,7 @@ class Segmented_FOD_receiver {
   public:
 
     using DataImage = Image<float>;
+    using DixelImage = Image<float>;
     using IndexImage = Image<index_type>;
     using LookupImage = Image<uint8_t>;
 
@@ -160,7 +163,8 @@ class Segmented_FOD_receiver {
                             const std::string& directory,
                             const fixel_dir_t fixel_directions,
                             bool save_as_nifti = false,
-                            bool write_lookup = true);
+                            bool write_lookup = true,
+                            bool write_dixel = false);
 
     ~Segmented_FOD_receiver();
 
@@ -212,6 +216,7 @@ class Segmented_FOD_receiver {
     const fixel_dir_t fixel_directions;
 
     LookupImage lookup_image;
+    vector<DixelImage> dixel_images;
     vector<Primitive_FOD_lobes> lobes;
     index_type fixel_count;
 };
@@ -223,7 +228,8 @@ Segmented_FOD_receiver::Segmented_FOD_receiver (const Header& header,
                                                 const std::string& directory,
                                                 const fixel_dir_t fixel_directions,
                                                 bool save_as_nifti,
-                                                bool write_lookup) :
+                                                bool write_lookup,
+                                                bool write_dixel) :
     H (header),
     dirs (dirs),
     fixel_directory_path (directory),
@@ -234,25 +240,27 @@ Segmented_FOD_receiver::Segmented_FOD_receiver (const Header& header,
     fixel_directions (fixel_directions),
     fixel_count (0)
 {
+  Eigen::Matrix<float, Eigen::Dynamic, 3> dirs_to_save (dirs.size(), 3);
+  for (size_t i = 0; i != dirs.size(); ++i)
+    dirs_to_save.row(i) = dirs[i].cast<float>();
+  Eigen::IOFormat format (Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+  std::stringstream directions_keyval;
+  directions_keyval << std::fixed << dirs_to_save.format (format);
+
+  auto dixel_header (H);
+  dixel_header.size(3) = dirs.size();
+  ++dixel_header.stride(0); ++dixel_header.stride(1); ++dixel_header.stride(2); dixel_header.stride(3) = 0;
+  dixel_header.keyval()["directions"] = directions_keyval.str();
+
   if (write_lookup) {
-    auto lookup_header (H);
-    lookup_header.size(3) = dirs.size();
+    auto lookup_header (dixel_header);
     lookup_header.datatype() = DataType::UInt8;
-    ++lookup_header.stride(0); ++lookup_header.stride(1); ++lookup_header.stride(2); lookup_header.stride(3) = 0;
-    // TODO Option to write directions as spherical vs cartesian
-    Eigen::Matrix<float, Eigen::Dynamic, 3> dirs_to_save (dirs.size(), 3);
-    for (size_t i = 0; i != dirs.size(); ++i)
-      dirs_to_save.row(i) = dirs[i].cast<float>();
-    if (save_as_nifti) {
+    if (save_as_nifti)
       MR::save_matrix (dirs_to_save, Path::join (fixel_directory_path, Fixel::basename_lookup + ".csv"));
-    } else {
-      Eigen::IOFormat format (Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
-      std::stringstream s;
-      s << std::fixed << dirs_to_save.format (format);
-      lookup_header.keyval()["directions"] = s.str();
-    }
     lookup_image = LookupImage::create (lookup_path, lookup_header);
   }
+  if (write_dixel)
+    dixel_images.emplace_back (DixelImage::create (Path::join (fixel_directory_path, std::string(DIXEL_IMAGE_PREFIX) + "0" + base_extension), dixel_header));
 }
 
 
@@ -266,6 +274,16 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     if (lookup_image.valid()) {
       assign_pos_of (in.vox).to (lookup_image);
       lookup_image.row (3) = in.lut.matrix();
+    }
+    if (dixel_images.size()) {
+      // If number of fixels in this voxel is larger than that encountered thus far,
+      //   need to create new images to support exporting them
+      while (in.size() > dixel_images.size())
+        dixel_images.emplace_back (DixelImage::create (Path::join (fixel_directory_path, std::string(DIXEL_IMAGE_PREFIX) + str(dixel_images.size()) + base_extension), dixel_images.front()));
+      for (size_t fixel_index = 0; fixel_index != in.size(); ++fixel_index) {
+        assign_pos_of (in.vox).to (dixel_images[fixel_index]);
+        dixel_images[fixel_index].row(3) = in[fixel_index].get_values().matrix();
+      }
     }
   }
   return true;
@@ -414,7 +432,8 @@ void run ()
                                    fixel_directory_path,
                                    fixel_directions,
                                    get_options("nii").size(),
-                                   !get_options("nolookup").size());
+                                   !get_options("nolookup").size(),
+                                   get_options("dixel_images").size());
 
   opt = get_options ("afd");      if (opt.size()) receiver.set_afd_output      (opt[0][0]);
   opt = get_options ("peak_amp"); if (opt.size()) receiver.set_peak_amp_output (opt[0][0]);
