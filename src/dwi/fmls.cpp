@@ -302,7 +302,7 @@ namespace MR {
 
         // If omitting some number of fixels, should be doing that before the LUT is constructed;
         //   would also be necessary if dilating the LUT
-        if (max_num_fixels)
+        if (max_num_fixels && out.size() > max_num_fixels)
           out.erase (out.begin() + max_num_fixels, out.end());
 
         // Only calculate the least squares direction for fixels being retained;
