@@ -147,27 +147,23 @@ void usage ()
 }
 
 
-
 class Segmented_FOD_receiver {
 
   public:
+
+    using DataImage = Image<float>;
+    using IndexImage = Image<index_type>;
+    using LookupImage = Image<uint8_t>;
+
     Segmented_FOD_receiver (const Header& header,
                             const DWI::Directions::FastLookupSet& dirs,
                             const std::string& directory,
                             const fixel_dir_t fixel_directions,
                             bool save_as_nifti = false,
-                            bool write_lookup = true) :
-        H (header),
-        dirs (dirs),
-        fixel_directory_path (directory),
-        fixel_directions (fixel_directions),
-        save_as_nifti (save_as_nifti),
-        write_lookup (write_lookup),
-        fixel_count (0) { }
+                            bool write_lookup = true);
 
-    void commit ();
+    ~Segmented_FOD_receiver();
 
-    void set_fixel_directory_output (const std::string& path) { fixel_directory_path = path; }
     void set_afd_output (const std::string& path) { afd_path = path; }
     void set_peak_amp_output (const std::string& path) { peak_amp_path = path; }
     void set_disp_output (const std::string& path) { disp_path = path; }
@@ -191,8 +187,7 @@ class Segmented_FOD_receiver {
     class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> {
       public:
         Primitive_FOD_lobes (const FOD_lobes& in, const fixel_dir_t fixel_directions) :
-            vox (in.vox),
-            lut (in.lut)
+            vox (in.vox)
         {
           Eigen::Vector3f dir;
           for (const auto& lobe : in) {
@@ -208,20 +203,57 @@ class Segmented_FOD_receiver {
           }
         }
         Eigen::Array3i vox;
-        FMLS::lookup_type lut;
     };
 
     Header H;
     const DWI::Directions::FastLookupSet& dirs;
-    std::string fixel_directory_path, index_path, dir_path, lookup_path;
+    const std::string fixel_directory_path, base_extension, index_path, dir_path, lookup_path;
     std::string afd_path, peak_amp_path, disp_path, skew_path;
-    fixel_dir_t fixel_directions;
-    bool save_as_nifti, write_lookup;
+    const fixel_dir_t fixel_directions;
 
+    LookupImage lookup_image;
     vector<Primitive_FOD_lobes> lobes;
     index_type fixel_count;
 };
 
+
+
+Segmented_FOD_receiver::Segmented_FOD_receiver (const Header& header,
+                                                const DWI::Directions::FastLookupSet& dirs,
+                                                const std::string& directory,
+                                                const fixel_dir_t fixel_directions,
+                                                bool save_as_nifti,
+                                                bool write_lookup) :
+    H (header),
+    dirs (dirs),
+    fixel_directory_path (directory),
+    base_extension (save_as_nifti ? ".nii" : ".mif"),
+    index_path (Path::join(fixel_directory_path, Fixel::basename_index + base_extension)),
+    dir_path (Path::join(fixel_directory_path, Fixel::basename_directions + base_extension)),
+    lookup_path (write_lookup ? Path::join (fixel_directory_path, Fixel::basename_lookup + base_extension) : ""),
+    fixel_directions (fixel_directions),
+    fixel_count (0)
+{
+  if (write_lookup) {
+    auto lookup_header (H);
+    lookup_header.size(3) = dirs.size();
+    lookup_header.datatype() = DataType::UInt8;
+    ++lookup_header.stride(0); ++lookup_header.stride(1); ++lookup_header.stride(2); lookup_header.stride(3) = 0;
+    // TODO Option to write directions as spherical vs cartesian
+    Eigen::Matrix<float, Eigen::Dynamic, 3> dirs_to_save (dirs.size(), 3);
+    for (size_t i = 0; i != dirs.size(); ++i)
+      dirs_to_save.row(i) = dirs[i].cast<float>();
+    if (save_as_nifti) {
+      MR::save_matrix (dirs_to_save, Path::join (fixel_directory_path, Fixel::basename_lookup + ".csv"));
+    } else {
+      Eigen::IOFormat format (Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+      std::stringstream s;
+      s << std::fixed << dirs_to_save.format (format);
+      lookup_header.keyval()["directions"] = s.str();
+    }
+    lookup_image = LookupImage::create (lookup_path, lookup_header);
+  }
+}
 
 
 
@@ -231,27 +263,23 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
   if (in.size()) {
     lobes.emplace_back (in, fixel_directions);
     fixel_count += lobes.back().size();
+    if (lookup_image.valid()) {
+      assign_pos_of (in.vox).to (lookup_image);
+      lookup_image.row (3) = in.lut.matrix();
+    }
   }
   return true;
 }
 
 
 
-void Segmented_FOD_receiver::commit ()
+Segmented_FOD_receiver::~Segmented_FOD_receiver()
 {
   if (!lobes.size() || !fixel_count)
     return;
 
-  using DataImage = Image<float>;
-  using IndexImage = Image<index_type>;
-  using LookupImage = Image<uint8_t>;
-
-  const auto index_filepath = Path::join (fixel_directory_path, index_path);
-  const std::string base_extension (save_as_nifti ? ".nii" : ".mif");
-
   IndexImage index_image;
   DataImage dir_image;
-  LookupImage lookup_image;
   DataImage afd_image;
   DataImage peak_amp_image;
   DataImage disp_image;
@@ -263,7 +291,7 @@ void Segmented_FOD_receiver::commit ()
   index_header.size(3) = 2;
   index_header.datatype() = DataType::from<index_type>();
   index_header.datatype().set_byte_order_native();
-  index_image = IndexImage::create (Path::join(fixel_directory_path, Fixel::basename_index + base_extension), index_header);
+  index_image = IndexImage::create (index_path, index_header);
 
   auto fixel_data_header (H);
   fixel_data_header.ndim() = 3;
@@ -276,28 +304,8 @@ void Segmented_FOD_receiver::commit ()
 
   auto dir_header (fixel_data_header);
   dir_header.size(1) = 3;
-  dir_image = DataImage::create (Path::join(fixel_directory_path, Fixel::basename_directions + base_extension), dir_header);
+  dir_image = DataImage::create (dir_path, dir_header);
   dir_image.index(1) = 0;
-
-  if (write_lookup) {
-    auto lookup_header (index_header);
-    lookup_header.size(3) = dirs.size();
-    lookup_header.datatype() = DataType::UInt8;
-    lookup_header.stride(0) = 0;
-    // TODO Option to write directions as spherical vs cartesian
-    Eigen::Matrix<float, Eigen::Dynamic, 3> directions_matrix = Eigen::Matrix<float, Eigen::Dynamic, 3>::Zero (dirs.size(), 3);
-    for (size_t i = 0; i != dirs.size(); ++i)
-      directions_matrix.row(i) = dirs[i].cast<float>();
-    if (save_as_nifti) {
-      MR::save_matrix (directions_matrix, Path::join (fixel_directory_path, Fixel::basename_lookup + ".csv"));
-    } else {
-      Eigen::IOFormat format (Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
-      std::stringstream s;
-      s << std::fixed << directions_matrix.format (format);
-      lookup_header.keyval()["directions"] = s.str();
-    }
-    lookup_image = LookupImage::create (Path::join (fixel_directory_path, Fixel::basename_lookup + base_extension), lookup_header);
-  }
 
   if (afd_path.size()) {
     auto afd_header (fixel_data_header);
@@ -340,11 +348,6 @@ void Segmented_FOD_receiver::commit ()
     for (size_t i = 0; i < n_vox_fixels; ++i) {
       dir_image.index(0) = offset + i;
       dir_image.row(1) = vox_fixels[i].dir;
-    }
-
-    if (lookup_image.valid()) {
-      assign_pos_of (vox_fixels.vox).to (lookup_image);
-      lookup_image.row(3) = vox_fixels.lut.matrix();
     }
 
     if (afd_image.valid()) {
@@ -433,5 +436,4 @@ void run ()
   fmls.set_calculate_lsq_dir (fixel_directions == fixel_dir_t::LSQ);
 
   Thread::run_queue (writer, Thread::batch (SH_coefs()), Thread::multi (fmls), Thread::batch (FOD_lobes()), receiver);
-  receiver.commit ();
 }
