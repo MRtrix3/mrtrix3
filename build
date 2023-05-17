@@ -2,67 +2,71 @@
 
 TAGNAME="$1"
 
-ARCHS="-arch x86_64 -arch arm64"
-PATH=/bin:/sbin:/usr/bin:/usr/sbin
+PATH=$(getconf PATH)
 export PATH
-MACOSX_DEPLOYMENT_TARGET=10.14
-export MACOSX_DEPLOYMENT_TARGET
+
+EIGEN_VERSION=3.4.0
+FFTW_VERSION=3.3.10
+QT_VERSION=6.4.1
+
+if [ "$(uname)" = "Linux" ]; then
+  OS=linux
+fi
+if [ "$(uname)" = "Darwin" ]; then
+  OS=macos
+fi
+
+
+ARCHS="x86_64"
+THREADS=$(getconf _NPROCESSORS_ONLN)
+if [ "${OS}" = "macos" ]; then
+  ARCHS="x86_64 arm64"
+  MACOS_ARCHS="-arch x86_64 -arch arm64"
+  MACOSX_DEPLOYMENT_TARGET=10.14
+  export MACOSX_DEPLOYMENT_TARGET
+  MACOSX_VERSION_MIN="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+fi
+
 PLD=$(pwd)
-THREADS=$(sysctl -n hw.ncpu)
 PREFIX=${PLD}/mrtrix3
-if [ -f "${PREFIX}-build-deps.tar.gz" ]; then
+if [ -f "${PREFIX}-${OS}-build-deps.tar.gz" ]; then
   DEPCACHE=1
   echo "Reusing previously built dependencies"
-  tar xfz ${PREFIX}-build-deps.tar.gz
+  tar xfz ${PREFIX}-${OS}-build-deps.tar.gz
 else
-  EIGEN_VERSION=3.4.0
-  echo "Using eigen ${EIGEN_VERSION}"
-
-  TIFF_VERSION=4.5.0
-  echo "Using tiff ${TIFF_VERSION}"
-
-  FFTW_VERSION=3.3.10
   echo "Using fftw ${FFTW_VERSION}"
-
-  QT_VERSION=6.4.1
+  echo "Using eigen ${EIGEN_VERSION}"
   echo "Using qt ${QT_VERSION}"
-
-  # TIFF
-  SECONDS=0
-  DNAME=tiff-${TIFF_VERSION}
-  FNAME=${DNAME}.tar.gz
-  curl -s -O -L http://download.osgeo.org/libtiff/${FNAME}
-  tar xf ${FNAME}
-  cd ${DNAME}
-  CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX} --enable-shared=NO --without-x --disable-jpeg --disable-old-jpeg --disable-lzma --disable-zstd --disable-webp --disable-cxx
-  make install > /dev/null
-  rm -r ${PREFIX}/{bin,share}
-  rm -r ${PREFIX}/lib/{pkgconfig,*.la}
-    cd ..
-  rm -r ${FNAME} ${DNAME}
-  TIFF_SECONDS=${SECONDS}
 
   # FFTW
   SECONDS=0
   DNAME=fftw-${FFTW_VERSION}
   FNAME=${DNAME}.tar.gz
   curl -s -O http://www.fftw.org/${FNAME}
-  for ARCH in x86_64 arm64; do
+  for ARCH in ${ARCHS}; do
     echo "building FFTW for ${ARCH}"
     SIMD=""
     if [ "${ARCH}" = "x86_64" ]; then
       SIMD="--enable-sse2 --enable-avx --enable-avx2"
     fi
+    if [ "${OS}" = "macos" ]; then
+      MACOS_ARCH="-arch ${ARCH}"
+    fi
     tar xf ${FNAME}
     mv ${DNAME} ${DNAME}-${ARCH}
     cd ${DNAME}-${ARCH}
-    CFLAGS="-arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure -q -prefix ${PREFIX}-${ARCH} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD}
+    CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" ./configure -q -prefix ${PREFIX}-${ARCH} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD}
     make install > /dev/null
     cd ..
     rm -r ${DNAME}-${ARCH}
   done
+  mkdir -p ${PREFIX}/{include,lib}
   cp ${PREFIX}-x86_64/include/fftw3.h ${PREFIX}/include/fftw3.h
-  libtool -static ${PREFIX}-*/lib/libfftw3.a -o ${PREFIX}/lib/libfftw3.a
+  if [ "${OS}" = "macos" ]; then
+    libtool -static ${PREFIX}-*/lib/libfftw3.a -o ${PREFIX}/lib/libfftw3.a
+  else
+    cp -a ${PREFIX}-x86_64/lib/libfftw3.a ${PREFIX}/lib/libfftw3.a
+  fi
   rm -r ${PREFIX}-*/
   rm ${FNAME}
   FFTW_SECONDS=${SECONDS}
@@ -80,9 +84,14 @@ else
   EIGEN_SECONDS=${SECONDS}
 
   # 7Z
-  FNAME=7z2107-mac.tar.xz
+  if [ "${OS}" = "linux" ]; then
+    FNAME=7z2201-linux-x64.tar.xz
+  fi
+  if [ "${OS}" = "macos" ]; then
+    FNAME=7z2107-mac.tar.xz
+  fi
   curl -s -O https://www.7-zip.org/a/${FNAME}
-  tar xvfz ${FNAME} 7zz
+  tar xf ${FNAME} 7zz
   mkdir -p ${PREFIX}/bin
   mv 7zz ${PREFIX}/bin/
   rm ${FNAME}
@@ -90,18 +99,27 @@ else
   # QT6
   SECONDS=0
   QT_MIRROR=https://ftp1.nluug.nl/languages/qt
-  QT_URL=${QT_MIRROR}/online/qtsdkrepository/mac_x64/desktop/qt6_${QT_VERSION//./}/qt.qt6.${QT_VERSION//./}.clang_64/
-  for QT_COMPONENT in qtbase qtsvg; do
+
+  if [ "${OS}" = "linux" ]; then
+    QT_URL=${QT_MIRROR}/online/qtsdkrepository/linux_x64/desktop/qt6_${QT_VERSION//./}/qt.qt6.${QT_VERSION//./}.gcc_64/
+    QT_COMPONENTS="qtbase qtsvg icu wayland"
+  fi
+  if [ "${OS}" = "macos" ]; then
+    QT_URL=${QT_MIRROR}/online/qtsdkrepository/mac_x64/desktop/qt6_${QT_VERSION//./}/qt.qt6.${QT_VERSION//./}.clang_64/
+    QT_COMPONENTS="qtbase qtsvg"
+  fi
+  for QT_COMPONENT in ${QT_COMPONENTS}; do
     FNAME=$(curl -s -L ${QT_URL} | grep -o -E "[[:alnum:]_.\-]*7z" | grep ${QT_COMPONENT} | tail -1)
     curl -s -O ${QT_URL}/${FNAME}
     ${PREFIX}/bin/7zz x ${FNAME} > /dev/null
     rm ${FNAME}
   done
-  cp -r ${QT_VERSION}/macos/* ${PREFIX}/
+  ls ${QT_VERSION}
+  cp -a ${QT_VERSION}/*/* ${PREFIX}/
   rm -r ${QT_VERSION}
   QT_SECONDS=${SECONDS}
 
-  tar cpfz ${PREFIX}-build-deps.tar.gz mrtrix3
+  tar cpfz ${PREFIX}-${OS}-build-deps.tar.gz mrtrix3
 fi
 
 # MRTRIX3
@@ -109,7 +127,7 @@ SECONDS=0
 git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${TAGNAME}
 cd ${PREFIX}-src
 MRTRIX_VERSION=$(git describe --abbrev=8 | tr '-' '_')
-CFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -I${PREFIX}/include" LINKFLAGS="${ARCHS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -L${PREFIX}/lib" PNG_CFLAGS="-I${PREFIX}/include/QtPng" PNG_LINKFLAGS="-lQt6BundledLibpng"  TIFF_LINKFLAGS="-ltiff" PATH=${PREFIX}/libexec:${PREFIX}/bin:${PATH} CXXSTD=c++17 ./configure
+CFLAGS="${MACOS_ARCHS} ${MACOSX_VERSION_MIN} -I${PREFIX}/include" LINKFLAGS="${MACOS_ARCHS} ${MACOSX_VERSION_MIN} -L${PREFIX}/lib" PNG_CFLAGS="-I${PREFIX}/include/QtPng" PNG_LINKFLAGS="-lQt6BundledLibpng" PATH=${PREFIX}/libexec:${PREFIX}/bin:${PATH} CXXSTD=c++17 ./configure
 NUMBER_OF_PROCESSORS=${THREADS} ./build
 cd ..
 MRTRIX_SECONDS=${SECONDS}
@@ -122,36 +140,46 @@ cp -R ${PREFIX}-src/lib    ${PREFIX}
 cp -R ${PREFIX}-src/share  ${PREFIX}
 cp -R ${PREFIX}-src/matlab ${PREFIX}
 rm -rf ${PREFIX}-src
-cp -a ${PREFIX}_dep/lib/Qt{Core,Gui,OpenGL,PrintSupport,Network,Svg,Widgets,OpenGLWidgets,DBus}.framework ${PREFIX}/lib
-find ${PREFIX}/lib -name Headers -print0 | xargs -0 rm -rf
-find ${PREFIX}/lib -name Current -print0 | xargs -0 rm -rf
-rm -r ${PREFIX}/lib/*.framework/Qt*
-rm -r ${PREFIX}/lib/*.framework/Resources
-mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats,styles}
-cp -a ${PREFIX}_dep/plugins/platforms/libqcocoa.dylib  ${PREFIX}/bin/plugins/platforms
-cp -a ${PREFIX}_dep/plugins/imageformats/libqsvg.dylib ${PREFIX}/bin/plugins/imageformats
-cp -a ${PREFIX}_dep/plugins/styles/libqmacstyle.dylib ${PREFIX}/bin/plugins/styles
+
+if [ "${OS}" = "linux" ]; then
+  cp -a ${PREFIX}_dep/lib/libicu* ${PREFIX}/lib
+  cp -a ${PREFIX}_dep/lib/libQt6{Core,DBus,Gui,Network,OpenGL,Svg,Wayland,Widgets,XcbQpa}* ${PREFIX}/lib
+  mkdir -p ${PREFIX}/plugins
+  cp -a ${PREFIX}_dep/plugins/{imageformats,platforms,wayland-decoration-client,wayland-graphics-integration-client,wayland-shell-integration,xcbglintegrations}  ${PREFIX}/plugins
+fi
+if [ "${OS}" = "macos" ]; then
+  cp -a ${PREFIX}_dep/lib/Qt{Core,Gui,OpenGL,PrintSupport,Network,Svg,Widgets,OpenGLWidgets,DBus}.framework ${PREFIX}/lib
+  find ${PREFIX}/lib -name Headers -print0 | xargs -0 rm -rf
+  find ${PREFIX}/lib -name Current -print0 | xargs -0 rm -rf
+  rm -r ${PREFIX}/lib/*.framework/Qt*
+  rm -r ${PREFIX}/lib/*.framework/Resources
+  mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats,styles}
+  cp -a ${PREFIX}_dep/plugins/platforms/libqcocoa.dylib  ${PREFIX}/bin/plugins/platforms
+  cp -a ${PREFIX}_dep/plugins/imageformats/libqsvg.dylib ${PREFIX}/bin/plugins/imageformats
+  cp -a ${PREFIX}_dep/plugins/styles/libqmacstyle.dylib ${PREFIX}/bin/plugins/styles
+fi
 rm -rf ${PREFIX}_dep
 
-cp -R ${PLD}/MRView.app ${PREFIX}/bin
-mkdir -p ${PREFIX}/bin/MRView.app/Contents/MacOS/
-mv ${PREFIX}/bin/mrview ${PREFIX}/bin/MRView.app/Contents/MacOS/
-cp ${PLD}/mrview ${PREFIX}/bin
+if [ "${OS}" = "macos" ]; then
+  cp -R ${PLD}/MRView.app ${PREFIX}/bin
+  mkdir -p ${PREFIX}/bin/MRView.app/Contents/MacOS/
+  mv ${PREFIX}/bin/mrview ${PREFIX}/bin/MRView.app/Contents/MacOS/
+  cp ${PLD}/mrview ${PREFIX}/bin
 
-cp -R ${PLD}/SHView.app ${PREFIX}/bin
-mkdir -p ${PREFIX}/bin/SHView.app/Contents/MacOS/
-mv ${PREFIX}/bin/shview ${PREFIX}/bin/SHView.app/Contents/MacOS/
-cp ${PLD}/shview ${PREFIX}/bin
+  cp -R ${PLD}/SHView.app ${PREFIX}/bin
+  mkdir -p ${PREFIX}/bin/SHView.app/Contents/MacOS/
+  mv ${PREFIX}/bin/shview ${PREFIX}/bin/SHView.app/Contents/MacOS/
+  cp ${PLD}/shview ${PREFIX}/bin
+fi
 
 cd ${PREFIX}/..
-tar cfz mrtrix3-macos-${TAGNAME}.tar.gz mrtrix3
+tar cfz mrtrix3-${OS}-${TAGNAME}.tar.gz mrtrix3
 rm -rf ${PREFIX}
 
-TOTAL_SECONDS=$((EIGEN_SECONDS + TIFF_SECONDS + FFTW_SECONDS + QT_SECONDS + MRTRIX_SECONDS))
+TOTAL_SECONDS=$((FFTW_SECONDS + EIGEN_SECONDS + QT_SECONDS + MRTRIX_SECONDS))
 if [[ ! -n "$DEPCACHE" ]]; then
-  echo "eigen ${EIGEN_VERSION}: ${EIGEN_SECONDS} s"
-  echo "tiff ${TIFF_VERSION}: ${TIFF_SECONDS} s"
   echo "fftw ${FFTW_VERSION}: ${FFTW_SECONDS} s"
+  echo "eigen ${EIGEN_VERSION}: ${EIGEN_SECONDS} s"
   echo "qt ${QT_VERSION}: ${QT_SECONDS} s"
 fi
 echo "mrtrix ${MRTRIX_VERSION}: ${MRTRIX_SECONDS} s"
