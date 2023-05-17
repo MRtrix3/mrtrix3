@@ -1,6 +1,5 @@
 name: Wipe Github Actions cache
-on: 
-  worflow_dispatch:
+on: workflow_dispatch
 
 jobs:
   cleanup:
