@@ -957,7 +957,7 @@ namespace MR
           if (opt.opt->is ("tractography.tsf_colourmap")) {
             try {
               int n = opt[0];
-              if (n < 0 || !ColourMap::maps[n].name)
+              if (n < 0 || n >= int(ColourMap::num()))
                 throw Exception ("invalid tsf colourmap index \"" + std::string (opt[0]) + "\" for -tractography.tsf_colourmap option");
               if (process_commandline_option_tsf_check_tracto_loaded()) {
                 // get list of selected tractograms:

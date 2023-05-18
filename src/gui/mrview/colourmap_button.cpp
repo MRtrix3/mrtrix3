@@ -48,13 +48,14 @@ ColourMapButton::ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs,
 
 void ColourMapButton::init_core_menu_items(bool create_shortcuts)
 {
+    ColourMap::initialise();
     core_colourmaps_actions->setExclusive(true);
 
     size_t n = 0;
-    for (size_t i = 0; ColourMap::maps[i].name; ++i)
+    for (const auto& entry : ColourMap::maps)
     {
-      if (!ColourMap::maps[i].special && !ColourMap::maps[i].is_colour) {
-        QAction* action = new QAction (ColourMap::maps[i].name, this);
+      if (!entry.special && !entry.is_colour) {
+        QAction* action = new QAction (QString::fromStdString (entry.name), this);
         action->setCheckable(true);
         core_colourmaps_actions->addAction(action);
 
@@ -97,10 +98,10 @@ void ColourMapButton::init_custom_colour_menu_items()
 void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts)
 {
     size_t n = colourmap_actions.size();
-    for (size_t i = 0; ColourMap::maps[i].name; ++i)
+    for (const auto& entry : ColourMap::maps)
     {
-      if (ColourMap::maps[i].special) {
-        QAction* action = new QAction (ColourMap::maps[i].name, this);
+      if (entry.special) {
+        QAction* action = new QAction (QString::fromStdString (entry.name), this);
         action->setCheckable(true);
         core_colourmaps_actions->addAction(action);
 

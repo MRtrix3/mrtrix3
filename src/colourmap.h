@@ -31,62 +31,60 @@ namespace MR
 
         using basic_map_fn = std::function< Eigen::Array3f (float) >;
 
-        Entry (const char* name, const char* glsl_mapping, basic_map_fn basic_mapping,
-            const char* amplitude = NULL, bool special = false, bool is_colour = false, bool is_rgb = false) :
+        Entry (const std::string& name, const std::string& glsl_mapping, basic_map_fn basic_mapping,
+            const std::string& amplitude = std::string(),
+            bool special = false, bool is_colour = false, bool is_rgb = false) :
           name (name),
           glsl_mapping (glsl_mapping),
           basic_mapping (basic_mapping),
-          amplitude (amplitude ? amplitude : default_amplitude),
+          amplitude (amplitude.size() ? amplitude : default_amplitude),
           special (special),
           is_colour (is_colour),
           is_rgb (is_rgb) { }
 
-        const char* name;
-        const char* glsl_mapping;
+        const std::string name;
+        const std::string glsl_mapping;
         basic_map_fn basic_mapping;
-        const char* amplitude;
+        const std::string amplitude;
         bool special, is_colour, is_rgb;
 
         static const char* default_amplitude;
 
     };
 
-    extern const Entry maps[];
+    extern vector<Entry> maps;
+    void initialise ();
 
 
 
 
 
-    inline size_t num () {
-      size_t n = 0;
-      while (maps[n].name) ++n;
-      return n;
-    }
+    inline size_t num () { return maps.size(); }
 
 
     inline size_t num_scalar () {
-      size_t n = 0, i = 0;
-      while (maps[i].name) {
-        if (!maps[i].special)
+      size_t n = 0;
+      for (const auto& entry : maps) {
+        if (!entry.special)
           ++n;
-        ++i;
       }
       return n;
     }
 
     inline size_t index (const std::string& name) {
-      size_t n = 0;
-      while (maps[n].name != name) ++n;
-      return n;
+      for (size_t n = 0; n < maps.size(); ++n)
+        if (maps[n].name == name)
+          return n;
+      assert (false /* should not be here! */);
+      return 0;
     }
 
 
     inline size_t num_special () {
-      size_t n = 0, i = 0;
-      while (maps[i].name) {
-        if (maps[i].special)
+      size_t n = 0;
+      for (const auto& entry : maps) {
+        if (entry.special)
           ++n;
-        ++i;
       }
       return n;
     }
