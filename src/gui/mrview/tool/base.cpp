@@ -28,7 +28,7 @@ namespace MR
 
         void Dock::closeEvent (QCloseEvent*) { assert (tool); tool->close_event(); }
 
-        void __Action__::visibility_slot (bool visible) { setChecked (dock->isVisible()); }
+        void __Action__::visibility_slot (bool) { setChecked (dock->isVisible()); }
 
 
         Base::Base (Dock* parent) :
