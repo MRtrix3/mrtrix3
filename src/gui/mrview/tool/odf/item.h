@@ -21,7 +21,7 @@
 
 #include "dwi/shells.h"
 
-#include "dwi/directions/adjacency.h"
+#include "math/sphere/set/adjacency.h"
 #include "gui/dwi/renderer.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/mrview/tool/odf/type.h"
@@ -74,7 +74,7 @@ namespace MR
                 Eigen::Matrix<default_type, Eigen::Dynamic, 4> grad;
                 std::unique_ptr<MR::DWI::Shells> shells;
                 size_t shell_index;
-                std::unique_ptr<MR::DWI::Directions::CartesianWithAdjacency> dirs;
+                std::unique_ptr<Math::Sphere::Set::CartesianWithAdjacency> dirs;
 
             };
             std::unique_ptr<DixelPlugin> dixel;

@@ -14,14 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/directions/assigner.h"
+#include "math/sphere/set/assigner.h"
 
 #include "math/rng.h"
+#include "math/sphere/sphere.h"
 
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
 
 
 
@@ -31,7 +33,7 @@ namespace MR {
         //   yet it involves expensive trigonometric operations...
         // TODO Alternative would be to construct lookup table in Euclidean space
         Eigen::Vector2d azel;
-        Math::Sphere::cartesian2spherical (dir, azel);
+        Sphere::cartesian2spherical (dir, azel);
         const size_t az_index = std::floor ((azel[0] - az_begin) / az_grid_step);
         const size_t el_index = std::floor ((azel[1] - el_begin) / el_grid_step);
         return (*this) (dir, grid_lookup (az_index, el_index));
@@ -77,7 +79,7 @@ namespace MR {
           for (size_t el_index = 0; el_index != num_el_grids; ++el_index) {
             const default_type el = el_begin + (el_index+0.5)*el_grid_step;
             Eigen::Vector3d p;
-            Math::Sphere::spherical2cartesian (Eigen::Vector2d({az, el}), p);
+            Sphere::spherical2cartesian (Eigen::Vector2d({az, el}), p);
             const index_type nearest_dir = (*this) (p, 0);
             grid_lookup (az_index, el_index) = nearest_dir;
           }
@@ -125,7 +127,7 @@ namespace MR {
 
 
 
-
+      }
     }
   }
 }

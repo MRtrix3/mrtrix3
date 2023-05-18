@@ -23,9 +23,9 @@
 #include "types.h"
 
 #include "math/rng.h"
+#include "math/sphere/set/adjacency.h"
 
 #include "dwi/fixel_map.h"
-#include "dwi/directions/adjacency.h"
 #include "dwi/tractography/SIFT/fixel.h"
 #include "dwi/tractography/SIFT/gradient_sort.h"
 #include "dwi/tractography/SIFT/model.h"
@@ -55,7 +55,7 @@ namespace MR
 
 
         public:
-        SIFTer (Image<float>& i, const DWI::Directions::Assigner& d) :
+        SIFTer (Image<float>& i, const Math::Sphere::Set::Assigner& d) :
             MapType (i, d),
             term_number (0),
             term_ratio (0.0),

@@ -16,8 +16,6 @@
 
 #include "registration/linear.h"
 
-#include "dwi/directions/directions.h"
-
 namespace MR
 {
   namespace Registration

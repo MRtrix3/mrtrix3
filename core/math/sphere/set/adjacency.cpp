@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/directions/adjacency.h"
+#include "math/sphere/set/adjacency.h"
 
 #include <list>
 #include <set>
@@ -23,8 +23,9 @@
 
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
 
 
 
@@ -289,6 +290,7 @@ namespace MR {
 
 
 
+      }
     }
   }
 }

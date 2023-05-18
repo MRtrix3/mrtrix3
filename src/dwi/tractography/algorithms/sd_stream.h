@@ -17,7 +17,7 @@
 #ifndef __dwi_tractography_algorithms_sd_stream_h__
 #define __dwi_tractography_algorithms_sd_stream_h__
 
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
@@ -31,16 +31,16 @@ namespace Algorithms {
 
 using namespace MR::DWI::Tractography::Tracking;
 
-class SDStream : public MethodBase { 
+class SDStream : public MethodBase {
   public:
-    class Shared : public SharedBase { 
+    class Shared : public SharedBase {
       public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
             SharedBase (diff_path, property_set),
-            lmax (Math::SH::LforN (source.size(3)))
+            lmax (Math::Sphere::SH::LforN (source.size(3)))
         {
           try {
-            Math::SH::check (source);
+            Math::Sphere::SH::check (source);
           } catch (Exception& e) {
             e.display();
             throw Exception ("Algorithm SD_STREAM expects as input a spherical harmonic (SH) image");
@@ -61,7 +61,7 @@ class SDStream : public MethodBase {
           bool precomputed = true;
           properties.set (precomputed, "sh_precomputed");
           if (precomputed)
-            precomputer = new Math::SH::PrecomputedAL<float> (lmax);
+            precomputer = new Math::Sphere::SH::PrecomputedAL<float> (lmax);
         }
 
         ~Shared () {
@@ -71,7 +71,7 @@ class SDStream : public MethodBase {
 
         float dot_threshold;
         size_t lmax;
-        Math::SH::PrecomputedAL<float>* precomputer;
+        Math::Sphere::SH::PrecomputedAL<float>* precomputer;
 
     };
 
@@ -148,7 +148,7 @@ class SDStream : public MethodBase {
 
       float find_peak ()
       {
-        float FOD = Math::SH::get_peak (values, S.lmax, dir, S.precomputer);
+        float FOD = Math::Sphere::SH::get_peak (values, S.lmax, dir, S.precomputer);
         if (!std::isfinite (FOD) || FOD < S.threshold)
           FOD = 0.0;
         return FOD;
@@ -158,7 +158,7 @@ class SDStream : public MethodBase {
       {
         return (S.precomputer ?
             S.precomputer->value (values, d) :
-            Math::SH::value (values, d, S.lmax)
+            Math::Sphere::SH::value (values, d, S.lmax)
         );
       }
 

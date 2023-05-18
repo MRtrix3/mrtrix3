@@ -14,26 +14,26 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/directions/directions.h"
+#include "math/sphere/sphere.h"
 
 #include "exception.h"
 #include "header.h"
 #include "mrtrix.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "dwi/directions/file.h"
-#include "dwi/directions/predefined.h"
-#include "math/sphere.h"
+#include "math/sphere/set/file.h"
+#include "math/sphere/set/predefined.h"
 
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
 
 
 
       const char* directions_description =
-          "Where the user is permitted to provide a set of directions that is "
+          "Where the user is permitted to provide a set of directions on the sphere that is "
           "requisite for the relevant command operation "
           "(including as an alternative to data that may be already present in an input image header), "
           "there are a number of permissible inputs from which the user could choose, including: "
@@ -86,7 +86,7 @@ namespace MR {
         } catch (Exception&) {}
         if (count) {
           DEBUG ("Loading internally predefined " + str(count) + "-direction set");
-          return load (count);
+          return Predefined::load (count);
         }
 
         // Text file
@@ -99,7 +99,7 @@ namespace MR {
           switch (from_file.cols()) {
             case 2:
             case 3:
-              Math::Sphere::check (from_file); return from_file;
+              check (from_file); return from_file;
             case 4:
               return process_dw_scheme (from_file, force_singleshell);
             default:
@@ -127,7 +127,7 @@ namespace MR {
           try {
             const Eigen::MatrixXd data = deserialise_matrix<> (directions_it->second);
             DEBUG ("Loading " + str(data.rows()) + "-direction set from key-value entry \"directions\" in image \"" + H.name() + "\"");
-            Math::Sphere::check (data, H.size (3));
+            check (data, H.size (3));
             return data;
           } catch (Exception&) {
             WARN ("Corrupt \"directions\" key-value field in image \"" + H.name() + "\" ignored");
@@ -148,6 +148,7 @@ namespace MR {
 
 
 
+      }
     }
   }
 }

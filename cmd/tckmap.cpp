@@ -374,13 +374,13 @@ void run () {
     Stride::set (header, Stride::contiguous_along_axis (3, header));
   }
 
-  std::unique_ptr<Directions::Assigner> dirs;
+  std::unique_ptr<Math::Sphere::Set::Assigner> dirs;
   opt = get_options ("dixel");
   if (opt.size()) {
     if (writer_type != GREYSCALE)
       throw Exception ("Options for setting output image dimensionality are mutually exclusive");
     writer_type = DIXEL;
-    dirs.reset (new Directions::Assigner (Directions::load (std::string (opt[0][0]), true)));
+    dirs.reset (new Math::Sphere::Set::Assigner (Math::Sphere::Set::load (std::string (opt[0][0]), true)));
     header.ndim() = 4;
     header.size(3) = dirs->size();
     header.sanitise();
@@ -404,7 +404,7 @@ void run () {
     if (lmax % 2)
       throw Exception ("lmax for TODI must be an even number");
     header.ndim() = 4;
-    header.size(3) = Math::SH::NforL (lmax);
+    header.size(3) = Math::Sphere::SH::NforL (lmax);
     header.sanitise();
     Stride::set (header, Stride::contiguous_along_axis (3, header));
   }

@@ -14,14 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_load_h__
-#define __dwi_directions_load_h__
+#ifndef __math_sphere_file_h__
+#define __math_sphere_file_h__
 
-#include "math/sphere.h"
+#include "math/sphere/sphere.h"
+#include "math/sphere/set/set.h"
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
 
 
 
@@ -32,7 +34,7 @@ namespace MR {
         inline void save_cartesian (const MatrixType& directions, const std::string& filename)
         {
           if (directions.cols() == 2)
-            save_matrix (Math::Sphere::spherical2cartesian (directions), filename);
+            save_matrix (spherical2cartesian (directions), filename);
           else
             save_matrix (directions, filename);
         }
@@ -41,7 +43,7 @@ namespace MR {
         inline void save_spherical (const MatrixType& directions, const std::string& filename)
         {
           if (directions.cols() == 3)
-            save_matrix (Math::Sphere::cartesian2spherical (directions), filename);
+            save_matrix (cartesian2spherical (directions), filename);
           else
             save_matrix (directions, filename);
         }
@@ -56,7 +58,7 @@ namespace MR {
         }
 
 
-
+      }
     }
   }
 }

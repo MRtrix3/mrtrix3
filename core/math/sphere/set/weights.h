@@ -14,31 +14,31 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_directions_h__
-#define __dwi_directions_directions_h__
+#ifndef __math_sphere_set_weights_h__
+#define __math_sphere_set_weights_h__
 
-#include "app.h"
-#include "header.h"
 #include "types.h"
 
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
 
 
 
-      using index_type = unsigned int;
+      class Weights
+      {
+        public:
+          Weights (const Eigen::MatrixXd& dirs);
+          default_type operator[] (const size_t i) { assert (i < size_t(data.size())); return data[i]; }
+        private:
+          Eigen::Array<default_type, Eigen::Dynamic, 1> data;
+      };
 
 
-      extern const char* directions_description;
-      MR::App::Option directions_option (const std::string& purpose, const bool ref_description, const std::string& default_set);
 
-
-      Eigen::MatrixXd load (const std::string& spec, const bool force_singleshell);
-      Eigen::MatrixXd load (const Header& H, const bool force_singleshell);
-
-
+      }
     }
   }
 }

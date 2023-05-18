@@ -18,7 +18,6 @@
 #include "progressbar.h"
 #include "image.h"
 #include "math/math.h"
-#include "math/sphere.h"
 #include "interp/nearest.h"
 #include "interp/linear.h"
 #include "interp/cubic.h"
@@ -28,14 +27,14 @@
 #include "algo/loop.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
-#include "dwi/directions/directions.h"
-#include "dwi/directions/predefined.h"
+#include "math/sphere/set/set.h"
+#include "math/sphere/set/predefined.h"
 #include "dwi/gradient.h"
 #include "registration/transform/reorient.h"
 #include "registration/warp/helpers.h"
 #include "registration/warp/compose.h"
 #include "math/average_space.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "adapter/jacobian.h"
 #include "file/nifti_utils.h"
 
@@ -183,7 +182,7 @@ void usage ()
         "to preserve the total intensity before and after the transformation.")
     + Argument ("method").type_choice (modulation_choices)
 
-    + DWI::Directions::directions_option ("of defining the number and orientation of the apodised point spread functions used in FOD reorientation",
+    + Math::Sphere::Set::directions_option ("of defining the number and orientation of the apodised point spread functions used in FOD reorientation",
                                           false,
                                           "built-in " + str(DEFAULT_REORIENTATION_DIRECTIONS) + "-direction set")
 
@@ -385,7 +384,7 @@ void run ()
 
   // Detect FOD image
   bool is_possible_fod_image = input_header.ndim() == 4 && input_header.size(3) >= 6 &&
-   input_header.size(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.size(3)));
+   input_header.size(3) == (int) Math::Sphere::SH::NforL (Math::Sphere::SH::LforN (input_header.size(3)));
 
 
   // reorientation
@@ -405,8 +404,8 @@ void run ()
 
     opt = get_options ("directions");
     const Eigen::MatrixXd directions_az_el = opt.size() ?
-                                             DWI::Directions::load (std::string (opt[0][0]), true) :
-                                             DWI::Directions::load (DEFAULT_REORIENTATION_DIRECTIONS);
+                                             Math::Sphere::Set::load (std::string (opt[0][0]), true) :
+                                             Math::Sphere::Set::Predefined::load (DEFAULT_REORIENTATION_DIRECTIONS);
     Math::Sphere::spherical2cartesian (directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM

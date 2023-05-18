@@ -21,9 +21,9 @@
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 
-#include "dwi/directions/directions.h"
+#include "math/sphere/set/set.h"
 
 
 using namespace MR;
@@ -40,9 +40,9 @@ void usage ()
   + "The spherical harmonic decomposition is calculated by least-squares linear fitting "
     "to the amplitude data."
 
-  + DWI::Directions::directions_description
+  + Math::Sphere::Set::directions_description
 
-  + Math::SH::encoding_description;
+  + Math::Sphere::SH::encoding_description;
 
   ARGUMENTS
   + Argument ("amp", "the input amplitude image.").type_image_in ()
@@ -58,7 +58,7 @@ void usage ()
 
   + Option ("normalise", "normalise the DW signal to the b=0 image")
 
-  + DWI::Directions::directions_option ("associating input image amplitudes with directions to facilitate SH transformation",
+  + Math::Sphere::Set::directions_option ("associating input image amplitudes with directions to facilitate SH transformation",
                                         true,
                                         "Read from the input image header contents")
 
@@ -205,14 +205,14 @@ void run ()
   if (opt.size()) {
     if (get_options ("grad").size() || get_options ("fslgrad").size())
       throw Exception ("Cannot use -directions in conjunction with -grad or -fslgrad; only one source of a direction set can be provided");
-    dirs = DWI::Directions::load (std::string (opt[0][0]), true);
+    dirs = Math::Sphere::Set::load (std::string (opt[0][0]), true);
     if (dirs.cols() == 4)
       throw Exception ("If importing a gradient table from an external file, use -grad command-line option rather than -directions");
     if (dirs.rows() != header.size (3))
       throw Exception ("Number of directions as imported via -directions option (" + str(dirs.rows()) + ") does not match number of input image volumes (" + str(header.size(3)) + ")");
-    dirs = Math::Sphere::to_spherical (dirs);
+    dirs = Math::Sphere::Set::to_spherical (dirs);
     dwis.reserve (dirs.rows());
-    for (size_t i = 0; i != dirs.rows(); ++i)
+    for (size_t i = 0; i != size_t(dirs.rows()); ++i)
       dwis.push_back (i);
   } else {
     // Try loading the full gradient table first;
@@ -231,7 +231,7 @@ void run ()
         auto directions_it = header.keyval().find ("directions");
         if (directions_it != header.keyval().end()) {
           dirs = deserialise_matrix (directions_it->second);
-          Math::Sphere::check (dirs, header.size (3));
+          Math::Sphere::Set::check (dirs, header.size (3));
           header.keyval()["prior_directions"] = directions_it->second;
           header.keyval().erase (directions_it);
         }

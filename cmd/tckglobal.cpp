@@ -18,7 +18,7 @@
 
 #include <limits>
 
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "image.h"
 #include "thread.h"
 #include "version.h"
@@ -194,20 +194,20 @@ void usage ()
 
 
 template<typename T>
-class __copy_fod { 
+class __copy_fod {
   public:
     __copy_fod (const int lmax, const double weight, const bool apodise)
-      : w(weight), a(apodise), apo (lmax), SH_in (Math::SH::NforL(lmax)), SH_out (SH_in.size()) { }
+      : w(weight), a(apodise), apo (lmax), SH_in (Math::Sphere::SH::NforL(lmax)), SH_out (SH_in.size()) { }
 
     void operator() (Image<T>& in, Image<T>& out) {
       SH_in = in.row(3);
-      out.row(3) = w * (a ? Math::SH::sconv (SH_out, apo.RH_coefs(), SH_in) : SH_in);
+      out.row(3) = w * (a ? Math::Sphere::SH::sconv (SH_out, apo.RH_coefs(), SH_in) : SH_in);
     }
 
   private:
     T w;
     bool a;
-    Math::SH::aPSF<T> apo;
+    Math::Sphere::SH::aPSF<T> apo;
     Eigen::Matrix<T, Eigen::Dynamic, 1> SH_in, SH_out;
 
 };
@@ -354,7 +354,7 @@ void run ()
   opt = get_options("fod");
   if (opt.size()) {
     INFO("Saving fODF image to file");
-    header.size(3) = Math::SH::NforL(properties.Lmax);
+    header.size(3) = Math::Sphere::SH::NforL(properties.Lmax);
     auto fODF = Image<float>::create (opt[0][0], header);
     auto f = __copy_fod<float>(properties.Lmax, properties.weight, !get_options("noapo").size());
     ThreadedLoop(Eext->getTOD(), 0, 3).run(f, Eext->getTOD(), fODF);

@@ -22,8 +22,7 @@
 #include <set>
 
 #include "image.h"
-
-#include "dwi/directions/directions.h"
+#include "math/sphere/set/set.h"
 
 
 namespace MR {
@@ -160,7 +159,7 @@ namespace MR {
 
           public:
 
-            using dir_index_type = DWI::Directions::index_type;
+            using dir_index_type = Math::Sphere::Set::index_type;
 
             Dixel () :
               Voxel (),

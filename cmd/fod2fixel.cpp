@@ -15,23 +15,21 @@
  */
 
 #include "command.h"
-#include "progressbar.h"
-
 #include "image.h"
+#include "progressbar.h"
+#include "thread_queue.h"
+
+#include "file/path.h"
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 
-#include "math/SH.h"
-#include "math/sphere.h"
-
-#include "thread_queue.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/set/adjacency.h"
+#include "math/sphere/set/predefined.h"
 
 #include "dwi/fmls.h"
-#include "dwi/directions/adjacency.h"
-#include "dwi/directions/predefined.h"
 
-#include "file/path.h"
 
 
 const char* fixel_direction_choices[] { "mean", "peak", "lsq", nullptr };
@@ -68,9 +66,9 @@ const OptionGroup InputOptions = OptionGroup ("Input options for fod2fixel")
   + Option ("mask", "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in()
 
-  + DWI::Directions::directions_option ("to sample FOD amplitudes in the discrete segmentation process",
-                                        false,
-                                        "built-in " + str(FMLS_DEFAULT_DIRECTION_SET) + "-direction set");
+  + Math::Sphere::Set::directions_option ("to sample FOD amplitudes in the discrete segmentation process",
+                                          false,
+                                          "built-in " + str(FMLS_DEFAULT_DIRECTION_SET) + "-direction set");
 
 
 
@@ -148,7 +146,7 @@ class Segmented_FOD_receiver {
 
   public:
     Segmented_FOD_receiver (const Header& header,
-                            const DWI::Directions::CartesianWithAdjacency& dirs,
+                            const Math::Sphere::Set::CartesianWithAdjacency& dirs,
                             const std::string& directory,
                             const fixel_dir_t fixel_directions,
                             bool save_as_nifti = false,
@@ -203,7 +201,7 @@ class Segmented_FOD_receiver {
     };
 
     Header H;
-    const DWI::Directions::CartesianWithAdjacency& dirs;
+    const Math::Sphere::Set::CartesianWithAdjacency& dirs;
     std::string fixel_directory_path, index_path, dir_path, lookup_path;
     std::string afd_path, peak_amp_path, disp_path;
     fixel_dir_t fixel_directions;
@@ -357,16 +355,16 @@ void Segmented_FOD_receiver::commit ()
 void run ()
 {
   Header H = Header::open (argument[0]);
-  Math::SH::check (H);
+  Math::Sphere::SH::check (H);
   auto fod_data = H.get_image<float>();
 
   const std::string fixel_directory_path = argument[1];
   Fixel::check_fixel_directory (fixel_directory_path, true, true);
 
   auto opt = get_options ("directions");
-  const DWI::Directions::Assigner dirs (opt.size() ?
-                                             DWI::Directions::load (std::string (opt[0][0]), true) :
-                                             DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
+  const Math::Sphere::Set::Assigner dirs (opt.size() ?
+                                          Math::Sphere::Set::load (std::string (opt[0][0]), true) :
+                                          Math::Sphere::Set::Predefined::load (FMLS_DEFAULT_DIRECTION_SET));
 
   opt = get_options ("fixel_dirs");
   fixel_dir_t fixel_directions = fixel_dir_t::MEAN;
@@ -399,7 +397,7 @@ void run ()
   }
   FMLS::FODQueueWriter writer (fod_data, mask);
 
-  Segmenter fmls (dirs, Math::SH::LforN (H.size(3)));
+  Segmenter fmls (dirs, Math::Sphere::SH::LforN (H.size(3)));
   load_fmls_thresholds (fmls);
   fmls.set_max_num_fixels (get_option_value ("maxnum", 0));
   fmls.set_calculate_lsq_dir (fixel_directions == fixel_dir_t::LSQ);

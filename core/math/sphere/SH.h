@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_SH_h__
-#define __math_SH_h__
+#ifndef __math_sphere_SH_h__
+#define __math_sphere_SH_h__
 
 #include "math/legendre.h"
 #include "math/least_squares.h"
@@ -27,6 +27,8 @@ namespace MR
 {
   namespace Math
   {
+    namespace Sphere
+    {
     namespace SH
     {
 
@@ -186,7 +188,7 @@ namespace MR
         }
 
       template <typename ValueType>
-      class Transform { 
+      class Transform {
         public:
           using matrix_type = Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic>;
 
@@ -387,7 +389,7 @@ namespace MR
 
       //! used to speed up SH calculation
       template <typename ValueType> class PrecomputedFraction
-      { 
+      {
         public:
           PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
           ValueType f1, f2;
@@ -397,7 +399,7 @@ namespace MR
 
       //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
       template <typename ValueType> class PrecomputedAL
-      { 
+      {
         public:
           using value_type = ValueType;
 
@@ -650,7 +652,7 @@ namespace MR
 
       //! a class to hold the coefficients for an apodised point-spread function.
       template <typename ValueType> class aPSF
-      { 
+      {
         public:
           aPSF (const size_t lmax) :
             lmax (lmax),
@@ -751,6 +753,7 @@ namespace MR
         }
       /** @} */
 
+    }
     }
   }
 }

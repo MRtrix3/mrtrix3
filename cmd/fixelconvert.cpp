@@ -20,8 +20,6 @@
 
 #include "algo/loop.h"
 
-#include "math/SH.h"
-
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"

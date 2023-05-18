@@ -20,10 +20,9 @@
 #include "image.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "math/sphere.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/set/set.h"
 
-#include "dwi/directions/directions.h"
 
 
 using namespace MR;
@@ -43,7 +42,7 @@ void usage ()
       "a single shell of directions. If 5D, each set of coefficients along the "
       "5th dimension is understood to correspond to a different shell."
 
-    + DWI::Directions::directions_description
+    + Math::Sphere::Set::directions_description
 
     + "If a full DW encoding is provided, the number of shells needs to match "
       "those found in the input image of coefficients (i.e. its size along the 5th "
@@ -55,7 +54,7 @@ void usage ()
       "set to contain multiple shells, which can only be provided as a full DW "
       "encodings (the last two options in the list above)."
 
-    + Math::SH::encoding_description;
+    + Math::Sphere::SH::encoding_description;
 
   ARGUMENTS
     + Argument ("input",
@@ -148,10 +147,10 @@ class SH2AmpMultiShell {
 void run ()
 {
   auto sh_data = Image<value_type>::open(argument[0]);
-  Math::SH::check (sh_data);
-  const size_t lmax = Math::SH::LforN (sh_data.size(3));
+  Math::Sphere::SH::check (sh_data);
+  const size_t lmax = Math::Sphere::SH::LforN (sh_data.size(3));
 
-  Eigen::MatrixXd directions = DWI::Directions::load (std::string (argument[1]), false);
+  Eigen::MatrixXd directions = Math::Sphere::Set::load (std::string (argument[1]), false);
 
   Header amp_header (sh_data);
   amp_header.ndim() = 4;
@@ -170,7 +169,7 @@ void run ()
     amp_header.ndim() = 4;
     amp_header.keyval()["directions"] = serialise_matrix (directions);
     auto amp_data = Image<value_type>::create (argument[2], amp_header);
-    auto transform = Math::SH::init_transform (Math::Sphere::to_spherical (directions), lmax);
+    auto transform = Math::Sphere::SH::init_transform (Math::Sphere::Set::to_spherical (directions), lmax);
 
     SH2Amp sh2amp (transform, get_options("nonnegative").size());
     ThreadedLoop("computing amplitudes", sh_data, 0, 3, 2).run (sh2amp, sh_data, amp_data);
@@ -204,7 +203,7 @@ void run ()
         for (size_t idx = 0; idx < shells[n].count(); ++idx)
           Math::Sphere::cartesian2spherical (directions.row (shells[n].get_volumes()[idx]).head (3), dirs.row (idx));
       }
-      transforms.push_back (Math::SH::init_transform (dirs, lmax));
+      transforms.push_back (Math::Sphere::SH::init_transform (dirs, lmax));
     }
 
     auto amp_data = Image<value_type>::create(argument[2], amp_header);

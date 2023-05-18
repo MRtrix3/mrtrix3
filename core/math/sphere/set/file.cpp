@@ -14,15 +14,17 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/directions/file.h"
+#include "math/sphere/set/file.h"
 
 #include "math/math.h"
+#include "math/sphere/set/predefined.h"
+#include "math/sphere/set/set.h"
 
-#include "dwi/directions/predefined.h"
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
 
 
 
@@ -34,7 +36,7 @@ namespace MR {
         if (directions.cols() != 3)
           throw Exception ("unexpected number of columns for directions file \"" + filename + "\"");
 
-        return Math::Sphere::cartesian2spherical (directions);
+        return cartesian2spherical (directions);
       }
 
 
@@ -43,7 +45,7 @@ namespace MR {
       {
         auto directions = load_matrix<> (filename);
         if (directions.cols() == 2)
-          directions = Math::Sphere::spherical2cartesian (directions);
+          directions = spherical2cartesian (directions);
         else {
           if (directions.cols() != 3)
             throw Exception ("unexpected number of columns for directions file \"" + filename + "\"");
@@ -63,6 +65,7 @@ namespace MR {
 
 
 
+      }
     }
   }
 }

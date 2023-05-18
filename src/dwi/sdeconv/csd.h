@@ -21,10 +21,10 @@
 #include "header.h"
 #include "dwi/gradient.h"
 #include "math/least_squares.h"
-#include "math/SH.h"
-#include "math/ZSH.h"
-#include "dwi/directions/directions.h"
-#include "dwi/directions/predefined.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/ZSH.h"
+#include "math/sphere/set/predefined.h"
+#include "math/sphere/set/set.h"
 #include "dwi/sdeconv/sdeconv.h"
 
 #define NORM_LAMBDA_MULTIPLIER 0.0002
@@ -51,7 +51,7 @@ namespace MR
           public:
 
             Shared (const Header& dwi_header) :
-              HR_dirs (Directions::load (SDeconv::default_constraint_directions)),
+              HR_dirs (Math::Sphere::Set::Predefined::load (SDeconv::default_constraint_directions)),
               neg_lambda (DEFAULT_CSD_NEG_LAMBDA),
               norm_lambda (DEFAULT_CSD_NORM_LAMBDA),
               threshold (DEFAULT_CSD_THRESHOLD),
@@ -65,7 +65,7 @@ namespace MR
                 dwis = DWI::Shells (grad).select_shells (true, false, true).largest().get_volumes();
                 DW_dirs = DWI::gen_direction_matrix (grad, dwis);
 
-                lmax_data = Math::SH::LforN (dwis.size());
+                lmax_data = Math::Sphere::SH::LforN (dwis.size());
               }
 
 
@@ -84,7 +84,7 @@ namespace MR
                 init_filter = load_vector (opt[0][0]);
               opt = get_options ("directions");
               if (opt.size())
-                HR_dirs = Math::Sphere::to_spherical (DWI::Directions::load (std::string (opt[0][0]), true));
+                HR_dirs = Math::Sphere::Set::to_spherical (Math::Sphere::Set::load (std::string (opt[0][0]), true));
               opt = get_options ("neg_lambda");
               if (opt.size())
                 neg_lambda = opt[0][0];
@@ -110,14 +110,14 @@ namespace MR
               void set_response (const Eigen::MatrixBase<Derived>& in)
               {
                 response = in;
-                lmax_response = Math::ZSH::LforN (response.size());
+                lmax_response = Math::Sphere::ZSH::LforN (response.size());
                 INFO ("setting response function using even SH coefficients: " + str (response.transpose()));
               }
 
 
             void init ()
             {
-              using namespace Math::SH;
+              using namespace Math::Sphere::SH;
 
               if (lmax_data <= 0)
                 throw Exception ("data contain too few directions even for lmax = 2");
@@ -136,11 +136,11 @@ namespace MR
 
               if (!init_filter.size())
                 init_filter = Eigen::VectorXd::Ones(3);
-              init_filter.conservativeResizeLike (Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax_response)));
+              init_filter.conservativeResizeLike (Eigen::VectorXd::Zero (Math::Sphere::ZSH::NforL (lmax_response)));
 
-              auto RH = Math::ZSH::ZSH2RH (response);
-              if (size_t(RH.size()) < Math::ZSH::NforL (lmax))
-                RH.conservativeResizeLike (Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax)));
+              auto RH = Math::Sphere::ZSH::ZSH2RH (response);
+              if (size_t(RH.size()) < Math::Sphere::ZSH::NforL (lmax))
+                RH.conservativeResizeLike (Eigen::VectorXd::Zero (Math::Sphere::ZSH::NforL (lmax)));
 
               // inverse sdeconv for initialisation:
               auto fconv = init_transform (DW_dirs, lmax_response);

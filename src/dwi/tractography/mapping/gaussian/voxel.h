@@ -32,7 +32,7 @@ namespace MR {
           // Base class to handle case where the factor contributed by the streamline varies along its length
           //   (currently only occurs when the track-wise statistic is Gaussian)
           class VoxelAddon
-          { 
+          {
             public:
               VoxelAddon() : sum_factors (0.0) { }
               VoxelAddon (const default_type v) : sum_factors (v) { }
@@ -50,7 +50,7 @@ namespace MR {
 
 
           class Voxel : public Mapping::Voxel, public VoxelAddon
-          { 
+          {
 
             using Base = Mapping::Voxel;
 
@@ -73,7 +73,7 @@ namespace MR {
 
 
           class VoxelDEC : public Mapping::VoxelDEC, public VoxelAddon
-          { 
+          {
 
             using Base = Mapping::VoxelDEC;
 
@@ -98,12 +98,12 @@ namespace MR {
 
 
           class Dixel : public Mapping::Dixel, public VoxelAddon
-          { 
+          {
 
             using Base = Mapping::Dixel;
 
             public:
-            using index_type = DWI::Directions::index_type;
+            using index_type = Math::Sphere::Set::index_type;
 
             Dixel () : Base (), VoxelAddon () { }
             Dixel (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
@@ -123,7 +123,7 @@ namespace MR {
 
 
           class VoxelTOD : public Mapping::VoxelTOD, public VoxelAddon
-          { 
+          {
 
             using Base = Mapping::VoxelTOD;
 
@@ -156,7 +156,7 @@ namespace MR {
           // However, it's handy from a code perspective to still use the same base class
           /*
              class SetVoxelExtras
-             { 
+             {
              public:
              size_t index;
              float weight;
@@ -168,7 +168,7 @@ namespace MR {
 
 
           class SetVoxel : public std::set<Voxel>, public Mapping::SetVoxelExtras
-          { 
+          {
             public:
 
               using VoxType = Voxel;
@@ -186,7 +186,7 @@ namespace MR {
 
 
           class SetVoxelDEC : public std::set<VoxelDEC>, public Mapping::SetVoxelExtras
-          { 
+          {
             public:
 
               using VoxType = VoxelDEC;
@@ -204,7 +204,7 @@ namespace MR {
 
 
           class SetDixel : public std::set<Dixel>, public Mapping::SetVoxelExtras
-          { 
+          {
             public:
 
               using VoxType = Dixel;
@@ -223,7 +223,7 @@ namespace MR {
 
 
           class SetVoxelTOD : public std::set<VoxelTOD>, public Mapping::SetVoxelExtras
-          { 
+          {
             public:
 
               using VoxType = VoxelTOD;

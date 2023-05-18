@@ -94,12 +94,12 @@ namespace MR {
 
 
 
-      Segmenter::Segmenter (const DWI::Directions::Assigner& directions, const size_t lmax) :
+      Segmenter::Segmenter (const Math::Sphere::Set::Assigner& directions, const size_t lmax) :
           dirs                 (directions),
           lmax                 (lmax),
-          transform            (new Math::SH::Transform<default_type> (Math::Sphere::to_spherical (directions), lmax)),
-          precomputer          (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * directions.rows())),
-          weights              (new DWI::Directions::Weights (directions)),
+          transform            (new Math::Sphere::SH::Transform<default_type> (Math::Sphere::Set::to_spherical (directions), lmax)),
+          precomputer          (new Math::Sphere::SH::PrecomputedAL<default_type> (lmax, 2 * directions.rows())),
+          weights              (new Math::Sphere::Set::Weights (directions)),
           max_num_fixels       (0),
           integral_threshold   (FMLS_INTEGRAL_THRESHOLD_DEFAULT),
           peak_value_threshold (FMLS_PEAK_VALUE_THRESHOLD_DEFAULT),
@@ -117,7 +117,7 @@ namespace MR {
 
       bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
-        assert (in.size() == ssize_t (Math::SH::NforL (lmax)));
+        assert (in.size() == ssize_t (Math::Sphere::SH::NforL (lmax)));
 
         out.clear();
         out.vox = in.vox;
@@ -216,8 +216,8 @@ namespace MR {
 
             // Revise multiple peaks if present
             for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
-              Eigen::Vector3d newton_peak_dir = i->get_peak_dir (peak_index); // to be updated by subsequent Math::SH::get_peak() call
-              const default_type newton_peak_value = Math::SH::get_peak (in, lmax, newton_peak_dir, &(*precomputer));
+              Eigen::Vector3d newton_peak_dir = i->get_peak_dir (peak_index); // to be updated by subsequent Math::Sphere::SH::get_peak() call
+              const default_type newton_peak_value = Math::Sphere::SH::get_peak (in, lmax, newton_peak_dir, &(*precomputer));
               if (std::isfinite (newton_peak_value) && newton_peak_dir.allFinite()) {
 
                 // Ensure that the new peak direction found via Newton optimisation

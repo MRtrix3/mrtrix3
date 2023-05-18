@@ -28,7 +28,7 @@
 
 #include "file/ofstream.h"
 
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 
 #include "fixel/legacy/fixel_metric.h"
 #include "fixel/legacy/image.h"
@@ -66,8 +66,8 @@ namespace MR
       void ModelBase<Fixel>::output_target_sh (const std::string& path) const
       {
         const size_t L = 8;
-        const size_t N = Math::SH::NforL (L);
-        Math::SH::aPSF<default_type> aPSF (L);
+        const size_t N = Math::Sphere::SH::NforL (L);
+        Math::Sphere::SH::aPSF<default_type> aPSF (L);
         Header H_sh (Fixel_map<Fixel>::header());
         H_sh.ndim() = 4;
         H_sh.size(3) = N;
@@ -146,8 +146,8 @@ namespace MR
       {
         const default_type current_mu = mu();
         const size_t L = 8;
-        const size_t N = Math::SH::NforL (L);
-        Math::SH::aPSF<default_type> aPSF (L);
+        const size_t N = Math::Sphere::SH::NforL (L);
+        Math::Sphere::SH::aPSF<default_type> aPSF (L);
         Header H_sh (Fixel_map<Fixel>::header());
         H_sh.ndim() = 4;
         H_sh.size(3) = N;

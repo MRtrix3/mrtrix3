@@ -14,17 +14,18 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_assigner_h__
-#define __dwi_directions_assigner_h__
+#ifndef __math_sphere_set_assigner_h__
+#define __math_sphere_set_assigner_h__
 
 #include "types.h"
 
-#include "dwi/directions/adjacency.h"
+#include "math/sphere/set/adjacency.h"
 
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
 
 
 
@@ -58,7 +59,7 @@ namespace MR {
 
 
 
-
+      }
     }
   }
 }

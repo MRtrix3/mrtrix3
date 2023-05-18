@@ -14,12 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/directions/predefined.h"
+#include "math/sphere/set/predefined.h"
 
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
+        namespace Predefined {
 
 
 
@@ -17302,6 +17304,9 @@ namespace MR {
 
 
 
+
+        }
+      }
     }
   }
 }

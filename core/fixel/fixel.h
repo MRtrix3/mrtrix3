@@ -18,6 +18,7 @@
 #ifndef __fixel_fixel_h__
 #define __fixel_fixel_h__
 
+#include <stdint.h>
 #include <string>
 
 namespace MR

@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "types.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "image.h"
 #include "header.h"
 #include "adapter/subset.h"
@@ -64,7 +64,7 @@ namespace MR
         }
     }
 
-    struct MultiContrastSetting { 
+    struct MultiContrastSetting {
       size_t start; // index to volume in image holding all tissue contrasts
       size_t nvols; // number of volumes preloaded into image holding all tissue contrasts
       ssize_t lmax;  // maximum requested lmax
@@ -77,7 +77,7 @@ namespace MR
       MultiContrastSetting (size_t image_nvols, bool do_reorientation = false, ssize_t limit_lmax = std::numeric_limits<ssize_t>::max()) :
         start (0), nvols (image_nvols), do_reorientation (do_reorientation), weight (1.0) {
           if (do_reorientation) {
-            image_lmax = Math::SH::LforN (image_nvols);
+            image_lmax = Math::Sphere::SH::LforN (image_nvols);
             lmax = image_lmax;
           } else {
             image_lmax = 0;
@@ -91,7 +91,7 @@ namespace MR
         if (new_lmax < lmax) {
           lmax = new_lmax;
           if (new_lmax > 0) {
-            nvols =  Math::SH::NforL (new_lmax);
+            nvols =  Math::Sphere::SH::NforL (new_lmax);
           } else {
             nvols = 1;
           }

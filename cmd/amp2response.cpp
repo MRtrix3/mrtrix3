@@ -23,12 +23,12 @@
 #include "types.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "dwi/directions/directions.h"
 #include "math/constrained_least_squares.h"
 #include "math/rng.h"
-#include "math/sphere.h"
-#include "math/SH.h"
-#include "math/ZSH.h"
+#include "math/sphere/sphere.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/ZSH.h"
+#include "math/sphere/set/set.h"
 
 
 
@@ -51,7 +51,7 @@ void usage ()
      "ensures that the response function is non-negative, and monotonic (i.e. its amplitude "
      "must increase from the fibre direction out to the orthogonal plane)."
 
-   + DWI::Directions::directions_description
+   + Math::Sphere::Set::directions_description
 
    + "If multi-shell data are provided, and one or more b-value shells are not explicitly "
      "requested, the command will generate a response function for every b-value shell "
@@ -68,7 +68,7 @@ void usage ()
 
     + Option ("noconstraint", "disable the non-negativity and monotonicity constraints")
 
-    + DWI::Directions::directions_option ("when interpreting input image amplitudes with respect to orientations on the sphere",
+    + Math::Sphere::Set::directions_option ("when interpreting input image amplitudes with respect to orientations on the sphere",
                                           true,
                                           "inferred from input image header")
 
@@ -125,7 +125,7 @@ class Accumulator {
           lmax (lmax),
           dirs (dirs),
           volumes (volumes),
-          M (Eigen::MatrixXd::Zero (Math::ZSH::NforL (lmax), Math::ZSH::NforL (lmax))),
+          M (Eigen::MatrixXd::Zero (Math::Sphere::ZSH::NforL (lmax), Math::Sphere::ZSH::NforL (lmax))),
           b (Eigen::VectorXd::Zero (M.rows())),
           count (0) { }
 
@@ -170,7 +170,7 @@ class Accumulator {
         rotated_dirs_cartesian.transpose() = R * S.dirs.transpose();
 
         // Convert directions from Euclidean space to azimuth/elevation pairs
-        Eigen::MatrixXd rotated_dirs_azel = Math::Sphere::cartesian2spherical (rotated_dirs_cartesian);
+        Math::Sphere::Set::spherical_type rotated_dirs_azel = Math::Sphere::Set::cartesian2spherical (rotated_dirs_cartesian);
 
         // Constrain elevations to between 0 and pi/2
         for (ssize_t i = 0; i != rotated_dirs_azel.rows(); ++i) {
@@ -184,7 +184,7 @@ class Accumulator {
         }
 
         // Generate the ZSH -> amplitude transform
-        transform = Math::ZSH::init_amp_transform<default_type> (rotated_dirs_azel.col(1), S.lmax);
+        transform = Math::Sphere::ZSH::init_amp_transform<default_type> (rotated_dirs_azel.col(1), S.lmax);
 
         // Grab the image data
         for (size_t i = 0; i != S.volumes.size(); ++i) {
@@ -203,7 +203,7 @@ class Accumulator {
     Eigen::VectorXd amplitudes, b;
     Eigen::MatrixXd M, transform;
     size_t count;
-    Eigen::Matrix<default_type, Eigen::Dynamic, 3> rotated_dirs_cartesian;
+    Math::Sphere::Set::cartesian_type rotated_dirs_cartesian;
 };
 
 
@@ -214,7 +214,7 @@ void run ()
   auto header = Header::open (argument[0]);
 
   // May be dealing with multiple shells
-  vector<Eigen::MatrixXd> dirs_azel;
+  vector<Math::Sphere::Set::spherical_type> dirs_azel;
   vector<vector<size_t>> volumes;
   std::unique_ptr<DWI::Shells> shells;
 
@@ -232,11 +232,11 @@ void run ()
 
   auto opt = get_options ("directions");
   if (opt.size()) {
-    auto data = DWI::Directions::load (std::string (opt[0][0]), false);
+    auto data = Math::Sphere::Set::load (std::string (opt[0][0]), false);
     switch (data.cols()) {
       case 2:
       case 3:
-        dirs_azel.push_back (Math::Sphere::to_spherical (data));
+        dirs_azel.push_back (Math::Sphere::Set::to_spherical (data));
         volumes.push_back (all_volumes (dirs_azel.back().rows()));
         break;
       case 4:
@@ -253,8 +253,8 @@ void run ()
     } else {
       try {
         const auto dirs_header = deserialise_matrix<> (directions_it->second);
-        Math::Sphere::check (dirs_header, header.size (3));
-        dirs_azel.push_back (Math::Sphere::to_spherical (dirs_header));
+        Math::Sphere::Set::check (dirs_header, header.size (3));
+        dirs_azel.push_back (Math::Sphere::Set::to_spherical (dirs_header));
         volumes.push_back (all_volumes (dirs_azel.back().rows()));
       } catch (Exception& e) {
         throw Exception (e, "Corrupt direction set in header field of input image \"" + header.name() + "\"");
@@ -327,13 +327,13 @@ void run ()
 
 
 
-  Eigen::MatrixXd responses (dirs_azel.size(), Math::ZSH::NforL (max_lmax));
+  Eigen::MatrixXd responses (dirs_azel.size(), Math::Sphere::ZSH::NforL (max_lmax));
 
   for (size_t shell_index = 0; shell_index != dirs_azel.size(); ++shell_index) {
 
     // check the ZSH -> amplitude transform upfront:
     {
-      auto transform = Math::ZSH::init_amp_transform<default_type> (dirs_azel[shell_index].col(1), lmax[shell_index]);
+      auto transform = Math::Sphere::ZSH::init_amp_transform<default_type> (dirs_azel[shell_index].col(1), lmax[shell_index]);
       if (!transform.allFinite()) {
         Exception e ("Unable to construct A2SH transformation for shell b=" + str(int(std::round((*shells)[shell_index].get_mean()))) + ";");
         e.push_back ("  lmax (" + str(lmax[shell_index]) + ") may be too large for this shell");
@@ -344,7 +344,7 @@ void run ()
     }
 
 
-    auto dirs_cartesian = Math::Sphere::spherical2cartesian (dirs_azel[shell_index]);
+    auto dirs_cartesian = Math::Sphere::Set::spherical2cartesian (dirs_azel[shell_index]);
 
     Accumulator::Shared shared (lmax[shell_index], volumes[shell_index], dirs_cartesian);
     ThreadedLoop(image, 0, 3).run (Accumulator (shared), image, dir_image, mask);
@@ -364,8 +364,8 @@ void run ()
       Eigen::VectorXd els (num_angles_constraint+1);
       for (size_t i = 0; i <= num_angles_constraint; ++i)
         els[i] = default_type(i) * Math::pi / 180.0;
-      auto amp_transform   = Math::ZSH::init_amp_transform  <default_type> (els, lmax[shell_index]);
-      auto deriv_transform = Math::ZSH::init_deriv_transform<default_type> (els, lmax[shell_index]);
+      auto amp_transform   = Math::Sphere::ZSH::init_amp_transform  <default_type> (els, lmax[shell_index]);
+      auto deriv_transform = Math::Sphere::ZSH::init_deriv_transform<default_type> (els, lmax[shell_index]);
 
       Eigen::MatrixXd constraints (amp_transform.rows() + deriv_transform.rows(), amp_transform.cols());
       constraints.block (0, 0, amp_transform.rows(), amp_transform.cols()) = amp_transform;
@@ -383,7 +383,7 @@ void run ()
 
     CONSOLE ("  b=" + str((*shells)[shell_index].get_mean(), 4) + ": [" + str(rf.transpose().cast<float>()) + "]");
 
-    rf.conservativeResizeLike (Eigen::VectorXd::Zero (Math::ZSH::NforL (max_lmax)));
+    rf.conservativeResizeLike (Eigen::VectorXd::Zero (Math::Sphere::ZSH::NforL (max_lmax)));
     responses.row(shell_index) = rf;
   }
 

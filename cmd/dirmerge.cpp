@@ -17,7 +17,7 @@
 #include "command.h"
 #include "progressbar.h"
 #include "math/rng.h"
-#include "dwi/directions/file.h"
+#include "math/sphere/set/file.h"
 #include "file/ofstream.h"
 
 #include <array>
@@ -54,7 +54,7 @@ using Direction = Eigen::Matrix<value_type,3,1>;
 using DirectionSet = vector<Direction>;
 
 
-struct OutDir { 
+struct OutDir {
   Direction d;
   size_t b;
   size_t pe;
@@ -86,7 +86,7 @@ void run ()
     bvalue[nb] = to<value_type> (argument[current++]);
     vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
-      auto m = DWI::Directions::load_cartesian (argument[current++]);
+      auto m = Math::Sphere::Set::load_cartesian (argument[current++]);
       DirectionSet set;
       for (ssize_t r = 0; r < m.rows(); ++r)
         set.push_back (Direction (m(r,0), m(r,1), m(r,2)));

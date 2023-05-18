@@ -19,7 +19,7 @@
 
 #include "memory.h"
 #include "types.h"
-#include "dwi/directions/adjacency.h"
+#include "math/sphere/set/adjacency.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dwi/renderer.h"
 #include "gui/projection.h"
@@ -101,11 +101,11 @@ namespace MR
             lod_computed = lod;
             update();
           }
-          void set_dixels (const MR::DWI::Directions::CartesianWithAdjacency& directions) {
+          void set_dixels (const Math::Sphere::Set::CartesianWithAdjacency& directions) {
             assert (mode == mode_t::DIXEL);
             if (dirs)
               delete dirs.release();
-            dirs.reset (new MR::DWI::Directions::CartesianWithAdjacency (directions));
+            dirs.reset (new Math::Sphere::Set::CartesianWithAdjacency (directions));
             recompute_mesh = recompute_amplitudes = true;
             update();
           }
@@ -138,7 +138,7 @@ namespace MR
           int lmax_computed, lod_computed;
           mode_t mode;
           bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_values, color_by_dir, use_lighting, normalise;
-          std::unique_ptr<MR::DWI::Directions::CartesianWithAdjacency> dirs;
+          std::unique_ptr<Math::Sphere::Set::CartesianWithAdjacency> dirs;
 
           QPointF last_pos;
           GL::Font glfont;

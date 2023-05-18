@@ -21,8 +21,8 @@
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
-#include "dwi/directions/directions.h"
-#include "dwi/directions/predefined.h"
+#include "math/sphere/set/set.h"
+#include "math/sphere/set/predefined.h"
 #include "math/constrained_least_squares.h"
 
 using namespace MR;
@@ -97,9 +97,9 @@ void usage ()
 
     + Option ("constrain", "constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).")
 
-    + DWI::Directions::directions_option ("in the application of constraints",
-                                          false,
-                                          "built-in " + str(DEFAULT_CONSTRAINT_DIRECTIONS) + "-direction set")
+    + Math::Sphere::Set::directions_option ("in the application of constraints",
+                                            false,
+                                            "built-in " + str(DEFAULT_CONSTRAINT_DIRECTIONS) + "-direction set")
 
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
@@ -300,9 +300,9 @@ void run ()
   Eigen::MatrixXd Aneq;
   if (constrain) {
     opt = get_options ("directions");
-    const Eigen::MatrixXd constr_dirs = opt.size() ?
-                                        DWI::Directions::load (std::string (opt[0][0]), true) :
-                                        Math::Sphere::spherical2cartesian (DWI::Directions::load (DEFAULT_CONSTRAINT_DIRECTIONS));
+    const Math::Sphere::Set::cartesian_type constr_dirs = opt.size() ?
+                                                          Math::Sphere::Set::to_cartesian (Math::Sphere::Set::load (std::string (opt[0][0]), true)) :
+                                                          Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::load (DEFAULT_CONSTRAINT_DIRECTIONS));
     Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (constr_dirs, dki);
     if (dki) {
       auto maxb = grad.col(3).maxCoeff();

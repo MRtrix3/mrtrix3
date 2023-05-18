@@ -23,7 +23,7 @@
 #include "transform.h"
 #include "types.h"
 
-#include "dwi/directions/adjacency.h"
+#include "math/sphere/set/adjacency.h"
 
 #include "dwi/tractography/resampling/upsampler.h"
 #include "dwi/tractography/streamline.h"
@@ -66,7 +66,7 @@ namespace MR {
                 upsampler     (1) { }
 
             template <class HeaderType>
-            TrackMapperBase (const HeaderType& template_image, const DWI::Directions::Assigner& dirs) :
+            TrackMapperBase (const HeaderType& template_image, const Math::Sphere::Set::Assigner& dirs) :
                 info          (template_image),
                 scanner2voxel (Transform(template_image).scanner2voxel.cast<float>()),
                 map_zero      (false),
@@ -95,7 +95,7 @@ namespace MR {
               ends_only = i;
             }
 
-            void create_dixel_plugin (const DWI::Directions::Assigner& dirs)
+            void create_dixel_plugin (const Math::Sphere::Set::Assigner& dirs)
             {
               assert (!dixel_plugin && !tod_plugin);
               dixel_plugin.reset (new DixelMappingPlugin (dirs));
@@ -333,7 +333,7 @@ namespace MR {
         inline void TrackMapperBase::add_to_set (SetDixel&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
         {
           assert (dixel_plugin);
-          const DWI::Directions::index_type bin = (*dixel_plugin) (d);
+          const Math::Sphere::Set::index_type bin = (*dixel_plugin) (d);
           out.insert (v, bin, l);
         }
         inline void TrackMapperBase::add_to_set (SetVoxelTOD& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const

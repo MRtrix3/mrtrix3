@@ -22,10 +22,11 @@
 #include "image.h"
 #include "memory.h"
 #include "algo/loop.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/set/assigner.h"
+#include "math/sphere/set/set.h"
+#include "math/sphere/set/weights.h"
 #include "misc/bitset.h"
-#include "dwi/directions/assigner.h"
-#include "dwi/directions/weights.h"
 
 
 
@@ -44,7 +45,7 @@ namespace MR
     {
 
 
-      using DWI::Directions::index_type;
+      using Math::Sphere::Set::index_type;
       using lookup_type = Eigen::Array<uint8_t, Eigen::Dynamic, 1>;
 
 
@@ -58,7 +59,7 @@ namespace MR
       class FOD_lobe {
 
         public:
-          FOD_lobe (const DWI::Directions::CartesianWithAdjacency& dirs, const index_type seed, const default_type value, const default_type weight) :
+          FOD_lobe (const Math::Sphere::Set::CartesianWithAdjacency& dirs, const index_type seed, const default_type value, const default_type weight) :
               mask (dirs.size()),
               values (Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero (dirs.size())),
               max_peak_value (abs (value)),
@@ -82,7 +83,7 @@ namespace MR
               neg (false) { }
 
 
-          void add (const DWI::Directions::CartesianWithAdjacency& dirs, const index_type bin, const default_type value, const default_type weight)
+          void add (const Math::Sphere::Set::CartesianWithAdjacency& dirs, const index_type bin, const default_type value, const default_type weight)
           {
             assert ((value <= 0.0 && neg) || (value >= 0.0 && !neg));
             mask[bin] = true;
@@ -213,7 +214,7 @@ namespace MR
       class Segmenter {
 
         public:
-          Segmenter (const DWI::Directions::Assigner&, const size_t);
+          Segmenter (const Math::Sphere::Set::Assigner&, const size_t);
 
           bool operator() (const SH_coefs&, FOD_lobes&) const;
 
@@ -235,13 +236,13 @@ namespace MR
           // Assigner is required for ensuring that when a peak direction is
           //   revised using Newton optimisation, that direction is still reflective
           //   of the original peak; i.e. it hasn't 'leaped' across to a different peak
-          const DWI::Directions::Assigner& dirs;
+          const Math::Sphere::Set::Assigner& dirs;
 
           const size_t lmax;
 
-          std::shared_ptr<Math::SH::Transform    <default_type>> transform;
-          std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
-          std::shared_ptr<DWI::Directions::Weights> weights;
+          std::shared_ptr<Math::Sphere::SH::Transform    <default_type>> transform;
+          std::shared_ptr<Math::Sphere::SH::PrecomputedAL<default_type>> precomputer;
+          std::shared_ptr<Math::Sphere::Set::Weights> weights;
 
           size_t       max_num_fixels;       // Maximal number of fixels to keep in any voxel
           default_type integral_threshold;   // Integral of positive lobe must be at least this value

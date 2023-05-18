@@ -14,21 +14,18 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_adjacency_h__
-#define __dwi_directions_adjacency_h__
-
+#ifndef __math_sphere_set_adjacency_h__
+#define __math_sphere_set_adjacency_h__
 
 #include "types.h"
-#include "math/sphere.h"
+#include "math/sphere/set/set.h"
 #include "misc/bitset.h"
 
-#include "dwi/directions/directions.h"
-
-
-
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
+
 
 
       class Adjacency : public vector<vector<index_type>> {
@@ -38,7 +35,7 @@ namespace MR {
           template <class MatrixType>
           Adjacency (const Eigen::MatrixBase<MatrixType>& dirs)
           {
-            initialise (Math::Sphere::to_cartesian (dirs));
+            initialise (to_cartesian (dirs));
           }
 
           // Are the directions corresponding to these two indices adjacent to one another?
@@ -63,7 +60,7 @@ namespace MR {
           index_type distance (const index_type one, const index_type two) const;
 
         private:
-          void initialise (const Eigen::Matrix<default_type, Eigen::Dynamic, 3>& dirs); // Expects prior conversion to cartesian
+          void initialise (const cartesian_type& dirs); // Expects prior conversion to cartesian
 
       };
 
@@ -71,13 +68,13 @@ namespace MR {
 
 
 
-      class CartesianWithAdjacency : public Eigen::Matrix<default_type, Eigen::Dynamic, 3>
+      class CartesianWithAdjacency : public cartesian_type
       {
         public:
           using BaseType = Eigen::Matrix<default_type, Eigen::Dynamic, 3>;
           template <class MatrixType>
           CartesianWithAdjacency (const Eigen::MatrixBase<MatrixType>& dirs) :
-              BaseType (Math::Sphere::to_cartesian (dirs)),
+              BaseType (to_cartesian (dirs)),
               adjacency (*this) {}
           size_t size() const { return rows(); }
           Eigen::Matrix<default_type, Eigen::Dynamic, 3>::ConstRowXpr operator[] (const size_t i) const { assert (i < rows()); return row(i); }
@@ -86,6 +83,7 @@ namespace MR {
 
 
 
+      }
     }
   }
 }

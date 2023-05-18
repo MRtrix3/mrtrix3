@@ -20,8 +20,9 @@
 
 #include "thread.h"
 #include "thread_queue.h"
-#include "dwi/directions/adjacency.h"
-#include "dwi/directions/predefined.h"
+#include "math/sphere/set/adjacency.h"
+#include "math/sphere/set/predefined.h"
+
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/roi.h"
@@ -81,9 +82,9 @@ namespace MR
                 using TckMapper = Mapping::TrackMapperBase;
                 using Writer = Seeding::WriteKernelDynamic;
 
-                DWI::Directions::Assigner dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
+                Math::Sphere::Set::Assigner dirs (Math::Sphere::Set::Predefined::load (FMLS_DEFAULT_DIRECTION_SET));
                 auto fod_data = Image<float>::open (fod_path);
-                Math::SH::check (fod_data);
+                Math::Sphere::SH::check (fod_data);
                 Seeding::Dynamic* seeder = new Seeding::Dynamic (fod_path, fod_data, num_tracks, dirs);
                 properties.seeds.add (seeder); // List is responsible for deleting this from memory
 

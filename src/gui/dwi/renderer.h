@@ -20,12 +20,12 @@
 #include <QOpenGLWidget>
 #include <Eigen/Eigenvalues>
 
+#include "math/sphere/set/adjacency.h"
+#include "math/sphere/SH.h"
 #include "gui/gui.h"
-#include "dwi/directions/adjacency.h"
 #include "gui/shapes/halfsphere.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
-#include "math/SH.h"
 
 namespace MR
 {
@@ -202,7 +202,7 @@ namespace MR
           class Dixel : public ModeBase
           {
 
-              using dir_t = MR::DWI::Directions::index_type;
+              using dir_t = Math::Sphere::Set::index_type;
 
             public:
               Dixel (Renderer& parent) :
@@ -216,7 +216,7 @@ namespace MR
               void set_data (const vector_t&, int buffer_ID = 0) const override;
               GLuint num_indices() const override { return index_count; }
 
-              void update_mesh (const MR::DWI::Directions::CartesianWithAdjacency&);
+              void update_mesh (const Math::Sphere::Set::CartesianWithAdjacency&);
 
             private:
               GL::VertexBuffer vertex_buffer, value_buffer;
@@ -224,7 +224,7 @@ namespace MR
               GL::VertexArrayObject VAO;
               GLuint vertex_count, index_count;
 
-              void update_dixels (const MR::DWI::Directions::CartesianWithAdjacency&);
+              void update_dixels (const Math::Sphere::Set::CartesianWithAdjacency&);
 
           } dixel;
 

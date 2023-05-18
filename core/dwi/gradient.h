@@ -23,8 +23,8 @@
 #include "file/config.h"
 #include "file/path.h"
 #include "math/condition_number.h"
-#include "math/sphere.h"
-#include "math/SH.h"
+#include "math/sphere/set/set.h"
+#include "math/sphere/SH.h"
 
 
 namespace MR
@@ -101,9 +101,9 @@ namespace MR
       if (dirs.cols() == 2) // spherical coordinates:
         g = dirs;
       else // Cartesian to spherical:
-        g = Math::Sphere::cartesian2spherical (dirs).leftCols(2);
+        g = Math::Sphere::Set::cartesian2spherical (dirs).leftCols(2);
 
-      return Math::condition_number (Math::SH::init_transform (g, lmax));
+      return Math::condition_number (Math::Sphere::SH::init_transform (g, lmax));
     }
 
 
@@ -267,7 +267,7 @@ namespace MR
           int default_lmax = 8)
       {
         int lmax = -1;
-        int lmax_from_ndir = Math::SH::LforN (directions.rows());
+        int lmax_from_ndir = Math::Sphere::SH::LforN (directions.rows());
         bool lmax_set_from_commandline = false;
         if (lmax_from_command_line) {
           auto opt = App::get_options ("lmax");
@@ -296,7 +296,7 @@ namespace MR
         int lmax_prev = lmax;
         Eigen::MatrixXd mapping;
         do {
-          mapping = Math::SH::init_transform (directions, lmax);
+          mapping = Math::Sphere::SH::init_transform (directions, lmax);
           const default_type cond = Math::condition_number (mapping);
           if (cond < 10.0)
             break;
@@ -326,7 +326,7 @@ namespace MR
           const int default_lmax = 8)
       {
         const auto mapping = compute_SH2amp_mapping (directions, lmax_from_command_line, default_lmax);
-        return Math::SH::LforN (mapping.cols());
+        return Math::Sphere::SH::LforN (mapping.cols());
       }
 
 

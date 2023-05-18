@@ -24,7 +24,7 @@
 #include "types.h"
 
 #include "algo/loop.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "misc/bitset.h"
 
 
@@ -58,7 +58,7 @@ void usage ()
       "command has previously been unable to automatically determine the SH basis from the "
       "image data, but the user themselves are confident of the SH basis of the data."
 
-    + Math::SH::encoding_description;
+    + Math::Sphere::SH::encoding_description;
 
 
   ARGUMENTS
@@ -101,12 +101,12 @@ void check_and_update (Header& H, const conv_t conversion)
 {
 
   const size_t N = H.size(3);
-  const size_t lmax = Math::SH::LforN (N);
+  const size_t lmax = Math::Sphere::SH::LforN (N);
 
   // Flag which volumes are m==0 and which are not
   BitSet mzero_terms (N, false);
   for (size_t l = 2; l <= lmax; l += 2)
-    mzero_terms[Math::SH::index (l, 0)] = true;
+    mzero_terms[Math::Sphere::SH::index (l, 0)] = true;
 
   // Open in read-write mode if there's a chance of modification
   auto image = H.get_image<value_type> (true);
@@ -143,7 +143,7 @@ void check_and_update (Header& H, const conv_t conversion)
   for (size_t l = 2; l <= lmax; l += 2) {
 
     double mzero_sum = 0.0, mnonzero_sum = 0.0;
-    for (image.index(3) = ssize_t (Math::SH::NforL(l-2)); image.index(3) != ssize_t (Math::SH::NforL(l)); ++image.index(3)) {
+    for (image.index(3) = ssize_t (Math::Sphere::SH::NforL(l-2)); image.index(3) != ssize_t (Math::Sphere::SH::NforL(l)); ++image.index(3)) {
       double sum = 0.0;
       for (auto i = Loop (image, 0, 3) (image, mask); i; ++i) {
         if (mask.value())
@@ -318,7 +318,7 @@ void run ()
     const std::string path = *i;
     Header H = Header::open (path);
     try {
-      Math::SH::check (H);
+      Math::Sphere::SH::check (H);
     }
     catch (Exception& E) {
       E.display(0);

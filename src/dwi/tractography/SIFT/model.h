@@ -22,9 +22,9 @@
 #include "thread_queue.h"
 #include "types.h"
 
-#include "dwi/fixel_map.h"
+#include "math/sphere/set/adjacency.h"
 
-#include "dwi/directions/adjacency.h"
+#include "dwi/fixel_map.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -64,7 +64,7 @@ namespace MR
 
         public:
           template <class Set>
-          Model (Set& dwi, const DWI::Directions::Assigner& dirs) :
+          Model (Set& dwi, const Math::Sphere::Set::Assigner& dirs) :
               ModelBase<Fixel> (dwi, dirs)
           {
             Track_fixel_contribution::set_scaling (dwi);

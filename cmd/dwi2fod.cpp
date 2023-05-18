@@ -21,9 +21,9 @@
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 
-#include "dwi/directions/directions.h"
+#include "math/sphere/set/set.h"
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
 #include "dwi/sdeconv/sdeconv.h"
@@ -39,9 +39,9 @@ const char* const algorithms[] = { "csd", "msmt_csd", NULL };
 
 OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
 
-    + DWI::Directions::directions_option ("for application of the non-negativity constraint",
-                                          false,
-                                          "built-in " + str(DWI::SDeconv::default_constraint_directions) + "-direction set")
+    + Math::Sphere::Set::directions_option ("for application of the non-negativity constraint",
+                                            false,
+                                            "built-in " + str(DWI::SDeconv::default_constraint_directions) + "-direction set")
 
     + Option ("lmax",
               "the maximum spherical harmonic order for the output FOD(s)."
@@ -65,7 +65,7 @@ void usage ()
   SYNOPSIS = "Estimate fibre orientation distributions from diffusion data using spherical deconvolution";
 
   DESCRIPTION
-    + Math::SH::encoding_description;
+    + Math::Sphere::SH::encoding_description;
 
   EXAMPLES
     + Example ("Perform single-shell single-tissue CSD",
@@ -308,7 +308,7 @@ void run ()
 
     vector< Image<float> > odfs;
     for (size_t i = 0; i < num_tissues; ++i) {
-      header_out.size (3) = Math::SH::NforL (shared.lmax[i]);
+      header_out.size (3) = Math::Sphere::SH::NforL (shared.lmax[i]);
       odfs.push_back (Image<float> (Image<float>::create (odf_paths[i], header_out)));
     }
 

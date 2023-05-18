@@ -20,7 +20,7 @@
 
 #include "algo/loop.h"
 
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
@@ -44,7 +44,7 @@ void usage ()
     "that can be visualised using the ODF tool in MRview. The output ODF lobes "
     "are scaled according to the values in the input fixel image."
 
-  + Math::SH::encoding_description
+  + Math::Sphere::SH::encoding_description
 
   + Fixel::format_description;
 
@@ -70,8 +70,8 @@ void run ()
   auto opt = get_options ("lmax");
   if (opt.size())
     lmax = opt[0][0];
-  const size_t n_sh_coeff = Math::SH::NforL (lmax);
-  Math::SH::aPSF<default_type> aPSF (lmax);
+  const size_t n_sh_coeff = Math::Sphere::SH::NforL (lmax);
+  Math::Sphere::SH::aPSF<default_type> aPSF (lmax);
 
   Header out_header (in_index_header);
   out_header.datatype() = DataType::Float32;

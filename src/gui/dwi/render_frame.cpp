@@ -216,13 +216,13 @@ namespace MR
               size_t nSH = 0;
               switch (mode) {
                 case mode_t::SH:
-                  nSH = Math::SH::NforL (lmax_computed);
+                  nSH = Math::Sphere::SH::NforL (lmax_computed);
                   if (size_t(values.rows()) < nSH) {
                     Eigen::Matrix<float, Eigen::Dynamic, 1> new_values = Eigen::Matrix<float, Eigen::Dynamic, 1>::Zero (nSH);
                     new_values.topRows (values.rows()) = values;
                     std::swap (values, new_values);
                   }
-                  renderer.sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax_computed)));
+                  renderer.sh.compute_r_del_daz (r_del_daz, values.topRows (Math::Sphere::SH::NforL (lmax_computed)));
                   renderer.sh.set_data (r_del_daz);
                   break;
                 case mode_t::TENSOR:

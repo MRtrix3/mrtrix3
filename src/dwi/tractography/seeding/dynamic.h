@@ -23,8 +23,8 @@
 
 #include "transform.h"
 #include "thread_queue.h"
+#include "math/sphere/set/adjacency.h"
 #include "dwi/fmls.h"
-#include "dwi/directions/adjacency.h"
 #include "dwi/tractography/ACT/tissues.h"
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/mapping/voxel.h"
@@ -215,7 +215,7 @@ namespace MR
 
 
         public:
-        Dynamic (const std::string&, Image<float>&, const size_t, const DWI::Directions::CartesianWithAdjacency&);
+        Dynamic (const std::string&, Image<float>&, const size_t, const Math::Sphere::Set::CartesianWithAdjacency&);
         ~Dynamic();
 
         Dynamic (const Dynamic&) = delete;

@@ -18,8 +18,8 @@
 
 #include "header.h"
 #include "dwi/gradient.h"
-#include "math/SH.h"
-#include "dwi/directions/predefined.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/set/predefined.h"
 
 namespace MR
 {
@@ -34,7 +34,7 @@ namespace MR
         ODF_Item::ODF_Item (MR::Header&& H, const odf_type_t type, const float scale, const bool hide_negative, const bool color_by_direction) :
             image (std::move (H)),
             odf_type (type),
-            lmax (odf_type == odf_type_t::SH ? Math::SH::LforN (image.header().size (3)) : -1),
+            lmax (odf_type == odf_type_t::SH ? Math::Sphere::SH::LforN (image.header().size (3)) : -1),
             scale (scale),
             hide_negative (hide_negative),
             color_by_direction (color_by_direction),
@@ -87,7 +87,7 @@ namespace MR
           if (entry != H.keyval().end()) {
             try {
               header_dirs = deserialise_matrix (entry->second);
-              Math::Sphere::check (header_dirs, H.size (3));
+              Math::Sphere::Set::check (header_dirs, H.size (3));
             } catch (Exception& e) {
               DEBUG (e[0]);
               header_dirs.resize (0, 0);
@@ -104,7 +104,7 @@ namespace MR
           const vector<size_t>& volumes = (*shells)[index].get_volumes();
           for (size_t row = 0; row != volumes.size(); ++row)
             shell_dirs.row (row) = grad.row (volumes[row]).head<3>();
-          auto new_dirs = MR::make_unique<MR::DWI::Directions::CartesianWithAdjacency> (shell_dirs);
+          auto new_dirs = MR::make_unique<Math::Sphere::Set::CartesianWithAdjacency> (shell_dirs);
           std::swap (dirs, new_dirs);
           shell_index = index;
           dir_type = DixelPlugin::dir_t::DW_SCHEME;
@@ -113,13 +113,13 @@ namespace MR
         void ODF_Item::DixelPlugin::set_header() {
           if (!header_dirs.rows())
             throw Exception ("No direction scheme defined in header");
-          auto new_dirs = MR::make_unique<MR::DWI::Directions::CartesianWithAdjacency> (header_dirs);
+          auto new_dirs = MR::make_unique<Math::Sphere::Set::CartesianWithAdjacency> (header_dirs);
           std::swap (dirs, new_dirs);
           dir_type = DixelPlugin::dir_t::HEADER;
         }
 
         void ODF_Item::DixelPlugin::set_internal (const size_t n) {
-          auto new_dirs = MR::make_unique<MR::DWI::Directions::CartesianWithAdjacency> (MR::DWI::Directions::load (n));
+          auto new_dirs = MR::make_unique<Math::Sphere::Set::CartesianWithAdjacency> (Math::Sphere::Set::Predefined::load (n));
           std::swap (dirs, new_dirs);
           dir_type = DixelPlugin::dir_t::INTERNAL;
         }
@@ -132,7 +132,7 @@ namespace MR
 
         void ODF_Item::DixelPlugin::set_from_file (const std::string& path)
         {
-          auto new_dirs = MR::make_unique<MR::DWI::Directions::CartesianWithAdjacency> (MR::DWI::Directions::load (path, true));
+          auto new_dirs = MR::make_unique<Math::Sphere::Set::CartesianWithAdjacency> (Math::Sphere::Set::load (path, true));
           std::swap (dirs, new_dirs);
           dir_type = DixelPlugin::dir_t::FILE;
         }

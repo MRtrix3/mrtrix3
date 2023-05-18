@@ -21,8 +21,8 @@
 
 #include "file/path.h"
 
-#include "dwi/directions/adjacency.h"
-#include "dwi/directions/predefined.h"
+#include "math/sphere/set/adjacency.h"
+#include "math/sphere/set/predefined.h"
 
 #include "dwi/tractography/mapping/fixel_td_map.h"
 
@@ -161,7 +161,7 @@ void run ()
 
   auto in_dwi = Image<float>::open (argument[1]);
 
-  DWI::Directions::Assigner dirs (DWI::Directions::load (FMLS_DEFAULT_DIRECTION_SET));
+  Math::Sphere::Set::Assigner dirs (Math::Sphere::Set::Predefined::load (FMLS_DEFAULT_DIRECTION_SET));
 
   TckFactor tckfactor (in_dwi, dirs);
 

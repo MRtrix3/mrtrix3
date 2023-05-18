@@ -20,7 +20,7 @@
 
 #include "app.h"
 
-#include "dwi/directions/directions.h"
+#include "math/sphere/set/set.h"
 
 namespace MR
 {
@@ -39,9 +39,9 @@ namespace MR
     const OptionGroup fod_options =
           OptionGroup ("FOD registration options")
 
-          + DWI::Directions::directions_option ("of FOD reorientation using apodised point spread functions",
-                                                false,
-                                                "built-in " + str(default_fod_reorientation_directions) + "-direction set")
+          + Math::Sphere::Set::directions_option ("of FOD reorientation using apodised point spread functions",
+                                                  false,
+                                                  "built-in " + str(default_fod_reorientation_directions) + "-direction set")
 
           + Option ("noreorientation", "turn off FOD reorientation; reorientation is on by default if the number "
                                        "of volumes in the 4th dimension corresponds to the number of coefficients in a real & "

@@ -14,24 +14,25 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/directions/weights.h"
+#include "math/sphere/set/weights.h"
 
-#include "math/SH.h"
-#include "math/sphere.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/set/set.h"
 
 
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
 
 
 
       Weights::Weights (const Eigen::MatrixXd& dirs) :
           data (dirs.size())
       {
-        const size_t calibration_lmax = Math::SH::LforN (dirs.rows()) + 2;
-        auto calibration_SH2A = Math::SH::init_transform (Math::Sphere::to_spherical (dirs), calibration_lmax);
+        const size_t calibration_lmax = SH::LforN (dirs.rows()) + 2;
+        auto calibration_SH2A = SH::init_transform (to_spherical (dirs), calibration_lmax);
         const size_t num_basis_fns = calibration_SH2A.cols();
 
         // Integrating an FOD with constant amplitude 1 (l=0 term = sqrt(4pi)) should produce a value of 4pi
@@ -54,6 +55,7 @@ namespace MR {
 
 
 
+      }
     }
   }
 }

@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_predefined_h__
-#define __dwi_directions_predefined_h__
+#ifndef __math_sphere_set_predefined_h__
+#define __math_sphere_set_predefined_h__
 
 
 #include "mrtrix.h"
@@ -23,8 +23,10 @@
 
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
+        namespace Predefined {
 
 
 
@@ -85,6 +87,10 @@ namespace MR {
       //! 5th-order tessellation of an icosahedron
       inline Eigen::MatrixXd tesselation_5121 () { return copy (tesselation_5121_data, 5121); }
 
+
+
+        }
+      }
     }
   }
 }

@@ -338,7 +338,7 @@ namespace MR
             Eigen::VectorXf values;
             switch (settings->odf_type) {
               case odf_type_t::SH:
-                values.resize (Math::SH::NforL (settings->lmax));
+                values.resize (Math::Sphere::SH::NforL (settings->lmax));
                 break;
               case odf_type_t::TENSOR:
                 values.resize (6);
@@ -363,7 +363,7 @@ namespace MR
                 switch (settings->odf_type) {
                   case odf_type_t::SH:
                     if (values[0] == 0.0) continue;
-                    renderer->sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax)));
+                    renderer->sh.compute_r_del_daz (r_del_daz, values.topRows (Math::Sphere::SH::NforL (lmax)));
                     renderer->sh.set_data (r_del_daz);
                     break;
                   case odf_type_t::TENSOR:
@@ -806,7 +806,7 @@ namespace MR
           Eigen::VectorXf values;
           switch (settings->odf_type) {
             case odf_type_t::SH:
-              values.resize (Math::SH::NforL (lmax_selector->value()));
+              values.resize (Math::Sphere::SH::NforL (lmax_selector->value()));
               break;
             case odf_type_t::TENSOR:
               values.resize (6);

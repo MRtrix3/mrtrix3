@@ -18,7 +18,7 @@
 
 #include "app.h"
 #include "dwi/fmls.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/seeding/dynamic.h"
 
@@ -65,7 +65,7 @@ namespace MR
 
 
 
-      Dynamic::Dynamic (const std::string& in, Image<float>& fod_data, const size_t num, const DWI::Directions::CartesianWithAdjacency& dirs) :
+      Dynamic::Dynamic (const std::string& in, Image<float>& fod_data, const size_t num, const Math::Sphere::Set::CartesianWithAdjacency& dirs) :
           Base (in, "dynamic", MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC),
           SIFT::ModelBase<Fixel_TD_seed> (fod_data, dirs),
           target_trackcount (num),

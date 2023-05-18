@@ -19,9 +19,9 @@
 #include "header.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "math/sphere.h"
-
-#include "dwi/directions/file.h"
+#include "math/sphere/sphere.h"
+#include "math/sphere/set/file.h"
+#include "math/sphere/set/set.h"
 
 
 
@@ -94,20 +94,20 @@ void usage ()
 
 int precision = 6;
 
-void report (const std::string& title, Eigen::MatrixXd& directions);
+void report (const std::string& title, Math::Sphere::Set::cartesian_type& directions);
 
 
 
 void run ()
 {
-  Eigen::MatrixXd directions;
+  Math::Sphere::Set::cartesian_type directions;
 
   try {
-    directions = DWI::Directions::load_cartesian (argument[0]);
+    directions = Math::Sphere::Set::load_cartesian (argument[0]);
   }
   catch (Exception& E) {
     try {
-      directions = load_matrix<double> (argument[0]);
+      directions = load_matrix<default_type> (argument[0]);
     }
     catch (Exception& E) {
       auto header = Header::open (argument[0]);
@@ -125,7 +125,7 @@ void run ()
     }
 
 
-    Eigen::MatrixXd dirs;
+    Math::Sphere::Set::cartesian_type dirs;
 
     for (size_t n = n_start; n < shells.count(); ++n) {
       dirs.resize (shells[n].count(), 3);
@@ -183,7 +183,7 @@ vector<default_type> summarise_E (const vector<double>& E)
 
 
 class Metrics
-{ 
+{
   public:
     vector<default_type> BN, UN, BE, UE, SH;
     default_type ASYM;
@@ -195,7 +195,7 @@ class Metrics
 
 
 
-Metrics compute (Eigen::MatrixXd& directions)
+Metrics compute (Math::Sphere::Set::cartesian_type& directions)
 {
   if (directions.cols() < 3)
     throw Exception ("unexpected matrix size for scheme \"" + str(argument[0]) + "\"");
@@ -236,7 +236,7 @@ Metrics compute (Eigen::MatrixXd& directions)
   metrics.UE = summarise_E (E_unipolar);
   metrics.BE = summarise_E (E_bipolar);
 
-  for (size_t lmax = 2; lmax <= Math::SH::LforN (directions.rows()); lmax += 2)
+  for (size_t lmax = 2; lmax <= Math::Sphere::SH::LforN (directions.rows()); lmax += 2)
     metrics.SH.push_back (DWI::condition_number_for_lmax (directions, lmax));
 
   metrics.ASYM = directions.leftCols(3).colwise().mean().norm();
@@ -287,7 +287,7 @@ void output_selected (const Metrics& metrics, const std::string& selection)
 
 
 
-void report (const std::string& title, Eigen::MatrixXd& directions)
+void report (const std::string& title, Math::Sphere::Set::cartesian_type& directions)
 {
   auto metrics = compute (directions);
 
