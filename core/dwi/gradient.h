@@ -72,39 +72,10 @@ namespace MR
      * azimuth/elevation direction set, using only the DWI volumes as per \a
      * dwi */
     template <class MatrixType, class IndexVectorType>
-      inline Eigen::MatrixXd gen_direction_matrix (
-          const MatrixType& grad,
-          const IndexVectorType& dwi)
+      inline Math::Sphere::Set::spherical_type gen_direction_matrix (const MatrixType& grad, const IndexVectorType& dwis)
       {
-        Eigen::MatrixXd dirs (dwi.size(),2);
-        for (size_t i = 0; i < dwi.size(); i++) {
-          dirs (i,0) = std::atan2 (grad (dwi[i],1), grad (dwi[i],0));
-          auto z = grad (dwi[i],2) / grad.row (dwi[i]).template head<3>().norm();
-          if (z >= 1.0)
-            dirs(i,1) = 0.0;
-          else if (z <= -1.0)
-            dirs (i,1) = Math::pi;
-          else
-            dirs (i,1) = std::acos (z);
-        }
-        return dirs;
+        return Math::Sphere::Set::cartesian2spherical (Math::Sphere::Set::subset (grad, dwis).template leftCols<3>());
       }
-
-
-
-
-
-    template <class MatrixType>
-    default_type condition_number_for_lmax (const MatrixType& dirs, int lmax)
-    {
-      Eigen::MatrixXd g;
-      if (dirs.cols() == 2) // spherical coordinates:
-        g = dirs;
-      else // Cartesian to spherical:
-        g = Math::Sphere::Set::cartesian2spherical (dirs).leftCols(2);
-
-      return Math::condition_number (Math::Sphere::SH::init_transform (g, lmax));
-    }
 
 
 
@@ -129,24 +100,6 @@ namespace MR
 
 
 
-    namespace
-    {
-      template <class MatrixType>
-      std::string scheme2str (const MatrixType& G)
-      {
-        std::string dw_scheme;
-        for (ssize_t row = 0; row < G.rows(); ++row) {
-          std::string line = str(G(row,0), 10);
-          for (ssize_t col = 1; col < G.cols(); ++col)
-            line += "," + str(G(row,col), 10);
-          add_line (dw_scheme, line);
-        }
-        return dw_scheme;
-      }
-    }
-
-
-
     //! store the DW gradient encoding matrix in a header
     /*! this will store the DW gradient encoding matrix into the
      * Header::keyval() structure of \a header, under the key 'dw_scheme'.
@@ -162,7 +115,7 @@ namespace MR
         }
         try {
           check_DW_scheme (header, G);
-          header.keyval()["dw_scheme"] = scheme2str (G);
+          header.keyval()["dw_scheme"] = serialise_matrix (G);
         } catch (Exception&) {
           WARN ("attempt to add non-matching DW scheme to header - ignored");
         }
@@ -213,7 +166,7 @@ namespace MR
     {
       clear_DW_scheme (header);
       if (grad.rows())
-        header.keyval()["prior_dw_scheme"] = scheme2str (grad);
+        header.keyval()["prior_dw_scheme"] = serialise_matrix (grad);
     }
 
 

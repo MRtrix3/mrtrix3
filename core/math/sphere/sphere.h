@@ -83,7 +83,13 @@ namespace MR {
         assert (az_el_r.size() == 2 or az_el_r.size() == 3);
         auto r = std::sqrt (Math::pow2(xyz[0]) + Math::pow2(xyz[1]) + Math::pow2(xyz[2]));
         az_el_r[0] = std::atan2 (xyz[1], xyz[0]);
-        az_el_r[1] = std::acos (xyz[2] / r);
+        auto z = xyz[2] / r;
+        if (z >= 1.0)
+          az_el_r[1] = 0.0;
+        else if (z <= -1.0)
+          az_el_r[1] = Math::pi;
+        else
+          az_el_r[1] = std::acos (z);
         if (az_el_r.size() == 3)
           az_el_r[2] = r;
       }
@@ -104,7 +110,7 @@ namespace MR {
 
       //! normalise a set of Cartesian coordinates
       template <class MatrixType>
-      inline void normalise_cartesian (MatrixType& cartesian)
+      inline void normalise (MatrixType& cartesian)
       {
         assert (cartesian.cols() == 3);
         for (ssize_t i = 0; i < cartesian.rows(); i++) {
@@ -113,6 +119,22 @@ namespace MR {
             cartesian.row(i).array() /= norm;
         }
       }
+
+
+
+      //! provide a normalised version of a set of Cartesian coordinates
+      template <class MatrixType>
+      inline MatrixType normalised (const MatrixType& cartesian)
+      {
+        assert (cartesian.cols() == 3);
+        MatrixType result (cartesian.rows(), 3);
+        for (ssize_t i = 0; i < cartesian.rows(); i++) {
+          auto norm = cartesian.row(i).norm();
+          result.row(i).array() = norm ? (cartesian.row(i).array() /= norm) : cartesian.row(i).array();
+        }
+        return result;
+      }
+
 
 
 

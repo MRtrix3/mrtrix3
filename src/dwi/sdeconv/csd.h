@@ -204,7 +204,7 @@ namespace MR
 
             Eigen::MatrixXd grad;
             Eigen::VectorXd response, init_filter;
-            Eigen::MatrixXd DW_dirs, HR_dirs;
+            Math::Sphere::Set::spherical_type DW_dirs, HR_dirs;
             Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
             default_type neg_lambda, norm_lambda, threshold;
             vector<size_t> dwis;

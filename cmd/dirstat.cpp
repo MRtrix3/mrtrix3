@@ -199,7 +199,7 @@ Metrics compute (Math::Sphere::Set::cartesian_type& directions)
 {
   if (directions.cols() < 3)
     throw Exception ("unexpected matrix size for scheme \"" + str(argument[0]) + "\"");
-  Math::Sphere::normalise_cartesian (directions);
+  Math::Sphere::normalise (directions);
 
   vector<double> NN_bipolar (directions.rows(), -1.0);
   vector<double> NN_unipolar (directions.rows(), -1.0);
@@ -237,7 +237,7 @@ Metrics compute (Math::Sphere::Set::cartesian_type& directions)
   metrics.BE = summarise_E (E_bipolar);
 
   for (size_t lmax = 2; lmax <= Math::Sphere::SH::LforN (directions.rows()); lmax += 2)
-    metrics.SH.push_back (DWI::condition_number_for_lmax (directions, lmax));
+    metrics.SH.push_back (Math::condition_number (Math::Sphere::SH::init_transform_cart (directions, lmax)));
 
   metrics.ASYM = directions.leftCols(3).colwise().mean().norm();
 

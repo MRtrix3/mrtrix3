@@ -70,7 +70,7 @@ namespace MR {
 
       //! convert matrix of (unit) Cartesian coordinates to spherical coordinates
       template <class MatrixType>
-      inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
+      inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, spherical_type>::type
       cartesian2spherical (const MatrixType& cartesian)
       {
         assert (cartesian.cols() == 3);
@@ -188,6 +188,23 @@ namespace MR {
           throw Exception ("Number of entries in direction matrix (" + str(M.rows()) + ") does not match required number (" + str(count) + ")");
         check (M);
       }
+
+
+
+
+
+      //! Select a subset of the directions within a set
+      template <class MatrixType, class IndexVectorType>
+      inline MatrixType subset (const MatrixType& data, const IndexVectorType& indices)
+      {
+        MatrixType result (indices.size(), data.cols());
+        for (size_t i = 0; i != indices.size(); i++)
+          result.row(i) = data.row(indices[i]);
+        return result;
+      }
+
+
+
 
 
 

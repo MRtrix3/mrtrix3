@@ -226,7 +226,7 @@ namespace MR
 
               const Eigen::MatrixXd grad;
               DWI::Shells shells;
-              Eigen::MatrixXd HR_dirs;
+              Math::Sphere::Set::spherical_type HR_dirs;
               vector<uint32_t> lmax, lmax_response;
               vector<Eigen::MatrixXd> responses;
               vector<std::string> response_files;

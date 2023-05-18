@@ -104,7 +104,7 @@ value_type calc_cost (const Eigen::MatrixXd& directions, const vector<size_t>& o
     const size_t lmax = Math::Sphere::SH::LforN (N-1);
     subset.conservativeResize (N, 3);
     subset.row(N-1) = directions.row(order[N-1]);
-    const value_type cond = DWI::condition_number_for_lmax (subset, lmax);
+    const value_type cond = Math::condition_number (Math::Sphere::SH::init_transform_cart (subset, lmax));
     cost += cond;
   }
   return cost;
