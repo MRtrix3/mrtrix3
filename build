@@ -59,6 +59,9 @@ SPECIAL TARGETS
        the inline documentation in commands can be propagated through to the
        user documentation site.
 
+    app_bundles
+       used to create app bundles for MacOS
+
     select name
        used to switch between configs / builds. This stores the current config
        and all compiler-generated files in a folder (called "build.oldname"),
@@ -351,6 +354,7 @@ def modify_path (name, tmp=False, strip=None, add=None):
 
 command_doc = False
 bash_completion = False
+app_bundles = False
 
 for arg in sys.argv[1:]:
   if '-help'.startswith(arg):
@@ -385,6 +389,8 @@ for arg in sys.argv[1:]:
     bash_completion = True
   elif arg == 'doc':
     command_doc = True
+  elif arg == 'app_bundles':
+    app_bundles = True
   elif arg == 'clean':
     targets = [ 'clean' ]
   else:
@@ -631,6 +637,14 @@ if 'clean' in targets:
         os.remove (filename)
       except OSError as excp: # pylint: disable=unused-variable
         disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
+
+  for appname in glob.glob (os.path.join ('bin', '*.app')):
+    if os.path.isdir (appname):
+      disp ('delete app: ' + appname + '\n')
+      try:
+        shutil.rmtree (appname)
+      except OSError as excp: # pylint: disable=unused-variable
+        disp ('error deleting app "' + appname + '": ' + os.strerror (excp.errno))
 
   sys.exit (0)
 
@@ -1344,6 +1358,64 @@ def update_user_docs ():
   if execute ('[DOC] generating user documentation (./docs)', [ script_path ], scripts_dir):
     sys.exit (1)
 
+def update_app_bundles ():
+  if build_mrview or not os.path.isdir(os.path.join('bin','MRView.app')):
+    print('Creating macOS app bundle for mrview')
+    shutil.rmtree(os.path.join('bin','MRView.app'),ignore_errors=True)
+
+    os.makedirs (os.path.join('bin','MRView.app','Contents'),exist_ok=True)
+    shutil.copy('mrtrix-mrview.plist',os.path.join('bin','MRView.app','Contents','Info.plist'))
+
+    os.makedirs (os.path.join('bin','MRView.app','Contents','MacOS'),exist_ok=True)
+    shutil.move(os.path.join('bin','mrview'),os.path.join('bin','MRView.app','Contents','MacOS','mrview'))
+
+    os.makedirs (os.path.join('bin','MRView.app','Contents','Resources'),exist_ok=True)
+    shutil.copy(os.path.join('icons','mrview.icns'),os.path.join('bin','MRView.app','Contents','Resources'))
+    shutil.copy(os.path.join('icons','mrview_doc.icns'),os.path.join('bin','MRView.app','Contents','Resources'))
+
+    os.symlink(os.path.relpath('lib',os.path.join('bin','MRView.app','Contents')),os.path.join('bin','MRView.app','Contents','lib'),target_is_directory=True)
+
+    with open (os.path.join('bin','mrview'), 'w', encoding='utf-8') as fd:
+      fd.write ('''#!/bin/bash
+f="${BASH_SOURCE}"
+while [[ -L "${f}" ]]; do
+ f2="$(readlink "${f}")"
+ if [[ "${f2}" = /* ]]; then f="${f2}"; else f="$(dirname "${f}")/${f2}"; fi
+done
+f=$(dirname "${f}")
+"${f}"/MRView.app/Contents/MacOS/mrview "$@"
+''')
+    stat = os.stat(os.path.join('bin','MRView.app','Contents','MacOS','mrview'))
+    os.chmod(os.path.join('bin','mrview'), 0o755)
+    os.utime(os.path.join('bin','mrview'), ns=(stat.st_atime_ns, stat.st_mtime_ns))
+
+  if build_shview or not os.path.isdir(os.path.join('bin','SHView.app')):
+    print('Creating macOS app bundle for shview')
+    shutil.rmtree(os.path.join('bin','SHView.app'),ignore_errors=True)
+
+    os.makedirs (os.path.join('bin','SHView.app','Contents'),exist_ok=True)
+    shutil.copy('mrtrix-shview.plist',os.path.join('bin','SHView.app','Contents','Info.plist'))
+
+    os.makedirs (os.path.join('bin','SHView.app','Contents','MacOS'),exist_ok=True)
+    shutil.move(os.path.join('bin','shview'),os.path.join('bin','SHView.app','Contents','MacOS','shview'))
+
+    os.symlink(os.path.relpath(os.path.join('bin','MRView.app','Contents','Resources'),os.path.join('bin','SHView.app','Contents')),os.path.join('bin','SHView.app','Contents','Resources'),target_is_directory=True)
+
+    os.symlink(os.path.relpath('lib',os.path.join('bin','SHView.app','Contents')),os.path.join('bin','SHView.app','Contents','lib'),target_is_directory=True)
+
+    with open (os.path.join('bin','shview'), 'w', encoding='utf-8') as fd:
+      fd.write ('''#!/bin/bash
+f="${BASH_SOURCE}"
+while [[ -L "${f}" ]]; do
+ f2="$(readlink "${f}")"
+ if [[ "${f2}" = /* ]]; then f="${f2}"; else f="$(dirname "${f}")/${f2}"; fi
+done
+f=$(dirname "${f}")
+"${f}"/SHView.app/Contents/MacOS/shview "$@"
+''')
+    stat = os.stat(os.path.join('bin','SHView.app','Contents','MacOS','shview'))
+    os.chmod(os.path.join('bin','shview'), 0o755)
+    os.utime(os.path.join('bin','shview'), ns=(stat.st_atime_ns, stat.st_mtime_ns))
 
 ###########################################################################
 #                              SCRIPT VERSION                             #
@@ -1419,6 +1491,13 @@ if nogui:
   targets = [ entry for entry in targets if not is_GUI_target (entry) ]
   todo = { name:entry for name, entry in todo.items() if not is_GUI_target (name) }
 
+if not nogui and not app_bundles:
+  app_bundles = os.path.isdir(os.path.join('bin', 'MRView.app')) or os.path.isdir(os.path.join('bin', 'SHView.app'))
+  log ('''
+found existing app bundles --> updating app_bundles
+''')
+if app_bundles and os.uname()[0] != 'Darwin' or nogui:
+  fail("app_bundles requires Darwin and GUI build target")
 
 
 log ('building targets: ' + ' '.join (targets) + os.linesep)
@@ -1449,6 +1528,8 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 
 ''')
 
+build_mrview = any('mrview' in k for k in todo)
+build_shview = any('shview' in k for k in todo)
 
 #for entry in todo.values():
 #  entry.display()
@@ -1510,5 +1591,7 @@ if not separate_project and stop <= 1:
     update_bash_completion()
   if command_doc:
     update_user_docs()
+  if app_bundles:
+    update_app_bundles()
 
 sys.exit (stop > 1)
