@@ -16,6 +16,8 @@
 
 #include "dwi/fmls.h"
 
+#include <set>
+
 
 
 namespace MR {
@@ -141,8 +143,7 @@ namespace MR {
           integral_threshold   (FMLS_INTEGRAL_THRESHOLD_DEFAULT),
           peak_value_threshold (FMLS_PEAK_VALUE_THRESHOLD_DEFAULT),
           lobe_merge_ratio     (FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT),
-          calculate_lsq_dir    (false),
-          create_lookup_table  (true)
+          calculate_lsq_dir    (false)
       {
         Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs (dirs.size(), 2);
         for (size_t row = 0; row != dirs.size(); ++row) {
@@ -160,6 +161,30 @@ namespace MR {
       class Max_abs {
         public:
           bool operator() (const default_type& a, const default_type& b) const { return (abs (a) > abs (b)); }
+      };
+
+      class RetrospectiveAssignment {
+        public:
+          RetrospectiveAssignment (const index_type dixel_index, const vector<uint32_t>& fixel_indices) :
+              dixel_index (dixel_index),
+              fixel_indices (fixel_indices) { }
+
+          index_type dixel() const { return dixel_index; }
+          const vector<uint32_t> fixels() const { return fixel_indices; }
+
+          // If fixel indices are going to be changed due to the merge of existing fixels,
+          //   any indices stored in here need to be updated accordingly
+          void update (const vector<uint32_t>& lookup)
+          {
+            // Use std::set to detect duplicates
+            std::set<uint32_t> new_fixel_indices;
+            for (const auto& i : fixel_indices)
+              new_fixel_indices.insert (lookup[i]);
+            fixel_indices = vector<uint32_t> (new_fixel_indices.begin(), new_fixel_indices.end());
+          }
+        private:
+          const index_type dixel_index;
+          vector<uint32_t> fixel_indices;
       };
 
       bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
@@ -184,7 +209,7 @@ namespace MR {
         if (dixels_in_order.begin()->first <= 0.0)
           return true;
 
-        vector< std::pair<index_type, uint32_t> > retrospective_assignments;
+        vector<RetrospectiveAssignment> retrospective_assignments;
 
         for (const auto& i : dixels_in_order) {
 
@@ -209,33 +234,27 @@ namespace MR {
 
           } else {
 
-            // Changed handling of lobe merges
-            // Merge lobes as they appear to be merged, but update the
-            //   contents of retrospective_assignments accordingly
             if (abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > lobe_merge_ratio) {
 
-              std::sort (adj_lobes.begin(), adj_lobes.end());
               for (size_t j = 1; j != adj_lobes.size(); ++j)
                 out[adj_lobes[0]].merge (out[adj_lobes[j]]);
               out[adj_lobes[0]].add (i.second, i.first, (*weights)[i.second]);
-              for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
-                bool modified = false;
-                for (size_t k = 1; k != adj_lobes.size(); ++k) {
-                  if (j->second == adj_lobes[k]) {
-                    j->second = adj_lobes[0];
-                    modified = true;
-                  }
-                }
-                if (!modified) {
-                  // Compensate for impending deletion of elements from the vector
-                  uint32_t lobe_index = j->second;
-                  for (size_t k = adj_lobes.size() - 1; k; --k) {
-                    if (adj_lobes[k] < lobe_index)
-                      --lobe_index;
-                  }
-                  j->second = lobe_index;
-                }
-              }
+
+              // Generate table where the value at a given fixel index offset
+              //   is equal to the new index where that fixel will appear after
+              //   the merging process is completed
+              vector<uint32_t> index_lookup;
+              index_lookup.reserve (out.size());
+              uint32_t counter = 0;
+              for (uint32_t f = 0; f != out.size(); ++f)
+                  index_lookup.push_back (
+                  ((f == adj_lobes[0]) || (std::find (adj_lobes.begin(), adj_lobes.end(), f) == adj_lobes.end())) ?
+                    counter++ :
+                    adj_lobes[0]);
+
+              for (auto& j : retrospective_assignments)
+                j.update (index_lookup);
+
               for (size_t j = adj_lobes.size() - 1; j; --j) {
                 vector<FOD_lobe>::iterator ptr = out.begin();
                 advance (ptr, adj_lobes[j]);
@@ -244,7 +263,7 @@ namespace MR {
 
             } else {
 
-              retrospective_assignments.push_back (std::make_pair (i.second, adj_lobes.front()));
+              retrospective_assignments.emplace_back (i.second, adj_lobes);
 
             }
 
@@ -252,8 +271,13 @@ namespace MR {
 
         }
 
-        for (const auto& i : retrospective_assignments)
-          out[i.second].add (i.first, values[i.first], (*weights)[i.first]);
+        // These dixels are attributed to multiple fixels;
+        //   split contribution to integrals / directions between them
+        for (const auto& i : retrospective_assignments) {
+          const default_type weight = (*weights)[i.dixel()] / i.fixels().size();
+          for (const auto f : i.fixels())
+            out[f].add (i.dixel(), values[i.dixel()], weight);
+        }
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
 
@@ -310,20 +334,6 @@ namespace MR {
         if (calculate_lsq_dir) {
           for (auto& i : out)
             do_lsq_dir (i);
-        }
-
-        if (create_lookup_table) {
-          out.lut = lookup_type::Constant (dirs.size(), out.size());
-          size_t index = 0;
-          for (auto i = out.begin(); i != out.end(); ++i, ++index) {
-            const DWI::Directions::Mask& this_mask (i->get_mask());
-            for (size_t d = 0; d != dirs.size(); ++d) {
-              if (this_mask[d])
-                out.lut[d] = index;
-            }
-          }
-        } else {
-          out.lut.resize (0, 0);
         }
 
         return true;

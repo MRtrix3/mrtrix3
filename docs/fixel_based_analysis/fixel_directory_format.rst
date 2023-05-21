@@ -57,6 +57,7 @@ Dixel Mask File
 -   The dixel mask image is optional, but if present requires a fixed naming of ``dixelmasks.nii`` or ``dixelmasks.mif``.
 -   *d* corresponds to the number of unique directions in a dense set of directions on the unit hemisphere (see :ref:`fixels_dixels`).
 -   For a given fixel, each of the *d* values encodes whether that specific direction is attributed to that fixel.
+-   Note that it is possible for multiple fixels within the same voxel to have the same direction attributed to them.
 -   The direction set must be provided along with the lookup table.
     For `.mif` files, this can be embedded within the image header as key-value entry ``"directions"``.
     Alternatively, they can be provided in a sidecar text file named ``dixelmasks.\*``, where "``\*``" corresponds to a file extension corresponding to some supported text file format.
