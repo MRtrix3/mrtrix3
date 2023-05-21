@@ -38,7 +38,7 @@ namespace MR
 
     const std::string basename_index = "index";
     const std::string basename_directions = "directions";
-    const std::string basename_lookup = "lookup";
+    const std::string basename_dixelmasks = "dixelmasks";
 
 
   }

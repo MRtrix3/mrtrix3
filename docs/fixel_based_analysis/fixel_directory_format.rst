@@ -49,18 +49,17 @@ Fixel Directions File
 -   **All fixel-based DWI models must specify the direction of each fixel**.
 -   Directions for each fixel must be saved within a single file named either ``directions.nii`` or ``directions.mif``.
 -   This can be considered as a special type of fixel data file, with dimensions (*n* x 3 x 1).
--   Directions must be specified with respect to the *scanner coordinate frame*, in *cartesian coordinates*.
+-   Directions must be specified with respect to the *scanner coordinate frame*, in *cartesian coordinates*, and have unity length.
 
-Lookup Table File
+Dixel Mask File
 .................
--   4D image (*i* X *j* X *k* X *d*).
--   The lookup table file is optional, but requires a fixed naming of ``lookup.nii`` or ``lookup.mif``.
+-   3D image (*n* X *d* X 1).
+-   The dixel mask image is optional, but if present requires a fixed naming of ``dixelmasks.nii`` or ``dixelmasks.mif``.
 -   *d* corresponds to the number of unique directions in a dense set of directions on the unit hemisphere (see :ref:`fixels_dixels`).
--   For a given voxel, each of the *d* values contains the index of the fixel (relative to the index of the first fixel in that voxel) to which that direction should be attributed.
--   Where a given direction should not be attributed to any fixel within the voxel, the value stored will be equal to the number of fixels in that voxel.
+-   For a given fixel, each of the *d* values encodes whether that specific direction is attributed to that fixel.
 -   The direction set must be provided along with the lookup table.
     For `.mif` files, this can be embedded within the image header as key-value entry ``"directions"``.
-    Alternatively, they can be provided in a sidecar text file named ``lookup.\*``, where "``\*``" corresponds to a file extension corresponding to some supported text file format.
+    Alternatively, they can be provided in a sidecar text file named ``dixelmasks.\*``, where "``\*``" corresponds to a file extension corresponding to some supported text file format.
     In both cases, each direction must be specified as a unit 3-vector with respect to the scanner coordinate frame, as is required for the fixel directions file (see above).
 
 Fixel Data File
