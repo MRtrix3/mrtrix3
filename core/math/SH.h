@@ -579,6 +579,10 @@ namespace MR
             typename VectorType::Scalar& d2SH_daz2,
             PrecomputedAL<typename VectorType::Scalar>* precomputer)
         {
+          if(lmax < 0){
+            throw std::logic_error("lmax cannot be negative!");
+          }
+
           using value_type = typename VectorType::Scalar;
           value_type sel = std::sin (elevation);
           value_type cel = std::cos (elevation);
