@@ -42,13 +42,16 @@ namespace MR
 
 
       class EnhancerBase : public Stats::EnhancerBase
-      { 
+      {
         public:
           virtual ~EnhancerBase() { }
         protected:
           // Alternative functor that also takes the threshold value;
           //   makes TFCE integration cleaner
           virtual void operator() (in_column_type /*input_statistics*/, const value_type /*threshold*/, out_column_type /*enhanced_statistics*/) const = 0;
+          // While we don't use this function, it reassures the compiler that we are not accidentally
+          //   hiding the virutal function of the base class using the function above
+          using Stats::EnhancerBase::operator();
           friend class Wrapper;
       };
 
@@ -56,7 +59,7 @@ namespace MR
 
 
       class Wrapper : public Stats::EnhancerBase
-      { 
+      {
         public:
           Wrapper (const std::shared_ptr<TFCE::EnhancerBase> base) : enhancer (base), dH (NaN), E (NaN), H (NaN) { }
           Wrapper (const std::shared_ptr<TFCE::EnhancerBase> base, const default_type dh, const default_type e, const default_type h) : enhancer (base), dH (dh), E (e), H (h) { }
