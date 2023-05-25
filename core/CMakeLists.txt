@@ -1,16 +1,43 @@
 file(GLOB_RECURSE CORE_SRCS *.cpp *.h)
 
+find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(ZLIB REQUIRED)
+find_package(FFTW REQUIRED)
+find_package(Git QUIET)
+
 add_library(mrtrix-core SHARED ${CORE_SRCS})
 add_library(mrtrix::core ALIAS mrtrix-core)
 
-find_package(Eigen3 REQUIRED)
-find_package(ZLIB REQUIRED)
-find_package(FFTW REQUIRED)
+set(CORE_VERSION_CPP ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
+
+add_custom_target(core-version-target ALL
+    COMMAND ${CMAKE_COMMAND} 
+        -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
+        -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
+        -D DST=${CMAKE_CURRENT_BINARY_DIR}/version.cpp
+        -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/version.cpp.in
+        -P ${CMAKE_SOURCE_DIR}/cmake/FindVersion.cmake
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Generating version.cpp for core library"
+    BYPRODUCTS ${CORE_VERSION_CPP}
+    VERBATIM
+)
+
+add_library(core-version-lib STATIC ${CORE_VERSION_CPP})
+add_dependencies(core-version-lib core-version-target)
+
+target_include_directories(core-version-lib PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_compile_definitions(mrtrix-core PUBLIC 
+    MRTRIX_BASE_VERSION="${MRTRIX_BASE_VERSION}"
+)
 
 target_link_libraries(mrtrix-core PUBLIC
     Eigen3::Eigen
     ZLIB::ZLIB
-    fftw3
+    core-version-lib
 )
 
 target_include_directories(mrtrix-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
