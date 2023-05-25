@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 project(mrtrix3)
 include(GNUInstallDirs)
 
+set(MRTRIX_BASE_VERSION "3.0.4")
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
