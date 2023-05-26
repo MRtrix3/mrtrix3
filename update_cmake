@@ -151,7 +151,7 @@ if __name__ == "__main__":
     src_cpp.update (src_link_cpp)
 
     cmd_cmake_contents += 'add_executable ({} {})\n'.format (os.path.basename (cmd[:-4]), os.path.basename(cmd))
-    link_libs = [ '$<TARGET_OBJECTS:'+object_libname(c)+'>' for c in sorted(src_link_cpp) ]
+    link_libs = + [ 'exec-version-lib' ] + [ '$<TARGET_OBJECTS:'+object_libname(c)+'>' for c in sorted(src_link_cpp) ]
     cmd_cmake_contents += 'target_link_libraries(' + os.path.basename (cmd[:-4]) + ' PRIVATE ' + '\n    '.join([ 'mrtrix::core' ] + link_libs) + ')\n\n'
 
     if '-verbose' in sys.argv:
