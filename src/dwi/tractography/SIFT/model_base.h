@@ -71,13 +71,13 @@ namespace MR
               FOD (0.0),
               TD (0.0),
               weight (0.0),
-              dir () { }
+              dir ({NaN, NaN, NaN}) { }
 
             FixelBase (const default_type amp) :
               FOD (amp),
               TD (0.0),
               weight (1.0),
-              dir () { }
+              dir ({NaN, NaN, NaN}) { }
 
             FixelBase (const default_type amp, const Eigen::Vector3d& d) :
               FOD (amp),

@@ -19,6 +19,7 @@
 #define __fixel_fixel_h__
 
 #include <string>
+#include <cstdint>
 
 namespace MR
 {
