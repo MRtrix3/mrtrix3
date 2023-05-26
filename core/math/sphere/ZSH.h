@@ -14,19 +14,21 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_ZSH_h__
-#define __math_ZSH_h__
+#ifndef __math_sphere_ZSH_h__
+#define __math_sphere_ZSH_h__
 
 #include <Eigen/Dense>
 
 #include "math/legendre.h"
 #include "math/least_squares.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 
 namespace MR
 {
   namespace Math
   {
+    namespace Sphere
+    {
     namespace ZSH
     {
 
@@ -50,7 +52,7 @@ namespace MR
         return (l/2);
       }
 
-      //! returns the largest \e lmax given \a N parameters 
+      //! returns the largest \e lmax given \a N parameters
       inline size_t LforN (int N)
       {
         return (2 * (N-1));
@@ -102,7 +104,7 @@ namespace MR
 
 
       template <typename ValueType>
-      class Transform { 
+      class Transform {
         public:
           using matrix_type = Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>;
 
@@ -178,11 +180,11 @@ namespace MR
       inline VectorType1& ZSH2SH (VectorType1& sh, const VectorType2& zsh)
       {
         const size_t lmax = LforN (zsh.size());
-        sh.resize (Math::SH::NforL (lmax));
+        sh.resize (SH::NforL (lmax));
         for (size_t i = 0; i != size_t(sh.size()); ++i)
           sh[i] = 0.0;
         for (size_t l = 0; l <= lmax; l+=2)
-          sh[Math::SH::index(l,0)] = zsh[index(l)];
+          sh[SH::index(l,0)] = zsh[index(l)];
         return sh;
       }
 
@@ -200,10 +202,10 @@ namespace MR
       template <class VectorType1, class VectorType2>
       inline VectorType1& SH2ZSH (VectorType1& zsh, const VectorType2& sh)
       {
-        const size_t lmax = Math::SH::LforN (sh.size());
+        const size_t lmax = SH::LforN (sh.size());
         zsh.resize (NforL (lmax));
         for (size_t l = 0; l <= lmax; l+=2)
-          zsh[index(l)] = sh[Math::SH::index(l,0)];
+          zsh[index(l)] = sh[SH::index(l,0)];
         return zsh;
       }
 
@@ -293,6 +295,7 @@ namespace MR
 
 
 
+    }
     }
   }
 }

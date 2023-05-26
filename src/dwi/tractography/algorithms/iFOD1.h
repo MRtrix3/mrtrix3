@@ -17,7 +17,7 @@
 #ifndef __dwi_tractography_algorithms_iFOD1_h__
 #define __dwi_tractography_algorithms_iFOD1_h__
 
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
@@ -40,13 +40,13 @@ namespace MR
 
     using namespace MR::DWI::Tractography::Tracking;
 
-    class iFOD1 : public MethodBase { 
+    class iFOD1 : public MethodBase {
       public:
-      class Shared : public SharedBase { 
+      class Shared : public SharedBase {
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
-          lmax (Math::SH::LforN (source.size(3))),
+          lmax (Math::Sphere::SH::LforN (source.size(3))),
           max_trials (Defaults::max_trials_per_step),
           sin_max_angle_1o (std::sin (max_angle_1o)),
           fod_power (1.0f),
@@ -56,7 +56,7 @@ namespace MR
           num_proc (0) {
 
           try {
-            Math::SH::check (source);
+            Math::Sphere::SH::check (source);
           } catch (Exception& e) {
             e.display();
             throw Exception ("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
@@ -112,7 +112,7 @@ namespace MR
 
         size_t lmax, max_trials;
         float sin_max_angle_1o, fod_power;
-        Math::SH::PrecomputedAL<float> precomputer;
+        Math::Sphere::SH::PrecomputedAL<float> precomputer;
 
         private:
         mutable double mean_samples, mean_truncations, max_max_truncation;
@@ -247,7 +247,7 @@ namespace MR
       {
         return (S.precomputer ?
             S.precomputer.value (values, d) :
-            Math::SH::value (values, d, S.lmax)
+            Math::Sphere::SH::value (values, d, S.lmax)
         );
       }
 
@@ -258,18 +258,18 @@ namespace MR
 
 
       class Calibrate
-      { 
+      {
         public:
           Calibrate (iFOD1& method) :
             P (method),
             fod (P.values)
           {
-            Math::SH::delta (fod, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax);
+            Math::Sphere::SH::delta (fod, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax);
           }
 
           float operator() (float el)
           {
-            return std::pow (Math::SH::value (P.values, Eigen::Vector3f (std::sin (el), 0.0, std::cos(el)), P.S.lmax), P.S.fod_power);
+            return std::pow (Math::Sphere::SH::value (P.values, Eigen::Vector3f (std::sin (el), 0.0, std::cos(el)), P.S.lmax), P.S.fod_power);
           }
 
         private:

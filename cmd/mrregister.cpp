@@ -23,17 +23,17 @@
 #include "registration/multi_contrast.h"
 #include "registration/linear.h"
 #include "registration/nonlinear.h"
+#include "registration/shared.h"
 #include "registration/metric/demons.h"
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/difference_robust.h"
 #include "registration/metric/local_cross_correlation.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
-#include "dwi/directions/predefined.h"
 #include "math/average_space.h"
-#include "math/SH.h"
-#include "math/sphere.h"
-#include "transform.h"
+#include "math/sphere/set/set.h"
+#include "math/sphere/set/predefined.h"
+#include "math/sphere/SH.h"
 #include "file/nifti_utils.h"
 
 
@@ -208,7 +208,7 @@ void run () {
   Eigen::MatrixXd directions_cartesian;
   opt = get_options ("directions");
   if (opt.size())
-    directions_cartesian = Math::Sphere::spherical2cartesian (load_matrix (opt[0][0])).transpose();
+    directions_cartesian = Math::Sphere::Set::to_cartesian (Math::Sphere::Set::load (std::string (opt[0][0]), true));
 
   // check header transformations for equality
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
@@ -247,12 +247,12 @@ void run () {
       mc_params[i].image_lmax = 0;
       CONSOLE ("3D input pair "+input1[i].name()+", "+input2[i].name());
     } else { // more than one volume
-      if (do_reorientation && nvols1 > 1 && SH::NforL(SH::LforN(nvols1)) == nvols1) {
+      if (do_reorientation && nvols1 > 1 && Math::Sphere::SH::NforL(Math::Sphere::SH::LforN(nvols1)) == nvols1) {
         CONSOLE ("SH image input pair "+input1[i].name()+", "+input2[i].name());
         mc_params[i].do_reorientation = true;
-        mc_params[i].image_lmax = Math::SH::LforN (nvols1);
+        mc_params[i].image_lmax = Math::Sphere::SH::LforN (nvols1);
         if (!directions_cartesian.cols())
-          directions_cartesian = Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_60()).transpose();
+          directions_cartesian = Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::load (Registration::default_fod_reorientation_directions)).transpose();
       } else {
         CONSOLE ("4D scalar input pair "+input1[i].name()+", "+input2[i].name());
         mc_params[i].do_reorientation = false;
@@ -806,7 +806,7 @@ void run () {
       if (input1[idx].ndim() == 3)
         mc_params[idx].nvols = 1;
       else if (mc_params[idx].do_reorientation) {
-        mc_params[idx].nvols = Math::SH::NforL (mc_params[idx].lmax);
+        mc_params[idx].nvols = Math::Sphere::SH::NforL (mc_params[idx].lmax);
       } else
         mc_params[idx].nvols = input1[idx].size(3);
     }
@@ -1047,7 +1047,7 @@ void run () {
         Image<value_type> im1_transformed = Image<value_type>::create (im1_transformed_paths[idx], transformed_header);
 
         const size_t nvols = im1_image.ndim() == 3 ? 1 : im1_image.size(3);
-        const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && SH::NforL(SH::LforN(nvols)) == nvols;
+        const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && Math::Sphere::SH::NforL(Math::Sphere::SH::LforN(nvols)) == nvols;
 
         if (do_nonlinear) {
           Filter::warp<Interp::Cubic> (im1_image, im1_transformed, deform_field, out_of_bounds_value);
@@ -1055,7 +1055,7 @@ void run () {
             Registration::Transform::reorient_warp ("reorienting FODs",
                                                     im1_transformed,
                                                     deform_field,
-                                                    Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                                    Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
           Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, out_of_bounds_value);
           if (reorient_output)
@@ -1063,7 +1063,7 @@ void run () {
                                                im1_transformed,
                                                im1_transformed,
                                                affine.get_transform(),
-                                               Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                               Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::electrostatic_repulsion_300()).transpose());
         } else { // rigid
           Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, out_of_bounds_value);
           if (reorient_output)
@@ -1071,7 +1071,7 @@ void run () {
                                                im1_transformed,
                                                im1_transformed,
                                                rigid.get_transform(),
-                                               Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                               Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::electrostatic_repulsion_300()).transpose());
         }
       }
     }
@@ -1107,24 +1107,24 @@ void run () {
           midway_header.size(3) = im1_image.size(3);
 
         const size_t nvols = im1_image.ndim() == 3 ? 1 : im1_image.size(3);
-        const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && SH::NforL(SH::LforN(nvols)) == nvols;
+        const bool reorient_output =  !reorientation_forbidden && (nvols > 1) && Math::Sphere::SH::NforL(Math::Sphere::SH::LforN(nvols)) == nvols;
 
         if (do_nonlinear) {
           auto im1_midway = Image<default_type>::create (input1_midway_transformed_paths[idx], midway_header);
           Filter::warp<Interp::Cubic> (im1_image, im1_midway, im1_deform_field, out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient_warp ("reorienting ODFs", im1_midway, im1_deform_field,
-                                                    Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                                    Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
           auto im1_midway = Image<default_type>::create (input1_midway_transformed_paths[idx], midway_header);
           Filter::reslice<Interp::Cubic> (im1_image, im1_midway, affine.get_transform_half(), Adapter::AutoOverSample, out_of_bounds_value);
           if (reorient_output)
-            Registration::Transform::reorient ("reorienting ODFs", im1_midway, im1_midway, affine.get_transform_half(), Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+            Registration::Transform::reorient ("reorienting ODFs", im1_midway, im1_midway, affine.get_transform_half(), Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::electrostatic_repulsion_300()).transpose());
         } else { // rigid
           auto im1_midway = Image<default_type>::create (input1_midway_transformed_paths[idx], midway_header);
           Filter::reslice<Interp::Cubic> (im1_image, im1_midway, rigid.get_transform_half(), Adapter::AutoOverSample, out_of_bounds_value);
           if (reorient_output)
-            Registration::Transform::reorient ("reorienting ODFs", im1_midway, im1_midway, rigid.get_transform_half(), Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+            Registration::Transform::reorient ("reorienting ODFs", im1_midway, im1_midway, rigid.get_transform_half(), Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::electrostatic_repulsion_300()).transpose());
         }
       }
     }
@@ -1153,17 +1153,17 @@ void run () {
           Filter::warp<Interp::Cubic> (im2_image, im2_midway, im2_deform_field, out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient_warp ("reorienting ODFs", im2_midway, im2_deform_field,
-                                                    Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+                                                    Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
           auto im2_midway = Image<default_type>::create (input2_midway_transformed_paths[idx], midway_header);
           Filter::reslice<Interp::Cubic> (im2_image, im2_midway, affine.get_transform_half_inverse(), Adapter::AutoOverSample, out_of_bounds_value);
           if (reorient_output)
-            Registration::Transform::reorient ("reorienting ODFs", im2_midway, im2_midway, affine.get_transform_half_inverse(), Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+            Registration::Transform::reorient ("reorienting ODFs", im2_midway, im2_midway, affine.get_transform_half_inverse(), Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::electrostatic_repulsion_300()).transpose());
         } else { // rigid
           auto im2_midway = Image<default_type>::create (input2_midway_transformed_paths[idx], midway_header);
           Filter::reslice<Interp::Cubic> (im2_image, im2_midway, rigid.get_transform_half_inverse(), Adapter::AutoOverSample, out_of_bounds_value);
           if (reorient_output)
-            Registration::Transform::reorient ("reorienting ODFs", im2_midway, im2_midway, rigid.get_transform_half_inverse(), Math::Sphere::spherical2cartesian (DWI::Directions::electrostatic_repulsion_300()).transpose());
+            Registration::Transform::reorient ("reorienting ODFs", im2_midway, im2_midway, rigid.get_transform_half_inverse(), Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::electrostatic_repulsion_300()).transpose());
         }
       }
     }

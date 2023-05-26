@@ -18,7 +18,7 @@
 #define __registration_transform_reorient_h__
 
 #include "algo/threaded_loop.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "math/least_squares.h"
 #include "adapter/jacobian.h"
 #include "registration/multi_contrast.h"
@@ -33,10 +33,10 @@ namespace MR
 
       FORCE_INLINE Eigen::MatrixXd aPSF_weights_to_FOD_transform (const int num_SH, const Eigen::MatrixXd& directions)
       {
-        const size_t lmax = Math::SH::LforN (num_SH);
-        Eigen::MatrixXd delta_matrix = Math::SH::init_transform_cart(directions.transpose(), lmax);
-        Math::SH::aPSF<default_type> aPSF (lmax);
-        Math::SH::sconv_mat(delta_matrix, aPSF.RH_coefs());
+        const size_t lmax = Math::Sphere::SH::LforN (num_SH);
+        Eigen::MatrixXd delta_matrix = Math::Sphere::SH::init_transform_cart(directions.transpose(), lmax);
+        Math::Sphere::SH::aPSF<default_type> aPSF (lmax);
+        Math::Sphere::SH::sconv_mat(delta_matrix, aPSF.RH_coefs());
         return delta_matrix.transpose();
       }
 
@@ -58,7 +58,7 @@ namespace MR
       }
 
       template <class FODImageType>
-      class LinearKernelMultiContrast { 
+      class LinearKernelMultiContrast {
 
         public:
           LinearKernelMultiContrast (ssize_t n_vol,
@@ -107,7 +107,7 @@ namespace MR
 
 
       template <class FODImageType>
-      class LinearKernel { 
+      class LinearKernel {
 
         public:
           LinearKernel (const ssize_t n_SH,
@@ -208,7 +208,7 @@ namespace MR
       }
 
       template <class FODImageType>
-      class NonLinearKernelMultiContrast { 
+      class NonLinearKernelMultiContrast {
 
         public:
           NonLinearKernelMultiContrast (ssize_t n_vol,
@@ -287,7 +287,7 @@ namespace MR
 
 
       template <class FODImageType>
-      class NonLinearKernel { 
+      class NonLinearKernel {
 
         public:
           NonLinearKernel (const ssize_t n_SH, Image<default_type>& warp, const Eigen::MatrixXd& directions, const bool modulate) :

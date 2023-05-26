@@ -19,8 +19,8 @@
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include "image.h"
-#include "math/SH.h"
-#include "math/ZSH.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/ZSH.h"
 
 using namespace MR;
 using namespace App;
@@ -37,15 +37,12 @@ void usage ()
       "(containing SH coefficients), perform spherical convolution to provide the "
       "corresponding SH coefficients of the signal."
     + "If multiple pairs of inputs are provided, their contributions will be "
-       "summed into a single output."
-    +  "If the responses are multi-shell (with one line of coefficients per "
+       "summed into a single output; "
+       "if the responses are multi-shell (with one line of coefficients per "
        "shell), the output will be a 5-dimensional image, with the SH "
        "coefficients of the signal in each shell stored at different indices "
        "along the 5th dimension."
-    + Math::SH::encoding_description;
-
-  DESCRIPTION
-  + Math::SH::encoding_description;
+    + Math::Sphere::SH::encoding_description;
 
   ARGUMENTS
     + Argument ("odf response", "pairs of input ODF image and corresponding responses").allow_multiple()
@@ -61,7 +58,7 @@ void usage ()
 using value_type = float;
 
 
-class SConvFunctor { 
+class SConvFunctor {
   public:
   SConvFunctor (const vector<Eigen::MatrixXd>& responses, vector<Image<value_type>>& inputs) :
     responses (responses),
@@ -73,7 +70,7 @@ class SConvFunctor {
         assign_pos_of (output, 0, 3).to (inputs[n]);
         in = inputs[n].row (3);
         for (ssize_t s = 0; s < responses[n].rows(); ++s) {
-          Math::SH::sconv (out, responses[n].row(s), in);
+          Math::Sphere::SH::sconv (out, responses[n].row(s), in);
           if (output.ndim() > 4)
             output.index(4) = s;
           for (ssize_t k = 0; k < out.size(); ++k) {
@@ -107,16 +104,16 @@ void run()
   size_t lmax = 0;
   for (size_t n = 0; n < inputs.size(); ++n) {
     inputs[n] = Image<value_type>::open (argument[2*n]);
-    Math::SH::check (inputs[n]);
+    Math::Sphere::SH::check (inputs[n]);
     if (inputs[n].ndim() > 4 && inputs[n].size(4) > 1)
       throw Exception ("input ODF contains more than 4 dimensions");
 
     responses[n] = load_matrix (argument[2*n+1]);
-    responses[n].conservativeResizeLike (Eigen::MatrixXd::Zero (responses[n].rows(), Math::ZSH::NforL (Math::SH::LforN (inputs[n].size (3)))));
-    lmax = std::max (Math::ZSH::LforN (responses[n].cols()), lmax);
+    responses[n].conservativeResizeLike (Eigen::MatrixXd::Zero (responses[n].rows(), Math::Sphere::ZSH::NforL (Math::Sphere::SH::LforN (inputs[n].size (3)))));
+    lmax = std::max (Math::Sphere::ZSH::LforN (responses[n].cols()), lmax);
 
     for (ssize_t k = 0; k < responses[n].rows(); ++k)
-      responses[n].row(k) = Math::ZSH::ZSH2RH (responses[n].row(k));
+      responses[n].row(k) = Math::Sphere::ZSH::ZSH2RH (responses[n].row(k));
 
     if (n) {
       if (responses[n].rows() != responses[0].rows())
@@ -133,7 +130,7 @@ void run()
   }
   else
     header.ndim() = 4;
-  header.size(3) = Math::SH::NforL (lmax);
+  header.size(3) = Math::Sphere::SH::NforL (lmax);
   Stride::set_from_command_line (header, Stride::contiguous_along_axis (3, header));
   header.datatype() = DataType::from_command_line (DataType::Float32);
 

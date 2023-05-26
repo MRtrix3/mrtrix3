@@ -18,9 +18,9 @@
 #include "image.h"
 #include "types.h"
 
-#include "math/SH.h"
-
-#include "dwi/directions/set.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/set/adjacency.h"
+#include "math/sphere/set/predefined.h"
 
 #include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/sift.h"
@@ -84,8 +84,8 @@ void run ()
   const std::string debug_path = get_option_value<std::string> ("output_debug", "");
 
   auto in_dwi = Image<float>::open (argument[1]);
-  Math::SH::check (in_dwi);
-  DWI::Directions::FastLookupSet dirs (1281);
+  Math::Sphere::SH::check (in_dwi);
+  Math::Sphere::Set::Assigner dirs (Math::Sphere::Set::Predefined::load (FMLS_DEFAULT_DIRECTION_SET));
 
   SIFTer sifter (in_dwi, dirs);
 

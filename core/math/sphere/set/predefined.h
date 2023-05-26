@@ -14,16 +14,21 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_directions_predefined_h__
-#define __dwi_directions_predefined_h__
+#ifndef __math_sphere_set_predefined_h__
+#define __math_sphere_set_predefined_h__
 
 
+#include "mrtrix.h"
 #include "types.h"
 
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
+        namespace Predefined {
+
+
 
       extern const default_type electrostatic_repulsion_60_data[];
       extern const default_type electrostatic_repulsion_300_data[];
@@ -33,6 +38,15 @@ namespace MR {
       extern const default_type tesselation_469_data[];
       extern const default_type tesselation_513_data[];
       extern const default_type tesselation_1281_data[];
+      extern const default_type tesselation_1957_data[];
+      extern const default_type tesselation_2049_data[];
+      extern const default_type tesselation_5121_data[];
+
+
+
+      Eigen::MatrixXd load (const size_t count);
+
+
 
       namespace {
         inline Eigen::MatrixXd copy (const default_type* p, ssize_t rows) {
@@ -44,8 +58,6 @@ namespace MR {
           return d;
         }
       }
-
-
 
       inline Eigen::MatrixXd electrostatic_repulsion_60 () { return copy (electrostatic_repulsion_60_data, 60); }
       inline Eigen::MatrixXd electrostatic_repulsion_300 () { return copy (electrostatic_repulsion_300_data, 300); }
@@ -66,6 +78,19 @@ namespace MR {
       //! 4th-order tessellation of an icosahedron
       inline Eigen::MatrixXd tesselation_1281 () { return copy (tesselation_1281_data, 1281); }
 
+      //! 5th-order tessellation of a tetrahedron
+      inline Eigen::MatrixXd tesselation_1957 () { return copy (tesselation_1957_data, 1957); }
+
+      //! 5th-order tessellation of an octahedron
+      inline Eigen::MatrixXd tesselation_2049 () { return copy (tesselation_2049_data, 2049); }
+
+      //! 5th-order tessellation of an icosahedron
+      inline Eigen::MatrixXd tesselation_5121 () { return copy (tesselation_5121_data, 5121); }
+
+
+
+        }
+      }
     }
   }
 }

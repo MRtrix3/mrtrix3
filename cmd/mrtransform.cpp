@@ -18,7 +18,6 @@
 #include "progressbar.h"
 #include "image.h"
 #include "math/math.h"
-#include "math/sphere.h"
 #include "interp/nearest.h"
 #include "interp/linear.h"
 #include "interp/cubic.h"
@@ -28,13 +27,14 @@
 #include "algo/loop.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
-#include "dwi/directions/predefined.h"
+#include "math/sphere/set/set.h"
+#include "math/sphere/set/predefined.h"
 #include "dwi/gradient.h"
 #include "registration/transform/reorient.h"
 #include "registration/warp/helpers.h"
 #include "registration/warp/compose.h"
 #include "math/average_space.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "adapter/jacobian.h"
 #include "file/nifti_utils.h"
 
@@ -45,6 +45,8 @@ using namespace App;
 
 const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", nullptr };
 const char* modulation_choices[] = { "fod", "jac", nullptr };
+
+#define DEFAULT_REORIENTATION_DIRECTIONS 300
 
 void usage ()
 {
@@ -180,13 +182,12 @@ void usage ()
         "to preserve the total intensity before and after the transformation.")
     + Argument ("method").type_choice (modulation_choices)
 
-    + Option ("directions",
-        "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation "
-        "(Default: 300 directions)")
-    + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
+    + Math::Sphere::Set::directions_option ("of defining the number and orientation of the apodised point spread functions used in FOD reorientation",
+                                          false,
+                                          "built-in " + str(DEFAULT_REORIENTATION_DIRECTIONS) + "-direction set")
 
     + Option ("reorient_fod",
-        "specify whether to perform FOD reorientation. This is required if the number "
+        "specify whether to perform FOD reorientation; this is required if the number "
         "of volumes in the 4th dimension corresponds to the number of coefficients in an "
         "antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes).")
     + Argument ("boolean").type_bool()
@@ -383,7 +384,7 @@ void run ()
 
   // Detect FOD image
   bool is_possible_fod_image = input_header.ndim() == 4 && input_header.size(3) >= 6 &&
-   input_header.size(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.size(3)));
+   input_header.size(3) == (int) Math::Sphere::SH::NforL (Math::Sphere::SH::LforN (input_header.size(3)));
 
 
   // reorientation
@@ -401,12 +402,10 @@ void run ()
   if (fod_reorientation && (linear || warp.valid() || template_header.valid()) && is_possible_fod_image) {
     CONSOLE ("performing apodised PSF reorientation");
 
-    Eigen::MatrixXd directions_az_el;
     opt = get_options ("directions");
-    if (opt.size())
-      directions_az_el = load_matrix (opt[0][0]);
-    else
-      directions_az_el = DWI::Directions::electrostatic_repulsion_300();
+    const Eigen::MatrixXd directions_az_el = opt.size() ?
+                                             Math::Sphere::Set::load (std::string (opt[0][0]), true) :
+                                             Math::Sphere::Set::Predefined::load (DEFAULT_REORIENTATION_DIRECTIONS);
     Math::Sphere::spherical2cartesian (directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
@@ -516,10 +515,7 @@ void run ()
             const Eigen::Vector3d dir = rotation * Eigen::Vector3d (v.data());
             result.row (l) = dir;
           }
-          std::stringstream s;
-          Eigen::IOFormat format (6, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
-          s << result.format (format);
-          output_header.keyval()["directions"] = s.str();
+          output_header.keyval()["directions"] = serialise_matrix<> (result);
         }
       } catch (Exception& e) {
         e.display (2);

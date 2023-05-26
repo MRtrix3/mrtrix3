@@ -17,6 +17,7 @@
 #include "command.h"
 #include "memory.h"
 #include "version.h"
+#include "math/sphere/set/predefined.h"
 #include "dwi/fmls.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -100,7 +101,7 @@ using DWI::Tractography::SIFT::FixelBase;
 
 
 class AFDConnFixel : public FixelBase
-{ 
+{
   public:
     AFDConnFixel () : FixelBase (), length (0.0) { }
     AFDConnFixel (const FMLS::FOD_lobe& lobe) : FixelBase (lobe), length (0.0) { }
@@ -121,9 +122,9 @@ class AFDConnFixel : public FixelBase
 
 
 class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<AFDConnFixel>
-{ 
+{
   public:
-    AFDConnectivity (Image<value_type>& fod_buffer, const DWI::Directions::FastLookupSet& dirs, const std::string& tck_path, const std::string& wbft_path) :
+    AFDConnectivity (Image<value_type>& fod_buffer, const Math::Sphere::Set::Assigner& dirs, const std::string& tck_path, const std::string& wbft_path) :
         DWI::Tractography::SIFT::ModelBase<AFDConnFixel> (fod_buffer, dirs),
         have_wbft (wbft_path.size()),
         all_fixels (false),
@@ -134,7 +135,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<AFDConnFixel>
         perform_FOD_segmentation (fod_buffer);
         map_streamlines (wbft_path);
       } else {
-        fmls.reset (new DWI::FMLS::Segmenter (dirs, Math::SH::LforN (fod_buffer.size (3))));
+        fmls.reset (new DWI::FMLS::Segmenter (dirs, Math::Sphere::SH::LforN (fod_buffer.size (3))));
       }
       mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (fod_buffer, tck_path, 0.1));
       mapper.set_use_precise_mapping (true);
@@ -302,9 +303,9 @@ void run ()
   auto opt = get_options ("wbft");
   const std::string wbft_path = opt.size() ? str(opt[0][0]) : "";
 
-  DWI::Directions::FastLookupSet dirs (1281);
+  const Math::Sphere::Set::Assigner dirs (Math::Sphere::Set::Predefined::load (FMLS_DEFAULT_DIRECTION_SET));
   auto fod = Image<value_type>::open (argument[0]);
-  Math::SH::check (fod);
+  Math::Sphere::SH::check (fod);
   check_3D_nonunity (fod);
   AFDConnectivity model (fod, dirs, argument[1], wbft_path);
 

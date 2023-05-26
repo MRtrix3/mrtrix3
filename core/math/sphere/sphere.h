@@ -14,23 +14,25 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_sphere_h__
-#define __math_sphere_h__
+#ifndef __math_sphere_sphere_h__
+#define __math_sphere_sphere_h__
 
 #include <cmath>
 #include <sys/types.h>
 #include <type_traits>
-
 #include <Eigen/Core>
 
+#include "app.h"
+#include "header.h"
+#include "types.h"
 #include "math/math.h"
 
-namespace MR
-{
-  namespace Math
-  {
-    namespace Sphere
-    {
+
+
+
+namespace MR {
+  namespace Math {
+    namespace Sphere {
 
 
 
@@ -39,14 +41,21 @@ namespace MR
       inline typename std::enable_if<VectorType1::IsVectorAtCompileTime, void>::type
       spherical2cartesian (const VectorType1& az_el_r, VectorType2&& xyz)
       {
-        if (az_el_r.size() == 3) {
-          xyz[0] = az_el_r[2] * std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
-          xyz[1] = az_el_r[2] * std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
-          xyz[2] = az_el_r[2] * cos (az_el_r[1]);
-        } else {
-          xyz[0] = std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
-          xyz[1] = std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
-          xyz[2] = cos (az_el_r[1]);
+        assert (xyz.size() == 3);
+        switch (az_el_r.size()) {
+          case 2:
+            xyz[0] = std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
+            xyz[1] = std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
+            xyz[2] = cos (az_el_r[1]);
+            break;
+          case 3:
+            xyz[0] = az_el_r[2] * std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
+            xyz[1] = az_el_r[2] * std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
+            xyz[2] = az_el_r[2] * cos (az_el_r[1]);
+            break;
+          default:
+            assert (false);
+            xyz[0] = xyz[1] = xyz[2] = std::numeric_limits<typename std::remove_reference<VectorType2>::type::Scalar>::quiet_NaN();
         }
       }
 
@@ -55,24 +64,12 @@ namespace MR
       //! convert matrix of spherical coordinates to Cartesian coordinates
       template <class MatrixType1, class MatrixType2>
       inline typename std::enable_if<!MatrixType1::IsVectorAtCompileTime, void>::type
-      spherical2cartesian (const MatrixType1& az_el, MatrixType2&& cartesian)
+      spherical2cartesian (const MatrixType1& az_el_r, MatrixType2&& cartesian)
       {
-        cartesian.resize (az_el.rows(), 3);
-        for (ssize_t dir = 0; dir < az_el.rows(); ++dir)
-          spherical2cartesian (az_el.row (dir), cartesian.row (dir));
-      }
-
-
-
-      //! convert matrix of spherical coordinates to Cartesian coordinates
-      template <class MatrixType>
-      inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
-      spherical2cartesian (const MatrixType& az_el)
-      {
-        Eigen::MatrixXd cartesian (az_el.rows(), 3);
-        for (ssize_t dir = 0; dir < az_el.rows(); ++dir)
-          spherical2cartesian (az_el.row (dir), cartesian.row (dir));
-        return cartesian;
+        assert (az_el_r.cols() == 2 || az_el_r.cols() == 3);
+        cartesian.resize (az_el_r.rows(), 3);
+        for (ssize_t dir = 0; dir < az_el_r.rows(); ++dir)
+          spherical2cartesian (az_el_r.row (dir), cartesian.row (dir));
       }
 
 
@@ -82,9 +79,17 @@ namespace MR
       inline typename std::enable_if<VectorType1::IsVectorAtCompileTime, void>::type
       cartesian2spherical (const VectorType1& xyz, VectorType2&& az_el_r)
       {
+        assert (xyz.size() == 3);
+        assert (az_el_r.size() == 2 or az_el_r.size() == 3);
         auto r = std::sqrt (Math::pow2(xyz[0]) + Math::pow2(xyz[1]) + Math::pow2(xyz[2]));
         az_el_r[0] = std::atan2 (xyz[1], xyz[0]);
-        az_el_r[1] = std::acos (xyz[2] / r);
+        auto z = xyz[2] / r;
+        if (z >= 1.0)
+          az_el_r[1] = 0.0;
+        else if (z <= -1.0)
+          az_el_r[1] = Math::pi;
+        else
+          az_el_r[1] = std::acos (z);
         if (az_el_r.size() == 3)
           az_el_r[2] = r;
       }
@@ -94,31 +99,18 @@ namespace MR
       //! convert matrix of Cartesian coordinates to spherical coordinates
       template <class MatrixType1, class MatrixType2>
       inline typename std::enable_if<!MatrixType1::IsVectorAtCompileTime, void>::type
-      cartesian2spherical (const MatrixType1& cartesian, MatrixType2&& az_el, bool include_r = false)
+      cartesian2spherical (const MatrixType1& cartesian, MatrixType2&& az_el_r, bool include_r = false)
       {
-        az_el.allocate (cartesian.rows(), include_r ? 3 : 2);
+        az_el_r.allocate (cartesian.rows(), include_r ? 3 : 2);
         for (ssize_t dir = 0; dir < cartesian.rows(); ++dir)
-          cartesian2spherical (cartesian.row (dir), az_el.row (dir));
-      }
-
-
-
-      //! convert matrix of Cartesian coordinates to spherical coordinates
-      template <class MatrixType>
-      inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
-      cartesian2spherical (const MatrixType& cartesian, bool include_r = false)
-      {
-        Eigen::MatrixXd az_el (cartesian.rows(), include_r ? 3 : 2);
-        for (ssize_t dir = 0; dir < cartesian.rows(); ++dir)
-          cartesian2spherical (cartesian.row (dir), az_el.row (dir));
-        return az_el;
+          cartesian2spherical (cartesian.row (dir), az_el_r.row (dir));
       }
 
 
 
       //! normalise a set of Cartesian coordinates
       template <class MatrixType>
-      inline void normalise_cartesian (MatrixType& cartesian)
+      inline void normalise (MatrixType& cartesian)
       {
         assert (cartesian.cols() == 3);
         for (ssize_t i = 0; i < cartesian.rows(); i++) {
@@ -130,8 +122,25 @@ namespace MR
 
 
 
+      //! provide a normalised version of a set of Cartesian coordinates
+      template <class MatrixType>
+      inline MatrixType normalised (const MatrixType& cartesian)
+      {
+        assert (cartesian.cols() == 3);
+        MatrixType result (cartesian.rows(), 3);
+        for (ssize_t i = 0; i < cartesian.rows(); i++) {
+          auto norm = cartesian.row(i).norm();
+          result.row(i).array() = norm ? (cartesian.row(i).array() /= norm) : cartesian.row(i).array();
+        }
+        return result;
+      }
+
+
+
+
     }
   }
 }
 
 #endif
+

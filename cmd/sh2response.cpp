@@ -23,8 +23,8 @@
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "math/math.h"
-#include "math/SH.h"
-#include "math/ZSH.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/ZSH.h"
 
 
 
@@ -46,7 +46,7 @@ void usage ()
   SYNOPSIS = "Generate an appropriate response function from the image data for spherical deconvolution";
 
   DESCRIPTION
-  + Math::SH::encoding_description;
+  + Math::Sphere::SH::encoding_description;
 
   ARGUMENTS
     + Argument ("SH", "the spherical harmonic decomposition of the diffusion-weighted images").type_image_in()
@@ -71,11 +71,11 @@ using value_type = double;
 void run ()
 {
   auto SH = Image<value_type>::open(argument[0]);
-  Math::SH::check (SH);
+  Math::Sphere::SH::check (SH);
   auto mask = Image<bool>::open(argument[1]);
   auto dir = Image<value_type>::open(argument[2]).with_direct_io();
 
-  int lmax = get_option_value ("lmax", Math::SH::LforN (SH.size(3)));
+  int lmax = get_option_value ("lmax", Math::Sphere::SH::LforN (SH.size(3)));
 
   check_dimensions (SH, mask, 0, 3);
   check_dimensions (SH, dir, 0, 3);
@@ -85,7 +85,7 @@ void run ()
     throw Exception ("input direction image \"" + std::string (argument[2]) + "\" must contain precisely 3 volumes");
 
   Eigen::VectorXd delta;
-  Eigen::VectorXd response = Eigen::VectorXd::Zero (Math::ZSH::NforL (lmax));
+  Eigen::VectorXd response = Eigen::VectorXd::Zero (Math::Sphere::ZSH::NforL (lmax));
   size_t count = 0;
 
   File::OFStream dump_stream;
@@ -114,13 +114,13 @@ void run ()
       continue;
     }
 
-    Math::SH::delta (delta, d, lmax);
+    Math::Sphere::SH::delta (delta, d, lmax);
 
     for (int l = 0; l <= lmax; l += 2) {
       value_type d_dot_s = 0.0;
       value_type d_dot_d = 0.0;
       for (int m = -l; m <= l; ++m) {
-        size_t i = Math::SH::index (l,m);
+        size_t i = Math::Sphere::SH::index (l,m);
         SH.index(3) = i;
         value_type s = SH.value();
         // TODO: currently this does NOT handle the non-orthonormal basis
@@ -128,7 +128,7 @@ void run ()
         d_dot_d += Math::pow2 (delta[i]);
       }
       value_type val = AL[l] * d_dot_s / d_dot_d;
-      response[Math::ZSH::index(l)] += val;
+      response[Math::Sphere::ZSH::index(l)] += val;
 
       if (dump_stream.is_open())
         dump_stream << val << " ";

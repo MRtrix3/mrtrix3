@@ -21,10 +21,12 @@
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 
+#include "math/sphere/set/set.h"
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
+#include "dwi/sdeconv/sdeconv.h"
 
 
 using namespace MR;
@@ -37,11 +39,9 @@ const char* const algorithms[] = { "csd", "msmt_csd", NULL };
 
 OptionGroup CommonOptions = OptionGroup ("Options common to more than one algorithm")
 
-    + Option ("directions",
-              "specify the directions over which to apply the non-negativity constraint "
-              "(by default, the built-in 300 direction set is used). These should be "
-              "supplied as a text file containing [ az el ] pairs for the directions.")
-      + Argument ("file").type_file_in()
+    + Math::Sphere::Set::directions_option ("for application of the non-negativity constraint",
+                                            false,
+                                            "built-in " + str(DWI::SDeconv::default_constraint_directions) + "-direction set")
 
     + Option ("lmax",
               "the maximum spherical harmonic order for the output FOD(s)."
@@ -65,7 +65,7 @@ void usage ()
   SYNOPSIS = "Estimate fibre orientation distributions from diffusion data using spherical deconvolution";
 
   DESCRIPTION
-    + Math::SH::encoding_description;
+    + Math::Sphere::SH::encoding_description;
 
   EXAMPLES
     + Example ("Perform single-shell single-tissue CSD",
@@ -117,7 +117,7 @@ void usage ()
 
 
 
-class CSD_Processor { 
+class CSD_Processor {
   public:
     CSD_Processor (const DWI::SDeconv::CSD::Shared& shared, Image<bool>& mask) :
       sdeconv (shared),
@@ -178,7 +178,7 @@ class CSD_Processor {
 
 
 
-class MSMT_Processor { 
+class MSMT_Processor {
   public:
     MSMT_Processor (const DWI::SDeconv::MSMT_CSD::Shared& shared, Image<bool>& mask_image,
       vector< Image<float> > odf_images, Image<float> dwi_modelled = Image<float>()) :
@@ -308,7 +308,7 @@ void run ()
 
     vector< Image<float> > odfs;
     for (size_t i = 0; i < num_tissues; ++i) {
-      header_out.size (3) = Math::SH::NforL (shared.lmax[i]);
+      header_out.size (3) = Math::Sphere::SH::NforL (shared.lmax[i]);
       odfs.push_back (Image<float> (Image<float>::create (odf_paths[i], header_out)));
     }
 

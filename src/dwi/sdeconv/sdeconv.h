@@ -14,36 +14,24 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#ifndef __dwi_sdeconv_sdeconv_h__
+#define __dwi_sdeconv_sdeconv_h__
 
-#ifndef __fixel_fixel_h__
-#define __fixel_fixel_h__
-
-#include <stdint.h>
-#include <string>
-#include <cstdint>
+#include <types.h>
 
 namespace MR
 {
-  namespace Fixel
+  namespace DWI
   {
+    namespace SDeconv
+    {
 
+      constexpr size_t default_constraint_directions = 300;
 
-    //! a string containing a description of the fixel directory format
-    /*! This can used directly in the DESCRIPTION field of a command's
-     * usage() function. */
-    extern const char* format_description;
-
-    using index_type = uint32_t;
-
-    const std::string n_fixels_key ("nfixels");
-    const std::initializer_list <const std::string> supported_sparse_formats { ".mif", ".nii", ".mif.gz" , ".nii.gz" };
-
-    const std::string basename_index = "index";
-    const std::string basename_directions = "directions";
-    const std::string basename_dixelmasks = "dixelmasks";
-
-
+    }
   }
 }
 
 #endif
+
+

@@ -20,7 +20,7 @@
 #include <algorithm>
 
 #include "types.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -43,14 +43,14 @@ namespace MR
 
         using namespace MR::DWI::Tractography::Tracking;
 
-        class iFOD2 : public MethodBase { 
+        class iFOD2 : public MethodBase {
           public:
 
-            class Shared : public SharedBase { 
+            class Shared : public SharedBase {
               public:
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                     SharedBase (diff_path, property_set),
-                    lmax (Math::SH::LforN (source.size(3))),
+                    lmax (Math::Sphere::SH::LforN (source.size(3))),
                     num_samples (Defaults::ifod2_nsamples),
                     max_trials (Defaults::max_trials_per_step),
                     sin_max_angle_ho (NaN),
@@ -60,7 +60,7 @@ namespace MR
                     num_proc (0)
                 {
                   try {
-                    Math::SH::check (source);
+                    Math::Sphere::SH::check (source);
                   } catch (Exception& e) {
                     e.display();
                     throw Exception ("Algorithm iFOD2 expects as input a spherical harmonic (SH) image");
@@ -131,7 +131,7 @@ namespace MR
 
                 size_t lmax, num_samples, max_trials;
                 float sin_max_angle_ho, fod_power;
-                Math::SH::PrecomputedAL<float> precomputer;
+                Math::Sphere::SH::PrecomputedAL<float> precomputer;
 
               private:
                 mutable double mean_samples, mean_truncations, max_max_truncation;
@@ -357,7 +357,7 @@ end_init:
             {
               return (S.precomputer ?
                   S.precomputer.value (values, direction) :
-                  Math::SH::value (values, direction, S.lmax)
+                  Math::Sphere::SH::value (values, direction, S.lmax)
                   );
             }
 
@@ -453,7 +453,7 @@ end_init:
 
           private:
             class Calibrate
-            { 
+            {
               public:
                 Calibrate (iFOD2& method) :
                   P (method),
@@ -461,8 +461,8 @@ end_init:
                   vox (P.S.vox()),
                   positions (P.S.num_samples),
                   tangents (P.S.num_samples) {
-                    Math::SH::delta (fod, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax);
-                    init_log_prob = 0.5 * std::log (Math::SH::value (P.values, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax));
+                    Math::Sphere::SH::delta (fod, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax);
+                    init_log_prob = 0.5 * std::log (Math::Sphere::SH::value (P.values, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax));
                   }
 
                 float operator() (float el)
@@ -472,7 +472,7 @@ end_init:
 
                   float log_prob = init_log_prob;
                   for (size_t i = 0; i < P.S.num_samples; ++i) {
-                    float prob = Math::SH::value (P.values, tangents[i], P.S.lmax) * (1.0 - (positions[i][0] / vox));
+                    float prob = Math::Sphere::SH::value (P.values, tangents[i], P.S.lmax) * (1.0 - (positions[i][0] / vox));
                     if (prob <= 0.0)
                       return 0.0;
                     prob = std::log (prob);

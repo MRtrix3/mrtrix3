@@ -19,8 +19,8 @@
 #include "algo/loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "math/SH.h"
-#include "math/ZSH.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/ZSH.h"
 
 
 namespace MR {
@@ -32,7 +32,7 @@ namespace MR {
           : EnergyComputer(stat),
             dwi(dwimage),
             T(Transform(dwimage).scanner2voxel),
-            lmax(props.Lmax), ncols(Math::SH::NforL(lmax)), nf(props.resp_ISO.size()),
+            lmax(props.Lmax), ncols(Math::Sphere::SH::NforL(lmax)), nf(props.resp_ISO.size()),
             beta(props.beta), mu(props.ppot*M_sqrt4PI), dE(0.0)
         {
           DEBUG("Initialise computation of external energy.");
@@ -71,16 +71,16 @@ namespace MR {
           Ak.setZero();
 
           Eigen::VectorXd delta_vec (ncols);
-          Eigen::VectorXd wmr_zsh (Math::ZSH::NforL (lmax)), wmr_rh (Math::ZSH::NforL (lmax));
+          Eigen::VectorXd wmr_zsh (Math::Sphere::ZSH::NforL (lmax)), wmr_rh (Math::Sphere::ZSH::NforL (lmax));
           wmr_zsh.setZero();
           Eigen::Vector3d unit_dir;
           double wmr0;
 
           for (size_t s = 0; s < shells.count(); s++)
           {
-            for (int i = 0; i < int(Math::ZSH::NforL (lmax)); ++i)
+            for (int i = 0; i < int(Math::Sphere::ZSH::NforL (lmax)); ++i)
               wmr_zsh[i] = (i < props.resp_WM.cols()) ? props.resp_WM(s, i) : 0.0;
-            wmr_rh = Math::ZSH::ZSH2RH (wmr_zsh);
+            wmr_rh = Math::Sphere::ZSH::ZSH2RH (wmr_zsh);
             wmr0 = props.resp_WM(s,0) / std::sqrt(M_4PI);
 
             for (size_t r : shells[s].get_volumes())
@@ -90,8 +90,8 @@ namespace MR {
               double n = unit_dir.norm();
               if (n > 0.0)
                 unit_dir /= n;
-              Math::SH::delta(delta_vec, unit_dir, lmax);
-              Math::SH::sconv(delta_vec, wmr_rh, delta_vec);
+              Math::Sphere::SH::delta(delta_vec, unit_dir, lmax);
+              Math::Sphere::SH::sconv(delta_vec, wmr_rh, delta_vec);
               K.row(r) = delta_vec;
               // Ak
               Ak(r,0) = wmr0;
@@ -176,7 +176,7 @@ namespace MR {
           Point_t v = Point_t(Math::floor<float>(p[0]), Math::floor<float>(p[1]), Math::floor<float>(p[2]));
           Point_t w = Point_t(hanning(p[0]-v[0]), hanning(p[1]-v[1]), hanning(p[2]-v[2]));
 
-          Math::SH::delta(d, dir, lmax);
+          Math::Sphere::SH::delta(d, dir, lmax);
 
           Eigen::Vector3i x = v.cast<int>();
           add2vox(x, factor*(1.-w[0])*(1.-w[1])*(1.-w[2]));

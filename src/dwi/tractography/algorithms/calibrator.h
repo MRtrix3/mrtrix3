@@ -18,7 +18,6 @@
 #define __dwi_tractography_algorithms_iFOD_calibrator_h__
 
 #include "types.h"
-#include "math/SH.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
 
@@ -55,7 +54,7 @@ namespace MR {
       }
 
       namespace {
-        class Pair { 
+        class Pair {
           public:
             Pair (float elevation, float amplitude) : el (elevation), amp (amplitude) { }
             float el, amp;

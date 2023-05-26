@@ -20,12 +20,16 @@
 
 #include "app.h"
 
+#include "math/sphere/set/set.h"
+
 namespace MR
 {
   namespace Registration
   {
     using namespace MR;
     using namespace App;
+
+    constexpr size_t default_fod_reorientation_directions = 60;
 
     const OptionGroup multiContrastOptions =
       OptionGroup ("Multi-contrast options")
@@ -35,12 +39,13 @@ namespace MR
     const OptionGroup fod_options =
           OptionGroup ("FOD registration options")
 
-          + Option ("directions", "the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)")
-          + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in ()
+          + Math::Sphere::Set::directions_option ("of FOD reorientation using apodised point spread functions",
+                                                  false,
+                                                  "built-in " + str(default_fod_reorientation_directions) + "-direction set")
 
-          + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
-                                       "of volumes in the 4th dimension corresponds to the number of coefficients in an "
-                                       "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc");
+          + Option ("noreorientation", "turn off FOD reorientation; reorientation is on by default if the number "
+                                       "of volumes in the 4th dimension corresponds to the number of coefficients in a real & "
+                                       "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc)");
   }
 }
 

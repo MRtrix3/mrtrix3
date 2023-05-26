@@ -17,6 +17,7 @@
 #include "gui/mrview/tool/odf/model.h"
 
 #include "header.h"
+#include "math/sphere/sh.h"
 
 namespace MR
 {
@@ -40,7 +41,7 @@ namespace MR
               auto header = make_unique<MR::Header> (MR::Header::open (list[i]));
               switch (type) {
                 case odf_type_t::SH:
-                  Math::SH::check (*header);
+                  Math::Sphere::SH::check (*header);
                   break;
                 case odf_type_t::TENSOR:
                   if (header->ndim() != 4)

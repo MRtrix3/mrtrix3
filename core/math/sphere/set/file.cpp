@@ -14,13 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/directions/file.h"
+#include "math/sphere/set/file.h"
 
 #include "math/math.h"
+#include "math/sphere/set/predefined.h"
+#include "math/sphere/set/set.h"
+
 
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+  namespace Math {
+    namespace Sphere {
+      namespace Set {
+
+
 
       Eigen::MatrixXd load_spherical (const std::string& filename)
       {
@@ -30,10 +36,8 @@ namespace MR {
         if (directions.cols() != 3)
           throw Exception ("unexpected number of columns for directions file \"" + filename + "\"");
 
-        return Math::Sphere::cartesian2spherical (directions);
+        return cartesian2spherical (directions);
       }
-
-
 
 
 
@@ -41,20 +45,27 @@ namespace MR {
       {
         auto directions = load_matrix<> (filename);
         if (directions.cols() == 2)
-          directions = Math::Sphere::spherical2cartesian (directions);
+          directions = spherical2cartesian (directions);
         else {
           if (directions.cols() != 3)
             throw Exception ("unexpected number of columns for directions file \"" + filename + "\"");
+          bool issue_warning = false;
           for (ssize_t n  = 0; n < directions.rows(); ++n) {
             auto norm = directions.row(n).norm();
             if (abs(default_type(1.0) - norm) > 1.0e-4)
-              WARN ("directions file \"" + filename + "\" contains non-unit direction vectors");
+              issue_warning = true;
             directions.row(n).array() *= norm ? default_type(1.0)/norm : default_type(0.0);
+          }
+          if (issue_warning) {
+            WARN ("directions file \"" + filename + "\" contains non-unit direction vectors");
           }
         }
         return directions;
       }
 
+
+
+      }
     }
   }
 }

@@ -18,7 +18,6 @@
 #include "command.h"
 #include "progressbar.h"
 #include "file/path.h"
-#include "math/SH.h"
 #include "gui/shview/icons.h"
 #include "gui/shview/render_window.h"
 #include "gui/shview/file_open.h"

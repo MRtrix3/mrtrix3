@@ -17,9 +17,9 @@
 #include "command.h"
 #include "progressbar.h"
 #include "math/rng.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "dwi/gradient.h"
-#include "dwi/directions/file.h"
+#include "math/sphere/set/file.h"
 
 #include <random>
 #include <functional>
@@ -90,7 +90,7 @@ vector<size_t> optimise (const Eigen::MatrixXd& directions, const size_t first_v
 
 value_type calc_cost (const Eigen::MatrixXd& directions, const vector<size_t>& order)
 {
-  const size_t start = Math::SH::NforL (2);
+  const size_t start = Math::Sphere::SH::NforL (2);
   if (size_t(directions.rows()) <= start)
     return value_type(0);
   Eigen::MatrixXd subset (start, 3);
@@ -101,10 +101,10 @@ value_type calc_cost (const Eigen::MatrixXd& directions, const vector<size_t>& o
     // Don't include condition numbers where precisely the number of coefficients
     //   for that spherical harmonic degree are included, as these tend to
     //   be outliers
-    const size_t lmax = Math::SH::LforN (N-1);
+    const size_t lmax = Math::Sphere::SH::LforN (N-1);
     subset.conservativeResize (N, 3);
     subset.row(N-1) = directions.row(order[N-1]);
-    const value_type cond = DWI::condition_number_for_lmax (subset, lmax);
+    const value_type cond = Math::condition_number (Math::Sphere::SH::init_transform_cart (subset, lmax));
     cost += cond;
   }
   return cost;
@@ -115,10 +115,10 @@ value_type calc_cost (const Eigen::MatrixXd& directions, const vector<size_t>& o
 
 void run ()
 {
-  auto directions = DWI::Directions::load_cartesian (argument[0]);
+  auto directions = Math::Sphere::Set::load_cartesian (argument[0]);
 
   size_t last_candidate_first_volume = directions.rows();
-  if (size_t(directions.rows()) <= Math::SH::NforL (2)) {
+  if (size_t(directions.rows()) <= Math::Sphere::SH::NforL (2)) {
     WARN ("Very few directions in input ("
           + str(directions.rows())
           + "); selection of first direction cannot be optimised"
@@ -143,7 +143,7 @@ void run ()
   for (ssize_t n = 0; n < directions.rows(); ++n)
     output.row(n) = directions.row (best_order[n]);
 
-  DWI::Directions::save (output, argument[1], get_options("cartesian").size());
+  Math::Sphere::Set::save (output, argument[1], get_options("cartesian").size());
 }
 
 

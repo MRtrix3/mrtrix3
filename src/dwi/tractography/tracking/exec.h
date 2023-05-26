@@ -20,7 +20,9 @@
 
 #include "thread.h"
 #include "thread_queue.h"
-#include "dwi/directions/set.h"
+#include "math/sphere/set/adjacency.h"
+#include "math/sphere/set/predefined.h"
+
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/roi.h"
@@ -54,7 +56,7 @@ namespace MR
 
         // TODO Try having ACT as a template boolean; allow compiler to optimise out branch statements
 
-        template <class Method> class Exec { 
+        template <class Method> class Exec {
 
           public:
 
@@ -80,9 +82,9 @@ namespace MR
                 using TckMapper = Mapping::TrackMapperBase;
                 using Writer = Seeding::WriteKernelDynamic;
 
-                DWI::Directions::FastLookupSet dirs (1281);
+                Math::Sphere::Set::Assigner dirs (Math::Sphere::Set::Predefined::load (FMLS_DEFAULT_DIRECTION_SET));
                 auto fod_data = Image<float>::open (fod_path);
-                Math::SH::check (fod_data);
+                Math::Sphere::SH::check (fod_data);
                 Seeding::Dynamic* seeder = new Seeding::Dynamic (fod_path, fod_data, num_tracks, dirs);
                 properties.seeds.add (seeder); // List is responsible for deleting this from memory
 

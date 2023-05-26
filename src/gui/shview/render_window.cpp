@@ -22,7 +22,7 @@
 #include "gui/dialog/file.h"
 #include "gui/dialog/dialog.h"
 #include "math/math.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 
 
 namespace MR
@@ -361,7 +361,7 @@ namespace MR
           is_response = values.cols() < 15;
           response_action->setChecked (is_response);
 
-          render_frame->set_lmax (is_response ? (values.cols()-1)*2 : Math::SH::LforN (values.cols()));
+          render_frame->set_lmax (is_response ? (values.cols()-1)*2 : Math::Sphere::SH::LforN (values.cols()));
           lmax_group->actions()[render_frame->get_lmax()/2]->setChecked (true);
 
           name = Path::basename (filename);
@@ -387,9 +387,9 @@ namespace MR
             current = int (values.rows())-1;
 
           if (is_response) {
-            val = decltype(val)::Zero (Math::SH::NforL (2 * (values.cols()-1)));
+            val = decltype(val)::Zero (Math::Sphere::SH::NforL (2 * (values.cols()-1)));
             for (size_t n = 0; n < size_t(values.cols()); n++)
-              val[Math::SH::index (2*n,0)] = values (current,n);
+              val[Math::Sphere::SH::index (2*n,0)] = values (current,n);
           }
           else
             val = values.row (current);

@@ -21,7 +21,8 @@
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
-#include "dwi/directions/predefined.h"
+#include "math/sphere/set/set.h"
+#include "math/sphere/set/predefined.h"
 #include "math/constrained_least_squares.h"
 
 using namespace MR;
@@ -30,6 +31,7 @@ using namespace App;
 using value_type = float;
 
 #define DEFAULT_NITER 2
+#define DEFAULT_CONSTRAINT_DIRECTIONS 300
 
 const char* const encoding_description[] = {
   "The tensor coefficients are stored in the output image as follows:\n"
@@ -95,11 +97,9 @@ void usage ()
 
     + Option ("constrain", "constrain fit to non-negative diffusivity and kurtosis as well as monotonic signal decay (see Description).")
 
-    + Option ("directions",
-              "specify the directions along which to apply the constraints "
-              "(by default, the built-in 300 direction set is used). These should be "
-              "supplied as a text file containing [ az el ] pairs for the directions.")
-      + Argument ("file").type_file_in()
+    + Math::Sphere::Set::directions_option ("in the application of constraints",
+                                            false,
+                                            "built-in " + str(DEFAULT_CONSTRAINT_DIRECTIONS) + "-direction set")
 
     + Option ("mask", "only perform computation within the specified binary brain mask image.")
     +   Argument ("image").type_image_in()
@@ -299,10 +299,10 @@ void run ()
 
   Eigen::MatrixXd Aneq;
   if (constrain) {
-    Eigen::MatrixXd constr_dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
     opt = get_options ("directions");
-    if (opt.size())
-      constr_dirs = load_matrix (opt[0][0]);
+    const Math::Sphere::Set::cartesian_type constr_dirs = opt.size() ?
+                                                          Math::Sphere::Set::to_cartesian (Math::Sphere::Set::load (std::string (opt[0][0]), true)) :
+                                                          Math::Sphere::Set::spherical2cartesian (Math::Sphere::Set::Predefined::load (DEFAULT_CONSTRAINT_DIRECTIONS));
     Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (constr_dirs, dki);
     if (dki) {
       auto maxb = grad.col(3).maxCoeff();

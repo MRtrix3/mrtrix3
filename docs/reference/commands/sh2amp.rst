@@ -16,7 +16,7 @@ Usage
     sh2amp [ options ]  input directions output
 
 -  *input*: the input image consisting of spherical harmonic (SH) coefficients.
--  *directions*: the list of directions along which the SH functions will be sampled, generated using the dirgen command
+-  *directions*: the source of the set of directions along which the SH functions will be sampled (see Description)
 -  *output*: the output image consisting of the amplitude of the SH functions along the specified directions.
 
 Description
@@ -24,13 +24,9 @@ Description
 
 The input image should consist of a 4D or 5D image, with SH coefficients along the 4th dimension according to the convention below. If 4D (or size 1 along the 5th dimension), the program expects to be provided with a single shell of directions. If 5D, each set of coefficients along the 5th dimension is understood to correspond to a different shell.
 
-The directions can be provided as: |br|
-- a 2-column ASCII text file contained azimuth / elevation pairs (as produced by dirgen) |br|
-- a 3-column ASCII text file containing x, y, z Cartesian direction vectors (as produced by dirgen -cart) |br|
-- a 4-column ASCII text file containing the x, y, z, b components of a full DW encoding scheme (in MRtrix format, see main documentation for details). |br|
-- an image file whose header contains a valid DW encoding scheme
+Where the user is permitted to provide a set of directions that is requisite for the relevant command operation (including as an alternative to data that may be already present in an input image header), there are a number of permissible inputs from which the user could choose, including: an integer value corresponding to a built-in direction set; a path to a text file containing directions (in either spherical, ie. [az el] pairs, or cartesian coordinates, ie. [x y z] triplets); a path to an image, where this set could be extracted from either key-value entry "directions" or from the diffusion gradient table.
 
-If a full DW encoding is provided, the number of shells needs to match those found in the input image of coefficients (i.e. its size along the 5th dimension). If needed, the -shell option can be used to pick out the specific shell(s) of interest.
+If a full DW encoding is provided, the number of shells needs to match those found in the input image of coefficients (i.e. its size along the 5th dimension). If needed, the -shells option can be used to pick out the specific shell(s) of interest.
 
 If the input image contains multiple shells (its size along the 5th dimension is greater than one), the program will expect the direction set to contain multiple shells, which can only be provided as a full DW encodings (the last two options in the list above).
 

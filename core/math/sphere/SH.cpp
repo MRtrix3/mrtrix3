@@ -14,13 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "version.h"
 
 namespace MR
 {
   namespace Math
   {
+    namespace Sphere
+    {
     namespace SH
     {
 
@@ -29,6 +31,7 @@ namespace MR
         "described in the main documentation, which can be found at the following link: \n"
         "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/spherical_harmonics.html";
 
+    }
     }
   }
 }

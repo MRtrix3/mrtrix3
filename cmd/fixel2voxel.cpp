@@ -26,8 +26,6 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
 
-#include "math/SH.h"
-
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
@@ -111,27 +109,27 @@ using FixelDataType = Image<float>;
 
 
 
-struct set_offset { 
+struct set_offset {
   FORCE_INLINE set_offset (index_type offset) : offset (offset) { }
   template <class DataType>
     FORCE_INLINE void operator() (DataType& data) { data.index(0) = offset; }
   index_type offset;
 };
 
-struct inc_fixel { 
+struct inc_fixel {
   template <class DataType>
     FORCE_INLINE void operator() (DataType& data) { ++data.index(0); }
 };
 
 
 
-struct LoopFixelsInVoxelWithMax { 
+struct LoopFixelsInVoxelWithMax {
   const index_type num_fixels;
   const index_type max_fixels;
   const index_type offset;
 
   template <class... DataType>
-  struct Run { 
+  struct Run {
     const index_type num_fixels;
     const index_type max_fixels;
     const index_type offset;
@@ -156,7 +154,7 @@ struct LoopFixelsInVoxelWithMax {
 
 
 class Base
-{ 
+{
   public:
     Base (FixelDataType& data, const index_type max_fixels, const bool pad = false, const float pad_value = 0.0) :
         data (data),
@@ -183,7 +181,7 @@ class Base
 
 
 class Mean : protected Base
-{ 
+{
   public:
     Mean (FixelDataType& data, const index_type max_fixels, FixelDataType& vol) :
         Base (data, max_fixels),
@@ -217,7 +215,7 @@ class Mean : protected Base
 
 
 class Sum : protected Base
-{ 
+{
   public:
     Sum (FixelDataType& data, const index_type max_fixels, FixelDataType& vol) :
         Base (data, max_fixels),
@@ -243,7 +241,7 @@ class Sum : protected Base
 
 
 class Product : protected Base
-{ 
+{
   public:
     Product (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -270,7 +268,7 @@ class Product : protected Base
 
 
 class Min : protected Base
-{ 
+{
   public:
     Min (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -288,7 +286,7 @@ class Min : protected Base
 
 
 class Max : protected Base
-{ 
+{
   public:
     Max (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -306,7 +304,7 @@ class Max : protected Base
 
 
 class AbsMax : protected Base
-{ 
+{
   public:
     AbsMax (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -324,7 +322,7 @@ class AbsMax : protected Base
 
 
 class MagMax : protected Base
-{ 
+{
   public:
     MagMax (FixelDataType& data, const index_type num_fixels) :
         Base (data, num_fixels) { }
@@ -342,7 +340,7 @@ class MagMax : protected Base
 
 
 class Complexity : protected Base
-{ 
+{
   public:
     Complexity (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -370,7 +368,7 @@ class Complexity : protected Base
 
 
 class SF : protected Base
-{ 
+{
   public:
     SF (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -391,7 +389,7 @@ class SF : protected Base
 
 
 class DEC_unit : protected Base
-{ 
+{
   public:
     DEC_unit (FixelDataType& data, const index_type max_fixels, FixelDataType& vol, Image<float>& dir) :
         Base (data, max_fixels),
@@ -423,7 +421,7 @@ class DEC_unit : protected Base
 
 
 class DEC_scaled : protected Base
-{ 
+{
   public:
     DEC_scaled (FixelDataType& data, const index_type max_fixels, FixelDataType& vol, Image<float>& dir) :
         Base (data, max_fixels),
@@ -466,7 +464,7 @@ class DEC_scaled : protected Base
 
 
 class None : protected Base
-{ 
+{
   public:
     None (FixelDataType& data, const index_type max_fixels, const float fill_value) :
         Base (data, max_fixels, true, fill_value) { }
