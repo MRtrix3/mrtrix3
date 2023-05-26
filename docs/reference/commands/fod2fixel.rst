@@ -38,6 +38,8 @@ Quantitative fixel-wise metric values to save as fixel data files
 
 -  **-disp image** output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude
 
+-  **-skew image** output a measure of FOD lobe skew as the angle between the mean and peak orientations
+
 FOD FMLS segmenter options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -65,7 +67,7 @@ Options to modulate outputs of fod2fixel
 
 -  **-fixel_dirs choice** choose what will be used to define the direction of each fixel; options are: mean,peak,lsq
 
--  **-nolookup** do not export the lookup table image
+-  **-amplitude_images** write a set of dixel images, where each encodes the FOD amplitudes for one fixel in each voxel
 
 Standard options
 ^^^^^^^^^^^^^^^^

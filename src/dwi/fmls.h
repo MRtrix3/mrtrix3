@@ -228,8 +228,6 @@ namespace MR
           void         set_lobe_merge_ratio     (const default_type i) { lobe_merge_ratio = i; }
           bool         get_calculate_lsq_dir    ()               const { return calculate_lsq_dir; }
           void         set_calculate_lsq_dir    (const bool i)         { calculate_lsq_dir = i; }
-          bool         get_create_lookup_table  ()               const { return create_lookup_table; }
-          void         set_create_lookup_table  (const bool i)         { create_lookup_table = i; }
 
         private:
 
@@ -249,7 +247,6 @@ namespace MR
           default_type peak_value_threshold; // Absolute threshold for the peak amplitude of the lobe
           default_type lobe_merge_ratio;     // Determines whether two lobes get agglomerated into one, depending on the FOD amplitude at the current point and how it compares to the maximal amplitudes of the lobes to which it could be assigned
           bool         calculate_lsq_dir;    // Whether to invest the clock cycles in calculating the least square direction
-          bool         create_lookup_table;  // If false, don't waste the memory required to create and store this
 
           // By default, the mean direction of each FOD lobe is calculated by taking a weighted average of the
           //   Euclidean unit vectors (weights are FOD amplitudes). This is not strictly mathematically correct, and

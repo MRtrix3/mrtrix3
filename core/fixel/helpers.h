@@ -24,6 +24,7 @@
 #include "algo/loop.h"
 #include "fixel/fixel.h"
 #include "formats/mrtrix_utils.h"
+#include "file/path.h"
 
 
 namespace MR
@@ -103,6 +104,24 @@ namespace MR
           && in.ndim() == 3
           && in.size(1) == 3
           && in.size(2) == 1;
+    }
+
+    FORCE_INLINE bool is_dixelmasks_filename (const std::string& path)
+    {
+      for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
+           it != supported_sparse_formats.end(); ++it) {
+        if (Path::basename (path) == Fixel::basename_dixelmasks + *it)
+          return true;
+      }
+      return false;
+    }
+
+    template <class HeaderType>
+    FORCE_INLINE bool is_dixelmasks_file (const HeaderType& in)
+    {
+      return is_dixelmasks_filename (in.name())
+          && in.ndim() == 3
+          && in.datatype() == DataType::Bit;
     }
 
 
@@ -268,12 +287,11 @@ namespace MR
 
 
 
-    FORCE_INLINE Header find_directions_header (const std::string fixel_directory_path)
+    FORCE_INLINE Header find_directions_header (Header& index_header)
     {
       bool directions_found (false);
       Header header;
       check_fixel_directory (fixel_directory_path);
-      Header index_header = Fixel::find_index_header (fixel_directory_path);
 
       auto dir_walker = Path::Dir (fixel_directory_path);
       std::string fname;
@@ -287,7 +305,7 @@ namespace MR
               directions_found = true;
               header = std::move (tmp_header);
             } else {
-              WARN ("fixel directions file (" + fname + ") does not contain the same number of elements as fixels in the index file" );
+              WARN ("fixel directions file (" + fname + ") does not contain the same number of elements as fixels in the index file");
             }
           }
         }
@@ -298,6 +316,83 @@ namespace MR
 
       return header;
     }
+
+
+
+    FORCE_INLINE Header find_directions_header (const std::string& fixel_directory_path)
+    {
+      Header index_header = Fixel::find_index_header (fixel_directory_path);
+      return find_directions_header (index_header);
+    }
+
+
+
+    FORCE_INLINE Header find_dixelmasks_header (Header& index_header)
+    {
+      bool dixelmasks_found (false);
+      Header header;
+      check_fixel_directory (fixel_directory_path);
+
+      auto dir_walker = Path::Dir (fixel_directory_path);
+      std::string fname;
+      while ((fname = dir_walker.read_name()).size()) {
+        if (is_dixelmasks_filename (fname)) {
+          Header tmp_header = Header::open (Path::join (fixel_directory_path, fname));
+          if (is_dixelmasks_file (tmp_header)) {
+            if (dimensions_match (index_header, tmp_header, 0, 3)) {
+              if (dixelmasks_found == true)
+                throw Exception ("multiple dixelmask files found in fixel image directory: " + fixel_directory_path);
+              dixelmasks_found = true;
+              header = std::move (tmp_header);
+            } else {
+              WARN ("dixelmasks image (" + fname + ") does not contain the same voxels as the index file");
+            }
+          }
+        }
+      }
+
+      return header;
+    }
+
+
+
+    FORCE_INLINE Header find_dixelmasks_header (const std::string& fixel_directory_path)
+    {
+      Header index_header = Fixel::find_index_header (fixel_directory_path);
+      return find_dixelmasks_header (index_header);
+    }
+
+
+
+    // TODO Modify to conform to parallel developments in handling of unit sphere direction sets
+    FORCE_INLINE Eigen::MatrixXd find_dixelmasks_directions (const Header& header)
+    {
+      const auto directions_it = header.keyval().find ("directions");
+      if (directions_it == header.keyval().end()) {
+        const std::string directory_path = Path::dirname (header.name());
+        Path::Dir dir (directory_path);
+        Eigen::MatrixXd result;
+        std::string filename;
+        while ((filename = dir.read_name()).size()) {
+          Eigen::MatrixXd data;
+          try {
+            data = load_matrix (Path::join (directory_path, filename));
+            if (!(data.cols() == 2 || data.cols() == 3))
+              throw Exception ("File \"" + filename + "\" does not contain direction set (matrix has " + str(data.cols()) + " columns)");
+            if (data.rows() != header.size(1))
+              throw Exception ("Number of directions in file \"" + filename + "\" (" + str(data.rows()) + ") does not correspond to number of dixels in mask image \"" + header.name() + "\" (" + str(header.size(1)) + ")");
+          } catch (Exception&) {}
+          if (result.rows())
+            throw Exception ("Multiple sidecar files corresponding to dixel mask image \"" + header.name() + "\" that contain direction set data");
+          result = data;
+        }
+        return result;
+      }
+      // TODO Perform additional verification once merged with other code
+      return deserialise_matrix (directions_it->second);
+    }
+
+
 
     //! Generate a header for a sparse data file (Nx1x1)
     FORCE_INLINE Header data_header_from_nfixels (const size_t nfixels) {
@@ -319,8 +414,6 @@ namespace MR
     template <class IndexHeaderType>
     FORCE_INLINE Header data_header_from_index (IndexHeaderType& index) {
       Header header (data_header_from_nfixels (get_number_of_fixels (index)));
-      for (size_t axis = 0; axis != 3; ++axis)
-        header.spacing (axis) = index.spacing (axis);
       header.keyval() = index.keyval();
       return header;
     }
@@ -338,8 +431,6 @@ namespace MR
     template <class IndexHeaderType>
     FORCE_INLINE Header directions_header_from_index (IndexHeaderType& index) {
       Header header = data_header_from_index (index);
-      for (size_t axis = 0; axis != 3; ++axis)
-        header.spacing (axis) = index.spacing (axis);
       header.size(1) = 3;
       header.stride(0) = 2;
       header.stride(1) = 1;
@@ -431,6 +522,9 @@ namespace MR
 
       return in_data_image;
     }
+
+
+
   }
 }
 

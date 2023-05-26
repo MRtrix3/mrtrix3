@@ -581,6 +581,10 @@ namespace MR
             typename VectorType::Scalar& d2SH_daz2,
             PrecomputedAL<typename VectorType::Scalar>* precomputer)
         {
+          if(lmax < 0){
+            throw std::logic_error("lmax cannot be negative!");
+          }
+
           using value_type = typename VectorType::Scalar;
           value_type sel = std::sin (elevation);
           value_type cel = std::cos (elevation);
@@ -603,7 +607,7 @@ namespace MR
             }
           }
 
-          amplitude = sh[0] * AL[0];
+          amplitude = sh[index (0, 0)] * AL[index_mpos (0, 0)];
           for (int l = 2; l <= (int) lmax; l+=2) {
             const value_type& v (sh[index (l,0)]);
             amplitude += v * AL[index_mpos (l,0)];

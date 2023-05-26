@@ -51,6 +51,7 @@ namespace MR
           virtual ~Fixel_TD_map() { }
 
           virtual bool operator() (const SetDixel& in);
+          using Fixel_map<Fixel>::operator();
 
         protected:
           using Fixel_map<Fixel>::accessor;
