@@ -192,7 +192,7 @@ namespace MR {
               for (size_t j = 1; j != adj_lobes.size(); ++j)
                 out[adj_lobes[0]].merge (out[adj_lobes[j]]);
 
-              out[adj_lobes[0]].add (i.second, i.first, (*weights)[i.second]);
+              out[adj_lobes[0]].add (dirs, i.second, i.first, (*weights)[i.second]);
 
               // Generate table where the value at a given fixel index offset
               //   is equal to the new index where that fixel will appear after
@@ -230,7 +230,7 @@ namespace MR {
         for (const auto& i : retrospective_assignments) {
           const default_type weight = (*weights)[i.dixel()] / i.fixels().size();
           for (const auto f : i.fixels())
-            out[f].add (i.dixel(), values[i.dixel()], weight);
+            out[f].add (dirs, i.dixel(), values[i.dixel()], weight);
         }
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment

@@ -17,7 +17,7 @@
 #include "gui/mrview/tool/odf/model.h"
 
 #include "header.h"
-#include "math/sphere/sh.h"
+#include "math/sphere/SH.h"
 
 namespace MR
 {

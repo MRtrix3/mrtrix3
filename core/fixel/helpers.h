@@ -291,7 +291,7 @@ namespace MR
     {
       bool directions_found (false);
       Header header;
-      check_fixel_directory (fixel_directory_path);
+      const std::string fixel_directory_path = Path::dirname (index_header.name());
 
       auto dir_walker = Path::Dir (fixel_directory_path);
       std::string fname;
@@ -331,7 +331,7 @@ namespace MR
     {
       bool dixelmasks_found (false);
       Header header;
-      check_fixel_directory (fixel_directory_path);
+      const std::string fixel_directory_path = Path::dirname (index_header.name());
 
       auto dir_walker = Path::Dir (fixel_directory_path);
       std::string fname;
@@ -339,13 +339,13 @@ namespace MR
         if (is_dixelmasks_filename (fname)) {
           Header tmp_header = Header::open (Path::join (fixel_directory_path, fname));
           if (is_dixelmasks_file (tmp_header)) {
-            if (dimensions_match (index_header, tmp_header, 0, 3)) {
+            if (fixels_match (index_header, tmp_header)) {
               if (dixelmasks_found == true)
                 throw Exception ("multiple dixelmask files found in fixel image directory: " + fixel_directory_path);
               dixelmasks_found = true;
               header = std::move (tmp_header);
             } else {
-              WARN ("dixelmasks image (" + fname + ") does not contain the same voxels as the index file");
+              WARN ("dixelmasks image (" + fname + ") does not contain the same number of elements as fixels in the index file");
             }
           }
         }
