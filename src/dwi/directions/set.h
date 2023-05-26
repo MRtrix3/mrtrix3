@@ -34,7 +34,7 @@ namespace MR {
       using index_type = unsigned int;
 
 
-      class Set { 
+      class Set {
 
         public:
 
@@ -152,11 +152,11 @@ namespace MR {
 
 
 
-      class FastLookupSet : public Set { 
+      class FastLookupSet : public Set {
 
         public:
 
-          FastLookupSet (const std::string& path) : 
+          FastLookupSet (const std::string& path) :
               Set (path)
           {
             initialise();

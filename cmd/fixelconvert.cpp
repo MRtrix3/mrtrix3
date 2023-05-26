@@ -139,8 +139,8 @@ void convert_old2new ()
   header.datatype() = DataType::from<index_type>();
   header.datatype().set_byte_order_native();
 
-  auto index_image = Image<index_type>::create (Path::join (output_fixel_directory, "index" + file_extension), header);
-  auto directions_image = Image<float>::create (Path::join (output_fixel_directory, "directions" + file_extension), directions_header).with_direct_io();
+  auto index_image = Image<index_type>::create (Path::join (output_fixel_directory, Fixel::basename_index + file_extension), header);
+  auto directions_image = Image<float>::create (Path::join (output_fixel_directory, Fixel::basename_directions + file_extension), directions_header).with_direct_io();
   auto value_image = Image<float>::create (Path::join (output_fixel_directory, value_name + file_extension), data_header);
   Image<float> size_image;
   if (output_size)

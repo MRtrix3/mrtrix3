@@ -15,16 +15,15 @@
  */
 
 #include "command.h"
-#include "progressbar.h"
-
 #include "image.h"
+#include "progressbar.h"
+#include "thread_queue.h"
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 
 #include "math/SH.h"
-
-#include "thread_queue.h"
+#include "math/sphere.h"
 
 #include "dwi/fmls.h"
 #include "dwi/directions/set.h"
@@ -32,6 +31,13 @@
 #include "file/path.h"
 
 
+#define DEFAULT_DIRECTION_SET 1281
+
+#define DIXEL_IMAGE_PREFIX "fixel_dixels_"
+
+
+const char* fixel_direction_choices[] { "mean", "peak", "lsq", nullptr };
+enum class fixel_dir_t { MEAN, PEAK, LSQ };
 
 
 using namespace MR;
@@ -42,7 +48,8 @@ using namespace App;
 using Fixel::index_type;
 
 
-const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sparse output images")
+
+const OptionGroup MetricOptions = OptionGroup ("Quantitative fixel-wise metric values to save as fixel data files")
 
   + Option ("afd",
             "output the total Apparent Fibre Density per fixel (integral of FOD lobe)")
@@ -54,8 +61,37 @@ const OptionGroup OutputOptions = OptionGroup ("Metric values for fixel-based sp
 
   + Option ("disp",
             "output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude")
+    + Argument ("image").type_image_out()
+
+  + Option ("skew",
+            "output a measure of FOD lobe skew as the angle between the mean and peak orientations")
     + Argument ("image").type_image_out();
 
+
+
+const OptionGroup InputOptions = OptionGroup ("Input options for fod2fixel")
+
+  + Option ("mask", "only perform computation within the specified binary brain mask image.")
+    + Argument ("image").type_image_in();
+
+  // TODO Add option to specify a different direction set for segmentation
+
+
+
+const OptionGroup OutputOptions = OptionGroup ("Options to modulate outputs of fod2fixel")
+
+  + Option ("maxnum", "maximum number of fixels to output for any particular voxel (default: no limit)")
+    + Argument ("number").type_integer(1)
+
+  + Option ("nii", "output the directions and index file in NIfTI format (instead of the default .mif)")
+
+  + Option ("fixel_dirs", "choose what will be used to define the direction of each fixel; "
+                          "options are: " + join(fixel_direction_choices, ","))
+    + Argument ("choice").type_choice (fixel_direction_choices)
+
+  + Option ("nolookup", "do not export the lookup table image")
+
+  + Option ("dixel_images", "write a set of dixel images, where each encodes the FOD amplitudes for one fixel in each voxel");
 
 
 
@@ -67,6 +103,15 @@ void usage ()
   SYNOPSIS = "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels";
 
   DESCRIPTION
+  + "The fixel directions can be determined in one of three ways. "
+    "By default, the direction is calculated as the weighted mean of all amplitude samples "
+    "that contributed to the formation of that fixel. "
+    "One alternative is to instead use the direction of the maximal peak amplitude of the lobe "
+    "using \"-fixel_dirs peak\". "
+    "Another is to use a least-squares solution for the spherical average of the lobe "
+    "(though this comes at a slight computational cost, and is typically not substantially "
+    "different to the default mean direction) using \"-fixel_dirs lsq\"."
+
   + Fixel::format_description;
 
   REFERENCES
@@ -77,8 +122,14 @@ void usage ()
 
     + "* Reference for Apparent Fibre Density (AFD):\n"
     "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A. " // Internal
-    "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
-    "Neuroimage, 2012, 15;59(4), 3976-94";
+    "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images. "
+    "Neuroimage, 2012, 15;59(4), 3976-94"
+
+    + "* Reference for \"dispersion\" measure:\n"
+    "Riffert, T.W.; Schreiber, J.; Anwander, A.; Knosche, T.R. "
+    "Beyond Fractional Anisotropy: Extraction of Bundle-Specific Structural Metrics from Crossing Fiber Models. "
+    "NeuroImage, 2014, 100, 176-191";
+
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ()
@@ -87,109 +138,170 @@ void usage ()
 
   OPTIONS
 
-  + OutputOptions
+  + MetricOptions
 
   + FMLSSegmentOption
 
-  + OptionGroup ("Other options for fod2fixel")
+  + InputOptions
 
-  + Option ("mask", "only perform computation within the specified binary brain mask image.")
-    + Argument ("image").type_image_in()
-
-  + Option ("maxnum", "maximum number of fixels to output for any particular voxel (default: no limit)")
-    + Argument ("number").type_integer(1)
-
-  + Option ("nii", "output the directions and index file in nii format (instead of the default mif)")
-
-  + Option ("dirpeak", "define the fixel direction as that of the lobe's maximal peak as opposed to its weighted mean direction (the default)");
+  + OutputOptions;
 
 }
 
 
-
-class Segmented_FOD_receiver { 
+class Segmented_FOD_receiver {
 
   public:
-    Segmented_FOD_receiver (const Header& header, const index_type maxnum = 0, bool dir_from_peak = false) :
-        H (header), fixel_count (0), max_per_voxel (maxnum), dir_from_peak (dir_from_peak) { }
 
-    void commit ();
+    using DataImage = Image<float>;
+    using DixelImage = Image<float>;
+    using IndexImage = Image<index_type>;
+    using LookupImage = Image<uint8_t>;
 
-    void set_fixel_directory_output (const std::string& path) { fixel_directory_path = path; }
-    void set_index_output (const std::string& path) { index_path = path; }
-    void set_directions_output (const std::string& path) { dir_path = path; }
+    Segmented_FOD_receiver (const Header& header,
+                            const DWI::Directions::FastLookupSet& dirs,
+                            const std::string& directory,
+                            const fixel_dir_t fixel_directions,
+                            bool save_as_nifti = false,
+                            bool write_lookup = true,
+                            bool write_dixel = false);
+
+    ~Segmented_FOD_receiver();
+
     void set_afd_output (const std::string& path) { afd_path = path; }
     void set_peak_amp_output (const std::string& path) { peak_amp_path = path; }
     void set_disp_output (const std::string& path) { disp_path = path; }
+    void set_skew_output (const std::string& path) { skew_path = path; }
 
     bool operator() (const FOD_lobes&);
 
 
   private:
 
-    struct Primitive_FOD_lobe { 
+    struct Primitive_FOD_lobe {
       Eigen::Vector3f dir;
       float integral;
       float max_peak_amp;
-      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float max_peak_amp) :
-          dir (dir), integral (integral), max_peak_amp (max_peak_amp) {}
+      float skew;
+      Primitive_FOD_lobe (Eigen::Vector3f dir, float integral, float max_peak_amp, float skew) :
+          dir (dir), integral (integral), max_peak_amp (max_peak_amp), skew (skew) {}
     };
 
 
-    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { 
+    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> {
       public:
-        Primitive_FOD_lobes (const FOD_lobes& in, const index_type maxcount, bool dir_from_peak) :
+        Primitive_FOD_lobes (const FOD_lobes& in, const fixel_dir_t fixel_directions) :
             vox (in.vox)
         {
-          const index_type N = maxcount ? std::min (index_type(in.size()), maxcount) : in.size();
-          for (index_type i = 0; i != N; ++i) {
-            const FOD_lobe& lobe (in[i]);
-            if (dir_from_peak)
-              this->emplace_back (lobe.get_peak_dir(0).cast<float>(), lobe.get_integral(), lobe.get_max_peak_value());
-            else
-              this->emplace_back (lobe.get_mean_dir().cast<float>(), lobe.get_integral(), lobe.get_max_peak_value());
+          Eigen::Vector3f dir;
+          for (const auto& lobe : in) {
+            switch (fixel_directions) {
+              case fixel_dir_t::MEAN: dir = lobe.get_mean_dir() .cast<float>(); break;
+              case fixel_dir_t::PEAK: dir = lobe.get_peak_dir(0).cast<float>(); break;
+              case fixel_dir_t::LSQ:  dir = lobe.get_lsq_dir () .cast<float>(); break;
+            }
+            this->emplace_back (dir,
+                                lobe.get_integral(),
+                                lobe.get_max_peak_value(),
+                                std::acos (abs (lobe.get_mean_dir().dot (lobe.get_peak_dir(0)))));
           }
         }
         Eigen::Array3i vox;
     };
 
     Header H;
-    std::string fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path;
+    const DWI::Directions::FastLookupSet& dirs;
+    const std::string fixel_directory_path, base_extension, index_path, dir_path, lookup_path;
+    std::string afd_path, peak_amp_path, disp_path, skew_path;
+    const fixel_dir_t fixel_directions;
+
+    LookupImage lookup_image;
+    vector<DixelImage> dixel_images;
     vector<Primitive_FOD_lobes> lobes;
     index_type fixel_count;
-    index_type max_per_voxel;
-    bool dir_from_peak;
 };
 
+
+
+Segmented_FOD_receiver::Segmented_FOD_receiver (const Header& header,
+                                                const DWI::Directions::FastLookupSet& dirs,
+                                                const std::string& directory,
+                                                const fixel_dir_t fixel_directions,
+                                                bool save_as_nifti,
+                                                bool write_lookup,
+                                                bool write_dixel) :
+    H (header),
+    dirs (dirs),
+    fixel_directory_path (directory),
+    base_extension (save_as_nifti ? ".nii" : ".mif"),
+    index_path (Path::join(fixel_directory_path, Fixel::basename_index + base_extension)),
+    dir_path (Path::join(fixel_directory_path, Fixel::basename_directions + base_extension)),
+    lookup_path (write_lookup ? Path::join (fixel_directory_path, Fixel::basename_lookup + base_extension) : ""),
+    fixel_directions (fixel_directions),
+    fixel_count (0)
+{
+  Eigen::Matrix<float, Eigen::Dynamic, 3> dirs_to_save (dirs.size(), 3);
+  for (size_t i = 0; i != dirs.size(); ++i)
+    dirs_to_save.row(i) = dirs[i].cast<float>();
+  Eigen::IOFormat format (Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+  std::stringstream directions_keyval;
+  directions_keyval << std::fixed << dirs_to_save.format (format);
+
+  auto dixel_header (H);
+  dixel_header.size(3) = dirs.size();
+  ++dixel_header.stride(0); ++dixel_header.stride(1); ++dixel_header.stride(2); dixel_header.stride(3) = 0;
+  dixel_header.keyval()["directions"] = directions_keyval.str();
+
+  if (write_lookup) {
+    auto lookup_header (dixel_header);
+    lookup_header.datatype() = DataType::UInt8;
+    if (save_as_nifti)
+      MR::save_matrix (dirs_to_save, Path::join (fixel_directory_path, Fixel::basename_lookup + ".csv"));
+    lookup_image = LookupImage::create (lookup_path, lookup_header);
+  }
+  if (write_dixel)
+    dixel_images.emplace_back (DixelImage::create (Path::join (fixel_directory_path, std::string(DIXEL_IMAGE_PREFIX) + "0" + base_extension), dixel_header));
+}
 
 
 
 bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 {
+  assert (in.lut.size() == dirs.size());
   if (in.size()) {
-    lobes.emplace_back (in, max_per_voxel, dir_from_peak);
+    lobes.emplace_back (in, fixel_directions);
     fixel_count += lobes.back().size();
+    if (lookup_image.valid()) {
+      assign_pos_of (in.vox).to (lookup_image);
+      lookup_image.row (3) = in.lut.matrix();
+    }
+    if (dixel_images.size()) {
+      // If number of fixels in this voxel is larger than that encountered thus far,
+      //   need to create new images to support exporting them
+      while (in.size() > dixel_images.size())
+        dixel_images.emplace_back (DixelImage::create (Path::join (fixel_directory_path, std::string(DIXEL_IMAGE_PREFIX) + str(dixel_images.size()) + base_extension), dixel_images.front()));
+      for (size_t fixel_index = 0; fixel_index != in.size(); ++fixel_index) {
+        assign_pos_of (in.vox).to (dixel_images[fixel_index]);
+        dixel_images[fixel_index].row(3) = in[fixel_index].get_values().matrix();
+      }
+    }
   }
   return true;
 }
 
 
 
-void Segmented_FOD_receiver::commit ()
+Segmented_FOD_receiver::~Segmented_FOD_receiver()
 {
   if (!lobes.size() || !fixel_count)
     return;
 
-  using DataImage = Image<float>;
-  using IndexImage = Image<index_type>;
-
-  const auto index_filepath = Path::join (fixel_directory_path, index_path);
-
-  std::unique_ptr<IndexImage> index_image;
-  std::unique_ptr<DataImage> dir_image;
-  std::unique_ptr<DataImage> afd_image;
-  std::unique_ptr<DataImage> peak_amp_image;
-  std::unique_ptr<DataImage> disp_image;
+  IndexImage index_image;
+  DataImage dir_image;
+  DataImage afd_image;
+  DataImage peak_amp_image;
+  DataImage disp_image;
+  DataImage skew_image;
 
   auto index_header (H);
   index_header.keyval()[Fixel::n_fixels_key] = str(fixel_count);
@@ -197,7 +309,7 @@ void Segmented_FOD_receiver::commit ()
   index_header.size(3) = 2;
   index_header.datatype() = DataType::from<index_type>();
   index_header.datatype().set_byte_order_native();
-  index_image = make_unique<IndexImage> (IndexImage::create (index_filepath, index_header));
+  index_image = IndexImage::create (index_path, index_header);
 
   auto fixel_data_header (H);
   fixel_data_header.ndim() = 3;
@@ -208,77 +320,79 @@ void Segmented_FOD_receiver::commit ()
   fixel_data_header.datatype() = DataType::Float32;
   fixel_data_header.datatype().set_byte_order_native();
 
-  if (dir_path.size()) {
-    auto dir_header (fixel_data_header);
-    dir_header.size(1) = 3;
-    dir_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, dir_path), dir_header));
-    dir_image->index(1) = 0;
-    Fixel::check_fixel_size (*index_image, *dir_image);
-  }
+  auto dir_header (fixel_data_header);
+  dir_header.size(1) = 3;
+  dir_image = DataImage::create (dir_path, dir_header);
+  dir_image.index(1) = 0;
 
   if (afd_path.size()) {
     auto afd_header (fixel_data_header);
     afd_header.size(1) = 1;
-    afd_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, afd_path), afd_header));
-    afd_image->index(1) = 0;
-    Fixel::check_fixel_size (*index_image, *afd_image);
+    afd_image = DataImage::create (Path::join(fixel_directory_path, afd_path), afd_header);
+    afd_image.index(1) = 0;
   }
 
   if (peak_amp_path.size()) {
     auto peak_amp_header (fixel_data_header);
     peak_amp_header.size(1) = 1;
-    peak_amp_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, peak_amp_path), peak_amp_header));
-    peak_amp_image->index(1) = 0;
-    Fixel::check_fixel_size (*index_image, *peak_amp_image);
+    peak_amp_image = DataImage::create (Path::join(fixel_directory_path, peak_amp_path), peak_amp_header);
+    peak_amp_image.index(1) = 0;
   }
 
   if (disp_path.size()) {
     auto disp_header (fixel_data_header);
     disp_header.size(1) = 1;
-    disp_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, disp_path), disp_header));
-    disp_image->index(1) = 0;
-    Fixel::check_fixel_size (*index_image, *disp_image);
+    disp_image = DataImage::create (Path::join(fixel_directory_path, disp_path), disp_header);
+    disp_image.index(1) = 0;
+  }
+
+  if (skew_path.size()) {
+    auto skew_header (fixel_data_header);
+    skew_header.size(1) = 1;
+    skew_image = DataImage::create (Path::join(fixel_directory_path, skew_path), skew_header);
+    skew_image.index(1) = 0;
   }
 
   size_t offset = 0;
-
-
   for (const auto& vox_fixels : lobes) {
     size_t n_vox_fixels = vox_fixels.size();
 
-    assign_pos_of (vox_fixels.vox).to (*index_image);
+    assign_pos_of (vox_fixels.vox).to (index_image);
+    index_image.index(3) = 0;
+    index_image.value() = n_vox_fixels;
+    index_image.index(3) = 1;
+    index_image.value() = offset;
 
-    index_image->index(3) = 0;
-    index_image->value () = n_vox_fixels;
+    for (size_t i = 0; i < n_vox_fixels; ++i) {
+      dir_image.index(0) = offset + i;
+      dir_image.row(1) = vox_fixels[i].dir;
+    }
 
-    index_image->index(3) = 1;
-    index_image->value() = offset;
-
-    if (dir_image) {
+    if (afd_image.valid()) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
-        dir_image->index(0) = offset + i;
-        dir_image->row(1) = vox_fixels[i].dir;
+        afd_image.index(0) = offset + i;
+        afd_image.value() = vox_fixels[i].integral;
       }
     }
 
-    if (afd_image) {
+    if (peak_amp_image.valid()) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
-        afd_image->index(0) = offset + i;
-        afd_image->value() = vox_fixels[i].integral;
+        peak_amp_image.index(0) = offset + i;
+        peak_amp_image.value() = vox_fixels[i].max_peak_amp;
       }
     }
 
-    if (peak_amp_image) {
+    if (disp_image.valid()) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
-        peak_amp_image->index(0) = offset + i;
-        peak_amp_image->value() = vox_fixels[i].max_peak_amp;
+        disp_image.index(0) = offset + i;
+        disp_image.value() = vox_fixels[i].integral / vox_fixels[i].max_peak_amp;
       }
     }
 
-    if (disp_image) {
+    if (skew_image.valid()) {
       for (size_t i = 0; i < n_vox_fixels; ++i) {
-        disp_image->index(0) = offset + i;
-        disp_image->value() = vox_fixels[i].integral / vox_fixels[i].max_peak_amp;
+        skew_image.index(0) = offset + i;
+        skew_image.value() = vox_fixels[i].skew;
       }
     }
 
@@ -297,27 +411,34 @@ void run ()
   Math::SH::check (H);
   auto fod_data = H.get_image<float>();
 
-  const bool dir_as_peak = get_options ("dirpeak").size();
-  const index_type maxnum = get_option_value ("maxnum", 0);
+  const std::string fixel_directory_path = argument[1];
+  Fixel::check_fixel_directory (fixel_directory_path, true, true);
 
-  Segmented_FOD_receiver receiver (H, maxnum, dir_as_peak);
+  const DWI::Directions::FastLookupSet dirs (DEFAULT_DIRECTION_SET);
 
-  auto& fixel_directory_path  = argument[1];
-  receiver.set_fixel_directory_output (fixel_directory_path);
+  auto opt = get_options ("fixel_dirs");
+  fixel_dir_t fixel_directions = fixel_dir_t::MEAN;
+  if (opt.size()) {
+    switch (int(opt[0][0])) {
+      case 0: fixel_directions = fixel_dir_t::MEAN; break;
+      case 1: fixel_directions = fixel_dir_t::PEAK; break;
+      case 2: fixel_directions = fixel_dir_t::LSQ;  break;
+      default: assert (false);
+    }
+  }
 
-  std::string file_extension (".mif");
-  if (get_options ("nii").size())
-    file_extension = ".nii";
+  Segmented_FOD_receiver receiver (H,
+                                   dirs,
+                                   fixel_directory_path,
+                                   fixel_directions,
+                                   get_options("nii").size(),
+                                   !get_options("nolookup").size(),
+                                   get_options("dixel_images").size());
 
-  static const std::string default_index_filename ("index" + file_extension);
-  static const std::string default_directions_filename ("directions" + file_extension);
-  receiver.set_index_output (default_index_filename);
-  receiver.set_directions_output (default_directions_filename);
-
-  auto
   opt = get_options ("afd");      if (opt.size()) receiver.set_afd_output      (opt[0][0]);
   opt = get_options ("peak_amp"); if (opt.size()) receiver.set_peak_amp_output (opt[0][0]);
   opt = get_options ("disp");     if (opt.size()) receiver.set_disp_output     (opt[0][0]);
+  opt = get_options ("skew");     if (opt.size()) receiver.set_skew_output     (opt[0][0]);
 
   opt = get_options ("mask");
   Image<float> mask;
@@ -326,15 +447,12 @@ void run ()
     if (!dimensions_match (fod_data, mask, 0, 3))
       throw Exception ("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
   }
-
-  Fixel::check_fixel_directory (fixel_directory_path, true, true);
-
   FMLS::FODQueueWriter writer (fod_data, mask);
 
-  const DWI::Directions::FastLookupSet dirs (1281);
   Segmenter fmls (dirs, Math::SH::LforN (H.size(3)));
   load_fmls_thresholds (fmls);
+  fmls.set_max_num_fixels (get_option_value ("maxnum", 0));
+  fmls.set_calculate_lsq_dir (fixel_directions == fixel_dir_t::LSQ);
 
   Thread::run_queue (writer, Thread::batch (SH_coefs()), Thread::multi (fmls), Thread::batch (FOD_lobes()), receiver);
-  receiver.commit ();
 }

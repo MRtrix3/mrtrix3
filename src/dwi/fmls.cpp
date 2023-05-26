@@ -133,16 +133,16 @@ namespace MR {
 
 
 
-      Segmenter::Segmenter (const DWI::Directions::FastLookupSet& directions, const size_t l) :
+      Segmenter::Segmenter (const DWI::Directions::FastLookupSet& directions, const size_t lmax) :
           dirs                 (directions),
-          lmax                 (l),
+          lmax                 (lmax),
           precomputer          (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
+          max_num_fixels       (0),
           integral_threshold   (FMLS_INTEGRAL_THRESHOLD_DEFAULT),
           peak_value_threshold (FMLS_PEAK_VALUE_THRESHOLD_DEFAULT),
           lobe_merge_ratio     (FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT),
-          create_null_lobe     (false),
-          create_lookup_table  (true),
-          dilate_lookup_table  (false)
+          calculate_lsq_dir    (false),
+          create_lookup_table  (true)
       {
         Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs (dirs.size(), 2);
         for (size_t row = 0; row != dirs.size(); ++row) {
@@ -157,7 +157,7 @@ namespace MR {
 
 
 
-      class Max_abs { 
+      class Max_abs {
         public:
           bool operator() (const default_type& a, const default_type& b) const { return (abs (a) > abs (b)); }
       };
@@ -177,16 +177,16 @@ namespace MR {
 
         using map_type = std::multimap<default_type, index_type, Max_abs>;
 
-        map_type data_in_order;
+        map_type dixels_in_order;
         for (size_t i = 0; i != size_t(values.size()); ++i)
-          data_in_order.insert (std::make_pair (values[i], i));
+          dixels_in_order.insert (std::make_pair (values[i], i));
 
-        if (data_in_order.begin()->first <= 0.0)
+        if (dixels_in_order.begin()->first <= 0.0)
           return true;
 
         vector< std::pair<index_type, uint32_t> > retrospective_assignments;
 
-        for (const auto& i : data_in_order) {
+        for (const auto& i : dixels_in_order) {
 
           vector<uint32_t> adj_lobes;
           for (uint32_t l = 0; l != out.size(); ++l) {
@@ -293,9 +293,6 @@ namespace MR {
               i = out.erase (i);
             } else {
               i->finalise();
-#ifdef FMLS_OPTIMISE_MEAN_DIR
-              optimise_mean_dir (*i);
-#endif
               ++i;
             }
           }
@@ -303,10 +300,20 @@ namespace MR {
 
         std::sort (out.begin(), out.end(), [] (const FOD_lobe& a, const FOD_lobe& b) { return (a.get_integral() > b.get_integral()); } );
 
+        // If omitting some number of fixels, should be doing that before the LUT is constructed;
+        //   would also be necessary if dilating the LUT
+        if (max_num_fixels && out.size() > max_num_fixels)
+          out.erase (out.begin() + max_num_fixels, out.end());
+
+        // Only calculate the least squares direction for fixels being retained;
+        //   it'd be a waste of calculations for omitted fixels
+        if (calculate_lsq_dir) {
+          for (auto& i : out)
+            do_lsq_dir (i);
+        }
+
         if (create_lookup_table) {
-
-          out.lut.assign (dirs.size(), out.size());
-
+          out.lut = lookup_type::Constant (dirs.size(), out.size());
           size_t index = 0;
           for (auto i = out.begin(); i != out.end(); ++i, ++index) {
             const DWI::Directions::Mask& this_mask (i->get_mask());
@@ -315,59 +322,8 @@ namespace MR {
                 out.lut[d] = index;
             }
           }
-
-          if (dilate_lookup_table && out.size()) {
-
-            DWI::Directions::Mask processed (dirs);
-            for (vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
-              processed |= i->get_mask();
-
-            NON_POD_VLA (new_assignments, vector<uint32_t>, dirs.size());
-            while (!processed.full()) {
-
-              for (index_type dir = 0; dir != dirs.size(); ++dir) {
-                if (!processed[dir]) {
-                  for (vector<index_type>::const_iterator neighbour = dirs.get_adj_dirs (dir).begin(); neighbour != dirs.get_adj_dirs (dir).end(); ++neighbour) {
-                    if (processed[*neighbour])
-                      new_assignments[dir].push_back (out.lut[*neighbour]);
-                  }
-                }
-              }
-              for (index_type dir = 0; dir != dirs.size(); ++dir) {
-                if (new_assignments[dir].size() == 1) {
-
-                  out.lut[dir] = new_assignments[dir].front();
-                  processed[dir] = true;
-                  new_assignments[dir].clear();
-
-                } else if (new_assignments[dir].size() > 1) {
-
-                  uint32_t best_lobe = 0;
-                  default_type max_integral = 0.0;
-                  for (vector<uint32_t>::const_iterator lobe_no = new_assignments[dir].begin(); lobe_no != new_assignments[dir].end(); ++lobe_no) {
-                    if (out[*lobe_no].get_integral() > max_integral) {
-                      best_lobe = *lobe_no;
-                      max_integral = out[*lobe_no].get_integral();
-                    }
-                  }
-                  out.lut[dir] = best_lobe;
-                  processed[dir] = true;
-                  new_assignments[dir].clear();
-
-                }
-              }
-
-            }
-
-          }
-
-        }
-
-        if (create_null_lobe) {
-          DWI::Directions::Mask null_mask (dirs, true);
-          for (vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
-            null_mask &= i->get_mask();
-          out.push_back (FOD_lobe (null_mask));
+        } else {
+          out.lut.resize (0, 0);
         }
 
         return true;
@@ -376,8 +332,7 @@ namespace MR {
 
 
 
-#ifdef FMLS_OPTIMISE_MEAN_DIR
-      void Segmenter::optimise_mean_dir (FOD_lobe& lobe) const
+      void Segmenter::do_lsq_dir (FOD_lobe& lobe) const
       {
 
         // For algorithm details see:
@@ -385,44 +340,40 @@ namespace MR {
         // Spherical averages and applications to spherical splines and interpolation.
         // ACM Trans. Graph. 2001:20;95-126.
 
-        Point<float> mean_dir = lobe.get_mean_dir(); // Initial estimate
+        Eigen::Vector3d lsq_dir = lobe.get_mean_dir(); // Initial estimate
 
-        Point<float> u; // Update step
+        Eigen::Vector3d u; // Update step
 
         do {
 
           // Axes on the tangent hyperplane for this iteration of optimisation
-          Point<float> Tx, Ty, Tz;
-          Tx = Point<float>(0.0, 0.0, 1.0).cross (mean_dir);
-          Tx.normalise();
-          if (!Tx) {
-            Tx = Point<float>(0.0, 1.0, 0.0).cross (mean_dir);
-            Tx.normalise();
-          }
-          Ty = mean_dir.cross (Tx);
-          Ty.normalise();
-          Tz = mean_dir;
+          Eigen::Vector3d Tx, Ty, Tz;
+          Tx = Eigen::Vector3d(0.0, 0.0, 1.0).cross (lsq_dir).normalized();
+          if (!Tx.allFinite())
+            Tx = Eigen::Vector3d(0.0, 1.0, 0.0).cross (lsq_dir).normalized();
+          Ty = lsq_dir.cross (Tx).normalized();
+          Tz = lsq_dir;
 
-          float sum_weights = 0.0;
-          u.set (float(0.0), float(0.0), float(0.0));
+          default_type sum_weights = 0.0;
+          u = {0.0, 0.0, 0.0};
 
-          for (dir_t d = 0; d != dirs.size(); ++d) {
+          for (index_type d = 0; d != dirs.size(); ++d) {
             if (lobe.get_values()[d]) {
 
-              const Point<float>& dir (dirs[d]);
+              const Eigen::Vector3d& dir (dirs[d]);
 
               // Transform unit direction onto tangent plane defined by the current mean direction estimate
-              Point<float> p (dir[0]*Tx[0] + dir[1]*Tx[1] + dir[2]*Tx[2],
-                              dir[0]*Ty[0] + dir[1]*Ty[1] + dir[2]*Ty[2],
-                              dir[0]*Tz[0] + dir[1]*Tz[1] + dir[2]*Tz[2]);
+              Eigen::Vector3d p (dir[0]*Tx[0] + dir[1]*Tx[1] + dir[2]*Tx[2],
+                                 dir[0]*Ty[0] + dir[1]*Ty[1] + dir[2]*Ty[2],
+                                 dir[0]*Tz[0] + dir[1]*Tz[1] + dir[2]*Tz[2]);
 
               if (p[2] < 0.0)
                 p = -p;
               p[2] = 0.0; // Force projection onto the tangent plane
 
-              const float dp = abs (mean_dir.dot (dir));
-              const float theta = (dp < 1.0) ? std::acos (dp) : 0.0;
-              const float log_transform = theta ? (theta / std::sin (theta)) : 1.0;
+              const default_type dp = abs (lsq_dir.dot (dir));
+              const default_type theta = (dp < 1.0) ? std::acos (dp) : 0.0;
+              const default_type log_transform = theta ? (theta / std::sin (theta)) : 1.0;
               p *= log_transform;
 
               u += lobe.get_values()[d] * p;
@@ -433,24 +384,23 @@ namespace MR {
 
           u *= (1.0 / sum_weights);
 
-          const float r = u.norm();
-          const float exp_transform = r ? (std::sin(r) / r) : 1.0;
+          const default_type r = u.norm();
+          const default_type exp_transform = r ? (std::sin(r) / r) : 1.0;
           u *= exp_transform;
 
           // Transform the offset from the tangent plane origin to euclidean space
-          u.set (u[0]*Tx[0] + u[1]*Ty[0] + u[2]*Tz[0],
-                 u[0]*Tx[1] + u[1]*Ty[1] + u[2]*Tz[1],
-                 u[0]*Tx[2] + u[1]*Ty[2] + u[2]*Tz[2]);
+          u = { u[0]*Tx[0] + u[1]*Ty[0] + u[2]*Tz[0],
+                u[0]*Tx[1] + u[1]*Ty[1] + u[2]*Tz[1],
+                u[0]*Tx[2] + u[1]*Ty[2] + u[2]*Tz[2] };
 
-          mean_dir += u;
-          mean_dir.normalise();
+          lsq_dir += u;
+          lsq_dir.normalize();
 
         } while (u.norm() > 1e-6);
 
-        lobe.revise_mean_dir (mean_dir);
+        lobe.set_lsq_dir (lsq_dir);
 
       }
-#endif
 
 
 
