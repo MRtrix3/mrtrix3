@@ -65,9 +65,7 @@ Options to modulate outputs of fod2fixel
 
 -  **-fixel_dirs choice** choose what will be used to define the direction of each fixel; options are: mean,peak,lsq
 
--  **-nolookup** do not export the lookup table image
-
--  **-dixel_images** write a set of dixel images, where each encodes the FOD amplitudes for one fixel in each voxel
+-  **-amplitude_images** write a set of dixel images, where each encodes the FOD amplitudes for one fixel in each voxel
 
 Standard options
 ^^^^^^^^^^^^^^^^
