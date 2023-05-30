@@ -51,8 +51,8 @@ void usage ()
     "transformation of the surface data prior to running this command.";
 
   ARGUMENTS
-  + Argument ("input",  "the input mesh file").type_file_in()
-  + Argument ("input",  "the input image").type_image_in()
+  + Argument ("mesh_in",  "the input mesh file").type_file_in()
+  + Argument ("image_in",  "the input image").type_image_in()
   + Argument ("output", "the output sampled values").type_file_out();
 
   OPTIONS
@@ -74,6 +74,7 @@ vector_type sample (const Mesh& mesh, const Image<float>& image)
       result[i] = interp.value();
     else
       result[i] = std::numeric_limits<float>::quiet_NaN();
+    DEBUG("Vertex " + str(i) + ": Realspace [" + str(mesh.vert(i).transpose()) + "]; voxelspace [" + str((interp.scanner2voxel * mesh.vert(i)).transpose()) + "]; value = " + str(result[i]));
   }
   return result;
 }
