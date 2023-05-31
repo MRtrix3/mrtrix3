@@ -346,7 +346,7 @@ namespace MR
               else
                 assert (0);
               json_path += ".json";
-              if (Path::exists (json_path))
+              if (std::filesystem::exists(json_path))
                 File::JSON::load (H, json_path);
             }
           }
@@ -833,15 +833,20 @@ namespace MR
       }
 
 
-      std::string get_json_path (const std::string & nifti_path) {
-        std::string json_path;
+      std::filesystem::path get_json_path (const std::filesystem::path & nifti_path) {
+        std::filesystem::path json_path;
+
+        const auto nifti_path_string = nifti_path.string();
         if (Path::has_suffix (nifti_path, ".nii.gz"))
-          json_path = nifti_path.substr (0, nifti_path.size()-7);
+          json_path = nifti_path_string.substr (0, nifti_path_string.size()-7);
         else if (Path::has_suffix (nifti_path, ".nii"))
-          json_path = nifti_path.substr (0, nifti_path.size()-4);
+          json_path = nifti_path_string.substr (0, nifti_path_string.size()-4);
         else
-          assert (0);
-        return json_path + ".json";
+          assert (false);
+        
+        json_path.replace_extension(".json");
+
+        return json_path;
       }
 
 

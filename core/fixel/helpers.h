@@ -365,7 +365,7 @@ namespace MR
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
 
       // If the index file already exists check it is the same as the input index file
-      if (Path::exists (output_path)) {
+      if (std::filesystem::exists(output_path)) {
         auto input_image = input_header.get_image<index_type>();
         auto output_image = Image<index_type>::open (output_path);
         if (!images_match_abs (input_image, output_image))
@@ -387,7 +387,7 @@ namespace MR
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
 
       // If the directions file already exists check it is the same as the input directions file
-      if (Path::exists (output_path)) {
+      if (std::filesystem::exists(output_path)) {
         auto input_image = input_header.get_image<float>();
         auto output_image = Image<float>::open (output_path);
         if (!images_match_abs (input_image, output_image))

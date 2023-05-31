@@ -1181,13 +1181,13 @@ namespace MR
       for (const auto& i : argument) {
         const std::string text = std::string (i);
         if (i.arg->type == ArgFileIn || i.arg->type == TracksIn) {
-          if (!Path::exists (text))
+          if (!std::filesystem::exists(text))
             throw Exception ("required input file \"" + text + "\" not found");
           if (!Path::is_file (text))
             throw Exception ("required input \"" + text + "\" is not a file");
         }
         if (i.arg->type == ArgDirectoryIn) {
-          if (!Path::exists (text))
+          if (!std::filesystem::exists(text))
             throw Exception ("required input directory \"" + text + "\" not found");
           if (!Path::is_dir (text))
             throw Exception ("required input \"" + text + "\" is not a directory");
@@ -1209,13 +1209,13 @@ namespace MR
           const Argument& arg = i.opt->operator [](j);
           const std::string text = std::string (i.args[j]);
           if (arg.type == ArgFileIn || arg.type == TracksIn) {
-            if (!Path::exists (text))
+            if (!std::filesystem::exists(text))
               throw Exception ("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
             if (!Path::is_file (text))
               throw Exception ("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
           }
           if (arg.type == ArgDirectoryIn) {
-            if (!Path::exists (text))
+            if (!std::filesystem::exists(text))
               throw Exception ("input directory \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
             if (!Path::is_dir (text))
               throw Exception ("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");

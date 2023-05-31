@@ -77,22 +77,6 @@ namespace MR
     }
 
 
-    inline bool exists (const std::string& path)
-    {
-      struct stat buf;
-#ifdef MRTRIX_WINDOWS
-      const std::string stripped (strip (path, PATH_SEPARATORS, false, true));
-      if (!stat (stripped.c_str(), &buf))
-#else
-      if (!stat (path.c_str(), &buf))
-#endif
-        return true;
-      if (errno == ENOENT) return false;
-      throw Exception (strerror (errno));
-      return false;
-    }
-
-
     inline bool is_dir (const std::string& path)
     {
       struct stat buf;

@@ -380,7 +380,7 @@ void run () {
     if (writer_type != GREYSCALE)
       throw Exception ("Options for setting output image dimensionality are mutually exclusive");
     writer_type = DIXEL;
-    if (Path::exists (opt[0][0]))
+    if (std::filesystem::exists (opt[0][0]))
       dirs.reset (new Directions::FastLookupSet (str(opt[0][0])));
     else
       dirs.reset (new Directions::FastLookupSet (to<size_t>(opt[0][0])));

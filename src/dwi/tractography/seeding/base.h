@@ -101,7 +101,7 @@ namespace MR
             volume (0.0),
             count (0),
             type (desc),
-            name (Path::exists (in) ? Path::basename (in) : in),
+            name (std::filesystem::exists(in) ? Path::basename (in) : in),
             max_attempts (attempts) { }
 
           virtual ~Base() { }

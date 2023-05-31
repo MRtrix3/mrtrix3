@@ -237,7 +237,7 @@ namespace MR
                                 const KeyValues& keyvals)
       {
 
-        if (Path::exists (path)) {
+        if (std::filesystem::exists(path)) {
           if (!Path::is_dir (path)) {
             if (App::overwrite_files) {
               File::remove (path);
