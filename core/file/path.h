@@ -63,14 +63,6 @@ namespace MR
       return (i == std::string::npos ? name : name.substr (i+1));
     }
 
-
-    inline std::string dirname (const std::string& name)
-    {
-      size_t i = name.find_last_of (PATH_SEPARATORS);
-      return (i == std::string::npos ? std::string ("") : (i ? name.substr (0,i) : std::string(1, PATH_SEPARATORS[0])));
-    }
-
-
     inline std::string join (const std::string& first, const std::string& second)
     {
       if (first.empty())

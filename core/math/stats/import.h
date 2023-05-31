@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <filesystem>
 
 #include "progressbar.h"
 
@@ -92,7 +93,7 @@ namespace MR
           // Needs to be its own function rather than the constructor
           //   so that the correct template type can be invoked explicitly
           template <class SubjectDataImport>
-          void initialise (const std::string& listpath, const std::string& explicit_from_directory = "");
+          void initialise (const std::filesystem::path& listpath, const std::string& explicit_from_directory = "");
 
           /*!
            * @param index for a particular element being tested (data will be acquired for
@@ -118,7 +119,7 @@ namespace MR
 
 
       template <class SubjectDataImport>
-      void CohortDataImport::initialise (const std::string& listpath, const std::string& explicit_from_directory)
+      void CohortDataImport::initialise (const std::filesystem::path& listpath, const std::string& explicit_from_directory)
       {
         // Read the provided text file one at a time
         // For each file, create an instance of SubjectDataImport
@@ -134,9 +135,9 @@ namespace MR
         //   text file is an attempt made to load all of those files
         vector<std::string> lines;
         {
-          std::ifstream ifs (listpath.c_str());
+          std::ifstream ifs (listpath.string().c_str());
           if (!ifs)
-            throw Exception ("Unable to open subject file list \"" + listpath + "\"");
+            throw Exception ("Unable to open subject file list \"" + listpath.string() + "\"");
           std::string line;
           while (getline (ifs, line)) {
             size_t p = line.find_last_not_of(" \t");
@@ -147,7 +148,7 @@ namespace MR
           }
         }
 
-        vector<std::string> directories { Path::dirname (listpath) };
+        vector<std::filesystem::path> directories { listpath.parent_path() };
         if (directories[0].empty())
           directories[0] = ".";
         else if (directories[0] != ".")
@@ -155,19 +156,19 @@ namespace MR
         if (explicit_from_directory.size())
           directories.insert (directories.begin(), explicit_from_directory);
 
-        Exception e_nosuccess ("Unable to load all input data from file \"" + listpath + "\"");
+        Exception e_nosuccess ("Unable to load all input data from file \"" + listpath.string() + "\"");
         std::string load_from_dir;
         for (const auto& directory : directories) {
           try {
             for (const auto& line : lines) {
-              const std::string full_path = Path::join (directory, line);
-              if (!Path::is_file (full_path))
-                throw Exception ("File \"" + full_path + "\" not found");
+              const std::filesystem::path full_path = directory / line;
+              if (!std::filesystem::is_regular_file(full_path))
+                throw Exception ("File \"" + full_path.string() + "\" not found");
             }
             load_from_dir = directory;
             break;
           } catch (Exception& e) {
-            e_nosuccess.push_back ("If loading relative to directory \"" + directory + "\": ");
+            e_nosuccess.push_back ("If loading relative to directory \"" + directory.string() + "\": ");
             e_nosuccess.push_back (e);
           }
         }

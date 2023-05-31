@@ -27,6 +27,7 @@
 
 #include "stats/permtest.h"
 
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -122,6 +123,8 @@ void run()
   CohortDataImport importer;
   matrix_type data;
   size_t num_inputs = 0, num_elements = 0;
+  const std::filesystem::path input_path{argument[0]};
+
   try {
     importer.initialise<SubjectVectorImport> (argument[0]);
     num_inputs = importer.size();

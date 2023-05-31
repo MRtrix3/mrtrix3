@@ -22,7 +22,7 @@ namespace MR {
     namespace Tractography {
 
 
-      void __ReaderBase__::open (const std::string& file, const std::string& type, Properties& properties)
+      void __ReaderBase__::open (const std::filesystem::path& file, const std::string& type, Properties& properties)
       {
         properties.clear();
         dtype = DataType::Undefined;
@@ -41,7 +41,7 @@ namespace MR {
               properties.prior_rois.insert (std::pair<std::string,std::string> (V[0], V[1]));
             }
             catch (...) {
-              WARN ("invalid ROI specification in " + type  + " file \"" + file + "\" - ignored");
+              WARN ("invalid ROI specification in " + type  + " file \"" + file.string() + "\" - ignored");
             }
           }
           else if (key == "comment") properties.comments.push_back (kv.value());
@@ -51,14 +51,14 @@ namespace MR {
         }
 
         if (dtype == DataType::Undefined)
-          throw Exception ("no datatype specified for tracks file \"" + file + "\"");
+          throw Exception ("no datatype specified for tracks file \"" + file.string() + "\"");
         if (dtype != DataType::Float32LE && dtype != DataType::Float32BE &&
             dtype != DataType::Float64LE && dtype != DataType::Float64BE)
           throw Exception ("only supported datatype for tracks file are "
-              "Float32LE, Float32BE, Float64LE & Float64BE (in " + type  + " file \"" + file + "\")");
+              "Float32LE, Float32BE, Float64LE & Float64BE (in " + type  + " file \"" + file.string() + "\")");
 
         if (data_file.empty())
-          throw Exception ("missing \"files\" specification for " + type  + " file \"" + file + "\"");
+          throw Exception ("missing \"files\" specification for " + type  + " file \"" + file.string() + "\"");
 
         std::istringstream files_stream (data_file);
         std::string fname;
@@ -68,12 +68,12 @@ namespace MR {
           try { files_stream >> offset; }
           catch (...) {
             throw Exception ("invalid offset specified for file \""
-                + fname + "\" in " + type  + " file \"" + file + "\"");
+                + fname + "\" in " + type  + " file \"" + file.string() + "\"");
           }
         }
 
         if (fname != ".")
-          fname = Path::join (Path::dirname (file), fname);
+          fname = file.parent_path() / fname;
         else
           fname = file;
 

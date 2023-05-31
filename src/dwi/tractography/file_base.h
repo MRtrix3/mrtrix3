@@ -27,8 +27,7 @@
 #include "file/path.h"
 #include "dwi/tractography/properties.h"
 
-
-
+#include <filesystem>
 
 namespace MR
 {
@@ -47,7 +46,7 @@ namespace MR
               in.close();
           }
 
-          void open (const std::string& file, const std::string& firstline, Properties& properties);
+          void open (const std::filesystem::path& file, const std::string& firstline, Properties& properties);
 
           void close () { in.close(); }
 

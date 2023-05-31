@@ -25,6 +25,7 @@
 #include "fixel/fixel.h"
 #include "formats/mrtrix_utils.h"
 
+#include <filesystem>
 
 namespace MR
 {
@@ -115,11 +116,11 @@ namespace MR
         throw InvalidImageException (in.name() + " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
     }
 
-    FORCE_INLINE std::string get_fixel_directory (const std::string& fixel_file) {
-      std::string fixel_directory = Path::dirname (fixel_file);
+    FORCE_INLINE std::string get_fixel_directory (const std::filesystem::path& fixel_file) {
+      std::filesystem::path fixel_directory = fixel_file.parent_path();
       // assume the user is running the command from within the fixel directory
-      if (fixel_directory.empty())
-        fixel_directory = Path::cwd();
+      if (std::filesystem::is_empty(fixel_directory))
+        fixel_directory = std::filesystem::current_path();
       return fixel_directory;
     }
 
@@ -186,46 +187,46 @@ namespace MR
     }
 
 
-    FORCE_INLINE void check_fixel_directory (const std::string &path, bool create_if_missing = false, bool check_if_empty = false)
+    FORCE_INLINE void check_fixel_directory (const std::filesystem::path &path, bool create_if_missing = false, bool check_if_empty = false)
     {
-      std::string path_temp = path;
       // handle the use case when a fixel command is run from inside a fixel directory
-      if (path.empty())
-        path_temp = Path::cwd();
+      std::filesystem::path path_temp = path.empty() ? std::filesystem::current_path() : path;
 
-      bool exists (true);
-
-      if (!(exists = Path::exists (path_temp))) {
-        if (create_if_missing) File::mkdir (path_temp);
-        else throw Exception ("Fixel directory (" + str(path_temp) + ") does not exist");
+      if (!(std::filesystem::exists(path_temp))) {
+        if (create_if_missing) {
+          std::filesystem::create_directory(path_temp);
+        } 
+        else {
+          throw Exception ("Fixel directory (" + path_temp.string() + ") does not exist");
+        }
       }
-      else if (!Path::is_dir (path_temp))
-        throw Exception (str(path_temp) + " is not a directory");
+      else if (!std::filesystem::is_directory (path_temp))
+        throw Exception (path_temp.string() + " is not a directory");
 
-      if (check_if_empty && Path::Dir (path_temp).read_name ().size () != 0)
-        throw Exception ("Output fixel directory \"" + path_temp + "\" is not empty"
+      if (check_if_empty && !std::filesystem::is_empty(path_temp))
+        throw Exception ("Output fixel directory \"" + path_temp.string() + "\" is not empty"
                          + (App::overwrite_files ?
                             " (-force option cannot safely be applied on directories; please erase manually instead)" :
                             ""));
     }
 
 
-    FORCE_INLINE Header find_index_header (const std::string &fixel_directory_path)
+    FORCE_INLINE Header find_index_header (const std::filesystem::path &fixel_directory_path)
     {
       Header header;
       check_fixel_directory (fixel_directory_path);
 
       for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
            it !=supported_sparse_formats.end(); ++it) {
-        std::string full_path = Path::join (fixel_directory_path, "index" + *it);
-        if (Path::exists(full_path)) {
+        std::filesystem::path full_path = fixel_directory_path / ("index" + *it);
+        if (std::filesystem::exists(full_path)) {
           if (header.valid())
-            throw InvalidFixelDirectoryException ("Multiple index images found in directory " + fixel_directory_path);
+            throw InvalidFixelDirectoryException ("Multiple index images found in directory " + fixel_directory_path.string());
           header = Header::open (full_path);
         }
       }
       if (!header.valid())
-        throw InvalidFixelDirectoryException ("Could not find index image in directory " + fixel_directory_path);
+        throw InvalidFixelDirectoryException ("Could not find index image in directory " + fixel_directory_path.string());
 
       check_index_image (header);
       return header;
@@ -268,7 +269,7 @@ namespace MR
 
 
 
-    FORCE_INLINE Header find_directions_header (const std::string fixel_directory_path)
+    FORCE_INLINE Header find_directions_header (const std::filesystem::path& fixel_directory_path)
     {
       bool directions_found (false);
       Header header;
@@ -283,7 +284,7 @@ namespace MR
           if (is_directions_file (tmp_header)) {
             if (fixels_match (index_header, tmp_header)) {
               if (directions_found == true)
-                throw Exception ("multiple directions files found in fixel image directory: " + fixel_directory_path);
+                throw Exception ("multiple directions files found in fixel image directory: " + fixel_directory_path.string());
               directions_found = true;
               header = std::move (tmp_header);
             } else {
@@ -294,7 +295,7 @@ namespace MR
       }
 
       if (!directions_found)
-        throw InvalidFixelDirectoryException ("Could not find directions image in directory " + fixel_directory_path);
+        throw InvalidFixelDirectoryException ("Could not find directions image in directory " + fixel_directory_path.string());
 
       return header;
     }

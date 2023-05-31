@@ -197,7 +197,7 @@ namespace MR
         };
 
 
-        auto directions_image = Fixel::find_directions_header (Path::dirname (index_image.name())).template get_image<default_type>().with_direct_io ({+2,+1});
+        auto directions_image = Fixel::find_directions_header (std::filesystem::path{index_image.name()}.parent_path()).template get_image<default_type>().with_direct_io ({+2,+1});
         DWI::Tractography::Properties properties;
         DWI::Tractography::Reader<float> track_file (track_filename, properties);
         const uint32_t num_tracks = properties["count"].empty() ? 0 : to<uint32_t>(properties["count"]);

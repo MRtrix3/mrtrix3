@@ -16,6 +16,7 @@
 
 #include "formats/mrtrix_utils.h"
 
+#include <filesystem>
 
 namespace MR
 {
@@ -151,8 +152,7 @@ namespace MR
             && fname[0] != PATH_SEPARATORS[1]
 #endif
            )
-          fname = Path::join (Path::dirname (H.name()), fname);
-
+          fname = std::filesystem::path{H.name()}.parent_path() / fname;
       }
 
     }
