@@ -174,7 +174,7 @@ ENVIRONMENT VARIABLES
 
    CXXSTD
         Set the version of the C++ standard to use. The minimum (and default)
-        is c++11. To use Qt6, you will need to set this to c++17.
+        is c++17.
 '''
 
 system = platform.system().lower()
@@ -305,7 +305,7 @@ else:
 log ('PATH set to: ' + path)
 
 
-cpp_std = 'c++11'
+cpp_std = 'c++17'
 if 'CXXSTD' in os.environ:
   std = os.environ['CXXSTD']
   if std:
