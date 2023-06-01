@@ -15,6 +15,7 @@
  */
 
 #include <cstdlib>
+#include <array>
 
 #include "formats/list.h"
 
@@ -70,37 +71,6 @@ namespace MR
       nullptr
     };
 
-
-
-    const char* known_extensions[] = {
-      ".mih",
-      ".mif",
-      ".mif.gz",
-      ".img",
-      ".nii",
-      ".nii.gz",
-      ".bfloat",
-      ".bshort",
-      ".mri",
-      ".par",
-      ".mgh",
-      ".mgz",
-      ".mgh.gz",
-      ".msf",
-      ".msh",
-      ".dcm",
-#ifdef MRTRIX_TIFF_SUPPORT
-      ".tiff",
-      ".tif",
-      ".TIFF",
-      ".TIF",
-#endif
-#ifdef MRTRIX_PNG_SUPPORT
-      ".png",
-      ".PNG",
-#endif
-      nullptr
-    };
 
   }
 }

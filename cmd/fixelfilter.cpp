@@ -99,19 +99,19 @@ void run()
   Image<float> single_file;
   vector<Header> multiple_files;
   std::unique_ptr<Fixel::Filter::Base> filter;
-
+  const std::filesystem::path input_path {argument[0]};
   {
     Header index_header;
     Header output_header;
     try {
-      index_header = Fixel::find_index_header (argument[0]);
-      multiple_files = Fixel::find_data_headers (argument[0], index_header);
+      index_header = Fixel::find_index_header (input_path);
+      multiple_files = Fixel::find_data_headers (input_path, index_header);
       if (multiple_files.empty())
         throw Exception ("No fixel data files found in directory \"" + argument[0] + "\"");
       output_header = Header (multiple_files[0]);
     } catch (...) {
       try {
-        index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
+        index_header = Fixel::find_index_header (Fixel::get_fixel_directory (input_path));
         single_file = Image<float>::open (argument[0]);
         Fixel::check_data_file (single_file);
         output_header = Header (single_file);

@@ -206,9 +206,9 @@ void convert_new2old ()
   auto opt = get_options ("value");
   if (!opt.size())
     throw Exception ("for converting from new to old formats, option -value is compulsory");
-  const std::string value_path = get_options ("value")[0][0];
+  const std::filesystem::path value_path {get_options ("value")[0][0]};
   opt = get_options ("in_size");
-  const std::string size_path = opt.size() ? std::string(opt[0][0]) : "";
+  const std::filesystem::path size_path {opt.size() ? std::string(opt[0][0]) : ""};
 
   Header H_index = Fixel::find_index_header (input_fixel_directory);
   Header H_dirs = Fixel::find_directions_header (input_fixel_directory);
@@ -216,11 +216,12 @@ void convert_new2old ()
   size_t size_index = H_data.size(), value_index = H_data.size();
 
   for (size_t i = 0; i != H_data.size(); ++i) {
-    if (Path::basename (H_data[i].name()) == Path::basename (value_path))
+    if (std::filesystem::path(H_data[i].name()).filename() == value_path.filename())
       value_index = i;
-    if (Path::basename (H_data[i].name()) == Path::basename (size_path))
+    if (std::filesystem::path(H_data[i].name()).filename() == size_path.filename())
       size_index = i;
   }
+
   if (value_index == H_data.size())
     throw Exception ("could not find image in input fixel directory corresponding to -value option");
 

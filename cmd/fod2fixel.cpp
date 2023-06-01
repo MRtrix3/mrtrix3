@@ -31,7 +31,7 @@
 
 #include "file/path.h"
 
-
+#include <filesystem>
 
 
 using namespace MR;
@@ -115,12 +115,12 @@ class Segmented_FOD_receiver {
 
     void commit ();
 
-    void set_fixel_directory_output (const std::string& path) { fixel_directory_path = path; }
-    void set_index_output (const std::string& path) { index_path = path; }
-    void set_directions_output (const std::string& path) { dir_path = path; }
-    void set_afd_output (const std::string& path) { afd_path = path; }
-    void set_peak_amp_output (const std::string& path) { peak_amp_path = path; }
-    void set_disp_output (const std::string& path) { disp_path = path; }
+    void set_fixel_directory_output (const std::filesystem::path& path) { fixel_directory_path = path; }
+    void set_index_output (const std::filesystem::path& path) { index_path = path; }
+    void set_directions_output (const std::filesystem::path& path) { dir_path = path; }
+    void set_afd_output (const std::filesystem::path& path) { afd_path = path; }
+    void set_peak_amp_output (const std::filesystem::path& path) { peak_amp_path = path; }
+    void set_disp_output (const std::filesystem::path& path) { disp_path = path; }
 
     bool operator() (const FOD_lobes&);
 
@@ -154,7 +154,7 @@ class Segmented_FOD_receiver {
     };
 
     Header H;
-    std::string fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path;
+    std::filesystem::path fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path;
     vector<Primitive_FOD_lobes> lobes;
     index_type fixel_count;
     index_type max_per_voxel;
@@ -208,7 +208,7 @@ void Segmented_FOD_receiver::commit ()
   fixel_data_header.datatype() = DataType::Float32;
   fixel_data_header.datatype().set_byte_order_native();
 
-  if (dir_path.size()) {
+  if (!dir_path.empty()) {
     auto dir_header (fixel_data_header);
     dir_header.size(1) = 3;
     dir_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, dir_path), dir_header));
@@ -216,7 +216,7 @@ void Segmented_FOD_receiver::commit ()
     Fixel::check_fixel_size (*index_image, *dir_image);
   }
 
-  if (afd_path.size()) {
+  if (!afd_path.empty()) {
     auto afd_header (fixel_data_header);
     afd_header.size(1) = 1;
     afd_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, afd_path), afd_header));
@@ -224,7 +224,7 @@ void Segmented_FOD_receiver::commit ()
     Fixel::check_fixel_size (*index_image, *afd_image);
   }
 
-  if (peak_amp_path.size()) {
+  if (!peak_amp_path.empty()) {
     auto peak_amp_header (fixel_data_header);
     peak_amp_header.size(1) = 1;
     peak_amp_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, peak_amp_path), peak_amp_header));
@@ -232,7 +232,7 @@ void Segmented_FOD_receiver::commit ()
     Fixel::check_fixel_size (*index_image, *peak_amp_image);
   }
 
-  if (disp_path.size()) {
+  if (!disp_path.empty()) {
     auto disp_header (fixel_data_header);
     disp_header.size(1) = 1;
     disp_image = make_unique<DataImage> (DataImage::create (Path::join(fixel_directory_path, disp_path), disp_header));
@@ -302,7 +302,7 @@ void run ()
 
   Segmented_FOD_receiver receiver (H, maxnum, dir_as_peak);
 
-  auto& fixel_directory_path  = argument[1];
+  const std::filesystem::path fixel_directory_path {argument[1]};
   receiver.set_fixel_directory_output (fixel_directory_path);
 
   std::string file_extension (".mif");
@@ -315,9 +315,9 @@ void run ()
   receiver.set_directions_output (default_directions_filename);
 
   auto
-  opt = get_options ("afd");      if (opt.size()) receiver.set_afd_output      (opt[0][0]);
-  opt = get_options ("peak_amp"); if (opt.size()) receiver.set_peak_amp_output (opt[0][0]);
-  opt = get_options ("disp");     if (opt.size()) receiver.set_disp_output     (opt[0][0]);
+  opt = get_options ("afd");      if (opt.size()) receiver.set_afd_output      (std::filesystem::path{opt[0][0]});
+  opt = get_options ("peak_amp"); if (opt.size()) receiver.set_peak_amp_output (std::filesystem::path{opt[0][0]});
+  opt = get_options ("disp");     if (opt.size()) receiver.set_disp_output     (std::filesystem::path{opt[0][0]});
 
   opt = get_options ("mask");
   Image<float> mask;

@@ -30,6 +30,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 
 
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -72,20 +73,23 @@ using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
 void run ()
 {
-  auto in_data_image = Fixel::open_fixel_data_file<float> (argument[0]);
+  const std::filesystem::path input_fixel_file {argument[0]};
+  const std::filesystem::path input_tracker_file {argument[1]};
+
+  auto in_data_image = Fixel::open_fixel_data_file<float> (input_fixel_file);
   if (in_data_image.size(2) != 1)
     throw Exception ("Only a single scalar value for each fixel can be output as a track scalar file, "
                      "therefore the input fixel data file must have dimension Nx1x1");
 
-  Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
+  Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (input_fixel_file));
   auto in_index_image = in_index_header.get_image<index_type>();
-  auto in_directions_image = Fixel::find_directions_header (Fixel::get_fixel_directory (argument[0])).get_image<float>().with_direct_io();
+  auto in_directions_image = Fixel::find_directions_header (Fixel::get_fixel_directory (input_fixel_file)).get_image<float>().with_direct_io();
 
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> reader (argument[1], properties);
+  DWI::Tractography::Reader<float> reader (input_tracker_file, properties);
   properties.comments.push_back ("Created using fixel2tsf");
-  properties.comments.push_back ("Source fixel image: " + Path::basename (argument[0]));
-  properties.comments.push_back ("Source track file: " + Path::basename (argument[1]));
+  properties.comments.push_back ("Source fixel image: " + input_fixel_file.filename().string());
+  properties.comments.push_back ("Source track file: " + input_tracker_file.filename().string());
 
   DWI::Tractography::ScalarWriter<float> tsf_writer (argument[2], properties);
 

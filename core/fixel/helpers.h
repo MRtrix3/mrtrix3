@@ -233,7 +233,7 @@ namespace MR
     }
 
 
-    FORCE_INLINE vector<Header> find_data_headers (const std::string &fixel_directory_path, const Header &index_header, const bool include_directions = false)
+    FORCE_INLINE vector<Header> find_data_headers (const std::filesystem::path &fixel_directory_path, const Header &index_header, const bool include_directions = false)
     {
       check_index_image (index_header);
       auto dir_walker = Path::Dir (fixel_directory_path);
@@ -418,11 +418,11 @@ namespace MR
 
     //! open a data file. checks that a user has not input a fixel directory or index image
     template <class ValueType>
-    Image<ValueType> open_fixel_data_file (const std::string& input_file) {
-      if (Path::is_dir (input_file))
+    Image<ValueType> open_fixel_data_file (const std::filesystem::path& input_file) {
+      if (std::filesystem::is_directory(input_file))
         throw Exception ("please input the specific fixel data file to be converted (not the fixel directory)");
 
-      Header in_data_header = Header::open (input_file);
+      Header in_data_header = Header::open (input_file.string());
       Fixel::check_data_file (in_data_header);
       auto in_data_image = in_data_header.get_image<ValueType>();
 

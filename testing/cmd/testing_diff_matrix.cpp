@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
 #include <fstream>
 
 #include "command.h"
@@ -49,7 +50,8 @@ void usage ()
 
 void run ()
 {
-
+  const std::filesystem::path first_matrix_path {argument[0]};
+  const std::filesystem::path second_matrix_path {argument[0]};
   const default_type tolerance_frac = get_option_value ("frac", 0.0);
   const default_type tolerance_abs = get_option_value ("abs", 0.0);
 
@@ -63,8 +65,11 @@ void run ()
     const auto in1c = load_matrix<cdouble> (argument[0]);
     const auto in2c = load_matrix<cdouble> (argument[1]);
 
+    const std::string first_path_string = first_matrix_path.string();
+    const std::string second_path_string = second_matrix_path.string();
+
     if (in1c.rows() != in2c.rows() || in1c.cols() != in2c.cols())
-      throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + "\" do not have matching sizes"
+      throw Exception ("matrices \"" + first_path_string + "\" and \"" + second_path_string + "\" do not have matching sizes"
                        " (" + str(in1.rows()) + "x" + str(in1c.cols()) + " vs " + str(in2c.rows()) + "x" + str(in2c.cols()) + ")");
 
     if (bool(tolerance_frac)) {
@@ -72,7 +77,7 @@ void run ()
         for (ssize_t row = 0; row != in1c.rows(); ++row) {
           if ((abs (in1c(row, col).real() - in2c(row, col).real()) / (0.5 * (in1c(row, col).real() + in2c(row, col).real())) > tolerance_frac)
               || (abs (in1c(row, col).imag() - in2c(row, col).imag()) / (0.5 * (in1c(row, col).imag() + in2c(row, col).imag())) > tolerance_frac))
-            throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + "\" do not match within fractional precision of " + str(tolerance_frac)
+            throw Exception ("matrices \"" + first_path_string + "\" and \"" + second_path_string + "\" do not match within fractional precision of " + str(tolerance_frac)
                              + " ((" + str(row) + ", " + str(col) + "): " + str(in1c(row, col)) + " vs " + str(in2c(row, col)) + ")");
         }
       }
@@ -83,7 +88,7 @@ void run ()
         for (ssize_t row = 0; row != in1c.rows(); ++row) {
           if ((abs (in1c(row, col).real() - in2c(row, col).real()) > tolerance_abs)
               || (abs (in1c(row, col).imag() - in2c(row, col).imag()) > tolerance_abs))
-            throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + "\" do not match within absolute precision of " + str(tolerance_abs)
+            throw Exception ("matrices \"" + first_path_string + "\" and \"" + second_path_string + "\" do not match within absolute precision of " + str(tolerance_abs)
                              + " ((" + str(row) + ", " + str(col) + "): " + str(in1c(row, col)) + " vs " + str(in2c(row, col)) + ")");
         }
       }
@@ -93,14 +98,14 @@ void run ()
   }
 
   if (in1.rows() != in2.rows() || in1.cols() != in2.cols())
-    throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + "\" do not have matching sizes"
+    throw Exception ("matrices \"" + first_path_string + "\" and \"" + second_path_string + "\" do not have matching sizes"
                      " (" + str(in1.rows()) + "x" + str(in1.cols()) + " vs " + str(in2.rows()) + "x" + str(in2.cols()) + ")");
 
   if (bool(tolerance_frac)) {
     for (ssize_t col = 0; col != in1.cols(); ++col) {
       for (ssize_t row = 0; row != in1.rows(); ++row) {
         if (abs (in1(row, col) - in2(row, col)) / (0.5 * (in1(row, col) + in2(row, col))) > tolerance_frac)
-          throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + "\" do not match within fractional precision of " + str(tolerance_abs)
+          throw Exception ("matrices \"" + first_path_string + "\" and \"" + second_path_string + "\" do not match within fractional precision of " + str(tolerance_abs)
                            + " ((" + str(row) + ", " + str(col) + "): " + str(in1(row, col)) + " vs " + str(in2(row, col)) + ")");
       }
     }
@@ -110,7 +115,7 @@ void run ()
     for (ssize_t col = 0; col != in1.cols(); ++col) {
       for (ssize_t row = 0; row != in1.rows(); ++row) {
         if (abs (in1(row, col) - in2(row, col)) > tolerance_abs)
-          throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + "\" do not match within absolute precision of " + str(tolerance_abs)
+          throw Exception ("matrices \"" + first_path_string + "\" and \"" + second_path_string + "\" do not match within absolute precision of " + str(tolerance_abs)
                            + " ((" + str(row) + ", " + str(col) + "): " + str(in1(row, col)) + " vs " + str(in2(row, col)) + ")");
       }
     }

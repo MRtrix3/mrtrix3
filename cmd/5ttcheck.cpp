@@ -26,6 +26,7 @@
 
 #include "dwi/tractography/ACT/act.h"
 
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -117,20 +118,19 @@ void run ()
       }
 
       if ((voxel_error_sum || voxel_error_abs) && voxels.valid()) {
-        std::string path = voxels_prefix;
-        if (argument.size() > 1) {
-          path += Path::basename (argument[i]);
-        } else {
-          bool has_extension = false;
-          for (auto p = MR::Formats::known_extensions; *p; ++p) {
-            if (Path::has_suffix (path, std::string (*p))) {
-              has_extension = true;
-              break;
-            }
+        const std::filesystem::path path = [&](){
+          if(argument.size() > 1){
+            return voxels_prefix + std::filesystem::path(argument[i]).filename().string();
           }
-          if (!has_extension)
-            path += ".mif";
-        }
+          auto has_extension = [&path](const auto& extension) { return path.extension() == extension; };
+
+          const bool has_known_extension = std::any_of(MR::Formats::known_extensions.begin(),
+                                                        MR::Formats::known_extensions.end(),
+                                                        has_extension);
+
+          return has_known_extension ? voxels_prefix : voxels_prefix + ".mif";
+        }();
+
         auto out = Image<bool>::create (path, H_out);
         copy (voxels, out);
       }

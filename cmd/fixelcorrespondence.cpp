@@ -21,6 +21,8 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -57,8 +59,11 @@ void run ()
   const float angular_threshold = get_option_value ("angle", DEFAULT_ANGLE_THRESHOLD);
   const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
-  const std::string input_file (argument[0]);
-  if (Path::is_dir (input_file))
+  const std::filesystem::path input_file (argument[0]);
+  const std::filesystem::path template_directory {argument[1]};
+  const std::filesystem::path output_fixel_directory {argument[2]};
+
+  if (std::filesystem::is_directory(input_file))
     throw Exception ("please input the specific fixel data file to be converted (not the fixel directory)");
 
   auto subject_index = Fixel::find_index_header (Fixel::get_fixel_directory (input_file)).get_image<index_type>();
@@ -70,11 +75,10 @@ void run ()
   auto subject_data = Image<float>::open (input_file);
   Fixel::check_fixel_size (subject_index, subject_data);
 
-  auto template_index = Fixel::find_index_header (argument[1]).get_image<index_type>();
-  auto template_directions = Fixel::find_directions_header (argument[1]).get_image<float>().with_direct_io();
+  auto template_index = Fixel::find_index_header (template_directory).get_image<index_type>();
+  auto template_directions = Fixel::find_directions_header (template_directory).get_image<float>().with_direct_io();
 
   check_dimensions (subject_index, template_index);
-  std::string output_fixel_directory = argument[2];
   Fixel::copy_index_and_directions_file (argument[1], output_fixel_directory);
 
   Header output_data_header (template_directions);

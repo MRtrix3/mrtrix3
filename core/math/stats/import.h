@@ -28,6 +28,7 @@
 
 #include "math/stats/typedefs.h"
 
+#include <filesystem>
 
 namespace MR
 {
@@ -51,7 +52,7 @@ namespace MR
       class SubjectDataImportBase
       { 
         public:
-          SubjectDataImportBase (const std::string& path) :
+          SubjectDataImportBase (const std::filesystem::path& path) :
               path (path) { }
           virtual ~SubjectDataImportBase() { }
 
@@ -67,12 +68,12 @@ namespace MR
            */
           virtual default_type operator[] (const size_t index) const = 0;
 
-          const std::string& name() const { return path; }
+          std::string name() const { return path.string(); }
 
           virtual size_t size() const = 0;
 
         protected:
-          const std::string path;
+          const std::filesystem::path path;
 
       };
       //! @}

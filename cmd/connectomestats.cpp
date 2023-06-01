@@ -30,6 +30,7 @@
 
 #include "stats/permtest.h"
 
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -134,13 +135,13 @@ void load_tfce_parameters (Stats::TFCE::Wrapper& enhancer)
 class SubjectConnectomeImport : public SubjectDataImportBase
 { 
   public:
-    SubjectConnectomeImport (const std::string& path) :
+    SubjectConnectomeImport (const std::filesystem::path& path) :
         SubjectDataImportBase (path)
     {
       auto M = load_matrix (path);
       Connectome::check (M);
       if (Connectome::is_directed (M))
-        throw Exception ("Connectome from file \"" + Path::basename (path) + "\" is a directed matrix");
+        throw Exception ("Connectome from file \"" + path.filename().string() + "\" is a directed matrix");
       Connectome::to_upper (M);
       Connectome::Mat2Vec mat2vec (M.rows());
       mat2vec.M2V (M, data);
@@ -169,10 +170,11 @@ class SubjectConnectomeImport : public SubjectDataImportBase
 
 void run()
 {
+  const std::filesystem::path input_file {argument[0]};
 
   // Read file names and check files exist
   CohortDataImport importer;
-  importer.initialise<SubjectConnectomeImport> (argument[0]);
+  importer.initialise<SubjectConnectomeImport> (input_file);
   CONSOLE ("Number of inputs: " + str(importer.size()));
   const size_t num_edges = importer[0]->size();
 
@@ -229,7 +231,7 @@ void run()
   auto opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
-    extra_columns[i].initialise<SubjectConnectomeImport> (opt[i][0]);
+    extra_columns[i].initialise<SubjectConnectomeImport> (std::filesystem::path{opt[i][0]});
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
   }

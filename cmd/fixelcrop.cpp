@@ -74,8 +74,7 @@ void run ()
   }
 
   out_header.keyval ()[Fixel::n_fixels_key] = str (total_nfixels);
-  auto out_index_image = Image<index_type>::create (Path::join (out_fixel_directory, Path::basename (in_index_image.name())), out_header);
-
+  auto out_index_image = Image<index_type>::create(out_fixel_directory / in_index_image.name(), out_header);
 
   // Open all data images and create output date images with size equal to expected number of fixels
   vector<Header> in_headers = Fixel::find_data_headers (in_directory, in_index_header, true);
