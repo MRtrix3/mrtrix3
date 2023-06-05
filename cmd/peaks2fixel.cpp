@@ -21,6 +21,7 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -97,7 +98,9 @@ void run ()
     INFO ("Peaks have variable amplitudes; will create additional fixel data file \"" + dataname + "\"");
   }
 
-  Fixel::check_fixel_directory (argument[1], true, true);
+  const std::filesystem::path output_fixel_directory {argument[1]};
+
+  Fixel::check_fixel_directory (output_fixel_directory, true, true);
 
   // Easiest if we first make the index image
   const std::string index_path = Path::join (argument[1], "index.mif");

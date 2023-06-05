@@ -66,7 +66,7 @@ namespace MR
           std::string filename;
           if (qstring.size()) {
             filename = qstring.toUtf8().data();
-            std::string new_folder = Path::dirname (filename);
+            std::string new_folder = std::filesystem::path{filename}.parent_path().string();
             if (folder)
               *folder = new_folder;
           }
@@ -86,7 +86,7 @@ namespace MR
           if (qlist.size()) {
             for (int n = 0; n < qlist.size(); ++n)
               list.push_back (qlist[n].toUtf8().data());
-            std::string new_folder = Path::dirname (list[0]);
+            std::string new_folder = std::filesystem::path{list[0]}.parent_path().string();
             if (folder)
               *folder = new_folder;
           }
@@ -133,7 +133,7 @@ namespace MR
           std::string filename;
           if (qstring.size()) {
             filename = qstring.toUtf8().data();
-            std::string new_folder = Path::dirname (filename);
+            std::string new_folder = std::filesystem::path{filename}.parent_path().string();
             if (folder)
               *folder = new_folder;
           }

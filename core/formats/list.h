@@ -108,7 +108,36 @@ namespace MR
     DECLARE_IMAGEFORMAT (MRtrix_sparse, "MRtrix WIP sparse image data format");
 
     /*! a list of all extensions for image formats that %MRtrix can handle. */
-    extern const char* known_extensions[];
+    using namespace std::string_literals;
+
+    const std::array known_extensions = {
+      ".mih"s,
+      ".mif"s,
+      ".mif.gz"s,
+      ".img"s,
+      ".nii"s,
+      ".nii.gz"s,
+      ".bfloat"s,
+      ".bshort"s,
+      ".mri"s,
+      ".par"s,
+      ".mgh"s,
+      ".mgz"s,
+      ".mgh.gz"s,
+      ".msf"s,
+      ".msh"s,
+      ".dcm"s,
+#ifdef MRTRIX_TIFF_SUPPORT
+      ".tiff"s,
+      ".tif"s,
+      ".TIFF"s,
+      ".TIF"s,
+#endif
+#ifdef MRTRIX_PNG_SUPPORT
+      ".png"s,
+      ".PNG"s,
+#endif
+    };
 
     /*! a list of all handlers for supported image formats. */
     extern const Base* handlers[];

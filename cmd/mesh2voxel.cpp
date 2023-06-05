@@ -55,9 +55,9 @@ void usage ()
 
 void run ()
 {
-
+  const std::filesystem::path input_source_path {argument[0]};
   // Read in the mesh data
-  Surface::Mesh mesh (argument[0]);
+  Surface::Mesh mesh (input_source_path);
 
   // Get the template image
   Header template_header = Header::open (argument[1]);

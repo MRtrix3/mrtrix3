@@ -63,14 +63,6 @@ namespace MR
       return (i == std::string::npos ? name : name.substr (i+1));
     }
 
-
-    inline std::string dirname (const std::string& name)
-    {
-      size_t i = name.find_last_of (PATH_SEPARATORS);
-      return (i == std::string::npos ? std::string ("") : (i ? name.substr (0,i) : std::string(1, PATH_SEPARATORS[0])));
-    }
-
-
     inline std::string join (const std::string& first, const std::string& second)
     {
       if (first.empty())
@@ -82,22 +74,6 @@ namespace MR
           )
         return first + PATH_SEPARATORS[0] + second;
       return first + second;
-    }
-
-
-    inline bool exists (const std::string& path)
-    {
-      struct stat buf;
-#ifdef MRTRIX_WINDOWS
-      const std::string stripped (strip (path, PATH_SEPARATORS, false, true));
-      if (!stat (stripped.c_str(), &buf))
-#else
-      if (!stat (path.c_str(), &buf))
-#endif
-        return true;
-      if (errno == ENOENT) return false;
-      throw Exception (strerror (errno));
-      return false;
     }
 
 

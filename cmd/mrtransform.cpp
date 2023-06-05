@@ -299,7 +299,7 @@ void run ()
   if (opt.size()) {
     if (!Path::is_mrtrix_image (opt[0][0]) && !(Path::has_suffix (opt[0][0], {".nii", ".nii.gz"}) &&
                                                 File::Config::get_bool ("NIfTIAutoLoadJSON", false) &&
-                                                Path::exists(File::NIfTI::get_json_path(opt[0][0]))))
+                                                std::filesystem::exists(File::NIfTI::get_json_path(opt[0][0]))))
       WARN ("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
             "Converting to other file formats may remove linear transformations stored in the image header.");
     warp = Image<default_type>::open (opt[0][0]).with_direct_io();

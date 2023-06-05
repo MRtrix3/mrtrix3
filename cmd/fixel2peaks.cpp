@@ -25,6 +25,8 @@
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -61,17 +63,21 @@ void usage ()
 void run ()
 {
   Header index_header, directions_header, data_header;
+  const std::filesystem::path input_path{argument[0]};
+  
   try {
     Header input_header = Header::open (argument[0]);
+    const std::filesystem::path input_parent_dir = input_path.parent_path();
+
     if (Fixel::is_index_image (input_header)) {
       index_header = std::move (input_header);
-      directions_header = Fixel::find_directions_header (Path::dirname (argument[0]));
+      directions_header = Fixel::find_directions_header (input_parent_dir);
     } else if (Fixel::is_directions_file (input_header)) {
-      index_header = Fixel::find_index_header (Path::dirname (argument[0]));
+      index_header = Fixel::find_index_header (input_parent_dir);
       directions_header = std::move (input_header);
     } else if (Fixel::is_data_file (input_header)) {
-      index_header = Fixel::find_index_header (Path::dirname (argument[0]));
-      directions_header = Fixel::find_directions_header (Path::dirname (argument[0]));
+      index_header = Fixel::find_index_header (input_parent_dir);
+      directions_header = Fixel::find_directions_header (input_parent_dir);
       data_header = std::move (input_header);
       Fixel::check_fixel_size (index_header, data_header);
     } else {
@@ -81,8 +87,8 @@ void run ()
     try {
       if (!Path::is_dir (argument[0]))
         throw Exception ("Input path is not a directory");
-      index_header = Fixel::find_index_header (argument[0]);
-      directions_header = Fixel::find_directions_header (argument[0]);
+      index_header = Fixel::find_index_header (input_path);
+      directions_header = Fixel::find_directions_header (input_path);
     } catch (Exception& e_asdir) {
       Exception e ("Could not locate fixel data based on input string \"" + argument[0] + "\"");
       e.push_back ("Error when interpreting as image: ");

@@ -30,6 +30,7 @@
 #include "types.h"
 #include "file/path.h"
 
+#include <filesystem>
 
 extern void usage ();
 extern void run ();
@@ -165,13 +166,13 @@ namespace MR
 
 
 
-    inline void check_overwrite (const std::string& name)
+    inline void check_overwrite (const std::filesystem::path& name)
     {
-      if (Path::exists (name) && !overwrite_files) {
+      if (std::filesystem::exists (name) && !overwrite_files) {
         if (check_overwrite_files_func)
           check_overwrite_files_func (name);
         else
-          throw Exception ("output file \"" + name + "\" already exists (use -force option to force overwrite)");
+          throw Exception ("output file \"" + name.string() + "\" already exists (use -force option to force overwrite)");
       }
     }
 

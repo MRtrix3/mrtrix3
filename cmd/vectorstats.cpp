@@ -27,6 +27,7 @@
 
 #include "stats/permtest.h"
 
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -122,8 +123,10 @@ void run()
   CohortDataImport importer;
   matrix_type data;
   size_t num_inputs = 0, num_elements = 0;
+  const std::filesystem::path input_path{argument[0]};
+
   try {
-    importer.initialise<SubjectVectorImport> (argument[0]);
+    importer.initialise<SubjectVectorImport> (input_path);
     num_inputs = importer.size();
     num_elements = importer[0]->size();
     for (size_t i = 0; i != importer.size(); ++i) {
@@ -162,7 +165,8 @@ void run()
   auto opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
-    extra_columns[i].initialise<SubjectVectorImport> (opt[i][0]);
+    const std::filesystem::path column_path {opt[i][0]};
+    extra_columns[i].initialise<SubjectVectorImport> (column_path);
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
   }

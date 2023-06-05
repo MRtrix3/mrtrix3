@@ -30,7 +30,7 @@
 
 #include "surface/types.h"
 
-
+#include <filesystem>
 
 namespace MR
 {
@@ -48,7 +48,7 @@ namespace MR
     class Mesh { 
 
       public:
-        Mesh (const std::string&);
+        Mesh (const std::filesystem::path&);
 
         Mesh (const Mesh& that) = default;
 
@@ -137,7 +137,7 @@ namespace MR
         }
 
 
-        void save (const std::string&, const bool binary = false) const;
+        void save (const std::filesystem::path&, const bool binary = false) const;
 
         size_t num_vertices() const { return vertices.size(); }
         size_t num_triangles() const { return triangles.size(); }
@@ -174,13 +174,13 @@ namespace MR
       private:
         std::string name;
 
-        void load_vtk (const std::string&);
-        void load_stl (const std::string&);
-        void load_obj (const std::string&);
-        void load_fs  (const std::string&);
-        void save_vtk (const std::string&, const bool) const;
-        void save_stl (const std::string&, const bool) const;
-        void save_obj (const std::string&) const;
+        void load_vtk (const std::filesystem::path&);
+        void load_stl (const std::filesystem::path&);
+        void load_obj (const std::filesystem::path&);
+        void load_fs  (const std::filesystem::path&);
+        void save_vtk (const std::filesystem::path&, const bool) const;
+        void save_stl (const std::filesystem::path&, const bool) const;
+        void save_obj (const std::filesystem::path&) const;
 
         void verify_data() const;
 

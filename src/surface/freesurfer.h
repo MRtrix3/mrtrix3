@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <fstream>
+#include <filesystem>
 
 #include "raw.h"
 
@@ -61,8 +62,8 @@ namespace MR
 
 
 
-      void read_annot (const std::string&, label_vector_type&, Connectome::LUT&);
-      void read_label (const std::string&, VertexList&, Scalar&);
+      void read_annot (const std::filesystem::path&, label_vector_type&, Connectome::LUT&);
+      void read_label (const std::filesystem::path&, VertexList&, Scalar&);
 
 
 

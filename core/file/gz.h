@@ -58,7 +58,7 @@ namespace MR
         void open (const std::string& fname, const char* mode) {
           close();
           filename = fname;
-          if (!MR::Path::exists (filename))
+          if (!std::filesystem::exists (filename))
             throw Exception ("cannot access file \"" + filename + "\": No such file or directory");
 
           gz = gzopen (filename.c_str(), mode);

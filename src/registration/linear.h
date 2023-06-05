@@ -230,7 +230,7 @@ namespace MR
             for (size_t iter = 1; iter <= stage.stage_iterations; ++iter) {
               std::ostringstream oss;
               oss << diagnostics_image_prefix << "_stage-" << level + 1 << "_iter-" << iter << ".mif";
-              if (Path::exists(oss.str()) && !App::overwrite_files)
+              if (std::filesystem::exists(oss.str()) && !App::overwrite_files)
                 throw Exception ("diagnostics image file \"" + oss.str() + "\" already exists (use -force option to force overwrite)");
               stage.diagnostics_images.push_back(oss.str());
             }

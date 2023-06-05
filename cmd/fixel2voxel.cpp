@@ -32,6 +32,8 @@
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -488,11 +490,13 @@ class None : protected Base
 
 void run ()
 {
-  auto in_data = Fixel::open_fixel_data_file<typename FixelDataType::value_type> (argument[0]);
+  const std::filesystem::path input_file {argument[0]};
+
+  auto in_data = Fixel::open_fixel_data_file<typename FixelDataType::value_type> (input_file);
   if (in_data.size(2) != 1)
     throw Exception ("Input fixel data file must have a single scalar value per fixel (i.e. have dimensions Nx1x1)");
 
-  Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (argument[0]));
+  Header in_index_header = Fixel::find_index_header (Fixel::get_fixel_directory (input_file));
   auto in_index_image = in_index_header.get_image<typename FixelIndexType::value_type>();
 
   Image<float> in_directions;

@@ -39,7 +39,7 @@ namespace MR
     FORCE_INLINE void check_image_output (const std::string& image_name, const Header& reference) {
       vector<std::string> V;
       if (!image_name.size()) throw Exception ("image output path is empty");
-        if (Path::exists (image_name) && !App::overwrite_files)
+        if (std::filesystem::exists(image_name) && !App::overwrite_files)
           throw Exception ("output image \"" + image_name + "\" already exists (use -force option to force overwrite)");
 
         Header H = reference;

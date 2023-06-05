@@ -32,6 +32,7 @@
 #include "stats/permtest.h"
 #include "stats/tfce.h"
 
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -180,7 +181,7 @@ std::shared_ptr<Voxel2Vector> SubjectVoxelImport::v2v = nullptr;
 
 
 void run() {
-
+  const std::filesystem::path input_path{argument[0]};
   const value_type cluster_forming_threshold = get_option_value ("threshold", NaN);
   const value_type tfce_dh = get_option_value ("tfce_dh", DEFAULT_TFCE_DH);
   const value_type tfce_H = get_option_value ("tfce_h", DEFAULT_TFCE_H);
@@ -203,7 +204,7 @@ void run() {
 
   // Read file names and check files exist
   CohortDataImport importer;
-  importer.initialise<SubjectVoxelImport> (argument[0]);
+  importer.initialise<SubjectVoxelImport> (input_path);
   for (size_t i = 0; i != importer.size(); ++i) {
     if (!dimensions_match (dynamic_cast<SubjectVoxelImport*>(importer[i].get())->header(), mask_header))
       throw Exception ("Image file \"" + importer[i]->name() + "\" does not match analysis mask");
@@ -223,7 +224,7 @@ void run() {
   auto opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
-    extra_columns[i].initialise<SubjectVoxelImport> (opt[i][0]);
+    extra_columns[i].initialise<SubjectVoxelImport> (std::filesystem::path{opt[i][0]});
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
   }

@@ -19,6 +19,8 @@
 
 #include "gui/mrview/tool/fixel/base_fixel.h"
 
+#include <filesystem>
+
 namespace MR
 {
   namespace GUI
@@ -30,8 +32,8 @@ namespace MR
         class Directory : public FixelType<FixelIndexImageType>
         { 
           public:
-            Directory (const std::string& filename, Fixel& fixel_tool) :
-              FixelType (MR::Fixel::find_index_header (Path::dirname (filename)).name (), fixel_tool)
+            Directory (const std::filesystem::path& filename, Fixel& fixel_tool) :
+              FixelType (MR::Fixel::find_index_header (filename.parent_path()).name (), fixel_tool)
             {
               value_types = {"unity"};
               colour_types = {"direction"};

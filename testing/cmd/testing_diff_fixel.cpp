@@ -57,7 +57,7 @@ void run ()
   while ((fname = dir_walker1.read_name()).size()) {
     auto in1 = Image<cdouble>::open (Path::join (fixel_directory1, fname));
     std::string filename2 = Path::join (fixel_directory2, fname);
-    if (!Path::exists (filename2))
+    if (!std::filesystem::exists(filename2))
       throw Exception ("File (" + fname + ") exists in fixel directory (" + fixel_directory1 + ") but not in fixel directory (" + fixel_directory2 + ") ");
     auto in2 = Image<cdouble>::open (filename2);
     Testing::diff_images (in1, in2);
@@ -65,7 +65,7 @@ void run ()
   auto dir_walker2 = Path::Dir (fixel_directory2);
   while ((fname = dir_walker2.read_name()).size()) {
     std::string filename1 = Path::join (fixel_directory1, fname);
-    if (!Path::exists (filename1))
+    if (!std::filesystem::exists(filename1))
       throw Exception ("File (" + fname + ") exists in fixel directory (" + fixel_directory2 + ") but not in fixel directory (" + fixel_directory1 + ") ");
   }
   CONSOLE ("data checked OK");

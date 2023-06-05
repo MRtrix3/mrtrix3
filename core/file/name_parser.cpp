@@ -18,6 +18,8 @@
 
 #include "file/name_parser.h"
 
+#include <filesystem>
+
 namespace MR
 {
   namespace File
@@ -53,7 +55,7 @@ namespace MR
         return;
       }
 
-      folder_name = Path::dirname (specification);
+      folder_name = std::filesystem::path{specification}.parent_path();
 
 
       try {

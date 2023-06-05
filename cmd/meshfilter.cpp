@@ -76,12 +76,14 @@ void usage ()
 
 void run ()
 {
-
+  const std::filesystem::path input_mesh_file {argument[0]};
+  const std::filesystem::path output_mesh_file{argument[2]};
+  
   MeshMulti in;
 
   // Read in the mesh data
   try {
-    Mesh mesh (argument[0]);
+    Mesh mesh (input_mesh_file);
     in.push_back (mesh);
   } catch (...) {
     in.load (argument[0]);
@@ -106,8 +108,8 @@ void run ()
 
   // Create the output file
   if (out.size() == 1)
-    out.front().save (argument[2]);
+    out.front().save (output_mesh_file);
   else
-    out.save (argument[2]);
+    out.save (output_mesh_file);
 
 }
