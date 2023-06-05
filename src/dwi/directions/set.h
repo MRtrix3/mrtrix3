@@ -85,7 +85,7 @@ namespace MR {
 
           size_t size () const { return unit_vectors.size(); }
           const Eigen::Vector3d& get_dir (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
-          const vector<index_type>& get_adj_dirs (const size_t i) const { assert (i < size()); return adj_dirs[i]; }
+          const std::vector<index_type>& get_adj_dirs (const size_t i) const { assert (i < size()); return adj_dirs[i]; }
           bool dirs_are_adjacent (const index_type one, const index_type two) const {
             assert (one < size());
             assert (two < size());
@@ -98,14 +98,14 @@ namespace MR {
 
           index_type get_min_linkage (const index_type one, const index_type two) const;
 
-          const vector<Eigen::Vector3d>& get_dirs() const { return unit_vectors; }
+          const std::vector<Eigen::Vector3d>& get_dirs() const { return unit_vectors; }
           const Eigen::Vector3d& operator[] (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
 
 
         protected:
 
-          vector<Eigen::Vector3d> unit_vectors;
-          vector< vector<index_type> > adj_dirs; // Note: not self-inclusive
+          std::vector<Eigen::Vector3d> unit_vectors;
+          std::vector< std::vector<index_type> > adj_dirs; // Note: not self-inclusive
 
 
         private:
@@ -185,7 +185,7 @@ namespace MR {
 
         private:
 
-          vector< vector<index_type> > grid_lookup;
+          std::vector< std::vector<index_type> > grid_lookup;
           unsigned int num_az_grids, num_el_grids, total_num_angle_grids;
           default_type az_grid_step, el_grid_step;
           default_type az_begin, el_begin;

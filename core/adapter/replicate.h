@@ -78,7 +78,7 @@ namespace MR
       protected:
         using base_type::parent;
         Header header_;
-        vector<ssize_t> pos_;
+        std::vector<ssize_t> pos_;
 
     };
 

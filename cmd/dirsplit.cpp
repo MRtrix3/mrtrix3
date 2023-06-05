@@ -62,13 +62,13 @@ class Shared {
           if (s >= num_subsets) s = 0;
         }
         INFO ("split " + str(directions.rows()) + " directions into subsets with " +
-            str([&]{ vector<size_t> c; for (auto& x : subset) c.push_back (x.size()); return c; }()) + " volumes");
+            str([&]{ std::vector<size_t> c; for (auto& x : subset) c.push_back (x.size()); return c; }()) + " volumes");
       }
 
 
 
 
-    bool update (value_type energy, const vector<vector<size_t>>& set)
+    bool update (value_type energy, const std::vector<std::vector<size_t>>& set)
     {
       std::lock_guard<std::mutex> lock (mutex);
       if (!progress) progress.reset (new ProgressBar ("distributing directions", target_num_permutations));
@@ -91,14 +91,14 @@ class Shared {
     }
 
 
-    const vector<vector<size_t>>& get_init_subset () const { return subset; }
-    const vector<vector<size_t>>& get_best_subset () const { return best_subset; }
+    const std::vector<std::vector<size_t>>& get_init_subset () const { return subset; }
+    const std::vector<std::vector<size_t>>& get_best_subset () const { return best_subset; }
 
 
   protected:
     const Eigen::MatrixXd& directions;
     std::mutex mutex;
-    vector<vector<size_t>> subset, best_subset;
+    std::vector<std::vector<size_t>> subset, best_subset;
     value_type best_energy;
     const size_t target_num_permutations;
     size_t num_permutations;
@@ -153,7 +153,7 @@ class EnergyCalculator {
 
   protected:
     Shared& shared;
-    vector<vector<size_t>> subset;
+    std::vector<std::vector<size_t>> subset;
     Math::RNG rng;
 };
 
@@ -173,7 +173,7 @@ void run ()
 
   const size_t num_permutations = get_option_value<size_t> ("permutations", default_permutations);
 
-  vector<vector<size_t>> best;
+  std::vector<std::vector<size_t>> best;
   {
     Shared shared (directions, num_subsets, num_permutations);
     Thread::run (Thread::multi (EnergyCalculator (shared)), "energy eval thread");

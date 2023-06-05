@@ -36,7 +36,7 @@ namespace MR
         Default& operator=(Default&&) = delete;
 
       protected:
-        vector<std::shared_ptr<File::MMap> > mmaps;
+        std::vector<std::shared_ptr<File::MMap> > mmaps;
         int64_t bytes_per_segment;
 
         virtual void load (const Header&, size_t);

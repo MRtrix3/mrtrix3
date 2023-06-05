@@ -106,7 +106,7 @@ namespace MR
                 // Break this voxel face into two triangles
 
                 // Get the integer positions of the four vertices
-                vector<Vox> voxels (4, p);
+                std::vector<Vox> voxels (4, p);
                 voxels[1][plane_axes[adj][0]]++;
                 voxels[2][plane_axes[adj][0]]++; voxels[2][plane_axes[adj][1]]++;
                 voxels[3][plane_axes[adj][1]]++;

@@ -168,7 +168,7 @@ void run () {
     }
 
     // over-sampling
-    vector<uint32_t> oversample = Adapter::AutoOverSample;
+    std::vector<uint32_t> oversample = Adapter::AutoOverSample;
     opt = get_options ("oversample");
     if (opt.size()) {
       oversample = parse_ints<uint32_t> (opt[0][0]);
@@ -192,7 +192,7 @@ void run () {
     regrid_filter.set_interp_type (interp);
     regrid_filter.set_oversample (oversample);
 
-    vector<default_type> scale;
+    std::vector<default_type> scale;
     opt = get_options ("scale");
     if (opt.size()) {
       scale = parse_floats (opt[0][0]);
@@ -202,7 +202,7 @@ void run () {
       ++resize_option_count;
     }
 
-    vector<uint32_t> image_size;
+    std::vector<uint32_t> image_size;
     opt = get_options ("size");
     if (opt.size()) {
       image_size = parse_ints<uint32_t> (opt[0][0]);
@@ -210,7 +210,7 @@ void run () {
       ++resize_option_count;
     }
 
-    vector<default_type> voxel_size;
+    std::vector<default_type> voxel_size;
     opt = get_options ("voxel");
     if (opt.size()) {
       voxel_size = parse_floats (opt[0][0]);
@@ -246,7 +246,7 @@ void run () {
 
     const size_t nd = get_options ("nd").size() ? input_header.ndim() : 3;
 
-    vector<vector<ssize_t>> bounds (input_header.ndim(), vector<ssize_t> (2));
+    std::vector<std::vector<ssize_t>> bounds (input_header.ndim(), std::vector<ssize_t> (2));
     for (size_t axis = 0; axis < input_header.ndim(); axis++) {
       bounds[axis][0] = 0;
       bounds[axis][1] = input_header.size (axis) - 1;
@@ -268,9 +268,9 @@ void run () {
       }
 
       struct BoundsCheck { 
-        vector<vector<ssize_t>>& overall_bounds;
-        vector<vector<ssize_t>> bounds;
-        BoundsCheck (vector<vector<ssize_t>>& overall_bounds) : overall_bounds (overall_bounds), bounds (overall_bounds) { }
+        std::vector<std::vector<ssize_t>>& overall_bounds;
+        std::vector<std::vector<ssize_t>> bounds;
+        BoundsCheck (std::vector<std::vector<ssize_t>>& overall_bounds) : overall_bounds (overall_bounds), bounds (overall_bounds) { }
         ~BoundsCheck () {
           for (size_t axis = 0; axis != 3; ++axis) {
             overall_bounds[axis][0] = std::min (bounds[axis][0], overall_bounds[axis][0]);
@@ -361,7 +361,7 @@ void run () {
       std::string::size_type start = 0, end;
       end = spec.find_first_of(":", start);
       if (end == std::string::npos) { // spec = delta_lower,delta_upper
-        vector<int> delta; // 0: not changed, > 0: pad, < 0: crop
+        std::vector<int> delta; // 0: not changed, > 0: pad, < 0: crop
         try { delta = parse_ints<int> (opt[i][1]); }
         catch (Exception& E) { Exception (E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\""); }
         if (delta.size() != 2)
@@ -390,8 +390,8 @@ void run () {
     if (crop_pad_option_count == 0)
       throw Exception ("no crop or pad option supplied");
 
-    vector<ssize_t> from (input_header.ndim());
-    vector<ssize_t> size (input_header.ndim());
+    std::vector<ssize_t> from (input_header.ndim());
+    std::vector<ssize_t> size (input_header.ndim());
     for (size_t axis = 0; axis < input_header.ndim(); axis++) {
       from[axis] = bounds[axis][0];
       size[axis] = bounds[axis][1] - from[axis] + 1;

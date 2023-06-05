@@ -121,7 +121,7 @@ namespace MR
               WARN ("Only a single variance group is defined in file \"" + opt[0][0] + "\"; variance groups will not be used");
               return index_array_type();
             }
-            vector<size_t> count_per_group (max_coeff + 1, 0);
+            std::vector<size_t> count_per_group (max_coeff + 1, 0);
             for (size_t i = 0; i != size_t(data.size()); ++i)
               count_per_group[data[i]]++;
             for (size_t vg_index = min_coeff; vg_index <= size_t(max_coeff); ++vg_index) {
@@ -139,9 +139,9 @@ namespace MR
 
 
 
-        vector<Hypothesis> load_hypotheses (const std::string& file_path)
+        std::vector<Hypothesis> load_hypotheses (const std::string& file_path)
         {
-          vector<Hypothesis> hypotheses;
+          std::vector<Hypothesis> hypotheses;
           const matrix_type contrast_matrix = load_matrix (file_path);
           for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
             hypotheses.emplace_back (Hypothesis (contrast_matrix.row (row), row));
@@ -164,7 +164,7 @@ namespace MR
               hypotheses.emplace_back (Hypothesis (this_f_matrix, ftest_index));
             }
             if (App::get_options ("fonly").size()) {
-              vector<Hypothesis> new_hypotheses;
+              std::vector<Hypothesis> new_hypotheses;
               for (size_t index = contrast_matrix.rows(); index != hypotheses.size(); ++index)
                 new_hypotheses.push_back (std::move (hypotheses[index]));
               std::swap (hypotheses, new_hypotheses);
@@ -195,7 +195,7 @@ namespace MR
             return hypothesis.matrix() * solve_betas (measurements, design);
         }
 
-        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
+        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const std::vector<Hypothesis>& hypotheses)
         {
           matrix_type result (measurements.cols(), hypotheses.size());
           for (size_t ic = 0; ic != hypotheses.size(); ++ic)
@@ -252,7 +252,7 @@ namespace MR
           return abs_effect_size (measurements, design, hypothesis).array() / stdev (measurements, design).array().col(0);
         }
 
-        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
+        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const std::vector<Hypothesis>& hypotheses)
         {
           const vector_type stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design).array().col(0);
           matrix_type result (measurements.cols(), hypotheses.size());
@@ -268,7 +268,7 @@ namespace MR
 
         void all_stats (const matrix_type& measurements,
                         const matrix_type& design,
-                        const vector<Hypothesis>& hypotheses,
+                        const std::vector<Hypothesis>& hypotheses,
                         const index_array_type& variance_groups,
                         matrix_type& betas,
                         matrix_type& abs_effect_size,
@@ -333,8 +333,8 @@ namespace MR
 
         void all_stats (const matrix_type& measurements,
                         const matrix_type& fixed_design,
-                        const vector<CohortDataImport>& extra_data,
-                        const vector<Hypothesis>& hypotheses,
+                        const std::vector<CohortDataImport>& extra_data,
+                        const std::vector<Hypothesis>& hypotheses,
                         const index_array_type& variance_groups,
                         vector_type& cond,
                         matrix_type& betas,
@@ -374,7 +374,7 @@ namespace MR
           class Functor
           {
             public:
-              Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_data, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+              Functor (const matrix_type& data, const matrix_type& design_fixed, const std::vector<CohortDataImport>& extra_data, const std::vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                        vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :
                   data (data),
                   design_fixed (design_fixed),
@@ -453,8 +453,8 @@ namespace MR
             private:
               const matrix_type& data;
               const matrix_type& design_fixed;
-              const vector<CohortDataImport>& extra_data;
-              const vector<Hypothesis>& hypotheses;
+              const std::vector<CohortDataImport>& extra_data;
+              const std::vector<Hypothesis>& hypotheses;
               const index_array_type& variance_groups;
               vector_type& global_cond;
               matrix_type& global_betas;
@@ -564,7 +564,7 @@ namespace MR
 
 
 
-        TestFixedHomoscedastic::TestFixedHomoscedastic (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
+        TestFixedHomoscedastic::TestFixedHomoscedastic (const matrix_type& measurements, const matrix_type& design, const std::vector<Hypothesis>& hypotheses) :
             TestBase (measurements, design, hypotheses),
             pinvM (Math::pinv (M)),
             Rm (matrix_type::Identity (num_inputs(), num_inputs()) - (M*pinvM))
@@ -669,7 +669,7 @@ namespace MR
 
 
 
-        TestFixedHeteroscedastic::TestFixedHeteroscedastic (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups) :
+        TestFixedHeteroscedastic::TestFixedHeteroscedastic (const matrix_type& measurements, const matrix_type& design, const std::vector<Hypothesis>& hypotheses, const index_array_type& variance_groups) :
             TestFixedHomoscedastic (measurements, design, hypotheses),
             VG (variance_groups),
             num_vgs (VG.maxCoeff() + 1),
@@ -828,10 +828,10 @@ namespace MR
 
 
 
-        TestVariableHomoscedastic::TestVariableHomoscedastic (const vector<CohortDataImport>& importers,
+        TestVariableHomoscedastic::TestVariableHomoscedastic (const std::vector<CohortDataImport>& importers,
                                                               const matrix_type& measurements,
                                                               const matrix_type& design,
-                                                              const vector<Hypothesis>& hypotheses,
+                                                              const std::vector<Hypothesis>& hypotheses,
                                                               const bool nans_in_data,
                                                               const bool nans_in_columns) :
             TestBase (measurements, design, hypotheses),
@@ -1078,10 +1078,10 @@ namespace MR
 
 
 
-        TestVariableHeteroscedastic::TestVariableHeteroscedastic (const vector<CohortDataImport>& importers,
+        TestVariableHeteroscedastic::TestVariableHeteroscedastic (const std::vector<CohortDataImport>& importers,
                                                                   const matrix_type& measurements,
                                                                   const matrix_type& design,
-                                                                  const vector<Hypothesis>& hypotheses,
+                                                                  const std::vector<Hypothesis>& hypotheses,
                                                                   const index_array_type& variance_groups,
                                                                   const bool nans_in_data,
                                                                   const bool nans_in_columns) :

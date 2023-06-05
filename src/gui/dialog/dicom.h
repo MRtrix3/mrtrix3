@@ -29,7 +29,7 @@ namespace MR
 
       using namespace MR::File::Dicom;
 
-      vector<std::shared_ptr<Series>> select_dicom (const Tree& tree);
+      std::vector<std::shared_ptr<Series>> select_dicom (const Tree& tree);
 
     }
   }

@@ -52,11 +52,11 @@ class Streamline_nodelist : public Tractography::Streamline<>
     Streamline_nodelist() : Tractography::Streamline<>(), nodes () { }
     Streamline_nodelist (const size_t i) : Tractography::Streamline<> (i), nodes () { }
 
-    void set_nodes (const vector<node_t>& i) { nodes = i; }
-    const vector<node_t>& get_nodes() const { return nodes; }
+    void set_nodes (const std::vector<node_t>& i) { nodes = i; }
+    const std::vector<node_t>& get_nodes() const { return nodes; }
 
   private:
-    vector<node_t> nodes;
+    std::vector<node_t> nodes;
 };
 
 

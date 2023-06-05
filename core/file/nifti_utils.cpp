@@ -65,7 +65,7 @@ namespace MR
           static char* regular (nifti_2_header& NH) { return nullptr; }
         };
 
-        const vector<std::string> suffixes { ".nii", ".img" };
+        const std::vector<std::string> suffixes { ".nii", ".img" };
       }
 
 
@@ -387,7 +387,7 @@ namespace MR
 
           bool is_BE = H.datatype().is_big_endian();
 
-          vector<size_t> axes;
+          std::vector<size_t> axes;
           auto M = File::NIfTI::adjust_transform (H, axes);
 
 
@@ -582,7 +582,7 @@ namespace MR
 
 
 
-      void axes_on_write (const Header& H, vector<size_t>& order, vector<bool>& flip)
+      void axes_on_write (const Header& H, std::vector<size_t>& order, std::vector<bool>& flip)
       {
         Stride::List strides = Stride::get (H);
         strides.resize (3);
@@ -593,9 +593,9 @@ namespace MR
 
 
 
-      transform_type adjust_transform (const Header& H, vector<size_t>& axes)
+      transform_type adjust_transform (const Header& H, std::vector<size_t>& axes)
       {
-        vector<bool> flip;
+        std::vector<bool> flip;
         axes_on_write (H, axes, flip);
 
         if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 &&
@@ -624,7 +624,7 @@ namespace MR
 
 
 
-      bool check (int VERSION, Header& H, const size_t num_axes, const vector<std::string>& suffixes)
+      bool check (int VERSION, Header& H, const size_t num_axes, const std::vector<std::string>& suffixes)
       {
         if (!Path::has_suffix (H.name(), suffixes))
           return false;

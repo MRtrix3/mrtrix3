@@ -28,7 +28,7 @@ namespace MR {
       class Study;
       class Image;
 
-      class Series : public vector<std::shared_ptr<Image>> { 
+      class Series : public std::vector<std::shared_ptr<Image>> { 
         public:
           Series (Study* parent, const std::string& series_name, size_t series_number, const std::string& image_type,
               const std::string& series_ref_UID, const std::string& series_modality,
@@ -51,7 +51,7 @@ namespace MR {
             }
           }
 
-          vector<int> count () const;
+          std::vector<int> count () const;
           bool operator< (const Series& s) const {
             if (number != s.number)
               return number < s.number;

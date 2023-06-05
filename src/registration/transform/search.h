@@ -235,7 +235,7 @@ namespace MR
           private:
             FORCE_INLINE ParamType get_parameters () {
               // create resized midway image
-              // vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
+              // std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
               // {
               //   Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_1 = ;
               //   Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_2 = local_trafo.get_transform_half();
@@ -244,7 +244,7 @@ namespace MR
               // }
               // auto padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0);
               // int subsample = 1;
-              // vector<Header> headers;
+              // std::vector<Header> headers;
               // headers.push_back (Header (im1));
               // headers.push_back (Header (im2));
               midway_image_header = compute_minimum_average_header (im1, im2, local_trafo.get_transform_half_inverse(), local_trafo.get_transform_half());
@@ -330,10 +330,10 @@ namespace MR
             transform_type best_trafo;
             Header midway_image_header;
             default_type min_cost;
-            vector<default_type> vec_cost;
-            vector<size_t> vec_overlap;
+            std::vector<default_type> vec_cost;
+            std::vector<size_t> vec_overlap;
             size_t global_search_iterations;
-            vector<default_type> rot_angles;
+            std::vector<default_type> rot_angles;
             size_t local_search_directions;
             default_type image_scale_factor;
             bool global_search;
@@ -343,7 +343,7 @@ namespace MR
             Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el;
             Eigen::Matrix<default_type, Eigen::Dynamic, 3> xyz;
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> overlap_it, cost_it;
-            vector<transform_type> trafo_it;
+            std::vector<transform_type> trafo_it;
           };
     } // namespace RotationSearch
   }

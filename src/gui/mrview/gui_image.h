@@ -63,7 +63,7 @@ namespace MR
 
         protected:
           GL::Texture texture2D[3];
-          vector<ssize_t> tex_positions;
+          std::vector<ssize_t> tex_positions;
 
       };
 
@@ -89,7 +89,7 @@ namespace MR
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
           const transform_type& transform() const { return image.transform(); }
-          const vector<std::string>& comments() const { return _comments; }
+          const std::vector<std::string>& comments() const { return _comments; }
 
           void reset_windowing (const int, const bool);
 
@@ -113,7 +113,7 @@ namespace MR
           void lookup_texture_4D_cache ();
           void update_texture_4D_cache ();
 
-          vector<std::string> _comments;
+          std::vector<std::string> _comments;
 
       };
 

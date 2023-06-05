@@ -63,7 +63,7 @@ namespace MR
       class Shuffler
       { 
         public:
-          typedef vector<size_t> PermuteLabels;
+          typedef std::vector<size_t> PermuteLabels;
           enum class error_t { EE, ISE, BOTH };
 
           // First version reads command-line options in order to determine parameters prior to running initialise();
@@ -98,8 +98,8 @@ namespace MR
 
         private:
           const size_t rows;
-          vector<PermuteLabels> permutations;
-          vector<BitSet> signflips;
+          std::vector<PermuteLabels> permutations;
+          std::vector<BitSet> signflips;
           size_t nshuffles, counter;
           std::unique_ptr<ProgressBar> progress;
 
@@ -149,7 +149,7 @@ namespace MR
                                        const index_array_type& blocks);
 
 
-          vector<vector<size_t>> indices2blocks (const index_array_type&) const;
+          std::vector<std::vector<size_t>> indices2blocks (const index_array_type&) const;
 
       };
 

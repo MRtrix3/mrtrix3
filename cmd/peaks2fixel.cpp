@@ -49,10 +49,10 @@ void usage ()
 
 
 
-vector<Eigen::Vector3d> get (Image<float>& data)
+std::vector<Eigen::Vector3d> get (Image<float>& data)
 {
   data.index(3) = 0;
-  vector<Eigen::Vector3d> result;
+  std::vector<Eigen::Vector3d> result;
   while (data.index(3) < data.size(3)) {
     Eigen::Vector3d direction;
     for (size_t axis = 0; axis != 3; ++axis) {

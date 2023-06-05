@@ -132,7 +132,7 @@ public:
   using MatrixType = Eigen::Matrix<F, Eigen::Dynamic, Eigen::Dynamic>;
   using SValsType = Eigen::VectorXd;
 
-  DenoisingFunctor (int ndwi, const vector<uint32_t>& extent,
+  DenoisingFunctor (int ndwi, const std::vector<uint32_t>& extent,
                     Image<bool>& mask, Image<real_type>& noise,
                     Image<uint16_t>& rank, bool exp1)
     : extent {{extent[0]/2, extent[1]/2, extent[2]/2}},
@@ -268,7 +268,7 @@ private:
 
 template <typename T>
 void process_image (Header& data, Image<bool>& mask, Image<real_type>& noise, Image<uint16_t>& rank,
-                    const std::string& output_name, const vector<uint32_t>& extent, bool exp1)
+                    const std::string& output_name, const std::vector<uint32_t>& extent, bool exp1)
   {
     auto input = data.get_image<T>().with_direct_io(3);
     // create output
@@ -297,7 +297,7 @@ void run ()
   }
 
   opt = get_options("extent");
-  vector<uint32_t> extent;
+  std::vector<uint32_t> extent;
   if (opt.size()) {
     extent = parse_ints<uint32_t> (opt[0][0]);
     if (extent.size() == 1)

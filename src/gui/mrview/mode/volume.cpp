@@ -64,10 +64,10 @@ namespace MR
 
         std::string Volume::Shader::fragment_shader_source (const Displayable& object)
         {
-          vector< std::pair<GL::vec4,bool> > clip = mode.get_active_clip_planes();
+          std::vector< std::pair<GL::vec4,bool> > clip = mode.get_active_clip_planes();
           const bool AND = mode.get_clipintersectionmodestate();
           std::string clip_color_spec = File::Config::get ("MRViewClipPlaneColour");
-          vector<float> clip_color = { 1.0, 0.0, 0.0, 0.1 };
+          std::vector<float> clip_color = { 1.0, 0.0, 0.0, 0.1 };
           if (clip_color_spec.size()) {
             auto colour = parse_floats (clip_color_spec);
             if (colour.size() != 4)
@@ -481,7 +481,7 @@ namespace MR
           GL_CHECK_ERROR;
           gl::Uniform1i (gl::GetUniformLocation (volume_shader, "depth_sampler"), 1);
 
-          vector< std::pair<GL::vec4,bool> > clip = get_active_clip_planes();
+          std::vector< std::pair<GL::vec4,bool> > clip = get_active_clip_planes();
           GL_CHECK_ERROR;
 
           for (size_t n = 0; n < clip.size(); ++n) {
@@ -542,16 +542,16 @@ namespace MR
           return dynamic_cast<Tool::View*> (dock->tool);
         }
 
-        inline vector< std::pair<GL::vec4,bool> > Volume::get_active_clip_planes () const
+        inline std::vector< std::pair<GL::vec4,bool> > Volume::get_active_clip_planes () const
         {
           Tool::View* view = get_view_tool();
-          return view ? view->get_active_clip_planes() : vector< std::pair<GL::vec4,bool> >();
+          return view ? view->get_active_clip_planes() : std::vector< std::pair<GL::vec4,bool> >();
         }
 
-        inline vector<GL::vec4*> Volume::get_clip_planes_to_be_edited () const
+        inline std::vector<GL::vec4*> Volume::get_clip_planes_to_be_edited () const
         {
           Tool::View* view = get_view_tool();
-          return view ? view->get_clip_planes_to_be_edited() : vector<GL::vec4*>();
+          return view ? view->get_clip_planes_to_be_edited() : std::vector<GL::vec4*>();
         }
 
         inline bool Volume::get_cliphighlightstate () const

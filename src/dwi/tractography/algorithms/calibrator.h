@@ -32,10 +32,10 @@ namespace MR {
 
       using namespace MR::DWI::Tractography::Tracking;
 
-      FORCE_INLINE vector<Eigen::Vector3f> direction_grid (float max_angle, float spacing)
+      FORCE_INLINE std::vector<Eigen::Vector3f> direction_grid (float max_angle, float spacing)
       {
         const float maxR = Math::pow2 (max_angle / spacing);
-        vector<Eigen::Vector3f> list;
+        std::vector<Eigen::Vector3f> list;
         ssize_t extent = std::ceil (max_angle / spacing);
 
         for (ssize_t i = -extent; i <= extent; ++i) {
@@ -69,7 +69,7 @@ namespace MR {
           const float sqrt3 = std::sqrt (3.0);
           const float max_angle = std::isfinite (method.S.max_angle_ho) ? method.S.max_angle_ho : method.S.max_angle_1o;
 
-          vector<Pair> amps;
+          std::vector<Pair> amps;
           for (float el = 0.0; el < max_angle; el += 0.001) {
             amps.push_back (Pair (el, calibrate_func (el)));
             if (!std::isfinite (amps.back().amp) || amps.back().amp <= 0.0) break;

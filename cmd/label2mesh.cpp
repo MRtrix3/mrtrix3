@@ -68,7 +68,7 @@ void run ()
 
   using voxel_corner_t = Eigen::Array<int, 3, 1>;
 
-  vector<voxel_corner_t> lower_corners, upper_corners;
+  std::vector<voxel_corner_t> lower_corners, upper_corners;
   {
     for (auto i = Loop ("Importing label image", labels) (labels); i; ++i) {
       const uint32_t index = labels.value();
@@ -92,7 +92,7 @@ void run ()
   meshes[0].set_name ("none");
   const bool blocky = get_options ("blocky").size();
 
-  vector<uint32_t> missing_nodes;
+  std::vector<uint32_t> missing_nodes;
   for (uint32_t i = 1; i != upper_corners.size(); ++i) {
     if (upper_corners[i][0] < 0)
       missing_nodes.push_back (i);
@@ -111,7 +111,7 @@ void run ()
     auto worker = [&] (const size_t& in)
     {
       meshes[in].set_name (str(in));
-      vector<int> from, dimensions;
+      std::vector<int> from, dimensions;
       for (size_t axis = 0; axis != 3; ++axis) {
         from.push_back (lower_corners[in][axis]);
         dimensions.push_back (upper_corners[in][axis] - lower_corners[in][axis] + 1);

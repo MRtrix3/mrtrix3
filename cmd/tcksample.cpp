@@ -166,7 +166,7 @@ class SamplerNonPrecise
       } else {
         if (statistic == MEDIAN) {
           // Don't bother with a weighted median here
-          vector<value_type> data;
+          std::vector<value_type> data;
           data.assign (values.data(), values.data() + values.size());
           out.second = Math::median (data);
         } else if (statistic == MIN) {
@@ -260,7 +260,7 @@ class SamplerPrecise
             bool operator< (const WeightSort& that) const { return value < that.value; }
             value_type value, length;
         };
-        vector<WeightSort> data;
+        std::vector<WeightSort> data;
         for (const auto& v : voxels) {
           assign_pos_of (v).to (image);
           data.push_back (WeightSort (v, (image.value() * get_tdi_multiplier (v))));

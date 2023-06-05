@@ -41,7 +41,7 @@ namespace MR
     public:
       NeighbourhoodIterator() = delete;
       template <class IteratorType>
-        NeighbourhoodIterator (const IteratorType& iter, const vector<size_t>& extent) :
+        NeighbourhoodIterator (const IteratorType& iter, const std::vector<size_t>& extent) :
           dim (iter.ndim()),
           offset (iter.ndim()),
           // pos (iter.ndim()),
@@ -108,7 +108,7 @@ namespace MR
 
 
     private:
-      vector<ssize_t> dim, offset, pos_orig, ext;
+      std::vector<ssize_t> dim, offset, pos_orig, ext;
       Eigen::Matrix< ssize_t, 1, Eigen::Dynamic > pos;
       bool has_next_;
 

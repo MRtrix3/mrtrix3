@@ -79,7 +79,7 @@ namespace MR {
           const double Fs;
           const double reg_tik, reg_tv;
 
-          vector<Fixel> fixels;
+          std::vector<Fixel> fixels;
 
       };
 

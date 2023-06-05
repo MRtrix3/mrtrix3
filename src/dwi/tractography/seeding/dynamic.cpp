@@ -274,7 +274,7 @@ namespace MR
       {
         static std::mutex mutex;
         std::lock_guard<std::mutex> lock (mutex);
-        vector< Eigen::Vector3f > tck;
+        std::vector< Eigen::Vector3f > tck;
         tck.push_back (p);
         seed_output (tck);
       }

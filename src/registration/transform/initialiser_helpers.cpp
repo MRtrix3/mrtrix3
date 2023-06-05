@@ -49,7 +49,7 @@ namespace MR
           eigenvals.resize(eval.size());
 
           // sort eigenvectors by eigenvalue, largest first
-          vector<std::pair<default_type, ssize_t>> eval_idx_vec;
+          std::vector<std::pair<default_type, ssize_t>> eval_idx_vec;
           for(ssize_t i = 0; i < eval.size(); ++i ) {
               eval_idx_vec.emplace_back(eval[i], i);
           }
@@ -70,7 +70,7 @@ namespace MR
                                     const Eigen::Matrix<default_type, 3, 1>& centre,
                                     Eigen::VectorXd& weighted_m,
                                     Eigen::VectorXd& weighted_mu,
-                                    const vector<MultiContrastSetting>& contrast_settings) :
+                                    const std::vector<MultiContrastSetting>& contrast_settings) :
               transform (image), mask (mask),
               centre (centre),
               global_m (weighted_m), global_mu (weighted_mu) {
@@ -141,8 +141,8 @@ namespace MR
             Eigen::VectorXd& global_mu;
             Eigen::VectorXd local_m;
             Eigen::VectorXd local_mu;
-            vector<size_t> start_vol;
-            vector<default_type> weight;
+            std::vector<size_t> start_vol;
+            std::vector<default_type> weight;
             Eigen::Vector3d voxel_pos, scanner_pos;
           };
 
@@ -221,7 +221,7 @@ namespace MR
             const MaskType& mask,
             default_type& weighted_mass,
             Eigen::Vector3d& weighted_centre_of_mass,
-            const vector<MultiContrastSetting>& contrast_settings) :
+            const std::vector<MultiContrastSetting>& contrast_settings) :
             transform (image), mask (mask), mass (0.0), global_mass (weighted_mass), global_centre_of_mass (weighted_centre_of_mass) {
               centre_of_mass.setZero();
               start_vol.resize (std::max(contrast_settings.size(), size_t(1)), 0);
@@ -265,15 +265,15 @@ namespace MR
           default_type& global_mass;
           Eigen::Vector3d& global_centre_of_mass;
           Eigen::Vector3d centre_of_mass;
-          vector<size_t> start_vol;
-          vector<default_type> weight;
+          std::vector<size_t> start_vol;
+          std::vector<default_type> weight;
           Eigen::Vector3d voxel_pos, scanner;
         };
 
         void get_centre_of_mass (Image<default_type>& im,
                                  Image<default_type>& mask,
                                  Eigen::Vector3d& centre_of_mass,
-                                 const vector<MultiContrastSetting>& contrast_settings) {
+                                 const std::vector<MultiContrastSetting>& contrast_settings) {
           centre_of_mass.setZero();
           default_type mass (0.0);
 
@@ -292,7 +292,7 @@ namespace MR
           Image<default_type>& mask2,
           Registration::Transform::Base& transform,
           Registration::Transform::Init::LinearInitialisationParams& init,
-          const vector<MultiContrastSetting>& contrast_settings) {
+          const std::vector<MultiContrastSetting>& contrast_settings) {
 
           CONSOLE ("searching for best rotation");
           Registration::Metric::MeanSquaredNoGradient metric; // replace with CrossCorrelationNoGradient?
@@ -315,7 +315,7 @@ namespace MR
                                           Image<default_type>& mask2,
                                           Registration::Transform::Base& transform,
                                           Registration::Transform::Init::LinearInitialisationParams& init,
-                                          const vector<MultiContrastSetting>& contrast_settings) {
+                                          const std::vector<MultiContrastSetting>& contrast_settings) {
 
           CONSOLE ("initialising translation and centre of rotation using centre of mass");
           Image<default_type> bogus_mask;

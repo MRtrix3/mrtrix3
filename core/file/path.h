@@ -140,7 +140,7 @@ namespace MR
                           [&] (const std::string& suffix) { return has_suffix (name, suffix); });
     }
 
-    inline bool has_suffix (const std::string &name, const vector<std::string> &suffix_list)
+    inline bool has_suffix (const std::string &name, const std::vector<std::string> &suffix_list)
     {
       return std::any_of (suffix_list.begin(),
                           suffix_list.end(),

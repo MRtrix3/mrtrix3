@@ -148,7 +148,7 @@ namespace MR
         for (KeyValues::const_iterator i = P.begin(); i != P.end(); ++i)
           stream << "[ " << i->first << ": " << i->second << " ], ";
         stream << "comments: ";
-        for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
+        for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
           stream << "\"" << *i << "\", ";
         return (stream);
       }

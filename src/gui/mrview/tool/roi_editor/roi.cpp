@@ -296,10 +296,10 @@ namespace MR
 
         void ROI::open_slot ()
         {
-          vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open", &current_folder);
+          std::vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open", &current_folder);
           if (names.empty())
             return;
-          vector<std::unique_ptr<MR::Header>> list;
+          std::vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < names.size(); ++n)
             list.push_back (make_unique<MR::Header> (MR::Header::open (names[n])));
 
@@ -317,7 +317,7 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            vector<std::unique_ptr<MR::Header>> list;
+            std::vector<std::unique_ptr<MR::Header>> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
               try {
@@ -341,7 +341,7 @@ namespace MR
 
         void ROI::save (ROI_Item* roi)
         {
-          vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
+          std::vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
           {
             GL::Context::Grab context;
             GL::assert_context_is_current();
@@ -399,7 +399,7 @@ namespace MR
 
 
 
-        void ROI::load (vector<std::unique_ptr<MR::Header>>& list)
+        void ROI::load (std::vector<std::unique_ptr<MR::Header>>& list)
         {
           list_model->load (list);
           list_view->selectionModel()->clear();
@@ -902,7 +902,7 @@ namespace MR
         bool ROI::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("roi.load")) {
-            vector<std::unique_ptr<MR::Header>> list;
+            std::vector<std::unique_ptr<MR::Header>> list;
             try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             load (list);

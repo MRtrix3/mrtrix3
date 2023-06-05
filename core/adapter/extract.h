@@ -38,7 +38,7 @@ namespace MR
         using base_type::parent;
 
 
-        Extract1D (const ImageType& original, const size_t axis, const vector<uint32_t>& indices) :
+        Extract1D (const ImageType& original, const size_t axis, const std::vector<uint32_t>& indices) :
           base_type (original),
           extract_axis (axis),
           indices (indices),
@@ -93,7 +93,7 @@ namespace MR
 
       private:
         const size_t extract_axis;
-        vector<uint32_t> indices;
+        std::vector<uint32_t> indices;
         const ssize_t nsize;
         transform_type trans;
         ssize_t current_pos;
@@ -123,7 +123,7 @@ namespace MR
         using base_type::parent;
 
 
-        Extract (const ImageType& original, const vector<vector<uint32_t>>& indices) :
+        Extract (const ImageType& original, const std::vector<std::vector<uint32_t>>& indices) :
           base_type (original),
           current_pos (ndim()),
           indices (indices),
@@ -163,9 +163,9 @@ namespace MR
         }
 
       private:
-        vector<ssize_t> current_pos;
-        vector<vector<uint32_t> > indices;
-        vector<ssize_t> sizes;
+        std::vector<ssize_t> current_pos;
+        std::vector<std::vector<uint32_t> > indices;
+        std::vector<ssize_t> sizes;
         transform_type trans;
     };
 

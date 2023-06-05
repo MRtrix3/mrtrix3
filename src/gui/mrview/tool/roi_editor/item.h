@@ -74,7 +74,7 @@ namespace MR
             float min_brush_size, max_brush_size, brush_size;
 
           private:
-            vector<ROI_UndoEntry> undo_list;
+            std::vector<ROI_UndoEntry> undo_list;
             int current_undo;
 
             static int number_of_undos;

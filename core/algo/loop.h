@@ -136,7 +136,7 @@ namespace MR
    * following example:
    * \code
    * float value = 0.0;
-   * vector<size_t> order = { 1, 0, 2 };
+   * std::vector<size_t> order = { 1, 0, 2 };
    *
    * LoopInOrder loop (vox, order);
    * for (auto i = loop.run (vox); i; ++i)
@@ -298,16 +298,16 @@ namespace MR
 
 
   struct LoopAlongDynamicAxes { 
-    const vector<size_t> axes;
+    const std::vector<size_t> axes;
 
     template <class... ImageType>
       struct Run { 
-        const vector<size_t> axes;
+        const std::vector<size_t> axes;
         const std::tuple<ImageType&...> vox;
         const size_t from;
         const ssize_t size0;
         bool ok;
-        FORCE_INLINE Run (const vector<size_t>& axes, const std::tuple<ImageType&...>& vox) :
+        FORCE_INLINE Run (const std::vector<size_t>& axes, const std::tuple<ImageType&...>& vox) :
           axes (axes), vox (vox), from (axes[0]), size0 (std::get<0>(vox).size(from)), ok (true) {
             for (auto axis : axes)
               MR::apply (set_pos (axis, 0), vox);
@@ -337,13 +337,13 @@ namespace MR
 
   struct LoopAlongDynamicAxesProgress : public LoopAlongDynamicAxes { 
       const std::string text;
-      LoopAlongDynamicAxesProgress (const std::string& text, const vector<size_t>& axes) :
+      LoopAlongDynamicAxesProgress (const std::string& text, const std::vector<size_t>& axes) :
         LoopAlongDynamicAxes ({ axes }), text (text) { }
 
       template <class... ImageType>
         struct Run : public LoopAlongDynamicAxes::Run<ImageType...> { 
           MR::ProgressBar progress;
-          FORCE_INLINE Run (const std::string& text, const vector<size_t>& axes, const std::tuple<ImageType&...>& vox) :
+          FORCE_INLINE Run (const std::string& text, const std::vector<size_t>& axes, const std::tuple<ImageType&...>& vox) :
             LoopAlongDynamicAxes::Run<ImageType...> (axes, vox), progress (text, MR::voxel_count (std::get<0>(vox), axes)) { }
           FORCE_INLINE void operator++() { LoopAlongDynamicAxes::Run<ImageType...>::operator++(); ++progress; }
           FORCE_INLINE void operator++(int) { operator++(); }
@@ -380,11 +380,11 @@ namespace MR
     { return { progress_message, axis_from, axis_to }; }
 
   FORCE_INLINE LoopAlongDynamicAxes
-    Loop (const vector<size_t>& axes)
+    Loop (const std::vector<size_t>& axes)
     { return { axes }; }
 
   FORCE_INLINE LoopAlongDynamicAxesProgress
-    Loop (const std::string& progress_message, const vector<size_t>& axes)
+    Loop (const std::string& progress_message, const std::vector<size_t>& axes)
     { return { progress_message, axes }; }
 
   template <class ImageType> FORCE_INLINE LoopAlongDynamicAxes

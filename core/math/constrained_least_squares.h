@@ -362,7 +362,7 @@ namespace MR
             const Problem<value_type>& P;
             matrix_type BtB, B;
             vector_type y_u, c, c_u, lambda, lambda_prev, l;
-            vector<bool> active;
+            std::vector<bool> active;
         };
 
 

@@ -36,7 +36,7 @@ namespace MR
         using base_type::size;
         using base_type::parent;
 
-        PermuteAxes (const ImageType& original, const vector<int>& axes) :
+        PermuteAxes (const ImageType& original, const std::vector<int>& axes) :
           base_type (original),
             axes_ (axes) {
               for (int i = 0; i < static_cast<int> (parent().ndim()); ++i) {
@@ -84,8 +84,8 @@ next_axis:
           }
 
         private:
-          vector<int> axes_;
-          vector<size_t> non_existent_axes;
+          std::vector<int> axes_;
+          std::vector<size_t> non_existent_axes;
 
       };
 

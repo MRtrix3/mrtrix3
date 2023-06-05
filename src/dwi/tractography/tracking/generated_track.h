@@ -34,13 +34,13 @@ namespace MR
 
 
 
-        class GeneratedTrack : public vector<Eigen::Vector3f>
+        class GeneratedTrack : public std::vector<Eigen::Vector3f>
         { 
 
 
           public:
 
-            using BaseType = vector<Eigen::Vector3f>;
+            using BaseType = std::vector<Eigen::Vector3f>;
 
             enum class status_t { INVALID, SEED_REJECTED, TRACK_REJECTED, ACCEPTED };
 

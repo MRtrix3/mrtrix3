@@ -24,9 +24,9 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      vector<std::shared_ptr<Series>> select_cmdline (const Tree& tree)
+      std::vector<std::shared_ptr<Series>> select_cmdline (const Tree& tree)
       {
-        vector<std::shared_ptr<Series>> series;
+        std::vector<std::shared_ptr<Series>> series;
 
         if (tree.size() == 0)
           throw Exception ("DICOM tree its empty");
@@ -55,7 +55,7 @@ namespace MR {
 
           // select using environment variables:
 
-          vector<std::shared_ptr<Patient>> patient;
+          std::vector<std::shared_ptr<Patient>> patient;
           for (size_t i = 0; i < tree.size(); i++) {
             if ( (!patient_from_env || match (patient_from_env, tree[i]->name, true)) &&
                  (!patid_from_env || match (patid_from_env, tree[i]->ID, true)) )
@@ -66,7 +66,7 @@ namespace MR {
           if (patient.size() > 1)
             throw Exception ("too many matching patients in DICOM dataset \"" + tree.description + "\"");
 
-          vector<std::shared_ptr<Study>> study;
+          std::vector<std::shared_ptr<Study>> study;
           for (size_t i = 0; i < patient[0]->size(); i++) {
             if (!study_from_env || match (study_from_env, (*patient[0])[i]->name, true))
               study.push_back ((*patient[0])[i]);
@@ -191,7 +191,7 @@ namespace MR {
             if (buf[0] == 'q' || buf[0] == 'Q')
               throw CancelException();
             if (isdigit (buf[0])) {
-              vector<uint32_t> seq;
+              std::vector<uint32_t> seq;
               try {
                 seq = parse_ints<uint32_t> (buf);
                 for (size_t i = 0; i < seq.size(); i++) {
@@ -217,7 +217,7 @@ namespace MR {
 
 
 
-      vector<std::shared_ptr<Series>> (*select_func) (const Tree& tree) = select_cmdline;
+      std::vector<std::shared_ptr<Series>> (*select_func) (const Tree& tree) = select_cmdline;
 
 
 

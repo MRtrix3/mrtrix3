@@ -52,10 +52,10 @@ using value_type = double;
 
 
 
-vector<size_t> optimise (const Eigen::MatrixXd& directions, const size_t first_volume)
+std::vector<size_t> optimise (const Eigen::MatrixXd& directions, const size_t first_volume)
 {
-  vector<size_t> indices (1, first_volume);
-  vector<size_t> remaining;
+  std::vector<size_t> indices (1, first_volume);
+  std::vector<size_t> remaining;
   for (size_t n = 0; n < size_t(directions.rows()); ++n)
     if (n != indices[0])
       remaining.push_back (n);
@@ -88,7 +88,7 @@ vector<size_t> optimise (const Eigen::MatrixXd& directions, const size_t first_v
 
 
 
-value_type calc_cost (const Eigen::MatrixXd& directions, const vector<size_t>& order)
+value_type calc_cost (const Eigen::MatrixXd& directions, const std::vector<size_t>& order)
 {
   const size_t start = Math::SH::NforL (2);
   if (size_t(directions.rows()) <= start)
@@ -127,10 +127,10 @@ void run ()
   }
 
   value_type min_cost = std::numeric_limits<value_type>::infinity();
-  vector<size_t> best_order;
+  std::vector<size_t> best_order;
   ProgressBar progress ("Determining best reordering", directions.rows());
   for (size_t first_volume = 0; first_volume != last_candidate_first_volume; ++first_volume) {
-    const vector<size_t> order = optimise (directions, first_volume);
+    const std::vector<size_t> order = optimise (directions, first_volume);
     const value_type cost = calc_cost (directions, order);
     if (cost < min_cost) {
       min_cost = cost;

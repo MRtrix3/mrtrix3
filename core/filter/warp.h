@@ -67,7 +67,7 @@ namespace MR
           ImageTypeDestination& destination,
           WarpType& warp,
           const typename ImageTypeDestination::value_type value_when_out_of_bounds = Interpolator<ImageTypeSource>::default_out_of_bounds_value(),
-          const vector<uint32_t> oversample = Adapter::AutoOverSample,
+          const std::vector<uint32_t> oversample = Adapter::AutoOverSample,
           const bool jacobian_modulate = false )
       {
 

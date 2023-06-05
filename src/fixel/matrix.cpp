@@ -38,7 +38,7 @@ namespace MR
 
 
 
-      void InitFixel::add (const vector<index_type>& indices)
+      void InitFixel::add (const std::vector<index_type>& indices)
       {
         if ((*this).empty()) {
           (*this).reserve (indices.size());
@@ -144,7 +144,7 @@ namespace MR
                 angular_threshold_dp (std::cos (angular_threshold * (Math::pi/180.0))) { }
 
             bool operator() (const DWI::Tractography::Streamline<>& tck,
-                             vector<index_type>& out) const
+                             std::vector<index_type>& out) const
             {
               using direction_type = Eigen::Vector3d;
               using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
@@ -210,10 +210,10 @@ namespace MR
         Thread::run_queue (loader,
                            Thread::batch (DWI::Tractography::Streamline<float>()),
                            track_processor,
-                           Thread::batch (vector<index_type>()),
+                           Thread::batch (std::vector<index_type>()),
                            // Inline lambda function for receiving streamline fixel visitations and
                            //   updating the connectivity matrix
-                           [&] (const vector<index_type>& fixels)
+                           [&] (const std::vector<index_type>& fixels)
                            {
                              try {
                                for (auto f : fixels)

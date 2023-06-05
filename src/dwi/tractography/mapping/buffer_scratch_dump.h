@@ -99,7 +99,7 @@ namespace MR {
             for (const auto& i : H.keyval())
               out_header << "\n" << i.first << ": " << i.second;
 
-            for (vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
+            for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
               out_header << "\ncomments: " << *i;
 
 

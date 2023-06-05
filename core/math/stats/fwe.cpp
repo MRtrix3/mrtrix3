@@ -36,7 +36,7 @@ namespace MR
         assert (null_distributions.cols() == 1 || null_distributions.cols() == statistics.cols());
         matrix_type pvalues (statistics.rows(), statistics.cols());
 
-        auto s2p = [] (const vector<value_type>& null_dist, const matrix_type::ConstColXpr in, matrix_type::ColXpr out)
+        auto s2p = [] (const std::vector<value_type>& null_dist, const matrix_type::ConstColXpr in, matrix_type::ColXpr out)
         {
           for (ssize_t element = 0; element != in.size(); ++element) {
             if (in[element] > 0.0) {
@@ -56,7 +56,7 @@ namespace MR
 
         if (null_distributions.cols() == 1) { // strong fwe control
 
-          vector<value_type> sorted_null_dist;
+          std::vector<value_type> sorted_null_dist;
           sorted_null_dist.reserve (null_distributions.rows());
           for (ssize_t shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
             sorted_null_dist.push_back (null_distributions (shuffle, 0));
@@ -67,7 +67,7 @@ namespace MR
         } else { // weak fwe control
 
           for (ssize_t hypothesis = 0; hypothesis != statistics.cols(); ++hypothesis) {
-            vector<value_type> sorted_null_dist;
+            std::vector<value_type> sorted_null_dist;
             sorted_null_dist.reserve (null_distributions.rows());
             for (ssize_t shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
               sorted_null_dist.push_back (null_distributions (shuffle, hypothesis));

@@ -26,7 +26,7 @@ namespace MR
     {
       if (event->type() == QEvent::FileOpen) {
         QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
-        vector<std::unique_ptr<MR::Header>> list;
+        std::vector<std::unique_ptr<MR::Header>> list;
         try {
           list.push_back (make_unique<MR::Header> (MR::Header::open (openEvent->file().toUtf8().data())));
         }

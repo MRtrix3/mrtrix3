@@ -35,11 +35,11 @@ void usage ()
 }
 
 
-vector<std::string> failures;
+std::vector<std::string> failures;
 
 
 template <class T>
-void test (const vector<std::string>& strings, const vector<bool>& results)
+void test (const std::vector<std::string>& strings, const std::vector<bool>& results)
 {
   for (size_t i = 0; i != strings.size(); ++i) {
     try {
@@ -57,7 +57,7 @@ void test (const vector<std::string>& strings, const vector<bool>& results)
 
 void run ()
 {
-  const vector<std::string> data = {
+  const std::vector<std::string> data = {
     "0",
     "1",
     "2",
@@ -111,7 +111,7 @@ void run ()
     "inf+infi",
     " -inf+-nani " };
 
-  const vector<bool> bool_tests = {
+  const std::vector<bool> bool_tests = {
     true,  // "0"
     true,  // "1"
     true,  // "2"
@@ -166,7 +166,7 @@ void run ()
     false  // " -inf+-nani "
   };
 
-  const vector<bool> int_tests = {
+  const std::vector<bool> int_tests = {
       true,  // "0"
       true,  // "1"
       true,  // "2"
@@ -221,7 +221,7 @@ void run ()
       false  // " -inf+-nani "
   };
 
-  const vector<bool> float_tests = {
+  const std::vector<bool> float_tests = {
       true,  // "0"
       true,  // "1"
       true,  // "2"
@@ -276,7 +276,7 @@ void run ()
       false  // " -inf+-nani "
   };
 
-  const vector<bool> complex_tests = {
+  const std::vector<bool> complex_tests = {
       true,  // "0"
       true,  // "1"
       true,  // "2"

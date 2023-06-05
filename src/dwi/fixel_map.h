@@ -79,7 +79,7 @@ namespace MR
         const ::MR::Header& header() const { return _header; }
 
       protected:
-        vector<Fixel> fixels;
+        std::vector<Fixel> fixels;
 
       private:
         const class HeaderHelper : public ::MR::Header { 

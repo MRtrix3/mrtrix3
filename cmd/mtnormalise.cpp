@@ -513,7 +513,7 @@ void run ()
   size_t max_balance_iter = DEFAULT_BALANCE_MAXITER_VALUE;
   auto opt = get_options ("niter");
   if (opt.size()) {
-    vector<size_t> num = parse_ints<size_t> (opt[0][0]);
+    std::vector<size_t> num = parse_ints<size_t> (opt[0][0]);
     if (num.size() < 1 && num.size() > 2)
       throw Exception ("unexpected number of entries provided to option \"-niter\"");
     for (auto n : num)

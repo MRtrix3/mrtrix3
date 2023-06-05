@@ -81,7 +81,7 @@ namespace MR
               im2_to_mid_linear = linear_transform.get_transform_half_inverse();
 
               INFO ("Estimating halfway space");
-              vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
+              std::vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
               // define transfomations that will be applied to the image header when the common space is calculated
               midway_image_header = compute_minimum_average_header (im1_image, im2_image, linear_transform.get_transform_half_inverse(), linear_transform.get_transform_half());
             } else {
@@ -394,12 +394,12 @@ namespace MR
             is_initialised = true;
           }
 
-          void set_max_iter (const vector<uint32_t>& maxiter) {
+          void set_max_iter (const std::vector<uint32_t>& maxiter) {
             max_iter = maxiter;
           }
 
 
-          void set_scale_factor (const vector<default_type>& scalefactor) {
+          void set_scale_factor (const std::vector<default_type>& scalefactor) {
             for (size_t level = 0; level < scalefactor.size(); ++level) {
               if (scalefactor[level] <= 0 || scalefactor[level] > 1)
                 throw Exception ("the non-linear registration scale factor for each multi-resolution level must be between 0 and 1");
@@ -407,7 +407,7 @@ namespace MR
             scale_factor = scalefactor;
           }
 
-          vector<default_type> get_scale_factor () const {
+          std::vector<default_type> get_scale_factor () const {
             return scale_factor;
           }
 
@@ -428,7 +428,7 @@ namespace MR
             disp_smoothing = voxel_fwhm;
           }
 
-          void set_lmax (const vector<uint32_t>& lmax) {
+          void set_lmax (const std::vector<uint32_t>& lmax) {
             for (size_t i = 0; i < lmax.size (); ++i)
               if (lmax[i] % 2)
                 throw Exception ("the input nonlinear lmax must be even");
@@ -436,7 +436,7 @@ namespace MR
           }
 
           // needs to be set after set_lmax
-          void set_mc_parameters (const vector<MultiContrastSetting>& mcs) {
+          void set_mc_parameters (const std::vector<MultiContrastSetting>& mcs) {
             contrasts = mcs;
           }
 
@@ -519,7 +519,7 @@ namespace MR
               throw Exception ("CC radius needs to be larger than 1");
             use_cc = true;
             INFO("Cross correlation radius: " + str(radius));
-            cc_extent = vector<size_t>(3, radius * 2 + 1);
+            cc_extent = std::vector<size_t>(3, radius * 2 + 1);
           }
 
           void set_diagnostics_image (const std::basic_string<char>& path) {
@@ -547,24 +547,24 @@ namespace MR
 
 
           bool is_initialised;
-          vector<uint32_t> max_iter;
-          vector<default_type> scale_factor;
+          std::vector<uint32_t> max_iter;
+          std::vector<default_type> scale_factor;
           default_type update_smoothing;
           default_type disp_smoothing;
           default_type gradient_step;
           Eigen::MatrixXd aPSF_directions;
           bool do_reorientation;
-          vector<uint32_t> fod_lmax;
+          std::vector<uint32_t> fod_lmax;
           bool use_cc;
           std::basic_string<char> diagnostics_image_prefix;
 
-          vector<size_t> cc_extent;
+          std::vector<size_t> cc_extent;
 
           transform_type im1_to_mid_linear;
           transform_type im2_to_mid_linear;
           Header midway_image_header;
 
-          vector<MultiContrastSetting> contrasts, stage_contrasts;
+          std::vector<MultiContrastSetting> contrasts, stage_contrasts;
 
           // Internally the warp is stored as a displacement field to enable easy smoothing near the boundaries
           std::shared_ptr<Image<default_type> > im1_to_mid_new;

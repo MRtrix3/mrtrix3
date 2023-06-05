@@ -333,9 +333,9 @@ namespace MR {
 
 
 
-      vector<int32_t> Element::get_int () const
+      std::vector<int32_t> Element::get_int () const
       {
-        vector<int32_t> V;
+        std::vector<int32_t> V;
         if (VR == VR_SL)
           for (const uint8_t* p = data; p < data + size; p += sizeof (int32_t))
             V.push_back (Raw::fetch_<int32_t> (p, is_BE));
@@ -357,9 +357,9 @@ namespace MR {
 
 
 
-      vector<uint32_t> Element::get_uint () const
+      std::vector<uint32_t> Element::get_uint () const
       {
-        vector<uint32_t> V;
+        std::vector<uint32_t> V;
         if (VR == VR_UL)
           for (const uint8_t* p = data; p < data + size; p += sizeof (uint32_t))
             V.push_back (Raw::fetch_<uint32_t> (p, is_BE));
@@ -379,9 +379,9 @@ namespace MR {
 
 
 
-      vector<default_type> Element::get_float () const
+      std::vector<default_type> Element::get_float () const
       {
-        vector<default_type> V;
+        std::vector<default_type> V;
         if (VR == VR_FD)
           for (const uint8_t* p = data; p < data + size; p += sizeof (float64))
             V.push_back (Raw::fetch_<float64> (p, is_BE));
@@ -435,7 +435,7 @@ namespace MR {
 
 
 
-      vector<std::string> Element::get_string () const
+      std::vector<std::string> Element::get_string () const
       {
         if (VR == VR_AT)
           return { printf ("%04X %04X", Raw::fetch_<uint16_t> (data, is_BE), Raw::fetch_<uint16_t> (data+2, is_BE)) };
@@ -504,7 +504,7 @@ namespace MR {
 
       namespace {
         template <class T>
-          inline void print_vec (const vector<T>& V)
+          inline void print_vec (const std::vector<T>& V)
           {
             for (const auto& entry: V)
               fprintf (stdout, "%s ", str(entry).c_str());

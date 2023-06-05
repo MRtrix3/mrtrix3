@@ -85,8 +85,8 @@ bool Matrix<T>::operator() (const Mapped_track_nodelist& in)
 {
   assert (assignments_single.empty());
   assert (assignments_pairs.empty());
-  vector<node_t> list (in.get_nodes());
-  for (vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
+  std::vector<node_t> list (in.get_nodes());
+  for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
     assert (*i < data.rows());
   }
   if (is_vector()) {
@@ -95,7 +95,7 @@ bool Matrix<T>::operator() (const Mapped_track_nodelist& in)
       inc_count (0, in.get_weight());
       list.push_back (0);
     } else {
-      for (vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n) {
+      for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n) {
         apply_data (*n, in.get_factor(), in.get_weight());
         inc_count (*n, in.get_weight());
       }
@@ -124,7 +124,7 @@ bool Matrix<T>::operator() (const Mapped_track_nodelist& in)
     } else if (in.get_track_index() < assignments_lists.size()) {
       assignments_lists[in.get_track_index()] = std::move (list);
     } else {
-      assignments_lists.resize (in.get_track_index() + 1, vector<node_t>());
+      assignments_lists.resize (in.get_track_index() + 1, std::vector<node_t>());
       assignments_lists[in.get_track_index()] = std::move (list);
     }
   }
@@ -178,7 +178,7 @@ void Matrix<T>::error_check (const std::set<node_t>& missing_nodes)
       visited[nodes.second] = true;
     }
   }
-  vector<std::string> empty_nodes;
+  std::vector<std::string> empty_nodes;
   for (node_t i = 1; i != visited.size(); ++i) {
     if (!visited[i] && missing_nodes.find (i) == missing_nodes.end())
       empty_nodes.push_back (str(i));

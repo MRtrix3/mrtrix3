@@ -35,7 +35,7 @@ void usage ()
 }
 
 
-vector<std::string> failures;
+std::vector<std::string> failures;
 
 
 

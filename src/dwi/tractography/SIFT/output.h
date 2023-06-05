@@ -231,7 +231,7 @@ namespace MR
         out << "# " << App::command_history_string << "\n";
         const default_type current_mu = mu();
         out << "#Fibre density,Track density (unscaled),Track density (scaled),Weight,\n";
-        for (typename vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
+        for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
           out << str (i->get_FOD()) << "," << str (i->get_TD()) << "," << str (i->get_TD() * current_mu) << "," << str (i->get_weight()) << ",\n";
         out.close();
       }

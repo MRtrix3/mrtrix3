@@ -208,7 +208,7 @@ void usage ()
 }
 
 void apply_warp (Image<float>& input, Image<float>& output, Image<default_type>& warp,
-  const int interp, const float out_of_bounds_value, const vector<uint32_t>& oversample, const bool jacobian_modulate = false) {
+  const int interp, const float out_of_bounds_value, const std::vector<uint32_t>& oversample, const bool jacobian_modulate = false) {
   switch (interp) {
   case 0:
     Filter::warp<Interp::Nearest> (input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
@@ -358,7 +358,7 @@ void run ()
 
   // Flip
   opt = get_options ("flip");
-  vector<int32_t> axes;
+  std::vector<int32_t> axes;
   if (opt.size()) {
     axes = parse_ints<int32_t> (opt[0][0]);
     transform_type flip;
@@ -538,7 +538,7 @@ void run ()
   }
 
   // over-sampling
-  vector<uint32_t> oversample = Adapter::AutoOverSample;
+  std::vector<uint32_t> oversample = Adapter::AutoOverSample;
   opt = get_options ("oversample");
   if (opt.size()) {
     if (!template_header.valid() && !warp)

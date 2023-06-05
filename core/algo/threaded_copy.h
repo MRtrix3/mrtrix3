@@ -43,7 +43,7 @@ namespace MR
     inline void threaded_copy (
         InputImageType& source, 
         OutputImageType& destination, 
-        const vector<size_t>& axes,
+        const std::vector<size_t>& axes,
         size_t num_axes_in_thread = 1) 
     {
       ThreadedLoop (source, axes, num_axes_in_thread)
@@ -70,7 +70,7 @@ namespace MR
         const std::string& message, 
         InputImageType& source, 
         OutputImageType& destination, 
-        const vector<size_t>& axes,
+        const std::vector<size_t>& axes,
         size_t num_axes_in_thread = 1)
     {
       ThreadedLoop (message, source, axes, num_axes_in_thread)
@@ -95,7 +95,7 @@ namespace MR
     inline void threaded_copy_with_progress (
         InputImageType& source,
         OutputImageType& destination, 
-        const vector<size_t>& axes, 
+        const std::vector<size_t>& axes, 
         size_t num_axes_in_thread = 1)
     {
       threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"",

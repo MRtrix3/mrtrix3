@@ -34,7 +34,7 @@ using MR::Math::Stats::index_array_type;
 #define ROWS size_t(6)
 #define BLOCK_INDICES 0,1,0,1,2,2 // Must increment from zero, and must be equal number in each
 enum exchange_t { NONE, WITHIN, WHOLE };
-vector<std::string> exchange_strings { "Unrestricted", "within-block", "whole-block" };
+std::vector<std::string> exchange_strings { "Unrestricted", "within-block", "whole-block" };
 
 void usage ()
 {
@@ -47,7 +47,7 @@ void usage ()
 
 void run ()
 {
-  vector<std::string> failed_tests;
+  std::vector<std::string> failed_tests;
 
   vector_type dummy_data (ROWS);
   for (ssize_t row = 0; row != ROWS; ++row)
@@ -56,7 +56,7 @@ void run ()
   index_array_type block_indices (ROWS);
   block_indices << BLOCK_INDICES;
   assert (block_indices.size() == ROWS);
-  vector<std::set<size_t>> blocks (block_indices.maxCoeff()+1);
+  std::vector<std::set<size_t>> blocks (block_indices.maxCoeff()+1);
   for (ssize_t i = 0; i != block_indices.size(); ++i)
     blocks[block_indices[i]].insert (i);
 
@@ -138,7 +138,7 @@ void run ()
   auto test_unique = [&] (Shuffler& in, const std::string& msg)
   {
     in.reset();
-    vector<Shuffle> matrices;
+    std::vector<Shuffle> matrices;
     Shuffle temp;
     bool duplicate_index = false, duplicate_data = false;
     while (in (temp)) {

@@ -117,7 +117,7 @@ namespace MR
 
         index_array_type load_variance_groups (const size_t num_inputs);
 
-        vector<Hypothesis> load_hypotheses (const std::string& file_path);
+        std::vector<Hypothesis> load_hypotheses (const std::string& file_path);
 
 
 
@@ -139,7 +139,7 @@ namespace MR
          * @return the matrix containing the output absolute effect sizes (one column of element effect sizes per contrast)
          */
         vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
-        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
+        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const std::vector<Hypothesis>& hypotheses);
 
 
 
@@ -168,7 +168,7 @@ namespace MR
          * @return the matrix containing the output standardised effect sizes (one column of element effect sizes per contrast)
          */
         vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
-        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
+        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const std::vector<Hypothesis>& hypotheses);
 
 
 
@@ -183,7 +183,7 @@ namespace MR
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+        void all_stats (const matrix_type& measurements, const matrix_type& design, const std::vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                         matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev);
 
         /*! Compute all GLM-related statistics
@@ -198,7 +198,7 @@ namespace MR
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+        void all_stats (const matrix_type& measurements, const matrix_type& design, const std::vector<CohortDataImport>& extra_columns, const std::vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                         vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev);
 
         //! @}
@@ -212,7 +212,7 @@ namespace MR
         class TestBase
         { 
           public:
-            TestBase (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
+            TestBase (const matrix_type& measurements, const matrix_type& design, const std::vector<Hypothesis>& hypotheses) :
                 y (measurements),
                 M (design),
                 c (hypotheses),
@@ -251,7 +251,7 @@ namespace MR
 
           protected:
             const matrix_type& y, M;
-            const vector<Hypothesis>& c;
+            const std::vector<Hypothesis>& c;
             std::shared_ptr<Math::Zstatistic> stat2z;
 
         };
@@ -280,7 +280,7 @@ namespace MR
              */
             TestFixedHomoscedastic (const matrix_type& measurements,
                                     const matrix_type& design,
-                                    const vector<Hypothesis>& hypotheses);
+                                    const std::vector<Hypothesis>& hypotheses);
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -291,11 +291,11 @@ namespace MR
 
           protected:
             // New classes to store information relevant to Freedman-Lane implementation
-            vector<Hypothesis::Partition> partitions;
+            std::vector<Hypothesis::Partition> partitions;
             const matrix_type pinvM;
             const matrix_type Rm;
-            vector<matrix_type> XtX;
-            vector<default_type> one_over_dof;
+            std::vector<matrix_type> XtX;
+            std::vector<default_type> one_over_dof;
 
         };
         //! @}
@@ -323,7 +323,7 @@ namespace MR
              */
             TestFixedHeteroscedastic (const matrix_type& measurements,
                                       const matrix_type& design,
-                                      const vector<Hypothesis>& hypotheses,
+                                      const std::vector<Hypothesis>& hypotheses,
                                       const index_array_type& variance_groups);
 
             size_t num_variance_groups() const { return num_vgs; }
@@ -341,7 +341,7 @@ namespace MR
             // Total number of variance groups
             const size_t num_vgs;
             // Number of inputs that are part of each variance group
-            vector<size_t> inputs_per_vg;
+            std::vector<size_t> inputs_per_vg;
             // Might as well construct this in the functor rather than here,
             //   given 1 value for each VG is computed
             vector_type Rnn_sums;
@@ -373,10 +373,10 @@ namespace MR
         class TestVariableHomoscedastic : public TestBase
         { 
           public:
-            TestVariableHomoscedastic (const vector<CohortDataImport>& importers,
+            TestVariableHomoscedastic (const std::vector<CohortDataImport>& importers,
                                        const matrix_type& measurements,
                                        const matrix_type& design,
-                                       const vector<Hypothesis>& hypotheses,
+                                       const std::vector<Hypothesis>& hypotheses,
                                        const bool nans_in_data,
                                        const bool nans_in_columns);
 
@@ -393,7 +393,7 @@ namespace MR
             size_t num_factors() const override { return M.cols() + importers.size(); }
 
           protected:
-            const vector<CohortDataImport>& importers;
+            const std::vector<CohortDataImport>& importers;
             const bool nans_in_data, nans_in_columns;
 
             void get_mask (const size_t ie, BitSet&, const matrix_type& extra_columns) const;
@@ -427,10 +427,10 @@ namespace MR
         class TestVariableHeteroscedastic : public TestVariableHomoscedastic
         { 
           public:
-            TestVariableHeteroscedastic (const vector<CohortDataImport>& importers,
+            TestVariableHeteroscedastic (const std::vector<CohortDataImport>& importers,
                                          const matrix_type& measurements,
                                          const matrix_type& design,
-                                         const vector<Hypothesis>& hypotheses,
+                                         const std::vector<Hypothesis>& hypotheses,
                                          const index_array_type& variance_groups,
                                          const bool nans_in_data,
                                          const bool nans_in_columns);

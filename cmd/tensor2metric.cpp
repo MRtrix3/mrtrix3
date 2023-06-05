@@ -153,7 +153,7 @@ class Processor {
         Image<value_type>& mk_img,
         Image<value_type>& ak_img,
         Image<value_type>& rk_img,
-        vector<uint32_t>& vals,
+        std::vector<uint32_t>& vals,
         int modulate,
         Eigen::MatrixXd mk_dirs,
         int rk_ndirs) :
@@ -355,7 +355,7 @@ class Processor {
     Image<value_type> mk_img;
     Image<value_type> ak_img;
     Image<value_type> rk_img;
-    vector<uint32_t> vals;
+    std::vector<uint32_t> vals;
     const int modulate;
     Eigen::MatrixXd mk_dirs;
     Eigen::MatrixXd mk_bmat, rk_bmat;
@@ -455,7 +455,7 @@ void run ()
     metric_count++;
   }
 
-  vector<uint32_t> vals = {1};
+  std::vector<uint32_t> vals = {1};
   opt = get_options ("num");
   if (opt.size()) {
     vals = parse_ints<uint32_t> (opt[0][0]);

@@ -474,7 +474,7 @@ namespace MR
 
 
 
-        void ODF::add_images (vector<std::string>& list, const odf_type_t mode)
+        void ODF::add_images (std::vector<std::string>& list, const odf_type_t mode)
         {
           size_t previous_size = image_list_model->rowCount();
           if (!image_list_model->add_items (list, mode,
@@ -517,7 +517,7 @@ namespace MR
 
         void ODF::sh_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_images (&window(), "Select SH-based ODF images to open", &current_folder);
+          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select SH-based ODF images to open", &current_folder);
           if (list.empty())
             return;
 
@@ -526,7 +526,7 @@ namespace MR
 
         void ODF::tensor_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_images (&window(), "Select tensor images to open", &current_folder);
+          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select tensor images to open", &current_folder);
           if (list.empty())
             return;
 
@@ -535,7 +535,7 @@ namespace MR
 
         void ODF::dixel_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_images (&window(), "Select dixel-based ODF images to open", &current_folder);
+          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select dixel-based ODF images to open", &current_folder);
           if (list.empty())
             return;
 
@@ -898,7 +898,7 @@ namespace MR
         {
           if (opt.opt->is ("odf.load_sh")) {
             try {
-              vector<std::string> list (1, opt[0]);
+              std::vector<std::string> list (1, opt[0]);
               add_images (list, odf_type_t::SH);
             }
             catch (Exception& e) {
@@ -909,7 +909,7 @@ namespace MR
 
           if (opt.opt->is ("odf.load_tensor")) {
             try {
-              vector<std::string> list (1, opt[0]);
+              std::vector<std::string> list (1, opt[0]);
               add_images (list, odf_type_t::TENSOR);
             }
             catch (Exception& e) {
@@ -920,7 +920,7 @@ namespace MR
 
           if (opt.opt->is ("odf.load_dixel")) {
             try {
-              vector<std::string> list (1, opt[0]);
+              std::vector<std::string> list (1, opt[0]);
               add_images (list, odf_type_t::DIXEL);
             }
             catch (Exception& e) {

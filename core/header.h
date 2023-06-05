@@ -214,7 +214,7 @@ namespace MR
 
       class NDimProxy {
         public:
-          NDimProxy (vector<Axis>& axes) : axes (axes) { }
+          NDimProxy (std::vector<Axis>& axes) : axes (axes) { }
           NDimProxy (NDimProxy&&) = default;
           NDimProxy (const NDimProxy&) = delete;
           NDimProxy& operator=(NDimProxy&&) = delete;
@@ -227,7 +227,7 @@ namespace MR
             return stream;
           }
         private:
-          vector<Axis>& axes;
+          std::vector<Axis>& axes;
       };
 
       //! return the number of dimensions (axes) of image
@@ -358,7 +358,7 @@ namespace MR
       friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 
     protected:
-      vector<Axis> axes_;
+      std::vector<Axis> axes_;
       transform_type transform_;
       std::string name_;
       KeyValues keyval_;
@@ -393,8 +393,8 @@ namespace MR
 
 
 
-  // Can't be a static member function due to memory alignment requirements of vector<>
-  Header concatenate (const vector<Header>& headers, const size_t axis, const bool permit_datatype_mismatch);
+  // Can't be a static member function due to memory alignment requirements of std::vector<>
+  Header concatenate (const std::vector<Header>& headers, const size_t axis, const bool permit_datatype_mismatch);
 
 
 

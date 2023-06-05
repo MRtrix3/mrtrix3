@@ -65,7 +65,7 @@ namespace MR
 
         };
 
-        vector<Vertex> vertices;
+        std::vector<Vertex> vertices;
     };
 
 

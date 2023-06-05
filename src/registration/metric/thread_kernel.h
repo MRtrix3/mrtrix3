@@ -331,7 +331,7 @@ namespace MR
       struct StochasticThreadKernel { 
         public:
           StochasticThreadKernel (
-              const vector<size_t>& inner_axes,
+              const std::vector<size_t>& inner_axes,
               const default_type density,
               const MetricType& metric,
               const ParamType& parameters,
@@ -372,7 +372,7 @@ namespace MR
               }
           }
         protected:
-          vector<size_t> inner_axes;
+          std::vector<size_t> inner_axes;
           default_type density;
           MetricType metric;
           ParamType params;

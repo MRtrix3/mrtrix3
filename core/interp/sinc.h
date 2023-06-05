@@ -158,7 +158,7 @@ namespace MR
         const size_t window_size;
         const int kernel_width;
         Math::Sinc<value_type> Sinc_x, Sinc_y, Sinc_z;
-        vector<value_type> y_values, z_values;
+        std::vector<value_type> y_values, z_values;
 
     };
 

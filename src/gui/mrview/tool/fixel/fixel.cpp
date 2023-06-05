@@ -43,7 +43,7 @@ namespace MR
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (vector<std::string>& filenames, Fixel& fixel_tool) {
+            void add_items (std::vector<std::string>& filenames, Fixel& fixel_tool) {
 
               size_t old_size = items.size();
               for (size_t i = 0, N = filenames.size(); i < N; ++i) {
@@ -344,13 +344,13 @@ namespace MR
 
         void Fixel::fixel_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_files (this, "Select fixel images to open",
+          std::vector<std::string> list = Dialog::File::get_files (this, "Select fixel images to open",
               GUI::Dialog::File::image_filter_string, &current_folder);
           add_images (list);
         }
 
 
-        void Fixel::add_images (vector<std::string> &list)
+        void Fixel::add_images (std::vector<std::string> &list)
         {
           if (list.empty())
             return;
@@ -376,7 +376,7 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            vector<std::string> list;
+            std::vector<std::string> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
                 list.push_back (urlList.at (i).path().toUtf8().constData());
@@ -853,7 +853,7 @@ namespace MR
         bool Fixel::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("fixel.load")) {
-            vector<std::string> list (1, std::string(opt[0]));
+            std::vector<std::string> list (1, std::string(opt[0]));
             try { fixel_list_model->add_items (list , *this); }
             catch (Exception& E) { E.display(); }
             return true;

@@ -158,7 +158,7 @@ void run () {
       //   convert between cfloat and cdouble...
       auto input = Image<cdouble>::open (argument[0]);
 
-      vector<size_t> axes = { 0, 1, 2 };
+      std::vector<size_t> axes = { 0, 1, 2 };
       auto opt = get_options ("axes");
       if (opt.size()) {
          axes = parse_ints<size_t> (opt[0][0]);
@@ -213,7 +213,7 @@ void run () {
       auto input = Image<float>::open (argument[0]);
       Filter::Gradient filter (input, get_options ("magnitude").size());
 
-      vector<default_type> stdev;
+      std::vector<default_type> stdev;
       auto opt = get_options ("stdev");
       if (opt.size()) {
         stdev = parse_floats (opt[0][0]);
@@ -267,7 +267,7 @@ void run () {
       if (opt.size()) {
         if (stdev_supplied)
           throw Exception ("the stdev and FWHM options are mutually exclusive.");
-        vector<default_type> stdevs = parse_floats((opt[0][0]));
+        std::vector<default_type> stdevs = parse_floats((opt[0][0]));
         for (size_t d = 0; d < stdevs.size(); ++d)
           stdevs[d] = stdevs[d] / 2.3548;  //convert FWHM to stdev
         filter.set_stdev (stdevs);

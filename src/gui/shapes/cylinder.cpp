@@ -33,8 +33,8 @@ namespace MR
     void Cylinder::LOD (const size_t level_of_detail)
     {
 
-      vector<Eigen::Vector3f> vertices, normals;
-      vector<Eigen::Array3i> indices;
+      std::vector<Eigen::Vector3f> vertices, normals;
+      std::vector<Eigen::Array3i> indices;
 
       // Want to be able to display using a single DrawElements call; not worth faffing about
       //   with combinations of GL_TRIANGLES and GL_TRIANGLE_FAN

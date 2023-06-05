@@ -59,7 +59,7 @@ class Tck2nodes_base {
       return std::make_pair (node_one, node_two);
     }
 
-    bool operator() (const Streamline<>& tck, vector<node_t>& out) const
+    bool operator() (const Streamline<>& tck, std::vector<node_t>& out) const
     {
       assert (!pair);
       Image<node_t> v (nodes);
@@ -79,7 +79,7 @@ class Tck2nodes_base {
       throw Exception ("Calling empty virtual function Tck2nodes_base::select_node()");
     }
 
-    virtual void select_nodes (const Streamline<>& tck, Image<node_t>& v, vector<node_t>& out) const {
+    virtual void select_nodes (const Streamline<>& tck, Image<node_t>& v, std::vector<node_t>& out) const {
       throw Exception ("Calling empty virtual function Tck2nodes_base::select_nodes()");
     }
 
@@ -144,7 +144,7 @@ class Tck2nodes_radial : public Tck2nodes_base {
     node_t select_node (const Tractography::Streamline<>&, Image<node_t>&, const bool) const override;
 
     void initialise_search ();
-    vector<voxel_type> radial_search;
+    std::vector<voxel_type> radial_search;
     const default_type max_dist;
     // Distances are sub-voxel from the precise streamline termination point, so the search order is imperfect.
     //   This parameter controls when to stop the radial search because no voxel within the search space can be closer
@@ -225,7 +225,7 @@ class Tck2nodes_all_voxels : public Tck2nodes_base
     ~Tck2nodes_all_voxels() { }
 
   private:
-    void select_nodes (const Streamline<>&, Image<node_t>&, vector<node_t>&) const override;
+    void select_nodes (const Streamline<>&, Image<node_t>&, std::vector<node_t>&) const override;
 
 };
 

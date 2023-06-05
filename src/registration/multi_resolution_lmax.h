@@ -33,15 +33,15 @@ namespace MR
                                                   const bool do_reorientation = false,
                                                   const uint32_t lmax = 0)
     {
-      vector<uint32_t> from (input.ndim(), 0);
-      vector<uint32_t> size (input.ndim());
+      std::vector<uint32_t> from (input.ndim(), 0);
+      std::vector<uint32_t> size (input.ndim());
       for (size_t dim = 0; dim < input.ndim(); ++dim)
         size[dim] = input.size(dim);
       if (do_reorientation)
         size[3] = Math::SH::NforL (lmax);
       Adapter::Subset<ImageType> subset (input, from, size);
       Filter::Smooth smooth_filter (subset);
-      vector<default_type> stdev(3);
+      std::vector<default_type> stdev(3);
       for (size_t dim = 0; dim < 3; ++dim)
         stdev[dim] = input.spacing(dim) / (2.0 * scale_factor);
 
@@ -60,10 +60,10 @@ namespace MR
     FORCE_INLINE ImageType multi_resolution_lmax (ImageType& input,
                                                   const default_type scale_factor,
                                                   const bool do_reorientation,
-                                                  const vector<MultiContrastSetting>& contrast,
-                                                  vector<MultiContrastSetting>* contrast_updated = nullptr)
+                                                  const std::vector<MultiContrastSetting>& contrast,
+                                                  std::vector<MultiContrastSetting>* contrast_updated = nullptr)
     {
-      vector<uint32_t> volume_indices;
+      std::vector<uint32_t> volume_indices;
       size_t start = 0;
       for (size_t ic = 0; ic < contrast.size(); ic++) {
         const auto & mc = contrast[ic];
@@ -78,7 +78,7 @@ namespace MR
       Adapter::Extract1D<ImageType> subset (input, 3, volume_indices);
 
       Filter::Smooth smooth_filter (subset);
-      vector<default_type> stdev(3);
+      std::vector<default_type> stdev(3);
       for (size_t dim = 0; dim < 3; ++dim)
         stdev[dim] = input.spacing(dim) / (2.0 * scale_factor);
 

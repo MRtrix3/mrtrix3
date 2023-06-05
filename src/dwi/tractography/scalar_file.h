@@ -209,7 +209,7 @@ namespace MR
             if (buffer_size + tck_scalar.size() > buffer_capacity)
               commit();
 
-            for (typename vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
+            for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
               assert (std::isfinite (*i));
               add_scalar (*i);
             }

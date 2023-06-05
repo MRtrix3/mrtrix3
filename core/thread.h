@@ -198,8 +198,8 @@ namespace MR
               }
             }
           protected:
-            vector<std::future<void>> threads;
-            vector<typename std::remove_reference<Functor>::type> functors;
+            std::vector<std::future<void>> threads;
+            std::vector<typename std::remove_reference<Functor>::type> functors;
 
         };
 

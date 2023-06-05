@@ -58,14 +58,14 @@ namespace MR
             }
 
         template <class HeaderType>
-        Median (const HeaderType& in, const vector<uint32_t>& extent) :
+        Median (const HeaderType& in, const std::vector<uint32_t>& extent) :
             Base (in),
             extent (extent) {
           datatype() = DataType::Float32;
         }
 
         template <class HeaderType>
-          Median (const HeaderType& in, const std::string& message, const vector<uint32_t>& extent) :
+          Median (const HeaderType& in, const std::string& message, const std::vector<uint32_t>& extent) :
             Base (in, message),
             extent (extent) {
               datatype() = DataType::Float32;
@@ -74,7 +74,7 @@ namespace MR
         //! Set the extent of median filtering neighbourhood in voxels.
         //! This must be set as a single value for all three dimensions
         //! or three values, one for each dimension. Default 3x3x3.
-        void set_extent (const vector<uint32_t>& ext) {
+        void set_extent (const std::vector<uint32_t>& ext) {
           for (size_t i = 0; i < ext.size(); ++i) {
             if (!(ext[i] & int (1)))
               throw Exception ("expected odd number for extent");
@@ -92,7 +92,7 @@ namespace MR
         }
 
     protected:
-        vector<uint32_t> extent;
+        std::vector<uint32_t> extent;
     };
     //! @}
   }

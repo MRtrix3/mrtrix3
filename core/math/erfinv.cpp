@@ -124,8 +124,8 @@ namespace MR
 
         private:
           const size_t N;
-          vector<default_type> m_Y;
-          vector<Eigen::Array<default_type, Eigen::Dynamic, 1>> m_P, m_Q;
+          std::vector<default_type> m_Y;
+          std::vector<Eigen::Array<default_type, Eigen::Dynamic, 1>> m_P, m_Q;
       };
       static const Shared shared;
 

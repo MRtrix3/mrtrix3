@@ -63,7 +63,7 @@ using value_type = float;
 
 class SConvFunctor { 
   public:
-  SConvFunctor (const vector<Eigen::MatrixXd>& responses, vector<Image<value_type>>& inputs) :
+  SConvFunctor (const std::vector<Eigen::MatrixXd>& responses, std::vector<Image<value_type>>& inputs) :
     responses (responses),
     inputs (inputs) { }
 
@@ -85,8 +85,8 @@ class SConvFunctor {
     }
 
   protected:
-    const vector<Eigen::MatrixXd>& responses;
-    vector<Image<value_type>> inputs;
+    const std::vector<Eigen::MatrixXd>& responses;
+    std::vector<Image<value_type>> inputs;
     Eigen::VectorXd in, out;
 
 };
@@ -101,8 +101,8 @@ void run()
   if (!(argument.size() & size_t(1U)))
     throw Exception ("unexpected number of arguments");
 
-  vector<Image<value_type>> inputs ((argument.size() - 1) / 2);
-  vector<Eigen::MatrixXd> responses (inputs.size());
+  std::vector<Image<value_type>> inputs ((argument.size() - 1) / 2);
+  std::vector<Eigen::MatrixXd> responses (inputs.size());
 
   size_t lmax = 0;
   for (size_t n = 0; n < inputs.size(); ++n) {

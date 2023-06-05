@@ -41,7 +41,7 @@ namespace MR
     void CFE::operator() (in_column_type stats, out_column_type enhanced_stats) const
     {
       enhanced_stats.setZero();
-      vector<default_type> connected_stats;
+      std::vector<default_type> connected_stats;
       for (size_t fixel = 0; fixel < matrix.size(); ++fixel) {
         if (stats[fixel] < dh)
           continue;
@@ -59,7 +59,7 @@ namespace MR
         //   divide statistic by dh to determine the number of cluster sizes that should
         //   be incremented, and dynamically increment all cluster sizes for that
         //   particular connected fixel
-        vector<Fixel::Matrix::connectivity_value_type> extents (std::floor (stats[fixel]/dh), Fixel::Matrix::connectivity_value_type(0));
+        std::vector<Fixel::Matrix::connectivity_value_type> extents (std::floor (stats[fixel]/dh), Fixel::Matrix::connectivity_value_type(0));
         for (const auto& connection : connections) {
           const default_type connection_stat = stats[connection.index()];
           if (connection_stat > dh) {

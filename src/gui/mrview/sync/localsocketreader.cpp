@@ -36,7 +36,7 @@ namespace MR
         */
         void LocalSocketReader::OnDataReceived()
         {
-          vector<std::shared_ptr<QByteArray>> messagesReceived;
+          std::vector<std::shared_ptr<QByteArray>> messagesReceived;
           while (socket->bytesAvailable() > 0)
           {
             //First byte must always by an unsigned int32 stating how much data to read

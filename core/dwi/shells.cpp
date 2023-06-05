@@ -49,7 +49,7 @@ namespace MR
 
 
 
-    Shell::Shell (const Eigen::MatrixXd& grad, const vector<size_t>& indices) :
+    Shell::Shell (const Eigen::MatrixXd& grad, const std::vector<size_t>& indices) :
         volumes (indices),
         mean (0.0),
         stdev (0.0),
@@ -57,14 +57,14 @@ namespace MR
         max (0.0)
     {
       assert (volumes.size());
-      for (vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++) {
+      for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++) {
         const default_type b = grad (*i, 3);
         mean += b;
         min = std::min (min, b);
         max = std::max (min, b);
       }
       mean /= default_type(volumes.size());
-      for (vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++)
+      for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++)
         stdev += Math::pow2 (grad (*i, 3) - mean);
       stdev = std::sqrt (stdev / (volumes.size() - 1));
     }
@@ -111,11 +111,11 @@ namespace MR
       auto opt = App::get_options ("shells");
       if (opt.size()) {
 
-        vector<default_type> desired_bvalues = opt[0][0];
+        std::vector<default_type> desired_bvalues = opt[0][0];
         bool bzero_selected = false;
         size_t nonbzero_selected_count = 0;
 
-        for (vector<default_type>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
+        for (std::vector<default_type>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
 
           if (*b < 0)
             throw Exception ("Cannot select shells corresponding to negative b-values");
@@ -185,7 +185,7 @@ namespace MR
                 // First, check to see if all non-zero shells have (effectively) non-zero standard deviation
                 // (If one non-zero shell has negligible standard deviation, assume a Poisson distribution for all shells)
                 bool zero_stdev = false;
-                for (vector<Shell>::const_iterator s = shells.begin(); s != shells.end(); ++s) {
+                for (std::vector<Shell>::const_iterator s = shells.begin(); s != shells.end(); ++s) {
                   if (!s->is_bzero() && s->get_stdev() < 1.0) {
                     zero_stdev = true;
                     break;
@@ -270,7 +270,7 @@ namespace MR
       }
 
       // Erase the unwanted shells
-      vector<Shell> new_shells;
+      std::vector<Shell> new_shells;
       for (size_t s = 0; s != count(); ++s) {
         if (to_retain[s])
           new_shells.push_back (shells[s]);
@@ -285,7 +285,7 @@ namespace MR
 
     Shells& Shells::reject_small_shells (const size_t min_volumes)
     {
-      for (vector<Shell>::iterator s = shells.begin(); s != shells.end();) {
+      for (std::vector<Shell>::iterator s = shells.begin(); s != shells.end();) {
         if (!s->is_bzero() && s->count() < min_volumes)
           s = shells.erase (s);
         else
@@ -300,7 +300,7 @@ namespace MR
     Shells::Shells (const Eigen::MatrixXd& grad)
     {
       BValueList bvals = grad.col (3);
-      vector<size_t> clusters (bvals.size(), 0);
+      std::vector<size_t> clusters (bvals.size(), 0);
       const size_t num_shells = clusterBvalues (bvals, clusters);
 
       if ((num_shells < 1) || (num_shells > std::sqrt (default_type(grad.rows()))))
@@ -308,7 +308,7 @@ namespace MR
 
       for (size_t shellIdx = 0; shellIdx <= num_shells; shellIdx++) {
 
-        vector<size_t> volumes;
+        std::vector<size_t> volumes;
         for (size_t volumeIdx = 0; volumeIdx != clusters.size(); ++volumeIdx) {
           if (clusters[volumeIdx] == shellIdx)
             volumes.push_back (volumeIdx);
@@ -344,7 +344,7 @@ namespace MR
 
 
 
-    size_t Shells::clusterBvalues (const BValueList& bvals, vector<size_t>& clusters) const
+    size_t Shells::clusterBvalues (const BValueList& bvals, std::vector<size_t>& clusters) const
     {
       BitSet visited (bvals.size(), false);
       size_t clusterIdx = 0;
@@ -362,7 +362,7 @@ namespace MR
 
           visited[ii] = true;
           const default_type b = bvals[ii];
-          vector<size_t> neighborIdx;
+          std::vector<size_t> neighborIdx;
           regionQuery (bvals, b, neighborIdx);
 
           if (b > bzero_threshold() && neighborIdx.size() < DWI_SHELLS_MIN_LINKAGE) {
@@ -375,7 +375,7 @@ namespace MR
             for (size_t i = 0; i < neighborIdx.size(); i++) {
               if (!visited[neighborIdx[i]]) {
                 visited[neighborIdx[i]] = true;
-                vector<size_t> neighborIdx2;
+                std::vector<size_t> neighborIdx2;
                 regionQuery (bvals, bvals[neighborIdx[i]], neighborIdx2);
                 if (neighborIdx2.size() >= DWI_SHELLS_MIN_LINKAGE)
                   for (size_t j = 0; j != neighborIdx2.size(); j++)
@@ -395,7 +395,7 @@ namespace MR
 
 
 
-    void Shells::regionQuery (const BValueList& bvals, const default_type b, vector<size_t>& idx) const
+    void Shells::regionQuery (const BValueList& bvals, const default_type b, std::vector<size_t>& idx) const
     {
       for (ssize_t i = 0; i < bvals.size(); i++) {
         if (bvals[i] > bzero_threshold() && abs (b - bvals[i]) < bvalue_epsilon())

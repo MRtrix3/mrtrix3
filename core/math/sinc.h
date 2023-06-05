@@ -124,8 +124,8 @@ namespace MR
 
       private:
         const size_t window_size, max_offset_from_kernel_centre;
-        vector<size_t> indices;
-        vector<value_type> weights;
+        std::vector<size_t> indices;
+        std::vector<value_type> weights;
         value_type current_pos;
 
     };

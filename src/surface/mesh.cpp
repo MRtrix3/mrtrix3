@@ -209,7 +209,7 @@ namespace MR
               if (vertex_count != 3 && vertex_count != 4)
                 throw Exception ("Could not parse file \"" + path + "\";  only suppport 3- and 4-vertex polygons");
 
-              vector<unsigned int> t (vertex_count, 0);
+              std::vector<unsigned int> t (vertex_count, 0);
 
               if (is_ascii) {
                 for (int index = 0; index != vertex_count; ++index) {
@@ -292,7 +292,7 @@ namespace MR
           if (attribute_byte_count)
             warn_attribute = true;
 
-          triangles.push_back ( vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
+          triangles.push_back ( std::vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
           const Eigen::Vector3d computed_normal = Surface::normal (*this, triangles.back());
           if (computed_normal.dot (normal.cast<default_type>()) < 0.0)
             warn_right_hand_rule = true;
@@ -355,7 +355,7 @@ namespace MR
             inside_facet = false;
             if (vertex_index != 3)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": facet ended with " + str(vertex_index) + " vertices");
-            triangles.push_back ( vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
+            triangles.push_back ( std::vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
             vertex_index = 0;
             const Eigen::Vector3d computed_normal = Surface::normal (*this, triangles.back());
             if (computed_normal.dot (normal) < 0.0)
@@ -433,7 +433,7 @@ namespace MR
           // Need to handle:
           // * Either 3 or 4 vertices - write to either triangles or quads
           // * Vertices only, vertices & texture coordinates, vertices & normals, all 3
-          vector<std::string> elements;
+          std::vector<std::string> elements;
           do {
             const size_t first_space = data.find_first_of (' ');
             if (first_space == data.npos) {
@@ -447,9 +447,9 @@ namespace MR
           } while (data.size());
           if (elements.size() != 3 && elements.size() != 4)
             throw Exception ("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " + str(counter) + ")");
-          vector<FaceData> face_data;
+          std::vector<FaceData> face_data;
           size_t values_per_element = 0;
-          for (vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
+          for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
             FaceData temp;
             temp.vertex = 0; temp.texture = 0; temp.normal = 0;
             const size_t first_slash = i->find_first_of ('/');
@@ -476,10 +476,10 @@ namespace MR
             face_data.push_back (temp);
           }
           if (face_data.size() == 3) {
-            vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex };
+            std::vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex };
             triangles.push_back (Triangle (temp));
           } else {
-            vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex };
+            std::vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex };
             quads.push_back (Quad (temp));
           }
           // The OBJ format allows defining different vertex-based normals for different faces that reference the same vertex

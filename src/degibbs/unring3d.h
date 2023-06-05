@@ -153,7 +153,7 @@ namespace MR {
           OutputImageType output;
           const int minW, maxW, num_shifts;
           Math::FFT1D fft;
-          vector<Math::FFT1D> ifft;
+          std::vector<Math::FFT1D> ifft;
 
 
           int optimumshift(int n, int lsize) {
@@ -192,7 +192,7 @@ namespace MR {
 
 
 
-      inline vector<size_t> strides_for_axis (int axis)
+      inline std::vector<size_t> strides_for_axis (int axis)
       {
         switch (axis) {
           case 0: return { 0, 1, 2 };

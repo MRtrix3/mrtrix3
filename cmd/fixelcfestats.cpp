@@ -261,7 +261,7 @@ void run()
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from fixel-wise subject data
-  vector<Math::Stats::CohortDataImport> extra_columns;
+  std::vector<Math::Stats::CohortDataImport> extra_columns;
   bool nans_in_columns = false;
   opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
@@ -301,7 +301,7 @@ void run()
     CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
+  const std::vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
   const size_t num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     throw Exception ("The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"

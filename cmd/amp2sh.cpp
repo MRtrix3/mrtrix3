@@ -87,8 +87,8 @@ class Amp2SHCommon {
   public:
     template <class MatrixType>
       Amp2SHCommon (const MatrixType& sh2amp,
-          const vector<size_t>& bzeros,
-          const vector<size_t>& dwis,
+          const std::vector<size_t>& bzeros,
+          const std::vector<size_t>& dwis,
           bool normalise_to_bzero) :
         sh2amp (sh2amp),
         amp2sh (Math::pinv (sh2amp)),
@@ -98,8 +98,8 @@ class Amp2SHCommon {
 
 
     Eigen::MatrixXd sh2amp, amp2sh;
-    const vector<size_t>& bzeros;
-    const vector<size_t>& dwis;
+    const std::vector<size_t>& bzeros;
+    const std::vector<size_t>& dwis;
     bool normalise;
 };
 
@@ -204,7 +204,7 @@ void run ()
   auto amp = Image<value_type>::open (argument[0]).with_direct_io (3);
   Header header (amp);
 
-  vector<size_t> bzeros, dwis;
+  std::vector<size_t> bzeros, dwis;
   Eigen::MatrixXd dirs;
   auto opt = get_options ("directions");
   if (opt.size()) {
@@ -215,7 +215,7 @@ void run ()
   else {
     auto hit = header.keyval().find ("directions");
     if (hit != header.keyval().end()) {
-      vector<default_type> dir_vector;
+      std::vector<default_type> dir_vector;
       for (auto line : split_lines (hit->second)) {
         auto v = parse_floats (line);
         dir_vector.insert (dir_vector.end(), v.begin(), v.end());

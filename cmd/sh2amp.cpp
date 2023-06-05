@@ -114,7 +114,7 @@ class SH2Amp {
 
 class SH2AmpMultiShell { 
   public:
-    SH2AmpMultiShell (const vector<Eigen::MatrixXd>& dirs, const DWI::Shells& shells, bool nonneg) :
+    SH2AmpMultiShell (const std::vector<Eigen::MatrixXd>& dirs, const DWI::Shells& shells, bool nonneg) :
       transforms (dirs),
       shells (shells),
       nonnegative (nonneg) { }
@@ -138,7 +138,7 @@ class SH2AmpMultiShell {
     }
 
   private:
-    const vector<Eigen::MatrixXd>& transforms;
+    const std::vector<Eigen::MatrixXd>& transforms;
     const DWI::Shells& shells;
     const bool nonnegative;
     Eigen::VectorXd sh, amp;
@@ -220,7 +220,7 @@ void run ()
     else if (! (sh_data.ndim() == 4 || ( sh_data.ndim() > 4 && ( sh_data.size(4) != 1 ))) )
       throw Exception ("number of shells differs between gradient scheme and input data");
 
-    vector<Eigen::MatrixXd> transforms;
+    std::vector<Eigen::MatrixXd> transforms;
 
     for (size_t n = 0; n < shells.count(); ++n) {
       Eigen::MatrixXd dirs (shells[n].count(), 2);

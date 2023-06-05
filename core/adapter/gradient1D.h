@@ -93,8 +93,8 @@ namespace MR
         size_t axis;
         value_type result;
         const bool wrt_spacing;
-        vector<value_type> derivative_weights;
-        vector<value_type> half_derivative_weights;
+        std::vector<value_type> derivative_weights;
+        std::vector<value_type> half_derivative_weights;
       };
   }
 }

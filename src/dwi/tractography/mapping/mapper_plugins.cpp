@@ -107,7 +107,7 @@ namespace MR {
 
 
 
-        void TWIScalarImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors) const
+        void TWIScalarImagePlugin::load_factors (const Streamline<>& tck, std::vector<default_type>& factors) const
         {
           if (statistic == ENDS_MIN || statistic == ENDS_MEAN || statistic == ENDS_MAX || statistic == ENDS_PROD) {
 
@@ -141,7 +141,7 @@ namespace MR {
 
 
 
-        void TWIFODImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors) const
+        void TWIFODImagePlugin::load_factors (const Streamline<>& tck, std::vector<default_type>& factors) const
         {
           assert (statistic != ENDS_CORR);
           if (statistic == ENDS_MAX || statistic == ENDS_MEAN || statistic == ENDS_MIN || statistic == ENDS_PROD) {
@@ -184,12 +184,12 @@ namespace MR {
 
 
 
-        void TWDFCStaticImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors) const
+        void TWDFCStaticImagePlugin::load_factors (const Streamline<>& tck, std::vector<default_type>& factors) const
         {
           // Use trilinear interpolation
           // Store values into local vectors, since it's a two-pass operation
           factors.assign (1, NaN);
-          vector<float> values[2];
+          std::vector<float> values[2];
           for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
             const ssize_t index = get_end_index (tck, bool(tck_end_index));
             if (index < 0)
@@ -227,14 +227,14 @@ namespace MR {
 
 
 
-        void TWDFCDynamicImagePlugin::load_factors (const Streamline<>& tck, vector<default_type>& factors) const
+        void TWDFCDynamicImagePlugin::load_factors (const Streamline<>& tck, std::vector<default_type>& factors) const
         {
           assert (statistic == ENDS_CORR);
           factors.assign (1, NaN);
 
           // Use trilinear interpolation
           // Store values into local vectors, since it's a two-pass operation
-          vector<default_type> values[2];
+          std::vector<default_type> values[2];
           for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
             const ssize_t index = get_end_index (tck, tck_end_index);
             if (index < 0)

@@ -855,7 +855,7 @@ namespace MR
           }
           if (opt.opt->is ("connectome.load")) {
             try {
-              vector<std::string> list (1, opt[0]);
+              std::vector<std::string> list (1, opt[0]);
               add_matrices (list);
             } catch (Exception& e) { e.display(); }
             return true;
@@ -896,7 +896,7 @@ namespace MR
 
         void Connectome::matrix_open_slot ()
         {
-          vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open", "", &current_folder);
+          std::vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open", "", &current_folder);
           if (list.empty())
             return;
           add_matrices (list);
@@ -2235,9 +2235,9 @@ namespace MR
             buffer.reset (new MR::Image<node_t> (H.get_image<node_t>().with_direct_io()));
           }
           MR::Transform transform (H);
-          vector<Eigen::Vector3f> node_coms;
-          vector<size_t> node_volumes;
-          vector<Eigen::Array3i> node_lower_corners, node_upper_corners;
+          std::vector<Eigen::Vector3f> node_coms;
+          std::vector<size_t> node_volumes;
+          std::vector<Eigen::Array3i> node_lower_corners, node_upper_corners;
           size_t max_index = 0;
 
           {
@@ -2278,7 +2278,7 @@ namespace MR
             for (size_t node_index = 1; node_index <= max_index; ++node_index) {
               if (node_volumes[node_index]) {
 
-                vector<int> from (3), dim (3);
+                std::vector<int> from (3), dim (3);
                 for (size_t axis = 0; axis != 3; ++axis) {
                   from[axis] = node_lower_corners[node_index][axis];
                   dim[axis] = node_upper_corners[node_index][axis] - node_lower_corners[node_index][axis] + 1;
@@ -2322,9 +2322,9 @@ namespace MR
           dynamic_cast<Node_list*>(node_list->tool)->initialize();
         }
 
-        void Connectome::add_matrices (const vector<std::string>& list)
+        void Connectome::add_matrices (const std::vector<std::string>& list)
         {
-          vector<FileDataVector> data;
+          std::vector<FileDataVector> data;
           for (size_t i = 0; i < list.size(); ++i) {
             try {
               MR::Connectome::matrix_type matrix = MR::load_matrix<default_type> (list[i]);
@@ -2770,7 +2770,7 @@ namespace MR
                 nodes[node_index].set_name (lut.find(node_index)->second.get_name());
               } else if (count > 1) {
                 ++duplicate_entry_count;
-                vector<std::string> names;
+                std::vector<std::string> names;
                 const auto range = lut.equal_range (node_index);
                 for (auto i = range.first; i != range.second; ++i)
                   names.push_back (i->second.get_name());
@@ -3511,11 +3511,11 @@ namespace MR
 
 
 
-        void Connectome::node_selection_changed (const vector<node_t>& list)
+        void Connectome::node_selection_changed (const std::vector<node_t>& list)
         {
           selected_nodes.clear();
           selected_node_count = list.size();
-          for (vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n)
+          for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n)
             selected_nodes[*n] = true;
           if (node_visibility == node_visibility_t::CONNECTOME || node_visibility == node_visibility_t::MATRIX_FILE) {
             if (selected_node_count >= 2) {

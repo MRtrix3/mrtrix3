@@ -303,7 +303,7 @@ namespace MR
 
         template <typename ImageType, typename MaskType>
         void calculate_median_mad (ImageType& image, MaskType& mask, size_t nvoxels, float& median, float& mad) {
-          MR::vector<float> vals (nvoxels);
+          std::vector<float> vals (nvoxels);
           size_t idx = 0;
           for (auto l = Loop (0,3) (mask, image); l; ++l) {
             if (mask.value())

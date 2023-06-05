@@ -92,7 +92,7 @@ namespace MR {
 
             void set_backtrack();
 
-            virtual void load_factors (const Streamline<>&, vector<default_type>&) const = 0;
+            virtual void load_factors (const Streamline<>&, std::vector<default_type>&) const = 0;
 
 
           protected:
@@ -141,7 +141,7 @@ namespace MR {
               return new TWIScalarImagePlugin (*this);
             }
 
-            void load_factors (const Streamline<>&, vector<default_type>&) const override;
+            void load_factors (const Streamline<>&, std::vector<default_type>&) const override;
         };
 
 
@@ -168,7 +168,7 @@ namespace MR {
               return new TWIFODImagePlugin (*this);
             }
 
-            void load_factors (const Streamline<>&, vector<default_type>&) const override;
+            void load_factors (const Streamline<>&, std::vector<default_type>&) const override;
 
           private:
             mutable Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh_coeffs;
@@ -191,7 +191,7 @@ namespace MR {
               return new TWDFCStaticImagePlugin (*this);
             }
 
-            void load_factors (const Streamline<>&, vector<default_type>&) const override;
+            void load_factors (const Streamline<>&, std::vector<default_type>&) const override;
         };
 
 
@@ -200,7 +200,7 @@ namespace MR {
         class TWDFCDynamicImagePlugin : public TWIImagePluginBase
         { 
           public:
-            TWDFCDynamicImagePlugin (Image<float>& input_image, const vector<float>& kernel, const ssize_t timepoint) :
+            TWDFCDynamicImagePlugin (Image<float>& input_image, const std::vector<float>& kernel, const ssize_t timepoint) :
                 TWIImagePluginBase (input_image, ENDS_CORR),
                 kernel (kernel),
                 kernel_centre ((kernel.size()-1) / 2),
@@ -213,10 +213,10 @@ namespace MR {
               return new TWDFCDynamicImagePlugin (*this);
             }
 
-            void load_factors (const Streamline<>&, vector<default_type>&) const override;
+            void load_factors (const Streamline<>&, std::vector<default_type>&) const override;
 
           protected:
-            const vector<float> kernel;
+            const std::vector<float> kernel;
             const ssize_t kernel_centre, sample_centre;
         };
 

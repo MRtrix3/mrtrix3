@@ -46,7 +46,7 @@ class Selector
     Selector (const node_t node_one, const node_t node_two) :
       exact_match (true),
       keep_self (true) { list.push_back (node_one); list.push_back (node_two); }
-    Selector (const vector<node_t>& node_list, const bool both, const bool keep_self = false) :
+    Selector (const std::vector<node_t>& node_list, const bool both, const bool keep_self = false) :
       list (node_list),
       exact_match (both),
       keep_self (keep_self) { }
@@ -58,10 +58,10 @@ class Selector
     bool operator() (const node_t) const;
     bool operator() (const NodePair&) const;
     bool operator() (const node_t one, const node_t two) const { return (*this) (NodePair (one, two)); }
-    bool operator() (const vector<node_t>&) const;
+    bool operator() (const std::vector<node_t>&) const;
 
   private:
-    vector<node_t> list;
+    std::vector<node_t> list;
     bool exact_match, keep_self;
 
 };
@@ -74,7 +74,7 @@ class Selector
 class WriterExemplars
 { 
   public:
-    WriterExemplars (const Tractography::Properties&, const vector<node_t>&, const bool, const node_t, const vector<Eigen::Vector3f>&);
+    WriterExemplars (const Tractography::Properties&, const std::vector<node_t>&, const bool, const node_t, const std::vector<Eigen::Vector3f>&);
 
     bool operator() (const Tractography::Connectome::Streamline_nodepair&);
     bool operator() (const Tractography::Connectome::Streamline_nodelist&);
@@ -88,8 +88,8 @@ class WriterExemplars
 
   private:
     float step_size;
-    vector<Selector> selectors;
-    vector<Exemplar> exemplars;
+    std::vector<Selector> selectors;
+    std::vector<Exemplar> exemplars;
 };
 
 
@@ -104,11 +104,11 @@ class WriterExtraction
 { 
 
   public:
-    WriterExtraction (const Tractography::Properties&, const vector<node_t>&, const bool, const bool);
+    WriterExtraction (const Tractography::Properties&, const std::vector<node_t>&, const bool, const bool);
 
     void add (const node_t, const std::string&, const std::string);
     void add (const node_t, const node_t, const std::string&, const std::string);
-    void add (const vector<node_t>&, const std::string&, const std::string);
+    void add (const std::vector<node_t>&, const std::string&, const std::string);
 
     void clear();
 
@@ -120,11 +120,11 @@ class WriterExtraction
 
   private:
     const Tractography::Properties& properties;
-    const vector<node_t>& node_list;
+    const std::vector<node_t>& node_list;
     const bool exclusive;
     const bool keep_self;
-    vector< Selector > selectors;
-    vector< std::unique_ptr< Tractography::WriterUnbuffered<float> > > writers;
+    std::vector< Selector > selectors;
+    std::vector< std::unique_ptr< Tractography::WriterUnbuffered<float> > > writers;
     Tractography::Streamline<> empty_tck;
 
 };

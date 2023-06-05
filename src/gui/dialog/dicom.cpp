@@ -197,9 +197,9 @@ namespace MR
 
 
 
-      vector<std::shared_ptr<Series>> select_dicom (const Tree& tree)
+      std::vector<std::shared_ptr<Series>> select_dicom (const Tree& tree)
       {
-        vector<std::shared_ptr<Series> > ret;
+        std::vector<std::shared_ptr<Series> > ret;
         if (tree.size() == 1) {
           if (tree[0]->size() == 1) {
             if ((*tree[0])[0]->size() == 1) {

@@ -234,7 +234,7 @@ void usage ()
 
 
 
-void permute_DW_scheme (Header& H, const vector<int>& axes)
+void permute_DW_scheme (Header& H, const std::vector<int>& axes)
 {
   auto in = DWI::parse_DW_scheme (H);
   if (!in.rows())
@@ -256,7 +256,7 @@ void permute_DW_scheme (Header& H, const vector<int>& axes)
 
 
 
-void permute_PE_scheme (Header& H, const vector<int>& axes)
+void permute_PE_scheme (Header& H, const std::vector<int>& axes)
 {
   auto in = PhaseEncoding::parse_scheme (H);
   if (!in.rows())
@@ -276,7 +276,7 @@ void permute_PE_scheme (Header& H, const vector<int>& axes)
 
 
 
-void permute_slice_direction (Header& H, const vector<int>& axes)
+void permute_slice_direction (Header& H, const std::vector<int>& axes)
 {
   auto it = H.keyval().find ("SliceEncodingDirection");
   if (it == H.keyval().end())
@@ -290,7 +290,7 @@ void permute_slice_direction (Header& H, const vector<int>& axes)
 
 
 template <class ImageType>
-inline vector<int> set_header (Header& header, const ImageType& input)
+inline std::vector<int> set_header (Header& header, const ImageType& input)
 {
   header.ndim() = input.ndim();
   for (size_t n = 0; n < header.ndim(); ++n) {
@@ -301,7 +301,7 @@ inline vector<int> set_header (Header& header, const ImageType& input)
   header.transform() = input.transform();
 
   auto opt = get_options ("axes");
-  vector<int32_t> axes;
+  std::vector<int32_t> axes;
   if (opt.size()) {
     axes = parse_ints<int32_t> (opt[0][0]);
     header.ndim() = axes.size();
@@ -325,7 +325,7 @@ inline vector<int> set_header (Header& header, const ImageType& input)
 
   opt = get_options ("vox");
   if (opt.size()) {
-    vector<default_type> vox = parse_floats (opt[0][0]);
+    std::vector<default_type> vox = parse_floats (opt[0][0]);
     if (vox.size() > header.ndim())
       throw Exception ("too many axes supplied to -vox option");
     if (vox.size() == 1)
@@ -363,7 +363,7 @@ void copy_permute (const InputType& in, Header& header_out, const std::string& o
 
 
 template <typename T>
-void extract (Header& header_in, Header& header_out, const vector<vector<uint32_t>>& pos, const std::string& output_filename)
+void extract (Header& header_in, Header& header_out, const std::vector<std::vector<uint32_t>>& pos, const std::string& output_filename)
 {
   auto in = header_in.get_image<T>();
   if (pos.empty()) {
@@ -460,9 +460,9 @@ void run ()
 
 
   opt = get_options ("coord");
-  vector<vector<uint32_t>> pos;
+  std::vector<std::vector<uint32_t>> pos;
   if (opt.size()) {
-    pos.assign (header_in.ndim(), vector<uint32_t>());
+    pos.assign (header_in.ndim(), std::vector<uint32_t>());
     for (size_t n = 0; n < opt.size(); n++) {
       size_t axis = opt[n][0];
       if (axis >= header_in.ndim())
@@ -521,7 +521,7 @@ void run ()
   opt = get_options ("scaling");
   if (opt.size()) {
     if (header_out.datatype().is_integer()) {
-      vector<default_type> scaling = opt[0][0];
+      std::vector<default_type> scaling = opt[0][0];
       if (scaling.size() != 2)
         throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
       header_out.intensity_offset() = scaling[0];

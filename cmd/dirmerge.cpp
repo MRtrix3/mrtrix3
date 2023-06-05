@@ -51,7 +51,7 @@ OPTIONS
 
 using value_type = double;
 using Direction = Eigen::Matrix<value_type,3,1>;
-using DirectionSet = vector<Direction>;
+using DirectionSet = std::vector<Direction>;
 
 
 struct OutDir { 
@@ -73,8 +73,8 @@ void run ()
   value_type bipolar_weight = 1.0 - unipolar_weight;
 
 
-  vector<vector<DirectionSet>> dirs;
-  vector<value_type> bvalue ((argument.size() - 2) / (1+num_subsets));
+  std::vector<std::vector<DirectionSet>> dirs;
+  std::vector<value_type> bvalue ((argument.size() - 2) / (1+num_subsets));
   INFO ("expecting " + str(bvalue.size()) + " b-values");
   if (bvalue.size()*(1+num_subsets) + 2 != argument.size())
     throw Exception ("inconsistent number of arguments");
@@ -84,7 +84,7 @@ void run ()
   size_t current = 1, nb = 0;
   while (current < argument.size()-1) {
     bvalue[nb] = to<value_type> (argument[current++]);
-    vector<DirectionSet> d;
+    std::vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
       auto m = DWI::Directions::load_cartesian (argument[current++]);
       DirectionSet set;
@@ -93,7 +93,7 @@ void run ()
       d.push_back (set);
     }
     INFO ("found b = " + str(bvalue[nb]) + ", " +
-        str ([&]{ vector<size_t> s; for (auto& n : d) s.push_back (n.size()); return s; }()) + " volumes");
+        str ([&]{ std::vector<size_t> s; for (auto& n : d) s.push_back (n.size()); return s; }()) + " volumes");
 
     dirs.push_back (d);
     ++nb;
@@ -109,7 +109,7 @@ void run ()
   size_t first = std::uniform_int_distribution<size_t> (0, dirs[0][0].size()-1)(rng);
 
 
-  vector<OutDir> merged;
+  std::vector<OutDir> merged;
 
   auto push = [&](size_t b, size_t p, size_t n)
   {
@@ -153,7 +153,7 @@ void run ()
 
 
 
-  vector<float> fraction;
+  std::vector<float> fraction;
   for (auto& d : dirs) {
     size_t n = 0;
     for (auto& m : d)
@@ -163,7 +163,7 @@ void run ()
 
   push (0, 0, first);
 
-  vector<size_t> counts (bvalue.size(), 0);
+  std::vector<size_t> counts (bvalue.size(), 0);
   ++counts[0];
 
   auto num_for_b = [&](size_t b) {

@@ -109,7 +109,7 @@ namespace MR {
 
 #ifdef MRTRIX_NO_VLA
 # define VLA(name, type, num) \
-  vector<type> __vla__ ## name(num); \
+  std::vector<type> __vla__ ## name(num); \
   type* name = &__vla__ ## name[0]
 # define VLA_MAX(name, type, num, max) type name[max]
 #else
@@ -138,7 +138,7 @@ namespace MR {
 
 #ifdef MRTRIX_NO_NON_POD_VLA
 # define NON_POD_VLA(name, type, num) \
-  vector<type> __vla__ ## name(num); \
+  std::vector<type> __vla__ ## name(num); \
   type* name = &__vla__ ## name[0]
 # define NON_POD_VLA_MAX(name, type, num, max) type name[max]
 #else
@@ -200,21 +200,6 @@ namespace MR
 
 
   template <typename X, int N=(alignof(X)>::MR::malloc_align)>
-    class vector : public ::std::vector<X, Eigen::aligned_allocator<X>> {
-      public:
-        using ::std::vector<X,Eigen::aligned_allocator<X>>::vector;
-        vector() { }
-    };
-
-  template <typename X>
-    class vector<X,0> : public ::std::vector<X> {
-      public:
-        using ::std::vector<X>::vector;
-        vector() { }
-    };
-
-
-  template <typename X, int N=(alignof(X)>::MR::malloc_align)>
     class deque : public ::std::deque<X, Eigen::aligned_allocator<X>> {
       public:
         using ::std::deque<X,Eigen::aligned_allocator<X>>::deque;
@@ -252,7 +237,7 @@ namespace MR
 namespace std
 {
 
-  template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
+  template <class T> inline ostream& operator<< (ostream& stream, const std::vector<T>& V)
   {
     stream << "[ ";
     for (size_t n = 0; n < V.size(); n++)

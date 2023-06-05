@@ -34,14 +34,14 @@ namespace MR
 
         std::string get_folder (QWidget* parent, const std::string& caption, std::string* folder = nullptr);
         std::string get_file (QWidget* parent, const std::string& caption, const std::string& filter = std::string(), std::string* folder = nullptr);
-        vector<std::string> get_files (QWidget* parent, const std::string& caption, const std::string& filter = std::string(), std::string* folder = nullptr);
+        std::vector<std::string> get_files (QWidget* parent, const std::string& caption, const std::string& filter = std::string(), std::string* folder = nullptr);
         std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& suggested_name = std::string(), const std::string& filter = std::string(), std::string* folder = nullptr);
 
         inline std::string get_image (QWidget* parent, const std::string& caption, std::string* folder = nullptr) {
           return get_file (parent, caption, image_filter_string, folder);
         }
 
-        inline vector<std::string> get_images (QWidget* parent, const std::string& caption, std::string* folder = nullptr) {
+        inline std::vector<std::string> get_images (QWidget* parent, const std::string& caption, std::string* folder = nullptr) {
           return get_files (parent, caption, image_filter_string, folder);
         }
 

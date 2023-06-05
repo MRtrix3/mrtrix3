@@ -131,8 +131,8 @@ namespace MR {
     class Unring2DFunctor
     { 
       public:
-        Unring2DFunctor (const vector<size_t>& outer_axes,
-            const vector<size_t>& slice_axes,
+        Unring2DFunctor (const std::vector<size_t>& outer_axes,
+            const std::vector<size_t>& slice_axes,
             const int& nsh,
             const int& minW,
             const int& maxW,
@@ -162,8 +162,8 @@ namespace MR {
 
 
       protected:
-        const vector<size_t>& outer_axes;
-        const vector<size_t>& slice_axes;
+        const std::vector<size_t>& outer_axes;
+        const std::vector<size_t>& slice_axes;
         Image<value_type> in, out;
         Eigen::MatrixXcd slice;
         Unring2D unring2d;

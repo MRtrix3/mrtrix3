@@ -149,7 +149,7 @@ namespace MR
 
       float version = NaN;
       ParCols cols;
-      vector<SliceData> slices;
+      std::vector<SliceData> slices;
 
       while (in.good()) {
         std::string line;
@@ -190,7 +190,7 @@ namespace MR
         }
       }
 
-      vector<std::array<float,4>> G;
+      std::vector<std::array<float,4>> G;
 
       int nslices = 0;
       int nvols = 0;

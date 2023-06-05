@@ -136,7 +136,7 @@ class Segmented_FOD_receiver {
     };
 
 
-    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { 
+    class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> { 
       public:
         Primitive_FOD_lobes (const FOD_lobes& in, const index_type maxcount, bool dir_from_peak) :
             vox (in.vox)
@@ -155,7 +155,7 @@ class Segmented_FOD_receiver {
 
     Header H;
     std::string fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path;
-    vector<Primitive_FOD_lobes> lobes;
+    std::vector<Primitive_FOD_lobes> lobes;
     index_type fixel_count;
     index_type max_per_voxel;
     bool dir_from_peak;

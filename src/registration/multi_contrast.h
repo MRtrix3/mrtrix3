@@ -37,7 +37,7 @@ namespace MR
   {
 
     FORCE_INLINE void check_image_output (const std::string& image_name, const Header& reference) {
-      vector<std::string> V;
+      std::vector<std::string> V;
       if (!image_name.size()) throw Exception ("image output path is empty");
         if (Path::exists (image_name) && !App::overwrite_files)
           throw Exception ("output image \"" + image_name + "\" already exists (use -force option to force overwrite)");
@@ -45,7 +45,7 @@ namespace MR
         Header H = reference;
         File::NameParser parser;
         parser.parse (image_name);
-        vector<int> Pdim (parser.ndim());
+        std::vector<int> Pdim (parser.ndim());
 
         H.name() = image_name;
 
@@ -105,7 +105,7 @@ namespace MR
       return o;
     }
 
-    void preload_data(vector<Header>& input, Image<default_type>& images, const vector<MultiContrastSetting>& mc_params);
+    void preload_data(std::vector<Header>& input, Image<default_type>& images, const std::vector<MultiContrastSetting>& mc_params);
 
   }
 }

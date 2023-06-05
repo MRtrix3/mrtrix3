@@ -90,11 +90,11 @@ namespace MR
       }
       size_t stage_iterations, gd_max_iter;
       default_type scale_factor;
-      vector<OptimiserAlgoType> optimisers;
+      std::vector<OptimiserAlgoType> optimisers;
       OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
       default_type loop_density;
       ssize_t fod_lmax;
-      vector<std::string> diagnostics_images;
+      std::vector<std::string> diagnostics_images;
     } ;
 
     class Linear { 
@@ -127,7 +127,7 @@ namespace MR
         }
 
         // set_scale_factor needs to be the first option that is set as it overwrites the stage vector
-        void set_scale_factor (const vector<default_type>& scalefactor) {
+        void set_scale_factor (const std::vector<default_type>& scalefactor) {
           stages.resize (scalefactor.size());
           for (size_t level = 0; level < scalefactor.size(); ++level) {
             if (scalefactor[level] <= 0 || scalefactor[level] > 1.0)
@@ -154,7 +154,7 @@ namespace MR
             stage.optimiser_last = type;
         }
 
-        void set_stage_iterations (const vector<uint32_t>& it) {
+        void set_stage_iterations (const std::vector<uint32_t>& it) {
           for (size_t i = 0; i < it.size (); ++i)
             if (!it[i])
               throw Exception ("the number of stage iterations must be positive");
@@ -174,7 +174,7 @@ namespace MR
           }
         }
 
-        void set_max_iter (const vector<uint32_t>& maxiter) {
+        void set_max_iter (const std::vector<uint32_t>& maxiter) {
           if (maxiter.size() == stages.size()) {
             for (size_t i = 0; i < stages.size (); ++i)
               stages[i].gd_max_iter = maxiter[i];
@@ -191,7 +191,7 @@ namespace MR
           do_reorientation = true;
         }
 
-        void set_lmax (const vector<uint32_t>& lmax) {
+        void set_lmax (const std::vector<uint32_t>& lmax) {
           for (size_t i = 0; i < lmax.size (); ++i)
             if (lmax[i] % 2)
               throw Exception ("the input lmax must be even");
@@ -206,11 +206,11 @@ namespace MR
         }
 
         // needs to be set after set_lmax
-        void set_mc_parameters (const vector<MultiContrastSetting>& mcs) {
+        void set_mc_parameters (const std::vector<MultiContrastSetting>& mcs) {
           contrasts = mcs;
         }
 
-        void set_loop_density (const vector<default_type>& loop_density_){
+        void set_loop_density (const std::vector<default_type>& loop_density_){
           for (size_t d = 0; d < loop_density_.size(); ++d)
             if (loop_density_[d] < 0.0 or loop_density_[d] > 1.0 )
               throw Exception ("loop density must be between 0.0 and 1.0");
@@ -237,7 +237,7 @@ namespace MR
           }
         }
 
-        void set_extent (const vector<size_t> extent) {
+        void set_extent (const std::vector<size_t> extent) {
           for (size_t d = 0; d < extent.size(); ++d) {
             if (extent[d] < 1)
               throw Exception ("the neighborhood kernel extent must be at least 1 voxel");
@@ -574,9 +574,9 @@ namespace MR
           // }
 
       protected:
-        vector<StageSetting> stages;
-        vector<MultiContrastSetting> contrasts, stage_contrasts;
-        vector<size_t> kernel_extent;
+        std::vector<StageSetting> stages;
+        std::vector<MultiContrastSetting> contrasts, stage_contrasts;
+        std::vector<size_t> kernel_extent;
         default_type grad_tolerance;
         default_type step_tolerance;
         std::streambuf* log_stream;

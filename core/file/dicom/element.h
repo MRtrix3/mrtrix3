@@ -110,7 +110,7 @@ namespace MR {
           uint16_t group, element, VR;
           uint32_t size;
           uint8_t* data;
-          vector<Sequence> parents;
+          std::vector<Sequence> parents;
           bool transfer_syntax_supported;
 
           void set (const std::string& filename, bool force_read = false, bool read_write = false);
@@ -154,13 +154,13 @@ namespace MR {
           bool is_in_series_ref_sequence () const;
 
           Type type () const;
-          vector<int32_t> get_int () const;
-          vector<uint32_t> get_uint () const;
-          vector<default_type> get_float () const;
+          std::vector<int32_t> get_int () const;
+          std::vector<uint32_t> get_uint () const;
+          std::vector<default_type> get_float () const;
           Date get_date () const;
           Time get_time () const;
           std::pair<Date,Time> get_datetime () const;
-          vector<std::string> get_string () const;
+          std::vector<std::string> get_string () const;
 
           int32_t     get_int (size_t idx, int32_t default_value = 0)                    const { auto v (get_int());    return check_get (idx, v.size()) ? v[idx] : default_value; }
           uint32_t    get_uint (size_t idx, uint32_t default_value = 0)                  const { auto v (get_uint());   return check_get (idx, v.size()) ? v[idx] : default_value; }
@@ -194,7 +194,7 @@ namespace MR {
           uint8_t* start;
           bool is_explicit, is_BE, is_transfer_syntax_BE;
 
-          vector<uint8_t*>  end_seq;
+          std::vector<uint8_t*>  end_seq;
 
 
           uint16_t get_VR_from_tag_name (const std::string& name) {

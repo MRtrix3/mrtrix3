@@ -69,8 +69,8 @@ namespace MR {
           default_type pixel_bandwidth, bandwidth_per_pixel_phase_encode, echo_time, inversion_time, repetition_time, flip_angle, partial_fourier, time_after_start;
           size_t echo_train_length;
           size_t bipolar_flag, readoutmode_flag;
-          vector<uint32_t> index;
-          vector<default_type> flip_angles;
+          std::vector<uint32_t> index;
+          std::vector<default_type> flip_angles;
 
           bool operator< (const Frame& frame) const {
             if (!ignore_series_num && series_num != frame.series_num)
@@ -125,10 +125,10 @@ namespace MR {
             return (philips_orientation == 'I' && bvalue > 0.0);
           }
 
-          static vector<size_t> count (const vector<Frame*>& frames);
-          static default_type get_slice_separation (const vector<Frame*>& frames, size_t nslices);
-          static std::string get_DW_scheme (const vector<Frame*>& frames, const size_t nslices, const transform_type& image_transform);
-          static Eigen::MatrixXd get_PE_scheme (const vector<Frame*>& frames, const size_t nslices);
+          static std::vector<size_t> count (const std::vector<Frame*>& frames);
+          static default_type get_slice_separation (const std::vector<Frame*>& frames, size_t nslices);
+          static std::string get_DW_scheme (const std::vector<Frame*>& frames, const size_t nslices, const transform_type& image_transform);
+          static Eigen::MatrixXd get_PE_scheme (const std::vector<Frame*>& frames, const size_t nslices);
 
           friend std::ostream& operator<< (std::ostream& stream, const Frame& item);
       };
@@ -156,15 +156,15 @@ namespace MR {
           size_t images_in_mosaic;
           std::string sequence_name, manufacturer;
           bool is_BE, in_frames;
-          vector<float> mosaic_slices_timing;
+          std::vector<float> mosaic_slices_timing;
 
-          vector<uint32_t> frame_dim;
-          vector<std::shared_ptr<Frame>> frames;
+          std::vector<uint32_t> frame_dim;
+          std::vector<std::shared_ptr<Frame>> frames;
 
           void read ();
           void parse_item (Element& item, const std::string& dirname = "");
           void decode_csa (const uint8_t* start, const uint8_t* end);
-          KeyValues read_csa_ascii (const vector<std::string>& data);
+          KeyValues read_csa_ascii (const std::vector<std::string>& data);
 
           bool operator< (const Image& ima) const {
             return Frame::operator< (ima);

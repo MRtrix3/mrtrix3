@@ -50,14 +50,14 @@ namespace MR
 
         private slots:
           void OnNewIncomingConnection();
-          void OnDataReceived(vector<std::shared_ptr<QByteArray>> dat);
+          void OnDataReceived(std::vector<std::shared_ptr<QByteArray>> dat);
 
         signals:
-          void SyncDataReceived(vector<std::shared_ptr<QByteArray>> data); //fires when data is received which is for syncing. It is up to listeners to validate and store this value
+          void SyncDataReceived(std::vector<std::shared_ptr<QByteArray>> data); //fires when data is received which is for syncing. It is up to listeners to validate and store this value
 
         private:
           int id;//id which is unique between mrview processes
-          vector<std::shared_ptr<GUI::MRView::Sync::Client>> senders;//send information
+          std::vector<std::shared_ptr<GUI::MRView::Sync::Client>> senders;//send information
           QLocalServer *receiver;//listens for information
           void TryConnectTo(int connectToId);//tries to connect with another interprocesscommunicator
 

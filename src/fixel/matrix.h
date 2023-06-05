@@ -68,14 +68,14 @@ namespace MR
 
 
 
-      class InitFixel : public vector<InitElement>
+      class InitFixel : public std::vector<InitElement>
       { 
         public:
           using ElementType = InitElement;
-          using BaseType = vector<InitElement>;
+          using BaseType = std::vector<InitElement>;
           InitFixel() :
               track_count (0) { }
-          void add (const vector<fixel_index_type>& indices);
+          void add (const std::vector<fixel_index_type>& indices);
           count_type count() const { return track_count; }
         private:
           count_type track_count;
@@ -108,11 +108,11 @@ namespace MR
 
       // With the internally normalised CFE expression, want to store a
       //   multiplicative factor per fixel
-      class NormFixel : public vector<NormElement>
+      class NormFixel : public std::vector<NormElement>
       { 
         public:
           using ElementType = NormElement;
-          using BaseType = vector<NormElement>;
+          using BaseType = std::vector<NormElement>;
           NormFixel() :
             norm_multiplier (connectivity_value_type (1)) { }
           NormFixel (const BaseType& i) :
@@ -141,7 +141,7 @@ namespace MR
       // Different types are used depending on whether the connectivity matrix
       //   is in the process of being built, or whether it has been normalised
       // TODO Revise
-      using init_matrix_type = vector<InitFixel>;
+      using init_matrix_type = std::vector<InitFixel>;
 
 
 

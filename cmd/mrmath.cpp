@@ -126,7 +126,7 @@ class Median {
     value_type result () {
       return Math::median(values);
     }
-    vector<value_type> values;
+    std::vector<value_type> values;
 };
 
 class Sum { 
@@ -414,7 +414,7 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    vector<Header> headers_in (num_inputs);
+    std::vector<Header> headers_in (num_inputs);
 
     // Header of first input image is the template to which all other input images are compared
     headers_in[0] = Header::open (argument[0]);

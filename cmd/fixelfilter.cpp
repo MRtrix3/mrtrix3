@@ -97,7 +97,7 @@ void run()
                                       "mask" };
 
   Image<float> single_file;
-  vector<Header> multiple_files;
+  std::vector<Header> multiple_files;
   std::unique_ptr<Fixel::Filter::Base> filter;
 
   {

@@ -94,7 +94,7 @@ namespace MR
           GL::Context::Grab context;
           GL::assert_context_is_current();
           bind();
-          vector<GLubyte> data (header().size(0)*header().size(1));
+          std::vector<GLubyte> data (header().size(0)*header().size(1));
           for (int n = 0; n < header().size(2); ++n)
             upload_data ({ { 0, 0, n } }, { { header().size(0), header().size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
           GL::assert_context_is_current();
@@ -107,7 +107,7 @@ namespace MR
           GL::assert_context_is_current();
           bind();
           auto image = header().get_image<bool>();
-          vector<GLubyte> data (image.size(0)*image.size(1));
+          std::vector<GLubyte> data (image.size(0)*image.size(1));
           ProgressBar progress ("loading ROI image \"" + header().name() + "\"");
           for (auto outer = MR::Loop(2) (image); outer; ++outer) {
             auto p = data.begin();

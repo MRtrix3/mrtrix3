@@ -69,7 +69,7 @@ namespace MR
 
 
         private:
-          vector<std::unique_ptr<Base>> seeders;
+          std::vector<std::unique_ptr<Base>> seeders;
           float total_volume;
           uint32_t total_count;
 

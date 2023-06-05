@@ -257,7 +257,7 @@ namespace MR
 
         size_t max_num_permutations;
         if (eb_within.size()) {
-          vector<size_t> counts (eb_within.maxCoeff()+1, 0);
+          std::vector<size_t> counts (eb_within.maxCoeff()+1, 0);
           for (ssize_t i = 0; i != eb_within.size(); ++i)
             counts[eb_within[i]]++;
           max_num_permutations = 1;
@@ -324,7 +324,7 @@ namespace MR
             if (nshuffles == max_shuffles) {
               generate_all_permutations (rows, eb_within, eb_whole);
               assert (permutations.size() == max_num_permutations);
-              vector<PermuteLabels> duplicated_permutations;
+              std::vector<PermuteLabels> duplicated_permutations;
               duplicated_permutations.reserve (max_shuffles);
               for (const auto& p : permutations) {
                 for (size_t i = 0; i != max_num_signflips; ++i)
@@ -354,7 +354,7 @@ namespace MR
             if (nshuffles == max_shuffles) {
               generate_all_signflips (rows, eb_whole);
               assert (signflips.size() == max_num_signflips);
-              vector<BitSet> duplicated_signflips;
+              std::vector<BitSet> duplicated_signflips;
               duplicated_signflips.reserve (max_shuffles);
               for (size_t i = 0; i != max_num_permutations; ++i)
                 duplicated_signflips.insert (duplicated_signflips.end(), signflips.begin(), signflips.end());
@@ -394,7 +394,7 @@ namespace MR
           data.array() -= 1;
           max_coeff--;
         }
-        vector<size_t> counts (max_coeff+1, 0);
+        std::vector<size_t> counts (max_coeff+1, 0);
         for (size_t i = 0; i != size_t(data.size()); ++i)
           counts[data[i]]++;
         for (size_t i = 0; i <= max_coeff; ++i) {
@@ -471,7 +471,7 @@ namespace MR
           return;
         }
 
-        vector<vector<size_t>> blocks;
+        std::vector<std::vector<size_t>> blocks;
 
         // Within-block exchangeability
         if (eb_within.size()) {
@@ -482,7 +482,7 @@ namespace MR
               permuted_labelling = default_labelling;
               // Random permutation within each block independently
               for (size_t ib = 0; ib != blocks.size(); ++ib) {
-                vector<size_t> permuted_block (blocks[ib]);
+                std::vector<size_t> permuted_block (blocks[ib]);
                 std::shuffle (permuted_block.begin(), permuted_block.end(), rng);
                 for (size_t i = 0; i != permuted_block.size(); ++i)
                   permuted_labelling[blocks[ib][i]] = permuted_block[i];
@@ -538,14 +538,14 @@ namespace MR
           return;
         }
 
-        vector<vector<size_t>> original;
+        std::vector<std::vector<size_t>> original;
 
         // Within-block exchangeability
         if (eb_within.size()) {
 
           original = indices2blocks (eb_within);
 
-          auto write = [&] (const vector<vector<size_t>>& data)
+          auto write = [&] (const std::vector<std::vector<size_t>>& data)
           {
             PermuteLabels temp (num_rows);
             for (size_t block = 0; block != data.size(); ++block) {
@@ -555,7 +555,7 @@ namespace MR
             permutations.push_back (std::move (temp));
           };
 
-          vector<vector<size_t>> blocks (original);
+          std::vector<std::vector<size_t>> blocks (original);
           write (blocks);
           do {
             size_t ib = 0;
@@ -602,7 +602,7 @@ namespace MR
 
       void Shuffler::load_permutations (const std::string& filename)
       {
-        vector<vector<size_t> > temp = load_matrix_2D_vector<size_t> (filename);
+        std::vector<std::vector<size_t> > temp = load_matrix_2D_vector<size_t> (filename);
         if (!temp.size())
           throw Exception ("no data found in permutations file: " + str(filename));
 
@@ -737,10 +737,10 @@ namespace MR
 
 
 
-      vector<vector<size_t>> Shuffler::indices2blocks (const index_array_type& indices) const
+      std::vector<std::vector<size_t>> Shuffler::indices2blocks (const index_array_type& indices) const
       {
         const size_t num_blocks = indices.maxCoeff()+1;
-        vector<vector<size_t>> result;
+        std::vector<std::vector<size_t>> result;
         result.resize (num_blocks);
         for (ssize_t i = 0; i != indices.size(); ++i)
           result[indices[i]].push_back (i);

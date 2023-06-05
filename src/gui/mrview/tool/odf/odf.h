@@ -104,7 +104,7 @@ namespace MR
 
              int lmax;
 
-             void add_images (vector<std::string>& list, const odf_type_t mode);
+             void add_images (std::vector<std::string>& list, const odf_type_t mode);
 
              virtual void closeEvent (QCloseEvent* event) override;
 

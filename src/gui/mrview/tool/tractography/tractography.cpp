@@ -66,7 +66,7 @@ namespace MR
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (vector<std::string>& filenames,
+            void add_items (std::vector<std::string>& filenames,
                             Tractography& tractography_tool) {
 
               for (size_t i = 0; i < filenames.size(); ++i) {
@@ -359,7 +359,7 @@ namespace MR
         void Tractography::tractogram_open_slot ()
         {
 
-          vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)", &current_folder);
+          std::vector<std::string> list = Dialog::File::get_files (this, "Select tractograms to open", "Tractograms (*.tck)", &current_folder);
           add_tractogram(list);
         }
 
@@ -367,7 +367,7 @@ namespace MR
 
 
 
-        void Tractography::add_tractogram (vector<std::string>& list)
+        void Tractography::add_tractogram (std::vector<std::string>& list)
         {
           if (list.empty())
           { return; }
@@ -391,7 +391,7 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            vector<std::string> list;
+            std::vector<std::string> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
                 list.push_back (urlList.at (i).path().toUtf8().constData());
@@ -886,7 +886,7 @@ namespace MR
 
           if (opt.opt->is ("tractography.load"))
           {
-            vector<std::string> list (1, std::string(opt[0]));
+            std::vector<std::string> list (1, std::string(opt[0]));
             add_tractogram(list);
             return true;
           }
@@ -920,7 +920,7 @@ namespace MR
           {
             try {
               //Set the tsf visualisation range
-              vector<default_type> range;
+              std::vector<default_type> range;
               if (process_commandline_option_tsf_option(opt,2, range))
                 scalar_file_options->set_scaling (range[0], range[1]);
             }
@@ -933,7 +933,7 @@ namespace MR
           {
             try {
               //Set the tsf visualisation threshold
-              vector<default_type> range;
+              std::vector<default_type> range;
               if (process_commandline_option_tsf_option(opt,2, range))
                 scalar_file_options->set_threshold (TrackThresholdType::UseColourFile,range[0], range[1]);
             }
@@ -1096,7 +1096,7 @@ namespace MR
 
 
       /*Checks whether legal to apply tsf options and prepares the scalar_file_options to do so. Returns the vector of floats parsed from the options, or null on fail*/
-        bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOption& opt, uint reqArgSize, vector<default_type>& range)
+        bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOption& opt, uint reqArgSize, std::vector<default_type>& range)
         {
           if(process_commandline_option_tsf_check_tracto_loaded()){
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();

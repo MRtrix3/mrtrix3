@@ -125,7 +125,7 @@ namespace MR
                     raw_signals.push_back (Eigen::VectorXf (size(3)));
                 }
 
-                vector<Eigen::VectorXf> raw_signals;
+                std::vector<Eigen::VectorXf> raw_signals;
 
                 bool get (const Eigen::Vector3f& pos, Eigen::VectorXf& data) {
                   if (!scanner (pos)) {

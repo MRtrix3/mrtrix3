@@ -89,13 +89,13 @@ namespace MR
               endRemoveRows();
             }
 
-            void add_items (vector<FileDataVector>&);
+            void add_items (std::vector<FileDataVector>&);
 
             const FileDataVector& get (const size_t index) { assert (index < items.size()); return items[index]; }
             const FileDataVector& get (QModelIndex& index) { assert (size_t(index.row()) < items.size()); return items[index.row()]; }
 
           protected:
-            vector<FileDataVector> items;
+            std::vector<FileDataVector> items;
 
         };
 

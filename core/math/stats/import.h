@@ -112,7 +112,7 @@ namespace MR
           bool allFinite() const;
 
         protected:
-          vector<std::shared_ptr<SubjectDataImportBase>> files;
+          std::vector<std::shared_ptr<SubjectDataImportBase>> files;
       };
 
 
@@ -132,7 +132,7 @@ namespace MR
         //   current working directory
         // Only once a directory is selected that contains all inputs listed in the
         //   text file is an attempt made to load all of those files
-        vector<std::string> lines;
+        std::vector<std::string> lines;
         {
           std::ifstream ifs (listpath.c_str());
           if (!ifs)
@@ -147,7 +147,7 @@ namespace MR
           }
         }
 
-        vector<std::string> directories { Path::dirname (listpath) };
+        std::vector<std::string> directories { Path::dirname (listpath) };
         if (directories[0].empty())
           directories[0] = ".";
         else if (directories[0] != ".")

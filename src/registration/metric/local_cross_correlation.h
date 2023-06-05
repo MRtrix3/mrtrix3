@@ -112,13 +112,13 @@ namespace MR
           out.row(3) = ( Eigen::Matrix<default_type,5,1>() << value_in1 - m1, value_in2 - m2, n1.adjoint() * n2, n1.adjoint() * n1, n2.adjoint() * n2 ).finished();
         }
 
-        LCCPrecomputeFunctorMasked_Naive (const vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
+        LCCPrecomputeFunctorMasked_Naive (const std::vector<size_t>& ext, ImageType1& adapter1, ImageType2& adapter2) :
           extent(ext),
           in1(adapter1),
           in2(adapter2) { /* TODO check dimensions and extent */ }
 
         protected:
-          vector<size_t> extent;
+          std::vector<size_t> extent;
           ImageType1 in1; // store reslice adapter in functor to avoid iterating over it when mask is false
           ImageType2 in2; // TODO: cache interpolated values for neighbourhood iteration
       };
@@ -163,7 +163,7 @@ namespace MR
                 auto cc_mask_header = Header::scratch (parameters.midway_image);
 
                 auto cc_image = cc_image_header.template get_image <ProcessedImageValueType>().with_direct_io(Stride::contiguous_along_axis(3));
-                vector<uint32_t> NoOversample;
+                std::vector<uint32_t> NoOversample;
                 {
                   LogLevelLatch log_level (0);
                   if (parameters.im1_mask.valid() or parameters.im2_mask.valid())

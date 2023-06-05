@@ -40,7 +40,7 @@ namespace MR {
         { 
         public:
           
-          using ParticleVectorType = vector<Particle*>;
+          using ParticleVectorType = std::vector<Particle*>;
           
           template <class HeaderType>
           ParticleGrid(const HeaderType& image)
@@ -91,7 +91,7 @@ namespace MR {
         protected:
           std::mutex mutex;
           ParticlePool pool;
-          vector<ParticleVectorType> grid;
+          std::vector<ParticleVectorType> grid;
           Math::RNG rng;
           transform_type T_s2g;
           size_t dims[3];

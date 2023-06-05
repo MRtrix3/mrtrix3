@@ -92,7 +92,7 @@ namespace MR
 
         protected:
           std::string tck_file_path;
-          vector<TrackContribution*> contributions;
+          std::vector<TrackContribution*> contributions;
 
           using Fixel_map<Fixel>::accessor;
           using Fixel_map<Fixel>::begin;
@@ -133,20 +133,20 @@ namespace MR
               Mapping::TrackMapperBase mapper;
               std::shared_ptr<std::mutex> mutex;
               double TD_sum;
-              vector<double> fixel_TDs;
-              vector<track_t> fixel_counts;
+              std::vector<double> fixel_TDs;
+              std::vector<track_t> fixel_counts;
           };
 
           class FixelRemapper
           { 
             public:
-              FixelRemapper (Model& i, vector<size_t>& r) :
+              FixelRemapper (Model& i, std::vector<size_t>& r) :
                 master   (i),
                 remapper (r) { }
               bool operator() (const TrackIndexRange&);
             private:
               Model& master;
-              vector<size_t>& remapper;
+              std::vector<size_t>& remapper;
           };
 
       };
@@ -158,7 +158,7 @@ namespace MR
       template <class Fixel>
       Model<Fixel>::~Model ()
       {
-        for (vector<TrackContribution*>::iterator i = contributions.begin(); i != contributions.end(); ++i) {
+        for (std::vector<TrackContribution*>::iterator i = contributions.begin(); i != contributions.end(); ++i) {
           if (*i) {
             delete *i;
             *i = nullptr;
@@ -221,10 +221,10 @@ namespace MR
         if (!remove_untracked_fixels && !min_fibre_density)
           return;
 
-        vector<size_t> fixel_index_mapping (fixels.size(), 0);
+        std::vector<size_t> fixel_index_mapping (fixels.size(), 0);
         VoxelAccessor v (accessor());
 
-        vector<Fixel> new_fixels;
+        std::vector<Fixel> new_fixels;
         new_fixels.push_back (Fixel());
         FOD_sum = 0.0;
 
@@ -260,7 +260,7 @@ namespace MR
         Thread::run_queue (writer, TrackIndexRange(), Thread::multi (remapper));
 
         TD_sum = 0.0;
-        for (typename vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
+        for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
           TD_sum += i->get_weight() * i->get_TD();
 
         INFO ("After fixel exclusion, the proportionality coefficient is " + str(mu()));
@@ -278,14 +278,14 @@ namespace MR
       {
         VAR (TD_sum);
         double sum_from_fixels = 0.0, sum_from_fixels_weighted = 0.0;
-        for (typename vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+        for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
           sum_from_fixels          += i->get_TD();
           sum_from_fixels_weighted += i->get_TD() * i->get_weight();
         }
         VAR (sum_from_fixels);
         VAR (sum_from_fixels_weighted);
         double sum_from_tracks = 0.0;
-        for (vector<TrackContribution*>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
+        for (std::vector<TrackContribution*>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
           if (*i)
             sum_from_tracks += (*i)->get_total_contribution();
         }
@@ -362,7 +362,7 @@ namespace MR
           Mapping::SetDixel dixels;
           mapper (in, dixels);
 
-          vector<Track_fixel_contribution> masked_contributions;
+          std::vector<Track_fixel_contribution> masked_contributions;
           default_type total_contribution = 0.0, total_length = 0.0;
 
           for (Mapping::SetDixel::const_iterator i = dixels.begin(); i != dixels.end(); ++i) {
@@ -371,7 +371,7 @@ namespace MR
             if (fixel_index && (i->get_length() > Track_fixel_contribution::min())) {
               total_contribution += i->get_length() * master.fixels[fixel_index].get_weight();
               bool incremented = false;
-              for (vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
+              for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
                 if ((c->get_fixel_index() == fixel_index) && c->add (i->get_length()))
                   incremented = true;
               }
@@ -383,7 +383,7 @@ namespace MR
           master.contributions[in.get_index()] = new TrackContribution (masked_contributions, total_contribution, total_length);
 
           TD_sum += total_contribution;
-          for (vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i) {
+          for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i) {
             fixel_TDs [i->get_fixel_index()] += i->get_length();
             ++fixel_counts [i->get_fixel_index()];
           }
@@ -406,7 +406,7 @@ namespace MR
         for (track_t track_index = in.first; track_index != in.second; ++track_index) {
           if (master.contributions[track_index]) {
             TrackContribution& this_cont (*master.contributions[track_index]);
-            vector<Track_fixel_contribution> new_cont;
+            std::vector<Track_fixel_contribution> new_cont;
             double total_contribution = 0.0;
             for (size_t i = 0; i != this_cont.dim(); ++i) {
               const size_t new_index = remapper[this_cont[i].get_fixel_index()];

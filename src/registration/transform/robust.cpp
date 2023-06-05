@@ -18,8 +18,8 @@ namespace MR
 {
   namespace Registration
   {
-    void calc_median_trafo (const MR::vector<transform_type>& candid_trafo, const Eigen::Matrix<default_type, 4, 4> & vertices_4,
-      const transform_type & trafo_before, transform_type & median_trafo, MR::vector<default_type> & scores) {
+    void calc_median_trafo (const std::vector<transform_type>& candid_trafo, const Eigen::Matrix<default_type, 4, 4> & vertices_4,
+      const transform_type & trafo_before, transform_type & median_trafo, std::vector<default_type> & scores) {
       DEBUG("calc_median_trafo");
       const int n_vertices = 4;
       int weiszfeld_iterations = 100;
@@ -28,7 +28,7 @@ namespace MR
 
       transform_type trafo;
       const Eigen::Matrix<default_type, 3, n_vertices> vertices = vertices_4.template block<3,4>(0,0);
-      MR::vector<Eigen::Matrix<default_type, 3, Eigen::Dynamic>> candid_vertices (n_vertices);
+      std::vector<Eigen::Matrix<default_type, 3, Eigen::Dynamic>> candid_vertices (n_vertices);
       Eigen::Matrix<default_type, 3, Eigen::Dynamic> start_vertices = trafo_before * vertices;
 
       for (size_t i = 0; i < n_vertices; ++i)

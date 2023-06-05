@@ -45,7 +45,7 @@ namespace MR {
             }
 
         protected:
-          vector<value_type> diff, med_diff;
+          std::vector<value_type> diff, med_diff;
 
       };
 

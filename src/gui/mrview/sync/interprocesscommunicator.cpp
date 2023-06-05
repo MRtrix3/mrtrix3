@@ -111,7 +111,7 @@ namespace MR
         void InterprocessCommunicator::OnNewIncomingConnection()
         {
           LocalSocketReader* lsr = new LocalSocketReader(receiver->nextPendingConnection());
-          connect(lsr, SIGNAL(DataReceived(vector<std::shared_ptr<QByteArray>>)), this, SLOT(OnDataReceived(vector<std::shared_ptr<QByteArray>>)));
+          connect(lsr, SIGNAL(DataReceived(std::vector<std::shared_ptr<QByteArray>>)), this, SLOT(OnDataReceived(std::vector<std::shared_ptr<QByteArray>>)));
         }
 
         /**
@@ -158,9 +158,9 @@ namespace MR
         /**
         * Fires when 1+ messages are received from another process.
         */
-        void InterprocessCommunicator::OnDataReceived(vector<std::shared_ptr<QByteArray>> allMessages)
+        void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteArray>> allMessages)
         {
-          vector<std::shared_ptr<QByteArray>> toSync;
+          std::vector<std::shared_ptr<QByteArray>> toSync;
 
           for (size_t i = 0; i < allMessages.size(); i++)
           {

@@ -109,7 +109,7 @@ namespace MR
 
       static void (*display_func) (const Exception& E, int log_level);
 
-      vector<std::string> description;
+      std::vector<std::string> description;
   };
 
   class InvalidImageException : public Exception { 

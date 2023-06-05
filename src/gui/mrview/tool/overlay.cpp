@@ -47,7 +47,7 @@ namespace MR
             Model (QObject* parent) :
               ListModelBase (parent) { }
 
-            void add_items (vector<std::unique_ptr<MR::Header>>& list);
+            void add_items (std::vector<std::unique_ptr<MR::Header>>& list);
 
             Item* get_image (QModelIndex& index) {
               return dynamic_cast<Item*>(items[index.row()].get());
@@ -55,7 +55,7 @@ namespace MR
         };
 
 
-        void Overlay::Model::add_items (vector<std::unique_ptr<MR::Header>>& list)
+        void Overlay::Model::add_items (std::vector<std::unique_ptr<MR::Header>>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
@@ -192,10 +192,10 @@ namespace MR
 
         void Overlay::image_open_slot ()
         {
-          vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open", &current_folder);
+          std::vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open", &current_folder);
           if (overlay_names.empty())
             return;
-          vector<std::unique_ptr<MR::Header>> list;
+          std::vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < overlay_names.size(); ++n) {
             try {
               list.push_back (make_unique<MR::Header> (MR::Header::open (overlay_names[n])));
@@ -210,7 +210,7 @@ namespace MR
 
 
 
-        void Overlay::add_images (vector<std::unique_ptr<MR::Header>>& list)
+        void Overlay::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
         {
           size_t previous_size = image_list_model->rowCount();
           image_list_model->add_items (list);
@@ -229,7 +229,7 @@ namespace MR
 
           const QMimeData* mimeData = event->mimeData();
           if (mimeData->hasUrls()) {
-            vector<std::unique_ptr<MR::Header>> list;
+            std::vector<std::unique_ptr<MR::Header>> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
               try {
@@ -752,7 +752,7 @@ namespace MR
         bool Overlay::process_commandline_option (const MR::App::ParsedOption& opt)
         {
           if (opt.opt->is ("overlay.load")) {
-            vector<std::unique_ptr<MR::Header>> list;
+            std::vector<std::unique_ptr<MR::Header>> list;
             try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             add_images (list);

@@ -69,12 +69,12 @@ namespace MR
         ~Resize () { delete out_of_bounds_value; }
 
         void set_voxel_size (default_type size) {
-          vector<default_type> voxel_size (3, size);
+          std::vector<default_type> voxel_size (3, size);
           set_voxel_size (voxel_size);
         }
 
 
-        void set_voxel_size (const vector<default_type>& voxel_size) {
+        void set_voxel_size (const std::vector<default_type>& voxel_size) {
           if (voxel_size.size() != 3)
             throw Exception ("the voxel size must be defined using a value for all three dimensions.");
 
@@ -93,10 +93,10 @@ namespace MR
         }
 
 
-        void set_size (const vector<uint32_t>& image_res) {
+        void set_size (const std::vector<uint32_t>& image_res) {
           if (image_res.size() != 3)
             throw Exception ("the image resolution must be defined for 3 spatial dimensions");
-          vector<default_type> new_voxel_size (3);
+          std::vector<default_type> new_voxel_size (3);
           for (size_t d = 0; d < 3; ++d) {
             if (image_res[d] <= 0)
               throw Exception ("the image resolution must be larger than zero for all 3 spatial dimensions");
@@ -107,14 +107,14 @@ namespace MR
 
 
         void set_scale_factor (default_type scale) {
-          set_scale_factor (vector<default_type> (3, scale));
+          set_scale_factor (std::vector<default_type> (3, scale));
         }
 
 
-        void set_scale_factor (const vector<default_type> & scale) {
+        void set_scale_factor (const std::vector<default_type> & scale) {
           if (scale.size() != 3)
             throw Exception ("a scale factor for each spatial dimension is required");
-          vector<default_type> new_voxel_size (3);
+          std::vector<default_type> new_voxel_size (3);
           for (size_t d = 0; d < 3; ++d) {
             if (scale[d] <= 0.0)
               throw Exception ("the scale factor must be larger than zero");
@@ -123,7 +123,7 @@ namespace MR
           set_voxel_size (new_voxel_size);
         }
 
-        void set_oversample (vector<uint32_t> oversample) {
+        void set_oversample (std::vector<uint32_t> oversample) {
           if (oversample.size() == 1)
             oversample.resize (3, oversample[0]);
           else if (oversample.size() != 3 and oversample.size() != 0)
@@ -175,7 +175,7 @@ namespace MR
       protected:
         int interp_type;
         transform_type transformation;
-        vector<uint32_t> oversampling;
+        std::vector<uint32_t> oversampling;
         default_type *out_of_bounds_value;
     };
     //! @}

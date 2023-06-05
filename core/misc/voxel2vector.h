@@ -53,7 +53,7 @@ namespace MR
 
       size_t size() const { return reverse.size(); }
 
-      const vector<index_t>& operator[] (const size_t index) const {
+      const std::vector<index_t>& operator[] (const size_t index) const {
         assert (index < reverse.size());
         return reverse[index];
       }
@@ -69,7 +69,7 @@ namespace MR
 
     private:
       Image<index_t> forward;
-      vector< vector<index_t> > reverse;
+      std::vector< std::vector<index_t> > reverse;
   };
 
 
@@ -89,7 +89,7 @@ namespace MR
     for (auto l = Loop(data) (r_mask, forward); l; ++l) {
       if (r_mask.value()) {
         forward.value() = counter++;
-        vector<index_t> pos;
+        std::vector<index_t> pos;
         for (size_t index = 0; index != data.ndim(); ++index)
           pos.push_back (forward.index(index));
         reverse.push_back (pos);
