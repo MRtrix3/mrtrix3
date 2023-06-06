@@ -160,7 +160,7 @@ namespace MR
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
+              list.push_back (std::make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
             }
             catch (Exception& e) {
               e.display();
@@ -783,7 +783,7 @@ namespace MR
 
           vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < MR::App::argument.size(); ++n) {
-            try { list.push_back (make_unique<MR::Header> (MR::Header::open (MR::App::argument[n]))); }
+            try { list.push_back (std::make_unique<MR::Header> (MR::Header::open (MR::App::argument[n]))); }
             catch (CancelException& e) {
               for (const auto& msg : e.description)
                 CONSOLE (msg);
@@ -849,7 +849,7 @@ namespace MR
         vector<std::unique_ptr<MR::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
-            list.push_back (make_unique<MR::Header> (MR::Header::open (image_list[n])));
+            list.push_back (std::make_unique<MR::Header> (MR::Header::open (image_list[n])));
           }
           catch (Exception& E) {
             E.display();
@@ -869,7 +869,7 @@ namespace MR
 
         try {
           vector<std::unique_ptr<MR::Header>> list;
-          list.push_back (make_unique<MR::Header> (MR::Header::open (folder)));
+          list.push_back (std::make_unique<MR::Header> (MR::Header::open (folder)));
           add_images (list);
         }
         catch (CancelException& E) {
@@ -2007,7 +2007,7 @@ namespace MR
 
           if (opt.opt->is ("load")) {
             vector<std::unique_ptr<MR::Header>> list;
-            try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
+            try { list.push_back (std::make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             add_images (list);
             return;

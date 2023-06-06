@@ -301,7 +301,7 @@ namespace MR
             return;
           vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < names.size(); ++n)
-            list.push_back (make_unique<MR::Header> (MR::Header::open (names[n])));
+            list.push_back (std::make_unique<MR::Header> (MR::Header::open (names[n])));
 
           load (list);
           in_insert_mode = false;
@@ -321,7 +321,7 @@ namespace MR
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
               try {
-                list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
+                list.push_back (std::make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
               }
               catch (Exception& e) {
                 e.display();
@@ -903,7 +903,7 @@ namespace MR
         {
           if (opt.opt->is ("roi.load")) {
             vector<std::unique_ptr<MR::Header>> list;
-            try { list.push_back (make_unique<MR::Header> (MR::Header::open (opt[0]))); }
+            try { list.push_back (std::make_unique<MR::Header> (MR::Header::open (opt[0]))); }
             catch (Exception& e) { e.display(); }
             load (list);
             return true;

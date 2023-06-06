@@ -117,7 +117,7 @@ namespace MR
           const vector<size_t>& volumes = (*shells)[index].get_volumes();
           for (size_t row = 0; row != volumes.size(); ++row)
             shell_dirs.row (row) = grad.row (volumes[row]).head<3>().cast<float>();
-          auto new_dirs = MR::make_unique<MR::DWI::Directions::Set> (shell_dirs);
+          auto new_dirs = std::make_unique<MR::DWI::Directions::Set> (shell_dirs);
           std::swap (dirs, new_dirs);
           shell_index = index;
           dir_type = DixelPlugin::dir_t::DW_SCHEME;
@@ -126,13 +126,13 @@ namespace MR
         void ODF_Item::DixelPlugin::set_header() {
           if (!header_dirs.rows())
             throw Exception ("No direction scheme defined in header");
-          auto new_dirs = MR::make_unique<MR::DWI::Directions::Set> (header_dirs);
+          auto new_dirs = std::make_unique<MR::DWI::Directions::Set> (header_dirs);
           std::swap (dirs, new_dirs);
           dir_type = DixelPlugin::dir_t::HEADER;
         }
 
         void ODF_Item::DixelPlugin::set_internal (const size_t n) {
-          auto new_dirs = MR::make_unique<MR::DWI::Directions::Set> (n);
+          auto new_dirs = std::make_unique<MR::DWI::Directions::Set> (n);
           std::swap (dirs, new_dirs);
           dir_type = DixelPlugin::dir_t::INTERNAL;
         }
@@ -145,7 +145,7 @@ namespace MR
 
         void ODF_Item::DixelPlugin::set_from_file (const std::string& path)
         {
-          auto new_dirs = MR::make_unique<MR::DWI::Directions::Set> (path);
+          auto new_dirs = std::make_unique<MR::DWI::Directions::Set> (path);
           std::swap (dirs, new_dirs);
           dir_type = DixelPlugin::dir_t::FILE;
         }

@@ -230,12 +230,6 @@ namespace MR
 
 
 
-  template <typename X, typename... Args>
-    inline std::unique_ptr<X> make_unique (Args&&... args) {
-      return std::unique_ptr<X> (new X (std::forward<Args> (args)...));
-    }
-
-
   // required to allow use of abs() call on unsigned integers in template
   // functions, etc, since the standard labels such calls ill-formed:
   // http://en.cppreference.com/w/cpp/numeric/math/abs
