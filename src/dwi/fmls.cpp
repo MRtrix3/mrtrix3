@@ -116,30 +116,6 @@ namespace MR {
           bool operator() (const default_type& a, const default_type& b) const { return (abs (a) > abs (b)); }
       };
 
-      class RetrospectiveAssignment {
-        public:
-          RetrospectiveAssignment (const index_type dixel_index, const vector<uint32_t>& fixel_indices) :
-              dixel_index (dixel_index),
-              fixel_indices (fixel_indices) { }
-
-          index_type dixel() const { return dixel_index; }
-          const vector<uint32_t> fixels() const { return fixel_indices; }
-
-          // If fixel indices are going to be changed due to the merge of existing fixels,
-          //   any indices stored in here need to be updated accordingly
-          void update (const vector<uint32_t>& lookup)
-          {
-            // Use std::set to detect duplicates
-            std::set<uint32_t> new_fixel_indices;
-            for (const auto& i : fixel_indices)
-              new_fixel_indices.insert (lookup[i]);
-            fixel_indices = vector<uint32_t> (new_fixel_indices.begin(), new_fixel_indices.end());
-          }
-        private:
-          const index_type dixel_index;
-          vector<uint32_t> fixel_indices;
-      };
-
       bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
         assert (in.size() == ssize_t (Math::Sphere::SH::NforL (lmax)));
@@ -162,19 +138,20 @@ namespace MR {
         if (dixels_in_order.begin()->first <= 0.0)
           return true;
 
-        vector<RetrospectiveAssignment> retrospective_assignments;
+        auto can_add = [&] (const default_type amplitude, const index_type dixel_index, const uint32_t lobe_index) -> bool {
+          return (((amplitude <= 0.0) && out[lobe_index].is_negative())
+                  || ((amplitude > 0.0) && !out[lobe_index].is_negative()))
+                  && (dirs.adjacency (out[lobe_index].get_mask(), dixel_index));
+        };
+
+        vector<index_type> retrospective_assignments;
 
         for (const auto& i : dixels_in_order) {
 
           vector<uint32_t> adj_lobes;
           for (uint32_t l = 0; l != out.size(); ++l) {
-            if ((((i.first <= 0.0) &&  out[l].is_negative())
-                  || ((i.first >  0.0) && !out[l].is_negative()))
-                  && (dirs.adjacency (out[l].get_mask(), i.second))) {
-
+            if (can_add (i.first, i.second, l))
               adj_lobes.push_back (l);
-
-            }
           }
 
           if (adj_lobes.empty()) {
@@ -185,52 +162,56 @@ namespace MR {
 
             out[adj_lobes.front()].add (dirs, i.second, i.first, (*weights)[i.second]);
 
+          } else if (abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > lobe_merge_ratio) {
+
+            for (size_t j = 1; j != adj_lobes.size(); ++j)
+              out[adj_lobes[0]].merge (out[adj_lobes[j]]);
+
+            out[adj_lobes[0]].add (dirs, i.second, i.first, (*weights)[i.second]);
+
+            for (size_t j = adj_lobes.size() - 1; j; --j) {
+              vector<FOD_lobe>::iterator ptr = out.begin();
+              advance (ptr, adj_lobes[j]);
+              out.erase (ptr);
+            }
+
           } else {
 
-            if (abs (i.first) / out[adj_lobes.back()].get_max_peak_value() > lobe_merge_ratio) {
-
-              for (size_t j = 1; j != adj_lobes.size(); ++j)
-                out[adj_lobes[0]].merge (out[adj_lobes[j]]);
-
-              out[adj_lobes[0]].add (dirs, i.second, i.first, (*weights)[i.second]);
-
-              // Generate table where the value at a given fixel index offset
-              //   is equal to the new index where that fixel will appear after
-              //   the merging process is completed
-              vector<uint32_t> index_lookup;
-              index_lookup.reserve (out.size());
-              uint32_t counter = 0;
-              for (uint32_t f = 0; f != out.size(); ++f)
-                  index_lookup.push_back (
-                  ((f == adj_lobes[0]) || (std::find (adj_lobes.begin(), adj_lobes.end(), f) == adj_lobes.end())) ?
-                    counter++ :
-                    adj_lobes[0]);
-
-              for (auto& j : retrospective_assignments)
-                j.update (index_lookup);
-
-              for (size_t j = adj_lobes.size() - 1; j; --j) {
-                vector<FOD_lobe>::iterator ptr = out.begin();
-                advance (ptr, adj_lobes[j]);
-                out.erase (ptr);
-              }
-
-            } else {
-
-              retrospective_assignments.emplace_back (i.second, adj_lobes);
-
-            }
+            retrospective_assignments.emplace_back (i.second);
 
           }
 
         }
 
-        // These dixels are attributed to multiple fixels;
-        //   split contribution to integrals / directions between them
-        for (const auto& i : retrospective_assignments) {
-          const default_type weight = (*weights)[i.dixel()] / i.fixels().size();
-          for (const auto f : i.fixels())
-            out[f].add (dirs, i.dixel(), values[i.dixel()], weight);
+        // These dixels were adjacent to multiple fixels during segmentation;
+        //   retrospectively choose which to assign them to,
+        //   so that that assignment does not itself influence subsequent segmentation
+        //   (produces a "seam" between two touching fixels)
+        for (auto i : retrospective_assignments) {
+          // Unlike previous implementations, we no longer track the fixels adjacent to each retrospective assignment
+          // Instead, we will now look at the directions adjacent to this,
+          //   see which fixels they were assigned to,
+          //   and choose which of them we should assign this direction to.
+          // Further, while previous implementations made this decision based on the
+          //   fixel with the maximal peak amplitude,
+          //   now this will instead be done based on the maximal _adjacent_ amplitude
+          const default_type amplitude = values[i];
+          default_type max_abs_adj_amplitude = 0.0;
+          uint32_t lobe = out.size();
+          for (uint32_t l = 0; l != out.size(); ++l) {
+            if (can_add (amplitude, i, l)) {
+              default_type abs_adj_amplitude = 0.0;
+              for (auto d : dirs.adjacency[i])
+                abs_adj_amplitude = std::max (abs_adj_amplitude, abs(out[l].get_values()[d]));
+              assert (abs_adj_amplitude > 0.0);
+              if (abs_adj_amplitude > max_abs_adj_amplitude) {
+                max_abs_adj_amplitude = abs_adj_amplitude;
+                lobe = l;
+              }
+            }
+            assert (lobe < out.size());
+            out[lobe].add (dirs, i, amplitude, (*weights)[i]);
+          }
         }
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
