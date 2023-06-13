@@ -96,14 +96,14 @@ namespace MR
     void Mesh::load_vtk (const std::string& path)
     {
 
-      std::ifstream in (path.c_str(), std::ios_base::in);
+      std::ifstream in (path.c_str(), std::ios_base::binary);
       if (!in)
         throw Exception ("Error opening input file!");
 
       std::string line;
 
       // First line: VTK version ID
-      std::getline (in, line);
+      MR::getline (in, line);
       // Strip the version numbers
       line[23] = line[25] = 'x';
       // Verify that the line is correct
@@ -111,10 +111,10 @@ namespace MR
         throw Exception ("Incorrect first line of .vtk file");
 
       // Second line: identifier
-      std::getline (in, line);
+      MR::getline (in, line);
 
       // Third line: format of data
-      std::getline (in, line);
+      MR::getline (in, line);
       bool is_ascii = false;
       if (line == "ASCII")
         is_ascii = true;
@@ -122,26 +122,19 @@ namespace MR
         throw Exception ("unknown data format in .vtk data");
 
       // Fourth line: Data set type
-      std::getline (in, line);
+      MR::getline (in, line);
       if (line.substr(0, 7) != "DATASET")
         throw Exception ("Error in definition of .vtk dataset");
       line = line.substr (8);
       if (line == "STRUCTURED_POINTS" || line == "STRUCTURED_GRID" || line == "UNSTRUCTURED_GRID" || line == "RECTILINEAR_GRID" || line == "FIELD")
         throw Exception ("Unsupported dataset type (" + line + ") in .vtk file");
 
-      if (!is_ascii) {
-        const std::streampos offset = in.tellg();
-        in.close();
-        in.open (path.c_str(), std::ios_base::in | std::ios_base::binary);
-        in.seekg (offset);
-      }
-
       // From here, don't necessarily know which parts of the data will come first
       while (!in.eof()) {
 
         // Need to read line in either ASCII mode or in raw binary
         if (is_ascii) {
-          std::getline (in, line);
+          MR::getline (in, line);
         } else {
           line.clear();
           char c = 0;
@@ -170,7 +163,7 @@ namespace MR
 
               Vertex v;
               if (is_ascii) {
-                std::getline (in, line);
+                MR::getline (in, line);
                 sscanf (line.c_str(), "%lf %lf %lf", &v[0], &v[1], &v[2]);
               } else {
                 if (is_double) {
@@ -200,7 +193,7 @@ namespace MR
 
               int vertex_count;
               if (is_ascii) {
-                std::getline (in, line);
+                MR::getline (in, line);
                 sscanf (line.c_str(), "%u", &vertex_count);
               } else {
                 in.read (reinterpret_cast<char*>(&vertex_count), sizeof (int));
@@ -399,7 +392,7 @@ namespace MR
     void Mesh::load_obj (const std::string& path)
     {
 
-      struct FaceData { 
+      struct FaceData {
           uint32_t vertex, texture, normal;
       };
 
