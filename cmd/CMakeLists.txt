@@ -6,8 +6,8 @@ foreach(CMD ${CMD_SRCS})
     get_filename_component(CMD_NAME ${CMD} NAME_WE)
     add_executable(${CMD_NAME} ${CMD})
     target_link_libraries(${CMD_NAME} PRIVATE mrtrix::main)
-    install(TARGETS ${CMD_NAME} 
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+    set_target_properties(${CMD_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
+    install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endforeach(CMD)
 
 
