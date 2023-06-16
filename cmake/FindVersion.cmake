@@ -23,7 +23,7 @@ if(GIT_EXECUTABLE)
 
     if(NOT GIT_TAG_ERROR AND NOT GIT_COMMIT_ERROR)
         message(STATUS "Git tag: ${GIT_TAG}; Git commit: ${GIT_COMMIT}")
-        set(MRTRIX_CORE_VERSION ${GIT_COMMIT})
+        set(MRTRIX_VERSION ${GIT_COMMIT})
     else()
         message(STATUS "Git tag: not found.")
     endif()
