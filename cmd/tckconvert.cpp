@@ -392,26 +392,27 @@ class PLYWriter: public WriterInterface<float> {
     }
 
     void computeNormals ( const Streamline<float>& tck, Streamline<float>& normals) {
-      Eigen::Vector3f sPrev, sNext, pt1, pt2, n, normal;
-      sPrev = (tck[1] - tck[0]).normalized();
-
+      Eigen::Vector3f sPrev = (tck[1] - tck[0]).normalized();
+      Eigen::Vector3f normal = Eigen::Vector3f::Zero();
+      
       // Find a good starting normal
-      for (size_t idx = 1; idx < tck.size(); idx++) {
-        pt1 = tck[idx];
-        pt2 = tck[idx+1];
-        sNext = (pt2 - pt1).normalized();
-        n = sPrev.cross(sNext);
+      for (size_t idx = 1; idx < tck.size() - 1; idx++) {
+        const auto& pt1 = tck[idx];
+        const auto& pt2 = tck[idx+1];
+        const auto sNext = (pt2 - pt1).normalized();
+        const auto n = sPrev.cross(sNext);
         if ( n.norm() > 1.0E-3 ) {
           normal = n;
           sPrev = sNext;
           break;
         }
       }
+
       normal.normalize();  // vtkPolyLine.cxx:170
-      for (size_t idx = 0; idx < tck.size(); idx++) {
-        pt1 = tck[idx];
-        pt2 = tck[idx+1];
-        sNext = (pt2 - pt1).normalized();
+      for (size_t idx = 0; idx < tck.size() - 1; idx++) {
+        const auto& pt1 = tck[idx];
+        const auto& pt2 = tck[idx+1];
+        const auto sNext = (pt2 - pt1).normalized();
 
         // compute rotation vector vtkPolyLine.cxx:187
         auto w = sPrev.cross(normal);

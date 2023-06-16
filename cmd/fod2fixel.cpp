@@ -240,7 +240,7 @@ void Segmented_FOD_receiver::commit ()
     Fixel::check_fixel_size (*index_image, *disp_image);
   }
 
-  size_t offset (0), lobe_index (0);
+  size_t offset = 0;
 
 
   for (const auto& vox_fixels : lobes) {
@@ -283,7 +283,6 @@ void Segmented_FOD_receiver::commit ()
     }
 
     offset += n_vox_fixels;
-    lobe_index ++;
   }
 
   assert (offset == fixel_count);
