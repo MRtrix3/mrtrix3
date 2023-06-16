@@ -88,6 +88,9 @@ ENVIRONMENT VARIABLES
     Multiple environment variables can be set this way as needed.
     The following environment variables are available:
 
+    CXX_COMPILER_LAUNCHER
+        A custom prefix to invoke the compiler. Useful for tools like ccache.
+        
     CXX
         The compiler command to use. The default is "clang++", falling back to
         "g++" if not found.
@@ -1476,6 +1479,11 @@ with open (config_filename, 'w', encoding='utf-8') as config_file:
   commit (config_file, 'exe_suffix', exe_suffix)
   commit (config_file, 'lib_prefix', lib_prefix)
   commit (config_file, 'lib_suffix', lib_suffix)
+
+  if "CXX_COMPILER_LAUNCHER" in os.environ:
+    print("\n USING COMPILER PREFIX", os.environ["CXX_COMPILER_LAUNCHER"])
+    cpp.insert(0, os.environ["CXX_COMPILER_LAUNCHER"])
+
   commit (config_file, 'cpp', cpp)
   commit (config_file, 'cpp_flags', cpp_flags)
   commit (config_file, 'ld', ld)
