@@ -37,7 +37,7 @@ namespace MR
 
       template <class Fixel>
       class Fixel_TD_map : public Fixel_map<Fixel>
-      { 
+      {
 
           using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
           using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
@@ -51,6 +51,7 @@ namespace MR
           virtual ~Fixel_TD_map() { }
 
           virtual bool operator() (const SetDixel& in);
+          using Fixel_map<Fixel>::operator();
 
         protected:
           using Fixel_map<Fixel>::accessor;
