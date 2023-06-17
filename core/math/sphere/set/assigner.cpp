@@ -32,6 +32,7 @@ namespace MR {
         // TODO The purpose of this operation is to speed up assignment of directions to dixels,
         //   yet it involves expensive trigonometric operations...
         // TODO Alternative would be to construct lookup table in Euclidean space
+        assert (dir.squaredNorm());
         Eigen::Vector2d azel;
         Sphere::cartesian2spherical (dir, azel);
         const size_t az_index = std::floor ((azel[0] - az_begin) / az_grid_step);
@@ -47,7 +48,7 @@ namespace MR {
         default_type max_dot_product = abs (dir.dot ((*this)[guess]));
         do {
           previous = result;
-          for (const auto& i : adjacency[previous]) {
+          for (const auto& i : adjacency(previous)) {
             const default_type this_dot_product = abs (dir.dot ((*this)[i]));
             if (this_dot_product > max_dot_product) {
               result = i;

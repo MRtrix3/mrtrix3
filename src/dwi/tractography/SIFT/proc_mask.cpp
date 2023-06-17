@@ -33,20 +33,27 @@ namespace MR
 
 
 
-        const App::OptionGroup SIFTModelProcMaskOption = App::OptionGroup ("Options for setting the processing mask for the SIFT fixel-streamlines comparison model")
 
+        const App::OptionGroup SIFTModelWeightsOption = App::OptionGroup ("Options for setting the model weights for SIFT fixel-tractogram comparisons")
+
+          // TODO:
+          // - Rename command-line option
+          // - Rename files
+          // - Let this be either a voxel image or fixel data file
+          // - Do not store as a member variable; instead just use function to fill contents of a scratch buffer, and use that to populate the corresponding column of the fixel data matrix
           + App::Option ("proc_mask", "provide an image containing the processing mask weights for the model; image spatial dimensions must match the fixel image")
             + App::Argument ("image").type_image_in()
 
-          + App::Option ("act", "use an ACT five-tissue-type segmented anatomical image to derive the processing mask")
+          + App::Option ("act", "use an ACT five-tissue-type segmented anatomical image to derive appropriate model weights")
             + App::Argument ("image").type_image_in();
 
 
 
 
-        void initialise_processing_mask (Image<float>& in_dwi, Image<float>& out_mask, Image<float>& out_5tt)
+        void initialise_processing_mask (const Header header, Image<float>& out_mask, Image<float>& out_5tt)
         {
           // User-specified processing mask
+          // TODO Rename command-line option
           auto opt = App::get_options ("proc_mask");
           if (opt.size()) {
             auto image = Image<float>::open (opt[0][0]);
@@ -61,7 +68,7 @@ namespace MR
               auto in_5tt = Image<float>::open (opt[0][0]);
               ACT::verify_5TT_image (in_5tt);
 
-              Header H_5tt (in_dwi);
+              Header H_5tt (header);
               H_5tt.ndim() = 4;
               H_5tt.size(3) = 5;
               assert (!out_5tt.valid());
@@ -73,8 +80,8 @@ namespace MR
                 INFO ("5TT image dimensions match fixel image - importing directly");
                 copy (in_5tt, out_5tt);
               } else {
-                auto threaded_loop = ThreadedLoop ("resampling ACT 5TT image to fixel image space", in_dwi, 0, 3);
-                ResampleFunctor functor (in_dwi, in_5tt, out_5tt);
+                auto threaded_loop = ThreadedLoop ("resampling ACT 5TT image to fixel image space", header, 0, 3);
+                ResampleFunctor functor (in_5tt, out_5tt);
                 threaded_loop.run (functor);
               }
 
@@ -95,10 +102,8 @@ namespace MR
 
             } else {
 
-              auto f = [] (Image<float>& dwi, Image<float>& mask) {
-                mask.value() = (dwi.value() && std::isfinite ((float) dwi.value())) ? 1.0 : 0.0;
-              };
-              ThreadedLoop ("Creating homogeneous processing mask", in_dwi, 0, 3).run (f, in_dwi, out_mask);
+              auto f = [] (Image<float>& mask) { mask.value() = true; };
+              ThreadedLoop ("Creating homogeneous processing mask", header, 0, 3).run (f, out_mask);
 
             }
 
@@ -107,14 +112,12 @@ namespace MR
         }
 
 
-        ResampleFunctor::ResampleFunctor (Image<float>& dwi, Image<float>& anat, Image<float>& out) :
-            dwi (dwi),
-            voxel2scanner (new transform_type (Transform(dwi).voxel2scanner.cast<float>())),
+        ResampleFunctor::ResampleFunctor (Image<float>& anat, Image<float>& out) :
+            voxel2scanner (new transform_type (Transform(out).voxel2scanner.cast<float>())),
             interp_anat (anat),
             out (out) { }
 
         ResampleFunctor::ResampleFunctor (const ResampleFunctor& that) :
-            dwi (that.dwi),
             voxel2scanner (that.voxel2scanner),
             interp_anat (that.interp_anat),
             out (that.out) { }
@@ -123,18 +126,12 @@ namespace MR
 
         void ResampleFunctor::operator() (const Iterator& pos)
         {
-          assign_pos_of (pos).to (dwi, out);
-          if (dwi.value() && std::isfinite ((float) dwi.value())) {
-            const ACT::Tissues tissues = ACT2pve (pos);
-            out.index (3) = 0; out.value() = tissues.get_cgm();
-            out.index (3) = 1; out.value() = tissues.get_sgm();
-            out.index (3) = 2; out.value() = tissues.get_wm();
-            out.index (3) = 3; out.value() = tissues.get_csf();
-            out.index (3) = 4; out.value() = tissues.get_path();
-          } else {
-            for (out.index(3) = 0; out.index(3) != 5; ++out.index(3))
-              out.value() = 0.0;
-          }
+          const ACT::Tissues tissues = ACT2pve (pos);
+          out.index (3) = 0; out.value() = tissues.get_cgm();
+          out.index (3) = 1; out.value() = tissues.get_sgm();
+          out.index (3) = 2; out.value() = tissues.get_wm();
+          out.index (3) = 3; out.value() = tissues.get_csf();
+          out.index (3) = 4; out.value() = tissues.get_path();
         }
 
 

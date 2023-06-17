@@ -31,7 +31,7 @@ namespace MR {
 
 
 
-      RegularisationCalculator::RegularisationCalculator (TckFactor& tckfactor, double& cf_reg_tik, double& cf_reg_tv) :
+      RegularisationCalculator::RegularisationCalculator (TckFactor& tckfactor, value_type& cf_reg_tik, value_type& cf_reg_tv) :
         master (tckfactor),
         cf_reg_tik (cf_reg_tik),
         cf_reg_tv (cf_reg_tv),
@@ -52,15 +52,15 @@ namespace MR {
       bool RegularisationCalculator::operator() (const SIFT::TrackIndexRange& range)
       {
         for (SIFT::track_t track_index = range.first; track_index != range.second; ++track_index) {
-          const double coefficient = master.coefficients[track_index];
+          const value_type coefficient = master.coefficients[track_index];
           tikhonov_sum += Math::pow2 (coefficient);
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
-          const double contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
-          double this_tv_sum = 0.0;
+          const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
+          value_type this_tv_sum = 0.0;
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
-            const Fixel& fixel (master.fixels[this_contribution[j].get_fixel_index()]);
-            const double fixel_coeff_cost = SIFT2::tvreg (coefficient, fixel.get_mean_coeff());
-            this_tv_sum += fixel.get_weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
+            const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
+            const value_type fixel_coeff_cost = SIFT2::tvreg (coefficient, fixel.mean_coeff());
+            this_tv_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
           }
           tv_sum += this_tv_sum;
         }

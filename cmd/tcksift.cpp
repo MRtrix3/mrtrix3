@@ -45,7 +45,7 @@ void usage ()
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals";
+  SYNOPSIS = "Filter a whole-brain fibre-tracking data set such that the streamline densities match fixel-wise fibre densities";
 
   REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
@@ -54,7 +54,7 @@ void usage ()
 
   ARGUMENTS
   + Argument ("in_tracks",  "the input track file").type_tracks_in()
-  + Argument ("in_fod",     "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
+  + Argument ("in_fd",      "input fixel data file containing fibre densities").type_image_in()
   + Argument ("out_tracks", "the output filtered tracks file").type_tracks_out();
 
   OPTIONS
@@ -65,7 +65,7 @@ void usage ()
                                 "numbers of remaining streamlines; provide as comma-separated list of integers")
     + Argument ("counts").type_sequence_int()
 
-  + SIFTModelProcMaskOption
+  + SIFTModelWeightsOption
   + SIFTModelOption
   + SIFTOutputOption
 
@@ -83,28 +83,24 @@ void run ()
 
   const std::string debug_path = get_option_value<std::string> ("output_debug", "");
 
-  auto in_dwi = Image<float>::open (argument[1]);
-  Math::Sphere::SH::check (in_dwi);
-  Math::Sphere::Set::Assigner dirs (Math::Sphere::Set::Predefined::load (FMLS_DEFAULT_DIRECTION_SET));
-
-  SIFTer sifter (in_dwi, dirs);
+  SIFTer sifter (argument[1]);
 
   if (debug_path.size()) {
     sifter.initialise_debug_image_output (debug_path);
-    sifter.output_proc_mask (Path::join (debug_path, "proc_mask.mif"));
+    //sifter.output_proc_mask (Path::join (debug_path, "proc_mask.mif"));
     if (get_options("act").size())
       sifter.output_5tt_image (Path::join (debug_path, "5tt.mif"));
   }
 
-  sifter.perform_FOD_segmentation (in_dwi);
-  sifter.scale_FDs_by_GM();
+  if (App::get_options("fd_scale_gm").size())
+    sifter.scale_FDs_by_GM();
 
   sifter.map_streamlines (argument[0]);
 
   if (debug_path.size())
     sifter.output_all_debug_images (debug_path, "before");
 
-  sifter.remove_excluded_fixels ();
+  sifter.exclude_fixels ();
 
   if (!get_options ("nofilter").size()) {
 

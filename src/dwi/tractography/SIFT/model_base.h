@@ -27,14 +27,12 @@
 #include "file/path.h"
 #include "file/utils.h"
 
-#include "dwi/fixel_map.h"
 #include "dwi/fmls.h"
 
 #include "dwi/tractography/file.h"
 
 #include "dwi/tractography/ACT/tissues.h"
 
-#include "dwi/tractography/mapping/fixel_td_map.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
@@ -62,345 +60,134 @@ namespace MR
 
 
 
-        class FixelBase
+        class ModelBase : public MR::Fixel::Dataset
         {
-
           public:
-            FixelBase () :
-              FOD (0.0),
-              TD (0.0),
-              weight (0.0),
-              dir ({NaN, NaN, NaN}) { }
-
-            FixelBase (const default_type amp) :
-              FOD (amp),
-              TD (0.0),
-              weight (1.0),
-              dir ({NaN, NaN, NaN}) { }
-
-            FixelBase (const default_type amp, const Eigen::Vector3d& d) :
-              FOD (amp),
-              TD (0.0),
-              weight (1.0),
-              dir (d) { }
-
-            FixelBase (const FMLS::FOD_lobe& lobe) :
-              FOD (lobe.get_integral()),
-              TD (0.0),
-              weight (1.0),
-              dir (lobe.get_mean_dir()) { }
-
-            FixelBase (const FixelBase&) = default;
-
-            default_type get_FOD()    const { return FOD; }
-            default_type get_TD()     const { return TD; }
-            default_type get_weight() const { return weight; }
-            const Eigen::Vector3d& get_dir() const { return dir; }
-
-            void       scale_FOD  (const default_type factor) { FOD *= factor; }
-            void       set_weight (const default_type w)      { weight = w; }
-            FixelBase& operator+= (const default_type length) { TD += length; return *this; }
-
-            void clear_TD() { TD = 0.0; }
-
-            default_type get_diff (const default_type mu) const { return ((TD * mu) - FOD); }
-            default_type get_cost (const default_type mu) const { return get_cost_unweighted (mu) * weight; }
+            using BaseType = MR::Fixel::Dataset;
+            using value_type = SIFT::value_type;
+            using data_matrix_type = Eigen::Array<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
 
-          protected:
-            default_type FOD, TD, weight;
-            Eigen::Vector3d dir;
-
-            default_type get_cost_unweighted (const default_type mu) const { return Math::pow2 (get_diff (mu)); }
-
-        };
+            // TODO Redo using strongly typed enum?
+            static const ssize_t model_weight_column = 0;
+            static const ssize_t fd_column = 1;
+            static const ssize_t td_column = 2;
+            static const ssize_t track_count_column = 3;
 
 
-
-
-
-
-        // Templated Fixel class should derive from FixelBase to ensure that it has adequate functionality
-        // This class stores the necessary fixel information (including streamline densities), but does not retain the
-        //   list of fixels traversed by each streamline. If this information is necessary, use the Model class (model.h)
-
-        template <class Fixel>
-        class ModelBase : public Mapping::Fixel_TD_map<Fixel>
-        {
-
-          protected:
-            using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
-            using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
-
-          public:
-            ModelBase (Image<float>& dwi, const Math::Sphere::Set::Assigner& dirs) :
-                Mapping::Fixel_TD_map<Fixel> (dwi, dirs),
-                proc_mask (Image<float>::scratch (Fixel_map<Fixel>::header(), "SIFT model processing mask")),
-                FOD_sum (0.0),
-                TD_sum (0.0),
-                have_null_lobes (false)
+            template <class RowType>
+            class ConstFixelFunctions : public RowType
             {
-              SIFT::initialise_processing_mask (dwi, proc_mask, act_5tt);
-            }
-            ModelBase (const ModelBase&) = delete;
+              public:
+                ConstFixelFunctions (const ModelBase& model, const MR::Fixel::index_type index) :
+                    RowType (model.fixels.row(index)) { }
+                ConstFixelFunctions (RowType&& row) :
+                    RowType (row) { }
 
-            virtual ~ModelBase () { }
+                value_type weight() const { return (*this)[model_weight_column]; }
+                value_type fd()     const { return (*this)[fd_column]; }
+                value_type td()     const { return (*this)[td_column]; }
+                track_t    count()  const { return track_t((*this)[track_count_column]); }
 
-            void perform_FOD_segmentation (Image<float>&);
-            void scale_FDs_by_GM();
+                value_type get_diff (const value_type mu) const { return ((td() * mu) - fd()); }
+                value_type get_cost (const value_type mu) const { return get_cost_unweighted (mu) * weight(); }
+
+              private:
+                value_type get_cost_unweighted (const value_type mu) const { return Math::pow2 (get_diff (mu)); }
+            };
+
+            template <class RowType>
+            class MutableFixelFunctions : public ConstFixelFunctions<RowType>
+            {
+              public:
+                MutableFixelFunctions (ModelBase& model, const MR::Fixel::index_type index) :
+                    ConstFixelFunctions<RowType> (model.fixels.row(index)) { }
+                MutableFixelFunctions (RowType&& row) :
+                    ConstFixelFunctions<RowType> (row) { }
+                using ConstFixelFunctions<RowType>::weight;
+                using ConstFixelFunctions<RowType>::fd;
+                using ConstFixelFunctions<RowType>::td;
+                using ConstFixelFunctions<RowType>::count;
+                void add (const value_type l, const track_t c) { (*this)[td_column] += l; (*this)[track_count_column] += value_type(c); }
+                void reset() { (*this)[td_column] = 0.0; (*this)[track_count_column] = 0.0; }
+                void set_fd (const value_type value) { (*this)[fd_column] = value; }
+                void set_weight (const value_type value) { (*this)[model_weight_column] = value; }
+
+                MutableFixelFunctions& operator+= (const value_type value) { (*this)[td_column] += value; (*this)[track_count_column] += 1.0; return *this; }
+                MutableFixelFunctions& operator-= (const value_type value) { assert (count()); (*this)[td_column] = std::max(td() - value, 0.0); (*this)[track_count_column] -= 1.0; return *this; }
+            };
+
+            using ConstFixelBase = ConstFixelFunctions<data_matrix_type::ConstRowXpr>;
+            using FixelBase = MutableFixelFunctions<data_matrix_type::RowXpr>;
+
+
+            ModelBase (const std::string&);
 
             void map_streamlines (const std::string&);
 
-            virtual bool operator() (const FMLS::FOD_lobes& in);
-            virtual bool operator() (const Mapping::SetDixel& in);
+            void scale_FDs_by_GM();
 
-            default_type calc_cost_function() const;
-
-            default_type mu() const { return FOD_sum / TD_sum; }
+            value_type mu() const { return (FD_sum / TD_sum); }
             bool have_act_data() const { return act_5tt.valid(); }
 
-            void output_proc_mask (const std::string&);
+            virtual bool operator() (const Mapping::SetFixel& in);
+
+            value_type calc_cost_function() const;
+
+            // void output_weights_image (const std::string&);
             void output_5tt_image (const std::string&);
+
+            // TODO Not yet sure what I want to do about the debugging images;
+            //   don't like how they're currently handled, but need them to be there
+            //   to make sure code conversion is correct
             void initialise_debug_image_output (const std::string&) const;
             void output_all_debug_images (const std::string&, const std::string&) const;
 
-            using Mapping::Fixel_TD_map<Fixel>::begin;
-
-
           protected:
-            using Fixel_map<Fixel>::accessor;
-            using Fixel_map<Fixel>::fixels;
-            using Mapping::Fixel_TD_map<Fixel>::dirs;
+            std::string tractogram_path;
+            // TODO Will include this for now, but would like to find a way to
+            //   not need to store this as part of the class
+            MR::Image<float> act_5tt;
 
-            Image<float> act_5tt, proc_mask;
-            default_type FOD_sum, TD_sum;
-            bool have_null_lobes;
+            // As an image; will still want to project these to individual fixels
+            // (Note that this was called "proc_mask" in old class)
+            // TODO Preferable for this to be primarily handled on a fixel-wise basis:
+            //   If the user provides a voxel image input, or it is calculated based on a 5TT image,
+            //   then so be it, the value for all fixels within a single voxel will be identical,
+            //   but it would be preferable to handle the more general use case,
+            //   both for user input and command output
+            // If the output is a fixel image, the user can still use fixel2voxel
+            // TODO Delete this once we can overhaul SIFT::initialise_processing_mask()
+            MR::Image<float> weights;
 
-            // The definitions of these functions are located in dwi/tractography/SIFT/output.h
+
+            data_matrix_type fixels;
+
+
+            value_type FD_sum, TD_sum;
+
+            // TODO Dummy dixel mask to which fixels can point if the
+            //   input fixel dataset does not include such
+            Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic> dummy_dixelmask;
+
             void output_target_voxel (const std::string&) const;
             void output_target_sh (const std::string&) const;
             void output_target_fixel (const std::string&) const;
             void output_tdi_voxel (const std::string&) const;
-            void output_tdi_null_lobes (const std::string&) const;
             void output_tdi_sh (const std::string&) const;
             void output_tdi_fixel (const std::string&) const;
             void output_errors_voxel (const std::string&, const std::string&, const std::string&, const std::string&) const;
             void output_errors_fixel (const std::string&, const std::string&, const std::string&) const;
             void output_scatterplot (const std::string&) const;
-            void output_fixel_count_image (const std::string&) const;
+
+            ConstFixelBase operator[] (const MR::Fixel::index_type index) const { return ConstFixelBase (*this, index); }
+            FixelBase operator[] (const MR::Fixel::index_type index) { return FixelBase (*this, index); }
+
+            // TODO Can we define a macro / template that will allow us to quickly define an iterator
+            //   for any derivative class, with any fixel type?
+
 
         };
-
-
-
-
-        template <class Fixel>
-        void ModelBase<Fixel>::perform_FOD_segmentation (Image<float>& data)
-        {
-          Math::Sphere::SH::check (data);
-          DWI::FMLS::FODQueueWriter writer (data, proc_mask);
-          DWI::FMLS::Segmenter fmls (dirs, Math::Sphere::SH::LforN (data.size(3)));
-          Thread::run_queue (writer, Thread::batch (FMLS::SH_coefs()), Thread::multi (fmls), Thread::batch (FMLS::FOD_lobes()), *this);
-          // TODO If we want to continue supporting lookup table manipulations
-          //   (dilation xor creation of an extra fixel containing all unassigned dixels)
-          //   , we will need to reimplement such elsewhere
-        }
-
-
-
-
-        template <class Fixel>
-        void ModelBase<Fixel>::scale_FDs_by_GM ()
-        {
-          if (!App::get_options("fd_scale_gm").size())
-            return;
-          if (!act_5tt.valid()) {
-            INFO ("Cannot scale fibre densities according to GM fraction; no ACT image data provided");
-            return;
-          }
-          // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
-          VoxelAccessor v (accessor());
-          FOD_sum = 0.0;
-          for (auto l = Loop(v) (v, act_5tt); l; ++l) {
-            Tractography::ACT::Tissues tissues (act_5tt);
-            const default_type multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
-            for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
-              i().scale_FOD (multiplier);
-              FOD_sum += i().get_weight() * i().get_FOD();
-            }
-          }
-        }
-
-
-
-
-        template <class Fixel>
-        void ModelBase<Fixel>::map_streamlines (const std::string& path)
-        {
-          Tractography::Properties properties;
-          Tractography::Reader<> file (path, properties);
-
-          const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
-          if (!count)
-            throw Exception ("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
-
-          Mapping::TrackLoader loader (file, count);
-          Mapping::TrackMapperBase mapper (Fixel_map<Fixel>::header(), dirs);
-          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (Fixel_map<Fixel>::header(), properties, 0.1));
-          mapper.set_use_precise_mapping (true);
-          Thread::run_queue (
-              loader,
-              Thread::batch (Tractography::Streamline<float>()),
-              Thread::multi (mapper),
-              Thread::batch (Mapping::SetDixel()),
-              *this);
-
-          INFO ("Proportionality coefficient after streamline mapping is " + str (mu()));
-        }
-
-
-
-
-        template <class Fixel>
-        bool ModelBase<Fixel>::operator() (const FMLS::FOD_lobes& in)
-        {
-          if (!Fixel_map<Fixel>::operator() (in))
-            return false;
-
-          VoxelAccessor v (accessor());
-          assign_pos_of (in.vox).to (v);
-
-          if (v.value()) {
-            assign_pos_of (in.vox).to (proc_mask);
-            const float mask_value = proc_mask.value();
-
-            for (typename Fixel_map<Fixel>::Iterator i = begin (v); i; ++i) {
-              i().set_weight (mask_value);
-              FOD_sum += i().get_FOD() * mask_value;
-            }
-          }
-          return true;
-        }
-
-
-
-
-        template <class Fixel>
-        bool ModelBase<Fixel>::operator() (const Mapping::SetDixel& in)
-        {
-          default_type total_contribution = 0.0;
-          for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
-            const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel (*i);
-            if (fixel_index) {
-              fixels[fixel_index] += i->get_length();
-              total_contribution += fixels[fixel_index].get_weight() * i->get_length();
-            }
-          }
-          TD_sum += total_contribution;
-          return true;
-        }
-
-
-
-
-        template <class Fixel>
-        default_type ModelBase<Fixel>::calc_cost_function() const
-        {
-          const default_type current_mu = mu();
-          default_type cost = 0.0;
-          for (auto i = fixels.cbegin()+1; i != fixels.end(); ++i)
-            cost += i->get_cost (current_mu);
-          return cost;
-        }
-
-
-
-        template <class Fixel>
-        void ModelBase<Fixel>::output_proc_mask (const std::string& path)
-        {
-          save (proc_mask, path);
-        }
-
-
-        template <class Fixel>
-        void ModelBase<Fixel>::output_5tt_image (const std::string& path)
-        {
-          if (!have_act_data())
-            throw Exception ("Cannot export 5TT image; no such data present");
-          save (act_5tt, path);
-        }
-
-
-
-        template <class Fixel>
-        void ModelBase<Fixel>::initialise_debug_image_output (const std::string& dirpath) const
-        {
-          File::mkdir (dirpath);
-#ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-          Header H_index (this->header());
-          H_index.ndim() = 4;
-          H_index.size(3) = 2;
-          H_index.datatype() = DataType::native (DataType::UInt64);
-          Header H_directions;
-          H_directions.ndim() = 3;
-          H_directions.size(0) = fixels.size();
-          H_directions.size(1) = 3;
-          H_directions.size(2) = 1;
-          H_directions.stride(0) = 2;
-          H_directions.stride(1) = 1;
-          H_directions.stride(2) = 3;
-          H_directions.spacing(0) = H_directions.spacing(1) = H_directions.spacing(2) = 1.0;
-          H_directions.transform().setIdentity();
-          H_directions.datatype() = DataType::native (DataType::from<float>());
-          Image<uint64_t> index_image = Image<uint64_t>::create (Path::join (dirpath, MR::Fixel::basename_index + ".mif"), H_index);
-          Image<float> directions_image = Image<float>::create (Path::join (dirpath, MR::Fixel::basename_directions + ".mif"), H_directions);
-          VoxelAccessor v (accessor());
-          for (auto l = Loop (v) (v, index_image); l; ++l) {
-            if (v.value()) {
-              index_image.index(3) = 0;
-              index_image.value() = (*v.value()).num_fixels();
-              index_image.index(3) = 1;
-              index_image.value() = (*v.value()).first_index();
-            }
-          }
-          for (size_t i = 0; i != fixels.size(); ++i) {
-            directions_image.index(0) = i;
-            directions_image.row(1) = fixels[i].get_dir();
-          }
-#endif
-
-          // These images do not change between before and after filtering
-          output_target_voxel (Path::join (dirpath, "target_voxel.mif"));
-#ifdef SIFT_MODEL_OUTPUT_SH_IMAGES
-          output_target_sh (Path::join (dirpath, "target_sh.mif"));
-#endif
-#ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-          output_target_fixel (Path::join (dirpath, "target_fixel.mif"));
-#endif
-          output_fixel_count_image (Path::join (dirpath, "trackcount_fixel.mif"));
-        }
-
-
-
-        template <class Fixel>
-        void ModelBase<Fixel>::output_all_debug_images (const std::string& dirpath, const std::string& prefix) const
-        {
-          output_tdi_voxel (Path::join (dirpath, prefix + "_tdi_voxel.mif"));
-          if (have_null_lobes)
-            output_tdi_null_lobes (Path::join (dirpath, prefix + "_tdi_nulllobes.mif"));
-#ifdef SIFT_MODEL_OUTPUT_SH_IMAGES
-          output_tdi_sh (Path::join (dirpath, prefix + "_tdi_sh.mif"));
-#endif
-#ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-          output_tdi_fixel (Path::join (dirpath, prefix + "_tdi_fixel.mif"));
-#endif
-
-          output_errors_voxel (dirpath, prefix + "_maxabsdiff_voxel.mif", prefix + "_diff_voxel.mif", prefix + "_cost_voxel.mif");
-#ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-          output_errors_fixel (dirpath, prefix + "_diff_fixel.mif", prefix + "_cost_fixel.mif");
-#endif
-          output_scatterplot (Path::join (dirpath, prefix + "_scatterplot.csv"));
-        }
 
 
 

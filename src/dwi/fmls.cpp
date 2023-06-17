@@ -170,7 +170,7 @@ namespace MR {
           for (uint32_t l = 0; l != out.size(); ++l) {
             if ((((i.first <= 0.0) &&  out[l].is_negative())
                   || ((i.first >  0.0) && !out[l].is_negative()))
-                  && (dirs.adjacency (out[l].get_mask(), i.second))) {
+                  && (dirs.adjacent (out[l].get_mask(), i.second))) {
 
               adj_lobes.push_back (l);
 
@@ -278,8 +278,6 @@ namespace MR {
 
         std::sort (out.begin(), out.end(), [] (const FOD_lobe& a, const FOD_lobe& b) { return (a.get_integral() > b.get_integral()); } );
 
-        // If omitting some number of fixels, should be doing that before the LUT is constructed;
-        //   would also be necessary if dilating the LUT
         if (max_num_fixels && out.size() > max_num_fixels)
           out.erase (out.begin() + max_num_fixels, out.end());
 

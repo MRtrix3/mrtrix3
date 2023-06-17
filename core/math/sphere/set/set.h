@@ -115,7 +115,7 @@ namespace MR {
             return spherical2cartesian (data);
           case 3:
             {
-            cartesian_type result (data.size(), 3);
+            cartesian_type result (data.rows(), 3);
             result << data;
             return result;
             }

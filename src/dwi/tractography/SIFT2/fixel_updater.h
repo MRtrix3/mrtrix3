@@ -34,9 +34,11 @@ namespace MR {
 
 
       class FixelUpdater
-      { 
+      {
 
         public:
+          using value_type = SIFT::value_type;
+
           FixelUpdater (TckFactor&);
           ~FixelUpdater();
 
@@ -46,8 +48,8 @@ namespace MR {
           TckFactor& master;
 
           // Each thread needs a local copy of these
-          vector<double> fixel_coeff_sums;
-          vector<double> fixel_TDs;
+          vector<value_type> fixel_coeff_sums;
+          vector<value_type> fixel_TDs;
           vector<SIFT::track_t> fixel_counts;
 
       };

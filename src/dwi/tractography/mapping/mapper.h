@@ -22,7 +22,7 @@
 #include "thread_queue.h"
 #include "transform.h"
 #include "types.h"
-
+#include "fixel/dataset.h"
 #include "math/sphere/set/adjacency.h"
 
 #include "dwi/tractography/resampling/upsampler.h"
@@ -75,7 +75,27 @@ namespace MR {
                 dixel_plugin  (new DixelMappingPlugin (dirs)),
                 upsampler     (1) { }
 
-            TrackMapperBase (const TrackMapperBase&) = default;
+            template <class HeaderType>
+            TrackMapperBase (const HeaderType& template_image, const MR::Fixel::Dataset& fixels) :
+                info          (template_image),
+                scanner2voxel (Transform(template_image).scanner2voxel.cast<float>()),
+                map_zero      (false),
+                precise       (false),
+                ends_only     (false),
+                fixel_plugin  (new FixelMappingPlugin (fixels)),
+                upsampler     (1) { }
+
+            TrackMapperBase (const TrackMapperBase& that) :
+                info (that.info),
+                scanner2voxel (that.scanner2voxel),
+                map_zero (that.map_zero),
+                precise (that.precise),
+                ends_only (that.ends_only),
+                dixel_plugin (that.dixel_plugin),
+                tod_plugin (that.tod_plugin ? new TODMappingPlugin (*that.tod_plugin) : nullptr),
+                fixel_plugin (that.fixel_plugin ? new FixelMappingPlugin (*that.fixel_plugin) : nullptr),
+                upsampler (that.upsampler) { }
+
             TrackMapperBase (TrackMapperBase&&) = default;
 
 
@@ -97,14 +117,20 @@ namespace MR {
 
             void create_dixel_plugin (const Math::Sphere::Set::Assigner& dirs)
             {
-              assert (!dixel_plugin && !tod_plugin);
+              assert (!has_plugin());
               dixel_plugin.reset (new DixelMappingPlugin (dirs));
             }
 
             void create_tod_plugin (const size_t N)
             {
-              assert (!dixel_plugin && !tod_plugin);
+              assert (!has_plugin());
               tod_plugin.reset (new TODMappingPlugin (N));
+            }
+
+            void create_fixel_plugin (const MR::Fixel::Dataset& fixels)
+            {
+              assert (!has_plugin());
+              fixel_plugin.reset (new FixelMappingPlugin (fixels));
             }
 
 
@@ -139,8 +165,12 @@ namespace MR {
             bool precise;
             bool ends_only;
 
+            // TODO Some of these may prefer to have one instance per thread...?
+            // Particularly the fixel plugin needs a separate index image accessor per thread...
             std::shared_ptr<DixelMappingPlugin> dixel_plugin;
-            std::shared_ptr<TODMappingPlugin>   tod_plugin;
+            std::unique_ptr<TODMappingPlugin>   tod_plugin;
+            std::unique_ptr<FixelMappingPlugin> fixel_plugin;
+            bool has_plugin() const { return dixel_plugin || tod_plugin || fixel_plugin; }
 
 
             // Specialist version of voxelise() is provided for the SetVoxel container:
@@ -165,6 +195,7 @@ namespace MR {
             inline void add_to_set (SetVoxelDir&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
             inline void add_to_set (SetDixel&   , const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
             inline void add_to_set (SetVoxelTOD&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
+            inline void add_to_set (SetFixel&,    const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
 
             DWI::Tractography::Resampling::Upsampler upsampler;
 
@@ -198,7 +229,7 @@ namespace MR {
             }
 
             for (auto& i : output)
-              i.normalize();
+              i.IntersectionLength::normalize();
 
           }
 
@@ -283,7 +314,7 @@ namespace MR {
 
               length += (p_prev - p_voxel_exit).norm();
               const Eigen::Vector3d traversal_vector = (p_voxel_exit - p_voxel_entry).cast<default_type>().normalized();
-              if (std::isfinite (traversal_vector[0]) && check (this_voxel, info))
+              if (traversal_vector.squaredNorm() && length && check (this_voxel, info))
                 add_to_set (out, this_voxel, traversal_vector, length);
 
             } while (!end_track);
@@ -339,9 +370,15 @@ namespace MR {
         inline void TrackMapperBase::add_to_set (SetVoxelTOD& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
         {
           assert (tod_plugin);
-          Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh;
-          (*tod_plugin) (sh, d);
-          out.insert (v, sh, l);
+          (*tod_plugin) (d);
+          out.insert (v, (*tod_plugin)(), l);
+        }
+        inline void TrackMapperBase::add_to_set (SetFixel& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
+        {
+          assert (fixel_plugin);
+          const MR::Fixel::index_type fixel = (*fixel_plugin) (v, d);
+          if (fixel != fixel_plugin->nfixels())
+            out.insert (fixel, l);
         }
 
 

@@ -39,9 +39,9 @@ namespace MR
 
 
       class Cost_fn_gradient_sort
-      { 
+      {
         public:
-          Cost_fn_gradient_sort (const track_t i, const double g, const double gpul) :
+          Cost_fn_gradient_sort (const track_t i, const value_type g, const value_type gpul) :
             tck_index            (i),
             cost_gradient        (g),
             grad_per_unit_length (gpul) { }
@@ -51,18 +51,18 @@ namespace MR
             cost_gradient        (that.cost_gradient),
             grad_per_unit_length (that.grad_per_unit_length) { }
 
-          void set (const track_t i, const double g, const double gpul) { tck_index = i; cost_gradient = g; grad_per_unit_length = gpul; }
+          void set (const track_t i, const value_type g, const value_type gpul) { tck_index = i; cost_gradient = g; grad_per_unit_length = gpul; }
 
           bool operator< (const Cost_fn_gradient_sort& that) const { return grad_per_unit_length < that.grad_per_unit_length; }
 
-          track_t get_tck_index()                const { return tck_index; }
-          double  get_cost_gradient()            const { return cost_gradient; }
-          double  get_gradient_per_unit_length() const { return grad_per_unit_length; }
+          track_t    get_tck_index()                const { return tck_index; }
+          value_type get_cost_gradient()            const { return cost_gradient; }
+          value_type get_gradient_per_unit_length() const { return grad_per_unit_length; }
 
         private:
           track_t tck_index;
-          double  cost_gradient;
-          double  grad_per_unit_length;
+          value_type cost_gradient;
+          value_type grad_per_unit_length;
       };
 
 
@@ -80,12 +80,12 @@ namespace MR
       //     be filtered in a single iteration, provided the gradient is less than that of the candidate streamline
       //     from all other blocks
       class MT_gradient_vector_sorter
-      { 
+      {
 
           using VecType = vector<Cost_fn_gradient_sort>;
           using VecItType = VecType::iterator;
 
-          class Comparator { 
+          class Comparator {
             public:
               bool operator() (const VecItType& a, const VecItType& b) const { return (a->get_gradient_per_unit_length() < b->get_gradient_per_unit_length()); }
           };
@@ -111,7 +111,7 @@ namespace MR
 
 
           class BlockSender
-          { 
+          {
             public:
               BlockSender (const track_t count, const track_t size) :
                 num_tracks (count),
@@ -134,7 +134,7 @@ namespace MR
           };
 
           class Sorter
-          { 
+          {
             public:
               Sorter (VecType& in) :
                 data  (in) { }

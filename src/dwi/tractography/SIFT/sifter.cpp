@@ -56,7 +56,7 @@ namespace MR
         enum recalc_reason { UNDEFINED, NONLINEARITY, QUANTISATION, TERM_COUNT, TERM_RATIO, TERM_MU, POS_GRADIENT };
 
         // For streamlines that do not contribute to the map, remove an equivalent proportion of length to those that do contribute
-        double sum_contributing_length = 0.0, sum_noncontributing_length = 0.0;
+        value_type sum_contributing_length = 0.0, sum_noncontributing_length = 0.0;
         vector<track_t> noncontributing_indices;
         for (track_t i = 0; i != contributions.size(); ++i) {
           if (contributions[i]) {
@@ -68,13 +68,13 @@ namespace MR
             }
           }
         }
-        double contributing_length_removed = 0.0, noncontributing_length_removed = 0.0;
+        value_type contributing_length_removed = 0.0, noncontributing_length_removed = 0.0;
         // Randomise the order or removal here; faster than trying to select at random later
         std::shuffle (noncontributing_indices.begin(), noncontributing_indices.end(), Math::RNG());
 
         vector<Cost_fn_gradient_sort> gradient_vector;
         try {
-          gradient_vector.assign (num_tracks(), Cost_fn_gradient_sort (num_tracks(), std::numeric_limits<double>::max(), std::numeric_limits<double>::max()));
+          gradient_vector.assign (num_tracks(), Cost_fn_gradient_sort (num_tracks(), std::numeric_limits<value_type>::max(), std::numeric_limits<value_type>::max()));
         } catch (...) {
           throw Exception ("Error assigning memory for SIFT gradient vector");
         }
@@ -84,9 +84,9 @@ namespace MR
         if (tracks_remaining < term_number)
           throw Exception ("Filtering failed; desired number of filtered streamlines is greater than or equal to the size of the input dataset");
 
-        const double init_cf = calc_cost_function();
+        const value_type init_cf = calc_cost_function();
         unsigned int iteration = 0;
-        double cf_end_iteration = init_cf;
+        value_type cf_end_iteration = init_cf;
         unsigned int removed_this_iteration = 0;
 
         if (!csv_path.empty()) {
@@ -107,9 +107,9 @@ namespace MR
 
           ++iteration;
 
-          const double current_mu     = mu();
-          const double current_cf     = calc_cost_function();
-          const double current_roc_cf = calc_roc_cost_function();
+          const value_type current_mu     = mu();
+          const value_type current_cf     = calc_cost_function();
+          const value_type current_roc_cf = calc_roc_cost_function();
 
 
           TrackIndexRangeWriter range_writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
@@ -131,7 +131,8 @@ namespace MR
           // Trying a heuristic for now; go for a sort size of 1000 following initial sort, assuming half of all
           //   remaining streamlines have a negative gradient
 
-          const track_t sort_size = std::min (std::ceil(num_tracks() / double(Thread::number_of_threads())), std::round (2000.0 * double(num_tracks()) / double(tracks_remaining)));
+          const track_t sort_size = std::min (std::ceil(num_tracks() / value_type(Thread::number_of_threads())),
+                                              std::round (2000.0 * value_type(num_tracks()) / value_type(tracks_remaining)));
           MT_gradient_vector_sorter sorter (gradient_vector, sort_size);
 
           // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed
@@ -142,11 +143,11 @@ namespace MR
             if (!output_at_counts.empty() && (tracks_remaining == output_at_counts.back())) {
               const std::string prefix = str (tracks_remaining);
               if (App::log_level)
-                fprintf (stderr, "\n");
-              output_filtered_tracks (tck_file_path, prefix + "_tracks.tck");
+                std::cerr << "\n";
+              output_filtered_tracks (tractogram_path, prefix + "_tracks.tck");
               if (debug_dir.size())
                 output_all_debug_images (debug_dir, prefix);
-              INFO ("\nProportionality coefficient at " + str (tracks_remaining) + " streamlines is " + str (mu()));
+              INFO ("Proportionality coefficient at " + str (tracks_remaining) + " streamlines is " + str (mu()));
               output_at_counts.pop_back();
             }
 
@@ -197,38 +198,38 @@ namespace MR
               assert (candidate_index != num_tracks());
               assert (contributions[candidate_index]);
 
-              const double streamline_density_ratio = candidate->get_cost_gradient() / (sum_contributing_length - contributing_length_removed);
-              const double required_cf_change_ratio = - term_ratio * streamline_density_ratio * current_cf;
+              const value_type streamline_density_ratio = candidate->get_cost_gradient() / (sum_contributing_length - contributing_length_removed);
+              const value_type required_cf_change_ratio = - term_ratio * streamline_density_ratio * current_cf;
 
               const TrackContribution& candidate_contribution (*contributions[candidate_index]);
 
-              const double old_mu = mu();
-              const double new_mu = FOD_sum / (TD_sum - candidate_contribution.get_total_contribution());
-              const double mu_change = new_mu - old_mu;
+              const value_type old_mu = mu();
+              const value_type new_mu = FD_sum / (TD_sum - candidate_contribution.get_total_contribution());
+              const value_type mu_change = new_mu - old_mu;
 
               // Initial estimate of cost change knowing only the change to the normalisation coefficient
-              double this_actual_cf_change = current_roc_cf * mu_change;
-              double quantisation = 0.0;
+              value_type this_actual_cf_change = current_roc_cf * mu_change;
+              value_type quantisation = 0.0;
 
               for (size_t f = 0; f != candidate_contribution.dim(); ++f) {
                 const Track_fixel_contribution& fixel_cont = candidate_contribution[f];
                 const float length = fixel_cont.get_length();
-                Fixel& this_fixel = fixels[fixel_cont.get_fixel_index()];
+                const Fixel this_fixel (*this, fixel_cont.get_fixel_index());
                 quantisation += this_fixel.calc_quantisation (old_mu, length);
-                const double undo_change_mu_only = this_fixel.get_d_cost_d_mu (old_mu) * mu_change;
-                const double change_remove_tck = this_fixel.get_cost_wo_track (new_mu, length) - this_fixel.get_cost (old_mu);
+                const value_type undo_change_mu_only = this_fixel.get_d_cost_d_mu (old_mu) * mu_change;
+                const value_type change_remove_tck = this_fixel.get_cost_wo_track (new_mu, length) - this_fixel.get_cost (old_mu);
                 this_actual_cf_change = this_actual_cf_change - undo_change_mu_only + change_remove_tck;
               }
 
-              const double required_cf_change_quantisation = enforce_quantisation ? (-0.5 * quantisation) : 0.0;
-              const double this_nonlinearity = (candidate->get_cost_gradient() - this_actual_cf_change);
+              const value_type required_cf_change_quantisation = enforce_quantisation ? (-0.5 * quantisation) : 0.0;
+              const value_type this_nonlinearity = candidate->get_cost_gradient() - this_actual_cf_change;
 
               if (this_actual_cf_change < std::min ( {required_cf_change_ratio, required_cf_change_quantisation, this_nonlinearity })) {
 
                 // Candidate streamline removal meets all criteria; remove from reconstruction
                 for (size_t f = 0; f != candidate_contribution.dim(); ++f) {
                   const Track_fixel_contribution& fixel_cont = candidate_contribution[f];
-                  fixels[fixel_cont.get_fixel_index()] -= fixel_cont.get_length();
+                  fixels(fixel_cont.get_fixel_index(), td_column) = std::max (0.0, fixels(fixel_cont.get_fixel_index(), td_column) - fixel_cont.get_length());
                 }
                 TD_sum -= candidate_contribution.get_total_contribution();
                 contributing_length_removed += candidate_contribution.get_total_length();
@@ -420,29 +421,30 @@ namespace MR
 
       // Convenience functions
 
-      double SIFTer::calc_roc_cost_function() const
+      value_type SIFTer::calc_roc_cost_function()
       {
-        const double current_mu = mu();
-        double roc_cost = 0.0;
-        vector<Fixel>::const_iterator i = fixels.begin();
-        for (++i; i != fixels.end(); ++i)
-          roc_cost += i->get_d_cost_d_mu (current_mu);
+        const value_type current_mu = mu();
+        value_type roc_cost = 0.0;
+        // TODO Better construct for looping over all fixels
+        for (MR::Fixel::index_type i = 0; i != nfixels(); ++i)
+          roc_cost += (*this)[i].get_d_cost_d_mu (current_mu);
         return roc_cost;
       }
 
-      double SIFTer::calc_gradient (const track_t index, const double current_mu, const double current_roc_cost) const
+      value_type SIFTer::calc_gradient (const track_t index, const value_type current_mu, const value_type current_roc_cost)
       {
         if (!contributions[index])
-          return std::numeric_limits<double>::max();
+          return std::numeric_limits<value_type>::max();
         const TrackContribution& tck_cont = *contributions[index];
-        const double TD_sum_if_removed = TD_sum - tck_cont.get_total_contribution();
-        const double mu_if_removed = FOD_sum / TD_sum_if_removed;
-        const double mu_change_if_removed = mu_if_removed - current_mu;
-        double gradient = current_roc_cost * mu_change_if_removed;
+        const value_type TD_sum_if_removed = TD_sum - tck_cont.get_total_contribution();
+        const value_type mu_if_removed = FD_sum / TD_sum_if_removed;
+        const value_type mu_change_if_removed = mu_if_removed - current_mu;
+        value_type gradient = current_roc_cost * mu_change_if_removed;
         for (size_t f = 0; f != tck_cont.dim(); ++f) {
-          const Fixel& fixel = fixels[tck_cont[f].get_fixel_index()];
-          const double undo_gradient_mu_only = fixel.get_d_cost_d_mu (current_mu) * mu_change_if_removed;
-          const double gradient_remove_tck = fixel.get_cost_wo_track (mu_if_removed, tck_cont[f].get_length()) - fixel.get_cost (current_mu);
+          // TODO Can we get a const version?
+          Fixel fixel = (*this)[tck_cont[f].get_fixel_index()];
+          const value_type undo_gradient_mu_only = fixel.get_d_cost_d_mu (current_mu) * mu_change_if_removed;
+          const value_type gradient_remove_tck = fixel.get_cost_wo_track (mu_if_removed, tck_cont[f].get_length()) - fixel.get_cost (current_mu);
           gradient = gradient - undo_gradient_mu_only + gradient_remove_tck;
         }
         return gradient;
@@ -453,12 +455,12 @@ namespace MR
 
 
 
-      bool SIFTer::TrackGradientCalculator::operator() (const TrackIndexRange& in) const
+      bool SIFTer::TrackGradientCalculator::operator() (const TrackIndexRange& in)
       {
         for (track_t track_index = in.first; track_index != in.second; ++track_index) {
           if (master.contributions[track_index]) {
-            const double gradient = master.calc_gradient (track_index, current_mu, current_roc_cost);
-            const double grad_per_unit_length = master.contributions[track_index]->get_total_contribution() ? (gradient / master.contributions[track_index]->get_total_contribution()) : 0.0;
+            const value_type gradient = master.calc_gradient (track_index, current_mu, current_roc_cost);
+            const value_type grad_per_unit_length = master.contributions[track_index]->get_total_contribution() ? (gradient / master.contributions[track_index]->get_total_contribution()) : 0.0;
             gradient_vector[track_index].set (track_index, gradient, grad_per_unit_length);
           } else {
             gradient_vector[track_index].set (master.num_tracks(), 0.0, 0.0);

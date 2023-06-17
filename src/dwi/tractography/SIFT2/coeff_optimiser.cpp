@@ -32,7 +32,7 @@ namespace MR {
 
 
 
-      CoefficientOptimiserBase::CoefficientOptimiserBase (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+      CoefficientOptimiserBase::CoefficientOptimiserBase (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
             master (tckfactor),
             mu (tckfactor.mu()),
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
@@ -98,7 +98,7 @@ namespace MR {
 
         for (SIFT::track_t track_index = range.first; track_index != range.second; ++track_index) {
 
-          double dFs = get_coeff_change (track_index);
+          value_type dFs = get_coeff_change (track_index);
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
           ++total;
@@ -116,8 +116,8 @@ namespace MR {
 #endif
           }
 
-          const double old_coefficient = master.coefficients[track_index];
-          double new_coefficient = old_coefficient + dFs;
+          const value_type old_coefficient = master.coefficients[track_index];
+          value_type new_coefficient = old_coefficient + dFs;
           if (new_coefficient < master.min_coeff) {
             new_coefficient = master.min_coeff;
             dFs = master.min_coeff - old_coefficient;
@@ -170,21 +170,21 @@ namespace MR {
 
 
 
-      double CoefficientOptimiserBase::do_fixel_exclusion (const SIFT::track_t track_index)
+      SIFT::value_type CoefficientOptimiserBase::do_fixel_exclusion (const SIFT::track_t track_index)
       {
         const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
 
         // Task 1: Identify the fixel that should be excluded
         size_t index_to_exclude = 0.0;
-        float cost_to_exclude = 0.0;
+        value_type cost_to_exclude = 0.0;
 
         for (size_t j = 0; j != this_contribution.dim(); ++j) {
-          const size_t fixel_index = this_contribution[j].get_fixel_index();
+          const MR::Fixel::index_type fixel_index = this_contribution[j].get_fixel_index();
           const float length = this_contribution[j].get_length();
-          const Fixel& fixel = master.fixels[fixel_index];
-          if (!fixel.is_excluded() && (fixel.get_diff (mu) < 0.0)) {
+          const TckFactor::Fixel fixel (master, fixel_index);
+          if (!fixel.excluded() && (fixel.get_diff (mu) < 0.0)) {
 
-            const double this_cost = fixel.get_cost (mu) * length / fixel.get_orig_TD();
+            const value_type this_cost = fixel.get_cost (mu) * length / fixel.orig_TD();
             if (this_cost > cost_to_exclude) {
               cost_to_exclude = this_cost;
               index_to_exclude = fixel_index;
@@ -199,17 +199,15 @@ namespace MR {
           return 0.0;
 
         // Task 2: Calculate a new coefficient for this streamline
-        double weighted_sum = 0.0, sum_weights = 0.0;
+        value_type weighted_sum = 0.0, sum_weights = 0.0;
 
         for (size_t j = 0; j != this_contribution.dim(); ++j) {
-          const size_t fixel_index = this_contribution[j].get_fixel_index();
+          const MR::Fixel::index_type fixel_index = this_contribution[j].get_fixel_index();
           const float length = this_contribution[j].get_length();
-          const Fixel& fixel = master.fixels[fixel_index];
-          if (!fixel.is_excluded() && (fixel_index != index_to_exclude)) {
-
-            weighted_sum += length * fixel.get_weight() * fixel.get_mean_coeff();
-            sum_weights  += length * fixel.get_weight();
-
+          const TckFactor::Fixel fixel (master, fixel_index);
+          if (!fixel.excluded() && (fixel_index != index_to_exclude)) {
+            weighted_sum += length * fixel.weight() * fixel.mean_coeff();
+            sum_weights  += length * fixel.weight();
           }
         }
 
@@ -227,17 +225,17 @@ namespace MR {
 
 
 
-      CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+      CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
             CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) { }
 
       CoefficientOptimiserGSS::CoefficientOptimiserGSS (const CoefficientOptimiserGSS& that) :
             CoefficientOptimiserBase (that) { }
 
-      double CoefficientOptimiserGSS::get_coeff_change (const SIFT::track_t track_index) const
+      SIFT::value_type CoefficientOptimiserGSS::get_coeff_change (const SIFT::track_t track_index) const
       {
         LineSearchFunctor line_search_functor (track_index, master);
-        const double dFs = Math::golden_section_search (line_search_functor, std::string(""), -master.max_coeff_step, 0.0, master.max_coeff_step, 0.001 / (2.0 * master.max_coeff_step));
-        const double cost = line_search_functor (dFs);
+        const value_type dFs = Math::golden_section_search (line_search_functor, std::string(""), -master.max_coeff_step, 0.0, master.max_coeff_step, 0.001 / (2.0 * master.max_coeff_step));
+        const value_type cost = line_search_functor (dFs);
         // The Golden Section Search doesn't check the endpoints; do that here
         // TODO Once GSS is turned into a functor, add this capability to it
         if ((dFs > 0.99 * master.max_coeff_step) && (line_search_functor (master.max_coeff_step) < cost))
@@ -253,7 +251,7 @@ namespace MR {
 
 
 
-      CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+      CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
             CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
             qls (-master.max_coeff_step, master.max_coeff_step)
       {
@@ -269,17 +267,17 @@ namespace MR {
         qls.set_value_tolerance (0.001);
       }
 
-      double CoefficientOptimiserQLS::get_coeff_change (const SIFT::track_t track_index) const
+      SIFT::value_type CoefficientOptimiserQLS::get_coeff_change (const SIFT::track_t track_index) const
       {
         LineSearchFunctor line_search_functor (track_index, master);
 
-        double dFs = qls (line_search_functor);
+        value_type dFs = qls (line_search_functor);
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
         ++total;
 #endif
         if (!std::isfinite (dFs)) {
           dFs = Math::golden_section_search (line_search_functor, std::string(""), -master.max_coeff_step, 0.0, master.max_coeff_step, 0.001 / (2.0 * master.max_coeff_step));
-          double cost = line_search_functor (dFs);
+          value_type cost = line_search_functor (dFs);
           if (dFs > 0.99 * master.max_coeff_step && line_search_functor (master.max_coeff_step) < cost)
             dFs = master.max_coeff_step;
           else if (dFs < -0.99 * master.max_coeff_step && line_search_functor (-master.max_coeff_step) < cost)
@@ -299,7 +297,7 @@ namespace MR {
 
 
 
-      CoefficientOptimiserIterative::CoefficientOptimiserIterative (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+      CoefficientOptimiserIterative::CoefficientOptimiserIterative (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
             CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs)
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
       , iter_count (0)
@@ -321,13 +319,13 @@ namespace MR {
 #endif
       }
 
-      double CoefficientOptimiserIterative::get_coeff_change (const SIFT::track_t track_index) const
+      SIFT::value_type CoefficientOptimiserIterative::get_coeff_change (const SIFT::track_t track_index) const
       {
 
         LineSearchFunctor line_search_functor (track_index, master);
 
-        double dFs = 0.0;
-        double change = 0.0;
+        value_type dFs = 0.0;
+        value_type change = 0.0;
         size_t iter = 0;
         do {
 
@@ -339,8 +337,8 @@ namespace MR {
             change = -change;
 
           // Halley update
-          //const double numerator   = 2.0 * result.first_deriv * result.second_deriv;
-          //const double denominator = (2.0 * Math::pow2 (result.second_deriv)) - (result.first_deriv * result.third_deriv);
+          //const value_type numerator   = 2.0 * result.first_deriv * result.second_deriv;
+          //const value_type denominator = (2.0 * Math::pow2 (result.second_deriv)) - (result.first_deriv * result.third_deriv);
           //change = denominator ? (-numerator / denominator) : 0.0;
           // Can't detect heading toward a maximum in Halley's method!
 

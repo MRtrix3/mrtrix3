@@ -18,6 +18,7 @@
 #define __dwi_tractography_sift_proc_mask_h__
 
 #include "cmdline_option.h"
+#include "header.h"
 #include "image.h"
 
 #include "algo/iterator.h"
@@ -38,26 +39,25 @@ namespace MR
       {
 
 
-        extern const App::OptionGroup SIFTModelProcMaskOption;
+        extern const App::OptionGroup SIFTModelWeightsOption;
 
 
-        void initialise_processing_mask (Image<float>&, Image<float>&, Image<float>&);
+        void initialise_processing_mask (const Header, Image<float>&, Image<float>&);
 
 
         // Private functor for performing ACT image regridding
         class ResampleFunctor
-        { 
+        {
 
             using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
 
           public:
-            ResampleFunctor (Image<float>&, Image<float>&, Image<float>&);
+            ResampleFunctor (Image<float>&, Image<float>&);
             ResampleFunctor (const ResampleFunctor&);
 
             void operator() (const Iterator&);
 
           private:
-            Image<float> dwi;
             std::shared_ptr<transform_type> voxel2scanner;
             Interp::Linear<Image<float>> interp_anat;
             Image<float> out;
