@@ -22,7 +22,6 @@
 #include "math/sphere/set/adjacency.h"
 #include "math/sphere/set/predefined.h"
 
-#include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/sift.h"
 #include "dwi/tractography/SIFT/sifter.h"
 
@@ -87,7 +86,6 @@ void run ()
 
   if (debug_path.size()) {
     sifter.initialise_debug_image_output (debug_path);
-    //sifter.output_proc_mask (Path::join (debug_path, "proc_mask.mif"));
     if (get_options("act").size())
       sifter.output_5tt_image (Path::join (debug_path, "5tt.mif"));
   }

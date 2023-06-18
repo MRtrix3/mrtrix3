@@ -24,7 +24,6 @@
 #include "math/sphere/set/adjacency.h"
 #include "math/sphere/set/predefined.h"
 
-#include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/sift.h"
 
 #include "dwi/tractography/SIFT2/tckfactor.h"

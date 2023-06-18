@@ -16,6 +16,11 @@
 
 #include "dwi/tractography/SIFT/model_base.h"
 
+#include "adapter/reslice.h"
+#include "interp/cubic.h"
+#include "dwi/tractography/ACT/act.h"
+#include "dwi/tractography/ACT/resample.h"
+
 
 namespace MR
 {
@@ -28,9 +33,19 @@ namespace MR
 
 
 
+        const App::OptionGroup SIFTModelWeightsOption = App::OptionGroup ("Options for setting the model weights for SIFT fixel-tractogram comparisons")
+
+          + App::Option ("model_weights", "provide an image containing the model weights for the model; can be fixel-wise or voxel-wise data")
+            + App::Argument ("image").type_image_in()
+
+          + App::Option ("act", "use an ACT five-tissue-type segmented anatomical image to derive appropriate model weights")
+            + App::Argument ("image").type_image_in();
+
+
+
+
         ModelBase::ModelBase (const std::string& fd_path) :
             MR::Fixel::Dataset (Path::dirname (fd_path)),
-            weights (Image<float>::scratch (*this, "Scratch voxel-wise model weights")),
             // TODO More robust way to define initial number of columns
             fixels (nfixels(), 4),
             FD_sum (0.0),
@@ -39,12 +54,12 @@ namespace MR
                              Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic>() :
                              Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic>::Zero (1, 1))
         {
-          SIFT::initialise_processing_mask (*this, weights, act_5tt);
-          // Populate the corresponding column of the fixel data matrix
-          for (auto l = MR::Loop (*this) (*this, weights); l; ++l) {
-            for (auto f : value())
-              (*this)[f].set_weight (weights.value());
-          }
+          const std::string act_5tt_path = App::get_option_value<std::string>("act", "");
+          if (act_5tt_path.size())
+            load_5tt_image (act_5tt_path);
+
+          const std::string weights_path = App::get_option_value<std::string>("model_weights", "");
+          set_model_weights (weights_path);
 
           Image<float> fd_image (Image<float>::open (fd_path));
           MR::Fixel::check_data_file (fd_image, nfixels());
@@ -139,10 +154,130 @@ namespace MR
 
 
 
-        // void ModelBase::output_weights_image (const std::string& path)
-        // {
-        //   save (weights, path);
-        // }
+
+
+
+
+
+        void ModelBase::load_5tt_image (const std::string& path)
+        {
+          auto H_in = Header::open (path);
+          ACT::verify_5TT_image (H_in);
+
+          if (voxel_grids_match_in_scanner_space (H_in, *this)) {
+            INFO ("5TT image voxel grid matches fixel dataset; importing directly");
+            act_5tt = H_in.get_image<float>();
+          } else {
+            INFO ("5TT image voxel grid does not match fixel dataset; regridding necessary");
+            auto in_5tt = H_in.get_image<float>();
+            Header H_5tt (*this);
+            H_5tt.ndim() = 4;
+            H_5tt.size(3) = 5;
+            H_5tt.datatype() = DataType::Float32;
+            H_5tt.datatype().set_byte_order_native();
+            act_5tt = Image<float>::scratch (H_5tt, "5TT scratch buffer");
+            auto threaded_loop = ThreadedLoop ("resampling ACT 5TT image to fixel dataset space", act_5tt, 0, 3);
+            ACT::ResampleFunctor functor (in_5tt, act_5tt);
+            threaded_loop.run (functor);
+          }
+        }
+
+
+
+
+
+        void ModelBase::set_model_weights (const std::string& path)
+        {
+          // There are multiple ways in which the model weights could be defined:
+          // - User provides a fixel data file
+          //   - Make sure to verify the contents: values need to lie between 0 and 1 inclusive
+          // - User provides a voxel image
+          //   - If voxel grid matches, do a nested loop across voxels then fixels
+          //     - Make sure to verify the contents
+          //   - If voxel grid doesn't match, issue a warning, and resample, clamping to [0.0, 1.0]
+          // - User does not provide weights data, but does provide 5TT image
+          //   - Image will have already been regridded into member "act_5tt" if necessary
+          //   - Calculate model weights for all voxels with at least one fixel
+          // - User provides nothing
+          //   - All fixels get a weight of 1.0 (at least initially)
+
+          if (path.size()) {
+
+            Header header (Header::open (path));
+            if (MR::Fixel::is_data_file (header)) {
+              MR::Fixel::check_data_file (header, nfixels());
+              if (header.size(1) > 1)
+                throw Exception ("Fixel data file containing model weights can only have one column");
+              Image<float> image = header.get_image<float>();
+              fixels.col(model_weight_column) = image.row(0);
+              const value_type min_weight = fixels.col(model_weight_column).minCoeff();
+              const value_type max_weight = fixels.col(model_weight_column).maxCoeff();
+              if (min_weight < 0.0 || max_weight > 1.0)
+                throw Exception ("Fixel-wise model weights must be within range [0.0, 1.0]; "
+                                 "user-provided data \"" + path + "\" contains values "
+                                 "[" + str(min_weight) + ", " + str(max_weight) + "]");
+            } else {
+              if (!(header.ndim() == 3 || (header.ndim() == 4 && header.size(3) == 1)))
+                throw Exception ("Model weights provided as a volumetric image must be a 3D image");
+              auto image = header.get_image<float>();
+              if (voxel_grids_match_in_scanner_space (header, *this)) {
+                INFO ("User-provided model weights image lies on same voxel grid as fixel dataset; "
+                      "values will be imported directly");
+                for (auto l = MR::Loop("Loading user-provided model weights image", *this) (*this, image); l; ++l) {
+                  if (count()) {
+                    const value_type weight = image.value();
+                    if (!(weight >= 0.0 && weight <= 1.0))
+                      throw Exception ("Invalid model weight of " + str(weight) + " observed in model weights image \"" + path + "\"; "
+                                       "values must reside within range [0.0, 1.0]");
+                    for (auto f : value())
+                      fixels(f, model_weight_column) = weight;
+                  }
+                }
+              } else {
+                WARN ("User-provided model weights image \"" + path + "\" does not reside on same voxel grid as fixel dataset; "
+                      "image will be explicitly interpolated and clamped to range [0.0, 1.0]");
+                Adapter::Reslice<Interp::Cubic, Image<float>> reslice (header.get_image<float>(), *this);
+                for (auto l = MR::Loop("Reslicing model weights image to fixel dataset voxel grid", *this) (*this, reslice); l; ++l) {
+                  if (count()) {
+                    const value_type weight = std::max(0.0, std::min(1.0, value_type(reslice.value())));
+                    for (auto f : value())
+                      fixels(f, model_weight_column) = weight;
+                  }
+                }
+              }
+            }
+
+          } else if (act_5tt.valid()) {
+
+            INFO ("User has not provided model weights data, but has provided an ACT 5TT image; "
+                  "appropriate model weights will be derived from the 5TT image");
+            act_5tt.index(3) = 2; // Access the WM fraction
+            bool allzero = true;
+            for (auto l = MR::Loop (act_5tt, 0, 3) (act_5tt, *this); l; ++l) {
+              // Model weight is the square of the WM fraction
+              value_type weight = Math::pow2<value_type> (act_5tt.value());
+              if (weight > 0.0)
+                allzero = false;
+              else if (!std::isfinite (weight))
+                weight = 0.0f;
+              for (auto f : value())
+                fixels(f, model_weight_column) = weight;
+            }
+            if (allzero)
+              throw Exception ("Model weights from ACT 5TT image are all empty; check 5TT image / registration");
+
+          } else {
+
+            INFO ("User has not provided either model weights data or an ACT 5TT image; "
+                  "all fixels will contribute equally to the model");
+            fixels.col(model_weight_column).setOnes();
+
+          }
+        }
+
+
+
+
 
         void ModelBase::output_5tt_image (const std::string& path)
         {

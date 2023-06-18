@@ -48,13 +48,13 @@ namespace MR {
       void TckFactor::set_reg_lambdas (const value_type lambda_tikhonov, const value_type lambda_tv)
       {
         assert (num_tracks());
-        value_type A = 0.0;
-        for (MR::Fixel::index_type i = 0; i != nfixels(); ++i) {
-          Fixel fixel (*this, i);
-          A += fixel.weight() * Math::pow2 (fixel.fd());
-        }
-        A /= value_type(num_tracks());
-        //const value_type A = fixels.col(model_weight_column).dot(fixels.col(fd_column).square()) / value_type(num_tracks());
+        // value_type A = 0.0;
+        // for (MR::Fixel::index_type i = 0; i != nfixels(); ++i) {
+        //   Fixel fixel (*this, i);
+        //   A += fixel.weight() * Math::pow2 (fixel.fd());
+        // }
+        // A /= value_type(num_tracks());
+        const value_type A = fixels.col(model_weight_column).matrix().dot(fixels.col(fd_column).square().matrix()) / value_type(num_tracks());
         INFO ("Constant A scaling regularisation terms to match data term is " + str(A));
         reg_multiplier_tikhonov = lambda_tikhonov * A;
         reg_multiplier_tv       = lambda_tv * A;

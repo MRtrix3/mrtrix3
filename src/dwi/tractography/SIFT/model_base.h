@@ -38,7 +38,6 @@
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/voxel.h"
 
-#include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/types.h"
 
 
@@ -57,6 +56,10 @@ namespace MR
     {
       namespace SIFT
       {
+
+
+
+        extern const App::OptionGroup SIFTModelWeightsOption;
 
 
 
@@ -121,7 +124,8 @@ namespace MR
             using FixelBase = MutableFixelFunctions<data_matrix_type::RowXpr>;
 
 
-            ModelBase (const std::string&);
+            ModelBase (const std::string& fd_path);
+
 
             void map_streamlines (const std::string&);
 
@@ -134,7 +138,6 @@ namespace MR
 
             value_type calc_cost_function() const;
 
-            // void output_weights_image (const std::string&);
             void output_5tt_image (const std::string&);
 
             // TODO Not yet sure what I want to do about the debugging images;
@@ -145,30 +148,20 @@ namespace MR
 
           protected:
             std::string tractogram_path;
-            // TODO Will include this for now, but would like to find a way to
-            //   not need to store this as part of the class
+
             MR::Image<float> act_5tt;
 
-            // As an image; will still want to project these to individual fixels
-            // (Note that this was called "proc_mask" in old class)
-            // TODO Preferable for this to be primarily handled on a fixel-wise basis:
-            //   If the user provides a voxel image input, or it is calculated based on a 5TT image,
-            //   then so be it, the value for all fixels within a single voxel will be identical,
-            //   but it would be preferable to handle the more general use case,
-            //   both for user input and command output
-            // If the output is a fixel image, the user can still use fixel2voxel
-            // TODO Delete this once we can overhaul SIFT::initialise_processing_mask()
-            MR::Image<float> weights;
-
-
             data_matrix_type fixels;
-
 
             value_type FD_sum, TD_sum;
 
             // TODO Dummy dixel mask to which fixels can point if the
             //   input fixel dataset does not include such
             Eigen::Array<bool, Eigen::Dynamic, Eigen::Dynamic> dummy_dixelmask;
+
+            void load_5tt_image (const std::string&);
+            void set_model_weights (const std::string&);
+
 
             void output_target_voxel (const std::string&) const;
             void output_target_sh (const std::string&) const;

@@ -14,19 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __dwi_tractography_sift_proc_mask_h__
-#define __dwi_tractography_sift_proc_mask_h__
+#ifndef __dwi_tractography_act_resample_h__
+#define __dwi_tractography_act_resample_h__
 
-#include "cmdline_option.h"
-#include "header.h"
+
 #include "image.h"
-
-#include "algo/iterator.h"
+#include "types.h"
 #include "interp/linear.h"
 
-#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
-
 
 
 namespace MR
@@ -35,17 +31,11 @@ namespace MR
   {
     namespace Tractography
     {
-      namespace SIFT
+      namespace ACT
       {
 
 
-        extern const App::OptionGroup SIFTModelWeightsOption;
 
-
-        void initialise_processing_mask (const Header, Image<float>&, Image<float>&);
-
-
-        // Private functor for performing ACT image regridding
         class ResampleFunctor
         {
 
@@ -63,7 +53,7 @@ namespace MR
             Image<float> out;
 
             // Helper function for doing the regridding
-            ACT::Tissues ACT2pve (const Iterator&);
+            Tissues ACT2pve (const Iterator&);
         };
 
 
