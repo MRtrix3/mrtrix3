@@ -51,7 +51,7 @@ namespace MR {
 
       bool RegularisationCalculator::operator() (const SIFT::TrackIndexRange& range)
       {
-        for (SIFT::track_t track_index = range.first; track_index != range.second; ++track_index) {
+        for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
           tikhonov_sum += Math::pow2 (coefficient);
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));

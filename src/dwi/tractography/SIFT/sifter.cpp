@@ -457,7 +457,7 @@ namespace MR
 
       bool SIFTer::TrackGradientCalculator::operator() (const TrackIndexRange& in)
       {
-        for (track_t track_index = in.first; track_index != in.second; ++track_index) {
+        for (auto track_index : in) {
           if (master.contributions[track_index]) {
             const value_type gradient = master.calc_gradient (track_index, current_mu, current_roc_cost);
             const value_type grad_per_unit_length = master.contributions[track_index]->get_total_contribution() ? (gradient / master.contributions[track_index]->get_total_contribution()) : 0.0;

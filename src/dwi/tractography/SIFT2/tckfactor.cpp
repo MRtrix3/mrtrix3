@@ -168,7 +168,7 @@ namespace MR {
                 fixed_mu (master.mu()) { }
             Functor (const Functor&) = default;
             bool operator() (const SIFT::TrackIndexRange& range) const {
-              for (SIFT::track_t track_index = range.first; track_index != range.second; ++track_index) {
+              for (auto track_index : range) {
                 const SIFT::TrackContribution& tckcont = *master.contributions[track_index];
                 value_type sum_afd = 0.0;
                 for (size_t f = 0; f != tckcont.dim(); ++f) {

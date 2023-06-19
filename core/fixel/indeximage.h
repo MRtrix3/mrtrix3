@@ -63,7 +63,7 @@ namespace MR
               index_image.index(3) = 1;
               offset = index_image.get_value();
             }
-            class iterator : public std::iterator<std::forward_iterator_tag, value_type, value_type, const value_type*, value_type>
+            class iterator : public std::iterator<std::forward_iterator_tag, value_type, std::ptrdiff_t, const value_type*, value_type>
             {
               public:
                 explicit iterator (const value_type value) : index (value) { }

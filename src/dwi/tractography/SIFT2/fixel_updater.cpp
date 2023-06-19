@@ -53,7 +53,7 @@ namespace MR {
 
       bool FixelUpdater::operator() (const SIFT::TrackIndexRange& range)
       {
-        for (SIFT::track_t track_index = range.first; track_index != range.second; ++track_index) {
+        for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
           const value_type weighting_factor = (coefficient > master.min_coeff) ? std::exp (coefficient) : 0.0;

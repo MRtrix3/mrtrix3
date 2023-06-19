@@ -39,10 +39,9 @@ namespace MR
       {
         if (start >= end)
           return false;
-        out.first = start;
-        const track_t last = std::min (start + size, end);
-        out.second = last;
-        start = last;
+        const track_t local_end = std::min (start + size, end);
+        out.set(start, local_end);
+        start = local_end;
         if (progress)
           ++*progress;
         return true;

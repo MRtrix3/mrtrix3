@@ -110,6 +110,7 @@ namespace MR
           VecItType end;
 
 
+          // TODO Is this redundant w.r.t "TrackIndexRangeWriter"?
           class BlockSender
           {
             public:
@@ -120,12 +121,12 @@ namespace MR
               bool operator() (TrackIndexRange& out)
               {
                 if (counter == num_tracks) {
-                  out.first = out.second = 0;
+                  out.invalidate();
                   return false;
                 }
-                out.first = counter;
-                counter = std::min (counter + block_size, num_tracks);
-                out.second = counter;
+                const track_t end = std::min (counter + block_size, num_tracks);
+                out.set (counter, end);
+                counter = end;
                 return true;
               }
             private:

@@ -96,7 +96,7 @@ namespace MR {
       bool CoefficientOptimiserBase::operator() (const SIFT::TrackIndexRange& range)
       {
 
-        for (SIFT::track_t track_index = range.first; track_index != range.second; ++track_index) {
+        for (auto track_index : range) {
 
           value_type dFs = get_coeff_change (track_index);
 
