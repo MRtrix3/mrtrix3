@@ -53,6 +53,7 @@ namespace MR
     ArgumentList ARGUMENTS;
     OptionList OPTIONS;
     Description REFERENCES;
+    Description PATENTS;
     bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
 
     OptionGroup __standard_options = OptionGroup ("Standard options")
@@ -298,11 +299,20 @@ namespace MR
         + paragraph ("", AUTHOR, HELP_PURPOSE_INDENT) + "\n"
         + bold ("COPYRIGHT") + "\n"
         + paragraph ("", COPYRIGHT, HELP_PURPOSE_INDENT) + "\n"
-        + [&](){
+        + [&]() -> std::string {
           std::string s = bold ("REFERENCES") + "\n";
           for (size_t n = 0; n < REFERENCES.size(); ++n)
             s += paragraph ("", REFERENCES[n], HELP_PURPOSE_INDENT) + "\n";
           s += paragraph ("", MRTRIX_CORE_REFERENCE, HELP_PURPOSE_INDENT) + "\n";
+          return s;
+        }()
+        + [&]() -> std::string {
+          if (PATENTS.size() == 0)
+            return "";
+          std::string s = bold ("PATENTS") + "\n";
+          s += paragraph ("", "Commercial use of the Software is subject to the following patents:", HELP_PURPOSE_INDENT) + "\n";
+          for (size_t n = 0; n < PATENTS.size(); ++n)
+            s += paragraph ("", PATENTS[n], HELP_PURPOSE_INDENT) + "\n";
           return s;
         }();
     }
@@ -785,6 +795,12 @@ namespace MR
         s += std::string (REFERENCES[i]) + "\n\n";
       s += std::string (MRTRIX_CORE_REFERENCE) + "\n\n";
 
+      if (PATENTS.size() > 0) {
+        s += std::string ("## Patents\n\n");
+        for (size_t i = 0; i < PATENTS.size(); ++i)
+          s += std::string (PATENTS[i]) + "\n\n";
+      };
+
       s += std::string("---\n\nMRtrix ") + mrtrix_version + ", built " + build_date + "\n\n"
         "\n\n**Author:** " + AUTHOR
         + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
@@ -927,6 +943,17 @@ namespace MR
         s += "\n\n";
       }
       s += std::string(MRTRIX_CORE_REFERENCE) + "\n\n";
+
+      if (PATENTS.size() > 0) {
+        s += std::string ("Patents\n^^^^^^^\n\n");
+        for (size_t i = 0; i < PATENTS.size(); ++i) {
+          auto refs = split_lines (PATENTS[i], false);
+          s += refs[0];
+          for (size_t n = 1; n < refs.size(); ++n)
+            s += " |br|\n  " + refs[n];
+          s += "\n\n";
+        }
+      };
 
       s += std::string("--------------\n\n") +
         "\n\n**Author:** " + (char*)AUTHOR
