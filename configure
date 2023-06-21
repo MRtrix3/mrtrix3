@@ -1481,8 +1481,9 @@ with open (config_filename, 'w', encoding='utf-8') as config_file:
   commit (config_file, 'lib_suffix', lib_suffix)
 
   if "CXX_COMPILER_LAUNCHER" in os.environ:
-    print("\n USING COMPILER PREFIX", os.environ["CXX_COMPILER_LAUNCHER"])
-    cpp.insert(0, os.environ["CXX_COMPILER_LAUNCHER"])
+    cpp_launcher = os.environ["CXX_COMPILER_LAUNCHER"].split()
+    print("\n USING CXX_COMPILER_LAUNCHER", cpp_launcher)
+    cpp = cpp_launcher + cpp
 
   commit (config_file, 'cpp', cpp)
   commit (config_file, 'cpp_flags', cpp_flags)
