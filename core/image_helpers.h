@@ -145,7 +145,7 @@ namespace MR
             std::declval<ImageType>().ndim() +
             std::declval<ImageType>().size(0) +
             std::declval<ImageType>().name().size() +
-            std::declval<ImageType>().value() +
+            std::real (typename ImageType::value_type (std::declval<ImageType>().value())) +
             std::declval<ImageType>().index(0)
         ), std::declval<ReturnType>()) type;
     };
