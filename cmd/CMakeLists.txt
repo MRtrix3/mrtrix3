@@ -1,14 +1,30 @@
-file(GLOB CMD_SRCS *.cpp)
+set(GUI_CMD_SRCS mrview.cpp shview.cpp)
+
+file(GLOB HEADLESS_CMD_SRCS *.cpp)
+foreach(CMD ${GUI_CMD_SRCS})
+    list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
+endforeach(CMD)
+
 file(GLOB BIN_SCRIPTS ${CMAKE_SOURCE_DIR}/bin/*)
 
-foreach(CMD ${CMD_SRCS})
+foreach(CMD ${HEADLESS_CMD_SRCS})
     # Extract the filename without an extension (NAME_WE)
     get_filename_component(CMD_NAME ${CMD} NAME_WE)
     add_executable(${CMD_NAME} ${CMD})
-    target_link_libraries(${CMD_NAME} PRIVATE mrtrix::main exec-version-lib)
+    target_link_libraries(${CMD_NAME} PRIVATE mrtrix::headless exec-version-lib)
+    set_target_properties(${CMD_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
+    install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endforeach(CMD)
+
+foreach(CMD ${GUI_CMD_SRCS})
+    # Extract the filename without an extension (NAME_WE)
+    get_filename_component(CMD_NAME ${CMD} NAME_WE)
+    add_executable(${CMD_NAME} ${CMD})
+    target_link_libraries(${CMD_NAME} PRIVATE mrtrix::gui exec-version-lib)
     set_target_properties(${CMD_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
     install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endforeach(CMD)
 
 
+file(COPY ${BIN_SCRIPTS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 install(FILES ${BIN_SCRIPTS} DESTINATION ${CMAKE_INSTALL_BINDIR})

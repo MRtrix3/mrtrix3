@@ -1,12 +1,14 @@
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
+file(GLOB_RECURSE HEADLESS_SOURCES *.h *.cpp)
+list(FILTER HEADLESS_SOURCES EXCLUDE REGEX "gui/.*")
 
-file(GLOB_RECURSE MAIN_SOURCES *.h *.cpp)
+file(GLOB_RECURSE GUI_SOURCES gui/*.h gui/*.cpp)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets OpenGL Network REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Git QUIET)
+
+qt5_add_resources(RCC_SOURCES ${CMAKE_SOURCE_DIR}/icons/icons.qrc)
 
 # Create version target and library
 set(EXEC_VERSION_CPP ${CMAKE_CURRENT_BINARY_DIR}/exec_version.cpp)
@@ -27,24 +29,36 @@ add_custom_target(exec-version-target ALL
 add_library(exec-version-lib STATIC ${EXEC_VERSION_CPP})
 add_dependencies(exec-version-lib exec-version-target)
 
-target_include_directories(exec-version-lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(mrtrix-headless SHARED ${HEADLESS_SOURCES})
+add_library(mrtrix::headless ALIAS mrtrix-headless)
 
-qt5_add_resources(RCC_SOURCES ${CMAKE_SOURCE_DIR}/icons/icons.qrc)
+add_library(mrtrix-gui SHARED ${GUI_SOURCES} ${RCC_SOURCES})
+add_library(mrtrix::gui ALIAS mrtrix-gui)
 
-add_library(mrtrix-main SHARED ${MAIN_SOURCES} ${RCC_SOURCES})
-add_library(mrtrix::main ALIAS mrtrix-main)
+set_target_properties(mrtrix-gui PROPERTIES
+    AUTOMOC ON
+    AUTOUIC ON
+)
 
-target_link_libraries(mrtrix-main PUBLIC
+target_include_directories(exec-version-lib PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_include_directories(mrtrix-headless PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(mrtrix-headless PUBLIC
+    mrtrix::core
+)
+
+target_link_libraries(mrtrix-gui PUBLIC
+    mrtrix::headless
     Qt5::Core
     Qt5::Gui
     Qt5::Widgets
     Qt5::OpenGL
     Qt5::Network
-    mrtrix::core
     Threads::Threads
     ${OPENGL_LIBRARIES}
-)
-
-target_include_directories(mrtrix-main PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
 )
