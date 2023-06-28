@@ -1,4 +1,8 @@
 #include "version.h"
 
-const char* mrtrix_version = "@MRTRIX_VERSION@";
-const char* build_date = __DATE__;
+namespace MR {
+    namespace App {
+        const char* mrtrix_version = "@MRTRIX_VERSION@";
+        const char* build_date = __DATE__;
+    }
+}
