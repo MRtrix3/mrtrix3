@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 project(mrtrix3)
 include(GNUInstallDirs)
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 set(MRTRIX_BASE_VERSION "3.0.4")
 
 set(CMAKE_CXX_STANDARD 17)
@@ -26,7 +28,7 @@ file(RELATIVE_PATH relDir
 
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(BuildType)
 
 add_compile_definitions(
     MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
