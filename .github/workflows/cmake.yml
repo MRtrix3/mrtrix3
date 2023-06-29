@@ -1,0 +1,120 @@
+name: CMake checks
+
+on:
+  push:
+
+jobs:
+  linux-gcc-build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      QT_SELECT: qt5
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
+      
+    - name: configure
+      run: |
+        mkdir cmake-build
+        cmake -B cmake-build -G Ninja -D CMAKE_CXX_COMPILER_LAUNCHER=sccache .
+
+    - name: build
+      run: cmake --build ./cmake-build
+
+
+  macos-build:
+
+    runs-on: macos-latest
+
+    env:
+      PACKAGES: "qt5 eigen pkg-config fftw libpng ninja cmake"
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install dependencies
+      run: |
+         brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
+         brew install $PACKAGES || brew install $PACKAGES
+         brew link --force qt5
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
+
+    - name: configure
+      run: |
+        export PATH=/usr/local/opt/qt5/bin:$PATH
+        mkdir cmake-build
+        cmake -B cmake-build -G Ninja -DCMAKE_CXX_COMPILER_LAUNCHER=sccache .
+
+    - name: build
+      run: cmake --build ./cmake-build
+
+
+
+  windows-build:
+
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    env:
+      # CFLAGS: -Werror
+      CHERE_INVOKING: enabled_from_arguments
+      MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          release: false
+          install: |
+            git
+            python
+            ${{env.MINGW_PACKAGE_PREFIX}}-bc
+            ${{env.MINGW_PACKAGE_PREFIX}}-cmake
+            ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
+            ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
+            ${{env.MINGW_PACKAGE_PREFIX}}-fftw
+            ${{env.MINGW_PACKAGE_PREFIX}}-gcc
+            ${{env.MINGW_PACKAGE_PREFIX}}-libtiff
+            ${{env.MINGW_PACKAGE_PREFIX}}-ninja
+            ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt5-base
+            ${{env.MINGW_PACKAGE_PREFIX}}-qt5-svg
+            ${{env.MINGW_PACKAGE_PREFIX}}-zlib
+
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      
+      - name: export sccache to msys2 shell
+        run: |
+          export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
+          echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
+          
+      - name: configure
+        run: |
+          mkdir cmake-build
+          cmake -B cmake-build -G Ninja -DCMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}} .
+
+      - name: build
+        run: cmake --build .
