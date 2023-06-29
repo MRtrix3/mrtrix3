@@ -159,7 +159,8 @@ namespace MR
 
           window().colourbar_renderer.render (tractogram.colourmap, tractogram.scale_inverted(),
                                               min_value, max_value,
-                                              tractogram.scaling_min(), tractogram.display_range, tractogram.colour);
+                                              tractogram.scaling_min(), tractogram.display_range,
+                                              { tractogram.colour[0]/255.0f, tractogram.colour[1]/255.0f, tractogram.colour[2]/255.0f });
         }
 
 
@@ -446,7 +447,7 @@ namespace MR
             window().updateGL();
           }
         }
-        
+
         void TrackScalarFileOptions::set_colourmap (int colourmap_index)
         {
           if (tractogram) {
