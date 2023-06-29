@@ -7,6 +7,13 @@ include(GNUInstallDirs)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(BUILD_GUI "Build the MRtrix3 GUI" ON)
+option(USE_QT6 "Use Qt6 to build" OFF)
+
+if(USE_QT6)
+    set(QT_MAJOR_VERSION 6)
+else()
+    set(QT_MAJOR_VERSION 5)
+endif()
 
 set(MRTRIX_BASE_VERSION "3.0.4")
 
