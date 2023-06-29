@@ -9,6 +9,15 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(MRTRIX_BASE_VERSION "${CMAKE_PROJECT_VERSION}")
 
 option(BUILD_GUI "Build the MRtrix3 GUI" ON)
+option(USE_QT6 "Use Qt6 to build" OFF)
+
+if(USE_QT6)
+    set(QT_MAJOR_VERSION 6)
+else()
+    set(QT_MAJOR_VERSION 5)
+endif()
+
+option(BUILD_GUI "Build the MRtrix3 GUI" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

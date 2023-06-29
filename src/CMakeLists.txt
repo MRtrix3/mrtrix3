@@ -3,11 +3,16 @@ list(FILTER HEADLESS_SOURCES EXCLUDE REGEX "gui/.*")
 
 file(GLOB_RECURSE GUI_SOURCES gui/*.h gui/*.cpp)
 
-if(BUILD_GUI)    
-    find_package(Qt5 COMPONENTS Core Gui Widgets OpenGL Network REQUIRED)
+if(BUILD_GUI)
+    if(USE_QT6)
+        find_package(Qt6 COMPONENTS Core Gui Widgets OpenGL Network OpenGLWidgets REQUIRED)
+        qt6_add_resources(RCC_SOURCES ${CMAKE_SOURCE_DIR}/icons/icons.qrc)
+    else()
+        find_package(Qt5 COMPONENTS Core Gui Widgets OpenGL Network REQUIRED)
+        qt5_add_resources(RCC_SOURCES ${CMAKE_SOURCE_DIR}/icons/icons.qrc)
+    endif()
     find_package(OpenGL REQUIRED)
     find_package(Threads REQUIRED)
-    qt5_add_resources(RCC_SOURCES ${CMAKE_SOURCE_DIR}/icons/icons.qrc)
 endif()
 
 find_package(Git QUIET)
@@ -58,14 +63,17 @@ if(BUILD_GUI)
 
     target_link_libraries(mrtrix-gui PUBLIC
         mrtrix::headless
-        Qt5::Core
-        Qt5::Gui
-        Qt5::Widgets
-        Qt5::OpenGL
-        Qt5::Network
+        Qt${QT_MAJOR_VERSION}::Core
+        Qt${QT_MAJOR_VERSION}::Gui
+        Qt${QT_MAJOR_VERSION}::Widgets
+        Qt${QT_MAJOR_VERSION}::OpenGL
+        Qt${QT_MAJOR_VERSION}::Network
         Threads::Threads
         ${OPENGL_LIBRARIES}
     )
+    if(USE_QT6)
+        target_link_libraries(mrtrix-gui PUBLIC Qt6::OpenGLWidgets)
+    endif()
 endif()
 
 install(TARGETS mrtrix-headless
