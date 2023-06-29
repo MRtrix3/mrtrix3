@@ -38,10 +38,10 @@ target_link_libraries(mrtrix-core PUBLIC
     Eigen3::Eigen
     ZLIB::ZLIB
     core-version-lib
-    fftw3
+    ${FFTW_LIBRARIES}
 )
 
-target_include_directories(mrtrix-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(mrtrix-core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} ${FFTW_INCLUDES})
 
 install(TARGETS mrtrix-core 
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
