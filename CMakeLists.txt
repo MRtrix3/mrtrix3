@@ -8,6 +8,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 option(BUILD_GUI "Build the MRtrix3 GUI" ON)
 option(USE_QT6 "Use Qt6 to build" OFF)
+option(WARNING_AS_ERRORS "Compiler warnings result in compilation errors" OFF)
 
 if(USE_QT6)
     set(QT_MAJOR_VERSION 6)
@@ -45,6 +46,14 @@ add_compile_definitions(
     $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
     $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOSX>
 )
+
+if(WARNING_AS_ERRORS)
+    if (MSVC)
+        add_compile_options(/WX)
+    else()
+        add_compile_options(-Werror)
+    endif()
+endif()
 
 add_subdirectory(core)
 add_subdirectory(src)
