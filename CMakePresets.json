@@ -1,0 +1,33 @@
+{
+    "version" : 2,
+    "configurePresets" : [
+        {
+            "name" : "base",
+            "displayName" : "Base configuration",
+            "hidden" : true,
+            "generator" : "Ninja",
+            "binaryDir" : "build",
+            "cacheVariables" : {
+                "CMAKE_CXX_COMPILER_LAUNCHER" : "sccache"
+            }
+        },
+        {
+            "name" : "release",
+            "displayName" : "Release",
+            "inherits" : "base",
+            "cacheVariables" : {
+                "CMAKE_BUILD_TYPE" : "Release"
+            }
+        },
+        {
+            "name" : "ci-release-checks",
+            "displayName" : "Release with asserts and warnings as errors",
+            "inherits" : "base",
+            "cacheVariables" : {
+                "CMAKE_BUILD_TYPE" : "RelWithDebInfo",
+                "WARNING_AS_ERRORS" : "ON"
+            }
+        }
+    ]
+}
+
