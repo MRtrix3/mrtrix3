@@ -47,6 +47,9 @@ namespace MR
       namespace ACT
       {
 
+        extern const char* sgm_trunc_choices[];
+        enum class sgm_trunc_enum { DEFAULT, ENTRY, EXIT, MINIMUM, RANDOM, ROULETTE };
+
         extern const App::OptionGroup ACTOption;
 
         void load_act_properties (Properties& properties);

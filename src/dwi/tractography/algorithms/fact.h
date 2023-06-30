@@ -48,8 +48,12 @@ namespace MR
           if (source.size(3) % 3)
             throw Exception ("Number of volumes in FACT algorithm input image should be a multiple of 3");
 
-          if (is_act() && act().backtrack())
-            throw Exception ("Backtracking not valid for deterministic algorithms");
+          if (is_act()) {
+            if (act().backtrack())
+              throw Exception ("Backtracking not valid for deterministic algorithms");
+            if (property_set.find ("sgm_truncation") == property_set.end())
+              act().set_sgm_trunc (ACT::sgm_trunc_enum::MINIMUM);
+          }
 
           if (rk4)
             throw Exception ("4th-order Runge-Kutta integration not valid for FACT algorithm");
