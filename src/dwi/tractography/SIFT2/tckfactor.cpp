@@ -350,10 +350,10 @@ namespace MR {
             weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
                          0.0 :
                          std::exp (coefficients[i]);
-          save_vector (weights, path);
         } catch (...) {
           WARN ("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
         }
+        save_vector (weights, path);
       }
 
 
