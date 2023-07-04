@@ -18,33 +18,33 @@ You can address all *MRtrix3*-related queries there, using your GitHub or Google
 ## Quick install
 
 1. Install dependencies by whichever means your system uses. 
-   These include: Python3, a C++ compiler with full C++11 support (`g++` 4.9 or later, `clang++`), 
+   These include: CMake (>= 3.19), Python3, a C++ compiler with full C++11 support (`g++` 4.9 or later, `clang++`), 
    Eigen (>=3.2.8), zlib, OpenGL (>=3.3), and Qt (>=5.5).
 
 2. Clone Git repository and compile:
 
         $ git clone https://github.com/MRtrix3/mrtrix3.git
         $ cd mrtrix3/
-        $ ./configure
-        $ ./build
+        $ mkdir build && cd build
+        $ cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/installation
+        $ cmake --build .
+        $ cmake --install .
+    
+    It's **highly** recommended, that you use [Ninja] and a compiler caching tool like [ccache](https://ccache.dev/) or [sccache](https://github.com/mozilla/sccache) to speed up compilation time. So in the steps above, you can replace `cmake .. -DCMAKE_INSTALL_PREFIX=/path/to/installation` with `cmake .. -G Ninja -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_INSTALL_PREFIX=/path/to/installation`.
 
 3. Set the `PATH`:
 
     * Bash shell:
 
-      run the `set_path` script provided:
+      edit the startup `~/.bashrc` or `/etc/bash.bashrc` file manually by adding this line:
 
-            $ ./set_path
-
-      or edit the startup `~/.bashrc` or `/etc/bash.bashrc` file manually by adding this line:
-
-            $ export PATH=/<edit as appropriate>/mrtrix3/bin:$PATH
+            $ export PATH=/path/to/installation/bin:$PATH
 
     * C shell:
 
       edit the startup `~/.cshrc` or `/etc/csh.cshrc` file manually by adding this line:
 
-            $ setenv PATH /<edit as appropriate>/mrtrix3/bin:$PATH
+            $ setenv PATH /path/to/installation/bin:$PATH
 
 4. Test installation:
 
