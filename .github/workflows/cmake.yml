@@ -117,4 +117,4 @@ jobs:
           cmake -B cmake-build -G Ninja -DCMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}} .
 
       - name: build
-        run: cmake --build .
+        run: cmake --build cmake-build
