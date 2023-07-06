@@ -631,7 +631,7 @@ namespace MR
               if (colourmap_index == -2)
                 colourmap_index = overlay->colourmap;
               else
-                colourmap_index = -1;                
+                colourmap_index = -1;
             }
             num_inverted += overlay->scale_inverted();
             rate += overlay->scaling_rate();
