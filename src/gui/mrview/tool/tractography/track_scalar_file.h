@@ -18,6 +18,7 @@
 #define __gui_mrtrix_tools_tractography_scalar_file_options_h__
 
 #include "gui/mrview/adjust_button.h"
+#include "gui/mrview/colourmap_button.h"
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/tractography/tractogram_enums.h"
@@ -36,8 +37,10 @@ namespace MR
         class Tractogram;
         class Tractography;
 
-          class TrackScalarFileOptions : public QGroupBox, public DisplayableVisitor
-          { 
+
+
+          class TrackScalarFileOptions : public QGroupBox, public ColourMapButtonObserver, public DisplayableVisitor
+          {
             Q_OBJECT
 
             public:
@@ -51,7 +54,13 @@ namespace MR
               void update_UI();
               void set_scaling(default_type min, default_type max);
               void set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource, default_type min, default_type max);
-              void set_colourmap (int colourmap_index);
+              void set_colourmap (int colourmap_index) { colourmap_button->set_colourmap_index (colourmap_index); }
+
+              void selected_colourmap (size_t, const ColourMapButton&) override;
+              void selected_custom_colour (const QColor&, const ColourMapButton&) override;
+              void toggle_show_colour_bar (bool, const ColourMapButton&) override;
+              void toggle_invert_colourmap (bool, const ColourMapButton&) override;
+              void reset_colourmap (const ColourMapButton&) override;
 
             public slots:
               bool open_intensity_track_scalar_file_slot ();
@@ -59,17 +68,13 @@ namespace MR
 
 
             private slots:
-              void show_colour_bar_slot();
-              void select_colourmap_slot ();
               void on_set_scaling_slot ();
               bool threshold_scalar_file_slot (int);
               void threshold_lower_changed (int unused);
               void threshold_upper_changed (int unused);
               void threshold_lower_value_changed ();
               void threshold_upper_value_changed ();
-              void invert_colourmap_slot ();
-              void reset_intensity_slot ();
-            
+
 
             protected:
               Tractography* tool;
@@ -78,10 +83,7 @@ namespace MR
               QGroupBox *colour_groupbox;
               QAction *show_colour_bar;
               QAction *invert_scale;
-              QMenu *colourmap_menu;
-              QAction **colourmap_actions;
-              QActionGroup *colourmap_group;
-              QToolButton *colourmap_button;
+              ColourMapButton* colourmap_button;
               QPushButton *intensity_file_button;
               AdjustButton *max_entry, *min_entry;
               QComboBox *threshold_file_combobox;
