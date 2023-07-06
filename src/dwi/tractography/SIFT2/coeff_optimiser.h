@@ -89,8 +89,11 @@ namespace MR {
 
 
 
-
-
+      // Completely commenting out the GSS optimiser for now,
+      //   as it relies on having an unambiguous functor,
+      //   whereas the current proposal involves a templated functor
+      // TODO Should the template be moved from the line search functors to the class?
+/*
       // Golden Section Search within the permitted range
       class CoefficientOptimiserGSS : public CoefficientOptimiserBase
       {
@@ -104,11 +107,15 @@ namespace MR {
           value_type get_coeff_change (const SIFT::track_t) const;
 
       };
+*/
 
 
 
-
-
+      // As with GSS, QLS requires access to an untemplated functor
+      // Theoretically this could be done with a wrapper class around LineSearchFunctor
+      //   that disambiguates the template
+      // But for now let's simplify as much as possible
+/*
       // Performs a Quadratic Line Search within the permitted domain
       // Does not requre derivatives; only needs 3 seed points (two extremities and 0.0)
       // Note however if that these extremities are large, the initial CF evaluation may be NAN!
@@ -126,7 +133,7 @@ namespace MR {
           value_type get_coeff_change (const SIFT::track_t) const;
 
       };
-
+*/
 
 
 

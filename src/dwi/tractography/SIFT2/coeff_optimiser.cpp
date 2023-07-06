@@ -17,6 +17,7 @@
 #include <mutex>
 
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
+#include "dwi/tractography/SIFT2/cost_and_derivatives.h"
 #include "dwi/tractography/SIFT2/line_search.h"
 #include "dwi/tractography/SIFT2/tckfactor.h"
 
@@ -224,7 +225,7 @@ namespace MR {
 
 
 
-
+/*
       CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
             CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) { }
 
@@ -244,13 +245,13 @@ namespace MR {
           return -master.max_coeff_step;
         return dFs;
       }
+*/
 
 
 
 
 
-
-
+/*
       CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, value_type& sum_costs) :
             CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
             qls (-master.max_coeff_step, master.max_coeff_step)
@@ -289,7 +290,7 @@ namespace MR {
 
         return dFs;
       }
-
+*/
 
 
 
@@ -329,16 +330,38 @@ namespace MR {
         size_t iter = 0;
         do {
 
-          const LineSearchFunctor::Result result = line_search_functor.get (dFs);
+          // TODO For the sake of getting things working initially,
+          //   let's branch here based on the regularisation;
+          //   once things are compiling again,
+          //   we can then move the template realisation further out for optimisation
+          CostAndDerivatives cost_and_derivatives;
+          switch (master.reg_basis) {
+            case reg_basis_t::STREAMLINE: {
+              switch (master.reg_fn) {
+                case reg_fn_t::COEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_t::COEFF>  (dFs); break;
+                case reg_fn_t::WEIGHT: cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_t::WEIGHT> (dFs); break;
+                case reg_fn_t::GAMMA:  cost_and_derivatives = line_search_functor.get<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA>  (dFs); break;
+              }
+            }
+            break;
+            case reg_basis_t::FIXEL: {
+              switch (master.reg_fn) {
+                case reg_fn_t::COEFF:  cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_t::COEFF>  (dFs); break;
+                case reg_fn_t::WEIGHT: cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_t::WEIGHT> (dFs); break;
+                case reg_fn_t::GAMMA:  cost_and_derivatives = line_search_functor.get<reg_basis_t::FIXEL, reg_fn_t::GAMMA>  (dFs); break;
+              }
+            }
+            break;
+          }
 
           // Newton update
-          change = result.second_deriv ? (-result.first_deriv / result.second_deriv) : 0.0;
-          if (result.second_deriv < 0.0)
+          change = cost_and_derivatives.second_deriv ? (-cost_and_derivatives.first_deriv / cost_and_derivatives.second_deriv) : 0.0;
+          if (cost_and_derivatives.second_deriv < 0.0)
             change = -change;
 
           // Halley update
-          //const value_type numerator   = 2.0 * result.first_deriv * result.second_deriv;
-          //const value_type denominator = (2.0 * Math::pow2 (result.second_deriv)) - (result.first_deriv * result.third_deriv);
+          //const value_type numerator   = 2.0 * cost_and_derivatives.first_deriv * cost_and_derivatives.second_deriv;
+          //const value_type denominator = (2.0 * Math::pow2 (cost_and_derivatives.second_deriv)) - (cost_and_derivatives.first_deriv * cost_and_derivatives.third_deriv);
           //change = denominator ? (-numerator / denominator) : 0.0;
           // Can't detect heading toward a maximum in Halley's method!
 
@@ -370,7 +393,25 @@ namespace MR {
         iter_count += iter;
 #endif
 
-        local_sum_costs += line_search_functor (0.0);
+        // TODO Remove once template instantiation is moved out
+        switch (master.reg_basis) {
+            case reg_basis_t::STREAMLINE: {
+              switch (master.reg_fn) {
+                case reg_fn_t::COEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_t::COEFF>  (0.0);
+                case reg_fn_t::WEIGHT: local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_t::WEIGHT> (0.0); break;
+                case reg_fn_t::GAMMA:  local_sum_costs += line_search_functor.operator()<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA>  (0.0); break;
+              }
+            }
+            break;
+            case reg_basis_t::FIXEL: {
+              switch (master.reg_fn) {
+                case reg_fn_t::COEFF:  local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_t::COEFF>  (0.0); break;
+                case reg_fn_t::WEIGHT: local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_t::WEIGHT> (0.0); break;
+                case reg_fn_t::GAMMA:  local_sum_costs += line_search_functor.operator()<reg_basis_t::FIXEL, reg_fn_t::GAMMA>  (0.0); break;
+              }
+            }
+            break;
+          }
 
         return dFs;
       }

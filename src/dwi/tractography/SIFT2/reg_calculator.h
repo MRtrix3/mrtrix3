@@ -22,6 +22,7 @@
 #include "dwi/tractography/SIFT/types.h"
 
 #include "dwi/tractography/SIFT2/regularisation.h"
+#include "dwi/tractography/SIFT2/tckfactor.h"
 
 
 namespace MR {
@@ -30,30 +31,64 @@ namespace MR {
       namespace SIFT2 {
 
 
-      class TckFactor;
-
-
+      // TODO Try implementing alternative templated version completely in parallel
+      // Going to have to change multiple things in multiple places before it can all compile together
+      template <reg_basis_t RegBasis, reg_fn_t RegFn>
       class RegularisationCalculator
       {
-
         public:
           using value_type = SIFT::value_type;
 
-          RegularisationCalculator (TckFactor&, value_type&, value_type&);
-          ~RegularisationCalculator();
+          RegularisationCalculator (TckFactor& tckfactor, value_type& global_sum) :
+            master (tckfactor),
+            global_sum (global_sum),
+            local_sum (value_type(0.0)) { }
+
+          ~RegularisationCalculator()
+          {
+            std::lock_guard<std::mutex> lock (master.mutex);
+            global_sum += local_sum;
+          }
 
           bool operator() (const SIFT::TrackIndexRange& range);
 
-
         private:
           TckFactor& master;
-          value_type& cf_reg_tik;
-          value_type& cf_reg_tv;
-
-          // Each thread needs a local copy of these
-          value_type tikhonov_sum, tv_sum;
-
+          value_type& global_sum;
+          value_type local_sum;
       };
+
+      // TODO Not working
+      // Is this a partial template specialisation problem?
+      // TODO Try to get working
+      // template <reg_fn_t RegFn>
+      // bool RegularisationCalculator<reg_basis_t::STREAMLINE, RegFn>::operator() (const SIFT::TrackIndexRange& range)
+      // {
+      //   for (auto track_index : range) {
+      //     const value_type coefficient = master.coefficients[track_index];
+      //     local_sum += reg<RegFn> (coefficient);
+      //   }
+      //   return true;
+      // }
+
+
+      // template <reg_fn_t RegFn>
+      // bool RegularisationCalculator<reg_basis_t::FIXEL, RegFn>::operator() (const SIFT::TrackIndexRange& range)
+      // {
+      //   for (auto track_index : range) {
+      //     const value_type coefficient = master.coefficients[track_index];
+      //     const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
+      //     const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
+      //     value_type streamline_sum = value_type(0.0);
+      //     for (size_t j = 0; j != this_contribution.dim(); ++j) {
+      //       const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
+      //       const value_type fixel_coeff_cost = SIFT2::reg<RegFn> (coefficient, fixel.mean_coeff());
+      //       streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
+      //     }
+      //     local_sum += streamline_sum;
+      //   }
+      //   return true;
+      // }
 
 
 

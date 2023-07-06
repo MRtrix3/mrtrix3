@@ -45,7 +45,7 @@ namespace MR {
 
 
 
-      void TckFactor::set_reg_lambdas (const value_type lambda_tikhonov, const value_type lambda_tv)
+      void TckFactor::set_reg_lambda (const value_type lambda)
       {
         assert (num_tracks());
         // value_type A = 0.0;
@@ -55,9 +55,8 @@ namespace MR {
         // }
         // A /= value_type(num_tracks());
         const value_type A = fixels.col(model_weight_column).matrix().dot(fixels.col(fd_column).square().matrix()) / value_type(num_tracks());
-        INFO ("Constant A scaling regularisation terms to match data term is " + str(A));
-        reg_multiplier_tikhonov = lambda_tikhonov * A;
-        reg_multiplier_tv       = lambda_tv * A;
+        INFO ("Constant A scaling regularisation term to match data term is " + str(A));
+        reg_multiplier = lambda * A;
       }
 
 
@@ -246,8 +245,8 @@ namespace MR {
         if (!csv_path.empty()) {
           csv_out.reset (new std::ofstream());
           csv_out->open (csv_path.c_str(), std::ios_base::trunc);
-          (*csv_out) << "Iteration,Cost_data,Cost_reg_tik,Cost_reg_tv,Cost_reg,Cost_total,Streamlines,Fixels_excluded,Step_min,Step_mean,Step_mean_abs,Step_var,Step_max,Coeff_min,Coeff_mean,Coeff_mean_abs,Coeff_var,Coeff_max,Coeff_norm,\n";
-          (*csv_out) << "0," << init_cf << ",0,0,0," << init_cf << "," << nonzero_streamlines << "," << total_excluded << ",0,0,0,0,0,0,0,0,0,0,0,\n";
+          (*csv_out) << "Iteration,Cost_data,Cost_reg,Cost_total,Streamlines,Fixels_excluded,Step_min,Step_mean,Step_mean_abs,Step_var,Step_max,Coeff_min,Coeff_mean,Coeff_mean_abs,Coeff_var,Coeff_max,Coeff_norm,\n";
+          (*csv_out) << "0," << init_cf << ",0," << init_cf << "," << nonzero_streamlines << "," << total_excluded << ",0,0,0,0,0,0,0,0,0,0,0,\n";
           csv_out->flush();
         }
 
@@ -313,22 +312,11 @@ namespace MR {
 
           // Calculate the cost of regularisation, given the updates to both the
           //   streamline weighting coefficients and the new fixel mean coefficients
-          // Log different regularisation costs separately
-          value_type cf_reg_tik = 0.0, cf_reg_tv = 0.0;
-          {
-            SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
-            RegularisationCalculator worker (*this, cf_reg_tik, cf_reg_tv);
-            Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
-          }
-          cf_reg_tik *= reg_multiplier_tikhonov;
-          cf_reg_tv  *= reg_multiplier_tv;
-
-          cf_reg = cf_reg_tik + cf_reg_tv;
-
+          cf_reg = calculate_regularisation();
           new_cf = cf_data + cf_reg;
 
           if (!csv_path.empty()) {
-            (*csv_out) << str (iter) << "," << str (cf_data) << "," << str (cf_reg_tik) << "," << str (cf_reg_tv) << "," << str (cf_reg) << "," << str (new_cf) << "," << str (nonzero_streamlines) << "," << str (total_excluded) << ","
+            (*csv_out) << str (iter) << "," << str (cf_data) << "," << str (cf_reg) << "," << str (new_cf) << "," << str (nonzero_streamlines) << "," << str (total_excluded) << ","
                 << str (step_stats       .get_min()) << "," << str (step_stats       .get_mean()) << "," << str (step_stats       .get_mean_abs()) << "," << str (step_stats       .get_var()) << "," << str (step_stats       .get_max()) << ","
                 << str (coefficient_stats.get_min()) << "," << str (coefficient_stats.get_mean()) << "," << str (coefficient_stats.get_mean_abs()) << "," << str (coefficient_stats.get_var()) << "," << str (coefficient_stats.get_max()) << ","
                 << str (coefficient_stats.get_var() * (num_tracks() - 1))
@@ -340,6 +328,43 @@ namespace MR {
 
           // Leaving out testing the fixel exclusion mask criterion; doesn't converge, and results in CF increase
         } while (((new_cf - prev_cf < required_cf_change) || (iter < min_iters) /* || !fixels_to_exclude.empty() */ ) && (iter < max_iters));
+      }
+
+
+      namespace
+      {
+        template <reg_basis_t RegBasis, reg_fn_t RegFn>
+        value_type calc_reg (TckFactor& master)
+        {
+          value_type result = value_type(0.0);
+          SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, master.num_tracks());
+          RegularisationCalculator<RegBasis, RegFn> worker (master, result);
+          Thread::run_queue (writer, SIFT::TrackIndexRange(), Thread::multi (worker));
+          return result;
+        }
+      }
+      value_type TckFactor::calculate_regularisation()
+      {
+        value_type unscaled = value_type(0.0);
+        switch (reg_basis) {
+          case reg_basis_t::STREAMLINE: {
+            switch (reg_fn) {
+              case reg_fn_t::COEFF: unscaled = calc_reg<reg_basis_t::STREAMLINE, reg_fn_t::COEFF> (*this); break;
+              case reg_fn_t::WEIGHT: unscaled = calc_reg<reg_basis_t::STREAMLINE, reg_fn_t::WEIGHT> (*this); break;
+              case reg_fn_t::GAMMA: unscaled = calc_reg<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA> (*this); break;
+            }
+            break;
+          }
+          case reg_basis_t::FIXEL: {
+            switch (reg_fn) {
+              case reg_fn_t::COEFF: unscaled = calc_reg<reg_basis_t::FIXEL, reg_fn_t::COEFF> (*this); break;
+              case reg_fn_t::WEIGHT: unscaled = calc_reg<reg_basis_t::FIXEL, reg_fn_t::WEIGHT> (*this); break;
+              case reg_fn_t::GAMMA: unscaled = calc_reg<reg_basis_t::FIXEL, reg_fn_t::GAMMA> (*this); break;
+            }
+            break;
+          }
+        }
+        return unscaled * reg_multiplier;
       }
 
 

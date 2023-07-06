@@ -26,6 +26,7 @@
 
 #include "dwi/tractography/SIFT/sift.h"
 
+#include "dwi/tractography/SIFT2/regularisation.h"
 #include "dwi/tractography/SIFT2/tckfactor.h"
 
 
@@ -41,16 +42,6 @@ using namespace MR::DWI::Tractography::SIFT2;
 
 using value_type = MR::DWI::Tractography::SIFT::value_type;
 
-
-
-
-const OptionGroup SIFT2RegularisationOption = OptionGroup ("Regularisation options for SIFT2")
-
-  + Option ("reg_tikhonov", "provide coefficient for regularising streamline weighting coefficients (Tikhonov regularisation) (default: " + str(SIFT2_REGULARISATION_TIKHONOV_DEFAULT, 2) + ")")
-    + Argument ("value").type_float (0.0)
-
-  + Option ("reg_tv", "provide coefficient for regularising variance of streamline weighting coefficient to fixels along its length (Total Variation regularisation) (default: " + str(SIFT2_REGULARISATION_TV_DEFAULT, 2) + ")")
-    + Argument ("value").type_float (0.0);
 
 
 
@@ -139,7 +130,7 @@ void usage ()
   + Option ("out_coeffs", "output text file containing the weighting coefficient for each streamline")
     + Argument ("path").type_file_out()
 
-  + SIFT2RegularisationOption
+  + SIFT2::RegularisationOptions
   + SIFT2AlgorithmOption;
 
 }
@@ -187,9 +178,13 @@ void run ()
     if (opt.size())
       tckfactor.set_csv_path (opt[0][0]);
 
-    const value_type reg_tikhonov = get_option_value ("reg_tikhonov", SIFT2_REGULARISATION_TIKHONOV_DEFAULT);
-    const value_type reg_tv = get_option_value ("reg_tv", SIFT2_REGULARISATION_TV_DEFAULT);
-    tckfactor.set_reg_lambdas (reg_tikhonov, reg_tv);
+    opt = get_options ("reg_basis");
+    if (opt.size())
+      tckfactor.set_reg_basis (reg_basis_t (int(opt[0][0])));
+    opt = get_options ("reg_fn");
+    if (opt.size())
+      tckfactor.set_reg_fn (reg_fn_t (int(opt[0][0])));
+    tckfactor.set_reg_lambda (get_option_value("reg_strength", SIFT2::regularisation_strength_default));
 
     opt = get_options ("min_iters");
     if (opt.size())

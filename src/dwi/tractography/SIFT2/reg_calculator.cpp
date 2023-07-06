@@ -31,41 +31,88 @@ namespace MR {
 
 
 
-      RegularisationCalculator::RegularisationCalculator (TckFactor& tckfactor, value_type& cf_reg_tik, value_type& cf_reg_tv) :
-        master (tckfactor),
-        cf_reg_tik (cf_reg_tik),
-        cf_reg_tv (cf_reg_tv),
-        tikhonov_sum (0.0),
-        tv_sum (0.0) { }
-
-
-
-      RegularisationCalculator::~RegularisationCalculator()
-      {
-        std::lock_guard<std::mutex> lock (master.mutex);
-        cf_reg_tik += tikhonov_sum;
-        cf_reg_tv  += tv_sum;
-      }
-
-
-
-      bool RegularisationCalculator::operator() (const SIFT::TrackIndexRange& range)
+      template <>
+      bool RegularisationCalculator<reg_basis_t::STREAMLINE, reg_fn_t::COEFF>::operator() (const SIFT::TrackIndexRange& range)
       {
         for (auto track_index : range) {
           const value_type coefficient = master.coefficients[track_index];
-          tikhonov_sum += Math::pow2 (coefficient);
-          const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
-          const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
-          value_type this_tv_sum = 0.0;
-          for (size_t j = 0; j != this_contribution.dim(); ++j) {
-            const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
-            const value_type fixel_coeff_cost = SIFT2::tvreg (coefficient, fixel.mean_coeff());
-            this_tv_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
-          }
-          tv_sum += this_tv_sum;
+          local_sum += reg_coeff (coefficient);
         }
         return true;
       }
+      template <>
+      bool RegularisationCalculator<reg_basis_t::STREAMLINE, reg_fn_t::WEIGHT>::operator() (const SIFT::TrackIndexRange& range)
+      {
+        for (auto track_index : range) {
+          const value_type coefficient = master.coefficients[track_index];
+          local_sum += reg_weight (coefficient);
+        }
+        return true;
+      }
+      template <>
+      bool RegularisationCalculator<reg_basis_t::STREAMLINE, reg_fn_t::GAMMA>::operator() (const SIFT::TrackIndexRange& range)
+      {
+        for (auto track_index : range) {
+          const value_type coefficient = master.coefficients[track_index];
+          local_sum += reg_gamma (coefficient);
+        }
+        return true;
+      }
+
+
+
+      template <>
+      bool RegularisationCalculator<reg_basis_t::FIXEL, reg_fn_t::COEFF>::operator() (const SIFT::TrackIndexRange& range)
+      {
+        for (auto track_index : range) {
+          const value_type coefficient = master.coefficients[track_index];
+          const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
+          const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
+          value_type streamline_sum = value_type(0.0);
+          for (size_t j = 0; j != this_contribution.dim(); ++j) {
+            const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
+            const value_type fixel_coeff_cost = SIFT2::reg_coeff (coefficient, fixel.mean_coeff());
+            streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
+          }
+          local_sum += streamline_sum;
+        }
+        return true;
+      }
+      template <>
+      bool RegularisationCalculator<reg_basis_t::FIXEL, reg_fn_t::WEIGHT>::operator() (const SIFT::TrackIndexRange& range)
+      {
+        for (auto track_index : range) {
+          const value_type coefficient = master.coefficients[track_index];
+          const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
+          const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
+          value_type streamline_sum = value_type(0.0);
+          for (size_t j = 0; j != this_contribution.dim(); ++j) {
+            const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
+            const value_type fixel_coeff_cost = SIFT2::reg_weight (coefficient, fixel.mean_coeff());
+            streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
+          }
+          local_sum += streamline_sum;
+        }
+        return true;
+      }
+      template <>
+      bool RegularisationCalculator<reg_basis_t::FIXEL, reg_fn_t::GAMMA>::operator() (const SIFT::TrackIndexRange& range)
+      {
+        for (auto track_index : range) {
+          const value_type coefficient = master.coefficients[track_index];
+          const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
+          const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
+          value_type streamline_sum = value_type(0.0);
+          for (size_t j = 0; j != this_contribution.dim(); ++j) {
+            const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
+            const value_type fixel_coeff_cost = SIFT2::reg_gamma (coefficient, fixel.mean_coeff());
+            streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
+          }
+          local_sum += streamline_sum;
+        }
+        return true;
+      }
+
 
 
 

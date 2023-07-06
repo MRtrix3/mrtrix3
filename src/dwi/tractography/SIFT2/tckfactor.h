@@ -29,11 +29,9 @@
 
 #include "dwi/tractography/SIFT/model.h"
 #include "dwi/tractography/SIFT/types.h"
+#include "dwi/tractography/SIFT2/regularisation.h"
 
 
-
-#define SIFT2_REGULARISATION_TIKHONOV_DEFAULT 0.0
-#define SIFT2_REGULARISATION_TV_DEFAULT 0.1
 
 #define SIFT2_MIN_TD_FRAC_DEFAULT 0.10
 
@@ -96,8 +94,9 @@ namespace MR {
 
           TckFactor (const std::string& fd_path) :
               Model (fd_path),
-              reg_multiplier_tikhonov (0.0),
-              reg_multiplier_tv (0.0),
+              reg_basis (reg_basis_t::FIXEL),
+              reg_fn (reg_fn_t::GAMMA),
+              reg_multiplier (0.0),
               min_iters (SIFT2_MIN_ITERS_DEFAULT),
               max_iters (SIFT2_MAX_ITERS_DEFAULT),
               min_coeff (SIFT2_MIN_COEFF_DEFAULT),
@@ -117,8 +116,9 @@ namespace MR {
 
 
 
-
-          void set_reg_lambdas     (const value_type, const value_type);
+          void set_reg_basis       (const reg_basis_t i) { reg_basis = i; }
+          void set_reg_fn          (const reg_fn_t i)    { reg_fn = i; }
+          void set_reg_lambda      (const value_type);
           void set_min_iters       (const int    i) { min_iters = i; }
           void set_max_iters       (const int    i) { max_iters = i; }
           void set_min_factor      (const value_type i) { min_coeff = i ? std::log(i) : -std::numeric_limits<value_type>::infinity(); }
@@ -146,6 +146,8 @@ namespace MR {
 
           void estimate_factors();
 
+          value_type calculate_regularisation();
+
           void report_entropy() const;
 
           void output_factors (const std::string&) const;
@@ -158,7 +160,9 @@ namespace MR {
         private:
           Eigen::Array<value_type, Eigen::Dynamic, 1> coefficients;
 
-          value_type reg_multiplier_tikhonov, reg_multiplier_tv;
+          reg_basis_t reg_basis;
+          reg_fn_t reg_fn;
+          value_type reg_multiplier;
           size_t min_iters, max_iters;
           value_type min_coeff, max_coeff, max_coeff_step, min_cf_decrease_percentage;
           std::string csv_path;
@@ -168,10 +172,11 @@ namespace MR {
 
           friend class LineSearchFunctor;
           friend class CoefficientOptimiserBase;
-          friend class CoefficientOptimiserGSS;
-          friend class CoefficientOptimiserQLS;
+          //friend class CoefficientOptimiserGSS;
+          //friend class CoefficientOptimiserQLS;
           friend class CoefficientOptimiserIterative;
           friend class FixelUpdater;
+          template <reg_basis_t RegBasis, reg_fn_t RegFn>
           friend class RegularisationCalculator;
 
 
