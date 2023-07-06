@@ -270,6 +270,7 @@ namespace MR {
             Fixel() = delete;
             Fixel (const index_type f) : length_type (1.0), index (f) { }
             Fixel (const index_type f, const default_type l) : length_type (l), index (f) { }
+            bool operator== (const Fixel& that) const { return index == that.index; }
             bool operator< (const Fixel& F) const { return (index < F.index); }
             Fixel& operator= (const Fixel& F) { index = F.index; set_length (F.get_length()); return *this; }
             operator index_type() const { return index; }

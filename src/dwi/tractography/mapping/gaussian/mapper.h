@@ -107,6 +107,7 @@ namespace MR {
             inline void add_to_set (SetVoxelDEC&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
             inline void add_to_set (SetDixel&   , const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
             inline void add_to_set (SetVoxelTOD&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
+            inline void add_to_set (SetFixel&,    const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type, const default_type) const;
 
             // Convenience function to convert from streamline position index to a linear-interpolated
             //   factor value (TrackMapperTWI member field factors[] only contains one entry per pre-upsampled point)
@@ -275,6 +276,13 @@ namespace MR {
             assert (tod_plugin);
             (*tod_plugin) (d);
             out.insert (v, (*tod_plugin)(), l, f);
+          }
+          inline void TrackMapper::add_to_set (SetFixel&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
+          {
+            assert (fixel_plugin);
+            const MR::Fixel::index_type fixel = (*fixel_plugin) (v, d);
+            if (fixel != fixel_plugin->nfixels())
+              out.insert (fixel, l, f);
           }
 
 

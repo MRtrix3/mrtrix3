@@ -41,7 +41,7 @@ namespace MR {
               void operator+= (const default_type f) const { sum_factors += f; }
               void operator=  (const default_type f) { sum_factors = f; }
               void operator=  (const VoxelAddon& that) { sum_factors = that.sum_factors; }
-              void normalize (const default_type l) const { sum_factors /= l; }
+              void normalize  (const default_type l) const { sum_factors /= l; }
             private:
               mutable default_type sum_factors;
           };
@@ -149,6 +149,30 @@ namespace MR {
 
 
 
+          class Fixel : public Mapping::Fixel, public VoxelAddon
+          {
+
+            using Base = Mapping::Fixel;
+            using index_type = Base::index_type;
+
+            public:
+            Fixel() = delete;
+            Fixel (const index_type F) : Base (F) , VoxelAddon () { }
+            Fixel (const index_type F, const default_type l) : Base (F, l), VoxelAddon () { }
+            Fixel (const index_type F, const default_type l, const default_type f) : Base (F, l), VoxelAddon (f) { }
+
+            Fixel& operator= (const Fixel& F) { Base::operator= (F); VoxelAddon::operator= (F); return *this; }
+            void operator+= (const default_type l) const { IntersectionLength::operator+= (l); }
+            bool operator== (const Fixel& F) const { return Base::operator== (F); }
+            bool operator<  (const Fixel& F) const { return Base::operator<  (F); }
+
+            void add (const default_type l, const default_type f) const { IntersectionLength::operator+= (l); VoxelAddon::operator+= (f); }
+            void normalize() const { VoxelAddon::normalize (get_length()); IntersectionLength::normalize(); }
+
+          };
+
+
+
 
 
 
@@ -237,6 +261,25 @@ namespace MR {
                   std::set<VoxelTOD>::insert (temp);
                 else
                   (*existing).add (t, l, f);
+              }
+          };
+
+
+
+          class SetFixel : public std::set<Fixel>, public Mapping::SetVoxelExtras
+          {
+            public:
+
+              using VoxType = Fixel;
+
+              inline void insert (const MR::Fixel::index_type& F, const default_type l, const default_type f)
+              {
+                const Fixel temp (F, l, f);
+                iterator existing = std::set<Fixel>::find (temp);
+                if (existing == std::set<Fixel>::end())
+                  std::set<Fixel>::insert (temp);
+                else
+                  (*existing).add (l, f);
               }
           };
 

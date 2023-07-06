@@ -24,6 +24,8 @@
 #include "types.h"
 
 #include "dwi/gradient.h"
+#include "fixel/dataset.h"
+
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
@@ -85,7 +87,12 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
     + Option ("tod",
         "generate a Track Orientation Distribution (TOD) in each voxel; need to specify the maximum "
         "spherical harmonic degree lmax to use when generating Apodised Point Spread Functions")
-      + Argument ("lmax").type_integer (2, 20);
+      + Argument ("lmax").type_integer (2, 20)
+
+    + Option ("fixel",
+        "generate a fixel data file containing the requested track-based contrast; "
+        "necessitates that the image provided via the -template option must be the index file "
+        "of a fixel dataset directory");
 
 
 
@@ -187,6 +194,8 @@ DESCRIPTION
     "or not a template image is provided using the -template option. If -template is used "
     "in conjunction with -vox, the image axes and FoV will still match that of the template "
     "image, but the spatial resolution will differ."
+
+  +
 
   + "Note: if you run into limitations with RAM usage, try writing the output image "
     "as a .mif file or .mih / .dat file pair to a local hard drive: this will allow "
@@ -306,29 +315,35 @@ void run () {
   if (!voxel_size.empty())
     INFO ("creating image with voxel dimensions [ " + str(voxel_size[0]) + " " + str(voxel_size[1]) + " " + str(voxel_size[2]) + " ]");
 
-  Header header;
+  Header output_header;
+  Header template_header;
   auto opt = get_options ("template");
   if (opt.size()) {
-    auto template_header = Header::open (opt[0][0]);
-    header = template_header;
-    header.keyval().clear();
-    header.keyval()["twi_template"] = str(opt[0][0]);
+    // TODO Consider additional handling only in the case where -fixel has been specified
+    // Eg. user may have specified:
+    // - The index image
+    // - A fixel data file within the directory
+    // - The directory path itself
+    template_header = Header::open (opt[0][0]);
+    output_header = template_header;
+    output_header.keyval().clear();
+    output_header.keyval()["twi_template"] = str(opt[0][0]);
     if (!voxel_size.empty())
-      oversample_header (header, voxel_size);
+      oversample_header (output_header, voxel_size);
   }
   else {
     if (voxel_size.empty())
       throw Exception ("please specify a template image and/or the desired voxel size");
-    generate_header (header, argument[0], voxel_size);
+    generate_header (output_header, argument[0], voxel_size);
   }
 
-  if (header.ndim() > 3) {
-    header.ndim() = 3;
-    header.sanitise();
+  if (output_header.ndim() > 3) {
+    output_header.ndim() = 3;
+    output_header.sanitise();
   }
 
-  add_line (header.keyval()["comments"], "track-weighted image");
-  header.keyval()["tck_source"] = std::string (argument[0]);
+  add_line (output_header.keyval()["comments"], "track-weighted image");
+  output_header.keyval()["tck_source"] = std::string (argument[0]);
 
   opt = get_options ("contrast");
   const contrast_t contrast = opt.size() ? contrast_t(int(opt[0][0])) : TDI;
@@ -368,10 +383,10 @@ void run () {
   opt = get_options ("dec");
   if (opt.size()) {
     writer_type = DEC;
-    header.ndim() = 4;
-    header.size (3) = 3;
-    header.sanitise();
-    Stride::set (header, Stride::contiguous_along_axis (3, header));
+    output_header.ndim() = 4;
+    output_header.size (3) = 3;
+    output_header.sanitise();
+    Stride::set (output_header, Stride::contiguous_along_axis (3, output_header));
   }
 
   std::unique_ptr<Math::Sphere::Set::Assigner> dirs;
@@ -381,18 +396,18 @@ void run () {
       throw Exception ("Options for setting output image dimensionality are mutually exclusive");
     writer_type = DIXEL;
     dirs.reset (new Math::Sphere::Set::Assigner (Math::Sphere::Set::load (std::string (opt[0][0]), true)));
-    header.ndim() = 4;
-    header.size(3) = dirs->size();
-    header.sanitise();
-    Stride::set (header, Stride::contiguous_along_axis (3, header));
-    // Write directions to image header as diffusion encoding
+    output_header.ndim() = 4;
+    output_header.size(3) = dirs->size();
+    output_header.sanitise();
+    Stride::set (output_header, Stride::contiguous_along_axis (3, output_header));
+    // Write directions to output image header as diffusion encoding
     // TODO Change this to write to "directions"
     Eigen::MatrixXd grad (dirs->size(), 4);
     for (size_t row = 0; row != dirs->size(); ++row) {
       grad.row (row).head<3>() = (*dirs)[row];
       grad (row, 3) = 1.0f;
     }
-    set_DW_scheme (header, grad);
+    set_DW_scheme (output_header, grad);
   }
 
   opt = get_options ("tod");
@@ -403,13 +418,32 @@ void run () {
     const size_t lmax = opt[0][0];
     if (lmax % 2)
       throw Exception ("lmax for TODI must be an even number");
-    header.ndim() = 4;
-    header.size(3) = Math::Sphere::SH::NforL (lmax);
-    header.sanitise();
-    Stride::set (header, Stride::contiguous_along_axis (3, header));
+    output_header.ndim() = 4;
+    output_header.size(3) = Math::Sphere::SH::NforL (lmax);
+    output_header.sanitise();
+    Stride::set (output_header, Stride::contiguous_along_axis (3, output_header));
   }
 
-  header.keyval()["twi_dimensionality"] = writer_dims[writer_type];
+  std::unique_ptr<MR::Fixel::Dataset> fixel_dataset;
+  opt = get_options ("fixel");
+  if (opt.size()) {
+    if (writer_type != GREYSCALE)
+      throw Exception ("Options for setting output image dimensionality are mutually exclusive");
+    if (!voxel_size.size())
+      throw Exception ("Custom voxel sizes cannot be specified if a template fixel dataset is to be used");
+    writer_type = FIXEL;
+    if (!template_header.valid())
+      throw Exception ("Output fixel data file cannot be generated unless fixel index image is provided via the -template option");
+    fixel_dataset.reset (new MR::Fixel::Dataset (Path::dirname (template_header.name())));
+    output_header.ndim() = 3;
+    output_header.size(0) = fixel_dataset->nfixels();
+    output_header.size(1) = output_header.size(2) = 1;
+    output_header.spacing(0) = output_header.spacing(1) = output_header.spacing(2) = 1.0;
+    output_header.transform().setIdentity();
+    Stride::set (output_header, Stride::contiguous_along_axis (0, output_header));
+  }
+
+  output_header.keyval()["twi_dimensionality"] = writer_dims[writer_type];
 
 
   // Deal with erroneous statistics & provide appropriate messages
@@ -455,21 +489,21 @@ void run () {
   }
 
 
-  header.keyval()["twi_contrast"] = contrasts[contrast];
-  header.keyval()["twi_vox_stat"] = voxel_statistics[stat_vox];
-  header.keyval()["twi_tck_stat"] = track_statistics[stat_tck];
+  output_header.keyval()["twi_contrast"] = contrasts[contrast];
+  output_header.keyval()["twi_vox_stat"] = voxel_statistics[stat_vox];
+  output_header.keyval()["twi_tck_stat"] = track_statistics[stat_tck];
   if (backtrack)
-    header.keyval()["twi_backtrack"] = "1";
+    output_header.keyval()["twi_backtrack"] = "1";
 
 
   // Figure out how the streamlines will be mapped
   const bool precise = get_options ("precise").size();
-  header.keyval()["precise_mapping"] = precise ? "1" : "0";
+  output_header.keyval()["precise_mapping"] = precise ? "1" : "0";
   const bool ends_only = get_options ("ends_only").size();
   if (ends_only) {
     if (precise)
       throw Exception ("Options -precise and -ends_only are mutually exclusive");
-    header.keyval()["endpoints_only"] = "1";
+    output_header.keyval()["endpoints_only"] = "1";
   }
 
   size_t upsample_ratio = 1;
@@ -486,7 +520,7 @@ void run () {
     //   (1/10th of the voxel size was found to give a good quantification of chordal length)
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
     try {
-      upsample_ratio = determine_upsample_ratio (header, properties, (precise ? 0.1 : 0.333));
+      upsample_ratio = determine_upsample_ratio (output_header, properties, (precise ? 0.1 : 0.333));
       INFO ("track upsampling ratio automatically set to " + str(upsample_ratio));
     } catch (Exception& e) {
       e.push_back ("Try using -upsample option to explicitly set the streamline upsampling ratio;");
@@ -496,38 +530,38 @@ void run () {
   }
 
 
-  // Get header datatype based on user input, or select an appropriate datatype automatically
-  header.datatype() = DataType::Undefined;
+  // Get output image datatype based on user input, or select an appropriate datatype automatically
+  output_header.datatype() = DataType::Undefined;
   if (writer_type == DEC)
-    header.datatype() = DataType::Float32;
+    output_header.datatype() = DataType::Float32;
 
   opt = get_options ("datatype");
   if (opt.size()) {
     if (writer_type == DEC || writer_type == TOD) {
       WARN ("Can't manually set datatype for " + str(Mapping::writer_dims[writer_type]) + " processing - overriding to Float32");
     } else {
-      header.datatype() = DataType::parse (opt[0][0]);
+      output_header.datatype() = DataType::parse (opt[0][0]);
     }
   }
 
   const bool have_weights = get_options ("tck_weights_in").size();
-  if (have_weights && header.datatype().is_integer()) {
+  if (have_weights && output_header.datatype().is_integer()) {
     WARN ("Can't use an integer type if streamline weights are provided; overriding to Float32");
-    header.datatype() = DataType::Float32;
+    output_header.datatype() = DataType::Float32;
   }
 
   DataType default_datatype = DataType::Float32;
-  if ((writer_type == GREYSCALE || writer_type == DIXEL) && !have_weights && ((!precise && contrast == TDI) || contrast == SCALAR_MAP_COUNT))
+  if ((writer_type == GREYSCALE || writer_type == DIXEL || writer_type == FIXEL) && !have_weights && ((!precise && contrast == TDI) || contrast == SCALAR_MAP_COUNT))
     default_datatype = DataType::UInt32;
-  header.datatype() = determine_datatype (header.datatype(), contrast, default_datatype, precise);
-  header.datatype().set_byte_order_native();
+  output_header.datatype() = determine_datatype (output_header.datatype(), contrast, default_datatype, precise);
+  output_header.datatype().set_byte_order_native();
 
 
-  // Whether or not to still ,ap streamlines even if the factor is zero
+  // Whether or not to still map streamlines even if the factor is zero
   //   (can still affect output image if voxel-wise statistic is mean)
   const bool map_zero = get_options ("map_zero").size();
   if (map_zero)
-    header.keyval()["map_zero"] = "1";
+    output_header.keyval()["map_zero"] = "1";
 
 
 
@@ -581,7 +615,7 @@ void run () {
   // Start initialising members for multi-threaded calculation
   TrackLoader loader (file, num_tracks);
 
-  std::unique_ptr<TrackMapperTWI> mapper ((stat_tck == GAUSSIAN) ? (new Gaussian::TrackMapper (header, contrast)) : (new TrackMapperTWI (header, contrast, stat_tck)));
+  std::unique_ptr<TrackMapperTWI> mapper ((stat_tck == GAUSSIAN) ? (new Gaussian::TrackMapper (output_header, contrast)) : (new TrackMapperTWI (output_header, contrast, stat_tck)));
   mapper->set_upsample_ratio      (upsample_ratio);
   mapper->set_map_zero            (map_zero);
   mapper->set_use_precise_mapping (precise);
@@ -589,7 +623,9 @@ void run () {
   if (writer_type == DIXEL)
     mapper->create_dixel_plugin (*dirs);
   if (writer_type == TOD)
-    mapper->create_tod_plugin (header.size(3));
+    mapper->create_tod_plugin (output_header.size(3));
+  if (writer_type == FIXEL)
+    mapper->create_fixel_plugin (*fixel_dataset);
   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
     opt = get_options ("image");
     if (!opt.size()) {
@@ -606,23 +642,24 @@ void run () {
     } else {
       mapper->add_fod_image (assoc_image);
     }
-    header.keyval()["twi_assoc_image"] = Path::basename (assoc_image);
+    output_header.keyval()["twi_assoc_image"] = Path::basename (assoc_image);
   } else if (contrast == VECTOR_FILE) {
     opt = get_options ("vector_file");
     if (!opt.size())
       throw Exception ("If using 'vector_file' contrast, must provide the relevant data file using the -vector_file option");
     const std::string path (opt[0][0]);
     mapper->add_vector_data (path);
-    header.keyval()["twi_vector_file"] = Path::basename (path);
+    output_header.keyval()["twi_vector_file"] = Path::basename (path);
   }
 
   std::unique_ptr<MapWriterBase> writer;
   switch (writer_type) {
     case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
-    case GREYSCALE: writer.reset (make_writer           (header, argument[1], stat_vox, GREYSCALE)); break;
-    case DEC:       writer.reset (new MapWriter<float>  (header, argument[1], stat_vox, DEC));       break;
-    case DIXEL:     writer.reset (make_writer           (header, argument[1], stat_vox, DIXEL));     break;
-    case TOD:       writer.reset (new MapWriter<float>  (header, argument[1], stat_vox, TOD));       break;
+    case GREYSCALE: writer.reset (make_writer           (output_header, argument[1], stat_vox, GREYSCALE)); break;
+    case DEC:       writer.reset (new MapWriter<float>  (output_header, argument[1], stat_vox, DEC));       break;
+    case DIXEL:     writer.reset (make_writer           (output_header, argument[1], stat_vox, DIXEL));     break;
+    case TOD:       writer.reset (new MapWriter<float>  (output_header, argument[1], stat_vox, TOD));       break;
+    case FIXEL:     writer.reset (make_writer           (output_header, argument[1], stat_vox, FIXEL));     break;
   }
 
   // Finally get to do some number crunching!
@@ -637,6 +674,7 @@ void run () {
       case DEC:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Gaussian::SetVoxelDEC()), *writer); break;
       case DIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Gaussian::SetDixel()),    *writer); break;
       case TOD:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Gaussian::SetVoxelTOD()), *writer); break;
+      case FIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Gaussian::SetFixel()),    *writer); break;
     }
   } else {
     switch (writer_type) {
@@ -645,6 +683,7 @@ void run () {
       case DEC:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (SetVoxelDEC()), *writer); break;
       case DIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (SetDixel()),    *writer); break;
       case TOD:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (SetVoxelTOD()), *writer); break;
+      case FIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (SetFixel()),    *writer); break;
     }
   }
 
