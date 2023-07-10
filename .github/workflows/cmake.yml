@@ -32,6 +32,8 @@ jobs:
     - name: build
       run: cmake --build ./cmake-build
 
+    - name: test
+      run: cd cmake-build && ctest --output-on-failure
 
   macos-build:
 
@@ -63,7 +65,8 @@ jobs:
     - name: build
       run: cmake --build ./cmake-build
 
-
+    - name: test
+      run: cd cmake-build && ctest --output-on-failure
 
   windows-build:
 
@@ -118,3 +121,6 @@ jobs:
 
       - name: build
         run: cmake --build cmake-build
+      
+      - name: test
+        run: cd cmake-build && ctest --output-on-failure
