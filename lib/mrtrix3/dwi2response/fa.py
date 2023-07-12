@@ -25,7 +25,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.set_synopsis('Use the old FA-threshold heuristic for single-fibre voxel selection and response function estimation')
   parser.add_citation('Tournier, J.-D.; Calamante, F.; Gadian, D. G. & Connelly, A. Direct estimation of the fiber orientation density function from diffusion-weighted MRI data using spherical deconvolution. NeuroImage, 2004, 23, 1176-1185')
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI')
-  parser.add_argument('output', type=app.Parser.ArgFileOut(), help='The output response function text file')
+  parser.add_argument('output', type=app.Parser.FileOut(), help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'fa\' algorithm')
   options.add_argument('-erode', type=int, default=3, help='Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)')
   options.add_argument('-number', type=int, default=300, help='The number of highest-FA voxels to use')

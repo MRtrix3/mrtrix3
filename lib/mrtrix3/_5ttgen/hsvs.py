@@ -34,7 +34,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('hsvs', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), using FreeSurfer and FSL tools')
-  parser.add_argument('input', type=app.Parser.ArgDirectoryIn(), help='The input FreeSurfer subject directory')
+  parser.add_argument('input', type=app.Parser.DirectoryIn(), help='The input FreeSurfer subject directory')
   parser.add_argument('output', type=app.Parser.ImageOut(), help='The output 5TT image')
   parser.add_argument('-template', type=app.Parser.ImageIn(), help='Provide an image that will form the template for the generated 5TT image')
   parser.add_argument('-hippocampi', choices=HIPPOCAMPI_CHOICES, help='Select method to be used for hippocampi (& amygdalae) segmentation; options are: ' + ','.join(HIPPOCAMPI_CHOICES))

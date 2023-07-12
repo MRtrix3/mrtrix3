@@ -122,7 +122,7 @@ def _execute(module): #pylint: disable=unused-variable
     module.usage(CMDLINE)
   except AttributeError:
     CMDLINE = None
-    raise 
+    raise
 
   ########################################################################################################################
   # Note that everything after this point will only be executed if the script is designed to operate against the library #
@@ -1101,90 +1101,85 @@ class Parser(argparse.ArgumentParser):
            not group == self._positionals and \
            group.title not in ( 'options', 'optional arguments' )
 
-  class Boolean:
+  # Various callable types for use as argparse argument types
+  class Bool:
     def __call__(self, input_value):
-      processed_value = input_value.lower().strip()
-      if processed_value.lower() == 'true' or processed_value == 'yes':
+      processed_value = input_value.strip().lower()
+      if processed_value in ['true', 'yes']:
         return True
-      elif processed_value.lower() == 'false' or processed_value == 'no':
+      if processed_value in ['false', 'no']:
         return False
-      else:
-        raise argparse.ArgumentTypeError('Entered value is not of type boolean')
-
-  class IntSeq:
-    def __call__(self, input_value):
-      int_list = []
       try:
-        int_list = [int(i) for i in input_value.split(',')]
-      except (ValueError, NameError) as e:
-        raise argparse.ArgumentTypeError('Entered value is not an integer sequence')
-      return int_list
-  
-  class FloatSeq:
-    def __call__(self, input_value):
-      float_list = []
-      try:
-        float_list = [float(i) for i in input_value.split(',')]
-      except (ValueError, NameError) as e:
-        raise argparse.ArgumentTypeError('Entered value is not a float sequence')
-      return float_list
+        processed_value = int(processed_value)
+      except ValueError:
+        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as boolean value"')
+      return bool(processed_value)
 
-  class ArgDirectoryIn:
+  class SequenceInt:
+    def __call__(self, input_value):
+      try:
+        return [int(i) for i in input_value.split(',')]
+      except ValueError:
+        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as integer sequence')
+
+  class SequenceFloat:
+    def __call__(self, input_value):
+      try:
+        return [float(i) for i in input_value.split(',')]
+      except ValueError:
+        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as floating-point sequence')
+
+  class DirectoryIn:
     def __call__(self, input_value):
       if not os.path.exists(input_value):
-        raise argparse.ArgumentTypeError(input_value + ' does not exist')
-      elif not os.path.isdir(input_value):
-        raise argparse.ArgumentTypeError(input_value + ' is not a directory')
-      else:
-        return input_value
+        raise argparse.ArgumentTypeError('Input directory "' + input_value + '" does not exist')
+      if not os.path.isdir(input_value):
+        raise argparse.ArgumentTypeError('Input path "' + input_value + '" is not a directory')
+      return input_value
 
-  class ArgDirectoryOut:
+  class DirectoryOut:
     def __call__(self, input_value):
       return input_value
 
-  class ArgFileIn:
+  class FileIn:
     def __call__(self, input_value):
       if not os.path.exists(input_value):
-        raise argparse.ArgumentTypeError(input_value + ' path does not exist')
-      elif not os.path.isfile(input_value):
-        raise argparse.ArgumentTypeError(input_value + ' is not a file')
-      else:
-        return input_value
+        raise argparse.ArgumentTypeError('Input file "' + input_value + '" does not exist')
+      if not os.path.isfile(input_value):
+        raise argparse.ArgumentTypeError('Input path "' + input_value + '" is not a file')
+      return input_value
 
-  class ArgFileOut:
+  class FileOut:
     def __call__(self, input_value):
       return input_value
 
   class ImageIn:
     def __call__(self, input_value):
-      if(input_value == '-'):
-        if not sys.stdin.isatty():
-          input_value = sys.stdin.read().strip()
-        else:
-          raise argparse.ArgumentTypeError('Input unavailable in stdin from command before pipe.')
+      if input_value == '-':
+        if sys.stdin.isatty():
+          raise argparse.ArgumentTypeError('Input piped image unavailable from stdin')
+        input_value = sys.stdin.read().strip()
       return input_value
 
   class ImageOut:
     def __call__(self, input_value):
-      if(input_value == '-'):
-        result_str = ''.join(random.choice(string.ascii_letters) for i in range(6))
+      if input_value == '-':
+        result_str = ''.join(random.choice(string.ascii_letters) for _ in range(6))
         input_value = 'mrtrix-tmp-' + result_str + '.mif'
       return input_value
 
-  class TracksIn(ArgFileIn):
+  class TracksIn(FileIn):
     def __call__(self, input_value):
       super().__call__(input_value)
       if not input_value.endswith('.tck'):
-        raise argparse.ArgumentTypeError(input_value + ' is not a valid track file')
-      else:
-        return input_value 
+        raise argparse.ArgumentTypeError('Input tractogram file "' + input_value + '" is not a valid track file')
+      return input_value
 
   class TracksOut:
     def __call__(self, input_value):
-      if not input_value.endsWith('.tck'):
-        raise argparse.ArgumentTypeError(input_value + ' must use the .tck suffix')
-      else:
-        return input_value          
+      if not input_value.endswith('.tck'):
+        raise argparse.ArgumentTypeError('Output tractogram path "' + input_value + '" does not use the requisite ".tck" suffix')
+      return input_value
 
 
 

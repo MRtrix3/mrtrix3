@@ -32,7 +32,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_citation('Dhollander, T.; Mito, R.; Raffelt, D. & Connelly, A. Improved white matter response function estimation for 3-tissue constrained spherical deconvolution. Proc Intl Soc Mag Reson Med, 2019, 555',
                       condition='If -wm_algo option is not used')
   parser.add_argument('input', type=app.Parser.ImageIn(), help='Input DWI dataset')
-  parser.add_argument('out_sfwm', type=app.Parser.ArgFileOut(), help='Output single-fibre WM response function text file')
+  parser.add_argument('out_sfwm', type=app.Parser.FileOut(), help='Output single-fibre WM response function text file')
   parser.add_argument('out_gm', type=app.Parser.ImageOut(), help='Output GM response function text file')
   parser.add_argument('out_csf', type=app.Parser.ImageOut(), help='Output CSF response function text file')
   options = parser.add_argument_group('Options for the \'dhollander\' algorithm')

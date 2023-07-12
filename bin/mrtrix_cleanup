@@ -30,9 +30,9 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_description('This script will search the file system at the specified location (and in sub-directories thereof) for any temporary files or directories that have been left behind by failed or terminated MRtrix3 commands, and attempt to delete them.')
   cmdline.add_description('Note that the script\'s search for temporary items will not extend beyond the user-specified filesystem location. This means that any built-in or user-specified default location for MRtrix3 piped data and scripts will not be automatically searched. Cleanup of such locations should instead be performed explicitly: e.g. "mrtrix_cleanup /tmp/" to remove residual piped images from /tmp/.')
   cmdline.add_description('This script should not be run while other MRtrix3 commands are being executed: it may delete temporary items during operation that may lead to unexpected behaviour.')
-  cmdline.add_argument('path', type=app.Parser.ArgDirectoryIn(), help='Directory from which to commence filesystem search')
+  cmdline.add_argument('path', type=app.Parser.DirectoryIn(), help='Directory from which to commence filesystem search')
   cmdline.add_argument('-test', action='store_true', help='Run script in test mode: will list identified files / directories, but not attempt to delete them')
-  cmdline.add_argument('-failed', type=app.Parser.ArgFileOut(), metavar='file', help='Write list of items that the script failed to delete to a text file')
+  cmdline.add_argument('-failed', type=app.Parser.FileOut(), metavar='file', help='Write list of items that the script failed to delete to a text file')
   cmdline.flag_mutually_exclusive_options([ 'test', 'failed' ])
 
 
