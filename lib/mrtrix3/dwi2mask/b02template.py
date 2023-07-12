@@ -74,7 +74,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   ants_options.add_argument('-ants_options', help='Provide options to be passed to the ANTs registration command (see Description)')
   fsl_options = parser.add_argument_group('Options applicable when using the FSL software for registration')
   fsl_options.add_argument('-flirt_options', metavar='" FlirtOptions"', help='Command-line options to pass to the FSL flirt command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to flirt)')
-  fsl_options.add_argument('-fnirt_config', type=app.Parser.ArgFileIn(), metavar='file', help='Specify a FNIRT configuration file for registration')
+  fsl_options.add_argument('-fnirt_config', type=app.Parser.FileIn(), metavar='file', help='Specify a FNIRT configuration file for registration')
 
 
 

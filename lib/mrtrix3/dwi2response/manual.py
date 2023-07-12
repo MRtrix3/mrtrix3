@@ -25,7 +25,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.set_synopsis('Derive a response function using an input mask image alone (i.e. pre-selected voxels)')
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI')
   parser.add_argument('in_voxels', type=app.Parser.ImageIn(), help='Input voxel selection mask')
-  parser.add_argument('output', type=app.Parser.ArgFileOut(), help='Output response function text file')
+  parser.add_argument('output', type=app.Parser.FileOut(), help='Output response function text file')
   options = parser.add_argument_group('Options specific to the \'manual\' algorithm')
   options.add_argument('-dirs', type=app.Parser.ImageIn(), help='Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)')
 

@@ -38,7 +38,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_citation('Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. NeuroImage, 2015, 104, 253-265')
   cmdline.add_argument('parc', type=app.Parser.ImageIn(), help='The input FreeSurfer parcellation image')
   cmdline.add_argument('t1', type=app.Parser.ImageIn(), help='The T1 image to be provided to FIRST')
-  cmdline.add_argument('lut', type=app.Parser.ArgFileIn(), help='The lookup table file that the parcellated image is based on')
+  cmdline.add_argument('lut', type=app.Parser.FileIn(), help='The lookup table file that the parcellated image is based on')
   cmdline.add_argument('output', type=app.Parser.ImageOut(), help='The output parcellation image')
   cmdline.add_argument('-premasked', action='store_true', default=False, help='Indicate that brain masking has been applied to the T1 input image')
   cmdline.add_argument('-sgm_amyg_hipp', action='store_true', default=False, help='Consider the amygdalae and hippocampi as sub-cortical grey matter structures, and also replace their estimates with those from FIRST')
