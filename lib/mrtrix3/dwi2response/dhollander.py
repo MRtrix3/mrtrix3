@@ -33,8 +33,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                       condition='If -wm_algo option is not used')
   parser.add_argument('input', type=app.Parser.ImageIn(), help='Input DWI dataset')
   parser.add_argument('out_sfwm', type=app.Parser.FileOut(), help='Output single-fibre WM response function text file')
-  parser.add_argument('out_gm', type=app.Parser.ImageOut(), help='Output GM response function text file')
-  parser.add_argument('out_csf', type=app.Parser.ImageOut(), help='Output CSF response function text file')
+  parser.add_argument('out_gm', type=app.Parser.FileOut(), help='Output GM response function text file')
+  parser.add_argument('out_csf', type=app.Parser.FileOut(), help='Output CSF response function text file')
   options = parser.add_argument_group('Options for the \'dhollander\' algorithm')
   options.add_argument('-erode', type=int, default=3, help='Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)')
   options.add_argument('-fa', type=float, default=0.2, help='FA threshold for crude WM versus GM-CSF separation. (default: 0.2)')
@@ -83,18 +83,16 @@ def execute(): #pylint: disable=unused-variable
   bvalues_option = ' -shells ' + ','.join(map(str,bvalues))
 
   # Get lmax information (if provided).
+  sfwm_lmax_option = ''
   sfwm_lmax = [ ]
   if app.ARGS.lmax:
     sfwm_lmax = app.ARGS.lmax
-    if not len(sfwm_lmax) == len(bvalues):
+    if len(sfwm_lmax) != len(bvalues):
       raise MRtrixError('Number of lmax\'s (' + str(len(sfwm_lmax)) + ', as supplied to the -lmax option: ' + ','.join(map(str,sfwm_lmax)) + ') does not match number of unique b-values.')
-    for sfl in sfwm_lmax:
-      if sfl%2:
-        raise MRtrixError('Values supplied to the -lmax option must be even.')
-      if sfl<0:
-        raise MRtrixError('Values supplied to the -lmax option must be non-negative.')
-  sfwm_lmax_option = ''
-  if sfwm_lmax:
+    if any(sfl%2 for sfl in sfwm_lmax):
+      raise MRtrixError('Values supplied to the -lmax option must be even.')
+    if any(sfl<0 for sfl in sfwm_lmax):
+      raise MRtrixError('Values supplied to the -lmax option must be non-negative.')
     sfwm_lmax_option = ' -lmax ' + ','.join(map(str,sfwm_lmax))
 
 

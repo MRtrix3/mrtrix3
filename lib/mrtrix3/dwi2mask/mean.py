@@ -24,7 +24,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI series')
   parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'mean\' algorithm')
-  options.add_argument('-shells', help='Comma separated list of shells to be included in the volume averaging')
+  options.add_argument('-shells', type=app.Parser.SequenceFloat(), metavar='bvalues', help='Comma separated list of shells to be included in the volume averaging')
   options.add_argument('-clean_scale',
                        type=int,
                        default=DEFAULT_CLEAN_SCALE,
@@ -46,7 +46,7 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
 
-  run.command(('dwiextract input.mif - -shells ' + app.ARGS.shells + ' | mrmath -' \
+  run.command(('dwiextract input.mif - -shells ' + ','.join(str(f) for f in app.ARGS.shells) + ' | mrmath -' \
                 if app.ARGS.shells \
                 else 'mrmath input.mif')
               + ' mean - -axis 3 |'

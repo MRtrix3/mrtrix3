@@ -36,7 +36,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.set_synopsis('Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), using FreeSurfer and FSL tools')
   parser.add_argument('input', type=app.Parser.DirectoryIn(), help='The input FreeSurfer subject directory')
   parser.add_argument('output', type=app.Parser.ImageOut(), help='The output 5TT image')
-  parser.add_argument('-template', type=app.Parser.ImageIn(), help='Provide an image that will form the template for the generated 5TT image')
+  parser.add_argument('-template', type=app.Parser.ImageIn(), metavar='image', help='Provide an image that will form the template for the generated 5TT image')
   parser.add_argument('-hippocampi', choices=HIPPOCAMPI_CHOICES, help='Select method to be used for hippocampi (& amygdalae) segmentation; options are: ' + ','.join(HIPPOCAMPI_CHOICES))
   parser.add_argument('-thalami', choices=THALAMI_CHOICES, help='Select method to be used for thalamic segmentation; options are: ' + ','.join(THALAMI_CHOICES))
   parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter')

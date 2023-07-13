@@ -116,7 +116,7 @@ Options
 Options specific to the 'freesurfer' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-lut** Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)
+- **-lut file** Manually provide path to the lookup table on which the input parcellation image is based (e.g. FreeSurferColorLUT.txt)
 
 Options common to all 5ttgen algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -207,9 +207,9 @@ Options
 Options specific to the 'fsl' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-t2 <T2 image>** Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST
+- **-t2 image** Provide a T2-weighted image in addition to the default T1-weighted image; this will be used as a second input to FSL FAST
 
-- **-mask** Manually provide a brain mask, rather than deriving one in the script
+- **-mask image** Manually provide a brain mask, rather than deriving one in the script
 
 - **-premasked** Indicate that brain masking has already been applied to the input image
 
@@ -393,7 +393,7 @@ Usage
 Options
 -------
 
-- **-template** Provide an image that will form the template for the generated 5TT image
+- **-template image** Provide an image that will form the template for the generated 5TT image
 
 - **-hippocampi** Select method to be used for hippocampi (& amygdalae) segmentation; options are: subfields,first,aseg
 

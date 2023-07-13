@@ -42,13 +42,13 @@ Options for importing the diffusion gradient table
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -159,13 +159,13 @@ Options for importing the diffusion gradient table
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -267,13 +267,13 @@ Options for importing the diffusion gradient table
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -358,7 +358,7 @@ Options
 Options specific to the 'manual' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-dirs** Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)
+- **-dirs image** Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -370,13 +370,13 @@ Options for importing the diffusion gradient table
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -461,7 +461,7 @@ Options
 Options specific to the 'msmt_5tt' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-dirs** Manually provide the fibre direction in each voxel (a tensor fit will be used otherwise)
+- **-dirs image** Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)
 
 - **-fa** Upper fractional anisotropy threshold for GM and CSF voxel selection (default: 0.2)
 
@@ -481,13 +481,13 @@ Options for importing the diffusion gradient table
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -587,13 +587,13 @@ Options for importing the diffusion gradient table
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -695,13 +695,13 @@ Options for importing the diffusion gradient table
 General dwi2response options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask** Provide an initial mask for response voxel selection
+- **-mask image** Provide an initial mask for response voxel selection
 
-- **-voxels** Output an image showing the final voxel selection(s)
+- **-voxels image** Output an image showing the final voxel selection(s)
 
-- **-shells** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values, b=0 must be included explicitly)
+- **-shells bvalues** The b-value(s) to use in response function estimation (comma-separated list in case of multiple b-values; b=0 must be included explicitly if desired)
 
-- **-lmax** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
+- **-lmax values** The maximum harmonic degree(s) for response function estimation (comma-separated list in case of multiple b-values)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

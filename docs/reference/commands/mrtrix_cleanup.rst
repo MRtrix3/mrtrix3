@@ -15,7 +15,7 @@ Usage
 
     mrtrix_cleanup path [ options ]
 
--  *path*: Path from which to commence filesystem search
+-  *path*: Directory from which to commence filesystem search
 
 Description
 -----------

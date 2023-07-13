@@ -27,7 +27,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('in_voxels', type=app.Parser.ImageIn(), help='Input voxel selection mask')
   parser.add_argument('output', type=app.Parser.FileOut(), help='Output response function text file')
   options = parser.add_argument_group('Options specific to the \'manual\' algorithm')
-  options.add_argument('-dirs', type=app.Parser.ImageIn(), help='Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)')
+  options.add_argument('-dirs', type=app.Parser.ImageIn(), metavar='image', help='Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)')
 
 
 
@@ -59,28 +59,24 @@ def supports_mask(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
   shells = [ int(round(float(x))) for x in image.mrinfo('dwi.mif', 'shell_bvalues').split() ]
+  bvalues_option = ' -shells ' + ','.join(map(str,shells))
 
   # Get lmax information (if provided)
-  lmax = [ ]
+  lmax_option = ''
   if app.ARGS.lmax:
-    lmax = app.ARGS.lmax
-    if not len(lmax) == len(shells):
-      raise MRtrixError('Number of manually-defined lmax\'s (' + str(len(lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
-    for shell_l in lmax:
-      if shell_l % 2:
-        raise MRtrixError('Values for lmax must be even')
-      if shell_l < 0:
-        raise MRtrixError('Values for lmax must be non-negative')
+    if len(app.ARGS.lmax) != len(shells):
+      raise MRtrixError('Number of manually-defined lmax\'s (' + str(len(app.ARGS.lmax)) + ') does not match number of b-value shells (' + str(len(shells)) + ')')
+    if any(l % 2 for l in app.ARGS.lmax):
+      raise MRtrixError('Values for lmax must be even')
+    if any(l < 0 for l in app.ARGS.lmax):
+      raise MRtrixError('Values for lmax must be non-negative')
+    lmax_option = ' -lmax ' + ','.join(map(str,app.ARGS.lmax))
 
   # Do we have directions, or do we need to calculate them?
   if not os.path.exists('dirs.mif'):
     run.command('dwi2tensor dwi.mif - -mask in_voxels.mif | tensor2metric - -vector dirs.mif')
 
   # Get response function
-  bvalues_option = ' -shells ' + ','.join(map(str,shells))
-  lmax_option = ''
-  if lmax:
-    lmax_option = ' -lmax ' + ','.join(map(str,lmax))
   run.command('amp2response dwi.mif in_voxels.mif dirs.mif response.txt' + bvalues_option + lmax_option)
 
   run.function(shutil.copyfile, 'response.txt', path.from_user(app.ARGS.output, False))

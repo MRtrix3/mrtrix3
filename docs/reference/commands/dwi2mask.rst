@@ -314,7 +314,7 @@ Usage
 Description
 -----------
 
-This script currently assumes that the template image provided via the -template option is T2-weighted, and can therefore be trivially registered to a mean b=0 image.
+This script currently assumes that the template image provided via the first input to the -template option is T2-weighted, and can therefore be trivially registered to a mean b=0 image.
 
 Command-line option -ants_options can be used with either the "antsquick" or "antsfull" software options. In both cases, image dimensionality is assumed to be 3, and so this should be omitted from the user-specified options.The input can be either a string (encased in double-quotes if more than one option is specified), or a path to a text file containing the requested options. In the case of the "antsfull" software option, one will require the names of the fixed and moving images that are provided to the antsRegistration command: these are "template_image.nii" and "bzero.nii" respectively.
 
@@ -326,12 +326,12 @@ Options applicable when using the FSL software for registration
 
 - **-flirt_options " FlirtOptions"** Command-line options to pass to the FSL flirt command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to flirt)
 
-- **-fnirt_config FILE** Specify a FNIRT configuration file for registration
+- **-fnirt_config file** Specify a FNIRT configuration file for registration
 
 Options applicable when using the ANTs software for registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-ants_options** Provide options to be passed to the ANTs registration command (see Description)
+- **-ants_options " ANTsOptions"** Provide options to be passed to the ANTs registration command (see Description)
 
 Options specific to the "template" algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -433,7 +433,7 @@ Options specific to the "consensus" algorithm
 
 - **-algorithms** Provide a list of dwi2mask algorithms that are to be utilised
 
-- **-masks** Export a 4D image containing the individual algorithm masks
+- **-masks image** Export a 4D image containing the individual algorithm masks
 
 - **-template TemplateImage MaskImage** Provide a template image and corresponding mask for those algorithms requiring such
 
@@ -530,7 +530,7 @@ Options specific to the 'fslbet' algorithm
 
 - **-bet_g** Vertical gradient in fractional intensity threshold (-1->1); positive values give larger brain outline at bottom, smaller at top
 
-- **-bet_c <x y z>** Centre-of-gravity (voxels not mm) of initial mesh surface
+- **-bet_c i,j,k** Centre-of-gravity (voxels not mm) of initial mesh surface
 
 - **-bet_r** Head radius (mm not voxels); initial surface sphere is set to half of this
 
@@ -797,7 +797,7 @@ Options
 Options specific to the 'mean' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** Comma separated list of shells to be included in the volume averaging
+- **-shells bvalues** Comma separated list of shells to be included in the volume averaging
 
 - **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
 
@@ -895,7 +895,7 @@ Options for turning 'dwi2mask trace' into an iterative algorithm
 Options specific to the 'trace' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-shells** Comma separated list of shells used to generate trace-weighted images for masking
+- **-shells bvalues** Comma-separated list of shells used to generate trace-weighted images for masking
 
 - **-clean_scale** the maximum scale used to cut bridges. A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. Setting this to 0 disables the mask cleaning step. (Default: 2)
 

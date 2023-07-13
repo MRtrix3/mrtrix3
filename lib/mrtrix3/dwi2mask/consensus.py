@@ -26,7 +26,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
   options = parser.add_argument_group('Options specific to the "consensus" algorithm')
   options.add_argument('-algorithms', nargs='+', help='Provide a list of dwi2mask algorithms that are to be utilised')
-  options.add_argument('-masks', type=app.Parser.ImageOut(), help='Export a 4D image containing the individual algorithm masks')
+  options.add_argument('-masks', type=app.Parser.ImageOut(), metavar='image', help='Export a 4D image containing the individual algorithm masks')
   options.add_argument('-template', type=app.Parser.ImageIn(), metavar=('TemplateImage', 'MaskImage'), nargs=2, help='Provide a template image and corresponding mask for those algorithms requiring such')
   options.add_argument('-threshold', type=float, default=DEFAULT_THRESHOLD, help='The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: ' + str(DEFAULT_THRESHOLD) + ')')
 

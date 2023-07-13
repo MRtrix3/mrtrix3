@@ -34,7 +34,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('out_gm', type=app.Parser.FileOut(), help='Output GM response text file')
   parser.add_argument('out_csf', type=app.Parser.FileOut(), help='Output CSF response text file')
   options = parser.add_argument_group('Options specific to the \'msmt_5tt\' algorithm')
-  options.add_argument('-dirs', type=app.Parser.ImageIn(), help='Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)')
+  options.add_argument('-dirs', type=app.Parser.ImageIn(), metavar='image', help='Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)')
   options.add_argument('-fa', type=float, default=0.2, help='Upper fractional anisotropy threshold for GM and CSF voxel selection (default: 0.2)')
   options.add_argument('-pvf', type=float, default=0.95, help='Partial volume fraction threshold for tissue voxel selection (default: 0.95)')
   options.add_argument('-wm_algo', metavar='algorithm', choices=WM_ALGOS, default='tournier', help='dwi2response algorithm to use for WM single-fibre voxel selection (options: ' + ', '.join(WM_ALGOS) + '; default: tournier)')
@@ -88,16 +88,15 @@ def execute(): #pylint: disable=unused-variable
     app.warn('Less than three b-values; response functions will not be applicable in resolving three tissues using MSMT-CSD algorithm')
 
   # Get lmax information (if provided)
-  wm_lmax = [ ]
+  sfwm_lmax_option = ''
   if app.ARGS.lmax:
-    wm_lmax = app.ARGS.lmax
-    if not len(wm_lmax) == len(shells):
-      raise MRtrixError('Number of manually-defined lmax\'s (' + str(len(wm_lmax)) + ') does not match number of b-values (' + str(len(shells)) + ')')
-    for shell_l in wm_lmax:
-      if shell_l % 2:
-        raise MRtrixError('Values for lmax must be even')
-      if shell_l < 0:
-        raise MRtrixError('Values for lmax must be non-negative')
+    if len(app.ARGS.lmax) != len(shells):
+      raise MRtrixError('Number of manually-defined lmax\'s (' + str(len(app.ARGS.lmax)) + ') does not match number of b-values (' + str(len(shells)) + ')')
+    if any(l % 2 for l in app.ARGS.lmax):
+      raise MRtrixError('Values for lmax must be even')
+    if any(l < 0 for l in app.ARGS.lmax):
+      raise MRtrixError('Values for lmax must be non-negative')
+    sfwm_lmax_option = ' -lmax ' + ','.join(map(str,app.ARGS.lmax))
 
   run.command('dwi2tensor dwi.mif - -mask mask.mif | tensor2metric - -fa fa.mif -vector vector.mif')
   if not os.path.exists('dirs.mif'):
@@ -143,9 +142,6 @@ def execute(): #pylint: disable=unused-variable
 
   # For each of the three tissues, generate a multi-shell response
   bvalues_option = ' -shells ' + ','.join(map(str,shells))
-  sfwm_lmax_option = ''
-  if wm_lmax:
-    sfwm_lmax_option = ' -lmax ' + ','.join(map(str,wm_lmax))
   run.command('amp2response dwi.mif wm_sf_mask.mif dirs.mif wm.txt' + bvalues_option + sfwm_lmax_option)
   run.command('amp2response dwi.mif gm_mask.mif dirs.mif gm.txt' + bvalues_option + ' -isotropic')
   run.command('amp2response dwi.mif csf_mask.mif dirs.mif csf.txt' + bvalues_option + ' -isotropic')
