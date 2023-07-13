@@ -79,7 +79,8 @@ class Shared:
     self._scratch_dir = None
     self.verbosity = 1
 
-    self.env['MRTRIX_DELETE_TMPFILE'] = 'no'
+    # Ensures that temporary piped images are not deleted automatically by MRtrix3 binary commands
+    self.env['MRTRIX_PRESERVE_TMPFILE'] = 'yes'
 
   # Acquire a unique index
   # This ensures that if command() is executed in parallel using different threads, they will

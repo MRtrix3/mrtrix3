@@ -36,9 +36,9 @@ Options for importing the diffusion gradient table
 Options common to all dwibiascorrect algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask image** Manually provide a mask image for bias field estimation
+- **-mask image** Manually provide an input mask image for bias field estimation
 
-- **-bias image** Output the estimated bias field
+- **-bias image** Output an image containing the estimated bias field
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -136,9 +136,9 @@ Options for importing the diffusion gradient table
 Options common to all dwibiascorrect algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask image** Manually provide a mask image for bias field estimation
+- **-mask image** Manually provide an input mask image for bias field estimation
 
-- **-bias image** Output the estimated bias field
+- **-bias image** Output an image containing the estimated bias field
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -234,9 +234,9 @@ Options for importing the diffusion gradient table
 Options common to all dwibiascorrect algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-mask image** Manually provide a mask image for bias field estimation
+- **-mask image** Manually provide an input mask image for bias field estimation
 
-- **-bias image** Output the estimated bias field
+- **-bias image** Output an image containing the estimated bias field
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

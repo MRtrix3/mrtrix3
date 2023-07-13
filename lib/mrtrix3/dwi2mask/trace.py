@@ -26,7 +26,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI series')
   parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
   options = parser.add_argument_group('Options specific to the \'trace\' algorithm')
-  options.add_argument('-shells', type=app.Parser.SequenceFloat(), help='Comma-separated list of shells used to generate trace-weighted images for masking')
+  options.add_argument('-shells', type=app.Parser.SequenceFloat(), metavar='bvalues', help='Comma-separated list of shells used to generate trace-weighted images for masking')
   options.add_argument('-clean_scale',
                        type=int,
                        default=DEFAULT_CLEAN_SCALE,

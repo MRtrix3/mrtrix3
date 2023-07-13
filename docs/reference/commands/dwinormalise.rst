@@ -99,7 +99,7 @@ Usage
 -  *input_dir*: The input directory containing all DWI images
 -  *mask_dir*: Input directory containing brain masks, corresponding to one per input image (with the same file name prefix)
 -  *output_dir*: The output directory containing all of the intensity normalised DWI images
--  *fa_template*: The output population specific FA template, which is threshold to estimate a white matter mask
+-  *fa_template*: The output population-specific FA template, which is thresholded to estimate a white matter mask
 -  *wm_mask*: The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation
 
 Description

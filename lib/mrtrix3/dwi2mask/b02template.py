@@ -53,7 +53,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('b02template', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Register the mean b=0 image to a T2-weighted template to back-propagate a brain mask')
-  parser.add_description('This script currently assumes that the template image provided via the -template option '
+  parser.add_description('This script currently assumes that the template image provided via the first input to the -template option '
                          'is T2-weighted, and can therefore be trivially registered to a mean b=0 image.')
   parser.add_description('Command-line option -ants_options can be used with either the "antsquick" or "antsfull" software options. '
                          'In both cases, image dimensionality is assumed to be 3, and so this should be omitted from the user-specified options.'
@@ -71,7 +71,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-software', choices=SOFTWARES, help='The software to use for template registration; options are: ' + ','.join(SOFTWARES) + '; default is ' + DEFAULT_SOFTWARE)
   options.add_argument('-template', type=app.Parser.ImageIn(), metavar=('TemplateImage', 'MaskImage'), nargs=2, help='Provide the template image to which the input data will be registered, and the mask to be projected to the input image. The template image should be T2-weighted.')
   ants_options = parser.add_argument_group('Options applicable when using the ANTs software for registration')
-  ants_options.add_argument('-ants_options', help='Provide options to be passed to the ANTs registration command (see Description)')
+  ants_options.add_argument('-ants_options', metavar='" ANTsOptions"', help='Provide options to be passed to the ANTs registration command (see Description)')
   fsl_options = parser.add_argument_group('Options applicable when using the FSL software for registration')
   fsl_options.add_argument('-flirt_options', metavar='" FlirtOptions"', help='Command-line options to pass to the FSL flirt command (provide a string within quotation marks that contains at least one space, even if only passing a single command-line option to flirt)')
   fsl_options.add_argument('-fnirt_config', type=app.Parser.FileIn(), metavar='file', help='Specify a FNIRT configuration file for registration')

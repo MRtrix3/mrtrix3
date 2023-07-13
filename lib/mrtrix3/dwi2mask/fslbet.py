@@ -29,7 +29,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the \'fslbet\' algorithm')
   options.add_argument('-bet_f', type=float, help='Fractional intensity threshold (0->1); smaller values give larger brain outline estimates')
   options.add_argument('-bet_g', type=float, help='Vertical gradient in fractional intensity threshold (-1->1); positive values give larger brain outline at bottom, smaller at top')
-  options.add_argument('-bet_c', type=app.Parser.SequenceFloat(), nargs=3, metavar='<x y z>', help='Centre-of-gravity (voxels not mm) of initial mesh surface')
+  options.add_argument('-bet_c', type=app.Parser.SequenceFloat(), metavar='i,j,k', help='Centre-of-gravity (voxels not mm) of initial mesh surface')
   options.add_argument('-bet_r', type=float, help='Head radius (mm not voxels); initial surface sphere is set to half of this')
   options.add_argument('-rescale', action='store_true', help='Rescale voxel size provided to BET to 1mm isotropic; can improve results for rodent data')
 

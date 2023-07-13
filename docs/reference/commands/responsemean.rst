@@ -15,8 +15,8 @@ Usage
 
     responsemean inputs output [ options ]
 
--  *inputs*: The input response functions
--  *output*: The output mean response function
+-  *inputs*: The input response function files
+-  *output*: The output mean response function file
 
 Description
 -----------

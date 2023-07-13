@@ -31,7 +31,7 @@ Input, output and general options
 
 - **-type** Specify the types of registration stages to perform. Options are "rigid" (perform rigid registration only which might be useful for intra-subject registration in longitudinal analysis), "affine" (perform affine registration) and "nonlinear" as well as cominations of registration types: "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear". Default: rigid_affine_nonlinear
 
-- **-voxel_size** Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma separated values.
+- **-voxel_size** Define the template voxel size in mm. Use either a single value for isotropic voxels or 3 comma-separated values.
 
 - **-initial_alignment** Method of alignment to form the initial template. Options are "mass" (default), "robust_mass" (requires masks), "geometric" and "none".
 
@@ -51,7 +51,7 @@ Input, output and general options
 
 - **-aggregate** Measure used to aggregate information from transformed images to the template image. Valid choices: mean, median. Default: mean
 
-- **-aggregation_weights** Comma separated file containing weights used for weighted image aggregation. Each row must contain the identifiers of the input image and its weight. Note that this weighs intensity values not transformations (shape).
+- **-aggregation_weights** Comma-separated file containing weights used for weighted image aggregation. Each row must contain the identifiers of the input image and its weight. Note that this weighs intensity values not transformations (shape).
 
 - **-nanmask** Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation. Only works if -mask_dir has been input.
 
@@ -81,9 +81,9 @@ Options for the linear registration
 
 - **-linear_no_drift_correction** Deactivate correction of template appearance (scale and shear) over iterations
 
-- **-linear_estimator** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: None (no robust estimator used)
+- **-linear_estimator** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), none (no robust estimator). Default: none.
 
-- **-rigid_scale** Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly  define the number of template levels
+- **-rigid_scale** Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly define the number of template levels
 
 - **-rigid_lmax** Specify the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: 2,2,2,4,4,4). The list must be the same length as the linear_scale factor list
 
