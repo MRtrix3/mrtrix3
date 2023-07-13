@@ -181,21 +181,21 @@ namespace MR {
             //   each streamline to each voxel it traverses
             // Third version is the 'precise' mapping as described in the SIFT paper
             // Fourth method only maps the streamline endpoints
-            void voxelise (const Streamline<>&, SetVoxel&) const;
+            void voxelise (const Streamline<>&, Set<Voxel>&) const;
             template <class Cont> void voxelise         (const Streamline<>&, Cont&) const;
             template <class Cont> void voxelise_precise (const Streamline<>&, Cont&) const;
             template <class Cont> void voxelise_ends    (const Streamline<>&, Cont&) const;
 
-            virtual bool preprocess  (const Streamline<>& tck, SetVoxelExtras& out) const { out.factor = 1.0; return true; }
-            virtual void postprocess (const Streamline<>& tck, SetVoxelExtras& out) const { }
+            virtual bool preprocess  (const Streamline<>& tck, SetExtras& out) const { out.factor = 1.0; return true; }
+            virtual void postprocess (const Streamline<>& tck, SetExtras& out) const { }
 
             // Used by voxelise() and voxelise_precise() to increment the relevant set
-            inline void add_to_set (SetVoxel&   , const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
-            inline void add_to_set (SetVoxelDEC&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
-            inline void add_to_set (SetVoxelDir&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
-            inline void add_to_set (SetDixel&   , const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
-            inline void add_to_set (SetVoxelTOD&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
-            inline void add_to_set (SetFixel&,    const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
+            inline void add_to_set (Set<Voxel>&   , const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
+            inline void add_to_set (Set<VoxelDEC>&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
+            inline void add_to_set (Set<VoxelDir>&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
+            inline void add_to_set (Set<Dixel>&   , const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
+            inline void add_to_set (Set<VoxelTOD>&, const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
+            inline void add_to_set (Set<Fixel>&,    const Eigen::Vector3i&, const Eigen::Vector3d&, const default_type) const;
 
             DWI::Tractography::Resampling::Upsampler upsampler;
 
@@ -349,36 +349,43 @@ namespace MR {
 
 
         // These are inlined to make as fast as possible
-        inline void TrackMapperBase::add_to_set (SetVoxel&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
+        inline void TrackMapperBase::add_to_set (Set<Voxel>&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
         {
-          out.insert (v, l);
+          const Voxel voxel (v, l);
+          out.insert (voxel);
         }
-        inline void TrackMapperBase::add_to_set (SetVoxelDEC& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
+        inline void TrackMapperBase::add_to_set (Set<VoxelDEC>& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
         {
-          out.insert (v, d, l);
+          const VoxelDEC voxel (v, d, l);
+          out.insert (voxel);
         }
-        inline void TrackMapperBase::add_to_set (SetVoxelDir& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
+        inline void TrackMapperBase::add_to_set (Set<VoxelDir>& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
         {
-          out.insert (v, d, l);
+          const VoxelDir voxel (v, d, l);
+          out.insert (voxel);
         }
-        inline void TrackMapperBase::add_to_set (SetDixel&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
+        inline void TrackMapperBase::add_to_set (Set<Dixel>&    out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
         {
           assert (dixel_plugin);
           const Math::Sphere::Set::index_type bin = (*dixel_plugin) (d);
-          out.insert (v, bin, l);
+          const Dixel dixel (v, bin, l);
+          out.insert (dixel);
         }
-        inline void TrackMapperBase::add_to_set (SetVoxelTOD& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
+        inline void TrackMapperBase::add_to_set (Set<VoxelTOD>& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
         {
           assert (tod_plugin);
           (*tod_plugin) (d);
-          out.insert (v, (*tod_plugin)(), l);
+          const VoxelTOD voxel (v, (*tod_plugin)(), l);
+          out.insert (voxel);
         }
-        inline void TrackMapperBase::add_to_set (SetFixel& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
+        inline void TrackMapperBase::add_to_set (Set<Fixel>& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l) const
         {
           assert (fixel_plugin);
-          const MR::Fixel::index_type fixel = (*fixel_plugin) (v, d);
-          if (fixel != fixel_plugin->nfixels())
-            out.insert (fixel, l);
+          const MR::Fixel::index_type fixel_index = (*fixel_plugin) (v, d);
+          if (fixel_index != fixel_plugin->nfixels()) {
+            const Fixel fixel (fixel_index, l);
+            out.insert (fixel);
+          }
         }
 
 
@@ -437,10 +444,10 @@ namespace MR {
 
           private:
 
-            virtual void set_factor (const Streamline<>&, SetVoxelExtras&) const;
+            virtual void set_factor (const Streamline<>&, SetExtras&) const;
 
             // Overload virtual function
-            virtual bool preprocess (const Streamline<>& tck, SetVoxelExtras& out) const { set_factor (tck, out); return out.factor; }
+            virtual bool preprocess (const Streamline<>& tck, SetExtras& out) const { set_factor (tck, out); return out.factor; }
 
 
 

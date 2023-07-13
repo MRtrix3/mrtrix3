@@ -68,17 +68,17 @@ namespace MR {
 
 
 
-            virtual bool operator() (const SetVoxel&)    { return false; }
-            virtual bool operator() (const SetVoxelDEC&) { return false; }
-            virtual bool operator() (const SetDixel&)    { return false; }
-            virtual bool operator() (const SetVoxelTOD&) { return false; }
-            virtual bool operator() (const SetFixel&) { return false; }
+            virtual bool operator() (const Set<Voxel>&)    { return false; }
+            virtual bool operator() (const Set<VoxelDEC>&) { return false; }
+            virtual bool operator() (const Set<Dixel>&)    { return false; }
+            virtual bool operator() (const Set<VoxelTOD>&) { return false; }
+            virtual bool operator() (const Set<Fixel>&) { return false; }
 
-            virtual bool operator() (const Gaussian::SetVoxel&)    { return false; }
-            virtual bool operator() (const Gaussian::SetVoxelDEC&) { return false; }
-            virtual bool operator() (const Gaussian::SetDixel&)    { return false; }
-            virtual bool operator() (const Gaussian::SetVoxelTOD&) { return false; }
-            virtual bool operator() (const Gaussian::SetFixel&)    { return false; }
+            virtual bool operator() (const Set<Gaussian::Voxel>&)    { return false; }
+            virtual bool operator() (const Set<Gaussian::VoxelDEC>&) { return false; }
+            virtual bool operator() (const Set<Gaussian::Dixel>&)    { return false; }
+            virtual bool operator() (const Set<Gaussian::VoxelTOD>&) { return false; }
+            virtual bool operator() (const Set<Gaussian::Fixel>&)    { return false; }
 
 
           protected:
@@ -235,17 +235,17 @@ namespace MR {
           }
 
 
-          bool operator() (const SetVoxel& in)    override { receive_greyscale (in); return true; }
-          bool operator() (const SetVoxelDEC& in) override { receive_dec       (in); return true; }
-          bool operator() (const SetDixel& in)    override { receive_dixel     (in); return true; }
-          bool operator() (const SetVoxelTOD& in) override { receive_tod       (in); return true; }
-          bool operator() (const SetFixel& in)    override { receive_fixel     (in); return true; }
+          bool operator() (const Set<Voxel>& in)    override { receive_greyscale (in); return true; }
+          bool operator() (const Set<VoxelDEC>& in) override { receive_dec       (in); return true; }
+          bool operator() (const Set<Dixel>& in)    override { receive_dixel     (in); return true; }
+          bool operator() (const Set<VoxelTOD>& in) override { receive_tod       (in); return true; }
+          bool operator() (const Set<Fixel>& in)    override { receive_fixel     (in); return true; }
 
-          bool operator() (const Gaussian::SetVoxel& in)    override { receive_greyscale (in); return true; }
-          bool operator() (const Gaussian::SetVoxelDEC& in) override { receive_dec       (in); return true; }
-          bool operator() (const Gaussian::SetDixel& in)    override { receive_dixel     (in); return true; }
-          bool operator() (const Gaussian::SetVoxelTOD& in) override { receive_tod       (in); return true; }
-          bool operator() (const Gaussian::SetFixel& in)    override { receive_fixel     (in); return true; }
+          bool operator() (const Set<Gaussian::Voxel>& in)    override { receive_greyscale (in); return true; }
+          bool operator() (const Set<Gaussian::VoxelDEC>& in) override { receive_dec       (in); return true; }
+          bool operator() (const Set<Gaussian::Dixel>& in)    override { receive_dixel     (in); return true; }
+          bool operator() (const Set<Gaussian::VoxelTOD>& in) override { receive_tod       (in); return true; }
+          bool operator() (const Set<Gaussian::Fixel>& in)    override { receive_fixel     (in); return true; }
 
 
           private:
@@ -267,16 +267,16 @@ namespace MR {
           //   For the standard SetVoxel classes, this is a single value 'factor' for the set as
           //     stored in SetVoxelExtras
           //   For the Gaussian SetVoxel classes, there is a factor per mapped element
-          default_type get_factor (const Voxel&    element, const SetVoxel&    set) const { return set.factor; }
-          default_type get_factor (const VoxelDEC& element, const SetVoxelDEC& set) const { return set.factor; }
-          default_type get_factor (const Dixel&    element, const SetDixel&    set) const { return set.factor; }
-          default_type get_factor (const VoxelTOD& element, const SetVoxelTOD& set) const { return set.factor; }
-          default_type get_factor (const Fixel&    element, const SetFixel&    set) const { return set.factor; }
-          default_type get_factor (const Gaussian::Voxel&    element, const Gaussian::SetVoxel&    set) const { return element.get_factor(); }
-          default_type get_factor (const Gaussian::VoxelDEC& element, const Gaussian::SetVoxelDEC& set) const { return element.get_factor(); }
-          default_type get_factor (const Gaussian::Dixel&    element, const Gaussian::SetDixel&    set) const { return element.get_factor(); }
-          default_type get_factor (const Gaussian::VoxelTOD& element, const Gaussian::SetVoxelTOD& set) const { return element.get_factor(); }
-          default_type get_factor (const Gaussian::Fixel&    element, const Gaussian::SetFixel&    set) const { return element.get_factor(); }
+          default_type get_factor (const Voxel&    element, const Set<Voxel>&    set) const { return set.factor; }
+          default_type get_factor (const VoxelDEC& element, const Set<VoxelDEC>& set) const { return set.factor; }
+          default_type get_factor (const Dixel&    element, const Set<Dixel>&    set) const { return set.factor; }
+          default_type get_factor (const VoxelTOD& element, const Set<VoxelTOD>& set) const { return set.factor; }
+          default_type get_factor (const Fixel&    element, const Set<Fixel>&    set) const { return set.factor; }
+          default_type get_factor (const Gaussian::Voxel&    element, const Set<Gaussian::Voxel>&    set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::VoxelDEC& element, const Set<Gaussian::VoxelDEC>& set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::Dixel&    element, const Set<Gaussian::Dixel>&    set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::VoxelTOD& element, const Set<Gaussian::VoxelTOD>& set) const { return element.get_factor(); }
+          default_type get_factor (const Gaussian::Fixel&    element, const Set<Gaussian::Fixel>&    set) const { return element.get_factor(); }
 
 
           // Convenience functions for Directionally-Encoded Colour processing

@@ -288,7 +288,9 @@ namespace MR {
 
 
 
-        class SetVoxelExtras
+
+
+        class SetExtras
         {
           public:
             default_type factor; // For TWI, when contribution to the map is uniform along the length of the track
@@ -297,164 +299,19 @@ namespace MR {
         };
 
 
-
-
-
-
-        // Set classes that give sensible behaviour to the insert() function depending on the base voxel class
-
-        class SetVoxel : public std::set<Voxel>, public SetVoxelExtras
+        template <class VoxelType>
+        class Set : public std::set<VoxelType>, public SetExtras
         {
           public:
-            using VoxType = Voxel;
-            inline void insert (const Voxel& v)
+            // Where a streamline contributes to the same element multiple times,
+            //   sum those contributions rather than adding multiple items to the set
+            void insert (const VoxelType& in)
             {
-              iterator existing = std::set<Voxel>::find (v);
-              if (existing == std::set<Voxel>::end())
-                std::set<Voxel>::insert (v);
+              typename std::set<VoxelType>::iterator existing = std::set<VoxelType>::find (in);
+              if (existing == std::set<VoxelType>::end())
+                std::set<VoxelType>::insert (in);
               else
-                (*existing) += v;
-            }
-            inline void insert (const Eigen::Vector3i& v, const default_type l)
-            {
-              const Voxel temp (v, l);
-              insert (temp);
-            }
-        };
-
-
-
-
-
-        class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
-        {
-          public:
-            using VoxType = VoxelDEC;
-            inline void insert (const VoxelDEC& v)
-            {
-              iterator existing = std::set<VoxelDEC>::find (v);
-              if (existing == std::set<VoxelDEC>::end())
-                std::set<VoxelDEC>::insert (v);
-              else
-                (*existing) += v;
-            }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d)
-            {
-              const VoxelDEC temp (v, d);
-              insert (temp);
-            }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l)
-            {
-              const VoxelDEC temp (v, d, l);
-              insert (temp);
-            }
-        };
-
-
-
-
-        class SetVoxelDir : public std::set<VoxelDir>, public SetVoxelExtras
-        {
-          public:
-            using VoxType = VoxelDir;
-            inline void insert (const VoxelDir& v)
-            {
-              iterator existing = std::set<VoxelDir>::find (v);
-              if (existing == std::set<VoxelDir>::end())
-                std::set<VoxelDir>::insert (v);
-              else
-                (*existing) += v;
-            }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d)
-            {
-              const VoxelDir temp (v, d);
-              insert (temp);
-            }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l)
-            {
-              const VoxelDir temp (v, d, l);
-              insert (temp);
-            }
-        };
-
-
-        class SetDixel : public std::set<Dixel>, public SetVoxelExtras
-        {
-          public:
-
-            using VoxType = Dixel;
-            using dir_index_type = Dixel::dir_index_type;
-
-            inline void insert (const Dixel& v)
-            {
-              iterator existing = std::set<Dixel>::find (v);
-              if (existing == std::set<Dixel>::end())
-                std::set<Dixel>::insert (v);
-              else
-                (*existing) += v;
-            }
-            inline void insert (const Eigen::Vector3i& v, const dir_index_type d)
-            {
-              const Dixel temp (v, d);
-              insert (temp);
-            }
-            inline void insert (const Eigen::Vector3i& v, const dir_index_type d, const default_type l)
-            {
-              const Dixel temp (v, d, l);
-              insert (temp);
-            }
-        };
-
-
-
-
-
-        class SetVoxelTOD : public std::set<VoxelTOD>, public SetVoxelExtras
-        {
-          public:
-
-            using VoxType = VoxelTOD;
-            using vector_type = VoxelTOD::vector_type;
-
-            inline void insert (const VoxelTOD& v)
-            {
-              iterator existing = std::set<VoxelTOD>::find (v);
-              if (existing == std::set<VoxelTOD>::end())
-                std::set<VoxelTOD>::insert (v);
-              else
-                (*existing) += v;
-            }
-            inline void insert (const Eigen::Vector3i& v, const vector_type& t)
-            {
-              const VoxelTOD temp (v, t);
-              insert (temp);
-            }
-            inline void insert (const Eigen::Vector3i& v, const vector_type& t, const default_type l)
-            {
-              const VoxelTOD temp (v, t, l);
-              insert (temp);
-            }
-        };
-
-
-
-        class SetFixel : public std::set<Fixel>, public SetVoxelExtras
-        {
-          public:
-            // TODO Rename
-            using VoxType = Fixel;
-            inline void insert (const Fixel& f)
-            {
-              iterator existing = std::set<Fixel>::find (f);
-              if (existing == std::set<Fixel>::end())
-                std::set<Fixel>::insert (f);
-              else
-                (*existing) += f;
-            }
-            inline void insert (const Fixel::index_type f, const default_type l)
-            {
-              const Fixel temp (f, l);
-              insert (temp);
+                (*existing) += in;
             }
         };
 

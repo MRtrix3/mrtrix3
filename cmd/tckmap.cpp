@@ -670,20 +670,20 @@ void run () {
     mapper_ptr->set_gaussian_FWHM (gaussian_fwhm_tck);
     switch (writer_type) {
       case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
-      case GREYSCALE: Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Gaussian::SetVoxel()),    *writer); break;
-      case DEC:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Gaussian::SetVoxelDEC()), *writer); break;
-      case DIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Gaussian::SetDixel()),    *writer); break;
-      case TOD:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Gaussian::SetVoxelTOD()), *writer); break;
-      case FIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Gaussian::SetFixel()),    *writer); break;
+      case GREYSCALE: Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Set<Gaussian::Voxel>()),    *writer); break;
+      case DEC:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Set<Gaussian::VoxelDEC>()), *writer); break;
+      case DIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Set<Gaussian::Dixel>()),    *writer); break;
+      case TOD:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Set<Gaussian::VoxelTOD>()), *writer); break;
+      case FIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper_ptr), Thread::batch (Set<Gaussian::Fixel>()),    *writer); break;
     }
   } else {
     switch (writer_type) {
       case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
-      case GREYSCALE: Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (SetVoxel()),    *writer); break;
-      case DEC:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (SetVoxelDEC()), *writer); break;
-      case DIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (SetDixel()),    *writer); break;
-      case TOD:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (SetVoxelTOD()), *writer); break;
-      case FIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (SetFixel()),    *writer); break;
+      case GREYSCALE: Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (Set<Voxel>()),          *writer); break;
+      case DEC:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (Set<VoxelDEC>()),       *writer); break;
+      case DIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (Set<Dixel>()),          *writer); break;
+      case TOD:       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (Set<VoxelTOD>()),       *writer); break;
+      case FIXEL:     Thread::run_queue (loader, Thread::batch (Tractography::Streamline<float>()), Thread::multi (*mapper), Thread::batch (Set<Mapping::Fixel>()), *writer); break;
     }
   }
 

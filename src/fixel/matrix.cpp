@@ -147,7 +147,7 @@ namespace MR
                              vector<index_type>& out) const
             {
               using direction_type = Eigen::Vector3d;
-              using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
+              using SetVoxelDir = DWI::Tractography::Mapping::Set<DWI::Tractography::Mapping::VoxelDir>;
 
               SetVoxelDir in;
               mapper (tck, in);
