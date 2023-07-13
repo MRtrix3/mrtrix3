@@ -43,6 +43,8 @@ void usage ()
     + Argument ("output", "the output directions file").type_file_out();
 
   OPTIONS
+    + Option ("skip", "preserve some number of directions in their position at the start of the set")
+      + Argument ("num").type_integer(1)
     + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 }
 
@@ -52,12 +54,18 @@ using value_type = double;
 
 
 
-vector<size_t> optimise (const Eigen::MatrixXd& directions, const size_t first_volume)
+vector<size_t> optimise (const Eigen::MatrixXd& directions, const size_t skip, const size_t first_volume)
 {
-  vector<size_t> indices (1, first_volume);
+  assert (first_volume >= skip);
+  vector<size_t> indices;
+  indices.reserve (directions.rows());
+  for (size_t n = 0; n != skip; ++n)
+    indices.push_back(n);
+  indices.push_back (first_volume);
   vector<size_t> remaining;
-  for (size_t n = 0; n < size_t(directions.rows()); ++n)
-    if (n != indices[0])
+  remaining.reserve (directions.rows() - skip);
+  for (size_t n = skip; n < size_t(directions.rows()); ++n)
+    if (n != first_volume)
       remaining.push_back (n);
 
   while (remaining.size()) {
@@ -117,20 +125,24 @@ void run ()
 {
   auto directions = DWI::Directions::load_cartesian (argument[0]);
 
+  const size_t skip = get_option_value<size_t> ("skip", 0);
+
   size_t last_candidate_first_volume = directions.rows();
   if (size_t(directions.rows()) <= Math::SH::NforL (2)) {
     WARN ("Very few directions in input ("
           + str(directions.rows())
           + "); selection of first direction cannot be optimised"
-          + " (first direction in input will be first direction in output)");
-    last_candidate_first_volume = 1;
+          + (skip ? " (direction #" + str(skip+1) + " will be first direction in output "
+                    "as that is the first direction after those to be skipped)"
+                  : " (first direction in input will be first direction in output)"));
+    last_candidate_first_volume = skip + 1;
   }
 
   value_type min_cost = std::numeric_limits<value_type>::infinity();
   vector<size_t> best_order;
   ProgressBar progress ("Determining best reordering", directions.rows());
-  for (size_t first_volume = 0; first_volume != last_candidate_first_volume; ++first_volume) {
-    const vector<size_t> order = optimise (directions, first_volume);
+  for (size_t first_volume = skip; first_volume != last_candidate_first_volume; ++first_volume) {
+    const vector<size_t> order = optimise (directions, skip, first_volume);
     const value_type cost = calc_cost (directions, order);
     if (cost < min_cost) {
       min_cost = cost;

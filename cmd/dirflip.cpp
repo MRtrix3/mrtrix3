@@ -49,6 +49,9 @@ void usage ()
     + Option ("permutations", "number of permutations to try (default: " + str(default_permutations) + ")")
     +   Argument ("num").type_integer (1)
 
+    + Option ("preserve", "preserve the sign of some number of directions at the start of the set")
+    +   Argument ("num").type_integer(1)
+
     + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 }
 
@@ -57,10 +60,10 @@ using value_type = double;
 using vector3_type = Eigen::Vector3d;
 
 
-class Shared { 
+class Shared {
   public:
-    Shared (const Eigen::MatrixXd& directions, size_t target_num_permutations) :
-      directions (directions), target_num_permutations (target_num_permutations), num_permutations(0),
+    Shared (const Eigen::MatrixXd& directions, const size_t target_num_permutations, const size_t preserve) :
+      directions (directions), target_num_permutations (target_num_permutations), preserve (preserve), num_permutations(0),
       progress ("optimising directions for eddy-currents", target_num_permutations),
       best_signs (directions.rows(), 1), best_eddy (std::numeric_limits<value_type>::max()) { }
 
@@ -90,11 +93,13 @@ class Shared {
 
     vector<int> get_init_signs () const { return vector<int> (directions.rows(), 1); }
     const vector<int>& get_best_signs () const { return best_signs; }
+    size_t get_preserve() const { return preserve; }
 
 
   protected:
     const Eigen::MatrixXd& directions;
     const size_t target_num_permutations;
+    const size_t preserve;
     size_t num_permutations;
     ProgressBar progress;
     vector<int> best_signs;
@@ -107,12 +112,12 @@ class Shared {
 
 
 
-class Processor { 
+class Processor {
   public:
     Processor (Shared& shared) :
       shared (shared),
       signs (shared.get_init_signs()),
-      uniform (0, signs.size()-1) { }
+      uniform (shared.get_preserve(), signs.size() - shared.get_preserve() - 1) { }
 
     void execute () {
       while (eval());
@@ -155,10 +160,11 @@ void run ()
   auto directions = DWI::Directions::load_cartesian (argument[0]);
 
   size_t num_permutations = get_option_value<size_t> ("permutations", default_permutations);
+  size_t preserve = get_option_value<size_t> ("preserve", 0);
 
   vector<int> signs;
   {
-    Shared eddy_shared (directions, num_permutations);
+    Shared eddy_shared (directions, num_permutations, preserve);
     Thread::run (Thread::multi (Processor (eddy_shared)), "eval thread");
     signs = eddy_shared.get_best_signs();
   }
