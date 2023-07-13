@@ -55,18 +55,14 @@ namespace MR {
             using Base = Mapping::Voxel;
 
             public:
-            Voxel (const int x, const int y, const int z) : Base (x, y, z) , VoxelAddon () { }
-            Voxel (const Eigen::Vector3i& that) : Base (that), VoxelAddon() { }
-            Voxel (const Eigen::Vector3i& v, const default_type l) : Base (v, l), VoxelAddon () { }
-            Voxel (const Eigen::Vector3i& v, const default_type l, const default_type f) : Base (v, l), VoxelAddon (f) { }
-            Voxel () : Base (), VoxelAddon () { }
+            Voxel () = delete;
+            Voxel (const Eigen::Vector3i& v, const default_type l, const default_type f) : Base (v, l), VoxelAddon (l * f) { }
 
             Voxel& operator= (const Voxel& V) { Base::operator= (V); VoxelAddon::operator= (V); return *this; }
-            void operator+= (const default_type l) const { IntersectionLength::operator+= (l); }
+            const Voxel& operator+= (const Voxel& V) const { assert (V == *this); IntersectionLength::operator+= (V); VoxelAddon::operator+= (V.get_factor() * V.get_length()); return *this; }
             bool operator== (const Voxel& V) const { return Base::operator== (V); }
             bool operator<  (const Voxel& V) const { return Base::operator<  (V); }
 
-            void add (const default_type l, const default_type f) const { IntersectionLength::operator+= (l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); IntersectionLength::normalize(); }
 
           };
@@ -78,20 +74,14 @@ namespace MR {
             using Base = Mapping::VoxelDEC;
 
             public:
-            VoxelDEC () : Base (), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3d& d) : Base (V, d), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3d& d, const default_type l) : Base (V, d, l), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3d& d, const default_type l, const default_type f) : Base (V, d, l), VoxelAddon (f) { }
+            VoxelDEC () = delete;
+            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3d& d, const default_type l, const default_type f) : Base (V, d, l), VoxelAddon (l * f) { }
 
             VoxelDEC& operator=  (const VoxelDEC& V)   { Base::operator= (V); VoxelAddon::operator= (V); return (*this); }
-            void operator+= (const default_type) const { assert (0); }
-            void operator+= (const Eigen::Vector3d&) const { assert (0); }
+            const VoxelDEC& operator+= (const VoxelDEC& V) const { assert (V == *this); Base::operator+= (V); VoxelAddon::operator+= (V.get_length() * V.get_factor()); return *this; }
             bool operator== (const VoxelDEC& V) const { return Base::operator== (V); }
             bool operator<  (const VoxelDEC& V) const { return Base::operator<  (V); }
 
-            void add (const Eigen::Vector3d&, const default_type) const { assert (0); }
-            void add (const Eigen::Vector3d& i, const default_type l, const default_type f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); IntersectionLength::normalize(); }
 
           };
@@ -107,16 +97,13 @@ namespace MR {
 
             Dixel() = delete;
             Dixel (const Eigen::Vector3i&) = delete;
-            Dixel (const Eigen::Vector3i& V, const dir_index_type b) : Base (V, b), VoxelAddon () { }
-            Dixel (const Eigen::Vector3i& V, const dir_index_type b, const default_type l) : Base (V, b, l), VoxelAddon () { }
-            Dixel (const Eigen::Vector3i& V, const dir_index_type b, const default_type l, const default_type f) : Base (V, b, l), VoxelAddon (f) { }
+            Dixel (const Eigen::Vector3i& V, const dir_index_type b, const default_type l, const default_type f) : Base (V, b, l), VoxelAddon (l * f) { }
 
             Dixel& operator=  (const Dixel& V)       { Base::operator= (V); VoxelAddon::operator= (V); return *this; }
             bool   operator== (const Dixel& V) const { return Base::operator== (V); }
             bool   operator<  (const Dixel& V) const { return Base::operator<  (V); }
-            void   operator+= (const default_type)  const { assert (0); }
+            const Dixel& operator+= (const Dixel& V) const { assert (V == *this); Base::operator+= (V); VoxelAddon::operator+= (V.get_length() * V.get_factor()); return *this; }
 
-            void add (const default_type l, const default_type f) const { IntersectionLength::operator+= (l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); IntersectionLength::normalize(); }
 
           };
@@ -130,19 +117,15 @@ namespace MR {
             public:
             using vector_type = Eigen::Matrix<default_type, Eigen::Dynamic, 1>;
 
-            VoxelTOD () : Base (), VoxelAddon () { }
+            VoxelTOD () = delete;
             VoxelTOD (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
-            VoxelTOD (const Eigen::Vector3i& V, const vector_type& t) : Base (V, t), VoxelAddon () { }
-            VoxelTOD (const Eigen::Vector3i& V, const vector_type& t, const default_type l) : Base (V, t, l), VoxelAddon () { }
-            VoxelTOD (const Eigen::Vector3i& V, const vector_type& t, const default_type l, const default_type f) : Base (V, t, l), VoxelAddon (f) { }
+            VoxelTOD (const Eigen::Vector3i& V, const vector_type& t, const default_type l, const default_type f) : Base (V, t, l), VoxelAddon (l * f) { }
 
             VoxelTOD& operator=  (const VoxelTOD& V)   { Base::operator= (V); VoxelAddon::operator= (V); return (*this); }
             bool      operator== (const VoxelTOD& V) const { return Base::operator== (V); }
             bool      operator<  (const VoxelTOD& V) const { return Base::operator< (V); }
-            void      operator+= (const vector_type&) const { assert (0); }
+            const VoxelTOD& operator+= (const VoxelTOD& V) const { assert (V == *this); Base::operator+= (V); VoxelAddon::operator+= (V.get_length() * V.get_factor()); return *this; }
 
-            void add (const vector_type&, const default_type) const { assert (0); }
-            void add (const vector_type& i, const default_type l, const default_type f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); IntersectionLength::normalize(); }
 
           };
@@ -158,15 +141,13 @@ namespace MR {
             public:
             Fixel() = delete;
             Fixel (const index_type F) : Base (F) , VoxelAddon () { }
-            Fixel (const index_type F, const default_type l) : Base (F, l), VoxelAddon () { }
-            Fixel (const index_type F, const default_type l, const default_type f) : Base (F, l), VoxelAddon (f) { }
+            Fixel (const index_type F, const default_type l, const default_type f) : Base (F, l), VoxelAddon (l * f) { }
 
             Fixel& operator= (const Fixel& F) { Base::operator= (F); VoxelAddon::operator= (F); return *this; }
-            void operator+= (const default_type l) const { IntersectionLength::operator+= (l); }
             bool operator== (const Fixel& F) const { return Base::operator== (F); }
             bool operator<  (const Fixel& F) const { return Base::operator<  (F); }
+            const Fixel& operator+= (const Fixel& F) const { assert (F == *this); Base::operator+= (F); VoxelAddon::operator+= (F.get_length() * F.get_factor()); return *this; }
 
-            void add (const default_type l, const default_type f) const { IntersectionLength::operator+= (l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); IntersectionLength::normalize(); }
 
           };
@@ -204,7 +185,7 @@ namespace MR {
                 if (existing == std::set<Voxel>::end())
                   std::set<Voxel>::insert (temp);
                 else
-                  (*existing).add (l, f);
+                  (*existing) += temp;
               }
           };
 
@@ -222,7 +203,7 @@ namespace MR {
                 if (existing == std::set<VoxelDEC>::end())
                   std::set<VoxelDEC>::insert (temp);
                 else
-                  (*existing).add (d, l, f);
+                  (*existing) += temp;
               }
           };
 
@@ -241,7 +222,7 @@ namespace MR {
                 if (existing == std::set<Dixel>::end())
                   std::set<Dixel>::insert (temp);
                 else
-                  (*existing).add (l, f);
+                  (*existing) += temp;
               }
           };
 
@@ -260,7 +241,7 @@ namespace MR {
                 if (existing == std::set<VoxelTOD>::end())
                   std::set<VoxelTOD>::insert (temp);
                 else
-                  (*existing).add (t, l, f);
+                  (*existing) += temp;
               }
           };
 
@@ -279,7 +260,7 @@ namespace MR {
                 if (existing == std::set<Fixel>::end())
                   std::set<Fixel>::insert (temp);
                 else
-                  (*existing).add (l, f);
+                  (*existing) += temp;
               }
           };
 

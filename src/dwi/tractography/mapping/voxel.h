@@ -59,7 +59,8 @@ namespace MR {
           public:
             IntersectionLength() : length (0.0) { }
             IntersectionLength (const default_type l) : length (l) { }
-            void operator+= (const default_type l) const { length += l; }
+            IntersectionLength operator+= (const default_type l) const { length += l; return *this; }
+            IntersectionLength operator+= (const IntersectionLength& that) const { length += that.get_length(); return *this; }
             void normalize() const { length = 1.0; }
             void set_length (const default_type l) { length = l; }
             default_type get_length() const { return length; }
@@ -81,6 +82,8 @@ namespace MR {
             Voxel () { vox_type::setZero(); }
             bool operator< (const Voxel& V) const { return (((*this)[2] == V[2]) ? (((*this)[1] == V[1]) ? ((*this)[0] < V[0]) : ((*this)[1] < V[1])) : ((*this)[2] < V[2])); }
             Voxel& operator= (const Voxel& V) { vox_type::operator= (V); set_length (V.get_length()); return *this; }
+            bool operator== (const Voxel& V) const { return vox_type::operator== (V); }
+            const Voxel& operator+= (const Voxel& that) const { IntersectionLength::operator+= (that); return *this; }
         };
 
 
@@ -115,7 +118,7 @@ namespace MR {
             void normalize() const { colour.normalize(); IntersectionLength::normalize(); }
             void set_dir (const Eigen::Vector3d& i) { colour = vec2DEC (i); }
             void add (const Eigen::Vector3d& i, const default_type l) const { IntersectionLength::operator+= (l); colour += vec2DEC (i); }
-            void operator+= (const Eigen::Vector3d& i) const { IntersectionLength::operator+= (1.0); colour += vec2DEC (i); }
+            const VoxelDEC& operator+= (const VoxelDEC& that) const { assert (that == *this); IntersectionLength::operator+= (that); colour += that.colour; return *this; }
             const Eigen::Vector3d& get_colour() const { return colour; }
 
           private:
@@ -155,7 +158,7 @@ namespace MR {
             void normalize() const { dir.normalize(); IntersectionLength::normalize(); }
             void set_dir (const Eigen::Vector3d& i) { dir = i; }
             void add (const Eigen::Vector3d& i, const default_type l) const { IntersectionLength::operator+= (l); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
-            void operator+= (const Eigen::Vector3d& i) const { IntersectionLength::operator+= (1.0); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
+            const VoxelDir& operator+= (const VoxelDir& that) const { assert (that == *this); dir += that.get_length() * that.dir * (dir.dot(that.dir) < 0.0 ? -1.0 : 1.0); IntersectionLength::operator+= (that.get_length()); return *this; }
             const Eigen::Vector3d& get_dir() const { return dir; }
 
           private:
@@ -188,11 +191,11 @@ namespace MR {
 
             dir_index_type get_dir() const { return dir; }
 
-            Dixel& operator=  (const Dixel& V)       { Voxel::operator= (V); dir = V.dir; return *this; }
-            Dixel& operator=  (const Eigen::Vector3i& V)  { Voxel::operator= (V); /*dir = invalid;*/ return *this; }
+            Dixel& operator=  (const Dixel& V) { Voxel::operator= (V); dir = V.dir; return *this; }
+            Dixel& operator=  (const Eigen::Vector3i& V) { Voxel::operator= (V); /*dir = invalid;*/ return *this; }
             bool   operator== (const Dixel& V) const { return (Voxel::operator== (V) ? (dir == V.dir) : false); }
             bool   operator<  (const Dixel& V) const { return (Voxel::operator== (V) ? (dir <  V.dir) : Voxel::operator< (V)); }
-            void   operator+= (const float l)  const { IntersectionLength::operator+= (l); }
+            const Dixel& operator+= (const Dixel& that) const { assert (that == *this); IntersectionLength::operator+= (that); return *this; }
 
           private:
             dir_index_type dir;
@@ -240,18 +243,13 @@ namespace MR {
               IntersectionLength::normalize();
             }
             void set_tod (const vector_type& i) { sh_coefs = i; }
-            void add (const vector_type& i, const default_type l) const
+            const VoxelTOD& operator+= (const VoxelTOD& that) const
             {
-              assert (i.size() == sh_coefs.size());
-              for (ssize_t index = 0; index != sh_coefs.size(); ++index)
-                sh_coefs[index] += l * i[index];
-              IntersectionLength::operator+= (l);
-            }
-            void operator+= (const vector_type& i) const
-            {
-              assert (i.size() == sh_coefs.size());
-              sh_coefs += i;
-              IntersectionLength::operator+= (1.0);
+              assert (that == *this);
+              assert (that.sh_coefs.size() == sh_coefs.size());
+              sh_coefs += that.sh_coefs;
+              IntersectionLength::operator+= (that);
+              return *this;
             }
             const vector_type& get_tod() const { return sh_coefs; }
 
@@ -273,6 +271,7 @@ namespace MR {
             bool operator== (const Fixel& that) const { return index == that.index; }
             bool operator< (const Fixel& F) const { return (index < F.index); }
             Fixel& operator= (const Fixel& F) { index = F.index; set_length (F.get_length()); return *this; }
+            const Fixel& operator+= (const Fixel& that) const { assert (that.index == index); IntersectionLength::operator+= (that); return *this; }
             operator index_type() const { return index; }
           private:
             index_type index;
@@ -314,7 +313,7 @@ namespace MR {
               if (existing == std::set<Voxel>::end())
                 std::set<Voxel>::insert (v);
               else
-                (*existing) += v.get_length();
+                (*existing) += v;
             }
             inline void insert (const Eigen::Vector3i& v, const default_type l)
             {
@@ -337,7 +336,7 @@ namespace MR {
               if (existing == std::set<VoxelDEC>::end())
                 std::set<VoxelDEC>::insert (v);
               else
-                existing->add (v.get_colour(), v.get_length());
+                (*existing) += v;
             }
             inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d)
             {
@@ -364,7 +363,7 @@ namespace MR {
               if (existing == std::set<VoxelDir>::end())
                 std::set<VoxelDir>::insert (v);
               else
-                existing->add (v.get_dir(), v.get_length());
+                (*existing) += v;
             }
             inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d)
             {
@@ -392,7 +391,7 @@ namespace MR {
               if (existing == std::set<Dixel>::end())
                 std::set<Dixel>::insert (v);
               else
-                (*existing) += v.get_length();
+                (*existing) += v;
             }
             inline void insert (const Eigen::Vector3i& v, const dir_index_type d)
             {
@@ -423,7 +422,7 @@ namespace MR {
               if (existing == std::set<VoxelTOD>::end())
                 std::set<VoxelTOD>::insert (v);
               else
-                (*existing) += v.get_tod();
+                (*existing) += v;
             }
             inline void insert (const Eigen::Vector3i& v, const vector_type& t)
             {
@@ -450,7 +449,7 @@ namespace MR {
               if (existing == std::set<Fixel>::end())
                 std::set<Fixel>::insert (f);
               else
-                (*existing) += f.get_length();
+                (*existing) += f;
             }
             inline void insert (const Fixel::index_type f, const default_type l)
             {
