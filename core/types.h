@@ -163,9 +163,9 @@ namespace MR {
 
 namespace std
 {
-  template <> struct is_floating_point<half_float::half> : std::true_type { NOMEMALIGN };
-  template <> struct is_arithmetic<half_float::half> : std::true_type { NOMEMALIGN };
-  template <> struct is_integral<half_float::half> : std::false_type { NOMEMALIGN };
+  template <> struct is_floating_point<half_float::half> : std::true_type { };
+  template <> struct is_arithmetic<half_float::half> : std::true_type { };
+  template <> struct is_integral<half_float::half> : std::false_type { };
 }
 
 
