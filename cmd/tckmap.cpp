@@ -429,7 +429,7 @@ void run () {
   if (opt.size()) {
     if (writer_type != GREYSCALE)
       throw Exception ("Options for setting output image dimensionality are mutually exclusive");
-    if (!voxel_size.size())
+    if (voxel_size.size())
       throw Exception ("Custom voxel sizes cannot be specified if a template fixel dataset is to be used");
     writer_type = FIXEL;
     if (!template_header.valid())
