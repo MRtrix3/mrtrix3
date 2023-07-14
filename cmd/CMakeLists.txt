@@ -5,7 +5,7 @@ foreach(CMD ${GUI_CMD_SRCS})
     list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
 endforeach(CMD)
 
-file(GLOB BIN_SCRIPTS ${CMAKE_SOURCE_DIR}/bin/*)
+file(GLOB BIN_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/../bin/*)
 
 function(add_cmd CMD_SRC IS_GUI)
     # Extract the filename without an extension (NAME_WE)

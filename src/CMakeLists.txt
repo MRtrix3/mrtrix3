@@ -6,10 +6,10 @@ file(GLOB_RECURSE GUI_SOURCES gui/*.h gui/*.cpp)
 if(BUILD_GUI)
     if(USE_QT6)
         find_package(Qt6 COMPONENTS Core Gui Widgets OpenGL Network OpenGLWidgets REQUIRED)
-        qt6_add_resources(RCC_SOURCES ${CMAKE_SOURCE_DIR}/icons/icons.qrc)
+        qt6_add_resources(RCC_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../icons/icons.qrc)
     else()
         find_package(Qt5 COMPONENTS Core Gui Widgets OpenGL Network REQUIRED)
-        qt5_add_resources(RCC_SOURCES ${CMAKE_SOURCE_DIR}/icons/icons.qrc)
+        qt5_add_resources(RCC_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../icons/icons.qrc)
     endif()
     find_package(OpenGL REQUIRED)
     find_package(Threads REQUIRED)
@@ -26,7 +26,7 @@ add_custom_target(exec-version-target ALL
         -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
         -D DST=${EXEC_VERSION_CPP}
         -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/exec_version.cpp.in
-        -P ${CMAKE_SOURCE_DIR}/cmake/FindVersion.cmake
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/FindVersion.cmake
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Generating exec_version.cpp for executables"
     BYPRODUCTS ${EXEC_VERSION_CPP}

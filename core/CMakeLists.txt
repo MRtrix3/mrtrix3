@@ -16,7 +16,7 @@ add_custom_target(core-version-target ALL
         -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
         -D DST=${CMAKE_CURRENT_BINARY_DIR}/version.cpp
         -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/version.cpp.in
-        -P ${CMAKE_SOURCE_DIR}/cmake/FindVersion.cmake
+        -P ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/FindVersion.cmake
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Generating version.cpp for core library"
     BYPRODUCTS ${CORE_VERSION_CPP}
