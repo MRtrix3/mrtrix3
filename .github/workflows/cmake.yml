@@ -15,6 +15,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
 
     - name: install dependencies
       run: |
@@ -46,6 +48,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
 
     - name: install dependencies
       run: |
@@ -85,7 +89,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v1
-      
+        with:
+          submodules: true
+
       - uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
