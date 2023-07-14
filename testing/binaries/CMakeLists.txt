@@ -48,7 +48,7 @@ function(add_binary_tests file_path)
             COMMAND ${BASH} -c "${new_line}"
             WORKING_DIRECTORY ${DATA_DIR}
         )
-        message(VERBOSE "Add binary test command for ${file_name}: ${new_line}")
+        message(STATUS "Add binary test command for ${file_name}: ${new_line}")
     endforeach()
 endfunction()
 
