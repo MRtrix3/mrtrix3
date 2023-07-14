@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,8 +42,11 @@ BIN_PATH = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.
 EXE_LIST = [ os.path.splitext(name)[0] for name in os.listdir(BIN_PATH) ] #pylint: disable=unused-variable
 
 
-# - 'CONFIG' is a directory containing those entries present in the MRtrix config files
-CONFIG = { }
+# 'CONFIG' is a dictionary containing those entries present in the MRtrix config files
+# Can add default values here that would otherwise appear in multiple locations
+CONFIG = {
+  'Dwi2maskAlgorithm': 'legacy'
+}
 
 
 # Codes for printing information to the terminal
@@ -84,4 +87,4 @@ setup_ansi()
 # Execute a command
 def execute(): #pylint: disable=unused-variable
   from . import app #pylint: disable=import-outside-toplevel
-  app._execute(inspect.getmodule(inspect.stack()[-1][0])) # pylint: disable=protected-access
+  app._execute(inspect.getmodule(inspect.stack()[1][0])) # pylint: disable=protected-access

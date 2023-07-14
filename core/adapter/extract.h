@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,7 +27,7 @@ namespace MR
     template <class ImageType>
       class Extract1D :
         public Base<Extract1D<ImageType>,ImageType>
-    { MEMALIGN (Extract1D<ImageType>)
+    { 
       public:
 
         using base_type = Base<Extract1D<ImageType>, ImageType>;
@@ -112,7 +112,7 @@ namespace MR
     template <class ImageType>
       class Extract :
         public Base<Extract<ImageType>,ImageType>
-    { MEMALIGN (Extract<ImageType>)
+    { 
       public:
 
         using base_type = Base<Extract<ImageType>, ImageType>;

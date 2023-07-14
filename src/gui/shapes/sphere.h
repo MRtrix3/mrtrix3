@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ namespace MR
 
 
     class Sphere
-    { MEMALIGN(Sphere)
+    { 
       public:
         // TODO Initialise sphere & buffers at construction;
         //   currently it doesn't seem to work as a GL context has not yet been
@@ -45,7 +45,7 @@ namespace MR
         GL::IndexBuffer index_buffer;
 
 
-        class Vertex { NOMEMALIGN
+        class Vertex { 
           public:
             Vertex () { }
             Vertex (const float x[3]) { p[0] = x[0]; p[1] = x[1]; p[2] = x[2]; }

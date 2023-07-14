@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,10 +43,10 @@ namespace MR
 
         using namespace MR::DWI::Tractography::Tracking;
 
-        class iFOD2 : public MethodBase { MEMALIGN(iFOD2)
+        class iFOD2 : public MethodBase { 
           public:
 
-            class Shared : public SharedBase { MEMALIGN(Shared)
+            class Shared : public SharedBase { 
               public:
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                     SharedBase (diff_path, property_set),
@@ -453,7 +453,7 @@ end_init:
 
           private:
             class Calibrate
-            { MEMALIGN(Calibrate)
+            { 
               public:
                 Calibrate (iFOD2& method) :
                   P (method),

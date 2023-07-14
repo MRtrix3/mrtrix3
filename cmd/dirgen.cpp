@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -78,7 +78,7 @@ void usage ()
 
 
 // constrain directions to remain unit length:
-class ProjectedUpdate { MEMALIGN(ProjectedUpdate)
+class ProjectedUpdate { 
   public:
     bool operator() (
         Eigen::VectorXd& newx,
@@ -98,7 +98,7 @@ class ProjectedUpdate { MEMALIGN(ProjectedUpdate)
 
 
 
-class Energy { MEMALIGN(Energy)
+class Energy { 
   public:
     Energy (ProgressBar& progress) :
       progress (progress),

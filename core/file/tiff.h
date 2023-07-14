@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,19 +31,19 @@ namespace MR
   {
 
     class TIFF
-    { MEMALIGN (TIFF)
+    {
       public:
         TIFF (const std::string& filename, const char* mode = "r");
 
         ~TIFF () {
-          if (tif) 
+          if (tif)
             TIFFClose (tif);
         }
 
         template <typename dtype>
           void read_and_check (ttag_t tag, dtype& var) {
             dtype x;
-            if (TIFFGetFieldDefaulted (tif, tag, &x) != 1) 
+            if (TIFFGetFieldDefaulted (tif, tag, &x) != 1)
               return;
             if (var && var != x)
               throw Exception (std::string ("mismatch between subfiles in TIFF image \"") + TIFFFileName (tif) + "\"");

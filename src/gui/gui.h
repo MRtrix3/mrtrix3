@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,9 @@
 #define __gui_app_h__
 
 #include <QApplication>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
+#include <QStyleHints>
+#endif
 
 #include "app.h"
 #include "file/config.h"
@@ -31,7 +34,7 @@ namespace MR
     inline QString qstr (const std::string& s) { return QString::fromUtf8 (s.c_str()); }
 
 
-    class App : public QApplication { NOMEMALIGN
+    class App : public QApplication { 
 
       public:
         App (int& cmdline_argc, char** cmdline_argv);

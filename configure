@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -88,6 +88,9 @@ ENVIRONMENT VARIABLES
     Multiple environment variables can be set this way as needed.
     The following environment variables are available:
 
+    CXX_COMPILER_LAUNCHER
+        A custom prefix to invoke the compiler. Useful for tools like ccache.
+        
     CXX
         The compiler command to use. The default is "clang++", falling back to
         "g++" if not found.
@@ -171,6 +174,10 @@ ENVIRONMENT VARIABLES
         Note that this path will be stored in the config file and used during
         subsequent invocations of the build process. It only needs to be
         specified correctly at configure time.
+
+   CXXSTD
+        Set the version of the C++ standard to use. The minimum (and default)
+        is c++11. To use Qt6, you will need to set this to c++17.
 '''
 
 system = platform.system().lower()
@@ -301,6 +308,11 @@ else:
 log ('PATH set to: ' + path)
 
 
+cpp_std = 'c++11'
+if 'CXXSTD' in os.environ:
+  std = os.environ['CXXSTD']
+  if std:
+    cpp_std = std
 
 
 # Test Python version
@@ -318,7 +330,7 @@ cpp = ld = None
 
 cxx = [ 'clang++', 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-std=c++11', '-DMRTRIX_BUILD_TYPE="'+build_type+'"' ]
+cpp_flags = [ '-std='+cpp_std, '-DMRTRIX_BUILD_TYPE="'+build_type+'"' ]
 
 ld_args = 'OBJECTS LINKFLAGS -o EXECUTABLE'.split()
 ld_flags = []
@@ -566,7 +578,7 @@ def compile (source, compiler_flags, linker_flags): # pylint: disable=redefined-
 
 
 def get_flags (default=None, env=None, pkg_config_flags=None):
-  """Return a list of the flags required for a given packagei
+  """Return a list of the flags required for a given package
 
   If 'env' is defined, it will check whether the corresponding environment
   variable is set, and if so return its contents. If 'pkg_config_flags' is set,
@@ -1267,11 +1279,15 @@ int main() { Foo f; }
       with open (os.path.join (qt_dir.name, 'qt.cpp'), 'w', encoding='utf-8') as f:
         f.write (filetext)
 
-      filetext = 'CONFIG += c++11'
+      filetext = 'CONFIG += ' + cpp_std
       if debug:
         filetext += ' debug'
-      filetext += '\nQT += core gui opengl svg network\n'
+      if [int(i) for i in qmake_version.split('.')][0] == 6:
+        filetext += '\nQT += core gui openglwidgets svg network\n'
+      else:
+        filetext += '\nQT += core gui opengl svg network\n'
       filetext += 'HEADERS += qt.h\nSOURCES += qt.cpp\n'
+      filetext += 'QMAKE_CXX = ' + cpp[0] + '\nQMAKE_LINK = ' + ld[0] + '\n'
       if system == "darwin":
         filetext += 'QMAKE_MACOSX_DEPLOYMENT_TARGET = ' + macosx_version + '\n'
 
@@ -1305,21 +1321,18 @@ int main() { Foo f; }
               line = line.strip()
               if line.startswith ('DEFINES'):
                 qt_defines = shlex.split (line[line.find('=')+1:].strip())
-              elif line.startswith ('CXXFLAGS'):
-                qt_cflags = shlex.split (line[line.find('=')+1:].strip())
               elif line.startswith ('INCPATH'):
                 qt_includes = shlex.split (line[line.find('=')+1:].strip())
+              elif line.startswith ('LFLAGS'):
+                qt_ldflags = [ entry for entry in shlex.split (line[line.find('=')+1:].strip()) if not entry.startswith('$') and not entry.startswith ('-flto=') ]
               elif line.startswith ('LIBS'):
                 qt_libs = shlex.split (line[line.find('=')+1:].strip())
-              elif line.startswith ('LFLAGS'):
-                qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
-          if qt_defines or qt_cflags or qt_includes or qt_libs or qt_ldflags:
+          if qt_defines or qt_includes or qt_libs:
             log ('ok\n')
             log ('  qt_defines: ' + str(qt_defines) + '\n')
-            log ('  qt_cflags: ' + str(qt_cflags) + '\n')
             log ('  qt_includes: ' + str(qt_includes) + '\n')
+            log ('  qt_ldflags: ' + str(qt_ldflags) + '\n')
             log ('  qt_libs: ' + str(qt_libs) + '\n')
-            log ('  qt_ldflags: ' + str(qt_ldflags) + '\n\n')
             break
         except OSError:
           log ('not found\n')
@@ -1332,8 +1345,7 @@ int main() { Foo f; }
         if entry[2:].startswith('..'):
           qt_includes[index] = '-I' + os.path.abspath(qt_dir.name + '/' + entry[2:])
 
-      qt_cflags = [ entry for entry in qt_cflags if entry != '-O2' ]
-      qt = qt_cflags + qt_defines + qt_includes
+      qt = qt_defines + qt_includes
       qt_cflags = []
       for entry in qt:
         if entry[0] != '$' and not entry == '-I.':
@@ -1343,9 +1355,7 @@ int main() { Foo f; }
           else:
             qt_cflags += [ entry ]
 
-      qt = qt_ldflags + qt_libs
-      qt_ldflags = []
-      for entry in qt:
+      for entry in qt_libs:
         if entry[0] != '$':
           qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
 
@@ -1358,7 +1368,7 @@ int main() { Foo f; }
       execute ([ cpp[0], '-c' ] + cpp_flags + qt_cflags + [ 'qt_moc.cpp', '-o', 'qt_moc.o' ], \
           CompileError, cwd=qt_dir.name)
 
-      execute ([ cpp[0] ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags, \
+      execute ([ ld[0] ] + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags, \
           LinkError, cwd=qt_dir.name)
 
       qt_stdout = execute ([ os.path.join(qt_dir.name, 'qt') ], RunError)[1]
@@ -1469,6 +1479,12 @@ with open (config_filename, 'w', encoding='utf-8') as config_file:
   commit (config_file, 'exe_suffix', exe_suffix)
   commit (config_file, 'lib_prefix', lib_prefix)
   commit (config_file, 'lib_suffix', lib_suffix)
+
+  if "CXX_COMPILER_LAUNCHER" in os.environ:
+    cpp_launcher = os.environ["CXX_COMPILER_LAUNCHER"].split()
+    print("\n USING CXX_COMPILER_LAUNCHER", cpp_launcher)
+    cpp = cpp_launcher + cpp
+
   commit (config_file, 'cpp', cpp)
   commit (config_file, 'cpp_flags', cpp_flags)
   commit (config_file, 'ld', ld)

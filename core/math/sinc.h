@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,7 +25,7 @@ namespace MR
   {
 
     template <typename T = float> class Sinc
-    { NOMEMALIGN
+    { 
       public:
         using value_type = T;
 
@@ -93,7 +93,7 @@ namespace MR
 
         template <class ImageType>
         value_type value (ImageType& image, const size_t axis) const {
-          assert (current_pos != NAN);
+          assert (std::isfinite (current_pos));
           const size_t init_pos = image.index(axis);
           value_type sum = 0.0;
           for (size_t i = 0; i != window_size; ++i) {
@@ -107,7 +107,7 @@ namespace MR
         template <class Cont>
         value_type value (Cont& data) const {
           assert (data.size() == window_size);
-          assert (current_pos != NAN);
+          assert (std::isfinite (current_pos));
           value_type sum = 0.0;
           for (size_t i = 0; i != window_size; ++i)
             sum += data[i] * weights[i];
@@ -115,7 +115,7 @@ namespace MR
         }
 
         value_type value (value_type* data) const {
-          assert (current_pos != NAN);
+          assert (std::isfinite (current_pos));
           value_type sum = 0.0;
           for (size_t i = 0; i != window_size; ++i)
             sum += data[i] * weights[i];
@@ -126,7 +126,7 @@ namespace MR
         const size_t window_size, max_offset_from_kernel_centre;
         vector<size_t> indices;
         vector<value_type> weights;
-        value_type  current_pos;
+        value_type current_pos;
 
     };
 

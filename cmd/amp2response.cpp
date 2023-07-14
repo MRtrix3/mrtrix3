@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -114,9 +114,9 @@ vector<size_t> all_volumes (const size_t num)
 
 
 
-class Accumulator { MEMALIGN(Accumulator)
+class Accumulator { 
   public:
-    class Shared { MEMALIGN(Shared)
+    class Shared { 
       public:
         Shared (int lmax, const vector<size_t>& volumes, const Eigen::MatrixXd& dirs) :
           lmax (lmax),

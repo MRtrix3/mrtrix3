@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -267,7 +267,7 @@ void run () {
         bounds[axis][1] = 0;
       }
 
-      struct BoundsCheck { NOMEMALIGN
+      struct BoundsCheck { 
         vector<vector<ssize_t>>& overall_bounds;
         vector<vector<ssize_t>> bounds;
         BoundsCheck (vector<vector<ssize_t>>& overall_bounds) : overall_bounds (overall_bounds), bounds (overall_bounds) { }

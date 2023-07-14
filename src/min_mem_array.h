@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,7 @@ namespace MR {
 //   to construct a Min_mem_array<>
 
 template <class T>
-class Min_mem_array { MEMALIGN(Min_mem_array<T>)
+class Min_mem_array { 
 
   public:
     Min_mem_array () :

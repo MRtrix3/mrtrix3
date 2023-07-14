@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,6 +43,10 @@ namespace MR
       std::setlocale (LC_ALL, "C");
 
       setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
+
+      #if QT_VERSION >= QT_VERSION_CHECK(5, 13, 0)
+      styleHints()->setShowShortcutsInContextMenus(true);
+      #endif
     }
 
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ if [ $# == 0 ]; then
     fi
   done
   for bin_path in bin/*; do
-    if [ -f ${bin_path} ] && $(head -n1 ${bin_path} | grep -q "#!\/usr\/bin\/python3"); then
+    if [ -f ${bin_path} ] && $(head -n1 ${bin_path} | grep -q "#!/usr/bin/python3"); then
       tests="$tests $bin_path"
     fi
   done

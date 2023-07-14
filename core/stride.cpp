@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -128,7 +128,7 @@ namespace MR
         if (abs(x) > max_remaining)
           max_remaining = abs(x);
 
-      struct FindStride { NOMEMALIGN
+      struct FindStride { 
         FindStride (List::value_type value) : x (abs(value)) { }
         bool operator() (List::value_type a) { return abs (a) == x; }
         const List::value_type x;

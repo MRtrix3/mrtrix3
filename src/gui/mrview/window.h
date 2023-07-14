@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,13 +52,13 @@ namespace MR
 
 
       class Window : public QMainWindow, ColourMapButtonObserver
-      { MEMALIGN(Window)
+      { 
           Q_OBJECT
 
         private:
           Cursor cursors_do_not_use;
 
-          class GLArea : public GL::Area { MEMALIGN(GLArea)
+          class GLArea : public GL::Area { 
             public:
               GLArea (Window& parent);
               QSize sizeHint () const override;

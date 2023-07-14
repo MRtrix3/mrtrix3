@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -67,7 +67,7 @@ namespace MR
 
 
       template <typename T = float> class ScalarReader : public __ReaderBase__
-      { NOMEMALIGN
+      { 
         public:
           using value_type = T;
 
@@ -165,7 +165,7 @@ namespace MR
        * */
       template <typename T = float>
       class ScalarWriter : public __WriterBase__<T>
-      { NOMEMALIGN
+      { 
         public:
           using value_type = T;
           using __WriterBase__<T>::count;

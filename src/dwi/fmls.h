@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -61,7 +61,7 @@ namespace MR
       void load_fmls_thresholds (Segmenter&);
 
 
-      class FOD_lobe { MEMALIGN(FOD_lobe)
+      class FOD_lobe { 
 
         public:
           FOD_lobe (const DWI::Directions::Set& dirs, const index_type seed, const default_type value, const default_type weight) :
@@ -161,14 +161,14 @@ namespace MR
 
 
 
-      class FOD_lobes : public vector<FOD_lobe> { MEMALIGN(FOD_lobes)
+      class FOD_lobes : public vector<FOD_lobe> { 
         public:
           Eigen::Array3i vox;
           vector<uint8_t> lut;
       };
 
 
-      class SH_coefs : public Eigen::Matrix<default_type, Eigen::Dynamic, 1> { MEMALIGN(SH_coefs)
+      class SH_coefs : public Eigen::Matrix<default_type, Eigen::Dynamic, 1> { 
         public:
           SH_coefs() :
               vox (-1, -1, -1) { }
@@ -179,7 +179,7 @@ namespace MR
       };
 
       class FODQueueWriter
-      { MEMALIGN (FODQueueWriter)
+      { 
 
           using FODImageType = Image<float>;
           using MaskImageType = Image<float>;
@@ -221,7 +221,7 @@ namespace MR
       // These weights are applied to the amplitude along each direction as the integral for each lobe is summed,
       //   in order to take into account the relative spacing between adjacent directions
       class IntegrationWeights
-      { MEMALIGN (IntegrationWeights)
+      { 
         public:
           IntegrationWeights (const DWI::Directions::Set& dirs);
           default_type operator[] (const size_t i) { assert (i < size_t(data.size())); return data[i]; }
@@ -232,7 +232,7 @@ namespace MR
 
 
 
-      class Segmenter { MEMALIGN(Segmenter)
+      class Segmenter { 
 
         public:
           Segmenter (const DWI::Directions::FastLookupSet&, const size_t);

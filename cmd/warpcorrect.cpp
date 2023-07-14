@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -50,13 +50,20 @@ void usage ()
 
 using value_type = float;
 
-class BoundsCheck { MEMALIGN(BoundsCheck)
+class BoundsCheck {
   public:
     BoundsCheck (value_type tolerance, const Eigen::Matrix<value_type, 3, 1>& marker, size_t& total_count):
-     precision (tolerance),
-     vec (marker),
-     counter (total_count),
-     count (0) { }
+        precision (tolerance),
+        vec (marker),
+        counter (total_count),
+        count (0),
+        val ({NaN, NaN, NaN}) { }
+    BoundsCheck (const BoundsCheck& that) :
+        precision (that.precision),
+        vec (that.vec),
+        counter (that.counter),
+        count (0),
+        val ({NaN, NaN, NaN}) { }
     template <class ImageTypeIn, class ImageTypeOut>
       void operator() (ImageTypeIn& in, ImageTypeOut& out)
       {

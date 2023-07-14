@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -79,9 +79,11 @@ def execute(): #pylint: disable=unused-variable
   # For "template" algorithm, can run twice with two different softwares
   # Ideally this would be determined based on the help page,
   #   rather than pre-programmed
-  algorithm_list = [item for item in algorithm_list if item != 'b02template']
-  algorithm_list.append('b02template -software antsfull')
-  algorithm_list.append('b02template -software fsl')
+  # Don't use "-software antsquick"; we're assuming that "antsfull" is superior
+  if 'b02template' in algorithm_list:
+    algorithm_list = [item for item in algorithm_list if item != 'b02template']
+    algorithm_list.append('b02template -software antsfull')
+    algorithm_list.append('b02template -software fsl')
   app.debug(str(algorithm_list))
 
   mask_list = []

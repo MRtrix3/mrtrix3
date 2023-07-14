@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -111,7 +111,7 @@ def execute(): #pylint: disable=unused-variable
   path.make_dir('wm_mask_warped')
   for i in input_list:
     run.command('mrtransform template_wm_mask.mif -interp nearest -warp_full ' + os.path.join('warps', i.prefix + '.mif') + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' -from 2 -template ' + os.path.join('fa', i.prefix + '.mif'))
-    run.command('dwinormalise individual ' + shlex.quote(os.path.join(input_dir, i.filename)) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' temp.mif')
+    run.command('dwinormalise manual ' + shlex.quote(os.path.join(input_dir, i.filename)) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' temp.mif')
     run.command('mrconvert temp.mif ' + path.from_user(os.path.join(app.ARGS.output_dir, i.filename)), mrconvert_keyval=path.from_user(os.path.join(input_dir, i.filename), False), force=app.FORCE_OVERWRITE)
     os.remove('temp.mif')
     progress.increment()

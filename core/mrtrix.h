@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,22 +56,22 @@ namespace MR
 
 
   template <typename X, typename ReturnType = int>
-    struct max_digits { NOMEMALIGN
+    struct max_digits { 
       static constexpr int value () { return 0; }
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<X>::value, int>::type> { NOMEMALIGN
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<X>::value, int>::type> { 
       static constexpr int value () { return std::numeric_limits<X>::max_digits10; }
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::Scalar>::value, int>::type> { NOMEMALIGN
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::Scalar>::value, int>::type> { 
       static constexpr int value () { return std::numeric_limits<typename X::Scalar>::max_digits10; }
     };
 
   template <typename X>
-    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value && !std::is_fundamental<typename X::Scalar>::value, int>::type> { NOMEMALIGN
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value && !std::is_fundamental<typename X::Scalar>::value, int>::type> { 
       static constexpr int value () { return std::numeric_limits<typename X::value_type>::max_digits10; }
     };
 

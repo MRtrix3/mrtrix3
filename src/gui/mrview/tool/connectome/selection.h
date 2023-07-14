@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ namespace MR
 
 
       class NodeSelectionSettings : public QObject
-      { MEMALIGN(NodeSelectionSettings)
+      { 
 
           Q_OBJECT
 
@@ -122,7 +122,7 @@ namespace MR
 
 
       class NodeSelectionSettingsFrame : public QFrame
-      { NOMEMALIGN
+      { 
           Q_OBJECT
 
         public:
@@ -211,7 +211,7 @@ namespace MR
 
 
       class NodeSelectionSettingsDialog : public QDialog
-      { NOMEMALIGN
+      { 
         public:
           NodeSelectionSettingsDialog (QWidget* parent, const std::string& message, NodeSelectionSettings& settings);
 

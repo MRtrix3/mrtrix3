@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -59,7 +59,7 @@ class Shared:
       self.env.pop('MRTRIX_QUIET')
     except KeyError:
       pass
-    self.env['MRTRIX_LOGLEVEL'] = 1
+    self.env['MRTRIX_LOGLEVEL'] = '1'
 
     # Flagged by calling the set_continue() function;
     #   run.command() and run.function() calls will be skipped until one of the inputs to

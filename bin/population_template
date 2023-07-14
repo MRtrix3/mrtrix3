@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,17 +30,23 @@ DEFAULT_NL_LMAX   = [  2,  2,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4,  4,  4,  4
 
 REGISTRATION_MODES = ['rigid', 'affine', 'nonlinear', 'rigid_affine', 'rigid_nonlinear', 'affine_nonlinear', 'rigid_affine_nonlinear']
 
-AGGREGATION_MODES = ["mean", "median"]
+AGGREGATION_MODES = ['mean', 'median']
 
-IMAGEEXT = 'mif nii mih mgh mgz img hdr'.split()
+IMAGEEXT = ['mif', 'nii', 'mih', 'mgh', 'mgz', 'img', 'hdr']
 
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)')
 
   cmdline.set_synopsis('Generates an unbiased group-average template from a series of images')
   cmdline.add_description('First a template is optimised with linear registration (rigid and/or affine, both by default), then non-linear registration is used to optimise the template further.')
-  cmdline.add_argument("input_dir", nargs='+', help='Input directory containing all images used to build the template')
-  cmdline.add_argument("template", help='Corresponding output template image. For multi-contrast registration, provide multiple paired input_dir and template arguments. Example: WM_dir WM_template.mif GM_dir GM_template.mif')
+  cmdline.add_argument('input_dir', nargs='+', help='Directory containing all input images of a given contrast')
+  cmdline.add_argument('template', help='Output template image')
+
+  cmdline.add_example_usage('Multi-contrast registration',
+                            'population_template input_WM_ODFs/ output_WM_template.mif input_GM_ODFs/ output_GM_template.mif',
+                            'When performing multi-contrast registration, the input directory and corresponding output template '
+                            'image for a given contrast are to be provided as a pair, '
+                            'with the pairs corresponding to different contrasts provided sequentially.')
 
   options = cmdline.add_argument_group('Multi-contrast options')
   options.add_argument('-mc_weight_initial_alignment', help='Weight contribution of each contrast to the initial alignment. Comma separated, default: 1.0')
@@ -50,6 +56,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
   linoptions = cmdline.add_argument_group('Options for the linear registration')
   linoptions.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
+  linoptions.add_argument('-linear_no_drift_correction', action='store_true', help='Deactivate correction of template appearance (scale and shear) over iterations')
   linoptions.add_argument('-linear_estimator', help='Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: None (no robust estimator used)')
   linoptions.add_argument('-rigid_scale', help='Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: %s). This and affine_scale implicitly  define the number of template levels' % ','.join([str(x) for x in DEFAULT_RIGID_SCALES]))
   linoptions.add_argument('-rigid_lmax', help='Specify the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in DEFAULT_RIGID_LMAX]))
@@ -81,6 +88,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   options.add_argument('-aggregation_weights', help='Comma separated file containing weights used for weighted image aggregation. Each row must contain the identifiers of the input image and its weight. Note that this weighs intensity values not transformations (shape).')
   options.add_argument('-nanmask', action='store_true', help='Optionally apply masks to (transformed) input images using NaN values to specify include areas for registration and aggregation. Only works if -mask_dir has been input.')
   options.add_argument('-copy_input', action='store_true', help='Copy input images and masks into local scratch directory.')
+  options.add_argument('-delete_temporary_files', action='store_true', help='Delete temporary files from scratch directory during template creation.')
 
 # ENH: add option to initialise warps / transformations
 
@@ -186,7 +194,7 @@ def aggregate(inputs, output, contrast_idx, mode, force=True):
   elif mode == 'weighted_mean':
     weights = [inp.aggregation_weight for inp in inputs]
     assert not any(w is None for w in weights), weights
-    wsum = sum([float(w) for w in weights])
+    wsum = sum(float(w) for w in weights)
     cmd = ['mrcalc']
     if wsum <= 0:
       raise MRtrixError("the sum of aggregetion weights has to be positive")
@@ -574,7 +582,12 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError, app, image, matrix, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import MRtrixError, app, image, matrix, path, run, EXE_LIST #pylint: disable=no-name-in-module, import-outside-toplevel
+
+  expected_commands = ['mrgrid', 'mrregister', 'mrtransform', 'mraverageheader', 'mrconvert', 'mrmath', 'transformcalc', 'mrfilter']
+  for cmd in expected_commands:
+    if cmd not in EXE_LIST :
+      raise MRtrixError("Could not find " + cmd + " in bin/. Binary commands not compiled?")
 
   if not app.ARGS.type in REGISTRATION_MODES:
     raise MRtrixError("registration type must be one of %s. provided: %s" % (str(REGISTRATION_MODES), app.ARGS.type))
@@ -972,7 +985,7 @@ def execute(): #pylint: disable=unused-variable
       elif cns.n_volumes[cid] == 1:
         run.function(copy, avh4d, 'average_header' + cns.suff[cid] + '.mif')
       else:
-        run.command('mrcat ' + ' '.join([avh3d] * cns.n_volumes[cid]) + ' -axis 3 average_header' + cns.suff[cid] + '.mif')
+        run.command(['mrcat', [avh3d] * cns.n_volumes[cid], '-axis', '3', 'average_header' + cns.suff[cid] + '.mif'])
     run.function(os.remove, avh3d)
     run.function(os.remove, avh4d)
   else:
@@ -994,7 +1007,7 @@ def execute(): #pylint: disable=unused-variable
     if use_masks:
       progress = app.ProgressBar('Reslicing input masks to average header', len(ins))
       for inp in ins:
-        run.command('mrtransform ' + inp.ims_path[cid] + ' ' + inp.msk_transformed + ' ' +
+        run.command('mrtransform ' + inp.msk_path + ' ' + inp.msk_transformed + ' ' +
                     '-interp nearest -template ' + cns.templates[0] + ' ' +
                     datatype_option)
         progress.increment()
@@ -1068,7 +1081,7 @@ def execute(): #pylint: disable=unused-variable
                     datatype_option)
       progress.increment()
     # update average space of first contrast to new extent, delete other average space images
-    run.command('mraverageheader ' + ' '.join([inp.ims_transformed[cid] + '_translated.mif' for inp in ins]) + ' average_header_tight.mif')
+    run.command(['mraverageheader', [inp.ims_transformed[cid] + '_translated.mif' for inp in ins], 'average_header_tight.mif'])
     progress.done()
 
     if voxel_size is None:
@@ -1158,8 +1171,8 @@ def execute(): #pylint: disable=unused-variable
           regtype_option = ' -type rigid'
           output_option = ' -rigid ' + os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt')
           contrast_weight_option = cns.rigid_weight_option
-          if level > 0:
-            initialise_option = ' -rigid_init_matrix ' + os.path.join('linear_transforms_%02i' % (level - 1), inp.uid + '.txt')
+          initialise_option = (' -rigid_init_matrix ' +
+                               os.path.join('linear_transforms_%02i' % (level - 1) if level > 0 else 'linear_transforms_initial', inp.uid + '.txt'))
           if do_fod_registration:
             lmax_option = ' -rigid_lmax ' + str(lmax)
           if linear_estimator:
@@ -1172,8 +1185,8 @@ def execute(): #pylint: disable=unused-variable
           regtype_option = ' -type affine'
           output_option = ' -affine ' + os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt')
           contrast_weight_option = cns.affine_weight_option
-          if level > 0:
-            initialise_option = ' -affine_init_matrix ' + os.path.join('linear_transforms_%02i' % (level - 1), inp.uid + '.txt')
+          initialise_option = (' -affine_init_matrix ' +
+                               os.path.join('linear_transforms_%02i' % (level - 1) if level > 0 else 'linear_transforms_initial', inp.uid + '.txt'))
           if do_fod_registration:
             lmax_option = ' -affine_lmax ' + str(lmax)
           if linear_estimator:
@@ -1214,19 +1227,48 @@ def execute(): #pylint: disable=unused-variable
             run.function(os.remove, im_temp)
         progress.increment()
 
-      # Here we ensure the template doesn't drift or scale
-      # TODO matrix avarage might produce a large FOV for large rotations  # pylint: disable=fixme
-      run.command('transformcalc ' + ' '.join(path.all_in_dir('linear_transforms_%02i' % level)) +
-                  ' average linear_transform_average.txt -quiet', force=True)
-      if linear_type[level] == 'rigid':
-        run.command('transformcalc linear_transform_average.txt rigid linear_transform_average.txt -quiet', force=True)
-      run.command('transformcalc linear_transform_average.txt invert linear_transform_average_inv.txt -quiet', force=True)
+      # Here we ensure the overall template properties don't change (too much) over levels
+      # The reference is the initialisation as that's used to construct the average space.
+      # T_i: linear trafo for case i, i.e. template(x) = E [ image_i(T_i x) ]
+      # R_i: inital trafo for case i (identity if initial alignment is none)
+      # A = E[ T_i ]: average of current trafos
+      # B = E[ R_i ]: average of initial trafos
+      # C_i' = T_i B A^{-1}: "drift" corrected T_i
+      # T_i <- C_i
+      # Notes:
+      #   - This approximately stabilises E[ T_i ], its' relatively close to B
+      #   - Not sure whether it's preferable to stabilise E[ T_i^{-1} ]
+      #   - If one subject's registration fails, this will affect the average and therefore the template which could result in instable behaviour.
+      #   - The template appearance changes slightly over levels, but the template and trafos are affected in the same way so should not affect template convergence.
+      if not app.ARGS.linear_no_drift_correction:
+        run.command(['transformcalc', [os.path.join('linear_transforms_initial', inp.uid + '.txt') for _inp in ins],
+                    'average', 'linear_transform_average_init.txt', '-quiet'], force=True)
+        run.command(['transformcalc', [os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt') for _inp in ins],
+                    'average', 'linear_transform_average_%02i_uncorrected.txt' % level, '-quiet'], force=True)
+        run.command(['transformcalc', 'linear_transform_average_%02i_uncorrected.txt' % level,
+                    'invert', 'linear_transform_average_%02i_uncorrected_inv.txt' % level, '-quiet'], force=True)
 
-      average_inv = matrix.load_transform('linear_transform_average_inv.txt')
-      if average_inv is not None:
+        transform_average_init = matrix.load_transform('linear_transform_average_init.txt')
+        transform_average_current_inv = matrix.load_transform('linear_transform_average_%02i_uncorrected_inv.txt' % level)
+
+        transform_update = matrix.dot(transform_average_init, transform_average_current_inv)
+        matrix.save_transform(os.path.join('linear_transforms_%02i_drift_correction.txt' %  level), transform_update, force=True)
+        if regtype == 'rigid':
+          run.command('transformcalc ' + os.path.join('linear_transforms_%02i_drift_correction.txt' %  level) +
+                      ' rigid ' + os.path.join('linear_transforms_%02i_drift_correction.txt' %  level) + ' -quiet', force=True)
+          transform_update = matrix.load_transform(os.path.join('linear_transforms_%02i_drift_correction.txt' %  level))
+
         for inp in ins:
-          transform = matrix.dot(matrix.load_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt')), average_inv)
-          matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform, force=True)
+          transform = matrix.load_transform('linear_transforms_%02i/' % level + inp.uid + '.txt')
+          transform_updated = matrix.dot(transform, transform_update)
+          run.function(copy, 'linear_transforms_%02i/' % level + inp.uid + '.txt', 'linear_transforms_%02i/' % level + inp.uid + '.precorrection')
+          matrix.save_transform(os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt'), transform_updated, force=True)
+
+        # compute average trafos and its properties for easier debugging
+        run.command(['transformcalc', [os.path.join('linear_transforms_%02i' % level, _inp.uid + '.txt') for _inp in ins],
+                    'average', 'linear_transform_average_%02i.txt' % level, '-quiet'], force=True)
+        run.command('transformcalc linear_transform_average_%02i.txt decompose linear_transform_average_%02i.dec' % (level, level), force=True)
+
 
       for cid in range(n_contrasts):
         for inp in ins:
@@ -1257,6 +1299,8 @@ def execute(): #pylint: disable=unused-variable
         calculate_isfinite(ins, cns)
 
       for cid in range(n_contrasts):
+        if level > 0 and app.ARGS.delete_temporary_files:
+          os.remove(cns.templates[cid])
         cns.templates[cid] = 'linear_template%02i%s.mif' % (level, cns.suff[cid])
         aggregate(ins, cns.templates[cid], cid, agg_measure)
         if cns.n_volumes[cid] == 1:
@@ -1360,6 +1404,8 @@ def execute(): #pylint: disable=unused-variable
         calculate_isfinite(ins, cns)
 
       for cid in range(n_contrasts):
+        if level > 0 and app.ARGS.delete_temporary_files:
+          os.remove(cns.templates[cid])
         cns.templates[cid] = 'nl_template%02i%s.mif' % (level, cns.suff[cid])
         aggregate(ins, cns.templates[cid], cid, agg_measure)
         if cns.n_volumes[cid] == 1:

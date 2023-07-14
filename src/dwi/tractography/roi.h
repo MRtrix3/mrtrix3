@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR
       void load_rois (Properties& properties);
 
 
-      class Mask : public Image<bool> { MEMALIGN(Mask)
+      class Mask : public Image<bool> { 
         public:
           using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
           Mask (const Mask&) = default;
@@ -56,7 +56,7 @@ namespace MR
 
 
 
-      class ROI { MEMALIGN(ROI)
+      class ROI { 
         public:
           ROI (const Eigen::Vector3f& sphere_pos, float sphere_radius) :
             pos (sphere_pos), radius (sphere_radius), radius2 (Math::pow2 (radius)) { }
@@ -138,7 +138,7 @@ namespace MR
 
 
       class ROISetBase
-      { MEMALIGN(ROISetBase)
+      { 
         public:
           ROISetBase () { }
 
@@ -164,7 +164,7 @@ namespace MR
 
 
       class ROIUnorderedSet : public ROISetBase
-      { MEMALIGN(ROIUnorderedSet)
+      { 
         public:
           ROIUnorderedSet () { }
           bool contains (const Eigen::Vector3f& p) const {
@@ -183,11 +183,11 @@ namespace MR
 
 
       class ROIOrderedSet : public ROISetBase
-      { MEMALIGN(ROIOrderedSet)
+      { 
         public:
 
           class LoopState
-          { NOMEMALIGN
+          { 
             public:
               LoopState (const ROIOrderedSet& master) :
                   size (master.size()),
@@ -239,7 +239,7 @@ namespace MR
 
 
       class IncludeROIVisitation
-      { MEMALIGN(IncludeROIVisitation)
+      { 
         public:
 
           IncludeROIVisitation (const ROIUnorderedSet& unordered,

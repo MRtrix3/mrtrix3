@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,7 +39,7 @@ namespace MR
 
 
       class Track_fixel_contribution
-      { MEMALIGN(Track_fixel_contribution)
+      { 
         public:
           Track_fixel_contribution (const uint32_t fixel_index, const float length)
           {
@@ -96,7 +96,7 @@ namespace MR
 // This is a 'safe' version of Track_fixel_contribution that does not use byte-sharing, but requires double the RAM
 // Simply comment the class above and un-comment this one to use
 class Track_fixel_contribution
-{ MEMALIGN(Track_fixel_contribution)
+{ 
   public:
     Track_fixel_contribution (const uint32_t fixel_index, const float length) :
       fixel (fixel_index),
@@ -129,7 +129,7 @@ class Track_fixel_contribution
 
 
       class TrackContribution : public Min_mem_array<Track_fixel_contribution>
-      { MEMALIGN(TrackContribution)
+      { 
 
         public:
         TrackContribution (const vector<Track_fixel_contribution>& in, const float c, const float l) :

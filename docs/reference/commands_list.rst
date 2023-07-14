@@ -36,6 +36,7 @@ List of MRtrix3 commands
     commands/dwi2response
     commands/dwi2tensor
     commands/dwibiascorrect
+    commands/dwibiasnormmask
     commands/dwicat
     commands/dwidenoise
     commands/dwiextract
@@ -167,6 +168,7 @@ List of MRtrix3 commands
     |python.png|, :ref:`dwi2response`, "Estimate response function(s) for spherical deconvolution"
     |cpp.png|, :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     |python.png|, :ref:`dwibiascorrect`, "Perform B1 field inhomogeneity correction for a DWI volume series"
+    |python.png|, :ref:`dwibiasnormmask`, "Perform a combination of bias field correction, intensity normalisation, and mask derivation, for DWI data"
     |python.png|, :ref:`dwicat`, "Concatenating multiple DWI series accounting for differential intensity scaling"
     |cpp.png|, :ref:`dwidenoise`, "dMRI noise level estimation and denoising using Marchenko-Pastur PCA"
     |cpp.png|, :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"

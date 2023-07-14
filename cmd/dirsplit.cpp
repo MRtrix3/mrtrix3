@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,7 +49,7 @@ using value_type = double;
 using vector3_type = Eigen::Vector3d;
 
 
-class Shared { MEMALIGN(Shared)
+class Shared { 
   public:
     Shared (const Eigen::MatrixXd& directions, size_t num_subsets, size_t target_num_permutations) :
       directions (directions), subset (num_subsets),
@@ -111,7 +111,7 @@ class Shared { MEMALIGN(Shared)
 
 
 
-class EnergyCalculator { MEMALIGN(EnergyCalculator)
+class EnergyCalculator { 
   public:
     EnergyCalculator (Shared& shared) : shared (shared), subset (shared.get_init_subset()) { }
 

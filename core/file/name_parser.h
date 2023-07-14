@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,9 +29,9 @@ namespace MR
   {
 
     //! a class to interpret numbered filenames
-    class NameParser { NOMEMALIGN
+    class NameParser { 
       public:
-        class Item { NOMEMALIGN
+        class Item { 
           public:
             Item () : seq_length (0) { }
 
@@ -148,12 +148,12 @@ namespace MR
 
 
     //! a class to hold a parsed image filename
-    class ParsedName { NOMEMALIGN
+    class ParsedName { 
       public:
         ParsedName (const std::string& name, const vector<uint32_t>& index) : indices (index), filename (name) { }
 
         //! a class to hold a set of parsed image filenames
-        class List { NOMEMALIGN
+        class List { 
           public:
             vector<uint32_t> parse_scan_check (const std::string& specifier,
                                                size_t max_num_sequences = std::numeric_limits<size_t>::max());

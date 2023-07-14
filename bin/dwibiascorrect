@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -71,7 +71,7 @@ def execute(): #pylint: disable=unused-variable
     if not image.match('in.mif', 'mask.mif', up_to_dim=3):
       raise MRtrixError('Provided mask image does not match input DWI')
   else:
-    run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' in.mif mask.mif')
+    run.command('dwi2mask ' + CONFIG['Dwi2maskAlgorithm'] + ' in.mif mask.mif')
 
   # From here, the script splits depending on what estimation algorithm is being used
   alg.execute()

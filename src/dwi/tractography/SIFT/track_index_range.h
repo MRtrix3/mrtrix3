@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,7 +45,7 @@ namespace MR
       // Instead, the input queue for multi-threading is filled with std::pair<track_t, track_t>'s, where the values
       //   are the start and end track indices to be processed
       class TrackIndexRangeWriter
-      { MEMALIGN(TrackIndexRangeWriter)
+      { 
 
         public:
           TrackIndexRangeWriter (const track_t, const track_t, const std::string& message = std::string ());

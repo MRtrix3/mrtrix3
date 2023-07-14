@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,7 +43,7 @@ namespace MR
 
 
         class Node_list_model : public QAbstractItemModel
-        { MEMALIGN(Node_list_model)
+        { 
           public:
 
             Node_list_model (Connectome* parent);
@@ -88,7 +88,7 @@ namespace MR
 
 
         class Node_list_view : public QTableView
-        { NOMEMALIGN
+        { 
           public:
             Node_list_view (QWidget* parent) :
                 QTableView (parent) { }
@@ -103,7 +103,7 @@ namespace MR
 
 
         class Node_list : public Tool::Base
-        { MEMALIGN(Node_list)
+        { 
 
             Q_OBJECT
 

@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,7 +56,7 @@ CMDLINE = None
 
 
 _DEFAULT_COPYRIGHT = \
-'''Copyright (c) 2008-2021 the MRtrix3 contributors.
+'''Copyright (c) 2008-2023 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -330,7 +330,7 @@ def goto_scratch_dir(): #pylint: disable=unused-variable
 #   all intermediates, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
 def cleanup(items): #pylint: disable=unused-variable
-  if not DO_CLEANUP:
+  if not DO_CLEANUP or not items:
     return
   if isinstance(items, list):
     if len(items) == 1:
@@ -593,7 +593,7 @@ class Parser(argparse.ArgumentParser):
       script_options.add_argument('-nocleanup', action='store_true', help='do not delete intermediate files during script execution, and do not delete scratch directory at script completion.')
       script_options.add_argument('-scratch', metavar='/path/to/scratch/', help='manually specify the path in which to generate the scratch directory.')
       script_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<ScratchDir>', '<LastFile>'), help='continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.')
-    module_file = inspect.getsourcefile(inspect.stack()[-1][0])
+    module_file = os.path.realpath (inspect.getsourcefile(inspect.stack()[-1][0]))
     self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
     try:
       with subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)), stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
@@ -1088,7 +1088,7 @@ class Parser(argparse.ArgumentParser):
     sys.stdout.flush()
 
   def _get_ungrouped_options(self):
-    return next((group for group in self._action_groups if group.title == 'optional arguments'), None)
+    return next((group for group in self._action_groups if group.title in ( 'options', 'optional arguments') ), None)
 
   def _is_option_group(self, group):
     # * Don't display empty groups
@@ -1099,7 +1099,7 @@ class Parser(argparse.ArgumentParser):
            not (len(group._group_actions) == 1 and \
            isinstance(group._group_actions[0], argparse._SubParsersAction)) and \
            not group == self._positionals and \
-           group.title != 'optional arguments'
+           group.title not in ( 'options', 'optional arguments' )
 
 
 
@@ -1173,9 +1173,12 @@ def handler(signum, _frame):
   if os.getcwd() != WORKING_DIR:
     os.chdir(WORKING_DIR)
   if SCRATCH_DIR:
-    try:
-      shutil.rmtree(SCRATCH_DIR)
-    except OSError:
-      pass
-    SCRATCH_DIR = ''
+    if DO_CLEANUP:
+      try:
+        shutil.rmtree(SCRATCH_DIR)
+      except OSError:
+        pass
+      SCRATCH_DIR = ''
+    else:
+      sys.stderr.write(EXEC_NAME + ': ' + ANSI.console + 'Scratch directory retained; location: ' + SCRATCH_DIR + ANSI.clear + '\n')
   os._exit(signum) # pylint: disable=protected-access

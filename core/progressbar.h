@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,7 +55,7 @@ namespace MR
    * Other implementations can be created by overriding the display_func() and
    * done_func() static functions. These functions will then be used throughout
    * the application.  */
-  class ProgressBar { NOMEMALIGN
+  class ProgressBar { 
     public:
 
       //! Create an unusable ProgressBar.
@@ -145,7 +145,7 @@ namespace MR
       template <class ThreadType>
         void run_update_thread (const ThreadType& threads) const;
 
-      struct SwitchToMultiThreaded { NOMEMALIGN
+      struct SwitchToMultiThreaded { 
         SwitchToMultiThreaded ();
         ~SwitchToMultiThreaded ();
       };

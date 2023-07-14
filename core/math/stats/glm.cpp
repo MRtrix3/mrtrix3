@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -255,7 +255,7 @@ namespace MR
 
         matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
         {
-          const auto stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design).array().col(0);
+          const vector_type stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design).array().col(0);
           matrix_type result (measurements.cols(), hypotheses.size());
           for (size_t ic = 0; ic != hypotheses.size(); ++ic)
             result.col (ic) = abs_effect_size (measurements, design, hypotheses[ic]) * stdev_reciprocal;
@@ -349,7 +349,7 @@ namespace MR
           }
 
           class Source
-          { NOMEMALIGN
+          {
             public:
               Source (const size_t num_elements) :
                   num_elements (num_elements),
@@ -373,7 +373,7 @@ namespace MR
           };
 
           class Functor
-          { MEMALIGN(Functor)
+          {
             public:
               Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_data, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                        vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :

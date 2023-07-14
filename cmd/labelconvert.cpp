@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -97,6 +97,8 @@ void run ()
 
   // Build the mapping from input to output indices
   const auto mapping = get_lut_mapping (lut_in, lut_out);
+  if (*std::max_element (mapping.begin(), mapping.end()) == 0)
+    throw Exception ("Mapping between input and output LUTs is empty, i.e. no common node names between these two LUTs");
 
   // Modify the header for the output file
   H.datatype() = DataType::from<node_t>();

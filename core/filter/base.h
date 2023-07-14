@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,7 +41,7 @@ namespace MR
      * should ideally conform to.
      *
      */
-    class Base : public Header { MEMALIGN(Base)
+    class Base : public Header { 
       public:
         template <class HeaderType>
         Base (const HeaderType& in) :

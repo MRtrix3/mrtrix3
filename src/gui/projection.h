@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,7 +35,7 @@ namespace MR
 
 
     class ModelViewProjection
-    { NOMEMALIGN
+    { 
       public:
         void set_viewport (int x, int y, int w, int h) {
           viewport[0] = x;
@@ -170,7 +170,7 @@ namespace MR
 
 
     class Projection : public ModelViewProjection
-    { NOMEMALIGN
+    { 
       public:
         Projection (GL::Area* parent, const GL::Font& font) :
             glarea (parent),

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ namespace MR
 
       // Classes to receive input from the colourmap buttons and act accordingly
       class NodeColourObserver : public ColourMapButtonObserver
-      { MEMALIGN(NodeColourObserver)
+      { 
         public:
           NodeColourObserver (Connectome& connectome) : master (connectome) { }
           void selected_colourmap (size_t, const ColourMapButton&) override;
@@ -45,7 +45,7 @@ namespace MR
           Connectome& master;
       };
       class EdgeColourObserver : public ColourMapButtonObserver
-      { MEMALIGN(EdgeColourObserver)
+      { 
         public:
           EdgeColourObserver (Connectome& connectome) : master (connectome) { }
           void selected_colourmap (size_t, const ColourMapButton&) override;

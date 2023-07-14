@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,13 +40,13 @@ namespace MR {
    * from a two-dimensional position to an array index. If a boolean value for
    * each voxel is required for three- or four-dimensional data, use of an
    * Image::BufferScratch<bool> is recommended. */
-  class BitSet { NOMEMALIGN
+  class BitSet { 
 
     public:
 
       /*! convenience classes that allow the programmer to access and modify
        * the bit wise information using the [] operator. */
-      class Value { NOMEMALIGN
+      class Value { 
         public:
         Value (BitSet& master, const size_t offset) : d (master), p (offset) { assert (p < d.size()); }
         operator bool()                  const { return d.test (p); }
@@ -59,7 +59,7 @@ namespace MR {
         BitSet& d;
         const size_t p;
       };
-      class ConstValue { NOMEMALIGN
+      class ConstValue { 
         public:
           ConstValue (const BitSet& master, const size_t offset) : d (master), p (offset) { assert (p < d.size()); }
           operator bool()                  const { return d.test (p); }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ namespace MR
       {
 
 
-        class Tissues { MEMALIGN(Tissues)
+        class Tissues { 
 
           public:
             Tissues () : cgm (0.0), sgm (0.0), wm (0.0), csf (0.0), path (0.0), is_valid (false) { }

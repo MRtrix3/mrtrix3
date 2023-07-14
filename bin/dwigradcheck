@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -92,7 +92,7 @@ def execute(): #pylint: disable=unused-variable
   # Note that gradient table must be explicitly loaded, since there may not
   #   be one in the image header (user may be relying on -grad or -fslgrad input options)
   if not os.path.exists('mask.mif'):
-    run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' data.mif mask.mif -grad grad.b')
+    run.command('dwi2mask ' + CONFIG['Dwi2maskAlgorithm'] + ' data.mif mask.mif -grad grad.b')
 
   # How many tracks are we going to generate?
   number_option = ' -select ' + str(app.ARGS.number)

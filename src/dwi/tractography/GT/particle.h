@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ namespace MR {
          * A particle is a segment of a track and consists of a position and a direction.
          */
         class Particle
-        { MEMALIGN(Particle)
+        { 
         public:
           
           // Particle length
@@ -224,11 +224,11 @@ namespace MR {
          * and to represent a pending fibre track.
          */
         struct ParticleEnd
-        { MEMALIGN(ParticleEnd)
-          Particle* par;
-          int alpha;
-          float e_conn;
-          double p_suc;
+        { 
+          Particle* par = nullptr;
+          int alpha = 0;
+          float e_conn = 0.0;
+          double p_suc = 1.0;
         };
         
         

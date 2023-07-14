@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,7 +35,7 @@ namespace MR
       {
 
         class Volume : public Base
-        { MEMALIGN(Volume)
+        { 
           public:
             Volume () :
               Base (FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold | ShaderClipping),
@@ -51,7 +51,7 @@ namespace MR
             GL::Texture depth_texture;
             vector<GL::vec4> clip;
 
-            class Shader : public Displayable::Shader { MEMALIGN(Shader)
+            class Shader : public Displayable::Shader { 
               public:
                 Shader (const Volume& mode) : mode (mode), active_clip_planes (0), cliphighlight (true), clipintersectionmode (false) { }
                 virtual std::string vertex_shader_source (const Displayable& object);

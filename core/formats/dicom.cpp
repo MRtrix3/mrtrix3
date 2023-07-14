@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,9 +31,11 @@ namespace MR
 
     std::unique_ptr<ImageIO::Base> DICOM::read (Header& H) const
     {
-      if (!Path::is_dir (H.name())) 
-        if (!Path::has_suffix (H.name(), ".dcm"))
-          return std::unique_ptr<ImageIO::Base>();
+      if (Path::is_dir (H.name())) {
+        INFO ("Image path \"" + H.name() + "\" is a directory; will attempt to parse as DICOM series");
+      } else if (!Path::has_suffix (H.name(), ".dcm")) {
+        return std::unique_ptr<ImageIO::Base>();
+      }
 
       File::Dicom::Tree dicom;
 
@@ -41,7 +43,7 @@ namespace MR
       dicom.sort();
 
       auto series = File::Dicom::select_func (dicom);
-      if (series.empty()) 
+      if (series.empty())
         throw Exception ("no DICOM series selected");
 
       return dicom_to_mapper (H, series);

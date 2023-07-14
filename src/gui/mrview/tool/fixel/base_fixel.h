@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,12 +42,12 @@ namespace MR
       namespace Tool
       {
 
-        class BaseFixel : public Displayable { MEMALIGN (BaseFixel)
+        class BaseFixel : public Displayable { 
           public:
             BaseFixel (const std::string&, Fixel&);
             ~BaseFixel();
 
-              class Shader : public Displayable::Shader { MEMALIGN (Shader)
+              class Shader : public Displayable::Shader { 
                 public:
                   Shader () : do_crop_to_slice (false), bidirectional (false), color_type (Direction), scale_type (Value) { }
                   std::string vertex_shader_source   (const Displayable&) override;
@@ -219,7 +219,7 @@ namespace MR
               }
 
             protected:
-              struct IntPointHasher { NOMEMALIGN
+              struct IntPointHasher { 
                 size_t operator () (const std::array<int, 3>& v) const {
                   // This hashing function works best if the fixel image dimensions
                   // are bounded above by 2^10 x 2^10 x 2^10 = 1024 x 1024 x 1024
@@ -308,7 +308,7 @@ namespace MR
         // Wrapper to generically store fixel data
 
         template <typename ImageType> class FixelType : public BaseFixel
-        { MEMALIGN (FixelType<ImageType>)
+        { 
           public:
             FixelType (const std::string& filename, Fixel& fixel_tool) :
             BaseFixel (filename, fixel_tool),
