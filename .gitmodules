@@ -6,6 +6,3 @@
 	path = testing/scripts/data
 	url = https://github.com/MRtrix3/script_test_data.git
 	ignore = dirty
-[submodule "vcpkg"]
-	path = vcpkg
-	url = https://github.com/microsoft/vcpkg.git

@@ -1,8 +1,0 @@
-{
-    "name" : "mrtrix",
-    "version" : "3.0.4",
-    "dependencies" : [
-        "eigen3",
-        { "name" : "fftw3", "platform" : "windows" }
-    ]
-}
