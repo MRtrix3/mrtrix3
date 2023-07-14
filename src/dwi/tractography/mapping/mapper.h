@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -53,7 +53,7 @@ namespace MR {
 
 
         class TrackMapperBase
-        { MEMALIGN(TrackMapperBase)
+        { 
 
           public:
             template <class HeaderType>
@@ -356,7 +356,7 @@ namespace MR {
 
 
         class TrackMapperTWI : public TrackMapperBase
-        { MEMALIGN(TrackMapperTWI)
+        { 
           public:
             template <class HeaderType>
             TrackMapperTWI (const HeaderType& template_image, const contrast_t c, const tck_stat_t s) :

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -353,7 +353,7 @@ namespace MR
         // Construct class functors necessary to calculate, for each voxel intersected by the
         //   surface, the partial volume fraction
         class Source
-        { MEMALIGN(Source)
+        { 
           public:
             Source (const Vox2Poly& data) :
                 data (data),
@@ -374,7 +374,7 @@ namespace MR
         };
 
         class Pipe
-        { NOMEMALIGN
+        { 
           public:
             Pipe (const Mesh& mesh, const vector<Eigen::Vector3d>& polygon_normals) :
                 mesh (mesh),
@@ -523,7 +523,7 @@ namespace MR
         };
 
         class Sink
-        { MEMALIGN(Sink)
+        { 
           public:
             Sink (Image<float>& image, const size_t voxel_count) :
                 image (image),

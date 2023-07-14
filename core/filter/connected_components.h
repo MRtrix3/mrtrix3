@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ namespace MR
 
 
     class Connector
-    { NOMEMALIGN
+    { 
 
       public:
 
@@ -49,7 +49,7 @@ namespace MR
         //   class, to define the volumes on the fourth axis that
         //   correspond to neighbouring directions using a Directions::Set.
         class Adjacency
-        { NOMEMALIGN
+        { 
           public:
             typedef Voxel2Vector::index_t index_t;
 
@@ -93,7 +93,7 @@ namespace MR
 
 
         class Cluster
-        { NOMEMALIGN
+        { 
           public:
             Cluster (const uint32_t l) :
                 label (l),
@@ -225,7 +225,7 @@ namespace MR
      *
      * \endcode
      */
-    class ConnectedComponents : public Base { MEMALIGN(ConnectedComponents)
+    class ConnectedComponents : public Base { 
       public:
 
         template <class HeaderType>
@@ -233,7 +233,8 @@ namespace MR
             Base (in),
             enabled_axes (ndim(), true),
             largest_only (false),
-            do_26_connectivity (false)
+            do_26_connectivity (false),
+            minsize (0)
         {
           if (this->ndim() > 4)
             throw Exception ("Cannot run connected components analysis with more than 4 dimensions");
@@ -275,8 +276,10 @@ namespace MR
           // Generate a lookup table to map input cluster index to
           //   output cluster index following cluster-size sorting
           vector<uint32_t> index_lookup (clusters.size() + 1, 0);
-          for (uint32_t c = 0; c < clusters.size(); c++)
+          for (uint32_t c = 0; c < clusters.size(); c++) {
+            if (clusters[c].size < minsize) break;
             index_lookup[clusters[c].label] = c + 1;
+          }
 
           for (auto l = Loop (out) (out); l; ++l)
             out.value() = 0;
@@ -330,10 +333,17 @@ namespace MR
         }
 
 
+        void set_minsize (uint32_t value)
+        {
+          minsize = value;
+        }
+
+
       protected:
         vector<bool> enabled_axes;
         bool largest_only;
         bool do_26_connectivity;
+        uint32_t minsize;
     };
     //! @}
   }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -195,7 +195,7 @@ void usage ()
 
 
 template<typename T>
-class __copy_fod { MEMALIGN(__copy_fod<T>)
+class __copy_fod { 
   public:
     __copy_fod (const int lmax, const double weight, const bool apodise)
       : w(weight), a(apodise), apo (lmax), SH_in (Math::SH::NforL(lmax)), SH_out (SH_in.size()) { }

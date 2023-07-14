@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -156,7 +156,7 @@ void write_fixel_output (const std::string& filename,
 //   specific subject based on the string path to the image file for
 //   that subject
 class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
-{ MEMALIGN(SubjectFixelImport)
+{ 
   public:
     SubjectFixelImport (const std::string& path) :
         Math::Stats::SubjectDataImportBase (path),

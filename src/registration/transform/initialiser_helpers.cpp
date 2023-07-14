@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -63,7 +63,7 @@ namespace MR
         }
 
         template <class ImageType, class MaskType>
-          class WeightedMomentsFunctor { MEMALIGN(WeightedMomentsFunctor)
+          class WeightedMomentsFunctor { 
           public:
             WeightedMomentsFunctor (const ImageType& image,
                                     const MaskType& mask,
@@ -215,7 +215,7 @@ namespace MR
         }
 
         template <class ImageType, class MaskType>
-        class WeightedMassFunctor { MEMALIGN(WeightedMassFunctor)
+        class WeightedMassFunctor { 
         public:
           WeightedMassFunctor (const ImageType& image,
             const MaskType& mask,

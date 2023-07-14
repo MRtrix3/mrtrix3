@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -107,7 +107,7 @@ void usage ()
 
 
 
-class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
+class Segmented_FOD_receiver { 
 
   public:
     Segmented_FOD_receiver (const Header& header, const index_type maxnum = 0, bool dir_from_peak = false) :
@@ -127,7 +127,7 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 
   private:
 
-    struct Primitive_FOD_lobe { MEMALIGN (Primitive_FOD_lobe)
+    struct Primitive_FOD_lobe { 
       Eigen::Vector3f dir;
       float integral;
       float max_peak_amp;
@@ -136,7 +136,7 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
     };
 
 
-    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { MEMALIGN (Primitive_FOD_lobes)
+    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { 
       public:
         Primitive_FOD_lobes (const FOD_lobes& in, const index_type maxcount, bool dir_from_peak) :
             vox (in.vox)
@@ -240,7 +240,7 @@ void Segmented_FOD_receiver::commit ()
     Fixel::check_fixel_size (*index_image, *disp_image);
   }
 
-  size_t offset (0), lobe_index (0);
+  size_t offset = 0;
 
 
   for (const auto& vox_fixels : lobes) {
@@ -283,7 +283,6 @@ void Segmented_FOD_receiver::commit ()
     }
 
     offset += n_vox_fixels;
-    lobe_index ++;
   }
 
   assert (offset == fixel_count);

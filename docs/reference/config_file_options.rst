@@ -277,6 +277,28 @@ List of MRtrix3 configuration file options
      The software to be used for registration and transformation
      by default within the "dwi2mask template" algorithm.
 
+.. option:: DwibiasnormmaskMaskAlgorithm
+
+    *default: threshold*
+
+     For the "dwibiasnormmask" command, specify the algorithm that
+     will be used for brain masking across the iterative process.
+     Note that the image data that are used to derive the mask
+     may be different between the various options.
+     Available options are as follows.
+     dwi2mask: Invoke the MRtrix3 command dwi2mask using the
+     bias-field-corrected DWI series, using whatever algorithm has
+     been specified as the default for that command
+     (see config file option Dwi2maskAlgorithm).
+     fslbet: Use FSL command "bet" on the ODF tissue sum image.
+     hdbet: Use HD-BET on the ODF tissue sum image.
+     mrthreshold: Use MRtrix3 command "mrthreshold" on the ODF tissue
+     sum image, allowing it to determine the appropriate threshold
+     automatically; some mask cleanup operations will additionally be used.
+     synthstrip: Use FreeSurfer's SynthStrip on the ODF tissue sum image.
+     threshold: Apply a 0.5 threshold to the ODF tissue sum image;
+     some mask cleanup operations will additionally be used.
+
 .. option:: FailOnWarn
 
     *default: 0 (false)*

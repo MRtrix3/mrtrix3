@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,54 +33,54 @@ namespace MR
       //! \cond skip
       namespace {
         template<class T>
-        struct Void { NOMEMALIGN
+        struct Void { 
           using type = void;
         };
 
         template <class MetricType, typename U = void>
-        struct is_neighbourhood_metric { NOMEMALIGN
+        struct is_neighbourhood_metric { 
           using no = int;
         };
 
         template <class MetricType>
-        struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> { NOMEMALIGN
+        struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> { 
           using yes = int;
         };
 
         template <class MetricType, typename U = void>
-        struct use_processed_image { NOMEMALIGN
+        struct use_processed_image { 
           using no = int;
         };
 
         template <class MetricType>
-        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> { NOMEMALIGN
+        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> { 
           using yes = int;
         };
 
         template <class MetricType, typename U = void>
-        struct cost_is_vector { NOMEMALIGN
+        struct cost_is_vector { 
           using no = int;
         };
 
         template <class MetricType>
-        struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> { NOMEMALIGN
+        struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> { 
           using yes = int;
         };
 
         template <class MetricType, typename U = void>
-        struct is_asymmetric { NOMEMALIGN
+        struct is_asymmetric { 
           using no = int;
         };
 
         template <class MetricType>
-        struct is_asymmetric<MetricType, typename Void<typename MetricType::is_asymmetric_type>::type> { NOMEMALIGN
+        struct is_asymmetric<MetricType, typename Void<typename MetricType::is_asymmetric_type>::type> { 
           using yes = int;
         };
       }
       //! \endcond
 
       template <class MetricType, class ParamType>
-      class ThreadKernel { MEMALIGN(ThreadKernel)
+      class ThreadKernel { 
         public:
           ThreadKernel (
               const MetricType& metric,
@@ -328,7 +328,7 @@ namespace MR
       };
 
       template <class MetricType, class ParamType>
-      struct StochasticThreadKernel { MEMALIGN(StochasticThreadKernel)
+      struct StochasticThreadKernel { 
         public:
           StochasticThreadKernel (
               const vector<size_t>& inner_axes,

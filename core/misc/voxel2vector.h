@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ namespace MR
   // A class to achieve a mapping from a voxel position in an image
   //   with any number of axes, to an index within a 1D vector of data.
   class Voxel2Vector
-  { MEMALIGN(Voxel2Vector)
+  { 
     public:
 
       typedef uint32_t index_t;

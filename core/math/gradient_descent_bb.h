@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ namespace MR
     //! \addtogroup Optimisation
     // @{
 
-    class LinearUpdateBB { NOMEMALIGN
+    class LinearUpdateBB { 
       public:
         template <typename ValueType>
           inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
@@ -48,7 +48,7 @@ namespace MR
     //! Computes the minimum of a function using a Barzilai Borwein gradient descent approach. ENH: implement stabilised version https://arxiv.org/abs/1907.06409
     template <class Function, class UpdateFunctor=LinearUpdateBB>
       class GradientDescentBB
-      { MEMALIGN(GradientDescentBB<Function,UpdateFunctor>)
+      { 
         public:
           using value_type = typename Function::value_type;
 

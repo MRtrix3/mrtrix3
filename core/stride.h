@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -71,7 +71,7 @@ namespace MR
     namespace
     {
       template <class HeaderType> 
-        class Compare { NOMEMALIGN
+        class Compare { 
           public:
             Compare (const HeaderType& header) : S (header) { }
             bool operator() (const size_t a, const size_t b) const {
@@ -85,7 +85,7 @@ namespace MR
             const HeaderType& S;
         };
 
-      class Wrapper { NOMEMALIGN
+      class Wrapper { 
         public:
           Wrapper (List& strides) : S (strides) { }
           size_t ndim () const {
@@ -103,7 +103,7 @@ namespace MR
 
       template <class HeaderType> 
         class InfoWrapper : public Wrapper
-      { NOMEMALIGN
+      { 
         public:
           InfoWrapper (List& strides, const HeaderType& header) : Wrapper (strides), D (header) {
             assert (ndim() == D.ndim());

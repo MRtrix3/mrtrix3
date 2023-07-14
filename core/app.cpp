@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ namespace MR
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2021 the MRtrix3 contributors.\n"
+       "Copyright (c) 2008-2023 the MRtrix3 contributors.\n"
        "\n"
        "This Source Code Form is subject to the terms of the Mozilla Public\n"
        "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
@@ -128,7 +128,7 @@ namespace MR
       inline void get_matches (vector<const Option*>& candidates, const OptionGroup& group, const std::string& stub)
       {
         for (size_t i = 0; i < group.size(); ++i) {
-          if (stub.compare (0, stub.size(), group[i].id, stub.size()) == 0)
+          if (stub.compare (0, stub.size(), std::string(group[i].id), 0, stub.size()) == 0)
             candidates.push_back (&group[i]);
         }
       }

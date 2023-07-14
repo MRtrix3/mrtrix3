@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,7 +35,7 @@ namespace MR
 
     template <int N, class Functor, class... ImageType>
       struct RandomThreadedLoopRunInner
-      { MEMALIGN(RandomThreadedLoopRunInner<N,Functor,ImageType...>)
+      { 
         const vector<size_t>& outer_axes;
         decltype (Loop (outer_axes)) loop;
         typename std::remove_reference<Functor>::type func;
@@ -69,7 +69,7 @@ namespace MR
 
     template <class Functor, class... ImageType>
       struct RandomThreadedLoopRunInner<0,Functor,ImageType...>
-      { MEMALIGN(RandomThreadedLoopRunInner<0,Functor,ImageType...>)
+      { 
         const vector<size_t>& outer_axes;
         const vector<size_t> inner;
         decltype (Loop (outer_axes)) loop;
@@ -138,7 +138,7 @@ namespace MR
 
 
     template <class OuterLoopType>
-      struct RandomThreadedLoopRunOuter { MEMALIGN(RandomThreadedLoopRunOuter<OuterLoopType>)
+      struct RandomThreadedLoopRunOuter { 
         Iterator iterator;
         OuterLoopType outer_loop;
         vector<size_t> inner_axes;
@@ -155,7 +155,7 @@ namespace MR
               return;
             }
 
-            struct Shared { MEMALIGN(Shared)
+            struct Shared { 
               Iterator& iterator;
               decltype (outer_loop (iterator)) loop;
               std::mutex mutex;
@@ -170,7 +170,7 @@ namespace MR
               }
             } shared = { iterator, outer_loop (iterator) };
 
-            struct PerThread { MEMALIGN(PerThread)
+            struct PerThread { 
               Shared& shared;
               typename std::remove_reference<Functor>::type func;
               void execute () {

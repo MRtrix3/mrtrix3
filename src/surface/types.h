@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ namespace MR
     using QuadList = vector<Quad>;
 
     class Vox : public Eigen::Array3i
-    { MEMALIGN (Vox)
+    { 
       public:
         using Eigen::Array3i::Array3i;
         Vox () : Eigen::Array3i (-1, -1, -1) { }

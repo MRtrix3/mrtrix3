@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,10 +45,6 @@ namespace MR
                 class ProcMaskType = Image<bool>,
                 class ProcessedMaskInterpolatorType = Interp::Nearest<Image<bool>>>
       class Params {
-        MEMALIGN (Params<TransformType,Im1ImageType,Im2ImageType,MidwayImageType,
-            Im1MaskType,Im2MaskType,Im1ImageInterpType,Im2ImageInterpType,
-            Im1MaskInterpolatorType,Im2MaskInterpolatorType,ProcImageType,ProcImageInterpolatorType,
-            ProcMaskType,ProcessedMaskInterpolatorType>)
         public:
 
           using TransformParamType = typename TransformType::ParameterType;
@@ -148,7 +144,7 @@ namespace MR
           template <class OptimiserType>
             void optimiser_update (OptimiserType& optim, const ssize_t overlap_count) {
               DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
-              if (!is_finite(optim.state())) {
+              if (!optim.state().allFinite()) {
                 CONSOLE ("last valid transformation:");
                 transformation.debug();
                 CONSOLE ("last optimisation step ran using " + str(optim.function_evaluations()) + " cost function evaluations.");

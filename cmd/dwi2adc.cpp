@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -47,13 +47,18 @@ using value_type = float;
 
 
 
-class DWI2ADC { MEMALIGN(DWI2ADC)
+class DWI2ADC {
   public:
     DWI2ADC (const Eigen::MatrixXd& binv, size_t dwi_axis) :
       dwi (binv.cols()),
       adc (2),
       binv (binv),
       dwi_axis (dwi_axis) { }
+    DWI2ADC (const DWI2ADC& that) :
+      dwi (that.dwi.size()),
+      adc (that.adc.size()),
+      binv (that.binv),
+      dwi_axis (that.dwi_axis) {}
 
     template <class DWIType, class ADCType>
       void operator() (DWIType& dwi_image, ADCType& adc_image) {

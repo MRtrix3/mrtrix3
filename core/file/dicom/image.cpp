@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,15 +27,10 @@ namespace MR {
     namespace Dicom {
 
 
-
       void Image::parse_item (Element& item, const std::string& dirname)
       {
-
-        for (const auto& seq : item.parents) {
-          // ignore anything within IconImageSequence:
-          if (seq.group ==  0x0088U && seq.element == 0x0200U)
-            return;
-        }
+        if (item.ignore_when_parsing())
+          return;
 
         switch (item.group) {
           case 0x0008U:
@@ -115,6 +110,12 @@ namespace MR {
               case 0x1314U:
                 flip_angle = item.get_float (0, flip_angle);
                 return;
+              case 0x9074U:
+                acquisition_time = item.get_datetime().second;
+                return;
+              case 0x9082U:
+                echo_time = item.get_float (0, echo_time);
+                return;
               case 0x9087U:
                 { // ugly hack to handle badly formatted Philips data:
                   default_type v = item.get_float (0, bvalue);
@@ -136,13 +137,13 @@ namespace MR {
           case 0x0019U:
             switch (item.element) { // GE DW encoding info:
               case 0x10BBU:
-                G[0] = item.get_float (0, G[0]);
+                G_prs[0] = item.get_float (0, G[0]);
                 return;
               case 0x10BCU:
-                G[1] = item.get_float (0, G[1]);
+                G_prs[1] = item.get_float (0, G[1]);
                 return;
               case 0x10BDU:
-                G[2] = item.get_float (0, G[2]);
+                G_prs[2] = item.get_float (0, G[2]);
                 return;
               case 0x100CU: //Siemens private DW encoding tags:
                 bvalue = item.get_float (0, bvalue);
@@ -161,6 +162,9 @@ namespace MR {
             return;
           case 0x0020U:
             switch (item.element) {
+              case 0x000EU:
+                ignore_series_num = item.is_in_series_ref_sequence();
+                return;
               case 0x0011U:
                 series_num = item.get_uint (0, series_num);
                 return;
@@ -205,6 +209,9 @@ namespace MR {
             return;
           case 0x0028U:
             switch (item.element) {
+              case 0x0002U:
+                samples_per_pixel = item.get_uint (0, samples_per_pixel);
+                return;
               case 0x0010U:
                 dim[1] = item.get_uint (0, dim[1]);
                 return;
@@ -244,12 +251,17 @@ namespace MR {
             if (item.element == 0x1039U) {
               if (item.get_int().size())
                 bvalue = item.get_int()[0];
-              DW_scheme_wrt_image = true;
             }
             return;
           case 0x2001U: // Philips DW encoding info:
-            if (item.element == 0x1003)
-              bvalue = item.get_float (0, bvalue);
+            switch (item.element) {
+              case 0x1003:
+                bvalue = item.get_float (0, bvalue);
+                return;
+              case 0x1004:
+                philips_orientation = item.get_string(0, "\0")[0];
+                return;
+            }
             return;
           case 0x2005U: // Philips DW encoding info:
             switch (item.element) {
@@ -261,6 +273,9 @@ namespace MR {
                 return;
               case 0x10B2U:
                 G[2] = item.get_float (0, G[2]);
+                return;
+              case 0x1413:
+                grad_number = item.get_int()[0];
                 return;
             }
             return;
@@ -281,7 +296,7 @@ namespace MR {
                   if (in_frames) {
                     calc_distance();
                     frames.push_back (std::shared_ptr<Frame> (new Frame (*this)));
-                    frame_offset += dim[0] * dim[1] * (bits_alloc/8);
+                    frame_offset += dim[0] * dim[1] * (bits_alloc/8) * samples_per_pixel;
                   }
                   else
                     in_frames = true;
@@ -536,8 +551,8 @@ namespace MR {
         for (auto frame_it = frames.cbegin()+1; frame_it != frames.cend(); ++frame_it) {
           const Frame& frame (**frame_it);
 
-          if (frame.series_num != previous->series_num ||
-              frame.acq != previous->acq)
+          if ((!frame.ignore_series_num && frame.series_num != previous->series_num ) ||
+              frame.acq != previous->acq || frame.distance < previous->distance)
             update_count (2, dim, index);
           else if (frame.distance != previous->distance)
             update_count (1, dim, index);
@@ -601,29 +616,33 @@ namespace MR {
         std::string dw_scheme;
         const size_t nDW = frames.size() / nslices;
 
-        const bool rotate_DW_scheme = frames[0]->DW_scheme_wrt_image;
         bool report_negative_bvalues = false;
         for (size_t n = 0; n < nDW; ++n) {
           const Frame& frame (*frames[n*nslices]);
-          std::array<default_type,4> g = {{ 0.0, 0.0, 0.0, frame.bvalue }};
-          if (g[3] < 0) {
-            g[3] = 0;
+          Eigen::Vector3d g = Eigen::Vector3d::Zero();
+          double bvalue = frame.bvalue;
+          if (bvalue < 0) {
+            bvalue = 0;
             report_negative_bvalues = true;
           }
-          if (g[3] && std::isfinite (frame.G[0]) && std::isfinite (frame.G[1]) && std::isfinite (frame.G[2])) {
-
-            if (rotate_DW_scheme) {
-              g[0] = image_transform(0,0)*frame.G[0] + image_transform(0,1)*frame.G[1] - image_transform(0,2)*frame.G[2];
-              g[1] = image_transform(1,0)*frame.G[0] + image_transform(1,1)*frame.G[1] - image_transform(1,2)*frame.G[2];
-              g[2] = image_transform(2,0)*frame.G[0] + image_transform(2,1)*frame.G[1] - image_transform(2,2)*frame.G[2];
-            } else {
+          if (bvalue) {
+           if (frame.G.allFinite()) {
               g[0] = -frame.G[0];
               g[1] = -frame.G[1];
               g[2] =  frame.G[2];
+           }
+           else if (frame.G_prs.allFinite()) {
+             Eigen::Matrix<double,3,3> T = image_transform.matrix().leftCols(3);
+             T.col(2) *= -1.0;
+             // if PE direction along x, need to switch X & Y:
+             if (frame.pe_axis == 0) {
+               T.col(0).swap (T.col(1));
+               T.col(0) *= -1.0;
+             }
+             g = T * frame.G_prs;
             }
-
           }
-          add_line (dw_scheme, str(g[0]) + "," + str(g[1]) + "," + str(g[2]) + "," + str(g[3]));
+          add_line (dw_scheme, str(g[0]) + "," + str(g[1]) + "," + str(g[2]) + "," + str(bvalue));
         }
 
         if (report_negative_bvalues)

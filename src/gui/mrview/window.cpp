@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -256,7 +256,7 @@ namespace MR
           GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
 
-          setDockOptions (AllowTabbedDocks | VerticalTabs);
+          setDockOptions (AllowTabbedDocks);
           setDocumentMode (true);
 
           //CONF option: IconSize
@@ -274,7 +274,7 @@ namespace MR
           QMenu* menu;
           QToolButton* button;
 
-          setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
+          setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::North);
 
           //CONF option: MRViewDockFloating
           //CONF default: 0 (false)
@@ -1025,7 +1025,7 @@ namespace MR
           return;
 
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (tools_floating);
-        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (visibility_slot (bool)));
 
         if (!tools_floating) {
 
@@ -1676,7 +1676,7 @@ namespace MR
 
         int group = get_mouse_mode();
 
-        if (buttons_ == Qt::MidButton)
+        if (buttons_ == Qt::MiddleButton)
           mouse_action = Pan;
         else if (group == 1) {
           if (buttons_ == Qt::LeftButton) {
@@ -2089,12 +2089,12 @@ namespace MR
             return;
           }
 
-          if (opt.opt->is ("orientationlabel")) {
+          if (opt.opt->is ("orientlabel")) {
             try {
               show_orientation_labels_action->setChecked (to<bool> (opt[0]));
             }
             catch (Exception& E) {
-              throw Exception ("-orientationlabel option expects a boolean");
+              throw Exception ("-orientlabel option expects a boolean");
             }
             glarea->update();
             return;
@@ -2214,7 +2214,7 @@ namespace MR
           + Option ("voxelinfo", "Show or hide voxel information overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("orientationlabel", "Show or hide orientation label overlay.").allow_multiple()
+          + Option ("orientlabel", "Show or hide orientation label overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
           + Option ("colourbar", "Show or hide colourbar overlay.").allow_multiple()
@@ -2255,6 +2255,3 @@ namespace MR
     }
   }
 }
-
-
-

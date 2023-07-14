@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,7 +42,7 @@ namespace MR
 
       using namespace MR::DWI::Tractography::Tracking;
 
-        class ACT_Method_additions { MEMALIGN(ACT_Method_additions)
+        class ACT_Method_additions { 
 
           public:
             ACT_Method_additions (const SharedBase& shared) :

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,7 +27,7 @@ namespace MR {
       namespace GT {
         
         class EnergyComputer
-        { MEMALIGN(EnergyComputer)
+        { 
         public:
           EnergyComputer(Stats& s) : stats(s) { }
           
@@ -55,7 +55,7 @@ namespace MR {
         
         
         class EnergySumComputer : public EnergyComputer
-        { MEMALIGN(EnergySumComputer)
+        { 
         public:
           
           // Copy-constructable via clone method

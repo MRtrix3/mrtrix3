@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ namespace MR {
          */
         template <typename T = float >
         class SpatialLock
-        { MEMALIGN(SpatialLock)
+        { 
         public:
           using value_type = T;
           using point_type = Eigen::Matrix<value_type, 3, 1>;
@@ -58,7 +58,7 @@ namespace MR {
 
 
           struct Guard
-          { NOMEMALIGN
+          { 
           public:
             Guard(SpatialLock& l) : lock(l), idx(-1) { }
 

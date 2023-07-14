@@ -40,10 +40,10 @@ WORKDIR /opt/art
 RUN curl -fsSL https://osf.io/73h5s/download \
     | tar xz --strip-components 1
 
-# Download minified ANTs (2.3.4).
+# Download minified ANTs (2.3.4-2).
 FROM base-builder as ants-installer
 WORKDIR /opt/ants
-RUN curl -fsSL https://osf.io/3ad69/download \
+RUN curl -fsSL https://osf.io/yswa4/download \
     | tar xz --strip-components 1
 
 # Download FreeSurfer files.
@@ -51,10 +51,10 @@ FROM base-builder as freesurfer-installer
 WORKDIR /opt/freesurfer
 RUN curl -fsSLO https://raw.githubusercontent.com/freesurfer/freesurfer/v7.1.1/distribution/FreeSurferColorLUT.txt
 
-# Download minified FSL (6.0.4)
+# Download minified FSL (6.0.4-2)
 FROM base-builder as fsl-installer
 WORKDIR /opt/fsl
-RUN curl -fsSL https://osf.io/dv258/download \
+RUN curl -fsSL https://osf.io/dtep4/download \
     | tar xz --strip-components 1
 
 # Build final image.
@@ -63,6 +63,7 @@ FROM base AS final
 # Install runtime system dependencies.
 RUN apt-get -qq update \
     && apt-get install -yq --no-install-recommends \
+        binutils \
         dc \
         less \
         libfftw3-3 \
@@ -73,6 +74,7 @@ RUN apt-get -qq update \
         libqt5core5a \
         libqt5gui5 \
         libqt5network5 \
+        libqt5svg5 \
         libqt5widgets5 \
         libquadmath0 \
         libtiff5 \
@@ -96,5 +98,9 @@ ENV ANTSPATH="/opt/ants/bin" \
     LD_LIBRARY_PATH="/opt/fsl/lib:$LD_LIBRARY_PATH" \
     PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/bin:$PATH"
 
-WORKDIR /work
+# Fix "Singularity container cannot load libQt5Core.so.5" on CentOS 7
+RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5 \
+    && ldconfig \
+    && apt-get purge -yq binutils
+
 CMD ["/bin/bash"]

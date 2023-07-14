@@ -15,13 +15,22 @@ Usage
 
     population_template input_dir template [ options ]
 
--  *input_dir*: Input directory containing all images used to build the template
--  *template*: Corresponding output template image. For multi-contrast registration, provide multiple paired input_dir and template arguments. Example: WM_dir WM_template.mif GM_dir GM_template.mif
+-  *input_dir*: Directory containing all input images of a given contrast
+-  *template*: Output template image
 
 Description
 -----------
 
 First a template is optimised with linear registration (rigid and/or affine, both by default), then non-linear registration is used to optimise the template further.
+
+Example usages
+--------------
+
+-   *Multi-contrast registration*::
+
+        $ population_template input_WM_ODFs/ output_WM_template.mif input_GM_ODFs/ output_GM_template.mif
+
+    When performing multi-contrast registration, the input directory and corresponding output template image for a given contrast are to be provided as a pair, with the pairs corresponding to different contrasts provided sequentially.
 
 Options
 -------
@@ -57,6 +66,8 @@ Input, output and general options
 
 - **-copy_input** Copy input images and masks into local scratch directory.
 
+- **-delete_temporary_files** Delete temporary files from scratch directory during template creation.
+
 Options for the non-linear registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -76,6 +87,8 @@ Options for the linear registration
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - **-linear_no_pause** Do not pause the script if a linear registration seems implausible
+
+- **-linear_no_drift_correction** Deactivate correction of template appearance (scale and shear) over iterations
 
 - **-linear_estimator** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: None (no robust estimator used)
 
@@ -141,7 +154,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

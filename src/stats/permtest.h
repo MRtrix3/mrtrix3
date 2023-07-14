@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,7 +54,7 @@ namespace MR
 
 
       /*! A class to pre-compute the empirical enhanced statistic image for non-stationarity correction */
-      class PreProcessor { MEMALIGN (PreProcessor)
+      class PreProcessor { 
         public:
           PreProcessor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                         const std::shared_ptr<EnhancerBase> enhancer,
@@ -83,7 +83,7 @@ namespace MR
 
 
       /*! A class to perform the permutation testing */
-      class Processor { MEMALIGN (Processor)
+      class Processor { 
         public:
           Processor (const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
                      const std::shared_ptr<EnhancerBase> enhancer,

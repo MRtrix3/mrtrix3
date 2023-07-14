@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ namespace MR
 
     namespace {
 
-      class LinearUpdate { NOMEMALIGN
+      class LinearUpdate { 
         public:
           template <typename ValueType>
             inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
@@ -52,7 +52,7 @@ namespace MR
     //! Computes the minimum of a function using a gradient descent approach.
     template <class Function, class UpdateFunctor=LinearUpdate>
       class GradientDescent
-      { MEMALIGN(GradientDescent<Function,UpdateFunctor>)
+      { 
         public:
           using value_type = typename Function::value_type;
 

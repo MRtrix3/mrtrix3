@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -105,7 +105,7 @@ namespace MR
                            ") does not match fixel connectivity matrix (" + str(matrix.size()) + ")");
 
         class Source
-        { NOMEMALIGN
+        { 
           public:
             Source (const size_t N) :
                 number (N),
@@ -123,7 +123,7 @@ namespace MR
         };
 
         class Worker
-        { MEMALIGN(Worker)
+        { 
           public:
             Worker (const Smooth& master, const Image<float>& input, const Image<float>& output) :
                 master (master),

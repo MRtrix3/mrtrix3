@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ namespace MR
     namespace Metric
     {
       template <typename ImageType1, typename ImageType2>
-      struct LCCPrecomputeFunctorMasked_Naive { MEMALIGN(LCCPrecomputeFunctorMasked_Naive<ImageType1,ImageType2>)
+      struct LCCPrecomputeFunctorMasked_Naive { 
         template <typename MaskType, typename ImageType3>
         void operator() (MaskType& mask, ImageType3& out) {
           if (!mask.value())
@@ -123,7 +123,7 @@ namespace MR
           ImageType2 in2; // TODO: cache interpolated values for neighbourhood iteration
       };
 
-      class LocalCrossCorrelation { MEMALIGN(LocalCrossCorrelation)
+      class LocalCrossCorrelation { 
           private:
             transform_type midway_v2s;
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR
   {
 
 
-    typedef struct { NOMEMALIGN
+    typedef struct { 
       int sl, ec, dyn, ph, ty, seq, ang, pos, b, grad, asl, ri, rs, ss, pix, size, vox, thick, gap;
     } ParCols;
 
@@ -66,7 +66,7 @@ namespace MR
 
 
 
-    typedef struct { NOMEMALIGN
+    typedef struct { 
       int sl, ec, dyn, ph, ty, seq, asl, pix, size[2];
       float b, grad[3], ri, rs, ss, ang[3], pos[3], vox[2], thick, gap;
     } SliceData;
