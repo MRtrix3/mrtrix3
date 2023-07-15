@@ -31,7 +31,7 @@ function(add_binary_tests file_path)
 
         set(EXEC_DIR1 ${CMAKE_CURRENT_BINARY_DIR})
         set(EXEC_DIR2 ${MRTRIX_MAIN_BINARY_DIR}/cmd)
-        set(EXEC_DIR3 ${MRTRIX_MAIN_BINARY_DIR}/testing/cmd)
+        set(EXEC_DIR3 ${MRTRIX_MAIN_BINARY_DIR}/testing/tools)
 
         add_test(
             NAME bintest_${test_name}
