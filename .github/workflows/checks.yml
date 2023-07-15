@@ -30,11 +30,11 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev python3-numpy
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
-        
+
     - name: configure
       run: ./configure -assert || { cat configure.log; false; }
 
@@ -70,11 +70,11 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+         sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
-      
+
     - name: configure
       run: ./configure -nooptim || { cat configure.log; false; }
 
@@ -88,7 +88,7 @@ jobs:
 
     env:
       CFLAGS: -Werror
-      PACKAGES: "qt5 eigen pkg-config fftw libpng"
+      PACKAGES: "qt5 eigen pkg-config fftw libpng numpy"
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
       CXX_COMPILER_LAUNCHER: sccache
@@ -141,7 +141,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      
+
       - uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
@@ -149,6 +149,7 @@ jobs:
           install: |
             git
             python
+            python-pip
             ${{env.MINGW_PACKAGE_PREFIX}}-bc
             ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
             ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
@@ -160,14 +161,18 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-qt5-svg
             ${{env.MINGW_PACKAGE_PREFIX}}-zlib
 
+      - name: Install numpy
+        run: |
+          pip install numpy
+
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.3
-      
+
       - name: export sccache to msys2 shell
         run: |
           export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
           echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
-          
+
       - name: configure
         run: |
           export CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}}
