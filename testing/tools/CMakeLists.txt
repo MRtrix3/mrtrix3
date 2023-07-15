@@ -10,7 +10,6 @@ function(add_testing_cmd CMD_SRC)
         mrtrix::tests-lib
     )
     set_target_properties(${CMD_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
-    install(TARGETS ${CMD_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endfunction()
 
 
