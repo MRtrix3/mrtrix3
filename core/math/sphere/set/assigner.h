@@ -44,9 +44,8 @@ namespace MR {
 
         private:
 
-          Eigen::Array<index_type, Eigen::Dynamic, Eigen::Dynamic> grid_lookup;
-          default_type az_grid_step, el_grid_step;
-          default_type az_begin, el_begin;
+          vector<index_type> lookup;
+          size_t resolution;
 
 
           void initialise();

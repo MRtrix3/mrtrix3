@@ -29,14 +29,18 @@ namespace MR {
 
       index_type Assigner::operator() (const Eigen::Vector3d& dir) const
       {
-        // TODO The purpose of this operation is to speed up assignment of directions to dixels,
-        //   yet it involves expensive trigonometric operations...
-        // TODO Alternative would be to construct lookup table in Euclidean space
-        Eigen::Vector2d azel;
-        Sphere::cartesian2spherical (dir, azel);
-        const size_t az_index = std::floor ((azel[0] - az_begin) / az_grid_step);
-        const size_t el_index = std::floor ((azel[1] - el_begin) / el_grid_step);
-        return (*this) (dir, grid_lookup (az_index, el_index));
+        auto clamp = [&] (const default_type value) -> ssize_t {
+          return std::min (ssize_t(resolution-1), std::max (ssize_t(0), ssize_t(value)));
+        };
+        const Eigen::Array<ssize_t, 3, 1> indices ({
+          clamp (std::floor (0.5 * (dir[0] + default_type(1.0)) * resolution)),
+          clamp (std::floor (0.5 * (dir[1] + default_type(1.0)) * resolution)),
+          clamp (std::floor (0.5 * (dir[2] + default_type(1.0)) * resolution))
+        });
+        const size_t lookup_index = indices[2]*Math::pow2(resolution) + indices[1]*resolution + indices[0];
+        const size_t guess = lookup[lookup_index];
+        assert (guess != rows());
+        return (*this) (dir, guess);
       }
 
 
@@ -62,33 +66,45 @@ namespace MR {
 
       void Assigner::initialise()
       {
-        const size_t num_az_grids = std::ceil (std::sqrt (2.0 * size()));
-        const size_t num_el_grids = std::ceil (std::sqrt (0.5 * size()));
-        az_grid_step = 2.0 * Math::pi / default_type(num_az_grids);
-        el_grid_step =       Math::pi / default_type(num_el_grids);
-
-        // Grid elements are defined by their lower corners;
-        //   this will be reflected in std::floor() operations for allocation of az-el pairs to grid elements
-        az_begin = -Math::pi;
-        el_begin = 0.0;
-
-        // Rather than storing in a 1D vector, here we're going to construct a 2D matrix
-        grid_lookup = Eigen::Array<index_type, Eigen::Dynamic, Eigen::Dynamic>::Constant (num_az_grids, num_el_grids, size());
-        for (size_t az_index = 0; az_index != num_az_grids; ++az_index) {
-          const default_type az = az_begin + (az_index+0.5)*az_grid_step;
-          for (size_t el_index = 0; el_index != num_el_grids; ++el_index) {
-            const default_type el = el_begin + (el_index+0.5)*el_grid_step;
-            Eigen::Vector3d p;
-            Sphere::spherical2cartesian (Eigen::Vector2d({az, el}), p);
-            const index_type nearest_dir = (*this) (p, 0);
-            grid_lookup (az_index, el_index) = nearest_dir;
+        // Decide on an appropriate resolution of the grid
+        //    Seems reasonable that for direction sets with more directions, we want a higher resolution grid
+        //    Also not clear that there's much penalty to generating a much higher resolution grid:
+        //    calculations are much the same, it's just extra storage / not quite as good caching
+        //    Also bear in mind we're dealing with antipodal symmetry for each direction
+        //    (we could arbitrarily choose just one hemisphere I suppose?)
+        //    Also make it an even number just so that it's symmetric about the origin
+        resolution = std::ceil (std::cbrt(2 * rows())/2.0) * 2;
+        lookup.assign (Math::pow3 (resolution), rows());
+        // Want to know the distance from the centre of the voxel to one of the vertices
+        // The total width of each voxel is (2.0 / resolution),
+        //   since we're spanning [-1.0, +1.0] on each axis
+        // The half-width along one axis is therefore (1.0 / resolution)
+        const default_type half_voxel_diagonal (std::sqrt (3.0 * Math::pow2 (1.0 / resolution)));
+        size_t fill_count = 0;
+        size_t lookup_index = 0;
+        for (size_t z_index = 0; z_index != resolution; ++z_index) {
+          const default_type z (-1.0 + (z_index + 0.5) * (2.0 / default_type(resolution)));
+          for (size_t y_index = 0; y_index != resolution; ++y_index) {
+            const default_type y (-1.0 + (y_index + 0.5) * (2.0 / default_type(resolution)));
+            for (size_t x_index = 0; x_index != resolution; ++x_index) {
+              const default_type x (-1.0 + (x_index + 0.5) * (2.0 / default_type(resolution)));
+              Eigen::Vector3d xyz (x, y, z);
+              // Is it plausible that a unit vector direction could lie anywhere within this voxel?
+              // If it is not, then we don't want to populate the lookup grid element
+              if (std::abs (xyz.norm() - default_type(1.0)) < half_voxel_diagonal) {
+                xyz.normalize();
+                const index_type nearest_dir = (*this) (xyz, 0);
+                lookup[lookup_index] = nearest_dir;
+                ++fill_count;
+              }
+              ++lookup_index;
+            }
           }
         }
-
-        DEBUG ("Lookup table from spherical coordinates to nearest of "
-               + str(size()) + "-direction set constructed using "
-               + str(num_az_grids) + " x " + str(num_el_grids) + " = " + str(num_az_grids * num_el_grids)
-               + " elements, with grid size " + str(az_grid_step) + " x " + str(el_grid_step));
+        DEBUG ("Math::Sphere::Set::Assigner for " + str(rows()) + "-direction set initialised"
+               + " using a resolution of " + str(resolution)
+               + " for a grid of " + str(lookup.size()) + " voxels"
+               + " with " + str(fill_count) + " filled elements");
         //test();
       }
 
