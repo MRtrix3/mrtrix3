@@ -209,9 +209,9 @@ namespace MR {
                 lobe = l;
               }
             }
-            assert (lobe < out.size());
-            out[lobe].add (dirs, i, amplitude, (*weights)[i]);
           }
+          assert (lobe < out.size());
+          out[lobe].add (dirs, i, amplitude, (*weights)[i]);
         }
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
