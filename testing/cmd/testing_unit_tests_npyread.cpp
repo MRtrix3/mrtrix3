@@ -18,7 +18,7 @@
 
 #include "command.h"
 #include "datatype.h"
-#include "half.hpp"
+#include "half.h"
 #include "types.h"
 #include "file/matrix.h"
 #include "file/npy.h"
