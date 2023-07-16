@@ -26,8 +26,6 @@
 #include <iostream>
 #include <vector>
 
-#include "half.hpp"
-
 
 #ifdef _WIN32
 #  ifdef _WIN64
@@ -156,17 +154,6 @@ namespace MR {
 # define FORCE_INLINE inline
 #endif
 
-
-
-
-
-
-namespace std
-{
-  template <> struct is_floating_point<half_float::half> : std::true_type { };
-  template <> struct is_arithmetic<half_float::half> : std::true_type { };
-  template <> struct is_integral<half_float::half> : std::false_type { };
-}
 
 
 namespace MR

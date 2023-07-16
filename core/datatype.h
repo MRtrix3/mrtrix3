@@ -18,7 +18,7 @@
 #define __data_type_h__
 
 #include "cmdline_option.h"
-#include "half.hpp"
+#include "half.h"
 
 #ifdef Complex
 # undef Complex
@@ -27,7 +27,7 @@
 namespace MR
 {
 
-  class DataType { 
+  class DataType {
     public:
       DataType () noexcept : dt (DataType::Native) { }
       DataType (uint8_t type) noexcept : dt (type) { }
