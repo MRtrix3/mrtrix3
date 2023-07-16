@@ -15,12 +15,12 @@
  */
 
 #include "command.h"
-#include "math/SH.h"
 #include "memory.h"
 #include "progressbar.h"
 #include "thread_queue.h"
 #include "image.h"
 #include "algo/loop.h"
+#include "math/sphere/SH.h"
 
 
 #define DOT_THRESHOLD 0.99
@@ -40,7 +40,7 @@ void usage ()
     "commencing a Newton search along each of a set of pre-specified directions";
 
   DESCRIPTION
-  + Math::SH::encoding_description;
+  + Math::Sphere::SH::encoding_description;
 
   ARGUMENTS
   + Argument ("SH", "the input image of SH coefficients.")
@@ -94,7 +94,7 @@ using value_type = float;
 
 
 
-class Direction { 
+class Direction {
   public:
     Direction () : a (NaN) { }
     Direction (const Direction& d) : a (d.a), v (d.v) { }
@@ -109,7 +109,7 @@ class Direction {
 
 
 
-class Item { 
+class Item {
   public:
     Eigen::VectorXf data;
     ssize_t pos[3];
@@ -119,7 +119,7 @@ class Item {
 
 
 
-class DataLoader { 
+class DataLoader {
   public:
     DataLoader (Image<value_type>& sh_data,
                 const Image<bool>& mask_data) :
@@ -161,7 +161,7 @@ class DataLoader {
 
 
 
-class Processor { 
+class Processor {
   public:
     Processor (Image<value_type>& dirs_data,
                Eigen::Matrix<value_type, Eigen::Dynamic, 2>& directions,
@@ -179,7 +179,7 @@ class Processor {
       threshold (threshold),
       peaks_out (npeaks),
       ipeaks_vox (ipeaks_data),
-      precomputer (use_precomputer ? new Math::SH::PrecomputedAL<value_type> (lmax) :  nullptr) { }
+      precomputer (use_precomputer ? new Math::Sphere::SH::PrecomputedAL<value_type> (lmax) :  nullptr) { }
 
     bool operator() (const Item& item) {
 
@@ -197,7 +197,7 @@ class Processor {
 
       for (size_t i = 0; i < size_t(dirs.rows()); i++) {
         Direction p (dirs (i,0), dirs (i,1));
-        p.a = Math::SH::get_peak (item.data, lmax, p.v, precomputer);
+        p.a = Math::Sphere::SH::get_peak (item.data, lmax, p.v, precomputer);
         if (std::isfinite (p.a)) {
           for (size_t j = 0; j < all_peaks.size(); j++) {
             if (abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
@@ -271,7 +271,7 @@ class Processor {
     value_type threshold;
     vector<Direction> peaks_out;
     Image<value_type> ipeaks_vox;
-    Math::SH::PrecomputedAL<value_type>* precomputer;
+    Math::Sphere::SH::PrecomputedAL<value_type>* precomputer;
 
     bool check_input (const Item& item) {
       if (ipeaks_vox.valid()) {
@@ -304,7 +304,7 @@ extern value_type default_directions [];
 void run ()
 {
   auto SH_data = Image<value_type>::open (argument[0]).with_direct_io (3);
-  Math::SH::check (SH_data);
+  Math::Sphere::SH::check (SH_data);
 
   auto opt = get_options ("mask");
 
@@ -353,7 +353,7 @@ void run ()
   auto peaks = Image<value_type>::create (argument[1], header);
 
   DataLoader loader (SH_data, mask_data);
-  Processor processor (peaks, dirs, Math::SH::LforN (SH_data.size (3)),
+  Processor processor (peaks, dirs, Math::Sphere::SH::LforN (SH_data.size (3)),
       npeaks, true_peaks, threshold, ipeaks_data, get_options("fast").size());
 
   Thread::run_queue (loader, Thread::batch (Item()), Thread::multi (processor));

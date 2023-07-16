@@ -25,7 +25,7 @@
 #include "image.h"
 #include "types.h"
 
-#include "dwi/directions/set.h"
+#include "math/sphere/set/adjacency.h"
 
 #include "dwi/tractography/SIFT/model.h"
 #include "dwi/tractography/SIFT/output.h"
@@ -57,11 +57,11 @@ namespace MR {
 
 
       class TckFactor : public SIFT::Model<Fixel>
-      { 
+      {
 
         public:
 
-          TckFactor (Image<float>& fod_image, const DWI::Directions::FastLookupSet& dirs) :
+          TckFactor (Image<float>& fod_image, const Math::Sphere::Set::Assigner& dirs) :
               SIFT::Model<Fixel> (fod_image, dirs),
               reg_multiplier_tikhonov (0.0),
               reg_multiplier_tv (0.0),

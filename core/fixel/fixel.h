@@ -18,6 +18,7 @@
 #ifndef __fixel_fixel_h__
 #define __fixel_fixel_h__
 
+#include <stdint.h>
 #include <string>
 #include <cstdint>
 
@@ -36,6 +37,10 @@ namespace MR
 
     const std::string n_fixels_key ("nfixels");
     const std::initializer_list <const std::string> supported_sparse_formats { ".mif", ".nii", ".mif.gz" , ".nii.gz" };
+
+    const std::string basename_index = "index";
+    const std::string basename_directions = "directions";
+    const std::string basename_dixelmasks = "dixelmasks";
 
 
   }

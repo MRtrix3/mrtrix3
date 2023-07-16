@@ -18,7 +18,7 @@
 #include "progressbar.h"
 #include "math/rng.h"
 #include "thread.h"
-#include "dwi/directions/file.h"
+#include "math/sphere/set/file.h"
 
 constexpr size_t default_permutations = 1e8;
 
@@ -49,7 +49,7 @@ using value_type = double;
 using vector3_type = Eigen::Vector3d;
 
 
-class Shared { 
+class Shared {
   public:
     Shared (const Eigen::MatrixXd& directions, size_t num_subsets, size_t target_num_permutations) :
       directions (directions), subset (num_subsets),
@@ -111,7 +111,7 @@ class Shared {
 
 
 
-class EnergyCalculator { 
+class EnergyCalculator {
   public:
     EnergyCalculator (Shared& shared) : shared (shared), subset (shared.get_init_subset()) { }
 
@@ -165,7 +165,7 @@ class EnergyCalculator {
 
 void run ()
 {
-  auto directions = DWI::Directions::load_cartesian (argument[0]);
+  auto directions = Math::Sphere::Set::load_cartesian (argument[0]);
 
   const size_t num_subsets = argument.size() - 1;
   if (num_subsets == 1)
@@ -185,7 +185,7 @@ void run ()
     Eigen::MatrixXd output (best[i].size(), 3);
     for (size_t n = 0; n < best[i].size(); ++n)
       output.row(n) = directions.row (best[i][n]);
-    DWI::Directions::save (output, argument[i+1], cartesian);
+    Math::Sphere::Set::save (output, argument[i+1], cartesian);
   }
 
 }

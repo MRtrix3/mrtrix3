@@ -52,7 +52,6 @@ namespace MR
     extern const App::OptionGroup lin_stage_options;
     extern const App::OptionGroup rigid_options;
     extern const App::OptionGroup affine_options;
-    extern const App::OptionGroup fod_options;
     extern const char* optim_algo_names[];
 
     enum LinearMetricType {Diff, NCC};
@@ -60,7 +59,9 @@ namespace MR
     enum OptimiserAlgoType {bbgd, gd, none};
 
 
-    struct StageSetting {  
+
+
+    struct StageSetting {
       StageSetting() :
         stage_iterations (1),
         gd_max_iter (500),
@@ -97,7 +98,7 @@ namespace MR
       vector<std::string> diagnostics_images;
     } ;
 
-    class Linear { 
+    class Linear {
 
       public:
 

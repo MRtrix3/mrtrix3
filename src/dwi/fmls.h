@@ -19,12 +19,14 @@
 
 #include <map> // Used for sorting FOD samples
 
-#include "memory.h"
-#include "math/SH.h"
-#include "dwi/directions/set.h"
-#include "dwi/directions/mask.h"
 #include "image.h"
+#include "memory.h"
 #include "algo/loop.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/set/assigner.h"
+#include "math/sphere/set/set.h"
+#include "math/sphere/set/weights.h"
+#include "misc/bitset.h"
 
 
 
@@ -32,14 +34,7 @@
 #define FMLS_PEAK_VALUE_THRESHOLD_DEFAULT 0.1
 #define FMLS_MERGE_RATIO_BRIDGE_TO_PEAK_DEFAULT 1.0 // By default, never perform merging of lobes generated from discrete peaks such that a single lobe contains multiple peaks
 
-
-// By default, the mean direction of each FOD lobe is calculated by taking a weighted average of the
-//   Euclidean unit vectors (weights are FOD amplitudes). This is not strictly mathematically correct, and
-//   a method is provided for optimising the mean direction estimate based on minimising the weighted sum of squared
-//   geodesic distances on the sphere. However the coarse estimate is in fact accurate enough for our applications.
-//   Uncomment this line to activate the optimal mean direction calculation (about a 20% performance penalty).
-//#define FMLS_OPTIMISE_MEAN_DIR
-
+#define FMLS_DEFAULT_DIRECTION_SET 1281
 
 
 namespace MR
@@ -50,8 +45,8 @@ namespace MR
     {
 
 
-      using DWI::Directions::Mask;
-      using DWI::Directions::index_type;
+      using Math::Sphere::Set::index_type;
+      using lookup_type = Eigen::Array<uint8_t, Eigen::Dynamic, 1>;
 
 
       class Segmenter;
@@ -61,15 +56,16 @@ namespace MR
       void load_fmls_thresholds (Segmenter&);
 
 
-      class FOD_lobe { 
+      class FOD_lobe {
 
         public:
-          FOD_lobe (const DWI::Directions::Set& dirs, const index_type seed, const default_type value, const default_type weight) :
-              mask (dirs),
+          FOD_lobe (const Math::Sphere::Set::CartesianWithAdjacency& dirs, const index_type seed, const default_type value, const default_type weight) :
+              mask (dirs.size()),
               values (Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero (dirs.size())),
               max_peak_value (abs (value)),
-              peak_dirs (1, dirs.get_dir (seed)),
+              peak_dirs (1, dirs[seed]),
               mean_dir (peak_dirs.front() * abs(value) * weight),
+              lsq_dir (Eigen::Vector3d::Constant (std::numeric_limits<double>::quiet_NaN())),
               integral (abs (value * weight)),
               neg (value <= 0.0)
           {
@@ -79,7 +75,7 @@ namespace MR
 
           // This is used for creating a `null lobe' i.e. an FOD lobe with zero size, containing all directions not
           //   assigned to any other lobe in the voxel
-          FOD_lobe (const DWI::Directions::Mask& i) :
+          FOD_lobe (const BitSet& i) :
               mask (i),
               values (Eigen::Array<default_type, Eigen::Dynamic, 1>::Zero (i.size())),
               max_peak_value (0.0),
@@ -87,12 +83,12 @@ namespace MR
               neg (false) { }
 
 
-          void add (const index_type bin, const default_type value, const default_type weight)
+          void add (const Math::Sphere::Set::CartesianWithAdjacency& dirs, const index_type bin, const default_type value, const default_type weight)
           {
             assert ((value <= 0.0 && neg) || (value >= 0.0 && !neg));
             mask[bin] = true;
             values[bin] = value;
-            const Eigen::Vector3d& dir = mask.get_dirs()[bin];
+            const Eigen::Vector3d& dir = dirs[bin];
             const default_type multiplier = (mean_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
             mean_dir += dir * multiplier * abs(value) * weight;
             integral += abs (value * weight);
@@ -106,14 +102,6 @@ namespace MR
             if (!index)
               max_peak_value = revised_peak_value;
           }
-
-#ifdef FMLS_OPTIMISE_MEAN_DIR
-          void revise_mean_dir (const Eigen::Vector3f& real_mean)
-          {
-            assert (!neg);
-            mean_dir = real_mean;
-          }
-#endif
 
           void finalise()
           {
@@ -138,22 +126,26 @@ namespace MR
             integral += that.integral;
           }
 
-          const DWI::Directions::Mask& get_mask() const { return mask; }
+          void set_lsq_dir (const Eigen::Vector3d& d) { lsq_dir = d; }
+
+          const BitSet& get_mask() const { return mask; }
           const Eigen::Array<default_type, Eigen::Dynamic, 1>& get_values() const { return values; }
           default_type get_max_peak_value() const { return max_peak_value; }
           size_t num_peaks() const { return peak_dirs.size(); }
           const Eigen::Vector3d& get_peak_dir (const size_t i) const { assert (i < num_peaks()); return peak_dirs[i]; }
           const Eigen::Vector3d& get_mean_dir() const { return mean_dir; }
+          const Eigen::Vector3d& get_lsq_dir() const { return lsq_dir; }
           default_type get_integral() const { return integral; }
           bool is_negative() const { return neg; }
 
 
         private:
-          DWI::Directions::Mask mask;
+          BitSet mask;
           Eigen::Array<default_type, Eigen::Dynamic, 1> values;
           default_type max_peak_value;
           vector<Eigen::Vector3d> peak_dirs;
           Eigen::Vector3d mean_dir;
+          Eigen::Vector3d lsq_dir;
           default_type integral;
           bool neg;
 
@@ -161,14 +153,13 @@ namespace MR
 
 
 
-      class FOD_lobes : public vector<FOD_lobe> { 
+      class FOD_lobes : public vector<FOD_lobe> {
         public:
           Eigen::Array3i vox;
-          vector<uint8_t> lut;
       };
 
 
-      class SH_coefs : public Eigen::Matrix<default_type, Eigen::Dynamic, 1> { 
+      class SH_coefs : public Eigen::Matrix<default_type, Eigen::Dynamic, 1> {
         public:
           SH_coefs() :
               vox (-1, -1, -1) { }
@@ -179,7 +170,7 @@ namespace MR
       };
 
       class FODQueueWriter
-      { 
+      {
 
           using FODImageType = Image<float>;
           using MaskImageType = Image<float>;
@@ -217,75 +208,51 @@ namespace MR
       };
 
 
-      // Store a vector of weights to be applied when computing integrals, to account for non-uniformities in direction distribution
-      // These weights are applied to the amplitude along each direction as the integral for each lobe is summed,
-      //   in order to take into account the relative spacing between adjacent directions
-      class IntegrationWeights
-      { 
-        public:
-          IntegrationWeights (const DWI::Directions::Set& dirs);
-          default_type operator[] (const size_t i) { assert (i < size_t(data.size())); return data[i]; }
-        private:
-          Eigen::Array<default_type, Eigen::Dynamic, 1> data;
-      };
 
 
-
-
-      class Segmenter { 
+      class Segmenter {
 
         public:
-          Segmenter (const DWI::Directions::FastLookupSet&, const size_t);
+          Segmenter (const Math::Sphere::Set::Assigner&, const size_t);
 
           bool operator() (const SH_coefs&, FOD_lobes&) const;
 
-
+          size_t       get_max_num_fixels       ()               const { return max_num_fixels; }
+          void         set_max_num_fixels       (const size_t i)       { max_num_fixels = i; }
           default_type get_integral_threshold   ()               const { return integral_threshold; }
           void         set_integral_threshold   (const default_type i) { integral_threshold = i; }
           default_type get_peak_value_threshold ()               const { return peak_value_threshold; }
           void         set_peak_value_threshold (const default_type i) { peak_value_threshold = i; }
           default_type get_lobe_merge_ratio     ()               const { return lobe_merge_ratio; }
           void         set_lobe_merge_ratio     (const default_type i) { lobe_merge_ratio = i; }
-          bool         get_create_null_lobe     ()               const { return create_null_lobe; }
-          void         set_create_null_lobe     (const bool i)         { create_null_lobe = i; verify_settings(); }
-          bool         get_create_lookup_table  ()               const { return create_lookup_table; }
-          void         set_create_lookup_table  (const bool i)         { create_lookup_table = i; verify_settings(); }
-          bool         get_dilate_lookup_table  ()               const { return dilate_lookup_table; }
-          void         set_dilate_lookup_table  (const bool i)         { dilate_lookup_table = i; verify_settings(); }
-
+          bool         get_calculate_lsq_dir    ()               const { return calculate_lsq_dir; }
+          void         set_calculate_lsq_dir    (const bool i)         { calculate_lsq_dir = i; }
 
         private:
 
-          // FastLookupSet is required for ensuring that when a peak direction is
+          // Assigner is required for ensuring that when a peak direction is
           //   revised using Newton optimisation, that direction is still reflective
           //   of the original peak; i.e. it hasn't 'leaped' across to a different peak
-          const DWI::Directions::FastLookupSet& dirs;
+          const Math::Sphere::Set::Assigner& dirs;
 
           const size_t lmax;
 
-          std::shared_ptr<Math::SH::Transform    <default_type>> transform;
-          std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
-          std::shared_ptr<IntegrationWeights> weights;
+          std::shared_ptr<Math::Sphere::SH::Transform    <default_type>> transform;
+          std::shared_ptr<Math::Sphere::SH::PrecomputedAL<default_type>> precomputer;
+          std::shared_ptr<Math::Sphere::Set::Weights> weights;
 
+          size_t       max_num_fixels;       // Maximal number of fixels to keep in any voxel
           default_type integral_threshold;   // Integral of positive lobe must be at least this value
           default_type peak_value_threshold; // Absolute threshold for the peak amplitude of the lobe
           default_type lobe_merge_ratio;     // Determines whether two lobes get agglomerated into one, depending on the FOD amplitude at the current point and how it compares to the maximal amplitudes of the lobes to which it could be assigned
-          bool         create_null_lobe;     // If this is set, an additional lobe will be created after segmentation with zero size, containing all directions not assigned to any other lobe
-          bool         create_lookup_table;  // If this is set, an additional lobe will be created after segmentation with zero size, containing all directions not assigned to any other lobe
-          bool         dilate_lookup_table;  // If this is set, the lookup table created for each voxel will be dilated so that all directions correspond to the nearest positive non-zero FOD lobe
+          bool         calculate_lsq_dir;    // Whether to invest the clock cycles in calculating the least square direction
 
-
-          void verify_settings() const
-          {
-            if (create_null_lobe && dilate_lookup_table)
-              throw Exception ("For FOD segmentation, options 'create_null_lobe' and 'dilate_lookup_table' are mutually exclusive");
-            if (!create_lookup_table && dilate_lookup_table)
-              throw Exception ("For FOD segmentation, 'create_lookup_table' must be set in order for lookup tables to be dilated ('dilate_lookup_table')");
-          }
-
-#ifdef FMLS_OPTIMISE_MEAN_DIR
-          void optimise_mean_dir (FOD_lobe&) const;
-#endif
+          // By default, the mean direction of each FOD lobe is calculated by taking a weighted average of the
+          //   Euclidean unit vectors (weights are FOD amplitudes). This is not strictly mathematically correct, and
+          //   a method is provided for optimising the mean direction estimate based on minimising the weighted sum of squared
+          //   geodesic distances on the sphere. However the coarse estimate is in fact accurate enough for our applications.
+          //   Uncomment this line to activate the optimal mean direction calculation (about a 20% performance penalty).
+          void do_lsq_dir (FOD_lobe&) const;
 
       };
 

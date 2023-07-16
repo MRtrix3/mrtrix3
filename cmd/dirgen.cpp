@@ -20,7 +20,7 @@
 #include "thread.h"
 #include "math/gradient_descent.h"
 #include "math/check_gradient.h"
-#include "dwi/directions/file.h"
+#include "math/sphere/set/file.h"
 
 #define DEFAULT_POWER 1
 #define DEFAULT_NITER 10000
@@ -78,7 +78,7 @@ void usage ()
 
 
 // constrain directions to remain unit length:
-class ProjectedUpdate { 
+class ProjectedUpdate {
   public:
     bool operator() (
         Eigen::VectorXd& newx,
@@ -98,7 +98,7 @@ class ProjectedUpdate {
 
 
 
-class Energy { 
+class Energy {
   public:
     Energy (ProgressBar& progress) :
       progress (progress),
@@ -268,7 +268,7 @@ void run ()
   for (size_t n = 0; n < ndirs; ++n)
     directions_matrix.row (n) = Energy::best_directions.segment (3*n, 3);
 
-  DWI::Directions::save (directions_matrix, argument[1], get_options ("cartesian").size());
+  Math::Sphere::Set::save (directions_matrix, argument[1], get_options ("cartesian").size());
 }
 
 

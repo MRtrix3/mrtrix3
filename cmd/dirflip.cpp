@@ -17,10 +17,10 @@
 #include "command.h"
 #include "progressbar.h"
 #include "math/rng.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "file/utils.h"
 #include "thread.h"
-#include "dwi/directions/file.h"
+#include "math/sphere/set/file.h"
 
 constexpr size_t default_permutations = 1e8;
 
@@ -57,7 +57,7 @@ using value_type = double;
 using vector3_type = Eigen::Vector3d;
 
 
-class Shared { 
+class Shared {
   public:
     Shared (const Eigen::MatrixXd& directions, size_t target_num_permutations) :
       directions (directions), target_num_permutations (target_num_permutations), num_permutations(0),
@@ -107,7 +107,7 @@ class Shared {
 
 
 
-class Processor { 
+class Processor {
   public:
     Processor (Shared& shared) :
       shared (shared),
@@ -152,7 +152,7 @@ class Processor {
 
 void run ()
 {
-  auto directions = DWI::Directions::load_cartesian (argument[0]);
+  auto directions = Math::Sphere::Set::load_cartesian (argument[0]);
 
   size_t num_permutations = get_option_value<size_t> ("permutations", default_permutations);
 
@@ -168,7 +168,7 @@ void run ()
       directions.row(n) *= -1.0;
 
   bool cartesian = get_options("cartesian").size();
-  DWI::Directions::save (directions, argument[1], cartesian);
+  Math::Sphere::Set::save (directions, argument[1], cartesian);
 }
 
 

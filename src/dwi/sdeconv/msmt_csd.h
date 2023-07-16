@@ -23,10 +23,12 @@
 #include "dwi/shells.h"
 #include "math/constrained_least_squares.h"
 #include "math/math.h"
-#include "math/SH.h"
-#include "math/ZSH.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/ZSH.h"
+#include "math/sphere/set/set.h"
+#include "math/sphere/set/predefined.h"
 
-#include "dwi/directions/predefined.h"
+#include "dwi/sdeconv/sdeconv.h"
 
 #define DEFAULT_MSMTCSD_LMAX 8
 #define DEFAULT_MSMTCSD_NORM_LAMBDA 1.0e-10
@@ -41,15 +43,15 @@ namespace MR
 
       extern const App::OptionGroup MSMT_CSD_options;
 
-      class MSMT_CSD { 
+      class MSMT_CSD {
         public:
 
-          class Shared { 
+          class Shared {
             public:
               Shared (const Header& dwi_header) :
                   grad (DWI::get_DW_scheme (dwi_header)),
                   shells (grad),
-                  HR_dirs (DWI::Directions::electrostatic_repulsion_300()),
+                  HR_dirs (Math::Sphere::Set::Predefined::load (SDeconv::default_constraint_directions)),
                   solution_min_norm_regularisation (DEFAULT_MSMTCSD_NORM_LAMBDA),
                   constraint_min_norm_regularisation (DEFAULT_MSMTCSD_NEG_LAMBDA) { shells.select_shells(false,false,false); }
 
@@ -62,7 +64,7 @@ namespace MR
                   lmax = parse_ints<uint32_t> (opt[0][0]);
                 opt = get_options ("directions");
                 if (opt.size())
-                  HR_dirs = load_matrix (opt[0][0]);
+                  HR_dirs = Math::Sphere::Set::to_spherical (Math::Sphere::Set::load (std::string (opt[0][0]), true));
                 opt = get_options ("norm_lambda");
                 if (opt.size())
                   solution_min_norm_regularisation = opt[0][0];
@@ -118,7 +120,7 @@ namespace MR
                     throw Exception ("number of rows in response functions must match number of b-value shells; "
                                      "number of shells is " + str(num_shells()) + ", but file \"" + response_files[t] + "\" contains " + str(responses[t].rows()) + " rows");
                   // Pad response functions out to the requested lmax for this tissue
-                  responses[t].conservativeResizeLike (Eigen::MatrixXd::Zero (num_shells(), Math::ZSH::NforL (lmax[t])));
+                  responses[t].conservativeResizeLike (Eigen::MatrixXd::Zero (num_shells(), Math::Sphere::ZSH::NforL (lmax[t])));
                 }
 
                 //////////////////////////////////////////////////
@@ -128,7 +130,7 @@ namespace MR
                 size_t nparams = 0;
                 uint32_t maxlmax = 0;
                 for (size_t i = 0; i < num_tissues(); i++) {
-                  nparams += Math::SH::NforL (lmax[i]);
+                  nparams += Math::Sphere::SH::NforL (lmax[i]);
                   maxlmax = std::max (maxlmax, lmax[i]);
                 }
 
@@ -141,7 +143,7 @@ namespace MR
                   dwilist.push_back(i);
 
                 Eigen::MatrixXd directions = DWI::gen_direction_matrix (grad, dwilist);
-                Eigen::MatrixXd SHT = Math::SH::init_transform (directions, maxlmax);
+                Eigen::MatrixXd SHT = Math::Sphere::SH::init_transform (directions, maxlmax);
                 for (ssize_t i = 0; i < SHT.rows(); i++)
                   for (ssize_t j = 0; j < SHT.cols(); j++)
                     if (std::isnan (SHT(i,j)))
@@ -149,7 +151,7 @@ namespace MR
 
                 // TODO: is this just computing the Associated Legrendre polynomials...?
                 Eigen::MatrixXd delta(1,2); delta << 0, 0;
-                Eigen::MatrixXd DSH__ = Math::SH::init_transform (delta, maxlmax);
+                Eigen::MatrixXd DSH__ = Math::Sphere::SH::init_transform (delta, maxlmax);
                 Eigen::VectorXd DSH_ = DSH__.row(0);
                 Eigen::VectorXd DSH (maxlmax/2+1);
                 size_t j = 0;
@@ -162,7 +164,7 @@ namespace MR
                 size_t pbegin = 0;
                 for (size_t tissue_idx = 0; tissue_idx < num_tissues(); ++tissue_idx) {
                   const size_t tissue_lmax = lmax[tissue_idx];
-                  const size_t tissue_n = Math::SH::NforL (tissue_lmax);
+                  const size_t tissue_n = Math::Sphere::SH::NforL (tissue_lmax);
                   const size_t tissue_nmzero = tissue_lmax/2+1;
 
                   for (size_t shell_idx = 0; shell_idx < num_shells(); ++shell_idx) {
@@ -192,7 +194,7 @@ namespace MR
                 size_t M = 0;
                 size_t N = 0;
 
-                Eigen::MatrixXd HR_SHT = Math::SH::init_transform (HR_dirs, maxlmax);
+                Eigen::MatrixXd HR_SHT = Math::Sphere::SH::init_transform (HR_dirs, maxlmax);
 
                 for (size_t i = 0; i != num_tissues(); i++) {
                   if (lmax[i] > 0)
@@ -200,7 +202,7 @@ namespace MR
                   else
                     m[i] = 1;
                   M += m[i];
-                  n[i] = Math::SH::NforL (lmax[i]);
+                  n[i] = Math::Sphere::SH::NforL (lmax[i]);
                   N += n[i];
                 }
 
@@ -224,7 +226,7 @@ namespace MR
 
               const Eigen::MatrixXd grad;
               DWI::Shells shells;
-              Eigen::MatrixXd HR_dirs;
+              Math::Sphere::Set::spherical_type HR_dirs;
               vector<uint32_t> lmax, lmax_response;
               vector<Eigen::MatrixXd> responses;
               vector<std::string> response_files;
@@ -250,7 +252,7 @@ namespace MR
                   //   if the user doesn't manually specify lmax, these will determine the
                   //   lmax of each tissue ODF output, with a further default lmax=8
                   //   restriction at that stage
-                  lmax_response.push_back (Math::ZSH::LforN (r.cols()));
+                  lmax_response.push_back (Math::Sphere::ZSH::LforN (r.cols()));
                 }
               }
 

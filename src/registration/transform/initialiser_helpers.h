@@ -22,7 +22,7 @@
 #include "image.h"
 #include "transform.h"
 #include "math/math.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "registration/transform/base.h"
 #include "registration/multi_contrast.h"
 
@@ -54,7 +54,7 @@ namespace MR
           Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>& eigenvectors,
           Eigen::Matrix<default_type, Eigen::Dynamic, 1>& eigenvals);
 
-        class FODInitialiser { 
+        class FODInitialiser {
           public:
             FODInitialiser (Image<default_type>& image1,
                                 Image<default_type>& image2,
@@ -70,9 +70,9 @@ namespace MR
               lmax (l_max) {
                 assert (im1.ndim() == 4 && im2.ndim() == 4);
                 assert (im1.size(3) == im2.size(3));
-                ssize_t l = Math::SH::LforN(im1.size(3));
+                ssize_t l = Math::Sphere::SH::LforN(im1.size(3));
                 if (lmax == -1 or lmax > l) lmax = l;
-                N = Math::SH::NforL(lmax);
+                N = Math::Sphere::SH::NforL(lmax);
                 sh1.resize(N);
                 sh1.setZero();
                 sh2.resize(N);
@@ -99,7 +99,7 @@ namespace MR
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh1, sh2;
         };
 
-        class MomentsInitialiser { 
+        class MomentsInitialiser {
           public:
             MomentsInitialiser (Image<default_type>& image1,
                                 Image<default_type>& image2,

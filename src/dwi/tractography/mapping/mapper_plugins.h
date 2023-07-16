@@ -21,9 +21,8 @@
 #include "image.h"
 #include "types.h"
 #include "interp/linear.h"
-#include "math/SH.h"
-
-#include "dwi/directions/set.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/set/assigner.h"
 
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/mapping/twi_stats.h"
@@ -39,28 +38,28 @@ namespace MR {
 
 
         class DixelMappingPlugin
-        { 
+        {
           public:
-            DixelMappingPlugin (const DWI::Directions::FastLookupSet& directions) :
-              dirs (directions) { }
+            DixelMappingPlugin (const Math::Sphere::Set::Assigner& dir2dixel) :
+              dir2dixel (dir2dixel) { }
             DixelMappingPlugin (const DixelMappingPlugin& that) :
-              dirs (that.dirs) { }
-            DWI::Directions::index_type operator() (const Eigen::Vector3d& d) const { return dirs.select_direction (d); }
+              dir2dixel (that.dir2dixel) { }
+            Math::Sphere::Set::index_type operator() (const Eigen::Vector3d& d) const { return dir2dixel (d); }
           private:
-            const DWI::Directions::FastLookupSet& dirs;
+            const Math::Sphere::Set::Assigner& dir2dixel;
         };
 
 
 
         class TODMappingPlugin
-        { 
+        {
           public:
             TODMappingPlugin (const size_t N) :
-              generator (new Math::SH::aPSF<float> (Math::SH::LforN (N))) { }
+              generator (new Math::Sphere::SH::aPSF<float> (Math::Sphere::SH::LforN (N))) { }
             template <class VectorType, class UnitVectorType>
               void operator() (VectorType& sh, const UnitVectorType& d) const { (*generator) (sh, d); }
           private:
-            std::shared_ptr<Math::SH::aPSF<float>> generator;
+            std::shared_ptr<Math::Sphere::SH::aPSF<float>> generator;
         };
 
 
@@ -68,7 +67,7 @@ namespace MR {
 
 
         class TWIImagePluginBase
-        { 
+        {
           public:
             TWIImagePluginBase (const std::string& input_image, const tck_stat_t track_statistic) :
                 statistic (track_statistic),
@@ -117,7 +116,7 @@ namespace MR {
 
 
         class TWIScalarImagePlugin : public TWIImagePluginBase
-        { 
+        {
           public:
             TWIScalarImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
                 TWIImagePluginBase (input_image, track_statistic)
@@ -148,17 +147,17 @@ namespace MR {
 
 
         class TWIFODImagePlugin : public TWIImagePluginBase
-        { 
+        {
           public:
             TWIFODImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
                 TWIImagePluginBase (input_image, track_statistic),
                 sh_coeffs (interp.size(3)),
-                precomputer (new Math::SH::PrecomputedAL<default_type> ())
+                precomputer (new Math::Sphere::SH::PrecomputedAL<default_type> ())
             {
               if (track_statistic == ENDS_CORR)
                 throw Exception ("Cannot use ends_corr track statistic with an FOD image");
-              Math::SH::check (Header (interp));
-              precomputer->init (Math::SH::LforN (sh_coeffs.size()));
+              Math::Sphere::SH::check (Header (interp));
+              precomputer->init (Math::Sphere::SH::LforN (sh_coeffs.size()));
             }
 
             TWIFODImagePlugin (const TWIFODImagePlugin& that) = default;
@@ -172,14 +171,14 @@ namespace MR {
 
           private:
             mutable Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh_coeffs;
-            std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
+            std::shared_ptr<Math::Sphere::SH::PrecomputedAL<default_type>> precomputer;
         };
 
 
 
 
         class TWDFCStaticImagePlugin : public TWIImagePluginBase
-        { 
+        {
           public:
             TWDFCStaticImagePlugin (Image<float>& input_image) :
                 TWIImagePluginBase (input_image, ENDS_CORR) { }
@@ -198,7 +197,7 @@ namespace MR {
 
 
         class TWDFCDynamicImagePlugin : public TWIImagePluginBase
-        { 
+        {
           public:
             TWDFCDynamicImagePlugin (Image<float>& input_image, const vector<float>& kernel, const ssize_t timepoint) :
                 TWIImagePluginBase (input_image, ENDS_CORR),

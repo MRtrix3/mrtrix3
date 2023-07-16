@@ -76,9 +76,9 @@ Fibre orientation distribution handling options
    fod: modulate FODs during reorientation to preserve the apparent fibre density across fibre bundle widths before and after the transformation.  |br|
    jac: modulate the image intensity with the determinant of the Jacobian of the warp of linear transformation to preserve the total intensity before and after the transformation.
 
--  **-directions file** directions defining the number and orientation of the apodised point spread functions used in FOD reorientation (Default: 300 directions)
+-  **-directions spec** Specify a source of a basis direction set to be used of defining the number and orientation of the apodised point spread functions used in FOD reorientation; default: built-in 300-direction set
 
--  **-reorient_fod boolean** specify whether to perform FOD reorientation. This is required if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes).
+-  **-reorient_fod boolean** specify whether to perform FOD reorientation; this is required if the number of volumes in the 4th dimension corresponds to the number of coefficients in an antipodally symmetric spherical harmonic series with lmax >= 2 (i.e. 6, 15, 28, 45, 66 volumes).
 
 DW gradient table import options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

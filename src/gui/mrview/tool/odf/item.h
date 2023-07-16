@@ -21,7 +21,7 @@
 
 #include "dwi/shells.h"
 
-#include "dwi/directions/set.h"
+#include "math/sphere/set/adjacency.h"
 #include "gui/dwi/renderer.h"
 #include "gui/mrview/gui_image.h"
 #include "gui/mrview/tool/odf/type.h"
@@ -40,7 +40,7 @@ namespace MR
 
 
 
-        class ODF_Item { 
+        class ODF_Item {
           public:
             ODF_Item (MR::Header&& H, const odf_type_t type, const float scale, const bool hide_negative, const bool color_by_direction);
 
@@ -53,7 +53,7 @@ namespace MR
             bool hide_negative, color_by_direction;
 
             class DixelPlugin
-            { 
+            {
               public:
                 enum dir_t { DW_SCHEME, HEADER, INTERNAL, NONE, FILE };
 
@@ -70,11 +70,11 @@ namespace MR
                 size_t num_DW_shells() const;
 
                 dir_t dir_type;
-                Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> header_dirs;
-                Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
+                Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> header_dirs;
+                Eigen::Matrix<default_type, Eigen::Dynamic, 4> grad;
                 std::unique_ptr<MR::DWI::Shells> shells;
                 size_t shell_index;
-                std::unique_ptr<MR::DWI::Directions::Set> dirs;
+                std::unique_ptr<Math::Sphere::Set::CartesianWithAdjacency> dirs;
 
             };
             std::unique_ptr<DixelPlugin> dixel;

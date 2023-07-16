@@ -20,9 +20,9 @@
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include "image.h"
-#include "math/sphere.h"
-#include "math/SH.h"
-#include "dwi/directions/predefined.h"
+#include "math/sphere/SH.h"
+#include "math/sphere/set/predefined.h"
+#include "math/sphere/set/set.h"
 #include "filter/reslice.h"
 #include "interp/cubic.h"
 
@@ -87,7 +87,7 @@ using value_type = float;
 const value_type UNIT = 1.0 / std::sqrt(3.0);  // component of 3D unit vector wrt L2-norm
 
 
-class DecTransform { 
+class DecTransform {
 
   public:
 
@@ -96,13 +96,13 @@ class DecTransform {
   double thresh;
 
   DecTransform (int lmax, const Eigen::Matrix<double, Eigen::Dynamic, 2>& dirs, double thresh) :
-    sht (Math::SH::init_transform(dirs, lmax)),
-    decs (Math::Sphere::spherical2cartesian(dirs).cwiseAbs()),
+    sht (Math::Sphere::SH::init_transform(dirs, lmax)),
+    decs (Math::Sphere::Set::spherical2cartesian(dirs).cwiseAbs()),
     thresh (thresh) { }
 
 };
 
-class DecComputer { 
+class DecComputer {
 
   private:
 
@@ -160,7 +160,7 @@ class DecComputer {
 
 };
 
-class DecWeighter { 
+class DecWeighter {
 
   private:
 
@@ -213,7 +213,7 @@ class DecWeighter {
 void run () {
 
   auto fod_hdr = Header::open(argument[0]);
-  Math::SH::check(fod_hdr);
+  Math::Sphere::SH::check(fod_hdr);
 
   auto mask_hdr = Header();
   auto optm = get_options("mask");
@@ -268,7 +268,7 @@ void run () {
       Stride::set (dec_hdr, Stride::contiguous_along_axis (3, dec_hdr));
       dec_img = Image<value_type>::scratch(dec_hdr,"DEC map");
 
-      Eigen::Matrix<double, 1281, 2> dirs = DWI::Directions::tesselation_1281();
+      Eigen::Matrix<double, 1281, 2> dirs = Math::Sphere::Set::Predefined::tesselation_1281();
 
       auto mask_img = Image<bool>();
       if (mask_hdr.valid())
@@ -281,7 +281,7 @@ void run () {
       }
 
       ThreadedLoop ("computing colours", fod_img, 0, 3)
-        .run (DecComputer (DecTransform (Math::SH::LforN(fod_img.size(3)), dirs, thresh), mask_img, w_img), fod_img, dec_img);
+        .run (DecComputer (DecTransform (Math::Sphere::SH::LforN(fod_img.size(3)), dirs, thresh), mask_img, w_img), fod_img, dec_img);
     }
 
     auto out_hdr = map_hdr.valid() ? Header(map_hdr) : Header(dec_img);

@@ -22,9 +22,9 @@
 #include "thread_queue.h"
 #include "types.h"
 
-#include "dwi/fixel_map.h"
+#include "math/sphere/set/adjacency.h"
 
-#include "dwi/directions/set.h"
+#include "dwi/fixel_map.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -56,7 +56,7 @@ namespace MR
 
       template <class Fixel>
       class Model : public ModelBase<Fixel>
-      { 
+      {
 
         protected:
           using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
@@ -64,7 +64,7 @@ namespace MR
 
         public:
           template <class Set>
-          Model (Set& dwi, const DWI::Directions::FastLookupSet& dirs) :
+          Model (Set& dwi, const Math::Sphere::Set::Assigner& dirs) :
               ModelBase<Fixel> (dwi, dirs)
           {
             Track_fixel_contribution::set_scaling (dwi);
@@ -106,7 +106,7 @@ namespace MR
         private:
           // Some member classes to support multi-threaded processes
           class TrackMappingWorker
-          { 
+          {
             public:
               TrackMappingWorker (Model& i, const default_type upsample_ratio) :
                   master (i),
@@ -138,7 +138,7 @@ namespace MR
           };
 
           class FixelRemapper
-          { 
+          {
             public:
               FixelRemapper (Model& i, vector<size_t>& r) :
                 master   (i),

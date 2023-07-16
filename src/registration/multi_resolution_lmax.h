@@ -19,6 +19,7 @@
 
 #include "adapter/subset.h"
 #include "adapter/extract.h"
+#include "math/sphere/SH.h"
 #include "filter/smooth.h"
 #include "registration/multi_contrast.h"
 
@@ -38,7 +39,7 @@ namespace MR
       for (size_t dim = 0; dim < input.ndim(); ++dim)
         size[dim] = input.size(dim);
       if (do_reorientation)
-        size[3] = Math::SH::NforL (lmax);
+        size[3] = Math::Sphere::SH::NforL (lmax);
       Adapter::Subset<ImageType> subset (input, from, size);
       Filter::Smooth smooth_filter (subset);
       vector<default_type> stdev(3);

@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_SH_h__
-#define __math_SH_h__
+#ifndef __math_sphere_SH_h__
+#define __math_sphere_SH_h__
 
 #include "math/legendre.h"
 #include "math/least_squares.h"
@@ -27,6 +27,8 @@ namespace MR
 {
   namespace Math
   {
+    namespace Sphere
+    {
     namespace SH
     {
 
@@ -755,6 +757,9 @@ namespace MR
         }
       /** @} */
 
+
+
+    }
     }
   }
 }

@@ -23,7 +23,7 @@ Description
 
 The spherical harmonic decomposition is calculated by least-squares linear fitting to the amplitude data.
 
-The directions can be defined either as a DW gradient scheme (for example to compute the SH representation of the DW signal), a set of [az el] pairs as output by the dirgen command, or a set of [ x y z ] directions in Cartesian coordinates. The DW gradient scheme or direction set can be supplied within the input image header or using the -gradient or -directions option. Note that if a direction set and DW gradient scheme can be found, the direction set will be used by default.
+Where the user is permitted to provide a set of directions that is requisite for the relevant command operation (including as an alternative to data that may be already present in an input image header), there are a number of permissible inputs from which the user could choose, including: an integer value corresponding to a built-in direction set; a path to a text file containing directions (in either spherical, ie. [az el] pairs, or cartesian coordinates, ie. [x y z] triplets); a path to an image, where this set could be extracted from either key-value entry "directions" or from the diffusion gradient table.
 
 The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link:  |br|
 https://mrtrix.readthedocs.io/en/3.0.4/concepts/spherical_harmonics.html
@@ -35,7 +35,7 @@ Options
 
 -  **-normalise** normalise the DW signal to the b=0 image
 
--  **-directions file** the directions corresponding to the input amplitude image used to sample AFD. By default this option is not required providing the direction set is supplied in the amplitude image. This should be supplied as a list of directions [az el], as generated using the dirgen command, or as a list of [ x y z ] Cartesian coordinates.
+-  **-directions spec** Specify a source of a basis direction set to be used associating input image amplitudes with directions to facilitate SH transformation (see Description); default: Read from the input image header contents
 
 -  **-rician noise** correct for Rician noise induced bias, using noise map supplied
 

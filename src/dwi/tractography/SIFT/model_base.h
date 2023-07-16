@@ -21,14 +21,14 @@
 #include "image.h"
 #include "thread_queue.h"
 #include "algo/copy.h"
+#include "math/sphere/set/adjacency.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "file/path.h"
 #include "file/utils.h"
 
 #include "dwi/fixel_map.h"
 #include "dwi/fmls.h"
-
-#include "dwi/directions/set.h"
 
 #include "dwi/tractography/file.h"
 
@@ -133,7 +133,7 @@ namespace MR
             using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
 
           public:
-            ModelBase (Image<float>& dwi, const DWI::Directions::FastLookupSet& dirs) :
+            ModelBase (Image<float>& dwi, const Math::Sphere::Set::Assigner& dirs) :
                 Mapping::Fixel_TD_map<Fixel> (dwi, dirs),
                 proc_mask (Image<float>::scratch (Fixel_map<Fixel>::header(), "SIFT model processing mask")),
                 FOD_sum (0.0),
@@ -197,13 +197,13 @@ namespace MR
         template <class Fixel>
         void ModelBase<Fixel>::perform_FOD_segmentation (Image<float>& data)
         {
-          Math::SH::check (data);
+          Math::Sphere::SH::check (data);
           DWI::FMLS::FODQueueWriter writer (data, proc_mask);
-          DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (data.size(3)));
-          fmls.set_dilate_lookup_table (!App::get_options ("no_dilate_lut").size());
-          fmls.set_create_null_lobe (App::get_options ("make_null_lobes").size());
+          DWI::FMLS::Segmenter fmls (dirs, Math::Sphere::SH::LforN (data.size(3)));
           Thread::run_queue (writer, Thread::batch (FMLS::SH_coefs()), Thread::multi (fmls), Thread::batch (FMLS::FOD_lobes()), *this);
-          have_null_lobes = fmls.get_create_null_lobe();
+          // TODO If we want to continue supporting lookup table manipulations
+          //   (dilation xor creation of an extra fixel containing all unassigned dixels)
+          //   , we will need to reimplement such elsewhere
         }
 
 
@@ -352,8 +352,8 @@ namespace MR
           H_directions.spacing(0) = H_directions.spacing(1) = H_directions.spacing(2) = 1.0;
           H_directions.transform().setIdentity();
           H_directions.datatype() = DataType::native (DataType::from<float>());
-          Image<uint64_t> index_image = Image<uint64_t>::create (Path::join (dirpath, "index.mif"), H_index);
-          Image<float> directions_image = Image<float>::create (Path::join (dirpath, "directions.mif"), H_directions);
+          Image<uint64_t> index_image = Image<uint64_t>::create (Path::join (dirpath, MR::Fixel::basename_index + ".mif"), H_index);
+          Image<float> directions_image = Image<float>::create (Path::join (dirpath, MR::Fixel::basename_directions + ".mif"), H_directions);
           VoxelAccessor v (accessor());
           for (auto l = Loop (v) (v, index_image); l; ++l) {
             if (v.value()) {

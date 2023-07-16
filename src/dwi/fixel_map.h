@@ -22,7 +22,6 @@
 #include "image.h"
 #include "algo/loop.h"
 #include "dwi/fmls.h"
-#include "dwi/directions/mask.h"
 
 
 namespace MR
@@ -33,7 +32,7 @@ namespace MR
 
 
     template <class Fixel>
-    class Fixel_map { 
+    class Fixel_map {
 
       public:
         Fixel_map (const Header& H) :
@@ -82,7 +81,7 @@ namespace MR
         vector<Fixel> fixels;
 
       private:
-        const class HeaderHelper : public ::MR::Header { 
+        const class HeaderHelper : public ::MR::Header {
           public:
             HeaderHelper (const ::MR::Header& H) :
                 ::MR::Header (H)
@@ -101,14 +100,24 @@ namespace MR
 
     template <class Fixel>
     class Fixel_map<Fixel>::MapVoxel
-    { 
+    {
       public:
         MapVoxel (const FMLS::FOD_lobes& in, const size_t first) :
             first_fixel_index (first),
             count (in.size()),
-            lookup_table (new uint8_t[in.lut.size()])
+            lookup_table (count ? new uint8_t[in[0].get_mask().size()] : nullptr)
         {
-          memcpy (lookup_table, &in.lut[0], in.lut.size() * sizeof (uint8_t));
+          const size_t num_dirs = in[0].get_mask().size();
+          memset (lookup_table, uint8_t(count), num_dirs);
+          for (size_t lobe_index = 0; lobe_index != count; ++lobe_index) {
+            const BitSet& mask (in[lobe_index].get_mask());
+            for (size_t dir_index = 0; dir_index != num_dirs; ++dir_index) {
+              if (mask[dir_index]) {
+                assert (lookup_table[dir_index] == count);
+                lookup_table[dir_index] = lobe_index;
+              }
+            }
+          }
         }
 
         MapVoxel (const size_t first, const size_t size) :
@@ -146,7 +155,7 @@ namespace MR
 
 
     template <class Fixel>
-    class Fixel_map<Fixel>::Iterator { 
+    class Fixel_map<Fixel>::Iterator {
         friend class Fixel_map<Fixel>::ConstIterator;
       public:
         Iterator (const MapVoxel* const voxel, Fixel_map<Fixel>& parent) :
@@ -164,7 +173,7 @@ namespace MR
     };
 
     template <class Fixel>
-    class Fixel_map<Fixel>::ConstIterator { 
+    class Fixel_map<Fixel>::ConstIterator {
       public:
         ConstIterator (const MapVoxel* const voxel, const Fixel_map& parent) :
             index     (voxel ? voxel->first_index() : 0),

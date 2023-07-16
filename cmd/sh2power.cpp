@@ -16,7 +16,7 @@
 
 #include "command.h"
 #include "image.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 #include "algo/threaded_loop.h"
 
 
@@ -34,7 +34,7 @@ void usage ()
       "which equals the mean-squared amplitude "
       "of the spherical function it represents."
 
-    + Math::SH::encoding_description;
+    + Math::Sphere::SH::encoding_description;
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()
@@ -48,13 +48,13 @@ void usage ()
 
 void run () {
   auto SH_data = Image<float>::open(argument[0]);
-  Math::SH::check (SH_data);
+  Math::Sphere::SH::check (SH_data);
 
   Header power_header (SH_data);
 
   bool spectrum = get_options("spectrum").size();
 
-  int lmax = Math::SH::LforN (SH_data.size (3));
+  int lmax = Math::Sphere::SH::LforN (SH_data.size (3));
   INFO ("calculating spherical harmonic power up to degree " + str (lmax));
 
   if (spectrum)
@@ -70,7 +70,7 @@ void run () {
     for (int l = 0; l <= lmax; l+=2) {
       float power = 0.0;
       for (int m = -l; m <= l; ++m) {
-        SH.index(3) = Math::SH::index (l, m);
+        SH.index(3) = Math::Sphere::SH::index (l, m);
         float val = SH.value();
         power += Math::pow2 (val);
       }
@@ -83,7 +83,7 @@ void run () {
     float power = 0.0;
     for (int l = 0; l <= lmax; l+=2) {
       for (int m = -l; m <= l; ++m) {
-        SH.index(3) = Math::SH::index (l, m);
+        SH.index(3) = Math::Sphere::SH::index (l, m);
         float val = SH.value();
         power += Math::pow2 (val);
       }

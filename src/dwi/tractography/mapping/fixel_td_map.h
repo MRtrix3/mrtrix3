@@ -17,9 +17,9 @@
 #ifndef __dwi_tractography_mapping_fixel_td_map_h__
 #define __dwi_tractography_mapping_fixel_td_map_h__
 
+#include "math/sphere/set/adjacency.h"
 
 #include "dwi/fixel_map.h"
-#include "dwi/directions/set.h"
 #include "dwi/tractography/mapping/voxel.h"
 
 namespace MR
@@ -43,7 +43,7 @@ namespace MR
           using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
 
         public:
-          Fixel_TD_map (const Header& H, const DWI::Directions::FastLookupSet& directions) :
+          Fixel_TD_map (const Header& H, const Math::Sphere::Set::CartesianWithAdjacency& directions) :
               Fixel_map<Fixel> (H),
               dirs (directions) { }
           Fixel_TD_map (const Fixel_TD_map&) = delete;
@@ -57,7 +57,7 @@ namespace MR
           using Fixel_map<Fixel>::accessor;
           using Fixel_map<Fixel>::fixels;
 
-          const DWI::Directions::FastLookupSet& dirs;
+          const Math::Sphere::Set::CartesianWithAdjacency& dirs;
 
           size_t dixel2fixel (const Dixel&) const;
 
