@@ -156,7 +156,6 @@ namespace MR
       class FOD_lobes : public vector<FOD_lobe> {
         public:
           Eigen::Array3i vox;
-          lookup_type lut;
       };
 
 

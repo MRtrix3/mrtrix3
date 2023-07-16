@@ -263,7 +263,6 @@ Segmented_FOD_receiver::Segmented_FOD_receiver (const Header& header,
 bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 {
   if (in.size()) {
-    assert (in.lut.size() == dirs.size());
     lobes.emplace_back (in, fixel_directions);
     fixel_count += lobes.back().size();
     if (amplitude_images.size()) {
