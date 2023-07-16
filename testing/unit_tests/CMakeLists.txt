@@ -1,13 +1,13 @@
 set(UNIT_TESTS_SRCS 
-    testing_unit_tests_bitset.cpp
-    testing_unit_tests_erfinv.cpp
-    testing_unit_tests_icls.cpp
-    testing_unit_tests_ordered_include.cpp
-    testing_unit_tests_ordered_queue.cpp
-    testing_unit_tests_parse_ints.cpp
-    testing_unit_tests_sh_precomputer.cpp
-    testing_unit_tests_shuffle.cpp
-    testing_unit_tests_to.cpp
+    bitset.cpp
+    erfinv.cpp
+    icls.cpp
+    ordered_include.cpp
+    ordered_queue.cpp
+    parse_ints.cpp
+    sh_precomputer.cpp
+    shuffle.cpp
+    to.cpp
 )
 
 find_program(BASH bash)

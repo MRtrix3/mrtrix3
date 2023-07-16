@@ -4,11 +4,11 @@ set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
 
 # Add test that cleans up temporary files
 add_test(
-    NAME bintest_cleanup
+    NAME bin_cleanup
     COMMAND ${BASH} -c "rm -rf ${DATA_DIR}/tmp* ${DATA_DIR}/*-tmp-*"
     WORKING_DIRECTORY ${DATA_DIR}
 )
-set_tests_properties(bintest_cleanup PROPERTIES FIXTURES_SETUP cleanup)
+set_tests_properties(bin_cleanup PROPERTIES FIXTURES_SETUP cleanup)
 
 function(add_binary_tests file_path)
     get_filename_component(file_name ${file_path} NAME_WE)
@@ -34,11 +34,11 @@ function(add_binary_tests file_path)
         set(EXEC_DIR3 ${MRTRIX_MAIN_BINARY_DIR}/testing/tools)
 
         add_test(
-            NAME bintest_${test_name}
+            NAME bin_${test_name}
             COMMAND ${BASH} -c "export PATH=${EXEC_DIR1}:${EXEC_DIR2}:${EXEC_DIR3}:$PATH;${line}"
             WORKING_DIRECTORY ${DATA_DIR}
         )
-        set_tests_properties(bintest_${test_name} 
+        set_tests_properties(bin_${test_name} 
             PROPERTIES FIXTURES_REQUIRED cleanup
         )
         message(VERBOSE "Add binary test command for ${file_name}: ${line}")
