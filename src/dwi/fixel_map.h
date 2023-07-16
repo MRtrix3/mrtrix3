@@ -105,9 +105,19 @@ namespace MR
         MapVoxel (const FMLS::FOD_lobes& in, const size_t first) :
             first_fixel_index (first),
             count (in.size()),
-            lookup_table (new uint8_t[in.lut.size()])
+            lookup_table (count ? new uint8_t[in[0].get_mask().size()] : nullptr)
         {
-          memcpy (lookup_table, &in.lut[0], in.lut.size() * sizeof (uint8_t));
+          const size_t num_dirs = in[0].get_mask().size();
+          memset (lookup_table, uint8_t(count), num_dirs);
+          for (size_t lobe_index = 0; lobe_index != count; ++lobe_index) {
+            const BitSet& mask (in[lobe_index].get_mask());
+            for (size_t dir_index = 0; dir_index != num_dirs; ++dir_index) {
+              if (mask[dir_index]) {
+                assert (lookup_table[dir_index] == count);
+                lookup_table[dir_index] = lobe_index;
+              }
+            }
+          }
         }
 
         MapVoxel (const size_t first, const size_t size) :
