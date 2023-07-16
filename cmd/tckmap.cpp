@@ -315,8 +315,7 @@ void run () {
   if (!voxel_size.empty())
     INFO ("creating image with voxel dimensions [ " + str(voxel_size[0]) + " " + str(voxel_size[1]) + " " + str(voxel_size[2]) + " ]");
 
-  Header output_header;
-  Header template_header;
+  Header output_header, target_grid, template_header;
   auto opt = get_options ("template");
   if (opt.size()) {
     // TODO Consider additional handling only in the case where -fixel has been specified
@@ -325,23 +324,24 @@ void run () {
     // - A fixel data file within the directory
     // - The directory path itself
     template_header = Header::open (opt[0][0]);
-    output_header = template_header;
-    output_header.keyval().clear();
-    output_header.keyval()["twi_template"] = str(opt[0][0]);
+    target_grid = Header (template_header);
+    target_grid.keyval().clear();
+    target_grid.keyval()["twi_template"] = str(opt[0][0]);
     if (!voxel_size.empty())
-      oversample_header (output_header, voxel_size);
+      oversample_header (target_grid, voxel_size);
   }
   else {
     if (voxel_size.empty())
       throw Exception ("please specify a template image and/or the desired voxel size");
-    generate_header (output_header, argument[0], voxel_size);
+    generate_header (target_grid, argument[0], voxel_size);
   }
 
-  if (output_header.ndim() > 3) {
-    output_header.ndim() = 3;
-    output_header.sanitise();
+  if (target_grid.ndim() > 3) {
+    target_grid.ndim() = 3;
+    target_grid.sanitise();
   }
 
+  output_header = Header (target_grid);
   add_line (output_header.keyval()["comments"], "track-weighted image");
   output_header.keyval()["tck_source"] = std::string (argument[0]);
 
@@ -520,7 +520,7 @@ void run () {
     //   (1/10th of the voxel size was found to give a good quantification of chordal length)
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
     try {
-      upsample_ratio = determine_upsample_ratio (output_header, properties, (precise ? 0.1 : 0.333));
+      upsample_ratio = determine_upsample_ratio (target_grid, properties, (precise ? 0.1 : 0.333));
       INFO ("track upsampling ratio automatically set to " + str(upsample_ratio));
     } catch (Exception& e) {
       e.push_back ("Try using -upsample option to explicitly set the streamline upsampling ratio;");
@@ -615,7 +615,7 @@ void run () {
   // Start initialising members for multi-threaded calculation
   TrackLoader loader (file, num_tracks);
 
-  std::unique_ptr<TrackMapperTWI> mapper ((stat_tck == GAUSSIAN) ? (new Gaussian::TrackMapper (output_header, contrast)) : (new TrackMapperTWI (output_header, contrast, stat_tck)));
+  std::unique_ptr<TrackMapperTWI> mapper ((stat_tck == GAUSSIAN) ? (new Gaussian::TrackMapper (target_grid, contrast)) : (new TrackMapperTWI (target_grid, contrast, stat_tck)));
   mapper->set_upsample_ratio      (upsample_ratio);
   mapper->set_map_zero            (map_zero);
   mapper->set_use_precise_mapping (precise);
