@@ -9,6 +9,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 option(BUILD_GUI "Build the MRtrix3 GUI" ON)
 option(USE_QT6 "Use Qt6 to build" OFF)
 option(WARNING_AS_ERRORS "Compiler warnings result in compilation errors" OFF)
+option(ENABLE_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(BUILD_TESTS "Build tests executables" ON)
 
 if(BUILD_TESTS)
@@ -50,6 +51,16 @@ add_compile_definitions(
     $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
     $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOSX>
 )
+
+if(ENABLE_STL_DEBUGGING AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+    if(MSVC)
+        add_compile_definitions(_ITERATOR_DEBUG_LEVEL=1)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        add_compile_options(_LIBCPP_DEBUG)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+        add_compile_options(_GLIBCXX_DEBUG _GLIBCXX_DEBUG_PEDANTIC)
+    endif()
+endif()
 
 if(WARNING_AS_ERRORS)
     if (MSVC)
