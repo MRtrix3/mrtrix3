@@ -6,7 +6,7 @@
             "displayName" : "Base configuration",
             "hidden" : true,
             "generator" : "Ninja",
-            "binaryDir" : "build",
+            "binaryDir": "${sourceParentDir}/mrtrix3-build-${presetName}",
             "cacheVariables" : {
                 "CMAKE_CXX_COMPILER_LAUNCHER" : "ccache"
             }
