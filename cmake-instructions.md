@@ -16,7 +16,7 @@
         $ mkdir build
         $ cmake -B build mrtrix3
     
-    If all the required dependencies are install, `CMake` should correctly configure the project.
+    If all the required dependencies are installed, `CMake` should correctly configure the project.
     It's highly recommended that you use `Ninja` and `ccache` (or `sccache`) to configure the project,
     to do this run `cmake -G Ninja -D CMAKE_CXX_COMPILER_LAUNCHER=ccache -B build mrtrix3` instead of
     second step above. This will provide you faster compilations speeds. You can install `Ninja` and 
@@ -52,8 +52,21 @@ You can enable/disable the following options (passing `-D MYOPTION=ON/OFF` to CM
 
 ## Testing
 
-This is very much WIP. Currently, basic support for some binary tests has been added. To run tests,
-you need to build the project as described above and then, from the build directory, run `ctest --output-on-failure`.
+This is very much WIP. To run the tests, you need to build the project as described above and then, from the build directory, run `ctest --output-on-failure`.
+
+Each test is prefixed by its category, so binary test names start with `bin_` and unit test names
+start with `unit_`.
+
+In order to run a specific set of tests, `ctest` allows you to make use of regex expressions, for example:
+
+        $ ctest -R unit # Runs all unit tests
+        $ ctest -R bin # Runs all binary tests
+        $ ctest -R bin_5tt2gmwmi # Runs the binary test for the 5tt2gmwmi command
+        $ ctest -E unit # Runs all tests, except unit tests
+
+You can also choose to rerun tests have failed by specifying the `--rerun-failed` option. 
+
+See [official documentation for using CTest](https://cmake.org/cmake/help/latest/manual/ctest.1.html).
 
 ## Known issues
 
