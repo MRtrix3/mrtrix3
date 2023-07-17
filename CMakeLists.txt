@@ -52,7 +52,7 @@ add_compile_definitions(
     $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOSX>
 )
 
-if(ENABLE_STL_DEBUGGING AND NOT CMAKE_BUILD_TYPE MATCHES "Debug")
+if(ENABLE_STL_DEBUGGING AND $<NOT:$<CONFIG:Debug>>)
     if(MSVC)
         add_compile_definitions(_ITERATOR_DEBUG_LEVEL=1)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
