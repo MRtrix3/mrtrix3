@@ -8,7 +8,15 @@
             "generator" : "Ninja",
             "binaryDir" : "build",
             "cacheVariables" : {
-                "CMAKE_CXX_COMPILER_LAUNCHER" : "sccache"
+                "CMAKE_CXX_COMPILER_LAUNCHER" : "ccache"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
             }
         },
         {
@@ -25,6 +33,8 @@
             "inherits" : "base",
             "cacheVariables" : {
                 "CMAKE_BUILD_TYPE" : "RelWithDebInfo",
+                "CMAKE_CXX_COMPILER_LAUNCHER" : "sccache",
+                "ENABLE_STL_DEBUGGING" : "ON",
                 "WARNING_AS_ERRORS" : "ON"
             }
         }
