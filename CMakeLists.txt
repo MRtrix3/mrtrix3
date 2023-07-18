@@ -1,5 +1,4 @@
-# TODO: Figure what's the minimum CMake we want
-cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 
 project(mrtrix3)
 include(GNUInstallDirs)
@@ -74,6 +73,6 @@ add_subdirectory(core)
 add_subdirectory(src)
 add_subdirectory(cmd)
 
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTS)
+if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTS)
     add_subdirectory(testing)
 endif()

@@ -1,13 +1,23 @@
 # Build MRtrix3 using CMake
 
 ## Requirements
-- CMake (>= 3.19)
+- CMake (>= 3.21)
 - A compiler that supports C++17
 - Qt >=5.9 (base and OpenGL components)
 - Eigen 3
 - FFTW
 - Ninja (Optional)
 - ccache or sccache (Optional)
+
+NOTE: If your OS doesn't provide a recent enough version of CMake, you can install it using `pip`:
+
+        $ pip install cmake
+
+Then you can add CMake's installation directory to your `PATH` environment variable (you can check where installed
+CMake by `pip show cmake`).
+For example, on Ubuntu you can add the following line to your `~/.bashrc`:
+
+        $ export PATH=~/.local/bin:$PATH
 
 ## Build instructions
 1. Clone the repo: `git clone https://github.com/mrtrix3/mrtrix3 -b cmake_experimental_shared`
