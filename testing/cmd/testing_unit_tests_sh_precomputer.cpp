@@ -17,7 +17,7 @@
 #include <sstream>
 
 #include "command.h"
-#include "math/SH.h"
+#include "math/sphere/SH.h"
 
 
 using namespace MR;
@@ -41,7 +41,7 @@ using dir_type = Eigen::Matrix<value_type,3,1>;
 
 void run ()
 {
-  using namespace Math::SH;
+  using namespace Math::Sphere::SH;
 
   const int lmax = 8;
 
