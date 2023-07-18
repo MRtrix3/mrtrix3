@@ -100,18 +100,18 @@ namespace MR
           using BaseType::operator<;
           using ValueType = connectivity_value_type;
           InitElementWeighted() :
-              sum_weights (connectivity_value_type(0)) { }
+              sum_weights (ValueType(0)) { }
           InitElementWeighted (const fixel_index_type fixel_index) = delete;
           InitElementWeighted (const fixel_index_type fixel_index, const MappedTrack& all_data) :
               BaseType (fixel_index),
               sum_weights (all_data.get_weight()) { }
           InitElementWeighted (const InitElementWeighted&) = default;
           FORCE_INLINE fixel_index_type index() const { return BaseType::index(); }
-          FORCE_INLINE InitElementWeighted& operator+= (const connectivity_value_type increment) { sum_weights += increment; return *this; }
+          FORCE_INLINE InitElementWeighted& operator+= (const ValueType increment) { sum_weights += increment; return *this; }
           FORCE_INLINE InitElementWeighted& operator= (const InitElementWeighted& that) { BaseType::operator= (that); sum_weights = that.sum_weights; return *this; }
           FORCE_INLINE ValueType value() const { return sum_weights; }
         private:
-          connectivity_value_type sum_weights;
+          ValueType sum_weights;
       };
 
 
@@ -192,7 +192,7 @@ namespace MR
           FORCE_INLINE void normalise (const ValueType norm_factor) { connectivity_value *= norm_factor; }
         private:
           fixel_index_type fixel_index;
-          connectivity_value_type connectivity_value;
+          ValueType connectivity_value;
       };
 
 
@@ -205,24 +205,25 @@ namespace MR
         public:
           using ElementType = NormElement;
           using BaseType = vector<NormElement>;
+          using ValueType = connectivity_value_type;
           NormFixel() :
-            norm_multiplier (connectivity_value_type (1)) { }
+            norm_multiplier (ValueType (1)) { }
           NormFixel (const BaseType& i) :
               BaseType (i),
-              norm_multiplier (connectivity_value_type (1)) { }
+              norm_multiplier (ValueType (1)) { }
           NormFixel (BaseType&& i) :
               BaseType (std::move (i)),
-              norm_multiplier (connectivity_value_type (1)) { }
+              norm_multiplier (ValueType (1)) { }
           void normalise() {
-            norm_multiplier = connectivity_value_type (0);
+            norm_multiplier = ValueType (0);
             for (const auto& c : *this)
               norm_multiplier += c.value();
-            norm_multiplier = norm_multiplier ? (connectivity_value_type (1) / norm_multiplier) : connectivity_value_type(0);
+            norm_multiplier = norm_multiplier ? (ValueType (1) / norm_multiplier) : ValueType(0);
           }
-          void normalise (const connectivity_value_type sum) {
-            norm_multiplier = sum ? (connectivity_value_type(1) / sum) : connectivity_value_type(0);
+          void normalise (const ValueType sum) {
+            norm_multiplier = sum ? (ValueType(1) / sum) : ValueType(0);
           }
-          connectivity_value_type norm_multiplier;
+          ValueType norm_multiplier;
       };
 
 
