@@ -1,0 +1,27 @@
+#!/usr/bin/env xdg-open
+
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+[Desktop Entry]
+Value=1.0
+Type=Application
+Terminal=false
+Name=MRView
+GenericName=Medical image viewer
+Comment=The MRtrix image viewer
+Icon=application-x-mrtrix
+Exec=mrview %F
+Categories=Science;Development;Education;MedicalSoftware
+MimeType=application/x-mrtrix;application/x-mrtrix-gz;application/x-nifti;application/x-nifti-gz;application/x-image-mgh;application/x-image-mgz;application/x-image-analyze;

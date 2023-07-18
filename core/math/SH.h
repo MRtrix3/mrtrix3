@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -186,7 +186,7 @@ namespace MR
         }
 
       template <typename ValueType>
-      class Transform { MEMALIGN(Transform<ValueType>)
+      class Transform {
         public:
           using matrix_type = Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic>;
 
@@ -377,7 +377,7 @@ namespace MR
 
 
       namespace {
-        template <typename> struct __dummy { NOMEMALIGN using type = int; };
+        template <typename> struct __dummy {  using type = int; };
       }
 
 
@@ -387,7 +387,7 @@ namespace MR
 
       //! used to speed up SH calculation
       template <typename ValueType> class PrecomputedFraction
-      { NOMEMALIGN
+      {
         public:
           PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
           ValueType f1, f2;
@@ -397,7 +397,7 @@ namespace MR
 
       //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
       template <typename ValueType> class PrecomputedAL
-      { NOMEMALIGN
+      {
         public:
           using value_type = ValueType;
 
@@ -579,6 +579,10 @@ namespace MR
             typename VectorType::Scalar& d2SH_daz2,
             PrecomputedAL<typename VectorType::Scalar>* precomputer)
         {
+          if(lmax < 0){
+            throw std::logic_error("lmax cannot be negative!");
+          }
+
           using value_type = typename VectorType::Scalar;
           value_type sel = std::sin (elevation);
           value_type cel = std::cos (elevation);
@@ -601,7 +605,7 @@ namespace MR
             }
           }
 
-          amplitude = sh[0] * AL[0];
+          amplitude = sh[index (0, 0)] * AL[index_mpos (0, 0)];
           for (int l = 2; l <= (int) lmax; l+=2) {
             const value_type& v (sh[index (l,0)]);
             amplitude += v * AL[index_mpos (l,0)];
@@ -650,7 +654,7 @@ namespace MR
 
       //! a class to hold the coefficients for an apodised point-spread function.
       template <typename ValueType> class aPSF
-      { MEMALIGN(aPSF<ValueType>)
+      {
         public:
           aPSF (const size_t lmax) :
             lmax (lmax),

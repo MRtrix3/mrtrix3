@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -74,7 +74,7 @@ using value_type = float;
 
 
 class Worker
-{ NOMEMALIGN
+{ 
   public:
     Worker (const std::unique_ptr<Resampling::Base>& in) :
         resampler (in->clone()) { }
@@ -94,7 +94,7 @@ class Worker
 
 
 class Receiver
-{ NOMEMALIGN
+{ 
   public:
     Receiver (const std::string& path, const Properties& properties) :
         writer (path, properties),

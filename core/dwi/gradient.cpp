@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #include "dwi/gradient.h"
 #include "file/nifti_utils.h"
+#include "dwi/shells.h"
 
 namespace MR
 {
@@ -253,15 +254,17 @@ namespace MR
         Eigen::Array<default_type, Eigen::Dynamic, 1> squared_norms = grad.leftCols(3).rowwise().squaredNorm();
         // ensure interpreted directions are always normalised
         // also make sure that directions of [0, 0, 0] don't affect subsequent calculations
+        bool warnambiguous = false;
         for (ssize_t row = 0; row != grad.rows(); ++row) {
           if (squared_norms[row])
             grad.row(row).template head<3>().array() /= std::sqrt(squared_norms[row]);
           else
-            squared_norms[row] = 1.0;
+            warnambiguous = warnambiguous || ( grad.row(row)[3] > bzero_threshold() );
         }
         // modulate verbosity of message & whether or not header is modified
         // based on magnitude of effect of normalisation
-        const default_type max_log_scaling_factor = squared_norms.log().abs().maxCoeff();
+        const default_type max_log_scaling_factor = squared_norms.unaryExpr ([](double v) {
+            return v > 0.0 ? abs(log(v)) : 0.0; }).maxCoeff();
         const default_type max_scaling_factor = std::exp (max_log_scaling_factor);
         const bool exceeds_single_precision = max_log_scaling_factor > 1e-5;
         const bool requires_bvalue_scaling = max_log_scaling_factor > 0.01;
@@ -272,6 +275,9 @@ namespace MR
         if (( requires_bvalue_scaling && bvalue_scaling == BValueScalingBehaviour::Auto ) ||
             bvalue_scaling == BValueScalingBehaviour::UserOn ) {
           grad.col(3).array() *= squared_norms;
+          if (warnambiguous)
+            WARN ("Ambiguous [ 0 0 0 non-zero ] entries found in DW gradient table. "
+                  "These will be interpreted as b=0 volumes unless -bvalue_scaling is disabled.");
           INFO ("b-values scaled by the square of DW gradient norm "
               "(maximum scaling factor = " + str(max_scaling_factor) + ")");
         }
@@ -288,7 +294,8 @@ namespace MR
         // write the scheme as interpreted back into the header if:
         // - vector normalisation effect is large, regardless of whether or not b-value scaling was applied
         // - gradient information was pulled from file
-        if (exceeds_single_precision || get_options ("grad").size() || get_options ("fslgrad").size())
+        // - explicit b-value scaling is requested
+        if (exceeds_single_precision || get_options ("grad").size() || get_options ("fslgrad").size() || bvalue_scaling != BValueScalingBehaviour::Auto)
           set_DW_scheme (const_cast<Header&> (header), grad);
 
         INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion gradient table");

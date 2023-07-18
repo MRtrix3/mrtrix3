@@ -36,6 +36,8 @@ Options
 
 -  **-noise level** The output noise map, i.e., the estimated noise level 'sigma' in the data. Note that on complex input data, this will be the total noise level across real and imaginary channels, so a scale factor sqrt(2) applies.
 
+-  **-rank cutoff** The selected signal rank of the output denoised image.
+
 -  **-datatype float32/float64** Datatype for the eigenvalue decomposition (single or double precision). For complex input data, this will select complex float32 or complex float64 datatypes.
 
 -  **-estimator Exp1/Exp2** Select the noise level estimator (default = Exp2), either:  |br|

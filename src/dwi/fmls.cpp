@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -92,7 +92,6 @@ namespace MR {
 
 
 
-
       IntegrationWeights::IntegrationWeights (const DWI::Directions::Set& dirs) :
           data (dirs.size())
       {
@@ -158,7 +157,7 @@ namespace MR {
 
 
 
-      class Max_abs { NOMEMALIGN
+      class Max_abs { 
         public:
           bool operator() (const default_type& a, const default_type& b) const { return (abs (a) > abs (b)); }
       };
@@ -264,7 +263,7 @@ namespace MR {
 
             // Revise multiple peaks if present
             for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
-              Eigen::Vector3 newton_peak_dir = i->get_peak_dir (peak_index); // to be updated by subsequent Math::SH::get_peak() call
+              Eigen::Vector3d newton_peak_dir = i->get_peak_dir (peak_index); // to be updated by subsequent Math::SH::get_peak() call
               const default_type newton_peak_value = Math::SH::get_peak (in, lmax, newton_peak_dir, &(*precomputer));
               if (std::isfinite (newton_peak_value) && newton_peak_dir.allFinite()) {
 
@@ -301,6 +300,8 @@ namespace MR {
             }
           }
         }
+
+        std::sort (out.begin(), out.end(), [] (const FOD_lobe& a, const FOD_lobe& b) { return (a.get_integral() > b.get_integral()); } );
 
         if (create_lookup_table) {
 

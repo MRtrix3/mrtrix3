@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -58,7 +58,7 @@ namespace MR
       using QuatType = Eigen::Quaternion<default_type>;
 
       template <class MetricType = Registration::Metric::MeanSquaredNoGradient>
-        class ExhaustiveRotationSearch { MEMALIGN(ExhaustiveRotationSearch<MetricType>)
+        class ExhaustiveRotationSearch { 
           public:
             ExhaustiveRotationSearch (
               Image<default_type>& image1,

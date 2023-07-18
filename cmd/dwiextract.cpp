@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -67,11 +67,13 @@ void usage ()
 void run()
 {
   auto input_image = Image<float>::open (argument[0]);
+  if (input_image.ndim() < 4)
+    throw Exception ("Epected input image to contain more than three dimensions");
   auto grad = DWI::get_DW_scheme (input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
-  vector<int> volumes;
+  vector<uint32_t> volumes;
   bool bzero = get_options ("bzero").size();
   if (get_options ("shells").size() || get_options ("singleshell").size()) {
     DWI::Shells shells (grad);
@@ -94,7 +96,7 @@ void run()
   } else {
     // "pe" option has been provided - need to initialise list of volumes
     //   to include all voxels, as the PE selection filters from this
-    for (int i = 0; i != grad.rows(); ++i)
+    for (uint32_t i = 0; i != grad.rows(); ++i)
       volumes.push_back (i);
   }
 
@@ -106,7 +108,7 @@ void run()
     const auto filter = parse_floats (opt[0][0]);
     if (!(filter.size() == 3 || filter.size() == 4))
       throw Exception ("Phase encoding filter must be a comma-separated list of either 3 or 4 numbers");
-    vector<int> new_volumes;
+    vector<uint32_t> new_volumes;
     for (const auto i : volumes) {
       bool keep = true;
       for (size_t axis = 0; axis != 3; ++axis) {

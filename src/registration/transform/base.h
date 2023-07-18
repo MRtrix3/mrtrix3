@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -83,7 +83,7 @@ namespace MR
        * The translation also should be initialised as image1 image centre minus the image2 image centre.
        *
        */
-      class Base  { MEMALIGN(Base)
+      class Base  { 
         public:
 
           using ParameterType = default_type;
@@ -118,7 +118,7 @@ namespace MR
             return number_of_parameters;
           }
 
-          Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params (const Eigen::Vector3& p) const {
+          Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params (const Eigen::Vector3d& p) const {
             throw Exception ("FIXME: get_jacobian_vector_wrt_params not implemented for this metric");
             Eigen::Matrix<default_type, 4, 1> jac;
             return jac;
@@ -173,23 +173,23 @@ namespace MR
             compute_halfspace_transformations();
           }
 
-          const Eigen::Vector3 get_translation() const {
+          const Eigen::Vector3d get_translation() const {
             return trafo.translation();
           }
 
-          void set_centre_without_transform_update (const Eigen::Vector3& centre_in) {
+          void set_centre_without_transform_update (const Eigen::Vector3d& centre_in) {
             centre = centre_in;
             DEBUG ("centre: " + str(centre.transpose()));
           }
 
-          void set_centre (const Eigen::Vector3& centre_in) {
+          void set_centre (const Eigen::Vector3d& centre_in) {
             centre = centre_in;
             DEBUG ("centre: " + str(centre.transpose()));
             compute_offset();
             compute_halfspace_transformations();
           }
 
-          const Eigen::Vector3 get_centre() const {
+          const Eigen::Vector3d get_centre() const {
             return centre;
           }
 
@@ -212,7 +212,7 @@ namespace MR
             nonsymmetric = asym;
           }
 
-          void set_offset (const Eigen::Vector3& offset_in) {
+          void set_offset (const Eigen::Vector3d& offset_in) {
             trafo.translation() = offset_in;
             compute_halfspace_transformations();
           }
@@ -280,7 +280,7 @@ namespace MR
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half;
           Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse;
-          Eigen::Vector3 centre;
+          Eigen::Vector3d centre;
           Eigen::VectorXd optimiser_weights;
           bool nonsymmetric;
 

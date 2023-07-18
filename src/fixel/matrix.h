@@ -1,15 +1,17 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -38,7 +40,7 @@ namespace MR
 
 
       class MappedTrack : public vector<fixel_index_type>
-      { NOMEMALIGN
+      {
         public:
           using BaseType = vector<fixel_index_type>;
           default_type get_weight() const { return weight; }
@@ -50,7 +52,7 @@ namespace MR
 
 
       class InitElementBase
-      { NOMEMALIGN
+      {
         public:
           InitElementBase() :
               fixel_index (std::numeric_limits<fixel_index_type>::max()) { }
@@ -67,7 +69,7 @@ namespace MR
 
 
       class InitElementUnweighted : private InitElementBase
-      { NOMEMALIGN
+      {
         public:
           using BaseType = InitElementBase;
           using BaseType::operator<;
@@ -91,8 +93,8 @@ namespace MR
 
 
 
-        class InitElementWeighted : private InitElementBase
-      { NOMEMALIGN
+      class InitElementWeighted : private InitElementBase
+      {
         public:
           using BaseType = InitElementBase;
           using BaseType::operator<;
@@ -116,7 +118,7 @@ namespace MR
 
       template <class ElementType>
       class InitFixelBase : public vector<ElementType>
-      { NOMEMALIGN
+      {
         public:
           using BaseType = vector<ElementType>;
           virtual ~InitFixelBase() { }
@@ -128,7 +130,7 @@ namespace MR
       };
 
       class InitFixelUnweighted : public InitFixelBase<InitElementUnweighted>
-      { NOMEMALIGN
+      {
         public:
           using BaseType = InitFixelBase<InitElementUnweighted>;
           InitFixelUnweighted() :
@@ -141,7 +143,7 @@ namespace MR
       };
 
       class InitFixelWeighted : public InitFixelBase<InitElementWeighted>
-      { NOMEMALIGN
+      {
         public:
           using BaseType = InitFixelBase<InitElementWeighted>;
           InitFixelWeighted() :
@@ -177,7 +179,7 @@ namespace MR
       // A class to store fixel index / connectivity value pairs
       //   only after the connectivity matrix has been thresholded / normalised
       class NormElement
-      { NOMEMALIGN
+      {
         public:
           using ValueType = connectivity_value_type;
           NormElement (const fixel_index_type fixel_index,
@@ -199,7 +201,7 @@ namespace MR
       // With the internally normalised CFE expression, want to store a
       //   multiplicative factor per fixel
       class NormFixel : public vector<NormElement>
-      { MEMALIGN(NormFixel)
+      {
         public:
           using ElementType = NormElement;
           using BaseType = vector<NormElement>;
@@ -279,7 +281,7 @@ namespace MR
 
       // Wrapper class for reading the connectivity matrix from the filesystem
       class Reader
-      { MEMALIGN(Reader)
+      {
 
         public:
           Reader (const std::string& path, const Image<bool>& mask);

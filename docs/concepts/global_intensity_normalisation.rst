@@ -46,7 +46,7 @@ folder containing the corresponding whole brain mask images (with the same filen
 prefix). The script runs by first computing diffusion tensor Fractional Anisotropy (FA)
 maps, registering these to a groupwise template, then thresholding the template FA map
 to obtain an *approximate* white matter mask. The mask is then transformed back into the
-space of each subject image and used in the :ref:`dwinormalise_individual` command to
+space of each subject image and used in the :ref:`dwinormalise_manual` command to
 normalise the input DW images to have the same b=0 white matter median value. All
 intensity normalised data will be output in a single folder. As previously mentioned,
 all DWI data must be bias field corrected *before* applying :ref:`dwinormalise_group`,

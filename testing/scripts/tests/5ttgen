@@ -11,4 +11,4 @@ mkdir -p ../tmp/5ttgen/hsvs && 5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/
 5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/modules.mif -hippocampi subfields -thalami nuclei -force && testing_diff_header ../tmp/5ttgen/hsvs/modules.mif 5ttgen/hsvs/modules.mif.gz
 5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/first.mif -hippocampi first -thalami first -force && testing_diff_header ../tmp/5ttgen/hsvs/first.mif  5ttgen/hsvs/first.mif.gz
 5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/aseg.mif -hippocampi aseg -thalami aseg -force && testing_diff_header ../tmp/5ttgen/hsvs/aseg.mif  5ttgen/hsvs/aseg.mif.gz
-mrgrid freesurfer/sub-01/mri/norm.mgz regrid tmp.mif -voxel 2 -force && 5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/template.mif -template tmp.mif -force && testing_diff_header ../tmp/5ttgen/hsvs/template.mif 5ttgen/hsvs/template.mif.gz
+5ttgen hsvs freesurfer/sub-01 ../tmp/5ttgen/hsvs/template.mif -template BIDS/sub-01/anat/sub-01_T1w.nii.gz -force && testing_diff_header ../tmp/5ttgen/hsvs/template.mif 5ttgen/hsvs/template.mif.gz

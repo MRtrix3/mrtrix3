@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@ namespace MR
     @{ */
 
   //! a dummy image to iterate over, useful for multi-threaded looping.
-  class Iterator { NOMEMALIGN
+  class Iterator { 
     public:
       Iterator() = delete;
       template <class InfoType>

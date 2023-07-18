@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ namespace MR
 
       template <class Fixel>
       class Fixel_TD_map : public Fixel_map<Fixel>
-      { MEMALIGN(Fixel_TD_map<Fixel>)
+      {
 
           using MapVoxel = typename Fixel_map<Fixel>::MapVoxel;
           using VoxelAccessor = typename Fixel_map<Fixel>::VoxelAccessor;
@@ -51,6 +51,7 @@ namespace MR
           virtual ~Fixel_TD_map() { }
 
           virtual bool operator() (const SetDixel& in);
+          using Fixel_map<Fixel>::operator();
 
         protected:
           using Fixel_map<Fixel>::accessor;

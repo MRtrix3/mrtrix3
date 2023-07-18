@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,15 +27,18 @@ namespace MR
   {
 
     class Pipe : public Base
-    { NOMEMALIGN
+    { 
       public:
         Pipe (Base&& io_handler) : Base (std::move (io_handler)) { }
+
+        static bool delete_piped_images;
 
       protected:
         std::unique_ptr<File::MMap> mmap;
 
         virtual void load (const Header&, size_t);
         virtual void unload (const Header&);
+
     };
 
   }

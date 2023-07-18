@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ namespace Connectome {
 
 
 class Streamline_nodepair : public Tractography::Streamline<>
-{ MEMALIGN(Streamline_nodepair)
+{ 
   public:
     Streamline_nodepair() : Tractography::Streamline<>(), nodes (std::make_pair (0, 0)) { }
     Streamline_nodepair (const size_t i) : Tractography::Streamline<> (i), nodes (std::make_pair (0, 0)) { }
@@ -47,7 +47,7 @@ class Streamline_nodepair : public Tractography::Streamline<>
 
 
 class Streamline_nodelist : public Tractography::Streamline<>
-{ MEMALIGN(Streamline_nodelist)
+{ 
   public:
     Streamline_nodelist() : Tractography::Streamline<>(), nodes () { }
     Streamline_nodelist (const size_t i) : Tractography::Streamline<> (i), nodes () { }

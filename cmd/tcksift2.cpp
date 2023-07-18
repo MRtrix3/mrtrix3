@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -118,7 +118,12 @@ void usage ()
   REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. "
-    "NeuroImage, 2015, 119, 338-351";
+    "NeuroImage, 2015, 119, 338-351"
+
+    + "* If using the -linear option: \n"
+    "Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. " // Internal
+    "Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. "
+    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
 
   ARGUMENTS
   + Argument ("in_tracks",   "the input track file").type_tracks_in()
@@ -159,23 +164,24 @@ void run ()
 
   TckFactor tckfactor (in_dwi, dirs);
 
-  const bool output_debug = get_options ("output_debug").size();
-
-  if (output_debug)
-    tckfactor.output_proc_mask ("proc_mask.mif");
-
   tckfactor.perform_FOD_segmentation (in_dwi);
   tckfactor.scale_FDs_by_GM();
 
-  tckfactor.map_streamlines (argument[0]);
+  std::string debug_path = get_option_value<std::string> ("output_debug", "");
+  if (debug_path.size()) {
+    tckfactor.initialise_debug_image_output (debug_path);
+    tckfactor.output_proc_mask (Path::join(debug_path, "proc_mask.mif"));
+  }
 
+  tckfactor.map_streamlines (argument[0]);
   tckfactor.store_orig_TDs();
 
-  const float min_td_frac = get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT);
-  tckfactor.remove_excluded_fixels (min_td_frac);
+  tckfactor.remove_excluded_fixels (get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT));
 
-  if (output_debug)
-    tckfactor.output_all_debug_images ("before");
+  if (debug_path.size()) {
+    tckfactor.output_TD_images (debug_path, "origTD_fixel.mif", "trackcount_fixel.mif");
+    tckfactor.output_all_debug_images (debug_path, "before");
+  }
 
   if (get_options ("linear").size()) {
 
@@ -220,14 +226,16 @@ void run ()
 
   }
 
+  tckfactor.report_entropy();
+
   tckfactor.output_factors (argument[2]);
 
   auto opt = get_options ("out_coeffs");
   if (opt.size())
     tckfactor.output_coefficients (opt[0][0]);
 
-  if (output_debug)
-    tckfactor.output_all_debug_images ("after");
+  if (debug_path.size())
+    tckfactor.output_all_debug_images (debug_path, "after");
 
   opt = get_options ("out_mu");
   if (opt.size()) {

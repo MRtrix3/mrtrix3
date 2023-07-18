@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,7 @@
 #include "header.h"
 
 #define DECLARE_IMAGEFORMAT(format, desc) \
-  class format : public Base { NOMEMALIGN \
+  class format : public Base {  \
     public:  \
       format () : Base (desc) { } \
       virtual std::unique_ptr<ImageIO::Base> read (Header& H) const; \
@@ -39,7 +39,7 @@ namespace MR
     /*! All image formats supported by %MRtrix are handled by a class derived
      * from the Formats::Base. An instance of each of these classes is
      * added to the list in the file list.cpp. */
-    class Base { NOMEMALIGN
+    class Base { 
       public:
         Base (const char* desc) : description (desc) { }
         virtual ~Base() { }
@@ -85,10 +85,7 @@ namespace MR
         virtual std::unique_ptr<ImageIO::Base> create (Header& H) const = 0;
     };
 
-#ifdef MRTRIX_AS_R_LIBRARY
     DECLARE_IMAGEFORMAT (RAM, "RAM buffer");
-#endif
-
     DECLARE_IMAGEFORMAT (Pipe, "Internal pipe");
     DECLARE_IMAGEFORMAT (DICOM, "DICOM");
     DECLARE_IMAGEFORMAT (MRtrix, "MRtrix");

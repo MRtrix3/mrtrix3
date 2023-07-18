@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,8 +31,8 @@ namespace MR
       namespace Init
       {
         enum InitType {set_centre_mass, set_centre_geometric, mass, geometric, moments, rot_search, none};
-        struct LinearInitialisationParams { MEMALIGN(LinearInitialisationParams)
-          struct TranslationInit { MEMALIGN(TranslationInit)
+        struct LinearInitialisationParams { 
+          struct TranslationInit { 
             bool unmasked1;
             bool unmasked2;
             TranslationInit () :
@@ -40,16 +40,16 @@ namespace MR
               unmasked2 (false) {} // TODO config parsing
           };
 
-          struct RotationInit { MEMALIGN(RotationInit)
+          struct RotationInit { 
             bool unmasked1;
             bool unmasked2;
-            struct rot_search { MEMALIGN(rot_search)
+            struct rot_search { 
               vector<default_type> angles;
               default_type scale;
               size_t directions;
               bool run_global;
               double translation_extent;
-              struct global_search { MEMALIGN(global_search)
+              struct global_search { 
                 size_t iterations;
                 global_search () :
                   iterations (10000) {}

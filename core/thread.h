@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -58,7 +58,7 @@ namespace MR
   namespace Thread
   {
 
-    class __Backend { NOMEMALIGN
+    class __Backend { 
       public:
         __Backend();
         ~__Backend();
@@ -96,7 +96,7 @@ namespace MR
 
     namespace {
 
-      class __thread_base { NOMEMALIGN
+      class __thread_base { 
         public:
           __thread_base (const std::string& name = "unnamed") : name (name) { __Backend::register_thread(); }
           __thread_base (const __thread_base&) = delete;
@@ -109,7 +109,7 @@ namespace MR
       };
 
 
-      class __single_thread : public __thread_base { NOMEMALIGN
+      class __single_thread : public __thread_base { 
         public:
           template <class Functor>
             __single_thread (Functor&& functor, const std::string& name = "unnamed") :
@@ -145,7 +145,7 @@ namespace MR
 
 
       template <class Functor>
-        class __multi_thread : public __thread_base { NOMEMALIGN
+        class __multi_thread : public __thread_base { 
           public:
             __multi_thread (Functor& functor, size_t nthreads, const std::string& name = "unnamed") :
               __thread_base (name), functors ( (nthreads>0 ? nthreads-1 : 0), functor) {
@@ -205,7 +205,7 @@ namespace MR
 
 
       template <class Functor>
-        class __Multi { NOMEMALIGN
+        class __Multi { 
           public:
             __Multi (Functor& object, size_t number) : functor (object), num (number) { }
             __Multi (__Multi&& m) = default;
@@ -217,7 +217,7 @@ namespace MR
         };
 
       template <class Functor>
-        class __run { NOMEMALIGN
+        class __run { 
           public:
             using type = __single_thread;
             type operator() (Functor& functor, const std::string& name) {
@@ -226,7 +226,7 @@ namespace MR
         };
 
       template <class Functor>
-        class __run<__Multi<Functor>> { NOMEMALIGN
+        class __run<__Multi<Functor>> { 
           public:
             using type = __multi_thread<Functor>;
             type operator() (__Multi<Functor>& functor, const std::string& name) {

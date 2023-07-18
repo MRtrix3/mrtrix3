@@ -161,7 +161,7 @@ image and provide this alternative FOD image to SIFT (this should have
 little influence on the outcome of the algorithm, but will greatly
 reduce memory consumption):
 
-``mrresize WM_FODs.mif FOD_downsampled.mif -scale 0.5 -interp sinc``
+``mrgrid WM_FODs.mif regrid FOD_downsampled.mif -scale 0.5 -interp sinc``
 
 If this still does not adequately reduce RAM usage, you will need to
 reduce the number of input streamlines to a level where your processing

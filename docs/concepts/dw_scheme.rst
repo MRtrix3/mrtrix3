@@ -254,8 +254,8 @@ The specific steps performed by *MRtrix3* include:
 - if required, scaling the *b*-values by the square of the gradient vector
   amplitude -- see `b-value scaling`_ for details.
 - where relevant, verifying that the DW gradient tables contains the data in a
-  shell structure, by clustering similar *b*-values together (see :ref:`mrinfo`'s
-  ``-shell_bvalues`` and ``-shell_sizes`` options);
+  shell structure, by clustering similar *b*-values together (see 
+  :ref:`dw_shells` below);
 
 .. NOTE::
 
@@ -265,6 +265,85 @@ The specific steps performed by *MRtrix3* include:
   other *MRtrix3* applications. If you need to display the raw DW gradient
   table before any modification, use :ref:`mrinfo` with the ``-property
   dw_scheme`` option.
+
+.. _dw_shells:
+
+*b*-value shells
+................
+
+For a number of *MRtrix3* processing steps, it is necessary for DWI data to be
+arranged in "shells": that is, sets of volumes within which the *strength* of
+diffusion sensitisation is identical, and only the *direction* of diffusion
+sensitisation varies, and hence when visualised in *q*-space such a set of volumes
+construct a "shell" of points at a fixed distance from the origin. Data acquired
+in such a fashion is, for instance, necessary for application of the spherical
+deconvolution model. 
+
+However sometimes even if data were acquired with the *intent* of being utilised
+in this fashion, the *reported* *b*-values of such volumes may not be *precisely*
+equivalent; e.g.::
+
+  5 5 1489.96 2994.94 1489.99 3009.96 1499.95 2989.96 
+
+Intuitively, these data look like there are three unique *b*-values: 0, 1500 and
+3000; but the actual reported values are slightly different. This can be due to e.g.:
+
+- The scanner vendor reporting a *b*-value that is calculated based on the
+  comprehensive set of all gradients applied during acquisition (this regularly 
+  deviates by 5-20 s/mm² from the nominal intended *b*-value);
+
+- Imprecise gradient vector directions leading to minor modulation of the *b*-value
+  once those vector directions are normalised to unit length (see :ref:`dw_scaling`
+  below).
+
+In order to robustly handle such data, some *MRtrix3* commands will internally run
+a clustering algorithm that groups DWI volumes according to *b*-value similarity.
+So for instance, if one were to run the :ref:`dwiextract` command on the data above,
+specifying the option ``-shell 3000``, those volumes with reported *b*-values 
+2994.94, 3009.96 and 2989.96 would be extracted, despite the *b*-value not being
+*precisely* 3000 in each case.
+
+The behaviour of this algorithm can be interrogated directly using the :ref:`mrinfo`
+command, using the following command-line options:
+
+- ``-shell_bvalues``: The mean *b*-value of those volumes attributed to each discrete 
+  shell;
+- ``-shell_sizes``: The number of volumes attributed to each discrete shell;
+- ``-shell_indices``: The indices of the specific volumes attributed to each shell;
+  note that the first volume of the 4D series has index 0; volumes within each shell
+  are separated by commas, while shells are separated by spaces.
+
+It is possible that in some instances, this automatic grouping of volumes with
+near-equivalent *b*-values into shells within *MRtrix3* may not yield the results
+wanted by the user. Rather than modifying the gradient table data directly, it is
+possible in some instances that modifying the underlying parameters within the
+*b*-value *clustering* algorithm may be sufficient to alter this behaviour. The
+following two variables can be set within the MRtrix :ref:`mrtrix_config`:
+
+-  :option:`BValueEpsilon`: If the *minimal* difference in *b*-value between two groups
+   of volumes is at least this amount (in s/mm²), then those two groups
+   will be classified as two separate shells, rather than agglomerated into a single
+   shell.
+
+-  :option:`BZeroThreshold`: Any volume for which the *b*-value is this value or lesser
+   will be classified as a "*b* = 0" volume, and therefore assigned to the group of
+   all volumes that are classified as "*b* = 0".
+
+.. NOTE::
+
+  There can be some ambiguity around the relationship between the common definition
+  of "shell" in the diffusion MRI field, and the interpretation of *b* = 0 volumes in 
+  *MRtrix3*. A DWI acquisition that involves acquisition of some number of *b* = 0
+  volumes, and some number of volumes at some fixed non-zero *b*-value, e.g. *b* = 3000,
+  would conventionally be referred to as a "single-shell" acquisition. However,
+  internally within *MRtrix3*, such data would be interpreted as consisting of *two*
+  "shells": one at *b* = 0, and one at *b* = 3000. The nominally *b* = 0 volumes can still
+  be utilised as a "shell" in various applications given that, when treated as a 
+  discrete set, they possess effectively an equivalent *b*-value, and the condition
+  of "different sensitisation directions" is essentially irrelevant in this specific
+  case.
+
+.. _dw_scaling:
 
 *b*-value scaling
 -----------------

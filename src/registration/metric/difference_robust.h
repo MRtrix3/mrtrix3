@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,16 +28,16 @@ namespace MR
     namespace Metric
     {
       template<class Estimator = L2>
-        class DifferenceRobust : public LinearBase { MEMALIGN(DifferenceRobust<Estimator>)
+        class DifferenceRobust : public LinearBase { 
           public:
             DifferenceRobust () = delete;
             DifferenceRobust (Estimator est) : estimator(est) {}
 
             template <class Params>
               default_type operator() (Params& params,
-                                       const Eigen::Vector3 im1_point,
-                                       const Eigen::Vector3 im2_point,
-                                       const Eigen::Vector3 midway_point,
+                                       const Eigen::Vector3d im1_point,
+                                       const Eigen::Vector3d im2_point,
+                                       const Eigen::Vector3d midway_point,
                                        Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
                 assert (!this->weighted && "FIXME: set_weights not implemented for 3D metric");
@@ -69,7 +69,7 @@ namespace MR
         };
 
       template<class Im1Type, class Im2Type, class Estimator = L2>
-        class DifferenceRobust4D : public LinearBase { MEMALIGN(DifferenceRobust4D<Im1Type,Im2Type,Estimator>)
+        class DifferenceRobust4D : public LinearBase { 
           public:
             DifferenceRobust4D () = delete;
             DifferenceRobust4D (const Im1Type& im1, const Im2Type& im2, const Estimator& est) :
@@ -103,9 +103,9 @@ namespace MR
 
           template <class Params>
             default_type operator() (Params& params,
-                                     const Eigen::Vector3& im1_point,
-                                     const Eigen::Vector3& im2_point,
-                                     const Eigen::Vector3& midway_point,
+                                     const Eigen::Vector3d& im1_point,
+                                     const Eigen::Vector3d& im2_point,
+                                     const Eigen::Vector3d& midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
               params.im1_image_interp->value_and_gradient_row_wrt_scanner (im1_values, im1_grad);

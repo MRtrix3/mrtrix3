@@ -28,7 +28,7 @@ import os
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = [ 'sphinx.ext.mathjax' ]
+extensions = [ 'sphinx.ext.mathjax', 'notfound.extension' ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -308,3 +308,21 @@ else:
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
+
+
+# --- options for 404 sphinx-notfound-page
+
+notfound_context = {'title': 'Page not found', 'body': '''
+<h1>Page not found</h1>
+<p>
+This page does not exist in the documentation for this version of <em>MRtrix3</em>.
+This is likely to be due to updates we make every so often to the way the documentation is organised.
+</p>
+<p>
+To find the page you're looking for, make sure to select the relevant version, by clicking on the green version string at the bottom of the menu. To figure out which version of <em>MRtrix3</em> you're currently using, use the <code>-version</code> option with any <em>MRtrix3</em> command, for example: <code>mrinfo -version</code>.
+</p>
+<p>
+Alternatively, if you want to find the corresponding section in this version of the documentation, use the search functionality at the top left of the page.
+</p>
+'''}
+

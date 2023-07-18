@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ namespace MR
 
       // Vector that stores the name of the file imported, so it can be displayed in the GUI
       class FileDataVector : public Eigen::VectorXf
-      { MEMALIGN(FileDataVector)
+      { 
         public:
           using base_t = Eigen::VectorXf;
           FileDataVector ();

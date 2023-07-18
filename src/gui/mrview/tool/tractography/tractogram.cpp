@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -67,6 +67,7 @@ namespace MR
           "uniform float slab_width;\n"
           "uniform float offset, scale;\n"
           "uniform float scale_x, scale_y;\n"
+          "uniform vec3 colourmap_colour;\n"
 
           "out vec3 v_tangent;\n"
           "out vec2 v_end;\n";
@@ -220,7 +221,7 @@ namespace MR
 
           std::string source =
             "uniform float lower, upper;\n"
-            "uniform vec3 const_colour;\n"
+            "uniform vec3 colourmap_colour;\n"
             "uniform mat4 MV;\n"
             "out vec3 colour;\n";
 
@@ -282,7 +283,7 @@ namespace MR
                                    : "  colour = v_colour;\n";
               break;
             case TrackColourType::Manual:
-              source += "  colour = const_colour;\n";
+              source += "  colour = colourmap_colour;\n";
           }
 
           if (use_lighting && (using_geom || using_points)) {
@@ -429,7 +430,8 @@ namespace MR
           }
 
           if (color_type == TrackColourType::Manual)
-            gl::Uniform3fv (gl::GetUniformLocation (track_shader, "const_colour"), 1, colour.data());
+            gl::Uniform3f (gl::GetUniformLocation (track_shader, "colourmap_colour"),
+                colour[0]/255.0, colour[1]/255.0, colour[2]/255.0);
 
           if (color_type == TrackColourType::ScalarFile) {
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "offset"), display_midpoint - 0.5f * display_range);
@@ -520,12 +522,12 @@ namespace MR
                 case TrackColourType::Ends:
                   gl::BindBuffer (gl::ARRAY_BUFFER, colour_buffers[buf]);
                   gl::EnableVertexAttribArray (3);
-                  gl::VertexAttribPointer (3, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)0);
+                  gl::VertexAttribPointer (3, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)(3*sample_stride*sizeof(float)));
                   break;
                 case TrackColourType::ScalarFile:
                   gl::BindBuffer (gl::ARRAY_BUFFER, intensity_scalar_buffers[buf]);
                   gl::EnableVertexAttribArray (3);
-                  gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
+                  gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)(sample_stride*sizeof(float)));
                   break;
                 default:
                   break;
@@ -534,7 +536,7 @@ namespace MR
               if (threshold_type == TrackThresholdType::SeparateFile) {
                 gl::BindBuffer (gl::ARRAY_BUFFER, threshold_scalar_buffers[buf]);
                 gl::EnableVertexAttribArray (4);
-                gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
+                gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)(sample_stride*sizeof(float)));
               }
 
               gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffers[buf]);
@@ -811,7 +813,7 @@ namespace MR
             while (file (tck_scalar)) {
 
               const size_t tck_size = tck_scalar.size();
-              assert (tck_size == size_t(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
+              assert (tck_size == size_t(original_track_sizes[threshold_scalar_buffers.size()][tck_count]));
 
               if (!tck_size)
                 continue;

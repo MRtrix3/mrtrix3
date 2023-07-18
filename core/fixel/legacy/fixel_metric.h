@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,7 +35,7 @@ namespace MR
       // * 'size': parameter related to the size of the fixel (e.g. FOD lobe integral, bolume fraction, FOD peak amplitude)
       // * 'value': the parameteric value of interest associated with the fixel
       class FixelMetric
-      { MEMALIGN (FixelMetric)
+      { 
         public:
           FixelMetric (const Eigen::Vector3f& d, const float s, const float v) :
             dir (d),

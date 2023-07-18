@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ namespace MR
       {
 
         class Slice : public Base
-        { MEMALIGN(Slice)
+        { 
           public:
             Slice () :
               Base (FocusContrast | MoveTarget | TiltRotate) { }
@@ -38,7 +38,7 @@ namespace MR
 
             virtual void paint (Projection& with_projection);
 
-            class Shader : public Displayable::Shader { MEMALIGN(Shader)
+            class Shader : public Displayable::Shader { 
               public:
                 virtual std::string vertex_shader_source (const Displayable& object);
                 virtual std::string fragment_shader_source (const Displayable& object);

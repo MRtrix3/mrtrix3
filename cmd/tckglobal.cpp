@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
 #include "math/SH.h"
 #include "image.h"
 #include "thread.h"
+#include "version.h"
 #include "algo/threaded_copy.h"
 
 #include "dwi/tractography/GT/particlegrid.h"
@@ -73,17 +74,19 @@ void usage ()
   + "This command will reconstruct the global white matter fibre tractogram that best "
     "explains the input DWI data, using a multi-tissue spherical convolution model."
 
-  + "Example use: "
+  + "A more thorough description of the operation of global tractography in MRtrix3 "
+    "can be found in the online documentation: \n"
+    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/quantitative_structural_connectivity/global_tractography.html";
 
-  + " $ tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif \n"
-    "   -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck "
+  EXAMPLES
 
-
-  + "in which dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, "
-    "and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is "
-    "saved to tracks.tck. Optional output images fod.mif and fiso.mif contain the predicted WM fODF and "
-    "isotropic tissue fractions of CSF and GM respectively, estimated as part of the global optimization "
-    "and thus affected by spatial regularization.";
+  + Example("Basic usage",
+             "tckglobal dwi.mif wmr.txt -riso csfr.txt -riso gmr.txt -mask mask.mif -niter 1e9 -fod fod.mif -fiso fiso.mif tracks.tck",
+             "dwi.mif is the input image, wmr.txt is an anisotropic, multi-shell response function for WM, "
+             "and csfr.txt and gmr.txt are isotropic response functions for CSF and GM. The output tractogram is "
+             "saved to tracks.tck. Optional output images fod.mif and fiso.mif contain the predicted WM fODF and "
+             "isotropic tissue fractions of CSF and GM respectively, estimated as part of the global optimization "
+             "and thus affected by spatial regularization.");
 
   REFERENCES
   + "Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F. " // Internal
@@ -191,7 +194,7 @@ void usage ()
 
 
 template<typename T>
-class __copy_fod { MEMALIGN(__copy_fod<T>)
+class __copy_fod { 
   public:
     __copy_fod (const int lmax, const double weight, const bool apodise)
       : w(weight), a(apodise), apo (lmax), SH_in (Math::SH::NforL(lmax)), SH_out (SH_in.size()) { }
@@ -281,7 +284,7 @@ void run ()
     }
   }
 
-  uint64_t niter = get_option_value("niter", DEFAULT_NITER);
+  uint64_t niter = get_option_value<uint64_t>("niter", DEFAULT_NITER);
   double t0 = get_option_value("t0", DEFAULT_T0);
   double t1 = get_option_value("t1", DEFAULT_T1);
 

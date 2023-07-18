@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,7 +40,7 @@ namespace MR {
 
       // This should be possible to use for any domain of inference
       class PassThrough : public Stats::EnhancerBase
-      { MEMALIGN (PassThrough)
+      { 
         public:
           PassThrough() { }
           virtual ~PassThrough() { }
@@ -53,7 +53,7 @@ namespace MR {
 
 
       class NBS : public Stats::TFCE::EnhancerBase
-      { MEMALIGN (NBS)
+      { 
         public:
 
           NBS () = delete;

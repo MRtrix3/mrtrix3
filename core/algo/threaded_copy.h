@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,7 +25,7 @@ namespace MR
   //! \cond skip
   namespace {
 
-    struct __copy_func { NOMEMALIGN
+    struct __copy_func { 
       template <class InputImageType, class OutputImageType>
         FORCE_INLINE void operator() (InputImageType& in, OutputImageType& out) const {
           out.value() = in.value();

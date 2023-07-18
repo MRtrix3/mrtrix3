@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,12 +22,11 @@
 import json, math, os, subprocess
 from collections import namedtuple
 from mrtrix3 import MRtrixError
-from mrtrix3.utils import STRING_TYPES
 
 
 
 # Class for importing header information from an image file for reading
-class Header(object):
+class Header:
   def __init__(self, image_path):
     from mrtrix3 import app, path, run #pylint: disable=import-outside-toplevel
     filename = path.name_temporary('json')
@@ -39,10 +38,10 @@ class Header(object):
     if result:
       raise MRtrixError('Could not access header information for image \'' + image_path + '\'')
     try:
-      with open(filename, 'r') as json_file:
+      with open(filename, 'r', encoding='utf-8') as json_file:
         data = json.load(json_file)
     except UnicodeDecodeError:
-      with open(filename, 'r') as json_file:
+      with open(filename, 'r', encoding='utf-8') as json_file:
         data = json.loads(json_file.read().decode('utf-8', errors='replace'))
     os.remove(filename)
     try:
@@ -63,8 +62,8 @@ class Header(object):
         self._keyval = { }
       else:
         self._keyval = data['keyval']
-    except:
-      raise MRtrixError('Error in reading header information from file \'' + image_path + '\'')
+    except Exception as exception:
+      raise MRtrixError('Error in reading header information from file \'' + image_path + '\'') from exception
     app.debug(str(vars(self)))
 
   def name(self):
@@ -129,7 +128,7 @@ def axis2dir(string): #pylint: disable=unused-variable
 def check_3d_nonunity(image_in): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not isinstance(image_in, Header):
-    if not isinstance(image_in, STRING_TYPES):
+    if not isinstance(image_in, str):
       raise MRtrixError('Error trying to test \'' + str(image_in) + '\': Not an image header or file path')
     image_in = Header(image_in)
   if len(image_in.size()) < 3:
@@ -150,8 +149,8 @@ def mrinfo(image_path, field): #pylint: disable=unused-variable
   command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-' + field ]
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  result, dummy_err = proc.communicate()
+  with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None) as proc:
+    result, dummy_err = proc.communicate()
   result = result.rstrip().decode('utf-8')
   if app.VERBOSITY > 1:
     app.console('Result: ' + result)
@@ -170,11 +169,11 @@ def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to image.match(): ' + str(kwargs))
   if not isinstance(image_one, Header):
-    if not isinstance(image_one, STRING_TYPES):
+    if not isinstance(image_one, str):
       raise MRtrixError('Error trying to test \'' + str(image_one) + '\': Not an image header or file path')
     image_one = Header(image_one)
   if not isinstance(image_two, Header):
-    if not isinstance(image_two, STRING_TYPES):
+    if not isinstance(image_two, str):
       raise MRtrixError('Error trying to test \'' + str(image_two) + '\': Not an image header or file path')
     image_two = Header(image_two)
   debug_prefix = '\'' + image_one.name() + '\' \'' + image_two.name() + '\''
@@ -240,14 +239,23 @@ def statistics(image_path, **kwargs): #pylint: disable=unused-variable
   if app.VERBOSITY > 1:
     app.console('Command: \'' + ' '.join(command) + '\' (piping data to local storage)')
 
-  proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None)
-  stdout = proc.communicate()[0]
-  if proc.returncode:
-    raise MRtrixError('Error trying to calculate statistics from image \'' + image_path + '\'')
+  try:
+    from subprocess import DEVNULL #pylint: disable=import-outside-toplevel
+  except ImportError:
+    DEVNULL = open(os.devnull, 'wb') #pylint: disable=consider-using-with
+  with subprocess.Popen(command, stdout=subprocess.PIPE, stderr=DEVNULL) as proc:
+    stdout = proc.communicate()[0]
+    try:
+      DEVNULL.close()
+    except AttributeError:
+      pass
+    if proc.returncode:
+      raise MRtrixError('Error trying to calculate statistics from image \'' + image_path + '\'')
+
   stdout_lines = [ line.strip() for line in stdout.decode('cp437').splitlines() ]
   result = [ ]
   for line in stdout_lines:
-    line = line.split()
+    line = line.replace('N/A', 'nan').split()
     assert len(line) == len(IMAGE_STATISTICS)
     result.append(ImageStatistics(float(line[0]), float(line[1]), float(line[2]), float(line[3]), float(line[4]), float(line[5]), int(line[6])))
   if len(result) == 1:

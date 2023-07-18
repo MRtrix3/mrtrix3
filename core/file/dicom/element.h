@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,14 +30,20 @@ namespace MR {
     namespace Dicom {
 
 
-      class Sequence { NOMEMALIGN
+      class Sequence { 
         public:
           Sequence (uint16_t group, uint16_t element, uint8_t* end) : group (group), element (element), end (end) { }
           uint16_t group, element;
           uint8_t* end;
+
+          bool is (uint16_t Group, uint16_t Element) const {
+            if (group != Group)
+              return false;
+            return element == Element;
+          }
       };
 
-      class Date { NOMEMALIGN
+      class Date { 
         public:
           Date (const std::string& entry) :
             year(0), month(0), day(0) {
@@ -53,7 +59,7 @@ namespace MR {
           friend std::ostream& operator<< (std::ostream& stream, const Date& item);
       };
 
-      class Time { NOMEMALIGN
+      class Time { 
         public:
           Time (const std::string& entry) : Time() {
             if (entry.size() < 6)
@@ -86,7 +92,7 @@ namespace MR {
 
 
 
-      class Element { NOMEMALIGN
+      class Element { 
         public:
           typedef enum _Type {
             INVALID,
@@ -95,6 +101,7 @@ namespace MR {
             FLOAT,
             DATE,
             TIME,
+            DATETIME,
             STRING,
             SEQ,
             OTHER
@@ -143,12 +150,16 @@ namespace MR {
             return VR == VR_SQ || ( group == GROUP_DATA && element == ELEMENT_DATA && size == LENGTH_UNDEFINED );
           }
 
+          bool ignore_when_parsing () const;
+          bool is_in_series_ref_sequence () const;
+
           Type type () const;
           vector<int32_t> get_int () const;
           vector<uint32_t> get_uint () const;
           vector<default_type> get_float () const;
           Date get_date () const;
           Time get_time () const;
+          std::pair<Date,Time> get_datetime () const;
           vector<std::string> get_string () const;
 
           int32_t     get_int (size_t idx, int32_t default_value = 0)                    const { auto v (get_int());    return check_get (idx, v.size()) ? v[idx] : default_value; }

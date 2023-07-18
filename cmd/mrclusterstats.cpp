@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -131,7 +131,7 @@ void write_output (const VectorType& data,
 //   are initialised in the CohortDataImport class).
 //
 class SubjectVoxelImport : public SubjectDataImportBase
-{ MEMALIGN(SubjectVoxelImport)
+{ 
   public:
     SubjectVoxelImport (const std::string& path) :
         SubjectDataImportBase (path),
@@ -320,7 +320,7 @@ void run() {
       write_output (stdev.row(0), *v2v, prefix + "std_dev.mif", output_header);
     } else {
       for (size_t i = 0; i != num_vgs; ++i) {
-        write_output (stdev.row(i), *v2v, prefix + "std_dev.mif", output_header);
+        write_output (stdev.row(i), *v2v, prefix + "std_dev" + str(i) + ".mif", output_header);
         ++progress;
       }
     }
@@ -368,7 +368,7 @@ void run() {
 
   if (!get_options ("notest").size()) {
 
-    const bool fwe_strong = get_option_value ("strong", false);
+    const bool fwe_strong = get_options ("strong").size();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
@@ -396,7 +396,7 @@ void run() {
     for (size_t i = 0; i != num_hypotheses; ++i) {
       write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
-      write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_pvalue" + postfix(i) + ".mif", output_header);
+      write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
       write_output (null_contributions.col(i), *v2v, prefix + "null_contributions" + postfix(i) + ".mif", output_header);
       ++progress;

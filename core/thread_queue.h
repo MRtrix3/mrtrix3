@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR
 
       // to get multi/single job/functor seamlessly:
       template <class X>
-        class __job { NOMEMALIGN
+        class __job { 
           public:
             using type = typename std::remove_reference<X>::type;
             using member_type = typename std::remove_reference<X>::type&;
@@ -51,7 +51,7 @@ namespace MR
         };
 
       template <class X>
-        class __job <__Multi<X>> { NOMEMALIGN
+        class __job <__Multi<X>> { 
           public:
             using type = typename std::remove_reference<X>::type;
             using member_type = typename std::remove_reference<X>::type;
@@ -331,7 +331,7 @@ namespace MR
      *
      * \sa Thread::run_queue()
      */
-     template <class T> class Queue { NOMEMALIGN
+     template <class T> class Queue { 
        public:
          //! Construct a Queue of items of type \c T
          /*! \param description a string identifying the queue for degugging purposes
@@ -372,7 +372,7 @@ namespace MR
           * \sa Thread::Queue for more detailed information and examples.
           * \sa Thread::run_queue() for a much more user-friendly way of setting
           * up a queue.  */
-         class Writer { NOMEMALIGN
+         class Writer { 
            public:
              //! Register a Writer object with the queue
              /*! The Writer object will register itself with the queue as a
@@ -392,7 +392,7 @@ namespace MR
               * \sa Thread::Queue for more detailed information and examples.
               * \sa Thread::run_queue() for a much more user-friendly way of setting
               * up a queue.  */
-             class Item { NOMEMALIGN
+             class Item { 
                public:
                  //! Construct a Writer::Item object
                  /*! The Writer::Item object can only be instantiated from a
@@ -442,7 +442,7 @@ namespace MR
           * \sa Thread::Queue for more detailed information and examples.
           * \sa Thread::run_queue() for a much more user-friendly way of setting
           * up a queue.  */
-         class Reader { NOMEMALIGN
+         class Reader { 
            public:
              //! Register a Reader object with the queue.
              /*! The Reader object will register itself with the queue as a
@@ -462,7 +462,7 @@ namespace MR
               * \sa Thread::Queue for more detailed information and examples.
               * \sa Thread::run_queue() for a much more user-friendly way of setting
               * up a queue.  */
-             class Item { NOMEMALIGN
+             class Item { 
                public:
                  //! Construct a Reader::Item object
                  /*! The Reader::Item object can only be instantiated from a
@@ -634,18 +634,18 @@ namespace MR
         * convenience Functor classes for use in Thread::run_queue()
         ********************************************************************/
        template <class Item>
-         struct __Batch { NOMEMALIGN
+         struct __Batch { 
            __Batch (size_t number) : num (number) { }
            size_t num;
          };
 
 
 
-       template <class Item> struct __batch_size { NOMEMALIGN
+       template <class Item> struct __batch_size { 
          __batch_size (const Item&) { }
          operator size_t () const { return 0; }
        };
-       template <class Item> struct __batch_size <__Batch<Item>> { NOMEMALIGN
+       template <class Item> struct __batch_size <__Batch<Item>> { 
          __batch_size (const __Batch<Item>& item) : n (item.num) { }
          operator size_t () const { return n; }
          const size_t n;
@@ -656,7 +656,7 @@ namespace MR
        /*! wrapper classes to extend simple functors designed for use with
         * Thread::run_queue with functionality needed for use with Thread::Queue */
 
-       template <class Item> struct Type { NOMEMALIGN
+       template <class Item> struct Type { 
          using item = Item;
          using queue = Queue<Item>;
          using reader = typename queue::Reader;
@@ -665,7 +665,7 @@ namespace MR
          using write_item = typename writer::Item;
        };
 
-       template <class Item> struct Type<__Batch<Item>> { NOMEMALIGN
+       template <class Item> struct Type<__Batch<Item>> { 
          using item = Item;
          using queue = Queue<vector<Item>>;
          using reader = typename queue::Reader;
@@ -677,7 +677,7 @@ namespace MR
 
 
        template <class Item>
-         struct FetchItem { NOMEMALIGN
+         struct FetchItem { 
            FetchItem (typename Type<Item>::reader& item) : in (item.placeholder()) { }
            bool read () { return in.read(); }
            Item& value () { return (*in); }
@@ -685,7 +685,7 @@ namespace MR
          };
 
        template <class Item>
-         struct FetchItem<__Batch<Item>> { NOMEMALIGN
+         struct FetchItem<__Batch<Item>> { 
            FetchItem (typename Type<__Batch<Item>>::reader& in) : in (in.placeholder()), n (0) { }
            bool read () {
              if (!in)
@@ -708,7 +708,7 @@ namespace MR
 
 
        template <class Item>
-         struct StoreItem { NOMEMALIGN
+         struct StoreItem { 
            StoreItem (size_t, typename Type<Item>::writer& item) : out (item.placeholder()) { }
            bool write () { return out.write(); }
            Item& value () { return (*out); }
@@ -717,7 +717,7 @@ namespace MR
          };
 
        template <class Item>
-         struct StoreItem<__Batch<Item>> { NOMEMALIGN
+         struct StoreItem<__Batch<Item>> { 
            StoreItem (size_t batch_size, typename Type<__Batch<Item>>::writer& item) :
              out (item.placeholder()), batch_size (batch_size), n(0) { out->resize (batch_size); }
            bool write () {
@@ -741,7 +741,7 @@ namespace MR
 
 
        template <class Item, class Functor>
-         struct __Source { MEMALIGN(__Source<Item,Functor>)
+         struct __Source { 
            using item_t = typename Type<Item>::item;
            using queue_t = typename Type<Item>::queue;
            using writer_t = typename Type<Item>::writer;
@@ -773,7 +773,7 @@ namespace MR
 
 
        template <class Item1, class Functor, class Item2>
-         struct __Pipe { MEMALIGN(__Pipe<Item1,Functor,Item2>)
+         struct __Pipe { 
            using item1_t = typename Type<Item1>::item;
            using item2_t = typename Type<Item2>::item;
            using queue1_t = typename Type<Item1>::queue;
@@ -813,7 +813,7 @@ namespace MR
 
 
        template <class Item, class Functor>
-         struct __Sink { MEMALIGN(__Sink<Item,Functor>)
+         struct __Sink { 
            using item_t = typename Type<Item>::item;
            using queue_t = typename Type<Item>::queue;
            using reader_t = typename Type<Item>::reader;

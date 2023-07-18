@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,6 @@
 
 import io, itertools, os, re
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
-from mrtrix3.utils import STRING_TYPES
 
 
 _TRANSFORM_LAST_ROW = [ 0.0, 0.0, 0.0, 1.0 ]
@@ -44,7 +43,7 @@ def dot(input_a, input_b): #pylint: disable=unused-variable
     raise MRtrixError('Both inputs must be either 1D vectors or 2D matrices')
   if len(input_a) != len(input_b):
     raise MRtrixError('Dimension mismatch (' + str(len(input_a)) + ' vs. ' + str(len(input_b)) + ')')
-  return sum([ x*y for x,y in zip(input_a, input_b) ])
+  return sum(x*y for x,y in zip(input_a, input_b))
 
 
 
@@ -180,7 +179,7 @@ def save_numeric(filename, data, **kwargs):
     encode_args['encoding'] = encoding
 
   if header:
-    if isinstance(header, STRING_TYPES):
+    if isinstance(header, str):
       header = { 'comments' : header }
     elif isinstance(header, list):
       header = { 'comments' : '\n'.join(str(entry) for entry in header) }
@@ -198,7 +197,7 @@ def save_numeric(filename, data, **kwargs):
       header['command_history'] = COMMAND_HISTORY_STRING
 
   if footer:
-    if isinstance(footer, STRING_TYPES):
+    if isinstance(footer, str):
       footer = { 'comments' : footer }
     elif isinstance(footer, list):
       footer = { 'comments' : '\n'.join(str(entry) for entry in footer) }

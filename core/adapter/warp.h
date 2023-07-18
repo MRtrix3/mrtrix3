@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -51,7 +51,7 @@ namespace MR
     template <template <class ImageType> class Interpolator, class ImageType, class WarpType>
       class Warp :
         public ImageBase<Warp<Interpolator,ImageType,WarpType>, typename ImageType::value_type>
-    { MEMALIGN(Warp<Interpolator,ImageType,WarpType>) 
+    {  
       public:
         using value_type = typename ImageType::value_type;
 
@@ -90,7 +90,7 @@ namespace MR
 
 
         value_type value () {
-          Eigen::Vector3 pos = get_position();
+          Eigen::Vector3d pos = get_position();
           if (std::isnan(pos[0]) || std::isnan(pos[1]) || std::isnan(pos[2]))
             return value_when_out_of_bounds;
           interp.scanner (pos);

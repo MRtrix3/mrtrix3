@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ namespace MR
     namespace Warp
     {
 
-        class ComposeLinearDeformKernel { MEMALIGN(ComposeLinearDeformKernel)
+        class ComposeLinearDeformKernel { 
           public:
             ComposeLinearDeformKernel (const transform_type& transform) :
                                        transform (transform) {}
@@ -40,7 +40,7 @@ namespace MR
 
             template <class InputDeformationFieldType, class OutputDeformationFieldType>
             void operator() (InputDeformationFieldType& deform_input, OutputDeformationFieldType& deform_output) {
-              deform_output.row(3) = transform * Eigen::Vector3 (deform_input.row(3));
+              deform_output.row(3) = transform * Eigen::Vector3d (deform_input.row(3));
             }
 
           protected:
@@ -48,7 +48,7 @@ namespace MR
         };
 
 
-        class ComposeLinearDispKernel { MEMALIGN(ComposeLinearDispKernel)
+        class ComposeLinearDispKernel { 
           public:
             template<class DisplacementFieldType>
             ComposeLinearDispKernel (const transform_type& linear_transform, const DisplacementFieldType& disp_in) :
@@ -58,8 +58,8 @@ namespace MR
 
             template <class DisplacementFieldType, class DeformationFieldType>
             void operator() (DisplacementFieldType& disp_input, DeformationFieldType& deform_output) {
-              Eigen::Vector3 voxel (disp_input.index(0), disp_input.index(1), disp_input.index(2));
-              deform_output.row(3) = linear_transform * (image_transform.voxel2scanner * voxel + Eigen::Vector3 (disp_input.row(3)));
+              Eigen::Vector3d voxel (disp_input.index(0), disp_input.index(1), disp_input.index(2));
+              deform_output.row(3) = linear_transform * (image_transform.voxel2scanner * voxel + Eigen::Vector3d (disp_input.row(3)));
             }
 
           protected:
@@ -67,22 +67,22 @@ namespace MR
             MR::Transform image_transform;
         };
 
-        class ComposeDispKernel { MEMALIGN(ComposeDispKernel)
+        class ComposeDispKernel { 
           public:
             ComposeDispKernel (Image<default_type>& disp_input1, Image<default_type>& disp_input2, default_type step) :
                                disp1_transform (disp_input1), disp2_interp (disp_input2), step (step) {}
 
 
             void operator() (Image<default_type>& disp_input1, Image<default_type>& disp_output) {
-              Eigen::Vector3 voxel ((default_type)disp_input1.index(0), (default_type)disp_input1.index(1), (default_type)disp_input1.index(2));
-              Eigen::Vector3 voxel_position = disp1_transform.voxel2scanner * voxel;
-              Eigen::Vector3 original_position = voxel_position + Eigen::Vector3(disp_input1.row(3));
+              Eigen::Vector3d voxel ((default_type)disp_input1.index(0), (default_type)disp_input1.index(1), (default_type)disp_input1.index(2));
+              Eigen::Vector3d voxel_position = disp1_transform.voxel2scanner * voxel;
+              Eigen::Vector3d original_position = voxel_position + Eigen::Vector3d(disp_input1.row(3));
               disp2_interp.scanner (original_position);
               if (!disp2_interp) {
                 disp_output.row(3) = disp_input1.row(3);
               } else {
-                Eigen::Vector3 displacement (Eigen::Vector3(disp2_interp.row(3)).array() * step);
-                Eigen::Vector3 new_position = displacement + original_position;
+                Eigen::Vector3d displacement (Eigen::Vector3d(disp2_interp.row(3)).array() * step);
+                Eigen::Vector3d new_position = displacement + original_position;
                 disp_output.row(3) = new_position - voxel_position;
               }
             }
@@ -95,7 +95,7 @@ namespace MR
 
 
         template <class DeformationField1Type, class DeformationField2Type>
-        class ComposeHalfwayKernel { MEMALIGN(ComposeHalfwayKernel<DeformationField1Type,DeformationField2Type>)
+        class ComposeHalfwayKernel { 
           public:
             ComposeHalfwayKernel (const transform_type& linear1, DeformationField1Type& deform1,
                                   DeformationField2Type& deform2, const transform_type& linear2) :
@@ -106,18 +106,18 @@ namespace MR
 
 
             void operator() (Image<default_type>& deform) {
-              Eigen::Vector3 voxel ((default_type)deform.index(0), (default_type)deform.index(1), (default_type)deform.index(2));
-              Eigen::Vector3 position = linear1 * voxel;
+              Eigen::Vector3d voxel ((default_type)deform.index(0), (default_type)deform.index(1), (default_type)deform.index(2));
+              Eigen::Vector3d position = linear1 * voxel;
               deform1_interp.scanner (position);
               if (!deform1_interp) {
                   deform.row(3) = out_of_bounds;
                 } else {
-                  Eigen::Vector3 position2 = deform1_interp.row(3);
+                  Eigen::Vector3d position2 = deform1_interp.row(3);
                   deform2_interp.scanner (position2);
                   if (!deform2_interp) {
                     deform.row(3) = out_of_bounds;
                   } else {
-                    Eigen::Vector3 position3 = deform2_interp.row(3);
+                    Eigen::Vector3d position3 = deform2_interp.row(3);
                     deform.row(3) = linear2 * position3;
                   }
                }
@@ -128,7 +128,7 @@ namespace MR
             Interp::Linear<DeformationField2Type> deform1_interp;
             Interp::Linear<DeformationField2Type> deform2_interp;
             const transform_type linear2;
-            Eigen::Vector3 out_of_bounds;
+            Eigen::Vector3d out_of_bounds;
         };
 
 
@@ -162,7 +162,7 @@ namespace MR
 
         default_type max_norm = 0.0;
         auto max_norm_func = [&max_norm](Image<default_type>& update) {
-          default_type norm = Eigen::Vector3 (update.row(3)).norm();
+          default_type norm = Eigen::Vector3d (update.row(3)).norm();
           if (norm > max_norm)
             max_norm = norm;
         };
@@ -184,7 +184,7 @@ namespace MR
           default_type scaled_step = step / scale_factor; // apply the step size and scale factor at once
           ThreadedLoop (update).run (
                 [&scaled_step](Image<default_type>& update, Image<default_type>& scaled_update) {
-                  scaled_update.row(3) = Eigen::Vector3 (update.row(3)) * scaled_step;
+                  scaled_update.row(3) = Eigen::Vector3d (update.row(3)) * scaled_step;
                 }, update, *scaled_update);
 
 //          CONSOLE ("composing " + str(std::log2 (scale_factor)) + "times");
@@ -247,7 +247,7 @@ namespace MR
         WarpType deformation = WarpType::scratch (midway_header);
 
         transform_type linear;
-        vector<int> index(1);
+        vector<uint32_t> index (1);
         if (from == 1) {
           linear = Registration::Warp::parse_linear_transform (warp, "linear1");
           index[0] = 0;
@@ -270,7 +270,7 @@ namespace MR
         transform_type linear1 = Registration::Warp::parse_linear_transform (warp, "linear1");
         transform_type linear2 = Registration::Warp::parse_linear_transform (warp, "linear2");
 
-        vector<int> index(1);
+        vector<uint32_t> index (1);
         if (from == 1) {
           index[0] = 0;
           Adapter::Extract1D<Image<default_type>> im1_to_mid (warp, 4, index);

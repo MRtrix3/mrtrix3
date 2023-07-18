@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR
     namespace Legacy
     {
       template <typename DataType>
-        class Value { MEMALIGN (Value<DataType>)
+        class Value { 
           public:
             Value (::MR::Image<uint64_t>& offsets, ImageIO::SparseLegacy& io) : offsets (offsets), io (io) { }
 
@@ -97,7 +97,7 @@ namespace MR
       // A convenience class for wrapping access to sparse images
       template <typename DataType>
         class Image : public ::MR::Image<uint64_t>
-      { MEMALIGN (Image<DataType>)
+      { 
         public:
           Image (const std::string& image_name) :
             ::MR::Image<uint64_t> (::MR::Image<uint64_t>::open (image_name)), io (nullptr) { check(); }

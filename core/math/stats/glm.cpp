@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -254,7 +254,7 @@ namespace MR
 
         matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
         {
-          const auto stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design).array().col(0);
+          const vector_type stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design).array().col(0);
           matrix_type result (measurements.cols(), hypotheses.size());
           for (size_t ic = 0; ic != hypotheses.size(); ++ic)
             result.col (ic) = abs_effect_size (measurements, design, hypotheses[ic]) * stdev_reciprocal;
@@ -348,7 +348,7 @@ namespace MR
           }
 
           class Source
-          { NOMEMALIGN
+          {
             public:
               Source (const size_t num_elements) :
                   num_elements (num_elements),
@@ -372,7 +372,7 @@ namespace MR
           };
 
           class Functor
-          { MEMALIGN(Functor)
+          {
             public:
               Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_data, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                        vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :
@@ -419,11 +419,14 @@ namespace MR
                   // Need to reduce the data and design matrices to contain only finite data
                   matrix_type element_data_finite (valid_rows, 1);
                   matrix_type element_design_finite (valid_rows, element_design.cols());
+                  index_array_type variance_groups_finite (variance_groups.size() ? valid_rows : 0);
                   ssize_t output_row = 0;
                   for (ssize_t row = 0; row != data.rows(); ++row) {
                     if (std::isfinite (element_data(row)) && element_design.row (row).allFinite()) {
                       element_data_finite(output_row, 0) = element_data(row);
                       element_design_finite.row (output_row) = element_design.row (row);
+                      if (variance_groups.size())
+                        variance_groups_finite[output_row] = variance_groups[row];
                       ++output_row;
                     }
                   }
@@ -434,7 +437,7 @@ namespace MR
                   if (!std::isfinite (condition_number) || condition_number > 1e5) {
                     zero();
                   } else {
-                    Math::Stats::GLM::all_stats (element_data_finite, element_design_finite, hypotheses, variance_groups,
+                    Math::Stats::GLM::all_stats (element_data_finite, element_design_finite, hypotheses, variance_groups_finite,
                                                  local_betas, local_abs_effect_size, local_std_effect_size, local_stdev);
                   }
                 } else { // Insufficient data to fit model at all
@@ -468,7 +471,7 @@ namespace MR
                 local_stdev = matrix_type::Zero (num_vgs, 1);
                 for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
                   if (hypotheses[ih].is_F())
-                    local_abs_effect_size (1, ih) = local_std_effect_size (1, ih) = NaN;
+                    local_abs_effect_size (0, ih) = local_std_effect_size (0, ih) = NaN;
                 }
               }
           };

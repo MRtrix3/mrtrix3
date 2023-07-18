@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,14 @@
 # See the Mozilla Public License v. 2.0 for more details.
 #
 # For more details, see http://www.mrtrix.org/.
+
+
+
+# when testing a binary release, you can use the MRTRIX_BINDIR environment
+# variable to point to the location of the executables you want to test. You'll
+# need to ensure the same commit/tag is checked out on this repo for the
+# results to be valid.
+
 
 if test "$#" -ne 1; then
   echo "Script must be provided with single input argument: \"binaries\", \"scripts\", \"units\", or the name of a specific test to be run."
@@ -82,13 +90,17 @@ EOD
 
 
 if [ ! -z $datadir ]; then
-  echo -n "fetching requisite test data... "
+  echo -n "checking for requisite test data... "
   git submodule update --init $datadir >> $LOGFILE 2>&1
   if [ $? != 0 ]; then
-    echo ERROR!
-    exit 1
+    if [[ -e $datadir && ! -z $(ls -A $datadir) ]]; then
+      echo "Found; UNABLE TO VERIFY VERSION MATCH"
+    else
+      echo "ERROR!"
+      exit 1
+    fi
   else
-    echo OK
+    echo "Synchronized OK"
   fi
 fi
 
@@ -147,6 +159,16 @@ cat >> $LOGFILE <<EOD
 PATH is set to $PATH
 EOD
 
+if [[ -z "$MRTRIX_BINDIR" ]]; then
+  MRTRIX_BINDIR="$(pwd)/bin"
+else
+  MRTRIX_BINDIR="${MRTRIX_BINDIR}"
+fi
+cat >> $LOGFILE <<EOD
+
+Testing executables in: $MRTRIX_BINDIR
+EOD
+
 
 for testitem in $testlist; do
 
@@ -158,10 +180,7 @@ for testitem in $testlist; do
 EOD
 
   echo -n 'running "'${testitem}'"... '
-  rm -f $datadir/tmp*.*
-  rm -rf $datadir/tmp-*/
-  rm -rf $datadir/tmp_*/
-  rm -rf $datadir/*-tmp-*/
+  [[ -n "$datadir" ]] && rm -rf $datadir/tmp* $datadir/*-tmp-*
   ((ntests=0))
   ((success=0))
   while IFS='' read -r cmd || [[ -n "$cmd" ]]; do
@@ -169,7 +188,7 @@ EOD
     [[ -n "$cmd" ]] || continue
     echo -n '# command: '$cmd >> $LOGFILE
     (
-      export PATH="$(pwd)/testing/bin:$(pwd)/bin:$PATH";
+      export PATH="$(pwd)/testing/bin:${MRTRIX_BINDIR}:$PATH";
       cd $datadir
       eval $cmd
     ) > .__tmp.log 2>&1
@@ -207,9 +226,7 @@ done
 
 if [[ ! -z $testsdir && ! -z $datadir ]]; then
   echo -n "Cleaning up temporary files... "
-  rm -f $datadir/tmp*.*
-  rm -rf $datadir/tmp-*/
-  rm -rf $datadir/*-tmp-*/
+  rm -rf $datadir/tmp* $datadir/*-tmp-*/
   echo OK
 fi
 
@@ -218,5 +235,3 @@ if [ ${a_test_has_failed} = true ];
 then
   exit 1
 fi
-
-

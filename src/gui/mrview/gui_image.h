@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -48,7 +48,7 @@ namespace MR
 
 
       class ImageBase : public Volume
-      { MEMALIGN(ImageBase)
+      { 
         public:
           ImageBase (MR::Header&&);
           virtual ~ImageBase();
@@ -73,7 +73,7 @@ namespace MR
 
 
       class Image : public ImageBase
-      { MEMALIGN(Image)
+      { 
         public:
           Image (MR::Header&&);
 
@@ -95,7 +95,7 @@ namespace MR
 
         protected:
 
-          struct CachedTexture { MEMALIGN(CachedTexture)
+          struct CachedTexture { 
             GL::Texture tex;
             float value_min, value_max;
           };

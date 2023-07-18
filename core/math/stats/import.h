@@ -1,16 +1,17 @@
-/*
- * Copyright (c) 2008-2016 the MRtrix3 contributors
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see www.mrtrix.org
- *
+ * For more details, see http://www.mrtrix.org/.
  */
 #ifndef __math_stats_import_h__
 #define __math_stats_import_h__
@@ -47,7 +48,7 @@ namespace MR
        * cases, within the design matrix).
        */
       class SubjectDataImportBase
-      { NOMEMALIGN
+      { 
         public:
           SubjectDataImportBase (const std::string& path) :
               path (path) { }
@@ -84,7 +85,7 @@ namespace MR
       //   for each subject a mechanism of data access is spawned & remains open throughout
       //   processing.
       class CohortDataImport
-      { NOMEMALIGN
+      { 
         public:
           CohortDataImport() { }
 
@@ -99,6 +100,7 @@ namespace MR
            */
           vector_type operator() (const size_t index) const;
 
+          operator bool() const { return bool(files.size()); }
           size_t size() const { return files.size(); }
 
           std::shared_ptr<SubjectDataImportBase> operator[] (const size_t i) const
@@ -146,7 +148,9 @@ namespace MR
         }
 
         vector<std::string> directories { Path::dirname (listpath) };
-        if (directories[0].size() && directories[0] != ".")
+        if (directories[0].empty())
+          directories[0] = ".";
+        else if (directories[0] != ".")
           directories.push_back (".");
         if (explicit_from_directory.size())
           directories.insert (directories.begin(), explicit_from_directory);
@@ -171,7 +175,7 @@ namespace MR
         if (load_from_dir.empty())
           throw e_nosuccess;
 
-        ProgressBar progress ("Importing data from files listed in \""
+        ProgressBar progress ("Configuring data import from files listed in \""
                               + Path::basename (listpath)
                               + "\" as found relative to directory \""
                               + load_from_dir + "\"");
@@ -181,7 +185,7 @@ namespace MR
             std::shared_ptr<SubjectDataImport> subject (new SubjectDataImport (Path::join (load_from_dir, line)));
             files.emplace_back (subject);
           } catch (Exception& e) {
-            throw Exception (e, "Input data not successfully loaded: \"" + line + "\"");
+            throw Exception (e, "Input data not successfully configured for load: \"" + line + "\"");
           }
           ++progress;
         }

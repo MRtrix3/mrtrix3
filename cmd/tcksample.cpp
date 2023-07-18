@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -101,7 +101,7 @@ using vector_type = Eigen::VectorXf;
 
 
 
-class TDI { MEMALIGN(TDI)
+class TDI { 
   public:
     TDI (Image<value_type>& image, const size_t num_tracks) :
         image (image),
@@ -128,7 +128,7 @@ class TDI { MEMALIGN(TDI)
 
 template <class Interp>
 class SamplerNonPrecise
-{ MEMALIGN (SamplerNonPrecise<Interp>)
+{ 
   public:
     SamplerNonPrecise (Image<value_type>& image, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
         interp (image),
@@ -221,7 +221,7 @@ class SamplerNonPrecise
 
 
 class SamplerPrecise
-{ MEMALIGN (SamplerPrecise)
+{ 
   public:
     SamplerPrecise (Image<value_type>& image, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
         image (image),
@@ -252,7 +252,7 @@ class SamplerPrecise
       } else if (statistic == MEDIAN) {
         // Should be a weighted median...
         // Just use the n.log(n) algorithm
-        class WeightSort { NOMEMALIGN
+        class WeightSort { 
           public:
             WeightSort (const DWI::Tractography::Mapping::Voxel& voxel, const value_type value) :
               value (value),
@@ -321,7 +321,7 @@ class SamplerPrecise
 
 
 
-class ReceiverBase { MEMALIGN(ReceiverBase)
+class ReceiverBase { 
   public:
     ReceiverBase (const size_t num_tracks) :
         received (0),
@@ -350,7 +350,7 @@ class ReceiverBase { MEMALIGN(ReceiverBase)
 };
 
 
-class Receiver_Statistic : private ReceiverBase { MEMALIGN(Receiver_Statistic)
+class Receiver_Statistic : private ReceiverBase { 
   public:
     Receiver_Statistic (const size_t num_tracks) :
         ReceiverBase (num_tracks),
@@ -375,7 +375,7 @@ class Receiver_Statistic : private ReceiverBase { MEMALIGN(Receiver_Statistic)
 
 
 
-class Receiver_NoStatistic : private ReceiverBase { MEMALIGN(Receiver_NoStatistic)
+class Receiver_NoStatistic : private ReceiverBase { 
   public:
     Receiver_NoStatistic (const std::string& path,
                           const size_t num_tracks,

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,19 +17,19 @@
 #ifndef __fixel_helpers_h__
 #define __fixel_helpers_h__
 
+#include "app.h"
 #include "image.h"
 #include "image_diff.h"
 #include "image_helpers.h"
 #include "algo/loop.h"
-#include "fixel/keys.h"
-#include "fixel/types.h"
+#include "fixel/fixel.h"
 #include "formats/mrtrix_utils.h"
 
 
 namespace MR
 {
   class InvalidFixelDirectoryException : public Exception
-  { NOMEMALIGN
+  {
     public:
       InvalidFixelDirectoryException (const std::string& msg) : Exception(msg) {}
       InvalidFixelDirectoryException (const Exception& previous_exception, const std::string& msg)
@@ -203,7 +203,10 @@ namespace MR
         throw Exception (str(path_temp) + " is not a directory");
 
       if (check_if_empty && Path::Dir (path_temp).read_name ().size () != 0)
-        throw Exception ("Expected fixel directory " + path_temp + " to be empty.");
+        throw Exception ("Output fixel directory \"" + path_temp + "\" is not empty"
+                         + (App::overwrite_files ?
+                            " (-force option cannot safely be applied on directories; please erase manually instead)" :
+                            ""));
     }
 
 
@@ -296,20 +299,39 @@ namespace MR
       return header;
     }
 
-    //! Generate a header for a sparse data file (Nx1x1) with a known number of fixels
-    FORCE_INLINE Header make_data_header (const size_t num_fixels) {
+    //! Generate a header for a sparse data file (Nx1x1)
+    FORCE_INLINE Header data_header_from_nfixels (const size_t nfixels) {
       Header header;
       header.ndim() = 3;
-      header.size(0) = num_fixels;
+      header.size(0) = nfixels;
       header.size(1) = 1;
       header.size(2) = 1;
       header.spacing(0) = header.spacing(1) = header.spacing(2) = 1.0;
       header.stride(0) = 1;
       header.stride(1) = 2;
       header.stride(2) = 3;
-      header.transform() = transform_type::Identity();
-      header.datatype() = DataType::Float32;
-      header.datatype().set_byte_order_native();
+      header.spacing(0) = header.spacing(1) = header.spacing(2) = 1.0;
+      header.transform().setIdentity();
+      header.datatype() = DataType::native (DataType::Float32);
+      return header;
+    }
+
+    //! Generate a header for a sparse data file (Nx1x1) using an index image as a template
+    template <class IndexHeaderType>
+    FORCE_INLINE Header data_header_from_index (IndexHeaderType& index) {
+      Header header (data_header_from_nfixels (get_number_of_fixels (index)));
+      for (size_t axis = 0; axis != 3; ++axis)
+        header.spacing (axis) = index.spacing (axis);
+      header.keyval() = index.keyval();
+      return header;
+    }
+
+    //! Generate a header for a fixel directions data file (Nx3x1) based on knowledge of the number of fixels
+    FORCE_INLINE Header directions_header_from_nfixels (const size_t nfixels) {
+      Header header = data_header_from_nfixels (nfixels);
+      header.size(1) = 3;
+      header.stride(0) = 2;
+      header.stride(1) = 1;
       return header;
     }
 
@@ -323,7 +345,11 @@ namespace MR
     template <class IndexHeaderType>
     FORCE_INLINE Header directions_header_from_index (IndexHeaderType& index) {
       Header header = data_header_from_index (index);
+      for (size_t axis = 0; axis != 3; ++axis)
+        header.spacing (axis) = index.spacing (axis);
       header.size(1) = 3;
+      header.stride(0) = 2;
+      header.stride(1) = 1;
       return header;
     }
 
@@ -345,14 +371,15 @@ namespace MR
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
 
       // If the index file already exists check it is the same as the input index file
-      if (Path::exists (output_path) && !App::overwrite_files) {
+      if (Path::exists (output_path)) {
         auto input_image = input_header.get_image<index_type>();
         auto output_image = Image<index_type>::open (output_path);
-
         if (!images_match_abs (input_image, output_image))
-          throw Exception ("output sparse image directory (" + output_directory + ") already contains index file, "
-                           "which is not the same as the expected output. Use -force to override if desired");
-
+          throw Exception ("output fixel directory \"" + output_directory + "\" already contains index file, "
+                           + "which is not the same as the expected output"
+                           + (App::overwrite_files ?
+                              " (-force option cannot safely be applied on directories; please erase manually instead)" :
+                              ""));
       } else {
         auto output_image = Image<index_type>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
         auto input_image = input_header.get_image<index_type>();
@@ -365,17 +392,20 @@ namespace MR
       Header input_header = Fixel::find_directions_header (input_directory);
       std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
 
-      // If the index file already exists check it is the same as the input index file
-      if (Path::exists (output_path) && !App::overwrite_files) {
-        auto input_image = input_header.get_image<index_type>();
-        auto output_image = Image<index_type>::open (output_path);
-
+      // If the directions file already exists check it is the same as the input directions file
+      if (Path::exists (output_path)) {
+        auto input_image = input_header.get_image<float>();
+        auto output_image = Image<float>::open (output_path);
         if (!images_match_abs (input_image, output_image))
-          throw Exception ("output sparse image directory (" + output_directory + ") already contains a directions file, "
-                           "which is not the same as the expected output. Use -force to override if desired");
-
+          throw Exception ("output fixel directory \"" + output_directory + "\" already contains directions file, "
+                           + "which is not the same as the expected output"
+                           + (App::overwrite_files ?
+                              " (-force option cannot safely be applied on directories; please erase manually instead)" :
+                              ""));
       } else {
-        copy_fixel_file (input_header.name(), output_directory);
+        auto output_image = Image<float>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
+        auto input_image = input_header.get_image<float>();
+        threaded_copy (input_image, output_image);
       }
 
     }

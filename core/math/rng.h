@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,7 +42,7 @@ namespace MR
      * multi-threading. */
     // TODO consider switch to std::mt19937_64
     class RNG : public std::mt19937
-    { NOMEMALIGN
+    { 
       public:
         RNG () : std::mt19937 (get_seed()) { }
         RNG (std::mt19937::result_type seed) : std::mt19937 (seed) { }
@@ -88,7 +88,7 @@ namespace MR
 
 
     template <typename ValueType>
-      class RNG::Uniform { NOMEMALIGN
+      class RNG::Uniform { 
         public:
           RNG rng;
           using result_type = ValueType;
@@ -99,7 +99,7 @@ namespace MR
       };
 
     template <typename ValueType>
-      class RNG::Normal { NOMEMALIGN
+      class RNG::Normal { 
         public:
           RNG rng;
           using result_type = ValueType;
@@ -108,7 +108,7 @@ namespace MR
       };
 
       template <typename ValueType>
-        class RNG::Integer { NOMEMALIGN
+        class RNG::Integer { 
           public:
             Integer (const ValueType max) :
                 dist (0, max) { }

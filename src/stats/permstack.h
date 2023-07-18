@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ namespace MR
 
 
       class Permutation
-      { MEMALIGN (Permutation)
+      { 
         public:
           size_t index;
           vector<size_t> data;
@@ -41,7 +41,7 @@ namespace MR
 
 
       class PermutationStack 
-      { MEMALIGN (PermutationStack)
+      { 
         public:
           PermutationStack (const size_t num_permutations, const size_t num_samples, const std::string msg, const bool include_default = true);
 

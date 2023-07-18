@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,10 +22,9 @@
 
 #include "math/SH.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 
 #include "fixel/legacy/fixel_metric.h"
 #include "fixel/legacy/keys.h"
@@ -45,6 +44,9 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format";
+
+  DESCRIPTION
+  + Fixel::format_description;
 
   EXAMPLES
   + Example ("Convert from the old file format to the new directory format",
@@ -114,7 +116,7 @@ void convert_old2new ()
   const bool output_size = get_options ("out_size").size();
 
   const std::string output_fixel_directory = argument[1];
-  Fixel::check_fixel_directory (output_fixel_directory, true);
+  Fixel::check_fixel_directory (output_fixel_directory, true, true);
 
   index_type fixel_count = 0;
   for (auto i = Loop (input) (input); i; ++i)
