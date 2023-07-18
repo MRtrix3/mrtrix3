@@ -296,7 +296,7 @@ namespace MR
             if (App::overwrite_files) {
               File::remove (path);
             } else {
-              throw Exception ("Cannot create fixel-fixel connectivity matrix \"" + path + "\": Already exists as file");
+              throw Exception ("Cannot create fixel-fixel connectivity matrix directory \"" + path + "\": Already exists as file");
             }
           }
         } else {
@@ -322,7 +322,7 @@ namespace MR
 
         index_type num_connections = 0;
         {
-          ProgressBar progress ("Computing number of fixel-fixel connections in matrix", matrix.size());
+          ProgressBar progress ("Computing number of supra-threshold fixel-fixel connections", matrix.size());
 
           for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
             const connectivity_value_type normalisation_factor = matrix[fixel_index].norm_factor();
