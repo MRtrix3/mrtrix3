@@ -36,7 +36,7 @@ using Fixel::index_type;
 #define DEFAULT_ANGLE_THRESHOLD 45.0
 
 
-class TrackProcessor { 
+class TrackProcessor {
 
  public:
 
@@ -141,7 +141,7 @@ void run ()
   vector<Eigen::Vector3d> directions (num_fixels);
 
   const std::string output_fixel_folder = argument[2];
-  Fixel::copy_index_and_directions_file (input_fixel_folder, output_fixel_folder);
+  Fixel::copy_all_integral_files (input_fixel_folder, output_fixel_folder);
 
   {
     auto directions_data = Fixel::find_directions_header (input_fixel_folder).get_image<default_type>().with_direct_io();

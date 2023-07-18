@@ -24,9 +24,6 @@
 #include "math/sphere/set/adjacency.h"
 #include "math/sphere/set/predefined.h"
 
-#include "dwi/tractography/mapping/fixel_td_map.h"
-
-#include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/sift.h"
 
 #include "dwi/tractography/SIFT2/tckfactor.h"
@@ -41,6 +38,8 @@ using namespace App;
 using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::SIFT2;
+
+using value_type = MR::DWI::Tractography::SIFT::value_type;
 
 
 
@@ -128,12 +127,12 @@ void usage ()
 
   ARGUMENTS
   + Argument ("in_tracks",   "the input track file").type_tracks_in()
-  + Argument ("in_fod",      "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
+  + Argument ("in_fd",       "input fixel data file containing fibre density estimates").type_image_in()
   + Argument ("out_weights", "output text file containing the weighting factor for each streamline").type_file_out();
 
   OPTIONS
 
-  + SIFT::SIFTModelProcMaskOption
+  + SIFT::SIFTModelWeightsOption
   + SIFT::SIFTModelOption
   + SIFT::SIFTOutputOption
 
@@ -159,25 +158,19 @@ void run ()
   if (Path::has_suffix (argument[2], ".tck"))
     throw Exception ("Output of tcksift2 command should be a text file, not a tracks file");
 
-  auto in_dwi = Image<float>::open (argument[1]);
+  TckFactor tckfactor (argument[1]);
 
-  Math::Sphere::Set::Assigner dirs (Math::Sphere::Set::Predefined::load (FMLS_DEFAULT_DIRECTION_SET));
-
-  TckFactor tckfactor (in_dwi, dirs);
-
-  tckfactor.perform_FOD_segmentation (in_dwi);
-  tckfactor.scale_FDs_by_GM();
+  if (App::get_options("fd_scale_gm").size())
+    tckfactor.scale_FDs_by_GM();
 
   std::string debug_path = get_option_value<std::string> ("output_debug", "");
-  if (debug_path.size()) {
+  if (debug_path.size())
     tckfactor.initialise_debug_image_output (debug_path);
-    tckfactor.output_proc_mask (Path::join(debug_path, "proc_mask.mif"));
-  }
 
   tckfactor.map_streamlines (argument[0]);
   tckfactor.store_orig_TDs();
 
-  tckfactor.remove_excluded_fixels (get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT));
+  tckfactor.exclude_fixels (get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT));
 
   if (debug_path.size()) {
     tckfactor.output_TD_images (debug_path, "origTD_fixel.mif", "trackcount_fixel.mif");
@@ -194,8 +187,8 @@ void run ()
     if (opt.size())
       tckfactor.set_csv_path (opt[0][0]);
 
-    const float reg_tikhonov = get_option_value ("reg_tikhonov", SIFT2_REGULARISATION_TIKHONOV_DEFAULT);
-    const float reg_tv = get_option_value ("reg_tv", SIFT2_REGULARISATION_TV_DEFAULT);
+    const value_type reg_tikhonov = get_option_value ("reg_tikhonov", SIFT2_REGULARISATION_TIKHONOV_DEFAULT);
+    const value_type reg_tv = get_option_value ("reg_tv", SIFT2_REGULARISATION_TV_DEFAULT);
     tckfactor.set_reg_lambdas (reg_tikhonov, reg_tv);
 
     opt = get_options ("min_iters");
@@ -206,22 +199,22 @@ void run ()
       tckfactor.set_max_iters (int(opt[0][0]));
     opt = get_options ("min_factor");
     if (opt.size())
-      tckfactor.set_min_factor (float(opt[0][0]));
+      tckfactor.set_min_factor (value_type(opt[0][0]));
     opt = get_options ("min_coeff");
     if (opt.size())
-      tckfactor.set_min_coeff (float(opt[0][0]));
+      tckfactor.set_min_coeff (value_type(opt[0][0]));
     opt = get_options ("max_factor");
     if (opt.size())
-      tckfactor.set_max_factor (float(opt[0][0]));
+      tckfactor.set_max_factor (value_type(opt[0][0]));
     opt = get_options ("max_coeff");
     if (opt.size())
-      tckfactor.set_max_coeff (float(opt[0][0]));
+      tckfactor.set_max_coeff (value_type(opt[0][0]));
     opt = get_options ("max_coeff_step");
     if (opt.size())
-      tckfactor.set_max_coeff_step (float(opt[0][0]));
+      tckfactor.set_max_coeff_step (value_type(opt[0][0]));
     opt = get_options ("min_cf_decrease");
     if (opt.size())
-      tckfactor.set_min_cf_decrease (float(opt[0][0]));
+      tckfactor.set_min_cf_decrease (value_type(opt[0][0]));
 
     tckfactor.estimate_factors();
 

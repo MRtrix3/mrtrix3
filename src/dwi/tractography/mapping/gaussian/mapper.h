@@ -36,7 +36,7 @@ namespace MR {
 
 
           class TrackMapper : public Mapping::TrackMapperTWI
-          { 
+          {
 
             using BaseMapper = Mapping::TrackMapperTWI;
 
@@ -143,7 +143,7 @@ namespace MR {
               }
 
               for (auto& i : output)
-                i.normalize();
+                i.IntersectionLength::normalize();
 
             }
 
@@ -273,9 +273,8 @@ namespace MR {
           inline void TrackMapper::add_to_set (SetVoxelTOD& out, const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f) const
           {
             assert (tod_plugin);
-            VoxelTOD::vector_type sh;
-            (*tod_plugin) (sh, d);
-            out.insert (v, sh, l, f);
+            (*tod_plugin) (d);
+            out.insert (v, (*tod_plugin)(), l, f);
           }
 
 

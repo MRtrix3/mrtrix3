@@ -28,7 +28,7 @@ namespace MR {
 
 
 
-      LineSearchFunctor::LineSearchFunctor (const SIFT::track_t index, const TckFactor& tckfactor) :
+      LineSearchFunctor::LineSearchFunctor (const SIFT::track_t index, TckFactor& tckfactor) :
         track_index (index),
         mu (tckfactor.mu()),
         Fs (tckfactor.coefficients[track_index]),
@@ -39,9 +39,9 @@ namespace MR {
       {
         const SIFT::TrackContribution& track_contribution = *tckfactor.contributions[track_index];
         for (size_t i = 0; i != track_contribution.dim(); ++i) {
-          const SIFT2::Fixel& fixel (tckfactor.fixels[track_contribution[i].get_fixel_index()]);
-          if (!fixel.is_excluded())
-            fixels.push_back (Fixel (track_contribution[i], tckfactor, Fs, fixel.get_mean_coeff()));
+          const TckFactor::Fixel fixel (tckfactor, track_contribution[i].get_fixel_index());
+          if (!fixel.excluded())
+            fixels.push_back (Fixel (track_contribution[i], fixel, Fs, fixel.mean_coeff()));
         }
       }
 
@@ -50,20 +50,20 @@ namespace MR {
 
 
       LineSearchFunctor::Result
-      LineSearchFunctor::get (const double dFs) const
+      LineSearchFunctor::get (const value_type dFs) const
       {
 
-        const double coefficient = Fs + dFs;
-        const double factor = std::exp (coefficient);
+        const value_type coefficient = Fs + dFs;
+        const value_type factor = std::exp (coefficient);
 
         Result data_result, tik_result, tv_result;
 
         for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
 
-          const double contribution = i->length * factor;
-          const double scaled_contribution = mu * contribution;
-          const double roc_contribution = mu * (contribution + i->dTD_dFs);
-          const double diff = (mu * (i->TD + contribution + (i->dTD_dFs * dFs))) - i->FOD;
+          const value_type contribution = i->length * factor;
+          const value_type scaled_contribution = mu * contribution;
+          const value_type roc_contribution = mu * (contribution + i->dTD_dFs);
+          const value_type diff = (mu * (i->TD + contribution + (i->dTD_dFs * dFs))) - i->FD;
 
           data_result.cost += i->cost_frac * i->PM * Math::pow2 (diff);
           data_result.first_deriv += 2.0 * i->PM * i->cost_frac * (roc_contribution * diff);
@@ -87,15 +87,15 @@ namespace MR {
 
 
 
-      double LineSearchFunctor::operator() (const double dFs) const
+      LineSearchFunctor::value_type LineSearchFunctor::operator() (const value_type dFs) const
       {
-        double cf_data = 0.0;
-        double cf_reg_tv = 0.0;
+        value_type cf_data = 0.0;
+        value_type cf_reg_tv = 0.0;
         for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
-          cf_data   += i->cost_frac * i->PM * Math::pow2 ((mu * (i->TD + (i->length * std::exp (Fs+dFs)) + (i->dTD_dFs*dFs))) - i->FOD);
+          cf_data   += i->cost_frac * i->PM * Math::pow2 ((mu * (i->TD + (i->length * std::exp (Fs+dFs)) + (i->dTD_dFs*dFs))) - i->FD);
           cf_reg_tv += i->SL_eff * SIFT2::tvreg (Fs+dFs, i->meanFs);
         }
-        const double cf_reg_tik = Math::pow2 (Fs+dFs);
+        const value_type cf_reg_tik = Math::pow2 (Fs+dFs);
         return (cf_data + (reg_tik * cf_reg_tik) + (reg_tv * cf_reg_tv));
       }
 
@@ -104,17 +104,17 @@ namespace MR {
 
 
 
-      LineSearchFunctor::Fixel::Fixel (const SIFT::Track_fixel_contribution& in, const TckFactor& tckfactor, const double Fs, const double fixel_coeff_mean) :
+      LineSearchFunctor::Fixel::Fixel (const SIFT::Track_fixel_contribution& in, const TckFactor::Fixel fixel, const value_type Fs, const value_type fixel_coeff_mean) :
           index (in.get_fixel_index()),
           length (in.get_length()),
-          PM (tckfactor.fixels[index].get_weight()),
-          TD (tckfactor.fixels[index].get_TD() - (length * std::exp (Fs))),
-          cost_frac (length / tckfactor.fixels[index].get_orig_TD()),
+          PM (fixel.weight()),
+          TD (fixel.td() - (length * std::exp (Fs))),
+          cost_frac (length / fixel.orig_TD()),
           SL_eff (PM * length),
-          dTD_dFs ((tckfactor.fixels[index].get_orig_TD() - length) * std::exp (Fs)),
+          dTD_dFs ((fixel.orig_TD() - length) * std::exp (Fs)),
           meanFs (fixel_coeff_mean),
           expmeanFs (std::exp (fixel_coeff_mean)),
-          FOD (tckfactor.fixels[index].get_FOD()) { }
+          FD (fixel.fd()) { }
 
 
 

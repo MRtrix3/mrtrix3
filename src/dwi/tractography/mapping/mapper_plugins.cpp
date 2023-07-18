@@ -18,11 +18,92 @@
 
 #include "image_helpers.h"
 #include "algo/threaded_loop.h"
+#include "misc/bitset.h"
 
 namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace Mapping {
+
+
+
+
+        FixelMappingPlugin::fixel_index_type FixelMappingPlugin::operator() (const Eigen::Vector3i& voxel, const Eigen::Vector3d& dir)
+        {
+          assign_pos_of (voxel).to (*this);
+          if (!count())
+            return nfixels();
+          if (dataset.have_fixel_masks()) {
+            // Assign direction to nearest dixel
+            const dixel_index_type dixel = dataset.dixels()(dir);
+            // TODO More faithful to pre-existing behaviour would be to select the
+            //   one with the greatest FD
+            // To address the above will require that each plugin take as input a
+            //   SetVoxelDir and convert an entire streamline's visitation in one go
+            for (auto f : value()) {
+              if (dataset.mask (f)[dixel])
+                return f;
+            }
+            if (!exhaustive)
+              return nfixels();
+            // Don't bother doing an expensive exhaustive search operation if the outcome is
+            //   guaranteed because there's only one fixel present in the voxel
+            if (count() == 1)
+              return offset();
+            // An exhaustive search on a per-streamline-intersection basis
+            // Iteratively search outwards from the assigned dixel, seeking the nearest dixel
+            //   that is assigned to a fixel; "nearest" is defined in terms of precise
+            //   dot product, and no more than the maximal necessary number of iterations is used
+            BitSet tested (dataset.dixels().size());
+            tested[dixel] = true;
+            vector<dixel_index_type> to_test = dataset.dixels().adjacency(dixel);
+            for (auto d : to_test)
+              tested[d] = true;
+            default_type max_abs_dp = 0.0;
+            fixel_index_type result = nfixels();
+            while (to_test.size()) {
+              vector<dixel_index_type> next_to_test;
+              bool all_below_max_abs_dp = true;
+              for (auto d : to_test) {
+                const default_type abs_dp = std::abs (dir.dot (dataset.dixels()[d]));
+                if (abs_dp > max_abs_dp) {
+                  all_below_max_abs_dp = false;
+                  for (auto f : value()) {
+                    if (dataset.mask (f)[d]) {
+                      max_abs_dp = abs_dp;
+                      result = f;
+                    }
+                  }
+                }
+                for (auto adj : dataset.dixels().adjacency(d)) {
+                  if (!tested[adj]) {
+                    tested[adj] = true;
+                    next_to_test.push_back (adj);
+                  }
+                }
+              }
+              if (all_below_max_abs_dp) {
+                assert (result != nfixels());
+                return result;
+              }
+              to_test = std::move (next_to_test);
+            }
+            assert (false);
+            return nfixels();
+          }
+          default_type max_dp = 0.0;
+          fixel_index_type max_index = dataset.nfixels();
+          for (auto f : value()) {
+            const default_type this_dp = abs (dir.dot (dataset.dir(f).cast<default_type>()));
+            if (this_dp > max_dp) {
+              max_dp = this_dp;
+              max_index = f;
+            }
+          }
+          return max_index;
+        }
+
+
 
 
 

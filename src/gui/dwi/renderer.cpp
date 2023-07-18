@@ -613,13 +613,13 @@ namespace MR
 
         for (size_t i = 0; i != dirs.size(); ++i) {
           directions_data.push_back (dirs[i].cast<float>());
-          for (auto j : dirs.adjacency[i]) {
+          for (auto j : dirs.adjacency(i)) {
             if (j > i) {
-              for (auto k : dirs.adjacency[j]) {
+              for (auto k : dirs.adjacency(j)) {
                 if (k > j) {
 
                   // k's adjacent direction list MUST contain i!
-                  for (auto I : dirs.adjacency[k]) {
+                  for (auto I : dirs.adjacency(k)) {
                     if (I == i) {
 
                       // Invert a direction if required

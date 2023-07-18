@@ -59,7 +59,7 @@ void run ()
   if (input_fixel_directory != output_fixel_directory) {
     ProgressBar progress ("copying fixel index and directions file into output directory");
     progress++;
-    Fixel::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
+    Fixel::copy_all_integral_files (input_fixel_directory, output_fixel_directory);
     progress++;
   }
 

@@ -134,6 +134,14 @@ namespace MR
         throw InvalidImageException (in.name() + " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
     }
 
+    template <class HeaderType>
+    FORCE_INLINE void check_data_file (const HeaderType& in, const index_type nfixels)
+    {
+      check_data_file (in);
+      if (in.size(0) != nfixels)
+        throw InvalidImageException ("Number of fixels in \"" + in.name() + " (" + str(in.size(0)) + ") does not match expected (" + str(nfixels) + ")");
+    }
+
     FORCE_INLINE std::string get_fixel_directory (const std::string& fixel_file) {
       std::string fixel_directory = Path::dirname (fixel_file);
       // assume the user is running the command from within the fixel directory
@@ -166,33 +174,19 @@ namespace MR
     }
 
 
+
+    template <class DataHeaderType>
+    FORCE_INLINE bool fixels_match (const DataHeaderType& data_header, const index_type nfixels)
+    {
+      return data_header.size(0) == nfixels;
+    }
+
     template <class IndexHeaderType, class DataHeaderType>
     FORCE_INLINE bool fixels_match (const IndexHeaderType& index_header, const DataHeaderType& data_header)
     {
-      bool fixels_match (false);
-
-      if (is_index_image (index_header)) {
-        if (index_header.keyval().count (n_fixels_key)) {
-          fixels_match = std::stoul (index_header.keyval().at(n_fixels_key)) == (index_type)data_header.size(0);
-        } else {
-          auto index_image = Image<index_type>::open (index_header.name());
-          index_image.index(3) = 1;
-          index_type num_fixels = 0;
-          index_type max_offset = 0;
-          for (auto i = MR::Loop (index_image, 0, 3) (index_image); i; ++i) {
-            if (index_image.value() > max_offset) {
-              max_offset = index_image.value();
-              index_image.index(3) = 0;
-              num_fixels = index_image.value();
-              index_image.index(3) = 1;
-            }
-          }
-          fixels_match = (max_offset + num_fixels) == (index_type)data_header.size(0);
-        }
-      }
-
-      return fixels_match;
+      return fixels_match (data_header, get_number_of_fixels (index_header));
     }
+
 
 
     FORCE_INLINE void check_fixel_size (const Header& index_h, const Header& data_h)
@@ -251,7 +245,10 @@ namespace MR
     }
 
 
-    FORCE_INLINE vector<Header> find_data_headers (const std::string &fixel_directory_path, const Header &index_header, const bool include_directions = false)
+    FORCE_INLINE vector<Header> find_data_headers (const std::string &fixel_directory_path,
+                                                   const Header &index_header,
+                                                   const bool include_directions = false,
+                                                   const bool include_dixelmasks = false)
     {
       check_index_image (index_header);
       auto dir_walker = Path::Dir (fixel_directory_path);
@@ -270,7 +267,7 @@ namespace MR
             auto H = Header::open (Path::join (fixel_directory_path, fname));
             if (is_data_file (H)) {
               if (fixels_match (index_header, H)) {
-                if (!is_directions_file (H) || include_directions)
+                if (!((is_directions_file (H) && !include_directions) || (is_dixelmasks_file (H) && !include_dixelmasks)))
                   data_headers.emplace_back (std::move (H));
               } else {
                 WARN ("fixel data file (" + fname + ") does not contain the same number of elements as fixels in the index file");
@@ -287,11 +284,10 @@ namespace MR
 
 
 
-    FORCE_INLINE Header find_directions_header (Header& index_header)
+    FORCE_INLINE Header find_directions_header (const std::string& fixel_directory_path, const index_type nfixels)
     {
       bool directions_found (false);
       Header header;
-      const std::string fixel_directory_path = Path::dirname (index_header.name());
 
       auto dir_walker = Path::Dir (fixel_directory_path);
       std::string fname;
@@ -299,7 +295,7 @@ namespace MR
         if (is_directions_filename (fname)) {
           Header tmp_header = Header::open (Path::join (fixel_directory_path, fname));
           if (is_directions_file (tmp_header)) {
-            if (fixels_match (index_header, tmp_header)) {
+            if (fixels_match (tmp_header, nfixels)) {
               if (directions_found == true)
                 throw Exception ("multiple directions files found in fixel image directory: " + fixel_directory_path);
               directions_found = true;
@@ -317,21 +313,24 @@ namespace MR
       return header;
     }
 
-
+    FORCE_INLINE Header find_directions_header (Header& index_header)
+    {
+      return find_directions_header (Path::dirname (index_header.name()), get_number_of_fixels (index_header));
+    }
 
     FORCE_INLINE Header find_directions_header (const std::string& fixel_directory_path)
     {
       Header index_header = Fixel::find_index_header (fixel_directory_path);
-      return find_directions_header (index_header);
+      return find_directions_header (fixel_directory_path, get_number_of_fixels (index_header));
     }
 
 
 
-    FORCE_INLINE Header find_dixelmasks_header (Header& index_header)
+
+    FORCE_INLINE Header find_dixelmasks_header (const std::string& fixel_directory_path, const index_type nfixels)
     {
       bool dixelmasks_found (false);
       Header header;
-      const std::string fixel_directory_path = Path::dirname (index_header.name());
 
       auto dir_walker = Path::Dir (fixel_directory_path);
       std::string fname;
@@ -339,7 +338,7 @@ namespace MR
         if (is_dixelmasks_filename (fname)) {
           Header tmp_header = Header::open (Path::join (fixel_directory_path, fname));
           if (is_dixelmasks_file (tmp_header)) {
-            if (fixels_match (index_header, tmp_header)) {
+            if (fixels_match (tmp_header, nfixels)) {
               if (dixelmasks_found == true)
                 throw Exception ("multiple dixelmask files found in fixel image directory: " + fixel_directory_path);
               dixelmasks_found = true;
@@ -354,13 +353,20 @@ namespace MR
       return header;
     }
 
-
+    FORCE_INLINE Header find_dixelmasks_header (Header& index_header)
+    {
+      return find_dixelmasks_header (Path::dirname (index_header.name()), get_number_of_fixels (index_header));
+    }
 
     FORCE_INLINE Header find_dixelmasks_header (const std::string& fixel_directory_path)
     {
       Header index_header = Fixel::find_index_header (fixel_directory_path);
-      return find_dixelmasks_header (index_header);
+      return find_dixelmasks_header (fixel_directory_path, get_number_of_fixels (index_header));
     }
+
+
+
+
 
 
 
@@ -491,12 +497,38 @@ namespace MR
         auto input_image = input_header.get_image<float>();
         threaded_copy (input_image, output_image);
       }
-
     }
 
-    FORCE_INLINE void copy_index_and_directions_file (const std::string& input_directory, const std::string &output_directory) {
+    //! Copy the dixelmasks file from one fixel directory into another.
+    FORCE_INLINE void copy_dixelmasks_file (const std::string& input_directory, const std::string& output_directory) {
+      Header input_header = Fixel::find_dixelmasks_header (input_directory);
+      if (input_header.name().empty()) {
+        INFO ("No dixelmasks image found in \"" + input_directory + "\"; not copying to \"" + output_directory + "\"");
+        return;
+      }
+      std::string output_path = Path::join (output_directory, Path::basename (input_header.name()));
+
+      // If the directions file already exists check it is the same as the input directions file
+      if (Path::exists (output_path)) {
+        auto input_image = input_header.get_image<bool>();
+        auto output_image = Image<bool>::open (output_path);
+        if (!images_match_abs (input_image, output_image))
+          throw Exception ("output fixel directory \"" + output_directory + "\" already contains dixelmasks file, "
+                           + "which is not the same as the expected output"
+                           + (App::overwrite_files ?
+                              " (-force option cannot safely be applied on directories; please erase manually instead)" :
+                              ""));
+      } else {
+        auto output_image = Image<bool>::create (Path::join (output_directory, Path::basename (input_header.name())), input_header);
+        auto input_image = input_header.get_image<bool>();
+        threaded_copy (input_image, output_image);
+      }
+    }
+
+    FORCE_INLINE void copy_all_integral_files (const std::string& input_directory, const std::string &output_directory) {
       copy_index_file (input_directory, output_directory);
       copy_directions_file (input_directory, output_directory);
+      copy_dixelmasks_file (input_directory, output_directory);
     }
 
 

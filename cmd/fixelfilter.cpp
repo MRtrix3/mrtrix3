@@ -175,7 +175,7 @@ void run()
     CONSOLE (std::string ("Applying \"") + filters[argument[1]] + "\" operation to fixel data file \"" + single_file.name() + "\"");
     (*filter) (single_file, output_image);
   } else {
-    Fixel::copy_index_and_directions_file (argument[0], argument[2]);
+    Fixel::copy_all_integral_files (argument[0], argument[2]);
     ProgressBar progress (std::string ("Applying \"") + filters[argument[1]] + "\" operation to " + str(multiple_files.size()) + " fixel data files",
                           multiple_files.size());
     for (auto& H : multiple_files) {

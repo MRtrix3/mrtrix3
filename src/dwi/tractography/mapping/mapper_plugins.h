@@ -20,6 +20,7 @@
 
 #include "image.h"
 #include "types.h"
+#include "fixel/dataset.h"
 #include "interp/linear.h"
 #include "math/sphere/SH.h"
 #include "math/sphere/set/assigner.h"
@@ -42,8 +43,6 @@ namespace MR {
           public:
             DixelMappingPlugin (const Math::Sphere::Set::Assigner& dir2dixel) :
               dir2dixel (dir2dixel) { }
-            DixelMappingPlugin (const DixelMappingPlugin& that) :
-              dir2dixel (that.dir2dixel) { }
             Math::Sphere::Set::index_type operator() (const Eigen::Vector3d& d) const { return dir2dixel (d); }
           private:
             const Math::Sphere::Set::Assigner& dir2dixel;
@@ -55,12 +54,47 @@ namespace MR {
         {
           public:
             TODMappingPlugin (const size_t N) :
-              generator (new Math::Sphere::SH::aPSF<float> (Math::Sphere::SH::LforN (N))) { }
-            template <class VectorType, class UnitVectorType>
-              void operator() (VectorType& sh, const UnitVectorType& d) const { (*generator) (sh, d); }
+                generator (new Math::Sphere::SH::aPSF<float> (Math::Sphere::SH::LforN (N))),
+                sh (Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (N)) { }
+            TODMappingPlugin (const TODMappingPlugin& that) :
+                generator (that.generator),
+                sh (Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (that.sh.size())) { }
+            template <class UnitVectorType>
+            void operator() (const UnitVectorType& d) { (*generator) (sh, d); }
+            const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& operator()() const { return sh; }
           private:
             std::shared_ptr<Math::Sphere::SH::aPSF<float>> generator;
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh;
         };
+
+
+
+        // Currently the if statement for whether or not mask information is available
+        //   will be performed for every single voxel intersection of every streamline
+        // TODO See if there's a way to speed this up...
+        // TODO The prospect of having modified mask information means there's
+        //   actually 3 options here...
+        // TODO See if this can be made private
+        class FixelMappingPlugin : public MR::Fixel::IndexImage
+        {
+          public:
+          using fixel_index_type = MR::Fixel::index_type;
+          using dixel_index_type = Math::Sphere::Set::index_type;
+            FixelMappingPlugin (const MR::Fixel::Dataset& dataset, const bool exhaustive = true) :
+                MR::Fixel::IndexImage (dataset),
+                dataset (dataset),
+                exhaustive (exhaustive) { }
+            FixelMappingPlugin (const FixelMappingPlugin& that) :
+                MR::Fixel::IndexImage (that),
+                dataset (that.dataset),
+                exhaustive (that.exhaustive) { }
+            fixel_index_type operator() (const Eigen::Vector3i& voxel, const Eigen::Vector3d& dir);
+            fixel_index_type nfixels() const { return dataset.nfixels(); }
+          private:
+            const MR::Fixel::Dataset& dataset;
+            const bool exhaustive;
+        };
+
 
 
 

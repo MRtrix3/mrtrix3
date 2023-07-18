@@ -52,7 +52,7 @@ namespace MR
 
 
     template <class... DestImageType>
-      struct __assign { 
+      struct __assign {
         __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
         const size_t axis;
         const ssize_t index;
@@ -61,7 +61,7 @@ namespace MR
       };
 
     template <class... DestImageType>
-      struct __assign<std::tuple<DestImageType...>> { 
+      struct __assign<std::tuple<DestImageType...>> {
         __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
         const size_t axis;
         const ssize_t index;
@@ -70,7 +70,7 @@ namespace MR
       };
 
     template <class... DestImageType>
-      struct __max_axis { 
+      struct __max_axis {
         __max_axis (size_t& axis) : axis (axis) { }
         size_t& axis;
         template <class ImageType>
@@ -78,7 +78,7 @@ namespace MR
       };
 
     template <class... DestImageType>
-      struct __max_axis<std::tuple<DestImageType...>> { 
+      struct __max_axis<std::tuple<DestImageType...>> {
         __max_axis (size_t& axis) : axis (axis) { }
         size_t& axis;
         template <class ImageType>
@@ -86,7 +86,7 @@ namespace MR
       };
 
     template <class ImageType>
-      struct __assign_pos_axis_range { 
+      struct __assign_pos_axis_range {
         template <class... DestImageType>
           FORCE_INLINE void to (DestImageType&... dest) const {
             size_t last_axis = to_axis;
@@ -100,7 +100,7 @@ namespace MR
 
 
     template <class ImageType, typename IntType>
-      struct __assign_pos_axes { 
+      struct __assign_pos_axes {
         template <class... DestImageType>
           FORCE_INLINE void to (DestImageType&... dest) const {
             for (auto a : axes)
@@ -117,7 +117,7 @@ namespace MR
 
   //! convenience function for SFINAE on header types
   template <class HeaderType, typename ReturnType>
-    struct enable_if_header_type { 
+    struct enable_if_header_type {
       typedef decltype ((void) (
             std::declval<HeaderType>().ndim() +
             std::declval<HeaderType>().size(0) +
@@ -127,7 +127,7 @@ namespace MR
 
   //! convenience function for SFINAE on header types
   template<typename HeaderType>
-    class is_header_type { 
+    class is_header_type {
       typedef char yes[1], no[2];
       template<typename C> static yes& test(typename enable_if_header_type<HeaderType,int>::type);
       template<typename C> static no&  test(...);
@@ -140,7 +140,7 @@ namespace MR
 
   //! convenience function for SFINAE on image types
   template <class ImageType, typename ReturnType>
-    struct enable_if_image_type { 
+    struct enable_if_image_type {
       typedef decltype ((void) (
             std::declval<ImageType>().ndim() +
             std::declval<ImageType>().size(0) +
@@ -153,7 +153,7 @@ namespace MR
 
   //! convenience function for SFINAE on image types
   template<typename ImageType>
-    class is_image_type { 
+    class is_image_type {
       typedef char yes[1], no[2];
       template<typename C> static yes& test(typename enable_if_image_type<ImageType,int>::type);
       template<typename C> static no&  test(...);
@@ -168,13 +168,13 @@ namespace MR
 
   //! convenience function for SFINAE on images of type Image<ValueType>
   template<class ImageType>
-    struct is_pure_image { 
+    struct is_pure_image {
       static bool const value = std::is_same<ImageType, ::MR::Image<typename ImageType::value_type>>::value;
     };
 
   //! convenience function for SFINAE on images NOT of type Image<ValueType>
   template<class ImageType>
-    struct is_adapter_type { 
+    struct is_adapter_type {
       static bool const value = is_image_type<ImageType>::value && !is_pure_image<ImageType>::value;
     };
 
@@ -481,7 +481,7 @@ namespace MR
   {
 
     template <class ImageType>
-      class Index { 
+      class Index {
         public:
           FORCE_INLINE Index (ImageType& image, size_t axis) : image (image), axis (axis) { assert (axis < image.ndim()); }
           Index () = delete;
@@ -507,7 +507,7 @@ namespace MR
 
 
     template <class ImageType>
-      class Value { 
+      class Value {
         public:
           using value_type = typename ImageType::value_type;
           Value () = delete;
@@ -532,10 +532,12 @@ namespace MR
 
 
     template <class ImageType>
-      class ConstRow { 
+      class ConstRow {
         public:
           ConstRow (ImageType& image, size_t axis) : axis (axis), image (image) { assert (axis < image.ndim()); }
           ssize_t size () const { return image.size (axis); }
+          Index<ImageType> index () { return Index<ImageType> (image, axis); }
+          typename ImageType::value_type value() const { return image.value(); }
           typename ImageType::value_type operator[] (ssize_t n) const { image.index (axis) = n; return image.value(); }
           const size_t axis;
         protected:
@@ -549,7 +551,7 @@ namespace MR
     template <class ImageType>
       class Row :
         public ConstRow<ImageType>
-    { 
+    {
       public:
 
         using value_type = typename ImageType::value_type;
@@ -624,7 +626,7 @@ namespace MR
 
   template <class Derived, typename ValueType>
     class ImageBase
-    { 
+    {
       public:
         using value_type = ValueType;
 

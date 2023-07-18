@@ -22,6 +22,7 @@
 #include "image.h"
 #include "memory.h"
 #include "algo/loop.h"
+#include "fixel/dataset.h"
 #include "math/sphere/SH.h"
 #include "math/sphere/set/assigner.h"
 #include "math/sphere/set/set.h"

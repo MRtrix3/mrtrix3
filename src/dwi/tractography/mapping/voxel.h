@@ -22,6 +22,7 @@
 #include <set>
 
 #include "image.h"
+#include "fixel/fixel.h"
 #include "math/sphere/set/set.h"
 
 
@@ -53,21 +54,33 @@ namespace MR {
 
 
 
-
-        class Voxel : public Eigen::Vector3i
+        class IntersectionLength
         {
           public:
-            Voxel (const int x, const int y, const int z) : Eigen::Vector3i (x,y,z), length (1.0f) { }
-            Voxel (const Eigen::Vector3i& that) : Eigen::Vector3i (that), length (1.0f) { }
-            Voxel (const Eigen::Vector3i& v, const default_type l) : Eigen::Vector3i (v), length (l) { }
-            Voxel () : length (0.0) { setZero(); }
-            bool operator< (const Voxel& V) const { return (((*this)[2] == V[2]) ? (((*this)[1] == V[1]) ? ((*this)[0] < V[0]) : ((*this)[1] < V[1])) : ((*this)[2] < V[2])); }
-            Voxel& operator= (const Voxel& V) { Eigen::Vector3i::operator= (V); length = V.length; return *this; }
+            IntersectionLength() : length (0.0) { }
+            IntersectionLength (const default_type l) : length (l) { }
             void operator+= (const default_type l) const { length += l; }
             void normalize() const { length = 1.0; }
+            void set_length (const default_type l) { length = l; }
             default_type get_length() const { return length; }
           private:
             mutable default_type length;
+        };
+
+
+
+
+        class Voxel : public Eigen::Vector3i, public IntersectionLength
+        {
+          public:
+            using vox_type = Eigen::Vector3i;
+            using length_type = IntersectionLength;
+            Voxel (const int x, const int y, const int z) : vox_type (x,y,z), length_type (1.0f) { }
+            Voxel (const vox_type& that) : vox_type (that), length_type (1.0f) { }
+            Voxel (const vox_type& v, const default_type l) : Eigen::Vector3i (v), length_type (l) { }
+            Voxel () { vox_type::setZero(); }
+            bool operator< (const Voxel& V) const { return (((*this)[2] == V[2]) ? (((*this)[1] == V[1]) ? ((*this)[0] < V[0]) : ((*this)[1] < V[1])) : ((*this)[2] < V[2])); }
+            Voxel& operator= (const Voxel& V) { vox_type::operator= (V); set_length (V.get_length()); return *this; }
         };
 
 
@@ -99,10 +112,10 @@ namespace MR {
             bool      operator== (const VoxelDEC& V) const { return Voxel::operator== (V); }
             bool      operator<  (const VoxelDEC& V) const { return Voxel::operator< (V); }
 
-            void normalize() const { colour.normalize(); Voxel::normalize(); }
+            void normalize() const { colour.normalize(); IntersectionLength::normalize(); }
             void set_dir (const Eigen::Vector3d& i) { colour = vec2DEC (i); }
-            void add (const Eigen::Vector3d& i, const default_type l) const { Voxel::operator+= (l); colour += vec2DEC (i); }
-            void operator+= (const Eigen::Vector3d& i) const { Voxel::operator+= (1.0); colour += vec2DEC (i); }
+            void add (const Eigen::Vector3d& i, const default_type l) const { IntersectionLength::operator+= (l); colour += vec2DEC (i); }
+            void operator+= (const Eigen::Vector3d& i) const { IntersectionLength::operator+= (1.0); colour += vec2DEC (i); }
             const Eigen::Vector3d& get_colour() const { return colour; }
 
           private:
@@ -112,7 +125,6 @@ namespace MR {
 
 
 
-        // Temporary fix for fixel stats branch
         // Stores precise direction through voxel rather than mapping to a DEC colour or a dixel
         class VoxelDir : public Voxel
         {
@@ -140,10 +152,10 @@ namespace MR {
             bool      operator== (const VoxelDir& V) const { return Voxel::operator== (V); }
             bool      operator<  (const VoxelDir& V) const { return Voxel::operator< (V); }
 
-            void normalize() const { dir.normalize(); Voxel::normalize(); }
+            void normalize() const { dir.normalize(); IntersectionLength::normalize(); }
             void set_dir (const Eigen::Vector3d& i) { dir = i; }
-            void add (const Eigen::Vector3d& i, const default_type l) const { Voxel::operator+= (l); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
-            void operator+= (const Eigen::Vector3d& i) const { Voxel::operator+= (1.0); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
+            void add (const Eigen::Vector3d& i, const default_type l) const { IntersectionLength::operator+= (l); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
+            void operator+= (const Eigen::Vector3d& i) const { IntersectionLength::operator+= (1.0); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
             const Eigen::Vector3d& get_dir() const { return dir; }
 
           private:
@@ -161,13 +173,8 @@ namespace MR {
 
             using dir_index_type = Math::Sphere::Set::index_type;
 
-            Dixel () :
-              Voxel (),
-              dir (invalid) { }
-
-            Dixel (const Eigen::Vector3i& V) :
-              Voxel (V),
-              dir (invalid) { }
+            Dixel () = delete;
+            Dixel (const Eigen::Vector3i& V) = delete;
 
             Dixel (const Eigen::Vector3i& V, const dir_index_type b) :
               Voxel (V),
@@ -179,25 +186,22 @@ namespace MR {
 
             void set_dir (const size_t b) { dir = b; }
 
-            bool valid() const { return (dir != invalid); }
             dir_index_type get_dir() const { return dir; }
 
             Dixel& operator=  (const Dixel& V)       { Voxel::operator= (V); dir = V.dir; return *this; }
-            Dixel& operator=  (const Eigen::Vector3i& V)  { Voxel::operator= (V); dir = invalid; return *this; }
+            Dixel& operator=  (const Eigen::Vector3i& V)  { Voxel::operator= (V); /*dir = invalid;*/ return *this; }
             bool   operator== (const Dixel& V) const { return (Voxel::operator== (V) ? (dir == V.dir) : false); }
             bool   operator<  (const Dixel& V) const { return (Voxel::operator== (V) ? (dir <  V.dir) : Voxel::operator< (V)); }
-            void   operator+= (const float l)  const { Voxel::operator+= (l); }
+            void   operator+= (const float l)  const { IntersectionLength::operator+= (l); }
 
           private:
             dir_index_type dir;
-
-            static const dir_index_type invalid;
 
         };
 
 
 
-        // TOD class: tore the SH coefficients in the voxel class so that aPSF generation can be multi-threaded
+        // TOD class: Store the SH coefficients in the voxel class so that aPSF generation can be multi-threaded
         // Provide a normalize() function to remove any length dependence, and have unary contribution per streamline
         class VoxelTOD : public Voxel
         {
@@ -233,7 +237,7 @@ namespace MR {
             {
               const default_type multiplier = 1.0 / get_length();
               sh_coefs *= multiplier;
-              Voxel::normalize();
+              IntersectionLength::normalize();
             }
             void set_tod (const vector_type& i) { sh_coefs = i; }
             void add (const vector_type& i, const default_type l) const
@@ -241,13 +245,13 @@ namespace MR {
               assert (i.size() == sh_coefs.size());
               for (ssize_t index = 0; index != sh_coefs.size(); ++index)
                 sh_coefs[index] += l * i[index];
-              Voxel::operator+= (l);
+              IntersectionLength::operator+= (l);
             }
             void operator+= (const vector_type& i) const
             {
               assert (i.size() == sh_coefs.size());
               sh_coefs += i;
-              Voxel::operator+= (1.0);
+              IntersectionLength::operator+= (1.0);
             }
             const vector_type& get_tod() const { return sh_coefs; }
 
@@ -258,11 +262,29 @@ namespace MR {
 
 
 
+        class Fixel : public IntersectionLength
+        {
+          public:
+            using index_type = MR::Fixel::index_type;
+            using length_type = IntersectionLength;
+            Fixel() = delete;
+            Fixel (const index_type f) : length_type (1.0), index (f) { }
+            Fixel (const index_type f, const default_type l) : length_type (l), index (f) { }
+            bool operator< (const Fixel& F) const { return (index < F.index); }
+            Fixel& operator= (const Fixel& F) { index = F.index; set_length (F.get_length()); return *this; }
+            operator index_type() const { return index; }
+          private:
+            index_type index;
+        };
+
+
+
         std::ostream& operator<< (std::ostream&, const Voxel&);
         std::ostream& operator<< (std::ostream&, const VoxelDEC&);
         std::ostream& operator<< (std::ostream&, const VoxelDir&);
         std::ostream& operator<< (std::ostream&, const Dixel&);
         std::ostream& operator<< (std::ostream&, const VoxelTOD&);
+        std::ostream& operator<< (std::ostream&, const Fixel&);
 
 
 
@@ -410,6 +432,28 @@ namespace MR {
             inline void insert (const Eigen::Vector3i& v, const vector_type& t, const default_type l)
             {
               const VoxelTOD temp (v, t, l);
+              insert (temp);
+            }
+        };
+
+
+
+        class SetFixel : public std::set<Fixel>, public SetVoxelExtras
+        {
+          public:
+            // TODO Rename
+            using VoxType = Fixel;
+            inline void insert (const Fixel& f)
+            {
+              iterator existing = std::set<Fixel>::find (f);
+              if (existing == std::set<Fixel>::end())
+                std::set<Fixel>::insert (f);
+              else
+                (*existing) += f.get_length();
+            }
+            inline void insert (const Fixel::index_type f, const default_type l)
+            {
+              const Fixel temp (f, l);
               insert (temp);
             }
         };

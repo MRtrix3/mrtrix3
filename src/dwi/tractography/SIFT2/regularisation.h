@@ -20,6 +20,8 @@
 
 #include "dwi/tractography/SIFT2/line_search.h"
 
+#include "dwi/tractography/SIFT/types.h"
+
 
 namespace MR
 {
@@ -29,6 +31,10 @@ namespace MR
     {
       namespace SIFT2
       {
+
+
+
+      using value_type = SIFT::value_type;
 
 
 
@@ -61,7 +67,7 @@ namespace MR
             (value_type(2.0) * std::exp(coeff) * ((value_type(4.0) * std::exp(coeff)) - std::exp(base))));
       }
       // A convenience function for LineSearchFunctor to reduce Math::exp() calls
-      inline void dxtvreg_dcoeffx (LineSearchFunctor::Result& result, const double coeff, const double expcoeff, const double multiplier, const double base, const double expbase)
+      inline void dxtvreg_dcoeffx (LineSearchFunctor::Result& result, const value_type coeff, const value_type expcoeff, const value_type multiplier, const value_type base, const value_type expbase)
       {
         if (coeff <= base) {
           result.cost         += multiplier * Math::pow2 (coeff - base);

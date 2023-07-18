@@ -24,7 +24,6 @@ namespace MR {
 
 
 
-        const Dixel::dir_index_type Dixel::invalid = std::numeric_limits<Dixel::dir_index_type>::max();
 
 
 
@@ -50,6 +49,11 @@ namespace MR {
 
         std::ostream& operator<< (std::ostream& stream, const VoxelTOD& v) {
           stream << "[" << Eigen::Vector3i(v).transpose() << "]: " << v.get_tod().transpose() << " " << v.get_length();
+          return stream;
+        }
+
+        std::ostream& operator<< (std::ostream& stream, const Fixel& f) {
+          stream << "[" << Fixel::index_type(f) << "]: " << f.get_length();
           return stream;
         }
 

@@ -62,12 +62,12 @@ namespace MR {
             Voxel () : Base (), VoxelAddon () { }
 
             Voxel& operator= (const Voxel& V) { Base::operator= (V); VoxelAddon::operator= (V); return *this; }
-            void operator+= (const default_type l) const { Base::operator+= (l); }
+            void operator+= (const default_type l) const { IntersectionLength::operator+= (l); }
             bool operator== (const Voxel& V) const { return Base::operator== (V); }
             bool operator<  (const Voxel& V) const { return Base::operator<  (V); }
 
-            void add (const default_type l, const default_type f) const { Base::operator+= (l); VoxelAddon::operator+= (f); }
-            void normalize() const { VoxelAddon::normalize (get_length()); Base::normalize(); }
+            void add (const default_type l, const default_type f) const { IntersectionLength::operator+= (l); VoxelAddon::operator+= (f); }
+            void normalize() const { VoxelAddon::normalize (get_length()); IntersectionLength::normalize(); }
 
           };
 
@@ -92,7 +92,7 @@ namespace MR {
 
             void add (const Eigen::Vector3d&, const default_type) const { assert (0); }
             void add (const Eigen::Vector3d& i, const default_type l, const default_type f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
-            void normalize() const { VoxelAddon::normalize (get_length()); Base::normalize(); }
+            void normalize() const { VoxelAddon::normalize (get_length()); IntersectionLength::normalize(); }
 
           };
 
@@ -105,8 +105,8 @@ namespace MR {
             public:
             using index_type = Math::Sphere::Set::index_type;
 
-            Dixel () : Base (), VoxelAddon () { }
-            Dixel (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
+            Dixel() = delete;
+            Dixel (const Eigen::Vector3i&) = delete;
             Dixel (const Eigen::Vector3i& V, const dir_index_type b) : Base (V, b), VoxelAddon () { }
             Dixel (const Eigen::Vector3i& V, const dir_index_type b, const default_type l) : Base (V, b, l), VoxelAddon () { }
             Dixel (const Eigen::Vector3i& V, const dir_index_type b, const default_type l, const default_type f) : Base (V, b, l), VoxelAddon (f) { }
@@ -116,8 +116,8 @@ namespace MR {
             bool   operator<  (const Dixel& V) const { return Base::operator<  (V); }
             void   operator+= (const default_type)  const { assert (0); }
 
-            void add (const default_type l, const default_type f) const { Base::operator+= (l); VoxelAddon::operator+= (f); }
-            void normalize() const { VoxelAddon::normalize (get_length()); Base::normalize(); }
+            void add (const default_type l, const default_type f) const { IntersectionLength::operator+= (l); VoxelAddon::operator+= (f); }
+            void normalize() const { VoxelAddon::normalize (get_length()); IntersectionLength::normalize(); }
 
           };
 
@@ -143,7 +143,7 @@ namespace MR {
 
             void add (const vector_type&, const default_type) const { assert (0); }
             void add (const vector_type& i, const default_type l, const default_type f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
-            void normalize() const { VoxelAddon::normalize (get_length()); Base::normalize(); }
+            void normalize() const { VoxelAddon::normalize (get_length()); IntersectionLength::normalize(); }
 
           };
 

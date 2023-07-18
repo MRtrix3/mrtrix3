@@ -75,7 +75,7 @@ void run ()
 
   check_dimensions (subject_index, template_index);
   std::string output_fixel_directory = argument[2];
-  Fixel::copy_index_and_directions_file (argument[1], output_fixel_directory);
+  Fixel::copy_all_integral_files (argument[1], output_fixel_directory);
 
   Header output_data_header (template_directions);
   output_data_header.size(1) = 1;

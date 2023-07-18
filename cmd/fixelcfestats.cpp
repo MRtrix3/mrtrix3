@@ -155,7 +155,7 @@ void write_fixel_output (const std::string& filename,
 //   specific subject based on the string path to the image file for
 //   that subject
 class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
-{ 
+{
   public:
     SubjectFixelImport (const std::string& path) :
         Math::Stats::SubjectDataImportBase (path),
@@ -313,7 +313,7 @@ void run()
   Fixel::Matrix::Reader matrix (argument[4], mask);
 
   const std::string output_fixel_directory = argument[5];
-  Fixel::copy_index_and_directions_file (input_fixel_directory, output_fixel_directory);
+  Fixel::copy_all_integral_files (input_fixel_directory, output_fixel_directory);
 
   // Do we still want to check whether or not there are any disconnected fixels?
   // With the current derivation, disconnected fixels will not possess any self-connectivity,

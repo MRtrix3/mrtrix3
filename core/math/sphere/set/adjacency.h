@@ -38,6 +38,10 @@ namespace MR {
             initialise (to_cartesian (dirs));
           }
 
+          Adjacency (const Adjacency& that) = default;
+
+          Adjacency() { }
+
           // Are the directions corresponding to these two indices adjacent to one another?
           bool operator() (const index_type one, const index_type two) const
           {
@@ -75,10 +79,14 @@ namespace MR {
           template <class MatrixType>
           CartesianWithAdjacency (const Eigen::MatrixBase<MatrixType>& dirs) :
               BaseType (to_cartesian (dirs)),
-              adjacency (*this) {}
+              adj (*this) {}
+          CartesianWithAdjacency() { }
           size_t size() const { return rows(); }
-          Eigen::Matrix<default_type, Eigen::Dynamic, 3>::ConstRowXpr operator[] (const size_t i) const { assert (i < rows()); return row(i); }
-          const Adjacency adjacency;
+          BaseType::ConstRowXpr operator[] (const index_type i) const { assert (i < rows()); return row(i); }
+          const vector<index_type>& adjacency (const index_type i) const { assert (i < rows()); return adj[i]; }
+          bool adjacent (const BitSet& mask, const index_type index) const { return adj (mask, index); }
+        private:
+          Adjacency adj;
       };
 
 
