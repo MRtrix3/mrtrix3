@@ -190,7 +190,7 @@ namespace MR
 
         template <class MatrixType>
         class Receiver
-        { NOMEMALIGN
+        {
           public:
             Receiver (MatrixType& data) :
                 data (data) { }
@@ -270,14 +270,14 @@ namespace MR
       void Writer<MatrixType>::set_count_path (const std::string& path)
       {
         assert (!count_image.valid());
-        count_image = Image<count_type>::create (path, MR::Fixel::make_data_header (matrix.size()));
+        count_image = Image<count_type>::create (path, MR::Fixel::data_header_from_nfixels (matrix.size()));
       }
 
       template <class MatrixType>
       void Writer<MatrixType>::set_extent_path (const std::string& path)
       {
         assert (!extent_image.valid());
-        extent_image = Image<connectivity_value_type>::create (path, MR::Fixel::make_data_header (matrix.size()));
+        extent_image = Image<connectivity_value_type>::create (path, MR::Fixel::data_header_from_nfixels (matrix.size()));
       }
 
 
@@ -322,10 +322,10 @@ namespace MR
 
         index_type num_connections = 0;
         {
-          ProgressBar progress ("Computing number of fixels in output", matrix.size());
+          ProgressBar progress ("Computing number of fixel-fixel connections in matrix", matrix.size());
 
           for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
-            const connectivity_value_type normalisation_factor = connectivity_value_type(1) / connectivity_value_type (matrix[fixel_index].count());
+            const connectivity_value_type normalisation_factor = matrix[fixel_index].norm_factor();
             for (auto& it : matrix[fixel_index]) {
               const connectivity_value_type connectivity = normalisation_factor * it.value();
               if (connectivity >= threshold)
@@ -349,6 +349,7 @@ namespace MR
         fixel_header.keyval()["nfixels"] = str(matrix.size());
         fixel_header.datatype() = DataType::from<index_type>();
         fixel_header.datatype().set_byte_order_native();
+
         Header value_header (fixel_header);
         value_header.datatype() = DataType::from<connectivity_value_type>();
         value_header.datatype().set_byte_order_native();
@@ -370,11 +371,13 @@ namespace MR
 
           const ssize_t connection_offset = fixel_image.index(0);
           index_type connection_count = 0;
-          const connectivity_value_type normalisation_factor = connectivity_value_type(1) / connectivity_value_type (matrix[fixel_index].count());
+          connectivity_value_type sum_connectivity = connectivity_value_type (0.0);
+          const connectivity_value_type normalisation_factor = matrix[fixel_index].norm_factor();
           for (auto& it : matrix[fixel_index]) {
             const connectivity_value_type connectivity = normalisation_factor * it.value();
             if (connectivity >= threshold) {
               ++connection_count;
+              sum_connectivity += connectivity;
               fixel_image.value() = it.index();
               ++fixel_image.index(0);
               value_image.value() = connectivity;
@@ -388,7 +391,7 @@ namespace MR
 
           if (count_image.valid()) {
             count_image.index(0) = fixel_index;
-            count_image.value() = fixel_buffer.size();
+            count_image.value() = connection_count;
           }
           if (extent_image.valid()) {
             extent_image.index(0) = fixel_index;

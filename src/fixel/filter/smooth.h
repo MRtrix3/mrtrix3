@@ -18,8 +18,7 @@
 #ifndef __fixel_filter_smooth_h__
 #define __fixel_filter_smooth_h__
 
-#include "fixel/types.h"
-
+#include "fixel/fixel.h"
 #include "fixel/matrix.h"
 #include "fixel/filter/base.h"
 
@@ -53,7 +52,7 @@ namespace MR
        */
 
       class Smooth : public Base
-      { 
+      {
 
         public:
           Smooth (Image<index_type> index_image,

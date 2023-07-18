@@ -21,7 +21,7 @@
 #include "image.h"
 #include "types.h"
 #include "file/ofstream.h"
-#include "fixel/types.h"
+#include "fixel/fixel.h"
 
 namespace MR
 {
@@ -254,7 +254,7 @@ namespace MR
 
       template <class MatrixType>
       class Writer
-      { MEMALIGN(Writer<MatrixType>)
+      {
         public:
           Writer (MatrixType& matrix,
                   const connectivity_value_type threshold) :
