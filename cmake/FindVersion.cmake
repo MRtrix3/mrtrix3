@@ -1,5 +1,5 @@
 if(GIT_EXECUTABLE)
-    message(STATUS "Git found: ${GIT_EXECUTABLE}")
+    message(VERBOSE "Git found: ${GIT_EXECUTABLE}")
     # Get tag
     execute_process(
         COMMAND ${GIT_EXECUTABLE} describe --abbrev=0
@@ -22,10 +22,10 @@ if(GIT_EXECUTABLE)
     endif()
 
     if(NOT GIT_TAG_ERROR AND NOT GIT_COMMIT_ERROR)
-        message(STATUS "Git tag: ${GIT_TAG}; Git commit: ${GIT_COMMIT}")
+        message(VERBOSE "Git tag: ${GIT_TAG}; Git commit: ${GIT_COMMIT}")
         set(MRTRIX_VERSION ${GIT_COMMIT})
     else()
-        message(STATUS "Git tag: not found.")
+        message(VERBOSE "Git tag: not found.")
     endif()
 endif()
 
