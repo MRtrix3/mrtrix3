@@ -335,12 +335,6 @@ namespace MR
       return header;
     }
 
-    //! Generate a header for a sparse data file (Nx1x1) using an index image as a template
-    template <class IndexHeaderType>
-    FORCE_INLINE Header data_header_from_index (IndexHeaderType& index) {
-      return make_data_header (get_number_of_fixels (index));
-    }
-
     //! Generate a header for a fixel directions data file (Nx3x1) using an index image as a template
     template <class IndexHeaderType>
     FORCE_INLINE Header directions_header_from_index (IndexHeaderType& index) {
