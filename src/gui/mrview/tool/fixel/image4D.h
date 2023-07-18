@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,7 +28,7 @@ namespace MR
       namespace Tool
       {
         class Image4D : public FixelType<FixelImage4DType>
-        { MEMALIGN (Image4D)
+        { 
           public:
             Image4D (const std::string& filename, Fixel& fixel_tool) :
               FixelType (filename, fixel_tool), tracking (false)

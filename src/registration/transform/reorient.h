@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -58,7 +58,7 @@ namespace MR
       }
 
       template <class FODImageType>
-      class LinearKernelMultiContrast { MEMALIGN(LinearKernelMultiContrast<FODImageType>)
+      class LinearKernelMultiContrast { 
 
         public:
           LinearKernelMultiContrast (ssize_t n_vol,
@@ -107,7 +107,7 @@ namespace MR
 
 
       template <class FODImageType>
-      class LinearKernel { MEMALIGN(LinearKernel<FODImageType>)
+      class LinearKernel { 
 
         public:
           LinearKernel (const ssize_t n_SH,
@@ -208,7 +208,7 @@ namespace MR
       }
 
       template <class FODImageType>
-      class NonLinearKernelMultiContrast { MEMALIGN(NonLinearKernelMultiContrast<FODImageType>)
+      class NonLinearKernelMultiContrast { 
 
         public:
           NonLinearKernelMultiContrast (ssize_t n_vol,
@@ -287,7 +287,7 @@ namespace MR
 
 
       template <class FODImageType>
-      class NonLinearKernel { MEMALIGN(NonLinearKernel<FODImageType>)
+      class NonLinearKernel { 
 
         public:
           NonLinearKernel (const ssize_t n_SH, Image<default_type>& warp, const Eigen::MatrixXd& directions, const bool modulate) :

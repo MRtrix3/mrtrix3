@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
+#include <QDebug>
 #include "app.h"
 #include "timer.h"
 #include "file/config.h"
@@ -56,6 +56,15 @@ namespace MR
       bool Window::tools_floating = false;
 
       namespace {
+
+        template <class Event> inline QPoint position (Event* event) { return event->pos(); }
+        template <> inline QPoint position (QWheelEvent* event) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 14, 0)
+          return event->position().toPoint();
+#else
+          return event->pos();
+#endif
+        }
 
         Qt::KeyboardModifiers get_modifier (const char* key, Qt::KeyboardModifiers default_key) {
           std::string value = lowercase (MR::File::Config::get (key));
@@ -109,7 +118,7 @@ namespace MR
           setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
           grabGesture (Qt::PinchGesture);
-          grabGesture (Qt::PanGesture);
+          // grabGesture (Qt::PanGesture); // deactivated to prevent sticky pan: https://github.com/MRtrix3/mrtrix3/issues/761
           QFont font_ = font();
           //CONF option: FontSize
           //CONF The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
@@ -127,9 +136,9 @@ namespace MR
         //CONF Initial window size of MRView in pixels.
         //CONF default: 512,512
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
-        vector<int> init_window_size;
+        vector<uint32_t> init_window_size;
         if (init_size_string.length())
-          init_window_size = parse_ints(init_size_string);
+          init_window_size = parse_ints<uint32_t> (init_size_string);
         if (init_window_size.size() == 2)
           return QSize (init_window_size[0], init_window_size[1]);
         else
@@ -159,6 +168,7 @@ namespace MR
           }
           if (list.size())
             main->add_images (list);
+          event->acceptProposedAction();
         }
       }
 
@@ -246,7 +256,7 @@ namespace MR
           GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
 
-          setDockOptions (AllowTabbedDocks | VerticalTabs);
+          setDockOptions (AllowTabbedDocks);
           setDocumentMode (true);
 
           //CONF option: IconSize
@@ -264,7 +274,7 @@ namespace MR
           QMenu* menu;
           QToolButton* button;
 
-          setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
+          setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::North);
 
           //CONF option: MRViewDockFloating
           //CONF default: 0 (false)
@@ -1015,7 +1025,7 @@ namespace MR
           return;
 
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (tools_floating);
-        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (visibility_slot (bool)));
 
         if (!tools_floating) {
 
@@ -1588,11 +1598,9 @@ namespace MR
 
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
         // otherwise we get transparent windows...
-#if QT_VERSION >= 0x050400
         gl::ColorMask (false, false, false, true);
         gl::Clear (gl::COLOR_BUFFER_BIT);
         glColorMask (true, true, true, true);
-#endif
         GL_CHECK_ERROR;
         GL::assert_context_is_current();
       }
@@ -1622,7 +1630,7 @@ namespace MR
         buttons_ = event->buttons();
         modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
         mouse_displacement_ = QPoint (0,0);
-        mouse_position_ = event->pos();
+        mouse_position_ = position (event);
         mouse_position_.setY (glarea->height() - mouse_position_.y());
       }
 
@@ -1630,7 +1638,7 @@ namespace MR
       template <class Event> void Window::update_mouse_state (Event* event)
       {
         mouse_displacement_ = mouse_position_;
-        mouse_position_ = event->pos();
+        mouse_position_ = position (event);
         mouse_position_.setY (glarea->height() - mouse_position_.y());
         mouse_displacement_ = mouse_position_ - mouse_displacement_;
       }
@@ -1668,7 +1676,7 @@ namespace MR
 
         int group = get_mouse_mode();
 
-        if (buttons_ == Qt::MidButton)
+        if (buttons_ == Qt::MiddleButton)
           mouse_action = Pan;
         else if (group == 1) {
           if (buttons_ == Qt::LeftButton) {
@@ -1744,15 +1752,11 @@ namespace MR
       void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
-#if QT_VERSION >= 0x050500
         QPoint delta;
         if (event->source() == Qt::MouseEventNotSynthesized)
           delta = event->angleDelta();
         else
           delta = 30 * event->pixelDelta();
-#else
-        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
-#endif
         if (delta.isNull())
           return;
 
@@ -1803,11 +1807,8 @@ namespace MR
         if (!image())
           return true;
 
-        if (QGesture* pan = event->gesture(Qt::PanGesture)) {
-          QPanGesture* e = static_cast<QPanGesture*> (pan);
-          mouse_displacement_ = QPoint (e->delta().x(), -e->delta().y());
-          mode->pan_event();
-        }
+        if (log_level > 2)
+          qDebug() << event;
 
         if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
           QPinchGesture* e = static_cast<QPinchGesture*> (pinch);
@@ -1848,7 +1849,7 @@ namespace MR
 
       void Window::register_camera_interactor (Tool::CameraInteractor* agent)
       {
-        if (camera_interactor)
+        if (camera_interactor && camera_interactor != agent)
           camera_interactor->deactivate();
         camera_interactor = agent;
       }
@@ -1886,7 +1887,7 @@ namespace MR
           }
 
           if (opt.opt->is ("size")) {
-            vector<int> glsize = parse_ints (opt[0]);
+            vector<uint32_t> glsize = parse_ints<uint32_t> (opt[0]);
             if (glsize.size() != 2)
               throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
             if (glsize[0] < 1 || glsize[1] < 1)
@@ -1939,6 +1940,17 @@ namespace MR
             return;
           }
 
+          if (opt.opt->is ("orientation")) {
+            if (image()) {
+              vector<default_type> pos = parse_floats (opt[0]);
+              if (pos.size() != 4)
+                throw Exception ("-orientation option expects a comma-separated list of 4 floating-point values");
+              set_orientation ({ float(pos[0]), float(pos[1]), float(pos[2]), float(pos[3]) });
+              glarea->update();
+            }
+            return;
+          }
+
           if (opt.opt->is ("voxel")) {
             if (image()) {
               vector<default_type> pos = parse_floats (opt[0]);
@@ -1952,9 +1964,9 @@ namespace MR
 
           if (opt.opt->is ("volume")) {
             if (image()) {
-              auto pos = parse_ints (opt[0]);
+              auto pos = parse_ints<uint32_t> (opt[0]);
               for (size_t n = 0; n < std::min (pos.size(), image()->image.ndim()); ++n) {
-                if (pos[n] < 0 || pos[n] >= image()->image.size(n+3))
+                if (pos[n] >= image()->image.size(n+3))
                   throw Exception ("volume index outside of image dimensions");
                 set_image_volume (n+3, pos[n]);
                 set_image_navigation_menu();
@@ -2037,7 +2049,7 @@ namespace MR
           }
 
           if (opt.opt->is ("position")) {
-            vector<int> pos = opt[0];
+            vector<int> pos = parse_ints<int> (opt[0]);
             if (pos.size() != 2)
               throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
             move (pos[0], pos[1]);
@@ -2077,12 +2089,12 @@ namespace MR
             return;
           }
 
-          if (opt.opt->is ("orientationlabel")) {
+          if (opt.opt->is ("orientlabel")) {
             try {
               show_orientation_labels_action->setChecked (to<bool> (opt[0]));
             }
             catch (Exception& E) {
-              throw Exception ("-orientationlabel option expects a boolean");
+              throw Exception ("-orientlabel option expects a boolean");
             }
             glarea->update();
             return;
@@ -2159,11 +2171,14 @@ namespace MR
           + Option ("focus", "Either set the position of the crosshairs in scanner coordinates, "
               "with the new position supplied as a comma-separated list of floating-point values or "
               "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
-          +   Argument ("x,y,z or boolean")
+          +   Argument ("x,y,z or boolean").type_various()
 
           + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
-              "that will appear at the centre of the viewing window")
+              "that will appear at the centre of the viewing window").allow_multiple()
           +   Argument ("x,y,z").type_sequence_float()
+
+          + Option ("orientation", "Set the orientation of the camera for the viewing window, in the form of a quaternion representing the rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point values (this will be automatically normalised).")
+          +   Argument ("w,x,y,z").type_sequence_float()
 
           + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
               "relative the image currently displayed. The new position should be supplied "
@@ -2199,7 +2214,7 @@ namespace MR
           + Option ("voxelinfo", "Show or hide voxel information overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("orientationlabel", "Show or hide orientation label overlay.").allow_multiple()
+          + Option ("orientlabel", "Show or hide orientation label overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
           + Option ("colourbar", "Show or hide colourbar overlay.").allow_multiple()
@@ -2240,6 +2255,3 @@ namespace MR
     }
   }
 }
-
-
-

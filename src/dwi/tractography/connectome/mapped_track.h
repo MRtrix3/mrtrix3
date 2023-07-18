@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,7 +28,7 @@ namespace MR {
 
 
         class Mapped_track_base
-        { MEMALIGN(Mapped_track_base)
+        { 
 
           public:
             Mapped_track_base() :
@@ -51,7 +51,7 @@ namespace MR {
 
 
         class Mapped_track_nodepair : public Mapped_track_base
-        { MEMALIGN(Mapped_track_nodepair)
+        { 
 
           public:
             Mapped_track_nodepair() :
@@ -73,7 +73,7 @@ namespace MR {
 
 
         class Mapped_track_nodelist : public Mapped_track_base
-        { MEMALIGN(Mapped_track_nodelist)
+        { 
 
           public:
             Mapped_track_nodelist() :

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,7 +35,7 @@ namespace MR
       // Base class for storing an index alongside either streamline vertex or track scalar data
       //
       class DataIndex
-      { NOMEMALIGN
+      { 
         public:
           static constexpr size_t invalid = std::numeric_limits<size_t>::max();
           DataIndex () : index (invalid) { }
@@ -58,7 +58,7 @@ namespace MR
       // A class for track scalars
       template <typename ValueType = float>
       class TrackScalar : public vector<ValueType>, public DataIndex
-      { MEMALIGN(TrackScalar)
+      { 
         public:
           using value_type = ValueType;
           using vector<ValueType>::vector;
@@ -76,7 +76,7 @@ namespace MR
 
       template <typename ValueType = float>
         class Streamline : public vector<Eigen::Matrix<ValueType,3,1>>, public DataIndex
-      { MEMALIGN(Streamline<ValueType>)
+      { 
         public:
           using point_type = Eigen::Matrix<ValueType,3,1>;
           using value_type = ValueType;

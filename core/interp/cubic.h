@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -70,7 +70,7 @@ namespace MR
 
     template <class ImageType, class SplineType, Math::SplineProcessingType PType>
     class SplineInterpBase : public Base<ImageType>
-    { MEMALIGN(SplineInterpBase<ImageType,SplineType,PType>)
+    { 
       public:
         using typename Base<ImageType>::value_type;
 
@@ -80,7 +80,7 @@ namespace MR
 
       protected:
         SplineType H[3];
-        Eigen::Vector3 P;
+        Eigen::Vector3d P;
 
         ssize_t clamp (ssize_t x, ssize_t dim) const {
           if (x < 0) return 0;
@@ -92,7 +92,7 @@ namespace MR
 
     template <class ImageType, class SplineType, Math::SplineProcessingType PType>
     class SplineInterp : public SplineInterpBase <ImageType, SplineType, PType>
-    { MEMALIGN(SplineInterp<ImageType,SplineType,PType>)
+    { 
       private:
         SplineInterp ();
     };
@@ -103,7 +103,7 @@ namespace MR
     template <class ImageType, class SplineType>
     class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::Value>:
         public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value>
-    { MEMALIGN(SplineInterp<ImageType,SplineType,Math::SplineProcessingType::Value>)
+    { 
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Value>;
 
@@ -120,7 +120,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos);
+          Eigen::Vector3d f = Base<ImageType>::intravoxel_offset (pos);
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;
@@ -218,7 +218,7 @@ namespace MR
     template <class ImageType, class SplineType>
     class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::Derivative>:
         public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative>
-    { MEMALIGN(SplineInterp<ImageType,SplineType,Math::SplineProcessingType::Derivative>)
+    { 
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Derivative>;
 
@@ -244,7 +244,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos);
+          Eigen::Vector3d f = Base<ImageType>::intravoxel_offset (pos);
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;
@@ -364,7 +364,7 @@ namespace MR
     template <class ImageType, class SplineType>
     class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>:
         public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>
-    { MEMALIGN(SplineInterp<ImageType,SplineType,Math::SplineProcessingType::ValueAndDerivative>)
+    { 
       public:
         using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>;
 
@@ -405,7 +405,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos);
+          Eigen::Vector3d f = Base<ImageType>::intravoxel_offset (pos);
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;

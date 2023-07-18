@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR
       // Stores all information relating to the drawing of individual edges, both fixed and variable
       // Try to store more than would otherwise be optimal in here, in order to simplify the drawing process
       class Edge
-      { MEMALIGN(Edge)
+      { 
 
           using node_t = MR::Connectome::node_t;
 
@@ -100,7 +100,7 @@ namespace MR
           class Streamtube;
 
           class Line
-          { MEMALIGN(Line)
+          { 
             public:
               Line (const Edge& parent);
               Line (Line&& that) :
@@ -118,7 +118,7 @@ namespace MR
 
           // Raw data for exemplar; need to hold on to this
           class Exemplar
-          { MEMALIGN(Exemplar)
+          { 
             public:
               Exemplar (const Edge&, const MR::DWI::Tractography::Streamline<float>&);
               Exemplar (Exemplar&& that) :
@@ -138,7 +138,7 @@ namespace MR
 
           // Class to store data relating to storing and displaying the exemplar as a streamline
           class Streamline
-          { MEMALIGN(Streamline)
+          { 
             public:
               Streamline (const Exemplar& exemplar);
               Streamline (Streamline&& that) :
@@ -159,7 +159,7 @@ namespace MR
 
           // Class to store data for plotting each edge exemplar as a streamtube
           class Streamtube
-          { MEMALIGN(Streamtube)
+          { 
             public:
               Streamtube (const Exemplar&);
               Streamtube (Streamtube&& that) :
@@ -177,7 +177,7 @@ namespace MR
               GL::VertexArrayObject vertex_array_object;
 
               class Shared
-              { MEMALIGN(Shared)
+              { 
                 public:
                   Shared() : max_num_points (0), LOD (0), element_counts (nullptr) { }
                   ~Shared() { clear(); }

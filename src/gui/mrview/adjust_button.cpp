@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -67,7 +67,7 @@ namespace MR
           if (event->type() == QEvent::MouseButtonPress) {
             QMouseEvent* mevent = static_cast<QMouseEvent*> (event);
             if (mevent->button() == mevent->buttons()) {
-              previous_y = deadzone_y = mevent->y();
+              previous_y = deadzone_y = mevent->pos().y();
               deadzone_value = value();
             }
           }
@@ -80,18 +80,18 @@ namespace MR
           else if (event->type() == QEvent::MouseMove) {
             QMouseEvent* mevent = static_cast<QMouseEvent*> (event);
             if (mevent->buttons() != Qt::NoButton) {
-              if (abs (mevent->y() - deadzone_y) < ADJUST_BUTTON_DEADZONE_SIZE) {
+              if (abs (mevent->pos().y() - deadzone_y) < ADJUST_BUTTON_DEADZONE_SIZE) {
                 if (value() != deadzone_value) {
                   setValue (deadzone_value);
                   emit valueChanged();
                   emit valueChanged(value());
                 }
-              } else if (mevent->y() != previous_y) {
-                setValue (value() - rate * (mevent->y() - previous_y));
+              } else if (mevent->pos().y() != previous_y) {
+                setValue (value() - rate * (mevent->pos().y() - previous_y));
                 emit valueChanged();
                 emit valueChanged(value());
               }
-              previous_y = mevent->y();
+              previous_y = mevent->pos().y();
               return true;
             }
           }

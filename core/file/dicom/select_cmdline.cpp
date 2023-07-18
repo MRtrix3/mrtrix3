@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -191,11 +191,11 @@ namespace MR {
             if (buf[0] == 'q' || buf[0] == 'Q')
               throw CancelException();
             if (isdigit (buf[0])) {
-              vector<int> seq;
+              vector<uint32_t> seq;
               try {
-                seq = parse_ints (buf);
+                seq = parse_ints<uint32_t> (buf);
                 for (size_t i = 0; i < seq.size(); i++) {
-                  if (seq[i] < 0 || seq[i] >= (int) study.size()) {
+                  if (seq[i] < 0 || seq[i] >= (uint32_t) study.size()) {
                     series.clear();
                     break;
                   }

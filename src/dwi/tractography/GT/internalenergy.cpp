@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -93,17 +93,19 @@ namespace MR {
         {
           double sum = 0.0;
           double t = rng_uniform() * normalization;
-          ParticleEnd pe;
-          for (vector<ParticleEnd>::iterator it = neighbourhood.begin(); it != neighbourhood.end(); ++it)
-          {
-            sum += it->p_suc;
-            if (sum >= t) {
-              return *it;
-            }
+
+          auto neighbour = std::find_if(neighbourhood.begin(), neighbourhood.end(), [&](const ParticleEnd& particle){
+            sum += particle.p_suc;
+            return sum >= t;
+          });
+
+          if(neighbour != neighbourhood.end()){
+            return *neighbour;
           }
-          return pe;
+          else {
+            throw Exception("Unable to pick neighbour!");
+          }
         }
-        
         
       }
     }

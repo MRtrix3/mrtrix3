@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,8 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os
-from distutils.spawn import find_executable
+import os, shutil
 from mrtrix3 import MRtrixError
 
 
@@ -32,7 +31,7 @@ _SUFFIX = ''
 def check_first(prefix, structures): #pylint: disable=unused-variable
   from mrtrix3 import app, path #pylint: disable=import-outside-toplevel
   vtk_files = [ prefix + '-' + struct + '_first.vtk' for struct in structures ]
-  existing_file_count = sum([ os.path.exists(filename) for filename in vtk_files ])
+  existing_file_count = sum(os.path.exists(filename) for filename in vtk_files)
   if existing_file_count != len(vtk_files):
     if 'SGE_ROOT' in os.environ and os.environ['SGE_ROOT']:
       app.console('FSL FIRST job may have been run via SGE; awaiting completion')
@@ -51,7 +50,7 @@ def check_first(prefix, structures): #pylint: disable=unused-variable
 def eddy_binary(cuda): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if cuda:
-    if find_executable('eddy_cuda'):
+    if shutil.which('eddy_cuda'):
       app.debug('Selected soft-linked CUDA version (\'eddy_cuda\')')
       return 'eddy_cuda'
     # Cuda versions are now provided with a CUDA trailing version number
@@ -73,7 +72,7 @@ def eddy_binary(cuda): #pylint: disable=unused-variable
         if version > max_version:
           max_version = version
           exe_path = entry
-      except:
+      except ValueError:
         pass
     if exe_path:
       app.debug('CUDA version ' + str(max_version) + ': ' + exe_path)
@@ -81,7 +80,7 @@ def eddy_binary(cuda): #pylint: disable=unused-variable
     app.debug('No CUDA version of eddy found')
     return ''
   for candidate in [ 'eddy_openmp', 'eddy_cpu', 'eddy', 'fsl5.0-eddy' ]:
-    if find_executable(candidate):
+    if shutil.which(candidate):
       app.debug(candidate)
       return candidate
   app.debug('No CPU version of eddy found')
@@ -95,9 +94,9 @@ def eddy_binary(cuda): #pylint: disable=unused-variable
 #   function will select the version 5 executable.
 def exe_name(name): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  if find_executable(name):
+  if shutil.which(name):
     output = name
-  elif find_executable('fsl5.0-' + name):
+  elif shutil.which('fsl5.0-' + name):
     output = 'fsl5.0-' + name
     app.warn('Using FSL binary \"' + output + '\" rather than \"' + name + '\"; suggest checking FSL installation')
   else:

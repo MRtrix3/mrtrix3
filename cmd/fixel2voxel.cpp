@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,10 +28,9 @@
 
 #include "math/SH.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
@@ -77,7 +76,9 @@ void usage ()
     "influence on the calculation than fixels with lesser volume. For instance, when estimating "
     "a voxel-based measure of mean axon diameter from per-fixel mean axon diameters, a fixel's "
     "mean axon diameter should be weigthed by its relative volume within the voxel in the "
-    "calculation of that voxel mean.";
+    "calculation of that voxel mean."
+
+  + Fixel::format_description;
 
   REFERENCES
     + "* Reference for 'complexity' operation:\n"
@@ -110,27 +111,27 @@ using FixelDataType = Image<float>;
 
 
 
-struct set_offset { NOMEMALIGN
+struct set_offset { 
   FORCE_INLINE set_offset (index_type offset) : offset (offset) { }
   template <class DataType>
     FORCE_INLINE void operator() (DataType& data) { data.index(0) = offset; }
   index_type offset;
 };
 
-struct inc_fixel { NOMEMALIGN
+struct inc_fixel { 
   template <class DataType>
     FORCE_INLINE void operator() (DataType& data) { ++data.index(0); }
 };
 
 
 
-struct LoopFixelsInVoxelWithMax { NOMEMALIGN
+struct LoopFixelsInVoxelWithMax { 
   const index_type num_fixels;
   const index_type max_fixels;
   const index_type offset;
 
   template <class... DataType>
-  struct Run { NOMEMALIGN
+  struct Run { 
     const index_type num_fixels;
     const index_type max_fixels;
     const index_type offset;
@@ -138,10 +139,10 @@ struct LoopFixelsInVoxelWithMax { NOMEMALIGN
     const std::tuple<DataType&...> data;
     FORCE_INLINE Run (const index_type num_fixels, const index_type max_fixels, const index_type offset, const std::tuple<DataType&...>& data) :
       num_fixels (num_fixels), max_fixels (max_fixels), offset (offset), fixel_index (0), data (data) {
-      apply (set_offset (offset), data);
+        MR::apply (set_offset (offset), data);
     }
     FORCE_INLINE operator bool() const { return max_fixels ? (fixel_index < max_fixels) : (fixel_index < num_fixels); }
-    FORCE_INLINE void operator++() { if (!padding()) apply (inc_fixel (), data); ++fixel_index; }
+    FORCE_INLINE void operator++() { if (!padding()) MR::apply (inc_fixel (), data); ++fixel_index; }
     FORCE_INLINE void operator++(int) { operator++(); }
     FORCE_INLINE bool padding() const { return (max_fixels && fixel_index >= num_fixels); }
     FORCE_INLINE index_type count() const { return max_fixels ? max_fixels : num_fixels; }
@@ -155,7 +156,7 @@ struct LoopFixelsInVoxelWithMax { NOMEMALIGN
 
 
 class Base
-{ NOMEMALIGN
+{ 
   public:
     Base (FixelDataType& data, const index_type max_fixels, const bool pad = false, const float pad_value = 0.0) :
         data (data),
@@ -182,7 +183,7 @@ class Base
 
 
 class Mean : protected Base
-{ MEMALIGN (Mean)
+{ 
   public:
     Mean (FixelDataType& data, const index_type max_fixels, FixelDataType& vol) :
         Base (data, max_fixels),
@@ -216,7 +217,7 @@ class Mean : protected Base
 
 
 class Sum : protected Base
-{ MEMALIGN (Sum)
+{ 
   public:
     Sum (FixelDataType& data, const index_type max_fixels, FixelDataType& vol) :
         Base (data, max_fixels),
@@ -242,7 +243,7 @@ class Sum : protected Base
 
 
 class Product : protected Base
-{ MEMALIGN (Product)
+{ 
   public:
     Product (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -269,7 +270,7 @@ class Product : protected Base
 
 
 class Min : protected Base
-{ MEMALIGN (Min)
+{ 
   public:
     Min (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -287,7 +288,7 @@ class Min : protected Base
 
 
 class Max : protected Base
-{ MEMALIGN (Max)
+{ 
   public:
     Max (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -305,7 +306,7 @@ class Max : protected Base
 
 
 class AbsMax : protected Base
-{ MEMALIGN (AbsMax)
+{ 
   public:
     AbsMax (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -323,7 +324,7 @@ class AbsMax : protected Base
 
 
 class MagMax : protected Base
-{ MEMALIGN (MagMax)
+{ 
   public:
     MagMax (FixelDataType& data, const index_type num_fixels) :
         Base (data, num_fixels) { }
@@ -341,7 +342,7 @@ class MagMax : protected Base
 
 
 class Complexity : protected Base
-{ MEMALIGN (Complexity)
+{ 
   public:
     Complexity (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -369,7 +370,7 @@ class Complexity : protected Base
 
 
 class SF : protected Base
-{ MEMALIGN (SF)
+{ 
   public:
     SF (FixelDataType& data, const index_type max_fixels) :
         Base (data, max_fixels) { }
@@ -390,7 +391,7 @@ class SF : protected Base
 
 
 class DEC_unit : protected Base
-{ MEMALIGN (DEC_unit)
+{ 
   public:
     DEC_unit (FixelDataType& data, const index_type max_fixels, FixelDataType& vol, Image<float>& dir) :
         Base (data, max_fixels),
@@ -398,16 +399,16 @@ class DEC_unit : protected Base
 
     void operator() (Image<index_type>& index, Image<float>& out)
     {
-      Eigen::Vector3 sum_dec = {0.0, 0.0, 0.0};
+      Eigen::Vector3d sum_dec = {0.0, 0.0, 0.0};
       if (vol.valid()) {
         for (auto f = Base::Loop (index) (data, vol, dir); f; ++f) {
           if (!f.padding())
-            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
+            sum_dec += Eigen::Vector3d (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
         }
       } else {
         for (auto f = Base::Loop (index) (data, dir); f; ++f) {
           if (!f.padding())
-            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
+            sum_dec += Eigen::Vector3d (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
         }
       }
       if ((sum_dec.array() != 0.0).any())
@@ -422,7 +423,7 @@ class DEC_unit : protected Base
 
 
 class DEC_scaled : protected Base
-{ MEMALIGN (DEC_scaled)
+{ 
   public:
     DEC_scaled (FixelDataType& data, const index_type max_fixels, FixelDataType& vol, Image<float>& dir) :
         Base (data, max_fixels),
@@ -430,13 +431,13 @@ class DEC_scaled : protected Base
 
     void operator() (FixelIndexType& index, Image<float>& out)
     {
-      Eigen::Vector3 sum_dec = {0.0, 0.0, 0.0};
+      Eigen::Vector3d sum_dec = {0.0, 0.0, 0.0};
       default_type sum_value = 0.0;
       if (vol.valid()) {
         default_type sum_volume = 0.0;
         for (auto f = Base::Loop (index) (data, vol, dir); f; ++f) {
           if (!f.padding()) {
-            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
+            sum_dec += Eigen::Vector3d (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value() * vol.value();
             sum_volume += vol.value();
             sum_value += vol.value() * data.value();
           }
@@ -447,7 +448,7 @@ class DEC_scaled : protected Base
       } else {
         for (auto f = Base::Loop (index) (data, dir); f; ++f) {
           if (!f.padding()) {
-            sum_dec += Eigen::Vector3 (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
+            sum_dec += Eigen::Vector3d (abs (dir.row(1)[0]), abs (dir.row(1)[1]), abs (dir.row(1)[2])) * data.value();
             sum_value += data.value();
           }
         }
@@ -465,7 +466,7 @@ class DEC_scaled : protected Base
 
 
 class None : protected Base
-{ MEMALIGN (None)
+{ 
   public:
     None (FixelDataType& data, const index_type max_fixels, const float fill_value) :
         Base (data, max_fixels, true, fill_value) { }

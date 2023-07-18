@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,17 +14,30 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __fixel_keys_h__
-#define __fixel_keys_h__
+
+#ifndef __fixel_fixel_h__
+#define __fixel_fixel_h__
 
 #include <string>
+#include <cstdint>
 
 namespace MR
 {
   namespace Fixel
   {
+
+
+    //! a string containing a description of the fixel directory format
+    /*! This can used directly in the DESCRIPTION field of a command's
+     * usage() function. */
+    extern const char* format_description;
+
+    using index_type = uint32_t;
+
     const std::string n_fixels_key ("nfixels");
     const std::initializer_list <const std::string> supported_sparse_formats { ".mif", ".nii", ".mif.gz" , ".nii.gz" };
+
+
   }
 }
 

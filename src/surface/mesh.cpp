@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -92,18 +92,32 @@ namespace MR
 
 
 
+    namespace {
+      template<typename T>
+      void load_vtk_points_binary (std::ifstream& in, const size_t num_vertices, vector<Eigen::Matrix<T, 3, 1>>& out)
+      {
+        out.reserve (num_vertices);
+        Eigen::Matrix<T, 3, 1> v;
+        for (size_t i = 0; i != num_vertices; ++i) {
+          in.read (reinterpret_cast<char*>(v.data()), 3 * sizeof (T));
+          out.push_back (v);
+        }
+      }
+    }
+
+
 
     void Mesh::load_vtk (const std::string& path)
     {
 
-      std::ifstream in (path.c_str(), std::ios_base::in);
+      std::ifstream in (path.c_str(), std::ios_base::binary);
       if (!in)
         throw Exception ("Error opening input file!");
 
       std::string line;
 
       // First line: VTK version ID
-      std::getline (in, line);
+      MR::getline (in, line);
       // Strip the version numbers
       line[23] = line[25] = 'x';
       // Verify that the line is correct
@@ -111,10 +125,10 @@ namespace MR
         throw Exception ("Incorrect first line of .vtk file");
 
       // Second line: identifier
-      std::getline (in, line);
+      MR::getline (in, line);
 
       // Third line: format of data
-      std::getline (in, line);
+      MR::getline (in, line);
       bool is_ascii = false;
       if (line == "ASCII")
         is_ascii = true;
@@ -122,26 +136,26 @@ namespace MR
         throw Exception ("unknown data format in .vtk data");
 
       // Fourth line: Data set type
-      std::getline (in, line);
+      MR::getline (in, line);
       if (line.substr(0, 7) != "DATASET")
         throw Exception ("Error in definition of .vtk dataset");
       line = line.substr (8);
       if (line == "STRUCTURED_POINTS" || line == "STRUCTURED_GRID" || line == "UNSTRUCTURED_GRID" || line == "RECTILINEAR_GRID" || line == "FIELD")
         throw Exception ("Unsupported dataset type (" + line + ") in .vtk file");
 
-      if (!is_ascii) {
-        const std::streampos offset = in.tellg();
-        in.close();
-        in.open (path.c_str(), std::ios_base::in | std::ios_base::binary);
-        in.seekg (offset);
-      }
+      // Won't know endianness of file when the vertex positions are read,
+      //   only when the polygon information is encountered;
+      bool change_endianness = false;
+
+      // If both float and big-endian, need to store natively as floats and swap endianness later
+      vector<Eigen::Matrix<float, 3, 1>> vertices_float;
 
       // From here, don't necessarily know which parts of the data will come first
       while (!in.eof()) {
 
         // Need to read line in either ASCII mode or in raw binary
         if (is_ascii) {
-          std::getline (in, line);
+          MR::getline (in, line);
         } else {
           line.clear();
           char c = 0;
@@ -166,25 +180,20 @@ namespace MR
               throw Exception ("Error in reading binary .vtk file: Unsupported datatype (\"" + line + "\"");
 
             vertices.reserve (num_vertices);
-            for (int i = 0; i != num_vertices; ++i) {
+            if (!is_double)
+              vertices_float.reserve (num_vertices);
+            Vertex v;
 
-              Vertex v;
-              if (is_ascii) {
-                std::getline (in, line);
+            if (is_ascii) {
+              for (int i = 0; i != num_vertices; ++i) {
+                MR::getline (in, line);
                 sscanf (line.c_str(), "%lf %lf %lf", &v[0], &v[1], &v[2]);
-              } else {
-                if (is_double) {
-                  double data[3];
-                  in.read (reinterpret_cast<char*>(&data[0]), 3 * sizeof (double));
-                  v = { data[0], data[1], data[2] };
-                } else {
-                  float data[3];
-                  in.read (reinterpret_cast<char*>(&data[0]), 3 * sizeof (float));
-                  v = { data[0], data[1], data[2] };
-                }
+                vertices.push_back (v);
               }
-              vertices.push_back (v);
-
+            } else if (is_double) {
+              load_vtk_points_binary<double> (in, num_vertices, vertices);
+            } else {
+              load_vtk_points_binary<float> (in, num_vertices, vertices_float);
             }
 
           } else if (line.substr (0, 8) == "POLYGONS") {
@@ -200,14 +209,22 @@ namespace MR
 
               int vertex_count;
               if (is_ascii) {
-                std::getline (in, line);
+                MR::getline (in, line);
                 sscanf (line.c_str(), "%u", &vertex_count);
               } else {
                 in.read (reinterpret_cast<char*>(&vertex_count), sizeof (int));
               }
 
+              if (!is_ascii) {
+                if (change_endianness) {
+                  vertex_count = ByteOrder::swap (vertex_count);
+                } else if (vertex_count != 3 && vertex_count != 4) {
+                  vertex_count = ByteOrder::swap (vertex_count);
+                  change_endianness = true;
+                }
+              }
               if (vertex_count != 3 && vertex_count != 4)
-                throw Exception ("Could not parse file \"" + path + "\";  only suppport 3- and 4-vertex polygons");
+                throw Exception ("Could not parse file \"" + path + "\": only support 3- and 4-vertex polygons");
 
               vector<unsigned int> t (vertex_count, 0);
 
@@ -237,17 +254,52 @@ namespace MR
         }
       }
 
-      // TODO If reading a binary file, may want to test endianness of data
-      // There's no explicit flag for this, but just calculating the standard
-      //   deviations of all vertex positions may be adequate
-      //   (likely to be huge if the endianness is wrong)
-      // Alternatively, just test the polygon indices: if there's at least one that exceeds the
-      //   number of vertices, it may be saved in big-endian format, so try flipping everything
-      // Actually, should pop up at the first polygon read: number of points in polygon won't be 3 or 4
+      if (!is_ascii) {
+#if MRTRIX_IS_BIG_ENDIAN
+        if (change_endianness) {
+          WARN("File \"" + path + "\" is little-endian, so is not format-compliant (may have been generated using an older MRtrix3 version); "
+              "imported contents will be converted to system big-endian");
+        } else {
+          INFO("File \"" + path + "\" is big-endian; no format conversion required as executing on big-endian system");
+        }
+#else
+        if (change_endianness) {
+          INFO("Converting imported contents of file \"" + path + "\" to native little-endian");
+        } else {
+          WARN("File \"" + path + "\" already in native little-endian format, so no endianness conversion required; "
+              "but file is therefore not format-compliant (may have been generated using an older MRtrix3 version)");
+        }
+#endif
+      }
+
+      if (change_endianness) {
+        for (auto& v : vertices) {
+          for (size_t i = 0; i != 3; ++i)
+            v[i] = ByteOrder::swap (v[i]);
+        }
+        for (auto& v : vertices_float) {
+          for (size_t i = 0; i != 3; ++i)
+            v[i] = ByteOrder::swap (v[i]);
+        }
+        for (auto& t : triangles) {
+          for (size_t i = 0; i != 3; ++i)
+            t[i] = ByteOrder::swap (t[i]);
+        }
+        for (auto& q : quads) {
+          for (size_t i = 0; i != 4; ++i)
+            q[i] = ByteOrder::swap (q[i]);
+        }
+      }
+
+      if (vertices_float.size()) {
+        assert (!vertices.size());
+        for (const auto& v : vertices_float)
+          vertices.emplace_back (Vertex (v.cast<double>()));
+      }
 
       try {
         verify_data();
-      } catch(Exception& e) {
+      } catch (Exception& e) {
         throw Exception (e, "Error verifying surface data from VTK file \"" + path + "\"");
       }
     }
@@ -293,7 +345,7 @@ namespace MR
             warn_attribute = true;
 
           triangles.push_back ( vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
-          const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
+          const Eigen::Vector3d computed_normal = Surface::normal (*this, triangles.back());
           if (computed_normal.dot (normal.cast<default_type>()) < 0.0)
             warn_right_hand_rule = true;
           if (abs (computed_normal.dot (normal.cast<default_type>())) < 0.99)
@@ -357,7 +409,7 @@ namespace MR
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": facet ended with " + str(vertex_index) + " vertices");
             triangles.push_back ( vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
             vertex_index = 0;
-            const Eigen::Vector3 computed_normal = Surface::normal (*this, triangles.back());
+            const Eigen::Vector3d computed_normal = Surface::normal (*this, triangles.back());
             if (computed_normal.dot (normal) < 0.0)
               warn_right_hand_rule = true;
             if (abs (computed_normal.dot (normal)) < 0.99)
@@ -399,7 +451,7 @@ namespace MR
     void Mesh::load_obj (const std::string& path)
     {
 
-      struct FaceData { NOMEMALIGN
+      struct FaceData {
           uint32_t vertex, texture, normal;
       };
 
@@ -634,66 +686,49 @@ namespace MR
       ProgressBar progress ("writing mesh to file", vertices.size() + triangles.size() + quads.size());
       if (binary) {
 
-        // FIXME Binary VTK output _still_ not working (crashes ParaView)
-        // Can however export as binary then -reconvert to ASCII and al is well...?
-        // Changed to big-endian output, doesn't seem to have fixed...
-
         out.close();
         out.open (path, std::ios_base::out | std::ios_base::app | std::ios_base::binary);
-        const bool is_double = (sizeof(default_type) == 8);
-        const std::string str_datatype = is_double ? "double" : "float";
-        const std::string points_header ("POINTS " + str(vertices.size()) + " " + str_datatype + "\n");
+        const std::string points_header ("POINTS " + str(vertices.size()) + " float\n");
         out.write (points_header.c_str(), points_header.size());
-        for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
-          //float temp[3];
-          //for (size_t id = 0; id != 3; ++id)
-          //  MR::putBE ((*i)[id], &temp[id]);
-          if (is_double) {
-            const double temp[3] { double((*i)[0]), double((*i)[1]), double((*i)[2]) };
-            out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(double));
-          } else {
-            const float temp[3] { float((*i)[0]), float((*i)[1]), float((*i)[2]) };
-            out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(float));
-          }
+        std::array<float, 3> temp_vertex;
+        for (const auto& v : vertices) {
+          temp_vertex = { ByteOrder::BE (float(v[0])), ByteOrder::BE (float(v[1])), ByteOrder::BE (float(v[2])) };
+          out.write (reinterpret_cast<const char*>(&temp_vertex), 3 * sizeof(float));
           ++progress;
         }
         const std::string polygons_header ("POLYGONS " + str(triangles.size() + quads.size()) + " " + str(4*triangles.size() + 5*quads.size()) + "\n");
         out.write (polygons_header.c_str(), polygons_header.size());
-        const uint32_t num_points_triangle = 3;
-        for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
+        const uint32_t num_points_triangle = ByteOrder::BE (uint32_t(3));
+        std::array<uint32_t, 3> temp_triangle;
+        for (const auto& t : triangles) {
           out.write (reinterpret_cast<const char*>(&num_points_triangle), sizeof(uint32_t));
-          //uint32_t temp[3];
-          //for (size_t id = 0; id != 3; ++id)
-          //  MR::putBE ((*i)[id], &temp[id]);
-          const uint32_t temp[3] { (*i)[0], (*i)[1], (*i)[2] };
-          out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(uint32_t));
+          temp_triangle = { ByteOrder::BE (t[0]), ByteOrder::BE (t[1]), ByteOrder::BE (t[2]) };
+          out.write (reinterpret_cast<const char*>(&temp_triangle), 3 * sizeof(uint32_t));
           ++progress;
         }
-        const uint32_t num_points_quad = 4;
-        for (QuadList::const_iterator i = quads.begin(); i != quads.end(); ++i) {
+        const uint32_t num_points_quad = ByteOrder::BE (uint32_t(4));
+        std::array<uint32_t, 4> temp_quad;
+        for (const auto& q : quads) {
           out.write (reinterpret_cast<const char*>(&num_points_quad), sizeof(uint32_t));
-          //uint32_t temp[4];
-          //for (size_t id = 0; id != 4; ++id)
-          //  MR::putBE ((*i)[id], &temp[id]);
-          const uint32_t temp[4] { (*i)[0], (*i)[1], (*i)[2], (*i)[3] };
-          out.write (reinterpret_cast<const char*>(temp), 4 * sizeof(uint32_t));
+          temp_quad = { ByteOrder::BE (q[0]), ByteOrder::BE (q[1]), ByteOrder::BE (q[2]), ByteOrder::BE (q[3]) };
+          out.write (reinterpret_cast<const char*>(&temp_quad), 4 * sizeof(uint32_t));
           ++progress;
         }
 
       } else {
 
         out << "POINTS " << str(vertices.size()) << " float\n";
-        for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
-          out << str((*i)[0]) << " " << str((*i)[1]) << " " << str((*i)[2]) << "\n";
+        for (const auto& v : vertices) {
+          out << str<float>(v[0]) << " " << str<float>(v[1]) << " " << str<float>(v[2]) << "\n";
           ++progress;
         }
         out << "POLYGONS " + str(triangles.size() + quads.size()) + " " + str(4*triangles.size() + 5*quads.size()) + "\n";
-        for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
-          out << "3 " << str((*i)[0]) << " " << str((*i)[1]) << " " << str((*i)[2]) << "\n";
+        for (const auto& t : triangles) {
+          out << "3 " << str(t[0]) << " " << str(t[1]) << " " << str(t[2]) << "\n";
           ++progress;
         }
-        for (QuadList::const_iterator i = quads.begin(); i != quads.end(); ++i) {
-          out << "4 " << str((*i)[0]) << " " << str((*i)[1]) << " " << str((*i)[2]) << " " << str((*i)[3]) << "\n";
+        for (const auto& q : quads) {
+          out << "4 " << str(q[0]) << " " << str(q[1]) << " " << str(q[2]) << " " << str(q[3]) << "\n";
           ++progress;
         }
 
@@ -720,7 +755,7 @@ namespace MR
         out.write (reinterpret_cast<const char*>(&count), sizeof(uint32_t));
         const uint16_t attribute_byte_count = 0;
         for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
-          const Eigen::Vector3 n (normal (*this, *i));
+          const Eigen::Vector3d n (normal (*this, *i));
           const float n_temp[3] { float(n[0]), float(n[1]), float(n[2]) };
           out.write (reinterpret_cast<const char*>(&n_temp[0]), 3 * sizeof(float));
           for (size_t v = 0; v != 3; ++v) {
@@ -737,7 +772,7 @@ namespace MR
         File::OFStream out (path);
         out << "solid \n";
         for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
-          const Eigen::Vector3 n (normal (*this, *i));
+          const Eigen::Vector3d n (normal (*this, *i));
           out << "facet normal " << str (n[0]) << " " << str (n[1]) << " " << str (n[2]) << "\n";
           out << "    outer loop\n";
           for (size_t v = 0; v != 3; ++v) {

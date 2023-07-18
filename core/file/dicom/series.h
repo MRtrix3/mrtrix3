@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,17 +28,16 @@ namespace MR {
       class Study;
       class Image;
 
-      class Series : public vector<std::shared_ptr<Image>> { NOMEMALIGN
+      class Series : public vector<std::shared_ptr<Image>> { 
         public:
           Series (Study* parent, const std::string& series_name, size_t series_number, const std::string& image_type,
-              const std::string& series_modality = "", const std::string& series_date = "", const std::string& series_time = "") :
-            study (parent), name (series_name), image_type (image_type), modality (series_modality),
-            date (series_date), time (series_time) { 
-              number = series_number; 
-            }
+              const std::string& series_ref_UID, const std::string& series_modality,
+              const std::string& series_date, const std::string& series_time) :
+            study (parent), name (series_name), image_type (image_type), series_ref_UID (series_ref_UID),
+                  number (series_number), modality (series_modality), date (series_date), time (series_time) { }
 
           Study* study;
-          std::string name, image_type;
+          std::string name, image_type, series_ref_UID;
           size_t number;
           std::string modality;
           std::string date;
@@ -47,14 +46,20 @@ namespace MR {
           void read () {
             ProgressBar progress ("reading DICOM series \"" + name + "\"", size());
             for (size_t i = 0; i < size(); i++) {
-              (*this)[i]->read(); 
+              (*this)[i]->read();
               ++progress;
             }
           }
 
           vector<int> count () const;
           bool operator< (const Series& s) const {
-            return number < s.number;
+            if (number != s.number)
+              return number < s.number;
+            if (date.size() && date != s.date)
+              return date < s.date;
+            if (time.size() && time != s.time)
+              return time < s.time;
+            return image_type < s.image_type;
           }
 
           friend std::ostream& operator<< (std::ostream& stream, const Series& item);

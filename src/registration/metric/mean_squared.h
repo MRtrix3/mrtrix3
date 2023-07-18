@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,13 +28,13 @@ namespace MR
     namespace Metric
     {
 
-      class MeanSquared : public LinearBase { MEMALIGN(MeanSquared)
+      class MeanSquared : public LinearBase { 
         public:
           template <class Params>
             default_type operator() (Params& params,
-                                     const Eigen::Vector3& im1_point,
-                                     const Eigen::Vector3& im2_point,
-                                     const Eigen::Vector3& midway_point,
+                                     const Eigen::Vector3d& im1_point,
+                                     const Eigen::Vector3d& im2_point,
+                                     const Eigen::Vector3d& midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
               assert (!this->weighted && "FIXME: set_weights not implemented for 3D metric");
@@ -63,13 +63,13 @@ namespace MR
           }
       };
 
-      class MeanSquaredNoGradient : public LinearBase { MEMALIGN(MeanSquaredNoGradient)
+      class MeanSquaredNoGradient : public LinearBase { 
         public:
           template <class Params>
             default_type operator() (Params& params,
-                                     const Eigen::Vector3& im1_point,
-                                     const Eigen::Vector3& im2_point,
-                                     const Eigen::Vector3& midway_point,
+                                     const Eigen::Vector3d& im1_point,
+                                     const Eigen::Vector3d& im2_point,
+                                     const Eigen::Vector3d& midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
               assert (!this->weighted && "FIXME: set_weights not implemented for 3D metric");
@@ -90,7 +90,7 @@ namespace MR
           }
       };
 
-      class MeanSquaredNonSymmetric : public LinearBase { MEMALIGN(MeanSquaredNonSymmetric)
+      class MeanSquaredNonSymmetric : public LinearBase { 
         public:
           /** typedef int is_asymmetric_type: type_trait to distinguish symmetric (two moving images)
             * from asymmetric (moving and fixed image) registration
@@ -99,9 +99,9 @@ namespace MR
 
           template <class Params>
             default_type operator() (Params& params,
-                                     const Eigen::Vector3& im1_point,
-                                     const Eigen::Vector3& im2_point,
-                                     const Eigen::Vector3& midway_point,
+                                     const Eigen::Vector3d& im1_point,
+                                     const Eigen::Vector3d& im2_point,
+                                     const Eigen::Vector3d& midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
               assert (!this->weighted && "FIXME: set_weights not implemented for 3D metric");
@@ -135,13 +135,13 @@ namespace MR
       };
 
       template <class Im1Type, class Im2Type>
-        class MeanSquared4D : public LinearBase { MEMALIGN(MeanSquared4D<Im1Type,Im2Type>)
+        class MeanSquared4D : public LinearBase { 
           public:
             template <class Params>
             default_type operator() (Params& params,
-                                     const Eigen::Vector3& im1_point,
-                                     const Eigen::Vector3& im2_point,
-                                     const Eigen::Vector3& midway_point,
+                                     const Eigen::Vector3d& im1_point,
+                                     const Eigen::Vector3d& im2_point,
+                                     const Eigen::Vector3d& midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
               const ssize_t volumes = params.im1_image_interp->size(3);
@@ -186,15 +186,15 @@ namespace MR
         };
 
       template <class Im1Type, class Im2Type>
-        class MeanSquaredNoGradient4D : public LinearBase { MEMALIGN(MeanSquaredNoGradient4D<Im1Type,Im2Type>)
+        class MeanSquaredNoGradient4D : public LinearBase { 
           public:
             MeanSquaredNoGradient4D ( ) {}
 
             template <class Params>
               default_type operator() (Params& params,
-                                     const Eigen::Vector3& im1_point,
-                                     const Eigen::Vector3& im2_point,
-                                     const Eigen::Vector3& midway_point,
+                                     const Eigen::Vector3d& im1_point,
+                                     const Eigen::Vector3d& im2_point,
+                                     const Eigen::Vector3d& midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
                 const ssize_t volumes = params.im1_image_interp->size(3);
 
@@ -225,13 +225,13 @@ namespace MR
         };
 
         template <class Im1Type, class Im2Type>
-          class MeanSquared4DNonSymmetric : public LinearBase { MEMALIGN(MeanSquared4DNonSymmetric<Im1Type,Im2Type>)
+          class MeanSquared4DNonSymmetric : public LinearBase { 
             public:
               template <class Params>
               default_type operator() (Params& params,
-                                       const Eigen::Vector3& im1_point,
-                                       const Eigen::Vector3& im2_point,
-                                       const Eigen::Vector3& midway_point,
+                                       const Eigen::Vector3d& im1_point,
+                                       const Eigen::Vector3d& im2_point,
+                                       const Eigen::Vector3d& midway_point,
                                        Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
                 const ssize_t volumes = params.im1_image_interp->size(3);
@@ -284,7 +284,7 @@ namespace MR
           };
 
       template <class Im1Type, class Im2Type>
-        class MeanSquaredVectorNoGradient4D : public LinearBase { MEMALIGN(MeanSquaredVectorNoGradient4D<Im1Type,Im2Type>)
+        class MeanSquaredVectorNoGradient4D : public LinearBase { 
           public:
             MeanSquaredVectorNoGradient4D () = delete;
             MeanSquaredVectorNoGradient4D ( const Im1Type im1, const Im2Type im2 ):
@@ -302,9 +302,9 @@ namespace MR
 
             template <class Params>
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> operator() (Params& params,
-                                     const Eigen::Vector3& im1_point,
-                                     const Eigen::Vector3& im2_point,
-                                     const Eigen::Vector3& midway_point,
+                                     const Eigen::Vector3d& im1_point,
+                                     const Eigen::Vector3d& im2_point,
+                                     const Eigen::Vector3d& midway_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
               assert (volumes == params.im1_image_interp->size(3));

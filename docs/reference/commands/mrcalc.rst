@@ -71,6 +71,8 @@ basic operations
 
 -  **-divide** *(multiple uses permitted)* (%1 / %2) : divide (n-1)th operand by nth
 
+-  **-modulo** *(multiple uses permitted)* (%1 % %2) : remainder after dividing (n-1)th operand by nth
+
 -  **-min** *(multiple uses permitted)* min (%1, %2) : smallest of last two operands
 
 -  **-max** *(multiple uses permitted)* max (%1, %2) : greatest of last two operands
@@ -224,7 +226,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2019 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

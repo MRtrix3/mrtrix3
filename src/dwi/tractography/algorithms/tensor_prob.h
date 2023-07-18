@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,9 +33,9 @@ namespace MR
 
         using namespace MR::DWI::Tractography::Tracking;
 
-        class Tensor_Prob : public Tensor_Det { MEMALIGN(Tensor_Prob)
+        class Tensor_Prob : public Tensor_Det { 
           public:
-            class Shared : public Tensor_Det::Shared { MEMALIGN(Shared)
+            class Shared : public Tensor_Det::Shared { 
               public:
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                   Tensor_Det::Shared (diff_path, property_set) {
@@ -89,7 +89,7 @@ namespace MR
 
           protected:
 
-            class WildBootstrap { MEMALIGN(WildBootstrap)
+            class WildBootstrap { 
               public:
                 WildBootstrap (const Eigen::MatrixXf& hat_matrix) :
                   H (hat_matrix),
@@ -116,26 +116,25 @@ namespace MR
             };
 
 
-            class Interp : public Interpolator<Bootstrap<Image<float>,WildBootstrap>>::type { MEMALIGN(Interp)
+            class Interp : public Interpolator<Bootstrap<Image<float>,WildBootstrap>>::type { 
               public:
                 Interp (const Bootstrap<Image<float>,WildBootstrap>& bootstrap_vox) :
-                  Interpolator<Bootstrap<Image<float>,WildBootstrap> >::type (bootstrap_vox) {
-                    for (size_t i = 0; i < 8; ++i)
-                      raw_signals.push_back (Eigen::VectorXf (size(3)));
-                  }
+                    Interpolator<Bootstrap<Image<float>,WildBootstrap> >::type (bootstrap_vox)
+                {
+                  for (size_t i = 0; i < 8; ++i)
+                    raw_signals.push_back (Eigen::VectorXf (size(3)));
+                }
 
                 vector<Eigen::VectorXf> raw_signals;
 
                 bool get (const Eigen::Vector3f& pos, Eigen::VectorXf& data) {
-                  scanner (pos);
-                  if (out_of_bounds) {
+                  if (!scanner (pos)) {
                     data.fill (NaN);
                     return false;
                   }
 
                   data.setZero();
 
-                  // Modified to be consistent with the new Interp::Linear implementation
                   size_t i = 0;
                   for (ssize_t z = 0; z < 2; ++z) {
                     index(2) = clamp (P[2]+z, size(2));

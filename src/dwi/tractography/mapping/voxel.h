@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -47,7 +47,7 @@ namespace MR {
             return (V[0] >= 0 && V[0] < H.size(0) && V[1] >= 0 && V[1] < H.size(1) && V[2] >= 0 && V[2] < H.size(2));
           }
 
-        inline Eigen::Vector3 vec2DEC (const Eigen::Vector3& d)
+        inline Eigen::Vector3d vec2DEC (const Eigen::Vector3d& d)
         {
           return { abs(d[0]), abs(d[1]), abs(d[2]) };
         }
@@ -56,7 +56,7 @@ namespace MR {
 
 
         class Voxel : public Eigen::Vector3i
-        { MEMALIGN(Voxel)
+        { 
           public:
             Voxel (const int x, const int y, const int z) : Eigen::Vector3i (x,y,z), length (1.0f) { }
             Voxel (const Eigen::Vector3i& that) : Eigen::Vector3i (that), length (1.0f) { }
@@ -74,7 +74,7 @@ namespace MR {
 
 
         class VoxelDEC : public Voxel 
-        { MEMALIGN(VoxelDEC)
+        { 
 
           public:
             VoxelDEC () :
@@ -85,11 +85,11 @@ namespace MR {
               Voxel (V),
               colour (0.0, 0.0, 0.0) { }
 
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d) :
+            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3d& d) :
               Voxel (V),
               colour (vec2DEC (d)) { }
 
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d, const float l) :
+            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3d& d, const float l) :
               Voxel (V, l),
               colour (vec2DEC (d)) { }
 
@@ -101,13 +101,13 @@ namespace MR {
             bool      operator<  (const VoxelDEC& V) const { return Voxel::operator< (V); }
 
             void normalize() const { colour.normalize(); Voxel::normalize(); }
-            void set_dir (const Eigen::Vector3& i) { colour = vec2DEC (i); }
-            void add (const Eigen::Vector3& i, const default_type l) const { Voxel::operator+= (l); colour += vec2DEC (i); }
-            void operator+= (const Eigen::Vector3& i) const { Voxel::operator+= (1.0); colour += vec2DEC (i); }
-            const Eigen::Vector3& get_colour() const { return colour; }
+            void set_dir (const Eigen::Vector3d& i) { colour = vec2DEC (i); }
+            void add (const Eigen::Vector3d& i, const default_type l) const { Voxel::operator+= (l); colour += vec2DEC (i); }
+            void operator+= (const Eigen::Vector3d& i) const { Voxel::operator+= (1.0); colour += vec2DEC (i); }
+            const Eigen::Vector3d& get_colour() const { return colour; }
 
           private:
-            mutable Eigen::Vector3 colour;
+            mutable Eigen::Vector3d colour;
 
         };
 
@@ -116,7 +116,7 @@ namespace MR {
         // Temporary fix for fixel stats branch
         // Stores precise direction through voxel rather than mapping to a DEC colour or a dixel
         class VoxelDir : public Voxel
-        { MEMALIGN(VoxelDir)
+        { 
 
           public:
             VoxelDir () :
@@ -127,11 +127,11 @@ namespace MR {
               Voxel (V),
               dir (0.0, 0.0, 0.0) { }
 
-            VoxelDir (const Eigen::Vector3i& V, const Eigen::Vector3& d) :
+            VoxelDir (const Eigen::Vector3i& V, const Eigen::Vector3d& d) :
               Voxel (V),
               dir (d) { }
 
-            VoxelDir (const Eigen::Vector3i& V, const Eigen::Vector3& d, const default_type l) :
+            VoxelDir (const Eigen::Vector3i& V, const Eigen::Vector3d& d, const default_type l) :
               Voxel (V, l),
               dir (d) { }
 
@@ -142,13 +142,13 @@ namespace MR {
             bool      operator<  (const VoxelDir& V) const { return Voxel::operator< (V); }
 
             void normalize() const { dir.normalize(); Voxel::normalize(); }
-            void set_dir (const Eigen::Vector3& i) { dir = i; }
-            void add (const Eigen::Vector3& i, const default_type l) const { Voxel::operator+= (l); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
-            void operator+= (const Eigen::Vector3& i) const { Voxel::operator+= (1.0); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
-            const Eigen::Vector3& get_dir() const { return dir; }
+            void set_dir (const Eigen::Vector3d& i) { dir = i; }
+            void add (const Eigen::Vector3d& i, const default_type l) const { Voxel::operator+= (l); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
+            void operator+= (const Eigen::Vector3d& i) const { Voxel::operator+= (1.0); dir += i * (dir.dot(i) < 0.0 ? -1.0 : 1.0); }
+            const Eigen::Vector3d& get_dir() const { return dir; }
 
           private:
-            mutable Eigen::Vector3 dir;
+            mutable Eigen::Vector3d dir;
 
         };
 
@@ -156,7 +156,7 @@ namespace MR {
 
         // Assumes tangent has been mapped to a hemisphere basis direction set
         class Dixel : public Voxel
-        { MEMALIGN(Dixel)
+        { 
 
           public:
 
@@ -201,7 +201,7 @@ namespace MR {
         // TOD class: tore the SH coefficients in the voxel class so that aPSF generation can be multi-threaded
         // Provide a normalize() function to remove any length dependence, and have unary contribution per streamline
         class VoxelTOD : public Voxel
-        { MEMALIGN(VoxelTOD)
+        { 
 
           public:
 
@@ -268,7 +268,7 @@ namespace MR {
 
 
         class SetVoxelExtras
-        { NOMEMALIGN
+        { 
           public:
             default_type factor; // For TWI, when contribution to the map is uniform along the length of the track
             size_t index; // Index of the track
@@ -283,7 +283,7 @@ namespace MR {
         // Set classes that give sensible behaviour to the insert() function depending on the base voxel class
 
         class SetVoxel : public std::set<Voxel>, public SetVoxelExtras
-        { NOMEMALIGN
+        { 
           public:
             using VoxType = Voxel;
             inline void insert (const Voxel& v)
@@ -306,7 +306,7 @@ namespace MR {
 
 
         class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
-        { NOMEMALIGN
+        { 
           public:
             using VoxType = VoxelDEC;
             inline void insert (const VoxelDEC& v)
@@ -317,12 +317,12 @@ namespace MR {
               else
                 existing->add (v.get_colour(), v.get_length());
             }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d)
+            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d)
             {
               const VoxelDEC temp (v, d);
               insert (temp);
             }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l)
+            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l)
             {
               const VoxelDEC temp (v, d, l);
               insert (temp);
@@ -333,7 +333,7 @@ namespace MR {
 
 
         class SetVoxelDir : public std::set<VoxelDir>, public SetVoxelExtras
-        { NOMEMALIGN
+        { 
           public:
             using VoxType = VoxelDir;
             inline void insert (const VoxelDir& v)
@@ -344,12 +344,12 @@ namespace MR {
               else
                 existing->add (v.get_dir(), v.get_length());
             }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d)
+            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d)
             {
               const VoxelDir temp (v, d);
               insert (temp);
             }
-            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l)
+            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l)
             {
               const VoxelDir temp (v, d, l);
               insert (temp);
@@ -358,7 +358,7 @@ namespace MR {
 
 
         class SetDixel : public std::set<Dixel>, public SetVoxelExtras
-        { NOMEMALIGN
+        { 
           public:
 
             using VoxType = Dixel;
@@ -389,7 +389,7 @@ namespace MR {
 
 
         class SetVoxelTOD : public std::set<VoxelTOD>, public SetVoxelExtras
-        { NOMEMALIGN
+        { 
           public:
 
             using VoxType = VoxelTOD;

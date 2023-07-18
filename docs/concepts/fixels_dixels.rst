@@ -1,7 +1,7 @@
 .. _fixels_dixels:
 
-"Fixels" (and "Dixels")
-=======================
+"Fixels" (and "Dixels" and "Peaks")
+===================================
 
 Internally we have created a couple of new terms that we find
 invaluable when discussing diffusion MRI processing methods and
@@ -45,7 +45,7 @@ voxel, can be considered as estimating fixels. However in the past,
 researchers have resorted either to lengthy descriptive labels in an
 attempt to express the nature of the data being manipulated, or have
 adopted existing terms, which can lead to confusion with the original sense of
-the terms. Furthermore, these labels are not applied inconsistently
+the terms. Furthermore, these labels are not applied consistently
 between publications; we hope that the term 'fixel', being unambiguous with
 other interpretations of "fibre bundle" or "fascicle" or other examples,
 will slowly become the standard term for describing these data.
@@ -140,6 +140,11 @@ Some observations / contexts in which the term 'dixel' may be useful:
    on accumulating these directions / samples. So this process can be
    thought of as converting the FOD from a continuous SH representation,
    to a dixel representation, then finally to a fixel representation.
+
+'Peak': *Local ODF maxima*
+--------------------------
+
+
 
 .. NOTE::
 

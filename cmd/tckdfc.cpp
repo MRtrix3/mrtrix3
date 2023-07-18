@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -148,7 +148,7 @@ OPTIONS
 // Instead, the one timepoint volume generated during this iteration is written
 //   into the one large buffer that contains the entire TW-dFC time series
 class Receiver
-{ MEMALIGN(Receiver)
+{ 
 
   public:
     Receiver (const Header& header, const vox_stat_t stat_vox) :
@@ -219,7 +219,7 @@ void Receiver::write (Image<float>& out)
 
 // Separate class for generating TDI i.e. receive SetVoxel & write directly to counts
 class Count_receiver
-{ MEMALIGN(Count_receiver)
+{ 
   public:
     Count_receiver (Image<uint32_t>& out) :
         v (out) { }

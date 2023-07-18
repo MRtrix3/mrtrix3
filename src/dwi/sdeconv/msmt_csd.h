@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,10 +41,10 @@ namespace MR
 
       extern const App::OptionGroup MSMT_CSD_options;
 
-      class MSMT_CSD { MEMALIGN(MSMT_CSD)
+      class MSMT_CSD { 
         public:
 
-          class Shared { MEMALIGN(Shared)
+          class Shared { 
             public:
               Shared (const Header& dwi_header) :
                   grad (DWI::get_DW_scheme (dwi_header)),
@@ -59,7 +59,7 @@ namespace MR
                 using namespace App;
                 auto opt = get_options ("lmax");
                 if (opt.size())
-                  lmax = parse_ints (opt[0][0]);
+                  lmax = parse_ints<uint32_t> (opt[0][0]);
                 opt = get_options ("directions");
                 if (opt.size())
                   HR_dirs = load_matrix (opt[0][0]);
@@ -102,13 +102,13 @@ namespace MR
                 if (lmax.empty()) {
                   lmax = lmax_response;
                   for (size_t t = 0; t != num_tissues(); ++t) {
-                    lmax[t] = std::min (DEFAULT_MSMTCSD_LMAX, lmax[t]);
+                    lmax[t] = std::min (uint32_t(DEFAULT_MSMTCSD_LMAX), lmax[t]);
                   }
                 } else {
                   if (lmax.size() != num_tissues())
                     throw Exception ("Number of lmaxes specified (" + str(lmax.size()) + ") does not match number of tissues (" + str(num_tissues()) + ")");
                   for (const auto i : lmax) {
-                    if (i < 0 || i % 2)
+                    if (i % 2)
                       throw Exception ("Each value of lmax must be a non-negative even integer");
                   }
                 }
@@ -126,7 +126,7 @@ namespace MR
                 //////////////////////////////////////////////////
 
                 size_t nparams = 0;
-                int maxlmax = 0;
+                uint32_t maxlmax = 0;
                 for (size_t i = 0; i < num_tissues(); i++) {
                   nparams += Math::SH::NforL (lmax[i]);
                   maxlmax = std::max (maxlmax, lmax[i]);
@@ -134,7 +134,7 @@ namespace MR
 
                 INFO ("initialising multi-tissue CSD for " + str(num_tissues()) + " tissue types, with " + str (nparams) + " parameters");
 
-                Eigen::MatrixXd C (grad.rows(), nparams);
+                Eigen::MatrixXd C = Eigen::MatrixXd::Zero (grad.rows(), nparams);
 
                 vector<size_t> dwilist;
                 for (size_t i = 0; i != size_t(grad.rows()); i++)
@@ -225,7 +225,7 @@ namespace MR
               const Eigen::MatrixXd grad;
               DWI::Shells shells;
               Eigen::MatrixXd HR_dirs;
-              vector<int> lmax, lmax_response;
+              vector<uint32_t> lmax, lmax_response;
               vector<Eigen::MatrixXd> responses;
               vector<std::string> response_files;
               Math::ICLS::Problem<double> problem;

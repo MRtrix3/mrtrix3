@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,10 +35,10 @@ namespace MR
 
     using namespace MR::DWI::Tractography::Tracking;
 
-    class NullDist1 : public MethodBase { MEMALIGN(NullDist1)
+    class NullDist1 : public MethodBase { 
       public:
 
-      class Shared : public SharedBase { MEMALIGN(Shared)
+      class Shared : public SharedBase { 
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set)
@@ -76,7 +76,7 @@ namespace MR
         return CONTINUE;
       }
 
-      float get_metric() override { return uniform(rng); }
+      float get_metric (const Eigen::Vector3f&, const Eigen::Vector3f&) override { return uniform(rng); }
 
 
       protected:
@@ -87,10 +87,10 @@ namespace MR
 
     };
 
-    class NullDist2 : public iFOD2 { MEMALIGN(NullDist2)
+    class NullDist2 : public iFOD2 { 
       public:
 
-      class Shared : public iFOD2::Shared { MEMALIGN(Shared)
+      class Shared : public iFOD2::Shared { 
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           iFOD2::Shared (diff_path, property_set)
@@ -156,7 +156,7 @@ namespace MR
         sample_idx = S.num_samples;
       }
 
-      float get_metric() override { return uniform(rng); }
+      float get_metric (const Eigen::Vector3f&, const Eigen::Vector3f&) override { return uniform(rng); }
 
 
       protected:

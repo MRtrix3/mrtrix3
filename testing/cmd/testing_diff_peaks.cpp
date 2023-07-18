@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -68,7 +68,7 @@ void run ()
   .run ([&tol] (decltype(in1)& a, decltype(in2)& b)
   {
     for (size_t i = 0; i != size_t(a.size(3)); i += 3) {
-      Eigen::Vector3 veca, vecb;
+      Eigen::Vector3d veca, vecb;
       for (size_t axis = 0; axis != 3; ++axis) {
         a.index(3) = b.index(3) = i + axis;
         veca[axis] = a.value();

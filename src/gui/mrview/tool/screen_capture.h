@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR
 
 
         class Capture : public Base
-        { MEMALIGN(Capture)
+        { 
           Q_OBJECT
           public:
             Capture (Dock* parent);
@@ -84,7 +84,7 @@ namespace MR
 
             bool is_playing;
 
-            class CaptureState { MEMALIGN(CaptureState)
+            class CaptureState { 
               public:
                 Eigen::Quaternionf orientation;
                 Eigen::Vector3f focus, target;

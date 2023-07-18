@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -73,7 +73,7 @@ namespace MR
     // @{
 
     //! vector of strings to hold more comprehensive command description
-    class Description : public vector<const char*> { NOMEMALIGN
+    class Description : public vector<const char*> { 
       public:
         Description& operator+ (const char* text) {
           push_back (text);
@@ -92,7 +92,7 @@ namespace MR
 
 
     //! object for storing a single example command usage
-    class Example { NOMEMALIGN
+    class Example { 
       public:
         Example (const std::string& title,
                  const std::string& code,
@@ -107,7 +107,7 @@ namespace MR
     };
 
     //! a class to hold the list of Example's
-    class ExampleList : public vector<Example> { NOMEMALIGN
+    class ExampleList : public vector<Example> { 
       public:
         ExampleList& operator+ (const Example& example) {
           push_back (example);
@@ -121,7 +121,7 @@ namespace MR
 
 
     //! a class to hold the list of Argument's
-    class ArgumentList : public vector<Argument> { NOMEMALIGN
+    class ArgumentList : public vector<Argument> { 
       public:
         ArgumentList& operator+ (const Argument& argument) {
           push_back (argument);
@@ -136,7 +136,7 @@ namespace MR
 
 
     //! a class to hold the list of option groups
-    class OptionList : public vector<OptionGroup> { NOMEMALIGN
+    class OptionList : public vector<OptionGroup> { 
       public:
         OptionList& operator+ (const OptionGroup& option_group) {
           push_back (option_group);
@@ -206,7 +206,7 @@ namespace MR
 
 
 
-    class ParsedArgument { NOMEMALIGN
+    class ParsedArgument { 
       public:
         operator std::string () const { return p; }
 
@@ -216,11 +216,18 @@ namespace MR
         uint64_t as_uint () const { return uint64_t (as_int()); }
         default_type as_float () const;
 
-        vector<int> as_sequence_int () const {
+        vector<int32_t> as_sequence_int () const {
           assert (arg->type == IntSeq);
-          try { return parse_ints (p); }
+          try { return parse_ints<int32_t> (p); }
           catch (Exception& e) { error (e); }
-          return vector<int>();
+          return vector<int32_t>();
+        }
+
+        vector<uint32_t> as_sequence_uint () const {
+          assert (arg->type == IntSeq);
+          try { return parse_ints<uint32_t> (p); }
+          catch (Exception& e) { error (e); }
+          return vector<uint32_t>();
         }
 
         vector<default_type> as_sequence_float () const {
@@ -239,7 +246,8 @@ namespace MR
         operator long long unsigned int () const { return as_uint(); }
         operator float () const { return as_float(); }
         operator double () const { return as_float(); }
-        operator vector<int> () const { return as_sequence_int(); }
+        operator vector<int32_t> () const { return as_sequence_int(); }
+        operator vector<uint32_t> () const { return as_sequence_uint(); }
         operator vector<default_type> () const { return as_sequence_float(); }
 
         const char* c_str () const { return p; }
@@ -275,19 +283,29 @@ namespace MR
     //! object storing information about option parsed from command-line
     /*! this is the object stored in the App::options vector, and the type
      * returned by App::get_options(). */
-    class ParsedOption { NOMEMALIGN
+    class ParsedOption { 
       public:
         ParsedOption (const Option* option, const char* const* arguments) :
             opt (option), args (arguments)
         {
           for (size_t i = 0; i != option->size(); ++i) {
-            if (arguments[i][0] == '-' &&
-                !(((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && !strcmp(arguments[i], std::string("-").c_str())) &&
-                !((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq || (*option)[i].type == FloatSeq || (*option)[i].type == Various)) {
-              WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
-                    ((option->size() == 1) ? "the expected argument" : ("one of the " + str(option->size()) + " expected arguments")) +
-                    " for option \"-" + option->id + "\"; is this what you intended?");
-            }
+            const char* p = arguments[i];
+            if (!consume_dash (p))
+              continue;
+            if (( (*option)[i].type == ImageIn || (*option)[i].type == ImageOut ) && is_dash (arguments[i]))
+              continue;
+            if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
+                (*option)[i].type == FloatSeq || (*option)[i].type == Various)
+              continue;
+            WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
+                ((option->size() == 1) ?
+                 "the expected argument " :
+                 ("one of the " + str(option->size()) + " expected arguments ")) +
+                "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
+                "the requisite input" +
+                ((option->size() == 1) ? " " : "s ") +
+                "to command-line option \"-" + option->id + "\" may have been erroneously omitted, which may cause " +
+                "other command-line parsing errors");
           }
         }
 
@@ -434,8 +452,8 @@ namespace MR
 
 
     //! Returns the option value if set, and the default otherwise.
-    /*! Returns the value of (the first occurence of) option \c name
-     *  or the default value provided as second argument.
+    /*! Only be used for command-line options that do not specify
+     * .allow_multiple(), and that have only one associated Argument.
      *
      * Use:
      * \code
@@ -447,8 +465,15 @@ namespace MR
     inline T get_option_value (const std::string& name, const T default_value)
     {
       auto opt = get_options(name);
-      T r = (opt.size()) ? opt[0][0] : default_value;
-      return r;
+      switch (opt.size()) {
+        case 0: return default_value;
+        case 1:
+          if (opt[0].opt->size() == 1)
+            return opt[0][0];
+        default:
+          assert (false);
+          throw Exception ("Internal error parsing command-line option \"-" + name + "\"");
+      }
     }
 
 

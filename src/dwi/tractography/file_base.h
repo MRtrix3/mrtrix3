@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,7 +39,7 @@ namespace MR
 
       //! \cond skip
       class __ReaderBase__
-      { NOMEMALIGN
+      { 
         public:
             __ReaderBase__() : current_index (0) { }
           ~__ReaderBase__ () {
@@ -60,7 +60,7 @@ namespace MR
 
       template <typename ValueType = float>
         class __WriterBase__
-        { NOMEMALIGN
+        { 
           public:
             using value_type = ValueType;
 

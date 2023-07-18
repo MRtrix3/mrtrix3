@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -280,9 +280,36 @@ namespace MR {
 
 
 
+      bool Element::ignore_when_parsing () const
+      {
+        for (const auto& seq : parents) {
+          // ignore anything within IconImageSequence:
+          if (seq.is (0x0088U, 0x0200U))
+            return true;
+          // allow Philips PrivatePerFrameSq:
+          if (seq.is (0x2005U, 0x140FU))
+            continue;
+          // ignore anything within sequences with unknown (private) group:
+          if (seq.group & 1U)
+            return true;
+        }
+
+        return false;
+      }
 
 
 
+
+
+      bool Element::is_in_series_ref_sequence () const
+      {
+        // required to group together series exported using
+        // Siemens XA10A in Interoperability mode
+        for (const auto& seq : parents)
+          if (seq.is (0x0008U, 0x1250U))
+            return true;
+        return false;
+      }
 
 
 
@@ -296,8 +323,9 @@ namespace MR {
         if (VR == VR_SQ) return SEQ;
         if (VR == VR_DA) return DATE;
         if (VR == VR_TM) return TIME;
+        if (VR == VR_DT) return DATETIME;
         if (VR == VR_AE || VR == VR_AS || VR == VR_CS ||
-            VR == VR_DS || VR == VR_DT || VR == VR_IS || VR == VR_LO ||
+            VR == VR_DS || VR == VR_IS || VR == VR_LO ||
             VR == VR_LT || VR == VR_PN || VR == VR_SH || VR == VR_ST ||
             VR == VR_UI || VR == VR_UT || VR == VR_AT) return STRING;
         return OTHER;
@@ -392,6 +420,20 @@ namespace MR {
 
 
 
+      std::pair<Date,Time> Element::get_datetime () const
+      {
+        assert (type() == DATETIME);
+        if (size < 14)
+          throw Exception ("malformed DateTime entry");
+        return {
+          Date (std::string (reinterpret_cast<const char*> (data), 8)),
+          Time (std::string (reinterpret_cast<const char*> (data+8), std::min(size-8,13U)))
+        };
+      }
+
+
+
+
 
       vector<std::string> Element::get_string () const
       {
@@ -428,6 +470,8 @@ namespace MR {
               return str(get_date());
             case Element::TIME:
               return str(get_time());
+            case Element::DATETIME:
+              return str(get_datetime().first) + " " + str(get_datetime().second);
             case Element::STRING:
               if (group == GROUP_DATA && element == ELEMENT_DATA) {
                 return "(data)";

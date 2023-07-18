@@ -1,15 +1,17 @@
-/*
- * Copyright (c) 2008-2018 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix3 is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
- * For more details, see http://www.mrtrix.org/
+ * For more details, see http://www.mrtrix.org/.
  */
 
 
@@ -44,7 +46,7 @@ namespace MR
         fixel_positions.resize (matrix.size());
         const Transform transform (index_image);
         for (auto i = Loop (index_image, 0, 3) (index_image); i; ++i) {
-          const Eigen::Vector3 vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
+          const Eigen::Vector3d vox ((default_type)index_image.index(0), (default_type)index_image.index(1), (default_type)index_image.index(2));
           const Eigen::Vector3f scanner = (transform.voxel2scanner * vox).cast<float>();
           index_image.index(3) = 0;
           const index_type count = index_image.value();
@@ -103,7 +105,7 @@ namespace MR
                            ") does not match fixel connectivity matrix (" + str(matrix.size()) + ")");
 
         class Source
-        { NOMEMALIGN
+        { 
           public:
             Source (const size_t N) :
                 number (N),
@@ -121,7 +123,7 @@ namespace MR
         };
 
         class Worker
-        { MEMALIGN(Worker)
+        { 
           public:
             Worker (const Smooth& master, const Image<float>& input, const Image<float>& output) :
                 master (master),

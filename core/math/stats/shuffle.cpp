@@ -1,12 +1,15 @@
-/* Copyright (c) 2008-2017 the MRtrix3 contributors
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, you can obtain one at http://mozilla.org/MPL/2.0/.
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * MRtrix is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
  *
  * For more details, see http://www.mrtrix.org/.
  */
@@ -18,7 +21,7 @@
 #include <random>
 
 #include "math/factorial.h"
-#include "math/math.h"
+#include "math/rng.h"
 
 namespace MR
 {
@@ -441,6 +444,8 @@ namespace MR
                                                    const bool include_default,
                                                    const bool permit_duplicates)
       {
+        Math::RNG rng;
+
         permutations.clear();
         permutations.reserve (num_perms);
 
@@ -459,7 +464,7 @@ namespace MR
           for (; p != num_perms; ++p) {
             PermuteLabels permuted_labelling (default_labelling);
             do {
-              std::random_shuffle (permuted_labelling.begin(), permuted_labelling.end());
+              std::shuffle (permuted_labelling.begin(), permuted_labelling.end(), rng);
             } while (!permit_duplicates && is_duplicate (permuted_labelling));
             permutations.push_back (permuted_labelling);
           }
@@ -478,7 +483,7 @@ namespace MR
               // Random permutation within each block independently
               for (size_t ib = 0; ib != blocks.size(); ++ib) {
                 vector<size_t> permuted_block (blocks[ib]);
-                std::random_shuffle (permuted_block.begin(), permuted_block.end());
+                std::shuffle (permuted_block.begin(), permuted_block.end(), rng);
                 for (size_t i = 0; i != permuted_block.size(); ++i)
                   permuted_labelling[blocks[ib][i]] = permuted_block[i];
               }
@@ -502,7 +507,7 @@ namespace MR
             // Randomly order a list corresponding to the block indices, and then
             //   generate the full permutation label listing accordingly
             PermuteLabels permuted_blocks (default_blocks);
-            std::random_shuffle (permuted_blocks.begin(), permuted_blocks.end());
+            std::shuffle (permuted_blocks.begin(), permuted_blocks.end(), rng);
             for (size_t ib = 0; ib != num_blocks; ++ib) {
               for (size_t i = 0; i != block_size; ++i)
                 permuted_labelling[blocks[ib][i]] = blocks[permuted_blocks[ib]][i];

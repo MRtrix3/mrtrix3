@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,7 +40,7 @@ namespace MR
 
 
 
-        class ODF_Item { MEMALIGN(ODF_Item)
+        class ODF_Item { 
           public:
             ODF_Item (MR::Header&& H, const odf_type_t type, const float scale, const bool hide_negative, const bool color_by_direction);
 
@@ -53,7 +53,7 @@ namespace MR
             bool hide_negative, color_by_direction;
 
             class DixelPlugin
-            { MEMALIGN(DixelPlugin)
+            { 
               public:
                 enum dir_t { DW_SCHEME, HEADER, INTERNAL, NONE, FILE };
 

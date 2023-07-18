@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,14 +22,14 @@
 
 namespace MR
 {
-    namespace Adapter 
+    namespace Adapter
     {
 
 
     template <class ImageType>
-        class Median : 
-          public Base<Median<ImageType>,ImageType> 
-      { MEMALIGN(Median<ImageType>)
+        class Median :
+          public Base<Median<ImageType>,ImageType>
+      { 
       public:
 
           using base_type = Base<Median<ImageType>, ImageType>;
@@ -45,20 +45,20 @@ namespace MR
             set_extent (vector<int>(1,3));
           }
 
-        Median (const ImageType& parent, const vector<int>& extent) :
+        Median (const ImageType& parent, const vector<uint32_t>& extent) :
           base_type (parent) {
             set_extent (extent);
           }
 
-        void set_extent (const vector<int>& ext)
+        void set_extent (const vector<uint32_t>& ext)
         {
           for (size_t i = 0; i < ext.size(); ++i)
-            if (! (ext[i] & int(1)))
+            if (! (ext[i] & uint32_t(1)))
               throw Exception ("expected odd number for extent");
           if (ext.size() != 1 && ext.size() != 3)
             throw Exception ("unexpected number of elements specified in extent");
           if (ext.size() == 1)
-            extent = vector<int> (3, ext[0]);
+            extent = vector<uint32_t> (3, ext[0]);
           else
             extent = ext;
 
@@ -99,7 +99,7 @@ namespace MR
         }
 
       protected:
-        vector<int> extent;
+        vector<uint32_t> extent;
         vector<value_type> values;
       };
 

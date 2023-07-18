@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -71,13 +71,13 @@ namespace MR
 
     template <class C>
     struct value_type_of
-    { NOMEMALIGN
+    { 
       using type = C;
     };
 
     template <class X>
     struct value_type_of<std::complex<X>>
-    { NOMEMALIGN
+    { 
       using type = X;
     };
 
@@ -94,7 +94,7 @@ namespace MR
     // which we store in LinearInterpBase
 
     template <class ImageType, LinearInterpProcessingType PType>
-    class LinearInterpBase : public Base<ImageType> { MEMALIGN(LinearInterpBase<ImageType, PType>)
+    class LinearInterpBase : public Base<ImageType> { 
       public:
         using typename Base<ImageType>::value_type;
         using coef_type = typename value_type_of<value_type>::type;
@@ -107,7 +107,7 @@ namespace MR
 
       protected:
         const coef_type zero, eps;
-        Eigen::Vector3 P;
+        Eigen::Vector3d P;
 
         ssize_t clamp (ssize_t x, ssize_t dim) const {
           if (x < 0) return 0;
@@ -118,7 +118,7 @@ namespace MR
 
 
     template <class ImageType, LinearInterpProcessingType PType>
-    class LinearInterp : public LinearInterpBase <ImageType, PType> { MEMALIGN(LinearInterp<ImageType,PType>)
+    class LinearInterp : public LinearInterpBase <ImageType, PType> { 
       private:
         LinearInterp ();
     };
@@ -129,7 +129,7 @@ namespace MR
     template <class ImageType>
     class LinearInterp<ImageType, LinearInterpProcessingType::Value> :
         public LinearInterpBase<ImageType, LinearInterpProcessingType::Value>
-    { MEMALIGN(LinearInterp<ImageType,LinearInterpProcessingType::Value>)
+    { 
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Value>;
 
@@ -148,7 +148,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos);
+          Eigen::Vector3d f = Base<ImageType>::intravoxel_offset (pos);
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;
@@ -255,7 +255,7 @@ namespace MR
     template <class ImageType>
     class LinearInterp<ImageType, LinearInterpProcessingType::Derivative> :
         public LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>
-    { MEMALIGN(LinearInterp<ImageType,LinearInterpProcessingType::Derivative>)
+    { 
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::Derivative>;
 
@@ -276,7 +276,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
+          Eigen::Vector3d f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;
@@ -404,7 +404,7 @@ namespace MR
     template <class ImageType>
     class LinearInterp<ImageType, LinearInterpProcessingType::ValueAndDerivative> :
         public LinearInterpBase <ImageType, LinearInterpProcessingType::ValueAndDerivative>
-    { MEMALIGN(LinearInterp<ImageType,LinearInterpProcessingType::ValueAndDerivative>)
+    { 
       public:
         using LinearBase = LinearInterpBase<ImageType, LinearInterpProcessingType::ValueAndDerivative>;
 
@@ -436,7 +436,7 @@ namespace MR
         /*! See file interp/base.h for details. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3 f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
+          Eigen::Vector3d f = Base<ImageType>::intravoxel_offset (pos.template cast<default_type>());
           if (Base<ImageType>::out_of_bounds)
             return false;
           P = pos;

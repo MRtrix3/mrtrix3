@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ namespace MR
 
 
     template <class Fixel>
-    class Fixel_map { MEMALIGN(Fixel_map<Fixel>)
+    class Fixel_map { 
 
       public:
         Fixel_map (const Header& H) :
@@ -82,7 +82,7 @@ namespace MR
         vector<Fixel> fixels;
 
       private:
-        const class HeaderHelper : public ::MR::Header { MEMALIGN(HeaderHelper)
+        const class HeaderHelper : public ::MR::Header { 
           public:
             HeaderHelper (const ::MR::Header& H) :
                 ::MR::Header (H)
@@ -101,7 +101,7 @@ namespace MR
 
     template <class Fixel>
     class Fixel_map<Fixel>::MapVoxel
-    { MEMALIGN(Fixel_map<Fixel>)
+    { 
       public:
         MapVoxel (const FMLS::FOD_lobes& in, const size_t first) :
             first_fixel_index (first),
@@ -146,7 +146,7 @@ namespace MR
 
 
     template <class Fixel>
-    class Fixel_map<Fixel>::Iterator { NOMEMALIGN
+    class Fixel_map<Fixel>::Iterator { 
         friend class Fixel_map<Fixel>::ConstIterator;
       public:
         Iterator (const MapVoxel* const voxel, Fixel_map<Fixel>& parent) :
@@ -164,7 +164,7 @@ namespace MR
     };
 
     template <class Fixel>
-    class Fixel_map<Fixel>::ConstIterator { NOMEMALIGN
+    class Fixel_map<Fixel>::ConstIterator { 
       public:
         ConstIterator (const MapVoxel* const voxel, const Fixel_map& parent) :
             index     (voxel ? voxel->first_index() : 0),

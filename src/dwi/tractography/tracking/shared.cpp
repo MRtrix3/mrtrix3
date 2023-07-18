@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -106,7 +106,7 @@ namespace MR
               case CALIBRATOR:            name = "calibrator";     break;
               case EXIT_IMAGE:            name = "exit_image";     break;
               case ENTER_CSF:             name = "enter_csf";      break;
-              case BAD_SIGNAL:            name = "bad_signal";     break;
+              case MODEL:                 name = "model";          break;
               case HIGH_CURVATURE:        name = "curvature";      break;
               case LENGTH_EXCEED:         name = "max_length";     break;
               case TERM_IN_SGM:           name = "term_in_sgm";    break;

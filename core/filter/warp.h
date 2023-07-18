@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ namespace MR
 
 
   // TODO if there is a use for this elsewhere then we should have threaded_copy4D convenience functions
-  class CopyKernel4D { NOMEMALIGN
+  class CopyKernel4D { 
     public:
       template <class InputImageType, class OutputImageType>
         FORCE_INLINE void operator() (InputImageType& in, OutputImageType& out) const {
@@ -67,7 +67,7 @@ namespace MR
           ImageTypeDestination& destination,
           WarpType& warp,
           const typename ImageTypeDestination::value_type value_when_out_of_bounds = Interpolator<ImageTypeSource>::default_out_of_bounds_value(),
-          vector<int> oversample = Adapter::AutoOverSample,
+          const vector<uint32_t> oversample = Adapter::AutoOverSample,
           const bool jacobian_modulate = false )
       {
 

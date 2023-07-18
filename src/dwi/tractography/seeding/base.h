@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -94,7 +94,7 @@ namespace MR
 
 
       // Common interface for providing streamline seeds
-      class Base { MEMALIGN(Base)
+      class Base { 
 
         public:
           Base (const std::string& in, const std::string& desc, const size_t attempts) :

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,10 +75,10 @@ void usage ()
 
 
 class Vox : public Eigen::Array3i
-{ MEMALIGN (Vox)
+{ 
   public:
     using Eigen::Array3i::Array3i;
-    Vox (const Eigen::Vector3& p) :
+    Vox (const Eigen::Vector3d& p) :
         Eigen::Array3i { int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])) } { }
     bool operator< (const Vox& i) const {
       return (i[0] == (*this)[0] ? (i[1] == (*this)[1] ? (i[2] < (*this)[2]) : (i[1] < (*this)[1])) : (i[0] < (*this)[0]));
@@ -128,7 +128,7 @@ void run ()
   operation_count += opt.size();
   for (auto p : opt) {
     const size_t axis = p[0];
-    const auto coords = parse_ints (p[1]);
+    const auto coords = parse_ints<uint32_t> (p[1]);
     const float value = p[2];
     const std::array<size_t, 2> loop_axes { { axis == 0 ? size_t(1) : size_t(0), axis == 2 ? size_t(1) : size_t(2) } };
     for (auto c : coords) {
@@ -146,12 +146,12 @@ void run ()
   operation_count += opt.size();
   for (auto s : opt) {
     const auto position = parse_floats (s[0]);
-    Eigen::Vector3 centre_scannerspace (position[0], position[1], position[2]);
+    Eigen::Vector3d centre_scannerspace (position[0], position[1], position[2]);
     const default_type radius = s[1];
     const float value = s[2];
     if (position.size() != 3)
       throw Exception ("Centre of sphere must be defined using 3 comma-separated values");
-    Eigen::Vector3 centre_voxelspace (centre_scannerspace);
+    Eigen::Vector3d centre_voxelspace (centre_scannerspace);
     if (scanner)
       centre_voxelspace = transform.scanner2voxel * centre_scannerspace;
     else
@@ -164,7 +164,7 @@ void run ()
     while (to_expand.size()) {
       const Vox v (to_expand.back());
       to_expand.pop_back();
-      const Eigen::Vector3 v_scanner = transform.voxel2scanner * v.matrix().cast<default_type>();
+      const Eigen::Vector3d v_scanner = transform.voxel2scanner * v.matrix().cast<default_type>();
       const default_type distance = (v_scanner - centre_scannerspace).norm();
       if (distance < radius) {
         if (!is_out_of_bounds (H, v)) {
@@ -190,7 +190,7 @@ void run ()
     if (position.size() != H.ndim())
       throw Exception ("Image has " + str(H.ndim()) + " dimensions, but -voxel option position " + std::string(v[0]) + " provides only " + str(position.size()) + " coordinates");
     if (scanner) {
-      Eigen::Vector3 p (position[0], position[1], position[2]);
+      Eigen::Vector3d p (position[0], position[1], position[2]);
       p = transform.scanner2voxel * p;
       const Vox voxel (p);
       assign_pos_of (voxel).to (out);

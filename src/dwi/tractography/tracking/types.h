@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,6 +20,7 @@
 
 #include "image.h"
 #include "interp/linear.h"
+#include "interp/masked.h"
 
 
 
@@ -47,9 +48,9 @@ namespace MR
 
 
         template <class ImageType>
-          class Interpolator { MEMALIGN(Interpolator<ImageType>)
+          class Interpolator { 
             public:
-              using type = Interp::Linear<ImageType>;
+              using type = Interp::Masked<Interp::Linear<ImageType>>;
           };
 
 

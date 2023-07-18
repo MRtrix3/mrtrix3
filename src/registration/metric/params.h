@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,10 +45,6 @@ namespace MR
                 class ProcMaskType = Image<bool>,
                 class ProcessedMaskInterpolatorType = Interp::Nearest<Image<bool>>>
       class Params {
-        MEMALIGN (Params<TransformType,Im1ImageType,Im2ImageType,MidwayImageType,
-            Im1MaskType,Im2MaskType,Im1ImageInterpType,Im2ImageInterpType,
-            Im1MaskInterpolatorType,Im2MaskInterpolatorType,ProcImageType,ProcImageInterpolatorType,
-            ProcMaskType,ProcessedMaskInterpolatorType>)
         public:
 
           using TransformParamType = typename TransformType::ParameterType;
@@ -131,7 +127,7 @@ namespace MR
           }
 
           void update_control_points () {
-            const Eigen::Vector3 centre = transformation.get_centre();
+            const Eigen::Vector3d centre = transformation.get_centre();
             control_points.resize(4, 4);
             // tetrahedron centred at centre of midspace scaled by control_point_exent
             control_points <<  1.0, -1.0, -1.0,  1.0,
@@ -148,7 +144,7 @@ namespace MR
           template <class OptimiserType>
             void optimiser_update (OptimiserType& optim, const ssize_t overlap_count) {
               DEBUG ("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
-              if (!is_finite(optim.state())) {
+              if (!optim.state().allFinite()) {
                 CONSOLE ("last valid transformation:");
                 transformation.debug();
                 CONSOLE ("last optimisation step ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
@@ -174,17 +170,17 @@ namespace MR
               header.keyval()["trafo2"] = str(trafo2.matrix());
               auto check = Image<default_type>::create (image_path, header);
 
-              vector<int> no_oversampling (3,1);
+              vector<uint32_t> no_oversampling (3,1);
               Adapter::Reslice<Interp::Linear, Im1ImageType > im1_reslicer (
                 im1_image, midway_image, trafo1, no_oversampling, NAN);
               Adapter::Reslice<Interp::Linear, Im2ImageType > im2_reslicer (
                 im2_image, midway_image, trafo2, no_oversampling, NAN);
 
               auto T = MR::Transform(midway_image).voxel2scanner;
-              Eigen::Vector3 midway_point, voxel_pos, im1_point, im2_point;
+              Eigen::Vector3d midway_point, voxel_pos, im1_point, im2_point;
 
               for (auto i = Loop (midway_image) (check, im1_reslicer, im2_reslicer); i; ++i) {
-                voxel_pos = Eigen::Vector3 ((default_type)check.index(0), (default_type)check.index(1), (default_type)check.index(2));
+                voxel_pos = Eigen::Vector3d ((default_type)check.index(0), (default_type)check.index(1), (default_type)check.index(2));
                 midway_point = T * voxel_pos;
 
                 check.index(3) = 0;
@@ -237,7 +233,7 @@ namespace MR
           MR::copy_ptr<Im1MaskInterpolatorType> im1_mask_interp;
           MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
           default_type loop_density;
-          Eigen::Vector3 control_point_exent;
+          Eigen::Vector3d control_point_exent;
 
           bool robust_estimate_subset;
           bool robust_estimate_use_score;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,10 +22,7 @@ namespace MR
 {
   namespace Formats
   {
-#ifdef MRTRIX_AS_R_LIBRARY
-    RAM        RAM_handler;
-#endif
-
+    RAM           RAM_handler;
     Pipe          pipe_handler;
     MRtrix        mrtrix_handler;
     MRtrix_GZ     mrtrix_gz_handler;
@@ -49,9 +46,7 @@ namespace MR
 
 
     const Base* handlers[] = {
-#ifdef MRTRIX_AS_R_LIBRARY
       &RAM_handler,
-#endif
       &pipe_handler,
       &dicom_handler,
       &mrtrix_handler,

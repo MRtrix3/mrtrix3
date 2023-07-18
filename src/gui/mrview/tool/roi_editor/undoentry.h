@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,7 +39,7 @@ namespace MR
         class ROI_Item;
 
 
-        struct ROI_UndoEntry { MEMALIGN(ROI_UndoEntry)
+        struct ROI_UndoEntry { 
 
           ROI_UndoEntry (ROI_Item&, int, int);
           ROI_UndoEntry (const ROI_UndoEntry&) = delete;
@@ -64,7 +64,7 @@ namespace MR
           vector<GLubyte> before, after;
 
           class Shared
-          { MEMALIGN(Shared)
+          { 
             public:
               Shared();
               ~Shared();

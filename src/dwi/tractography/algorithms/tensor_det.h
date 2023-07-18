@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,9 +46,9 @@ namespace MR
     using namespace MR::DWI::Tractography::Tracking;
 
 
-    class Tensor_Det : public MethodBase { MEMALIGN(Tensor_Det)
+    class Tensor_Det : public MethodBase { 
       public:
-      class Shared : public SharedBase { MEMALIGN(Shared)
+      class Shared : public SharedBase { 
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set) {
@@ -99,7 +99,13 @@ namespace MR
       {
         if (!get_data (source))
           return false;
-        return do_init();
+        if (!do_init())
+          return false;
+        if (S.init_dir.allFinite())
+          return true;
+        if (S.init_dir.dot (dir) < 0.0)
+          dir = -dir;
+        return true;
       }
 
 
@@ -107,13 +113,15 @@ namespace MR
       term_t next () override
       {
         if (!get_data (source))
-          return Tracking::EXIT_IMAGE;
+          return EXIT_IMAGE;
         return do_next();
       }
 
 
-      float get_metric() override
+      float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) override
       {
+        if (!get_data (source, position))
+          return 0.0;
         dwi2tensor (dt, S.binv, values);
         return tensor2FA (dt);
       }

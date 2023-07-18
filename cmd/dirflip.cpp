@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -57,7 +57,7 @@ using value_type = double;
 using vector3_type = Eigen::Vector3d;
 
 
-class Shared { MEMALIGN(Shared)
+class Shared { 
   public:
     Shared (const Eigen::MatrixXd& directions, size_t target_num_permutations) :
       directions (directions), target_num_permutations (target_num_permutations), num_permutations(0),
@@ -107,7 +107,7 @@ class Shared { MEMALIGN(Shared)
 
 
 
-class Processor { MEMALIGN(Processor)
+class Processor { 
   public:
     Processor (Shared& shared) :
       shared (shared),

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -77,7 +77,7 @@ namespace MR
       get_mrtrix_file_path (H, "file", image_fname, image_offset);
 
       File::ParsedName::List image_list;
-      vector<int> image_num = image_list.parse_scan_check (image_fname);
+      image_list.parse_scan_check (image_fname);
 
       get_mrtrix_file_path (H, "sparse_file", sparse_fname, sparse_offset);
 

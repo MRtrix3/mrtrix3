@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -65,7 +65,7 @@ namespace MR
      */
 
     template <class ImageType>
-      class Nearest : public Base<ImageType> { MEMALIGN(Nearest<ImageType>)
+      class Nearest : public Base<ImageType> { 
       public:
         using typename Base<ImageType>::value_type;
 

@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,9 +15,12 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-# pylint: disable=redefined-outer-name,invalid-name
+# pylint: disable=redefined-outer-name,invalid-name,broad-except
 
-usage_string = '''
+import atexit, codecs, copy, glob, os, platform, re, shutil, subprocess, sys, tempfile, time, threading
+from timeit import default_timer as timer
+
+USAGE_STRING = '''
 USAGE
 
     ./build [-verbose] [-showdep[=target|all]] [target ...]
@@ -108,12 +111,11 @@ OPTIONS
 #                          COMMON DEFINITIONS                              #
 ############################################################################
 
-import atexit, codecs, copy, glob, os, platform, re, shutil, subprocess, sys, tempfile, time, threading
-from timeit import default_timer as timer
+
 
 # on Windows, need to use MSYS2 version of python - not MinGW version:
 if sys.executable[0].isalpha() and sys.executable[1] == ':':
-  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python' ]).decode(errors='ignore').splitlines()[0].strip()
+  python_cmd = subprocess.check_output ([ 'cygpath.exe', '-w', '/usr/bin/python3' ]).decode(errors='ignore').splitlines()[0].strip()
   sys.exit (subprocess.call ([ python_cmd ] + sys.argv))
 
 
@@ -144,13 +146,15 @@ targets = []
 
 
 todo, headers, object_deps, file_flags = {}, {}, {}, {}
+formatstr=''
 lock = threading.Lock()
 print_lock = threading.Lock()
+index_lock = threading.Lock()
 stop = False
 error_stream = None
-main_cindex = 0
+todo_index = 0
 
-logfile = open ('build.log', 'wb')
+logfile = open ('build.log', 'wb') #pylint: disable=consider-using-with
 timingfile = None
 
 
@@ -182,9 +186,9 @@ bcolors = {
 def colorize(s):
   out = ''
   for l in s.splitlines():
-    for st in bcolors:
-      if st in l:
-        l = l.replace (st, bcolors[st] + st) + '\033[0m'
+    for key, value in bcolors.items():
+      if key in l:
+        l = l.replace (key, value + key) + '\033[0m'
         break
     out += l + '\n'
   return out
@@ -193,64 +197,55 @@ def colorize(s):
 
 
 def pipe_errors_to_less_handler():
-  global error_stream
   if error_stream:
-    [ fid, name ] = tempfile.mkstemp()
-    fid = os.fdopen (fid, 'wb')
-    fid.write (colorize(error_stream).encode (errors='ignore'))
-    fid.close()
-    os.system ("less -RX " + name)
-    os.unlink (name)
-
+    with tempfile.NamedTemporaryFile() as tf:
+      tf.write (colorize(error_stream).encode (errors='ignore'))
+      tf.flush()
+      os.system ("less -RX " + tf.name)
 
 
 
 
 
 def disp (msg):
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  sys.stdout.write (msg)
-  sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    sys.stdout.write (msg)
+    sys.stdout.flush()
 
 
 def log (msg):
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  if verbose:
-    sys.stdout.write (msg)
-    sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    if verbose:
+      sys.stdout.write (msg)
+      sys.stdout.flush()
 
 
 
 def logtime (msg):
-  print_lock.acquire()
-  timingfile.write (msg.encode (errors='ignore'))
-  timingfile.flush()
-  print_lock.release()
+  with print_lock:
+    timingfile.write (msg.encode (errors='ignore'))
+    timingfile.flush()
 
 
 
 def error (msg):
   global error_stream
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  if error_stream is not None:
-    error_stream += msg
-  else:
-    sys.stdout.write (msg)
-    sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    if error_stream is not None:
+      error_stream += msg
+    else:
+      sys.stdout.write (msg)
+      sys.stdout.flush()
 
 
 def fail (msg):
-  print_lock.acquire()
-  logfile.write (msg.encode (errors='ignore'))
-  sys.stdout.write (msg)
-  sys.stdout.flush()
-  print_lock.release()
+  with print_lock:
+    logfile.write (msg.encode (errors='ignore'))
+    sys.stdout.write (msg)
+    sys.stdout.flush()
   sys.exit (1)
 
 
@@ -296,10 +291,10 @@ def list_unexpected_bin_files (exe_suffix, cmd_directory=cmd_dir, bin_directory=
 
 
 def list_untracked_bin_files (directory = '.'):
-  process = subprocess.Popen ([ 'git', '-C', directory, 'ls-files', '-x', '.*', '-o', bin_dir ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  filelist = process.communicate()[0]
-  if process.returncode == 0:
-    return filelist.decode(errors='ignore').splitlines()
+  with subprocess.Popen ([ 'git', '-C', directory, 'ls-files', '-x', '.*', '-o', bin_dir ], stdout=subprocess.PIPE, stderr=subprocess.PIPE) as process:
+    filelist = process.communicate()[0]
+    if process.returncode == 0:
+      return filelist.decode(errors='ignore').splitlines()
   return []
 
 
@@ -322,7 +317,7 @@ def is_likely_text(filename, nbytes=1024):
 
     try:
       chunk.decode('utf-8')
-      log('is_likely_text: ' + filename + 'utf-8 encoded \n')
+      log('is_likely_text: ' + filename + ': utf-8 encoded \n')
       return True
     except UnicodeDecodeError:
       pass
@@ -359,7 +354,7 @@ bash_completion = False
 
 for arg in sys.argv[1:]:
   if '-help'.startswith(arg):
-    sys.stdout.write (usage_string)
+    sys.stdout.write (USAGE_STRING)
     sys.exit (0)
   elif '-verbose'.startswith(arg):
     verbose = True
@@ -381,7 +376,7 @@ for arg in sys.argv[1:]:
   elif '-tree'.startswith(arg):
     dep_recursive = True
   elif '-timings'.startswith(arg):
-    timingfile = open ('timings.log', 'wb')
+    timingfile = open ('timings.log', 'wb') #pylint: disable=consider-using-with
   elif '-nopaginate'.startswith(arg):
     paginate = False
   elif arg[0] == '-':
@@ -394,7 +389,6 @@ for arg in sys.argv[1:]:
     targets = [ 'clean' ]
   else:
     targets.append(arg)
-
 
 
 
@@ -542,7 +536,8 @@ cpp = cpp_flags = ld = ld_flags = ld_lib = ld_lib_flags = eigen_cflags = qt_cfla
 
 try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
-  exec (codecs.open (config_file, mode='r', encoding='utf-8').read()) # pylint: disable=exec-used
+  with codecs.open (config_file, mode='r', encoding='utf-8') as f:
+    exec (f.read()) # pylint: disable=exec-used
 except IOError:
   fail ('''no configuration file found!
 please run "./configure" prior to invoking this script
@@ -574,6 +569,8 @@ lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
 
 if ld_enabled and runpath:
   ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
+else:
+  ld_flags += [ '-static-libgcc', '-static-libstdc++' ]
 
 
 
@@ -600,19 +597,19 @@ if 'clean' in targets:
         disp ('delete directory: ' + dirname + '\n')
         try:
           os.rmdir (dirname)
-        except OSError as excp:
+        except OSError as excp: # pylint: disable=unused-variable
           disp ('error deleting folder "' + dirname + '": ' + os.strerror (excp.errno))
     disp ('delete directory: ' + f + '\n')
     try:
       os.rmdir (f)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=unused-variable
       disp ('error deleting folder "' + f + '": ' + os.strerror (excp.errno))
 
   for filename in list_expected_bin_files(exe_suffix):
     disp ('delete file: ' + filename + '\n')
     try:
       os.remove (filename)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=unused-variable
       disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   for filepath in list_unexpected_bin_files(exe_suffix):
@@ -624,7 +621,7 @@ if 'clean' in targets:
     disp ('WARNING: moving unexpected file ' + filepath + ' to ' + move_to + '\n')
     try:
       shutil.move(filepath, move_to)
-    except OSError as excp:
+    except OSError as excp: # pylint: disable=unused-variable
       disp ('error moving file "' + filepath + '": ' + os.strerror (excp.errno))
 
   for filename in glob.glob (os.path.join ('lib', 'libmrtrix*')):
@@ -632,7 +629,7 @@ if 'clean' in targets:
       disp ('delete file: ' + filename + '\n')
       try:
         os.remove (filename)
-      except OSError as excp:
+      except OSError as excp: # pylint: disable=unused-variable
         disp ('error deleting file "' + filename + '": ' + os.strerror (excp.errno))
 
   sys.exit (0)
@@ -681,7 +678,7 @@ for filepath in list_unexpected_bin_files(exe_suffix):
   disp ('WARNING: moving unexpected binary file ' + filepath + ' to ' + move_to + '\n')
   try:
     shutil.move(filepath, move_to)
-  except OSError as excp:
+  except OSError as excp: # pylint: disable=unused-variable
     disp ('error moving file "' + filepath + '": ' + os.strerror (excp.errno))
 
 
@@ -692,9 +689,16 @@ for filepath in list_unexpected_bin_files(exe_suffix):
 class TargetException (Exception):
   pass
 
-class Entry(object):
+
+def next_index ():
+  global todo_index
+  with index_lock:
+    todo_index+=1
+    return todo_index
+
+
+class Entry:
   def __init__ (self, name):
-    global todo
     name = os.path.normpath (name)
     if name in todo:
       return
@@ -724,14 +728,14 @@ class Entry(object):
 
 
     [ Entry(item) for item in self.deps ] # pylint: disable=expression-not-assigned
-    dep_timestamp = [ todo[item].timestamp for item in todo if item in self.deps and not is_library(item) ]
-    dep_timestamp += [ todo[item].dep_timestamp for item in todo if item in self.deps and not is_library(item) ]
+    dep_timestamp = [ item.timestamp for name, item in todo.items() if name in self.deps and not is_library(name) ]
+    dep_timestamp += [ item.dep_timestamp for name, item in todo.items() if name in self.deps and not is_library(name) ]
     if dep_timestamp:
       self.dep_timestamp = max(dep_timestamp)
 
 
 
-  def execute (self, cindex, formatstr):
+  def execute (self):
     folder = os.path.dirname (self.name)
     try:
       os.makedirs (folder)
@@ -748,7 +752,7 @@ class Entry(object):
             fd.write ('<file>' + entry + '</file>\n')
         fd.write ('</qresource>\n</RCC>\n')
     if self.cmd:
-      return execute (formatstr.format (cindex, self.action, self.name), self.cmd)
+      return execute (formatstr.format (next_index(), self.action, self.name), self.cmd)
     return None
 
 
@@ -865,7 +869,8 @@ class Entry(object):
     return self.timestamp == float("inf") or self.timestamp < self.dep_timestamp
 
   def display (self, indent=''):
-    show_rebuild = lambda x: x+' [REBUILD]' if todo[x].need_rebuild() else x
+    def show_rebuild(x):
+      return x+' [REBUILD]' if todo[x].need_rebuild() else x
     msg = indent + '[' + self.action + '] ' + show_rebuild (self.name) + ':\n'
     msg += indent + '  timestamp: ' + str(self.timestamp)
     if self.deps:
@@ -942,15 +947,15 @@ def execute (message, cmd, working_dir=None):
 
   try:
     start = timer()
-    process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ, cwd=working_dir)
-    ( stdout, stderr ) = process.communicate()
-    end = timer()
-    if timingfile is not None:
-      logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
+    with subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ, cwd=working_dir) as process:
+      ( stdout, stderr ) = process.communicate()
+      end = timer()
+      if timingfile is not None:
+        logtime ('[{:>8.3f}s] '.format(end-start) + message + os.linesep)
 
-    if process.returncode != 0:
-      error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
-      return 1
+      if process.returncode != 0:
+        error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
+        return 1
 
     errstr = None
     if stdout or stderr:
@@ -999,10 +1004,9 @@ def is_GUI_target (current_file):
 
 
 def list_headers (current_file):
-  global headers, file_flags
   current_file = os.path.normpath (current_file)
 
-  if current_file not in headers.keys():
+  if current_file not in headers:
     headers[current_file] = set()
 
     if current_file not in file_flags:
@@ -1048,10 +1052,9 @@ def list_headers (current_file):
 
 
 def list_cmd_deps (file_cc):
-  global object_deps, file_flags
   file_cc = os.path.normpath (file_cc)
 
-  if file_cc not in object_deps.keys():
+  if file_cc not in object_deps:
     object_deps[file_cc] = set([ modify_path (file_cc, tmp=True, strip=cpp_suffix, add=obj_suffix) ])
     for entry in list_headers (file_cc):
       if os.path.abspath(entry).startswith(os.path.abspath(lib_dir)):
@@ -1087,29 +1090,24 @@ def list_lib_deps ():
 
 
 def build_next ():
-  global todo, lock, stop, main_cindex
-  total_count = len(todo)
-  cindex = 0
-  formatstr = '({:>'+str(len(str(total_count)))+'}/'+str(total_count)+') [{}] {}'
+  global stop, formatstr
+  formatstr = '({:>'+str(len(str(initial_num_todo)))+'}/'+str(initial_num_todo)+') [{}] {}'
 
   try:
     while not stop:
       current = None
-      lock.acquire()
-      if todo:
-        for item in todo:
-          if todo[item].currently_being_processed:
-            continue
-          unsatisfied_deps = set(todo[item].deps).intersection (todo.keys())
-          if not unsatisfied_deps:
-            todo[item].currently_being_processed = True
-            current = item
-            main_cindex+=1
-            cindex = main_cindex
-            break
-      else:
-        stop = max (stop, 1)
-      lock.release()
+      with lock:
+        if todo:
+          for name,entry in todo.items():
+            if entry.currently_being_processed:
+              continue
+            unsatisfied_deps = set(entry.deps).intersection (todo.keys())
+            if not unsatisfied_deps:
+              entry.currently_being_processed = True
+              current = name
+              break
+        else:
+          stop = max (stop, 1)
 
       if stop:
         return
@@ -1118,16 +1116,16 @@ def build_next ():
         continue
 
       target = todo[current]
-      if target.execute(cindex, formatstr):
+      if target.execute():
         target.currently_being_processed = False
         stop = 2
         return
 
-      lock.acquire()
-      del todo[current]
-      lock.release()
+      with lock:
+        del todo[current]
 
-  except Exception:
+  except Exception as excp:
+    disp (str(excp))
     stop = 2
     return
 
@@ -1150,21 +1148,21 @@ def build_next ():
 def version_from_git (folder):
   try:
     log ('fetching version information from git in folder "' + folder + '": ')
-    with open (os.devnull) as devnull:
+    with open (os.devnull, encoding='ascii') as devnull:
       tag = subprocess.check_output ([ 'git', 'describe', '--abbrev=0' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip() #pylint: disable=unexpected-keyword-arg
       commit = subprocess.check_output ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stderr=devnull).decode(errors='ignore').strip() #pylint: disable=unexpected-keyword-arg
     log (tag + ', ' + commit + '\n')
     return [ tag, commit ]
-  except Exception:
+  except Exception as e:
     log ('not found\n')
-    raise LookupError
+    raise LookupError from e
 
 
 
 def version_from_file (version_file, version_macro):
   log ('fetching version information from "' + version_macro + '" in "' + version_file + '": ')
   try:
-    with open (version_file) as fd:
+    with open (version_file, 'r', encoding='utf-8') as fd:
       for line in fd:
         line = line.split ("//")[0]
         if version_macro in line:
@@ -1173,9 +1171,9 @@ def version_from_file (version_file, version_macro):
           return tag
     if not tag:
       raise NameError
-  except Exception:
+  except Exception as e:
     log ('not found\n')
-    raise LookupError
+    raise LookupError from e
   return None
 
 
@@ -1185,26 +1183,42 @@ def mrtrix_version ():
   try:
     return mrtrix_version.version
   except AttributeError:
-    pass
+    fetch_mrtrix_version()
+    return mrtrix_version.version
+
+
+
+def mrtrix_tag ():
+  try:
+    return mrtrix_version.tag
+  except AttributeError:
+    fetch_mrtrix_version()
+    return mrtrix_version.tag
+
+
+
+def fetch_mrtrix_version ():
 
   log ('''
 getting MRtrix version from folder "''' + mrtrix_dir[-1] + '"...\n  ')
   try:
-    tag = version_from_file (os.path.join (lib_dir, 'version.h'), 'MRTRIX_BASE_VERSION')
+    base_version = version_from_file (os.path.join (lib_dir, 'version.h'), 'MRTRIX_BASE_VERSION')
   except LookupError:
-    fail ('ERROR: failed to read version information from file "' + os.path.join (lib_dir, 'version.h') + '"\n')
+    fail ('ERROR: failed to read base version information from file "' + os.path.join (lib_dir, 'version.h') + '"\n')
 
   try:
     log ('  ')
-    version = version_from_git (mrtrix_dir[-1])
-    if version[0] != tag:
+    [ tag, commit ] = version_from_git (mrtrix_dir[-1])
+    if tag != base_version:
       fail ('ERROR: version stored in "' + os.path.join (lib_dir, 'version.h') + '" does not match git tag name\n')
-    mrtrix_version.version = version[1]
+    mrtrix_version.tag = tag
+    mrtrix_version.version = commit
   except LookupError:
-    mrtrix_version.version = tag
+    mrtrix_version.tag = base_version
+    mrtrix_version.version = base_version
 
   log ('Using MRtrix version "' + mrtrix_version.version + '"\n')
-  return mrtrix_version.version
+
 
 
 
@@ -1244,7 +1258,7 @@ def update_version (version, version_file, template):
   version_file_contents = template.replace ('%%%', version or "unknown")
 
   try:
-    with open (version_file) as fd:
+    with open (version_file, 'r', encoding='utf-8') as fd:
       current_version_file_contents = fd.read()
     if ( version is None ) or ( version_file_contents == current_version_file_contents ):
       log ('version file "' + version_file + '" is up to date\n')
@@ -1253,7 +1267,7 @@ def update_version (version, version_file, template):
     pass
 
   log ('version file "' + version_file + '" is out of date - updating\n')
-  with open (version_file, 'w') as fd:
+  with open (version_file, 'w', encoding='utf-8') as fd:
     fd.write (version_file_contents)
 
 
@@ -1335,8 +1349,9 @@ def update_user_docs ():
 #                              SCRIPT VERSION                             #
 ###########################################################################
 
-with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w') as vfile:
+with open (os.path.join(mrtrix_dir[-1], script_dir, '_version.py'),'w', encoding='utf-8') as vfile:
   vfile.write('__version__ = "'+ mrtrix_version() +'" #pylint: disable=unused-variable\n')
+  vfile.write('__tag__ = "'+ mrtrix_tag() +'" #pylint: disable=unused-variable\n')
 
 
 ###########################################################################
@@ -1394,26 +1409,15 @@ compiling TODO list...
 ''')
 try:
   [ Entry(item) for item in targets ] # pylint: disable=expression-not-assigned
-except TargetException as excp:
+except TargetException as excp: # pylint: disable=unused-variable
   fail ('ERROR: ' + str(excp) + '\n')
 
 
 
 # for nogui config, remove GUI elements from targets and todo list:
 if nogui:
-  nogui_targets = []
-  for entry in targets:
-    if not is_GUI_target (entry):
-      nogui_targets.append (entry)
-  targets = nogui_targets
-
-  nogui_todo = {}
-  for item in todo:
-    if not is_GUI_target (todo[item].name):
-      nogui_todo[item] = todo[item]
-  todo = nogui_todo
-
-
+  targets = [ entry for entry in targets if not is_GUI_target (entry) ]
+  todo = { name:entry for name, entry in todo.items() if not is_GUI_target (name) }
 
 
 
@@ -1433,15 +1437,13 @@ elif dependencies==2:
 Printing dependencies for all files:
 
 ''')
-  for entry in todo:
-    todo[entry].display()
+  for entry in todo.values():
+    entry.display()
   sys.exit (0)
 
-todo_tmp = {}
-for item in todo:
-  if todo[item].action != '--' and todo[item].need_rebuild():
-    todo_tmp[item] = todo[item]
-todo = todo_tmp
+
+# remove todo items that don't need rebuild:
+todo = { name:entry for name, entry in todo.items() if entry.action != '--' and entry.need_rebuild() }
 
 log ('TODO list contains ' + str(len(todo)) + ''' items
 
@@ -1452,23 +1454,24 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 #  entry.display()
 try:
   num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
-except (KeyError, TypeError):
+except (KeyError, ValueError):
   try:
     num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
   except ValueError:
     num_processors = 1
+log ('''
+
+Build will use ''' + str(num_processors) + ''' threads
+
+''')
+
 
 while todo:
 
   stop = False
-  main_cindex = 0
   num_todo_previous = len(todo)
-
-  log ('''
-
-  launching ''' + str(num_processors) + ''' threads
-
-  ''')
+  initial_num_todo = len(todo)
+  todo_index = 0
 
   threads = []
   for i in range (1, num_processors): # pylint: disable=unused-variable

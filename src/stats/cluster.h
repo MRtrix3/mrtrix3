@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR
       /** \addtogroup Statistics
       @{ */
       class ClusterSize : public Stats::TFCE::EnhancerBase
-      { MEMALIGN (ClusterSize)
+      { 
         public:
           ClusterSize (const Filter::Connector& connector, const value_type T) :
                        connector (connector), threshold (T) { }

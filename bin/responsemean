@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python3
 
-# Copyright (c) 2008-2019 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,7 +56,7 @@ def execute(): #pylint: disable=unused-variable
   # New approach: Calculate a multiplier to use for each subject, based on the geometric mean
   #   scaling factor required to bring the subject toward the group mean l=0 terms (across shells)
 
-  mean_lzero_terms = [ sum([ subject[row][0] for subject in data ])/len(data) for row in range(len(data[0])) ]
+  mean_lzero_terms = [ sum(subject[row][0] for subject in data)/len(data) for row in range(len(data[0])) ]
   app.debug('Mean l=0 terms: ' + str(mean_lzero_terms))
 
   weighted_sum_coeffs = [[0.0] * len(data[0][0]) for _ in range(len(data[0]))] #pylint: disable=unused-variable
@@ -81,5 +81,5 @@ def execute(): #pylint: disable=unused-variable
 
 
 # Execute the script
-import mrtrix3
+import mrtrix3 #pylint: disable=wrong-import-position
 mrtrix3.execute() #pylint: disable=no-member

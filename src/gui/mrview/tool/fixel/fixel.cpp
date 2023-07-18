@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ namespace MR
 
 
         class Fixel::Model : public ListModelBase
-        { MEMALIGN (Fixel::Model)
+        { 
 
           public:
             Model (QObject* parent) :
@@ -48,32 +48,41 @@ namespace MR
               size_t old_size = items.size();
               for (size_t i = 0, N = filenames.size(); i < N; ++i) {
                 BaseFixel* fixel_image(nullptr);
-
                 try
-                {
-                  if(Path::has_suffix (filenames[i], {".msf", ".msh"}))
-                    fixel_image = new Legacy (filenames[i], fixel_tool);
-                  else
-                    fixel_image = new Directory (filenames[i], fixel_tool);
-                }
-                catch (InvalidFixelDirectoryException &)
                 {
                   try
                   {
-                    fixel_image = new Image4D (filenames[i], fixel_tool);
+                    if(Path::has_suffix (filenames[i], {".msf", ".msh"}))
+                      fixel_image = new Legacy (filenames[i], fixel_tool);
+                    else
+                      fixel_image = new Directory (filenames[i], fixel_tool);
                   }
-                  catch (InvalidImageException& e)
+                  catch (InvalidFixelDirectoryException& error)
                   {
-                    e.display();
-                    continue;
+                    error.push_back("Couldn't open \"" + filenames[i] + "\" as a Directory fixel dataset");
+                    try
+                    {
+                      fixel_image = new Image4D (filenames[i], fixel_tool);
+                    }
+                    catch (InvalidImageException& e)
+                    {
+                      error.push_back(e);
+                      error.push_back("Couldn't open \"" + filenames[i] + "\" as a 4D vector image");
+                      throw error;
+                    }
+                  }
+                  catch(InvalidImageException& e)
+                  {
+                    e.push_back("Couldn't open \"" + filenames[i] + "\" as a Legacy fixel dataset");
+                    throw e;
                   }
                 }
-                catch(InvalidImageException& e)
+                catch(Exception& e)
                 {
+                  e.push_back("Error loading \"" + filenames[i] + "\" as a fixel dataset");
                   e.display();
                   continue;
                 }
-
                 items.push_back (std::unique_ptr<Displayable> (fixel_image));
               }
 
@@ -378,6 +387,7 @@ namespace MR
             catch (Exception& e) {
               e.display();
             }
+            event->acceptProposedAction();
           }
         }
 

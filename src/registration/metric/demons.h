@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ namespace MR
     {
 
       template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
-      class Demons { MEMALIGN(Demons<Im1ImageType,Im2ImageType,Im1MaskType,Im2MaskType>)
+      class Demons { 
         public:
           Demons (default_type& global_energy, size_t& global_voxel_count,
                      const Im1ImageType& im1_image, const Im2ImageType& im2_image, const Im1MaskType im1_mask, const Im2MaskType im2_mask) :
@@ -118,8 +118,8 @@ namespace MR
               im1_update.row(3) = 0.0;
               im2_update.row(3) = 0.0;
             } else {
-              im1_update.row(3) = Eigen::Vector3 (speed * grad.array() / denominator);
-              im2_update.row(3) = -Eigen::Vector3 (im1_update.row(3));
+              im1_update.row(3) = Eigen::Vector3d (speed * grad.array() / denominator);
+              im2_update.row(3) = -Eigen::Vector3d (im1_update.row(3));
             }
           }
 

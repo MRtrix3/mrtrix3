@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2019 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,9 +19,8 @@
 
 #include "image.h"
 
-#include "fixel/keys.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/types.h"
 
 #include "math/SH.h"
 
@@ -67,6 +66,9 @@ void usage ()
 
   SYNOPSIS = "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels";
 
+  DESCRIPTION
+  + Fixel::format_description;
+
   REFERENCES
     + "* Reference for the FOD segmentation method:\n"
     "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
@@ -105,7 +107,7 @@ void usage ()
 
 
 
-class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
+class Segmented_FOD_receiver { 
 
   public:
     Segmented_FOD_receiver (const Header& header, const index_type maxnum = 0, bool dir_from_peak = false) :
@@ -125,7 +127,7 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
 
   private:
 
-    struct Primitive_FOD_lobe { MEMALIGN (Primitive_FOD_lobe)
+    struct Primitive_FOD_lobe { 
       Eigen::Vector3f dir;
       float integral;
       float max_peak_amp;
@@ -134,7 +136,7 @@ class Segmented_FOD_receiver { MEMALIGN(Segmented_FOD_receiver)
     };
 
 
-    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { MEMALIGN (Primitive_FOD_lobes)
+    class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> { 
       public:
         Primitive_FOD_lobes (const FOD_lobes& in, const index_type maxcount, bool dir_from_peak) :
             vox (in.vox)
@@ -201,6 +203,8 @@ void Segmented_FOD_receiver::commit ()
   fixel_data_header.ndim() = 3;
   fixel_data_header.size(0) = fixel_count;
   fixel_data_header.size(2) = 1;
+  fixel_data_header.transform().setIdentity();
+  fixel_data_header.spacing(0) = fixel_data_header.spacing(1) = fixel_data_header.spacing(2) = 1.0;
   fixel_data_header.datatype() = DataType::Float32;
   fixel_data_header.datatype().set_byte_order_native();
 
@@ -236,7 +240,7 @@ void Segmented_FOD_receiver::commit ()
     Fixel::check_fixel_size (*index_image, *disp_image);
   }
 
-  size_t offset (0), lobe_index (0);
+  size_t offset = 0;
 
 
   for (const auto& vox_fixels : lobes) {
@@ -279,7 +283,6 @@ void Segmented_FOD_receiver::commit ()
     }
 
     offset += n_vox_fixels;
-    lobe_index ++;
   }
 
   assert (offset == fixel_count);
