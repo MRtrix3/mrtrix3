@@ -171,7 +171,7 @@ namespace MR
         if (check_overwrite_files_func)
           check_overwrite_files_func (name);
         else
-          throw Exception ("output file \"" + name + "\" already exists (use -force option to force overwrite)");
+          throw Exception ("output path \"" + name + "\" already exists (use -force option to force overwrite)");
       }
     }
 

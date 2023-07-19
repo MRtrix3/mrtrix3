@@ -39,6 +39,15 @@ Options that influence generation of the connectivity matrix / matrices
 
 -  **-mask file** provide a fixel data file containing a mask of those fixels to be computed; fixels outside the mask will be empty in the output matrix
 
+-  **-tck_weights_in path** specify a text scalar file containing the streamline weights
+
+Options for additional outputs to be generated
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-count path** export a fixel data file encoding the number of connections for each fixel
+
+-  **-extent path** export a fixel data file encoding the extent of connectivity (sum of weights) for each fixel
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
