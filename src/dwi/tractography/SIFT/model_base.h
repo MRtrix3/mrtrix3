@@ -134,7 +134,7 @@ namespace MR
             value_type mu() const { return (FD_sum / TD_sum); }
             bool have_act_data() const { return act_5tt.valid(); }
 
-            virtual bool operator() (const Mapping::SetFixel& in);
+            virtual bool operator() (const Mapping::Set<Mapping::Fixel>& in);
 
             value_type calc_cost_function() const;
 
