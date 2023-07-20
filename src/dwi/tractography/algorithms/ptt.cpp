@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/tractography/algorithms/iFOD2.h"
+#include "dwi/tractography/algorithms/ptt.h"
 
 
 namespace MR
@@ -26,20 +26,26 @@ namespace MR
       namespace Algorithms
       {
 
+
+
         using namespace App;
 
-        const OptionGroup iFOD2Options = OptionGroup ("Options specific to the iFOD2 tracking algorithm")
-
-        + Option ("samples",
-                  "set the number of FOD samples to take per step (Default: " + str(Tracking::Defaults::ifod2_nsamples) + ").")
-          + Argument ("number").type_integer (2, 100);
 
 
-        void load_iFOD2_options (Tractography::Properties& properties)
+        const OptionGroup PTTOptions = OptionGroup ("Options specific to the Parallel Transport Tractography (PTT) algorithm")
+        + Option ("probe_length", "length of probe used to sample FOD amplitudes; not necessarily equal to step size (default: " + str(Defaults::probelength_voxels_ptt) + " x voxel size)")
+          + Argument ("value").type_float (0.0);
+
+
+
+        void load_PTT_options (Tractography::Properties& properties)
         {
-          auto opt = get_options ("samples");
-          if (opt.size()) properties["samples_per_step"] = str<unsigned int> (opt[0][0]);
+          auto opt = get_options ("probe_length");
+          if (opt.size())
+            properties["probe_length"] = str<float> (opt[0][0]);
         }
+
+
 
       }
     }

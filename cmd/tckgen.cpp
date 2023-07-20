@@ -30,6 +30,8 @@
 #include "dwi/tractography/algorithms/iFOD1.h"
 #include "dwi/tractography/algorithms/iFOD2.h"
 #include "dwi/tractography/algorithms/nulldist.h"
+#include "dwi/tractography/algorithms/options.h"
+#include "dwi/tractography/algorithms/ptt.h"
 #include "dwi/tractography/algorithms/sd_stream.h"
 #include "dwi/tractography/algorithms/seedtest.h"
 #include "dwi/tractography/algorithms/tensor_det.h"
@@ -44,8 +46,7 @@ using namespace MR;
 using namespace App;
 
 
-
-const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist1", "nulldist2", "sd_stream", "seedtest", "tensor_det", "tensor_prob", nullptr };
+const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist1", "nulldist2", "ptt", "sd_stream", "seedtest", "tensor_det", "tensor_prob", nullptr };
 
 
 void usage ()
@@ -102,6 +103,11 @@ void usage ()
       "and streamlines trajectories are determined entirely from random sampling. "
       "The NullDist2 algorithm is designed to be used in conjunction with iFOD2; "
       "NullDist1 should be used in conjunction with any first-order algorithm."
+
+    + "- PTT: Parallel Transport Tractography. This probabilistic method shares "
+      "concepts with the iFOD2 method, but better preserves curvature and constrains "
+      "torsion between adjacent streamline segments. The required input is a "
+      "Fibre Orientation Distirbution (FOD) image."
 
     + "- SD_STREAM: Streamlines tractography based on Spherical Deconvolution (SD). "
       "A deterministic algorithm that takes as input a Fiber Orientation Distribution "
@@ -160,6 +166,11 @@ void usage ()
    "Probabilistic fibre tracking: Differentiation of connections from chance events. "
    "NeuroImage, 2008, 42, 1329-1339"
 
+   + "* PTT:\n"
+   "Aydogan, D. B. & Shi, Y."
+   "Parallel Transport Tractography. "
+   "IEEE Transactions on Medical Imaging, 2021, 40(2), 635-647"
+
    + "* Tensor_Det:\n"
    "Basser, P. J.; Pajevic, S.; Pierpaoli, C.; Duda, J. & Aldroubi, A. "
    "In vivo fiber tractography using DT-MRI data. "
@@ -200,7 +211,7 @@ void usage ()
 
   + Option ("algorithm",
             "specify the tractography algorithm to use. Valid choices are: "
-              "FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).")
+              "FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, PTT, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).")
     + Argument ("name").type_choice (algorithms)
 
   + DWI::Tractography::Tracking::TrackOption
@@ -213,8 +224,9 @@ void usage ()
 
   + DWI::Tractography::ACT::ACTOption
 
-  + DWI::Tractography::Algorithms::iFODOptions
-  + DWI::Tractography::Algorithms::iFOD2Options
+  + DWI::Tractography::Algorithms::FODOptions
+  + DWI::Tractography::Algorithms::SecondOrderOptions
+  + DWI::Tractography::Algorithms::PTTOptions
 
   + DWI::GradImportOptions();
 
@@ -244,10 +256,11 @@ void run ()
   Seeding::load_seed_parameters (properties);
 
   if (algorithm == 1 || algorithm == 2)
-    Algorithms::load_iFOD_options (properties);
-  if (algorithm == 2)
-    Algorithms::load_iFOD2_options (properties);
-
+    Algorithms::load_FOD_options (properties);
+  if (algorithm == 2 || algorithm == 3)
+    Algorithms::load_2ndorder_options (properties);
+  if (algorithm == 3)
+    Algorithms::load_PTT_options (properties);
 
   //load ROIs and tractography specific options
   //NB must occur before seed check below due to -select option override
@@ -287,15 +300,18 @@ void run ()
       Exec<NullDist2>  ::run (argument[0], argument[1], properties);
       break;
     case 5:
-      Exec<SDStream>   ::run (argument[0], argument[1], properties);
+      Exec<PTT>        ::run (argument[0], argument[1], properties);
       break;
     case 6:
-      Exec<Seedtest>   ::run (argument[0], argument[1], properties);
+      Exec<SDStream>   ::run (argument[0], argument[1], properties);
       break;
     case 7:
-      Exec<Tensor_Det> ::run (argument[0], argument[1], properties);
+      Exec<Seedtest>   ::run (argument[0], argument[1], properties);
       break;
     case 8:
+      Exec<Tensor_Det> ::run (argument[0], argument[1], properties);
+      break;
+    case 9:
       Exec<Tensor_Prob>::run (argument[0], argument[1], properties);
       break;
     default:

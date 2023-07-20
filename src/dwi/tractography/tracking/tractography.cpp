@@ -78,15 +78,7 @@ namespace MR
             "threshold multiplied by " + str(Defaults::cutoff_act_multiplier) + " when using ACT).")
           + Argument ("value").type_float (0.0)
 
-      + Option ("trials",
-            "set the maximum number of sampling trials at each point "
-            "(only used for iFOD1 / iFOD2) "
-            "(default: " + str(Defaults::max_trials_per_step) + ").")
-          + Argument ("number").type_integer (1)
 
-      + Option ("noprecomputed",
-            "do NOT pre-compute legendre polynomial values. Warning: "
-            "this will slow down the algorithm by a factor of approximately 4.")
 
       + Option ("rk4", "use 4th-order Runge-Kutta integration "
                        "(slower, but eliminates curvature overshoot in 1st-order deterministic methods)")
@@ -128,12 +120,6 @@ namespace MR
 
         opt = get_options ("cutoff");
         if (opt.size()) properties["threshold"] = std::string (opt[0][0]);
-
-        opt = get_options ("trials");
-        if (opt.size()) properties["max_trials"] = str<unsigned int> (opt[0][0]);
-
-        opt = get_options ("noprecomputed");
-        if (opt.size()) properties["sh_precomputed"] = "0";
 
         opt = get_options ("rk4");
         if (opt.size()) properties["rk4"] = "1";

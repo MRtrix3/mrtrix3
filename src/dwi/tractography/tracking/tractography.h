@@ -48,19 +48,24 @@ namespace MR
 
           constexpr size_t max_trials_per_step = 1000;
 
+          constexpr float probelength_voxels_ptt = 0.25f;
           constexpr float stepsize_voxels_firstorder = 0.1f;
-          constexpr float stepsize_voxels_rk4 = 0.25f;
           constexpr float stepsize_voxels_ifod2 = 0.5f;
+          constexpr float stepsize_voxels_ptt = 0.025f;
+          constexpr float stepsize_voxels_rk4 = 0.25f;
 
           constexpr float angle_deterministic = 60.0f;
           constexpr float angle_ifod1 = 15.0f;
           constexpr float angle_ifod2 = 45.0f;
+          constexpr float angle_ptt = 90.0f;
 
           constexpr float minlength_voxels_noact = 5.0f;
           constexpr float minlength_voxels_withact = 2.0f;
           constexpr float maxlength_voxels = 100.0f;
 
-          constexpr size_t ifod2_nsamples = 4;
+          constexpr size_t secondorder_nsamples = 4;
+
+          constexpr size_t downsample_stepsize_voxels_ptt = 0.5;
         }
 
         extern const App::OptionGroup TrackOption;

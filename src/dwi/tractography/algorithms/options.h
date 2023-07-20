@@ -14,7 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/tractography/algorithms/iFOD1.h"
+#ifndef __dwi_tractography_algorithms_options_h__
+#define __dwi_tractography_algorithms_options_h__
+
+
+#include "app.h"
+
+#include "dwi/tractography/properties.h"
 
 
 namespace MR
@@ -26,23 +32,20 @@ namespace MR
       namespace Algorithms
       {
 
-        using namespace App;
-
-        const OptionGroup iFODOptions = OptionGroup ("Options specific to the iFOD tracking algorithms")
-
-        + Option ("power", "raise the FOD to the power specified (defaults are: 1.0 for iFOD1; 1.0/nsamples for iFOD2).")
-          + Argument ("value").type_float (0.0);
 
 
-        void load_iFOD_options (Tractography::Properties& properties)
-        {
-          auto opt = get_options ("power");
-          if (opt.size()) properties["fod_power"] = str<float> (opt[0][0]);
-        }
+        extern const App::OptionGroup FODOptions;
+        extern const App::OptionGroup SecondOrderOptions;
+
+        void load_FOD_options (Tractography::Properties&);
+        void load_2ndorder_options (Tractography::Properties&);
+
+
 
       }
     }
   }
 }
 
+#endif
 
