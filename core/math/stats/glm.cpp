@@ -105,27 +105,27 @@ namespace MR
 
 
 
-        index_array_type load_variance_groups (const size_t num_inputs)
+        index_array_type load_variance_groups (const index_type num_inputs)
         {
           auto opt = App::get_options ("variance");
           if (!opt.size())
             return index_array_type();
           try {
-            auto data = File::Matrix::load_vector<size_t> (opt[0][0]);
-            if (size_t(data.size()) != num_inputs)
+            auto data = File::Matrix::load_vector<index_type> (opt[0][0]);
+            if (index_type(data.size()) != num_inputs)
               throw Exception ("Number of entries in variance group file \"" + std::string(opt[0][0]) + "\" (" + str(data.size()) + ") does not match number of inputs (" + str(num_inputs) + ")");
-            const size_t min_coeff = data.minCoeff();
-            const size_t max_coeff = data.maxCoeff();
+            const index_type min_coeff = data.minCoeff();
+            const index_type max_coeff = data.maxCoeff();
             if (min_coeff > 1)
               throw Exception ("Minimum coefficient needs to be either zero or one");
             if (max_coeff == min_coeff) {
               WARN ("Only a single variance group is defined in file \"" + opt[0][0] + "\"; variance groups will not be used");
               return index_array_type();
             }
-            vector<size_t> count_per_group (max_coeff + 1, 0);
-            for (size_t i = 0; i != size_t(data.size()); ++i)
+            vector<index_type> count_per_group (max_coeff + 1, 0);
+            for (index_type i = 0; i != index_type(data.size()); ++i)
               count_per_group[data[i]]++;
-            for (size_t vg_index = min_coeff; vg_index <= size_t(max_coeff); ++vg_index) {
+            for (index_type vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
               if (!count_per_group[vg_index])
                 throw Exception ("No entries found for variance group " + str(vg_index));
             }
@@ -144,7 +144,7 @@ namespace MR
         {
           vector<Hypothesis> hypotheses;
           const matrix_type contrast_matrix = File::Matrix::load_matrix (file_path);
-          for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
+          for (index_type row = 0; row != index_type(contrast_matrix.rows()); ++row)
             hypotheses.emplace_back (Hypothesis (contrast_matrix.row (row), row));
           auto opt = App::get_options ("ftests");
           if (opt.size()) {
@@ -153,12 +153,12 @@ namespace MR
               throw Exception ("Number of columns in F-test matrix (" + str(ftest_matrix.cols()) + ") does not match number of rows in contrast matrix (" + str(contrast_matrix.rows()) + ")");
             if (!((ftest_matrix.array() == 0.0) + (ftest_matrix.array() == 1.0)).all())
               throw Exception ("F-test array must contain ones and zeros only");
-            for (ssize_t ftest_index = 0; ftest_index != ftest_matrix.rows(); ++ftest_index) {
+            for (index_type ftest_index = 0; ftest_index != index_type(ftest_matrix.rows()); ++ftest_index) {
               if (!ftest_matrix.row (ftest_index).count())
                 throw Exception ("Row " + str(ftest_index+1) + " of F-test matrix does not contain any ones");
               matrix_type this_f_matrix (ftest_matrix.row (ftest_index).count(), contrast_matrix.cols());
-              ssize_t ftest_row = 0;
-              for (ssize_t contrast_row = 0; contrast_row != contrast_matrix.rows(); ++contrast_row) {
+              index_type ftest_row = 0;
+              for (index_type contrast_row = 0; contrast_row != index_type(contrast_matrix.rows()); ++contrast_row) {
                 if (ftest_matrix (ftest_index, contrast_row))
                   this_f_matrix.row (ftest_row++) = contrast_matrix.row (contrast_row);
               }
@@ -166,7 +166,7 @@ namespace MR
             }
             if (App::get_options ("fonly").size()) {
               vector<Hypothesis> new_hypotheses;
-              for (size_t index = contrast_matrix.rows(); index != hypotheses.size(); ++index)
+              for (index_type index = contrast_matrix.rows(); index != hypotheses.size(); ++index)
                 new_hypotheses.push_back (std::move (hypotheses[index]));
               std::swap (hypotheses, new_hypotheses);
             }
@@ -199,7 +199,7 @@ namespace MR
         matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
         {
           matrix_type result (measurements.cols(), hypotheses.size());
-          for (size_t ic = 0; ic != hypotheses.size(); ++ic)
+          for (index_type ic = 0; ic != hypotheses.size(); ++ic)
             result.col (ic) = abs_effect_size (measurements, design, hypotheses[ic]);
           return result;
         }
@@ -226,17 +226,17 @@ namespace MR
           const matrix_type e (R * measurements);
           // One standard deviation per element per variance group
           // Rows are variance groups, columns are elements
-          const size_t num_vgs = variance_groups.array().maxCoeff() + 1;
+          const index_type num_vgs = variance_groups.array().maxCoeff() + 1;
           // Sum of residual-forming matrix diagonal elements within each variance group
           //   will be equivalent across elements
           vector_type Rnn_sums (vector_type::Zero (num_vgs));
-          for (ssize_t i = 0; i != measurements.rows(); ++i)
+          for (index_type i = 0; i != index_type(measurements.rows()); ++i)
             Rnn_sums[variance_groups[i]] += R.diagonal()[i];
           // For each variance group, get the sum of squared residuals within that group
           matrix_type result (num_vgs, measurements.cols());
-          for (ssize_t ie = 0; ie != measurements.cols(); ++ie) {
+          for (index_type ie = 0; ie != index_type(measurements.cols()); ++ie) {
             vector_type sse (vector_type::Zero (num_vgs));
-            for (ssize_t i = 0; i != measurements.rows(); ++i)
+            for (index_type i = 0; i != index_type(measurements.rows()); ++i)
               sse[variance_groups[i]] += Math::pow2 (e (i, ie));
             // (Rnn_sum / sse) is the inverse of the estimated variance
             result.col (ie) = (sse.array() / Rnn_sums.array()).sqrt();
@@ -257,7 +257,7 @@ namespace MR
         {
           const vector_type stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design).array().col(0);
           matrix_type result (measurements.cols(), hypotheses.size());
-          for (size_t ic = 0; ic != hypotheses.size(); ++ic)
+          for (index_type ic = 0; ic != hypotheses.size(); ++ic)
             result.col (ic) = abs_effect_size (measurements, design, hypotheses[ic]) * stdev_reciprocal;
           return result;
         }
@@ -292,7 +292,7 @@ namespace MR
             ++*progress;
 #endif
           abs_effect_size.resize (measurements.cols(), hypotheses.size());
-          for (size_t ic = 0; ic != hypotheses.size(); ++ic) {
+          for (index_type ic = 0; ic != hypotheses.size(); ++ic) {
             if (hypotheses[ic].is_F()) {
               abs_effect_size.col (ic).fill (NaN);
             } else {
@@ -351,11 +351,11 @@ namespace MR
           class Source
           {
             public:
-              Source (const size_t num_elements) :
+              Source (const index_type num_elements) :
                   num_elements (num_elements),
                   counter (0),
                   progress (new ProgressBar ("Calculating basic properties of default permutation", num_elements)) { }
-              bool operator() (size_t& element_index)
+              bool operator() (index_type& element_index)
               {
                 element_index = counter++;
                 if (element_index >= num_elements) {
@@ -367,8 +367,8 @@ namespace MR
                 return true;
               }
             private:
-              const size_t num_elements;
-              size_t counter;
+              const index_type num_elements;
+              index_type counter;
               std::unique_ptr<ProgressBar> progress;
           };
 
@@ -389,21 +389,21 @@ namespace MR
                   global_stdev (stdev),
                   num_vgs (variance_groups.size() ? variance_groups.maxCoeff()+1 : 1)
               {
-                assert (size_t(design_fixed.cols()) + extra_data.size() == size_t(hypotheses[0].cols()));
+                assert (index_type(design_fixed.cols()) + extra_data.size() == index_type(hypotheses[0].cols()));
               }
-              bool operator() (const size_t& element_index)
+              bool operator() (const index_type& element_index)
               {
                 const matrix_type element_data = data.col (element_index);
                 matrix_type element_design (design_fixed.rows(), design_fixed.cols() + extra_data.size());
                 element_design.leftCols (design_fixed.cols()) = design_fixed;
                 // For each element-wise design matrix column,
                 //   acquire the data for this particular element, without permutation
-                for (size_t col = 0; col != extra_data.size(); ++col)
+                for (index_type col = 0; col != extra_data.size(); ++col)
                   element_design.col (design_fixed.cols() + col) = (extra_data[col]) (element_index);
                 // For each element-wise design matrix, remove any NaN values
                 //   present in either the input data or imported from the element-wise design matrix column data
-                ssize_t valid_rows = 0;
-                for (ssize_t row = 0; row != data.rows(); ++row) {
+                index_type valid_rows = 0;
+                for (index_type row = 0; row != index_type(data.rows()); ++row) {
                   if (std::isfinite (element_data(row)) && element_design.row (row).allFinite())
                     ++valid_rows;
                 }
@@ -421,8 +421,8 @@ namespace MR
                   matrix_type element_data_finite (valid_rows, 1);
                   matrix_type element_design_finite (valid_rows, element_design.cols());
                   index_array_type variance_groups_finite (variance_groups.size() ? valid_rows : 0);
-                  ssize_t output_row = 0;
-                  for (ssize_t row = 0; row != data.rows(); ++row) {
+                  index_type output_row = 0;
+                  for (index_type row = 0; row != index_type(data.rows()); ++row) {
                     if (std::isfinite (element_data(row)) && element_design.row (row).allFinite()) {
                       element_data_finite(output_row, 0) = element_data(row);
                       element_design_finite.row (output_row) = element_design.row (row);
@@ -463,14 +463,14 @@ namespace MR
               matrix_type& global_std_effect_size;
               matrix_type& global_stdev;
               matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
-              const size_t num_vgs;
+              const index_type num_vgs;
 
               void zero () {
                 local_betas = matrix_type::Zero (global_betas.rows(), 1);
                 local_abs_effect_size = matrix_type::Zero (1, hypotheses.size());
                 local_std_effect_size = matrix_type::Zero (1, hypotheses.size());
                 local_stdev = matrix_type::Zero (num_vgs, 1);
-                for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
+                for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
                   if (hypotheses[ih].is_F())
                     local_abs_effect_size (0, ih) = local_std_effect_size (0, ih) = NaN;
                 }
@@ -480,7 +480,7 @@ namespace MR
           Source source (measurements.cols());
           Functor functor (measurements, fixed_design, extra_data, hypotheses, variance_groups,
                            cond, betas, abs_effect_size, std_effect_size, stdev);
-          Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
+          Thread::run_queue (source, Thread::batch (index_type()), Thread::multi (functor));
         }
 
 
@@ -522,7 +522,7 @@ namespace MR
 
 
 
-        matrix_type Hypothesis::check_rank (const matrix_type& in, const size_t index) const
+        matrix_type Hypothesis::check_rank (const matrix_type& in, const index_type index) const
         {
           // FullPivLU.image() provides column-space of matrix;
           //   here we want the row-space (since it's degeneracy in contrast matrix rows
@@ -585,7 +585,7 @@ namespace MR
                                                 matrix_type& stats,
                                                 matrix_type& zstats) const
         {
-          assert (size_t(shuffling_matrix.rows()) == num_inputs());
+          assert (index_type(shuffling_matrix.rows()) == num_inputs());
           stats .resize (num_elements(), num_hypotheses());
           zstats.resize (num_elements(), num_hypotheses());
 
@@ -594,7 +594,7 @@ namespace MR
 
           // Freedman-Lane for fixed design matrix case
           // Each hypothesis needs to be handled explicitly on its own
-          for (size_t ih = 0; ih != c.size(); ++ih) {
+          for (index_type ih = 0; ih != c.size(); ++ih) {
 
             // First, we perform permutation of the input data
             // In Freedman-Lane, the initial 'effective' regression against the nuisance
@@ -627,7 +627,7 @@ namespace MR
             VAR (XtX[ih].cols());
             VAR (one_over_dof);
 #endif
-            const size_t dof = num_inputs() - partitions[ih].rank_x - partitions[ih].rank_z;
+            const index_type dof = num_inputs() - partitions[ih].rank_x - partitions[ih].rank_z;
             const default_type one_over_dof = 1.0 / default_type(dof);
             sse = (Rm*Sy).colwise().squaredNorm();
 #ifdef GLM_TEST_DEBUG
@@ -635,7 +635,7 @@ namespace MR
             VAR (one_over_dof);
             VAR (sse.size());
 #endif
-            for (size_t ie = 0; ie != num_elements(); ++ie) {
+            for (index_type ie = 0; ie != num_elements(); ++ie) {
               beta.noalias() = c[ih].matrix() * lambdas.col (ie);
               const default_type F = ((beta.transpose() * XtX[ih] * beta) (0,0) / c[ih].rank()) /
                                      (one_over_dof * sse[ie]);
@@ -679,7 +679,7 @@ namespace MR
             gamma_weights (vector_type::Zero (num_hypotheses()))
         {
           // Pre-calculate whatever can be pre-calculated for G-statistic
-          for (size_t input = 0; input != num_inputs(); ++input) {
+          for (index_type input = 0; input != num_inputs(); ++input) {
             // Number of inputs belonging to each VG
             inputs_per_vg[VG[input]]++;
             // Sum of diagonal entries of residual-forming matrix corresponding to each VG
@@ -695,8 +695,8 @@ namespace MR
           VAR (inv_Rnn_sums);
 #endif
           // Multiplication term for calculation of gamma; unique for each hypothesis
-          for (size_t ih = 0; ih != c.size(); ++ih) {
-            const size_t s = c[ih].rank();
+          for (index_type ih = 0; ih != c.size(); ++ih) {
+            const index_type s = c[ih].rank();
             gamma_weights[ih] = 2.0*(s-1) / default_type(s*(s+2));
           }
 #ifdef GLM_TEST_DEBUG
@@ -708,7 +708,7 @@ namespace MR
 
         void TestFixedHeteroscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) const
         {
-          assert (size_t(shuffling_matrix.rows()) == num_inputs());
+          assert (index_type(shuffling_matrix.rows()) == num_inputs());
           stats.resize (num_elements(), num_hypotheses());
           zstats.resize (num_elements(), num_hypotheses());
 
@@ -719,7 +719,7 @@ namespace MR
           VAR (shuffling_matrix);
 #endif
 
-          for (size_t ih = 0; ih != c.size(); ++ih) {
+          for (index_type ih = 0; ih != c.size(); ++ih) {
             // First two steps are identical to the homoscedastic case
             Sy.noalias() = shuffling_matrix * partitions[ih].Rz * y;
 #ifdef GLM_TEST_DEBUG
@@ -739,7 +739,7 @@ namespace MR
             VAR (sq_residuals.cols());
 #endif
             sse = matrix_type::Zero (num_variance_groups(), num_elements());
-            for (size_t input = 0; input != num_inputs(); ++input)
+            for (index_type input = 0; input != num_inputs(); ++input)
               sse.row(VG[input]) += sq_residuals.row(input);
 #ifdef GLM_TEST_DEBUG
             VAR (sse);
@@ -749,8 +749,8 @@ namespace MR
             // These terms are what appears in the weighting matrix based on the VG to which each input belongs;
             //   one row per variance group, one column per element to be tested
             Wterms = sse.array().inverse().colwise() * Rnn_sums;
-            for (size_t col = 0; col != num_elements(); ++col) {
-              for (size_t row = 0; row != num_vgs; ++row) {
+            for (index_type col = 0; col != num_elements(); ++col) {
+              for (index_type row = 0; row != num_vgs; ++row) {
                 if (!std::isfinite (Wterms (row, col)))
                   Wterms (row, col) = 0.0;
               }
@@ -760,10 +760,10 @@ namespace MR
             VAR (Wterms.rows());
             VAR (Wterms.cols());
 #endif
-            for (size_t ie = 0; ie != num_elements(); ++ie) {
+            for (index_type ie = 0; ie != num_elements(); ++ie) {
               // Need to construct the weights diagonal matrix; is unique for each element
               default_type W_trace (0.0);
-              for (size_t input = 0; input != num_inputs(); ++input) {
+              for (index_type input = 0; input != num_inputs(); ++input) {
                 W[input] = Wterms(VG[input], ie);
                 W_trace += W[input];
               }
@@ -775,7 +775,7 @@ namespace MR
               VAR (numerator);
 #endif
               default_type gamma (0.0);
-              for (size_t vg_index = 0; vg_index != num_vgs; ++vg_index)
+              for (index_type vg_index = 0; vg_index != num_vgs; ++vg_index)
                 // Since Wnn is the same for every n in the variance group, can compute that summation as the product of:
                 //   - the value inserted in W for that particular VG
                 //   - the number of inputs that are a part of that VG
@@ -842,7 +842,7 @@ namespace MR
         {
           // Make sure that the specified contrast matrix reflects the full design matrix (with additional
           //   data loaded)
-          assert (hypotheses[0].cols() == M.cols() + ssize_t(importers.size()));
+          assert (index_type(hypotheses[0].cols()) == index_type(M.cols()) + importers.size());
         }
 
 
@@ -862,7 +862,7 @@ namespace MR
           matrix_type XtX, beta;
 
           // Let's loop over elements first, then hypotheses in the inner loop
-          for (ssize_t ie = 0; ie != y.cols(); ++ie) {
+          for (index_type ie = 0; ie != num_elements(); ++ie) {
 
             // For each element (row in y), need to load the additional data for that element
             //   for all subjects in order to construct the design matrix
@@ -870,7 +870,7 @@ namespace MR
             //   rather than re-generating them each time? (More RAM, less CPU)
             // No, most of the time that subject data will be memory-mapped, so pre-loading (in
             //   addition to the duplication of the fixed design matrix contents) would hurt bad
-            for (ssize_t col = 0; col != ssize_t(importers.size()); ++col)
+            for (index_type col = 0; col != importers.size(); ++col)
               extra_column_data.col (col) = importers[col] (ie);
 
             // What can we do here that's common across all hypotheses?
@@ -889,7 +889,7 @@ namespace MR
             //     that contain non-zero values in those columns
             //
             get_mask (ie, element_mask, extra_column_data);
-            const size_t finite_count = element_mask.count();
+            const index_type finite_count = element_mask.count();
             // Additional rejection here:
             // If the number of finite elemets is _not_ equal to the number of subjects
             //   (i.e. at least one subject has been removed), there needs to be a
@@ -926,7 +926,7 @@ namespace MR
 
                 // We now have our permutation (shuffling) matrix and design matrix prepared,
                 //   and can commence regressing the partitioned model of each hypothesis
-                for (size_t ih = 0; ih != c.size(); ++ih) {
+                for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
 
                   const auto partition = c[ih].partition (Mfull_masked);
                   dof (ie, ih) = finite_count - partition.rank_x - partition.rank_z;
@@ -985,17 +985,17 @@ namespace MR
 
 
 
-        void TestVariableHomoscedastic::get_mask (const size_t ie, BitSet& mask, const matrix_type& extra_data) const
+        void TestVariableHomoscedastic::get_mask (const index_type ie, BitSet& mask, const matrix_type& extra_data) const
         {
           mask.clear (true);
           if (nans_in_data) {
-            for (ssize_t row = 0; row != y.rows(); ++row) {
+            for (index_type row = 0; row != num_inputs(); ++row) {
               if (!std::isfinite (y (row, ie)))
                 mask[row] = false;
             }
           }
           if (nans_in_columns) {
-            for (ssize_t row = 0; row != extra_data.rows(); ++row) {
+            for (index_type row = 0; row != extra_data.rows(); ++row) {
               if (!extra_data.row (row).allFinite())
                 mask[row] = false;
             }
@@ -1012,7 +1012,7 @@ namespace MR
                                                     matrix_type& shuffling_matrix_masked,
                                                     vector_type& data_masked) const
         {
-          const size_t finite_count = mask.count();
+          const index_type finite_count = mask.count();
           // Do we need to reduce the size of our matrices / vectors
           //   based on the presence of non-finite values?
           if (finite_count == num_inputs()) {
@@ -1028,8 +1028,8 @@ namespace MR
             Mfull_masked.resize (finite_count, num_factors());
             data_masked.resize (finite_count);
             BitSet perm_matrix_mask (num_inputs(), true);
-            size_t out_index = 0;
-            for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+            index_type out_index = 0;
+            for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
               if (mask[in_index]) {
                 Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
                 Mfull_masked.block (out_index, M.cols(), 1, extra_column_data.cols()) = extra_column_data.row (in_index);
@@ -1038,7 +1038,7 @@ namespace MR
                 // Any row in the permutation matrix that contains a non-zero entry
                 //   in the column corresponding to in_row needs to be removed
                 //   from the permutation matrix
-                for (ssize_t perm_row = 0; perm_row != shuffling_matrix.rows(); ++perm_row) {
+                for (index_type perm_row = 0; perm_row != index_type(shuffling_matrix.rows()); ++perm_row) {
                   if (shuffling_matrix (perm_row, in_index))
                     perm_matrix_mask[perm_row] = false;
                 }
@@ -1051,7 +1051,7 @@ namespace MR
             // Step 1: Remove rows that contain non-zero entries in columns to be removed
             matrix_type temp (finite_count, num_inputs());
             out_index = 0;
-            for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+            for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
               if (perm_matrix_mask[in_index])
                 temp.row (out_index++) = shuffling_matrix.row (in_index);
             }
@@ -1059,7 +1059,7 @@ namespace MR
             // Step 2: Remove columns
             shuffling_matrix_masked.resize (finite_count, finite_count);
             out_index = 0;
-            for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+            for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
               if (mask[in_index])
                 shuffling_matrix_masked.col (out_index++) = temp.col (in_index);
             }
@@ -1091,8 +1091,8 @@ namespace MR
             num_vgs (VG.maxCoeff() + 1),
             gamma_weights (vector_type::Zero (num_hypotheses()))
         {
-          for (size_t ih = 0; ih != c.size(); ++ih) {
-            const size_t s = c[ih].rank();
+          for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
+            const index_type s = c[ih].rank();
             gamma_weights[ih] = 2.0*(s-1) / default_type(s*(s+2));
           }
         }
@@ -1112,12 +1112,12 @@ namespace MR
           index_array_type VG_masked, VG_counts;
           vector_type y_masked, Sy, lambda, sq_residuals, sse, Rnn_sums, Wterms;
 
-          for (ssize_t ie = 0; ie != y.cols(); ++ie) {
+          for (index_type ie = 0; ie != num_elements(); ++ie) {
             // Common ground to the TestVariableHomoscedastic case
-            for (ssize_t col = 0; col != ssize_t(importers.size()); ++col)
+            for (index_type col = 0; col != importers.size(); ++col)
               extra_column_data.col (col) = importers[col] (ie);
             get_mask (ie, element_mask, extra_column_data);
-            const size_t finite_count = element_mask.count();
+            const index_type finite_count = element_mask.count();
             if (finite_count < std::min (num_inputs(), 2 * num_factors())) {
               stats.row (ie).setZero();
               zstats.row (ie).setZero();
@@ -1141,7 +1141,7 @@ namespace MR
                 } else {
                   pinvMfull_masked = Math::pinv (Mfull_masked);
                   Rm.noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked*pinvMfull_masked);
-                  for (size_t ih = 0; ih != c.size(); ++ih) {
+                  for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
                     const auto partition = c[ih].partition (Mfull_masked);
 
                     // At this point the implementation diverges from the TestVariableHomoscedastic case,
@@ -1151,18 +1151,18 @@ namespace MR
                     sq_residuals = (Rm*Sy.matrix()).array().square();
                     sse = vector_type::Zero (num_variance_groups());
                     Rnn_sums = vector_type::Zero (num_variance_groups());
-                    for (size_t input = 0; input != finite_count; ++input) {
+                    for (index_type input = 0; input != finite_count; ++input) {
                       sse[VG_masked[input]] += sq_residuals[input];
                       Rnn_sums[VG_masked[input]] += Rm.diagonal()[input];
                     }
                     Wterms = sse.inverse() * Rnn_sums;
-                    for (size_t vg = 0; vg != num_vgs; ++vg) {
+                    for (index_type vg = 0; vg != num_vgs; ++vg) {
                       if (!std::isfinite (Wterms[vg]))
                         Wterms[vg] = 0.0;
                     }
                     default_type W_trace (0.0);
                     W.resize (finite_count);
-                    for (size_t input = 0; input != finite_count; ++input) {
+                    for (index_type input = 0; input != finite_count; ++input) {
                       W[input] = Wterms[VG_masked[input]];
                       W_trace += W[input];
                     }
@@ -1170,7 +1170,7 @@ namespace MR
                     const default_type numerator = lambda.matrix().transpose() * c[ih].matrix().transpose() * (c[ih].matrix() * (Mfull_masked.transpose() * W.asDiagonal() * Mfull_masked).inverse() * c[ih].matrix().transpose()).inverse() * c[ih].matrix() * lambda.matrix();
 
                     default_type gamma (0.0);
-                    for (size_t vg_index = 0; vg_index != num_vgs; ++vg_index)
+                    for (index_type vg_index = 0; vg_index != num_vgs; ++vg_index)
                       gamma += Math::pow2 (1.0 - ((Wterms[vg_index] * VG_counts[vg_index]) / W_trace)) / Rnn_sums[vg_index];
                     gamma = 1.0 + (gamma_weights[ih] * gamma);
 
@@ -1221,14 +1221,14 @@ namespace MR
         {
           VG_masked.resize (mask.count());
           VG_counts = index_array_type::Zero (num_vgs);
-          size_t out_index = 0;
-          for (size_t in_index = 0; in_index != mask.size(); ++in_index) {
+          index_type out_index = 0;
+          for (index_type in_index = 0; in_index != mask.size(); ++in_index) {
             if (mask[in_index]) {
               VG_masked[out_index++] = VG[in_index];
               VG_counts[VG[in_index]]++;
             }
           }
-          assert (out_index == size_t(VG_masked.size()));
+          assert (out_index == index_type(VG_masked.size()));
         }
 
 

@@ -41,7 +41,7 @@ namespace MR
           for (ssize_t element = 0; element != in.size(); ++element) {
             if (in[element] > 0.0) {
               value_type pvalue = 1.0;
-              for (size_t j = 0; j < size_t(null_dist.size()); ++j) {
+              for (ssize_t j = 0; j < null_dist.size(); ++j) {
                 if (in[element] < null_dist[j]) {
                   pvalue = value_type(j) / value_type(null_dist.size());
                   break;

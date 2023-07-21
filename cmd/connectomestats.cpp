@@ -37,6 +37,7 @@ using namespace App;
 using namespace MR::Math::Stats;
 using namespace MR::Math::Stats::GLM;
 
+using Math::Stats::index_type;
 using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
@@ -153,13 +154,13 @@ class SubjectConnectomeImport : public SubjectDataImportBase
       row = data;
     }
 
-    default_type operator[] (const size_t index) const override
+    default_type operator[] (const index_type index) const override
     {
-      assert (index < size_t(data.size()));
+      assert (index < index_type(data.size()));
       return (data[index]);
     }
 
-    size_t size() const override { return data.size(); }
+    index_type size() const override { return data.size(); }
 
   private:
     vector_type data;
@@ -175,9 +176,9 @@ void run()
   CohortDataImport importer;
   importer.initialise<SubjectConnectomeImport> (argument[0]);
   CONSOLE ("Number of inputs: " + str(importer.size()));
-  const size_t num_edges = importer[0]->size();
+  const index_type num_edges = importer[0]->size();
 
-  for (size_t i = 1; i < importer.size(); ++i) {
+  for (index_type i = 1; i < importer.size(); ++i) {
     if (importer[i]->size() != importer[0]->size())
       throw Exception ("Size of connectome for subject " + str(i) + " (file \"" + importer[i]->name() + "\" does not match that of first subject");
   }
@@ -220,7 +221,7 @@ void run()
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix (argument[2]);
-  if (size_t(design.rows()) != importer.size())
+  if (index_type(design.rows()) != importer.size())
     throw Exception ("number of subjects (" + str(importer.size()) + ") does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
   // Before validating the contrast matrix, we first need to see if there are any
@@ -234,7 +235,7 @@ void run()
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
   }
-  const ssize_t num_factors = design.cols() + extra_columns.size();
+  const index_type num_factors = design.cols() + extra_columns.size();
   CONSOLE ("Number of factors: " + str(num_factors));
   if (extra_columns.size()) {
     CONSOLE ("Number of element-wise design matrix columns: " + str(extra_columns.size()));
@@ -245,13 +246,13 @@ void run()
 
   // Load variance groups
   auto variance_groups = GLM::load_variance_groups (design.rows());
-  const size_t num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
+  const index_type num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
   if (num_vgs > 1)
     CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
   const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
-  const size_t num_hypotheses = hypotheses.size();
+  const index_type num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     throw Exception ("the number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
                      + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
@@ -267,7 +268,7 @@ void run()
   matrix_type data (importer.size(), num_edges);
   {
     ProgressBar progress ("Agglomerating input connectome data", importer.size());
-    for (size_t subject = 0; subject < importer.size(); subject++) {
+    for (index_type subject = 0; subject < importer.size(); subject++) {
       (*importer[subject]) (data.row (subject));
       ++progress;
     }
@@ -275,7 +276,7 @@ void run()
   const bool nans_in_data = !data.allFinite();
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
-  auto postfix = [&] (const size_t i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
+  auto postfix = [&] (const index_type i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
 
   {
     matrix_type betas (num_factors, num_edges);
@@ -288,11 +289,11 @@ void run()
                                  cond, betas, abs_effect_size, std_effect_size, stdev);
 
     ProgressBar progress ("outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
-    for (ssize_t i = 0; i != num_factors; ++i) {
+    for (index_type i = 0; i != num_factors; ++i) {
       File::Matrix::save_matrix (mat2vec.V2M (betas.row(i)), output_prefix + "beta_" + str(i) + ".csv");
       ++progress;
     }
-    for (size_t i = 0; i != num_hypotheses; ++i) {
+    for (index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
         File::Matrix::save_matrix (mat2vec.V2M (abs_effect_size.col(i)), output_prefix + "abs_effect" + postfix(i) + ".csv");
         ++progress;
@@ -310,7 +311,7 @@ void run()
     if (num_vgs == 1) {
       File::Matrix::save_matrix (mat2vec.V2M (stdev.row(0)), output_prefix + "std_dev.csv");
     } else {
-      for (size_t i = 0; i != num_vgs; ++i) {
+      for (index_type i = 0; i != num_vgs; ++i) {
         File::Matrix::save_matrix (mat2vec.V2M (stdev.row(i)), output_prefix + "std_dev" + str(i) + ".csv");
         ++progress;
       }
@@ -336,14 +337,14 @@ void run()
   if (do_nonstationarity_adjustment) {
     empirical_statistic = matrix_type::Zero (num_edges, num_hypotheses);
     Stats::PermTest::precompute_empirical_stat (glm_test, enhancer, empirical_skew, empirical_statistic);
-    for (size_t i = 0; i != num_hypotheses; ++i)
+    for (index_type i = 0; i != num_hypotheses; ++i)
       File::Matrix::save_matrix (mat2vec.V2M (empirical_statistic.col(i)), output_prefix + "empirical" + postfix(i) + ".csv");
   }
 
   // Precompute default statistic, Z-transformation of such, and enhanced statistic
   matrix_type default_statistic, default_zstat, default_enhanced;
   Stats::PermTest::precompute_default_permutation (glm_test, enhancer, empirical_statistic, default_statistic, default_zstat, default_enhanced);
-  for (size_t i = 0; i != num_hypotheses; ++i) {
+  for (index_type i = 0; i != num_hypotheses; ++i) {
     File::Matrix::save_matrix (mat2vec.V2M (default_statistic.col(i)), output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
     File::Matrix::save_matrix (mat2vec.V2M (default_zstat    .col(i)), output_prefix + "Zstat" + postfix(i) + ".csv");
     File::Matrix::save_matrix (mat2vec.V2M (default_enhanced .col(i)), output_prefix + "enhanced" + postfix(i) + ".csv");
@@ -364,11 +365,11 @@ void run()
     if (fwe_strong) {
       File::Matrix::save_vector (null_distribution.col(0), output_prefix + "null_dist.txt");
     } else {
-      for (size_t i = 0; i != num_hypotheses; ++i)
+      for (index_type i = 0; i != num_hypotheses; ++i)
         File::Matrix::save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".txt");
     }
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
-    for (size_t i = 0; i != num_hypotheses; ++i) {
+    for (index_type i = 0; i != num_hypotheses; ++i) {
       File::Matrix::save_matrix (mat2vec.V2M (pvalue_output.col(i)),       output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       File::Matrix::save_matrix (mat2vec.V2M (uncorrected_pvalues.col(i)), output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");
       File::Matrix::save_matrix (mat2vec.V2M (null_contributions.col(i)),  output_prefix + "null_contributions" + postfix(i) + ".csv");
