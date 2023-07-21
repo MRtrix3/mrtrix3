@@ -720,8 +720,8 @@ namespace MR
                 return;
             }
             temp[ib] = true;
-            for (--ib; ib >= 0; --ib)
-              temp[ib] = false;
+            for (index_type ib2 = 0; ib2 != ib; ++ib2)
+              temp[ib2] = false;
             write (temp);
           } while (true);
         }
