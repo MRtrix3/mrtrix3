@@ -23,10 +23,11 @@ add_custom_target(core-version-target ALL
     VERBATIM
 )
 
-add_library(core-version-lib STATIC ${CORE_VERSION_CPP})
-add_dependencies(core-version-lib core-version-target)
+add_library(mrtrix-core-version-lib STATIC ${CORE_VERSION_CPP})
+add_library(mrtrix::core-version-lib ALIAS mrtrix-core-version-lib)
+add_dependencies(mrtrix-core-version-lib core-version-target)
 
-target_include_directories(core-version-lib PRIVATE 
+target_include_directories(mrtrix-core-version-lib PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
@@ -37,7 +38,7 @@ target_compile_definitions(mrtrix-core PUBLIC
 target_link_libraries(mrtrix-core PUBLIC
     Eigen3::Eigen
     ZLIB::ZLIB
-    core-version-lib
+    mrtrix::core-version-lib
     ${FFTW_LIBRARIES}
 )
 
