@@ -39,9 +39,7 @@ file(RELATIVE_PATH relDir
 )
 
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
-set(MRTRIX_MAIN_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}
-    CACHE STRING "MRtrix3 main binary directory")
-    
+
 include(BuildType)
 include(FindFFTW)
 
