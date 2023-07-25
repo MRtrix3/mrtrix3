@@ -1,4 +1,5 @@
 add_subdirectory(binaries)
 add_subdirectory(lib)
+add_subdirectory(scripts)
 add_subdirectory(tools)
 add_subdirectory(unit_tests)
