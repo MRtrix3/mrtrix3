@@ -34,8 +34,11 @@ jobs:
     - name: build
       run: cmake --build ./cmake-build
 
-    - name: test
-      run: cd cmake-build && ctest --output-on-failure
+    - name: unit tests
+      run: ctest -R unit --output-on-failure --test-dir ./cmake-build
+
+    - name: binary tests
+      run: ctest -R bin --output-on-failure --test-dir ./cmake-build
 
   macos-build:
 
@@ -69,8 +72,11 @@ jobs:
     - name: build
       run: cmake --build ./cmake-build
 
-    - name: test
-      run: cd cmake-build && ctest --output-on-failure
+    - name: unit tests
+      run: ctest -R unit --output-on-failure --test-dir ./cmake-build
+
+    - name: binary tests
+      run: ctest -R bin --output-on-failure --test-dir ./cmake-build
 
   windows-build:
 
@@ -128,5 +134,9 @@ jobs:
       - name: build
         run: cmake --build cmake-build
       
-      - name: test
-        run: cd cmake-build && ctest --output-on-failure
+      - name: unit tests
+        run: ctest -R unit --output-on-failure --test-dir ./cmake-build
+  
+      - name: binary tests
+        run: ctest -R bin --output-on-failure --test-dir ./cmake-build
+  
