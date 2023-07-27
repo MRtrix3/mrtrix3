@@ -40,6 +40,12 @@ add_dependencies(mrtrix-exec-version-lib exec-version-target)
 add_library(mrtrix-headless SHARED ${HEADLESS_SOURCES})
 add_library(mrtrix::headless ALIAS mrtrix-headless)
 
+# On Windows, the library need to be in the same directory as the executables
+if(WIN32)
+    set_target_properties(mrtrix-headless PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
+    )
+endif()
 
 target_include_directories(mrtrix-exec-version-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
