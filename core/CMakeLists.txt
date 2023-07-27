@@ -4,6 +4,8 @@ find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(ZLIB REQUIRED)
 find_package(FFTW REQUIRED)
 find_package(Git QUIET)
+find_package(PNG QUIET)
+find_package(TIFF QUIET)
 
 add_library(mrtrix-core SHARED ${CORE_SRCS})
 add_library(mrtrix::core ALIAS mrtrix-core)
@@ -41,6 +43,20 @@ target_include_directories(mrtrix-core-version-lib PRIVATE
 target_compile_definitions(mrtrix-core PUBLIC 
     MRTRIX_BASE_VERSION="${MRTRIX_BASE_VERSION}"
 )
+
+if(PNG_FOUND)
+    target_compile_definitions(mrtrix-core PUBLIC MRTRIX_PNG_SUPPORT)
+    target_link_libraries(mrtrix-core PUBLIC PNG::PNG)
+else()
+    message(WARNING "libpng not found, disabling PNG support")
+endif()
+
+if(TIFF_FOUND)
+    target_compile_definitions(mrtrix-core PUBLIC MRTRIX_TIFF_SUPPORT)
+    target_link_libraries(mrtrix-core PUBLIC TIFF::TIFF)
+else()
+    message(WARNING "libtiff not found, disabling TIFF support")
+endif()
 
 target_link_libraries(mrtrix-core PUBLIC
     Eigen3::Eigen
