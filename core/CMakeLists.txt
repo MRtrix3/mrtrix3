@@ -8,6 +8,13 @@ find_package(Git QUIET)
 add_library(mrtrix-core SHARED ${CORE_SRCS})
 add_library(mrtrix::core ALIAS mrtrix-core)
 
+# On Windows, the library need to be in the same directory as the executables
+if(WIN32)
+    set_target_properties(mrtrix-core PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
+    )
+endif()
+
 set(CORE_VERSION_CPP ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
 
 add_custom_target(core-version-target ALL
