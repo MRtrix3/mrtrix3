@@ -20,7 +20,10 @@ function(add_unit_test FILE_SRC)
         mrtrix::exec-version-lib
         mrtrix::tests-lib
     )
-    set_target_properties(${NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
+    set_target_properties(${NAME} PROPERTIES 
+        LINK_DEPENDS_NO_SHARED true
+        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
+    )
     add_test(
         NAME unittest_${NAME}
         COMMAND ${BASH} -c "$<TARGET_FILE:${NAME}>"
