@@ -72,6 +72,7 @@ endif()
 add_subdirectory(cmd)
 add_subdirectory(core)
 add_subdirectory(python)
+add_subdirectory(share)
 add_subdirectory(src)
 
 if(PROJECT_IS_TOP_LEVEL AND MRTRIX_BUILD_TESTS)
