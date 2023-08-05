@@ -88,7 +88,7 @@ jobs:
 
     env:
       CFLAGS: -Werror
-      PACKAGES: "qt5 eigen pkg-config fftw libpng numpy"
+      PACKAGES: "qt5 eigen pkg-config fftw libpng"
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
       CXX_COMPILER_LAUNCHER: sccache
@@ -100,6 +100,7 @@ jobs:
       run: |
          brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
          brew install $PACKAGES || brew install $PACKAGES
+         /usr/bin/python3 -m ensurepip && /usr/bin/pip3 install numpy
          brew link --force qt5
 
     - name: Run sccache-cache
