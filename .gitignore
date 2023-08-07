@@ -1,9 +1,4 @@
 *.o
-*_moc.cpp
-*.so
-*.dll
-*.dylib
-*.a
 *~
 *.swp
 *.pyc
@@ -15,15 +10,10 @@
 *.mri
 *.img
 *.hdr
-# *.qrc
 *.rste
 /python/lib/mrtrix3/_version.py
-/test/src/project_version.h
 /scripts/mrtrix_bash_completion
-/release/
 /dev/
-/bin/
-/tmp/
 /compiled_docs/
 /.vscode/
 .cproject
@@ -33,19 +23,11 @@
 .pydevproject
 *.config
 *.creator
-# *.txt
 *.log
 *.creator.user
 *.files
 *.includes
 *.code-workspace
-/debug/
-/assert/
-testing.log
-testing/build.log
-testing/bin/
-testing/src/project_version.cpp
-testing/src/project_version.h
 .__tmp.log
 .check_syntax.tmp
 .check_syntax2.tmp
