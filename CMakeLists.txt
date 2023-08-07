@@ -82,3 +82,15 @@ add_subdirectory(src)
 if(PROJECT_IS_TOP_LEVEL AND MRTRIX_BUILD_TESTS)
     add_subdirectory(testing)
 endif()
+
+add_custom_target(Github SOURCES
+    .github/pull_request_template.md
+    .github/ISSUE_TEMPLATE/bug_report.md
+    .github/ISSUE_TEMPLATE/custom.md
+    .github/ISSUE_TEMPLATE/feature_request.md
+    .github/workflows/checks.yml
+    .github/workflows/package-linux-anaconda.yml
+    .github/workflows/package-macos-anaconda.yml
+    .github/workflows/package-macos-native.yml
+    .github/workflows/package-windows-msys2.yml
+)
