@@ -228,10 +228,15 @@ namespace MR {
 
 
 
-        if (parents.size())
-          if ((parents.back().end && data > parents.back().end) ||
-              (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM))
+        if (parents.size()) {
+          if (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM) {
             parents.pop_back();
+          }
+          else { // Undefined length encoding:
+            while (parents.size() && parents.back().end && data > parents.back().end)
+              parents.pop_back();
+          }
+        }
 
         if (is_new_sequence()) {
           if (size == LENGTH_UNDEFINED)
