@@ -17,7 +17,7 @@
 #include "header.h"
 #include "image.h"
 
-#include "math/math.h"
+#include "file/matrix.h"
 #include "misc/bitset.h"
 
 #include "fixel/legacy/fixel_metric.h"
@@ -152,7 +152,7 @@ namespace MR {
         }
 
         class Functor
-        { 
+        {
           public:
             Functor (TckFactor& master) :
                 master (master),
@@ -385,14 +385,14 @@ namespace MR {
           weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
                         0.0 :
                         std::exp (coefficients[i]);
-        save_vector (weights, path);
+        File::Matrix::save_vector (weights, path);
       }
 
 
 
       void TckFactor::output_coefficients (const std::string& path) const
       {
-        save_vector (coefficients, path);
+        File::Matrix::save_vector (coefficients, path);
       }
 
 

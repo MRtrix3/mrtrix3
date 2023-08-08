@@ -17,6 +17,7 @@
 #include "command.h"
 #include "image.h"
 #include "algo/threaded_loop.h"
+#include "file/matrix.h"
 #include "interp/linear.h"
 
 using namespace MR;
@@ -115,7 +116,7 @@ void run ()
 
     } catch (Exception& E) {
       try {
-        std::unique_ptr<TransformBase> transform (new Linear (load_transform (argument[i])));
+        std::unique_ptr<TransformBase> transform (new Linear (File::Matrix::load_transform (argument[i])));
         transform_list.push_back (std::move (transform));
       } catch (Exception& E) {
         throw Exception ("error reading input file: " + str(argument[i]) + ". Does not appear to be a 4D warp image or 4x4 linear transform.");
@@ -146,7 +147,7 @@ void run ()
       index--;
       progress++;
     }
-    save_transform (composed, argument[argument.size() - 1]);
+    File::Matrix::save_transform (composed, argument[argument.size() - 1]);
 
   } else {
     Header output_header (*template_header);

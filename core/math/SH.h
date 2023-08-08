@@ -17,6 +17,8 @@
 #ifndef __math_SH_h__
 #define __math_SH_h__
 
+#include "exception.h"
+#include "mrtrix.h"
 #include "math/legendre.h"
 #include "math/least_squares.h"
 

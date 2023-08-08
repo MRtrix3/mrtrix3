@@ -23,6 +23,7 @@
 #include "dwi/tensor.h"
 #include "dwi/directions/predefined.h"
 #include "math/constrained_least_squares.h"
+#include "file/matrix.h"
 
 using namespace MR;
 using namespace App;
@@ -299,10 +300,10 @@ void run ()
 
   Eigen::MatrixXd Aneq;
   if (constrain) {
-    Eigen::MatrixXd constr_dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
     opt = get_options ("directions");
-    if (opt.size())
-      constr_dirs = load_matrix (opt[0][0]);
+    const Eigen::MatrixXd constr_dirs = opt.size() ?
+                                        File::Matrix::load_matrix (opt[0][0]) :
+                                        Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
     Eigen::MatrixXd tmp = DWI::grad2bmatrix<double> (constr_dirs, dki);
     if (dki) {
       auto maxb = grad.col(3).maxCoeff();

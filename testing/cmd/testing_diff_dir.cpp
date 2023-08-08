@@ -15,8 +15,9 @@
  */
 
 #include "command.h"
-#include "progressbar.h"
 #include "datatype.h"
+#include "progressbar.h"
+#include "file/matrix.h"
 
 using namespace MR;
 using namespace App;
@@ -38,8 +39,8 @@ void run ()
 {
   double tol = argument[2];
 
-  Eigen::MatrixXd dir1 = load_matrix (argument[0]);
-  Eigen::MatrixXd dir2 = load_matrix (argument[1]);
+  Eigen::MatrixXd dir1 = File::Matrix::load_matrix (argument[0]);
+  Eigen::MatrixXd dir2 = File::Matrix::load_matrix (argument[1]);
 
   if (dir1.cols() != dir2.cols())
     throw Exception ("number of columns is not the same");
