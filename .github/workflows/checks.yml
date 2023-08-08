@@ -150,7 +150,6 @@ jobs:
           install: |
             git
             python
-            python-pip
             ${{env.MINGW_PACKAGE_PREFIX}}-bc
             ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
             ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
@@ -161,10 +160,6 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-qt5-base
             ${{env.MINGW_PACKAGE_PREFIX}}-qt5-svg
             ${{env.MINGW_PACKAGE_PREFIX}}-zlib
-
-      - name: Install numpy
-        run: |
-          pip install numpy
 
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.3

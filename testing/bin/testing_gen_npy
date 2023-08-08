@@ -2,17 +2,22 @@
 
 import os
 import sys
-import numpy as np
+
+dirname = sys.argv[1]
+if not os.path.exists(dirname):
+    os.makedirs(dirname)
+
+try:
+    import numpy as np
+except ImportError:
+    sys.stderr.write('WARNING: Error importing numpy module; cannot conduct npy unit tests\n')
+    sys.exit(0)
 
 dtypes = ['?', 'b', 'B']
 for bytes in [2, 4, 8]:
     for kind in ['i', 'u', 'f']:
         for endianness in ['<', '>']:
             dtypes.append(endianness + kind + str(bytes))
-
-dirname = sys.argv[1]
-if not os.path.exists(dirname):
-    os.makedirs(dirname)
 
 def genpath(prefix, ord, dt):
     return os.path.join(dirname, prefix + '_' + ord + '_' + dt.replace('<', 'LE').replace('>', 'BE').replace('?', 'BOOL') + '.npy')
