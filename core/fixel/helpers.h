@@ -29,7 +29,7 @@
 namespace MR
 {
   class InvalidFixelDirectoryException : public Exception
-  { 
+  {
     public:
       InvalidFixelDirectoryException (const std::string& msg) : Exception(msg) {}
       InvalidFixelDirectoryException (const Exception& previous_exception, const std::string& msg)
@@ -306,6 +306,7 @@ namespace MR
       header.size(0) = nfixels;
       header.size(1) = 1;
       header.size(2) = 1;
+      header.spacing(0) = header.spacing(1) = header.spacing(2) = 1.0;
       header.stride(0) = 1;
       header.stride(1) = 2;
       header.stride(2) = 3;

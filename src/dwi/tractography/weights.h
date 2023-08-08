@@ -23,7 +23,6 @@ namespace MR
 {
   namespace DWI
   {
-
     namespace Tractography
     {
 
