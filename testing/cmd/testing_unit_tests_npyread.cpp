@@ -147,6 +147,7 @@ void run ()
 {
   Path::Dir dir (argument[0]);
   vector<std::string> errors_basic, errors_advanced;
+  size_t check_count = 0;
   size_t wrong_endianness_count = 0;
   size_t advanced_boolean_count = 0;
   std::string entry;
@@ -187,12 +188,18 @@ void run ()
     }
     if (!verify_advanced (fullpath, info))
       errors_advanced.push_back (basename);
+    ++check_count;
   }
-  CONSOLE (str(wrong_endianness_count) + " files skipped from advanced read due to possessing mismatched endianness");
-  CONSOLE (str(advanced_boolean_count) + " files skipped from advanced read due to numpy not exporting packed boolean data");
-  if (errors_basic.size() || errors_advanced.size())
-    throw Exception ("Errors on basic read in " + str(errors_basic.size()) + " files & advanced read in " + str(errors_advanced.size()) + " files: "
-                     "[" + join(errors_basic, ",") + "] [" + join(errors_advanced, ",") + "]");
-  CONSOLE ("All NPY format read checks OK");
+
+  if (check_count) {
+    CONSOLE (str(wrong_endianness_count) + " files skipped from advanced read due to possessing mismatched endianness");
+    CONSOLE (str(advanced_boolean_count) + " files skipped from advanced read due to numpy not exporting packed boolean data");
+    if (errors_basic.size() || errors_advanced.size())
+      throw Exception ("Errors on basic read in " + str(errors_basic.size()) + " files & advanced read in " + str(errors_advanced.size()) + " files: "
+                      "[" + join(errors_basic, ",") + "] [" + join(errors_advanced, ",") + "]");
+    CONSOLE (str(check_count) + " NPY format read checks OK");
+  } else {
+    WARN ("NPY input directory empty; no checks performed");
+  }
 }
 

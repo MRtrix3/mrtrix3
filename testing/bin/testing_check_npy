@@ -2,7 +2,12 @@
 
 import os
 import sys
-import numpy as np
+
+try:
+    import numpy as np
+except ImportError:
+    sys.stderr.write('WARNING: Unable to import numpy module; validity of .npy files will not be checked\n')
+    sys.exit(0)
 
 REFERENCE_1D = np.arange(0, 3)
 REFERENCE_1D_BOOL = REFERENCE_1D.astype('?')
