@@ -15,6 +15,7 @@
  */
 
 #include "algo/histogram.h"
+#include "file/matrix.h"
 
 namespace MR
 {
@@ -46,7 +47,7 @@ namespace MR
       {
         Eigen::MatrixXd M;
         try {
-          M = load_matrix (path);
+          M = File::Matrix::load_matrix (path);
           if (M.cols() == 1)
             throw Exception ("Histogram template must have at least 2 columns");
           vector<default_type>().swap (data);

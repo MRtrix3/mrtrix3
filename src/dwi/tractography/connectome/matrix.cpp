@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/connectome/matrix.h"
 
+#include "file/matrix.h"
 #include "file/path.h"
 #include "misc/bitset.h"
 
@@ -229,9 +230,9 @@ void Matrix<T>::save (const std::string& path,
     if (zero_diagonal)
       WARN ("Option -zero_diagonal not applicable when generating connectivity vector; ignored");
     if (keep_unassigned)
-      save_vector (data, path);
+      File::Matrix::save_vector (data, path);
     else
-      save_vector (data.tail(data.size()-1), path);
+      File::Matrix::save_vector (data.tail(data.size()-1), path);
     return;
   }
 

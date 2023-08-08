@@ -55,11 +55,11 @@ namespace MR
         //   a t-test and an F-test for the sake of signedness (and taking the square root);
         //   this is managed by having two separate constructor templates
         class Hypothesis
-        { 
+        {
           public:
 
             class Partition
-            { 
+            {
               public:
                 Partition (const matrix_type& x, const matrix_type& z) :
                     X (x),
@@ -78,16 +78,16 @@ namespace MR
                 const matrix_type Hz, Rz;
                 // rank_x: Rank of X
                 // rank_z: Rank of Z
-                const size_t rank_x, rank_z;
+                const index_type rank_x, rank_z;
             };
 
-            Hypothesis (matrix_type::ConstRowXpr& in, const size_t index) :
+            Hypothesis (matrix_type::ConstRowXpr& in, const index_type index) :
                 c (in),
                 r (Math::rank (c)),
                 F (false),
                 i (index) { check_nonzero(); }
 
-            Hypothesis (const matrix_type& in, const size_t index) :
+            Hypothesis (const matrix_type& in, const index_type index) :
                 c (check_rank (in, index)),
                 r (Math::rank (c)),
                 F (true),
@@ -96,26 +96,26 @@ namespace MR
             Partition partition (const matrix_type&) const;
 
             const matrix_type& matrix() const { return c; }
-            ssize_t cols() const { return c.cols(); }
-            size_t rank() const { return r; }
+            index_type cols() const { return c.cols(); }
+            index_type rank() const { return r; }
             bool is_F() const { return F; }
             std::string name() const { return std::string(F ? "F" : "t") + str(i+1); }
 
           private:
             const matrix_type c;
-            const size_t r;
+            const index_type r;
             const bool F;
-            const size_t i;
+            const index_type i;
 
             void check_nonzero() const;
-            matrix_type check_rank (const matrix_type&, const size_t) const;
+            matrix_type check_rank (const matrix_type&, const index_type) const;
         };
 
 
 
         void check_design (const matrix_type&, const bool);
 
-        index_array_type load_variance_groups (const size_t num_inputs);
+        index_array_type load_variance_groups (const index_type num_inputs);
 
         vector<Hypothesis> load_hypotheses (const std::string& file_path);
 
@@ -210,7 +210,7 @@ namespace MR
 
         // Define a base class for GLM tests
         class TestBase
-        { 
+        {
           public:
             TestBase (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
                 y (measurements),
@@ -243,11 +243,11 @@ namespace MR
             virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) const = 0;
 
 
-            size_t num_inputs () const { return M.rows(); }
-            size_t num_elements () const { return y.cols(); }
-            size_t num_hypotheses () const { return c.size(); }
+            index_type num_inputs () const { return M.rows(); }
+            index_type num_elements () const { return y.cols(); }
+            index_type num_hypotheses () const { return c.size(); }
 
-            virtual size_t num_factors() const { return M.cols(); }
+            virtual index_type num_factors() const { return M.cols(); }
 
           protected:
             const matrix_type& y, M;
@@ -271,7 +271,7 @@ namespace MR
          *     equivalent across all inputs.
          */
         class TestFixedHomoscedastic : public TestBase
-        { 
+        {
           public:
             /*!
              * @param measurements a matrix storing the measured data across subjects in each column
@@ -313,7 +313,7 @@ namespace MR
          *     all observations can be considered to have the same variance.
          */
         class TestFixedHeteroscedastic : public TestFixedHomoscedastic
-        { 
+        {
           public:
             /*!
              * @param measurements a matrix storing the measured data across subjects in each column
@@ -326,7 +326,7 @@ namespace MR
                                       const vector<Hypothesis>& hypotheses,
                                       const index_array_type& variance_groups);
 
-            size_t num_variance_groups() const { return num_vgs; }
+            index_type num_variance_groups() const { return num_vgs; }
 
             /*! Compute the statistics
              * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -339,9 +339,9 @@ namespace MR
             // Variance group assignments
             const index_array_type& VG;
             // Total number of variance groups
-            const size_t num_vgs;
+            const index_type num_vgs;
             // Number of inputs that are part of each variance group
-            vector<size_t> inputs_per_vg;
+            vector<index_type> inputs_per_vg;
             // Might as well construct this in the functor rather than here,
             //   given 1 value for each VG is computed
             vector_type Rnn_sums;
@@ -371,7 +371,7 @@ namespace MR
          *     equivalent across all inputs.
          */
         class TestVariableHomoscedastic : public TestBase
-        { 
+        {
           public:
             TestVariableHomoscedastic (const vector<CohortDataImport>& importers,
                                        const matrix_type& measurements,
@@ -390,13 +390,13 @@ namespace MR
              */
             void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) const override;
 
-            size_t num_factors() const override { return M.cols() + importers.size(); }
+            index_type num_factors() const override { return M.cols() + importers.size(); }
 
           protected:
             const vector<CohortDataImport>& importers;
             const bool nans_in_data, nans_in_columns;
 
-            void get_mask (const size_t ie, BitSet&, const matrix_type& extra_columns) const;
+            void get_mask (const index_type ie, BitSet&, const matrix_type& extra_columns) const;
             void apply_mask (const BitSet& mask,
                              matrix_type::ConstColXpr data,
                              const matrix_type& shuffling_matrix,
@@ -425,7 +425,7 @@ namespace MR
          *     all observations can be considered to have the same variance.
          */
         class TestVariableHeteroscedastic : public TestVariableHomoscedastic
-        { 
+        {
           public:
             TestVariableHeteroscedastic (const vector<CohortDataImport>& importers,
                                          const matrix_type& measurements,
@@ -445,14 +445,14 @@ namespace MR
              */
             void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) const override;
 
-            size_t num_factors() const override { return M.cols() + importers.size(); }
-            size_t num_variance_groups() const { return num_vgs; }
+            index_type num_factors() const override { return M.cols() + importers.size(); }
+            index_type num_variance_groups() const { return num_vgs; }
 
           protected:
             // Only a limited amount can be pre-calculated from the variance group information;
             //   other data may vary as rows of the design matrix & data are excluded
             const index_array_type& VG;
-            const size_t num_vgs;
+            const index_type num_vgs;
             vector_type gamma_weights;
 
             // Need to apply the row selection mask to the variance groups in addition to other data

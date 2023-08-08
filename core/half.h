@@ -14,33 +14,22 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __math_stats_types_h__
-#define __math_stats_types_h__
+#ifndef __mrtrix_half_h__
+#define __mrtrix_half_h__
 
-#include "types.h"
-
-#include <Eigen/Dense>
-
-namespace MR
+namespace half_float
 {
-  namespace Math
-  {
-    namespace Stats
-    {
-
-
-
-      using value_type = MR::default_type;
-      using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
-      using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
-      using index_type = uint32_t;
-      using index_array_type = Eigen::Array<index_type, Eigen::Dynamic, 1>;
-
-
-
-    }
-  }
+  class half;
 }
 
+namespace std
+{
+  template <> struct is_fundamental<half_float::half> : std::true_type { };
+  template <> struct is_floating_point<half_float::half> : std::true_type { };
+  template <> struct is_arithmetic<half_float::half> : std::true_type { };
+  template <> struct is_integral<half_float::half> : std::false_type { };
+}
+
+#include "half.hpp"
 
 #endif

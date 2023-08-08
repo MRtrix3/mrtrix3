@@ -118,6 +118,7 @@ namespace MR
           case DataType::UInt64:
           case DataType::Int64:
             H.datatype() = DataType::Int32BE; break;
+          case DataType::Float16:
           case DataType::Float32:
           case DataType::Float64:
             H.datatype() = DataType::Float32BE; break;

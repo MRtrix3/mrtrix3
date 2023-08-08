@@ -17,8 +17,9 @@
 #include <cstdio>
 #include <sstream>
 #include "command.h"
-#include "file/ofstream.h"
+#include "file/matrix.h"
 #include "file/name_parser.h"
+#include "file/ofstream.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "raw.h"
@@ -296,7 +297,7 @@ class ASCIIReader: public ReaderInterface<float> {
     bool operator() (Streamline<float>& tck) {
       tck.clear();
       if (item < list.size()) {
-        auto t = load_matrix<float>(list[item].name());
+        auto t = File::Matrix::load_matrix<float>(list[item].name());
         for (size_t i = 0; i < size_t(t.rows()); i++)
           tck.push_back(Eigen::Vector3f(t.row(i)));
         item++;

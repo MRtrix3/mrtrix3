@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "file/matrix.h"
 #include "connectome/enhance.h"
 
 using namespace MR;
@@ -51,7 +52,7 @@ void usage ()
 
 void run ()
 {
-  MR::Connectome::matrix_type connectome = load_matrix (argument[0]);
+  MR::Connectome::matrix_type connectome = File::Matrix::load_matrix (argument[0]);
   MR::Connectome::check(connectome);
   const int op = argument[1];
   const std::string& output_path = argument[2];
@@ -67,5 +68,5 @@ void run ()
       default: assert (0);
     }
 
-  MR::save_matrix(connectome, output_path);
+  File::Matrix::save_matrix(connectome, output_path);
 }

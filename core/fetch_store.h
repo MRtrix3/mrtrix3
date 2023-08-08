@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_io_fetch_store_h__
-#define __image_io_fetch_store_h__
+#ifndef __fetch_store_h__
+#define __fetch_store_h__
 
 #include "raw.h"
 #include "datatype.h"
@@ -24,19 +24,34 @@ namespace MR
 {
 
 
+
   template <typename ValueType>
-    typename std::enable_if<!is_data_type<ValueType>::value, void>::type __set_fetch_store_functions (
+    typename std::enable_if<!is_data_type<ValueType>::value, std::function<ValueType(const void*,size_t)>>::type __set_fetch_function (const DataType /*datatype*/) { }
+  template <typename ValueType>
+    typename std::enable_if<is_data_type<ValueType>::value, std::function<ValueType(const void*,size_t)>>::type __set_fetch_function (const DataType datatype);
+
+  template <typename ValueType>
+    typename std::enable_if<!is_data_type<ValueType>::value, std::function<void(ValueType,void*,size_t)>>::type __set_store_function (const DataType /*datatype*/) { }
+  template <typename ValueType>
+    typename std::enable_if<is_data_type<ValueType>::value, std::function<void(ValueType,void*,size_t)>>::type __set_store_function (const DataType datatype);
+
+
+
+
+
+  template <typename ValueType>
+    typename std::enable_if<!is_data_type<ValueType>::value, void>::type __set_fetch_store_scale_functions (
         std::function<ValueType(const void*,size_t,default_type,default_type)>& /*fetch_func*/,
         std::function<void(ValueType,void*,size_t,default_type,default_type)>& /*store_func*/,
-        DataType /*datatype*/) { }
+        const DataType /*datatype*/) { }
 
 
 
   template <typename ValueType>
-    typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_store_functions (
+    typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_store_scale_functions (
         std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func,
         std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func,
-        DataType datatype);
+        const DataType datatype);
 
 
 }

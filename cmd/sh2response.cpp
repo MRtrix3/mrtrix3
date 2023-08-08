@@ -22,7 +22,7 @@
 #include "algo/loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "math/math.h"
+#include "file/matrix.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 
@@ -147,6 +147,6 @@ void run ()
     std::cout << "\n";
   }
   else {
-    save_vector(response, argument[3]);
+    File::Matrix::save_vector (response, argument[3]);
   }
 }

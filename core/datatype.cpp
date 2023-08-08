@@ -51,10 +51,15 @@ namespace MR
   constexpr uint8_t DataType::UInt64LE;
   constexpr uint8_t DataType::Int64BE;
   constexpr uint8_t DataType::UInt64BE;
+  constexpr uint8_t DataType::Float16LE;
+  constexpr uint8_t DataType::Float16BE;
   constexpr uint8_t DataType::Float32LE;
   constexpr uint8_t DataType::Float32BE;
   constexpr uint8_t DataType::Float64LE;
   constexpr uint8_t DataType::Float64BE;
+  constexpr uint8_t DataType::CFloat16;
+  constexpr uint8_t DataType::CFloat16LE;
+  constexpr uint8_t DataType::CFloat16BE;
   constexpr uint8_t DataType::CFloat32;
   constexpr uint8_t DataType::CFloat32LE;
   constexpr uint8_t DataType::CFloat32BE;
@@ -64,11 +69,11 @@ namespace MR
   constexpr uint8_t DataType::Native;
 
   const char* DataType::identifiers[] = {
-    "float32", "float32le", "float32be", "float64", "float64le", "float64be",
+    "float16", "float16le", "float16be", "float32", "float32le", "float32be", "float64", "float64le", "float64be",
     "int64", "uint64", "int64le", "uint64le", "int64be", "uint64be",
     "int32", "uint32", "int32le", "uint32le", "int32be", "uint32be",
     "int16", "uint16", "int16le", "uint16le", "int16be", "uint16be",
-    "cfloat32", "cfloat32le", "cfloat32be", "cfloat64", "cfloat64le", "cfloat64be",
+    "cfloat16", "cfloat16le", "cfloat16be", "cfloat32", "cfloat32le", "cfloat32be", "cfloat64", "cfloat64le", "cfloat64be",
     "int8", "uint8", "bit", NULL
   };
 
@@ -76,6 +81,13 @@ namespace MR
   DataType DataType::parse (const std::string& spec)
   {
     std::string str (lowercase (spec));
+
+    if (str == "float16")
+      return Float16;
+    if (str == "float16le")
+      return Float16LE;
+    if (str == "float16be")
+      return Float16BE;
 
     if (str == "float32") 
       return Float32;
@@ -130,6 +142,13 @@ namespace MR
     if (str == "uint16be")
       return UInt16BE;
 
+    if (str == "cfloat16")
+      return CFloat16;
+    if (str == "cfloat16le")
+      return CFloat16LE;
+    if (str == "cfloat16be")
+      return CFloat16BE;
+
     if (str == "cfloat32") 
       return CFloat32;
     if (str == "cfloat32le")
@@ -171,6 +190,8 @@ namespace MR
         return 32;
       case UInt64:
         return 64;
+      case Float16:
+        return is_complex() ? 32 : 16;
       case Float32:
         return is_complex() ? 64 : 32;
       case Float64:
@@ -224,6 +245,11 @@ namespace MR
       case UInt64BE:
         return "unsigned 64 bit integer (big endian)";
 
+      case Float16LE:
+        return "16 bit float (little endian)";
+      case Float16BE:
+        return "16 bit float (big endian)";
+
       case Float32LE:
         return "32 bit float (little endian)";
       case Float32BE:
@@ -233,6 +259,11 @@ namespace MR
         return "64 bit float (little endian)";
       case Float64BE:
         return "64 bit float (big endian)";
+
+      case CFloat16LE:
+        return "Complex 16 bit float (little endian)";
+      case CFloat16BE:
+        return "Complex 16 bit float (big endian)";
 
       case CFloat32LE:
         return "Complex 32 bit float (little endian)";
@@ -298,6 +329,11 @@ namespace MR
       case UInt64BE:
         return "UInt64BE";
 
+      case Float16LE:
+        return "Float16LE";
+      case Float16BE:
+        return "Float16BE";
+
       case Float32LE:
         return "Float32LE";
       case Float32BE:
@@ -307,6 +343,11 @@ namespace MR
         return "Float64LE";
       case Float64BE:
         return "Float64BE";
+
+      case CFloat16LE:
+        return "CFloat16LE";
+      case CFloat16BE:
+        return "CFloat16BE";
 
       case CFloat32LE:
         return "CFloat32LE";
@@ -330,10 +371,14 @@ namespace MR
         return "Int64";
       case UInt64:
         return "UInt64";
+      case Float16:
+        return "Float16";
       case Float32:
         return "Float32";
       case Float64:
         return "Float64";
+      case CFloat16:
+        return "CFloat16";
       case CFloat32:
         return "CFloat32";
       case CFloat64:

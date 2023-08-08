@@ -30,11 +30,11 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev python3-numpy
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
-        
+
     - name: configure
       run: ./configure -assert || { cat configure.log; false; }
 
@@ -70,11 +70,11 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+         sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
-      
+
     - name: configure
       run: ./configure -nooptim || { cat configure.log; false; }
 
@@ -100,6 +100,7 @@ jobs:
       run: |
          brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
          brew install $PACKAGES || brew install $PACKAGES
+         /usr/bin/python3 -m ensurepip && /usr/bin/pip3 install numpy
          brew link --force qt5
 
     - name: Run sccache-cache
@@ -141,7 +142,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      
+
       - uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
@@ -162,12 +163,12 @@ jobs:
 
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.3
-      
+
       - name: export sccache to msys2 shell
         run: |
           export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
           echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
-          
+
       - name: configure
         run: |
           export CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}}

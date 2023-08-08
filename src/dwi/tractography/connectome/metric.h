@@ -21,12 +21,14 @@
 #include "image.h"
 #include "types.h"
 #include "algo/loop.h"
+#include "file/matrix.h"
 #include "interp/linear.h"
 
 #include "connectome/connectome.h"
 
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/connectome/connectome.h"
+
 
 
 
@@ -120,7 +122,7 @@ class Metric {
         return;
       }
       file_path = Path::basename (path);
-      file_values = MR::load_vector (path);
+      file_values = File::Matrix::load_vector (path);
     }
 
 
