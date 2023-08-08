@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,6 @@
 #include "app.h"
 #include "thread_queue.h"
 #include "types.h"
-#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "fixel/helpers.h"
@@ -39,19 +38,12 @@ namespace MR
 
 
 
-      void InitFixel::add (const vector<index_type>& indices)
+      template <class ElementType>
+      void InitFixelBase<ElementType>::add (const MappedTrack& mapped_track)
       {
-        if ((*this).empty()) {
-          (*this).reserve (indices.size());
-          for (auto i : indices)
-            (*this).emplace_back (InitElement (i));
-          track_count = 1;
-          return;
-        }
-
         ssize_t self_index = 0, in_index = 0;
 
-        // For anything in indices that doesn't yet appear in *this,
+        // For anything in mapped_track that doesn't yet appear in *this,
         //   add to this list; once completed, extend *this by the appropriate
         //   amount, and insert these into the appropriate locations
         // Need to continue making use of the existing allocated memory
@@ -62,15 +54,15 @@ namespace MR
         // - On second pass, from back to front, move elements from previous back of vector to new back,
         //   inserting new elements at appropriate locations to retain sortedness of list
         const ssize_t old_size = (*this).size();
-        const ssize_t in_count = indices.size();
+        const ssize_t in_count = mapped_track.size();
         size_t intersection = 0;
         while (self_index < old_size && in_index < in_count) {
-          if ((*this)[self_index].index() == indices[in_index]) {
-            ++(*this)[self_index];
+          if ((*this)[self_index].index() == mapped_track[in_index]) {
+            increment ((*this)[self_index], mapped_track);
             ++self_index;
             ++in_index;
             ++intersection;
-          } else if ((*this)[self_index].index() > indices[in_index]) {
+          } else if ((*this)[self_index].index() > mapped_track[in_index]) {
             ++in_index;
           } else {
             ++self_index;
@@ -78,59 +70,55 @@ namespace MR
         }
 
         self_index = old_size - 1;
-        in_index = indices.size() - 1;
+        in_index = mapped_track.size() - 1;
 
         // It's possible that a resize() call may always result in requesting
         //   a re-assignment of memory that exactly matches the size, which may in turn
         //   lead to memory bloat due to inability to return the old memory
         // If this occurs, iteratively calling push_back() may instead engage the
         //   memory-reservation-doubling behaviour
-        while ((*this).size() < old_size + indices.size() - intersection)
-          (*this).push_back (InitElement());
+        while ((*this).size() < old_size + mapped_track.size() - intersection)
+          (*this).push_back (ElementType());
         ssize_t out_index = (*this).size() - 1;
 
         // For each output vector location, need to determine whether it should come from copying an existing entry,
         //   or creating a new one
         while (out_index > self_index && self_index >= 0 && in_index >= 0) {
-          if ((*this)[self_index].index() == indices[in_index]) {
+          if ((*this)[self_index].index() == mapped_track[in_index]) {
             (*this)[out_index] = (*this)[self_index];
             --self_index;
             --in_index;
-          } else if ((*this)[self_index].index() > indices[in_index]) {
+          } else if ((*this)[self_index].index() > mapped_track[in_index]) {
             (*this)[out_index] = (*this)[self_index];
             --self_index;
           } else {
-            (*this)[out_index] = InitElement (indices[in_index]);
+            (*this)[out_index] = ElementType (mapped_track[in_index], mapped_track);
             --in_index;
           }
           --out_index;
         }
         if (self_index < 0) {
           while (in_index >= 0 && out_index >= 0)
-            (*this)[out_index--] = InitElement (indices[in_index--]);
+            (*this)[out_index--] = ElementType (mapped_track[in_index--], mapped_track);
         }
 
-        // Track total number of streamlines intersecting this fixel,
+        // Track total number of streamlines / sum of streamline weights intersecting this fixel,
         //   independently of the extent of fixel-fixel connectivity
-        ++track_count;
+        increment (mapped_track);
       }
 
+      template class InitFixelBase<InitElementUnweighted>;
+      template class InitFixelBase<InitElementWeighted>;
 
 
 
 
 
 
-
-
-      init_matrix_type generate (
-          const std::string& track_filename,
-          Image<index_type>& index_image,
-          Image<bool>& fixel_mask,
-          const float angular_threshold)
+      namespace
       {
 
-        class TrackProcessor { MEMALIGN(TrackProcessor)
+        class TrackProcessor {
 
           public:
             TrackProcessor (const DWI::Tractography::Mapping::TrackMapperBase& mapper,
@@ -145,17 +133,18 @@ namespace MR
                 angular_threshold_dp (std::cos (angular_threshold * (Math::pi/180.0))) { }
 
             bool operator() (const DWI::Tractography::Streamline<>& tck,
-                             vector<index_type>& out) const
+                             MappedTrack& out) const
             {
-              using direction_type = Eigen::Vector3;
+              using direction_type = Eigen::Vector3d;
               using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
               SetVoxelDir in;
               mapper (tck, in);
 
-              // For each voxel tract tangent, assign to a fixel
+              // For each voxel intersection, assign to a fixel
               out.clear();
               out.reserve (in.size());
+              out.set_weight (tck.weight);
               for (const auto& i : in) {
                 assign_pos_of (i).to (fixel_indexer);
                 fixel_indexer.index(3) = 0;
@@ -198,33 +187,77 @@ namespace MR
         };
 
 
-        auto directions_image = Fixel::find_directions_header (Path::dirname (index_image.name())).template get_image<default_type>().with_direct_io ({+2,+1});
-        DWI::Tractography::Properties properties;
-        DWI::Tractography::Reader<float> track_file (track_filename, properties);
-        const uint32_t num_tracks = properties["count"].empty() ? 0 : to<uint32_t>(properties["count"]);
-        DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "computing fixel-fixel connectivity matrix");
-        DWI::Tractography::Mapping::TrackMapperBase mapper (index_image);
-        mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (index_image, properties, 0.333f));
-        mapper.set_use_precise_mapping (true);
+
+        template <class MatrixType>
+        class Receiver
+        {
+          public:
+            Receiver (MatrixType& data) :
+                data (data) { }
+            bool operator() (const MappedTrack& in) const
+            {
+              try {
+                for (auto f : in)
+                  data[f].add (in);
+                return true;
+              } catch (...) {
+                throw Exception ("Error assigning memory for CFE connectivity matrix");
+                return false;
+              }
+            }
+          private:
+            MatrixType& data;
+        };
+      }
+
+
+
+#define FIXEL_MATRIX_GENERATE_SHARED \
+        auto directions_image = Fixel::find_directions_header (Path::dirname (index_image.name())).template get_image<default_type>().with_direct_io ({+2,+1}); \
+        DWI::Tractography::Properties properties; \
+        DWI::Tractography::Reader<float> track_file (track_filename, properties); \
+        const uint32_t num_tracks = properties["count"].empty() ? 0 : to<uint32_t>(properties["count"]); \
+        DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "computing fixel-fixel connectivity matrix"); \
+        DWI::Tractography::Mapping::TrackMapperBase mapper (index_image); \
+        mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (index_image, properties, 0.333f)); \
+        mapper.set_use_precise_mapping (true); \
         TrackProcessor track_processor (mapper, index_image, directions_image, fixel_mask, angular_threshold);
-        init_matrix_type connectivity_matrix (Fixel::get_number_of_fixels (index_image));
+
+
+
+      InitMatrixUnweighted generate_unweighted (
+          const std::string& track_filename,
+          Image<index_type>& index_image,
+          Image<bool>& fixel_mask,
+          const float angular_threshold)
+      {
+        FIXEL_MATRIX_GENERATE_SHARED
+        InitMatrixUnweighted connectivity_matrix (Fixel::get_number_of_fixels (index_image));
+        Receiver<InitMatrixUnweighted> receiver (connectivity_matrix);
         Thread::run_queue (loader,
                            Thread::batch (DWI::Tractography::Streamline<float>()),
                            track_processor,
-                           Thread::batch (vector<index_type>()),
-                           // Inline lambda function for receiving streamline fixel visitations and
-                           //   updating the connectivity matrix
-                           [&] (const vector<index_type>& fixels)
-                           {
-                             try {
-                               for (auto f : fixels)
-                                 connectivity_matrix[f].add (fixels);
-                               return true;
-                             } catch (...) {
-                               throw Exception ("Error assigning memory for CFE connectivity matrix");
-                               return false;
-                             }
-                           });
+                           Thread::batch (MappedTrack()),
+                           receiver);
+        return connectivity_matrix;
+      }
+
+
+
+      InitMatrixWeighted generate_weighted (
+          const std::string& track_filename,
+          Image<index_type>& index_image,
+          Image<bool>& fixel_mask,
+          const float angular_threshold)
+      {
+        FIXEL_MATRIX_GENERATE_SHARED
+        InitMatrixWeighted connectivity_matrix (Fixel::get_number_of_fixels (index_image));
+        Receiver<InitMatrixWeighted> receiver (connectivity_matrix);
+        Thread::run_queue (loader,
+                           Thread::batch (DWI::Tractography::Streamline<float>()),
+                           track_processor,
+                           Thread::batch (MappedTrack()),
+                           receiver);
         return connectivity_matrix;
       }
 
@@ -232,18 +265,38 @@ namespace MR
 
 
 
-      void normalise_and_write (init_matrix_type& matrix,
-                                const connectivity_value_type threshold,
-                                const std::string& path,
-                                const KeyValues& keyvals)
-      {
 
+      template <class MatrixType>
+      void Writer<MatrixType>::set_count_path (const std::string& path)
+      {
+        assert (!count_image.valid());
+        count_image = Image<count_type>::create (path, MR::Fixel::data_header_from_nfixels (matrix.size()));
+      }
+
+      template <class MatrixType>
+      void Writer<MatrixType>::set_extent_path (const std::string& path)
+      {
+        assert (!extent_image.valid());
+        extent_image = Image<connectivity_value_type>::create (path, MR::Fixel::data_header_from_nfixels (matrix.size()));
+      }
+
+
+
+      template <class MatrixType>
+      void Writer<MatrixType>::save (const std::string& path) const
+      {
         if (Path::exists (path)) {
-          if (!Path::is_dir (path)) {
+          if (Path::is_dir (path)) {
+            if (!App::overwrite_files && (Path::is_file (Path::join (path, "index.mif")) ||
+                                          Path::is_file (Path::join (path, "fixels.mif")) ||
+                                          Path::is_file (Path::join (path, "values.mif"))))
+              throw Exception ("Cannot create fixel-fixel connectivity matrix \"" + path + "\": "
+                               "one or more files already exists (use -force to override)");
+          } else {
             if (App::overwrite_files) {
               File::remove (path);
             } else {
-              throw Exception ("Cannot create fixel-fixel connectivity matrix \"" + path + "\": Already exists as file");
+              throw Exception ("Cannot create fixel-fixel connectivity matrix directory \"" + path + "\": Already exists as file");
             }
           }
         } else {
@@ -265,87 +318,96 @@ namespace MR
         index_header.keyval() = keyvals;
         index_header.keyval()["nfixels"] = str(matrix.size());
         index_header.datatype() = DataType::from<index_image_type>();
-        Image<index_image_type> index_image = Image<index_image_type>::create (Path::join (path, "index.mif"), index_header);
+        index_header.datatype().set_byte_order_native();
 
-        // Can't use function write_mrtrix_header() as the file offset of the
-        //   first entry of the "dim" field needs to be known
-        //   (and enough space needs to be left to fill in a large number upon completion)
-        File::OFStream fixel_stream (Path::join (path, "fixels.mif"), std::ios_base::out | std::ios_base::binary);
-        File::OFStream value_stream (Path::join (path, "values.mif"), std::ios_base::out | std::ios_base::binary);
+        index_type num_connections = 0;
+        {
+          ProgressBar progress ("Computing number of supra-threshold fixel-fixel connections", matrix.size());
 
-        const std::string leadin = "mrtrix image\ndim: ";
-        // Need enough space for the largest possible 64-bit unsigned integer,
-        //   plus ",1,1" for the two dummy axes
-        const size_t dim_padding = std::log10 (std::numeric_limits<size_t>::max()) + 4;
+          for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
+            const connectivity_value_type normalisation_factor = matrix[fixel_index].norm_factor();
+            for (auto& it : matrix[fixel_index]) {
+              const connectivity_value_type connectivity = normalisation_factor * it.value();
+              if (connectivity >= threshold)
+                ++num_connections;
+            }
+            ++progress;
+          }
+        }
 
-        Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\ntransform: ", "", "", "\ntransform: ", "");
+        Header fixel_header;
+        fixel_header.ndim() = 3;
+        fixel_header.size(0) = num_connections;
+        fixel_header.size(1) = 1;
+        fixel_header.size(2) = 1;
+        fixel_header.stride(0) = 1;
+        fixel_header.stride(1) = 2;
+        fixel_header.stride(2) = 3;
+        fixel_header.spacing(0) = fixel_header.spacing(1) = fixel_header.spacing(2) = 1.0;
+        fixel_header.transform() = transform_type::Identity();
+        fixel_header.keyval() = keyvals;
+        fixel_header.keyval()["nfixels"] = str(matrix.size());
+        fixel_header.datatype() = DataType::from<index_type>();
+        fixel_header.datatype().set_byte_order_native();
 
-        for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
-          File::OFStream& stream (stream_index ? value_stream : fixel_stream);
-          stream << leadin << std::string (dim_padding, ' ') << "\n";
-          stream << "vox: 1,1,1\n";
-          stream << "layout: +0,+1,+2\n";
-          stream << "datatype: ";
-          if (stream_index)
-            stream << DataType::from<connectivity_value_type>().specifier();
-          else
-            stream << DataType::from<index_type>().specifier();
-          stream << transform_type::Identity().matrix().topLeftCorner(3,4).format(fmt) << "\n";
-          stream << "scaling: 0,1\n";
-          stream << "nfixels: " + str(matrix.size()) + "\n";
-          File::KeyValue::write (stream, keyvals, "", true);
-          stream << "file: ";
-          uint64_t offset = uint64_t(stream.tellp()) + 18;
-          offset += ((4 - (offset % 4)) % 4);
-          stream << ". " << offset << "\nEND\n";
-          stream << std::string (offset - uint64_t(stream.tellp()), '\0');
+        Header value_header (fixel_header);
+        value_header.datatype() = DataType::from<connectivity_value_type>();
+        value_header.datatype().set_byte_order_native();
+
+        Image<index_image_type> index_image;
+        Image<index_type> fixel_image;
+        Image<connectivity_value_type> value_image;
+
+        try {
+          index_image = Image<index_image_type>::create (Path::join (path, "index.mif"), index_header);
+          fixel_image = Image<index_type>::create (Path::join (path, "fixels.mif"), fixel_header);
+          value_image = Image<connectivity_value_type>::create (Path::join (path, "values.mif"), value_header);
+        } catch (Exception& e) {
+          throw Exception (e, "Unable to allocate space on filesystem for fixel-fixel connectivity matrix data");
         }
 
         ProgressBar progress ("Normalising and writing fixel-fixel connectivity matrix to directory \"" + path + "\"", matrix.size());
-        size_t data_count = 0;
-        vector<index_type> fixel_buffer;
-        vector<connectivity_value_type> value_buffer;
         for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
 
-          fixel_buffer.clear();
-          value_buffer.clear();
-          fixel_buffer.reserve (matrix[fixel_index].size());
-          value_buffer.reserve (matrix[fixel_index].size());
-
-          const connectivity_value_type normalisation_factor = connectivity_value_type(1) / connectivity_value_type (matrix[fixel_index].count());
+          const ssize_t connection_offset = fixel_image.index(0);
+          index_type connection_count = 0;
+          connectivity_value_type sum_connectivity = connectivity_value_type (0.0);
+          const connectivity_value_type normalisation_factor = matrix[fixel_index].norm_factor();
           for (auto& it : matrix[fixel_index]) {
             const connectivity_value_type connectivity = normalisation_factor * it.value();
             if (connectivity >= threshold) {
-              fixel_buffer.push_back (it.index());
-              value_buffer.push_back (connectivity);
+              ++connection_count;
+              sum_connectivity += connectivity;
+              fixel_image.value() = it.index();
+              ++fixel_image.index(0);
+              value_image.value() = connectivity;
+              ++value_image.index(0);
             }
           }
 
           index_image.index (0) = fixel_index;
-          index_image.index (3) = 0; index_image.value() = uint64_t(fixel_buffer.size());
-          index_image.index (3) = 1; index_image.value() = fixel_buffer.size() ? data_count : uint64_t(0);
+          index_image.index (3) = 0; index_image.value() = uint64_t(connection_count);
+          index_image.index (3) = 1; index_image.value() = connection_count ? connection_offset : uint64_t(0);
 
-          fixel_stream.write (reinterpret_cast<const char*>(fixel_buffer.data()), fixel_buffer.size() * sizeof (index_type));
-          value_stream.write (reinterpret_cast<const char*>(value_buffer.data()), value_buffer.size() * sizeof (connectivity_value_type));
-
-          data_count += fixel_buffer.size();
+          if (count_image.valid()) {
+            count_image.index(0) = fixel_index;
+            count_image.value() = connection_count;
+          }
+          if (extent_image.valid()) {
+            extent_image.index(0) = fixel_index;
+            extent_image.value() = sum_connectivity;
+          }
 
           // Force deallocation of memory used for this fixel in the generated matrix
-          InitFixel().swap (matrix[fixel_index]);
+          typename MatrixType::value_type().swap (matrix[fixel_index]);
 
           ++progress;
         }
 
-        // Update headers to reflect the number of fixel-fixel connections
-        std::string dim_string = str(data_count) + ",1,1";
-        dim_string += std::string (dim_padding - dim_string.size(), ' ');
-        for (size_t stream_index = 0; stream_index != 2; ++stream_index) {
-          File::OFStream& stream (stream_index ? value_stream : fixel_stream);
-          stream.seekp (leadin.size());
-          stream << dim_string;
-        }
-
       }
+
+      template class Writer<InitMatrixUnweighted>;
+      template class Writer<InitMatrixWeighted>;
 
 
 

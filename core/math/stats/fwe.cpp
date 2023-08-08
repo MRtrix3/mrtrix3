@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,10 +38,10 @@ namespace MR
 
         auto s2p = [] (const vector<value_type>& null_dist, const matrix_type::ConstColXpr in, matrix_type::ColXpr out)
         {
-          for (ssize_t element = 0; element != in.size(); ++element) {
+          for (index_type element = 0; element != index_type(in.size()); ++element) {
             if (in[element] > 0.0) {
               value_type pvalue = 1.0;
-              for (size_t j = 0; j < size_t(null_dist.size()); ++j) {
+              for (index_type j = 0; j < null_dist.size(); ++j) {
                 if (in[element] < null_dist[j]) {
                   pvalue = value_type(j) / value_type(null_dist.size());
                   break;
@@ -58,18 +58,18 @@ namespace MR
 
           vector<value_type> sorted_null_dist;
           sorted_null_dist.reserve (null_distributions.rows());
-          for (ssize_t shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
+          for (index_type shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
             sorted_null_dist.push_back (null_distributions (shuffle, 0));
           std::sort (sorted_null_dist.begin(), sorted_null_dist.end());
-          for (ssize_t hypothesis = 0; hypothesis != statistics.cols(); ++hypothesis)
+          for (index_type hypothesis = 0; hypothesis != statistics.cols(); ++hypothesis)
             s2p (sorted_null_dist, statistics.col (hypothesis), pvalues.col (hypothesis));
 
         } else { // weak fwe control
 
-          for (ssize_t hypothesis = 0; hypothesis != statistics.cols(); ++hypothesis) {
+          for (index_type hypothesis = 0; hypothesis != statistics.cols(); ++hypothesis) {
             vector<value_type> sorted_null_dist;
             sorted_null_dist.reserve (null_distributions.rows());
-            for (ssize_t shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
+            for (index_type shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
               sorted_null_dist.push_back (null_distributions (shuffle, hypothesis));
             std::sort (sorted_null_dist.begin(), sorted_null_dist.end());
             s2p (sorted_null_dist, statistics.col (hypothesis), pvalues.col (hypothesis));

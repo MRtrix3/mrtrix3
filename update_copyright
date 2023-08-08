@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,9 @@
 # See the Mozilla Public License v. 2.0 for more details.
 #
 # For more details, see http://www.mrtrix.org/.
+
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding
 
 import datetime, os
 from collections import namedtuple
@@ -69,7 +72,7 @@ def main():
 
   def has_shebang(filepath):
     try:
-      with open(filepath, 'r') as shebang_file:
+      with open(filepath, 'r', encoding='utf-8') as shebang_file:
         return shebang_file.read(2) == '#!'
     except UnicodeDecodeError:
       return False
@@ -93,7 +96,7 @@ def main():
             filelist.append(ProcessFile(fullpath, path.need_shebang, path.comment))
 
   for item in filelist:
-    with open(item.path, 'r') as infile:
+    with open(item.path, 'r', encoding='utf-8') as infile:
       data = infile.readlines()
     if not data:
       continue
@@ -112,18 +115,18 @@ def main():
       data = data[next(index for index, value in enumerate(data) if not value.startswith(item.comment)):]
       # Insert new copyright notice
       data = [item.comment + (' ' + line if line else '') + '\n' for line in COPYRIGHT] + data
-    with open(item.path, 'w') as outfile:
+    with open(item.path, 'w', encoding='utf-8') as outfile:
       if shebang:
         outfile.write(shebang + '\n')
       outfile.write(''.join(data))
 
 
 
-  with open(APP_CPP_PATH, 'r') as app_cpp_file:
+  with open(APP_CPP_PATH, 'r', encoding='utf-8') as app_cpp_file:
     data = app_cpp_file.readlines()
   first_line = next(index for index, value in enumerate(data) if value.strip().startswith(APP_CPP_STRING)) + 1
   indent = ' ' * (len(data[first_line]) - len(data[first_line].lstrip()))
-  with open(APP_CPP_PATH, 'w') as app_cpp_file:
+  with open(APP_CPP_PATH, 'w', encoding='utf-8') as app_cpp_file:
     app_cpp_file.write(''.join(data[:first_line]))
     for line in COPYRIGHT[:-1]:
       app_cpp_file.write(indent + '"' + line.replace('"', '\\"') + '\\n"\n')
@@ -131,10 +134,10 @@ def main():
     app_cpp_file.write(''.join(data[first_line+len(COPYRIGHT):]))
 
 
-  with open(APP_PY_PATH, 'r') as app_py_file:
+  with open(APP_PY_PATH, 'r', encoding='utf-8') as app_py_file:
     data = app_py_file.readlines()
   first_line = next(index for index, value in enumerate(data) if value.startswith(APP_PY_STRING)) + 1
-  with open(APP_PY_PATH, 'w') as app_py_file:
+  with open(APP_PY_PATH, 'w', encoding='utf-8') as app_py_file:
     app_py_file.write(''.join(data[:first_line]))
     app_py_file.write('\'\'\'' + '\n'.join(COPYRIGHT) + '\'\'\'\n')
     app_py_file.write(''.join(data[first_line+len(COPYRIGHT):]))

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,13 +39,13 @@ namespace MR {
 
 
         class DixelMappingPlugin
-        { MEMALIGN(DixelMappingPlugin)
+        { 
           public:
             DixelMappingPlugin (const DWI::Directions::FastLookupSet& directions) :
               dirs (directions) { }
             DixelMappingPlugin (const DixelMappingPlugin& that) :
               dirs (that.dirs) { }
-            DWI::Directions::index_type operator() (const Eigen::Vector3& d) const { return dirs.select_direction (d); }
+            DWI::Directions::index_type operator() (const Eigen::Vector3d& d) const { return dirs.select_direction (d); }
           private:
             const DWI::Directions::FastLookupSet& dirs;
         };
@@ -53,7 +53,7 @@ namespace MR {
 
 
         class TODMappingPlugin
-        { MEMALIGN(TODMappingPlugin)
+        { 
           public:
             TODMappingPlugin (const size_t N) :
               generator (new Math::SH::aPSF<float> (Math::SH::LforN (N))) { }
@@ -68,7 +68,7 @@ namespace MR {
 
 
         class TWIImagePluginBase
-        { MEMALIGN(TWIImagePluginBase)
+        { 
           public:
             TWIImagePluginBase (const std::string& input_image, const tck_stat_t track_statistic) :
                 statistic (track_statistic),
@@ -117,7 +117,7 @@ namespace MR {
 
 
         class TWIScalarImagePlugin : public TWIImagePluginBase
-        { MEMALIGN(TWIScalarImagePlugin)
+        { 
           public:
             TWIScalarImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
                 TWIImagePluginBase (input_image, track_statistic)
@@ -148,7 +148,7 @@ namespace MR {
 
 
         class TWIFODImagePlugin : public TWIImagePluginBase
-        { MEMALIGN(TWIFODImagePlugin)
+        { 
           public:
             TWIFODImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
                 TWIImagePluginBase (input_image, track_statistic),
@@ -179,7 +179,7 @@ namespace MR {
 
 
         class TWDFCStaticImagePlugin : public TWIImagePluginBase
-        { MEMALIGN(TWDFCStaticImagePlugin)
+        { 
           public:
             TWDFCStaticImagePlugin (Image<float>& input_image) :
                 TWIImagePluginBase (input_image, ENDS_CORR) { }
@@ -198,7 +198,7 @@ namespace MR {
 
 
         class TWDFCDynamicImagePlugin : public TWIImagePluginBase
-        { MEMALIGN(TWDFCDynamicImagePlugin)
+        { 
           public:
             TWDFCDynamicImagePlugin (Image<float>& input_image, const vector<float>& kernel, const ssize_t timepoint) :
                 TWIImagePluginBase (input_image, ENDS_CORR),

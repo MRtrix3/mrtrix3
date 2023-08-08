@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,7 @@ namespace MR
         * Auto reads data from its local socket when data arrives, and fires an event with that data attached
         */
         class LocalSocketReader : public QObject
-        { NOMEMALIGN
+        { 
           Q_OBJECT
 
         public:

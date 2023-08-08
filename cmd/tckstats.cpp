@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -74,7 +74,7 @@ void usage ()
 
 
 // Store length and weight of each streamline
-class LW { NOMEMALIGN
+class LW { 
   public:
     LW (const float l, const float w) : length (l), weight (w) { }
     LW () : length (NaN), weight (NaN) { }
@@ -126,10 +126,8 @@ void run ()
       WARN ("Do not have streamline step size with which to bin histogram; histogram will be generated using 1mm bin widths");
     }
 
-    std::unique_ptr<File::OFStream> dump;
-    auto opt = get_options ("dump");
-    if (opt.size())
-      dump.reset (new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc));
+    vector<float> dump;
+    dump.reserve (header_count);
 
     ProgressBar progress ("Reading track file", header_count);
     Streamline<> tck;
@@ -151,10 +149,13 @@ void run ()
       } else {
         ++empty_streamlines;
       }
-      if (dump)
-        (*dump) << length << "\n";
+      dump.push_back (length);
       ++progress;
     }
+
+    auto opt = get_options ("dump");
+    if (opt.size())
+      File::Matrix::save_vector (dump, opt[0][0]);
   }
 
   if (!get_options ("ignorezero").size() && (empty_streamlines || zero_length_streamlines)) {

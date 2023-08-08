@@ -34,7 +34,7 @@ Required dependencies:
 -  `Python <https://www.python.org/>`__ version >= 3.3;
 -  The `zlib <http://www.zlib.net/>`__ compression library;
 -  `Eigen <http://eigen.tuxfamily.org>`__ version >= 3.2 (>= 3.3 recommended);
--  `Qt <http://www.qt.io/>`__ version >= 5.5 *[GUI components only]*;
+-  `Qt <http://www.qt.io/>`__ version >= 5.5 (but *not* Qt 6) *[GUI components only]*;
 
 and optionally:
 

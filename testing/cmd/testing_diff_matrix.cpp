@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,12 +15,11 @@
  */
 
 #include <fstream>
+#include <Eigen/Dense>
 
 #include "command.h"
 #include "types.h"
-
-#include <Eigen/Dense>
-#include "math/math.h"
+#include "file/matrix.h"
 
 using namespace MR;
 using namespace App;
@@ -56,12 +55,12 @@ void run ()
   Eigen::MatrixXd in1, in2;
 
   try {
-    in1 = load_matrix<double> (argument[0]);
-    in2 = load_matrix<double> (argument[1]);
+    in1 = File::Matrix::load_matrix<double> (argument[0]);
+    in2 = File::Matrix::load_matrix<double> (argument[1]);
   } catch (Exception&) {
 
-    const auto in1c = load_matrix<cdouble> (argument[0]);
-    const auto in2c = load_matrix<cdouble> (argument[1]);
+    const auto in1c = File::Matrix::load_matrix<cdouble> (argument[0]);
+    const auto in2c = File::Matrix::load_matrix<cdouble> (argument[1]);
 
     if (in1c.rows() != in2c.rows() || in1c.cols() != in2c.cols())
       throw Exception ("matrices \"" + Path::basename (argument[0]) + "\" and \"" + Path::basename (argument[1]) + "\" do not have matching sizes"

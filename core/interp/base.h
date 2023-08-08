@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -67,7 +67,7 @@ namespace MR
      */
 
     template <class ImageType> class Base : public ImageType, public Transform
-    { MEMALIGN(Base<ImageType>)
+    { 
       public:
         using image_type = ImageType;
         using value_type = typename ImageType::value_type;
@@ -208,10 +208,10 @@ namespace MR
         }
 
         template <class VectorType>
-        Eigen::Vector3 intravoxel_offset (const VectorType& pos) {
+        Eigen::Vector3d intravoxel_offset (const VectorType& pos) {
           if (set_out_of_bounds (pos))
-            return Eigen::Vector3 (NaN, NaN, NaN);
-          return Eigen::Vector3 (pos[0]-std::floor (pos[0]), pos[1]-std::floor (pos[1]), pos[2]-std::floor (pos[2]));
+            return Eigen::Vector3d (NaN, NaN, NaN);
+          return Eigen::Vector3d (pos[0]-std::floor (pos[0]), pos[1]-std::floor (pos[1]), pos[2]-std::floor (pos[2]));
         }
 
     };

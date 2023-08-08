@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ namespace MR {
          * @brief The ParticleGrid class
          */
         class ParticleGrid
-        { MEMALIGN(ParticleGrid)
+        { 
         public:
           
           using ParticleVectorType = vector<Particle*>;
@@ -53,7 +53,7 @@ namespace MR {
             
             // Initialise scanner-to-grid transform
             Eigen::DiagonalMatrix<default_type, 3> newspacing (2.0*Particle::L, 2.0*Particle::L, 2.0*Particle::L);
-            Eigen::Vector3 shift (image.spacing(0)/2.0 - Particle::L,
+            Eigen::Vector3d shift (image.spacing(0)/2.0 - Particle::L,
                                   image.spacing(1)/2.0 - Particle::L,
                                   image.spacing(2)/2.0 - Particle::L);
             T_s2g = image.transform() * newspacing;

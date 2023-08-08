@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 # Functions relating to handling phase encoding information
-
 
 
 from mrtrix3 import COMMAND_HISTORY_STRING, MRtrixError
@@ -125,7 +124,7 @@ def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
     else:
       header['command_history'] = COMMAND_HISTORY_STRING
 
-  with open(filename, 'w') as outfile:
+  with open(filename, 'w', encoding='utf-8') as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
         outfile.write('# ' + key + ': ' + line + '\n')

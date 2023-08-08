@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,7 +32,7 @@ namespace MR {
           // Base class to handle case where the factor contributed by the streamline varies along its length
           //   (currently only occurs when the track-wise statistic is Gaussian)
           class VoxelAddon
-          { NOMEMALIGN
+          { 
             public:
               VoxelAddon() : sum_factors (0.0) { }
               VoxelAddon (const default_type v) : sum_factors (v) { }
@@ -50,7 +50,7 @@ namespace MR {
 
 
           class Voxel : public Mapping::Voxel, public VoxelAddon
-          { MEMALIGN(Voxel)
+          { 
 
             using Base = Mapping::Voxel;
 
@@ -73,32 +73,32 @@ namespace MR {
 
 
           class VoxelDEC : public Mapping::VoxelDEC, public VoxelAddon
-          { MEMALIGN(VoxelDEC)
+          { 
 
             using Base = Mapping::VoxelDEC;
 
             public:
             VoxelDEC () : Base (), VoxelAddon () { }
             VoxelDEC (const Eigen::Vector3i& V) : Base (V), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d) : Base (V, d), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d, const default_type l) : Base (V, d, l), VoxelAddon () { }
-            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3& d, const default_type l, const default_type f) : Base (V, d, l), VoxelAddon (f) { }
+            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3d& d) : Base (V, d), VoxelAddon () { }
+            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3d& d, const default_type l) : Base (V, d, l), VoxelAddon () { }
+            VoxelDEC (const Eigen::Vector3i& V, const Eigen::Vector3d& d, const default_type l, const default_type f) : Base (V, d, l), VoxelAddon (f) { }
 
             VoxelDEC& operator=  (const VoxelDEC& V)   { Base::operator= (V); VoxelAddon::operator= (V); return (*this); }
             void operator+= (const default_type) const { assert (0); }
-            void operator+= (const Eigen::Vector3&) const { assert (0); }
+            void operator+= (const Eigen::Vector3d&) const { assert (0); }
             bool operator== (const VoxelDEC& V) const { return Base::operator== (V); }
             bool operator<  (const VoxelDEC& V) const { return Base::operator<  (V); }
 
-            void add (const Eigen::Vector3&, const default_type) const { assert (0); }
-            void add (const Eigen::Vector3& i, const default_type l, const default_type f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
+            void add (const Eigen::Vector3d&, const default_type) const { assert (0); }
+            void add (const Eigen::Vector3d& i, const default_type l, const default_type f) const { Base::add (i, l); VoxelAddon::operator+= (f); }
             void normalize() const { VoxelAddon::normalize (get_length()); Base::normalize(); }
 
           };
 
 
           class Dixel : public Mapping::Dixel, public VoxelAddon
-          { MEMALIGN(Dixel)
+          { 
 
             using Base = Mapping::Dixel;
 
@@ -123,7 +123,7 @@ namespace MR {
 
 
           class VoxelTOD : public Mapping::VoxelTOD, public VoxelAddon
-          { MEMALIGN(VoxelTOD)
+          { 
 
             using Base = Mapping::VoxelTOD;
 
@@ -156,7 +156,7 @@ namespace MR {
           // However, it's handy from a code perspective to still use the same base class
           /*
              class SetVoxelExtras
-             { MEMALIGN(SetVoxelExtras)
+             { 
              public:
              size_t index;
              float weight;
@@ -168,7 +168,7 @@ namespace MR {
 
 
           class SetVoxel : public std::set<Voxel>, public Mapping::SetVoxelExtras
-          { MEMALIGN(SetVoxel)
+          { 
             public:
 
               using VoxType = Voxel;
@@ -186,12 +186,12 @@ namespace MR {
 
 
           class SetVoxelDEC : public std::set<VoxelDEC>, public Mapping::SetVoxelExtras
-          { MEMALIGN(SetVoxelDEC)
+          { 
             public:
 
               using VoxType = VoxelDEC;
 
-              inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3& d, const default_type l, const default_type f)
+              inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3d& d, const default_type l, const default_type f)
               {
                 const VoxelDEC temp (v, d, l, f);
                 iterator existing = std::set<VoxelDEC>::find (temp);
@@ -204,7 +204,7 @@ namespace MR {
 
 
           class SetDixel : public std::set<Dixel>, public Mapping::SetVoxelExtras
-          { MEMALIGN(SetDixel)
+          { 
             public:
 
               using VoxType = Dixel;
@@ -223,7 +223,7 @@ namespace MR {
 
 
           class SetVoxelTOD : public std::set<VoxelTOD>, public Mapping::SetVoxelExtras
-          { MEMALIGN(SetVoxelTOD)
+          { 
             public:
 
               using VoxType = VoxelTOD;

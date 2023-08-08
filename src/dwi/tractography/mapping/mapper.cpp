@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #include "dwi/tractography/mapping/mapper.h"
+
+#include "file/matrix.h"
 
 
 namespace MR {
@@ -231,7 +233,7 @@ void TrackMapperTWI::add_vector_data (const std::string& path)
     throw Exception ("Cannot add both an associated image and a vector data file to TWI");
   if (contrast != VECTOR_FILE)
     throw Exception ("Cannot add a vector data file to TWI unless the VECTOR_FILE contrast is used");
-  vector_data.reset (new Eigen::VectorXf (load_vector<float> (path)));
+  vector_data.reset (new Eigen::VectorXf (File::Matrix::load_vector<float> (path)));
 }
 
 
@@ -254,7 +256,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   if (contrast != CURVATURE)
     throw Exception ("Unsupported contrast in function TrackMapperTWI::load_factors()");
 
-  vector<Eigen::Vector3> tangents;
+  vector<Eigen::Vector3d> tangents;
   tangents.reserve (tck.size());
 
   // Would like to be able to manipulate the length over which the tangent calculation is affected
@@ -271,7 +273,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   step_sizes.reserve (tck.size());
 
   for (size_t i = 0; i != tck.size(); ++i) {
-    Eigen::Vector3 this_tangent;
+    Eigen::Vector3d this_tangent;
     if (i == 0)
       this_tangent = ((tck[1]   - tck[0]  ).cast<default_type>().normalized());
     else if (i == tck.size() - 1)
@@ -322,7 +324,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   // Smooth both the tangent vectors and the principal normal vectors according to a Gaussuan kernel
   // Remember: tangent vectors are unit length, but for principal normal vectors length must be preserved!
 
-  vector<Eigen::Vector3> smoothed_tangents;
+  vector<Eigen::Vector3d> smoothed_tangents;
   smoothed_tangents.reserve (tangents.size());
 
   static const default_type gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt (2.0 * log (2.0)));
@@ -330,7 +332,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    Eigen::Vector3 this_tangent (0.0, 0.0, 0.0);
+    Eigen::Vector3d this_tangent (0.0, 0.0, 0.0);
 
     for (size_t j = 0; j != tck.size(); ++j) {
       const default_type distance = spline_distances (i, j);

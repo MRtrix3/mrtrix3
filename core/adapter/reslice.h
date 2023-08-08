@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -109,7 +109,7 @@ namespace MR
     template <template <class ImageType> class Interpolator, class ImageType>
       class Reslice :
         public ImageBase<Reslice<Interpolator,ImageType>,typename ImageType::value_type>
-    { MEMALIGN (Reslice<Interpolator, ImageType>)
+    { 
       public:
 
         using value_type = typename ImageType::value_type;
@@ -149,12 +149,12 @@ namespace MR
                   OS[0] = OS[1] = OS[2] = 1;
                 }
                 else {
-                  Vector3 y = direct_transform * Vector3 (0.0, 0.0, 0.0);
-                  Vector3 x0 = direct_transform * Vector3 (1.0, 0.0, 0.0);
+                  Vector3d y = direct_transform * Vector3d (0.0, 0.0, 0.0);
+                  Vector3d x0 = direct_transform * Vector3d (1.0, 0.0, 0.0);
                   OS[0] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
-                  x0 = direct_transform * Vector3 (0.0, 1.0, 0.0);
+                  x0 = direct_transform * Vector3d (0.0, 1.0, 0.0);
                   OS[1] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
-                  x0 = direct_transform * Vector3 (0.0, 0.0, 1.0);
+                  x0 = direct_transform * Vector3d (0.0, 0.0, 1.0);
                   OS[2] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
                 }
               }
@@ -194,9 +194,9 @@ namespace MR
         value_type value () {
           using namespace Eigen;
           if (oversampling) {
-            Vector3 d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
+            Vector3d d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
             default_type sum (0.0);
-            Vector3 s;
+            Vector3d s;
             for (uint32_t z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
               for (uint32_t y = 0; y < OS[1]; ++y) {
@@ -210,7 +210,7 @@ namespace MR
             }
             return normalise<value_type> (sum, norm);
           }
-          interp.voxel (direct_transform * Vector3 (x[0], x[1], x[2]));
+          interp.voxel (direct_transform * Vector3d (x[0], x[1], x[2]));
           return interp.value();
         }
 

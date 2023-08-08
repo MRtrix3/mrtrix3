@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,8 @@
 
 #include "header.h"
 #include "stride.h"
-#include "math/math.h"
 #include "dwi/gradient.h"
+#include "file/matrix.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/list.h"
 #include "gui/dialog/image_properties.h"
@@ -161,7 +161,7 @@ namespace MR
         assert (save_data.rows());
         std::string name = File::get_save_name (this, "Save as...", "dwgrad.txt");
         if (name.size())
-          MR::save_matrix (save_data, name);
+          MR::File::Matrix::save_matrix (save_data, name);
       }
 
     }

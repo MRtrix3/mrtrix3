@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,8 +27,6 @@
 #include <vector>
 
 
-#define NOMEMALIGN
-
 #ifdef _WIN32
 #  ifdef _WIN64
 #    define PRI_SIZET PRIu64
@@ -45,7 +43,7 @@ namespace MR {
 #ifdef MRTRIX_MAX_ALIGN_T_NOT_DEFINED
 # ifdef MRTRIX_STD_MAX_ALIGN_T_NOT_DEFINED
   // needed for clang 3.4:
-  using __max_align_t = struct { NOMEMALIGN
+  using __max_align_t = struct {
     long long __clang_max_align_nonce1
         __attribute__((__aligned__(__alignof__(long long))));
     long double __clang_max_align_nonce2
@@ -157,57 +155,6 @@ namespace MR {
 #endif
 
 
-#ifndef EIGEN_DEFAULT_ALIGN_BYTES
-// Assume 16 byte alignment as hard-coded in Eigen 3.2:
-# define EIGEN_DEFAULT_ALIGN_BYTES 16
-#endif
-
-
-template <class T> class __has_custom_new_operator { NOMEMALIGN
-    template <typename C> static inline char test (decltype(C::operator new (sizeof(C)))) ;
-    template <typename C> static inline long test (...);
-  public:
-    enum { value = sizeof(test<T>(nullptr)) == sizeof(char) };
-};
-
-
-inline void* __aligned_malloc (std::size_t size) {
-  auto* original = std::malloc (size + EIGEN_DEFAULT_ALIGN_BYTES);
-  if (!original) throw std::bad_alloc();
-  void *aligned = reinterpret_cast<void*>((reinterpret_cast<std::size_t>(original) & ~(std::size_t(EIGEN_DEFAULT_ALIGN_BYTES-1))) + EIGEN_DEFAULT_ALIGN_BYTES);
-  *(reinterpret_cast<void**>(aligned) - 1) = original;
-  return aligned;
-}
-
-inline void __aligned_free (void* ptr) { if (ptr) std::free (*(reinterpret_cast<void**>(ptr) - 1)); }
-
-
-#define MEMALIGN(...) public: \
-  FORCE_INLINE void* operator new (std::size_t size) { return (alignof(__VA_ARGS__)>::MR::malloc_align) ? __aligned_malloc (size) : ::operator new (size); } \
-  FORCE_INLINE void* operator new[] (std::size_t size) { return (alignof(__VA_ARGS__)>::MR::malloc_align) ? __aligned_malloc (size) : ::operator new[] (size); } \
-  FORCE_INLINE void operator delete (void* ptr) { if (alignof(__VA_ARGS__)>::MR::malloc_align) __aligned_free (ptr); else ::operator delete (ptr); } \
-  FORCE_INLINE void operator delete[] (void* ptr) { if (alignof(__VA_ARGS__)>::MR::malloc_align) __aligned_free (ptr); else ::operator delete[] (ptr); }
-
-
-/*! \def CHECK_MEM_ALIGN
- * used to verify that the class is set up approriately for memory alignment
- * when dynamically allocated. This checks whether the class's alignment
- * requirements exceed that of the default allocator, and if so whether it has
- * custom operator new methods defined to deal with this. Conversely, it also
- * checks whether a custom allocator has been defined needlessly, which is to
- * be avoided for performance reasons.
- *
- * The compiler will check whether this is indeed needed, and fail with an
- * appropriate warning if this is not true. In this case, you need to replace
- * MEMALIGN with NOMEMALIGN.
- * \sa NOMEMALIGN
- * \sa MEMALIGN
- */
-#define CHECK_MEM_ALIGN(...) \
-    static_assert ( (alignof(__VA_ARGS__) <= ::MR::malloc_align) || __has_custom_new_operator<__VA_ARGS__>::value, \
-        "class requires over-alignment, but no operator new defined! Please insert MEMALIGN() into class definition.")
-
-
 
 namespace MR
 {
@@ -218,7 +165,7 @@ namespace MR
   using cfloat  = std::complex<float>;
 
   template <typename T>
-    struct container_cast : public T { MEMALIGN(container_cast<T>)
+    struct container_cast : public T {
       template <typename U>
         container_cast (const U& x) :
         T (x.begin(), x.end()) { }
@@ -239,25 +186,25 @@ namespace MR
 
 
   //! check whether type is complex:
-  template <class ValueType> struct is_complex : std::false_type { NOMEMALIGN };
-  template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type { NOMEMALIGN };
+  template <class ValueType> struct is_complex : std::false_type {  };
+  template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type {  };
 
 
   //! check whether type is compatible with MRtrix3's file IO backend:
   template <class ValueType>
     struct is_data_type :
-      std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { NOMEMALIGN };
+      std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> {  };
 
 
   template <typename X, int N=(alignof(X)>::MR::malloc_align)>
-    class vector : public ::std::vector<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
+    class vector : public ::std::vector<X, Eigen::aligned_allocator<X>> {
       public:
         using ::std::vector<X,Eigen::aligned_allocator<X>>::vector;
         vector() { }
     };
 
   template <typename X>
-    class vector<X,0> : public ::std::vector<X> { NOMEMALIGN
+    class vector<X,0> : public ::std::vector<X> {
       public:
         using ::std::vector<X>::vector;
         vector() { }
@@ -265,14 +212,14 @@ namespace MR
 
 
   template <typename X, int N=(alignof(X)>::MR::malloc_align)>
-    class deque : public ::std::deque<X, Eigen::aligned_allocator<X>> { NOMEMALIGN
+    class deque : public ::std::deque<X, Eigen::aligned_allocator<X>> {
       public:
         using ::std::deque<X,Eigen::aligned_allocator<X>>::deque;
         deque() { }
     };
 
   template <typename X>
-    class deque<X,0> : public ::std::deque<X> { NOMEMALIGN
+    class deque<X,0> : public ::std::deque<X> {
       public:
         using ::std::deque<X>::deque;
         deque() { }
@@ -320,11 +267,6 @@ namespace std
     return stream;
   }
 
-}
-
-namespace Eigen {
-  using Vector3 = Matrix<MR::default_type, 3, 1>;
-  using Vector4 = Matrix<MR::default_type, 4, 1>;
 }
 
 #endif

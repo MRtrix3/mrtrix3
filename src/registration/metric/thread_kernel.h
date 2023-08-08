@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,54 +33,54 @@ namespace MR
       //! \cond skip
       namespace {
         template<class T>
-        struct Void { NOMEMALIGN
+        struct Void { 
           using type = void;
         };
 
         template <class MetricType, typename U = void>
-        struct is_neighbourhood_metric { NOMEMALIGN
+        struct is_neighbourhood_metric { 
           using no = int;
         };
 
         template <class MetricType>
-        struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> { NOMEMALIGN
+        struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> { 
           using yes = int;
         };
 
         template <class MetricType, typename U = void>
-        struct use_processed_image { NOMEMALIGN
+        struct use_processed_image { 
           using no = int;
         };
 
         template <class MetricType>
-        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> { NOMEMALIGN
+        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> { 
           using yes = int;
         };
 
         template <class MetricType, typename U = void>
-        struct cost_is_vector { NOMEMALIGN
+        struct cost_is_vector { 
           using no = int;
         };
 
         template <class MetricType>
-        struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> { NOMEMALIGN
+        struct cost_is_vector<MetricType, typename Void<typename MetricType::is_vector_type>::type> { 
           using yes = int;
         };
 
         template <class MetricType, typename U = void>
-        struct is_asymmetric { NOMEMALIGN
+        struct is_asymmetric { 
           using no = int;
         };
 
         template <class MetricType>
-        struct is_asymmetric<MetricType, typename Void<typename MetricType::is_asymmetric_type>::type> { NOMEMALIGN
+        struct is_asymmetric<MetricType, typename Void<typename MetricType::is_asymmetric_type>::type> { 
           using yes = int;
         };
       }
       //! \endcond
 
       template <class MetricType, class ParamType>
-      class ThreadKernel { MEMALIGN(ThreadKernel)
+      class ThreadKernel { 
         public:
           ThreadKernel (
               const MetricType& metric,
@@ -125,12 +125,12 @@ namespace MR
               typename cost_is_vector<U>::no = 0,
               typename is_asymmetric<U>::no = 0) {
 
-            Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
-            Eigen::Vector3 midway_point = voxel2scanner * voxel_pos;
+            Eigen::Vector3d voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+            Eigen::Vector3d midway_point = voxel2scanner * voxel_pos;
 
 
 
-            Eigen::Vector3 im2_point;
+            Eigen::Vector3d im2_point;
             params.transformation.transform_half_inverse (im2_point, midway_point);
             if (params.im2_mask_interp) {
               params.im2_mask_interp->scanner (im2_point);
@@ -143,7 +143,7 @@ namespace MR
                 return;
             }
 
-            Eigen::Vector3 im1_point;
+            Eigen::Vector3d im1_point;
             params.transformation.transform_half (im1_point, midway_point);
             if (params.im1_mask_interp) {
               params.im1_mask_interp->scanner (im1_point);
@@ -176,8 +176,8 @@ namespace MR
               typename cost_is_vector<U>::no = 0,
               typename is_asymmetric<U>::yes = 0) {
 
-            Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
-            Eigen::Vector3 im2_point = voxel2scanner * voxel_pos; // image 2 == midway_point == fixed image
+            Eigen::Vector3d voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+            Eigen::Vector3d im2_point = voxel2scanner * voxel_pos; // image 2 == midway_point == fixed image
 
             // shift voxel position as evaluate iterates over a subset of the image
             if (params.robust_estimate_subset) {
@@ -212,7 +212,7 @@ namespace MR
                 return;
             }
 
-            Eigen::Vector3 im1_point; // moving
+            Eigen::Vector3d im1_point; // moving
             params.transformation.transform_half (im1_point, im2_point); // transform_half is full transformation, transform_half_inverse is identity
             if (params.im1_mask_interp) {
               params.im1_mask_interp->scanner (im1_point);
@@ -240,11 +240,11 @@ namespace MR
               typename cost_is_vector<U>::yes = 0,
               typename is_asymmetric<U>::no = 0) {
 
-            Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+            Eigen::Vector3d voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
 
-            Eigen::Vector3 midway_point = voxel2scanner * voxel_pos;
+            Eigen::Vector3d midway_point = voxel2scanner * voxel_pos;
 
-            Eigen::Vector3 im2_point;
+            Eigen::Vector3d im2_point;
             params.transformation.transform_half_inverse (im2_point, midway_point);
             if (params.im2_mask_interp) {
               params.im2_mask_interp->scanner (im2_point);
@@ -252,7 +252,7 @@ namespace MR
                 return;
             }
 
-            Eigen::Vector3 im1_point;
+            Eigen::Vector3d im1_point;
             params.transformation.transform_half (im1_point, midway_point);
             if (params.im1_mask_interp) {
               params.im1_mask_interp->scanner (im1_point);
@@ -298,7 +298,7 @@ namespace MR
                 typename is_asymmetric<U>::no = 0) {
               assert(params.processed_image.valid());
 
-              Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+              Eigen::Vector3d voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
 
               if (params.processed_mask.valid()){
                 assign_pos_of (iter, 0, 3).to (params.processed_mask);
@@ -328,7 +328,7 @@ namespace MR
       };
 
       template <class MetricType, class ParamType>
-      struct StochasticThreadKernel { MEMALIGN(StochasticThreadKernel)
+      struct StochasticThreadKernel { 
         public:
           StochasticThreadKernel (
               const vector<size_t>& inner_axes,

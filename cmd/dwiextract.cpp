@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -67,6 +67,8 @@ void usage ()
 void run()
 {
   auto input_image = Image<float>::open (argument[0]);
+  if (input_image.ndim() < 4)
+    throw Exception ("Epected input image to contain more than three dimensions");
   auto grad = DWI::get_DW_scheme (input_image);
 
   // Want to support non-shell-like data if it's just a straight extraction

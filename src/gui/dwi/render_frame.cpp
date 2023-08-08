@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,7 @@
 
 #include <fstream>
 
-#include <QGLWidget>
+#include <QOpenGLWidget>
 
 #include "app.h"
 #include "gui/dwi/render_frame.h"
@@ -61,7 +61,7 @@ namespace MR
         glfont (get_font (parent)), projection (this, glfont),
         orientation (DefaultOrientation),
         focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
-        renderer ((QGLWidget*)this)
+        renderer ((QOpenGLWidget*)this)
       {
         setMinimumSize (128, 128);
         lighting = new GL::Lighting (this);
@@ -288,14 +288,24 @@ namespace MR
 
       void RenderFrame::mousePressEvent (QMouseEvent* event)
       {
-        last_pos = event->pos();
+#if QT_VERSION >= 0x060000
+        last_pos = event->position();
+#else
+	last_pos = event->pos();
+#endif
       }
 
       void RenderFrame::mouseMoveEvent (QMouseEvent* event)
       {
-        int dx = event->x() - last_pos.x();
-        int dy = event->y() - last_pos.y();
+#if QT_VERSION >= 0x060000
+        int dx = event->position().x() - last_pos.x();
+        int dy = event->position().y() - last_pos.y();
+        last_pos = event->position();
+#else
+        int dx = event->pos().x() - last_pos.x();
+        int dy = event->pos().y() - last_pos.y();
         last_pos = event->pos();
+#endif
         if (dx == 0 && dy == 0) return;
 
         if (event->modifiers() == Qt::NoModifier) {
@@ -309,7 +319,7 @@ namespace MR
             orientation = rot * orientation;
             update();
           }
-          else if (event->buttons() == Qt::MidButton) {
+          else if (event->buttons() == Qt::MiddleButton) {
             focus += projection.screen_to_model_direction (QPoint (dx, -dy), focus);
             update();
           }
@@ -396,4 +406,3 @@ namespace MR
     }
   }
 }
-

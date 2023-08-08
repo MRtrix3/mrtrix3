@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,7 +29,7 @@ namespace MR {
     // for details, see: Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. Journal of the American Statistical Association 1993;88:1273–1283. 
 
     template <typename value_type = default_type> 
-      class Sn_scale_estimator { NOMEMALIGN
+      class Sn_scale_estimator { 
         public:
           template <class VectorType>
             value_type operator() (const VectorType& vec)

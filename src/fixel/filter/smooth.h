@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 #ifndef __fixel_filter_smooth_h__
 #define __fixel_filter_smooth_h__
 
+#include "fixel/fixel.h"
 #include "fixel/matrix.h"
 #include "fixel/filter/base.h"
 
@@ -51,7 +52,7 @@ namespace MR
        */
 
       class Smooth : public Base
-      { MEMALIGN (Smooth)
+      {
 
         public:
           Smooth (Image<index_type> index_image,

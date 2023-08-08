@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR
 
 
     class Zstatistic
-    { MEMALIGN(Zstatistic)
+    { 
       public:
         Zstatistic() { }
 
@@ -54,7 +54,7 @@ namespace MR
       protected:
 
         class LookupBase
-        { MEMALIGN(LookupBase)
+        { 
           public:
             virtual ~LookupBase() { }
             using array_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
@@ -72,7 +72,7 @@ namespace MR
         };
 
         class Lookup_t2z : public LookupBase
-        { MEMALIGN(Lookup_t2z)
+        { 
           public:
             Lookup_t2z (const size_t dof);
             default_type operator() (const default_type) const override;
@@ -84,7 +84,7 @@ namespace MR
         };
 
         class Lookup_F2z : public LookupBase
-        { MEMALIGN(Lookup_F2z)
+        { 
           public:
             Lookup_F2z (const size_t rank, const size_t dof);
             default_type operator() (const default_type) const override;

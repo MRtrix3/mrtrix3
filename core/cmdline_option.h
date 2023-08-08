@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -102,7 +102,7 @@ namespace MR
      * as multiple (see allow_multiple() function). Note that in this case only
      * one such argument can be optional and/or multiple, since more than one
      * such argument would lead to ambiguities when parsing the command-line.  */
-    class Argument { NOMEMALIGN
+    class Argument { 
       public:
         //! constructor
         /*! this is used to construct a command-line argument object, with a name
@@ -126,10 +126,10 @@ namespace MR
         //! a structure to store the various parameters of the Argument
         union {
           const char* const* choices;
-          struct { NOMEMALIGN
+          struct { 
             int64_t min, max;
           } i;
-          struct { NOMEMALIGN
+          struct { 
             default_type min, max;
           } f;
         } limits;
@@ -340,7 +340,7 @@ namespace MR
      * Options can also be specified as required (see required() function), or
      * as multiple (see allow_multiple() function).
      */
-    class Option : public vector<Argument> { NOMEMALIGN
+    class Option : public vector<Argument> { 
       public:
         Option () : id (nullptr), flags (Optional) { }
 
@@ -415,7 +415,7 @@ namespace MR
      * }
      * \endcode
      */
-    class OptionGroup : public vector<Option> { NOMEMALIGN
+    class OptionGroup : public vector<Option> { 
       public:
         OptionGroup (const char* group_name = "OPTIONS") : name (group_name) { }
         const char* name;

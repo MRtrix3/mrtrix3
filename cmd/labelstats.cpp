@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -74,7 +74,7 @@ void run ()
         coms.conservativeResizeLike (matrix_type::Zero (value, 3));
         masses.conservativeResizeLike (vector_type::Zero (value));
       }
-      coms.row(value-1) += Eigen::Vector3 (image.index(0), image.index(1), image.index(2));
+      coms.row(value-1) += Eigen::Vector3d (image.index(0), image.index(1), image.index(2));
       masses[value-1]++;
     }
   }

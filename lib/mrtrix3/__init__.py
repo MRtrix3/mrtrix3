@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,8 +42,11 @@ BIN_PATH = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(os.path.
 EXE_LIST = [ os.path.splitext(name)[0] for name in os.listdir(BIN_PATH) ] #pylint: disable=unused-variable
 
 
-# - 'CONFIG' is a directory containing those entries present in the MRtrix config files
-CONFIG = { }
+# 'CONFIG' is a dictionary containing those entries present in the MRtrix config files
+# Can add default values here that would otherwise appear in multiple locations
+CONFIG = {
+  'Dwi2maskAlgorithm': 'legacy'
+}
 
 
 # Codes for printing information to the terminal
@@ -56,14 +59,14 @@ ANSI = ANSICodes('\033[0K', '', '', '', '', '', '') #pylint: disable=unused-vari
 for config_path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.sep, 'etc', 'mrtrix.conf')),
                      os.path.join(os.path.expanduser('~'), '.mrtrix.conf') ]:
   try:
-    f = open (config_path, 'r')
-    for line in f:
-      line = line.strip().split(': ')
-      if len(line) != 2:
-        continue
-      if line[0][0] == '#':
-        continue
-      CONFIG[line[0]] = line[1]
+    with open (config_path, 'r', encoding='utf-8') as f:
+      for line in f:
+        line = line.strip().split(': ')
+        if len(line) != 2:
+          continue
+        if line[0][0] == '#':
+          continue
+        CONFIG[line[0]] = line[1]
   except IOError:
     pass
 
@@ -74,7 +77,7 @@ for config_path in [ os.environ.get ('MRTRIX_CONFIGFILE', os.path.join(os.path.s
 
 # Set up terminal special characters now, since they may be dependent on the config file
 def setup_ansi():
-  global ANSI, CONFIG
+  global ANSI
   if sys.stderr.isatty() and not ('TerminalColor' in CONFIG and CONFIG['TerminalColor'].lower() in ['no', 'false', '0']):
     ANSI = ANSICodes('\033[0K', '\033[0m', '\033[03;32m', '\033[03;34m', '\033[01;31m', '\033[03;36m', '\033[00;31m') #pylint: disable=unused-variable
 setup_ansi()
@@ -84,4 +87,4 @@ setup_ansi()
 # Execute a command
 def execute(): #pylint: disable=unused-variable
   from . import app #pylint: disable=import-outside-toplevel
-  app._execute(inspect.getmodule(inspect.stack()[-1][0])) # pylint: disable=protected-access
+  app._execute(inspect.getmodule(inspect.stack()[1][0])) # pylint: disable=protected-access

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ namespace MR
 
 
     class Connector
-    { NOMEMALIGN
+    { 
 
       public:
 
@@ -49,7 +49,7 @@ namespace MR
         //   class, to define the volumes on the fourth axis that
         //   correspond to neighbouring directions using a Directions::Set.
         class Adjacency
-        { NOMEMALIGN
+        { 
           public:
             typedef Voxel2Vector::index_t index_t;
 
@@ -93,7 +93,7 @@ namespace MR
 
 
         class Cluster
-        { NOMEMALIGN
+        { 
           public:
             Cluster (const uint32_t l) :
                 label (l),
@@ -225,7 +225,7 @@ namespace MR
      *
      * \endcode
      */
-    class ConnectedComponents : public Base { MEMALIGN(ConnectedComponents)
+    class ConnectedComponents : public Base { 
       public:
 
         template <class HeaderType>
@@ -233,7 +233,8 @@ namespace MR
             Base (in),
             enabled_axes (ndim(), true),
             largest_only (false),
-            do_26_connectivity (false)
+            do_26_connectivity (false),
+            minsize (0)
         {
           if (this->ndim() > 4)
             throw Exception ("Cannot run connected components analysis with more than 4 dimensions");
@@ -254,24 +255,20 @@ namespace MR
         template <class InputVoxelType, class OutputVoxelType>
         void operator() (InputVoxelType& in, OutputVoxelType& out)
         {
+          std::unique_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message, 5) : nullptr);
+
           Voxel2Vector v2v (in, *this);
+          if (progress) ++(*progress);
 
           Connector connector;
           connector.adjacency.set_axes (enabled_axes);
           connector.adjacency.set_26_adjacency (do_26_connectivity);
           connector.adjacency.initialise (in, v2v);
-
-          std::unique_ptr<ProgressBar> progress;
-          if (message.size()) {
-            progress.reset (new ProgressBar (message));
-            ++(*progress);
-          }
+          if (progress) ++(*progress);
 
           vector<Connector::Cluster> clusters;
           vector<uint32_t> labels;
           connector.run (clusters, labels);
-          if (progress) ++(*progress);
-
           // Sort clusters in order from largest to smallest
           std::sort (clusters.begin(), clusters.end(), Connector::largest);
           if (progress) ++(*progress);
@@ -279,11 +276,14 @@ namespace MR
           // Generate a lookup table to map input cluster index to
           //   output cluster index following cluster-size sorting
           vector<uint32_t> index_lookup (clusters.size() + 1, 0);
-          for (uint32_t c = 0; c < clusters.size(); c++)
+          for (uint32_t c = 0; c < clusters.size(); c++) {
+            if (clusters[c].size < minsize) break;
             index_lookup[clusters[c].label] = c + 1;
+          }
 
           for (auto l = Loop (out) (out); l; ++l)
             out.value() = 0;
+          if (progress) ++(*progress);
 
           for (uint32_t i = 0; i < v2v.size(); i++) {
             assign_pos_of (v2v[i]).to (out);
@@ -294,6 +294,7 @@ namespace MR
               out.value() = index_lookup[labels[i]];
             }
           }
+
         }
 
 
@@ -302,13 +303,21 @@ namespace MR
         {
           const size_t max_axis = *std::max_element (i.begin(), i.end());
           if (max_axis >= ndim())
-            throw Exception ("Requested axis for connected component filter (" + str(max_axis) + " is beyond the dimensionality of the image (" + str(ndim()) + "D)");
+            throw Exception ("Requested axis for connected-component filter (" + str(max_axis) + " is beyond the dimensionality of the image (" + str(ndim()) + "D)");
           enabled_axes.assign (std::max (max_axis+1, size_t(ndim())), false);
           for (const auto& axis : i) {
             if (axis < 0)
               throw Exception ("Cannot specify negative axis index for connected-component filter");
             enabled_axes[axis] = true;
           }
+        }
+
+
+        void set_axes (const vector<bool>& i)
+        {
+          if (i.size() != ndim())
+            throw Exception ("Length of axis selection flag vector (" + str(i.size()) + ") does not match dimensionality of connected-component filter (" + str(ndim()) + "D)");
+          enabled_axes = i;
         }
 
 
@@ -324,10 +333,17 @@ namespace MR
         }
 
 
+        void set_minsize (uint32_t value)
+        {
+          minsize = value;
+        }
+
+
       protected:
         vector<bool> enabled_axes;
         bool largest_only;
         bool do_26_connectivity;
+        uint32_t minsize;
     };
     //! @}
   }

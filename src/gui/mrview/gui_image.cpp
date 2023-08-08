@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -490,12 +490,12 @@ namespace MR
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
         {
-          struct WithType : public MR::Image<cfloat> { NOMEMALIGN
+          struct WithType : public MR::Image<cfloat> { 
             using MR::Image<cfloat>::data_offset;
             using MR::Image<cfloat>::buffer;
 
             WithType (const MR::Image<cfloat>& source) : MR::Image<cfloat> (source) {
-              __set_fetch_store_functions (fetch_func, store_func, buffer->datatype());
+              __set_fetch_store_scale_functions (fetch_func, store_func, buffer->datatype());
             }
             FORCE_INLINE ValueType value () const {
               ssize_t nseg = data_offset / buffer->get_io()->segment_size();

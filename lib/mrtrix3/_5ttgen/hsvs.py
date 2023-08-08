@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -225,7 +225,7 @@ def execute(): #pylint: disable=unused-variable
       hipp_subfield_paired_images.append(lh_filename[1:])
   # Choose which of these image pairs we are going to use
   for code in [ '.CA.', '.FS60.' ]:
-    if any([ code in filename for filename in hipp_subfield_paired_images ]):
+    if any(code in filename for filename in hipp_subfield_paired_images):
       hipp_subfield_image_suffix = [ filename for filename in hipp_subfield_paired_images if code in filename ][0]
       have_hipp_subfields = True
       break
@@ -433,7 +433,7 @@ def execute(): #pylint: disable=unused-variable
   run.command('mesh2voxel ' + bs_smoothed_mesh_path + ' ' + template_image + ' brain_stem.mif')
   app.cleanup(bs_smoothed_mesh_path)
   progress.increment()
-  fourthventricle_zmin = min([ int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines() ])
+  fourthventricle_zmin = min(int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines())
   if fourthventricle_zmin:
     bs_cropmask_path = 'brain_stem_crop.mif'
     run.command('mredit brain_stem.mif - ' + ' '.join([ '-plane 2 ' + str(index) + ' 0' for index in range(0, fourthventricle_zmin) ]) + ' | '
@@ -545,7 +545,7 @@ def execute(): #pylint: disable=unused-variable
     acpcdetect_input_header = image.Header(acpcdetect_input_image)
     acpcdetect_output_path = os.path.splitext(acpcdetect_input_image)[0] + '_ACPC.txt'
     app.cleanup(acpcdetect_input_image)
-    with open(acpcdetect_output_path, 'r') as acpc_file:
+    with open(acpcdetect_output_path, 'r', encoding='utf-8') as acpc_file:
       acpcdetect_output_data = acpc_file.read().splitlines()
     app.cleanup(glob.glob(os.path.splitext(acpcdetect_input_image)[0] + "*"))
     # Need to scan through the contents of this file,

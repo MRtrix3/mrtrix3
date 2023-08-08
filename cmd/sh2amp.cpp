@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,6 +20,7 @@
 #include "image.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "file/matrix.h"
 #include "math/sphere.h"
 #include "math/SH.h"
 
@@ -87,7 +88,7 @@ using value_type = float;
 
 
 
-class SH2Amp { MEMALIGN(SH2Amp)
+class SH2Amp { 
   public:
     SH2Amp (const Eigen::MatrixXd& transform, bool nonneg) :
       transform (transform),
@@ -112,7 +113,7 @@ class SH2Amp { MEMALIGN(SH2Amp)
 
 
 
-class SH2AmpMultiShell { MEMALIGN(SH2AmpMultiShell)
+class SH2AmpMultiShell { 
   public:
     SH2AmpMultiShell (const vector<Eigen::MatrixXd>& dirs, const DWI::Shells& shells, bool nonneg) :
       transforms (dirs),
@@ -161,7 +162,7 @@ void run ()
   }
   catch (Exception& E) {
     try {
-      directions = load_matrix<double> (argument[1]);
+      directions = File::Matrix::load_matrix<double> (argument[1]);
       if (directions.cols() < 4)
         throw ("unable to interpret file \"" + std::string(argument[1]) + "\" as a directions or gradient file");
     }

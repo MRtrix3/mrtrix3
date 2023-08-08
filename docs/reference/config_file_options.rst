@@ -213,6 +213,92 @@ List of MRtrix3 configuration file options
 
      The default intensity for the diffuse light in OpenGL renders.
 
+.. option:: Dwi2maskAlgorithm
+
+    *default: legacy*
+
+     The dwi2mask algorithm to utilise whenever dwi2mask must be invoked
+     within a Python script, and the user is not provided with the
+     opportunity to select the algorithm at the command-line.
+
+.. option:: Dwi2maskTemplateANTsFullOptions
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software antsfull (or
+     Dwi2maskTemplate is set to "antsfull"), specify the command-line
+     options with which command "antsRegistration" will be provided.
+
+.. option:: Dwi2maskTemplateANTsQuickOptions
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software antsquick (or
+     Dwi2maskTemplate is set to "antsquick"), specify the command-line
+     options with which command "antsRegistrationSynQuick.sh" will be
+     provided.
+
+.. option:: Dwi2maskTemplateFSLFlirtOptions
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software fsl (or
+     Dwi2maskTemplate is set to "fsl"), specify the command-line
+     options with which FSL command flirt will be provided.
+
+.. option:: Dwi2maskTemplateFSLFnirtConfig
+
+    *default: (none)*
+
+     When dwi2mask template is used with -software fsl (or
+     Dwi2maskTemplate is set to "fsl"), specify the configuration
+     file to be provided to the FSL command fnirt.
+
+.. option:: Dwi2maskTemplateImage
+
+    *default: (none)*
+
+     The template image to utilise by default whenever the "dwi2mask ants"
+     or "dwi2mask template" algorithms are invoked but no template image
+     / mask pair are explicitly nominated at the command-line.
+
+.. option:: Dwi2maskTemplateMask
+
+    *default: (none)*
+
+     The template brain mask to utilise by default whenever the "dwi2mask
+     ants" or "dwi2mask template" algorithms are invoked but no template
+     image / mask pair are explicitly nominated at the command-line.
+
+.. option:: Dwi2maskTemplateSoftware
+
+    *default: fsl*
+
+     The software to be used for registration and transformation
+     by default within the "dwi2mask template" algorithm.
+
+.. option:: DwibiasnormmaskMaskAlgorithm
+
+    *default: threshold*
+
+     For the "dwibiasnormmask" command, specify the algorithm that
+     will be used for brain masking across the iterative process.
+     Note that the image data that are used to derive the mask
+     may be different between the various options.
+     Available options are as follows.
+     dwi2mask: Invoke the MRtrix3 command dwi2mask using the
+     bias-field-corrected DWI series, using whatever algorithm has
+     been specified as the default for that command
+     (see config file option Dwi2maskAlgorithm).
+     fslbet: Use FSL command "bet" on the ODF tissue sum image.
+     hdbet: Use HD-BET on the ODF tissue sum image.
+     mrthreshold: Use MRtrix3 command "mrthreshold" on the ODF tissue
+     sum image, allowing it to determine the appropriate threshold
+     automatically; some mask cleanup operations will additionally be used.
+     synthstrip: Use FreeSurfer's SynthStrip on the ODF tissue sum image.
+     threshold: Apply a 0.5 threshold to the ODF tissue sum image;
+     some mask cleanup operations will additionally be used.
+
 .. option:: FailOnWarn
 
     *default: 0 (false)*
@@ -483,6 +569,14 @@ List of MRtrix3 configuration file options
      sform transformation should be used in preference to the
      qform matrix. The default is to use the sform matrix;
      set to 0 / false to override and instead use the qform.
+
+.. option:: NPYFloatMaxSavePrecision
+
+    *default: 64*
+
+     When exporting floating-point data to NumPy .npy format, do not
+     use a precision any greater than this value in bits (used to
+     minimise file size). Must be equal to either 16, 32 or 64.
 
 .. option:: NeedOpenGLCoreProfile
 

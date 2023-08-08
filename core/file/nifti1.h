@@ -130,7 +130,7 @@ extern "C" {
              NIFTI-1 header file.
    */
   /*************************/  /************************/
-  struct nifti_1_header { NOMEMALIGN
+  struct nifti_1_header { 
     /* NIFTI-1 usage         */  /* ANALYZE 7.5 field(s) */
     /*************************/  /************************/
 
@@ -274,7 +274,7 @@ extern "C" {
              values of {0,0,0,0} imply the file does not contain extensions.
              Other sequences of values are not currently defined.
    */
-  struct nifti1_extender { NOMEMALIGN
+  struct nifti1_extender { 
     char extension[4] ;
   } ;
   typedef struct nifti1_extender nifti1_extender ;
@@ -282,7 +282,7 @@ extern "C" {
   /*! \struct nifti1_extension
       \brief Data structure defining the fields of a header extension.
    */
-  struct nifti1_extension { NOMEMALIGN
+  struct nifti1_extension { 
     int    esize ; /*!< size of extension, in bytes (must be multiple of 16) */
     int    ecode ; /*!< extension code, one of the NIFTI_ECODE_ values       */
     char* edata ;  /*!< raw data, with no byte swapping                      */
@@ -546,16 +546,16 @@ extern "C" {
 
   /*-------- sample typedefs for complicated types ---*/
 #if 0
-  typedef struct { NOMEMALIGN
+  typedef struct { 
     float       r,i;
   } complex_float ;
-  typedef struct { NOMEMALIGN
+  typedef struct { 
     double      r,i;
   } complex_double ;
-  typedef struct { NOMEMALIGN
+  typedef struct { 
     long double r,i;
   } complex_longdouble ;
-  typedef struct { NOMEMALIGN
+  typedef struct { 
     unsigned char r,g,b;
   } rgb_byte ;
 #endif

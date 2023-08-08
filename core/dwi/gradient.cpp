@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
+#include "file/matrix.h"
 #include "file/nifti_utils.h"
 
 namespace MR
@@ -101,7 +103,7 @@ namespace MR
       const auto it = header.keyval().find ("dw_scheme");
       if (it != header.keyval().end()) {
         try {
-          G = parse_matrix (it->second);
+          G = MR::parse_matrix (it->second);
         } catch (Exception& e) {
           throw Exception (e, "malformed DW scheme in image \"" + header.name() + "\"");
         }
@@ -116,8 +118,8 @@ namespace MR
     {
       Eigen::MatrixXd bvals, bvecs;
       try {
-        bvals = load_matrix<> (bvals_path);
-        bvecs = load_matrix<> (bvecs_path);
+        bvals = File::Matrix::load_matrix<> (bvals_path);
+        bvecs = File::Matrix::load_matrix<> (bvecs_path);
       } catch (Exception& e) {
         throw Exception (e, "Unable to import files \"" + bvecs_path + "\" and \"" + bvals_path + "\" as FSL bvecs/bvals pair");
       }
@@ -199,8 +201,8 @@ namespace MR
       if (adjusted_transform.linear().determinant() > 0.0)
         bvecs.row(0) = -bvecs.row(0);
 
-      save_matrix (bvecs, bvecs_path, KeyValues(), false);
-      save_matrix (bvals, bvals_path, KeyValues(), false);
+      File::Matrix::save_matrix (bvecs, bvecs_path, KeyValues(), false);
+      File::Matrix::save_matrix (bvals, bvals_path, KeyValues(), false);
     }
 
 
@@ -223,7 +225,7 @@ namespace MR
       // check whether the DW scheme has been provided via the command-line:
       const auto opt_mrtrix = get_options ("grad");
       if (opt_mrtrix.size())
-        grad = load_matrix<> (opt_mrtrix[0][0]);
+        grad = File::Matrix::load_matrix<> (opt_mrtrix[0][0]);
 
       const auto opt_fsl = get_options ("fslgrad");
       if (opt_fsl.size()) {
@@ -253,15 +255,17 @@ namespace MR
         Eigen::Array<default_type, Eigen::Dynamic, 1> squared_norms = grad.leftCols(3).rowwise().squaredNorm();
         // ensure interpreted directions are always normalised
         // also make sure that directions of [0, 0, 0] don't affect subsequent calculations
+        bool warnambiguous = false;
         for (ssize_t row = 0; row != grad.rows(); ++row) {
           if (squared_norms[row])
             grad.row(row).template head<3>().array() /= std::sqrt(squared_norms[row]);
           else
-            squared_norms[row] = 1.0;
+            warnambiguous = warnambiguous || ( grad.row(row)[3] > bzero_threshold() );
         }
         // modulate verbosity of message & whether or not header is modified
         // based on magnitude of effect of normalisation
-        const default_type max_log_scaling_factor = squared_norms.log().abs().maxCoeff();
+        const default_type max_log_scaling_factor = squared_norms.unaryExpr ([](double v) {
+            return v > 0.0 ? abs(log(v)) : 0.0; }).maxCoeff();
         const default_type max_scaling_factor = std::exp (max_log_scaling_factor);
         const bool exceeds_single_precision = max_log_scaling_factor > 1e-5;
         const bool requires_bvalue_scaling = max_log_scaling_factor > 0.01;
@@ -272,6 +276,9 @@ namespace MR
         if (( requires_bvalue_scaling && bvalue_scaling == BValueScalingBehaviour::Auto ) ||
             bvalue_scaling == BValueScalingBehaviour::UserOn ) {
           grad.col(3).array() *= squared_norms;
+          if (warnambiguous)
+            WARN ("Ambiguous [ 0 0 0 non-zero ] entries found in DW gradient table. "
+                  "These will be interpreted as b=0 volumes unless -bvalue_scaling is disabled.");
           INFO ("b-values scaled by the square of DW gradient norm "
               "(maximum scaling factor = " + str(max_scaling_factor) + ")");
         }
@@ -313,7 +320,7 @@ namespace MR
 
       auto opt = get_options ("export_grad_mrtrix");
       if (opt.size())
-        save_matrix (parse_DW_scheme (check (header)), opt[0][0]);
+        File::Matrix::save_matrix (parse_DW_scheme (check (header)), opt[0][0]);
 
       opt = get_options ("export_grad_fsl");
       if (opt.size())
