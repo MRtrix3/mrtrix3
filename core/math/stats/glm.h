@@ -224,7 +224,7 @@ namespace MR
 
         // Only exists to permit the use of a base class pointer in the TestBase class
         class SharedBase
-        { NOMEMALIGN
+        {
           public:
             virtual ~SharedBase() { }
         };
@@ -232,7 +232,7 @@ namespace MR
         using SharedHomoscedasticBase = Math::Zstatistic;
 
         class SharedFixedBase
-        { MEMALIGN(SharedFixedBase)
+        {
           public:
             SharedFixedBase (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
             vector<Hypothesis::Partition> partitions;
@@ -241,7 +241,7 @@ namespace MR
         };
 
         class SharedVariableBase
-        { MEMALIGN(SharedVariableBase)
+        {
           public:
             SharedVariableBase (const vector<CohortDataImport>& importers,
                                 const bool nans_in_data,
@@ -252,7 +252,7 @@ namespace MR
         };
 
         class SharedHeteroscedasticBase
-        { MEMALIGN(SharedHeteroscedasticBase)
+        {
           public:
             SharedHeteroscedasticBase (const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups);
             index_array_type VG;
@@ -324,7 +324,7 @@ namespace MR
 #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
             , public SharedHomoscedasticBase
 #endif
-            { MEMALIGN(Shared)
+            {
               public:
                 Shared (const matrix_type& measurements,
                         const matrix_type& design,
@@ -356,7 +356,7 @@ namespace MR
              */
             void operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) override;
 
-            size_t num_factors() const override { return M.cols(); }
+            index_type num_factors() const override { return M.cols(); }
 
             const Shared& S() const { return *dynamic_cast<const Shared* const> (shared.get()); }
 
@@ -387,7 +387,7 @@ namespace MR
           public:
 
             class Shared : public SharedBase, public SharedFixedBase, public SharedHeteroscedasticBase
-            { MEMALIGN(Shared)
+            {
               public:
                 Shared (const matrix_type& measurements,
                         const matrix_type& design,
@@ -423,7 +423,7 @@ namespace MR
              */
             void operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) override;
 
-            virtual size_t num_factors() const final { return M.cols(); }
+            index_type num_factors() const final { return M.cols(); }
             index_type num_variance_groups() const { return S().num_vgs; }
 
             const Shared& S() const { return *dynamic_cast<const Shared* const> (shared.get()); }
@@ -444,7 +444,7 @@ namespace MR
 
 
         class TestVariableBase : public TestBase
-        { MEMALIGN(TestVariableBase)
+        {
           public:
             TestVariableBase (const matrix_type& measurements,
                               const matrix_type& design,
@@ -455,7 +455,7 @@ namespace MR
 
             std::unique_ptr<TestBase> __clone() const override = 0;
 
-            virtual size_t num_importers() const = 0;
+            virtual index_type num_importers() const = 0;
 
           protected:
             // Temporaries
@@ -465,9 +465,9 @@ namespace MR
             vector_type y_masked, Sy, lambda;
 
             template <class SharedType>
-            void set_mask (const SharedType& s, const size_t ie);
+            void set_mask (const SharedType& s, const index_type ie);
 
-            void apply_mask (const size_t ie, const matrix_type& shuffling_matrix);
+            void apply_mask (const index_type ie, const matrix_type& shuffling_matrix);
 
         };
 
@@ -495,7 +495,7 @@ namespace MR
 #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
             , public SharedHomoscedasticBase
 #endif
-            { MEMALIGN(Shared)
+            {
               public:
                 Shared (const vector<CohortDataImport>& importers,
                         const bool nans_in_data,
@@ -557,7 +557,7 @@ namespace MR
         {
           public:
             class Shared : public SharedBase, public SharedVariableBase, public SharedHeteroscedasticBase
-            { MEMALIGN(Shared)
+            {
               public:
                 Shared (const vector<Hypothesis>& hypotheses,
                         const index_array_type& variance_groups,

@@ -573,8 +573,8 @@ namespace MR
             num_vgs (variance_groups.maxCoeff() + 1),
             gamma_weights (vector_type::Zero (hypotheses.size()))
         {
-          for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
-            const size_t s = hypotheses[ih].rank();
+          for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
+            const index_type s = hypotheses[ih].rank();
             gamma_weights[ih] = 2.0*(s-1) / default_type(s*(s+2));
           }
         }
@@ -614,7 +614,7 @@ namespace MR
             sse (measurements.cols())
         {
           shared.reset (new Shared (measurements, design, hypotheses));
-          for (size_t ih = 0; ih != hypotheses.size(); ++ih)
+          for (index_type ih = 0; ih != hypotheses.size(); ++ih)
             betas.emplace_back (matrix_type (hypotheses[ih].matrix().rows(), 1));
         }
 
@@ -627,7 +627,7 @@ namespace MR
             residuals (num_inputs(), num_elements()),
             sse (num_elements())
         {
-          for (size_t ih = 0; ih != num_hypotheses(); ++ih)
+          for (index_type ih = 0; ih != num_hypotheses(); ++ih)
             betas.emplace_back (matrix_type (c[ih].matrix().rows(), 1));
         }
 
@@ -645,8 +645,8 @@ namespace MR
 
 
         void TestFixedHomoscedastic::operator() (const matrix_type& shuffling_matrix,
-                                                matrix_type& stats,
-                                                matrix_type& zstats)
+                                                 matrix_type& stats,
+                                                 matrix_type& zstats)
         {
           assert (index_type(shuffling_matrix.rows()) == num_inputs());
           stats .resize (num_elements(), num_hypotheses());
@@ -684,9 +684,7 @@ namespace MR
             VAR (S().XtX[ih].rows());
             VAR (S().XtX[ih].cols());
 #endif
-            const index_type dof = num_inputs() - partitions[ih].rank_x - partitions[ih].rank_z;
-            const default_type one_over_dof = 1.0 / default_type(dof);
-            sse = (Rm*Sy).colwise().squaredNorm();
+            sse = (S().Rm*Sy).colwise().squaredNorm();
 #ifdef GLM_TEST_DEBUG
             VAR (sse.size());
 #endif
@@ -739,7 +737,7 @@ namespace MR
             Rnn_sums (vector_type::Zero (num_vgs))
         {
           // Pre-calculate whatever can be pre-calculated for G-statistic
-          for (index_type input = 0; input != num_inputs(); ++input) {
+          for (index_type input = 0; input != measurements.rows(); ++input) {
             // Number of inputs belonging to each VG
             inputs_per_vg[variance_groups[input]]++;
             // Sum of diagonal entries of residual-forming matrix corresponding to each VG
@@ -951,30 +949,30 @@ namespace MR
 
 
         template <class SharedType>
-        void TestVariableBase::set_mask (const SharedType& s, const size_t ie)
+        void TestVariableBase::set_mask (const SharedType& s, const index_type ie)
         {
           element_mask.clear (true);
           if (s.nans_in_data) {
-            for (ssize_t row = 0; row != num_inputs(); ++row) {
+            for (index_type row = 0; row != num_inputs(); ++row) {
               if (!std::isfinite (y (row, ie)))
                 element_mask[row] = false;
             }
           }
           if (s.nans_in_columns) {
-            for (ssize_t row = 0; row != extra_column_data.rows(); ++row) {
+            for (index_type row = 0; row != extra_column_data.rows(); ++row) {
               if (!extra_column_data.row (row).allFinite())
                 element_mask[row] = false;
             }
           }
         }
-        template void TestVariableBase::set_mask (const TestVariableHomoscedastic::Shared&, const size_t);
-        template void TestVariableBase::set_mask (const TestVariableHeteroscedastic::Shared&, const size_t);
+        template void TestVariableBase::set_mask (const TestVariableHomoscedastic::Shared&, const index_type);
+        template void TestVariableBase::set_mask (const TestVariableHeteroscedastic::Shared&, const index_type);
 
 
 
-        void TestVariableBase::apply_mask (const size_t ie, const matrix_type& shuffling_matrix)
+        void TestVariableBase::apply_mask (const index_type ie, const matrix_type& shuffling_matrix)
         {
-          const size_t finite_count = element_mask.count();
+          const index_type finite_count = element_mask.count();
           // Do we need to reduce the size of our matrices / vectors
           //   based on the presence of non-finite values?
           if (finite_count == num_inputs()) {
@@ -986,9 +984,10 @@ namespace MR
             y_masked = y.col (ie);
 
           } else {
+
             permuted_mask.clear (true);
-            size_t out_index = 0;
-            for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+            index_type out_index = 0;
+            for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
               if (element_mask[in_index]) {
                 Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
                 if (num_importers())
@@ -998,7 +997,7 @@ namespace MR
                 // Any row in the permutation matrix that contains a non-zero entry
                 //   in the column corresponding to in_row needs to be removed
                 //   from the permutation matrix
-                for (ssize_t perm_row = 0; perm_row != shuffling_matrix.rows(); ++perm_row) {
+                for (index_type perm_row = 0; perm_row != shuffling_matrix.rows(); ++perm_row) {
                   if (shuffling_matrix (perm_row, in_index))
                     permuted_mask[perm_row] = false;
                 }
@@ -1011,18 +1010,19 @@ namespace MR
             // Only after we've reduced the design matrix do we now reduce the shuffling matrix
             // Step 1: Remove rows that contain non-zero entries in columns to be removed
             out_index = 0;
-            for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+            for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
               if (permuted_mask[in_index])
                 intermediate_shuffling_matrix.row (out_index++) = shuffling_matrix.row (in_index);
             }
             assert (out_index == finite_count);
             // Step 2: Remove columns
             out_index = 0;
-            for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+            for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
               if (element_mask[in_index])
                 shuffling_matrix_masked.col (out_index++) = intermediate_shuffling_matrix.col (in_index);
             }
             assert (out_index == finite_count);
+
           }
         }
 
@@ -1058,7 +1058,7 @@ namespace MR
             TestVariableBase (measurements, design, hypotheses, importers)
         {
           shared.reset (new Shared(importers, nans_in_data, nans_in_columns));
-          for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
+          for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
             XtX.emplace_back (hypotheses[ih].matrix().rows(), hypotheses[ih].matrix().rows());
             beta.emplace_back (hypotheses[ih].matrix().rows(), 1);
           }
@@ -1069,7 +1069,7 @@ namespace MR
         TestVariableHomoscedastic::TestVariableHomoscedastic (const TestVariableHomoscedastic& that) :
             TestVariableBase (that)
         {
-          for (size_t ih = 0; ih != num_hypotheses(); ++ih) {
+          for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
             XtX.emplace_back (c[ih].matrix().rows(), c[ih].matrix().rows());
             beta.emplace_back (c[ih].matrix().rows(), 1);
           }
@@ -1105,7 +1105,7 @@ namespace MR
             //   rather than re-generating them each time? (More RAM, less CPU)
             // No, most of the time that subject data will be memory-mapped, so pre-loading (in
             //   addition to the duplication of the fixed design matrix contents) would hurt bad
-            for (index_type col = 0; col != S().num_importers(); ++col)
+            for (index_type col = 0; col != num_importers(); ++col)
               extra_column_data.col (col) = S().importers[col] (ie);
 
             // What can we do here that's common across all hypotheses?
@@ -1301,7 +1301,7 @@ namespace MR
 
           for (index_type ie = 0; ie != num_elements(); ++ie) {
             // Common ground to the TestVariableHomoscedastic case
-            for (index_type col = 0; col != ssize_t(S().num_importers()); ++col)
+            for (index_type col = 0; col != num_importers(); ++col)
               extra_column_data.col (col) = S().importers[col] (ie);
             set_mask (S(), ie);
             const index_type finite_count = element_mask.count();
@@ -1316,8 +1316,8 @@ namespace MR
                 zstats.row (ie).fill (0.0);
               } else {
                 VG_counts.setZero();
-                size_t out_index = 0;
-                for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+                index_type out_index = 0;
+                for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
                   if (element_mask[in_index]) {
                     VG_masked[out_index++] = S().VG[in_index];
                     VG_counts[S().VG[in_index]]++;
