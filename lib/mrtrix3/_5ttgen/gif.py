@@ -41,7 +41,8 @@ def check_gif_input(image_path):
 
 def get_inputs(): #pylint: disable=unused-variable
   check_gif_input(path.from_user(app.ARGS.input, False))
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'))
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'),
+              preserve_pipes=True)
 
 
 def execute(): #pylint: disable=unused-variable
@@ -65,4 +66,7 @@ def execute(): #pylint: disable=unused-variable
   else:
     run.command('mrmath 5tt.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrgrid 5tt.mif crop result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
+              mrconvert_keyval=path.from_user(app.ARGS.input, False),
+              force=app.FORCE_OVERWRITE,
+              preserve_pipes=True)

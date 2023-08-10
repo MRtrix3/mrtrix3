@@ -36,7 +36,8 @@ def check_output_paths(): #pylint: disable=unused-variable
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'))
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'),
+              preserve_pipes=True)
   if app.ARGS.lut:
     run.function(shutil.copyfile, path.from_user(app.ARGS.lut, False), path.to_scratch('LUT.txt', False))
 
@@ -79,4 +80,7 @@ def execute(): #pylint: disable=unused-variable
 
   run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - result.mif -datatype float32')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
+              mrconvert_keyval=path.from_user(app.ARGS.input, False),
+              force=app.FORCE_OVERWRITE,
+              preserve_pipes=True)

@@ -48,7 +48,8 @@ def execute(): #pylint: disable=unused-variable
   app.check_output_path(app.ARGS.output)
   # import data and gradient table
   app.make_scratch_dir()
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif') + gradimport + ' -strides 0,0,0,1')
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif') + gradimport + ' -strides 0,0,0,1',
+              preserve_pipes=True)
   app.goto_scratch_dir()
   # run per-shell operations
   files = []
@@ -59,11 +60,17 @@ def execute(): #pylint: disable=unused-variable
   if len(files) > 1:
     # concatenate to output file
     run.command('mrcat -axis 3 ' + ' '.join(files) + ' out.mif')
-    run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+    run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output),
+                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                force=app.FORCE_OVERWRITE,
+                preserve_pipes=True)
   else:
     # make a 4D image with one volume
     app.warn('Only one unique b-value present in DWI data; command mrmath with -axis 3 option may be preferable')
-    run.command('mrconvert ' + files[0] + ' ' + path.from_user(app.ARGS.output) + ' -axes 0,1,2,-1', mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+    run.command('mrconvert ' + files[0] + ' ' + path.from_user(app.ARGS.output) + ' -axes 0,1,2,-1',
+                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                force=app.FORCE_OVERWRITE,
+                preserve_pipes=True)
 
 
 

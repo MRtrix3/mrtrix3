@@ -102,6 +102,14 @@ else:
 
 
 
+# Store any input piped images that need to be deleted upon script completion
+#   rather than when some underlying MRtrix3 command reads them
+_STDIN_IMAGES = []
+# Store output piped images that need to be emitted to stdout upon script completion
+_STDOUT_IMAGES = []
+
+
+
 # Generally preferable to use:
 #   "import mrtrix3"
 #   "mrtrix3.execute()"
@@ -252,6 +260,14 @@ def _execute(module): #pylint: disable=unused-variable
       if not return_code:
         console('Changing back to original directory (' + WORKING_DIR + ')')
       os.chdir(WORKING_DIR)
+    if _STDIN_IMAGES:
+      debug('Erasing ' + str(len(_STDIN_IMAGES)) + ' piped input images')
+      for item in _STDIN_IMAGES:
+        try:
+          os.remove(item)
+          debug('Successfully erased "' + item + '"')
+        except OSError as exc:
+          debug('Unable to erase "' + item + '": ' + str(exc))
     if SCRATCH_DIR:
       if DO_CLEANUP:
         if not return_code:
@@ -263,6 +279,9 @@ def _execute(module): #pylint: disable=unused-variable
         SCRATCH_DIR = ''
       else:
         console('Scratch directory retained; location: ' + SCRATCH_DIR)
+    if _STDOUT_IMAGES:
+      debug('Emitting ' + str(len(_STDOUT_IMAGES)) + ' output piped images to stdout')
+      sys.stdout.write('\n'.join(_STDOUT_IMAGES))
   sys.exit(return_code)
 
 
@@ -1111,23 +1130,23 @@ class Parser(argparse.ArgumentParser):
         return False
       try:
         processed_value = int(processed_value)
-      except ValueError:
-        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as boolean value"')
+      except ValueError as exc:
+        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as boolean value"') from exc
       return bool(processed_value)
 
   class SequenceInt:
     def __call__(self, input_value):
       try:
         return [int(i) for i in input_value.split(',')]
-      except ValueError:
-        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as integer sequence')
+      except ValueError as exc:
+        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as integer sequence') from exc
 
   class SequenceFloat:
     def __call__(self, input_value):
       try:
         return [float(i) for i in input_value.split(',')]
-      except ValueError:
-        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as floating-point sequence')
+      except ValueError as exc:
+        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as floating-point sequence') from exc
 
   class DirectoryIn:
     def __call__(self, input_value):
@@ -1158,14 +1177,15 @@ class Parser(argparse.ArgumentParser):
       if input_value == '-':
         if sys.stdin.isatty():
           raise argparse.ArgumentTypeError('Input piped image unavailable from stdin')
-        input_value = sys.stdin.read().strip()
+        input_value = sys.stdin.readline().strip()
+        _STDIN_IMAGES.append(input_value)
       return input_value
 
   class ImageOut:
     def __call__(self, input_value):
       if input_value == '-':
-        result_str = ''.join(random.choice(string.ascii_letters) for _ in range(6))
-        input_value = 'mrtrix-tmp-' + result_str + '.mif'
+        input_value = utils.name_temporary('mif')
+        _STDOUT_IMAGES.append(input_value)
       return input_value
 
   class TracksIn(FileIn):
@@ -1260,4 +1280,9 @@ def handler(signum, _frame):
       SCRATCH_DIR = ''
     else:
       sys.stderr.write(EXEC_NAME + ': ' + ANSI.console + 'Scratch directory retained; location: ' + SCRATCH_DIR + ANSI.clear + '\n')
+  for item in _STDIN_IMAGES:
+    try:
+      os.remove(item)
+    except OSError:
+      pass
   os._exit(signum) # pylint: disable=protected-access

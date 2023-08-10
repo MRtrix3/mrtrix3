@@ -251,10 +251,12 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.json_import:
     json_import_option = ' -json_import ' + path.from_user(app.ARGS.json_import)
   json_export_option = ' -json_export ' + path.to_scratch('dwi.json', True)
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('dwi.mif') + grad_import_option + json_import_option + json_export_option)
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('dwi.mif') + grad_import_option + json_import_option + json_export_option,
+              preserve_pipes=True)
   if app.ARGS.se_epi:
     image.check_3d_nonunity(path.from_user(app.ARGS.se_epi, False))
-    run.command('mrconvert ' + path.from_user(app.ARGS.se_epi) + ' ' + path.to_scratch('se_epi.mif'))
+    run.command('mrconvert ' + path.from_user(app.ARGS.se_epi) + ' ' + path.to_scratch('se_epi.mif'),
+                preserve_pipes=True)
   if topup_file_userpath:
     run.function(shutil.copyfile, topup_input_movpar, path.to_scratch('field_movpar.txt', False))
     # Can't run field spline coefficients image through mrconvert:
@@ -262,7 +264,8 @@ def execute(): #pylint: disable=unused-variable
     #   applytopup requires that these be set, but mrconvert will wipe them
     run.function(shutil.copyfile, topup_input_fieldcoef, path.to_scratch('field_fieldcoef.nii' + ('.gz' if topup_input_fieldcoef.endswith('.nii.gz') else ''), False))
   if app.ARGS.eddy_mask:
-    run.command('mrconvert ' + path.from_user(app.ARGS.eddy_mask) + ' ' + path.to_scratch('eddy_mask.mif') + ' -datatype bit')
+    run.command('mrconvert ' + path.from_user(app.ARGS.eddy_mask) + ' ' + path.to_scratch('eddy_mask.mif') + ' -datatype bit',
+                preserve_pipes=True)
 
   app.goto_scratch_dir()
 

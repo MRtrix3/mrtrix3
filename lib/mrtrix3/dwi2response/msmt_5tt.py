@@ -50,9 +50,11 @@ def check_output_paths(): #pylint: disable=unused-variable
 
 
 def get_inputs(): #pylint: disable=unused-variable
-  run.command('mrconvert ' + path.from_user(app.ARGS.in_5tt) + ' ' + path.to_scratch('5tt.mif'))
+  run.command('mrconvert ' + path.from_user(app.ARGS.in_5tt) + ' ' + path.to_scratch('5tt.mif'),
+              preserve_pipes=True)
   if app.ARGS.dirs:
-    run.command('mrconvert ' + path.from_user(app.ARGS.dirs) + ' ' + path.to_scratch('dirs.mif') + ' -strides 0,0,0,1')
+    run.command('mrconvert ' + path.from_user(app.ARGS.dirs) + ' ' + path.to_scratch('dirs.mif') + ' -strides 0,0,0,1',
+                preserve_pipes=True)
 
 
 
@@ -152,4 +154,7 @@ def execute(): #pylint: disable=unused-variable
   # Generate output 4D binary image with voxel selections; RGB as in MSMT-CSD paper
   run.command('mrcat csf_mask.mif gm_mask.mif wm_sf_mask.mif voxels.mif -axis 3')
   if app.ARGS.voxels:
-    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+    run.command('mrconvert voxels.mif ' + path.from_user(app.ARGS.voxels),
+                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                force=app.FORCE_OVERWRITE,
+                preserve_pipes=True)

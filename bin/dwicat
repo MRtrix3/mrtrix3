@@ -55,7 +55,7 @@ def execute(): #pylint: disable=unused-variable
     try:
       if isinstance(dw_scheme[0], list):
         num_grad_lines = len(dw_scheme)
-      elif (isinstance(dw_scheme[0], ( int, float))) and len(dw_scheme) >= 4:
+      elif (isinstance(dw_scheme[0], (int, float))) and len(dw_scheme) >= 4:
         num_grad_lines = 1
       else:
         raise MRtrixError
@@ -95,9 +95,11 @@ def execute(): #pylint: disable=unused-variable
   # import data to scratch directory
   app.make_scratch_dir()
   for index, filename in enumerate(app.ARGS.inputs):
-    run.command('mrconvert ' + path.from_user(filename) + ' ' + path.to_scratch(str(index) + 'in.mif'))
+    run.command('mrconvert ' + path.from_user(filename) + ' ' + path.to_scratch(str(index) + 'in.mif'),
+                preserve_pipes=True)
   if app.ARGS.mask:
-    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit')
+    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit',
+                preserve_pipes=True)
   app.goto_scratch_dir()
 
   # extract b=0 volumes within each input series
@@ -151,7 +153,9 @@ def execute(): #pylint: disable=unused-variable
   with open('result_final.json', 'w', encoding='utf-8') as output_json_file:
     json.dump(keyval, output_json_file)
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval='result_final.json', force=app.FORCE_OVERWRITE)
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
+              mrconvert_keyval='result_final.json',
+              force=app.FORCE_OVERWRITE)
 
 
 

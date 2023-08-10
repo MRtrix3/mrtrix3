@@ -65,7 +65,7 @@ namespace MR
     namespace {
       bool preserve_tmpfile() {
         const char* const MRTRIX_PRESERVE_TMPFILE = getenv("MRTRIX_PRESERVE_TMPFILE");
-        return (!(MRTRIX_PRESERVE_TMPFILE && to<bool>(MRTRIX_PRESERVE_TMPFILE)));
+        return (MRTRIX_PRESERVE_TMPFILE && to<bool>(std::string(MRTRIX_PRESERVE_TMPFILE)));
       }
     }
     bool Pipe::delete_piped_images = !preserve_tmpfile();

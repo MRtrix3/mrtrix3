@@ -79,9 +79,6 @@ class Shared:
     self._scratch_dir = None
     self.verbosity = 1
 
-    # Ensures that temporary piped images are not deleted automatically by MRtrix3 binary commands
-    self.env['MRTRIX_PRESERVE_TMPFILE'] = 'yes'
-
   # Acquire a unique index
   # This ensures that if command() is executed in parallel using different threads, they will
   #   not interfere with one another; but terminate() will also have access to all relevant data
@@ -233,7 +230,17 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   show = kwargs.pop('show', True)
   mrconvert_keyval = kwargs.pop('mrconvert_keyval', None)
   force = kwargs.pop('force', False)
-  env = kwargs.pop('env', shared.env)
+  if 'env' in kwargs:
+    env = kwargs.pop('env')
+    if kwargs.pop('preserve_pipes', False):
+      env['MRTRIX_PRESERVE_TMPFILE'] = 'True'
+  elif 'preserve_pipes' in kwargs:
+    env = dict(shared.env)
+    kwargs.pop('preserve_pipes')
+    env['MRTRIX_PRESERVE_TMPFILE'] = 'True'
+  else:
+    # Reference rather than copying
+    env = shared.env
   if kwargs:
     raise TypeError('Unsupported keyword arguments passed to run.command(): ' + str(kwargs))
 

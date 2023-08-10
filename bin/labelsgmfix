@@ -91,11 +91,16 @@ def execute(): #pylint: disable=unused-variable
   app.make_scratch_dir()
 
   # Get the parcellation and T1 images into the scratch directory, with conversion of the T1 into the correct format for FSL
-  run.command('mrconvert ' + path.from_user(app.ARGS.parc) + ' ' + path.to_scratch('parc.mif'))
+  run.command('mrconvert ' + path.from_user(app.ARGS.parc) + ' ' + path.to_scratch('parc.mif'),
+              preserve_pipes=True)
   if upsample_for_first:
-    run.command('mrgrid ' + path.from_user(app.ARGS.t1) + ' regrid - -voxel 1.0 -interp sinc | mrcalc - 0.0 -max - | mrconvert - ' + path.to_scratch('T1.nii') + ' -strides -1,+2,+3')
+    run.command('mrgrid ' + path.from_user(app.ARGS.t1) + ' regrid - -voxel 1.0 -interp sinc | '
+                'mrcalc - 0.0 -max - | '
+                'mrconvert - ' + path.to_scratch('T1.nii') + ' -strides -1,+2,+3',
+                preserve_pipes=True)
   else:
-    run.command('mrconvert ' + path.from_user(app.ARGS.t1) + ' ' + path.to_scratch('T1.nii') + ' -strides -1,+2,+3')
+    run.command('mrconvert ' + path.from_user(app.ARGS.t1) + ' ' + path.to_scratch('T1.nii') + ' -strides -1,+2,+3',
+                preserve_pipes=True)
 
   app.goto_scratch_dir()
 
@@ -165,7 +170,10 @@ def execute(): #pylint: disable=unused-variable
   # Insert the new delineations of all SGM structures in a single call
   # Enforce unsigned integer datatype of output image
   run.command('mrcalc sgm_new_labels.mif 0.5 -gt sgm_new_labels.mif parc.mif -if result.mif -datatype uint32')
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.parc, False), force=app.FORCE_OVERWRITE)
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
+              mrconvert_keyval=path.from_user(app.ARGS.parc, False),
+              force=app.FORCE_OVERWRITE,
+              preserve_pipes=True)
 
 
 

@@ -44,13 +44,16 @@ def check_output_paths(): #pylint: disable=unused-variable
 
 def get_inputs(): #pylint: disable=unused-variable
   image.check_3d_nonunity(path.from_user(app.ARGS.input, False))
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'))
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif'),
+              preserve_pipes=True)
   if app.ARGS.mask:
-    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit -strides -1,+2,+3')
+    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit -strides -1,+2,+3',
+                preserve_pipes=True)
   if app.ARGS.t2:
     if not image.match(path.from_user(app.ARGS.input, False), path.from_user(app.ARGS.t2, False)):
       raise MRtrixError('Provided T2 image does not match input T1 image')
-    run.command('mrconvert ' + path.from_user(app.ARGS.t2) + ' ' + path.to_scratch('T2.nii') + ' -strides -1,+2,+3')
+    run.command('mrconvert ' + path.from_user(app.ARGS.t2) + ' ' + path.to_scratch('T2.nii') + ' -strides -1,+2,+3',
+                preserve_pipes=True)
 
 
 
@@ -211,7 +214,9 @@ def execute(): #pylint: disable=unused-variable
   fast_gm_output = fsl.find_image(fast_output_prefix + '_pve_1')
   fast_wm_output = fsl.find_image(fast_output_prefix + '_pve_2')
   # Step 1: Run LCC on the WM image
-  run.command('mrthreshold ' + fast_wm_output + ' - -abs 0.001 | maskfilter - connect - -connectivity | mrcalc 1 - 1 -gt -sub remove_unconnected_wm_mask.mif -datatype bit')
+  run.command('mrthreshold ' + fast_wm_output + ' - -abs 0.001 | '
+              'maskfilter - connect - -connectivity | '
+              'mrcalc 1 - 1 -gt -sub remove_unconnected_wm_mask.mif -datatype bit')
   # Step 2: Generate the images in the same fashion as the old 5ttgen binary used to:
   #   - Preserve CSF as-is
   #   - Preserve SGM, unless it results in a sum of volume fractions greater than 1, in which case clamp
@@ -229,6 +234,11 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.nocrop:
     run.function(os.rename, 'combined_precrop.mif', 'result.mif')
   else:
-    run.command('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrgrid combined_precrop.mif crop result.mif -mask -')
+    run.command('mrmath combined_precrop.mif sum - -axis 3 | '
+                'mrthreshold - - -abs 0.5 | '
+                'mrgrid combined_precrop.mif crop result.mif -mask -')
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
+              mrconvert_keyval=path.from_user(app.ARGS.input, False),
+              force=app.FORCE_OVERWRITE,
+              preserve_pipes=True)
