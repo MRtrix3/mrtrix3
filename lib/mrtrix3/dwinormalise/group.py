@@ -15,7 +15,7 @@
 
 import os, shlex
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, image, path, run
+from mrtrix3 import app, image, path, run, utils
 
 
 
@@ -83,7 +83,7 @@ def execute(): #pylint: disable=unused-variable
   app.make_scratch_dir()
   app.goto_scratch_dir()
 
-  path.make_dir('fa')
+  utils.make_dir('fa')
   progress = app.ProgressBar('Computing FA images', len(input_list))
   for i in input_list:
     run.command('dwi2tensor ' + shlex.quote(os.path.join(input_dir, i.filename)) + ' -mask ' + shlex.quote(os.path.join(mask_dir, i.mask_filename)) + ' - | tensor2metric - -fa ' + os.path.join('fa', i.prefix + '.mif'))
@@ -107,8 +107,8 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrthreshold fa_template.mif -abs ' +  app.ARGS.fa_threshold + ' template_wm_mask.mif')
 
   progress = app.ProgressBar('Intensity normalising subject images', len(input_list))
-  path.make_dir(path.from_user(app.ARGS.output_dir, False))
-  path.make_dir('wm_mask_warped')
+  utils.make_dir(path.from_user(app.ARGS.output_dir, False))
+  utils.make_dir('wm_mask_warped')
   for i in input_list:
     run.command('mrtransform template_wm_mask.mif -interp nearest -warp_full ' + os.path.join('warps', i.prefix + '.mif') + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' -from 2 -template ' + os.path.join('fa', i.prefix + '.mif'))
     run.command('dwinormalise individual ' + shlex.quote(os.path.join(input_dir, i.filename)) + ' ' + os.path.join('wm_mask_warped', i.prefix + '.mif') + ' temp.mif')
