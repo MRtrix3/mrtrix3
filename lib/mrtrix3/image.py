@@ -28,8 +28,8 @@ from mrtrix3 import MRtrixError
 # Class for importing header information from an image file for reading
 class Header:
   def __init__(self, image_path):
-    from mrtrix3 import app, path, run #pylint: disable=import-outside-toplevel
-    filename = path.name_temporary('json')
+    from mrtrix3 import app, run, utils #pylint: disable=import-outside-toplevel
+    filename = utils.name_temporary('json')
     command = [ run.exe_name(run.version_match('mrinfo')), image_path, '-json_all', filename, '-nodelete' ]
     if app.VERBOSITY > 1:
       app.console('Loading header for image file \'' + image_path + '\'')

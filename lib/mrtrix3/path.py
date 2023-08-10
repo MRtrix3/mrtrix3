@@ -17,8 +17,7 @@
 
 
 
-import ctypes, errno, inspect, os, random, shlex, shutil, string, subprocess, time
-from mrtrix3 import CONFIG
+import ctypes, inspect, os, shlex, shutil, subprocess, time
 
 
 
@@ -61,58 +60,6 @@ def from_user(filename, escape=True): #pylint: disable=unused-variable
     fullpath = shlex.quote(fullpath)
   app.debug(filename + ' -> ' + fullpath)
   return fullpath
-
-
-
-# Make a directory if it doesn't exist; don't do anything if it does already exist
-def make_dir(path): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  try:
-    os.makedirs(path)
-    app.debug('Created directory ' + path)
-  except OSError as exception:
-    if exception.errno != errno.EEXIST:
-      raise
-    app.debug('Directory \'' + path + '\' already exists')
-
-
-
-# Make a temporary empty file / directory with a unique name
-# If the filesystem path separator is provided as the 'suffix' input, then the function will generate a new
-#   directory rather than a file.
-def make_temporary(suffix): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  is_directory = suffix in '\\/' and len(suffix) == 1
-  while True:
-    temp_path = name_temporary(suffix)
-    try:
-      if is_directory:
-        os.makedirs(temp_path)
-      else:
-        with open(temp_path, 'a', encoding='utf-8'):
-          pass
-      app.debug(temp_path)
-      return temp_path
-    except OSError as exception:
-      if exception.errno != errno.EEXIST:
-        raise
-
-
-
-# Get an appropriate location and name for a new temporary file / directory
-# Note: Doesn't actually create anything; just gives a unique name that won't over-write anything.
-# If you want to create a temporary file / directory, use the make_temporary() function above.
-def name_temporary(suffix): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  dir_path = CONFIG['TmpFileDir'] if 'TmpFileDir' in CONFIG else (app.SCRATCH_DIR if app.SCRATCH_DIR else os.getcwd())
-  prefix = CONFIG['TmpFilePrefix'] if 'TmpFilePrefix' in CONFIG else 'mrtrix-tmp-'
-  full_path = dir_path
-  suffix = suffix.lstrip('.')
-  while os.path.exists(full_path):
-    random_string = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for x in range(6))
-    full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
-  app.debug(full_path)
-  return full_path
 
 
 
