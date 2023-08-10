@@ -22,8 +22,8 @@
 #include <mutex>
 
 #include "debug.h"
-#include "mrtrix.h"
 #include "exception.h"
+#include "mrtrix.h"
 
 /** \defgroup thread_classes Multi-threading
  * \brief functions to provide support for multi-threading
@@ -144,16 +144,43 @@ namespace MR
       };
 
 
+      // TODO Duplicate class instance using __clone__() function if defined;
+      //   copy-constructor if not
+      namespace
+      {
+        template <class T> class __has_clone_function { NOMEMALIGN
+            template <typename C> static inline char test (decltype(C::__clone())) ;
+            template <typename C> static inline long test (...);
+          public:
+            enum { value = sizeof(test<T>(nullptr)) == sizeof(char) };
+        };
+        template <class T>
+        inline typename std::enable_if<__has_clone_function<T>::value, std::unique_ptr<T>>::type __clone (const T& in)
+        {
+          return in.__clone();
+        }
+        template <class T>
+        inline typename std::enable_if<!__has_clone_function<T>::value, std::unique_ptr<T>>::type __clone (const T& in)
+        {
+          std::unique_ptr<T> result (new T (in));
+          return result;
+        }
+      }
+
+
       template <class Functor>
         class __multi_thread : public __thread_base { 
           public:
             __multi_thread (Functor& functor, size_t nthreads, const std::string& name = "unnamed") :
-              __thread_base (name), functors ( (nthreads>0 ? nthreads-1 : 0), functor) {
+              __thread_base (name)
+              {
                 DEBUG ("launching " + str (nthreads) + " threads \"" + name + "\"...");
                 using F = typename std::remove_reference<Functor>::type;
                 threads.reserve (nthreads);
-                for (auto& f : functors)
-                  threads.push_back (std::async (std::launch::async, &F::execute, &f));
+                for (size_t i = 0; i != (nthreads>0 ? nthreads-1 : 0); ++i) {
+                  functors.emplace_back (__clone<F> (functor));
+                  threads.push_back (std::async (std::launch::async, &F::execute, functors[i].get()));
+                }
                 threads.push_back (std::async (std::launch::async, &F::execute, &functor));
               }
 
@@ -199,7 +226,7 @@ namespace MR
             }
           protected:
             vector<std::future<void>> threads;
-            vector<typename std::remove_reference<Functor>::type> functors;
+            vector<std::unique_ptr<typename std::remove_reference<Functor>::type>> functors;
 
         };
 
