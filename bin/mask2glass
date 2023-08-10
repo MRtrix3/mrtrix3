@@ -39,7 +39,8 @@ def execute(): #pylint: disable=unused-variable
 
   # import data to scratch directory
   app.make_scratch_dir()
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif'))
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif'),
+              preserve_pipes=True)
   app.goto_scratch_dir()
 
   dilate_option = ' -npass ' + str(app.ARGS.dilate)
@@ -77,7 +78,8 @@ def execute(): #pylint: disable=unused-variable
   # create output image
   run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output),
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
-              force=app.FORCE_OVERWRITE)
+              force=app.FORCE_OVERWRITE,
+              preserve_pipes=True)
 
 # Execute the script
 import mrtrix3 #pylint: disable=wrong-import-position

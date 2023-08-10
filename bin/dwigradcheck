@@ -53,7 +53,8 @@ def execute(): #pylint: disable=unused-variable
   app.make_scratch_dir()
 
   # Make sure the image data can be memory-mapped
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('data.mif') + ' -strides 0,0,0,1 -datatype float32')
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('data.mif') + ' -strides 0,0,0,1 -datatype float32',
+              preserve_pipes=True)
 
   if app.ARGS.grad:
     shutil.copy(path.from_user(app.ARGS.grad, False), path.to_scratch('grad.b', False))
@@ -61,7 +62,8 @@ def execute(): #pylint: disable=unused-variable
     shutil.copy(path.from_user(app.ARGS.fslgrad[0], False), path.to_scratch('bvecs', False))
     shutil.copy(path.from_user(app.ARGS.fslgrad[1], False), path.to_scratch('bvals', False))
   if app.ARGS.mask:
-    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit')
+    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit',
+                preserve_pipes=True)
 
   app.goto_scratch_dir()
 

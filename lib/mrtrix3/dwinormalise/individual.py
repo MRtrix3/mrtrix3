@@ -65,10 +65,12 @@ def execute(): #pylint: disable=unused-variable
   else:
     reference_value = float(run.command('dwiextract ' + path.from_user(app.ARGS.input_dwi) + grad_option + ' -bzero - | ' + \
                                         'mrmath - mean - -axis 3 | ' + \
-                                        'mrstats - -mask ' + path.from_user(app.ARGS.input_mask) + ' -output median').stdout)
+                                        'mrstats - -mask ' + path.from_user(app.ARGS.input_mask) + ' -output median',
+                                        preserve_pipes=True).stdout)
   multiplier = app.ARGS.intensity / reference_value
 
   run.command('mrcalc ' + path.from_user(app.ARGS.input_dwi) + ' ' + str(multiplier) + ' -mult - | ' + \
               'mrconvert - ' + path.from_user(app.ARGS.output_dwi) + grad_option, \
               mrconvert_keyval=path.from_user(app.ARGS.input_dwi, False), \
-              force=app.FORCE_OVERWRITE)
+              force=app.FORCE_OVERWRITE,
+              preserve_pipes=True)

@@ -56,7 +56,8 @@ def execute(): #pylint: disable=unused-variable
 
   # Get input data into the scratch directory
   run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('input.mif')
-              + ' -strides 0,0,0,1' + grad_import_option)
+              + ' -strides 0,0,0,1' + grad_import_option,
+              preserve_pipes=True)
   alg.get_inputs()
 
   app.goto_scratch_dir()
@@ -96,7 +97,8 @@ def execute(): #pylint: disable=unused-variable
               + path.from_user(app.ARGS.output)
               + ' -strides ' + ','.join(str(value) for value in strides),
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
-              force=app.FORCE_OVERWRITE)
+              force=app.FORCE_OVERWRITE,
+              preserve_pipes=True)
 
 
 

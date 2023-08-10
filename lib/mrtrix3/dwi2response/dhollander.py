@@ -291,5 +291,9 @@ def execute(): #pylint: disable=unused-variable
   run.function(shutil.copyfile, 'response_gm.txt', path.from_user(app.ARGS.out_gm, False), show=False)
   run.function(shutil.copyfile, 'response_csf.txt', path.from_user(app.ARGS.out_csf, False), show=False)
   if app.ARGS.voxels:
-    run.command('mrconvert check_voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE, show=False)
+    run.command('mrconvert check_voxels.mif ' + path.from_user(app.ARGS.voxels),
+                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                force=app.FORCE_OVERWRITE,
+                preserve_pipes=True,
+                show=False)
   app.console('-------')

@@ -41,9 +41,11 @@ def get_inputs(): #pylint: disable=unused-variable
   if os.path.exists(mask_path):
     app.warn('-mask option is ignored by algorithm \'manual\'')
     os.remove(mask_path)
-  run.command('mrconvert ' + path.from_user(app.ARGS.in_voxels) + ' ' + path.to_scratch('in_voxels.mif'))
+  run.command('mrconvert ' + path.from_user(app.ARGS.in_voxels) + ' ' + path.to_scratch('in_voxels.mif'),
+              preserve_pipes=True)
   if app.ARGS.dirs:
-    run.command('mrconvert ' + path.from_user(app.ARGS.dirs) + ' ' + path.to_scratch('dirs.mif') + ' -strides 0,0,0,1')
+    run.command('mrconvert ' + path.from_user(app.ARGS.dirs) + ' ' + path.to_scratch('dirs.mif') + ' -strides 0,0,0,1',
+                preserve_pipes=True)
 
 
 
@@ -81,4 +83,7 @@ def execute(): #pylint: disable=unused-variable
 
   run.function(shutil.copyfile, 'response.txt', path.from_user(app.ARGS.output, False))
   if app.ARGS.voxels:
-    run.command('mrconvert in_voxels.mif ' + path.from_user(app.ARGS.voxels), mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
+    run.command('mrconvert in_voxels.mif ' + path.from_user(app.ARGS.voxels),
+                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+                force=app.FORCE_OVERWRITE,
+                preserve_pipes=True)

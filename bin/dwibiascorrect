@@ -49,9 +49,11 @@ def execute(): #pylint: disable=unused-variable
   app.make_scratch_dir()
 
   grad_import_option = app.read_dwgrad_import_options()
-  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif') + grad_import_option)
+  run.command('mrconvert ' + path.from_user(app.ARGS.input) + ' ' + path.to_scratch('in.mif') + grad_import_option,
+              preserve_pipes=True)
   if app.ARGS.mask:
-    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit')
+    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit',
+                preserve_pipes=True)
 
   alg.get_inputs()
 

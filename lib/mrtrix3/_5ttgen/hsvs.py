@@ -144,9 +144,11 @@ def check_output_paths(): #pylint: disable=unused-variable
 def get_inputs(): #pylint: disable=unused-variable
   # Most freeSurfer files will be accessed in-place; no need to pre-convert them into the temporary directory
   # However convert aparc image so that it does not have to be repeatedly uncompressed
-  run.command('mrconvert ' + path.from_user(os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), True) + ' ' + path.to_scratch('aparc.mif', True))
+  run.command('mrconvert ' + path.from_user(os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), True) + ' ' + path.to_scratch('aparc.mif', True),
+              preserve_pipes=True)
   if app.ARGS.template:
-    run.command('mrconvert ' + path.from_user(app.ARGS.template, True) + ' ' + path.to_scratch('template.mif', True) + ' -axes 0,1,2')
+    run.command('mrconvert ' + path.from_user(app.ARGS.template, True) + ' ' + path.to_scratch('template.mif', True) + ' -axes 0,1,2',
+                preserve_pipes=True)
 
 
 
