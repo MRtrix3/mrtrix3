@@ -98,6 +98,14 @@ int main (int cmdline_argc, char** cmdline_argv)
     ::MR::GUI::App app (cmdline_argc, cmdline_argv);
 #endif
     ::MR::App::parse ();
+
+    //ENVVAR name: MRTRIX_PARSE_ONLY
+    //ENVVAR Set the command to parse the provided inputs and then quit
+    //ENVVAR if it is 1. This can be used in the CI of wrapping code,
+    //ENVVAR such as the automatically generated Pydra ones
+    int parse_only = getenv("MRTRIX_PARSE_ONLY")
+    if (parse_only)
+      return 0;
     run ();
   }
   catch (::MR::Exception& E) {
