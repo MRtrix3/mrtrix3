@@ -21,7 +21,7 @@ import math, os, sys
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   cmdline.set_synopsis('Calculate the mean response function from a set of text files')
   cmdline.add_description('Example usage: ' + os.path.basename(sys.argv[0]) + ' input_response1.txt input_response2.txt input_response3.txt ... output_average_response.txt')

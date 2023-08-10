@@ -23,7 +23,7 @@ POSTFIXES = [ 'B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB' ]
 
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
 
   cmdline.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Clean up residual temporary files & scratch directories from MRtrix3 commands')

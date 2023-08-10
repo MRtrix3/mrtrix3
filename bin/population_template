@@ -45,7 +45,7 @@ LEAVE_ONE_OUT = ['0', '1', 'auto']
 IMAGEEXT = ['mif', 'nii', 'mih', 'mgh', 'mgz', 'img', 'hdr']
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk) & Thijs Dhollander (thijs.dhollander@gmail.com)')
 
   cmdline.set_synopsis('Generates an unbiased group-average template from a series of images')

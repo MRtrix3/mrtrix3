@@ -16,7 +16,7 @@
 # For more details, see http://www.mrtrix.org/.
 
 def usage(cmdline): #pylint: disable=unused-variable
-  from mrtrix3 import app
+  from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Remika Mito (remika.mito@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Create a glass brain from mask input')
   cmdline.add_description('The output of this command is a glass brain image, which can be viewed '
