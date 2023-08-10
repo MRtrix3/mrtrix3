@@ -182,8 +182,19 @@ def _execute(module): #pylint: disable=unused-variable
   if hasattr(ARGS, 'config') and ARGS.config:
     for keyval in ARGS.config:
       CONFIG[keyval[0]] = keyval[1]
+
   # ANSI settings may have been altered at the command-line
   setup_ansi()
+
+  # Check compatibility with command-line piping
+  # if _STDIN_IMAGES and sys.stdin.isatty():
+  #   sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] Piped input images not available from stdin' + ANSI.clear + '\n')
+  #   sys.stderr.flush()
+  #   sys.exit(1)
+  if _STDOUT_IMAGES and sys.stdout.isatty():
+    sys.stderr.write(EXEC_NAME + ': ' + ANSI.error + '[ERROR] Cannot pipe output images as no command connected to stdout' + ANSI.clear + '\n')
+    sys.stderr.flush()
+    sys.exit(1)
 
   if hasattr(ARGS, 'cont') and ARGS.cont:
     CONTINUE_OPTION = True
@@ -1175,8 +1186,6 @@ class Parser(argparse.ArgumentParser):
   class ImageIn:
     def __call__(self, input_value):
       if input_value == '-':
-        if sys.stdin.isatty():
-          raise argparse.ArgumentTypeError('Input piped image unavailable from stdin')
         input_value = sys.stdin.readline().strip()
         _STDIN_IMAGES.append(input_value)
       return input_value
