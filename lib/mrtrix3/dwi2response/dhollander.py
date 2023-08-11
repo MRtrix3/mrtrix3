@@ -36,11 +36,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('out_gm', type=app.Parser.FileOut(), help='Output GM response function text file')
   parser.add_argument('out_csf', type=app.Parser.FileOut(), help='Output CSF response function text file')
   options = parser.add_argument_group('Options for the \'dhollander\' algorithm')
-  options.add_argument('-erode', type=int, default=3, help='Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)')
-  options.add_argument('-fa', type=float, default=0.2, help='FA threshold for crude WM versus GM-CSF separation. (default: 0.2)')
-  options.add_argument('-sfwm', type=float, default=0.5, help='Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)')
-  options.add_argument('-gm', type=float, default=2.0, help='Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)')
-  options.add_argument('-csf', type=float, default=10.0, help='Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)')
+  options.add_argument('-erode', type=int, metavar='passes', default=3, help='Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)')
+  options.add_argument('-fa', type=float, metavar='threshold', default=0.2, help='FA threshold for crude WM versus GM-CSF separation. (default: 0.2)')
+  options.add_argument('-sfwm', type=float, metavar='percentage', default=0.5, help='Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)')
+  options.add_argument('-gm', type=float, metavar='percentage', default=2.0, help='Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)')
+  options.add_argument('-csf', type=float, metavar='percentage', default=10.0, help='Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)')
   options.add_argument('-wm_algo', metavar='algorithm', choices=WM_ALGOS, help='Use external dwi2response algorithm for WM single-fibre voxel selection (options: ' + ', '.join(WM_ALGOS) + ') (default: built-in Dhollander 2019)')
 
 

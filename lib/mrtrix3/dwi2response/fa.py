@@ -27,9 +27,9 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI')
   parser.add_argument('output', type=app.Parser.FileOut(), help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'fa\' algorithm')
-  options.add_argument('-erode', type=int, default=3, help='Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)')
-  options.add_argument('-number', type=int, default=300, help='The number of highest-FA voxels to use')
-  options.add_argument('-threshold', type=float, help='Apply a hard FA threshold, rather than selecting the top voxels')
+  options.add_argument('-erode', type=int, metavar='passes', default=3, help='Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)')
+  options.add_argument('-number', type=int, metavar='voxels', default=300, help='The number of highest-FA voxels to use')
+  options.add_argument('-threshold', type=float, metavar='value', help='Apply a hard FA threshold, rather than selecting the top voxels')
   parser.flag_mutually_exclusive_options( [ 'number', 'threshold' ] )
 
 

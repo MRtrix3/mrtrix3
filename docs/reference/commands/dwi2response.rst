@@ -137,15 +137,15 @@ Options
 Options for the 'dhollander' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-erode** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
+- **-erode passes** Number of erosion passes to apply to initial (whole brain) mask. Set to 0 to not erode the brain mask. (default: 3)
 
-- **-fa** FA threshold for crude WM versus GM-CSF separation. (default: 0.2)
+- **-fa threshold** FA threshold for crude WM versus GM-CSF separation. (default: 0.2)
 
-- **-sfwm** Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
+- **-sfwm percentage** Final number of single-fibre WM voxels to select, as a percentage of refined WM. (default: 0.5 per cent)
 
-- **-gm** Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
+- **-gm percentage** Final number of GM voxels to select, as a percentage of refined GM. (default: 2 per cent)
 
-- **-csf** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
+- **-csf percentage** Final number of CSF voxels to select, as a percentage of refined CSF. (default: 10 per cent)
 
 - **-wm_algo algorithm** Use external dwi2response algorithm for WM single-fibre voxel selection (options: fa, tax, tournier) (default: built-in Dhollander 2019)
 
@@ -251,11 +251,11 @@ Options
 Options specific to the 'fa' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-erode** Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)
+- **-erode passes** Number of brain mask erosion steps to apply prior to threshold (not used if mask is provided manually)
 
-- **-number** The number of highest-FA voxels to use
+- **-number voxels** The number of highest-FA voxels to use
 
-- **-threshold** Apply a hard FA threshold, rather than selecting the top voxels
+- **-threshold value** Apply a hard FA threshold, rather than selecting the top voxels
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -463,13 +463,13 @@ Options specific to the 'msmt_5tt' algorithm
 
 - **-dirs image** Provide an input image that contains a pre-estimated fibre direction in each voxel (a tensor fit will be used otherwise)
 
-- **-fa** Upper fractional anisotropy threshold for GM and CSF voxel selection (default: 0.2)
+- **-fa value** Upper fractional anisotropy threshold for GM and CSF voxel selection (default: 0.2)
 
-- **-pvf** Partial volume fraction threshold for tissue voxel selection (default: 0.95)
+- **-pvf fraction** Partial volume fraction threshold for tissue voxel selection (default: 0.95)
 
 - **-wm_algo algorithm** dwi2response algorithm to use for WM single-fibre voxel selection (options: fa, tax, tournier; default: tournier)
 
-- **-sfwm_fa_threshold** Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)
+- **-sfwm_fa_threshold value** Sets -wm_algo to fa and allows to specify a hard FA threshold for single-fibre WM voxels, which is passed to the -threshold option of the fa algorithm (warning: overrides -wm_algo option)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -571,11 +571,11 @@ Options
 Options specific to the 'tax' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-peak_ratio** Second-to-first-peak amplitude ratio threshold
+- **-peak_ratio value** Second-to-first-peak amplitude ratio threshold
 
-- **-max_iters** Maximum number of iterations
+- **-max_iters iterations** Maximum number of iterations
 
-- **-convergence** Percentile change in any RF coefficient required to continue iterating
+- **-convergence percentage** Percentile change in any RF coefficient required to continue iterating
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -677,13 +677,13 @@ Options
 Options specific to the 'tournier' algorithm
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-- **-number** Number of single-fibre voxels to use when calculating response function
+- **-number voxels** Number of single-fibre voxels to use when calculating response function
 
-- **-iter_voxels** Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)
+- **-iter_voxels voxels** Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)
 
-- **-dilate** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration
+- **-dilate passes** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration
 
-- **-max_iters** Maximum number of iterations
+- **-max_iters iterations** Maximum number of iterations
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

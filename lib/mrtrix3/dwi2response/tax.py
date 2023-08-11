@@ -27,9 +27,9 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI')
   parser.add_argument('output', type=app.Parser.FileOut(), help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tax\' algorithm')
-  options.add_argument('-peak_ratio', type=float, default=0.1, help='Second-to-first-peak amplitude ratio threshold')
-  options.add_argument('-max_iters', type=int, default=20, help='Maximum number of iterations')
-  options.add_argument('-convergence', type=float, default=0.5, help='Percentile change in any RF coefficient required to continue iterating')
+  options.add_argument('-peak_ratio', type=float, metavar='value', default=0.1, help='Second-to-first-peak amplitude ratio threshold')
+  options.add_argument('-max_iters', type=int, metavar='iterations', default=20, help='Maximum number of iterations')
+  options.add_argument('-convergence', type=float, metavar='percentage', default=0.5, help='Percentile change in any RF coefficient required to continue iterating')
 
 
 
