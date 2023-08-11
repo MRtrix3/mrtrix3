@@ -46,10 +46,9 @@ def needs_mean_bzero(): #pylint: disable=unused-variable
 
 def execute(): #pylint: disable=unused-variable
 
-  run.command('mrcalc input.mif 0 -max input_nonneg.mif')
-  run.command('dwishellmath input_nonneg.mif mean trace.mif')
-  app.cleanup('input_nonneg.mif')
-  run.command('mrthreshold trace.mif - -comparison gt | '
+  run.command('mrcalc input.mif 0 -max - | '
+              'dwishellmath - mean - | '
+              'mrthreshold - - -comparison gt | '
               'mrmath - max -axis 3 - | '
               'maskfilter - median - | '
               'maskfilter - connect -largest - | '
