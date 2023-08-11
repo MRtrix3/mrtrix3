@@ -30,7 +30,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('output_dir', type=app.Parser.DirectoryOut(), help='The output directory containing all of the intensity normalised DWI images')
   parser.add_argument('fa_template', type=app.Parser.ImageOut(), help='The output population-specific FA template, which is thresholded to estimate a white matter mask')
   parser.add_argument('wm_mask', type=app.Parser.ImageOut(), help='The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation')
-  parser.add_argument('-fa_threshold', default='0.4', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)')
+  parser.add_argument('-fa_threshold', default='0.4', metavar='value', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)')
 
 
 

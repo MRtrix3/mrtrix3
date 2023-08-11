@@ -112,7 +112,7 @@ All input DWI files must contain an embedded diffusion gradient table; for this 
 Options
 -------
 
-- **-fa_threshold** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)
+- **-fa_threshold value** The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)
 
 Additional standard options for Python scripts
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -192,9 +192,9 @@ Usage
 Options
 -------
 
-- **-intensity** Normalise the b=0 signal to a specified value (Default: 1000)
+- **-intensity value** Normalise the b=0 signal to a specified value (Default: 1000)
 
-- **-percentile** Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value
+- **-percentile value** Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
