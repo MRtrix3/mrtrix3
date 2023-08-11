@@ -138,8 +138,14 @@ namespace MR
             flags_ = cmap;
           }
 
-          void set_colour (std::array<GLubyte,3> &c) {
+          void set_colour (const std::array<GLubyte,3> &c) {
             colour = c;
+          }
+
+          void set_colour (const QColor &c) {
+            colour[0] = c.red();
+            colour[1] = c.green();
+            colour[2] = c.blue();
           }
 
           void set_use_discard_lower (bool yesno) {

@@ -23,6 +23,7 @@
 #include "app.h"
 #include "axes.h"
 #include "header.h"
+#include "file/matrix.h"
 #include "file/nifti_utils.h"
 #include "file/ofstream.h"
 
@@ -292,8 +293,8 @@ namespace MR
       Eigen::MatrixXd config;
       Eigen::Array<int, Eigen::Dynamic, 1> indices;
       scheme2eddy (transform_for_nifti_write (PE, header), config, indices);
-      save_matrix (config, config_path, KeyValues(), false);
-      save_vector (indices, index_path, KeyValues(), false);
+      File::Matrix::save_matrix (config, config_path, KeyValues(), false);
+      File::Matrix::save_vector (indices, index_path, KeyValues(), false);
     }
 
 
@@ -307,7 +308,7 @@ namespace MR
     template <class HeaderType>
     Eigen::MatrixXd load (const std::string& path, const HeaderType& header)
     {
-      const Eigen::MatrixXd PE = load_matrix (path);
+      const Eigen::MatrixXd PE = File::Matrix::load_matrix (path);
       check (PE, header);
       // As with JSON import, need to query the header to discover if the 
       //   strides / transform were modified on image load to make the image
@@ -320,8 +321,8 @@ namespace MR
     template <class HeaderType>
     Eigen::MatrixXd load_eddy (const std::string& config_path, const std::string& index_path, const HeaderType& header)
     {
-      const Eigen::MatrixXd config = load_matrix (config_path);
-      const Eigen::Array<int, Eigen::Dynamic, 1> indices = load_vector<int> (index_path);
+      const Eigen::MatrixXd config = File::Matrix::load_matrix (config_path);
+      const Eigen::Array<int, Eigen::Dynamic, 1> indices = File::Matrix::load_vector<int> (index_path);
       const Eigen::MatrixXd PE = eddy2scheme (config, indices);
       check (PE, header);
       return transform_for_image_load (PE, header);

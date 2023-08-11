@@ -16,12 +16,13 @@
 
 #include "header.h"
 #include "raw.h"
+#include "file/config.h"
+#include "file/gz.h"
+#include "file/json_utils.h"
+#include "file/nifti_utils.h"
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
-#include "file/config.h"
-#include "file/nifti_utils.h"
-#include "file/json_utils.h"
-#include "file/gz.h"
 #include "image_io/default.h"
 #include "image_io/gz.h"
 
@@ -668,6 +669,9 @@ namespace MR
         if (H.datatype() == DataType::Bit)
           if (!File::Config::get_bool ("NIfTIAllowBitwise", false))
             H.datatype() = DataType::UInt8;
+
+        if ((H.datatype()() & DataType::Type) == DataType::Float16)
+          H.datatype() = (DataType::Float32 & DataType::Type) | (H.datatype()() & DataType::Attributes);
 
         return true;
       }

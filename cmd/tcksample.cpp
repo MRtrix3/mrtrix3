@@ -24,6 +24,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/mapping/mapper.h"
+#include "file/matrix.h"
 #include "file/ofstream.h"
 #include "file/path.h"
 #include "interp/linear.h"
@@ -366,7 +367,7 @@ class Receiver_Statistic : private ReceiverBase {
     }
 
     void save (const std::string& path) {
-      MR::save_vector (vector_data, path);
+      File::Matrix::save_vector (vector_data, path);
     }
 
   private:

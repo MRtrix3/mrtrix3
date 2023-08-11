@@ -19,6 +19,8 @@
 
 #include <limits>
 
+#include "math/math.h"
+
 namespace MR
 {
   namespace Math

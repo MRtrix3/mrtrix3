@@ -23,7 +23,7 @@ DEFAULT_TARGET_INTENSITY=1000
 
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
-  parser = subparsers.add_parser('individual', parents=[base_parser])
+  parser = subparsers.add_parser('manual', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au) and David Raffelt (david.raffelt@florey.edu.au)')
   parser.set_synopsis('Intensity normalise a DWI series based on the b=0 signal within a supplied mask')
   parser.add_argument('input_dwi', type=app.Parser.ImageIn(), help='The input DWI series')

@@ -16,8 +16,6 @@
 
 #include "phase_encoding.h"
 
-#include "math/math.h"
-
 namespace MR
 {
   namespace PhaseEncoding
@@ -67,7 +65,7 @@ namespace MR
       const auto it = header.keyval().find ("pe_scheme");
       if (it != header.keyval().end()) {
         try {
-          PE = parse_matrix (it->second);
+          PE = MR::parse_matrix (it->second);
         } catch (Exception& e) {
           throw Exception (e, "malformed PE scheme in image \"" + header.name() + "\"");
         }

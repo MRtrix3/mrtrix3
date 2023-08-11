@@ -18,8 +18,8 @@
 
 #include <limits>
 
+#include "file/matrix.h"
 #include "file/path.h"
-#include "math/math.h"
 
 namespace MR
 {
@@ -68,7 +68,7 @@ namespace MR
             mean (NaN),
             max (NaN)
         {
-          base_t temp = MR::load_vector<float> (file);
+          base_t temp = File::Matrix::load_vector<float> (file);
           base_t::operator= (temp);
           calc_stats();
         }
@@ -102,7 +102,7 @@ namespace MR
 
         FileDataVector& FileDataVector::load (const std::string& filename)
         {
-          base_t temp = MR::load_vector<float> (filename);
+          base_t temp = File::Matrix::load_vector<float> (filename);
           base_t::operator= (temp);
           name = qstr (Path::basename (filename));
           calc_stats();

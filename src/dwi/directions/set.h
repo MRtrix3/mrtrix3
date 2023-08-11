@@ -23,6 +23,8 @@
 #include "progressbar.h"
 #include "types.h"
 #include "dwi/directions/predefined.h"
+#include "file/matrix.h"
+#include "math/math.h"
 
 
 namespace MR {
@@ -43,7 +45,7 @@ namespace MR {
               dir_mask_excess_bits (0),
               dir_mask_excess_bits_mask (0)
           {
-            auto matrix = load_matrix (path);
+            auto matrix = File::Matrix::load_matrix (path);
 
             if (matrix.cols() != 2 && matrix.cols() != 3)
               throw Exception ("Text file \"" + path + "\"does not contain directions as either azimuth-elevation pairs or XYZ triplets");

@@ -112,7 +112,7 @@ def execute(): #pylint: disable=unused-variable
         raise MRtrixError('Provided mask image needs to be a 3D image')
     else:
       app.console('Computing brain mask (dwi2mask)...')
-      run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' dwi.mif mask.mif', show=False)
+      run.command('dwi2mask ' + CONFIG['Dwi2maskAlgorithm'] + ' dwi.mif mask.mif', show=False)
 
     if not image.statistics('mask.mif', mask='mask.mif').count:
       raise MRtrixError(('Provided' if app.ARGS.mask else 'Generated') + ' mask image does not contain any voxels')

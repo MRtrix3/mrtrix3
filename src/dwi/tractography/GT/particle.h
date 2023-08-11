@@ -225,10 +225,10 @@ namespace MR {
          */
         struct ParticleEnd
         { 
-          Particle* par;
-          int alpha;
-          float e_conn;
-          double p_suc;
+          Particle* par = nullptr;
+          int alpha = 0;
+          float e_conn = 0.0;
+          double p_suc = 1.0;
         };
         
         

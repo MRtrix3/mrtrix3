@@ -22,6 +22,7 @@
 #include "dwi/tensor.h"
 #include <Eigen/Eigenvalues>
 #include "dwi/directions/predefined.h"
+#include "file/matrix.h"
 
 using namespace MR;
 using namespace App;
@@ -137,7 +138,7 @@ void usage ()
     "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
 }
 
-class Processor { 
+class Processor {
   public:
     Processor (Image<bool>& mask_img,
         Image<value_type>& adc_img,
@@ -523,10 +524,10 @@ void run ()
     dki_metric_count++;
   }
 
-  Eigen::MatrixXd mk_dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
   opt = get_options ("mk_dirs");
-  if (opt.size())
-    mk_dirs = load_matrix (opt[0][0]);
+  const Eigen::MatrixXd mk_dirs = opt.size() ?
+                                  File::Matrix::load_matrix (opt[0][0]) :
+                                  Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
 
   auto rk_ndirs = get_option_value ("rk_ndirs", DEFAULT_RK_NDIRS);
 

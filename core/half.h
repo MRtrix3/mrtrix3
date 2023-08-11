@@ -14,36 +14,22 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_colourmap_menu_h__
-#define __gui_mrview_colourmap_menu_h__
+#ifndef __mrtrix_half_h__
+#define __mrtrix_half_h__
 
-#include "colourmap.h"
-#include "gui/opengl/gl.h"
-
-namespace MR
+namespace half_float
 {
-  namespace GUI
-  {
-    namespace MRView
-    {
-
-
-
-      void create_colourmap_menu (QWidget* parent,
-                                  QActionGroup*& group,
-                                  QMenu* menu,
-                                  QAction** & actions,
-                                  bool create_shortcuts = false,
-                                  bool use_special = true);
-
-
-
-    }
-  }
+  class half;
 }
 
+namespace std
+{
+  template <> struct is_fundamental<half_float::half> : std::true_type { };
+  template <> struct is_floating_point<half_float::half> : std::true_type { };
+  template <> struct is_arithmetic<half_float::half> : std::true_type { };
+  template <> struct is_integral<half_float::half> : std::false_type { };
+}
+
+#include "half.hpp"
+
 #endif
-
-
-
-
