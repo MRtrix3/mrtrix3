@@ -13,6 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+import os
 from mrtrix3 import CONFIG, MRtrixError
 from mrtrix3 import algorithm, app, path, run
 
@@ -25,7 +26,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI series')
   parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
   options = parser.add_argument_group('Options specific to the "consensus" algorithm')
-  options.add_argument('-algorithms', nargs='+', help='Provide a list of dwi2mask algorithms that are to be utilised')
+  options.add_argument('-algorithms', nargs='+', help='Provide a (space- or comma-separated) list of dwi2mask algorithms that are to be utilised')
   options.add_argument('-masks', type=app.Parser.ImageOut(), metavar='image', help='Export a 4D image containing the individual algorithm masks')
   options.add_argument('-template', type=app.Parser.ImageIn(), metavar=('TemplateImage', 'MaskImage'), nargs=2, help='Provide a template image and corresponding mask for those algorithms requiring such')
   options.add_argument('-threshold', type=float, default=DEFAULT_THRESHOLD, help='The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: ' + str(DEFAULT_THRESHOLD) + ')')
@@ -43,9 +44,6 @@ def get_inputs(): #pylint: disable=unused-variable
                 + ' -strides +1,+2,+3')
     run.command('mrconvert ' + CONFIG['Dwi2maskTemplateMask'] + ' ' + path.to_scratch('template_mask.nii')
                 + ' -strides +1,+2,+3 -datatype uint8')
-  else:
-    raise MRtrixError('No template image information available from '
-                      'either command-line or MRtrix configuration file(s)')
 
 
 
@@ -66,15 +64,18 @@ def execute(): #pylint: disable=unused-variable
   app.debug(str(algorithm_list))
 
   if app.ARGS.algorithms:
-    if 'consensus' in app.ARGS.algorithms:
+    user_algorithms = app.ARGS.algorithms
+    if len(user_algorithms) == 1:
+      user_algorithms = user_algorithms[0].split(',')
+    if 'consensus' in user_algorithms:
       raise MRtrixError('Cannot provide "consensus" in list of dwi2mask algorithms to utilise')
-    invalid_algs = [entry for entry in app.ARGS.algorithms if entry not in algorithm_list]
+    invalid_algs = [entry for entry in user_algorithms if entry not in algorithm_list]
     if invalid_algs:
       raise MRtrixError('Requested dwi2mask algorithm'
                         + ('s' if len(invalid_algs) > 1 else '')
                         + ' not available: '
                         + str(invalid_algs))
-    algorithm_list = app.ARGS.algorithms
+    algorithm_list = user_algorithms
 
   # For "template" algorithm, can run twice with two different softwares
   # Ideally this would be determined based on the help page,
@@ -85,6 +86,11 @@ def execute(): #pylint: disable=unused-variable
     algorithm_list.append('b02template -software antsfull')
     algorithm_list.append('b02template -software fsl')
   app.debug(str(algorithm_list))
+
+  if any(any(item in alg for item in ('ants', 'b02template')) for alg in algorithm_list) \
+      and not os.path.isfile('template_image.nii'):
+    raise MRtrixError('Cannot include within consensus algorithms that necessitate use of a template image '
+                      'if no template image is provided via command-line or configuration file')
 
   mask_list = []
   for alg in algorithm_list:
@@ -111,7 +117,7 @@ def execute(): #pylint: disable=unused-variable
   if not mask_list:
     raise MRtrixError('No dwi2mask algorithms were successful; cannot generate mask')
   if len(mask_list) == 1:
-    app.warn('Only one dwi2mask algorithm was successful; output mask will be this result and not a consensus')
+    app.warn('Only one dwi2mask algorithm was successful; output mask will be this result and not a "consensus"')
     if app.ARGS.masks:
       run.command('mrconvert ' + mask_list[0] + ' ' + path.from_user(app.ARGS.masks),
                   mrconvert_keyval=path.from_user(app.ARGS.input, False),
