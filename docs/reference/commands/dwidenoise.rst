@@ -74,6 +74,11 @@ Cordero-Grande, L.; Christiaens, D.; Hutter, J.; Price, A.N.; Hajnal, J.V. Compl
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
+Patents
+^^^^^^^
+
+US10698065B2: System, method and computer accessible medium for noise estimation, noise removal and Gibbs ringing removal.
+
 --------------
 
 

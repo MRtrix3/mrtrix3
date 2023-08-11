@@ -424,6 +424,11 @@ namespace MR
      * one citation per paragraph)." */
     extern Description REFERENCES;
 
+    //! add references to command help page
+    /*! Like the description, use the '+' operator to add paragraphs (typically
+     * one citation per paragraph)." */
+    extern Description PATENTS;
+    
 
     //! the group of standard options for all commands
     extern OptionGroup __standard_options;

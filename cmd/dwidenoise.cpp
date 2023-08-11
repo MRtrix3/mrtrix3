@@ -116,6 +116,10 @@ void usage ()
       "licenses under any patents or patent application owned by NYU. \n \n"
       "\t 5. The Software may only be used for non-commercial research and may not be used for clinical care. \n \n"
       "\t 6. Any publication by Recipient of research involving the Software shall cite the references listed below.";
+  
+
+  PATENTS
+    + "US10698065B2: System, method and computer accessible medium for noise estimation, noise removal and Gibbs ringing removal.";
 
 }
 
