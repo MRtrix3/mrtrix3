@@ -17,7 +17,7 @@
 #include "header.h"
 #include "image.h"
 
-#include "math/math.h"
+#include "file/matrix.h"
 #include "misc/bitset.h"
 
 #include "fixel/legacy/fixel_metric.h"
@@ -152,7 +152,7 @@ namespace MR {
         }
 
         class Functor
-        { 
+        {
           public:
             Functor (TckFactor& master) :
                 master (master),
@@ -374,22 +374,25 @@ namespace MR {
       {
         if (size_t(coefficients.size()) != contributions.size())
           throw Exception ("Cannot output weighting factors if they have not first been estimated!");
+        decltype(coefficients) weights;
         try {
-          decltype(coefficients) weights (coefficients.size());
-          for (SIFT::track_t i = 0; i != num_tracks(); ++i)
-            weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
-                         0.0 :
-                         std::exp (coefficients[i]);
-          save_vector (weights, path);
+          weights.resize (coefficients.size());
         } catch (...) {
           WARN ("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
+          return;
         }
+        for (SIFT::track_t i = 0; i != num_tracks(); ++i)
+          weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ?
+                        0.0 :
+                        std::exp (coefficients[i]);
+        File::Matrix::save_vector (weights, path);
       }
+
 
 
       void TckFactor::output_coefficients (const std::string& path) const
       {
-        save_vector (coefficients, path);
+        File::Matrix::save_vector (coefficients, path);
       }
 
 

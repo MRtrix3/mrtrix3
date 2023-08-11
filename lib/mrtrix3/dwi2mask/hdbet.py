@@ -18,6 +18,9 @@ from mrtrix3 import MRtrixError
 from mrtrix3 import app, run
 
 
+OUTPUT_IMAGE_PATH = 'bzero_bet_mask.nii.gz'
+
+
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('hdbet', parents=[base_parser])
@@ -26,6 +29,9 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_citation('Isensee F, Schell M, Tursunova I, Brugnara G, Bonekamp D, Neuberger U, Wick A, Schlemmer HP, Heiland S, Wick W, Bendszus M, Maier-Hein KH, Kickingereder P. Automated brain extraction of multi-sequence MRI using artificial neural networks. Hum Brain Mapp. 2019; 1-13. https://doi.org/10.1002/hbm.24750', is_external=True)
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI series')
   parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
+  options = parser.add_argument_group('Options specific to the \'hdbet\' algorithm')
+  options.add_argument('-nogpu', action='store_true', help='Do not attempt to run on the GPU')
+
 
 
 
@@ -46,17 +52,21 @@ def execute(): #pylint: disable=unused-variable
 
   # GPU version is not guaranteed to work;
   #   attempt CPU version if that is the case
-  try:
-    run.command('hd-bet -i bzero.nii')
-  except run.MRtrixCmdError as e_gpu:
-    app.warn('HD-BET failed when running on GPU; attempting on CPU')
+  e_gpu = None #pylint: disable=unused-variable
+  if not app.ARGS.nogpu:
     try:
-      run.command('hd-bet -i bzero.nii -device cpu -mode fast -tta 0')
-    except run.MRtrixCmdError as e_cpu:
-      gpu_header = ('===\nGPU\n===\n')
-      cpu_header = ('===\nCPU\n===\n')
-      exception_stdout = gpu_header + e_gpu.stdout + '\n\n' + cpu_header + e_cpu.stdout + '\n\n'
-      exception_stderr = gpu_header + e_gpu.stderr + '\n\n' + cpu_header + e_cpu.stderr + '\n\n'
-      raise run.MRtrixCmdError('hd-bet', 1, exception_stdout, exception_stderr)
-
-  return 'bzero_bet_mask.nii.gz'
+      run.command('hd-bet -i bzero.nii')
+      return OUTPUT_IMAGE_PATH
+    except run.MRtrixCmdError as e_gpu: #pylint: disable=unused-variable
+      app.warn('HD-BET failed when running on GPU; attempting on CPU')
+  try:
+    run.command('hd-bet -i bzero.nii -device cpu -mode fast -tta 0')
+    return OUTPUT_IMAGE_PATH
+  except run.MRtrixCmdError as e_cpu:
+    if app.ARGS.nogpu:
+      raise
+    gpu_header = ('===\nGPU\n===\n')
+    cpu_header = ('===\nCPU\n===\n')
+    exception_stdout = gpu_header + e_gpu.stdout + '\n\n' + cpu_header + e_cpu.stdout + '\n\n'
+    exception_stderr = gpu_header + e_gpu.stderr + '\n\n' + cpu_header + e_cpu.stderr + '\n\n'
+    raise run.MRtrixCmdError('hd-bet', 1, exception_stdout, exception_stderr)

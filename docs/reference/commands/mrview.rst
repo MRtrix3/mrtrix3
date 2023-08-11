@@ -72,7 +72,7 @@ View options
 
 -  **-voxelinfo boolean** *(multiple uses permitted)* Show or hide voxel information overlay.
 
--  **-orientationlabel boolean** *(multiple uses permitted)* Show or hide orientation label overlay.
+-  **-orientlabel boolean** *(multiple uses permitted)* Show or hide orientation label overlay.
 
 -  **-colourbar boolean** *(multiple uses permitted)* Show or hide colourbar overlay.
 

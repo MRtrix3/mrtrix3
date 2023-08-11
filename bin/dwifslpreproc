@@ -819,7 +819,7 @@ def execute(): #pylint: disable=unused-variable
 
   # Need gradient table if running dwi2mask after applytopup to derive a brain mask for eddy
   run.command('mrinfo dwi.mif -export_grad_mrtrix grad.b')
-  dwi2mask_algo = CONFIG.get('Dwi2maskAlgorithm', 'legacy')
+  dwi2mask_algo = CONFIG['Dwi2maskAlgorithm']
 
   eddy_in_topup_option = ''
   dwi_post_eddy_crop_option = ''

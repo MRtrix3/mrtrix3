@@ -30,11 +30,11 @@
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
+#include "file/matrix.h"
+#include "file/nifti_utils.h"
 #include "math/average_space.h"
 #include "math/SH.h"
 #include "math/sphere.h"
-#include "transform.h"
-#include "file/nifti_utils.h"
 
 
 using namespace MR;
@@ -208,7 +208,7 @@ void run () {
   Eigen::MatrixXd directions_cartesian;
   opt = get_options ("directions");
   if (opt.size())
-    directions_cartesian = Math::Sphere::spherical2cartesian (load_matrix (opt[0][0])).transpose();
+    directions_cartesian = Math::Sphere::spherical2cartesian (File::Matrix::load_matrix (opt[0][0])).transpose();
 
   // check header transformations for equality
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
@@ -369,7 +369,7 @@ void run () {
   if (opt.size()) {
     init_rigid_matrix_set = true;
     Eigen::Vector3d centre;
-    transform_type rigid_transform = load_transform (opt[0][0], centre);
+    transform_type rigid_transform = File::Matrix::load_transform (opt[0][0], centre);
     rigid.set_transform (rigid_transform);
     if (!std::isfinite(centre(0))) {
       rigid_registration.set_init_translation_type (Registration::Transform::Init::set_centre_mass);
@@ -522,7 +522,7 @@ void run () {
 
     init_affine_matrix_set = true;
     Eigen::Vector3d centre;
-    transform_type affine_transform = load_transform (opt[0][0], centre);
+    transform_type affine_transform = File::Matrix::load_transform (opt[0][0], centre);
     affine.set_transform (affine_transform);
     if (!std::isfinite(centre(0))) {
       affine_registration.set_init_translation_type (Registration::Transform::Init::set_centre_mass);
@@ -895,13 +895,13 @@ void run () {
     }
 
     if (output_rigid_1tomid)
-      save_transform (rigid.get_transform_half(), rigid.get_centre(), rigid_1tomid_filename);
+      File::Matrix::save_transform (rigid.get_transform_half(), rigid.get_centre(), rigid_1tomid_filename);
 
     if (output_rigid_2tomid)
-      save_transform (rigid.get_transform_half_inverse(), rigid.get_centre(), rigid_2tomid_filename);
+      File::Matrix::save_transform (rigid.get_transform_half_inverse(), rigid.get_centre(), rigid_2tomid_filename);
 
     if (output_rigid)
-      save_transform (rigid.get_transform(), rigid.get_centre(), rigid_filename);
+      File::Matrix::save_transform (rigid.get_transform(), rigid.get_centre(), rigid_filename);
   }
 
   // ****** RUN AFFINE REGISTRATION *******
@@ -963,13 +963,13 @@ void run () {
       } else throw Exception ("FIXME: metric selection");
     }
     if (output_affine_1tomid)
-      save_transform (affine.get_transform_half(), affine.get_centre(), affine_1tomid_filename);
+      File::Matrix::save_transform (affine.get_transform_half(), affine.get_centre(), affine_1tomid_filename);
 
     if (output_affine_2tomid)
-      save_transform (affine.get_transform_half_inverse(), affine.get_centre(), affine_2tomid_filename);
+      File::Matrix::save_transform (affine.get_transform_half_inverse(), affine.get_centre(), affine_2tomid_filename);
 
     if (output_affine)
-      save_transform (affine.get_transform(), affine.get_centre(), affine_filename);
+      File::Matrix::save_transform (affine.get_transform(), affine.get_centre(), affine_filename);
   }
 
 

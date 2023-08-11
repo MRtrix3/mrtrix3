@@ -22,8 +22,8 @@
 #include <tuple>
 
 #include "debug.h"
+#include "fetch_store.h"
 #include "header.h"
-#include "image_io/fetch_store.h"
 #include "image_helpers.h"
 #include "formats/mrtrix_utils.h"
 #include "algo/copy.h"
@@ -248,7 +248,7 @@ namespace MR
         std::function<void(ValueType,void*,size_t,default_type,default_type)> store_func;
 
         void set_fetch_store_functions () {
-          __set_fetch_store_functions (fetch_func, store_func, datatype());
+          __set_fetch_store_scale_functions (fetch_func, store_func, datatype());
         }
     };
 

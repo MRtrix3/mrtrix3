@@ -360,7 +360,7 @@ def goto_scratch_dir(): #pylint: disable=unused-variable
 #   all intermediates, the resource will be retained; if not, it will be deleted (in particular
 #   to dynamically free up storage space used by the script).
 def cleanup(items): #pylint: disable=unused-variable
-  if not DO_CLEANUP:
+  if not DO_CLEANUP or not items:
     return
   if isinstance(items, list):
     if len(items) == 1:

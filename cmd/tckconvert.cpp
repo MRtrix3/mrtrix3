@@ -17,8 +17,9 @@
 #include <cstdio>
 #include <sstream>
 #include "command.h"
-#include "file/ofstream.h"
+#include "file/matrix.h"
 #include "file/name_parser.h"
+#include "file/ofstream.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "raw.h"
@@ -296,7 +297,7 @@ class ASCIIReader: public ReaderInterface<float> {
     bool operator() (Streamline<float>& tck) {
       tck.clear();
       if (item < list.size()) {
-        auto t = load_matrix<float>(list[item].name());
+        auto t = File::Matrix::load_matrix<float>(list[item].name());
         for (size_t i = 0; i < size_t(t.rows()); i++)
           tck.push_back(Eigen::Vector3f(t.row(i)));
         item++;
@@ -392,26 +393,27 @@ class PLYWriter: public WriterInterface<float> {
     }
 
     void computeNormals ( const Streamline<float>& tck, Streamline<float>& normals) {
-      Eigen::Vector3f sPrev, sNext, pt1, pt2, n, normal;
-      sPrev = (tck[1] - tck[0]).normalized();
-
+      Eigen::Vector3f sPrev = (tck[1] - tck[0]).normalized();
+      Eigen::Vector3f normal = Eigen::Vector3f::Zero();
+      
       // Find a good starting normal
-      for (size_t idx = 1; idx < tck.size(); idx++) {
-        pt1 = tck[idx];
-        pt2 = tck[idx+1];
-        sNext = (pt2 - pt1).normalized();
-        n = sPrev.cross(sNext);
+      for (size_t idx = 1; idx < tck.size() - 1; idx++) {
+        const auto& pt1 = tck[idx];
+        const auto& pt2 = tck[idx+1];
+        const auto sNext = (pt2 - pt1).normalized();
+        const auto n = sPrev.cross(sNext);
         if ( n.norm() > 1.0E-3 ) {
           normal = n;
           sPrev = sNext;
           break;
         }
       }
+
       normal.normalize();  // vtkPolyLine.cxx:170
-      for (size_t idx = 0; idx < tck.size(); idx++) {
-        pt1 = tck[idx];
-        pt2 = tck[idx+1];
-        sNext = (pt2 - pt1).normalized();
+      for (size_t idx = 0; idx < tck.size() - 1; idx++) {
+        const auto& pt1 = tck[idx];
+        const auto& pt2 = tck[idx+1];
+        const auto sNext = (pt2 - pt1).normalized();
 
         // compute rotation vector vtkPolyLine.cxx:187
         auto w = sPrev.cross(normal);

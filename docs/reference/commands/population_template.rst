@@ -15,13 +15,22 @@ Usage
 
     population_template input_dir template [ options ]
 
--  *input_dir*: Input directory containing all images used to build the template
--  *template*: Corresponding output template image. For multi-contrast registration, provide multiple paired input_dir and template arguments. Example: WM_dir WM_template.mif GM_dir GM_template.mif
+-  *input_dir*: Directory containing all input images of a given contrast
+-  *template*: Output template image
 
 Description
 -----------
 
 First a template is optimised with linear registration (rigid and/or affine, both by default), then non-linear registration is used to optimise the template further.
+
+Example usages
+--------------
+
+-   *Multi-contrast registration*::
+
+        $ population_template input_WM_ODFs/ output_WM_template.mif input_GM_ODFs/ output_GM_template.mif
+
+    When performing multi-contrast registration, the input directory and corresponding output template image for a given contrast are to be provided as a pair, with the pairs corresponding to different contrasts provided sequentially.
 
 Options
 -------

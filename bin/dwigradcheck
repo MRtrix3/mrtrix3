@@ -94,7 +94,7 @@ def execute(): #pylint: disable=unused-variable
   # Note that gradient table must be explicitly loaded, since there may not
   #   be one in the image header (user may be relying on -grad or -fslgrad input options)
   if not os.path.exists('mask.mif'):
-    run.command('dwi2mask ' + CONFIG.get('Dwi2maskAlgorithm', 'legacy') + ' data.mif mask.mif -grad grad.b')
+    run.command('dwi2mask ' + CONFIG['Dwi2maskAlgorithm'] + ' data.mif mask.mif -grad grad.b')
 
   # How many tracks are we going to generate?
   number_option = ' -select ' + str(app.ARGS.number)

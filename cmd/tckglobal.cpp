@@ -18,11 +18,12 @@
 
 #include <limits>
 
-#include "math/SH.h"
 #include "image.h"
 #include "thread.h"
 #include "version.h"
 #include "algo/threaded_copy.h"
+#include "file/matrix.h"
+#include "math/SH.h"
 
 #include "dwi/tractography/GT/particlegrid.h"
 #include "dwi/tractography/GT/gt.h"
@@ -225,14 +226,14 @@ void run ()
   auto dwi = Image<float>::open(argument[0]).with_direct_io(3);
 
   Properties properties;
-  properties.resp_WM = load_matrix<float> (argument[1]);
+  properties.resp_WM = File::Matrix::load_matrix<float> (argument[1]);
   double wmscale2 = (properties.resp_WM(0,0)*properties.resp_WM(0,0))/M_4PI;
 
   Eigen::VectorXf riso;
   auto opt = get_options("riso");
   for (auto popt : opt)
   {
-    riso = load_vector<float>(popt[0]);
+    riso = File::Matrix::load_vector<float>(popt[0]);
     properties.resp_ISO.push_back(riso);
   }
 

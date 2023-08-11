@@ -21,6 +21,7 @@
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "file/matrix.h"
 #include "math/SH.h"
 
 
@@ -208,7 +209,7 @@ void run ()
   Eigen::MatrixXd dirs;
   auto opt = get_options ("directions");
   if (opt.size()) {
-    dirs = load_matrix (opt[0][0]);
+    dirs = File::Matrix::load_matrix (opt[0][0]);
     if (dirs.cols() == 3)
       dirs = Math::Sphere::cartesian2spherical (dirs);
   }
