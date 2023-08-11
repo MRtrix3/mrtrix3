@@ -592,6 +592,134 @@ class ProgressBar: #pylint: disable=unused-variable
 
 class Parser(argparse.ArgumentParser):
 
+
+
+  # Various callable types for use as argparse argument types
+  class CustomTypeBase:
+    @staticmethod
+    def _typestring():
+      assert False
+
+  class Bool(CustomTypeBase):
+    def __call__(self, input_value):
+      processed_value = input_value.strip().lower()
+      if processed_value in ['true', 'yes']:
+        return True
+      if processed_value in ['false', 'no']:
+        return False
+      try:
+        processed_value = int(processed_value)
+      except ValueError as exc:
+        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as boolean value"') from exc
+      return bool(processed_value)
+    @staticmethod
+    def _typestring():
+      return 'BOOL'
+
+  class SequenceInt(CustomTypeBase):
+    def __call__(self, input_value):
+      try:
+        return [int(i) for i in input_value.split(',')]
+      except ValueError as exc:
+        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as integer sequence') from exc
+    @staticmethod
+    def _typestring():
+      return 'ISEQ'
+
+  class SequenceFloat(CustomTypeBase):
+    def __call__(self, input_value):
+      try:
+        return [float(i) for i in input_value.split(',')]
+      except ValueError as exc:
+        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as floating-point sequence') from exc
+    @staticmethod
+    def _typestring():
+      return 'FSEQ'
+
+  class DirectoryIn(CustomTypeBase):
+    def __call__(self, input_value):
+      if not os.path.exists(input_value):
+        raise argparse.ArgumentTypeError('Input directory "' + input_value + '" does not exist')
+      if not os.path.isdir(input_value):
+        raise argparse.ArgumentTypeError('Input path "' + input_value + '" is not a directory')
+      return input_value
+    @staticmethod
+    def _typestring():
+      return 'DIRIN'
+
+  class DirectoryOut(CustomTypeBase):
+    def __call__(self, input_value):
+      return input_value
+    @staticmethod
+    def _typestring():
+      return 'DIROUT'
+
+  class FileIn(CustomTypeBase):
+    def __call__(self, input_value):
+      if not os.path.exists(input_value):
+        raise argparse.ArgumentTypeError('Input file "' + input_value + '" does not exist')
+      if not os.path.isfile(input_value):
+        raise argparse.ArgumentTypeError('Input path "' + input_value + '" is not a file')
+      return input_value
+    def _typestring():
+      return 'FILEIN'
+
+  class FileOut(CustomTypeBase):
+    def __call__(self, input_value):
+      return input_value
+    @staticmethod
+    def _typestring():
+      return 'FILEOUT'
+
+  class ImageIn(CustomTypeBase):
+    def __call__(self, input_value):
+      if input_value == '-':
+        input_value = sys.stdin.readline().strip()
+        _STDIN_IMAGES.append(input_value)
+      return input_value
+    @staticmethod
+    def _typestring():
+      return 'IMAGEIN'
+
+  class ImageOut(CustomTypeBase):
+    def __call__(self, input_value):
+      if input_value == '-':
+        input_value = utils.name_temporary('mif')
+        _STDOUT_IMAGES.append(input_value)
+      return input_value
+    @staticmethod
+    def _typestring():
+      return 'IMAGEOUT'
+
+  class TracksIn(FileIn):
+    def __call__(self, input_value):
+      super().__call__(input_value)
+      if not input_value.endswith('.tck'):
+        raise argparse.ArgumentTypeError('Input tractogram file "' + input_value + '" is not a valid track file')
+      return input_value
+    @staticmethod
+    def _typestring():
+      return 'TRACKSIN'
+
+  class TracksOut(FileOut):
+    def __call__(self, input_value):
+      if not input_value.endswith('.tck'):
+        raise argparse.ArgumentTypeError('Output tractogram path "' + input_value + '" does not use the requisite ".tck" suffix')
+      return input_value
+    def _typestring():
+      return 'TRACKSOUT'
+
+  class Various(CustomTypeBase):
+    def __call__(self, input_value):
+      return input_value
+    @staticmethod
+    def _typestring():
+      return 'VARIOUS'
+
+
+
+
+
   # pylint: disable=protected-access
   def __init__(self, *args_in, **kwargs_in):
     self._author = None
@@ -616,13 +744,13 @@ class Parser(argparse.ArgumentParser):
       self.flag_mutually_exclusive_options( [ 'info', 'quiet', 'debug' ] )
       standard_options.add_argument('-force', action='store_true', help='force overwrite of output files.')
       standard_options.add_argument('-nthreads', metavar='number', type=int, help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).')
-      standard_options.add_argument('-config', action='append', metavar='key value', nargs=2, help='temporarily set the value of an MRtrix config file entry.')
+      standard_options.add_argument('-config', action='append', type=str, metavar=('key', 'value'), nargs=2, help='temporarily set the value of an MRtrix config file entry.')
       standard_options.add_argument('-help', action='store_true', help='display this information page and exit.')
       standard_options.add_argument('-version', action='store_true', help='display version information and exit.')
       script_options = self.add_argument_group('Additional standard options for Python scripts')
       script_options.add_argument('-nocleanup', action='store_true', help='do not delete intermediate files during script execution, and do not delete scratch directory at script completion.')
-      script_options.add_argument('-scratch', metavar='/path/to/scratch/', help='manually specify the path in which to generate the scratch directory.')
-      script_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<ScratchDir>', '<LastFile>'), help='continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.')
+      script_options.add_argument('-scratch', type=Parser.DirectoryOut, metavar='/path/to/scratch/', help='manually specify the path in which to generate the scratch directory.')
+      script_options.add_argument('-continue', nargs=2, dest='cont', metavar=('ScratchDir', 'LastFile'), help='continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.')
     module_file = os.path.realpath (inspect.getsourcefile(inspect.stack()[-1][0]))
     self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
     try:
@@ -740,6 +868,12 @@ class Parser(argparse.ArgumentParser):
         sys.stderr.write('(Consult the help page for more information: ' + self.prog + ' -help)\n\n')
         sys.stderr.flush()
         sys.exit(1)
+
+
+
+
+
+
 
   def format_usage(self):
     argument_list = [ ]
@@ -921,23 +1055,52 @@ class Parser(argparse.ArgumentParser):
           self._subparsers._group_actions[0].choices[alg].print_full_usage()
           return
       self.error('Invalid subparser nominated')
+
+    def arg2str(arg):
+      if arg.choices:
+        return 'CHOICE ' + ' '.join(arg.choices)
+      if isinstance(arg.type, int) or arg.type is int:
+        return 'INT'
+      if isinstance(arg.type, float) or arg.type is float:
+        return 'FLOAT'
+      if isinstance(arg.type, str) or arg.type is str or arg.type is None:
+        return 'TEXT'
+      if isinstance(arg.type, Parser.CustomTypeBase):
+        return type(arg.type)._typestring()
+      return arg.type._typestring()
+
+    def allow_multiple(nargs):
+      return '1' if nargs in ('*', '+') else '0'
+
     for arg in self._positionals._group_actions:
-      # This will need updating if any scripts allow mulitple argument inputs
-      sys.stdout.write('ARGUMENT ' + arg.dest + ' 0 0\n')
+      sys.stdout.write('ARGUMENT ' + arg.dest + ' 0 ' + allow_multiple(arg.nargs) + ' ' + arg2str(arg) + '\n')
       sys.stdout.write(arg.help + '\n')
 
     def print_group_options(group):
       for option in group._group_actions:
-        optional = '0' if option.required else '1'
-        allow_multiple = '1' if isinstance(option, argparse._AppendAction) else '0'
-        sys.stdout.write('OPTION ' + '/'.join(option.option_strings) + ' ' + optional + ' ' + allow_multiple + '\n')
+        sys.stdout.write('OPTION '
+                         + '/'.join(option.option_strings)
+                         + ' '
+                         + ('0' if option.required else '1')
+                         + ' '
+                         + allow_multiple(option.nargs)
+                         + '\n')
         sys.stdout.write(option.help + '\n')
-        if option.metavar:
-          if isinstance(option.metavar, tuple):
-            for arg in option.metavar:
-              sys.stdout.write('ARGUMENT ' + arg + ' 0 0\n')
-          else:
-            sys.stdout.write('ARGUMENT ' + option.metavar + ' 0 0\n')
+        if option.metavar and isinstance(option.metavar, tuple):
+          assert len(option.metavar) == option.nargs
+          for arg in option.metavar:
+            sys.stdout.write('ARGUMENT ' + arg + ' 0 0 ' + arg2str(option) + '\n')
+        else:
+          multiple = allow_multiple(option.nargs)
+          nargs = 1 if multiple == '1' else (option.nargs if option.nargs is not None else 1)
+          for _ in range(0, nargs):
+            sys.stdout.write('ARGUMENT '
+                             + (option.metavar if option.metavar else '/'.join(option.option_strings))
+                             + ' 0 '
+                             + multiple
+                             + ' '
+                             + arg2str(option)
+                             + '\n')
 
     ungrouped_options = self._get_ungrouped_options()
     if ungrouped_options and ungrouped_options._group_actions:
@@ -1131,92 +1294,13 @@ class Parser(argparse.ArgumentParser):
            not group == self._positionals and \
            group.title not in ( 'options', 'optional arguments' )
 
-  # Various callable types for use as argparse argument types
-  class Bool:
-    def __call__(self, input_value):
-      processed_value = input_value.strip().lower()
-      if processed_value in ['true', 'yes']:
-        return True
-      if processed_value in ['false', 'no']:
-        return False
-      try:
-        processed_value = int(processed_value)
-      except ValueError as exc:
-        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as boolean value"') from exc
-      return bool(processed_value)
-
-  class SequenceInt:
-    def __call__(self, input_value):
-      try:
-        return [int(i) for i in input_value.split(',')]
-      except ValueError as exc:
-        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as integer sequence') from exc
-
-  class SequenceFloat:
-    def __call__(self, input_value):
-      try:
-        return [float(i) for i in input_value.split(',')]
-      except ValueError as exc:
-        raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as floating-point sequence') from exc
-
-  class DirectoryIn:
-    def __call__(self, input_value):
-      if not os.path.exists(input_value):
-        raise argparse.ArgumentTypeError('Input directory "' + input_value + '" does not exist')
-      if not os.path.isdir(input_value):
-        raise argparse.ArgumentTypeError('Input path "' + input_value + '" is not a directory')
-      return input_value
-
-  class DirectoryOut:
-    def __call__(self, input_value):
-      return input_value
-
-  class FileIn:
-    def __call__(self, input_value):
-      if not os.path.exists(input_value):
-        raise argparse.ArgumentTypeError('Input file "' + input_value + '" does not exist')
-      if not os.path.isfile(input_value):
-        raise argparse.ArgumentTypeError('Input path "' + input_value + '" is not a file')
-      return input_value
-
-  class FileOut:
-    def __call__(self, input_value):
-      return input_value
-
-  class ImageIn:
-    def __call__(self, input_value):
-      if input_value == '-':
-        input_value = sys.stdin.readline().strip()
-        _STDIN_IMAGES.append(input_value)
-      return input_value
-
-  class ImageOut:
-    def __call__(self, input_value):
-      if input_value == '-':
-        input_value = utils.name_temporary('mif')
-        _STDOUT_IMAGES.append(input_value)
-      return input_value
-
-  class TracksIn(FileIn):
-    def __call__(self, input_value):
-      super().__call__(input_value)
-      if not input_value.endswith('.tck'):
-        raise argparse.ArgumentTypeError('Input tractogram file "' + input_value + '" is not a valid track file')
-      return input_value
-
-  class TracksOut:
-    def __call__(self, input_value):
-      if not input_value.endswith('.tck'):
-        raise argparse.ArgumentTypeError('Output tractogram path "' + input_value + '" does not use the requisite ".tck" suffix')
-      return input_value
-
 
 
 # Define functions for incorporating commonly-used command-line options / option groups
 def add_dwgrad_import_options(cmdline): #pylint: disable=unused-variable
   options = cmdline.add_argument_group('Options for importing the diffusion gradient table')
-  options.add_argument('-grad', help='Provide the diffusion gradient table in MRtrix format')
-  options.add_argument('-fslgrad', nargs=2, metavar=('bvecs', 'bvals'), help='Provide the diffusion gradient table in FSL bvecs/bvals format')
+  options.add_argument('-grad', type=Parser.FileIn, metavar='file', help='Provide the diffusion gradient table in MRtrix format')
+  options.add_argument('-fslgrad', type=Parser.FileIn, nargs=2, metavar=('bvecs', 'bvals'), help='Provide the diffusion gradient table in FSL bvecs/bvals format')
   cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
 def read_dwgrad_import_options(): #pylint: disable=unused-variable
   from mrtrix3 import path #pylint: disable=import-outside-toplevel
@@ -1232,8 +1316,8 @@ def read_dwgrad_import_options(): #pylint: disable=unused-variable
 
 def add_dwgrad_export_options(cmdline): #pylint: disable=unused-variable
   options = cmdline.add_argument_group('Options for exporting the diffusion gradient table')
-  options.add_argument('-export_grad_mrtrix', metavar='grad', help='Export the final gradient table in MRtrix format')
-  options.add_argument('-export_grad_fsl', nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
+  options.add_argument('-export_grad_mrtrix', type=Parser.FileOut, metavar='grad', help='Export the final gradient table in MRtrix format')
+  options.add_argument('-export_grad_fsl', type=Parser.FileOut, nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
   cmdline.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
 
 
