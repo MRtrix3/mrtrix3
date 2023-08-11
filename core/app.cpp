@@ -212,6 +212,8 @@ namespace MR
     const char* argtype_description (ArgType type)
     {
       switch (type) {
+        case Boolean:
+          return ("boolean");
         case Integer:
           return ("integer");
         case Float:
@@ -502,6 +504,9 @@ namespace MR
       switch (type) {
         case Undefined:
           assert (0);
+          break;
+        case Boolean:
+          stream << "BOOL";
           break;
         case Integer:
           stream << "INT " << limits.i.min << " " << limits.i.max;
