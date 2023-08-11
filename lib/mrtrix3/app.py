@@ -1037,6 +1037,12 @@ class Parser(argparse.ArgumentParser):
         sys.stdout.flush()
 
   def print_full_usage(self):
+    if self._subparsers and len(sys.argv) == 3:
+      for alg in self._subparsers._group_actions[0].choices:
+        if alg == sys.argv[1]:
+          self._subparsers._group_actions[0].choices[alg].print_full_usage()
+          return
+      self.error('Invalid subparser nominated')
     sys.stdout.write(self._synopsis + '\n')
     if self._description:
       if isinstance(self._description, list):
@@ -1049,12 +1055,6 @@ class Parser(argparse.ArgumentParser):
       if example[2]:
         sys.stdout.write('; ' + example[2])
       sys.stdout.write('\n')
-    if self._subparsers and len(sys.argv) == 3:
-      for alg in self._subparsers._group_actions[0].choices:
-        if alg == sys.argv[1]:
-          self._subparsers._group_actions[0].choices[alg].print_full_usage()
-          return
-      self.error('Invalid subparser nominated')
 
     def arg2str(arg):
       if arg.choices:
@@ -1095,7 +1095,7 @@ class Parser(argparse.ArgumentParser):
           nargs = 1 if multiple == '1' else (option.nargs if option.nargs is not None else 1)
           for _ in range(0, nargs):
             sys.stdout.write('ARGUMENT '
-                             + (option.metavar if option.metavar else '/'.join(option.option_strings))
+                             + (option.metavar if option.metavar else '/'.join(opt.lstrip('-') for opt in option.option_strings))
                              + ' 0 '
                              + multiple
                              + ' '
