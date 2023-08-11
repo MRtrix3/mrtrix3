@@ -24,6 +24,7 @@
 
 #include "app.h"
 #include "exec_version.h"
+#include "mrtrix.h"
 #ifdef MRTRIX_PROJECT
 namespace MR {
   namespace App {
@@ -103,7 +104,7 @@ int main (int cmdline_argc, char** cmdline_argv)
     //ENVVAR Set the command to parse the provided inputs and then quit
     //ENVVAR if it is 1. This can be used in the CI of wrapping code,
     //ENVVAR such as the automatically generated Pydra ones
-    int parse_only = getenv("MRTRIX_PARSE_ONLY")
+    int parse_only = MR::to<int>(getenv("MRTRIX_PARSE_ONLY"));
     if (parse_only)
       return 0;
     run ();
