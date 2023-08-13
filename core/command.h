@@ -104,13 +104,13 @@ int main (int cmdline_argc, char** cmdline_argv)
     //ENVVAR Set the command to parse the provided inputs and then quit
     //ENVVAR if it is 1. This can be used in the CI of wrapping code,
     //ENVVAR such as the automatically generated Pydra ones
-    int parse_only = MR::to<int>(getenv("MRTRIX_PARSE_ONLY"));
-    if (parse_only)
+    char* parse_only = std::getenv("MRTRIX_PARSE_ONLY");
+    if (parse_only && ::MR::to<int>(parse_only)) {
       WARN(
-        "Quitting after parsing command-line arguments for " + MR::str(cmdline_argv[0])
-        + " successfully because environment variable 'MRTRIX_PARSE_ONLY' is set"
+        "Quitting after parsing command-line arguments successfully because environment variable 'MRTRIX_PARSE_ONLY' is set to '1'"
       );
       return 0;
+    }
     run ();
   }
   catch (::MR::Exception& E) {
