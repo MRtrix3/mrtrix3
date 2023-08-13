@@ -106,6 +106,10 @@ int main (int cmdline_argc, char** cmdline_argv)
     //ENVVAR such as the automatically generated Pydra ones
     int parse_only = MR::to<int>(getenv("MRTRIX_PARSE_ONLY"));
     if (parse_only)
+      WARN(
+        "Quitting after parsing command-line arguments for " + MR::str(cmdline_argv[0])
+        + " successfully because environment variable 'MRTRIX_PARSE_ONLY' is set"
+      );
       return 0;
     run ();
   }
