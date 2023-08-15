@@ -277,6 +277,13 @@ namespace MR {
               case 0x1413:
                 grad_number = item.get_int()[0];
                 return;
+              case 0x100EU:
+                // Philips intensity scaling
+                auto MRScaleSlope = item.get_float (0, 1.0);
+                MRScaleSlope *= scale_slope;
+                scale_slope /= MRScaleSlope;
+                scale_intercept /= MRScaleSlope;
+                return;
             }
             return;
           case 0x7FE0U:
