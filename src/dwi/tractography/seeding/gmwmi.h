@@ -17,62 +17,45 @@
 #ifndef __dwi_tractography_seeding_gmwmi_h__
 #define __dwi_tractography_seeding_gmwmi_h__
 
-
-#include "image.h"
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/seeding/basic.h"
+#include "image.h"
 
+namespace MR {
+namespace DWI {
+namespace Tractography {
 
-
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
-
-      namespace ACT { class GMWMI_finder; }
-
-      namespace Seeding
-      {
-
-
-
-        class GMWMI_5TT_Wrapper
-        { 
-          public:
-            GMWMI_5TT_Wrapper (const std::string& path) :
-                anat_data (Image<float>::open (path)) { }
-            Image<float> anat_data;
-        };
-
-
-        class GMWMI : public Base, private GMWMI_5TT_Wrapper, private ACT::GMWMI_finder
-        { 
-
-          public:
-            using ACT::GMWMI_finder::Interp;
-
-            GMWMI (const std::string&, const std::string&);
-
-            bool get_seed (Eigen::Vector3f&) const override;
-
-
-          private:
-            Rejection init_seeder;
-            const float perturb_max_step;
-
-            bool perturb (Eigen::Vector3f&, Interp&) const;
-
-        };
-
-
-
-
-      }
-    }
-  }
+namespace ACT {
+class GMWMI_finder;
 }
 
-#endif
+namespace Seeding {
 
+class GMWMI_5TT_Wrapper {
+public:
+  GMWMI_5TT_Wrapper(const std::string &path) : anat_data(Image<float>::open(path)) {}
+  Image<float> anat_data;
+};
+
+class GMWMI : public Base, private GMWMI_5TT_Wrapper, private ACT::GMWMI_finder {
+
+public:
+  using ACT::GMWMI_finder::Interp;
+
+  GMWMI(const std::string &, const std::string &);
+
+  bool get_seed(Eigen::Vector3f &) const override;
+
+private:
+  Rejection init_seeder;
+  const float perturb_max_step;
+
+  bool perturb(Eigen::Vector3f &, Interp &) const;
+};
+
+} // namespace Seeding
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
+
+#endif

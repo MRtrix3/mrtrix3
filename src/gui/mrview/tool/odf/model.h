@@ -25,81 +25,72 @@
 #include "gui/mrview/tool/odf/item.h"
 #include "gui/mrview/tool/odf/type.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Tool {
 
+class ODF_Model : public QAbstractItemModel {
+public:
+  ODF_Model(QObject *parent) : QAbstractItemModel(parent) {}
 
-
-        class ODF_Model : public QAbstractItemModel
-        { 
-          public:
-
-            ODF_Model (QObject* parent) :
-              QAbstractItemModel (parent) { }
-
-            QVariant data (const QModelIndex& index, int role) const {
-              if (!index.isValid()) return {};
-              if (role != Qt::DisplayRole && role != Qt::ToolTipRole) return {};
-              return qstr (items[index.row()]->image.get_filename());
-            }
-
-            bool setData (const QModelIndex& index, const QVariant& value, int role) {
-              return QAbstractItemModel::setData (index, value, role);
-            }
-
-            Qt::ItemFlags flags (const QModelIndex& index) const {
-              if (!index.isValid()) return {};
-              return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
-            }
-
-            QModelIndex parent (const QModelIndex&) const {
-              return {};
-            }
-
-            int rowCount (const QModelIndex& parent = QModelIndex()) const {
-              (void) parent;  // to suppress warnings about unused parameters
-              return items.size();
-            }
-
-            int columnCount (const QModelIndex& parent = QModelIndex()) const {
-              (void) parent; // to suppress warnings about unused parameters
-              return 1;
-            }
-
-            size_t add_items (const vector<std::string>& list, const odf_type_t type, bool colour_by_direction, bool hide_negative_lobes, float scale);
-
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const {
-              (void ) parent; // to suppress warnings about unused parameters
-              return createIndex (row, column);
-            }
-
-            void remove_item (QModelIndex& index) {
-              beginRemoveRows (QModelIndex(), index.row(), index.row());
-              items.erase (items.begin() + index.row());
-              endRemoveRows();
-            }
-
-            ODF_Item* get_image (QModelIndex& index) {
-              return index.isValid() ? dynamic_cast<ODF_Item*>(items[index.row()].get()) : NULL;
-            }
-
-            vector<std::unique_ptr<ODF_Item>> items;
-        };
-
-      }
-    }
+  QVariant data(const QModelIndex &index, int role) const {
+    if (!index.isValid())
+      return {};
+    if (role != Qt::DisplayRole && role != Qt::ToolTipRole)
+      return {};
+    return qstr(items[index.row()]->image.get_filename());
   }
-}
+
+  bool setData(const QModelIndex &index, const QVariant &value, int role) {
+    return QAbstractItemModel::setData(index, value, role);
+  }
+
+  Qt::ItemFlags flags(const QModelIndex &index) const {
+    if (!index.isValid())
+      return {};
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+  }
+
+  QModelIndex parent(const QModelIndex &) const { return {}; }
+
+  int rowCount(const QModelIndex &parent = QModelIndex()) const {
+    (void)parent; // to suppress warnings about unused parameters
+    return items.size();
+  }
+
+  int columnCount(const QModelIndex &parent = QModelIndex()) const {
+    (void)parent; // to suppress warnings about unused parameters
+    return 1;
+  }
+
+  size_t add_items(const vector<std::string> &list,
+                   const odf_type_t type,
+                   bool colour_by_direction,
+                   bool hide_negative_lobes,
+                   float scale);
+
+  QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
+    (void)parent; // to suppress warnings about unused parameters
+    return createIndex(row, column);
+  }
+
+  void remove_item(QModelIndex &index) {
+    beginRemoveRows(QModelIndex(), index.row(), index.row());
+    items.erase(items.begin() + index.row());
+    endRemoveRows();
+  }
+
+  ODF_Item *get_image(QModelIndex &index) {
+    return index.isValid() ? dynamic_cast<ODF_Item *>(items[index.row()].get()) : NULL;
+  }
+
+  vector<std::unique_ptr<ODF_Item>> items;
+};
+
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-
-
-
-

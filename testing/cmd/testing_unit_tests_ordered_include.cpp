@@ -14,15 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #include "command.h"
 #include "unit_tests/tractography/roi_unit_tests.h"
 
 using namespace MR;
 using namespace App;
 
-void usage ()
-{
+void usage() {
   AUTHOR = "Lee Reid (lee.reid@csiro.au)";
 
   SYNOPSIS = "Runs units tests for tractography-related classes";
@@ -30,24 +28,19 @@ void usage ()
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
 
+void run() {
 
-void run ()
-{
+  bool allPassed = Testing::UnitTests::Tractography::ROIUnitTests::ROIUnitTests::run();
+  // Add further tests here like so:
+  // allPassed &= <test>
+  // OR
+  // allPassed = allPassed && <test>
 
-     bool allPassed = Testing::UnitTests::Tractography::ROIUnitTests::ROIUnitTests::run();
-     //Add further tests here like so:
-     //allPassed &= <test>
-     //OR
-     //allPassed = allPassed && <test>
-
-
-     if (allPassed)
-     {
-        std::cout << "All Passed";
-     }
-     else
-     {
-        std::cout << "Failed";
-        throw 1;//Register an error - command.h doesn't let us return a variable - it only listens for something being thrown
-     }
+  if (allPassed) {
+    std::cout << "All Passed";
+  } else {
+    std::cout << "Failed";
+    throw 1; // Register an error - command.h doesn't let us return a variable - it only listens for something being
+             // thrown
+  }
 }

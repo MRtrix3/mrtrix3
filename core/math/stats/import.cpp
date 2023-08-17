@@ -16,52 +16,36 @@
 
 #include "math/stats/import.h"
 
-namespace MR
-{
-  namespace Math
-  {
-    namespace Stats
-    {
+namespace MR {
+namespace Math {
+namespace Stats {
 
-
-
-
-
-      vector_type CohortDataImport::operator() (const index_type element) const
-      {
-        vector_type result (files.size());
-        for (index_type i = 0; i != files.size(); ++i)
-          result[i] = (*files[i]) [element]; // Get the intensity for just a particular element from this input data file
-        return result;
-      }
-
-
-
-
-      bool CohortDataImport::allFinite() const
-      {
-        // TESTME Should be possible to do this faster by populating matrix data
-        if (!size())
-          return true;
-        matrix_type data (size(), files[0]->size());
-        for (index_type i = 0; i != size(); ++i)
-          (*files[i]) (data.row (i));
-        return data.allFinite();
-/*
-        for (index_type i = 0; i != files.size(); ++i) {
-          for (index_type j = 0; j != files[i]->size(); ++j) {
-            if ((*files[i])[j])
-              return false;
-          }
-        }
-        return true;
-*/
-      }
-
-
-
-
-    }
-  }
+vector_type CohortDataImport::operator()(const index_type element) const {
+  vector_type result(files.size());
+  for (index_type i = 0; i != files.size(); ++i)
+    result[i] = (*files[i])[element]; // Get the intensity for just a particular element from this input data file
+  return result;
 }
 
+bool CohortDataImport::allFinite() const {
+  // TESTME Should be possible to do this faster by populating matrix data
+  if (!size())
+    return true;
+  matrix_type data(size(), files[0]->size());
+  for (index_type i = 0; i != size(); ++i)
+    (*files[i])(data.row(i));
+  return data.allFinite();
+  /*
+          for (index_type i = 0; i != files.size(); ++i) {
+            for (index_type j = 0; j != files[i]->size(); ++j) {
+              if ((*files[i])[j])
+                return false;
+            }
+          }
+          return true;
+  */
+}
+
+} // namespace Stats
+} // namespace Math
+} // namespace MR

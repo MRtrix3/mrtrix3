@@ -17,91 +17,67 @@
 #ifndef __dwi_tractography_resampling_arc_h__
 #define __dwi_tractography_resampling_arc_h__
 
-
 #include "dwi/tractography/resampling/resampling.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Resampling {
+namespace DWI {
+namespace Tractography {
+namespace Resampling {
 
+// Also handles resampling along a fixed line
+class Arc : public BaseCRTP<Arc> {
 
+  using value_type = float;
+  using point_type = Eigen::Vector3f;
 
-        // Also handles resampling along a fixed line
-        class Arc : public BaseCRTP<Arc> { 
+  enum class state_t { BEFORE_START, AFTER_START, BEFORE_END, AFTER_END };
 
-            using value_type = float;
-            using point_type = Eigen::Vector3f;
-
-            enum class state_t { BEFORE_START, AFTER_START, BEFORE_END, AFTER_END };
-
-          private:
-            class Plane { 
-              public:
-                Plane (const point_type& pos, const point_type& dir) :
-                    n (dir)
-                {
-                  n.normalize();
-                  d = n.dot (pos);
-                }
-                value_type dist (const point_type& pos) const { return n.dot (pos) - d; }
-              private:
-                point_type n;
-                value_type d;
-            };
-
-            vector<Plane> planes;
-
-          public:
-            Arc (const size_t n, const point_type& s, const point_type& e) :
-                nsamples (n),
-                start (s),
-                mid (0.5*(s+e)),
-                end (e),
-                idx_start (0),
-                idx_end (0)
-            {
-              init_line();
-            }
-
-            Arc (const size_t n, const point_type& s, const point_type& w, const point_type& e) :
-                nsamples (n),
-                start (s),
-                mid (w),
-                end (e),
-                idx_start (0),
-                idx_end (0)
-            {
-              init_arc();
-            }
-
-            bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid() const override { return nsamples; }
-
-          private:
-            const size_t nsamples;
-            const point_type start, mid, end;
-
-            mutable size_t idx_start, idx_end;
-            mutable point_type start_dir, mid_dir, end_dir;
-
-            void init_line();
-            void init_arc();
-
-
-            state_t state (const point_type&) const;
-
-        };
-
-
-
-      }
+private:
+  class Plane {
+  public:
+    Plane(const point_type &pos, const point_type &dir) : n(dir) {
+      n.normalize();
+      d = n.dot(pos);
     }
+    value_type dist(const point_type &pos) const { return n.dot(pos) - d; }
+
+  private:
+    point_type n;
+    value_type d;
+  };
+
+  vector<Plane> planes;
+
+public:
+  Arc(const size_t n, const point_type &s, const point_type &e)
+      : nsamples(n), start(s), mid(0.5 * (s + e)), end(e), idx_start(0), idx_end(0) {
+    init_line();
   }
-}
+
+  Arc(const size_t n, const point_type &s, const point_type &w, const point_type &e)
+      : nsamples(n), start(s), mid(w), end(e), idx_start(0), idx_end(0) {
+    init_arc();
+  }
+
+  bool operator()(const Streamline<> &, Streamline<> &) const override;
+  bool valid() const override { return nsamples; }
+
+private:
+  const size_t nsamples;
+  const point_type start, mid, end;
+
+  mutable size_t idx_start, idx_end;
+  mutable point_type start_dir, mid_dir, end_dir;
+
+  void init_line();
+  void init_arc();
+
+  state_t state(const point_type &) const;
+};
+
+} // namespace Resampling
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-
-

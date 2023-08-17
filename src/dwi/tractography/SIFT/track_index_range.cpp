@@ -16,43 +16,32 @@
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 
+namespace MR {
+namespace DWI {
+namespace Tractography {
+namespace SIFT {
 
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
-      namespace SIFT
-      {
+TrackIndexRangeWriter::TrackIndexRangeWriter(const track_t buffer_size,
+                                             const track_t num_tracks,
+                                             const std::string &message)
+    : size(buffer_size),
+      end(num_tracks),
+      start(0),
+      progress(message.empty() ? NULL : new ProgressBar(message, ceil(float(end) / float(size)))) {}
 
-
-
-      TrackIndexRangeWriter::TrackIndexRangeWriter (const track_t buffer_size, const track_t num_tracks, const std::string& message) :
-        size  (buffer_size),
-        end   (num_tracks),
-        start (0),
-        progress (message.empty() ? NULL : new ProgressBar (message, ceil (float(end) / float(size)))) { }
-
-
-      bool TrackIndexRangeWriter::operator() (TrackIndexRange& out)
-      {
-        if (start >= end)
-          return false;
-        out.first = start;
-        const track_t last = std::min (start + size, end);
-        out.second = last;
-        start = last;
-        if (progress)
-          ++*progress;
-        return true;
-      }
-
-
-
-      }
-    }
-  }
+bool TrackIndexRangeWriter::operator()(TrackIndexRange &out) {
+  if (start >= end)
+    return false;
+  out.first = start;
+  const track_t last = std::min(start + size, end);
+  out.second = last;
+  start = last;
+  if (progress)
+    ++*progress;
+  return true;
 }
 
-
+} // namespace SIFT
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR

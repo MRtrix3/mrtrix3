@@ -17,17 +17,14 @@
 #include "dwi/tractography/GT/particle.h"
 
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace GT {
-        
-        // Initialize particle length
-        float Particle::L = 1.;
-        
-        
-        
-      }
-    }
-  }
-}
+namespace DWI {
+namespace Tractography {
+namespace GT {
 
+// Initialize particle length
+float Particle::L = 1.;
+
+} // namespace GT
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR

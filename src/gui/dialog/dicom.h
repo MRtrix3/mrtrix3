@@ -17,24 +17,19 @@
 #ifndef __dialog_dicom_h__
 #define __dialog_dicom_h__
 
-#include "gui/opengl/gl.h"
 #include "file/dicom/tree.h"
+#include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Dialog
-    {
+namespace MR {
+namespace GUI {
+namespace Dialog {
 
-      using namespace MR::File::Dicom;
+using namespace MR::File::Dicom;
 
-      vector<std::shared_ptr<Series>> select_dicom (const Tree& tree);
+vector<std::shared_ptr<Series>> select_dicom(const Tree &tree);
 
-    }
-  }
-}
+} // namespace Dialog
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-

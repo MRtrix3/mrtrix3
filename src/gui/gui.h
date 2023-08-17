@@ -26,36 +26,29 @@
 #include "file/config.h"
 #include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
+namespace MR {
+namespace GUI {
 
-    inline QString qstr (const std::string& s) { return QString::fromUtf8 (s.c_str()); }
+inline QString qstr(const std::string &s) { return QString::fromUtf8(s.c_str()); }
 
+class App : public QApplication {
 
-    class App : public QApplication { 
+public:
+  App(int &cmdline_argc, char **cmdline_argv);
 
-      public:
-        App (int& cmdline_argc, char** cmdline_argv);
+  // this needs to be defined on a per-application basis:
+  virtual bool event(QEvent *event) override;
 
-        // this needs to be defined on a per-application basis:
-        virtual bool event (QEvent *event) override;
-
-
-        static void set_main_window (QWidget* window, GL::Area* glarea) {
-          main_window = window;
-          GL::glwidget = glarea;
-        }
-
-        static QWidget* main_window;
-        static App* application;
-    };
-
-
-
+  static void set_main_window(QWidget *window, GL::Area *glarea) {
+    main_window = window;
+    GL::glwidget = glarea;
   }
-}
+
+  static QWidget *main_window;
+  static App *application;
+};
+
+} // namespace GUI
+} // namespace MR
 
 #endif
-

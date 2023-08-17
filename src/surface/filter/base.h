@@ -22,52 +22,42 @@
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
 
-namespace MR
-{
-  namespace Surface
-  {
-    namespace Filter
-    {
+namespace MR {
+namespace Surface {
+namespace Filter {
 
-      /*! A base class for defining surface mesh filters.
-       *
-       * The Surface::Filter::Base class defines the basic
-       * interface for defining filters that operate upon mesh
-       * data. It allows these filters to be initialised,
-       * set up and run using base class pointers, and defines a
-       * standardised functor interface that mesh filter classes
-       * should ideally conform to.
-       *
-       */
-      class Base
-      { 
-        public:
-          Base (const std::string& s) :
-              message (s) { }
-          Base () { }
+/*! A base class for defining surface mesh filters.
+ *
+ * The Surface::Filter::Base class defines the basic
+ * interface for defining filters that operate upon mesh
+ * data. It allows these filters to be initialised,
+ * set up and run using base class pointers, and defines a
+ * standardised functor interface that mesh filter classes
+ * should ideally conform to.
+ *
+ */
+class Base {
+public:
+  Base(const std::string &s) : message(s) {}
+  Base() {}
 
-          virtual ~Base() { }
+  virtual ~Base() {}
 
-          void set_message (const std::string& s) { message = s; }
+  void set_message(const std::string &s) { message = s; }
 
-          virtual void operator() (const Mesh&, Mesh&) const
-          {
-            throw Exception ("Running empty function Surface::Filter::Base::operator()");
-          }
-
-          virtual void operator() (const MeshMulti&, MeshMulti&) const;
-
-        protected:
-          std::string message;
-
-      };
-      //! @}
-
-
-
-    }
+  virtual void operator()(const Mesh &, Mesh &) const {
+    throw Exception("Running empty function Surface::Filter::Base::operator()");
   }
-}
 
+  virtual void operator()(const MeshMulti &, MeshMulti &) const;
+
+protected:
+  std::string message;
+};
+//! @}
+
+} // namespace Filter
+} // namespace Surface
+} // namespace MR
 
 #endif

@@ -17,33 +17,27 @@
 #ifndef __image_io_pipe_h__
 #define __image_io_pipe_h__
 
-#include "memory.h"
-#include "image_io/base.h"
 #include "file/mmap.h"
+#include "image_io/base.h"
+#include "memory.h"
 
-namespace MR
-{
-  namespace ImageIO
-  {
+namespace MR {
+namespace ImageIO {
 
-    class Pipe : public Base
-    { 
-      public:
-        Pipe (Base&& io_handler) : Base (std::move (io_handler)) { }
+class Pipe : public Base {
+public:
+  Pipe(Base &&io_handler) : Base(std::move(io_handler)) {}
 
-        static bool delete_piped_images;
+  static bool delete_piped_images;
 
-      protected:
-        std::unique_ptr<File::MMap> mmap;
+protected:
+  std::unique_ptr<File::MMap> mmap;
 
-        virtual void load (const Header&, size_t);
-        virtual void unload (const Header&);
+  virtual void load(const Header &, size_t);
+  virtual void unload(const Header &);
+};
 
-    };
-
-  }
-}
+} // namespace ImageIO
+} // namespace MR
 
 #endif
-
-

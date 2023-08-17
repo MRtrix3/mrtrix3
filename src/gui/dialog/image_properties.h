@@ -17,40 +17,35 @@
 #ifndef __gui_dialog_image_properties_h__
 #define __gui_dialog_image_properties_h__
 
-#include "header.h"
 #include "gui/opengl/gl.h"
+#include "header.h"
 
-namespace MR
-{
-  class Header;
+namespace MR {
+class Header;
 
-  namespace GUI
-  {
-    namespace Dialog
-    {
-      class TreeModel;
+namespace GUI {
+namespace Dialog {
+class TreeModel;
 
-      class ImageProperties : public QDialog
-      { 
-          Q_OBJECT
+class ImageProperties : public QDialog {
+  Q_OBJECT
 
-        public:
-          ImageProperties (QWidget* parent, const MR::Header& header);
+public:
+  ImageProperties(QWidget *parent, const MR::Header &header);
 
-        private slots:
-          void context_menu (const QPoint& point);
-          void write_to_file ();
+private slots:
+  void context_menu(const QPoint &point);
+  void write_to_file();
 
-        private:
-          const MR::Header& H;
-          QTreeView* view;
-          TreeModel* model;
-          Eigen::MatrixXd save_data;
-      };
+private:
+  const MR::Header &H;
+  QTreeView *view;
+  TreeModel *model;
+  Eigen::MatrixXd save_data;
+};
 
-    }
-  }
-}
+} // namespace Dialog
+} // namespace GUI
+} // namespace MR
 
 #endif
-

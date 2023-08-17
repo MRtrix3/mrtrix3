@@ -12,4 +12,3 @@
 #define MRTRIX_BASE_VERSION "3.0.4"
 
 #endif
-

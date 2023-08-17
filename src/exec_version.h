@@ -18,9 +18,9 @@
 #define __exec_version_h__
 
 namespace MR {
-  namespace App {
-    void set_executable_uses_mrtrix_version ();
-  }
+namespace App {
+void set_executable_uses_mrtrix_version();
 }
+} // namespace MR
 
 #endif

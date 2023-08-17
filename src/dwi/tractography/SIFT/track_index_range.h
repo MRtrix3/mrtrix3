@@ -17,56 +17,39 @@
 #ifndef __dwi_tractography_sift_track_index_range_h__
 #define __dwi_tractography_sift_track_index_range_h__
 
-#include "progressbar.h"
 #include "dwi/tractography/SIFT/types.h"
+#include "progressbar.h"
 
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
-      namespace SIFT
-      {
-
-
+namespace MR {
+namespace DWI {
+namespace Tractography {
+namespace SIFT {
 
 #define SIFT_TRACK_INDEX_BUFFER_SIZE 10000
 
+using TrackIndexRange = std::pair<track_t, track_t>;
+using TrackIndexRangeQueue = Thread::Queue<TrackIndexRange>;
 
+// Some processes in SIFT are fast for each streamline, but there are a large number of streamlines, so
+//   if multi-threading is done on a per-track basis the I/O associated with multi-threading begins to dominate
+// Instead, the input queue for multi-threading is filled with std::pair<track_t, track_t>'s, where the values
+//   are the start and end track indices to be processed
+class TrackIndexRangeWriter {
 
-      using TrackIndexRange = std::pair<track_t, track_t>;
-      using TrackIndexRangeQueue = Thread::Queue< TrackIndexRange >;
+public:
+  TrackIndexRangeWriter(const track_t, const track_t, const std::string &message = std::string());
 
+  bool operator()(TrackIndexRange &);
 
+private:
+  const track_t size, end;
+  track_t start;
+  std::unique_ptr<ProgressBar> progress;
+};
 
-      // Some processes in SIFT are fast for each streamline, but there are a large number of streamlines, so
-      //   if multi-threading is done on a per-track basis the I/O associated with multi-threading begins to dominate
-      // Instead, the input queue for multi-threading is filled with std::pair<track_t, track_t>'s, where the values
-      //   are the start and end track indices to be processed
-      class TrackIndexRangeWriter
-      { 
-
-        public:
-          TrackIndexRangeWriter (const track_t, const track_t, const std::string& message = std::string ());
-
-          bool operator() (TrackIndexRange&);
-
-        private:
-          const track_t size, end;
-          track_t start;
-          std::unique_ptr<ProgressBar> progress;
-
-      };
-
-
-
-
-      }
-    }
-  }
-}
-
+} // namespace SIFT
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
