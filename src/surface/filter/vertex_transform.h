@@ -18,6 +18,7 @@
 #define __surface_filter_vertex_transform_h__
 
 #include "header.h"
+#include "image.h"
 #include "transform.h"
 
 #include "surface/mesh.h"
@@ -37,7 +38,7 @@ namespace MR
       class VertexTransform : public Base
       { 
         public:
-          enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL };
+          enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL, WARP };
 
           VertexTransform (const Header& H) :
               header (H),
@@ -49,8 +50,11 @@ namespace MR
           void set_voxel2real() { mode = transform_t::VOXEL2REAL; }
           void set_real2voxel() { mode = transform_t::REAL2VOXEL; }
           void set_fs2real   () { mode = transform_t::FS2REAL   ; }
+          void set_warp      () { mode = transform_t::WARP      ; }
 
           transform_t get_mode() const { return mode; }
+
+          void set_warp_image (const Image<float>& warp) { warp_image = warp; }
 
           void operator() (const Mesh&, Mesh&) const override;
 
@@ -62,6 +66,7 @@ namespace MR
           const Header& header;
           Transform transform;
           transform_t mode;
+          Image<float> warp_image;
 
       };
 

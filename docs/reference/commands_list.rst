@@ -199,7 +199,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     |cpp.png|, :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
     |cpp.png|, :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"
-    |cpp.png|, :ref:`meshconvert`, "Convert meshes between different formats, and apply transformations"
+    |cpp.png|, :ref:`meshconvert`, "Transform a mesh between different formats and apply transformations, or apply a non-linear transformation to a mesh"
     |cpp.png|, :ref:`meshfilter`, "Apply filter operations to meshes"
     |cpp.png|, :ref:`mraverageheader`, "Calculate the average (unbiased) coordinate space of all input images"
     |cpp.png|, :ref:`mrcalc`, "Apply generic voxel-wise mathematical operations to images"
