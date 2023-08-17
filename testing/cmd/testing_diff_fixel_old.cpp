@@ -20,8 +20,11 @@
 
 #include "algo/threaded_loop.h"
 #include "fixel/legacy/fixel_metric.h"
-#include "fixel/legacy/image.h"
+// image.h must be included before fixel/legacy/image.h
+// clang-format off
 #include "image.h"
+#include "fixel/legacy/image.h"
+// clang-format on
 #include "image_helpers.h"
 using MR::Fixel::Legacy::FixelMetric;
 

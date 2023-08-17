@@ -17,6 +17,8 @@
 #ifndef __file_dicom_dict_h__
 #define __file_dicom_dict_h__
 
+#include <string>
+
 #define VR_OB 0x4F42U
 #define VR_OW 0x4F57U
 #define VR_OF 0x4F46U

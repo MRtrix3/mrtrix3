@@ -18,6 +18,7 @@
 #define __dwi_tractography_act_shared_h__
 
 #include "dwi/tractography/ACT/gmwmi.h"
+#include "dwi/tractography/properties.h"
 #include "memory.h"
 
 namespace MR {

@@ -23,6 +23,7 @@
 #include "stride.h"
 #include <algorithm> // std::shuffle
 #include <iterator>
+#include <numeric>
 #include <unordered_set>
 
 namespace MR {

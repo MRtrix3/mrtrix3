@@ -17,6 +17,9 @@
 #ifndef __fixel_filter_base_h__
 #define __fixel_filter_base_h__
 
+#include "image.h"
+#include <string>
+
 namespace MR {
 namespace Fixel {
 namespace Filter {

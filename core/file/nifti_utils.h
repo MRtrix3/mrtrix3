@@ -17,10 +17,14 @@
 #ifndef __file_nifti_utils_h__
 #define __file_nifti_utils_h__
 
-#include "file/config.h"
+// nifti1_io.h and nifti2_io.h headers must be included after dirent.h (transitively included by header.h)
+// otherwise we run into definitions conflict on Linux
+// clang-format off
+#include "header.h"
 #include "file/nifti1.h"
 #include "file/nifti2.h"
-#include "header.h"
+// clang-format on
+#include "file/config.h"
 #include "raw.h"
 #include "types.h"
 
