@@ -14,53 +14,44 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "gui/gui.h"
 #include "command.h"
-#include "progressbar.h"
 #include "file/path.h"
-#include "math/SH.h"
+#include "gui/gui.h"
+#include "gui/shview/file_open.h"
 #include "gui/shview/icons.h"
 #include "gui/shview/render_window.h"
-#include "gui/shview/file_open.h"
-
+#include "math/SH.h"
+#include "progressbar.h"
 
 using namespace MR;
 using namespace App;
 
-void usage ()
-{
+void usage() {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "View spherical harmonics surface plots";
 
   ARGUMENTS
-  + Argument ("coefs",
-              "a text file containing the even order spherical harmonics coefficients to display.")
-  .optional()
-  .type_file_in();
+  +Argument("coefs", "a text file containing the even order spherical harmonics coefficients to display.")
+       .optional()
+       .type_file_in();
 
   OPTIONS
-  + Option ("response",
-            "assume SH coefficients file only contains m=0 terms (zonal harmonics). "
-            "Used to display the response function as produced by estimate_response");
+  +Option("response",
+          "assume SH coefficients file only contains m=0 terms (zonal harmonics). "
+          "Used to display the response function as produced by estimate_response");
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
 
-
-
-
-
-void run ()
-{
-  GUI::DWI::Window window (get_options ("response").size());
+void run() {
+  GUI::DWI::Window window(get_options("response").size());
 
   if (argument.size())
-    window.set_values (std::string (argument[0]));
+    window.set_values(std::string(argument[0]));
 
   window.show();
 
   if (qApp->exec())
-    throw Exception ("error running Qt application");
+    throw Exception("error running Qt application");
 }
-

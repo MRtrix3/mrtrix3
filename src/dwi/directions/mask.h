@@ -17,49 +17,37 @@
 #ifndef __dwi_directions_mask_h__
 #define __dwi_directions_mask_h__
 
-
 #include <fstream>
 
 #include "misc/bitset.h"
 
 #include "dwi/directions/set.h"
 
-
-
 namespace MR {
-  namespace DWI {
-    namespace Directions {
+namespace DWI {
+namespace Directions {
 
+class Mask : public BitSet {
 
+public:
+  Mask(const Set &master, const bool allocator = false) : BitSet(master.size(), allocator), dirs(&master) {}
 
-      class Mask : public BitSet { 
+  Mask(const Mask &that) : BitSet(that), dirs(that.dirs) {}
 
-        public:
-          Mask (const Set& master, const bool allocator = false) :
-              BitSet (master.size(), allocator),
-              dirs (&master) { }
+  const Set &get_dirs() const { return *dirs; }
 
-          Mask (const Mask& that) :
-              BitSet (that),
-              dirs (that.dirs) { }
+  void erode(const size_t iterations = 1);
+  void dilate(const size_t iterations = 1);
 
-          const Set& get_dirs() const { return *dirs; }
+  bool is_adjacent(const size_t) const;
+  size_t get_min_linkage(const Mask &);
 
-          void erode  (const size_t iterations = 1);
-          void dilate (const size_t iterations = 1);
+private:
+  const Set *dirs;
+};
 
-          bool is_adjacent (const size_t) const;
-          size_t get_min_linkage (const Mask&);
-
-        private:
-          const Set* dirs;
-
-      };
-
-
-
-    }
-  }
-}
+} // namespace Directions
+} // namespace DWI
+} // namespace MR
 
 #endif

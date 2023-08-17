@@ -19,20 +19,15 @@
 
 #include "math/rng.h"
 
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
+namespace MR {
+namespace DWI {
+namespace Tractography {
 
-      //! thread-local, but globally accessible RNG to vastly simplify multi-threading
-      extern thread_local Math::RNG rng;
+//! thread-local, but globally accessible RNG to vastly simplify multi-threading
+extern thread_local Math::RNG rng;
 
-    }
-  }
-}
-
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-

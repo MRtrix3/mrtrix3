@@ -18,42 +18,22 @@
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Tool {
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
+Matrix_list_model::Matrix_list_model(Connectome *parent) : QAbstractItemModel(dynamic_cast<QObject *>(parent)) {}
 
-
-
-      Matrix_list_model::Matrix_list_model (Connectome* parent) :
-          QAbstractItemModel (dynamic_cast<QObject*>(parent)) { }
-
-
-
-
-
-
-      void Matrix_list_model::add_items (vector<FileDataVector>& list) {
-        beginInsertRows (QModelIndex(), items.size(), items.size() + list.size());
-        items.reserve (items.size() + list.size());
-        std::move (std::begin (list), std::end (list), std::back_inserter (items));
-        list.clear();
-        endInsertRows();
-      }
-
-
-
-
-
-      }
-    }
-  }
+void Matrix_list_model::add_items(vector<FileDataVector> &list) {
+  beginInsertRows(QModelIndex(), items.size(), items.size() + list.size());
+  items.reserve(items.size() + list.size());
+  std::move(std::begin(list), std::end(list), std::back_inserter(items));
+  list.clear();
+  endInsertRows();
 }
 
-
-
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR

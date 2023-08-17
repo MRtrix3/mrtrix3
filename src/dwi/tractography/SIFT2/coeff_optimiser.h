@@ -17,7 +17,6 @@
 #ifndef __dwi_tractography_sift2_coeff_optimiser_h__
 #define __dwi_tractography_sift2_coeff_optimiser_h__
 
-
 #include "math/golden_section_search.h"
 #include "math/quadratic_line_search.h"
 #include "misc/bitset.h"
@@ -27,135 +26,99 @@
 
 #include "dwi/tractography/SIFT2/streamline_stats.h"
 
-
-//#define SIFT2_COEFF_OPTIMISER_DEBUG
-
+// #define SIFT2_COEFF_OPTIMISER_DEBUG
 
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace SIFT2 {
+namespace DWI {
+namespace Tractography {
+namespace SIFT2 {
 
+class TckFactor;
 
+class CoefficientOptimiserBase {
+public:
+  CoefficientOptimiserBase(TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, BitSet &, double &);
+  CoefficientOptimiserBase(const CoefficientOptimiserBase &);
+  virtual ~CoefficientOptimiserBase();
 
-      class TckFactor;
+  bool operator()(const SIFT::TrackIndexRange &);
 
+protected:
+  TckFactor &master;
+  const double mu;
 
-
-      class CoefficientOptimiserBase
-      { 
-        public:
-          CoefficientOptimiserBase (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
-          CoefficientOptimiserBase (const CoefficientOptimiserBase&);
-          virtual ~CoefficientOptimiserBase();
-
-          bool operator() (const SIFT::TrackIndexRange&);
-
-
-        protected:
-          TckFactor& master;
-          const double mu;
-
-          virtual double get_coeff_change (const SIFT::track_t) const = 0;
-
+  virtual double get_coeff_change(const SIFT::track_t) const = 0;
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
-          size_t total, failed, wrong_dir, step_truncated, coeff_truncated;
+  size_t total, failed, wrong_dir, step_truncated, coeff_truncated;
 #endif
 
+private:
+  StreamlineStats &step_stats;
+  StreamlineStats &coefficient_stats;
+  unsigned int &nonzero_streamlines;
+  BitSet &fixels_to_exclude;
+  double &sum_costs;
 
-        private:
-          StreamlineStats& step_stats;
-          StreamlineStats& coefficient_stats;
-          unsigned int& nonzero_streamlines;
-          BitSet& fixels_to_exclude;
-          double& sum_costs;
+  StreamlineStats local_stats_steps, local_stats_coefficients;
+  size_t local_nonzero_count;
+  BitSet local_to_exclude;
 
-          StreamlineStats local_stats_steps, local_stats_coefficients;
-          size_t local_nonzero_count;
-          BitSet local_to_exclude;
+protected:
+  mutable double local_sum_costs;
 
-        protected:
-          mutable double local_sum_costs;
+private:
+  double do_fixel_exclusion(const SIFT::track_t);
+};
 
-        private:
-          double do_fixel_exclusion (const SIFT::track_t);
+// Golden Section Search within the permitted range
+class CoefficientOptimiserGSS : public CoefficientOptimiserBase {
 
-      };
+public:
+  CoefficientOptimiserGSS(TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, BitSet &, double &);
+  CoefficientOptimiserGSS(const CoefficientOptimiserGSS &);
+  ~CoefficientOptimiserGSS() {}
 
+private:
+  double get_coeff_change(const SIFT::track_t) const;
+};
 
+// Performs a Quadratic Line Search within the permitted domain
+// Does not requre derivatives; only needs 3 seed points (two extremities and 0.0)
+// Note however if that these extremities are large, the initial CF evaluation may be NAN!
+class CoefficientOptimiserQLS : public CoefficientOptimiserBase {
 
+public:
+  CoefficientOptimiserQLS(TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, BitSet &, double &);
+  CoefficientOptimiserQLS(const CoefficientOptimiserQLS &);
+  ~CoefficientOptimiserQLS() {}
 
+private:
+  Math::QuadraticLineSearch<double> qls;
 
+  double get_coeff_change(const SIFT::track_t) const;
+};
 
+// Coefficient optimiser based on iterative root-finding Newton / Halley
+// Early exit if outside the permitted coefficient step range and moving further away
+class CoefficientOptimiserIterative : public CoefficientOptimiserBase {
 
+public:
+  CoefficientOptimiserIterative(TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, BitSet &, double &);
+  CoefficientOptimiserIterative(const CoefficientOptimiserIterative &);
+  ~CoefficientOptimiserIterative();
 
-      // Golden Section Search within the permitted range
-      class CoefficientOptimiserGSS : public CoefficientOptimiserBase
-      { 
-
-        public:
-          CoefficientOptimiserGSS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
-          CoefficientOptimiserGSS (const CoefficientOptimiserGSS&);
-          ~CoefficientOptimiserGSS() { }
-
-        private:
-          double get_coeff_change (const SIFT::track_t) const;
-
-      };
-
-
-
-
-
-      // Performs a Quadratic Line Search within the permitted domain
-      // Does not requre derivatives; only needs 3 seed points (two extremities and 0.0)
-      // Note however if that these extremities are large, the initial CF evaluation may be NAN!
-      class CoefficientOptimiserQLS : public CoefficientOptimiserBase
-      { 
-
-        public:
-          CoefficientOptimiserQLS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
-          CoefficientOptimiserQLS (const CoefficientOptimiserQLS&);
-          ~CoefficientOptimiserQLS() { }
-
-        private:
-          Math::QuadraticLineSearch<double> qls;
-
-          double get_coeff_change (const SIFT::track_t) const;
-
-      };
-
-
-
-
-      // Coefficient optimiser based on iterative root-finding Newton / Halley
-      // Early exit if outside the permitted coefficient step range and moving further away
-      class CoefficientOptimiserIterative : public CoefficientOptimiserBase
-      { 
-
-        public:
-          CoefficientOptimiserIterative (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
-          CoefficientOptimiserIterative (const CoefficientOptimiserIterative&);
-          ~CoefficientOptimiserIterative();
-
-        private:
-          double get_coeff_change (const SIFT::track_t) const;
+private:
+  double get_coeff_change(const SIFT::track_t) const;
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
-          mutable uint64_t iter_count;
+  mutable uint64_t iter_count;
 #endif
+};
 
-      };
-
-
-
-
-
-      }
-    }
-  }
-}
-
+} // namespace SIFT2
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif

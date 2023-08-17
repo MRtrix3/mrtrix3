@@ -18,52 +18,40 @@
 
 #include "command.h"
 #include "datatype.h"
-#include "half.h"
-#include "types.h"
 #include "file/matrix.h"
 #include "file/npy.h"
 #include "file/path.h"
 #include "file/utils.h"
+#include "half.h"
+#include "types.h"
 
 using namespace MR;
 using namespace App;
 
-void usage ()
-{
+void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Test the writing of NPY files";
 
   ARGUMENTS
-  + Argument ("out_dir", "Path to output directory in which test data will be generated").type_directory_out ();
+  +Argument("out_dir", "Path to output directory in which test data will be generated").type_directory_out();
 }
 
+const Eigen::Array<default_type, 3, 1> reference_1d{0.0, 1.0, 2.0};
+const Eigen::Array<bool, 3, 1> reference_1d_bool{false, true, true};
+const Eigen::Array<default_type, 3, 2> reference_2d{{0.0, 1.0}, {10.0, 11.0}, {20.0, 21.0}};
+const Eigen::Array<bool, 3, 2> reference_2d_bool{{false, true}, {true, true}, {true, true}};
 
-
-const Eigen::Array<default_type, 3, 1> reference_1d {0.0, 1.0, 2.0};
-const Eigen::Array<bool, 3, 1> reference_1d_bool {false, true, true};
-const Eigen::Array<default_type, 3, 2> reference_2d { {0.0,   1.0},
-                                                      {10.0, 11.0},
-                                                      {20.0, 21.0} };
-const Eigen::Array<bool, 3, 2> reference_2d_bool { {false, true},
-                                                   { true, true},
-                                                   { true, true} };
-
-template <typename T>
-void save_1d (const std::string& path)
-{
+template <typename T> void save_1d(const std::string &path) {
   File::Matrix::save_vector(reference_1d.cast<T>(), Path::join(argument[0], path));
 }
 
-template <typename T>
-void save_2d (const std::string& path)
-{
+template <typename T> void save_2d(const std::string &path) {
   File::Matrix::save_matrix(reference_2d.cast<T>(), Path::join(argument[0], path));
 }
 
-void run ()
-{
-  File::mkdir (argument[0]);
+void run() {
+  File::mkdir(argument[0]);
 
   File::Matrix::save_vector(reference_1d_bool, Path::join(argument[0], "1D3_BOOL.npy"));
   save_1d<int8_t>("1D3_i1.npy");
@@ -91,4 +79,3 @@ void run ()
   save_2d<uint64_t>("2D3x2_u8.npy");
   save_2d<double>("2D3x2_f8.npy");
 }
-

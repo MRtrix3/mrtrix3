@@ -16,39 +16,31 @@
 
 #include <memory>
 
-#include "image_io/scratch.h"
 #include "header.h"
+#include "image_io/scratch.h"
 
-namespace MR
-{
-  namespace ImageIO
-  {
+namespace MR {
+namespace ImageIO {
 
-    bool Scratch::is_file_backed () const { return false; }
+bool Scratch::is_file_backed() const { return false; }
 
-    void Scratch::load (const Header& header, size_t buffer_size)
-    {
-      assert (buffer_size);
-      DEBUG ("allocating scratch buffer for image \"" + header.name() + "\"...");
-      try {
-        addresses.push_back (std::unique_ptr<uint8_t[]> (new uint8_t [buffer_size]));
-        memset (addresses[0].get(), 0, buffer_size);
-      } catch (...) {
-        throw Exception ("Error allocating memory for scratch buffer");
-      }
-    }
-
-
-    void Scratch::unload (const Header& header)
-    {
-      if (addresses.size()) {
-        DEBUG ("deleting scratch buffer for image \"" + header.name() + "\"...");
-        addresses[0].reset();
-      }
-    }
-
+void Scratch::load(const Header &header, size_t buffer_size) {
+  assert(buffer_size);
+  DEBUG("allocating scratch buffer for image \"" + header.name() + "\"...");
+  try {
+    addresses.push_back(std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size]));
+    memset(addresses[0].get(), 0, buffer_size);
+  } catch (...) {
+    throw Exception("Error allocating memory for scratch buffer");
   }
 }
 
+void Scratch::unload(const Header &header) {
+  if (addresses.size()) {
+    DEBUG("deleting scratch buffer for image \"" + header.name() + "\"...");
+    addresses[0].reset();
+  }
+}
 
-
+} // namespace ImageIO
+} // namespace MR

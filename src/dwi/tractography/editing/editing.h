@@ -26,20 +26,15 @@ namespace DWI {
 namespace Tractography {
 namespace Editing {
 
-
-
 extern const App::OptionGroup LengthOption;
 extern const App::OptionGroup TruncateOption;
 extern const App::OptionGroup WeightsOption;
 
+void load_properties(Tractography::Properties &);
 
-void load_properties (Tractography::Properties&);
-
-
-
-}
-}
-}
-}
+} // namespace Editing
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif

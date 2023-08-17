@@ -16,50 +16,39 @@
 
 #include "dwi/tractography/mapping/voxel.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Mapping {
+namespace DWI {
+namespace Tractography {
+namespace Mapping {
 
+const Dixel::dir_index_type Dixel::invalid = std::numeric_limits<Dixel::dir_index_type>::max();
 
-
-        const Dixel::dir_index_type Dixel::invalid = std::numeric_limits<Dixel::dir_index_type>::max();
-
-
-
-        std::ostream& operator<< (std::ostream& stream, const Voxel& v) {
-          stream << "[" << Eigen::Vector3i(v).transpose() << "]: " << v.get_length();
-          return stream;
-        }
-
-        std::ostream& operator<< (std::ostream& stream, const VoxelDEC& v) {
-          stream << "[" << Eigen::Vector3i(v).transpose() << "]: [" << v.get_colour().transpose() << "] " << v.get_length();
-          return stream;
-        }
-
-        std::ostream& operator<< (std::ostream& stream, const VoxelDir& v) {
-          stream << "[" << Eigen::Vector3i(v).transpose() << "]: [" << v.get_dir().transpose() << "] " << v.get_length();
-          return stream;
-        }
-
-        std::ostream& operator<< (std::ostream& stream, const Dixel& d) {
-          stream << "[" << Eigen::Vector3i(d).transpose() << "] " << d.get_dir() << ": " << d.get_length();
-          return stream;
-        }
-
-        std::ostream& operator<< (std::ostream& stream, const VoxelTOD& v) {
-          stream << "[" << Eigen::Vector3i(v).transpose() << "]: " << v.get_tod().transpose() << " " << v.get_length();
-          return stream;
-        }
-
-
-
-      }
-    }
-  }
+std::ostream &operator<<(std::ostream &stream, const Voxel &v) {
+  stream << "[" << Eigen::Vector3i(v).transpose() << "]: " << v.get_length();
+  return stream;
 }
 
+std::ostream &operator<<(std::ostream &stream, const VoxelDEC &v) {
+  stream << "[" << Eigen::Vector3i(v).transpose() << "]: [" << v.get_colour().transpose() << "] " << v.get_length();
+  return stream;
+}
 
+std::ostream &operator<<(std::ostream &stream, const VoxelDir &v) {
+  stream << "[" << Eigen::Vector3i(v).transpose() << "]: [" << v.get_dir().transpose() << "] " << v.get_length();
+  return stream;
+}
 
+std::ostream &operator<<(std::ostream &stream, const Dixel &d) {
+  stream << "[" << Eigen::Vector3i(d).transpose() << "] " << d.get_dir() << ": " << d.get_length();
+  return stream;
+}
 
+std::ostream &operator<<(std::ostream &stream, const VoxelTOD &v) {
+  stream << "[" << Eigen::Vector3i(v).transpose() << "]: " << v.get_tod().transpose() << " " << v.get_length();
+  return stream;
+}
+
+} // namespace Mapping
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR

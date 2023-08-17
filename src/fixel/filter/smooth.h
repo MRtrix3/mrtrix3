@@ -14,80 +14,66 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #ifndef __fixel_filter_smooth_h__
 #define __fixel_filter_smooth_h__
 
+#include "fixel/filter/base.h"
 #include "fixel/fixel.h"
 #include "fixel/matrix.h"
-#include "fixel/filter/base.h"
 
 #define DEFAULT_FIXEL_SMOOTHING_FWHM 10.0
 #define DEFAULT_FIXEL_SMOOTHING_MINWEIGHT 0.01
 
-namespace MR
-{
-  namespace Fixel
-  {
-    namespace Filter
-    {
+namespace MR {
+namespace Fixel {
+namespace Filter {
 
+/** \addtogroup Filters
+@{ */
 
+/*! Smooth fixel data using a fixel-fixel connectivity matrix.
+ *
+ * Typical usage:
+ * \code
+ * auto fixel_index = Image<index_type>::open (index_image_path);
+ * auto fixel_data_in = Image<float>::open (fixel_data_path);
+ * auto fixel_matrix = Fixel::Matrix::Reader (fixel_matrix_path);
+ * Fixel::Filter::Smooth smooth_filter (fixel_index, fixel_matrix);
+ * auto fixel_data_out = Image::create<float> (fixel_data_out, fixel_data_in);
+ * smooth_filter (fixel_data_in, fixel_data_out);
+ *
+ * \endcode
+ */
 
-      /** \addtogroup Filters
-      @{ */
+class Smooth : public Base {
 
-      /*! Smooth fixel data using a fixel-fixel connectivity matrix.
-       *
-       * Typical usage:
-       * \code
-       * auto fixel_index = Image<index_type>::open (index_image_path);
-       * auto fixel_data_in = Image<float>::open (fixel_data_path);
-       * auto fixel_matrix = Fixel::Matrix::Reader (fixel_matrix_path);
-       * Fixel::Filter::Smooth smooth_filter (fixel_index, fixel_matrix);
-       * auto fixel_data_out = Image::create<float> (fixel_data_out, fixel_data_in);
-       * smooth_filter (fixel_data_in, fixel_data_out);
-       *
-       * \endcode
-       */
+public:
+  Smooth(Image<index_type> index_image,
+         const Matrix::Reader &matrix,
+         const Image<bool> &mask_image,
+         const float smoothing_fwhm,
+         const float smoothing_threshold);
+  Smooth(Image<index_type> index_image, const Matrix::Reader &matrix, const Image<bool> &mask_image);
+  Smooth(Image<index_type> index_image,
+         const Matrix::Reader &matrix,
+         const float smoothing_fwhm,
+         const float smoothing_threshold);
+  Smooth(Image<index_type> index_image, const Matrix::Reader &matrix);
 
-      class Smooth : public Base
-      {
+  void set_fwhm(const float fwhm);
 
-        public:
-          Smooth (Image<index_type> index_image,
-                  const Matrix::Reader& matrix,
-                  const Image<bool>& mask_image,
-                  const float smoothing_fwhm,
-                  const float smoothing_threshold);
-          Smooth (Image<index_type> index_image,
-                  const Matrix::Reader& matrix,
-                  const Image<bool>& mask_image);
-          Smooth (Image<index_type> index_image,
-                  const Matrix::Reader& matrix,
-                  const float smoothing_fwhm,
-                  const float smoothing_threshold);
-          Smooth (Image<index_type> index_image,
-                  const Matrix::Reader& matrix);
+  void operator()(Image<float> &input, Image<float> &output) const override;
 
-          void set_fwhm (const float fwhm);
+protected:
+  Image<bool> mask_image;
+  Matrix::Reader matrix;
+  vector<Eigen::Vector3f> fixel_positions;
+  float stdev, gaussian_const1, gaussian_const2, threshold;
+};
+//! @}
 
-          void operator() (Image<float>& input, Image<float>& output) const override;
-
-        protected:
-          Image<bool> mask_image;
-          Matrix::Reader matrix;
-          vector<Eigen::Vector3f> fixel_positions;
-          float stdev, gaussian_const1, gaussian_const2, threshold;
-
-      };
-    //! @}
-
-
-
-    }
-  }
-}
-
+} // namespace Filter
+} // namespace Fixel
+} // namespace MR
 
 #endif

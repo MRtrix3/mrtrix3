@@ -19,22 +19,15 @@
 
 #include <string>
 
-namespace MR
-{
-  namespace Fixel
-  {
-    namespace Legacy
-    {
+namespace MR {
+namespace Fixel {
+namespace Legacy {
 
-      // These are the keys that must be present in an image header to successfully read or write sparse image data
-      const std::string name_key ("sparse_data_name");
-      const std::string size_key ("sparse_data_size");
-    }
-  }
-}
+// These are the keys that must be present in an image header to successfully read or write sparse image data
+const std::string name_key("sparse_data_name");
+const std::string size_key("sparse_data_size");
+} // namespace Legacy
+} // namespace Fixel
+} // namespace MR
 
 #endif
-
-
-
-

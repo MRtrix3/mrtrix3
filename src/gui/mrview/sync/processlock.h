@@ -21,45 +21,40 @@
 
 #include "types.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Sync
-      {
-        /**
-        * Can be used to prevent multiple processes accessing a resource at the
-        * same time. QLockFile is another option but not available in Qt 4.8
-        * Use TryToRun(), check the returned value on whether to continue or
-        * not, then call Release when done.
-        */
-        class ProcessLock
-        { 
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Sync {
+/**
+ * Can be used to prevent multiple processes accessing a resource at the
+ * same time. QLockFile is another option but not available in Qt 4.8
+ * Use TryToRun(), check the returned value on whether to continue or
+ * not, then call Release when done.
+ */
+class ProcessLock {
 
-        public:
-          ProcessLock(const QString& key);
-          ~ProcessLock();
+public:
+  ProcessLock(const QString &key);
+  ~ProcessLock();
 
-          bool IsAnotherRunning();
-          bool TryToRun();
-          void Release();
+  bool IsAnotherRunning();
+  bool TryToRun();
+  void Release();
 
-        private:
-          const QString key;
-          const QString memLockKey;
-          const QString sharedmemKey;
+private:
+  const QString key;
+  const QString memLockKey;
+  const QString sharedmemKey;
 
-          QSharedMemory sharedMem;
-          QSystemSemaphore memLock;
+  QSharedMemory sharedMem;
+  QSystemSemaphore memLock;
 
-          Q_DISABLE_COPY(ProcessLock)
-        };
+  Q_DISABLE_COPY(ProcessLock)
+};
 
-      }
-    }
-  }
-}
+} // namespace Sync
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif // __sync_processlock_h__

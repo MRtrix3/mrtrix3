@@ -17,17 +17,14 @@
 #ifndef __gui_dialog_dialog_h__
 #define __gui_dialog_dialog_h__
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Dialog
-    {
+namespace MR {
+namespace GUI {
+namespace Dialog {
 
-      void init();
+void init();
 
-    }
-  }
 }
+} // namespace GUI
+} // namespace MR
 
 #endif

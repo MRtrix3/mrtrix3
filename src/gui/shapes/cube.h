@@ -20,30 +20,23 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Shapes
-    {
+namespace MR {
+namespace GUI {
+namespace Shapes {
 
-    class Cube
-    { 
-      public:
-        Cube () : num_indices (0) { }
+class Cube {
+public:
+  Cube() : num_indices(0) {}
 
-        void generate();
+  void generate();
 
-        GL::VertexBuffer vertex_buffer, normals_buffer;
-        GL::IndexBuffer index_buffer;
-        size_t num_indices;
+  GL::VertexBuffer vertex_buffer, normals_buffer;
+  GL::IndexBuffer index_buffer;
+  size_t num_indices;
+};
 
-    };
-
-
-    }
-  }
-}
+} // namespace Shapes
+} // namespace GUI
+} // namespace MR
 
 #endif
-

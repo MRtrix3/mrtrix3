@@ -19,27 +19,21 @@
 
 #include "image_io/base.h"
 
-namespace MR
-{
-  namespace ImageIO
-  {
+namespace MR {
+namespace ImageIO {
 
+class Scratch : public Base {
+public:
+  Scratch(const Header &header) : Base(header) {}
 
-    class Scratch : public Base
-    { 
-      public:
-        Scratch (const Header& header) : Base (header) { }
+  virtual bool is_file_backed() const;
 
-        virtual bool is_file_backed () const;
+protected:
+  virtual void load(const Header &, size_t);
+  virtual void unload(const Header &);
+};
 
-      protected:
-        virtual void load (const Header&, size_t);
-        virtual void unload (const Header&);
-    };
-
-  }
-}
+} // namespace ImageIO
+} // namespace MR
 
 #endif
-
-

@@ -17,39 +17,28 @@
 #ifndef __surface_mesh_multi_h__
 #define __surface_mesh_multi_h__
 
-
 #include "types.h"
 
 #include "surface/mesh.h"
 
+namespace MR {
+namespace Surface {
 
+// Class to handle multiple meshes per file
+// For now, this will only be supported using the .obj file type
+// TODO Another alternative may be .vtp: XML-based polydata by VTK
+//   (would allow embedding binary data within the file, rather than
+//   everything being ASCII as in .obj)
 
-namespace MR
-{
-  namespace Surface
-  {
+class MeshMulti : public vector<Mesh> {
+public:
+  using vector<Mesh>::vector;
 
+  void load(const std::string &);
+  void save(const std::string &) const;
+};
 
-
-    // Class to handle multiple meshes per file
-    // For now, this will only be supported using the .obj file type
-    // TODO Another alternative may be .vtp: XML-based polydata by VTK
-    //   (would allow embedding binary data within the file, rather than
-    //   everything being ASCII as in .obj)
-
-    class MeshMulti : public vector<Mesh>
-    { 
-      public:
-        using vector<Mesh>::vector;
-
-        void load (const std::string&);
-        void save (const std::string&) const;
-    };
-
-
-
-  }
-}
+} // namespace Surface
+} // namespace MR
 
 #endif
-

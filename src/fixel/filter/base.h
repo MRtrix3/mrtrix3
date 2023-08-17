@@ -14,54 +14,43 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #ifndef __fixel_filter_base_h__
 #define __fixel_filter_base_h__
 
-namespace MR
-{
-  namespace Fixel
-  {
-    namespace Filter
-    {
+namespace MR {
+namespace Fixel {
+namespace Filter {
 
-      /*! A base class for defining fixel data filters.
-       *
-       * The Fixel::Filter::Base class defines the basic
-       * interface for defining filters that operate upon fixel
-       * data. It allows these filters to be initialised,
-       * set up and run using base class pointers, and defines a
-       * standardised functor interface that fixel data filter
-       * classes should ideally conform to.
-       *
-       */
-      class Base
-      { 
-        public:
-          Base (const std::string& s) :
-              message (s) { }
-          Base () { }
+/*! A base class for defining fixel data filters.
+ *
+ * The Fixel::Filter::Base class defines the basic
+ * interface for defining filters that operate upon fixel
+ * data. It allows these filters to be initialised,
+ * set up and run using base class pointers, and defines a
+ * standardised functor interface that fixel data filter
+ * classes should ideally conform to.
+ *
+ */
+class Base {
+public:
+  Base(const std::string &s) : message(s) {}
+  Base() {}
 
-          virtual ~Base() { }
+  virtual ~Base() {}
 
-          void set_message (const std::string& s) { message = s; }
+  void set_message(const std::string &s) { message = s; }
 
-          virtual void operator() (Image<float>&, Image<float>&) const
-          {
-            throw Exception ("Running empty function Fixel::Filter::Base::operator()");
-          }
-
-        protected:
-          std::string message;
-
-      };
-      //! @}
-
-
-
-    }
+  virtual void operator()(Image<float> &, Image<float> &) const {
+    throw Exception("Running empty function Fixel::Filter::Base::operator()");
   }
-}
 
+protected:
+  std::string message;
+};
+//! @}
+
+} // namespace Filter
+} // namespace Fixel
+} // namespace MR
 
 #endif

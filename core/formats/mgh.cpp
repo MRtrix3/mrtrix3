@@ -14,68 +14,55 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "header.h"
+#include "file/mgh.h"
 #include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
-#include "file/mgh.h"
-#include "image_io/default.h"
 #include "formats/list.h"
+#include "header.h"
+#include "image_io/default.h"
 #include "raw.h"
 
-namespace MR
-{
-  namespace Formats
-  {
+namespace MR {
+namespace Formats {
 
-    std::unique_ptr<ImageIO::Base> MGH::read (Header& H) const
-    {
-      if (!Path::has_suffix (H.name(), ".mgh"))
-        return std::unique_ptr<ImageIO::Base>();
+std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
+  if (!Path::has_suffix(H.name(), ".mgh"))
+    return std::unique_ptr<ImageIO::Base>();
 
-      std::ifstream in (H.name(), std::ios_base::binary);
-      File::MGH::read_header (H, in);
+  std::ifstream in(H.name(), std::ios_base::binary);
+  File::MGH::read_header(H, in);
 
-      // Remaining header items appear AFTER the data
-      // It's possible that these data may not even be there; need to make sure that we don't go over the file size
-      in.seekg (MGH_DATA_OFFSET + footprint (H));
-      File::MGH::read_other (H, in);
+  // Remaining header items appear AFTER the data
+  // It's possible that these data may not even be there; need to make sure that we don't go over the file size
+  in.seekg(MGH_DATA_OFFSET + footprint(H));
+  File::MGH::read_other(H, in);
 
-      in.close();
+  in.close();
 
-      std::unique_ptr<ImageIO::Base> io_handler (new ImageIO::Default (H));
-      io_handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));
+  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
+  io_handler->files.push_back(File::Entry(H.name(), MGH_DATA_OFFSET));
 
-      return io_handler;
-    }
-
-
-
-
-
-    bool MGH::check (Header& H, size_t num_axes) const
-    {
-      if (!Path::has_suffix (H.name(), ".mgh")) return (false);
-      return File::MGH::check (H, num_axes);
-    }
-
-
-
-
-
-    std::unique_ptr<ImageIO::Base> MGH::create (Header& H) const
-    {
-      File::OFStream out (H.name(), std::ios_base::binary);
-      File::MGH::write_header (H, out);
-      out.seekp (MGH_DATA_OFFSET + footprint(H));
-      File::MGH::write_other (H, out);
-
-      std::unique_ptr<ImageIO::Base> io_handler (new ImageIO::Default (H));
-      io_handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));
-
-      return io_handler;
-    }
-
-  }
+  return io_handler;
 }
 
+bool MGH::check(Header &H, size_t num_axes) const {
+  if (!Path::has_suffix(H.name(), ".mgh"))
+    return (false);
+  return File::MGH::check(H, num_axes);
+}
+
+std::unique_ptr<ImageIO::Base> MGH::create(Header &H) const {
+  File::OFStream out(H.name(), std::ios_base::binary);
+  File::MGH::write_header(H, out);
+  out.seekp(MGH_DATA_OFFSET + footprint(H));
+  File::MGH::write_other(H, out);
+
+  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
+  io_handler->files.push_back(File::Entry(H.name(), MGH_DATA_OFFSET));
+
+  return io_handler;
+}
+
+} // namespace Formats
+} // namespace MR

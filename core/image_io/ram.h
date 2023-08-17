@@ -19,25 +19,19 @@
 
 #include "image_io/base.h"
 
-namespace MR
-{
-  namespace ImageIO
-  {
+namespace MR {
+namespace ImageIO {
 
+class RAM : public Base {
+public:
+  RAM(const Header &header) : Base(header) {}
 
-    class RAM : public Base
-    { 
-      public:
-        RAM (const Header& header) : Base (header) { }
+protected:
+  virtual void load(const Header &, size_t);
+  virtual void unload(const Header &);
+};
 
-      protected:
-        virtual void load (const Header&, size_t);
-        virtual void unload (const Header&);
-    };
-
-  }
-}
+} // namespace ImageIO
+} // namespace MR
 
 #endif
-
-

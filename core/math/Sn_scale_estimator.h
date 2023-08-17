@@ -17,41 +17,34 @@
 #ifndef __math_Sn_scale_estimator_h__
 #define __math_Sn_scale_estimator_h__
 
-#include "types.h"
 #include "math/median.h"
-
+#include "types.h"
 
 namespace MR {
-  namespace Math {
+namespace Math {
 
+// Sn robust estimator of scale to get solid estimate of standard deviation:
+// for details, see: Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. Journal of the American
+// Statistical Association 1993;88:1273–1283.
 
-    // Sn robust estimator of scale to get solid estimate of standard deviation:
-    // for details, see: Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. Journal of the American Statistical Association 1993;88:1273–1283. 
-
-    template <typename value_type = default_type> 
-      class Sn_scale_estimator { 
-        public:
-          template <class VectorType>
-            value_type operator() (const VectorType& vec)
-            {
-              diff.resize (vec.size());
-              med_diff.resize (vec.size());
-              for (ssize_t j = 0; j < vec.size(); ++j) {
-                for (ssize_t i = 0; i < vec.size(); ++i) 
-                  diff[i] = abs (vec[i] - vec[j]);
-                med_diff[j] = Math::median (diff);
-              }
-              return 1.1926 * Math::median (med_diff);
-            }
-
-        protected:
-          vector<value_type> diff, med_diff;
-
-      };
-
+template <typename value_type = default_type> class Sn_scale_estimator {
+public:
+  template <class VectorType> value_type operator()(const VectorType &vec) {
+    diff.resize(vec.size());
+    med_diff.resize(vec.size());
+    for (ssize_t j = 0; j < vec.size(); ++j) {
+      for (ssize_t i = 0; i < vec.size(); ++i)
+        diff[i] = abs(vec[i] - vec[j]);
+      med_diff[j] = Math::median(diff);
+    }
+    return 1.1926 * Math::median(med_diff);
   }
-}
+
+protected:
+  vector<value_type> diff, med_diff;
+};
+
+} // namespace Math
+} // namespace MR
 
 #endif
-
-

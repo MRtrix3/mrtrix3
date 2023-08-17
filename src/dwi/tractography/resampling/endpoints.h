@@ -17,36 +17,25 @@
 #ifndef __dwi_tractography_resampling_endpoints_h__
 #define __dwi_tractography_resampling_endpoints_h__
 
-
 #include "dwi/tractography/resampling/resampling.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Resampling {
+namespace DWI {
+namespace Tractography {
+namespace Resampling {
 
+class Endpoints : public BaseCRTP<Endpoints> {
 
+public:
+  Endpoints() {}
 
-        class Endpoints : public BaseCRTP<Endpoints>
-        { 
+  bool operator()(const Streamline<> &, Streamline<> &) const override;
+  bool valid() const override { return true; }
+};
 
-          public:
-            Endpoints() { }
-
-            bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid() const override { return true; }
-
-        };
-
-
-
-      }
-    }
-  }
-}
+} // namespace Resampling
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-
-

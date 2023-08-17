@@ -45,53 +45,42 @@
 #define VR_US 0x5553U
 #define VR_UT 0x5554U
 
-#define LENGTH_UNDEFINED           0xFFFFFFFFUL
+#define LENGTH_UNDEFINED 0xFFFFFFFFUL
 
-#define GROUP_BYTE_ORDER                0x0002U
-#define GROUP_BYTE_ORDER_SWAPPED        0x0200U
-#define GROUP_SEQUENCE                  0xFFFEU
-#define GROUP_DATA                      0x7FE0U
+#define GROUP_BYTE_ORDER 0x0002U
+#define GROUP_BYTE_ORDER_SWAPPED 0x0200U
+#define GROUP_SEQUENCE 0xFFFEU
+#define GROUP_DATA 0x7FE0U
 
-#define ELEMENT_TRANSFER_SYNTAX_UID     0x0010U
-#define ELEMENT_SEQUENCE_ITEM           0xE000U
-#define ELEMENT_SEQUENCE_DELIMITATION_ITEM  0xE0DDU
-#define ELEMENT_DATA                    0x0010U
-
-
+#define ELEMENT_TRANSFER_SYNTAX_UID 0x0010U
+#define ELEMENT_SEQUENCE_ITEM 0xE000U
+#define ELEMENT_SEQUENCE_DELIMITATION_ITEM 0xE0DDU
+#define ELEMENT_DATA 0x0010U
 
 namespace MR {
-  namespace File {
-    namespace Dicom {
+namespace File {
+namespace Dicom {
 
-      inline std::string format_date (const std::string& date)
-      {
-        if (date.empty() || date.size() < 8)
-          return date;
-        return date.substr(6,2) + "/" + date.substr(4,2) + "/" + date.substr(0,4);
-      }
-
-
-
-      inline std::string format_time (const std::string& time)
-      {
-        if (time.empty())
-          return time;
-        return time.substr(0,2) + ":" + time.substr(2,2) + ":" + time.substr(4,2);
-      }
-
-
-
-      inline std::string format_ID (const std::string& ID)
-      {
-        if (ID.empty())
-          return ID;
-        return "(" + ID + ")";
-      }
-
-
-    }
-  }
+inline std::string format_date(const std::string &date) {
+  if (date.empty() || date.size() < 8)
+    return date;
+  return date.substr(6, 2) + "/" + date.substr(4, 2) + "/" + date.substr(0, 4);
 }
 
+inline std::string format_time(const std::string &time) {
+  if (time.empty())
+    return time;
+  return time.substr(0, 2) + ":" + time.substr(2, 2) + ":" + time.substr(4, 2);
+}
+
+inline std::string format_ID(const std::string &ID) {
+  if (ID.empty())
+    return ID;
+  return "(" + ID + ")";
+}
+
+} // namespace Dicom
+} // namespace File
+} // namespace MR
 
 #endif

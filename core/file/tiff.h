@@ -19,54 +19,45 @@
 
 #include <tiffio.h>
 
-#include "mrtrix.h"
-#include "types.h"
 #include "debug.h"
 #include "exception.h"
 #include "file/path.h"
+#include "mrtrix.h"
+#include "types.h"
 
-namespace MR
-{
-  namespace File
-  {
+namespace MR {
+namespace File {
 
-    class TIFF
-    {
-      public:
-        TIFF (const std::string& filename, const char* mode = "r");
+class TIFF {
+public:
+  TIFF(const std::string &filename, const char *mode = "r");
 
-        ~TIFF () {
-          if (tif)
-            TIFFClose (tif);
-        }
-
-        template <typename dtype>
-          void read_and_check (ttag_t tag, dtype& var) {
-            dtype x;
-            if (TIFFGetFieldDefaulted (tif, tag, &x) != 1)
-              return;
-            if (var && var != x)
-              throw Exception (std::string ("mismatch between subfiles in TIFF image \"") + TIFFFileName (tif) + "\"");
-            var = x;
-          }
-
-        int read_directory () {
-          return TIFFReadDirectory (tif);
-        }
-
-        size_t scanline_size () const { return TIFFScanlineSize (tif); }
-        void read_scanline (tdata_t buf, size_t row, size_t sample = 0) { TIFFReadScanline (tif, buf, row, sample); }
-
-      private:
-        ::TIFF* tif;
-
-        static void error_handler (const char* module, const char* fmt, va_list ap);
-    };
-
+  ~TIFF() {
+    if (tif)
+      TIFFClose(tif);
   }
-}
+
+  template <typename dtype> void read_and_check(ttag_t tag, dtype &var) {
+    dtype x;
+    if (TIFFGetFieldDefaulted(tif, tag, &x) != 1)
+      return;
+    if (var && var != x)
+      throw Exception(std::string("mismatch between subfiles in TIFF image \"") + TIFFFileName(tif) + "\"");
+    var = x;
+  }
+
+  int read_directory() { return TIFFReadDirectory(tif); }
+
+  size_t scanline_size() const { return TIFFScanlineSize(tif); }
+  void read_scanline(tdata_t buf, size_t row, size_t sample = 0) { TIFFReadScanline(tif, buf, row, sample); }
+
+private:
+  ::TIFF *tif;
+
+  static void error_handler(const char *module, const char *fmt, va_list ap);
+};
+
+} // namespace File
+} // namespace MR
 
 #endif
-
-
-
