@@ -53,6 +53,12 @@ List of MRtrix3 environment variables
      :option:`NumberOfThreads` setting in the configuration file, but
      will be overridden by the ENVVAR ``-nthreads`` command-line option.
 
+.. envvar:: MRTRIX_PARSE_ONLY
+
+     Set the command to parse the provided inputs and then quit
+     if it is 1. This can be used in the CI of wrapping code,
+     such as the automatically generated Pydra interfaces
+
 .. envvar:: MRTRIX_PRESERVE_PHILIPS_ISO
 
      Do not remove the synthetic isotropically-weighted diffusion
