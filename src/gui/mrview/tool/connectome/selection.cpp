@@ -82,7 +82,7 @@ NodeSelectionSettings::NodeSelectionSettings()
   // CONF option: ConnectomeEdgeSelectedColourFade
   // CONF default: 0.5
   // CONF The fraction of the colour of an edge connected to two selected nodes determined by the fixed selection
-  // highlight colour.
+  // CONF highlight colour.
   edge_selected_colour_fade = File::Config::get_float("ConnectomeEdgeSelectedColourFade", 0.5f);
   // CONF option: ConnectomeEdgeSelectedColour
   // CONF default: 0.9,0.9,1.0
@@ -142,7 +142,7 @@ NodeSelectionSettings::NodeSelectionSettings()
   // CONF option: ConnectomeNodeOtherColourFade
   // CONF default: 0.75
   // CONF The fraction of the colour of an unselected, non-associated node determined by the fixed not-selected
-  // highlight colour.
+  // CONF highlight colour.
   node_other_colour_fade = File::Config::get_float("ConnectomeNodeOtherColourFade", 0.75f);
   // CONF option: ConnectomeNodeOtherColour
   // CONF default: 0.0,0.0,0.0
@@ -151,12 +151,12 @@ NodeSelectionSettings::NodeSelectionSettings()
   // CONF option: ConnectomeNodeOtherSizeMultiplier
   // CONF default: 1.0
   // CONF The multiplicative factor to apply to the size of nodes not currently selected nor associated with a selected
-  // node.
+  // CONF node.
   node_other_size_multiplier = File::Config::get_float("ConnectomeNodeOtherSizeMultiplier", 1.0f);
   // CONF option: ConnectomeNodeOtherAlphaMultiplier
   // CONF default: 1.0
   // CONF The multiplicative factor to apply to the transparency of nodes not currently selected nor associated with a
-  // selected node.
+  // CONF selected node.
   node_other_alpha_multiplier = File::Config::get_float("ConnectomeNodeOtherAlphaMultiplier", 1.0f);
 
   // CONF option: ConnectomeEdgeOtherVisibilityOverride

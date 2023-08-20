@@ -455,7 +455,7 @@ public:
       // CONF option: RegStopLen
       // CONF default: 0.0001
       // CONF Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop
-      // registration.
+      // CONF registration.
       default_type reg_stop_len = File::Config::get_float("RegStopLen", 0.0001);
       stop.array() *= reg_stop_len;
       DEBUG("coherence length: " + str(coherence));
