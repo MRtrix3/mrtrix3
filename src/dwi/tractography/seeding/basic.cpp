@@ -42,7 +42,6 @@ namespace MR
 
 
 
-
         bool SeedMask::get_seed (Eigen::Vector3f& p) const
         {
          auto seed = mask;
@@ -56,8 +55,6 @@ namespace MR
           p = (*mask.voxel2scanner) * p;
           return true;
         }
-
-
 
 
 
@@ -94,10 +91,6 @@ namespace MR
           p = (*mask.voxel2scanner) * p;
           return true;
         }
-
-
-
-
 
 
 
@@ -234,6 +227,54 @@ namespace MR
 
 
 
+        bool Coordinates_fixed::get_seed (Eigen::Vector3f& p) const
+        {
+
+          std::lock_guard<std::mutex> lock (mutex);
+
+          if (expired)
+              return false;
+
+          if (num_at_coord == nsl) {
+            num_at_coord = 0;
+            current_coord++;            
+          }
+
+          if (current_coord == nr) {
+            expired = true;
+            return false;
+          }
+          
+          p = coords.row(current_coord);  
+          num_at_coord++;
+
+          return true;
+
+        }
+
+
+
+
+        bool Coordinates_global::get_seed (Eigen::Vector3f& p) const
+        {
+
+          long coordinate_index = std::uniform_int_distribution<> (0, nr - 1) (rng);          
+
+          if (nc == 4) {
+
+              std::uniform_real_distribution<float> uniform;
+              float selector = uniform (rng);
+
+              do {
+                coordinate_index = std::uniform_int_distribution<> (0, nr - 1) (rng);            
+              } while (weights(coordinate_index) < selector);
+          }
+
+          p = coords.row(coordinate_index);
+
+          return true;
+
+        }
       }
     }
   }

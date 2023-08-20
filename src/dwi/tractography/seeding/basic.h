@@ -59,7 +59,8 @@ namespace MR
             Eigen::Vector3f pos;
             float rad;
 
-        };
+        };   
+
 
 
         class SeedMask : public Base
@@ -160,6 +161,96 @@ namespace MR
 
 
 
+        class Coordinate_parser
+        { MEMALIGN(Coordinate_parser)
+
+          public:
+
+            Eigen::MatrixXf coords;
+            size_t nr;
+            size_t nc;         
+
+            Coordinate_parser (const std::string& cds_path) {
+              
+              coords = load_matrix<float> (cds_path);
+              nr = coords.rows();
+              nc = coords.cols();
+
+            }  
+
+        };
+
+
+        
+        class Coordinates_fixed : public Base, public Coordinate_parser
+        { MEMALIGN(Coordinates_fixed)
+
+          public:
+
+            Coordinates_fixed (const std::string& in, const size_t n_streamlines) :              
+              Base (in, "coordinate seeding fixed", MAX_TRACKING_SEED_ATTEMPTS_FIXED), 
+              Coordinate_parser(in),               
+              current_coord(0),
+              num_at_coord(0),
+              expired(false),              
+              nsl(n_streamlines) {
+
+                if (nc != 3)
+                  throw Exception ("Number of columns in \"" + in + "\" must equal 3!"); 
+                
+                count = nr * nsl;
+
+              }
+
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
+
+          private:
+
+            mutable size_t current_coord;
+            mutable size_t num_at_coord;
+            mutable bool expired;   
+            const size_t nsl; 
+
+        };
+
+
+
+        class Coordinates_global : public Base, public Coordinate_parser
+        { MEMALIGN(Coordinates_global)
+
+          public:
+
+            Coordinates_global (const std::string& in) :
+              Base (in, "coordinate seeding global", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), 
+              Coordinate_parser(in) {
+
+                if (nc < 3 && nc > 4)
+                  throw Exception ("Number of columns in \"" + in + "\" must equal 3 or 4!"); 
+
+                if (nc == 4) {
+
+                  if (coords.col(3).minCoeff() < 0)
+                    throw Exception ("The seeding weights must be non-negative!");
+
+                  if (coords.col(3).maxCoeff() == 0)
+                    throw Exception ("At least one of the weights must be positive!");
+                 
+                  weights = coords.col(3).array() / coords.col(3).maxCoeff();
+                  coords = coords.block(0, 0, nr, 3);                  
+
+                }
+
+                volume = 0.0;
+
+              }
+
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
+            
+          private:
+
+            mutable Eigen::VectorXf weights;
+
+        };
 
 
 

@@ -90,6 +90,10 @@ Tractography seeding mechanisms; at least one must be provided
 
 -  **-seed_dynamic fod_image** determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, it should NOT be used as a substitute for the SIFT method itself.
 
+-  **-seed_coordinates_fixed cds_path num_per_coordinate** *(multiple uses permitted)* provide coordinates in a space-separated Mx3 matrix (XYZ per row) and seed a fixed number of streamlines per coordinate
+
+-  **-seed_coordinates_global cds_path** provide coordinates in a space-separated Mx3 matrix (XYZ per row) and seed until global seed/streamline target is met (must not provide any other seeding mechanism). The matrix may optionally contain a fourth column with non-negative weights 
+
 Tractography seeding options and parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
