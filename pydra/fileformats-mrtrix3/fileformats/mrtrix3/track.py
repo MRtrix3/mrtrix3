@@ -1,6 +1,6 @@
 from fileformats.generic import File
 
 
-class TrackFile(File):
+class Tracks(File):
 
     ext = ".tck"
