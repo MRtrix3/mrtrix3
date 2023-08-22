@@ -48,6 +48,21 @@ jobs:
 
     - name: build
       run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+    - name: Upload bin directory
+      uses: actions/upload-artifact@v2
+      with:
+        name: Bin
+        path: bin
+    - name: Upload dylib
+      uses: actions/upload-artifact@v2
+      with:
+        name: Dylib
+        path: lib/libmrtrix.dylib
+    - name: Upload build py-file
+      uses: actions/upload-artifact@v2
+      with:
+        name: Build
+        path: build
 
 
   generate-pydra:
@@ -55,6 +70,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: Download bin directory
+        uses: actions/download-artifact@v2
+        with:
+          name: Bin
+          path: bin
+      - name: Download dylib
+        uses: actions/download-artifact@v2
+        with:
+          name: Dylib
+          path: lib/libmrtrix.dylib
+      - name: Download build py-file
+        uses: actions/download-artifact@v2
+        with:
+          name: Build
+          path: build
       - name: Set up Python
         uses: actions/setup-python@v2
       - name: Install build dependencies
@@ -66,6 +96,11 @@ jobs:
       - name: Generate task specifications
         run: |
           python pydra/pydra-auto-gen.py
+      - name: Upload auto-gen pydra
+        uses: actions/upload-artifact@v2
+        with:
+          name: AutoGen
+          path: pydra/src/pydra/tasks/mrtrix3/latest
 
   devcheck:
     needs: [generate-pydra]
@@ -80,6 +115,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Download auto-gen pydra
+      uses: actions/download-artifact@v2
+      with:
+        name: AutoGen
+        path: pydra/src/pydra/tasks/mrtrix3/latest
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -145,9 +185,11 @@ jobs:
         python-version: [3.11]
     steps:
     - uses: actions/checkout@v2
+    - name: Download auto-gen pydra
+      uses: actions/download-artifact@v2
       with:
-        submodules: recursive
-        fetch-depth: 0
+        name: AutoGen
+        path: pydra/src/pydra/tasks/mrtrix3/latest    
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
