@@ -53,11 +53,11 @@ jobs:
       with:
         name: Bin
         path: bin
-    - name: Upload dylib
+    - name: Upload shared lib
       uses: actions/upload-artifact@v2
       with:
-        name: Dylib
-        path: lib/libmrtrix.dylib
+        name: Shared
+        path: lib/libmrtrix.so
     - name: Upload build py-file
       uses: actions/upload-artifact@v2
       with:
@@ -75,11 +75,11 @@ jobs:
         with:
           name: Bin
           path: bin
-      - name: Download dylib
+      - name: Download shared lib
         uses: actions/download-artifact@v2
         with:
-          name: Dylib
-          path: lib/libmrtrix.dylib
+          name: Shared
+          path: lib/libmrtrix.so
       - name: Download build py-file
         uses: actions/download-artifact@v2
         with:
