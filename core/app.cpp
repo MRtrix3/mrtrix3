@@ -921,28 +921,6 @@ std::string restructured_text_usage() {
         return f;
       };
 
-      auto format_option = [&](const Option& opt) {
-        std::string f = base_indent + "(\n";
-        // Print name of field
-        f += indent + "\"" + opt.id + "\",\n";
-        // Print type
-        f += indent + format_option_type(opt) + ",\n" + indent + "{\n";
-        // Print metadata fields
-        f += md_indent + "\"argstr\": \"-" + opt.id + "\",\n";
-        f += md_indent + "\"help_string\": \"\"\"" + opt.desc + "\"\"\",\n";
-        if (!(opt.flags & Optional)) {
-          f += md_indent + "\"mandatory\": True,\n";
-        }
-        if (opt.size() == 1 && (opt[0].type == IntSeq || opt[0].type == FloatSeq)) {
-          f += md_indent + "\"sep\": \",\",\n";
-        }
-        if (opt.size() == 1 && opt[0].type == Choice) {
-          f += format_choices(opt[0]);
-        }
-        f += indent + "},\n" + base_indent + "),\n";
-        return f;
-      };
-
       auto format_output_template = [&](const std::string& id, const ArgType& type) {
         std::string tmpl(id);
         if (type == ImageOut) {
@@ -955,6 +933,47 @@ std::string restructured_text_usage() {
         // TODO: Add special cases for file-out based on the 'id' where the extension
         // is something else.
         return tmpl;
+      };
+
+      auto format_option = [&](const Option& opt) {
+        std::string f = base_indent + "(\n";
+        // Print name of field
+        f += indent + "\"" + escape_id(opt.id) + "\",\n";
+        bool is_output_file = false;
+        std::string type_string = format_option_type(opt);
+        if (
+          opt.size() && 
+          (
+            opt[0].type == ImageOut
+            || opt[0].type == ArgFileOut
+            || opt[0].type == ArgDirectoryOut
+          )
+        ) {
+          is_output_file = true;
+          type_string = "ty.Union[" + type_string + ", bool]";
+        }
+        // Print type
+        f += indent + type_string + ",\n";
+        if (is_output_file)
+          f += indent + "False,\n";
+        f += indent + "{\n";
+        // Print metadata fields
+        f += md_indent + "\"argstr\": \"-" + opt.id + "\",\n";
+        if (is_output_file) {
+          f += md_indent + "\"output_file_template\": \"" + format_output_template(escape_id(opt.id), opt[0].type) + "\",\n";
+        }
+        f += md_indent + "\"help_string\": \"\"\"" + opt.desc + "\"\"\",\n";
+        if (!(opt.flags & Optional) && !is_output_file) {
+          f += md_indent + "\"mandatory\": True,\n";
+        }
+        if (opt.size() == 1 && (opt[0].type == IntSeq || opt[0].type == FloatSeq)) {
+          f += md_indent + "\"sep\": \",\",\n";
+        }
+        if (opt.size() == 1 && opt[0].type == Choice) {
+          f += format_choices(opt[0]);
+        }
+        f += indent + "},\n" + base_indent + "),\n";
+        return f;
       };
 
       // Print out input spec
@@ -1051,18 +1070,18 @@ std::string restructured_text_usage() {
         while (n < OPTIONS.size()) {
           if (OPTIONS[n].name == group_names[i]) {
             for (size_t o = 0; o < OPTIONS[n].size(); ++o) {
-              bool is_output = false;
+              bool is_output_file = false;
               for (size_t j = 0; j < OPTIONS[n][o].size(); ++j) {
                 if (
                   OPTIONS[n][o][j].type == ImageOut
                   || OPTIONS[n][o][j].type == ArgFileOut
                   || OPTIONS[n][o][j].type == ArgDirectoryOut
                 ) {
-                  is_output = true;
+                  is_output_file = true;
                   break;
                 }
               }
-              if (is_output) {
+              if (is_output_file) {
                 s += base_indent + "(\n";
                 // Print name of field
                 s += indent + "\"" + OPTIONS[n][o].id + "\",\n";
