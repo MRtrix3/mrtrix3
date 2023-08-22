@@ -16,7 +16,7 @@
 import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, re
 import typing as ty
 try:
-  import black
+  import black.parsing
 except ImportError:
   black = None  # type: ignore
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
@@ -1114,6 +1114,12 @@ class Parser(argparse.ArgumentParser):
         metadata["mandatory"] = True
       return metadata
 
+    def parse_type(type_):
+      if type_:
+        return f"#{type_.__name__}#"
+      else:
+        return ty.Any
+
     inputs = []
     input_names = [a.dest for a in self._positionals._group_actions]
     output_names = []
@@ -1122,7 +1128,7 @@ class Parser(argparse.ArgumentParser):
       metadata["position"] = pos
       metadata["argstr"] = ""
       if arg.type:
-        type_ = arg.type
+        type_ = parse_type(arg.type)
       elif arg.dest == "input":
         type_ = "#FileSet#"
       elif arg.dest == "output":
@@ -1147,7 +1153,7 @@ class Parser(argparse.ArgumentParser):
         if isinstance(option, argparse._StoreTrueAction):
           type_ = "#bool#"
         else:
-          type_ = option.type if option.type else ty.Any
+          type_ = parse_type(option.type)
         if isinstance(option, argparse._AppendAction):
           type_ = f"#specs.MultiInputObj[{type_}]#"
         metadata = get_arg_metadata(option)
@@ -1186,7 +1192,7 @@ class Parser(argparse.ArgumentParser):
         "from fileformats.core import FileSet  # noqa: F401\n"
         "from fileformats.generic import File, Directory  # noqa: F401\n"
         "from fileformats.medimage import MrtrixTrack  # noqa: F401\n"
-        "from pydra import ShellCommandTask \n"
+        "from pydra.engine.task import ShellCommandTask \n"
         "from pydra.engine import specs\n"
         "from pydra.tasks.mrtrix3.fileformats import ImageIn, ImageOut  # noqa: F401\n"
     )
@@ -1198,6 +1204,7 @@ class Parser(argparse.ArgumentParser):
     text += f"class {self.prog}(ShellCommandTask):\n"
     indent = "    "
     text += indent + "\"\"\"\n"
+    text += indent + (self.description if self.description else "")
     text += indent + "References\n"
     text += indent + "----------\n\n"
     for ref in self._citation_list:
@@ -1216,9 +1223,15 @@ class Parser(argparse.ArgumentParser):
     text += f"    executable='{self.prog}'\n\n"
 
     if black:
-      text = black.format_file_contents(
-          text, fast=False, mode=black.FileMode()
-      )
+      try:
+        text = black.format_file_contents(
+            text, fast=False, mode=black.FileMode()
+        )
+      except black.parsing.InvalidInput:
+        print(text)
+        raise RuntimeError(
+          "Black couldn't parse the generated code printed above"
+        )
     sys.stdout.write(text)
     sys.stdout.flush()
 
