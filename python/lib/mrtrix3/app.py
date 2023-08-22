@@ -1141,6 +1141,7 @@ class Parser(argparse.ArgumentParser):
         escaped = id_ + "_"
       else:
         escaped = id_
+      escaped = escaped.replace(".", '_')
       return escaped
 
     inputs = []
@@ -1184,7 +1185,7 @@ class Parser(argparse.ArgumentParser):
         metadata["argstr"] = "-" + option.dest
         inputs.append(
           (
-            option.dest,
+            escape_id(option.dest),
             type_,
             metadata,
           )
@@ -1217,8 +1218,7 @@ class Parser(argparse.ArgumentParser):
         "import typing\n"
         "from pathlib import Path  # noqa: F401\n"
         "from fileformats.generic import FsObject, File, Directory  # noqa: F401\n"
-        "from fileformats.medimage import MrtrixTrack  # noqa: F401\n"
-        "from fileformats.mrtrix3 import ImageIn, ImageOut  # noqa: F401\n"
+        "from fileformats.mrtrix3 import Tracks, ImageIn, ImageOut  # noqa: F401\n"
         "from pydra.engine.task import ShellCommandTask \n"
         "from pydra.engine import specs\n"
     )

@@ -10,6 +10,10 @@ import re
 import click
 import black.report
 import black.parsing
+from fileformats.core import FileSet
+from fileformats.mrtrix3 import ImageIn, Tracks
+from pydra.engine.helpers import make_klass
+from pydra.engine import specs
 
 
 logging.basicConfig(level=logging.WARNING)
@@ -56,8 +60,6 @@ def auto_gen_mrtrix3_pydra(cmd_dir: Path, output_dir: Path, log_errors: bool):
             continue
         cmd = [str(cmd_dir / cmd_name)]
         auto_gen_cmd(cmd, cmd_name, output_dir, log_errors)
-        auto_gen_test(cmd_name, output_dir, log_errors)
-
 
 def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors: bool):
     try:
@@ -77,13 +79,13 @@ def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors:
         return
 
     # Since Python identifiers can't start with numbers we need to rename 5tt*
-    # with fivetissuetype*
+    # with fivett*
     if cmd_name.startswith("5tt"):
         old_name = cmd_name
         cmd_name = escape_cmd_name(cmd_name)
         code_str = code_str.replace(f"class {old_name}", f"class {cmd_name}")
         code_str = code_str.replace(f"{old_name}_input_spec", f"{cmd_name}_input_spec")
-        code_str = code_str.replace(f"{old_name}_output_spec", f"{cmd_name}_input_spec")
+        code_str = code_str.replace(f"{old_name}_output_spec", f"{cmd_name}_output_spec")
         code_str = re.sub(r"(?<!\w)5tt_in(?!\w)", "in_5tt", code_str)
     try:
         code_str = black.format_file_contents(
@@ -100,29 +102,76 @@ def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors:
     with open(output_dir / (cmd_name + ".py"), "w") as f:
         f.write(code_str)
     logger.info("%s", cmd_name)
+    auto_gen_test(cmd_name, output_dir, log_errors)
 
 
 def auto_gen_test(cmd_name: str, output_dir: Path, log_errors: bool):
-    cmd_name = escape_cmd_name(cmd_name)
     tests_dir = output_dir / "tests"
     tests_dir.mkdir(exist_ok=True)
     module = import_module(cmd_name)
-    task = getattr(module, cmd_name)()
+    interface = getattr(module, cmd_name)
+    task = interface()
 
     code_str = f"""# Auto-generated tests for {cmd_name}
+from fileformats.generic import File  # noqa
+from fileformats.mrtrix3 import ImageIn, Tracks  # noqa
 from .{cmd_name} import {cmd_name}
 
-def test_{cmd_name}():
+def test_{cmd_name}(tmp_path):
 
     task = {cmd_name}(
 """
-    for field in attrs.fields(type(task.inputs)):
+    input_fields = attrs.fields(type(task.inputs))
+    output_fields = attrs.fields(make_klass(task.output_spec))
+
+    for field in input_fields:
         if field.name == "executable":
             continue
+
+        def get_value(type_):
+            if type_ is ImageIn:
+                value = "NiftiGz.sample()"
+            elif type_ is Tracks:
+                value = "Tracks.sample()"
+            elif type_ is int:
+                value = "99999"
+            elif type_ is float:
+                value = "0.99999"
+            elif type_ is str:
+                value = '"sample-string"'
+            elif type_ is bool:
+                value = "True"
+            elif type_ is Path:
+                ext = ""
+                try:
+                    output_field = getattr(output_fields, field.name)
+                except AttributeError:
+                    pass
+                else:
+                    try:
+                        ext = output_field.type.strext
+                    except AttributeError:
+                        pass
+                value = f"tmp_path / {field.name}{ext}"
+            elif ty.get_origin(type_) is specs.MultiInputObj:
+                value = get_value(ty.get_args(type_)[0])
+            elif ty.get_origin(type_) and issubclass(ty.get_origin(type_), ty.Sequence):
+                value = (
+                    ty.get_origin(type_).__name__
+                    + "("
+                    + ", ".join(get_value(a) for a in ty.get_args(type_))
+                    + ")"
+                )
+            elif type_ is ty.Any or issubclass(type_, FileSet):
+                value = "File.sample()"
+            else:
+                raise NotImplementedError
+            return value
+
         if field.default is not attrs.NOTHING:
             value = field.default
         else:
-            raise NotImplementedError
+            value = get_value(field.type)
 
         code_str += f"        {field.name}={value},\n"
 
@@ -149,7 +198,7 @@ def test_{cmd_name}():
 
 
 def escape_cmd_name(cmd_name: str) -> str:
-    return cmd_name.replace("5tt", "fivetissuetype")
+    return cmd_name.replace("5tt", "fivett")
 
 
 if __name__ == "__main__":
@@ -171,5 +220,7 @@ if __name__ == "__main__":
     )
 
     latest = script_dir / "src" / "pydra" / "tasks" / "mrtrix3" / "latest.py"
-    latest.write_text(f"# Auto-generated, do not edit\n\nfrom .{pkg_version} import *\n")
+    latest.write_text(
+        f"# Auto-generated, do not edit\n\nfrom .{pkg_version} import *\n"
+    )
     print(f"Generated pydra.tasks.mrtrix3.{pkg_version} package")
