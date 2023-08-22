@@ -57,7 +57,7 @@ void usage() {
   ARGUMENTS
     + Argument ("amps", "the amplitudes image").type_image_in()
     + Argument ("mask", "the mask containing the voxels from which to estimate the response function").type_image_in()
-    + Argument ("directions", "a 4D image containing the estimated fibre directions").type_image_in()
+    + Argument ("directions_image", "a 4D image containing the estimated fibre directions").type_image_in()
     + Argument ("response", "the output zonal spherical harmonic coefficients").type_file_out();
 
   OPTIONS
