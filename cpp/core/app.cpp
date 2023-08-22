@@ -847,431 +847,911 @@ std::string restructured_text_usage() {
   return s;
 }
 
-const Option *match_option(std::string_view arg) {
-  auto no_dash_arg = without_leading_dash(arg);
-  if (arg.size() == no_dash_arg.size() || no_dash_arg.empty() || isdigit(no_dash_arg.front()) != 0 ||
-      no_dash_arg.front() == '.') {
-    return nullptr;
-  }
+std::string pydra_usage() {
 
-  std::vector<const Option *> candidates;
-  std::string root(no_dash_arg);
+  std::string CMD_PREFIXES[] = {"Fivett", "Afd",    "Amp",       "Connectome", "Dcm",   "Dir",    "Dwi",   "Fixel",
+                                "Fod",    "Label",  "Mask",      "Mesh",       "Mr",    "Mt",     "Peaks", "Sh",
+                                "Tck",    "Tensor", "Transform", "Tsf",        "Voxel", "Vector", "Warp"};
 
-  for (size_t i = 0; i < OPTIONS.size(); ++i)
-    get_matches(candidates, OPTIONS[i], root);
-  get_matches(candidates, __standard_options, root);
-
-  // no matches
-  if (candidates.empty())
-    throw Exception(std::string("unknown option \"-") + root + "\"");
-
-  // return match if unique:
-  if (candidates.size() == 1)
-    return candidates[0];
-
-  // return match if fully specified:
-  for (size_t i = 0; i < candidates.size(); ++i)
-    if (root == candidates[i]->id)
-      return candidates[i];
-
-  // check if there is only one *unique* candidate
-  const auto cid = candidates[0]->id;
-  if (std::all_of(++candidates.begin(), candidates.end(), [&cid](const Option *cand) { return cand->id == cid; }))
-    return candidates[0];
-
-  // report something useful:
-  root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
-
-  for (size_t i = 1; i < candidates.size(); ++i)
-    root += std::string("\", \"-") + candidates[i]->id + "\"";
-
-  throw Exception(root);
-}
-
-void sort_arguments(const std::vector<std::string> &arguments) {
-  auto it = arguments.begin();
-  while (it != arguments.end()) {
-    const size_t index = std::distance(arguments.begin(), it);
-    const Option *opt = match_option(*it);
-    if (opt != nullptr) {
-      if (it + opt->size() >= arguments.end()) {
-        throw Exception(std::string("not enough parameters to option \"-") + opt->id + "\"");
-      }
-
-      std::vector<std::string> option_args;
-      std::copy_n(it + 1, opt->size(), std::back_inserter(option_args));
-      option.push_back(ParsedOption(opt, option_args, index));
-      it += opt->size();
-    } else {
-      argument.push_back(ParsedArgument(nullptr, nullptr, *it, index));
-    }
-    ++it;
-  }
-}
-
-void parse_standard_options() {
-  if (!get_options("info").empty())
-    log_level = std::max(log_level, 2);
-  if (!get_options("debug").empty())
-    log_level = 3;
-  if (!get_options("quiet").empty())
-    log_level = 0;
-  if (!get_options("force").empty()) {
-    WARN("existing output files will be overwritten");
-    overwrite_files = true;
-  }
-}
-
-void verify_usage() {
-  if (AUTHOR.empty())
-    throw Exception("No author specified for command " + std::string(NAME));
-  if (SYNOPSIS.empty())
-    throw Exception("No synopsis specified for command " + std::string(NAME));
-}
-
-void parse_special_options() {
-  // special options are only accessible as the first argument
-  if (raw_arguments_list.size() != 1)
-    return;
-
-  if (raw_arguments_list.front() == "__print_full_usage__") {
-    print(full_usage());
-    throw 0;
-  }
-  if (raw_arguments_list.front() == "__print_usage_markdown__") {
-    print(markdown_usage());
-    throw 0;
-  }
-  if (raw_arguments_list.front() == "__print_usage_rst__") {
-    print(restructured_text_usage());
-    throw 0;
-  }
-  if (raw_arguments_list.front() == "__print_synopsis__") {
-    print(SYNOPSIS);
-    throw 0;
-  }
-}
-
-void parse() {
-  argument.clear();
-  option.clear();
-
-  sort_arguments(raw_arguments_list);
-
-  if (!get_options("help").empty()) {
-    print_help();
-    throw 0;
-  }
-  if (!get_options("version").empty()) {
-    print(version_string());
-    throw 0;
-  }
-
-  size_t num_args_required = 0;
-  size_t num_optional_arguments = 0;
-
-  ArgFlags flags = None;
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-    if (ARGUMENTS[i].flags) {
-      if (flags && flags != ARGUMENTS[i].flags)
-        throw Exception("FIXME: all arguments declared optional() or allow_multiple() should have matching flags in "
-                        "command-line syntax");
-      flags = ARGUMENTS[i].flags;
-      ++num_optional_arguments;
-      if (!(flags & Optional))
-        ++num_args_required;
-    } else
-      ++num_args_required;
-  }
-
-  if (option.empty() && argument.empty() && REQUIRES_AT_LEAST_ONE_ARGUMENT) {
-    print_help();
-    throw 0;
-  }
-
-  if (num_optional_arguments && num_args_required > argument.size())
-    throw Exception("Expected at least " + str(num_args_required) + " arguments (" + str(argument.size()) +
-                    " supplied)");
-
-  if (num_optional_arguments == 0 && num_args_required != argument.size()) {
-    Exception e("Expected exactly " + str(num_args_required) + " arguments (" + str(argument.size()) + " supplied)");
-    std::string s = "Usage: " + NAME;
-    for (const auto &a : ARGUMENTS)
-      s += " " + std::string(a.id);
-    e.push_back(s);
-    s = "Yours: " + NAME;
-    for (const auto &a : argument)
-      s += " " + std::string(a);
-    e.push_back(s);
-    if (argument.size() > num_args_required) {
-      std::vector<std::string> potential_options;
-      for (const auto &a : argument) {
-        for (const auto &og : OPTIONS) {
-          for (const auto &o : og) {
-            if (std::string(a) == std::string(o.id))
-              potential_options.push_back("'-" + a + "'");
+  auto convert_to_pascal_case = [&](const std::string &input) {
+    std::string result;
+    bool capitalizeNext = true;
+    for (char c : input) {
+      if (!result.size() && c == '5') {
+        result += "Five"; // handle 5tt prefixes so they don't create invalid Python identifiers
+        capitalizeNext = false;
+      } else if (std::isalpha(c) && capitalizeNext) {
+        result += std::toupper(c);
+        capitalizeNext = false;
+      } else {
+        result += c;
+        if (c == '2')
+          capitalizeNext = true;
+        for (const std::string &prefix : CMD_PREFIXES) {
+          if (result == prefix) {
+            capitalizeNext = true;
+            break;
           }
         }
       }
-      if (!potential_options.empty())
-        e.push_back("(Did you mean " + join(potential_options, " or ") + "?)");
     }
-    throw e;
+    return result;
+  };
+
+  std::string name_string = convert_to_pascal_case(NAME);
+  // Check whether name starts with 5tt and escape the name if so
+
+  if (name_string.length() > 3) {
+    std::string prefix = name_string.substr(0, 3);
+    if (!prefix.compare("5tt")) {
+      name_string = "Fivett" + name_string.substr(3, name_string.length());
+    }
   }
 
-  size_t num_extra_arguments = argument.size() - num_args_required;
-  size_t num_arg_per_multi = num_optional_arguments ? num_extra_arguments / num_optional_arguments : 0;
-  if (num_arg_per_multi * num_optional_arguments != num_extra_arguments)
-    throw Exception("number of optional arguments provided are not equal for all arguments");
-  if (!(flags & Optional))
-    ++num_arg_per_multi;
+  std::string base_indent("    ");
+  std::string indent = base_indent + "    ";
 
-  // assign arguments to their corresponding definitions:
-  for (size_t n = 0, index = 0, next = 0; n < argument.size(); ++n) {
-    if (n == next) {
-      if (n)
-        ++index;
-      if (ARGUMENTS[index].flags != None)
-        next = n + num_arg_per_multi;
+  std::string PYTHON_KEYWORDS[] = {
+      "and",    "as",     "assert", "break",   "class",    "continue", "def",       "del",   "elif",
+      "else",   "except", "False",  "finally", "for",      "from",     "global",    "if",    "import",
+      "in",     "is",     "lambda", "None",    "nonlocal", "not",      "or",        "pass",  "raise",
+      "return", "True",   "try",    "while",   "with",     "yield",    "container", "image", "container_xargs"};
+
+  // Add import lines
+  std::string s =
+      std::string("# Auto-generated from MRtrix C++ command with '__print_usage_pydra__' secret option\n\n");
+  s += "import typing as ty \n";
+  s += "from pathlib import Path  # noqa: F401\n";
+  s += "from fileformats.generic import File, Directory  # noqa: F401\n";
+  s += "from fileformats.medimage_mrtrix3 import ImageIn, ImageOut, Tracks  # noqa: F401\n";
+  s += "from pydra.compose import shell\n";
+  s += "from pydra.utils.typing import MultiInputObj\n";
+
+  auto escape_id = [&](const std::string &id) {
+    std::string escaped = id;
+    // Replace any spaces and periods with underscores
+    std::replace(escaped.begin(), escaped.end(), ' ', '_');
+    std::replace(escaped.begin(), escaped.end(), '.', '_');
+    // Append any Python keywords with an underscore
+    bool is_keyword = std::any_of(std::begin(PYTHON_KEYWORDS),
+                                  std::end(PYTHON_KEYWORDS),
+                                  [&id](const std::string &kword) { return kword == id; });
+    if (is_keyword)
+      escaped += "_";
+
+    return escaped;
+  };
+
+  auto format_type = [&](const ArgType &type, bool optional = false) {
+    switch (type) {
+    case Undefined:
+      return "ty.Any";
+    case Text:
+      return "str";
+    case Boolean:
+      return "bool";
+    case Integer:
+      return "int";
+    case Float:
+      return "float";
+    case ArgFileIn:
+      return "File";
+    case ArgFileOut:
+      return "File";
+    case ArgDirectoryIn:
+      return "Directory";
+    case ArgDirectoryOut:
+      return "Directory";
+    case Choice:
+      return "str";
+    case ImageIn:
+      return "ImageIn";
+    case ImageOut:
+      return "ImageOut";
+    case IntSeq:
+      return "list[int]";
+    case FloatSeq:
+      return "list[float]";
+    case TracksIn:
+      return "Tracks";
+    case TracksOut:
+      return "Tracks";
+    case Various:
+      return "ty.Any";
+    default:
+      assert(0);
+    }
+    return "not-reached";
+  };
+
+  auto format_option_type = [&](const Option &opt, bool for_output = false) {
+    std::string f;
+    bool is_multi = (opt.flags & AllowMultiple) && (!opt.size() || opt[0].type != ArgFileOut);
+    if (is_multi) {
+      f += "MultiInputObj[";
+    }
+    if (!opt.size()) {
+      f += "bool";
+    } else if (opt.size() == 1) {
+      f += format_type(opt[0].type, true);
+    } else {
+      f += "tuple[";
+      for (size_t a = 0; a < opt.size(); ++a) {
+        f += format_type(opt[0].type, true);
+        if (a != opt.size() - 1) {
+          f += ", ";
+        }
+      }
+      f += "]";
+    }
+    if (is_multi) {
+      f += "]";
+    }
+    return f;
+  };
+
+  auto format_choices = [&](const Argument &arg) {
+    std::string f = indent + "allowed_values=[";
+    std::vector<std::string> choices = std::get<std::vector<std::string>>(arg.limits);
+    f += "\"" + choices[0] + "\"";
+    for (int i = 1; i < choices.size(); ++i) {
+      f += ", \"" + choices[i] + "\"";
+    }
+    f += "],\n";
+    return f;
+  };
+
+  auto format_output_template = [&](const std::string &id, const ArgType &type) {
+    std::string tmpl(id);
+    if (type == ImageOut) {
+      tmpl += ".mif";
+    } else if (type == TracksOut) {
+      tmpl += ".tck";
+    } else if (type == ArgFileOut) {
+      tmpl += ".txt";
+    }
+    // TODO: Add special cases for file-out based on the 'id' where the extension
+    // is something else.
+    return tmpl;
+  };
+
+  auto format_output_templates = [&](const std::string &id, const Option &opt) {
+    if (opt.size() == 1)
+      return "\"" + format_output_template(id, opt[0].type) + "\"";
+    std::string tmpl = "(";
+    for (size_t i = 0; i < opt.size(); ++i)
+      tmpl += "\"" + format_output_template(id + MR::str(i), opt[i].type) + "\",";
+    tmpl += ")";
+    return tmpl;
+  };
+
+  auto format_arg_name = [&](const Argument &arg) {
+    std::string id = arg.id;
+    std::string arg_name;
+    if (id == "input" && (arg.type == ImageIn || arg.type == ArgFileIn))
+      arg_name = "in_file";
+    else if (id == "input" && arg.type == ArgDirectoryIn)
+      arg_name = "in_dir";
+    else if (id == "output" && (arg.type == ImageOut || arg.type == ArgFileOut))
+      arg_name = "out_file";
+    else if (id == "output" && arg.type == ArgDirectoryOut)
+      arg_name = "out_dir";
+    else
+      arg_name = escape_id(arg.id);
+    return arg_name;
+  };
+
+  auto format_argument = [&](const Argument &arg, int position, bool is_output = false) {
+    bool is_multi = (arg.flags & AllowMultiple) && (arg.type != ArgFileOut);
+    // Print name of field
+    std::string f = "";
+    std::string arg_name = format_arg_name(arg);
+    f += base_indent + arg_name + ": ";
+    // Print type
+    std::string type = "";
+    if (is_multi) {
+      if (is_output)
+        type += "list[";
       else
-        ++next;
+        type += "MultiInputObj[";
     }
-    argument[n].arg = &ARGUMENTS[index];
+    type += format_type(arg.type);
+    if (is_multi) {
+      type += "]";
+    }
+    if (arg.flags & Optional) {
+      type += " | None";
+    }
+    f += type;
+    if (is_output)
+      f += " = shell.outarg(\n";
+    else
+      f += " = shell.arg(\n";
+    // Print metadata fields
+    f += indent + "argstr=\"\",\n";
+    f += indent + "position=" + std::to_string(position) + ",\n";
+    if (arg.flags & Optional) {
+      if (arg.type == Boolean)
+        f += indent + "default=False,\n";
+      else
+        f += indent + "default=None,\n";
+    }
+    if (is_output) {
+      f += indent + "path_template=\"" + format_output_template(arg_name, arg.type) + "\",\n";
+    }
+
+    f += indent + "help=\"\"\"" + arg.desc + "\"\"\",\n";
+
+    if (arg.type == Choice) {
+      f += format_choices(arg);
+    }
+    f += base_indent + ")\n";
+    return f;
+  };
+
+  auto format_option = [&](const Option &opt, bool is_output = false) {
+    // Print name of field
+    std::string f = base_indent + escape_id(opt.id) + ": ";
+    std::string type_string = format_option_type(opt);
+    bool is_multi = type_string.length() > 19 && type_string.substr(0, 19) == "MultiInputObj";
+    if (is_output && !is_multi) {
+      type_string += "| bool | None";
+    } else if (opt.flags & Optional && type_string != "bool" && type_string != "ty.Any") {
+      type_string += " | None";
+    }
+    // Print type
+    f += type_string;
+    if (is_output)
+      f += " = shell.outarg(\n";
+    else
+      f += " = shell.arg(\n";
+    if (opt.flags & Optional) {
+      if (type_string == "bool")
+        f += indent + "default=False,\n";
+      else
+        f += indent + "default=None,\n";
+    }
+    // Print metadata fields
+    f += indent + "argstr= \"-" + opt.id + "\",\n";
+    if (is_output) {
+      f += indent + "path_template=" + format_output_templates(escape_id(opt.id), opt) + ",\n";
+    }
+    f += indent + "help=\"\"\"" + opt.desc + "\"\"\",\n";
+    if (opt.size() == 1 && (opt[0].type == IntSeq || opt[0].type == FloatSeq)) {
+      f += indent + "sep=\",\",\n";
+    } else if (opt.size() > 1) {
+      f += indent + "sep=\" \",\n";
+    }
+    if (opt.size() == 1 && opt[0].type == Choice) {
+      f += format_choices(opt[0]);
+    }
+    f += base_indent + ")\n";
+    return f;
+  };
+
+  auto option_is_output = [&](const Option &opt) {
+    for (size_t i = 0; i < opt.size(); ++i) {
+      if (opt[i].type == ImageOut || opt[i].type == ArgFileOut || opt[i].type == ArgDirectoryOut)
+        return true;
+    }
+    return false;
+  };
+
+  auto argument_is_output = [&](const Argument &arg) {
+    return arg.type == ImageOut || arg.type == ArgFileOut || arg.type == ArgDirectoryOut;
+  };
+
+  // Create actual class
+  s += "\n\n@shell.define\nclass " + name_string + "(shell.Task[\"" + name_string + ".Outputs\"]):\n";
+  s += "    \"\"\"";
+  // Add description
+  if (DESCRIPTION.size()) {
+    for (size_t i = 0; i < DESCRIPTION.size(); ++i)
+      s += base_indent + std::string(DESCRIPTION[i]) + "\n\n";
   }
 
-  // check for multiple instances of options:
+  if (EXAMPLES.size()) {
+    s += "\n" + base_indent + "Example usages\n" + base_indent + "--------------\n\n";
+    for (size_t i = 0; i < EXAMPLES.size(); ++i) {
+      s += "\n" + base_indent + EXAMPLES[i].title + ":\n\n";
+      s += base_indent + "`$ " + EXAMPLES[i].code + "`\n\n";
+      if (EXAMPLES[i].description.size())
+        s += base_indent + EXAMPLES[i].description + "\n";
+      s += "\n";
+    }
+  }
+
+  s += "\n" + base_indent + "References\n" + base_indent + "----------\n\n";
+  for (size_t i = 0; i < REFERENCES.size(); ++i)
+    s += indent + REFERENCES[i] + "\n\n";
+  s += indent + MRTRIX_CORE_REFERENCE + "\n\n";
+
+  s += "\n" + base_indent + "MRtrix\n" + base_indent + "------" + "\n\n" + base_indent + "Version:" + mrtrix_version +
+       ", built " + build_date + "\n\n" + base_indent + "Author: " + AUTHOR + "\n\n" + base_indent +
+       "Copyright: " + COPYRIGHT;
+  s += "    \"\"\"\n";
+  s += "    executable = \"" + NAME + "\"\n";
+
+  s += "\n" + base_indent + "# Arguments\n";
+
+  // Print out input spec
+  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+    if (!argument_is_output(ARGUMENTS[i]))
+      s += format_argument(ARGUMENTS[i], i + 1);
+  }
+
+  s += "\n" + base_indent + "# Options\n";
+
+  std::vector<std::string> group_names;
   for (size_t i = 0; i < OPTIONS.size(); ++i) {
-    for (size_t j = 0; j < OPTIONS[i].size(); ++j) {
-      size_t count = 0;
-      for (size_t k = 0; k < option.size(); ++k)
-        if (option[k].opt == &OPTIONS[i][j])
-          count++;
-
-      if (count < 1 && !(OPTIONS[i][j].flags & Optional))
-        throw Exception(std::string("mandatory option \"-") + OPTIONS[i][j].id + "\" must be specified");
-
-      if (count > 1 && !(OPTIONS[i][j].flags & AllowMultiple))
-        throw Exception(std::string("multiple instances of option \"-") + OPTIONS[i][j].id + "\" are not allowed");
+    if (std::find(group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end())
+      group_names.push_back(OPTIONS[i].name);
+  }
+  for (size_t i = 0; i < group_names.size(); ++i) {
+    size_t n = i;
+    while (OPTIONS[n].name != group_names[i])
+      ++n;
+    if (OPTIONS[n].name != std::string("OPTIONS"))
+      s += std::string("\n") + base_indent + "# " + OPTIONS[n].name + ":\n";
+    while (n < OPTIONS.size()) {
+      if (OPTIONS[n].name == group_names[i]) {
+        for (size_t o = 0; o < OPTIONS[n].size(); ++o) {
+          if (!option_is_output(OPTIONS[n][o])) {
+            s += format_option(OPTIONS[n][o]);
+          }
+        }
+      }
+      ++n;
     }
   }
 
-  parse_standard_options();
+  s += "\n" + base_indent + "# Standard options\n";
+  for (size_t i = 0; i < __standard_options.size(); ++i)
+    if (__standard_options[i].id != str("help") && __standard_options[i].id != str("version"))
+      s += format_option(__standard_options[i]);
 
-  File::Config::init();
+  s += "\n" + base_indent + "class Outputs(shell.Outputs):\n";
 
-  // CONF option: FailOnWarn
-  // CONF default: 0 (false)
-  // CONF A boolean value specifying whether MRtrix applications should
-  // CONF abort as soon as any (otherwise non-fatal) warning is issued.
-  fail_on_warn = File::Config::get_bool("FailOnWarn", false);
+  // Add an additional indent
+  base_indent += "    ";
+  indent += "    ";
 
-  // CONF option: TerminalColor
-  // CONF default: 1 (true)
-  // CONF A boolean value to indicate whether colours should be used in the terminal.
-  terminal_use_colour = File::Config::get_bool("TerminalColor", terminal_use_colour);
-
-  // check for the existence of all specified input files (including optional ones that have been provided)
-  // if necessary, also check for pre-existence of any output files with known paths
-  //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
-  for (const auto &i : argument) {
-    const std::string text = std::string(i);
-    if (i.arg->type == ArgFileIn || i.arg->type == TracksIn) {
-      if (!Path::exists(text))
-        throw Exception("required input file \"" + text + "\" not found");
-      if (!Path::is_file(text))
-        throw Exception("required input \"" + text + "\" is not a file");
+  int n_outputs = 0;
+  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+    if (argument_is_output(ARGUMENTS[i])) {
+      s += format_argument(ARGUMENTS[i], i + 1, true);
+      n_outputs++;
     }
-    if (i.arg->type == ArgDirectoryIn) {
-      if (!Path::exists(text))
-        throw Exception("required input directory \"" + text + "\" not found");
-      if (!Path::is_dir(text))
-        throw Exception("required input \"" + text + "\" is not a directory");
-    }
-    if (i.arg->type == ArgFileOut || i.arg->type == TracksOut) {
-      if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-        throw Exception("output path \"" + std::string(i) +
-                        "\" is not a valid file path (ends with directory path separator)");
-      check_overwrite(text);
-    }
-    if (i.arg->type == ArgDirectoryOut)
-      check_overwrite(text);
-    if (i.arg->type == TracksIn && !Path::has_suffix(text, ".tck"))
-      throw Exception("input file \"" + text + "\" is not a valid track file");
-    if (i.arg->type == TracksOut && !Path::has_suffix(text, ".tck"))
-      throw Exception("output track file \"" + text + "\" must use the .tck suffix");
   }
-  for (const auto &i : option) {
-    for (size_t j = 0; j != i.opt->size(); ++j) {
-      const Argument &arg = i.opt->operator[](j);
-      const std::string text = std::string(i.args[j]);
-      if (arg.type == ArgFileIn || arg.type == TracksIn) {
+
+  for (size_t i = 0; i < group_names.size(); ++i) {
+    size_t n = i;
+    while (OPTIONS[n].name != group_names[i])
+      ++n;
+    while (n < OPTIONS.size()) {
+      if (OPTIONS[n].name == group_names[i]) {
+        for (size_t o = 0; o < OPTIONS[n].size(); ++o) {
+          if (option_is_output(OPTIONS[n][o])) {
+            s += format_option(OPTIONS[n][o], true);
+            n_outputs++;
+          }
+        }
+      }
+      ++n;
+    }
+  }
+
+  if (n_outputs == 0)
+    s += base_indent + "pass\n";
+
+  return s;
+}
+
+const Option *match_option(const char *arg) {
+  if (consume_dash(arg) && *arg && !isdigit(*arg) && *arg != '.') {
+    while (consume_dash(arg))
+      ;
+    std::vector<const Option *> candidates;
+    std::string root(arg);
+
+    for (size_t i = 0; i < OPTIONS.size(); ++i)
+      get_matches(candidates, OPTIONS[i], root);
+    get_matches(candidates, __standard_options, root);
+
+    // no matches
+    if (candidates.size() == 0)
+      throw Exception(std::string("unknown option \"-") + root + "\"");
+
+    // return match if unique:
+    if (candidates.size() == 1)
+      return candidates[0];
+
+    // return match if fully specified:
+    for (size_t i = 0; i < candidates.size(); ++i)
+      if (root == candidates[i]->id)
+        return candidates[i];
+
+    // check if there is only one *unique* candidate
+    const auto cid = candidates[0]->id;
+    if (std::all_of(++candidates.begin(), candidates.end(), [&cid](const Option *cand) { return cand->id == cid; }))
+      return candidates[0];
+
+    // report something useful:
+    root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
+
+    for (size_t i = 1; i < candidates.size(); ++i)
+      root += std::string("\", \"-") + candidates[i]->id + "\"";
+
+    throw Exception(root);
+  }
+
+  const Option *match_option(std::string_view arg) {
+    auto no_dash_arg = without_leading_dash(arg);
+    if (arg.size() == no_dash_arg.size() || no_dash_arg.empty() || isdigit(no_dash_arg.front()) != 0 ||
+        no_dash_arg.front() == '.') {
+      return nullptr;
+    }
+
+    std::vector<const Option *> candidates;
+    std::string root(no_dash_arg);
+
+    for (size_t i = 0; i < OPTIONS.size(); ++i)
+      get_matches(candidates, OPTIONS[i], root);
+    get_matches(candidates, __standard_options, root);
+
+    // no matches
+    if (candidates.empty())
+      throw Exception(std::string("unknown option \"-") + root + "\"");
+
+    // return match if unique:
+    if (candidates.size() == 1)
+      return candidates[0];
+
+    // return match if fully specified:
+    for (size_t i = 0; i < candidates.size(); ++i)
+      if (root == candidates[i]->id)
+        return candidates[i];
+
+    // check if there is only one *unique* candidate
+    const auto cid = candidates[0]->id;
+    if (std::all_of(++candidates.begin(), candidates.end(), [&cid](const Option *cand) { return cand->id == cid; }))
+      return candidates[0];
+
+    // report something useful:
+    root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
+
+    for (size_t i = 1; i < candidates.size(); ++i)
+      root += std::string("\", \"-") + candidates[i]->id + "\"";
+
+    throw Exception(root);
+  }
+
+  void sort_arguments(const std::vector<std::string> &arguments) {
+    auto it = arguments.begin();
+    while (it != arguments.end()) {
+      const size_t index = std::distance(arguments.begin(), it);
+      const Option *opt = match_option(*it);
+      if (opt != nullptr) {
+        if (it + opt->size() >= arguments.end()) {
+          throw Exception(std::string("not enough parameters to option \"-") + opt->id + "\"");
+        }
+
+        std::vector<std::string> option_args;
+        std::copy_n(it + 1, opt->size(), std::back_inserter(option_args));
+        option.push_back(ParsedOption(opt, option_args, index));
+        it += opt->size();
+      } else {
+        argument.push_back(ParsedArgument(nullptr, nullptr, *it, index));
+      }
+      ++it;
+    }
+  }
+
+  void parse_standard_options() {
+    if (!get_options("info").empty())
+      log_level = std::max(log_level, 2);
+    if (!get_options("debug").empty())
+      log_level = 3;
+    if (!get_options("quiet").empty())
+      log_level = 0;
+    if (!get_options("force").empty()) {
+      WARN("existing output files will be overwritten");
+      overwrite_files = true;
+    }
+  }
+
+  void verify_usage() {
+    if (AUTHOR.empty())
+      throw Exception("No author specified for command " + std::string(NAME));
+    if (SYNOPSIS.empty())
+      throw Exception("No synopsis specified for command " + std::string(NAME));
+  }
+
+  void parse_special_options() {
+    // special options are only accessible as the first argument
+    if (raw_arguments_list.size() != 1)
+      return;
+
+    if (raw_arguments_list.front() == "__print_full_usage__") {
+      print(full_usage());
+      throw 0;
+    }
+    if (raw_arguments_list.front() == "__print_usage_markdown__") {
+      print(markdown_usage());
+      throw 0;
+    }
+    if (raw_arguments_list.front() == "__print_usage_rst__") {
+      print(restructured_text_usage());
+      throw 0;
+    }
+    if (raw_arguments_list.front() == "__print_usage_pydra__") {
+      print(pydra_usage());
+      throw 0;
+    }
+    if (raw_arguments_list.front() == "__print_synopsis__") {
+      print(SYNOPSIS);
+      throw 0;
+    }
+  }
+
+  void parse() {
+    argument.clear();
+    option.clear();
+
+    sort_arguments(raw_arguments_list);
+
+    if (!get_options("help").empty()) {
+      print_help();
+      throw 0;
+    }
+    if (!get_options("version").empty()) {
+      print(version_string());
+      throw 0;
+    }
+
+    size_t num_args_required = 0;
+    size_t num_optional_arguments = 0;
+
+    ArgFlags flags = None;
+    for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+      if (ARGUMENTS[i].flags) {
+        if (flags && flags != ARGUMENTS[i].flags)
+          throw Exception("FIXME: all arguments declared optional() or allow_multiple() should have matching flags in "
+                          "command-line syntax");
+        flags = ARGUMENTS[i].flags;
+        ++num_optional_arguments;
+        if (!(flags & Optional))
+          ++num_args_required;
+      } else
+        ++num_args_required;
+    }
+
+    if (option.empty() && argument.empty() && REQUIRES_AT_LEAST_ONE_ARGUMENT) {
+      print_help();
+      throw 0;
+    }
+
+    if (num_optional_arguments && num_args_required > argument.size())
+      throw Exception("Expected at least " + str(num_args_required) + " arguments (" + str(argument.size()) +
+                      " supplied)");
+
+    if (num_optional_arguments == 0 && num_args_required != argument.size()) {
+      Exception e("Expected exactly " + str(num_args_required) + " arguments (" + str(argument.size()) + " supplied)");
+      std::string s = "Usage: " + NAME;
+      for (const auto &a : ARGUMENTS)
+        s += " " + std::string(a.id);
+      e.push_back(s);
+      s = "Yours: " + NAME;
+      for (const auto &a : argument)
+        s += " " + std::string(a);
+      e.push_back(s);
+      if (argument.size() > num_args_required) {
+        std::vector<std::string> potential_options;
+        for (const auto &a : argument) {
+          for (const auto &og : OPTIONS) {
+            for (const auto &o : og) {
+              if (std::string(a) == std::string(o.id))
+                potential_options.push_back("'-" + a + "'");
+            }
+          }
+        }
+        if (!potential_options.empty())
+          e.push_back("(Did you mean " + join(potential_options, " or ") + "?)");
+      }
+      throw e;
+    }
+
+    size_t num_extra_arguments = argument.size() - num_args_required;
+    size_t num_arg_per_multi = num_optional_arguments ? num_extra_arguments / num_optional_arguments : 0;
+    if (num_arg_per_multi * num_optional_arguments != num_extra_arguments)
+      throw Exception("number of optional arguments provided are not equal for all arguments");
+    if (!(flags & Optional))
+      ++num_arg_per_multi;
+
+    // assign arguments to their corresponding definitions:
+    for (size_t n = 0, index = 0, next = 0; n < argument.size(); ++n) {
+      if (n == next) {
+        if (n)
+          ++index;
+        if (ARGUMENTS[index].flags != None)
+          next = n + num_arg_per_multi;
+        else
+          ++next;
+      }
+      argument[n].arg = &ARGUMENTS[index];
+    }
+
+    // check for multiple instances of options:
+    for (size_t i = 0; i < OPTIONS.size(); ++i) {
+      for (size_t j = 0; j < OPTIONS[i].size(); ++j) {
+        size_t count = 0;
+        for (size_t k = 0; k < option.size(); ++k)
+          if (option[k].opt == &OPTIONS[i][j])
+            count++;
+
+        if (count < 1 && !(OPTIONS[i][j].flags & Optional))
+          throw Exception(std::string("mandatory option \"-") + OPTIONS[i][j].id + "\" must be specified");
+
+        if (count > 1 && !(OPTIONS[i][j].flags & AllowMultiple))
+          throw Exception(std::string("multiple instances of option \"-") + OPTIONS[i][j].id + "\" are not allowed");
+      }
+    }
+
+    parse_standard_options();
+
+    File::Config::init();
+
+    // CONF option: FailOnWarn
+    // CONF default: 0 (false)
+    // CONF A boolean value specifying whether MRtrix applications should
+    // CONF abort as soon as any (otherwise non-fatal) warning is issued.
+    fail_on_warn = File::Config::get_bool("FailOnWarn", false);
+
+    // CONF option: TerminalColor
+    // CONF default: 1 (true)
+    // CONF A boolean value to indicate whether colours should be used in the terminal.
+    terminal_use_colour = File::Config::get_bool("TerminalColor", terminal_use_colour);
+
+    // check for the existence of all specified input files (including optional ones that have been provided)
+    // if necessary, also check for pre-existence of any output files with known paths
+    //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
+    for (const auto &i : argument) {
+      const std::string text = std::string(i);
+      if (i.arg->type == ArgFileIn || i.arg->type == TracksIn) {
         if (!Path::exists(text))
-          throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
+          throw Exception("required input file \"" + text + "\" not found");
         if (!Path::is_file(text))
-          throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
+          throw Exception("required input \"" + text + "\" is not a file");
       }
-      if (arg.type == ArgDirectoryIn) {
+      if (i.arg->type == ArgDirectoryIn) {
         if (!Path::exists(text))
-          throw Exception("input directory \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
+          throw Exception("required input directory \"" + text + "\" not found");
         if (!Path::is_dir(text))
-          throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");
+          throw Exception("required input \"" + text + "\" is not a directory");
       }
-      if (arg.type == ArgFileOut || arg.type == TracksOut) {
+      if (i.arg->type == ArgFileOut || i.arg->type == TracksOut) {
         if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-          throw Exception("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) +
+          throw Exception("output path \"" + std::string(i) +
                           "\" is not a valid file path (ends with directory path separator)");
         check_overwrite(text);
       }
-      if (arg.type == ArgDirectoryOut)
+      if (i.arg->type == ArgDirectoryOut)
         check_overwrite(text);
-      if (arg.type == TracksIn && !Path::has_suffix(text, ".tck"))
-        throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
-                        "\" is not a valid track file");
-      if (arg.type == TracksOut && !Path::has_suffix(text, ".tck"))
-        throw Exception("output track file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
-                        "\" must use the .tck suffix");
+      if (i.arg->type == TracksIn && !Path::has_suffix(text, ".tck"))
+        throw Exception("input file \"" + text + "\" is not a valid track file");
+      if (i.arg->type == TracksOut && !Path::has_suffix(text, ".tck"))
+        throw Exception("output track file \"" + text + "\" must use the .tck suffix");
     }
+    for (const auto &i : option) {
+      for (size_t j = 0; j != i.opt->size(); ++j) {
+        const Argument &arg = i.opt->operator[](j);
+        const std::string text = std::string(i.args[j]);
+        if (arg.type == ArgFileIn || arg.type == TracksIn) {
+          if (!Path::exists(text))
+            throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
+          if (!Path::is_file(text))
+            throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
+        }
+        if (arg.type == ArgDirectoryIn) {
+          if (!Path::exists(text))
+            throw Exception("input directory \"" + text + "\" for option \"-" + std::string(i.opt->id) +
+                            "\" not found");
+          if (!Path::is_dir(text))
+            throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");
+        }
+        if (arg.type == ArgFileOut || arg.type == TracksOut) {
+          if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
+            throw Exception("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) +
+                            "\" is not a valid file path (ends with directory path separator)");
+          check_overwrite(text);
+        }
+        if (arg.type == ArgDirectoryOut)
+          check_overwrite(text);
+        if (arg.type == TracksIn && !Path::has_suffix(text, ".tck"))
+          throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
+                          "\" is not a valid track file");
+        if (arg.type == TracksOut && !Path::has_suffix(text, ".tck"))
+          throw Exception("output track file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
+                          "\" must use the .tck suffix");
+      }
+    }
+
+    SignalHandler::init();
   }
 
-  SignalHandler::init();
-}
-
-void init(int cmdline_argc, const char *const *cmdline_argv) {
+  void init(int cmdline_argc, const char *const *cmdline_argv) {
 #ifdef MRTRIX_WINDOWS
-  // force stderr to be unbuffered, and stdout to be line-buffered:
-  setvbuf(stderr, nullptr, _IONBF, 0);
-  setvbuf(stdout, nullptr, _IOLBF, 0);
+    // force stderr to be unbuffered, and stdout to be line-buffered:
+    setvbuf(stderr, nullptr, _IONBF, 0);
+    setvbuf(stdout, nullptr, _IOLBF, 0);
 #endif
 
-  terminal_use_colour = !ProgressBar::set_update_method();
+    terminal_use_colour = !ProgressBar::set_update_method();
 
-  raw_arguments_list = std::vector<std::string>(cmdline_argv, cmdline_argv + cmdline_argc);
-  NAME = Path::basename(raw_arguments_list.front());
-  raw_arguments_list.erase(raw_arguments_list.begin());
+    raw_arguments_list = std::vector<std::string>(cmdline_argv, cmdline_argv + cmdline_argc);
+    NAME = Path::basename(raw_arguments_list.front());
+    raw_arguments_list.erase(raw_arguments_list.begin());
 
 #ifdef MRTRIX_WINDOWS
-  if (Path::has_suffix(NAME, ".exe"))
-    NAME.erase(NAME.size() - 4);
+    if (Path::has_suffix(NAME, ".exe"))
+      NAME.erase(NAME.size() - 4);
 #endif
 
-  auto argv_quoted = [](const std::string &s) -> std::string {
-    for (size_t i = 0; i != s.size(); ++i) {
-      if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
-        std::string escaped_string("\'");
-        for (auto c : s) {
-          switch (c) {
-          case '\'':
-            escaped_string.append("\\\'");
+    auto argv_quoted = [](const std::string &s) -> std::string {
+      for (size_t i = 0; i != s.size(); ++i) {
+        if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
+          std::string escaped_string("\'");
+          for (auto c : s) {
+            switch (c) {
+            case '\'':
+              escaped_string.append("\\\'");
+              break;
+            case '\\':
+              escaped_string.append("\\\\");
+              break;
+            default:
+              escaped_string.push_back(c);
+              break;
+            }
+          }
+          escaped_string.push_back('\'');
+          return escaped_string;
+        }
+      }
+      return s;
+    };
+    command_history_string = cmdline_argv[0];
+    for (const auto &a : raw_arguments_list)
+      command_history_string += std::string(" ") + argv_quoted(a);
+    command_history_string += std::string("  (version=") + mrtrix_version;
+    if (project_version)
+      command_history_string += std::string(", project=") + project_version;
+    command_history_string += ")";
+
+    std::locale::global(std::locale::classic());
+    std::setlocale(LC_ALL, "C");
+
+    srand(time(nullptr));
+  }
+
+  const std::vector<ParsedOption> get_options(const std::string &name) {
+    assert(!name.empty());
+    assert(name[0] != '-');
+    std::vector<ParsedOption> matches;
+    for (size_t i = 0; i < option.size(); ++i) {
+      assert(option[i].opt);
+      if (option[i].opt->is(name))
+        matches.push_back({option[i].opt, option[i].args, option[i].index});
+    }
+    return matches;
+  }
+
+  int64_t App::ParsedArgument::as_int() const {
+    if (arg->type == Integer) {
+
+      // Check to see if there are any alpha characters in here
+      // - If a single character at the end, use as integer multiplier
+      //   - Unless there's a dot point before the multiplier; in which case,
+      //     parse the number as a float, multiply, then cast to integer
+      // - If a single 'e' or 'E' in the middle, parse as float and convert to integer
+      size_t alpha_count = 0;
+      bool alpha_is_last = false;
+      bool contains_dotpoint = false;
+      char alpha_char = 0;
+      for (const char &c : p) {
+        if (std::isalpha(c) != 0) {
+          ++alpha_count;
+          alpha_is_last = true;
+          alpha_char = c;
+        } else {
+          alpha_is_last = false;
+        }
+        if (c == '.')
+          contains_dotpoint = true;
+      }
+      if (alpha_count > 1)
+        throw Exception("error converting string " + str(p) + " to integer: too many letters");
+      int64_t retval = 0;
+      if (alpha_count) {
+        if (alpha_is_last) {
+          std::string num(p);
+          const char postfix = num.back();
+          num.pop_back();
+          int64_t multiplier = 1.0;
+          switch (postfix) {
+          case 'k':
+          case 'K':
+            multiplier = 1000;
             break;
-          case '\\':
-            escaped_string.append("\\\\");
+          case 'm':
+          case 'M':
+            multiplier = 1000000;
+            break;
+          case 'b':
+          case 'B':
+            multiplier = 1000000000;
+            break;
+          case 't':
+          case 'T':
+            multiplier = 1000000000000;
             break;
           default:
-            escaped_string.push_back(c);
-            break;
+            throw Exception("error converting string " + str(p) + " to integer: unexpected postfix \'" + postfix +
+                            "\'");
           }
-        }
-        escaped_string.push_back('\'');
-        return escaped_string;
-      }
-    }
-    return s;
-  };
-  command_history_string = cmdline_argv[0];
-  for (const auto &a : raw_arguments_list)
-    command_history_string += std::string(" ") + argv_quoted(a);
-  command_history_string += std::string("  (version=") + mrtrix_version;
-  if (project_version)
-    command_history_string += std::string(", project=") + project_version;
-  command_history_string += ")";
-
-  std::locale::global(std::locale::classic());
-  std::setlocale(LC_ALL, "C");
-
-  srand(time(nullptr));
-}
-
-const std::vector<ParsedOption> get_options(const std::string &name) {
-  assert(!name.empty());
-  assert(name[0] != '-');
-  std::vector<ParsedOption> matches;
-  for (size_t i = 0; i < option.size(); ++i) {
-    assert(option[i].opt);
-    if (option[i].opt->is(name))
-      matches.push_back({option[i].opt, option[i].args, option[i].index});
-  }
-  return matches;
-}
-
-int64_t App::ParsedArgument::as_int() const {
-  if (arg->type == Integer) {
-
-    // Check to see if there are any alpha characters in here
-    // - If a single character at the end, use as integer multiplier
-    //   - Unless there's a dot point before the multiplier; in which case,
-    //     parse the number as a float, multiply, then cast to integer
-    // - If a single 'e' or 'E' in the middle, parse as float and convert to integer
-    size_t alpha_count = 0;
-    bool alpha_is_last = false;
-    bool contains_dotpoint = false;
-    char alpha_char = 0;
-    for (const char &c : p) {
-      if (std::isalpha(c) != 0) {
-        ++alpha_count;
-        alpha_is_last = true;
-        alpha_char = c;
-      } else {
-        alpha_is_last = false;
-      }
-      if (c == '.')
-        contains_dotpoint = true;
-    }
-    if (alpha_count > 1)
-      throw Exception("error converting string " + str(p) + " to integer: too many letters");
-    int64_t retval = 0;
-    if (alpha_count) {
-      if (alpha_is_last) {
-        std::string num(p);
-        const char postfix = num.back();
-        num.pop_back();
-        int64_t multiplier = 1.0;
-        switch (postfix) {
-        case 'k':
-        case 'K':
-          multiplier = 1000;
-          break;
-        case 'm':
-        case 'M':
-          multiplier = 1000000;
-          break;
-        case 'b':
-        case 'B':
-          multiplier = 1000000000;
-          break;
-        case 't':
-        case 'T':
-          multiplier = 1000000000000;
-          break;
-        default:
-          throw Exception("error converting string " + str(p) + " to integer: unexpected postfix \'" + postfix + "\'");
-        }
-        if (contains_dotpoint) {
-          const default_type prefix = to<default_type>(num);
-          retval = std::round(prefix * default_type(multiplier));
+          if (contains_dotpoint) {
+            const default_type prefix = to<default_type>(num);
+            retval = std::round(prefix * default_type(multiplier));
+          } else {
+            retval = to<int64_t>(num) * multiplier;
+          }
+        } else if (alpha_char == 'e' || alpha_char == 'E') {
+          const default_type as_float = to<default_type>(p);
+          retval = std::round(as_float);
         } else {
-          retval = to<int64_t>(num) * multiplier;
+          throw Exception("error converting string " + str(p) + " to integer: unexpected character");
         }
-      } else if (alpha_char == 'e' || alpha_char == 'E') {
-        const default_type as_float = to<default_type>(p);
-        retval = std::round(as_float);
       } else {
-        throw Exception("error converting string " + str(p) + " to integer: unexpected character");
+        retval = to<int64_t>(p);
       }
-    } else {
-      retval = to<int64_t>(p);
+
+      const auto range = std::get<Argument::IntRange>(arg->limits);
+      if (retval < range.min || retval > range.max) {
+        std::string msg("value supplied for ");
+        if (opt)
+          msg += std::string("option \"") + opt->id;
+        else
+          msg += std::string("argument \"") + arg->id;
+        msg += "\" is out of bounds (valid range: " + str(range.min) + " to " + str(range.max) +
+               ", value supplied: " + str(retval) + ")";
+        throw Exception(msg);
+      }
+      return retval;
     }
 
-    const auto range = std::get<Argument::IntRange>(arg->limits);
+    if (arg->type == Choice) {
+      std::string selection = lowercase(p);
+      const auto &choices = std::get<std::vector<std::string>>(arg->limits);
+      auto it = std::find(choices.begin(), choices.end(), selection);
+      if (it == choices.end()) {
+        std::string msg = std::string("unexpected value supplied for ");
+        if (opt != nullptr)
+          msg += std::string("option \"") + opt->id;
+        else
+          msg += std::string("argument \"") + arg->id;
+        msg += std::string("\" (received \"" + std::string(p) + "\"; valid choices are: ") + join(choices, ", ") + ")";
+        throw Exception(msg);
+      }
+      return static_cast<int>(std::distance(choices.begin(), it));
+    }
+    assert(0);
+    return (0);
+  }
+
+  default_type App::ParsedArgument::as_float() const {
+    assert(arg->type == Float);
+    const default_type retval = to<default_type>(p);
+    const auto range = std::get<Argument::FloatRange>(arg->limits);
     if (retval < range.min || retval > range.max) {
       std::string msg("value supplied for ");
       if (opt)
@@ -1282,139 +1762,103 @@ int64_t App::ParsedArgument::as_int() const {
              ", value supplied: " + str(retval) + ")";
       throw Exception(msg);
     }
+
     return retval;
   }
 
-  if (arg->type == Choice) {
-    std::string selection = lowercase(p);
-    const auto &choices = std::get<std::vector<std::string>>(arg->limits);
-    auto it = std::find(choices.begin(), choices.end(), selection);
-    if (it == choices.end()) {
-      std::string msg = std::string("unexpected value supplied for ");
-      if (opt != nullptr)
-        msg += std::string("option \"") + opt->id;
-      else
-        msg += std::string("argument \"") + arg->id;
-      msg += std::string("\" (received \"" + std::string(p) + "\"; valid choices are: ") + join(choices, ", ") + ")";
-      throw Exception(msg);
+  std::vector<int32_t> ParsedArgument::as_sequence_int() const {
+    assert(arg->type == IntSeq);
+    try {
+      return parse_ints<int32_t>(p);
+    } catch (Exception &e) {
+      error(e);
     }
-    return static_cast<int>(std::distance(choices.begin(), it));
+    return std::vector<int32_t>();
   }
-  assert(0);
-  return (0);
-}
 
-default_type App::ParsedArgument::as_float() const {
-  assert(arg->type == Float);
-  const default_type retval = to<default_type>(p);
-  const auto range = std::get<Argument::FloatRange>(arg->limits);
-  if (retval < range.min || retval > range.max) {
-    std::string msg("value supplied for ");
-    if (opt)
-      msg += std::string("option \"") + opt->id;
+  std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
+    assert(arg->type == IntSeq);
+    try {
+      return parse_ints<uint32_t>(p);
+    } catch (Exception &e) {
+      error(e);
+    }
+    return std::vector<uint32_t>();
+  }
+
+  std::vector<default_type> ParsedArgument::as_sequence_float() const {
+    assert(arg->type == FloatSeq);
+    try {
+      return parse_floats(p);
+    } catch (Exception &e) {
+      error(e);
+    }
+    return std::vector<default_type>();
+  }
+
+  ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index)
+      : opt(option), arg(argument), p(std::move(text)), index_(index) {
+    assert(!p.empty());
+  }
+
+  void ParsedArgument::error(Exception & e) const {
+    std::string msg("error parsing token \"");
+    msg += p;
+    if (opt != nullptr)
+      msg += std::string("\" for option \"") + opt->id + "\"";
     else
-      msg += std::string("argument \"") + arg->id;
-    msg += "\" is out of bounds (valid range: " + str(range.min) + " to " + str(range.max) +
-           ", value supplied: " + str(retval) + ")";
-    throw Exception(msg);
+      msg += std::string("\" for argument \"") + arg->id + "\"";
+    throw Exception(e, msg);
   }
 
-  return retval;
-}
-
-std::vector<int32_t> ParsedArgument::as_sequence_int() const {
-  assert(arg->type == IntSeq);
-  try {
-    return parse_ints<int32_t>(p);
-  } catch (Exception &e) {
-    error(e);
+  void check_overwrite(const std::string &name) {
+    if (Path::exists(name) && !overwrite_files) {
+      if (check_overwrite_files_func != nullptr)
+        check_overwrite_files_func(name);
+      else
+        throw Exception("output path \"" + name + "\" already exists (use -force option to force overwrite)");
+    }
   }
-  return std::vector<int32_t>();
-}
 
-std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
-  assert(arg->type == IntSeq);
-  try {
-    return parse_ints<uint32_t>(p);
-  } catch (Exception &e) {
-    error(e);
+  ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> &arguments, size_t i)
+      : opt(option), args(arguments), index(i) {
+    for (size_t i = 0; i != option->size(); ++i) {
+      const auto &p = arguments[i];
+      if (!starts_with_dash(p))
+        continue;
+      if (((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && is_dash(arguments[i]))
+        continue;
+      if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
+          (*option)[i].type == FloatSeq || (*option)[i].type == Various)
+        continue;
+      WARN(std::string("Value \"") + arguments[i] + "\" is being used as " +
+           ((option->size() == 1) ? "the expected argument "
+                                  : ("one of the " + str(option->size()) + " expected arguments ")) +
+           "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
+           "the requisite input" + ((option->size() == 1) ? " " : "s ") + "to command-line option \"-" + option->id +
+           "\" may have been erroneously omitted, which may cause " + "other command-line parsing errors");
+    }
   }
-  return std::vector<uint32_t>();
-}
 
-std::vector<default_type> ParsedArgument::as_sequence_float() const {
-  assert(arg->type == FloatSeq);
-  try {
-    return parse_floats(p);
-  } catch (Exception &e) {
-    error(e);
+  ParsedArgument ParsedOption::operator[](size_t num) const {
+    assert(num < opt->size());
+    return ParsedArgument(opt, &(*opt)[num], args[num], index + num + 1);
   }
-  return std::vector<default_type>();
-}
 
-ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index)
-    : opt(option), arg(argument), p(std::move(text)), index_(index) {
-  assert(!p.empty());
-}
-
-void ParsedArgument::error(Exception &e) const {
-  std::string msg("error parsing token \"");
-  msg += p;
-  if (opt != nullptr)
-    msg += std::string("\" for option \"") + opt->id + "\"";
-  else
-    msg += std::string("\" for argument \"") + arg->id + "\"";
-  throw Exception(e, msg);
-}
-
-void check_overwrite(const std::string &name) {
-  if (Path::exists(name) && !overwrite_files) {
-    if (check_overwrite_files_func != nullptr)
-      check_overwrite_files_func(name);
-    else
-      throw Exception("output path \"" + name + "\" already exists (use -force option to force overwrite)");
+  bool ParsedOption::operator==(const char *match) const {
+    const std::string name = lowercase(match);
+    return name == opt->id;
   }
-}
 
-ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> &arguments, size_t i)
-    : opt(option), args(arguments), index(i) {
-  for (size_t i = 0; i != option->size(); ++i) {
-    const auto &p = arguments[i];
-    if (!starts_with_dash(p))
-      continue;
-    if (((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && is_dash(arguments[i]))
-      continue;
-    if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
-        (*option)[i].type == FloatSeq || (*option)[i].type == Various)
-      continue;
-    WARN(std::string("Value \"") + arguments[i] + "\" is being used as " +
-         ((option->size() == 1) ? "the expected argument "
-                                : ("one of the " + str(option->size()) + " expected arguments ")) +
-         "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
-         "the requisite input" + ((option->size() == 1) ? " " : "s ") + "to command-line option \"-" + option->id +
-         "\" may have been erroneously omitted, which may cause " + "other command-line parsing errors");
+  std::string operator+(const char *left, const ParsedArgument &right) {
+    std::string retval(left);
+    retval += std::string(right);
+    return retval;
   }
-}
 
-ParsedArgument ParsedOption::operator[](size_t num) const {
-  assert(num < opt->size());
-  return ParsedArgument(opt, &(*opt)[num], args[num], index + num + 1);
-}
-
-bool ParsedOption::operator==(const char *match) const {
-  const std::string name = lowercase(match);
-  return name == opt->id;
-}
-
-std::string operator+(const char *left, const ParsedArgument &right) {
-  std::string retval(left);
-  retval += std::string(right);
-  return retval;
-}
-
-std::ostream &operator<<(std::ostream &stream, const ParsedArgument &arg) {
-  stream << std::string(arg);
-  return stream;
-}
+  std::ostream &operator<<(std::ostream &stream, const ParsedArgument &arg) {
+    stream << std::string(arg);
+    return stream;
+  }
 
 } // namespace MR::App
