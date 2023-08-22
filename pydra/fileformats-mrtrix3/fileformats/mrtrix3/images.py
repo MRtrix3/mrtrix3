@@ -67,7 +67,7 @@ class BaseMrtrixImage(WithMagicNumber, fileformats.medimage.MedicalImage, File):
         return self.metadata["dim"]
 
 
-class MrtrixImage(BaseMrtrixImage):
+class ImageFormat(BaseMrtrixImage):
 
     ext = ".mif"
 
@@ -83,14 +83,14 @@ class MrtrixImage(BaseMrtrixImage):
         return self
 
 
-class MrtrixImageHeader(BaseMrtrixImage):
+class ImageHeader(BaseMrtrixImage):
 
     ext = ".mih"
 
     @mark.required
     @property
     def data_file(self):
-        return MrtrixDataFile(self.data_fspath)
+        return ImageDataFile(self.data_fspath)
 
     def __attrs_post_init__(self):
         if len(self.fspaths) == 1:
@@ -99,7 +99,7 @@ class MrtrixImageHeader(BaseMrtrixImage):
         super().__attrs_post_init__()
 
 
-class MrtrixDataFile(File):
+class ImageDataFile(File):
 
     ext = ".dat"
 
@@ -111,8 +111,10 @@ SupportedImageIn = ty.Union[
     fileformats.medimage.NiftiX,
     fileformats.medimage.Nifti1,
     fileformats.medimage.Nifti2,
-    MrtrixImage,
-    MrtrixImageHeader,
+    ImageFormat,
+    ImageHeader,
+    fileformats.medimage.MGH,
+    fileformats.medimage.MGHZip,
     fileformats.medimage.Analyze,
 ]
 
@@ -122,7 +124,9 @@ SupportedImageOut = ty.Union[
     fileformats.medimage.NiftiX,
     fileformats.medimage.Nifti1,
     fileformats.medimage.Nifti2,
-    MrtrixImage,
-    MrtrixImageHeader,
+    ImageFormat,
+    ImageHeader,
+    fileformats.medimage.MGH,
+    fileformats.medimage.MGHZip,
     fileformats.medimage.Analyze,
 ]
