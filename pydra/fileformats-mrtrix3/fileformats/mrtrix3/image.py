@@ -104,28 +104,29 @@ class ImageDataFile(File):
     ext = ".dat"
 
 
-SupportedImageIn = ty.Union[
+ImageIn = ty.Union[
+    ImageFormat,
+    ImageHeader,
+    fileformats.misc.Dicom,
     fileformats.medimage.DicomDir,
     fileformats.medimage.NiftiGzX,
     fileformats.medimage.NiftiGz,
     fileformats.medimage.NiftiX,
     fileformats.medimage.Nifti1,
     fileformats.medimage.Nifti2,
-    ImageFormat,
-    ImageHeader,
     fileformats.medimage.MGH,
     fileformats.medimage.MGHZip,
     fileformats.medimage.Analyze,
 ]
 
-SupportedImageOut = ty.Union[
+ImageOut = ty.Union[
+    ImageFormat,
+    ImageHeader,
     fileformats.medimage.NiftiGzX,
     fileformats.medimage.NiftiGz,
     fileformats.medimage.NiftiX,
     fileformats.medimage.Nifti1,
     fileformats.medimage.Nifti2,
-    ImageFormat,
-    ImageHeader,
     fileformats.medimage.MGH,
     fileformats.medimage.MGHZip,
     fileformats.medimage.Analyze,

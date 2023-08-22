@@ -1218,9 +1218,9 @@ class Parser(argparse.ArgumentParser):
         "from pathlib import Path  # noqa: F401\n"
         "from fileformats.generic import FsObject, File, Directory  # noqa: F401\n"
         "from fileformats.medimage import MrtrixTrack  # noqa: F401\n"
+        "from fileformats.mrtrix3 import ImageIn, ImageOut  # noqa: F401\n"
         "from pydra.engine.task import ShellCommandTask \n"
         "from pydra.engine import specs\n"
-        "from pydra.tasks.mrtrix3.fileformats import ImageIn, ImageOut  # noqa: F401\n"
     )
 
     text += f"input_fields = {inputs_str}\n"
