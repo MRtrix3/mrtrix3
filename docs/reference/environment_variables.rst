@@ -24,6 +24,12 @@ List of MRtrix3 environment variables
      when reading DICOM data, match the StudyName entry against
      the string provided
 
+.. envvar:: MRTRIX_CLI_PARSE_ONLY
+
+     Set the command to parse the provided inputs and then quit
+     if it is 1. This can be used in the CI of wrapping code,
+     such as the automatically generated Pydra interfaces
+
 .. envvar:: MRTRIX_CONFIGFILE
 
      This can be used to set the location of the system-wide
@@ -52,12 +58,6 @@ List of MRtrix3 environment variables
      This overrides the automatically determined number, or the
      :option:`NumberOfThreads` setting in the configuration file, but
      will be overridden by the ENVVAR ``-nthreads`` command-line option.
-
-.. envvar:: MRTRIX_CLI_PARSE_ONLY
-
-     Set the command to parse the provided inputs and then quit
-     if it is 1. This can be used in the CI of wrapping code,
-     such as the automatically generated Pydra interfaces
 
 .. envvar:: MRTRIX_PRESERVE_PHILIPS_ISO
 
