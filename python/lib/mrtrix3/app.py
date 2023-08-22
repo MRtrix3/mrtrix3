@@ -15,6 +15,7 @@
 
 import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, re
 import typing as ty
+from keyword import kwlist as PYTHON_KEYWORDS
 try:
   import black.parsing
 except ImportError:
@@ -23,6 +24,7 @@ else:
   HAVE_BLACK = True
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
+
 from ._version import __version__
 
 
@@ -1134,6 +1136,13 @@ class Parser(argparse.ArgumentParser):
         return f"#{type_.__name__}#"
       return ty.Any
 
+    def escape_id(id_: str) -> str:
+      if id_ in PYTHON_KEYWORDS:
+        escaped = id_ + "_"
+      else:
+        escaped = id_
+      return escaped
+
     inputs = []
     input_names = [a.dest for a in self._positionals._group_actions]
     output_names = []
@@ -1141,21 +1150,22 @@ class Parser(argparse.ArgumentParser):
       metadata = get_arg_metadata(arg)
       metadata["position"] = pos
       metadata["argstr"] = ""
+      arg_id = escape_id(arg.dest)
       if arg.type:
         type_ = parse_type(arg.type)
-      elif arg.dest == "input":
+      elif arg_id == "input":
         type_ = "#FsObject#"
-      elif arg.dest == "output":
+      elif arg_id == "output":
         type_ = "#Path#"
-        output_names.append(arg.dest)
+        output_names.append(arg_id)
       else:
         type_ = ty.Any
-      if arg.dest == "output" and "input" in input_names:
+      if arg_id == "output" and "input" in input_names:
         metadata["output_file_template"] = "output_{input}"
         metadata.pop("mandatory", None)
       inputs.append(
         (
-          arg.dest,
+          arg_id,
           type_,
           metadata,
         )
@@ -1184,7 +1194,8 @@ class Parser(argparse.ArgumentParser):
 
     outputs = []
     for arg in self._positionals._group_actions:
-      if arg.dest in output_names:
+      arg_id = escape_id(arg.dest)
+      if arg_id in output_names:
         metadata = get_arg_metadata(arg)
         if arg.type:
           type_ = arg.type
@@ -1192,7 +1203,7 @@ class Parser(argparse.ArgumentParser):
           type_ = "#FsObject#"
         outputs.append((
             (
-              arg.dest,
+              arg_id,
               type_,
               metadata,
             )

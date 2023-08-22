@@ -808,6 +808,13 @@ std::string restructured_text_usage() {
       std::string indent = base_indent + "    ";
       std::string md_indent = indent + "    ";
 
+      std::string PYTHON_KEYWORDS[] = {
+        "and", "as", "assert", "break", "class", "continue", "def", "del", "elif",
+        "else", "except", "False", "finally", "for", "from", "global", "if", "import",
+        "in", "is", "lambda", "None", "nonlocal", "not", "or", "pass", "raise", "return",
+        "True", "try", "while", "with", "yield"
+      };
+
       // Add import lines
       std::string s = std::string("import typing as ty \n");
       s += "from pathlib import Path  # noqa: F401\n";
@@ -816,6 +823,16 @@ std::string restructured_text_usage() {
       s += "from pydra import ShellCommandTask \n";
       s += "from pydra.engine import specs\n";
       s += "from pydra.tasks.mrtrix3.fileformats import ImageIn, ImageOut  # noqa: F401\n";
+
+      auto escape_id = [&](const std::string& id) {
+        std::string escaped = id;
+        bool is_keyword = std::any_of(std::begin(PYTHON_KEYWORDS), std::end(PYTHON_KEYWORDS), [&id](const std::string& kword) {
+          return kword == id;
+        });
+        if (is_keyword)
+          escaped += "_";
+        return escaped;
+      };
 
       auto format_type = [&](const ArgType& type, bool for_output = false) {
         switch (type) {
@@ -946,7 +963,7 @@ std::string restructured_text_usage() {
 
         s += base_indent + "(\n";
         // Print name of field
-        s += indent + "\"" + ARGUMENTS[i].id + "\",\n";
+        s += indent + "\"" + escape_id(ARGUMENTS[i].id) + "\",\n";
         // Print type
         s += indent;
         if (ARGUMENTS[i].flags & AllowMultiple) {
@@ -966,7 +983,7 @@ std::string restructured_text_usage() {
           || ARGUMENTS[i].type == ArgFileOut
           || ARGUMENTS[i].type == ArgDirectoryOut
         ) {
-          s += md_indent + "\"output_file_template\": \"" + format_output_template(ARGUMENTS[i].id, ARGUMENTS[i].type) + "\",\n";
+          s += md_indent + "\"output_file_template\": \"" + format_output_template(escape_id(ARGUMENTS[i].id), ARGUMENTS[i].type) + "\",\n";
           output_type = true;
         }
         s += md_indent + "\"help_string\": \"\"\"" + ARGUMENTS[i].desc + "\"\"\",\n";
@@ -1018,7 +1035,7 @@ std::string restructured_text_usage() {
         ) {
             s += base_indent + "(\n";
             // Print name of field
-            s += indent + "\"" + ARGUMENTS[i].id + "\",\n";
+            s += indent + "\"" + escape_id(ARGUMENTS[i].id) + "\",\n";
             // Print type
             s += indent + format_type(ARGUMENTS[i].type, true) + ",\n";
             s += indent + "{\n";
