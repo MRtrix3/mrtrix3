@@ -26,7 +26,6 @@ from pathlib import Path
 # These will be in a sub-directory relative to this library file
 def _algorithms_path():
     from mrtrix3 import path  # pylint: disable=import-outside-toplevel
-    return str(Path(__file__).parent / "dwi2mask")  # DEBUGGING, PLEASE REMOVE
     return os.path.realpath(
         os.path.join(
             os.path.dirname(
@@ -77,8 +76,7 @@ def usage(cmdline):  # pylint: disable=unused-variable
         [_algorithms_path()]
     ):
         if package_name in pylist:
-            module = importlib.import_module("dwi2mask." + package_name)
-            # module = importlib.import_module(path.script_subdir_name() + "." + package_name)
+            module = importlib.import_module(path.script_subdir_name() + "." + package_name)
             module.usage(base_parser, subparsers)
             initlist.extend(package_name)
     app.debug("Initialised algorithms: " + str(initlist))
