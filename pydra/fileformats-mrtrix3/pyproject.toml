@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fileformats-mrtrix3"
+description = "Classes for representing different file formats in Python classes for use in type hinting in data workflows"
+readme = "README.rst"
+requires-python = ">=3.8"
+dependencies = [
+    "fileformats >= 0.8.6",
+    "fileformats-medimage >= 0.4.4"
+]
+license = {file = "LICENSE"}
+authors = [
+    {name = "Thomas G. Close", email = "tom.g.close@gmail.com"},
+]
+maintainers = [
+    {name = "Thomas G. Close", email = "tom.g.close@gmail.com"},
+] # Ideally this would be the generic MRtrix developers authors list, but will leave it as me for now
+keywords = [
+    "file formats",
+    "data",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "pre-commit",
+    "codespell",
+    "flake8",
+    "flake8-pyproject",
+]
+test = [
+    "pytest >=6.2.5",
+    "pytest-env>=0.6.2",
+    "pytest-cov>=2.12.1",
+    "codecov",
+]
+
+[project.urls]
+repository = "https://github.com/ArcanaFramework/fileformats-mrtrix3"
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { root = "../../" }
+
+[tool.hatch.build.hooks.vcs]
+version-file = "fileformats/mrtrix3/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["fileformats"]
+
+[tool.black]
+target-version = ['py38']
+exclude = "fileformats/mrtrix3/_version.py"
+
+[tool.codespell]
+ignore-words = ".codespell-ignorewords"
+
+[tool.flake8]
+doctests = true
+per-file-ignores = [
+    "__init__.py:F401"
+]
+max-line-length = 88
+select = "C,E,F,W,B,B950"
+extend-ignore = ['E203', 'E501', 'E129']

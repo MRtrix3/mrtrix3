@@ -84,6 +84,7 @@ def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors:
         code_str = code_str.replace(f"class {old_name}", f"class {cmd_name}")
         code_str = code_str.replace(f"{old_name}_input_spec", f"{cmd_name}_input_spec")
         code_str = code_str.replace(f"{old_name}_output_spec", f"{cmd_name}_input_spec")
+        code_str = re.sub(r"(?<!\w)5tt_in(?!\w)", "in_5tt", code_str)
     try:
         code_str = black.format_file_contents(
             code_str, fast=False, mode=black.FileMode()
@@ -116,6 +117,8 @@ def test_{cmd_name}():
     task = {cmd_name}(
 """
     for field in attrs.fields(type(task.inputs)):
+        if field.name == "executable":
+            continue
         if field.default is not attrs.NOTHING:
             value = field.default
         else:
