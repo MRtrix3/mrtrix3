@@ -1,0 +1,210 @@
+# Auto-generated from MRtrix C++ command with '__print_usage_pydra__' secret option
+
+import typing as ty
+from pathlib import Path  # noqa: F401
+from fileformats.generic import File, Directory  # noqa: F401
+from fileformats.medimage_mrtrix3 import ImageIn, ImageOut, Tracks  # noqa: F401
+from pydra.engine import specs, ShellCommandTask
+
+
+input_fields = [
+    # Arguments
+    (
+        "input",
+        ty.Any,
+        {
+            "argstr": "",
+            "position": 0,
+            "help_string": """the input: either a fixel data file, or a fixel directory (see Description)""",
+            "mandatory": True,
+        },
+    ),
+    (
+        "filter",
+        str,
+        {
+            "argstr": "",
+            "position": 1,
+            "help_string": """the filtering operation to perform; options are: connect, smooth""",
+            "mandatory": True,
+            "allowed_values": ["connect", "connect", "smooth"],
+        },
+    ),
+    (
+        "output",
+        ty.Any,
+        {
+            "argstr": "",
+            "position": 2,
+            "help_string": """the output: either a fixel data file, or a fixel directory (see Description)""",
+            "mandatory": True,
+        },
+    ),
+    (
+        "matrix",
+        Directory,
+        {
+            "argstr": "-matrix",
+            "help_string": """provide a fixel-fixel connectivity matrix for filtering operations that require it""",
+            "mandatory": True,
+        },
+    ),
+    # Options specific to the "connect" filter Option Group
+    (
+        "threshold_value",
+        float,
+        {
+            "argstr": "-threshold_value",
+            "help_string": """specify a threshold for the input fixel data file values (default = 0.5)""",
+        },
+    ),
+    (
+        "threshold_connectivity",
+        float,
+        {
+            "argstr": "-threshold_connectivity",
+            "help_string": """specify a fixel-fixel connectivity threshold for connected-component analysis (default = 0.10000000000000001)""",
+        },
+    ),
+    # Options specific to the "smooth" filter Option Group
+    (
+        "fwhm",
+        float,
+        {
+            "argstr": "-fwhm",
+            "help_string": """the full-width half-maximum (FWHM) of the spatial component of the smoothing filter (default = 10mm)""",
+        },
+    ),
+    (
+        "minweight",
+        float,
+        {
+            "argstr": "-minweight",
+            "help_string": """apply a minimum threshold to smoothing weights (default = 0.01)""",
+        },
+    ),
+    (
+        "mask",
+        ImageIn,
+        {
+            "argstr": "-mask",
+            "help_string": """only perform smoothing within a specified binary fixel mask""",
+        },
+    ),
+    # Standard options
+    (
+        "info",
+        bool,
+        {
+            "argstr": "-info",
+            "help_string": """display information messages.""",
+        },
+    ),
+    (
+        "quiet",
+        bool,
+        {
+            "argstr": "-quiet",
+            "help_string": """do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.""",
+        },
+    ),
+    (
+        "debug",
+        bool,
+        {
+            "argstr": "-debug",
+            "help_string": """display debugging messages.""",
+        },
+    ),
+    (
+        "force",
+        bool,
+        {
+            "argstr": "-force",
+            "help_string": """force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).""",
+        },
+    ),
+    (
+        "nthreads",
+        int,
+        {
+            "argstr": "-nthreads",
+            "help_string": """use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).""",
+        },
+    ),
+    (
+        "config",
+        specs.MultiInputObj[ty.Tuple[str, str]],
+        {
+            "argstr": "-config",
+            "help_string": """temporarily set the value of an MRtrix config file entry.""",
+        },
+    ),
+    (
+        "help",
+        bool,
+        {
+            "argstr": "-help",
+            "help_string": """display this information page and exit.""",
+        },
+    ),
+    (
+        "version",
+        bool,
+        {
+            "argstr": "-version",
+            "help_string": """display version information and exit.""",
+        },
+    ),
+]
+
+fixelfilter_input_spec = specs.SpecInfo(
+    name="fixelfilter_input", fields=input_fields, bases=(specs.ShellSpec,)
+)
+
+
+output_fields = []
+fixelfilter_output_spec = specs.SpecInfo(
+    name="fixelfilter_output", fields=output_fields, bases=(specs.ShellOutSpec,)
+)
+
+
+class fixelfilter(ShellCommandTask):
+    """If the first input to the command is a specific fixel data file, then a filtered version of only that file will be generated by the command. Alternatively, if the input is the location of a fixel directory, then the command will create a duplicate of the fixel directory, and apply the specified filter operation to all fixel data files within the directory.
+
+        Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:
+    https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/fixel_directory_format.html
+
+
+        References
+        ----------
+
+            Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
+
+
+        MRtrix
+        ------
+
+            Version:3.0.4-691-g05465c3c-dirty, built Sep 29 2023
+
+            Author: Robert E. Smith (robert.smith@florey.edu.au)
+
+            Copyright: Copyright (c) 2008-2023 the MRtrix3 contributors.
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+    Covered Software is provided under this License on an "as is"
+    basis, without warranty of any kind, either expressed, implied, or
+    statutory, including, without limitation, warranties that the
+    Covered Software is free of defects, merchantable, fit for a
+    particular purpose or non-infringing.
+    See the Mozilla Public License v. 2.0 for more details.
+
+    For more details, see http://www.mrtrix.org/.
+    """
+
+    executable = "fixelfilter"
+    input_spec = fixelfilter_input_spec
+    output_spec = fixelfilter_output_spec
