@@ -1,0 +1,61 @@
+[build-system]
+requires = ["flit_scm"]
+build-backend = "flit_scm:buildapi"
+
+[project]
+name = "pydra-mrtrix3"
+description = "Description for pydra-mrtrix3"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = ["pydra >=0.22"]
+license = {file = "LICENSE"}
+authors = [{name = "Nipype developers", email = "neuroimaging@python.org"}]
+maintainers = [{name = "Nipype developers", email = "neuroimaging@python.org"}]
+keywords = ["pydra"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "pre-commit",
+]
+doc = [
+    "packaging",
+    "sphinx >=2.1.2",
+    "sphinx_rtd_theme",
+    "sphinxcontrib-apidoc ~=0.3.0",
+    "sphinxcontrib-napoleon",
+    "sphinxcontrib-versioning",
+]
+test = [
+    "pytest >= 4.4.0",
+    "pytest-cov",
+    "pytest-env",
+    "pytest-xdist",
+    "pytest-rerunfailures",
+    "codecov",
+]
+
+[tool.flit.module]
+name = "pydra.tasks.mrtrix3"
+
+[tool.flit.sdist]
+exclude = [".gitignore"]
+
+[tool.setuptools_scm]
+write_to = "pydra/tasks/mrtrix3/_version.py"
+
+[tool.black]
+line-length = 99
+target-version = ["py38"]
+exclude = "_version.py"

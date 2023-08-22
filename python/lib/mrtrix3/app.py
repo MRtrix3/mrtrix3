@@ -18,7 +18,9 @@ import typing as ty
 try:
   import black.parsing
 except ImportError:
-  black = None  # type: ignore
+  HAVE_BLACK = False
+else:
+  HAVE_BLACK = True
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
 from ._version import __version__
@@ -1117,8 +1119,7 @@ class Parser(argparse.ArgumentParser):
     def parse_type(type_):
       if type_:
         return f"#{type_.__name__}#"
-      else:
-        return ty.Any
+      return ty.Any
 
     inputs = []
     input_names = [a.dest for a in self._positionals._group_actions]
@@ -1222,16 +1223,16 @@ class Parser(argparse.ArgumentParser):
     text += f"    output_spec = {self.prog}_output_spec\n"
     text += f"    executable='{self.prog}'\n\n"
 
-    if black:
+    if HAVE_BLACK:
       try:
         text = black.format_file_contents(
             text, fast=False, mode=black.FileMode()
         )
-      except black.parsing.InvalidInput:
+      except black.parsing.InvalidInput as exc:
         print(text)
         raise RuntimeError(
           "Black couldn't parse the generated code printed above"
-        )
+        ) from exc
     sys.stdout.write(text)
     sys.stdout.flush()
 

@@ -42,3 +42,7 @@ build.*
 .check_syntax2.tmp
 build/
 CMakeLists.txt.user
+*.venv
+__pycache__
+.DS_Store
+/pydra/pydra/tasks/mrtrix3/_version.py
