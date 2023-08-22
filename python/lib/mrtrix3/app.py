@@ -14,6 +14,11 @@
 # For more details, see http://www.mrtrix.org/.
 
 import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, re
+import typing as ty
+try:
+  import black
+except ImportError:
+  black = None  # type: ignore
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
 from ._version import __version__
@@ -1099,12 +1104,6 @@ class Parser(argparse.ArgumentParser):
 
   def print_usage_pydra(self):
 
-    import typing as ty
-
-    class MultiInputObj(ty.Generic[ty.T]):
-      pass
-
-
     def get_arg_metadata(arg):
       metadata = {
         "help_string": arg.help,
@@ -1148,7 +1147,7 @@ class Parser(argparse.ArgumentParser):
         if isinstance(option, argparse._StoreTrueAction):
           type_ = "#bool#"
         else:
-          type_ = arg.type if arg.type else ty.Any
+          type_ = option.type if option.type else ty.Any
         if isinstance(option, argparse._AppendAction):
           type_ = f"#specs.MultiInputObj[{type_}]#"
         metadata = get_arg_metadata(option)
@@ -1216,11 +1215,7 @@ class Parser(argparse.ArgumentParser):
     text += f"    output_spec = {self.prog}_output_spec\n"
     text += f"    executable='{self.prog}'\n\n"
 
-    try:
-      import black
-    except ImportError:
-      pass
-    else:
+    if black:
       text = black.format_file_contents(
           text, fast=False, mode=black.FileMode()
       )
