@@ -4,7 +4,7 @@
 # For deployment, it will be necessary to create a PyPI API token and store it as a secret
 # https://docs.github.com/en/actions/reference/encrypted-secrets
 
-name: Pydra PyPI
+name: Pydra
 
 # Set once
 env:
