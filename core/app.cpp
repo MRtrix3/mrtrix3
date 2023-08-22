@@ -905,7 +905,7 @@ std::string restructured_text_usage() {
         f += indent + format_option_type(opt) + ",\n" + indent + "{\n";
         // Print metadata fields
         f += md_indent + "\"argstr\": \"-" + opt.id + "\",\n";
-        f += md_indent + "\"help_string\": \"" + opt.desc + "\",\n";
+        f += md_indent + "\"help_string\": \"\"\"" + opt.desc + "\"\"\",\n";
         if (!(opt.flags & Optional)) {
           f += md_indent + "\"mandatory\": True,\n";
         }
@@ -932,6 +932,8 @@ std::string restructured_text_usage() {
         // is something else.
         return tmpl;
       };
+
+      printf("HERE 1080\n");
 
       // Print out input spec
       s += "\n\ninput_fields = [\n\n" + base_indent + "# Arguments\n";

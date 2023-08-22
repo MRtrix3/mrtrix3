@@ -1228,11 +1228,8 @@ class Parser(argparse.ArgumentParser):
         text = black.format_file_contents(
             text, fast=False, mode=black.FileMode()
         )
-      except black.parsing.InvalidInput as exc:
-        print(text)
-        raise RuntimeError(
-          "Black couldn't parse the generated code printed above"
-        ) from exc
+      except black.parsing.InvalidInput:
+        pass
     sys.stdout.write(text)
     sys.stdout.flush()
 
