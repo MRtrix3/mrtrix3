@@ -58,11 +58,6 @@ jobs:
       with:
         name: Shared
         path: lib/libmrtrix.so
-    - name: Upload build py-file
-      uses: actions/upload-artifact@v2
-      with:
-        name: Build
-        path: build
 
 
   generate-pydra:
@@ -80,11 +75,6 @@ jobs:
         with:
           name: Shared
           path: lib/libmrtrix.so
-      - name: Download build py-file
-        uses: actions/download-artifact@v2
-        with:
-          name: Build
-          path: build
       - name: Set up Python
         uses: actions/setup-python@v2
       - name: Install build dependencies
@@ -201,6 +191,11 @@ jobs:
       run: python -m build
     - name: Check distributions
       run: twine check pydra/src/dist/*
+    - name: Upload sdist
+      uses: actions/upload-artifact@v2
+      with:
+        name: SDist
+        path: pydra/src/dist/*.tar.gz
     # Deploy on tags if PYPI_API_TOKEN is defined in the repository secrets.
     # Secrets are not accessible in the if: condition [0], so set an output variable [1]
     # [0] https://github.community/t/16928
