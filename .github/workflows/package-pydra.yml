@@ -6,10 +6,6 @@
 
 name: Pydra
 
-# Set once
-env:
-  SUBPACKAGE: mrtrix3
-
 on:
   push:
     branches: [ master ]
@@ -75,6 +71,10 @@ jobs:
         with:
           name: Shared
           path: lib/libmrtrix.so
+      - name: Set PATH Variable
+        run: echo "PATH=$PATH:$(pwd)/bin" >> $GITHUB_ENV
+      - name: Set LD_LIBRARY_PATH Variable
+        run: echo "LD_LIBRARY_PATH=$(pwd)/lib" >> $GITHUB_ENV        
       - name: Set up Python
         uses: actions/setup-python@v2
       - name: Install build dependencies
@@ -124,7 +124,7 @@ jobs:
     - name: Install task package
       run: |
         pip install ${{ matrix.pip-flags }} "pydra/src[dev]"
-        python -c "import pydra.tasks.$SUBPACKAGE as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
+        python -c "import pydra.tasks.mrtrix3 as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
         python -c "import pydra as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
 
   # test:
@@ -157,12 +157,12 @@ jobs:
   #   - name: Install task package
   #     run: |
   #       pip install ".[test]"
-  #       python -c "import pydra.tasks.$SUBPACKAGE as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
+  #       python -c "import pydra.tasks.mrtrix3 as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
   #       python -c "import pydra as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
   #   - name: Test with pytest
   #     run: |
-  #       pytest -sv --doctest-modules pydra/tasks/$SUBPACKAGE \
-  #           --cov pydra.tasks.$SUBPACKAGE --cov-report xml
+  #       pytest -sv --doctest-modules pydra/tasks/mrtrix3 \
+  #           --cov pydra.tasks.mrtrix3 --cov-report xml
   #   - uses: codecov/codecov-action@v1
   #     if: ${{ always() }}
 
