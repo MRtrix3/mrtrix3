@@ -4,6 +4,7 @@ import subprocess as sp
 import logging
 import click
 import black.report
+import black.parsing
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -27,9 +28,12 @@ CMD_DIR the command directory to list the commands from
 OUTPUT_DIR the output directory to write the generated files to
 """
 )
-@click.argument("cmd_dir", type=click.Path(exists=True, file_okay=False, dir_okay=True))
+@click.argument(
+    "cmd_dir",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
+)
 @click.argument("output_dir", type=click.Path(exists=False, path_type=Path))
-def auto_gen_mrtrix3_pydra(cmd_dir, output_dir):
+def auto_gen_mrtrix3_pydra(cmd_dir: Path, output_dir: Path):
 
     env = os.environ.copy()
     env["PATH"] = str(cmd_dir) + ":" + env["PATH"]
@@ -45,9 +49,11 @@ def auto_gen_mrtrix3_pydra(cmd_dir, output_dir):
             logger.error("%s", cmd_name)
 
         if cmd_name.startswith("5tt"):
-            code_str == code_str.replace("5tt_input_spec", "five_tissue_type_input_spec")
+            code_str == code_str.replace(
+                "5tt_input_spec", "five_tissue_type_input_spec"
+            )
             code_str == code_str.replace("5tt_put_spec", "five_tissue_type_input_spec")
-
+            cmd_name = cmd_name.replace("5tt", "five_tissue_type")
         try:
             code_str = black.format_file_contents(
                 code_str, fast=False, mode=black.FileMode()
