@@ -47,6 +47,7 @@ def auto_gen_mrtrix3_pydra(cmd_dir: Path, output_dir: Path):
             ).decode("utf-8")
         except sp.CalledProcessError:
             logger.error("%s", cmd_name)
+            continue
 
         if cmd_name.startswith("5tt"):
             code_str == code_str.replace(

@@ -20,10 +20,41 @@ on:
       - dev
 
 jobs:
-  generate:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      CFLAGS: -Werror
+      QT_SELECT: qt5
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+      CXX_COMPILER_LAUNCHER: sccache
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev 
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
+        
+    - name: configure
+      run: ./configure -assert || { cat configure.log; false; }
+
+    - name: build
+      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+
+
+  generate-pydra:
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      # - uses: actions/checkout@v2
       - name: Set up Python
         uses: actions/setup-python@v2
       - name: Install build dependencies
@@ -37,7 +68,7 @@ jobs:
           python pydra/pydra-auto-gen.py
 
   devcheck:
-    needs: [generate]
+    needs: [generate-pydra]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -48,7 +79,7 @@ jobs:
         - '--editable git+https://github.com/nipype/pydra.git#egg=pydra'
 
     steps:
-    - uses: actions/checkout@v2
+    # - uses: actions/checkout@v2
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
@@ -62,7 +93,7 @@ jobs:
         python -c "import pydra as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
     - name: Install task package
       run: |
-        pip install ${{ matrix.pip-flags }} ".[dev]"
+        pip install ${{ matrix.pip-flags }} "pydra/src[dev]"
         python -c "import pydra.tasks.$SUBPACKAGE as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
         python -c "import pydra as m; print(f'{m.__name__} {m.__version__} @ {m.__file__}')"
 
