@@ -1106,6 +1106,19 @@ class Parser(argparse.ArgumentParser):
 
   def print_usage_pydra(self):
 
+    if self._subparsers:
+
+      if len(sys.argv) == 3:
+        for alg in self._subparsers._group_actions[0].choices:
+          if alg == sys.argv[-2]:
+            self._subparsers._group_actions[0].choices[alg].print_usage_pydra()
+            return
+        self.error('Invalid subparser nominated: ' + sys.argv[-2])
+      assert len(sys.argv) == 2
+      sys.stdout.write(",".join(self._subparsers._group_actions[0].choices))
+      sys.stdout.flush()
+      return
+
     def get_arg_metadata(arg):
       metadata = {
         "help_string": arg.help,
@@ -1187,6 +1200,8 @@ class Parser(argparse.ArgumentParser):
         )
     outputs_str = re.sub(r"'#([a-zA-Z0-9_\[\]]+)#'", r"\1", str(outputs))
 
+    task_name = self.prog.replace(" ", "_")
+
     text = (
         "import typing\n"
         "from pathlib import Path  # noqa: F401\n"
@@ -1199,10 +1214,10 @@ class Parser(argparse.ArgumentParser):
     )
 
     text += f"input_fields = {inputs_str}\n"
-    text += f"{self.prog}_input_spec = specs.SpecInfo(name='Input', fields=input_fields, bases=(specs.ShellSpec,))\n\n"
+    text += f"{task_name}_input_spec = specs.SpecInfo(name='Input', fields=input_fields, bases=(specs.ShellSpec,))\n\n"
     text += f"output_fields = {outputs_str}\n"
-    text += f"{self.prog}_output_spec = specs.SpecInfo(name='Output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n"
-    text += f"class {self.prog}(ShellCommandTask):\n"
+    text += f"{task_name}_output_spec = specs.SpecInfo(name='Output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n"
+    text += f"class {task_name}(ShellCommandTask):\n"
     indent = "    "
     text += indent + "\"\"\"\n"
     text += indent + (self.description if self.description else "")
@@ -1219,8 +1234,8 @@ class Parser(argparse.ArgumentParser):
     text += indent + '**Author:** ' + self._author + '\n\n'
     text += indent + '**Copyright:** ' + self._copyright + '\n\n'
     text += indent + "\"\"\"\n"
-    text += f"    input_spec = {self.prog}_input_spec\n"
-    text += f"    output_spec = {self.prog}_output_spec\n"
+    text += f"    input_spec = {task_name}_input_spec\n"
+    text += f"    output_spec = {task_name}_output_spec\n"
     text += f"    executable='{self.prog}'\n\n"
 
     if HAVE_BLACK:

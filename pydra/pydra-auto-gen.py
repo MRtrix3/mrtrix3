@@ -1,7 +1,9 @@
 import os
 from pathlib import Path
 import subprocess as sp
+import typing as ty
 import logging
+import re
 import click
 import black.report
 import black.parsing
@@ -45,46 +47,56 @@ def auto_gen_mrtrix3_pydra(cmd_dir: Path, output_dir: Path, log_errors: bool):
     for cmd_name in sorted(os.listdir(cmd_dir)):
         if cmd_name.startswith("_") or "." in cmd_name or cmd_name in IGNORE:
             continue
-        try:
-            code_str = sp.check_output(
-                [str(cmd_dir / cmd_name), "__print_usage_pydra__"]
-            ).decode("utf-8")
-        except sp.CalledProcessError:
-            if log_errors:
-                logger.error("Could not generate interface for '%s'", cmd_name)
-                continue
-            else:
-                raise
+        cmd = [str(cmd_dir / cmd_name)]
+        auto_gen_cmd(cmd, cmd_name, output_dir, log_errors)
 
-        # Since Python identifiers can't start with numbers we need to rename 5tt*
-        # with fivetissuetype*
-        if cmd_name.startswith("5tt"):
-            old_name = cmd_name
-            cmd_name = old_name.replace("5tt", "fivetissuetype")
-            code_str = code_str.replace(
-                f"class {old_name}", f"class {cmd_name}"
+
+def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors: bool):
+
+    try:
+        code_str = sp.check_output(cmd + ["__print_usage_pydra__"]).decode("utf-8")
+    except sp.CalledProcessError:
+        if log_errors:
+            logger.error("Could not generate interface for '%s'", cmd_name)
+            return
+        else:
+            raise
+
+    if re.match(r"(\w+,)+\w+", code_str):
+        for algorithm in code_str.split(","):
+            auto_gen_cmd(
+                cmd + [algorithm], f"{cmd_name}_{algorithm}", output_dir, log_errors
             )
-            code_str = code_str.replace(
-                f"{old_name}_input_spec", f"{cmd_name}_input_spec"
-            )
-            code_str = code_str.replace(
-                f"{old_name}_output_spec", f"{cmd_name}_input_spec"
-            )
-        try:
-            code_str = black.format_file_contents(
-                code_str, fast=False, mode=black.FileMode()
-            )
-        except black.report.NothingChanged:
-            pass
-        except black.parsing.InvalidInput:
-            if log_errors:
-                logger.error("Could not parse generated interface for '%s'", cmd_name)
-            else:
-                raise
-        output_dir.mkdir(exist_ok=True)
-        with open(output_dir / (cmd_name + ".py"), "w") as f:
-            f.write(code_str)
-        logger.info("%s", cmd_name)
+
+    # Since Python identifiers can't start with numbers we need to rename 5tt*
+    # with fivetissuetype*
+    if cmd_name.startswith("5tt"):
+        old_name = cmd_name
+        cmd_name = old_name.replace("5tt", "fivetissuetype")
+        code_str = code_str.replace(
+            f"class {old_name}", f"class {cmd_name}"
+        )
+        code_str = code_str.replace(
+            f"{old_name}_input_spec", f"{cmd_name}_input_spec"
+        )
+        code_str = code_str.replace(
+            f"{old_name}_output_spec", f"{cmd_name}_input_spec"
+        )
+    try:
+        code_str = black.format_file_contents(
+            code_str, fast=False, mode=black.FileMode()
+        )
+    except black.report.NothingChanged:
+        pass
+    except black.parsing.InvalidInput:
+        if log_errors:
+            logger.error("Could not parse generated interface for '%s'", cmd_name)
+        else:
+            raise
+    output_dir.mkdir(exist_ok=True)
+    with open(output_dir / (cmd_name + ".py"), "w") as f:
+        f.write(code_str)
+    logger.info("%s", cmd_name)
 
 
 if __name__ == "__main__":
