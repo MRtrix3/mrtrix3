@@ -796,6 +796,14 @@ std::string restructured_text_usage() {
     {
 
       std::string name_string(NAME);
+      // Check whether name starts with 5tt and escape the name if so
+      if (name_string.length() > 3) {
+        std::string prefix = name_string.substr(0, 3);
+        if (!prefix.compare("5tt")) {
+          name_string = "fivetissuetype" + name_string.substr(3, name_string.length());
+        }
+      }
+
       std::string base_indent("    ");
       std::string indent = base_indent + "    ";
       std::string md_indent = indent + "    ";

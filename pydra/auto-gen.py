@@ -9,6 +9,7 @@ logging.basicConfig(level=logging.WARNING)
 
 logger = logging.getLogger("pydra-auto-gen")
 
+# Ignore non-standard tools that will need to be added manually
 IGNORE = [
     "blend",
     "convert_bruker",
