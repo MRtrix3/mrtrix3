@@ -10,7 +10,7 @@ requires-python = ">=3.8"
 dependencies = [
     "pydra >=0.22",
     "fileformats-medimage >=0.3.4"]
-license = {file = "../../LICENCE.txt"}
+license = {file = "LICENCE.txt"}
 authors = [
     {name = "Thomas G. Close", email = "tom.g.close@gmail.com"},
 ]
