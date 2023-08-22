@@ -67,6 +67,7 @@ def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors:
             auto_gen_cmd(
                 cmd + [algorithm], f"{cmd_name}_{algorithm}", output_dir, log_errors
             )
+        return
 
     # Since Python identifiers can't start with numbers we need to rename 5tt*
     # with fivetissuetype*
