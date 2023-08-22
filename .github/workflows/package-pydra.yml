@@ -66,6 +66,8 @@ jobs:
         with:
           name: Bin
           path: bin
+      - name: Set execute perms on bin
+        run: chmod +x ./bin/*
       - name: Download shared lib
         uses: actions/download-artifact@v2
         with:
