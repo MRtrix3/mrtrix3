@@ -96,6 +96,6 @@ if __name__ == "__main__":
         [
             str(script_dir.parent / "bin"),
             str(script_dir / "src" / "pydra" / "tasks" / "mrtrix3" / "latest"),
-            "--log-errors",
+            "--raise-errors",
         ]
     )
