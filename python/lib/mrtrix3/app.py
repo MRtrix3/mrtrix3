@@ -13,7 +13,7 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time
+import argparse, inspect, math, os, random, shlex, shutil, signal, string, subprocess, sys, textwrap, time, re
 from mrtrix3 import ANSI, CONFIG, MRtrixError, setup_ansi
 from mrtrix3 import utils # Needed at global level
 from ._version import __version__
@@ -143,6 +143,9 @@ def _execute(module): #pylint: disable=unused-variable
     sys.exit(0)
   elif sys.argv[-1] == '__print_usage_rst__':
     CMDLINE.print_usage_rst()
+    sys.exit(0)
+  elif sys.argv[-1] == '__print_usage_pydra__':
+    CMDLINE.print_usage_pydra()
     sys.exit(0)
 
   # Do the main command-line input parsing
@@ -1092,6 +1095,138 @@ class Parser(argparse.ArgumentParser):
     if self._subparsers:
       for alg in self._subparsers._group_actions[0].choices:
         subprocess.call ([ sys.executable, os.path.realpath(sys.argv[0]), alg, '__print_usage_rst__' ])
+
+
+  def print_usage_pydra(self):
+
+    import typing as ty
+
+    class MultiInputObj(ty.Generic[ty.T]):
+      pass
+
+
+    def get_arg_metadata(arg):
+      metadata = {
+        "help_string": arg.help,
+      }
+      if arg.choices:
+        metadata["allowed_values"] = arg.choices
+      if arg.required:
+        metadata["mandatory"] = True
+      return metadata
+
+    inputs = []
+    input_names = [a.dest for a in self._positionals._group_actions]
+    output_names = []
+    for pos, arg in enumerate(self._positionals._group_actions):
+      metadata = get_arg_metadata(arg)
+      metadata["position"] = pos
+      metadata["argstr"] = ""
+      if arg.type:
+        type_ = arg.type
+      elif arg.dest == "input":
+        type_ = "#FileSet#"
+      elif arg.dest == "output":
+        type_ = "#Path#"
+        output_names.append(arg.dest)
+      else:
+        type_ = ty.Any
+      if arg.dest == "output" and "input" in input_names:
+        metadata["output_file_template"] = "output_{input}"
+        metadata.pop("mandatory", None)
+      inputs.append(
+        (
+          arg.dest,
+          type_,
+          metadata,
+        )
+      )
+    for group in reversed(self._action_groups):
+      for option in group._group_actions:
+        if option.dest in input_names:
+          continue
+        if isinstance(option, argparse._StoreTrueAction):
+          type_ = "#bool#"
+        else:
+          type_ = arg.type if arg.type else ty.Any
+        if isinstance(option, argparse._AppendAction):
+          type_ = f"#specs.MultiInputObj[{type_}]#"
+        metadata = get_arg_metadata(option)
+        metadata["argstr"] = "-" + option.dest
+        inputs.append(
+          (
+            option.dest,
+            type_,
+            metadata,
+          )
+        )
+    # Replace # escapes
+    inputs_str = re.sub(r"'#([a-zA-Z0-9\._\[\]]+)#'", r"\1", str(inputs))
+
+    outputs = []
+    for arg in self._positionals._group_actions:
+      if arg.dest in output_names:
+        metadata = get_arg_metadata(arg)
+        if arg.type:
+          type_ = arg.type
+        else:
+          type_ = "#FileSet#"
+        outputs.append((
+            (
+              arg.dest,
+              type_,
+              metadata,
+            )
+          )
+        )
+    outputs_str = re.sub(r"'#([a-zA-Z0-9_\[\]]+)#'", r"\1", str(outputs))
+
+    text = (
+        "import typing\n"
+        "from pathlib import Path  # noqa: F401\n"
+        "from fileformats.core import FileSet  # noqa: F401\n"
+        "from fileformats.generic import File, Directory  # noqa: F401\n"
+        "from fileformats.medimage import MrtrixTrack  # noqa: F401\n"
+        "from pydra import ShellCommandTask \n"
+        "from pydra.engine import specs\n"
+        "from pydra.tasks.mrtrix3.fileformats import ImageIn, ImageOut  # noqa: F401\n"
+    )
+
+    text += f"input_fields = {inputs_str}\n"
+    text += f"{self.prog}_input_spec = specs.SpecInfo(name='Input', fields=input_fields, bases=(specs.ShellSpec,))\n\n"
+    text += f"output_fields = {outputs_str}\n"
+    text += f"{self.prog}_output_spec = specs.SpecInfo(name='Output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n"
+    text += f"class {self.prog}(ShellCommandTask):\n"
+    indent = "    "
+    text += indent + "\"\"\"\n"
+    text += indent + "References\n"
+    text += indent + "----------\n\n"
+    for ref in self._citation_list:
+      ref_text = indent + "* "
+      if ref[0]:
+        ref_text += ref[0] + ': '
+      ref_text += ref[1]
+      text += ref_text + '\n\n'
+    text += indent + _MRTRIX3_CORE_REFERENCE + '\n\n'
+    text += indent + '--------------\n\n\n\n'
+    text += indent + '**Author:** ' + self._author + '\n\n'
+    text += indent + '**Copyright:** ' + self._copyright + '\n\n'
+    text += indent + "\"\"\"\n"
+    text += f"    input_spec = {self.prog}_input_spec\n"
+    text += f"    output_spec = {self.prog}_output_spec\n"
+    text += f"    executable='{self.prog}'\n\n"
+
+    try:
+      import black
+    except ImportError:
+      pass
+    else:
+      text = black.format_file_contents(
+          text, fast=False, mode=black.FileMode()
+      )
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
 
   def print_version(self):
     text = '== ' + self.prog + ' ' + (self._git_version if self._is_project else __version__) + ' ==\n'
