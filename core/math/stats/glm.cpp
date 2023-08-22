@@ -190,7 +190,7 @@ namespace MR
         vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
         {
           if (hypothesis.is_F())
-            return vector_type::Constant (measurements.rows(), NaN);
+            return vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::quiet_NaN());
           else
             return hypothesis.matrix() * solve_betas (measurements, design);
         }
@@ -248,7 +248,7 @@ namespace MR
         vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
         {
           if (hypothesis.is_F())
-            return vector_type::Constant (measurements.cols(), NaN);
+            return vector_type::Constant (measurements.cols(), std::numeric_limits<default_type>::quiet_NaN());
           return abs_effect_size (measurements, design, hypothesis).array() / stdev (measurements, design).array().col(0);
         }
 
@@ -293,7 +293,7 @@ namespace MR
           abs_effect_size.resize (measurements.cols(), hypotheses.size());
           for (index_type ic = 0; ic != hypotheses.size(); ++ic) {
             if (hypotheses[ic].is_F()) {
-              abs_effect_size.col (ic).fill (NaN);
+              abs_effect_size.col (ic).fill (std::numeric_limits<default_type>::quiet_NaN());
             } else {
               abs_effect_size.col (ic) = (hypotheses[ic].matrix() * betas).row (0);
             }
@@ -321,7 +321,7 @@ namespace MR
             ++*progress;
 #endif
           if (variance_groups.size())
-            std_effect_size = matrix_type::Constant (measurements.cols(), hypotheses.size(), NaN);
+            std_effect_size = matrix_type::Constant (measurements.cols(), hypotheses.size(), std::numeric_limits<default_type>::quiet_NaN());
           else
             std_effect_size = abs_effect_size.array().colwise() / stdev.transpose().array().col(0);
 #ifdef GLM_ALL_STATS_DEBUG
@@ -471,7 +471,7 @@ namespace MR
                 local_stdev = matrix_type::Zero (num_vgs, 1);
                 for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
                   if (hypotheses[ih].is_F())
-                    local_abs_effect_size (0, ih) = local_std_effect_size (0, ih) = NaN;
+                    local_abs_effect_size (0, ih) = local_std_effect_size (0, ih) = std::numeric_limits<default_type>::quiet_NaN();
                 }
               }
           };
@@ -608,27 +608,49 @@ namespace MR
 
         TestFixedHomoscedastic::TestFixedHomoscedastic (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
             TestBase (measurements, design, hypotheses),
+#ifdef NDEBUG
             Sy (measurements.rows(), measurements.cols()),
             lambdas (design.cols(), measurements.cols()),
             residuals (measurements.rows(), measurements.cols()),
             sse (measurements.cols())
+#else
+            Sy (matrix_type::Constant (measurements.rows(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (design.cols(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            residuals (matrix_type::Constant (measurements.rows(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            sse (vector_type::Constant (measurements.cols(), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
         {
           shared.reset (new Shared (measurements, design, hypotheses));
           for (index_type ih = 0; ih != hypotheses.size(); ++ih)
+#ifdef NDEBUG
             betas.emplace_back (matrix_type (hypotheses[ih].matrix().rows(), 1));
+#else
+            betas.emplace_back (matrix_type::Constant (hypotheses[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+#endif
         }
 
 
 
         TestFixedHomoscedastic::TestFixedHomoscedastic (const TestFixedHomoscedastic& that) :
             TestBase (that),
+#ifdef NDEBUG
             Sy (num_inputs(), num_elements()),
             lambdas (num_factors(), num_elements()),
             residuals (num_inputs(), num_elements()),
             sse (num_elements())
+#else
+            Sy (matrix_type::Constant (num_inputs(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (num_factors(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
+            residuals (matrix_type::Constant (num_inputs(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
+            sse (vector_type::Constant (num_elements(), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
         {
           for (index_type ih = 0; ih != num_hypotheses(); ++ih)
+#ifdef NDEBUG
             betas.emplace_back (matrix_type (c[ih].matrix().rows(), 1));
+#else
+            betas.emplace_back (matrix_type::Constant (c[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+#endif
         }
 
 
@@ -761,27 +783,50 @@ namespace MR
                                                             const vector<Hypothesis>& hypotheses,
                                                             const index_array_type& variance_groups) :
             TestBase (measurements, design, hypotheses),
+#ifdef NDEBUG
             Sy (measurements.rows(), measurements.cols()),
             lambdas (design.cols(), measurements.cols()),
             sq_residuals (measurements.rows(), measurements.cols()),
             W (measurements.rows())
+
+#else
+            Sy (matrix_type::Constant (measurements.rows(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (design.cols(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            sq_residuals (decltype(sq_residuals)::Constant (measurements.rows(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            W (decltype(W)::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
         {
           shared.reset (new Shared (measurements, design, hypotheses, variance_groups));
           // Require shared to have been constructed first
+#ifdef NDEBUG
           sse_per_vg.resize (num_variance_groups(), measurements.cols());
           Wterms.resize (num_variance_groups(), measurements.cols());
+#else
+          sse_per_vg = decltype(sse_per_vg)::Constant (num_variance_groups(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN());
+          Wterms = decltype(Wterms)::Constant (num_variance_groups(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN());
+#endif
         }
 
 
 
         TestFixedHeteroscedastic::TestFixedHeteroscedastic (const TestFixedHeteroscedastic& that) :
             TestBase (that),
+#ifdef NDEBUG
             Sy (num_inputs(), num_elements()),
             lambdas (num_factors(), num_elements()),
             sq_residuals (num_inputs(), num_elements()),
             sse_per_vg (num_variance_groups(), num_elements()),
             Wterms (num_variance_groups(), num_elements()),
-            W (num_inputs()) { }
+            W (num_inputs())
+#else
+            Sy (matrix_type::Constant (num_inputs(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (num_factors(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
+            sq_residuals (decltype(sq_residuals)::Constant (num_inputs(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
+            sse_per_vg (decltype(sse_per_vg)::Constant (num_variance_groups(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
+            Wterms (decltype(Wterms)::Constant (num_variance_groups(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
+            W (decltype(W)::Constant (num_inputs(), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
+        { }
 
 
 
@@ -916,6 +961,7 @@ namespace MR
                                             const vector<Hypothesis>& hypotheses,
                                             const vector<CohortDataImport>& importers) :
             TestBase (measurements, design, hypotheses),
+#ifdef NDEBUG
             dof (measurements.cols(), hypotheses.size()),
             extra_column_data (measurements.rows(), importers.size()),
             element_mask (measurements.rows()),
@@ -927,12 +973,28 @@ namespace MR
             Rm (measurements.rows(), measurements.rows()),
             y_masked (measurements.rows()),
             Sy (measurements.rows()),
-            lambda (design.cols() + importers.size()) { }
+            lambda (design.cols() + importers.size())
+#else
+            dof (matrix_type::Constant (measurements.cols(), hypotheses.size(), std::numeric_limits<default_type>::signaling_NaN())),
+            extra_column_data (matrix_type::Constant (measurements.rows(), importers.size(), std::numeric_limits<default_type>::signaling_NaN())),
+            element_mask (measurements.rows()),
+            permuted_mask (measurements.rows()),
+            intermediate_shuffling_matrix (matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            shuffling_matrix_masked (matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            Mfull_masked (matrix_type::Constant (measurements.rows(), design.cols() + importers.size(), std::numeric_limits<default_type>::signaling_NaN())),
+            pinvMfull_masked (matrix_type::Constant (design.cols() + importers.size(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            Rm (matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            y_masked (vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            Sy (vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            lambda (vector_type::Constant (design.cols() + importers.size(), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
+        { }
 
 
 
         TestVariableBase::TestVariableBase (const TestVariableBase& that) :
             TestBase (that),
+#ifdef NDEBUG
             dof (that.dof.rows(), that.dof.cols()),
             extra_column_data (that.extra_column_data.rows(), that.extra_column_data.cols()),
             element_mask (that.element_mask.size()),
@@ -944,7 +1006,22 @@ namespace MR
             Rm (that.Rm.rows(), that.Rm.cols()),
             y_masked (that.y_masked.size()),
             Sy (that.Sy.size()),
-            lambda (that.lambda.size()) { }
+            lambda (that.lambda.size())
+#else
+            dof (matrix_type::Constant (that.dof.rows(), that.dof.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            extra_column_data (matrix_type::Constant (that.extra_column_data.rows(), that.extra_column_data.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            element_mask (that.element_mask.size()),
+            permuted_mask (that.permuted_mask.size()),
+            intermediate_shuffling_matrix (matrix_type::Constant (that.intermediate_shuffling_matrix.rows(), that.intermediate_shuffling_matrix.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            shuffling_matrix_masked (matrix_type::Constant (that.shuffling_matrix_masked.rows(), that.shuffling_matrix_masked.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            Mfull_masked (matrix_type::Constant (that.Mfull_masked.rows(), that.Mfull_masked.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            pinvMfull_masked (matrix_type::Constant (that.pinvMfull_masked.rows(), that.pinvMfull_masked.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            Rm (matrix_type::Constant (that.Rm.rows(), that.Rm.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            y_masked (vector_type::Constant (that.y_masked.size(), std::numeric_limits<default_type>::signaling_NaN())),
+            Sy (vector_type::Constant (that.Sy.size(), std::numeric_limits<default_type>::signaling_NaN())),
+            lambda (vector_type::Constant (that.lambda.size(), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
+        { }
 
 
 
@@ -1007,6 +1084,10 @@ namespace MR
             assert (permuted_mask.count() == finite_count);
             assert (Mfull_masked.topRows (finite_count).allFinite());
             assert (y_masked.head (finite_count).allFinite());
+#ifndef NDEBUG
+            Mfull_masked.bottomRows(num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+            y_masked.tail (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
             // Only after we've reduced the design matrix do we now reduce the shuffling matrix
             // Step 1: Remove rows that contain non-zero entries in columns to be removed
             out_index = 0;
@@ -1015,6 +1096,9 @@ namespace MR
                 intermediate_shuffling_matrix.row (out_index++) = shuffling_matrix.row (in_index);
             }
             assert (out_index == finite_count);
+#ifndef NDEBUG
+            intermediate_shuffling_matrix.bottomRows (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
             // Step 2: Remove columns
             out_index = 0;
             for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
@@ -1022,6 +1106,9 @@ namespace MR
                 shuffling_matrix_masked.col (out_index++) = intermediate_shuffling_matrix.col (in_index);
             }
             assert (out_index == finite_count);
+#ifndef NDEBUG
+            shuffling_matrix_masked.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 
           }
         }
@@ -1059,8 +1146,13 @@ namespace MR
         {
           shared.reset (new Shared(importers, nans_in_data, nans_in_columns));
           for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
+#ifdef NDEBUG
             XtX.emplace_back (hypotheses[ih].matrix().rows(), hypotheses[ih].matrix().rows());
             beta.emplace_back (hypotheses[ih].matrix().rows(), 1);
+#else
+            XtX.emplace_back (matrix_type::Constant (hypotheses[ih].matrix().rows(), hypotheses[ih].matrix().rows(), std::numeric_limits<default_type>::signaling_NaN()));
+            beta.emplace_back (matrix_type::Constant (hypotheses[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+#endif
           }
         }
 
@@ -1070,8 +1162,13 @@ namespace MR
             TestVariableBase (that)
         {
           for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
+#ifdef NDEBUG
             XtX.emplace_back (c[ih].matrix().rows(), c[ih].matrix().rows());
             beta.emplace_back (c[ih].matrix().rows(), 1);
+#else
+            XtX.emplace_back (matrix_type::Constant (c[ih].matrix().rows(), c[ih].matrix().rows(), std::numeric_limits<default_type>::signaling_NaN()));
+            beta.emplace_back (matrix_type::Constant (c[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+#endif
           }
         }
 
@@ -1136,7 +1233,7 @@ namespace MR
             if (finite_count < std::min (num_inputs(), 2 * num_factors())) {
               stats.row (ie).setZero();
               zstats.row (ie).setZero();
-              dof.row (ie).fill (NaN);
+              dof.row (ie).fill (std::numeric_limits<default_type>::quiet_NaN());
             } else {
               apply_mask (ie, shuffling_matrix);
               assert (Mfull_masked.topRows (finite_count).allFinite());
@@ -1153,11 +1250,18 @@ namespace MR
               if (!std::isfinite (condition_number) || condition_number > 1e5) {
                 stats.row (ie).fill (0.0);
                 zstats.row (ie).fill (0.0);
-                dof.row (ie).fill (NaN);
+                dof.row (ie).fill (std::numeric_limits<default_type>::quiet_NaN());
               } else {
 
-                pinvMfull_masked.leftCols (finite_count) = Math::pinv (Mfull_masked.topRows (finite_count));
+                pinvMfull_masked.leftCols (finite_count).noalias() = Math::pinv (Mfull_masked.topRows (finite_count));
+#ifndef NDEBUG
+                pinvMfull_masked.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
                 Rm.topLeftCorner (finite_count, finite_count).noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked.topRows (finite_count) * pinvMfull_masked.leftCols (finite_count));
+#ifndef NDEBUG
+                Rm.bottomRows (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+                Rm.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 
                 // We now have our permutation (shuffling) matrix and design matrix prepared,
                 //   and can commence regressing the partitioned model of each hypothesis
@@ -1256,29 +1360,52 @@ namespace MR
                                                                   const bool nans_in_data,
                                                                   const bool nans_in_columns) :
             TestVariableBase (measurements, design, hypotheses, importers),
+#ifdef NDEBUG
             W (measurements.rows()),
             sq_residuals (measurements.rows()),
+#else
+            W (vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            sq_residuals (vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+#endif
             VG_masked (measurements.rows())
         {
           shared.reset (new Shared (hypotheses, variance_groups, importers, nans_in_data, nans_in_columns));
-          // Require shared to have bene initialised
+          // Require shared to have been initialised
+#ifdef NDEBUG
           sse_per_vg.resize (num_variance_groups());
           Rnn_sums.resize (num_variance_groups());
           Wterms.resize (num_variance_groups());
           VG_counts.resize (num_variance_groups());
+#else
+          sse_per_vg = vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN());
+          Rnn_sums = vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN());
+          Wterms = vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN());
+          VG_counts = index_array_type::Zero (num_variance_groups());
+#endif
         }
 
 
 
         TestVariableHeteroscedastic::TestVariableHeteroscedastic (const TestVariableHeteroscedastic& that) :
             TestVariableBase (that),
+#ifdef NDEBUG
             W (num_inputs()),
             sq_residuals (num_inputs()),
             sse_per_vg (num_variance_groups()),
             Rnn_sums (num_variance_groups()),
             Wterms (num_variance_groups()),
             VG_masked (num_inputs()),
-            VG_counts (num_variance_groups()) { }
+            VG_counts (num_variance_groups())
+#else
+            W (vector_type::Constant (num_inputs(), std::numeric_limits<default_type>::signaling_NaN())),
+            sq_residuals (vector_type::Constant (num_inputs(), std::numeric_limits<default_type>::signaling_NaN())),
+            sse_per_vg (vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN())),
+            Rnn_sums (vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN())),
+            Wterms (vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN())),
+            VG_masked (num_inputs()),
+            VG_counts (index_array_type::Zero (num_variance_groups()))
+#endif
+        { }
 
 
 
@@ -1329,15 +1456,28 @@ namespace MR
                   zstats.row (ie).fill (0.0);
                 } else {
                   pinvMfull_masked.leftCols (finite_count) = Math::pinv (Mfull_masked.topRows (finite_count));
+#ifndef NDEBUG
+                  pinvMfull_masked.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
                   Rm.topLeftCorner (finite_count, finite_count).noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked.topRows (finite_count) * pinvMfull_masked.leftCols (finite_count));
+#ifndef NDEBUG
+                  Rm.bottomRows (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+                  Rm.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
                   for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
                     const auto partition = c[ih].partition (Mfull_masked.topRows (finite_count));
 
                     // At this point the implementation diverges from the TestVariableHomoscedastic case,
                     //   more closely mimicing the TestFixedHeteroscedastic case
                     Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count) * partition.Rz * y_masked.head (finite_count).matrix();
+#ifndef NDEBUG
+                    Sy.tail (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
                     lambda = pinvMfull_masked.leftCols (finite_count) * Sy.head (finite_count).matrix();
                     sq_residuals.head (finite_count) = (Rm.topLeftCorner (finite_count, finite_count) * Sy.head (finite_count).matrix()).array().square();
+#ifndef NDEBUG
+                    sq_residuals.tail (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
                     sse_per_vg.setZero();
                     Rnn_sums.setZero();
                     for (index_type input = 0; input != finite_count; ++input) {
