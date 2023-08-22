@@ -33,7 +33,11 @@ OUTPUT_DIR the output directory to write the generated files to
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
 )
 @click.argument("output_dir", type=click.Path(exists=False, path_type=Path))
-def auto_gen_mrtrix3_pydra(cmd_dir: Path, output_dir: Path):
+@click.option(
+    "--log-errors/--raise-errors", type=bool,
+    help="whether to log errors (and skip to the next tool) instead of raising them"
+)
+def auto_gen_mrtrix3_pydra(cmd_dir: Path, output_dir: Path, log_errors: bool):
 
     env = os.environ.copy()
     env["PATH"] = str(cmd_dir) + ":" + env["PATH"]
@@ -46,8 +50,11 @@ def auto_gen_mrtrix3_pydra(cmd_dir: Path, output_dir: Path):
                 [cmd_name, "__print_usage_pydra__"], env=env
             ).decode("utf-8")
         except sp.CalledProcessError:
-            logger.error("%s", cmd_name)
-            continue
+            if log_errors:
+                logger.error("Could not generate interface for '%s'", cmd_name)
+                continue
+            else:
+                raise
 
         if cmd_name.startswith("5tt"):
             code_str == code_str.replace(
@@ -62,7 +69,10 @@ def auto_gen_mrtrix3_pydra(cmd_dir: Path, output_dir: Path):
         except black.report.NothingChanged:
             pass
         except black.parsing.InvalidInput:
-            logger.warning("%s", cmd_name)
+            if log_errors:
+                logger.error("Could not parse generated interface for '%s'", cmd_name)
+            else:
+                raise
         output_dir.mkdir(exist_ok=True)
         with open(output_dir / (cmd_name + ".py"), "w") as f:
             f.write(code_str)
@@ -78,5 +88,6 @@ if __name__ == "__main__":
         [
             str(script_dir.parent / "bin"),
             str(script_dir / "src" / "pydra" / "tasks" / "mrtrix3" / "latest"),
+            "--log-errors",
         ]
     )
