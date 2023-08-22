@@ -976,7 +976,6 @@ std::string restructured_text_usage() {
         if (std::find (group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end())
           group_names.push_back (OPTIONS[i].name);
       }
-      std::cout << "HERE 1125\n";
       for (size_t i = 0; i < group_names.size(); ++i) {
         size_t n = i;
         while (OPTIONS[n].name != group_names[i])
@@ -984,10 +983,8 @@ std::string restructured_text_usage() {
         if (OPTIONS[n].name != std::string("OPTIONS"))
           s += std::string("\n") + base_indent + "# " + OPTIONS[n].name + " Option Group\n";
         while (n < OPTIONS.size()) {
-          std::cout << "Options size: " << OPTIONS[n].size() << "\n";
           if (OPTIONS[n].name == group_names[i]) {
             for (size_t o = 0; o < OPTIONS[n].size(); ++o) {
-              std::cout << "o : " << o << "\n";
               s += format_option (OPTIONS[n][o]);
             }
           }

@@ -10,17 +10,22 @@ logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger("pydra-auto-gen")
 
 IGNORE = [
-    "blend", "convert_bruker", "gen_scheme", "notfound",
+    "blend",
+    "convert_bruker",
+    "gen_scheme",
+    "notfound",
 ]
 
 
-@click.command(help="""Loops through all MRtrix commands to generate Pydra
+@click.command(
+    help="""Loops through all MRtrix commands to generate Pydra
 (https://pydra.readthedocs.io) task interfaces for them
 
 CMD_DIR the command directory to list the commands from
 
 OUTPUT_DIR the output directory to write the generated files to
-""")
+"""
+)
 @click.argument("cmd_dir", type=click.Path(exists=True, file_okay=False, dir_okay=True))
 @click.argument("output_dir", type=click.Path(exists=False, path_type=Path))
 def auto_gen_mrtrix3_pydra(cmd_dir, output_dir):
@@ -32,9 +37,16 @@ def auto_gen_mrtrix3_pydra(cmd_dir, output_dir):
         if cmd_name.startswith("_") or "." in cmd_name or cmd_name in IGNORE:
             continue
         try:
-            code_str = sp.check_output([cmd_name, "__print_usage_pydra__"], env=env).decode("utf-8")
+            code_str = sp.check_output(
+                [cmd_name, "__print_usage_pydra__"], env=env
+            ).decode("utf-8")
         except sp.CalledProcessError:
             logger.error("%s", cmd_name)
+
+        if cmd_name.startswith("5tt"):
+            code_str == code_str.replace("5tt_input_spec", "five_tissue_type_input_spec")
+            code_str == code_str.replace("5tt_put_spec", "five_tissue_type_input_spec")
+
         try:
             code_str = black.format_file_contents(
                 code_str, fast=False, mode=black.FileMode()
@@ -54,4 +66,9 @@ if __name__ == "__main__":
 
     script_dir = Path(__file__).parent
 
-    auto_gen_mrtrix3_pydra([str(script_dir.parent / "bin"), str(script_dir / "src" / "pydra" / "tasks" / "mrtrix3" / "latest")])
+    auto_gen_mrtrix3_pydra(
+        [
+            str(script_dir.parent / "bin"),
+            str(script_dir / "src" / "pydra" / "tasks" / "mrtrix3" / "latest"),
+        ]
+    )
