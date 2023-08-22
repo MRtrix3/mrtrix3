@@ -80,7 +80,7 @@ def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors:
     # with fivetissuetype*
     if cmd_name.startswith("5tt"):
         old_name = cmd_name
-        cmd_name = old_name.replace("5tt", "fivetissuetype")
+        cmd_name = escape_cmd_name(cmd_name)
         code_str = code_str.replace(f"class {old_name}", f"class {cmd_name}")
         code_str = code_str.replace(f"{old_name}_input_spec", f"{cmd_name}_input_spec")
         code_str = code_str.replace(f"{old_name}_output_spec", f"{cmd_name}_input_spec")
@@ -102,7 +102,7 @@ def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors:
 
 
 def auto_gen_test(cmd_name: str, output_dir: Path, log_errors: bool):
-
+    cmd_name = escape_cmd_name(cmd_name)
     tests_dir = output_dir / "tests"
     tests_dir.mkdir(exist_ok=True)
     module = import_module(cmd_name)
@@ -143,6 +143,10 @@ def test_{cmd_name}():
 
     with open(tests_dir / f"test_{cmd_name}.py", "w") as f:
         f.write(code_str)
+
+
+def escape_cmd_name(cmd_name: str) -> str:
+    return cmd_name.replace("5tt", "fivetissuetype")
 
 
 if __name__ == "__main__":
