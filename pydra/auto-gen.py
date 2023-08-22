@@ -5,9 +5,13 @@ import logging
 import click
 import black.report
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.WARNING)
 
 logger = logging.getLogger("pydra-auto-gen")
+
+IGNORE = [
+    "blend", "convert_bruker", "gen_scheme", "notfound",
+]
 
 
 @click.command(help="""Loops through all MRtrix commands to generate Pydra
@@ -25,7 +29,7 @@ def auto_gen_mrtrix3_pydra(cmd_dir, output_dir):
     env["PATH"] = str(cmd_dir) + ":" + env["PATH"]
 
     for cmd_name in sorted(os.listdir(cmd_dir)):
-        if cmd_name.startswith("_") or "." in cmd_name:
+        if cmd_name.startswith("_") or "." in cmd_name or cmd_name in IGNORE:
             continue
         try:
             code_str = sp.check_output([cmd_name, "__print_usage_pydra__"], env=env).decode("utf-8")
@@ -49,5 +53,5 @@ if __name__ == "__main__":
     from pathlib import Path
 
     script_dir = Path(__file__).parent
-    
+
     auto_gen_mrtrix3_pydra([str(script_dir.parent / "bin"), str(script_dir / "src" / "pydra" / "tasks" / "mrtrix3" / "latest")])
