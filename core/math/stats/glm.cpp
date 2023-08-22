@@ -1281,7 +1281,7 @@ namespace MR
                     //   the rest of this function should proceed similarly to the fixed
                     //   design matrix case
                     Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count) * partition.Rz * y_masked.head (finite_count).matrix();
-                    lambda = pinvMfull_masked * Sy.matrix();
+                    lambda = pinvMfull_masked.leftCols(finite_count) * Sy.head(finite_count).matrix();
                     beta[ih].noalias() = c[ih].matrix() * lambda.matrix();
 #ifdef GLM_TEST_DEBUG
                     VAR (Sy.size());
