@@ -64,6 +64,18 @@ packages = ["pydra"]
 include-only = ["pydra/tasks/mrtrix3"]
 
 [tool.black]
-line-length = 99
 target-version = ["py38"]
 exclude = "_version.py"
+
+[tool.codespell]
+ignore-words = ".codespell-ignorewords"
+
+[tool.flake8]
+doctests = true
+per-file-ignores = [
+    "__init__.py:F401"
+]
+max-line-length = 88
+select = "C,E,F,W,B,B950"
+extend-ignore = ['E203', 'E501', 'E129', 'W503']
+
