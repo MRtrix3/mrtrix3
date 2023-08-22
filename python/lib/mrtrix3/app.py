@@ -1144,7 +1144,7 @@ class Parser(argparse.ArgumentParser):
       if arg.type:
         type_ = parse_type(arg.type)
       elif arg.dest == "input":
-        type_ = "#FileSet#"
+        type_ = "#FsObject#"
       elif arg.dest == "output":
         type_ = "#Path#"
         output_names.append(arg.dest)
@@ -1189,7 +1189,7 @@ class Parser(argparse.ArgumentParser):
         if arg.type:
           type_ = arg.type
         else:
-          type_ = "#FileSet#"
+          type_ = "#FsObject#"
         outputs.append((
             (
               arg.dest,
@@ -1205,8 +1205,7 @@ class Parser(argparse.ArgumentParser):
     text = (
         "import typing\n"
         "from pathlib import Path  # noqa: F401\n"
-        "from fileformats.core import FileSet  # noqa: F401\n"
-        "from fileformats.generic import File, Directory  # noqa: F401\n"
+        "from fileformats.generic import FsObject, File, Directory  # noqa: F401\n"
         "from fileformats.medimage import MrtrixTrack  # noqa: F401\n"
         "from pydra.engine.task import ShellCommandTask \n"
         "from pydra.engine import specs\n"
@@ -1236,7 +1235,11 @@ class Parser(argparse.ArgumentParser):
     text += indent + "\"\"\"\n"
     text += f"    input_spec = {task_name}_input_spec\n"
     text += f"    output_spec = {task_name}_output_spec\n"
-    text += f"    executable='{self.prog}'\n\n"
+    if " " in self.prog:
+      executable = tuple(self.prog.split(" "))
+    else:
+      executable = self.prog
+    text += f"    executable={executable!r}\n\n"
 
     if HAVE_BLACK:
       try:
