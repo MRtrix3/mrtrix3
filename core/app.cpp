@@ -935,6 +935,16 @@ std::string restructured_text_usage() {
         return tmpl;
       };
 
+      auto format_output_templates = [&](const std::string& id, const Option& opt) {
+        if (opt.size() == 1)
+          return "\"" + format_output_template(id, opt[0].type) + "\"";
+        std::string tmpl = "(";
+        for (size_t i = 0; i < opt.size(); ++i)
+          tmpl += "\"" + format_output_template(id + MR::str(i), opt[i].type) + "\",";
+        tmpl += ")";
+        return tmpl;
+      };      
+
       auto format_option = [&](const Option& opt) {
         std::string f = base_indent + "(\n";
         // Print name of field
@@ -960,7 +970,7 @@ std::string restructured_text_usage() {
         // Print metadata fields
         f += md_indent + "\"argstr\": \"-" + opt.id + "\",\n";
         if (is_output_file) {
-          f += md_indent + "\"output_file_template\": \"" + format_output_template(escape_id(opt.id), opt[0].type) + "\",\n";
+          f += md_indent + "\"output_file_template\": " + format_output_templates(escape_id(opt.id), opt) + ",\n";
         }
         f += md_indent + "\"help_string\": \"\"\"" + opt.desc + "\"\"\",\n";
         if (!(opt.flags & Optional) && !is_output_file) {
