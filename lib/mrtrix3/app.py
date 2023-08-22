@@ -192,6 +192,15 @@ def _execute(module): #pylint: disable=unused-variable
   CMDLINE.print_citation_warning()
 
   return_code = 0
+
+  cli_parse_only = os.getenv("MRTRIX_CLI_PARSE_ONLY")
+  if cli_parse_only == "1":
+    warn(
+      "Quitting after parsing command-line arguments successfully because "
+      "environment variable 'MRTRIX_CLI_PARSE_ONLY' is set to '1'"
+    )
+    sys.exit(return_code)
+
   try:
     module.execute()
   except (run.MRtrixCmdError, run.MRtrixFnError) as exception:
