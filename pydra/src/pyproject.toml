@@ -1,16 +1,22 @@
 [build-system]
-requires = ["flit_scm"]
-build-backend = "flit_scm:buildapi"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
 [project]
 name = "pydra-mrtrix3"
-description = "Description for pydra-mrtrix3"
+description = "pydra-mrtrix3 contains Pydra task specifications for MRtrix3 tools"
 readme = "README.md"
 requires-python = ">=3.8"
-dependencies = ["pydra >=0.22"]
-license = {file = "LICENSE"}
-authors = [{name = "Nipype developers", email = "neuroimaging@python.org"}]
-maintainers = [{name = "Nipype developers", email = "neuroimaging@python.org"}]
+dependencies = [
+    "pydra >=0.22",
+    "fileformats-medimage >=0.3.4"]
+license = {file = "../../LICENCE.txt"}
+authors = [
+    {name = "Thomas G. Close", email = "tom.g.close@gmail.com"},
+]
+maintainers = [
+    {name = "Thomas G. Close", email = "tom.g.close@gmail.com"},
+]
 keywords = ["pydra"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
@@ -46,14 +52,16 @@ test = [
     "codecov",
 ]
 
-[tool.flit.module]
-name = "pydra.tasks.mrtrix3"
+[tool.hatch.version]
+source = "vcs"
+raw-options = { root = "../.." }
 
-[tool.flit.sdist]
-exclude = [".gitignore"]
+[tool.hatch.build.hooks.vcs]
+version-file = "pydra/tasks/mrtrix3/_version.py"
 
-[tool.setuptools_scm]
-write_to = "pydra/tasks/mrtrix3/_version.py"
+[tool.hatch.build.targets.wheel]
+packages = ["pydra"]
+include-only = ["pydra/tasks/mrtrix3"]
 
 [tool.black]
 line-length = 99
