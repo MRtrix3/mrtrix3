@@ -820,8 +820,7 @@ std::string restructured_text_usage() {
       s += "from pathlib import Path  # noqa: F401\n";
       s += "from fileformats.generic import File, Directory  # noqa: F401\n";
       s += "from fileformats.mrtrix3 import ImageIn, ImageOut, Tracks  # noqa: F401\n";
-      s += "from pydra import ShellCommandTask \n";
-      s += "from pydra.engine import specs\n";
+      s += "from pydra.engine import specs, ShellCommandTask\n";
 
       auto escape_id = [&](const std::string& id) {
         std::string escaped = id;
@@ -963,8 +962,10 @@ std::string restructured_text_usage() {
             || opt[0].type == ArgDirectoryOut
           )
         ) {
-          is_output_file = true;
-          type_string = "ty.Union[" + type_string + ", bool]";
+          bool is_multi = type_string.length() > 19 && type_string.substr(0, 19) == "specs.MultiInputObj";
+          if (!is_multi) {
+            type_string = "ty.Union[" + type_string + ", bool]";
+          }
         }
         // Print type
         f += indent + type_string + ",\n";

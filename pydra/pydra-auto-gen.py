@@ -11,7 +11,7 @@ import click
 import black.report
 import black.parsing
 from fileformats.core import FileSet
-from fileformats.mrtrix3 import ImageIn, Tracks
+from fileformats.mrtrix3 import ImageFormat, ImageIn, ImageOut, Tracks
 from pydra.engine.helpers import make_klass
 from pydra.engine import specs
 
@@ -36,6 +36,8 @@ IGNORE = [
 CMD_DIR the command directory to list the commands from
 
 OUTPUT_DIR the output directory to write the generated files to
+
+MRTRIX_VERSION the version of MRTrix the commands are generated for
 """
 )
 @click.argument(
@@ -43,40 +45,79 @@ OUTPUT_DIR the output directory to write the generated files to
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
 )
 @click.argument("output_dir", type=click.Path(exists=False, path_type=Path))
+@click.argument("mrtrix_version", type=str)
 @click.option(
     "--log-errors/--raise-errors",
     type=bool,
     help="whether to log errors (and skip to the next tool) instead of raising them",
 )
-def auto_gen_mrtrix3_pydra(cmd_dir: Path, output_dir: Path, log_errors: bool):
+@click.option(
+    "--latest/--not-latest",
+    type=bool,
+    default=False,
+    help="whether to write 'latest' module",
+)
+def auto_gen_mrtrix3_pydra(
+    cmd_dir: Path, mrtrix_version: str, output_dir: Path, log_errors: bool, latest: bool
+):
+    pkg_version = "v" + "_".join(mrtrix_version.split(".")[:2])
+
     cmd_dir = cmd_dir.absolute()
 
     # Insert output dir to path so we can load the generated tasks in order to
     # generate the tests
     sys.path.insert(0, str(output_dir))
 
+    cmds = []
+
     for cmd_name in sorted(os.listdir(cmd_dir)):
         if cmd_name.startswith("_") or "." in cmd_name or cmd_name in IGNORE:
             continue
         cmd = [str(cmd_dir / cmd_name)]
-        auto_gen_cmd(cmd, cmd_name, output_dir, log_errors)
+        cmds.extend(auto_gen_cmd(cmd, cmd_name, output_dir, log_errors, pkg_version))
 
-def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors: bool):
+    # Write init
+    init_path = output_dir / "pydra" / "tasks" / "mrtrix3" / pkg_version / "__init__.py"
+    imports = "\n".join(f"from .{c}_ import {c}" for c in cmds)
+    init_path.write_text(f"# Auto-generated, do not edit\n\n{imports}\n")
+
+    if latest:
+        latest_path = output_dir / "pydra" / "tasks" / "mrtrix3" / "latest.py"
+        latest_path.write_text(
+            f"# Auto-generated, do not edit\n\nfrom .{pkg_version} import *\n"
+        )
+        print(f"Generated pydra.tasks.mrtrix3.{pkg_version} package")
+
+
+def auto_gen_cmd(
+    cmd: ty.List[str],
+    cmd_name: str,
+    output_dir: Path,
+    log_errors: bool,
+    pkg_version: str,
+) -> ty.List[str]:
     try:
         code_str = sp.check_output(cmd + ["__print_usage_pydra__"]).decode("utf-8")
     except sp.CalledProcessError:
         if log_errors:
             logger.error("Could not generate interface for '%s'", cmd_name)
-            return
+            return []
         else:
             raise
 
     if re.match(r"(\w+,)+\w+", code_str):
+        sub_cmds = []
         for algorithm in code_str.split(","):
-            auto_gen_cmd(
-                cmd + [algorithm], f"{cmd_name}_{algorithm}", output_dir, log_errors
+            sub_cmds.extend(
+                auto_gen_cmd(
+                    cmd + [algorithm],
+                    f"{cmd_name}_{algorithm}",
+                    output_dir,
+                    log_errors,
+                    pkg_version,
+                )
             )
-        return
+        return sub_cmds
 
     # Since Python identifiers can't start with numbers we need to rename 5tt*
     # with fivett*
@@ -85,7 +126,9 @@ def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors:
         cmd_name = escape_cmd_name(cmd_name)
         code_str = code_str.replace(f"class {old_name}", f"class {cmd_name}")
         code_str = code_str.replace(f"{old_name}_input_spec", f"{cmd_name}_input_spec")
-        code_str = code_str.replace(f"{old_name}_output_spec", f"{cmd_name}_output_spec")
+        code_str = code_str.replace(
+            f"{old_name}_output_spec", f"{cmd_name}_output_spec"
+        )
         code_str = re.sub(r"(?<!\w)5tt_in(?!\w)", "in_5tt", code_str)
     try:
         code_str = black.format_file_contents(
@@ -98,24 +141,31 @@ def auto_gen_cmd(cmd: ty.List[str], cmd_name: str, output_dir: Path, log_errors:
             logger.error("Could not parse generated interface for '%s'", cmd_name)
         else:
             raise
-    output_dir.mkdir(exist_ok=True)
-    with open(output_dir / (cmd_name + ".py"), "w") as f:
+    output_path = (
+        output_dir / "pydra" / "tasks" / "mrtrix3" / pkg_version / (cmd_name + "_.py")
+    )
+    output_path.parent.mkdir(exist_ok=True, parents=True)
+    with open(output_path, "w") as f:
         f.write(code_str)
     logger.info("%s", cmd_name)
-    auto_gen_test(cmd_name, output_dir, log_errors)
+    auto_gen_test(cmd_name, output_dir, log_errors, pkg_version)
+    return [cmd_name]
 
 
-def auto_gen_test(cmd_name: str, output_dir: Path, log_errors: bool):
-    tests_dir = output_dir / "tests"
+def auto_gen_test(cmd_name: str, output_dir: Path, log_errors: bool, pkg_version: str):
+    tests_dir = output_dir / "pydra" / "tasks" / "mrtrix3" / pkg_version / "tests"
     tests_dir.mkdir(exist_ok=True)
-    module = import_module(cmd_name)
+    module = import_module(f"pydra.tasks.mrtrix3.{pkg_version}.{cmd_name}_")
     interface = getattr(module, cmd_name)
     task = interface()
 
-    code_str = f"""# Auto-generated tests for {cmd_name}
+    code_str = f"""# Auto-generated test for {cmd_name}
+
 from fileformats.generic import File  # noqa
+from fileformats.medimage import NiftiGz  # noqa
 from fileformats.mrtrix3 import ImageIn, Tracks  # noqa
-from .{cmd_name} import {cmd_name}
+from pydra.tasks.mrtrix3.{pkg_version} import {cmd_name}
+
 
 def test_{cmd_name}(tmp_path):
 
@@ -134,11 +184,11 @@ def test_{cmd_name}(tmp_path):
             elif type_ is Tracks:
                 value = "Tracks.sample()"
             elif type_ is int:
-                value = "99999"
+                value = "1"
             elif type_ is float:
-                value = "0.99999"
+                value = "1.0"
             elif type_ is str:
-                value = '"sample-string"'
+                value = '"a-string"'
             elif type_ is bool:
                 value = "True"
             elif type_ is Path:
@@ -148,19 +198,23 @@ def test_{cmd_name}(tmp_path):
                 except AttributeError:
                     pass
                 else:
-                    try:
-                        ext = output_field.type.strext
-                    except AttributeError:
-                        pass
-                value = f"tmp_path / {field.name}{ext}"
-            elif ty.get_origin(type_) is specs.MultiInputObj:
+                    output_type = output_field.type
+                    if ty.get_origin(output_type) is specs.MultiInputObj:
+                        output_type = ty.get_args(output_type)[0]
+                    if ty.get_origin(output_type) is tuple:
+                        output_type = ty.get_args(output_type)[0]
+                    if output_type is ImageOut:
+                        output_type = ImageFormat
+                    ext = output_type.strext
+                value = f'tmp_path / "{field.name}{ext}"'
+            elif ty.get_origin(type_) in (specs.MultiInputObj, ty.Union):
                 value = get_value(ty.get_args(type_)[0])
             elif ty.get_origin(type_) and issubclass(ty.get_origin(type_), ty.Sequence):
                 value = (
                     ty.get_origin(type_).__name__
-                    + "("
+                    + "(["
                     + ", ".join(get_value(a) for a in ty.get_args(type_))
-                    + ")"
+                    + "])"
                 )
             elif type_ is ty.Any or issubclass(type_, FileSet):
                 value = "File.sample()"
@@ -209,18 +263,13 @@ if __name__ == "__main__":
     mrtrix_version = sp.check_output(
         "git describe --tags --abbrev=0", cwd=script_dir, shell=True
     ).decode("utf-8")
-    pkg_version = "v" + "_".join(mrtrix_version.split(".")[:2])
 
     auto_gen_mrtrix3_pydra(
         [
             str(script_dir.parent / "bin"),
-            str(script_dir / "src" / "pydra" / "tasks" / "mrtrix3" / pkg_version),
+            str(script_dir / "src"),
+            mrtrix_version,
             "--raise-errors",
+            "--latest",
         ]
     )
-
-    latest = script_dir / "src" / "pydra" / "tasks" / "mrtrix3" / "latest.py"
-    latest.write_text(
-        f"# Auto-generated, do not edit\n\nfrom .{pkg_version} import *\n"
-    )
-    print(f"Generated pydra.tasks.mrtrix3.{pkg_version} package")
