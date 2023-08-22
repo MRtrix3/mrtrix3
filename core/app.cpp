@@ -802,13 +802,14 @@ std::string restructured_text_usage() {
 
       // Add import lines
       std::string s = std::string("import typing as ty \n");
+      s += "from pathlib import Path  # noqa: F401\n";
+      s += "from fileformats.generic import File, Directory  # noqa: F401\n";
+      s += "from fileformats.medimage import MrtrixTrack  # noqa: F401\n";
       s += "from pydra import ShellCommandTask \n";
       s += "from pydra.engine import specs\n";
-      s += "from fileformats.generic import File, Directory  # noqa\n";
-      s += "from fileformats.medimage import MrtrixTrack  # noqa\n";
-      s += "from pydra.tasks.mrtrix3.fileformats import ImageInput, ImageOutput  # noqa\n";
+      s += "from pydra.tasks.mrtrix3.fileformats import ImageIn, ImageOut  # noqa: F401\n";
 
-      auto format_type = [&](const ArgType& type) {
+      auto format_type = [&](const ArgType& type, bool for_output = false) {
         switch (type) {
           case Undefined:
             return "ty.Any";
@@ -823,17 +824,26 @@ std::string restructured_text_usage() {
           case ArgFileIn:
             return "File";
           case ArgFileOut:
-            return "File";
+            if (for_output)
+              return "File";
+            else
+              return "Path";
           case ArgDirectoryIn:
             return "Directory";
           case ArgDirectoryOut:
-            return "Directory";
+            if (for_output)
+              return "Directory";
+            else
+              return "Path";
           case Choice:
             return "str";
           case ImageIn:
-            return "ImageInput";
+            return "ImageIn";
           case ImageOut:
-            return "ImageOutput";
+            if (for_output)
+              return "ImageOut";
+            else
+              return "Path";
           case IntSeq:
             return "ty.List[int]";
           case FloatSeq:
@@ -844,7 +854,34 @@ std::string restructured_text_usage() {
             return "MrtrixTrack";
           case Various:
             return "ty.Any";
+          default:
+            assert(0);
         }
+      };
+
+      auto format_option_type = [&](const Option& opt, bool for_output = false) {
+        std::string f;
+        if (opt.flags & AllowMultiple) {
+          f += "specs.MultiInputObj[";
+        }
+        if (!opt.size()) {
+          f += "bool";
+        } else if (opt.size() == 1) {
+          f += format_type(opt[0].type, for_output);
+        } else {
+          f += "ty.Tuple[";
+          for (size_t a = 0; a < opt.size(); ++a) {
+            f += format_type(opt[0].type, for_output);
+            if (a != opt.size() - 1) {
+              f += ", ";
+            }
+          }
+          f += "]";
+        }
+        if (opt.flags & AllowMultiple) {
+          f += "]";
+        }
+        return f;
       };
       
       auto format_limits = [&](const Argument& arg) {
@@ -863,36 +900,25 @@ std::string restructured_text_usage() {
         std::string f = base_indent + "(\n";
         // Print name of field
         f += indent + "\"" + opt.id + "\",\n";
-        bool is_seq = false;
         // Print type
-        if (!opt.size()) {
-          f += indent + "bool";
-        } else if (opt.size() == 1) {
-          f += indent + format_type(opt[0].type);
-          if (opt[0].type == IntSeq || opt[0].type == FloatSeq)
-            is_seq = true;
-        } else {
-          f += indent + "ty.Tuple[";
-          for (size_t a = 0; a < opt.size(); ++a) {
-            f += format_type(opt[0].type);
-            if (a != opt.size() - 1) {
-              f += ", ";
-            }
-          }
-          f += "]";
-        }
-        f +=  + ",\n" + indent + "{\n";
+        f += indent + format_option_type(opt) + ",\n" + indent + "{\n";
         // Print metadata fields
         f += md_indent + "\"argstr\": \"-" + opt.id + "\",\n";
         f += md_indent + "\"help_string\": \"" + opt.desc + "\",\n";
-        if (opt.flags & AllowMultiple) {
-          f+= md_indent + "\"multiple\": True,\n";
-        }
         if (!(opt.flags & Optional)) {
-          f+= md_indent + "\"mandatory\": True,\n";
+          f += md_indent + "\"mandatory\": True,\n";
         }
-        if (is_seq) {
-          f+= md_indent + "\"sep\": \",\",\n";
+        if (
+          opt.size() == 1 && (
+            opt[0].type == ImageOut
+            || opt[0].type == ArgFileOut
+            || opt[0].type == ArgDirectoryOut
+          )
+        ) {
+            f += md_indent + "\"output_file_template\": \"" + opt.id + "\",\n";
+        }
+        if (opt.size() == 1 && (opt[0].type == IntSeq || opt[0].type == FloatSeq)) {
+          f += md_indent + "\"sep\": \",\",\n";
         }
         if (opt.size() == 1 and opt[0].limits.choices) {
           f += format_limits(opt[0]);
@@ -901,6 +927,17 @@ std::string restructured_text_usage() {
         return f;
       };
 
+      auto format_output_template = [&](const std::string& id, const ArgType& type) {
+        std::string template = id;
+        if (type == ImageOut) {
+          template += ".mif";
+        } else if (type == TracksOut) {
+          template += ".tck"
+        } else if (type == ArgFileOut) {
+          template += ".txt"
+        }
+        return template
+      };
 
       // Print out input spec
       s += "\n\ninput_fields = [\n\n" + base_indent + "# Arguments\n";
@@ -910,7 +947,14 @@ std::string restructured_text_usage() {
         // Print name of field
         s += indent + "\"" + ARGUMENTS[i].id + "\",\n";
         // Print type
-        s += indent + format_type(ARGUMENTS[i].type);
+        s += indent;
+        if (ARGUMENTS[i].flags & AllowMultiple) {
+          s += "specs.MultiInputObj[";
+        }
+        s += format_type(ARGUMENTS[i].type);
+        if (ARGUMENTS[i].flags & AllowMultiple) {
+          s += "]";
+        }
         s +=  + ",\n" + indent + "{\n";
         // Print metadata fields
         s += md_indent + "\"argstr\": \"\",\n";
@@ -921,13 +965,10 @@ std::string restructured_text_usage() {
           || ARGUMENTS[i].type == ArgFileOut
           || ARGUMENTS[i].type == ArgDirectoryOut
         ) {
-          s += md_indent + "\"output_file_template\": \"" + ARGUMENTS[i].id + "\",\n";
+          s += md_indent + "\"output_file_template\": \"" + format_output_template(ARGUMENTS[i].id, ARGUMENTS[i].type) + "\",\n";
           output_type = true;
         }
         s += md_indent + "\"help_string\": \"" + ARGUMENTS[i].desc + "\",\n";
-        if (ARGUMENTS[i].flags & AllowMultiple) {
-          s += md_indent + "\"multiple\": True,\n";
-        }
         if (!(ARGUMENTS[i].flags & Optional) && !output_type) {
           s += md_indent + "\"mandatory\": True,\n";
         }
@@ -966,7 +1007,60 @@ std::string restructured_text_usage() {
 
       s += name_string + "_input_spec = specs.SpecInfo(name='Input', fields=input_fields, bases=(specs.ShellSpec,))\n\n\n";
 
-      s += "output_fields = []"; // {output_fields_str}\n"
+      s += "output_fields = [\n";
+
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+        if (
+          ARGUMENTS[i].type == ImageOut
+          || ARGUMENTS[i].type == ArgFileOut
+          || ARGUMENTS[i].type == ArgDirectoryOut
+        ) {
+            s += base_indent + "(\n";
+            // Print name of field
+            s += indent + "\"" + ARGUMENTS[i].id + "\",\n";
+            // Print type
+            s += indent + format_type(ARGUMENTS[i].type, true) + ",\n";
+            s += indent + "{\n";
+            s += md_indent + "\"help_string\": \"" + ARGUMENTS[i].desc + "\",\n";
+            s += indent + "},\n" + base_indent + "),\n";
+        }
+      }
+
+      for (size_t i = 0; i < group_names.size(); ++i) {
+        size_t n = i;
+        while (OPTIONS[n].name != group_names[i])
+          ++n;
+        while (n < OPTIONS.size()) {
+          if (OPTIONS[n].name == group_names[i]) {
+            for (size_t o = 0; o < OPTIONS[n].size(); ++o) {
+              bool is_output = false;
+              for (size_t j = 0; j < OPTIONS[n][o].size(); ++j) {
+                if (
+                  OPTIONS[n][o][j].type == ImageOut
+                  || OPTIONS[n][o][j].type == ArgFileOut
+                  || OPTIONS[n][o][j].type == ArgDirectoryOut
+                ) {
+                  is_output = true;
+                  break;
+                }
+              }
+              if (is_output) {
+                s += base_indent + "(\n";
+                // Print name of field
+                s += indent + "\"" + OPTIONS[n][o].id + "\",\n";
+                // Print type
+                s += indent + format_option_type(OPTIONS[n][o], true) + ",\n";
+                s += indent + "{\n";
+                s += md_indent + "\"help_string\": \"" + OPTIONS[n][o].desc + "\",\n";
+                s += indent + "},\n" + base_indent + "),\n";
+              }
+            }
+          }
+          ++n;
+        }
+      }
+
+      s += "]\n";
       s += name_string + "_output_spec = specs.SpecInfo(name='Output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n\n";
 
       // Create actual class
