@@ -34,7 +34,7 @@ jobs:
           pip install -r pydra/requirements.txt
       - name: Generate task specifications
         run: |
-          pydra/pydra-auto-gen.py
+          python pydra/pydra-auto-gen.py
 
   devcheck:
     needs: [generate]
