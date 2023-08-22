@@ -908,15 +908,6 @@ std::string restructured_text_usage() {
         if (!(opt.flags & Optional)) {
           f += md_indent + "\"mandatory\": True,\n";
         }
-        if (
-          opt.size() == 1 && (
-            opt[0].type == ImageOut
-            || opt[0].type == ArgFileOut
-            || opt[0].type == ArgDirectoryOut
-          )
-        ) {
-            f += md_indent + "\"output_file_template\": \"" + opt.id + "\",\n";
-        }
         if (opt.size() == 1 && (opt[0].type == IntSeq || opt[0].type == FloatSeq)) {
           f += md_indent + "\"sep\": \",\",\n";
         }
@@ -928,15 +919,17 @@ std::string restructured_text_usage() {
       };
 
       auto format_output_template = [&](const std::string& id, const ArgType& type) {
-        std::string template = id;
+        std::string tmpl(id);
         if (type == ImageOut) {
-          template += ".mif";
+          tmpl += ".mif";
         } else if (type == TracksOut) {
-          template += ".tck"
+          tmpl += ".tck";
         } else if (type == ArgFileOut) {
-          template += ".txt"
+          tmpl += ".txt";
         }
-        return template
+        // TODO: Add special cases for file-out based on the 'id' where the extension
+        // is something else.
+        return tmpl;
       };
 
       // Print out input spec
