@@ -1224,9 +1224,9 @@ class Parser(argparse.ArgumentParser):
     )
 
     text += f"input_fields = {inputs_str}\n"
-    text += f"{task_name}_input_spec = specs.SpecInfo(name='Input', fields=input_fields, bases=(specs.ShellSpec,))\n\n"
+    text += f"{task_name}_input_spec = specs.SpecInfo(name='{task_name}_input', fields=input_fields, bases=(specs.ShellSpec,))\n\n"
     text += f"output_fields = {outputs_str}\n"
-    text += f"{task_name}_output_spec = specs.SpecInfo(name='Output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n"
+    text += f"{task_name}_output_spec = specs.SpecInfo(name='{task_name}_output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n"
     text += f"class {task_name}(ShellCommandTask):\n"
     indent = "    "
     text += indent + "\"\"\"\n"

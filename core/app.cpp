@@ -1057,7 +1057,7 @@ std::string restructured_text_usage() {
 
       s += "]\n\n";
 
-      s += name_string + "_input_spec = specs.SpecInfo(name='Input', fields=input_fields, bases=(specs.ShellSpec,))\n\n\n";
+      s += name_string + "_input_spec = specs.SpecInfo(name='" + name_string + "_input', fields=input_fields, bases=(specs.ShellSpec,))\n\n\n";
 
       s += "output_fields = [\n";
 
@@ -1113,7 +1113,7 @@ std::string restructured_text_usage() {
       }
 
       s += "]\n";
-      s += name_string + "_output_spec = specs.SpecInfo(name='Output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n\n";
+      s += name_string + "_output_spec = specs.SpecInfo(name='" + name_string + "_output', fields=output_fields, bases=(specs.ShellOutSpec,))\n\n\n";
 
       // Create actual class
       s += "class " + name_string + "(ShellCommandTask):\n";
