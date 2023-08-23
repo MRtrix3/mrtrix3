@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 import tempfile
 import pytest
+from fileformats.medimage import DicomDir
 
 # Set DEBUG logging for unittests
 
@@ -35,3 +36,11 @@ if os.getenv("_PYTEST_RAISE", "0") != "0":
 def work_dir():
     work_dir = tempfile.mkdtemp()
     return Path(work_dir)
+
+
+
+@pytest.fixture(scope="session")
+def dummy_dwi_dicom():
+    import medimages4tests.dummy.dicom.mri.dwi.siemens.skyra.syngo_d13c as module
+
+    return DicomDir(module.get_image())

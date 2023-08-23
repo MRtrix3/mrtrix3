@@ -9,6 +9,7 @@ readme = "README.rst"
 requires-python = ">=3.8"
 dependencies = [
     "fileformats >= 0.8",
+    "fileformats-mrtrix3",
     "pydra >= 0.22.0"
 ]
 license = {file = "LICENSE"}
@@ -50,6 +51,7 @@ test = [
     "pytest >=6.2.5",
     "pytest-env>=0.6.2",
     "pytest-cov>=2.12.1",
+    "medimages4tests",
     "codecov",
 ]
 
