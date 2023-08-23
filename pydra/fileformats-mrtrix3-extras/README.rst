@@ -1,5 +1,5 @@
 FileFormats-mrtrix3 Extras
-===========================
+==========================
 .. image:: https://github.com/arcanaframework/fileformats-mrtrix3-extras/actions/workflows/tests.yml/badge.svg
     :target: https://github.com/arcanaframework/fileformats-mrtrix3-extras/actions/workflows/tests.yml
 .. image:: https://codecov.io/gh/arcanaframework/fileformats-mrtrix3-extras/branch/main/graph/badge.svg?token=UIS0OGPST7
@@ -12,8 +12,7 @@ FileFormats-mrtrix3 Extras
     :alt: Documentation Status
 
 
-This is a extras module for the
-`fileformats-mrtrix3 <https://github.com/ArcanaFramework/fileformats-mrtrix3>`__ package, which provides
+This is a extras module for the fileformats-mrtrix3 package, which provides
 additional functionality to format classes (i.e. aside from basic identification and validation), such as
 conversion tools, metadata parsers, test data generators, etc...
 
