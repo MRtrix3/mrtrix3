@@ -1,9 +1,10 @@
 import numpy as np
-from fileformats.medimage import MedicalImage, MrtrixImage
+from fileformats.medimage import MedicalImage
+from fileformats.mrtrix3 import ImageFormat
 
 
 @MedicalImage.read_array.register
-def mrtrix_read_array(mif: MrtrixImage):
+def mrtrix_read_array(mif: ImageFormat):
     raise NotImplementedError(
         "Need to work out how to use the metadata to read the array in the correct order"
     )

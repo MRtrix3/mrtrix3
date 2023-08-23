@@ -1,6 +1,5 @@
 from fileformats.core import mark
 from fileformats.core.mixin import WithAdjacentFiles
-from fileformats.generic import File
 from fileformats.medimage import DwiEncoding, Nifti1, NiftiGz, NiftiX, NiftiGzX
 
 

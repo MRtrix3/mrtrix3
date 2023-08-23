@@ -52,7 +52,9 @@ jobs:
           python -m pip install --upgrade pip
       - name: Install pydra-auto-gen requirements
         run: |
-          pip install -r pydra/requirements.txt
+          pip install -r pydra/fileformats-mrtrix
+          pip install -r pydra/fileformats-mrtrix-extras
+          pip install -r pydra/requirements.txt          
       - name: Generate task specifications
         run: |
           python pydra/pydra-auto-gen.py

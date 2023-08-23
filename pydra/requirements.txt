@@ -1,3 +1,9 @@
 black >=22.12.0
 click >=8.1.3
 attrs >=23.1.0
+fileformats >= 0.8
+fileformats-extras >= 0.2.1
+fileformats-medimage >= 0.4.4
+fileformats-medimage-extras >= 0.1.5
+fileformats-mrtrix
+fileformats-mrtrix-extras
