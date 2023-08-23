@@ -1,7 +1,10 @@
 from fileformats.core import mark
 from fileformats.medimage.base import MedicalImage
 
-from fileformats.mrtrix3 import ImageFormat as MrtrixImage, ImageHeader as MrtrixImageHeader
+from fileformats.mrtrix3 import (
+    ImageFormat as MrtrixImage,
+    ImageHeader as MrtrixImageHeader,
+)
 try:
     from pydra.tasks.mrtrix3.utils import MRConvert
 except ImportError:
@@ -9,14 +12,20 @@ except ImportError:
 
 
 @mark.converter(
-    source_format=MedicalImage, target_format=MrtrixImage, out_ext=MrtrixImage.ext
+    source_format=MedicalImage,
+    target_format=MrtrixImage,
+    out_ext=MrtrixImage.ext,
+    in_file="input",
+    out_file="output",
 )
 @mark.converter(
     source_format=MedicalImage,
     target_format=MrtrixImageHeader,
     out_ext=MrtrixImageHeader.ext,
+    in_file="input",
+    out_file="output",
 )
-def mrconvert(name, out_ext: str):
+def mrconvert(name, out_ext: str, **kwargs):
     """Initiate an MRConvert task with the output file extension set
 
     Parameters
@@ -31,4 +40,4 @@ def mrconvert(name, out_ext: str):
     pydra.ShellCommandTask
         the converter task
     """
-    return MRConvert(name=name, out_file="out" + out_ext)
+    return MRConvert(name=name, out_file="out" + out_ext, **kwargs)
