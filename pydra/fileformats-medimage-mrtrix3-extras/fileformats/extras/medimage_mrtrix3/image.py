@@ -1,6 +1,16 @@
+from pathlib import Path
 import numpy as np
-from fileformats.medimage import MedicalImage
-from fileformats.mrtrix3 import ImageFormat
+from medimages4tests.dummy.nifti import get_image as get_dummy_nifti
+from fileformats.core import FileSet
+from fileformats.medimage import MedicalImage, Nifti1
+from fileformats.medimage_mrtrix3 import ImageFormat
+
+
+@FileSet.generate_sample_data.register
+def generate_mrtrix_sample_data(mif: ImageFormat, dest_dir: Path):
+    nifti = Nifti1(get_dummy_nifti(dest_dir / "nifti.nii"))
+    mif = ImageFormat.convert(nifti)
+    return mif.fspaths
 
 
 @MedicalImage.read_array.register

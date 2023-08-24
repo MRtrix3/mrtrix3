@@ -1,7 +1,7 @@
 from fileformats.core import mark
 from fileformats.medimage.base import MedicalImage
 
-from fileformats.mrtrix3 import (
+from fileformats.medimage_mrtrix3 import (
     ImageFormat as MrtrixImage,
     ImageHeader as MrtrixImageHeader,
 )

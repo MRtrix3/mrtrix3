@@ -54,21 +54,21 @@ test = [
 ]
 
 [project.urls]
-repository = "https://github.com/ArcanaFramework/fileformats-mrtrix3"
+repository = "https://github.com/MRtrix3/mrtrix3"
 
 [tool.hatch.version]
 source = "vcs"
 raw-options = { root = "../../" }
 
 [tool.hatch.build.hooks.vcs]
-version-file = "fileformats/mrtrix3/_version.py"
+version-file = "fileformats/medimage_mrtrix3/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["fileformats"]
 
 [tool.black]
 target-version = ['py38']
-exclude = "fileformats/mrtrix3/_version.py"
+exclude = "fileformats/medimage_mrtrix3/_version.py"
 
 [tool.codespell]
 ignore-words = ".codespell-ignorewords"

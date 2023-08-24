@@ -819,7 +819,7 @@ std::string restructured_text_usage() {
       std::string s = std::string("import typing as ty \n");
       s += "from pathlib import Path  # noqa: F401\n";
       s += "from fileformats.generic import File, Directory  # noqa: F401\n";
-      s += "from fileformats.mrtrix3 import ImageIn, ImageOut, Tracks  # noqa: F401\n";
+      s += "from fileformats.medimage_mrtrix3 import ImageIn, ImageOut, Tracks  # noqa: F401\n";
       s += "from pydra.engine import specs, ShellCommandTask\n";
 
       auto escape_id = [&](const std::string& id) {

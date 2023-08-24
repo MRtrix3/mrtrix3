@@ -1,6 +1,6 @@
 import numpy as np
 from fileformats.medimage import DwiEncoding
-from fileformats.mrtrix3 import BFile
+from fileformats.medimage_mrtrix3 import BFile
 
 
 @DwiEncoding.read_array.register

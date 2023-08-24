@@ -11,7 +11,7 @@ import click
 import black.report
 import black.parsing
 from fileformats.core import FileSet
-from fileformats.mrtrix3 import ImageFormat, ImageIn, ImageOut, Tracks
+from fileformats.medimage_mrtrix3 import ImageFormat, ImageIn, ImageOut, Tracks
 from pydra.engine.helpers import make_klass
 from pydra.engine import specs
 
@@ -232,7 +232,7 @@ def test_{cmd_name}(tmp_path):
         if field.default is not attrs.NOTHING:
             value = field.default
         elif "allowed_values" in field.metadata:
-            value = field.metadata["allowed_values"][0]
+            value = repr(field.metadata["allowed_values"][0])
         else:
             value = get_value(field.type)
 
