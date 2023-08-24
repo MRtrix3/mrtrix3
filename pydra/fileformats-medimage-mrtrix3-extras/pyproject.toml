@@ -3,13 +3,13 @@ requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
-name = "fileformats-mrtrix3-extras"
+name = "fileformats-medimage-mrtrix3-extras"
 description = "Classes for representing different file formats in Python classes for use in type hinting in data workflows"
 readme = "README.rst"
 requires-python = ">=3.8"
 dependencies = [
     "fileformats >= 0.8",
-    "fileformats-mrtrix3",
+    "fileformats-medimage-mrtrix3",
     "pydra >= 0.22.0"
 ]
 license = {file = "LICENSE"}
