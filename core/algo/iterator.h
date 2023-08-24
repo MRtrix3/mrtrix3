@@ -19,48 +19,41 @@
 
 #include "types.h"
 
-namespace MR
-{
+namespace MR {
 
-  /** \defgroup loop Looping functions
-    @{ */
+/** \defgroup loop Looping functions
+  @{ */
 
-  //! a dummy image to iterate over, useful for multi-threaded looping.
-  class Iterator { 
-    public:
-      Iterator() = delete;
-      template <class InfoType>
-        Iterator (const InfoType& S) :
-          d (S.ndim()),
-          p (S.ndim(), 0) {
-            for (size_t i = 0; i < S.ndim(); ++i)
-              d[i] = S.size(i);
-          }
+//! a dummy image to iterate over, useful for multi-threaded looping.
+class Iterator {
+public:
+  Iterator() = delete;
+  template <class InfoType> Iterator(const InfoType &S) : d(S.ndim()), p(S.ndim(), 0) {
+    for (size_t i = 0; i < S.ndim(); ++i)
+      d[i] = S.size(i);
+  }
 
-      size_t ndim () const { return d.size(); }
-      ssize_t size (size_t axis) const { return d[axis]; }
+  size_t ndim() const { return d.size(); }
+  ssize_t size(size_t axis) const { return d[axis]; }
 
-      const ssize_t& index (size_t axis) const { return p[axis]; }
-      ssize_t& index (size_t axis) { return p[axis]; }
+  const ssize_t &index(size_t axis) const { return p[axis]; }
+  ssize_t &index(size_t axis) { return p[axis]; }
 
-      friend std::ostream& operator<< (std::ostream& stream, const Iterator& V) {
-        stream << "iterator, position [ ";
-        for (size_t n = 0; n < V.ndim(); ++n)
-          stream << V.index(n) << " ";
-        stream << "]";
-        return stream;
-      }
+  friend std::ostream &operator<<(std::ostream &stream, const Iterator &V) {
+    stream << "iterator, position [ ";
+    for (size_t n = 0; n < V.ndim(); ++n)
+      stream << V.index(n) << " ";
+    stream << "]";
+    return stream;
+  }
 
-    private:
-      vector<ssize_t> d, p;
+private:
+  vector<ssize_t> d, p;
 
-      void value () const { assert (0); }
-  };
+  void value() const { assert(0); }
+};
 
-  //! @}
-}
+//! @}
+} // namespace MR
 
 #endif
-
-
-

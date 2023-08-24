@@ -20,52 +20,43 @@
 #include <mutex>
 #include <stdint.h>
 
+#include "math/stats/permutation.h"
 #include "progressbar.h"
 #include "types.h"
-#include "math/stats/permutation.h"
 
-namespace MR
-{
-  namespace Stats
-  {
-    namespace PermTest
-    {
+namespace MR {
+namespace Stats {
+namespace PermTest {
 
+class Permutation {
+public:
+  size_t index;
+  vector<size_t> data;
+};
 
-      class Permutation
-      { 
-        public:
-          size_t index;
-          vector<size_t> data;
-      };
+class PermutationStack {
+public:
+  PermutationStack(const size_t num_permutations,
+                   const size_t num_samples,
+                   const std::string msg,
+                   const bool include_default = true);
 
+  PermutationStack(vector<vector<size_t>> &permutations, const std::string msg);
 
-      class PermutationStack 
-      { 
-        public:
-          PermutationStack (const size_t num_permutations, const size_t num_samples, const std::string msg, const bool include_default = true);
+  bool operator()(Permutation &);
 
-          PermutationStack (vector <vector<size_t> >& permutations, const std::string msg);
+  const vector<size_t> &operator[](size_t index) const { return permutations[index]; }
 
-          bool operator() (Permutation&);
+  const size_t num_permutations;
 
-          const vector<size_t>& operator[] (size_t index) const {
-            return permutations[index];
-          }
+protected:
+  vector<vector<size_t>> permutations;
+  size_t counter;
+  ProgressBar progress;
+};
 
-          const size_t num_permutations;
-
-        protected:
-          vector< vector<size_t> > permutations;
-          size_t counter;
-          ProgressBar progress;
-      };
-
-
-
-
-    }
-  }
-}
+} // namespace PermTest
+} // namespace Stats
+} // namespace MR
 
 #endif

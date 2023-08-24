@@ -18,28 +18,21 @@
 
 #include "file/tiff.h"
 
+namespace MR {
+namespace File {
 
-namespace MR
-{
-  namespace File
-  {
-
-    TIFF::TIFF (const std::string& filename, const char* mode) :
-      tif (nullptr) { 
-        TIFFSetWarningHandler (error_handler);
-        tif = TIFFOpen (filename.c_str(), mode);
-        if (!tif)
-          throw Exception ("error opening TIFF file \"" + filename + "\": " + strerror(errno));
-      }
-
-
-    void TIFF::error_handler (const char* module, const char* fmt, va_list ap)
-    {
-      INFO (std::string ("error in TIFF library: [") + module + "]: " + MR::printf (fmt, ap));
-    }
-
-  }
+TIFF::TIFF(const std::string &filename, const char *mode) : tif(nullptr) {
+  TIFFSetWarningHandler(error_handler);
+  tif = TIFFOpen(filename.c_str(), mode);
+  if (!tif)
+    throw Exception("error opening TIFF file \"" + filename + "\": " + strerror(errno));
 }
 
-#endif
+void TIFF::error_handler(const char *module, const char *fmt, va_list ap) {
+  INFO(std::string("error in TIFF library: [") + module + "]: " + MR::printf(fmt, ap));
+}
 
+} // namespace File
+} // namespace MR
+
+#endif

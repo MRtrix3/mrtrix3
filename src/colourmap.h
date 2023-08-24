@@ -17,86 +17,77 @@
 #ifndef __colourmap_h__
 #define __colourmap_h__
 
-#include <functional>
 #include "types.h"
+#include <functional>
 
+namespace MR {
+namespace ColourMap {
 
-namespace MR
-{
-  namespace ColourMap
-  {
+class Entry {
+public:
+  using basic_map_fn = std::function<Eigen::Array3f(float)>;
 
-    class Entry { 
-      public:
+  Entry(const char *name,
+        const char *glsl_mapping,
+        basic_map_fn basic_mapping,
+        const char *amplitude = NULL,
+        bool special = false,
+        bool is_colour = false,
+        bool is_rgb = false)
+      : name(name),
+        glsl_mapping(glsl_mapping),
+        basic_mapping(basic_mapping),
+        amplitude(amplitude ? amplitude : default_amplitude),
+        special(special),
+        is_colour(is_colour),
+        is_rgb(is_rgb) {}
 
-        using basic_map_fn = std::function< Eigen::Array3f (float) >;
+  const char *name;
+  const char *glsl_mapping;
+  basic_map_fn basic_mapping;
+  const char *amplitude;
+  bool special, is_colour, is_rgb;
 
-        Entry (const char* name, const char* glsl_mapping, basic_map_fn basic_mapping,
-            const char* amplitude = NULL, bool special = false, bool is_colour = false, bool is_rgb = false) :
-          name (name),
-          glsl_mapping (glsl_mapping),
-          basic_mapping (basic_mapping),
-          amplitude (amplitude ? amplitude : default_amplitude),
-          special (special),
-          is_colour (is_colour),
-          is_rgb (is_rgb) { }
+  static const char *default_amplitude;
+};
 
-        const char* name;
-        const char* glsl_mapping;
-        basic_map_fn basic_mapping;
-        const char* amplitude;
-        bool special, is_colour, is_rgb;
+extern const Entry maps[];
 
-        static const char* default_amplitude;
-
-    };
-
-    extern const Entry maps[];
-
-
-
-
-
-    inline size_t num () {
-      size_t n = 0;
-      while (maps[n].name) ++n;
-      return n;
-    }
-
-
-    inline size_t num_scalar () {
-      size_t n = 0, i = 0;
-      while (maps[i].name) {
-        if (!maps[i].special)
-          ++n;
-        ++i;
-      }
-      return n;
-    }
-
-    inline size_t index (const std::string& name) {
-      size_t n = 0;
-      while (maps[n].name != name) ++n;
-      return n;
-    }
-
-
-    inline size_t num_special () {
-      size_t n = 0, i = 0;
-      while (maps[i].name) {
-        if (maps[i].special)
-          ++n;
-        ++i;
-      }
-      return n;
-    }
-
-
-  }
+inline size_t num() {
+  size_t n = 0;
+  while (maps[n].name)
+    ++n;
+  return n;
 }
 
+inline size_t num_scalar() {
+  size_t n = 0, i = 0;
+  while (maps[i].name) {
+    if (!maps[i].special)
+      ++n;
+    ++i;
+  }
+  return n;
+}
+
+inline size_t index(const std::string &name) {
+  size_t n = 0;
+  while (maps[n].name != name)
+    ++n;
+  return n;
+}
+
+inline size_t num_special() {
+  size_t n = 0, i = 0;
+  while (maps[i].name) {
+    if (maps[i].special)
+      ++n;
+    ++i;
+  }
+  return n;
+}
+
+} // namespace ColourMap
+} // namespace MR
+
 #endif
-
-
-
-

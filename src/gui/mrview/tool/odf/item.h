@@ -26,70 +26,59 @@
 #include "gui/mrview/gui_image.h"
 #include "gui/mrview/tool/odf/type.h"
 
-namespace MR
-{
+namespace MR {
 
-  class Header;
+class Header;
 
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
+namespace GUI {
+namespace MRView {
+namespace Tool {
 
+class ODF_Item {
+public:
+  ODF_Item(MR::Header &&H,
+           const odf_type_t type,
+           const float scale,
+           const bool hide_negative,
+           const bool color_by_direction);
 
+  bool valid() const;
 
-        class ODF_Item { 
-          public:
-            ODF_Item (MR::Header&& H, const odf_type_t type, const float scale, const bool hide_negative, const bool color_by_direction);
+  MRView::Image image;
+  odf_type_t odf_type;
+  int lmax;
+  float scale;
+  bool hide_negative, color_by_direction;
 
-            bool valid() const;
+  class DixelPlugin {
+  public:
+    enum dir_t { DW_SCHEME, HEADER, INTERNAL, NONE, FILE };
 
-            MRView::Image image;
-            odf_type_t odf_type;
-            int lmax;
-            float scale;
-            bool hide_negative, color_by_direction;
+    DixelPlugin(const MR::Header &);
 
-            class DixelPlugin
-            { 
-              public:
-                enum dir_t { DW_SCHEME, HEADER, INTERNAL, NONE, FILE };
+    void set_shell(size_t index);
+    void set_header();
+    void set_internal(const size_t n);
+    void set_none();
+    void set_from_file(const std::string &path);
 
-                DixelPlugin (const MR::Header&);
+    Eigen::VectorXf get_shell_data(const Eigen::VectorXf &values) const;
 
-                void set_shell (size_t index);
-                void set_header();
-                void set_internal (const size_t n);
-                void set_none();
-                void set_from_file (const std::string& path);
+    size_t num_DW_shells() const;
 
-                Eigen::VectorXf get_shell_data (const Eigen::VectorXf& values) const;
+    dir_t dir_type;
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> header_dirs;
+    Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
+    std::unique_ptr<MR::DWI::Shells> shells;
+    size_t shell_index;
+    std::unique_ptr<MR::DWI::Directions::Set> dirs;
+  };
+  std::unique_ptr<DixelPlugin> dixel;
+};
 
-                size_t num_DW_shells() const;
-
-                dir_t dir_type;
-                Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> header_dirs;
-                Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
-                std::unique_ptr<MR::DWI::Shells> shells;
-                size_t shell_index;
-                std::unique_ptr<MR::DWI::Directions::Set> dirs;
-
-            };
-            std::unique_ptr<DixelPlugin> dixel;
-        };
-
-
-
-      }
-    }
-  }
-}
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-
-
-
-

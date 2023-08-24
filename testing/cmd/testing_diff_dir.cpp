@@ -16,46 +16,42 @@
 
 #include "command.h"
 #include "datatype.h"
-#include "progressbar.h"
 #include "file/matrix.h"
+#include "progressbar.h"
 
 using namespace MR;
 using namespace App;
 
-void usage ()
-{
+void usage() {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   SYNOPSIS = "Compare two direction sets for differences, within specified tolerance";
 
   ARGUMENTS
-  + Argument ("dir1", "directions file").type_file_in ()
-  + Argument ("dir2", "another directions file.").type_file_in ()
-  + Argument ("tolerance", "the amount of difference to consider acceptable").type_float (0.0);
+  +Argument("dir1", "directions file").type_file_in() + Argument("dir2", "another directions file.").type_file_in() +
+      Argument("tolerance", "the amount of difference to consider acceptable").type_float(0.0);
 }
 
-
-void run ()
-{
+void run() {
   double tol = argument[2];
 
-  Eigen::MatrixXd dir1 = File::Matrix::load_matrix (argument[0]);
-  Eigen::MatrixXd dir2 = File::Matrix::load_matrix (argument[1]);
+  Eigen::MatrixXd dir1 = File::Matrix::load_matrix(argument[0]);
+  Eigen::MatrixXd dir2 = File::Matrix::load_matrix(argument[1]);
 
   if (dir1.cols() != dir2.cols())
-    throw Exception ("number of columns is not the same");
+    throw Exception("number of columns is not the same");
 
   if (dir1.rows() != dir2.rows())
-    throw Exception ("number of rows is not the same");
+    throw Exception("number of rows is not the same");
 
   for (ssize_t i = 0; i < dir1.cols(); ++i) {
     for (ssize_t j = 0; j < dir1.rows(); ++j) {
-      if (abs (dir1(i,j) - dir2(i,j)) > tol)
-        throw Exception ("direction files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\" do not match within specified precision of " + str(tol)
-            + " (" + str(dir1(i,j)) + " vs " + str(dir2(i,j)) + ")");
+      if (abs(dir1(i, j) - dir2(i, j)) > tol)
+        throw Exception("direction files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) +
+                        "\" do not match within specified precision of " + str(tol) + " (" + str(dir1(i, j)) + " vs " +
+                        str(dir2(i, j)) + ")");
     }
   }
 
-  CONSOLE ("directions checked OK");
+  CONSOLE("directions checked OK");
 }
-

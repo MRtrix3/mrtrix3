@@ -17,60 +17,46 @@
 #ifndef __dwi_tractography_act_shared_h__
 #define __dwi_tractography_act_shared_h__
 
-#include "memory.h"
 #include "dwi/tractography/ACT/gmwmi.h"
+#include "dwi/tractography/properties.h"
+#include "memory.h"
 
+namespace MR {
+namespace DWI {
+namespace Tractography {
+namespace ACT {
 
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
-      namespace ACT
-      {
+class ACT_Shared_additions {
 
-
-        class ACT_Shared_additions { 
-
-          public:
-            ACT_Shared_additions (const std::string& path, Properties& property_set) :
-              voxel (Image<float>::open (path)),
-              bt (false)
-            {
-              verify_5TT_image (voxel);
-              property_set.set (bt, "backtrack");
-              if (property_set.find ("crop_at_gmwmi") != property_set.end())
-                gmwmi_finder.reset (new GMWMI_finder (voxel));
-            }
-
-
-            bool backtrack() const { return bt; }
-
-            bool crop_at_gmwmi() const { return bool (gmwmi_finder); }
-            void crop_at_gmwmi (vector<Eigen::Vector3f>& tck) const
-            {
-              assert (gmwmi_finder);
-              tck.back() = gmwmi_finder->find_interface (tck, true);
-            }
-
-
-          private:
-            Image<float> voxel;
-            bool bt;
-
-            std::unique_ptr<GMWMI_finder> gmwmi_finder;
-
-
-          protected:
-            friend class ACT_Method_additions;
-
-        };
-
-
-      }
-    }
+public:
+  ACT_Shared_additions(const std::string &path, Properties &property_set) : voxel(Image<float>::open(path)), bt(false) {
+    verify_5TT_image(voxel);
+    property_set.set(bt, "backtrack");
+    if (property_set.find("crop_at_gmwmi") != property_set.end())
+      gmwmi_finder.reset(new GMWMI_finder(voxel));
   }
-}
+
+  bool backtrack() const { return bt; }
+
+  bool crop_at_gmwmi() const { return bool(gmwmi_finder); }
+  void crop_at_gmwmi(vector<Eigen::Vector3f> &tck) const {
+    assert(gmwmi_finder);
+    tck.back() = gmwmi_finder->find_interface(tck, true);
+  }
+
+private:
+  Image<float> voxel;
+  bool bt;
+
+  std::unique_ptr<GMWMI_finder> gmwmi_finder;
+
+protected:
+  friend class ACT_Method_additions;
+};
+
+} // namespace ACT
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif

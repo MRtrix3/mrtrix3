@@ -19,35 +19,28 @@
 
 #include "gui/mrview/tool/fixel/base_fixel.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
-        class Legacy : public FixelType<FixelLegacyType>
-        { 
-          public:
-            Legacy (const std::string& filename, Fixel& fixel_tool) :
-              FixelType (filename, fixel_tool)
-            {
-              value_types = {"unity", "fixel size", "associated value"};
-              colour_types = {"direction", "fixel size", "associated value"};
-              threshold_types = {"fixel size", "associated value"};
-              fixel_values[value_types[1]];
-              fixel_values[value_types[2]];
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Tool {
+class Legacy : public FixelType<FixelLegacyType> {
+public:
+  Legacy(const std::string &filename, Fixel &fixel_tool) : FixelType(filename, fixel_tool) {
+    value_types = {"unity", "fixel size", "associated value"};
+    colour_types = {"direction", "fixel size", "associated value"};
+    threshold_types = {"fixel size", "associated value"};
+    fixel_values[value_types[1]];
+    fixel_values[value_types[2]];
 
-              fixel_data.reset (new FixelLegacyType (header));
-              load_image (filename);
-            }
-
-            void load_image_buffer () override;
-        };
-      }
-    }
+    fixel_data.reset(new FixelLegacyType(header));
+    load_image(filename);
   }
-}
+
+  void load_image_buffer() override;
+};
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif

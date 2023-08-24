@@ -17,36 +17,31 @@
 #include "command.h"
 #include "datatype.h"
 
-#include "progressbar.h"
-#include "image.h"
 #include "diff_images.h"
+#include "image.h"
+#include "progressbar.h"
 
 using namespace MR;
 using namespace App;
 
-void usage ()
-{
-  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
+void usage() {
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) and David Raffelt (david.raffelt@florey.edu.au) and Robert E. "
+           "Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compare two images for differences, optionally with a specified tolerance";
 
   ARGUMENTS
-  + Argument ("data1", "an image.").type_image_in()
-  + Argument ("data2", "another image.").type_image_in();
-  
+  +Argument("data1", "an image.").type_image_in() + Argument("data2", "another image.").type_image_in();
+
   OPTIONS
-  + Testing::Diff_Image_Options;
-
+  +Testing::Diff_Image_Options;
 }
 
+void run() {
+  auto in1 = Image<cdouble>::open(argument[0]);
+  auto in2 = Image<cdouble>::open(argument[1]);
 
-void run ()
-{
-  auto in1 = Image<cdouble>::open (argument[0]);
-  auto in2 = Image<cdouble>::open (argument[1]);
+  Testing::diff_images(in1, in2);
 
-  Testing::diff_images (in1, in2);
-
-  CONSOLE ("data checked OK");
+  CONSOLE("data checked OK");
 }
-

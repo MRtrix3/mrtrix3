@@ -15,34 +15,30 @@
  */
 
 #include "command.h"
-#include "progressbar.h"
 #include "datatype.h"
 #include "math/rng.h"
+#include "progressbar.h"
 
-#include "image.h"
 #include "algo/threaded_loop.h"
+#include "image.h"
 
 using namespace MR;
 using namespace App;
 
-void usage ()
-{
+void usage() {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Generate a test image of random numbers";
 
   ARGUMENTS
-  + Argument ("size", "the dimensions of the test data.").type_sequence_int ()
-  + Argument ("data", "the output image.").type_image_out ();
+  +Argument("size", "the dimensions of the test data.").type_sequence_int() +
+      Argument("data", "the output image.").type_image_out();
 
   OPTIONS
-    + Stride::Options
-    + DataType::options();
+  +Stride::Options + DataType::options();
 }
 
-
-void run ()
-{
+void run() {
   vector<int> dim = argument[0];
 
   Header header;
@@ -52,16 +48,15 @@ void run ()
     header.size(n) = dim[n];
     header.spacing(n) = 1.0f;
   }
-  header.datatype() = DataType::from_command_line (DataType::Float32);
-  Stride::set_from_command_line (header, Stride::contiguous_along_spatial_axes (header));
+  header.datatype() = DataType::from_command_line(DataType::Float32);
+  Stride::set_from_command_line(header, Stride::contiguous_along_spatial_axes(header));
 
-  auto image = Header::create (argument[1], header).get_image<float>();
+  auto image = Header::create(argument[1], header).get_image<float>();
 
-  struct fill { 
+  struct fill {
     Math::RNG rng;
     std::normal_distribution<float> normal;
-    void operator() (decltype(image)& v) { v.value() = normal(rng); }
+    void operator()(decltype(image) &v) { v.value() = normal(rng); }
   };
-  ThreadedLoop ("generating random data...", image).run (fill(), image);
+  ThreadedLoop("generating random data...", image).run(fill(), image);
 }
-
