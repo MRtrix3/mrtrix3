@@ -17,45 +17,40 @@
 #ifndef __file_dicom_patient_h__
 #define __file_dicom_patient_h__
 
-#include "memory.h"
 #include "file/dicom/study.h"
+#include "memory.h"
 
 namespace MR {
-  namespace File {
-    namespace Dicom {
+namespace File {
+namespace Dicom {
 
-      class Study;
+class Study;
 
-      class Patient : public vector<std::shared_ptr<Study>> { 
-        public:
-          Patient (const std::string& patient_name, const std::string& patient_ID,
-              const std::string& patient_DOB) :
-            name (patient_name), ID (patient_ID), DOB (patient_DOB) { }
-          std::string name, ID, DOB;
+class Patient : public vector<std::shared_ptr<Study>> {
+public:
+  Patient(const std::string &patient_name, const std::string &patient_ID, const std::string &patient_DOB)
+      : name(patient_name), ID(patient_ID), DOB(patient_DOB) {}
+  std::string name, ID, DOB;
 
-          std::shared_ptr<Study> find (const std::string& study_name, const std::string& study_ID = "",
-              const std::string& study_UID = "", const std::string& study_date = "", const std::string& study_time = "");
+  std::shared_ptr<Study> find(const std::string &study_name,
+                              const std::string &study_ID = "",
+                              const std::string &study_UID = "",
+                              const std::string &study_date = "",
+                              const std::string &study_time = "");
 
-          bool operator< (const Patient& s) const {
-            if (name != s.name)
-              return name < s.name;
-            if (ID != s.ID)
-              return ID < s.ID;
-            return DOB < s.DOB;
-          }
-
-      };
-
-
-      std::ostream& operator<< (std::ostream& stream, const Patient& item);
-
-
-    }
+  bool operator<(const Patient &s) const {
+    if (name != s.name)
+      return name < s.name;
+    if (ID != s.ID)
+      return ID < s.ID;
+    return DOB < s.DOB;
   }
-}
+};
 
+std::ostream &operator<<(std::ostream &stream, const Patient &item);
+
+} // namespace Dicom
+} // namespace File
+} // namespace MR
 
 #endif
-
-
-

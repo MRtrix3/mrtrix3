@@ -17,33 +17,14 @@
 #include "file/nifti_utils.h"
 #include "formats/list.h"
 
-namespace MR
-{
-  namespace Formats
-  {
+namespace MR {
+namespace Formats {
 
+std::unique_ptr<ImageIO::Base> NIfTI1_GZ::read(Header &H) const { return File::NIfTI::read_gz<1>(H); }
 
-    std::unique_ptr<ImageIO::Base> NIfTI1_GZ::read (Header& H) const
-    {
-      return File::NIfTI::read_gz<1> (H);
-    }
+bool NIfTI1_GZ::check(Header &H, size_t num_axes) const { return File::NIfTI::check(1, H, num_axes, {".nii.gz"}); }
 
+std::unique_ptr<ImageIO::Base> NIfTI1_GZ::create(Header &H) const { return File::NIfTI::create_gz<1>(H); }
 
-
-    bool NIfTI1_GZ::check (Header& H, size_t num_axes) const
-    {
-      return File::NIfTI::check (1, H, num_axes, { ".nii.gz" });
-    }
-
-
-
-    std::unique_ptr<ImageIO::Base> NIfTI1_GZ::create (Header& H) const
-    {
-      return File::NIfTI::create_gz<1> (H);
-    }
-
-
-
-  }
-}
-
+} // namespace Formats
+} // namespace MR

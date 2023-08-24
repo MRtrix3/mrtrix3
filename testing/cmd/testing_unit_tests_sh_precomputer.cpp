@@ -19,13 +19,10 @@
 #include "command.h"
 #include "math/SH.h"
 
-
 using namespace MR;
 using namespace App;
 
-
-void usage ()
-{
+void usage() {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Test the accuracy of the spherical harmonic precomputer";
@@ -34,25 +31,20 @@ void usage ()
 }
 
 using value_type = float;
-using coefs_type = Eigen::Matrix<value_type,Eigen::Dynamic,1>;
-using dir_type = Eigen::Matrix<value_type,3,1>;
+using coefs_type = Eigen::Matrix<value_type, Eigen::Dynamic, 1>;
+using dir_type = Eigen::Matrix<value_type, 3, 1>;
 
-
-
-void run ()
-{
+void run() {
   using namespace Math::SH;
 
   const int lmax = 8;
 
-  coefs_type coefs = coefs_type::Random (NforL (lmax));
-  PrecomputedAL<value_type> precomputer (lmax);
+  coefs_type coefs = coefs_type::Random(NforL(lmax));
+  PrecomputedAL<value_type> precomputer(lmax);
 
   for (size_t n = 0; n < 10000; ++n) {
     dir_type direction = dir_type::Random().normalized();
-    if (std::abs (value (coefs, direction, lmax) - precomputer.value (coefs, direction)) > 1e-3)
-      throw Exception ("difference exceeds tolerance");
+    if (std::abs(value(coefs, direction, lmax) - precomputer.value(coefs, direction)) > 1e-3)
+      throw Exception("difference exceeds tolerance");
   }
-
 }
-

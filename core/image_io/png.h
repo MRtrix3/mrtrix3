@@ -19,28 +19,23 @@
 
 #ifdef MRTRIX_PNG_SUPPORT
 
-#include "types.h"
 #include "image_io/base.h"
+#include "types.h"
 
-namespace MR
-{
-  namespace ImageIO
-  {
+namespace MR {
+namespace ImageIO {
 
-    class PNG : public Base
-    { 
-      public:
-        PNG (const Header& header) : Base (header) { }
+class PNG : public Base {
+public:
+  PNG(const Header &header) : Base(header) {}
 
-      protected:
-        virtual void load (const Header&, size_t);
-        virtual void unload (const Header&);
-    };
+protected:
+  virtual void load(const Header &, size_t);
+  virtual void unload(const Header &);
+};
 
-  }
-}
+} // namespace ImageIO
+} // namespace MR
 
 #endif
 #endif
-
-

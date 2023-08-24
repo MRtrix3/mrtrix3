@@ -307,6 +307,33 @@ A few explicit notes on such:
    introduce Windows-style newline characters ("`CR LF`" / "`\r\n`")
    will need to be edited accordingly.
 
+-  In C++, we use [clang-format](https://clang.llvm.org/docs/ClangFormat.html) 16
+   to ensure that all C++ code is formatted using the same conventions.
+   To comply with this requirement, we recommend that you install a local git hook
+   using [pre-commit](https://pre-commit.com/):
+
+   - Install `pre-commit` via `pip install pre-commit` (or via your OS package manager).
+   
+   - Run `pre-commit install` in the source directory of MRtrix. 
+     NOTE: you may need to add the pip scripts folder to your `PATH` 
+     (you can check where pip has installed the package using `pip show pre-commit`).
+
+   This procedure will install a local git hook to ensure that all of your commits
+   are correctly formatted. If this isn't the case, the commits will fail and an 
+   automatic formatting of the staged changes will be applied. You will then have 
+   to commit those changes again.
+
+   Alternatively, you may wish to configure your editor to automatically format 
+   your code using `clang-format`. We also provide a Python script in the top level directory
+   called `clang-format-all` that can format all C++ code in the repository. You can run
+   this to format your code before committing it. The script also allows you to
+   specify a custom `clang-format` binary by using the `--executable` flag.
+
+   NOTE: If you are using a version of `clang-format` that is different from the one
+   used by the CI (currently version 16), your code may be formatted differently and thus
+   fail our CI tests. We recommend that you use the same version of `clang-format` as the
+   CI to avoid this issue.
+
 -  In Python, variable / class / module names are enforced through
    `pylint`. Script "`run_pylint`" in the *MRtrix3* root directory
    will test any code modifications against these expectations.

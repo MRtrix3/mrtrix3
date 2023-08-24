@@ -17,43 +17,39 @@
 #ifndef __stats_cfe_h__
 #define __stats_cfe_h__
 
-#include "types.h"
 #include "math/stats/typedefs.h"
 #include "stats/enhance.h"
+#include "types.h"
 
 #include "fixel/matrix.h"
 
-namespace MR
-{
-  namespace Stats
-  {
+namespace MR {
+namespace Stats {
 
+using value_type = Math::Stats::value_type;
+using direction_type = Eigen::Matrix<value_type, 3, 1>;
 
-    using value_type = Math::Stats::value_type;
-    using direction_type = Eigen::Matrix<value_type, 3, 1>;
+class CFE : public Stats::EnhancerBase {
+public:
+  CFE(const Fixel::Matrix::Reader &connectivity_matrix,
+      const value_type dh,
+      const value_type E,
+      const value_type H,
+      const value_type C,
+      const bool norm);
+  virtual ~CFE() {}
 
+protected:
+  Fixel::Matrix::Reader matrix;
+  const value_type dh, E, H, C;
+  const bool normalise;
 
+  mutable vector<value_type> h_pow_H;
 
-    class CFE : public Stats::EnhancerBase { 
-      public:
-        CFE (const Fixel::Matrix::Reader& connectivity_matrix,
-             const value_type dh, const value_type E, const value_type H, const value_type C,
-             const bool norm);
-        virtual ~CFE() { }
+  void operator()(in_column_type, out_column_type) const override;
+};
 
-      protected:
-        Fixel::Matrix::Reader matrix;
-        const value_type dh, E, H, C;
-        const bool normalise;
-
-        mutable vector<value_type> h_pow_H;
-
-        void operator() (in_column_type, out_column_type) const override;
-    };
-
-
-
-  }
-}
+} // namespace Stats
+} // namespace MR
 
 #endif

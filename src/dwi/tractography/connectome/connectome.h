@@ -17,25 +17,20 @@
 #ifndef __dwi_tractography_connectome_connectome_h__
 #define __dwi_tractography_connectome_connectome_h__
 
-
 #include "app.h"
 #include "image.h"
 
 #include "connectome/connectome.h"
-
-
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
 namespace Connectome {
 
-
-
 #define TCK2NODES_RADIAL_DEFAULT_DIST 4.0
-#define TCK2NODES_REVSEARCH_DEFAULT_DIST 0.0 // Default = no distance limit, reverse search all the way to the streamline midpoint
+#define TCK2NODES_REVSEARCH_DEFAULT_DIST                                                                               \
+  0.0 // Default = no distance limit, reverse search all the way to the streamline midpoint
 #define TCK2NODES_FORWARDSEARCH_DEFAULT_DIST 3.0
-
 
 using node_t = MR::Connectome::node_t;
 using NodePair = std::pair<node_t, node_t>;
@@ -43,22 +38,16 @@ using NodePair = std::pair<node_t, node_t>;
 class Tck2nodes_base;
 class Metric;
 
-
-
-extern const char* modes[];
+extern const char *modes[];
 extern const App::OptionGroup AssignmentOptions;
-Tck2nodes_base* load_assignment_mode (Image<node_t>&);
+Tck2nodes_base *load_assignment_mode(Image<node_t> &);
 
 extern const App::OptionGroup MetricOptions;
-void setup_metric (Metric&, Image<node_t>&);
+void setup_metric(Metric &, Image<node_t> &);
 
-
-
-}
-}
-}
-}
-
+} // namespace Connectome
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-

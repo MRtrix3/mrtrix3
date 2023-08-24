@@ -21,36 +21,30 @@
 
 #include "types.h"
 
-namespace MR
-{
-  namespace File
-  {
+namespace MR {
+namespace File {
 
-    class Entry { 
-      public:
-        Entry (const std::string& fname, int64_t offset = 0) :
-          name (fname), start (offset) { }
+class Entry {
+public:
+  Entry(const std::string &fname, int64_t offset = 0) : name(fname), start(offset) {}
 
-        Entry (const Entry&) = default;
-        Entry (Entry&&) noexcept = default;
-        Entry& operator=(Entry&& E) noexcept {
-          name = std::move (E.name);
-          start = E.start;
-          return *this;
-        }
-
-        std::string name;
-        int64_t start;
-    };
-
-
-    inline std::ostream& operator<< (std::ostream& stream, const Entry& e)
-    {
-      stream << "File::Entry { \"" << e.name << "\", offset " << e.start << " }";
-      return stream;
-    }
+  Entry(const Entry &) = default;
+  Entry(Entry &&) noexcept = default;
+  Entry &operator=(Entry &&E) noexcept {
+    name = std::move(E.name);
+    start = E.start;
+    return *this;
   }
+
+  std::string name;
+  int64_t start;
+};
+
+inline std::ostream &operator<<(std::ostream &stream, const Entry &e) {
+  stream << "File::Entry { \"" << e.name << "\", offset " << e.start << " }";
+  return stream;
 }
+} // namespace File
+} // namespace MR
 
 #endif
-

@@ -19,46 +19,39 @@
 
 #include "gui/mrview/tool/fixel/base_fixel.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
-        class Image4D : public FixelType<FixelImage4DType>
-        { 
-          public:
-            Image4D (const std::string& filename, Fixel& fixel_tool) :
-              FixelType (filename, fixel_tool), tracking (false)
-            {
-              value_types = {"Unity", "Length"};
-              colour_types = {"Direction", "Length"};
-              threshold_types = {"Length"};
-              fixel_values[value_types[1]];
-              fixel_data.reset (new FixelImage4DType (header.get_image<float> ()));
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Tool {
+class Image4D : public FixelType<FixelImage4DType> {
+public:
+  Image4D(const std::string &filename, Fixel &fixel_tool) : FixelType(filename, fixel_tool), tracking(false) {
+    value_types = {"Unity", "Length"};
+    colour_types = {"Direction", "Length"};
+    threshold_types = {"Length"};
+    fixel_values[value_types[1]];
+    fixel_data.reset(new FixelImage4DType(header.get_image<float>()));
 
-              load_image (filename);
-            }
-
-            void load_image_buffer () override;
-            void reload_image_buffer ();
-
-            void update_image_buffers () override;
-
-            bool trackable () const {
-              if (fixel_data->ndim() < 5)
-                return false;
-              if (fixel_data->size(4) <= 1)
-                return false;
-              return true;
-            }
-            bool tracking;
-        };
-    }
-    }
+    load_image(filename);
   }
-}
+
+  void load_image_buffer() override;
+  void reload_image_buffer();
+
+  void update_image_buffers() override;
+
+  bool trackable() const {
+    if (fixel_data->ndim() < 5)
+      return false;
+    if (fixel_data->size(4) <= 1)
+      return false;
+    return true;
+  }
+  bool tracking;
+};
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif

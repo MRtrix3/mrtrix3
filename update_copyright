@@ -44,7 +44,7 @@ ProcessFile = namedtuple('ProcessFile', 'path keep_shebang comment')
 
 MRTRIX_ROOT = os.path.abspath(os.path.dirname(__file__))
 APP_CPP_PATH = os.path.join(MRTRIX_ROOT, 'core', 'app.cpp')
-APP_CPP_STRING = 'const char* COPYRIGHT ='
+APP_CPP_STRING = 'const char *COPYRIGHT ='
 APP_PY_PATH = os.path.join(MRTRIX_ROOT, 'lib', 'mrtrix3', 'app.py')
 APP_PY_STRING = '_DEFAULT_COPYRIGHT ='
 
@@ -127,11 +127,12 @@ def main():
   first_line = next(index for index, value in enumerate(data) if value.strip().startswith(APP_CPP_STRING)) + 1
   indent = ' ' * (len(data[first_line]) - len(data[first_line].lstrip()))
   with open(APP_CPP_PATH, 'w', encoding='utf-8') as app_cpp_file:
-    app_cpp_file.write(''.join(data[:first_line]))
-    for line in COPYRIGHT[:-1]:
+    app_cpp_file.write(''.join(data[:first_line-1]))
+    app_cpp_file.write(APP_CPP_STRING + ' "' + COPYRIGHT[0].replace('"', '\\"') + '\\n"\n')
+    for line in COPYRIGHT[1:-1]:
       app_cpp_file.write(indent + '"' + line.replace('"', '\\"') + '\\n"\n')
     app_cpp_file.write(indent + '"' + COPYRIGHT[-1].replace('"', '\\"') + '\\n";\n')
-    app_cpp_file.write(''.join(data[first_line+len(COPYRIGHT):]))
+    app_cpp_file.write(''.join(data[first_line-1+len(COPYRIGHT):]))
 
 
   with open(APP_PY_PATH, 'r', encoding='utf-8') as app_py_file:

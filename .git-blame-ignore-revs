@@ -97,3 +97,8 @@ aad44d847ac48d02bb7f8badf801dbfaa0ccdac0
 #Author: MRtrixBot <gitbot@mrtrix.org>
 #Date:   Tue Jan 3 13:42:58 2023 +0100
 #    Update Copyright notice in command docs
+
+45fc06bdf687584bf4d55140720e84c5ef517bf0
+#Author: MRtrixBot <gitbot@mrtrix.org>
+#Date:   Thu, 17 Aug 2023 15:36:14 +0100
+#    Apply formatting for C++ using clang-format

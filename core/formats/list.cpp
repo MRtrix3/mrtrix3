@@ -18,92 +18,62 @@
 
 #include "formats/list.h"
 
-namespace MR
-{
-  namespace Formats
-  {
-    RAM           RAM_handler;
-    Pipe          pipe_handler;
-    MRtrix        mrtrix_handler;
-    MRtrix_GZ     mrtrix_gz_handler;
-    MRI           mri_handler;
-    PAR           par_handler;
-    NIfTI1        nifti1_handler;
-    NIfTI2        nifti2_handler;
-    NIfTI1_GZ     nifti1_gz_handler;
-    NIfTI2_GZ     nifti2_gz_handler;
-    XDS           xds_handler;
-    DICOM         dicom_handler;
-    MGH           mgh_handler;
-    MGZ           mgz_handler;
+namespace MR {
+namespace Formats {
+RAM RAM_handler;
+Pipe pipe_handler;
+MRtrix mrtrix_handler;
+MRtrix_GZ mrtrix_gz_handler;
+MRI mri_handler;
+PAR par_handler;
+NIfTI1 nifti1_handler;
+NIfTI2 nifti2_handler;
+NIfTI1_GZ nifti1_gz_handler;
+NIfTI2_GZ nifti2_gz_handler;
+XDS xds_handler;
+DICOM dicom_handler;
+MGH mgh_handler;
+MGZ mgz_handler;
 #ifdef MRTRIX_TIFF_SUPPORT
-    TIFF          tiff_handler;
+TIFF tiff_handler;
 #endif
 #ifdef MRTRIX_PNG_SUPPORT
-    PNG           png_handler;
+PNG png_handler;
 #endif
-    MRtrix_sparse mrtrix_sparse_handler;
+MRtrix_sparse mrtrix_sparse_handler;
 
-
-    const Base* handlers[] = {
-      &RAM_handler,
-      &pipe_handler,
-      &dicom_handler,
-      &mrtrix_handler,
-      &mrtrix_gz_handler,
-      &nifti1_handler,
-      &nifti2_handler,
-      &nifti1_gz_handler,
-      &nifti2_gz_handler,
-      &mri_handler,
-      &par_handler,
-      &xds_handler,
-      &mgh_handler,
-      &mgz_handler,
+const Base *handlers[] = {&RAM_handler,
+                          &pipe_handler,
+                          &dicom_handler,
+                          &mrtrix_handler,
+                          &mrtrix_gz_handler,
+                          &nifti1_handler,
+                          &nifti2_handler,
+                          &nifti1_gz_handler,
+                          &nifti2_gz_handler,
+                          &mri_handler,
+                          &par_handler,
+                          &xds_handler,
+                          &mgh_handler,
+                          &mgz_handler,
 #ifdef MRTRIX_TIFF_SUPPORT
-      &tiff_handler,
+                          &tiff_handler,
 #endif
 #ifdef MRTRIX_PNG_SUPPORT
-      &png_handler,
+                          &png_handler,
 #endif
-      &mrtrix_sparse_handler,
-      nullptr
-    };
+                          &mrtrix_sparse_handler,
+                          nullptr};
 
-
-
-    const char* known_extensions[] = {
-      ".mih",
-      ".mif",
-      ".mif.gz",
-      ".img",
-      ".nii",
-      ".nii.gz",
-      ".bfloat",
-      ".bshort",
-      ".mri",
-      ".par",
-      ".mgh",
-      ".mgz",
-      ".mgh.gz",
-      ".msf",
-      ".msh",
-      ".dcm",
+const char *known_extensions[] = {".mih",  ".mif", ".mif.gz", ".img", ".nii",    ".nii.gz", ".bfloat", ".bshort",
+                                  ".mri",  ".par", ".mgh",    ".mgz", ".mgh.gz", ".msf",    ".msh",    ".dcm",
 #ifdef MRTRIX_TIFF_SUPPORT
-      ".tiff",
-      ".tif",
-      ".TIFF",
-      ".TIF",
+                                  ".tiff", ".tif", ".TIFF",   ".TIF",
 #endif
 #ifdef MRTRIX_PNG_SUPPORT
-      ".png",
-      ".PNG",
+                                  ".png",  ".PNG",
 #endif
-      nullptr
-    };
+                                  nullptr};
 
-  }
-}
-
-
-
+} // namespace Formats
+} // namespace MR

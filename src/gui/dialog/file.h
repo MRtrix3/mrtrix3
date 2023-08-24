@@ -20,39 +20,47 @@
 #include "file/path.h"
 #include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Dialog
-    {
-      namespace File
-      {
+namespace MR {
+namespace GUI {
+namespace Dialog {
+namespace File {
 
-        extern const std::string image_filter_string;
-        void check_overwrite_files_func (const std::string& name);
+extern const std::string image_filter_string;
+void check_overwrite_files_func(const std::string &name);
 
-        std::string get_folder (QWidget* parent, const std::string& caption, std::string* folder = nullptr);
-        std::string get_file (QWidget* parent, const std::string& caption, const std::string& filter = std::string(), std::string* folder = nullptr);
-        vector<std::string> get_files (QWidget* parent, const std::string& caption, const std::string& filter = std::string(), std::string* folder = nullptr);
-        std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& suggested_name = std::string(), const std::string& filter = std::string(), std::string* folder = nullptr);
+std::string get_folder(QWidget *parent, const std::string &caption, std::string *folder = nullptr);
+std::string get_file(QWidget *parent,
+                     const std::string &caption,
+                     const std::string &filter = std::string(),
+                     std::string *folder = nullptr);
+vector<std::string> get_files(QWidget *parent,
+                              const std::string &caption,
+                              const std::string &filter = std::string(),
+                              std::string *folder = nullptr);
+std::string get_save_name(QWidget *parent,
+                          const std::string &caption,
+                          const std::string &suggested_name = std::string(),
+                          const std::string &filter = std::string(),
+                          std::string *folder = nullptr);
 
-        inline std::string get_image (QWidget* parent, const std::string& caption, std::string* folder = nullptr) {
-          return get_file (parent, caption, image_filter_string, folder);
-        }
-
-        inline vector<std::string> get_images (QWidget* parent, const std::string& caption, std::string* folder = nullptr) {
-          return get_files (parent, caption, image_filter_string, folder);
-        }
-
-        inline std::string get_save_image_name (QWidget* parent, const std::string& caption, const std::string& suggested_name = std::string(), std::string* folder = nullptr) {
-          return get_save_name (parent, caption, suggested_name, image_filter_string, folder);
-        }
-
-      }
-    }
-  }
+inline std::string get_image(QWidget *parent, const std::string &caption, std::string *folder = nullptr) {
+  return get_file(parent, caption, image_filter_string, folder);
 }
 
-#endif
+inline vector<std::string> get_images(QWidget *parent, const std::string &caption, std::string *folder = nullptr) {
+  return get_files(parent, caption, image_filter_string, folder);
+}
 
+inline std::string get_save_image_name(QWidget *parent,
+                                       const std::string &caption,
+                                       const std::string &suggested_name = std::string(),
+                                       std::string *folder = nullptr) {
+  return get_save_name(parent, caption, suggested_name, image_filter_string, folder);
+}
+
+} // namespace File
+} // namespace Dialog
+} // namespace GUI
+} // namespace MR
+
+#endif

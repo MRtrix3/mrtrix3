@@ -17,38 +17,26 @@
 #ifndef __axes_h__
 #define __axes_h__
 
-
 #include <string>
 
 #include "types.h"
 
+namespace MR {
+namespace Axes {
 
+//! convert axis directions between formats
+/*! these helper functions convert the definition of
+ *  phase-encoding direction between a 3-vector (e.g.
+ *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
+ */
+std::string dir2id(const Eigen::Vector3d &);
+Eigen::Vector3d id2dir(const std::string &);
 
-namespace MR
-{
-  namespace Axes
-  {
+//! determine the axis permutations and flips necessary to make an image
+//!   appear approximately axial
+void get_permutation_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip);
 
-
-
-    //! convert axis directions between formats
-    /*! these helper functions convert the definition of
-       *  phase-encoding direction between a 3-vector (e.g.
-       *  [0 1 0] ) and a NIfTI axis identifier (e.g. 'i-')
-       */
-    std::string    dir2id (const Eigen::Vector3d&);
-    Eigen::Vector3d id2dir (const std::string&);
-
-
-
-    //! determine the axis permutations and flips necessary to make an image
-    //!   appear approximately axial
-    void get_permutation_to_make_axial (const transform_type& T, std::array<size_t, 3>& perm, std::array<bool, 3>& flip);
-
-
-
-  }
-}
+} // namespace Axes
+} // namespace MR
 
 #endif
-

@@ -17,28 +17,22 @@
 #include "gui/mrview/file_open.h"
 #include "gui/mrview/window.h"
 
-namespace MR
-{
-  namespace GUI
-  {
+namespace MR {
+namespace GUI {
 
-    bool App::event (QEvent *event)
-    {
-      if (event->type() == QEvent::FileOpen) {
-        QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
-        vector<std::unique_ptr<MR::Header>> list;
-        try {
-          list.push_back (make_unique<MR::Header> (MR::Header::open (openEvent->file().toUtf8().data())));
-        }
-        catch (Exception& E) {
-          E.display();
-        }
-        reinterpret_cast<MRView::Window*> (main_window)->add_images (list);
-      }
-      return QApplication::event(event);
+bool App::event(QEvent *event) {
+  if (event->type() == QEvent::FileOpen) {
+    QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
+    vector<std::unique_ptr<MR::Header>> list;
+    try {
+      list.push_back(make_unique<MR::Header>(MR::Header::open(openEvent->file().toUtf8().data())));
+    } catch (Exception &E) {
+      E.display();
     }
-
-
+    reinterpret_cast<MRView::Window *>(main_window)->add_images(list);
   }
+  return QApplication::event(event);
 }
 
+} // namespace GUI
+} // namespace MR

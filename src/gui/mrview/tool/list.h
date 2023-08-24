@@ -17,15 +17,15 @@
 #ifndef TOOL
 
 // place #include files in here:
-#include "gui/mrview/tool/view.h"
-#include "gui/mrview/tool/roi_editor/roi.h"
-#include "gui/mrview/tool/overlay.h"
-#include "gui/mrview/tool/odf/odf.h"
+#include "gui/mrview/tool/connectome/connectome.h"
 #include "gui/mrview/tool/fixel/fixel.h"
+#include "gui/mrview/tool/odf/odf.h"
+#include "gui/mrview/tool/overlay.h"
+#include "gui/mrview/tool/roi_editor/roi.h"
 #include "gui/mrview/tool/screen_capture.h"
 #include "gui/mrview/tool/tractography/tractography.h"
-#include "gui/mrview/tool/connectome/connectome.h"
 #include "gui/mrview/tool/transform.h"
+#include "gui/mrview/tool/view.h"
 
 #else
 
@@ -36,15 +36,12 @@ The third argument is the text to be shown in the menu tooltip. */
 
 TOOL(View, View options, Adjust view settings)
 TOOL(Overlay, Overlay, Overlay other images over the current image)
-TOOL(ROI, ROI editor, View & edit regions of interest)
+TOOL(ROI, ROI editor, View &edit regions of interest)
 TOOL(Tractography, Tractography, Display tracks over the current image)
 TOOL(ODF, ODF display, Display orientation density functions)
 TOOL(Fixel, Fixel plot, Plot fixel images)
 TOOL(Connectome, Connectome, Plot connectome properties)
 TOOL(Capture, Screen capture, Capture the screen as a png file)
-TOOL(Transform, Transform, Manipulate the rigid-body transform of the image)
+TOOL(Transform, Transform, Manipulate the rigid - body transform of the image)
 
 #endif
-
-
-

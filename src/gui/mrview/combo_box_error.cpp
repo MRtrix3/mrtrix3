@@ -17,51 +17,36 @@
 #include "gui/mrview/combo_box_error.h"
 #include "math/math.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
+namespace MR {
+namespace GUI {
+namespace MRView {
 
-      ComboBoxWithErrorMsg::ComboBoxWithErrorMsg (QWidget* parent, const QString& msg) :
-          QComboBox (parent),
-          error_message (msg),
-          error_index (-1)
-      {
-        connect (this, SIGNAL (currentIndexChanged(int)), SLOT (onSetIndex(int)));
-      }
-
-
-      void ComboBoxWithErrorMsg::setError()
-      {
-        if (error_index >= 0) {
-          setCurrentIndex (error_index);
-          return;
-        }
-        // Create the extra element, and set the current index to activate it
-        error_index = count();
-        addItem (error_message);
-        setCurrentIndex (error_index);
-      }
-
-      void ComboBoxWithErrorMsg::clearError (int new_index)
-      {
-        if (error_index == -1 || new_index == error_index)
-          return;
-        // Delete the extra element
-        removeItem (error_index);
-        error_index = -1;
-      }
-
-
-      void ComboBoxWithErrorMsg::onSetIndex (int new_index)
-      {
-        clearError (new_index);
-      }
-
-
-    }
-  }
+ComboBoxWithErrorMsg::ComboBoxWithErrorMsg(QWidget *parent, const QString &msg)
+    : QComboBox(parent), error_message(msg), error_index(-1) {
+  connect(this, SIGNAL(currentIndexChanged(int)), SLOT(onSetIndex(int)));
 }
 
+void ComboBoxWithErrorMsg::setError() {
+  if (error_index >= 0) {
+    setCurrentIndex(error_index);
+    return;
+  }
+  // Create the extra element, and set the current index to activate it
+  error_index = count();
+  addItem(error_message);
+  setCurrentIndex(error_index);
+}
+
+void ComboBoxWithErrorMsg::clearError(int new_index) {
+  if (error_index == -1 || new_index == error_index)
+    return;
+  // Delete the extra element
+  removeItem(error_index);
+  error_index = -1;
+}
+
+void ComboBoxWithErrorMsg::onSetIndex(int new_index) { clearError(new_index); }
+
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
