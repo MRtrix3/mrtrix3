@@ -126,9 +126,7 @@ def auto_gen_cmd(
         cmd_name = escape_cmd_name(cmd_name)
         code_str = code_str.replace(f"class {old_name}", f"class {cmd_name}")
         code_str = code_str.replace(f"{old_name}_input", f"{cmd_name}_input")
-        code_str = code_str.replace(
-            f"{old_name}_output", f"{cmd_name}_output"
-        )
+        code_str = code_str.replace(f"{old_name}_output", f"{cmd_name}_output")
         code_str = re.sub(r"(?<!\w)5tt_in(?!\w)", "in_5tt", code_str)
     try:
         code_str = black.format_file_contents(
@@ -162,8 +160,8 @@ def auto_gen_test(cmd_name: str, output_dir: Path, log_errors: bool, pkg_version
     code_str = f"""# Auto-generated test for {cmd_name}
 
 from fileformats.generic import File  # noqa
-from fileformats.medimage import NiftiGz  # noqa
-from fileformats.mrtrix3 import ImageIn, Tracks  # noqa
+from fileformats.medimage import Nifti1  # noqa
+from fileformats.mrtrix3 import ImageFormat, ImageIn, Tracks  # noqa
 from pydra.tasks.mrtrix3.{pkg_version} import {cmd_name}
 
 
@@ -175,12 +173,21 @@ def test_{cmd_name}(tmp_path):
     output_fields = attrs.fields(make_klass(task.output_spec))
 
     for field in input_fields:
-        if field.name == "executable":
+        if field.name in (
+            "executable",
+            "help",
+            "version",
+            "quiet",
+            "info",
+            "nthreads",
+            "config",
+            "args",
+        ):
             continue
 
         def get_value(type_):
             if type_ is ImageIn:
-                value = "NiftiGz.sample()"
+                value = "Nifti1.sample()"
             elif type_ is Tracks:
                 value = "Tracks.sample()"
             elif type_ is int:
@@ -192,7 +199,6 @@ def test_{cmd_name}(tmp_path):
             elif type_ is bool:
                 value = "True"
             elif type_ is Path:
-                ext = ""
                 try:
                     output_field = getattr(output_fields, field.name)
                 except AttributeError:
@@ -205,10 +211,11 @@ def test_{cmd_name}(tmp_path):
                         output_type = ty.get_args(output_type)[0]
                     if output_type is ImageOut:
                         output_type = ImageFormat
-                    ext = output_type.strext
-                value = f'tmp_path / "{field.name}{ext}"'
-            elif ty.get_origin(type_) in (specs.MultiInputObj, ty.Union):
+                value = f"{output_type.__name__}.sample()"
+            elif ty.get_origin(type_) is ty.Union:
                 value = get_value(ty.get_args(type_)[0])
+            elif ty.get_origin(type_) is specs.MultiInputObj:
+                value = "[" + get_value(ty.get_args(type_)[0]) + "]"
             elif ty.get_origin(type_) and issubclass(ty.get_origin(type_), ty.Sequence):
                 value = (
                     ty.get_origin(type_).__name__
@@ -224,6 +231,8 @@ def test_{cmd_name}(tmp_path):
 
         if field.default is not attrs.NOTHING:
             value = field.default
+        elif "allowed_values" in field.metadata:
+            value = field.metadata["allowed_values"][0]
         else:
             value = get_value(field.type)
 
@@ -232,7 +241,7 @@ def test_{cmd_name}(tmp_path):
     code_str += """
     )
     result = task(plugin="serial")
-    assert result.exit_code == 0
+    assert not result.errored
 """
 
     try:
