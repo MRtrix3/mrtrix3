@@ -161,7 +161,7 @@ def auto_gen_test(cmd_name: str, output_dir: Path, log_errors: bool, pkg_version
 
 from fileformats.generic import File  # noqa
 from fileformats.medimage import Nifti1  # noqa
-from fileformats.mrtrix3 import ImageFormat, ImageIn, Tracks  # noqa
+from fileformats.medimage_mrtrix3 import ImageFormat, ImageIn, Tracks  # noqa
 from pydra.tasks.mrtrix3.{pkg_version} import {cmd_name}
 
 
