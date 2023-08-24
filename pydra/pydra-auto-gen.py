@@ -125,9 +125,9 @@ def auto_gen_cmd(
         old_name = cmd_name
         cmd_name = escape_cmd_name(cmd_name)
         code_str = code_str.replace(f"class {old_name}", f"class {cmd_name}")
-        code_str = code_str.replace(f"{old_name}_input_spec", f"{cmd_name}_input_spec")
+        code_str = code_str.replace(f"{old_name}_input", f"{cmd_name}_input")
         code_str = code_str.replace(
-            f"{old_name}_output_spec", f"{cmd_name}_output_spec"
+            f"{old_name}_output", f"{cmd_name}_output"
         )
         code_str = re.sub(r"(?<!\w)5tt_in(?!\w)", "in_5tt", code_str)
     try:

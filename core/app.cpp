@@ -954,6 +954,7 @@ std::string restructured_text_usage() {
         f += indent + "\"" + escape_id(opt.id) + "\",\n";
         bool is_output_file = false;
         std::string type_string = format_option_type(opt);
+        bool is_multi = type_string.length() > 19 && type_string.substr(0, 19) == "specs.MultiInputObj";
         if (
           opt.size() && 
           (
@@ -963,13 +964,12 @@ std::string restructured_text_usage() {
           )
         ) {
           is_output_file = true;
-          bool is_multi = type_string.length() > 19 && type_string.substr(0, 19) == "specs.MultiInputObj";
           if (!is_multi)
             type_string = "ty.Union[" + type_string + ", bool]";
         }
         // Print type
         f += indent + type_string + ",\n";
-        if (is_output_file)
+        if (is_output_file && !is_multi)
           f += indent + "False,\n";
         f += indent + "{\n";
         // Print metadata fields
