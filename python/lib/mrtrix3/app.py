@@ -1137,7 +1137,7 @@ class Parser(argparse.ArgumentParser):
       return ty.Any
 
     def escape_id(id_: str) -> str:
-      if id_ in PYTHON_KEYWORDS:
+      if id_ in list(PYTHON_KEYWORDS) + ["container", "image", "container_xargs"]:
         escaped = id_ + "_"
       else:
         escaped = id_
