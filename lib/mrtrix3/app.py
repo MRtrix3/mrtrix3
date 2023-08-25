@@ -197,14 +197,14 @@ def _execute(module): #pylint: disable=unused-variable
   if cli_parse_only:
     try:
       if cli_parse_only.lower() in ['yes', 'true'] or int(cli_parse_only):
-        info(
+        console(
           'Quitting after parsing command-line arguments successfully due to '
           'environment variable "MRTRIX_CLI_PARSE_ONLY"'
         )
         sys.exit(return_code)
     except ValueError:
       warn('Potentially corrupt environment variable "MRTRIX_CLI_PARSE_ONLY" '
-           '= " + cli_parse_only + '; ignoring')
+           '= "' + cli_parse_only + '; ignoring')
     sys.exit(return_code)
 
   try:
