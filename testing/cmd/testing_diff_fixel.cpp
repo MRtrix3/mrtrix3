@@ -17,57 +17,53 @@
 #include "command.h"
 #include "datatype.h"
 
-
-#include "image.h"
 #include "fixel/helpers.h"
+#include "image.h"
 
 #include "diff_images.h"
 
 using namespace MR;
 using namespace App;
 
-void usage ()
-{
+void usage() {
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Compare two fixel images for differences, within specified tolerance";
 
   ARGUMENTS
-  + Argument ("fixel1", "fixel directory.").type_directory_in()
-  + Argument ("fixel2", "another fixel directory.").type_directory_in();
+  +Argument("fixel1", "fixel directory.").type_directory_in() +
+      Argument("fixel2", "another fixel directory.").type_directory_in();
 
   OPTIONS
-  + Testing::Diff_Image_Options;
-
+  +Testing::Diff_Image_Options;
 }
 
-
-void run ()
-{
+void run() {
   std::string fixel_directory1 = argument[0];
-  Fixel::check_fixel_directory (fixel_directory1);
+  Fixel::check_fixel_directory(fixel_directory1);
   std::string fixel_directory2 = argument[1];
-  Fixel::check_fixel_directory (fixel_directory2);
+  Fixel::check_fixel_directory(fixel_directory2);
 
   if (fixel_directory1 == fixel_directory2)
-    throw Exception ("Input fixel directorys are the same");
+    throw Exception("Input fixel directorys are the same");
 
-  auto dir_walker1 = Path::Dir (fixel_directory1);
+  auto dir_walker1 = Path::Dir(fixel_directory1);
   std::string fname;
   while ((fname = dir_walker1.read_name()).size()) {
-    auto in1 = Image<cdouble>::open (Path::join (fixel_directory1, fname));
-    std::string filename2 = Path::join (fixel_directory2, fname);
-    if (!Path::exists (filename2))
-      throw Exception ("File (" + fname + ") exists in fixel directory (" + fixel_directory1 + ") but not in fixel directory (" + fixel_directory2 + ") ");
-    auto in2 = Image<cdouble>::open (filename2);
-    Testing::diff_images (in1, in2);
+    auto in1 = Image<cdouble>::open(Path::join(fixel_directory1, fname));
+    std::string filename2 = Path::join(fixel_directory2, fname);
+    if (!Path::exists(filename2))
+      throw Exception("File (" + fname + ") exists in fixel directory (" + fixel_directory1 +
+                      ") but not in fixel directory (" + fixel_directory2 + ") ");
+    auto in2 = Image<cdouble>::open(filename2);
+    Testing::diff_images(in1, in2);
   }
-  auto dir_walker2 = Path::Dir (fixel_directory2);
+  auto dir_walker2 = Path::Dir(fixel_directory2);
   while ((fname = dir_walker2.read_name()).size()) {
-    std::string filename1 = Path::join (fixel_directory1, fname);
-    if (!Path::exists (filename1))
-      throw Exception ("File (" + fname + ") exists in fixel directory (" + fixel_directory2 + ") but not in fixel directory (" + fixel_directory1 + ") ");
+    std::string filename1 = Path::join(fixel_directory1, fname);
+    if (!Path::exists(filename1))
+      throw Exception("File (" + fname + ") exists in fixel directory (" + fixel_directory2 +
+                      ") but not in fixel directory (" + fixel_directory1 + ") ");
   }
-  CONSOLE ("data checked OK");
+  CONSOLE("data checked OK");
 }
-

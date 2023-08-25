@@ -20,50 +20,42 @@
 #include "gui/mrview/colourmap_button.h"
 #include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Tool {
 
-      class Connectome;
+class Connectome;
 
-      // Classes to receive input from the colourmap buttons and act accordingly
-      class NodeColourObserver : public ColourMapButtonObserver
-      { 
-        public:
-          NodeColourObserver (Connectome& connectome) : master (connectome) { }
-          void selected_colourmap (size_t, const ColourMapButton&) override;
-          void selected_custom_colour (const QColor&, const ColourMapButton&) override;
-          void toggle_show_colour_bar (bool, const ColourMapButton&) override;
-          void toggle_invert_colourmap (bool, const ColourMapButton&) override;
-          void reset_colourmap (const ColourMapButton&) override;
-        private:
-          Connectome& master;
-      };
-      class EdgeColourObserver : public ColourMapButtonObserver
-      { 
-        public:
-          EdgeColourObserver (Connectome& connectome) : master (connectome) { }
-          void selected_colourmap (size_t, const ColourMapButton&) override;
-          void selected_custom_colour (const QColor&, const ColourMapButton&) override;
-          void toggle_show_colour_bar (bool, const ColourMapButton&) override;
-          void toggle_invert_colourmap (bool, const ColourMapButton&) override;
-          void reset_colourmap (const ColourMapButton&) override;
-        private:
-          Connectome& master;
-      };
+// Classes to receive input from the colourmap buttons and act accordingly
+class NodeColourObserver : public ColourMapButtonObserver {
+public:
+  NodeColourObserver(Connectome &connectome) : master(connectome) {}
+  void selected_colourmap(size_t, const ColourMapButton &) override;
+  void selected_custom_colour(const QColor &, const ColourMapButton &) override;
+  void toggle_show_colour_bar(bool, const ColourMapButton &) override;
+  void toggle_invert_colourmap(bool, const ColourMapButton &) override;
+  void reset_colourmap(const ColourMapButton &) override;
 
-      }
-    }
-  }
-}
+private:
+  Connectome &master;
+};
+class EdgeColourObserver : public ColourMapButtonObserver {
+public:
+  EdgeColourObserver(Connectome &connectome) : master(connectome) {}
+  void selected_colourmap(size_t, const ColourMapButton &) override;
+  void selected_custom_colour(const QColor &, const ColourMapButton &) override;
+  void toggle_show_colour_bar(bool, const ColourMapButton &) override;
+  void toggle_invert_colourmap(bool, const ColourMapButton &) override;
+  void reset_colourmap(const ColourMapButton &) override;
+
+private:
+  Connectome &master;
+};
+
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-
-
-

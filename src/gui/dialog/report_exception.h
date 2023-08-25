@@ -17,21 +17,17 @@
 #ifndef __gui_dialog_exception_h__
 #define __gui_dialog_exception_h__
 
-#include "gui/opengl/gl.h"
 #include "exception.h"
+#include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Dialog
-    {
+namespace MR {
+namespace GUI {
+namespace Dialog {
 
-      extern void display_exception (const Exception& E, int log_level);
+extern void display_exception(const Exception &E, int log_level);
 
-    }
-  }
 }
+} // namespace GUI
+} // namespace MR
 
 #endif
-

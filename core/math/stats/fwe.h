@@ -14,28 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #ifndef __math_stats_fwe_h__
 #define __math_stats_fwe_h__
 
 #include "math/stats/typedefs.h"
 
+namespace MR {
+namespace Math {
+namespace Stats {
 
-namespace MR
-{
-  namespace Math
-  {
-    namespace Stats
-    {
+matrix_type fwe_pvalue(const matrix_type &null_dist, const matrix_type &stats);
 
-
-
-      matrix_type fwe_pvalue (const matrix_type& null_dist, const matrix_type& stats);
-
-
-
-    }
-  }
 }
+} // namespace Math
+} // namespace MR
 
 #endif

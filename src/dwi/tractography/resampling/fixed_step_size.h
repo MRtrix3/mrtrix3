@@ -17,46 +17,33 @@
 #ifndef __dwi_tractography_resampling_fixed_step_size_h__
 #define __dwi_tractography_resampling_fixed_step_size_h__
 
-
 #include "dwi/tractography/resampling/resampling.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Resampling {
+namespace DWI {
+namespace Tractography {
+namespace Resampling {
 
+class FixedStepSize : public BaseCRTP<FixedStepSize> {
 
+public:
+  FixedStepSize() : step_size(value_type(0)) {}
 
-        class FixedStepSize : public BaseCRTP<FixedStepSize>
-        { 
+  FixedStepSize(const float ss) : step_size(ss) {}
 
-          public:
-            FixedStepSize () :
-              step_size (value_type(0)) { }
+  bool operator()(const Streamline<> &, Streamline<> &) const override;
+  bool valid() const override { return step_size; }
 
-            FixedStepSize (const float ss) :
-              step_size (ss) { }
+  void set_step_size(const value_type ss) { step_size = ss; }
+  float get_step_size() const { return step_size; }
 
-            bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid() const override { return step_size; }
+private:
+  value_type step_size;
+};
 
-            void set_step_size (const value_type ss) { step_size = ss; }
-            float get_step_size() const { return step_size; }
-
-          private:
-            value_type step_size;
-
-        };
-
-
-
-      }
-    }
-  }
-}
+} // namespace Resampling
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-
-

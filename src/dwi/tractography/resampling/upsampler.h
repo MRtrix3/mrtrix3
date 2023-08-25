@@ -17,60 +17,41 @@
 #ifndef __dwi_tractography_resampling_upsampler_h__
 #define __dwi_tractography_resampling_upsampler_h__
 
-
 #include "dwi/tractography/resampling/resampling.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Resampling {
+namespace DWI {
+namespace Tractography {
+namespace Resampling {
 
+class Upsampler : public BaseCRTP<Upsampler> {
 
+public:
+  Upsampler() : data(4, 3) {}
 
-        class Upsampler : public BaseCRTP<Upsampler>
-        { 
+  Upsampler(const size_t os_ratio) : data(4, 3) { set_ratio(os_ratio); }
 
-          public:
-            Upsampler () :
-              data (4, 3) { }
+  Upsampler(const Upsampler &that) : M(that.M), temp(M.rows(), 3), data(4, 3) {}
 
-            Upsampler (const size_t os_ratio) :
-              data (4, 3) {
-                set_ratio (os_ratio);
-              }
+  ~Upsampler() {}
 
-            Upsampler (const Upsampler& that) :
-              M    (that.M),
-              temp (M.rows(), 3),
-              data (4, 3) { }
+  bool operator()(const Streamline<> &, Streamline<> &) const override;
+  bool valid() const override { return true; }
 
-            ~Upsampler() { }
+  void set_ratio(const size_t);
+  size_t get_ratio() const { return (M.rows() ? (M.rows() + 1) : 1); }
 
+private:
+  Eigen::MatrixXf M;
+  mutable Eigen::MatrixXf temp, data;
 
-            bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid () const override { return true; }
+  void interp_prepare(Streamline<> &) const;
+  void increment(const point_type &) const;
+};
 
-            void set_ratio (const size_t);
-            size_t get_ratio() const { return (M.rows() ? (M.rows() + 1) : 1); }
-
-          private:
-            Eigen::MatrixXf M;
-            mutable Eigen::MatrixXf temp, data;
-
-            void interp_prepare (Streamline<>&) const;
-            void increment (const point_type&) const;
-
-        };
-
-
-
-      }
-    }
-  }
-}
+} // namespace Resampling
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-
-

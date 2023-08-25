@@ -14,55 +14,54 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-#include "image.h"
 #include "algo/loop.h"
+#include "command.h"
 #include "fixel/helpers.h"
-
+#include "image.h"
 
 using namespace MR;
 using namespace App;
 
-
-void usage ()
-{
+void usage() {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Extract amplitudes from a peak directions image";
 
   ARGUMENTS
-  + Argument ("directions", "the input directions image. Each volume corresponds to the x, y & z "
-                             "component of each direction vector in turn.").type_image_in ()
+  +Argument("directions",
+            "the input directions image. Each volume corresponds to the x, y & z "
+            "component of each direction vector in turn.")
+          .type_image_in()
 
-  + Argument ("amplitudes", "the output amplitudes image.").type_image_out ();
+      + Argument("amplitudes", "the output amplitudes image.").type_image_out();
 }
 
-
-
-void run ()
-{
-  Header H_in = Header::open (argument[0]);
-  Peaks::check (H_in);
+void run() {
+  Header H_in = Header::open(argument[0]);
+  Peaks::check(H_in);
   auto dir = H_in.get_image<float>();
 
-  Header header (dir);
-  header.size(3) = header.size(3)/3;
+  Header header(dir);
+  header.size(3) = header.size(3) / 3;
 
-  auto amp = Image<float>::create (argument[1], header);
+  auto amp = Image<float>::create(argument[1], header);
 
   auto loop = Loop("converting directions to amplitudes", 0, 3);
 
-  for (auto i = loop (dir, amp); i; ++i) {
+  for (auto i = loop(dir, amp); i; ++i) {
     Eigen::Vector3f n;
     dir.index(3) = 0;
     amp.index(3) = 0;
     while (dir.index(3) < dir.size(3)) {
-      n[0] = dir.value(); ++dir.index(3);
-      n[1] = dir.value(); ++dir.index(3);
-      n[2] = dir.value(); ++dir.index(3);
+      n[0] = dir.value();
+      ++dir.index(3);
+      n[1] = dir.value();
+      ++dir.index(3);
+      n[2] = dir.value();
+      ++dir.index(3);
 
       float amplitude = 0.0;
-      if (std::isfinite (n[0]) && std::isfinite (n[1]) && std::isfinite (n[2]))
+      if (std::isfinite(n[0]) && std::isfinite(n[1]) && std::isfinite(n[2]))
         amplitude = n.norm();
 
       amp.value() = amplitude;

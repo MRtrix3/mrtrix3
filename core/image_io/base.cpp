@@ -17,45 +17,31 @@
 #include "image_io/base.h"
 #include "header.h"
 
-namespace MR
-{
-  namespace ImageIO
-  {
+namespace MR {
+namespace ImageIO {
 
+Base::Base(const Header &header) : segsize(voxel_count(header)), is_new(false), writable(false) {}
 
-    Base::Base (const Header& header) : 
-      segsize (voxel_count (header)),
-      is_new (false),
-      writable (false) { }
+Base::~Base() {}
 
+bool Base::is_file_backed() const { return true; }
 
-    Base::~Base () { }
+void Base::open(const Header &header, size_t buffer_size) {
+  if (addresses.size())
+    return;
 
-
-    bool Base::is_file_backed () const { return true; }
-
-    void Base::open (const Header& header, size_t buffer_size)
-    {
-      if (addresses.size())
-        return;
-
-      load (header, buffer_size);
-      DEBUG ("image \"" + header.name() + "\" loaded");
-    }
-
-
-
-    void Base::close (const Header& header)
-    {
-      if (addresses.empty())
-        return;
-
-      unload (header);
-      DEBUG ("image \"" + header.name() + "\" unloaded");
-      addresses.clear();
-    }
-
-
-  }
+  load(header, buffer_size);
+  DEBUG("image \"" + header.name() + "\" loaded");
 }
 
+void Base::close(const Header &header) {
+  if (addresses.empty())
+    return;
+
+  unload(header);
+  DEBUG("image \"" + header.name() + "\" unloaded");
+  addresses.clear();
+}
+
+} // namespace ImageIO
+} // namespace MR

@@ -20,7 +20,7 @@ import sys
 varlist =  [ ]
 
 for line in sys.stdin:
-  line = line.split ('//ENVVAR')[1][1:]
+  line = line.split ('// ENVVAR')[1][1:]
   if line.startswith ('name:'):
     varlist += [ [ line[6:].strip(), '', '' ] ]
   else:

@@ -23,45 +23,35 @@
 #include "gui/mrview/displayable.h"
 #include "gui/mrview/gui_image.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Tool {
 
-      // Class to handle the node image overlay
-      class NodeOverlay : public MR::GUI::MRView::ImageBase
-      { 
-        public:
-          NodeOverlay (MR::Header&&);
+// Class to handle the node image overlay
+class NodeOverlay : public MR::GUI::MRView::ImageBase {
+public:
+  NodeOverlay(MR::Header &&);
 
-          void update_texture2D (const int, const int) override;
-          void update_texture3D() override;
+  void update_texture2D(const int, const int) override;
+  void update_texture3D() override;
 
-          MR::Image<float> data;
+  MR::Image<float> data;
 
-        private:
-          bool need_update;
+private:
+  bool need_update;
 
-        public:
-          class Shader : public Displayable::Shader { 
-            public:
-            virtual std::string vertex_shader_source (const Displayable&);
-            virtual std::string fragment_shader_source (const Displayable&);
-          } slice_shader;
-      };
+public:
+  class Shader : public Displayable::Shader {
+  public:
+    virtual std::string vertex_shader_source(const Displayable &);
+    virtual std::string fragment_shader_source(const Displayable &);
+  } slice_shader;
+};
 
-
-      }
-    }
-  }
-}
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-
-
-

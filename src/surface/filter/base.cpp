@@ -21,31 +21,33 @@
 
 #include "thread_queue.h"
 
-namespace MR
-{
-  namespace Surface
-  {
-    namespace Filter
-    {
+namespace MR {
+namespace Surface {
+namespace Filter {
 
+void Base::operator()(const MeshMulti &in, MeshMulti &out) const {
+  std::unique_ptr<ProgressBar> progress;
+  if (message.size())
+    progress.reset(new ProgressBar(message, in.size()));
+  out.assign(in.size(), Mesh());
 
-
-      void Base::operator() (const MeshMulti& in, MeshMulti& out) const
-      {
-        std::unique_ptr<ProgressBar> progress;
-        if (message.size())
-          progress.reset (new ProgressBar (message, in.size()));
-        out.assign (in.size(), Mesh());
-
-        std::mutex mutex;
-        auto loader = [&] (size_t& index) { static size_t i = 0; index = i++; return (index != in.size()); };
-        auto worker = [&] (const size_t& index) { (*this) (in[index], out[index]); if (progress) { std::lock_guard<std::mutex> lock (mutex); ++(*progress); } return true; };
-        Thread::run_queue (loader, size_t(), Thread::multi (worker));
-      }
-
-
-
+  std::mutex mutex;
+  auto loader = [&](size_t &index) {
+    static size_t i = 0;
+    index = i++;
+    return (index != in.size());
+  };
+  auto worker = [&](const size_t &index) {
+    (*this)(in[index], out[index]);
+    if (progress) {
+      std::lock_guard<std::mutex> lock(mutex);
+      ++(*progress);
     }
-  }
+    return true;
+  };
+  Thread::run_queue(loader, size_t(), Thread::multi(worker));
 }
 
+} // namespace Filter
+} // namespace Surface
+} // namespace MR

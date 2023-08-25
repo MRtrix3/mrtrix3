@@ -21,59 +21,41 @@
 #include "surface/polygon.h"
 #include "surface/types.h"
 
+namespace MR {
+namespace Surface {
 
-namespace MR
-{
-  namespace Surface
-  {
-
-
-
-    inline Vertex normal (const Vertex& one, const Vertex& two, const Vertex& three)
-    {
-      return (two - one).cross (three - two).normalized();
-    }
-    inline Vertex normal (const Mesh& mesh, const Triangle& tri)
-    {
-      return normal (mesh.vert(tri[0]), mesh.vert(tri[1]), mesh.vert(tri[2]));
-    }
-
-    inline Vertex normal (const Vertex& one, const Vertex& two, const Vertex& three, const Vertex& four)
-    {
-      return (normal (one, two, three) + normal (one, three, four)).normalized();
-    }
-
-    inline Vertex normal (const Mesh& mesh, const Quad& quad)
-    {
-      return normal (mesh.vert(quad[0]), mesh.vert(quad[1]), mesh.vert(quad[2]), mesh.vert(quad[3]));
-    }
-
-
-
-    inline default_type area (const Vertex& one, const Vertex& two, const Vertex& three)
-    {
-      return 0.5 * ((two - one).cross (three - two).norm());
-    }
-
-    inline default_type area (const Mesh& mesh, const Triangle& tri)
-    {
-      return area (mesh.vert(tri[0]), mesh.vert(tri[1]), mesh.vert(tri[2]));
-    }
-
-    inline default_type area (const Vertex& one, const Vertex& two, const Vertex& three, const Vertex& four)
-    {
-      return area (one, two, three) + area (one, three, four);
-    }
-
-    inline default_type area (const Mesh& mesh, const Quad& quad)
-    {
-      return area (mesh.vert(quad[0]), mesh.vert(quad[1]), mesh.vert(quad[2]), mesh.vert(quad[3]));
-    }
-
-
-
-  }
+inline Vertex normal(const Vertex &one, const Vertex &two, const Vertex &three) {
+  return (two - one).cross(three - two).normalized();
+}
+inline Vertex normal(const Mesh &mesh, const Triangle &tri) {
+  return normal(mesh.vert(tri[0]), mesh.vert(tri[1]), mesh.vert(tri[2]));
 }
 
-#endif
+inline Vertex normal(const Vertex &one, const Vertex &two, const Vertex &three, const Vertex &four) {
+  return (normal(one, two, three) + normal(one, three, four)).normalized();
+}
 
+inline Vertex normal(const Mesh &mesh, const Quad &quad) {
+  return normal(mesh.vert(quad[0]), mesh.vert(quad[1]), mesh.vert(quad[2]), mesh.vert(quad[3]));
+}
+
+inline default_type area(const Vertex &one, const Vertex &two, const Vertex &three) {
+  return 0.5 * ((two - one).cross(three - two).norm());
+}
+
+inline default_type area(const Mesh &mesh, const Triangle &tri) {
+  return area(mesh.vert(tri[0]), mesh.vert(tri[1]), mesh.vert(tri[2]));
+}
+
+inline default_type area(const Vertex &one, const Vertex &two, const Vertex &three, const Vertex &four) {
+  return area(one, two, three) + area(one, three, four);
+}
+
+inline default_type area(const Mesh &mesh, const Quad &quad) {
+  return area(mesh.vert(quad[0]), mesh.vert(quad[1]), mesh.vert(quad[2]), mesh.vert(quad[3]));
+}
+
+} // namespace Surface
+} // namespace MR
+
+#endif

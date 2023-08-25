@@ -14,56 +14,44 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #ifndef __gui_mrview_tool_transform_h__
 #define __gui_mrview_tool_transform_h__
 
-#include "gui/mrview/tool/base.h"
 #include "gui/mrview/mode/base.h"
+#include "gui/mrview/tool/base.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
+namespace MR {
+namespace GUI {
+namespace MRView {
 
-      namespace Tool
-      {
+namespace Tool {
 
+class Transform : public Base, public Tool::CameraInteractor {
+  Q_OBJECT
+public:
+  Transform(Dock *parent);
 
-        class Transform : public Base, public Tool::CameraInteractor
-        { 
-          Q_OBJECT
-          public:
-            Transform (Dock* parent);
+  bool slice_move_event(const ModelViewProjection &projection, float inc) override;
+  bool pan_event(const ModelViewProjection &projection) override;
+  bool panthrough_event(const ModelViewProjection &projection) override;
+  bool tilt_event(const ModelViewProjection &projection) override;
+  bool rotate_event(const ModelViewProjection &projection) override;
 
-            bool slice_move_event (const ModelViewProjection& projection, float inc) override;
-            bool pan_event (const ModelViewProjection& projection) override;
-            bool panthrough_event (const ModelViewProjection& projection) override;
-            bool tilt_event (const ModelViewProjection& projection) override;
-            bool rotate_event (const ModelViewProjection& projection) override;
+protected:
+  QPushButton *activate_button;
+  virtual void showEvent(QShowEvent *event) override;
+  virtual void closeEvent(QCloseEvent *event) override;
+  virtual void hideEvent(QHideEvent *event) override;
 
-          protected:
-            QPushButton *activate_button;
-            virtual void showEvent (QShowEvent* event) override;
-            virtual void closeEvent (QCloseEvent* event) override;
-            virtual void hideEvent (QHideEvent* event) override;
+  void setActive(bool onoff);
 
-            void setActive (bool onoff);
+protected slots:
+  void onActivate(bool);
+};
 
-          protected slots:
-            void onActivate (bool);
-        };
-
-      }
-    }
-  }
-}
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-
-
-
-
