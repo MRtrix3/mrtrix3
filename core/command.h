@@ -105,7 +105,7 @@ int main (int cmdline_argc, char** cmdline_argv)
     //ENVVAR if it is 1. This can be used in the CI of wrapping code,
     //ENVVAR such as the automatically generated Pydra interfaces
     char* parse_only = std::getenv("MRTRIX_CLI_PARSE_ONLY");
-    if (parse_only && ::MR::to<int>(parse_only)) {
+    if (parse_only && ::MR::to<bool>(parse_only)) {
       INFO(
         "Quitting after parsing command-line arguments successfully due to environment variable 'MRTRIX_CLI_PARSE_ONLY'"
       );
