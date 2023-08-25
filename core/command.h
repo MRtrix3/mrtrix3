@@ -101,8 +101,8 @@ int main(int cmdline_argc, char **cmdline_argv) {
     // ENVVAR Note that it will have no effect for R interfaces
     char *parse_only = std::getenv("MRTRIX_CLI_PARSE_ONLY");
     if (parse_only && ::MR::to<bool>(parse_only)) {
-      INFO("Quitting after parsing command-line arguments successfully due to environment variable "
-           "'MRTRIX_CLI_PARSE_ONLY'");
+      CONSOLE("Quitting after parsing command-line arguments successfully due to environment variable "
+              "'MRTRIX_CLI_PARSE_ONLY'");
       return 0;
     }
     run();
