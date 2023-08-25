@@ -204,7 +204,7 @@ def _execute(module): #pylint: disable=unused-variable
         sys.exit(return_code)
     except ValueError:
       warn('Potentially corrupt environment variable "MRTRIX_CLI_PARSE_ONLY" '
-           '= "' + cli_parse_only + '; ignoring')
+           '= "' + cli_parse_only + '"; ignoring')
     sys.exit(return_code)
 
   try:
