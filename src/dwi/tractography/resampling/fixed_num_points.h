@@ -17,46 +17,33 @@
 #ifndef __dwi_tractography_resampling_fixed_num_points_h__
 #define __dwi_tractography_resampling_fixed_num_points_h__
 
-
 #include "dwi/tractography/resampling/resampling.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Resampling {
+namespace DWI {
+namespace Tractography {
+namespace Resampling {
 
+class FixedNumPoints : public BaseCRTP<FixedNumPoints> {
 
+public:
+  FixedNumPoints() : num_points(0) {}
 
-        class FixedNumPoints : public BaseCRTP<FixedNumPoints>
-        { 
+  FixedNumPoints(const size_t n) : num_points(n) {}
 
-          public:
-            FixedNumPoints () :
-                num_points (0) { }
+  bool operator()(const Streamline<> &, Streamline<> &) const override;
+  bool valid() const override { return num_points; }
 
-            FixedNumPoints (const size_t n) :
-                num_points (n) { }
+  void set_num_points(const size_t n) { num_points = n; }
+  size_t get_num_points() const { return num_points; }
 
-            bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid() const override { return num_points; }
+private:
+  size_t num_points;
+};
 
-            void set_num_points (const size_t n) { num_points = n; }
-            size_t get_num_points() const { return num_points; }
-
-          private:
-            size_t num_points;
-
-        };
-
-
-
-      }
-    }
-  }
-}
+} // namespace Resampling
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-
-

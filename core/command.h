@@ -17,9 +17,8 @@
 #ifndef __command_h__
 #define __command_h__
 
-
 #ifdef FLUSH_TO_ZERO
-# include <xmmintrin.h>
+#include <xmmintrin.h>
 #endif
 
 #include "app.h"
@@ -27,18 +26,17 @@
 #include "mrtrix.h"
 #ifdef MRTRIX_PROJECT
 namespace MR {
-  namespace App {
-    void set_project_version ();
-  }
+namespace App {
+void set_project_version();
 }
+} // namespace MR
 #endif
 
 #define MRTRIX_UPDATED_API
 
 #ifdef MRTRIX_AS_R_LIBRARY
 
-extern "C" void R_main (int* cmdline_argc, char** cmdline_argv)
-{
+extern "C" void R_main(int *cmdline_argc, char **cmdline_argv) {
   ::MR::App::set_executable_uses_mrtrix_version();
 #ifdef MRTRIX_PROJECT
   ::MR::App::set_project_version();
@@ -49,54 +47,50 @@ extern "C" void R_main (int* cmdline_argc, char** cmdline_argv)
   try {
     usage();
     ::MR::App::verify_usage();
-    ::MR::App::init (*cmdline_argc, cmdline_argv);
-    ::MR::App::parse ();
-    run ();
-  }
-  catch (MR::Exception& E) {
+    ::MR::App::init(*cmdline_argc, cmdline_argv);
+    ::MR::App::parse();
+    run();
+  } catch (MR::Exception &E) {
     E.display();
     return;
-  }
-  catch (int retval) {
+  } catch (int retval) {
     return;
   }
 }
 
-extern "C" void R_usage (char** output)
-{
+extern "C" void R_usage(char **output) {
   ::MR::App::DESCRIPTION.clear();
   ::MR::App::ARGUMENTS.clear();
   ::MR::App::OPTIONS.clear();
   usage();
   std::string s = MR::App::full_usage();
-  *output = new char [s.size()+1];
-  strncpy(*output, s.c_str(), s.size()+1);
+  *output = new char[s.size() + 1];
+  strncpy(*output, s.c_str(), s.size() + 1);
 }
 
 #else
 
-int main (int cmdline_argc, char** cmdline_argv)
-{
+int main(int cmdline_argc, char **cmdline_argv) {
 #ifdef FLUSH_TO_ZERO
   // use gcc switches: -msse -mfpmath=sse -ffast-math
-  int mxcsr = _mm_getcsr ();
+  int mxcsr = _mm_getcsr();
   // Sets denormal results from floating-point calculations to zero:
-  mxcsr |= (1<<15) | (1<<11); // flush-to-zero
+  mxcsr |= (1 << 15) | (1 << 11); // flush-to-zero
   // Treats denormal values used as input to floating-point instructions as zero:
-  mxcsr |= (1<<6); // denormals-are-zero
-  _mm_setcsr (mxcsr);
+  mxcsr |= (1 << 6); // denormals-are-zero
+  _mm_setcsr(mxcsr);
 #endif
   ::MR::App::set_executable_uses_mrtrix_version();
 #ifdef MRTRIX_PROJECT
   ::MR::App::set_project_version();
 #endif
   try {
-    ::MR::App::init (cmdline_argc, cmdline_argv);
-    usage ();
+    ::MR::App::init(cmdline_argc, cmdline_argv);
+    usage();
     ::MR::App::verify_usage();
     ::MR::App::parse_special_options();
 #ifdef __gui_app_h__
-    ::MR::GUI::App app (cmdline_argc, cmdline_argv);
+    ::MR::GUI::App app(cmdline_argc, cmdline_argv);
 #endif
     ::MR::App::parse ();
 
@@ -111,13 +105,11 @@ int main (int cmdline_argc, char** cmdline_argv)
       );
       return 0;
     }
-    run ();
-  }
-  catch (::MR::Exception& E) {
+    run();
+  } catch (::MR::Exception &E) {
     E.display();
     return 1;
-  }
-  catch (int retval) {
+  } catch (int retval) {
     return retval;
   }
   return ::MR::App::exit_error_code;
@@ -126,5 +118,3 @@ int main (int cmdline_argc, char** cmdline_argv)
 #endif
 
 #endif
-
-

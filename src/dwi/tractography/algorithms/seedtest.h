@@ -21,8 +21,6 @@
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
 
-
-
 namespace MR {
 namespace DWI {
 namespace Tractography {
@@ -30,44 +28,35 @@ namespace Algorithms {
 
 using namespace MR::DWI::Tractography::Tracking;
 
-class Seedtest : public MethodBase { 
+class Seedtest : public MethodBase {
 
+public:
+  class Shared : public SharedBase {
   public:
-
-  class Shared : public SharedBase { 
-    public:
-    Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
-        SharedBase (diff_path, property_set)
-    {
-      set_step_and_angle (1.0f, 90.0f, false);
+    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+        : SharedBase(diff_path, property_set) {
+      set_step_and_angle(1.0f, 90.0f, false);
       min_num_points_preds = min_num_points_postds = 1;
       max_num_points_preds = max_num_points_postds = 2;
-      set_cutoff (0.0f);
+      set_cutoff(0.0f);
       unidirectional = true;
       properties["method"] = "Seedtest";
     }
   };
 
-  Seedtest (const Shared& shared) :
-    MethodBase (shared),
-    S (shared) { }
-
+  Seedtest(const Shared &shared) : MethodBase(shared), S(shared) {}
 
   bool init() override { return true; }
-  term_t next () override { return EXIT_IMAGE; }
-  float get_metric (const Eigen::Vector3f& position, const Eigen::Vector3f& direction) override { return 1.0f; }
+  term_t next() override { return EXIT_IMAGE; }
+  float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override { return 1.0f; }
 
-
-  protected:
-    const Shared& S;
-
+protected:
+  const Shared &S;
 };
 
-}
-}
-}
-}
+} // namespace Algorithms
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-

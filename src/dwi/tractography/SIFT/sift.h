@@ -20,21 +20,20 @@
 #include "app.h"
 
 namespace MR {
-namespace App { class OptionGroup; }
+namespace App {
+class OptionGroup;
+}
 namespace DWI {
 namespace Tractography {
 namespace SIFT {
-
 
 extern const App::OptionGroup SIFTModelOption;
 extern const App::OptionGroup SIFTOutputOption;
 extern const App::OptionGroup SIFTTermOption;
 
-
-}
-}
-}
-}
+} // namespace SIFT
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-

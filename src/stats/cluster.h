@@ -20,48 +20,37 @@
 #include "filter/connected_components.h"
 #include "math/stats/typedefs.h"
 
-#include "stats/tfce.h"
 #include "stats/enhance.h"
+#include "stats/tfce.h"
 
-namespace MR
-{
-  namespace Stats
-  {
-    namespace Cluster
-    {
+namespace MR {
+namespace Stats {
+namespace Cluster {
 
+using value_type = Math::Stats::value_type;
+using vector_type = Math::Stats::vector_type;
 
-      using value_type = Math::Stats::value_type;
-      using vector_type = Math::Stats::vector_type;
+/** \addtogroup Statistics
+@{ */
+class ClusterSize : public Stats::TFCE::EnhancerBase {
+public:
+  ClusterSize(const Filter::Connector &connector, const value_type T) : connector(connector), threshold(T) {}
+  virtual ~ClusterSize() {}
 
+  void set_threshold(const value_type T) { threshold = T; }
 
-      /** \addtogroup Statistics
-      @{ */
-      class ClusterSize : public Stats::TFCE::EnhancerBase
-      { 
-        public:
-          ClusterSize (const Filter::Connector& connector, const value_type T) :
-                       connector (connector), threshold (T) { }
-          virtual ~ClusterSize() { }
+protected:
+  const Filter::Connector &connector;
+  value_type threshold;
 
-          void set_threshold (const value_type T) { threshold = T; }
+  void operator()(in_column_type in, out_column_type out) const override { (*this)(in, threshold, out); }
 
-        protected:
-          const Filter::Connector& connector;
-          value_type threshold;
+  void operator()(in_column_type, const value_type, out_column_type) const override;
+};
+//! @}
 
-          void operator() (in_column_type in, out_column_type out) const override {
-            (*this) (in, threshold, out);
-          }
-
-          void operator() (in_column_type, const value_type, out_column_type) const override;
-      };
-      //! @}
-
-
-
-    }
-  }
-}
+} // namespace Cluster
+} // namespace Stats
+} // namespace MR
 
 #endif

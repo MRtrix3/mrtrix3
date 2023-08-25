@@ -18,59 +18,54 @@
 #define __dwi_tractography_tracking_tractography_h__
 
 #include "app.h"
-#include "mrtrix.h"
 #include "dwi/tractography/properties.h"
+#include "mrtrix.h"
 
-
-namespace MR
-{
-  namespace App { class OptionGroup; }
-
-  namespace DWI
-  {
-
-    namespace Tractography
-    {
-
-      namespace Tracking
-      {
-
-        namespace Defaults
-        {
-          constexpr size_t num_selected_tracks = 5000;
-          constexpr size_t seed_to_select_ratio = 1000;
-          constexpr size_t max_attempts_per_seed = 1000;
-
-          constexpr float cutoff_fod = 0.10f;
-          constexpr float cutoff_fixel = 0.10f;
-          constexpr float cutoff_fa = 0.10f;
-          constexpr float cutoff_act_multiplier = 0.5f;
-
-          constexpr size_t max_trials_per_step = 1000;
-
-          constexpr float stepsize_voxels_firstorder = 0.1f;
-          constexpr float stepsize_voxels_rk4 = 0.25f;
-          constexpr float stepsize_voxels_ifod2 = 0.5f;
-
-          constexpr float angle_deterministic = 60.0f;
-          constexpr float angle_ifod1 = 15.0f;
-          constexpr float angle_ifod2 = 45.0f;
-
-          constexpr float minlength_voxels_noact = 5.0f;
-          constexpr float minlength_voxels_withact = 2.0f;
-          constexpr float maxlength_voxels = 100.0f;
-
-          constexpr size_t ifod2_nsamples = 4;
-        }
-
-        extern const App::OptionGroup TrackOption;
-
-        void load_streamline_properties_and_rois (Properties&);
-
-      }
-    }
-  }
+namespace MR {
+namespace App {
+class OptionGroup;
 }
 
-#endif
+namespace DWI {
 
+namespace Tractography {
+
+namespace Tracking {
+
+namespace Defaults {
+constexpr size_t num_selected_tracks = 5000;
+constexpr size_t seed_to_select_ratio = 1000;
+constexpr size_t max_attempts_per_seed = 1000;
+
+constexpr float cutoff_fod = 0.10f;
+constexpr float cutoff_fixel = 0.10f;
+constexpr float cutoff_fa = 0.10f;
+constexpr float cutoff_act_multiplier = 0.5f;
+
+constexpr size_t max_trials_per_step = 1000;
+
+constexpr float stepsize_voxels_firstorder = 0.1f;
+constexpr float stepsize_voxels_rk4 = 0.25f;
+constexpr float stepsize_voxels_ifod2 = 0.5f;
+
+constexpr float angle_deterministic = 60.0f;
+constexpr float angle_ifod1 = 15.0f;
+constexpr float angle_ifod2 = 45.0f;
+
+constexpr float minlength_voxels_noact = 5.0f;
+constexpr float minlength_voxels_withact = 2.0f;
+constexpr float maxlength_voxels = 100.0f;
+
+constexpr size_t ifod2_nsamples = 4;
+} // namespace Defaults
+
+extern const App::OptionGroup TrackOption;
+
+void load_streamline_properties_and_rois(Properties &);
+
+} // namespace Tracking
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
+
+#endif

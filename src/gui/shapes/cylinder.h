@@ -20,31 +20,23 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Shapes
-    {
+namespace MR {
+namespace GUI {
+namespace Shapes {
 
+class Cylinder {
+public:
+  Cylinder() : num_indices(0) {}
 
-    class Cylinder
-    { 
-      public:
-        Cylinder () : num_indices (0) { }
+  void LOD(const size_t);
 
-        void LOD (const size_t);
+  size_t num_indices;
+  GL::VertexBuffer vertex_buffer, normal_buffer;
+  GL::IndexBuffer index_buffer;
+};
 
-        size_t num_indices;
-        GL::VertexBuffer vertex_buffer, normal_buffer;
-        GL::IndexBuffer index_buffer;
-
-    };
-
-
-    }
-  }
-}
+} // namespace Shapes
+} // namespace GUI
+} // namespace MR
 
 #endif
-

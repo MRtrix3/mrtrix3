@@ -110,7 +110,7 @@ echo "
 
 # Generating list of configuration file options
 
-grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b' "${mrtrix_root}" |\
+grep -rn --include=\*.h --include=\*.cpp '^\s*//\sCONF\b' "${mrtrix_root}" |\
   "${mrtrix_root}"/docs/format_config_options > ${mrtrix_root}/docs/reference/config_file_options.rst
 
 
@@ -119,6 +119,6 @@ grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b' "${mrtrix_root}" |\
 
 # Generating list of environment variables
 
-grep -rn --include=\*.h --include=\*.cpp '^\s*//ENVVAR\b' "${mrtrix_root}" |\
+grep -rn --include=\*.h --include=\*.cpp '^\s*//\sENVVAR\b' "${mrtrix_root}" |\
   "${mrtrix_root}"/docs/format_environment_variables > ${mrtrix_root}/docs/reference/environment_variables.rst
 

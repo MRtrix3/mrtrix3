@@ -21,26 +21,18 @@
 
 #include <Eigen/Dense>
 
-namespace MR
-{
-  namespace Math
-  {
-    namespace Stats
-    {
+namespace MR {
+namespace Math {
+namespace Stats {
 
+using value_type = MR::default_type;
+using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
+using index_type = uint32_t;
+using index_array_type = Eigen::Array<index_type, Eigen::Dynamic, 1>;
 
-
-      using value_type = MR::default_type;
-      using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
-      using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
-      using index_type = uint32_t;
-      using index_array_type = Eigen::Array<index_type, Eigen::Dynamic, 1>;
-
-
-
-    }
-  }
-}
-
+} // namespace Stats
+} // namespace Math
+} // namespace MR
 
 #endif

@@ -16,22 +16,18 @@
 
 #include "dwi/tractography/GT/gt.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace GT {
+namespace DWI {
+namespace Tractography {
+namespace GT {
 
-        std::ostream& operator<< (std::ostream& o, Stats const& stats)
-        {
-          return o << stats.Tint << ", " << stats.EextTot << ", " << stats.EintTot << ", " <<
-                      stats.getAcceptanceRate('b') << ", " << stats.getAcceptanceRate('d') << ", " <<
-                      stats.getAcceptanceRate('r') << ", " << stats.getAcceptanceRate('o') << ", " <<
-                      stats.getAcceptanceRate('c');
-        }
-
-      }
-    }
-  }
+std::ostream &operator<<(std::ostream &o, Stats const &stats) {
+  return o << stats.Tint << ", " << stats.EextTot << ", " << stats.EintTot << ", " << stats.getAcceptanceRate('b')
+           << ", " << stats.getAcceptanceRate('d') << ", " << stats.getAcceptanceRate('r') << ", "
+           << stats.getAcceptanceRate('o') << ", " << stats.getAcceptanceRate('c');
 }
 
+} // namespace GT
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR

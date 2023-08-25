@@ -23,40 +23,31 @@
 
 class QLocalSocket;
 
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Sync {
+/**
+ * Auto reads data from its local socket when data arrives, and fires an event with that data attached
+ */
+class LocalSocketReader : public QObject {
+  Q_OBJECT
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Sync
-      {
-        /**
-        * Auto reads data from its local socket when data arrives, and fires an event with that data attached
-        */
-        class LocalSocketReader : public QObject
-        { 
-          Q_OBJECT
+public:
+  LocalSocketReader(QLocalSocket *mySocket);
 
-        public:
-          LocalSocketReader(QLocalSocket* mySocket);
+signals:
+  void DataReceived(vector<std::shared_ptr<QByteArray>> dat); // emits every message currently available
 
+private slots:
+  void OnDataReceived();
 
-        signals:
-          void DataReceived(vector<std::shared_ptr<QByteArray>> dat);//emits every message currently available
+private:
+  QLocalSocket *socket;
+};
 
-
-        private slots:
-          void OnDataReceived();
-
-
-        private:
-          QLocalSocket * socket;
-        };
-
-      }
-    }
-  }
-}
+} // namespace Sync
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 #endif

@@ -16,17 +16,10 @@
 
 #include "gui/shview/file_open.h"
 
-namespace MR
-{
-  namespace GUI
-  {
+namespace MR {
+namespace GUI {
 
-    bool App::event (QEvent *event)
-    {
-      return QApplication::event(event);
-    }
+bool App::event(QEvent *event) { return QApplication::event(event); }
 
-
-  }
-}
-
+} // namespace GUI
+} // namespace MR

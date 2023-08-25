@@ -17,38 +17,22 @@
 #ifndef __gui_mrview_tool_odf_type_h__
 #define __gui_mrview_tool_odf_type_h__
 
-
 #include "gui/dwi/renderer.h"
 
+namespace MR {
 
-namespace MR
-{
+class Header;
 
-  class Header;
+namespace GUI {
+namespace MRView {
+namespace Tool {
 
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
+// TODO Remove
+using odf_type_t = GUI::DWI::Renderer::mode_t;
 
-
-
-        // TODO Remove
-        using odf_type_t = GUI::DWI::Renderer::mode_t;
-
-
-
-
-      }
-    }
-  }
-}
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-
-
-
-

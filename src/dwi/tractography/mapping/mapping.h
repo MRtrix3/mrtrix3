@@ -21,38 +21,27 @@
 #include "progressbar.h"
 #include "types.h"
 
-#include "dwi/tractography/properties.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/properties.h"
 
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Mapping {
+namespace DWI {
+namespace Tractography {
+namespace Mapping {
 
-
-
-        // Convenience functions to figure out an appropriate upsampling ratio for streamline mapping
-        size_t determine_upsample_ratio (const Header&, const float, const float);
-        size_t determine_upsample_ratio (const Header&, const std::string&, const float);
-        size_t determine_upsample_ratio (const Header&, const Tractography::Properties&, const float);
-
-
+// Convenience functions to figure out an appropriate upsampling ratio for streamline mapping
+size_t determine_upsample_ratio(const Header &, const float, const float);
+size_t determine_upsample_ratio(const Header &, const std::string &, const float);
+size_t determine_upsample_ratio(const Header &, const Tractography::Properties &, const float);
 
 #define MAX_TRACKS_READ_FOR_HEADER 1000000
-        void generate_header (Header&, const std::string&, const vector<default_type>&);
+void generate_header(Header &, const std::string &, const vector<default_type> &);
 
-        void oversample_header (Header&, const vector<default_type>&);
+void oversample_header(Header &, const vector<default_type> &);
 
-
-
-
-
-      }
-    }
-  }
-}
+} // namespace Mapping
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-
-

@@ -16,33 +16,26 @@
 
 #include "dwi/tractography/algorithms/iFOD1.h"
 
+namespace MR {
+namespace DWI {
+namespace Tractography {
+namespace Algorithms {
 
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
-      namespace Algorithms
-      {
+using namespace App;
 
-        using namespace App;
+const OptionGroup iFODOptions =
+    OptionGroup("Options specific to the iFOD tracking algorithms")
 
-        const OptionGroup iFODOptions = OptionGroup ("Options specific to the iFOD tracking algorithms")
+    + Option("power", "raise the FOD to the power specified (defaults are: 1.0 for iFOD1; 1.0/nsamples for iFOD2).") +
+    Argument("value").type_float(0.0);
 
-        + Option ("power", "raise the FOD to the power specified (defaults are: 1.0 for iFOD1; 1.0/nsamples for iFOD2).")
-          + Argument ("value").type_float (0.0);
-
-
-        void load_iFOD_options (Tractography::Properties& properties)
-        {
-          auto opt = get_options ("power");
-          if (opt.size()) properties["fod_power"] = str<float> (opt[0][0]);
-        }
-
-      }
-    }
-  }
+void load_iFOD_options(Tractography::Properties &properties) {
+  auto opt = get_options("power");
+  if (opt.size())
+    properties["fod_power"] = str<float>(opt[0][0]);
 }
 
-
+} // namespace Algorithms
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR

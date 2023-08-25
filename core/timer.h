@@ -19,59 +19,55 @@
 
 #include <chrono>
 
-namespace MR
-{
+namespace MR {
 
-  class Timer {
-    public:
-      Timer () {
-        start();
-      }
+class Timer {
+public:
+  Timer() { start(); }
 
-      void start () {
-        from = std::chrono::high_resolution_clock::now();
-      }
-      double elapsed () {
-        return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - from).count() * 1.0e-9;
-      }
+  void start() { from = std::chrono::high_resolution_clock::now(); }
+  double elapsed() {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - from)
+               .count() *
+           1.0e-9;
+  }
 
-      static double current_time () {
-        return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count() * 1.0e-9;
-      }
+  static double current_time() {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch())
+               .count() *
+           1.0e-9;
+  }
 
-    protected:
-      std::chrono::high_resolution_clock::time_point from;
-  };
+protected:
+  std::chrono::high_resolution_clock::time_point from;
+};
 
+// a class to help perform operations at given time intervals
+class IntervalTimer : protected Timer {
+public:
+  //! by default, fire at ~30 Hz - most monitors are 60Hz
+  IntervalTimer(double time_interval = 0.0333333)
+      : interval(std::chrono::duration_cast<std::chrono::high_resolution_clock::duration>(
+            std::chrono::nanoseconds(std::chrono::nanoseconds::rep(1.0e9 * time_interval)))),
+        next_time(from + interval) {}
 
+  //! return true if ready, false otherwise
+  /*! Note that the timer immediately resets; next invocation will return
+   * false until another interval has elapsed. */
+  operator bool() {
+    auto now = std::chrono::high_resolution_clock::now();
+    if (now < next_time)
+      return false;
+    from = now;
+    next_time += interval;
+    return true;
+  }
 
+protected:
+  const std::chrono::high_resolution_clock::duration interval;
+  std::chrono::high_resolution_clock::time_point next_time;
+};
 
-  // a class to help perform operations at given time intervals
-  class IntervalTimer : protected Timer {
-    public:
-      //! by default, fire at ~30 Hz - most monitors are 60Hz
-      IntervalTimer (double time_interval = 0.0333333) :
-        interval (std::chrono::duration_cast<std::chrono::high_resolution_clock::duration> (std::chrono::nanoseconds (std::chrono::nanoseconds::rep (1.0e9*time_interval)))),
-        next_time (from + interval) { }
-
-      //! return true if ready, false otherwise
-      /*! Note that the timer immediately resets; next invocation will return
-       * false until another interval has elapsed. */
-      operator bool() {
-        auto now = std::chrono::high_resolution_clock::now();
-        if (now < next_time)
-          return false;
-        from = now;
-        next_time += interval;
-        return true;
-      }
-
-    protected:
-      const std::chrono::high_resolution_clock::duration interval;
-      std::chrono::high_resolution_clock::time_point next_time;
-  };
-
-}
+} // namespace MR
 
 #endif
-

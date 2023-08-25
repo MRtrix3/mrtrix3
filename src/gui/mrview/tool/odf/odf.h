@@ -18,112 +18,99 @@
 #define __gui_mrview_tool_odf_odf_h__
 
 #include "gui/color_button.h"
-#include "gui/mrview/tool/base.h"
-#include "gui/mrview/tool/odf/type.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/spin_box.h"
+#include "gui/mrview/tool/base.h"
+#include "gui/mrview/tool/odf/type.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace DWI {
-      class Renderer;
-      class RenderFrame;
-    }
+namespace MR {
+namespace GUI {
+namespace DWI {
+class Renderer;
+class RenderFrame;
+} // namespace DWI
 
-    class LightingDock;
+class LightingDock;
 
+namespace MRView {
+namespace Tool {
 
-    namespace MRView
-    {
-      namespace Tool
-      {
+class ODF_Item;
+class ODF_Model;
+class ODF_Preview;
 
-        class ODF_Item;
-        class ODF_Model;
-        class ODF_Preview;
+class ODF : public Base {
+  Q_OBJECT
 
-        class ODF : public Base
-        { 
-            Q_OBJECT
+public:
+  ODF(Dock *parent);
+  ~ODF();
 
-          public:
+  void draw(const Projection &projection, bool is_3D, int axis, int slice) override;
 
-            ODF (Dock* parent);
-            ~ODF();
+  static void add_commandline_options(MR::App::OptionList &options);
+  virtual bool process_commandline_option(const MR::App::ParsedOption &opt) override;
 
-            void draw (const Projection& projection, bool is_3D, int axis, int slice) override;
+private slots:
+  void onPreviewClosed();
+  void sh_open_slot();
+  void tensor_open_slot();
+  void dixel_open_slot();
+  void image_close_slot();
+  void show_preview_slot();
+  void hide_all_slot();
+  void selection_changed_slot(const QItemSelection &, const QItemSelection &);
+  void lmax_slot(int);
+  void dirs_slot();
+  void shell_slot();
+  void adjust_scale_slot();
+  void colour_by_direction_slot(int unused);
+  void hide_negative_values_slot(int unused);
+  void colour_change_slot();
+  void use_lighting_slot(int unused);
+  void lighting_settings_slot(bool unused);
+  void updateGL();
+  void update_preview();
 
-            static void add_commandline_options (MR::App::OptionList& options);
-            virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
+  void close_event() override;
 
-          private slots:
-            void onPreviewClosed ();
-            void sh_open_slot ();
-            void tensor_open_slot ();
-            void dixel_open_slot ();
-            void image_close_slot ();
-            void show_preview_slot ();
-            void hide_all_slot ();
-            void selection_changed_slot (const QItemSelection &, const QItemSelection &);
-            void lmax_slot (int);
-            void dirs_slot();
-            void shell_slot();
-            void adjust_scale_slot ();
-            void colour_by_direction_slot (int unused);
-            void hide_negative_values_slot (int unused);
-            void colour_change_slot();
-            void use_lighting_slot (int unused);
-            void lighting_settings_slot (bool unused);
-            void updateGL ();
-            void update_preview();
+protected:
+  ODF_Preview *preview;
 
-            void close_event() override;
+  DWI::Renderer *renderer;
 
-          protected:
-             ODF_Preview *preview;
+  ODF_Model *image_list_model;
+  QListView *image_list_view;
+  QPushButton *show_preview_button, *hide_all_button;
+  QLabel *lmax_label, *level_of_detail_label;
+  SpinBox *lmax_selector, *level_of_detail_selector;
+  QLabel *dirs_label, *shell_label;
+  QComboBox *dirs_selector, *shell_selector;
+  QCheckBox *use_lighting_box, *hide_negative_values_box, *lock_to_grid_box, *main_grid_box;
+  QCheckBox *colour_by_direction_box, *interpolation_box, *colour_relative_to_projection_box;
+  QColorButton *colour_button;
 
-             DWI::Renderer *renderer;
+  AdjustButton *scale;
 
-             ODF_Model* image_list_model;
-             QListView* image_list_view;
-             QPushButton *show_preview_button, *hide_all_button;
-             QLabel *lmax_label, *level_of_detail_label;
-             SpinBox *lmax_selector, *level_of_detail_selector;
-             QLabel *dirs_label, *shell_label;
-             QComboBox *dirs_selector, *shell_selector;
-             QCheckBox *use_lighting_box, *hide_negative_values_box, *lock_to_grid_box, *main_grid_box;
-             QCheckBox *colour_by_direction_box, *interpolation_box, *colour_relative_to_projection_box;
-             QColorButton *colour_button;
+  LightingDock *lighting_dock;
+  GL::Lighting *lighting;
 
-             AdjustButton *scale;
+  int lmax;
 
-             LightingDock *lighting_dock;
-             GL::Lighting* lighting;
+  void add_images(vector<std::string> &list, const odf_type_t mode);
 
-             int lmax;
+  virtual void closeEvent(QCloseEvent *event) override;
 
-             void add_images (vector<std::string>& list, const odf_type_t mode);
+  ODF_Item *get_image();
+  void get_values(Eigen::VectorXf &, ODF_Item &, const Eigen::Vector3f &, const bool);
+  void setup_ODFtype_UI(const ODF_Item *);
 
-             virtual void closeEvent (QCloseEvent* event) override;
+  friend class ODF_Preview;
+};
 
-             ODF_Item* get_image ();
-             void get_values (Eigen::VectorXf&, ODF_Item&, const Eigen::Vector3f&, const bool);
-             void setup_ODFtype_UI (const ODF_Item*);
-
-             friend class ODF_Preview;
-
-        };
-
-      }
-    }
-  }
-}
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-
-
-
-
