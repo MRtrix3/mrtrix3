@@ -96,8 +96,9 @@ int main(int cmdline_argc, char **cmdline_argv) {
 
     //ENVVAR name: MRTRIX_CLI_PARSE_ONLY
     //ENVVAR Set the command to parse the provided inputs and then quit
-    //ENVVAR if it is 1. This can be used in the CI of wrapping code,
-    //ENVVAR such as the automatically generated Pydra interfaces
+    //ENVVAR if it is set. This can be used in the CI of wrapping code,
+    //ENVVAR such as the automatically generated Pydra interfaces.
+    //ENVVAR Note that it will have no effect for R interfaces
     char* parse_only = std::getenv("MRTRIX_CLI_PARSE_ONLY");
     if (parse_only && ::MR::to<bool>(parse_only)) {
       INFO(
