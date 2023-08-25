@@ -24,6 +24,13 @@ List of MRtrix3 environment variables
      when reading DICOM data, match the StudyName entry against
      the string provided
 
+.. envvar:: MRTRIX_CLI_PARSE_ONLY
+
+     Set the command to parse the provided inputs and then quit
+     if it is set. This can be used in the CI of wrapping code,
+     such as the automatically generated Pydra interfaces.
+     Note that it will have no effect for R interfaces
+
 .. envvar:: MRTRIX_CONFIGFILE
 
      This can be used to set the location of the system-wide
