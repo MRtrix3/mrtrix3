@@ -1211,33 +1211,30 @@ void verify_usage() {
     throw Exception("No synopsis specified for command " + std::string(NAME));
 }
 
-
-
-    void parse_special_options ()
-    {
-      if (argc != 2) return;
-      if (strcmp (argv[1], "__print_full_usage__") == 0) {
-        print (full_usage ());
-        throw 0;
-      }
-      if (strcmp (argv[1], "__print_usage_markdown__") == 0) {
-        print (markdown_usage ());
-        throw 0;
-      }
-      if (strcmp (argv[1], "__print_usage_rst__") == 0) {
-        print (restructured_text_usage ());
-        throw 0;
-      }
-      if (strcmp (argv[1], "__print_usage_pydra__") == 0) {
-        print (pydra_usage ());
-        throw 0;
-      }
-
-      if (strcmp (argv[1], "__print_synopsis__") == 0) {
-        print (SYNOPSIS);
-        throw 0;
-      }
-    }
+void parse_special_options() {
+  if (argc != 2)
+    return;
+  if (strcmp(argv[1], "__print_full_usage__") == 0) {
+    print(full_usage());
+    throw 0;
+  }
+  if (strcmp(argv[1], "__print_usage_markdown__") == 0) {
+    print(markdown_usage());
+    throw 0;
+  }
+  if (strcmp(argv[1], "__print_usage_rst__") == 0) {
+    print(restructured_text_usage());
+    throw 0;
+  }
+  if (strcmp(argv[1], "__print_usage_pydra__") == 0) {
+    print(pydra_usage());
+    throw 0;
+  }
+  if (strcmp(argv[1], "__print_synopsis__") == 0) {
+    print(SYNOPSIS);
+    throw 0;
+  }
+}
 
 void parse() {
   argument.clear();
