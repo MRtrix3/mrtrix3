@@ -30,6 +30,8 @@ DEFAULT_NL_LMAX   = [  2,  2,  2,  2,  2,  2,  2,  2,  4,  4,  4,  4,  4,  4,  4
 
 REGISTRATION_MODES = ['rigid', 'affine', 'nonlinear', 'rigid_affine', 'rigid_nonlinear', 'affine_nonlinear', 'rigid_affine_nonlinear']
 
+LINEAR_ESTIMATORS = ['l1', 'l2', 'lp', 'none']
+
 AGGREGATION_MODES = ['mean', 'median']
 
 IMAGEEXT = ['mif', 'nii', 'mih', 'mgh', 'mgz', 'img', 'hdr']
@@ -57,7 +59,7 @@ def usage(cmdline): #pylint: disable=unused-variable
   linoptions = cmdline.add_argument_group('Options for the linear registration')
   linoptions.add_argument('-linear_no_pause', action='store_true', help='Do not pause the script if a linear registration seems implausible')
   linoptions.add_argument('-linear_no_drift_correction', action='store_true', help='Deactivate correction of template appearance (scale and shear) over iterations')
-  linoptions.add_argument('-linear_estimator', help='Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), Default: None (no robust estimator used)')
+  linoptions.add_argument('-linear_estimator', choices=LINEAR_ESTIMATORS, help='Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: |x|), l2 (ordinary least squares), lp (least powers: |x|^1.2), none (no robust estimator). Default: none.')
   linoptions.add_argument('-rigid_scale', help='Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: %s). This and affine_scale implicitly  define the number of template levels' % ','.join([str(x) for x in DEFAULT_RIGID_SCALES]))
   linoptions.add_argument('-rigid_lmax', help='Specify the lmax used for rigid registration for each scale factor, in the form of a list of integers (default: %s). The list must be the same length as the linear_scale factor list' % ','.join([str(x) for x in DEFAULT_RIGID_LMAX]))
   linoptions.add_argument('-rigid_niter', help='Specify the number of registration iterations used within each level before updating the template, in the form of a list of integers (default:50 for each scale). This must be a single number or a list of same length as the linear_scale factor list')
@@ -663,11 +665,8 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError('initial_alignment must be one of ' + " ".join(["mass", "robust_mass", "geometric", "none"]) + " provided: " + str(initial_alignment))
 
   linear_estimator = app.ARGS.linear_estimator
-  if linear_estimator and not linear_estimator.lower() == 'none':
-    if not dolinear:
-      raise MRtrixError('linear_estimator specified when no linear registration is requested')
-    if linear_estimator not in ["l1", "l2", "lp"]:
-      raise MRtrixError('linear_estimator must be one of ' + " ".join(["l1", "l2", "lp"]) + " provided: " + str(linear_estimator))
+  if linear_estimator is not None and not dolinear:
+    raise MRtrixError('linear_estimator specified when no linear registration is requested')
 
   use_masks = False
   mask_files = []
@@ -1175,7 +1174,7 @@ def execute(): #pylint: disable=unused-variable
                                os.path.join('linear_transforms_%02i' % (level - 1) if level > 0 else 'linear_transforms_initial', inp.uid + '.txt'))
           if do_fod_registration:
             lmax_option = ' -rigid_lmax ' + str(lmax)
-          if linear_estimator:
+          if linear_estimator is not None:
             metric_option = ' -rigid_metric.diff.estimator ' + linear_estimator
           if app.VERBOSITY >= 2:
             mrregister_log_option = ' -info -rigid_log ' + os.path.join('log', inp.uid + contrast[cid] + "_" + str(level) + '.log')
@@ -1189,7 +1188,7 @@ def execute(): #pylint: disable=unused-variable
                                os.path.join('linear_transforms_%02i' % (level - 1) if level > 0 else 'linear_transforms_initial', inp.uid + '.txt'))
           if do_fod_registration:
             lmax_option = ' -affine_lmax ' + str(lmax)
-          if linear_estimator:
+          if linear_estimator is not None:
             metric_option = ' -affine_metric.diff.estimator ' + linear_estimator
           if write_log:
             mrregister_log_option = ' -info -affine_log ' + os.path.join('log', inp.uid + contrast[cid] + "_" + str(level) + '.log')

@@ -90,7 +90,7 @@ Options for the linear registration
 
 - **-linear_no_drift_correction** Deactivate correction of template appearance (scale and shear) over iterations
 
-- **-linear_estimator** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: None (no robust estimator used)
+- **-linear_estimator** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), none (no robust estimator). Default: none.
 
 - **-rigid_scale** Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly  define the number of template levels
 

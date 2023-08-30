@@ -475,8 +475,10 @@ void run() {
     case 2:
       rigid_estimator = Registration::LP;
       break;
+    case 3:
+      rigid_estimator = Registration::None;
     default:
-      break;
+      assert (false);
     }
   }
 
