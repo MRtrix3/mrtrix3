@@ -32,6 +32,9 @@ double matrix_average(vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd &ma
 
 namespace MR {
 
+extern const char *const avgspace_voxspacing_choices[];
+enum class avgspace_voxspacing_t { MIN_PROJECTION, MEAN_PROJECTION, MIN_NEAREST, MEAN_NEAREST };
+
 Eigen::Matrix<default_type, 8, 4> get_cuboid_corners(const Eigen::Matrix<default_type, 4, 1> &xzx1);
 Eigen::Matrix<default_type, 8, 4>
 get_bounding_box(const Header &header, const Eigen::Transform<default_type, 3, Eigen::Projective> &voxel2scanner);
@@ -39,7 +42,7 @@ get_bounding_box(const Header &header, const Eigen::Transform<default_type, 3, E
 Header compute_minimum_average_header(
     const vector<Header> &input_headers,
     const vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
-    int voxel_subsampling = 1,
+    const avgspace_voxspacing_t voxel_spacing_calculation = avgspace_voxspacing_t::MEAN_NEAREST,
     Eigen::Matrix<default_type, 4, 1> padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0));
 
 template <class ImageType1, class ImageType2>
@@ -51,10 +54,10 @@ Header compute_minimum_average_header(
     Eigen::Transform<default_type, 3, Eigen::Projective> transform_2 =
         Eigen::Transform<default_type, 3, Eigen::Projective>::Identity(),
     Eigen::Matrix<default_type, 4, 1> padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0),
-    int voxel_subsampling = 1) {
+    const avgspace_voxspacing_t voxel_spacing_calculation = avgspace_voxspacing_t::MEAN_NEAREST) {
   vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms{transform_1, transform_2};
   vector<Header> headers{im1, im2};
-  return compute_minimum_average_header(headers, init_transforms, voxel_subsampling, padding);
+  return compute_minimum_average_header(headers, init_transforms, voxel_spacing_calculation, padding);
 }
 } // namespace MR
 #endif
