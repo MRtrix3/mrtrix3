@@ -18,14 +18,19 @@ Usage
 -  *input*: the input image(s).
 -  *output*: the output image
 
+Description
+-----------
+
+The voxel spacings of the calculated average header can be determined from the set of input images in one of four different ways, which may be more or less appropriate in different use cases. These options vary in two key ways: 1. Projected voxel spacing of the input image in the direction of the average header axes versus the voxel spacing of the input image axis that is closest to the average header axis; 2. Selecting the minimum of these spacings across input images to maintain maximal spatial resolution versus the mean across images to produce an unbiased average.
+
 Options
 -------
 
 -  **-padding value**  boundary box padding in voxels. Default: 0
 
--  **-resolution type**  subsampling of template compared to smallest voxel size in any input image. Valid options are 'mean': unbiased but loss of resolution for individual images possible, and 'max': smallest voxel size of any input image defines the resolution. Default: mean
+-  **-spacing type** Method for determination of voxel spacings based on the set of input images and the average header axes (see Description).Valid options are: min_projection,mean_projection,min_nearest,mean_nearest; default = mean_nearest
 
--  **-fill**  set the intensity in the first volume of the average space to 1
+-  **-fill** set the intensity in the first volume of the average space to 1
 
 Data type options
 ^^^^^^^^^^^^^^^^^

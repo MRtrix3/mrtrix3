@@ -69,15 +69,25 @@ Eigen::Vector3d id2dir(const std::string &id) {
     throw Exception("Malformed image axis identifier: \"" + id + "\"");
 }
 
-void get_permutation_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip) {
+void get_shuffle_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip) {
+  perm = closest(T.matrix().topLeftCorner<3, 3>());
+  // Figure out whether any of the rows of the transform point in the
+  //   opposite direction to the MRtrix convention
+  flip[perm[0]] = T(0, perm[0]) < 0.0;
+  flip[perm[1]] = T(1, perm[1]) < 0.0;
+  flip[perm[2]] = T(2, perm[2]) < 0.0;
+}
+
+std::array<size_t, 3> closest(const Eigen::Matrix3d &M) {
+  std::array<size_t, 3> result;
   // Find which row of the transform is closest to each scanner axis
-  decltype(T.matrix().topLeftCorner<3, 3>())::Index index;
-  T.matrix().topLeftCorner<3, 3>().row(0).cwiseAbs().maxCoeff(&index);
-  perm[0] = index;
-  T.matrix().topLeftCorner<3, 3>().row(1).cwiseAbs().maxCoeff(&index);
-  perm[1] = index;
-  T.matrix().topLeftCorner<3, 3>().row(2).cwiseAbs().maxCoeff(&index);
-  perm[2] = index;
+  Eigen::Matrix3d::Index index;
+  M.row(0).cwiseAbs().maxCoeff(&index);
+  result[0] = index;
+  M.row(1).cwiseAbs().maxCoeff(&index);
+  result[1] = index;
+  M.row(2).cwiseAbs().maxCoeff(&index);
+  result[2] = index;
 
   // Disambiguate permutations
   auto not_any_of = [](size_t a, size_t b) -> size_t {
@@ -89,19 +99,15 @@ void get_permutation_to_make_axial(const transform_type &T, std::array<size_t, 3
     assert(0);
     return std::numeric_limits<size_t>::max();
   };
-  if (perm[0] == perm[1])
-    perm[1] = not_any_of(perm[0], perm[2]);
-  if (perm[0] == perm[2])
-    perm[2] = not_any_of(perm[0], perm[1]);
-  if (perm[1] == perm[2])
-    perm[2] = not_any_of(perm[0], perm[1]);
-  assert(perm[0] != perm[1] && perm[1] != perm[2] && perm[2] != perm[0]);
+  if (result[0] == result[1])
+    result[1] = not_any_of(result[0], result[2]);
+  if (result[0] == result[2])
+    result[2] = not_any_of(result[0], result[1]);
+  if (result[1] == result[2])
+    result[2] = not_any_of(result[0], result[1]);
+  assert(result[0] != result[1] && result[1] != result[2] && result[2] != result[0]);
 
-  // Figure out whether any of the rows of the transform point in the
-  //   opposite direction to the MRtrix convention
-  flip[perm[0]] = T(0, perm[0]) < 0.0;
-  flip[perm[1]] = T(1, perm[1]) < 0.0;
-  flip[perm[2]] = T(2, perm[2]) < 0.0;
+  return result;
 }
 
 } // namespace Axes
