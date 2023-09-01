@@ -195,14 +195,14 @@ namespace MR
 
 
 
-        matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design)
+        matrix_type solve_betas (const measurements_matrix_type& measurements, const matrix_type& design)
         {
-          return design.jacobiSvd (Eigen::ComputeThinU | Eigen::ComputeThinV).solve (measurements);
+          return design.jacobiSvd (Eigen::ComputeThinU | Eigen::ComputeThinV).solve (measurements.cast<default_type>());
         }
 
 
 
-        vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
+        vector_type abs_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
         {
           if (hypothesis.is_F())
             return vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::quiet_NaN());
@@ -210,7 +210,7 @@ namespace MR
             return hypothesis.matrix() * solve_betas (measurements, design);
         }
 
-        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
+        matrix_type abs_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
         {
           matrix_type result (measurements.cols(), hypotheses.size());
           for (index_type ic = 0; ic != hypotheses.size(); ++ic)
@@ -220,15 +220,15 @@ namespace MR
 
 
 
-        matrix_type stdev (const matrix_type& measurements, const matrix_type& design)
+        matrix_type stdev (const measurements_matrix_type& measurements, const matrix_type& design)
         {
-          const matrix_type residuals = measurements - design * solve_betas (measurements, design);
+          const matrix_type residuals = measurements.cast<default_type>() - design * solve_betas (measurements, design);
           const matrix_type sse = residuals.colwise().squaredNorm();
           return (sse.array() / value_type(design.rows()-Math::rank (design))).sqrt();
         }
 
 
-        matrix_type stdev (const matrix_type& measurements, const matrix_type& design, const index_array_type& variance_groups)
+        matrix_type stdev (const measurements_matrix_type& measurements, const matrix_type& design, const index_array_type& variance_groups)
         {
           assert (measurements.rows() == design.rows());
           if (!variance_groups.size())
@@ -237,7 +237,7 @@ namespace MR
           // Residual-forming matrix
           const matrix_type R (matrix_type::Identity (design.rows(), design.rows()) - (design * Math::pinv (design)));
           // Residuals
-          const matrix_type e (R * measurements);
+          const matrix_type e (R * measurements.cast<default_type>());
           // One standard deviation per element per variance group
           // Rows are variance groups, columns are elements
           const index_type num_vgs = variance_groups.array().maxCoeff() + 1;
@@ -260,14 +260,14 @@ namespace MR
 
 
 
-        vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
+        vector_type std_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
         {
           if (hypothesis.is_F())
             return vector_type::Constant (measurements.cols(), std::numeric_limits<default_type>::quiet_NaN());
           return abs_effect_size (measurements, design, hypothesis).array() / stdev (measurements, design).array().col(0);
         }
 
-        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
+        matrix_type std_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
         {
           const vector_type stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design).array().col(0);
           matrix_type result (measurements.cols(), hypotheses.size());
@@ -281,7 +281,7 @@ namespace MR
 
 
 
-        void all_stats (const matrix_type& measurements,
+        void all_stats (const measurements_matrix_type& measurements,
                         const matrix_type& design,
                         const vector<Hypothesis>& hypotheses,
                         const index_array_type& variance_groups,
@@ -321,7 +321,7 @@ namespace MR
 #endif
           // Explicit calculation of residuals before SSE, rather than in a single
           //   step, appears to be necessary for compatibility with Eigen 3.2.0
-          const matrix_type residuals = (measurements - design * betas);
+          const matrix_type residuals = (measurements.cast<default_type>() - design * betas);
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "Residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
 #else
@@ -346,7 +346,7 @@ namespace MR
 
 
 
-        void all_stats (const matrix_type& measurements,
+        void all_stats (const measurements_matrix_type& measurements,
                         const matrix_type& fixed_design,
                         const vector<CohortDataImport>& extra_data,
                         const vector<Hypothesis>& hypotheses,
@@ -389,7 +389,7 @@ namespace MR
           class Functor
           {
             public:
-              Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_data, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+              Functor (const measurements_matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_data, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                        vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :
                   data (data),
                   design_fixed (design_fixed),
@@ -407,13 +407,13 @@ namespace MR
               }
               bool operator() (const index_type& element_index)
               {
-                const matrix_type element_data = data.col (element_index);
+                const measurements_matrix_type element_data = data.col (element_index);
                 matrix_type element_design (design_fixed.rows(), design_fixed.cols() + extra_data.size());
                 element_design.leftCols (design_fixed.cols()) = design_fixed;
                 // For each element-wise design matrix column,
                 //   acquire the data for this particular element, without permutation
                 for (index_type col = 0; col != extra_data.size(); ++col)
-                  element_design.col (design_fixed.cols() + col) = (extra_data[col]) (element_index);
+                  element_design.col (design_fixed.cols() + col) = (extra_data[col])(element_index).cast<default_type>();
                 // For each element-wise design matrix, remove any NaN values
                 //   present in either the input data or imported from the element-wise design matrix column data
                 index_type valid_rows = 0;
@@ -432,7 +432,7 @@ namespace MR
                   }
                 } else if (valid_rows >= element_design.cols()) {
                   // Need to reduce the data and design matrices to contain only finite data
-                  matrix_type element_data_finite (valid_rows, 1);
+                  measurements_matrix_type element_data_finite (valid_rows, 1);
                   matrix_type element_design_finite (valid_rows, element_design.cols());
                   index_array_type variance_groups_finite (variance_groups.size() ? valid_rows : 0);
                   index_type output_row = 0;
@@ -466,7 +466,7 @@ namespace MR
                 return true;
               }
             private:
-              const matrix_type& data;
+              const measurements_matrix_type& data;
               const matrix_type& design_fixed;
               const vector<CohortDataImport>& extra_data;
               const vector<Hypothesis>& hypotheses;
@@ -560,7 +560,7 @@ namespace MR
 
 
 
-        SharedFixedBase::SharedFixedBase (const matrix_type& measurements,
+        SharedFixedBase::SharedFixedBase (const measurements_matrix_type& measurements,
                                           const matrix_type& design,
                                           const vector<Hypothesis>& hypotheses) :
             pinvM (Math::pinv (design)),
@@ -601,7 +601,7 @@ namespace MR
 
 
 
-        TestFixedHomoscedastic::Shared::Shared (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
+        TestFixedHomoscedastic::Shared::Shared (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
             SharedFixedBase (measurements, design, hypotheses)
         {
           for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
@@ -621,7 +621,7 @@ namespace MR
 
 
 
-        TestFixedHomoscedastic::TestFixedHomoscedastic (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
+        TestFixedHomoscedastic::TestFixedHomoscedastic (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
             TestBase (measurements, design, hypotheses),
 #ifdef NDEBUG
             Sy (measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size()))),
@@ -711,7 +711,7 @@ namespace MR
 
             for (index_type iestart = 0; iestart < num_elements(); iestart += batch_size()) {
               const index_type this_batch_size = std::min (num_elements() - iestart, batch_size());
-              Sy.leftCols(this_batch_size).noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y.block(0, iestart, num_inputs(), this_batch_size);
+              Sy.leftCols(this_batch_size).noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y.block(0, iestart, num_inputs(), this_batch_size).cast<default_type>();
 #ifndef NDEBUG
               Sy.rightCols(Sy.cols() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
 #endif
@@ -780,7 +780,7 @@ namespace MR
 
 
 
-        TestFixedHeteroscedastic::Shared::Shared (const matrix_type& measurements,
+        TestFixedHeteroscedastic::Shared::Shared (const measurements_matrix_type& measurements,
                                                   const matrix_type& design,
                                                   const vector<Hypothesis>& hypotheses,
                                                   const index_array_type& variance_groups) :
@@ -809,7 +809,7 @@ namespace MR
 
 
 
-        TestFixedHeteroscedastic::TestFixedHeteroscedastic (const matrix_type& measurements,
+        TestFixedHeteroscedastic::TestFixedHeteroscedastic (const measurements_matrix_type& measurements,
                                                             const matrix_type& design,
                                                             const vector<Hypothesis>& hypotheses,
                                                             const index_array_type& variance_groups) :
@@ -888,7 +888,7 @@ namespace MR
               const index_type this_batch_size = std::min (num_elements() - iestart, batch_size());
 
               // First two steps are identical to the homoscedastic case
-              Sy.leftCols(this_batch_size).noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y.block(0, iestart, num_inputs(), this_batch_size);
+              Sy.leftCols(this_batch_size).noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y.block(0, iestart, num_inputs(), this_batch_size).cast<default_type>();
 #ifndef NDEBUG
               Sy.rightCols(Sy.cols() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
 #endif
@@ -1007,7 +1007,7 @@ namespace MR
 
 
 
-        TestVariableBase::TestVariableBase (const matrix_type& measurements,
+        TestVariableBase::TestVariableBase (const measurements_matrix_type& measurements,
                                             const matrix_type& design,
                                             const vector<Hypothesis>& hypotheses,
                                             const vector<CohortDataImport>& importers) :
@@ -1027,7 +1027,7 @@ namespace MR
             lambda (design.cols() + importers.size())
 #else
             dof (matrix_type::Constant (measurements.cols(), hypotheses.size(), std::numeric_limits<default_type>::signaling_NaN())),
-            extra_column_data (matrix_type::Constant (measurements.rows(), importers.size(), std::numeric_limits<default_type>::signaling_NaN())),
+            extra_column_data (measurements_matrix_type::Constant (measurements.rows(), importers.size(), std::numeric_limits<measurements_value_type>::signaling_NaN())),
             element_mask (measurements.rows()),
             permuted_mask (measurements.rows()),
             intermediate_shuffling_matrix (shuffle_matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<int8_t>::min())),
@@ -1035,7 +1035,7 @@ namespace MR
             Mfull_masked (matrix_type::Constant (measurements.rows(), design.cols() + importers.size(), std::numeric_limits<default_type>::signaling_NaN())),
             pinvMfull_masked (matrix_type::Constant (design.cols() + importers.size(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
             Rm (matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
-            y_masked (vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            y_masked (measurements_vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
             Sy (vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
             lambda (vector_type::Constant (design.cols() + importers.size(), std::numeric_limits<default_type>::signaling_NaN()))
 #endif
@@ -1060,7 +1060,7 @@ namespace MR
             lambda (that.lambda.size())
 #else
             dof (matrix_type::Constant (that.dof.rows(), that.dof.cols(), std::numeric_limits<default_type>::signaling_NaN())),
-            extra_column_data (matrix_type::Constant (that.extra_column_data.rows(), that.extra_column_data.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            extra_column_data (measurements_matrix_type::Constant (that.extra_column_data.rows(), that.extra_column_data.cols(), std::numeric_limits<measurements_value_type>::signaling_NaN())),
             element_mask (that.element_mask.size()),
             permuted_mask (that.permuted_mask.size()),
             intermediate_shuffling_matrix (shuffle_matrix_type::Constant (that.intermediate_shuffling_matrix.rows(), that.intermediate_shuffling_matrix.cols(), std::numeric_limits<int8_t>::min())),
@@ -1068,7 +1068,7 @@ namespace MR
             Mfull_masked (matrix_type::Constant (that.Mfull_masked.rows(), that.Mfull_masked.cols(), std::numeric_limits<default_type>::signaling_NaN())),
             pinvMfull_masked (matrix_type::Constant (that.pinvMfull_masked.rows(), that.pinvMfull_masked.cols(), std::numeric_limits<default_type>::signaling_NaN())),
             Rm (matrix_type::Constant (that.Rm.rows(), that.Rm.cols(), std::numeric_limits<default_type>::signaling_NaN())),
-            y_masked (vector_type::Constant (that.y_masked.size(), std::numeric_limits<default_type>::signaling_NaN())),
+            y_masked (measurements_vector_type::Constant (that.y_masked.size(), std::numeric_limits<measurements_value_type>::signaling_NaN())),
             Sy (vector_type::Constant (that.Sy.size(), std::numeric_limits<default_type>::signaling_NaN())),
             lambda (vector_type::Constant (that.lambda.size(), std::numeric_limits<default_type>::signaling_NaN()))
 #endif
@@ -1107,7 +1107,7 @@ namespace MR
 
             Mfull_masked.block (0, 0, num_inputs(), M.cols()) = M;
             if (num_importers())
-              Mfull_masked.block (0, M.cols(), num_inputs(), extra_column_data.cols()) = extra_column_data;
+              Mfull_masked.block (0, M.cols(), num_inputs(), extra_column_data.cols()) = extra_column_data.cast<default_type>();
             shuffling_matrix_masked = shuffling_matrix;
             y_masked = y.col (ie);
 
@@ -1119,7 +1119,7 @@ namespace MR
               if (element_mask[in_index]) {
                 Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
                 if (num_importers())
-                  Mfull_masked.block (out_index, M.cols(), 1, extra_column_data.cols()) = extra_column_data.row (in_index);
+                  Mfull_masked.block (out_index, M.cols(), 1, extra_column_data.cols()) = extra_column_data.row (in_index).cast<default_type>();
                 y_masked[out_index++] = y(in_index, ie);
               } else {
                 // Any row in the permutation matrix that contains a non-zero entry
@@ -1137,7 +1137,7 @@ namespace MR
             assert (y_masked.head (finite_count).allFinite());
 #ifndef NDEBUG
             Mfull_masked.bottomRows(num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
-            y_masked.tail (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+            y_masked.tail (num_inputs() - finite_count).fill (std::numeric_limits<measurements_value_type>::signaling_NaN());
 #endif
             // Only after we've reduced the design matrix do we now reduce the shuffling matrix
             // Step 1: Remove rows that contain non-zero entries in columns to be removed
@@ -1187,7 +1187,7 @@ namespace MR
 
 
 
-        TestVariableHomoscedastic::TestVariableHomoscedastic (const matrix_type& measurements,
+        TestVariableHomoscedastic::TestVariableHomoscedastic (const measurements_matrix_type& measurements,
                                                               const matrix_type& design,
                                                               const vector<Hypothesis>& hypotheses,
                                                               const vector<CohortDataImport>& importers,
@@ -1331,7 +1331,7 @@ namespace MR
                     // Now that we have the individual hypothesis model partition for these data,
                     //   the rest of this function should proceed similarly to the fixed
                     //   design matrix case
-                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count).cast<default_type>() * partition.Rz * y_masked.head (finite_count).matrix();
+                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count).cast<default_type>() * partition.Rz * y_masked.head (finite_count).matrix().cast<default_type>();
                     lambda = pinvMfull_masked.leftCols(finite_count) * Sy.head(finite_count).matrix();
                     beta[ih].noalias() = c[ih].matrix() * lambda.matrix();
 #ifdef GLM_TEST_DEBUG
@@ -1403,7 +1403,7 @@ namespace MR
 
 
 
-        TestVariableHeteroscedastic::TestVariableHeteroscedastic (const matrix_type& measurements,
+        TestVariableHeteroscedastic::TestVariableHeteroscedastic (const measurements_matrix_type& measurements,
                                                                   const matrix_type& design,
                                                                   const vector<Hypothesis>& hypotheses,
                                                                   const index_array_type& variance_groups,
@@ -1520,7 +1520,7 @@ namespace MR
 
                     // At this point the implementation diverges from the TestVariableHomoscedastic case,
                     //   more closely mimicing the TestFixedHeteroscedastic case
-                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count).cast<default_type>() * partition.Rz * y_masked.head (finite_count).matrix();
+                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count).cast<default_type>() * partition.Rz * y_masked.head (finite_count).matrix().cast<default_type>();
 #ifndef NDEBUG
                     Sy.tail (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
 #endif

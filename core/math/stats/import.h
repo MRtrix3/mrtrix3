@@ -58,13 +58,13 @@ namespace MR
           * @param row the row of a matrix into which the data from this
           * particular file should be loaded
           */
-          virtual void operator() (matrix_type::RowXpr column) const = 0;
+          virtual void operator() (measurements_matrix_type::RowXpr column) const = 0;
 
           /*!
            * @param index extract the data from this file corresponding to a particular
            * row in the measurements vector
            */
-          virtual default_type operator[] (const index_type index) const = 0;
+          virtual measurements_value_type operator[] (const index_type index) const = 0;
 
           const std::string& name() const { return path; }
 
@@ -98,7 +98,7 @@ namespace MR
            * @param index for a particular element being tested (data will be acquired for
            * all subjects for that element)
            */
-          vector_type operator() (const index_type index) const;
+          measurements_vector_type operator() (const index_type index) const;
 
           operator bool() const { return bool(files.size()); }
           index_type size() const { return files.size(); }

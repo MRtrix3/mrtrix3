@@ -40,6 +40,9 @@ using namespace MR::Math::Stats::GLM;
 using Math::Stats::index_type;
 using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
+using Math::Stats::measurements_value_type;
+using Math::Stats::measurements_vector_type;
+using Math::Stats::measurements_matrix_type;
 using Stats::PermTest::count_matrix_type;
 
 
@@ -139,7 +142,7 @@ class SubjectConnectomeImport : public SubjectDataImportBase
     SubjectConnectomeImport (const std::string& path) :
         SubjectDataImportBase (path)
     {
-      auto M = File::Matrix::load_matrix (path);
+      auto M = File::Matrix::load_matrix<measurements_value_type> (path);
       Connectome::check (M);
       if (Connectome::is_directed (M))
         throw Exception ("Connectome from file \"" + Path::basename (path) + "\" is a directed matrix");
@@ -148,13 +151,13 @@ class SubjectConnectomeImport : public SubjectDataImportBase
       mat2vec.M2V (M, data);
     }
 
-    void operator() (matrix_type::RowXpr row) const override
+    void operator() (measurements_matrix_type::RowXpr row) const override
     {
       assert (row.size() == data.size());
       row = data;
     }
 
-    default_type operator[] (const index_type index) const override
+    measurements_value_type operator[] (const index_type index) const override
     {
       assert (index < index_type(data.size()));
       return (data[index]);
@@ -163,7 +166,7 @@ class SubjectConnectomeImport : public SubjectDataImportBase
     index_type size() const override { return data.size(); }
 
   private:
-    vector_type data;
+    measurements_vector_type data;
 
 };
 
@@ -265,7 +268,7 @@ void run()
   // For compatibility with existing statistics code, symmetric matrix data is adjusted
   //   into vector form - one row per edge in the symmetric connectome. This has already
   //   been performed when the CohortDataImport class is initialised.
-  matrix_type data (importer.size(), num_edges);
+  measurements_matrix_type data (importer.size(), num_edges);
   {
     ProgressBar progress ("Agglomerating input connectome data", importer.size());
     for (index_type subject = 0; subject < importer.size(); subject++) {

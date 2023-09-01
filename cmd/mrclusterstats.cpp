@@ -40,6 +40,8 @@ using namespace MR::Math::Stats;
 using namespace MR::Math::Stats::GLM;
 
 using MR::Math::Stats::index_type;
+using MR::Math::Stats::measurements_value_type;
+using MR::Math::Stats::measurements_matrix_type;
 using Stats::PermTest::count_matrix_type;
 
 
@@ -135,27 +137,28 @@ void write_output (const VectorType& data,
 class SubjectVoxelImport : public SubjectDataImportBase
 {
   public:
+    using image_type = Image<measurements_value_type>;
     SubjectVoxelImport (const std::string& path) :
         SubjectDataImportBase (path),
         H (Header::open (path)),
-        data (H.get_image<float>()) { }
+        data (H.get_image<measurements_value_type>()) { }
 
     virtual ~SubjectVoxelImport() { }
 
-    void operator() (matrix_type::RowXpr row) const override
+    void operator() (measurements_matrix_type::RowXpr row) const override
     {
       assert (v2v);
-      Image<float> temp (data); // For thread-safety
+      image_type temp (data); // For thread-safety
       for (index_type i = 0; i != size(); ++i) {
         assign_pos_of ((*v2v)[i]).to (temp);
         row[i] = temp.value();
       }
     }
 
-    default_type operator[] (const index_type index) const override
+    measurements_value_type operator[] (const index_type index) const override
     {
       assert (v2v);
-      Image<float> temp (data); // For thread-safety
+      image_type temp (data); // For thread-safety
       assign_pos_of ((*v2v)[index]).to (temp);
       assert (!is_out_of_bounds (temp));
       return temp.value();
@@ -171,7 +174,7 @@ class SubjectVoxelImport : public SubjectDataImportBase
 
   private:
     Header H;
-    const Image<float> data;
+    image_type data;
 
     static std::shared_ptr<Voxel2Vector> v2v;
 
@@ -253,7 +256,7 @@ void run() {
                      + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
-  matrix_type data (importer.size(), num_voxels);
+  measurements_matrix_type data (importer.size(), num_voxels);
   {
     // Load images
     ProgressBar progress ("loading input images", importer.size());

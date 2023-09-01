@@ -37,6 +37,10 @@ namespace MR
       using index_array_type = Eigen::Array<index_type, Eigen::Dynamic, 1>;
       using shuffle_matrix_type = Eigen::Matrix<int8_t, Eigen::Dynamic, Eigen::Dynamic>;
 
+      using measurements_value_type = float;
+      using measurements_vector_type = Eigen::Matrix<measurements_value_type, Eigen::Dynamic, 1>;
+      using measurements_matrix_type = Eigen::Matrix<measurements_value_type, Eigen::Dynamic, Eigen::Dynamic>;
+
 
 
     }

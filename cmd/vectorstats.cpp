@@ -73,7 +73,9 @@ void usage ()
 
 
 using Math::Stats::matrix_type;
-using Math::Stats::vector_type;
+using Math::Stats::measurements_value_type;
+using Math::Stats::measurements_vector_type;
+using Math::Stats::measurements_matrix_type;
 using Stats::PermTest::count_matrix_type;
 
 
@@ -91,15 +93,15 @@ class SubjectVectorImport : public SubjectDataImportBase
   public:
     SubjectVectorImport (const std::string& path) :
         SubjectDataImportBase (path),
-        data (File::Matrix::load_vector (path)) { }
+        data (File::Matrix::load_vector<measurements_value_type> (path)) { }
 
-    void operator() (matrix_type::RowXpr row) const override
+    void operator() (measurements_matrix_type::RowXpr row) const override
     {
       assert (index_type(row.size()) == size());
       row = data;
     }
 
-    default_type operator[] (const index_type index) const override
+    measurements_value_type operator[] (const index_type index) const override
     {
       assert (index < size());
       return data[index];
@@ -108,7 +110,7 @@ class SubjectVectorImport : public SubjectDataImportBase
     index_type size() const override { return data.size(); }
 
   private:
-    const vector_type data;
+    const measurements_vector_type data;
 
 };
 
@@ -122,7 +124,7 @@ void run()
   //   a text file containing raw numerical matrix data, rather than
   //   a list of files
   CohortDataImport importer;
-  matrix_type data;
+  measurements_matrix_type data;
   index_type num_inputs = 0, num_elements = 0;
   try {
     importer.initialise<SubjectVectorImport> (argument[0]);
@@ -137,7 +139,7 @@ void run()
       (*importer[subject]) (data.row(subject));
   } catch (Exception& e_asfilelist) {
     try {
-      data = File::Matrix::load_matrix (argument[0]);
+      data = File::Matrix::load_matrix<measurements_matrix_type::Scalar> (argument[0]);
       num_inputs = data.rows();
       num_elements = data.cols();
     } catch (Exception& e_asmatrix) {

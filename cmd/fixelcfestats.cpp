@@ -44,6 +44,8 @@ using namespace App;
 using Math::Stats::matrix_type;
 using Math::Stats::value_type;
 using Math::Stats::vector_type;
+using Math::Stats::measurements_value_type;
+using Math::Stats::measurements_matrix_type;
 using Stats::PermTest::count_matrix_type;
 
 #define DEFAULT_ANGLE_THRESHOLD 45.0
@@ -159,10 +161,11 @@ void write_fixel_output (const std::string& filename,
 class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
 {
   public:
+    using image_type = Image<measurements_value_type>;
     SubjectFixelImport (const std::string& path) :
         Math::Stats::SubjectDataImportBase (path),
         H (Header::open (path)),
-        data (H.get_image<float>())
+        data (H.get_image<measurements_value_type>())
     {
       for (size_t axis = 1; axis < data.ndim(); ++axis) {
         if (data.size(axis) > 1)
@@ -170,16 +173,16 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
       }
     }
 
-    void operator() (matrix_type::RowXpr row) const override
+    void operator() (measurements_matrix_type::RowXpr row) const override
     {
-      Image<float> temp (data); // For thread-safety
+      image_type temp (data); // For thread-safety
       for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0))
         row [temp.index(0)] = temp.value();
     }
 
-    default_type operator[] (const Math::Stats::index_type index) const override
+    measurements_value_type operator[] (const Math::Stats::index_type index) const override
     {
-      Image<float> temp (data); // For thread-safety
+      image_type temp (data); // For thread-safety
       temp.index(0) = index;
       assert (!is_out_of_bounds (temp));
       return default_type(temp.value());
@@ -189,11 +192,9 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
 
     const Header& header() const { return H; }
 
-
-
   private:
     Header H;
-    Image<float> data; // May be mapped input file, or scratch smoothed data
+    image_type data;
 
 };
 
@@ -272,7 +273,7 @@ void run()
     // Check for non-finite values in mask fixels only
     // Can't use generic allFinite() function; need to populate matrix data
     if (!nans_in_columns) {
-      matrix_type column_data (importer.size(), num_fixels);
+      measurements_matrix_type column_data (importer.size(), num_fixels);
       for (Math::Stats::index_type j = 0; j != importer.size(); ++j)
         (*extra_columns[i][j]) (column_data.row (j));
       if (mask_fixels == num_fixels) {
@@ -346,7 +347,7 @@ void run()
   output_header.keyval()["cfe_c"] = str(cfe_c);
   output_header.keyval()["cfe_legacy"] = str(cfe_legacy);
 
-  matrix_type data = matrix_type::Zero (importer.size(), num_fixels);
+  measurements_matrix_type data (importer.size(), num_fixels);
   {
     ProgressBar progress (std::string ("Loading fixel data (no smoothing)"), importer.size());
     for (Math::Stats::index_type subject = 0; subject != importer.size(); subject++) {

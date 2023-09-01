@@ -144,7 +144,7 @@ namespace MR
            * @param design the design matrix
            * @return the matrix containing the output GLM betas (one column of factor betas per element)
            */
-        matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design);
+        matrix_type solve_betas (const measurements_matrix_type& measurements, const matrix_type& design);
 
 
 
@@ -154,8 +154,8 @@ namespace MR
          * @param hypothesis a Hypothesis class instance defining the effect of interest
          * @return the matrix containing the output absolute effect sizes (one column of element effect sizes per contrast)
          */
-        vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
-        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
+        vector_type abs_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
+        matrix_type abs_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
 
 
 
@@ -164,7 +164,7 @@ namespace MR
          * @param design the design matrix
          * @return the vector containing the output standard deviation for each element
          */
-        matrix_type stdev (const matrix_type& measurements, const matrix_type& design);
+        matrix_type stdev (const measurements_matrix_type& measurements, const matrix_type& design);
 
 
 
@@ -173,7 +173,7 @@ namespace MR
          * @param design the design matrix
          * @return the vector containing the output standard deviation for each element
          */
-        matrix_type stdev (const matrix_type& measurements, const matrix_type& design, const index_array_type& variance_groups);
+        matrix_type stdev (const measurements_matrix_type& measurements, const matrix_type& design, const index_array_type& variance_groups);
 
 
 
@@ -183,8 +183,8 @@ namespace MR
          * @param hypothesis a Hypothesis class instance defining the effect of interest
          * @return the matrix containing the output standardised effect sizes (one column of element effect sizes per contrast)
          */
-        vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
-        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
+        vector_type std_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
+        matrix_type std_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
 
 
 
@@ -199,7 +199,7 @@ namespace MR
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+        void all_stats (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                         matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev);
 
         /*! Compute all GLM-related statistics
@@ -214,7 +214,7 @@ namespace MR
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+        void all_stats (const measurements_matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                         vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev);
 
         //! @}
@@ -235,7 +235,7 @@ namespace MR
         class SharedFixedBase
         {
           public:
-            SharedFixedBase (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
+            SharedFixedBase (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
             vector<Hypothesis::Partition> partitions;
             const matrix_type pinvM;
             const matrix_type Rm;
@@ -267,7 +267,7 @@ namespace MR
         class TestBase
         {
           public:
-            TestBase (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
+            TestBase (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
                 y (measurements),
                 M (design),
                 c (hypotheses)
@@ -295,7 +295,7 @@ namespace MR
             virtual index_type num_factors() const { return M.cols(); }
 
           protected:
-            const matrix_type& y;
+            const measurements_matrix_type& y;
             const matrix_type& M;
             const vector<Hypothesis>& c;
 
@@ -328,7 +328,7 @@ namespace MR
 #endif
             {
               public:
-                Shared (const matrix_type& measurements,
+                Shared (const measurements_matrix_type& measurements,
                         const matrix_type& design,
                         const vector<Hypothesis>& hypotheses);
                 ~Shared() { }
@@ -343,7 +343,7 @@ namespace MR
              * @param design the design matrix
              * @param hypotheses a vector of Hypothesis instances
              */
-            TestFixedHomoscedastic (const matrix_type& measurements,
+            TestFixedHomoscedastic (const measurements_matrix_type& measurements,
                                     const matrix_type& design,
                                     const vector<Hypothesis>& hypotheses);
 
@@ -391,7 +391,7 @@ namespace MR
             class Shared : public SharedBase, public SharedFixedBase, public SharedHeteroscedasticBase
             {
               public:
-                Shared (const matrix_type& measurements,
+                Shared (const measurements_matrix_type& measurements,
                         const matrix_type& design,
                         const vector<Hypothesis>& hypotheses,
                         const index_array_type& variance_groups);
@@ -409,7 +409,7 @@ namespace MR
              * @param hypotheses a vector of Hypothesis instances
              * @param variance_groups a vector of integers corresponding to variance group assignments (should be indexed from zero)
              */
-            TestFixedHeteroscedastic (const matrix_type& measurements,
+            TestFixedHeteroscedastic (const measurements_matrix_type& measurements,
                                       const matrix_type& design,
                                       const vector<Hypothesis>& hypotheses,
                                       const index_array_type& variance_groups);
@@ -448,7 +448,7 @@ namespace MR
         class TestVariableBase : public TestBase
         {
           public:
-            TestVariableBase (const matrix_type& measurements,
+            TestVariableBase (const measurements_matrix_type& measurements,
                               const matrix_type& design,
                               const vector<Hypothesis>& hypotheses,
                               const vector<CohortDataImport>& importers);
@@ -461,11 +461,13 @@ namespace MR
 
           protected:
             // Temporaries
-            matrix_type dof, extra_column_data;
+            matrix_type dof;
+            measurements_matrix_type extra_column_data;
             BitSet element_mask, permuted_mask;
             shuffle_matrix_type intermediate_shuffling_matrix, shuffling_matrix_masked;
             matrix_type Mfull_masked, pinvMfull_masked, Rm;
-            vector_type y_masked, Sy, lambda;
+            measurements_vector_type y_masked;
+            vector_type Sy, lambda;
 
             template <class SharedType>
             void set_mask (const SharedType& s, const index_type ie);
@@ -506,7 +508,7 @@ namespace MR
                 ~Shared() { }
             };
 
-            TestVariableHomoscedastic (const matrix_type& measurements,
+            TestVariableHomoscedastic (const measurements_matrix_type& measurements,
                                        const matrix_type& design,
                                        const vector<Hypothesis>& hypotheses,
                                        const vector<CohortDataImport>& importers,
@@ -570,7 +572,7 @@ namespace MR
                 ~Shared() { }
             };
 
-            TestVariableHeteroscedastic (const matrix_type& measurements,
+            TestVariableHeteroscedastic (const measurements_matrix_type& measurements,
                                          const matrix_type& design,
                                          const vector<Hypothesis>& hypotheses,
                                          const index_array_type& variance_groups,
