@@ -198,20 +198,19 @@ namespace MR
           output.data.resize (0, 0);
           return false;
         }
-        // TESTME Think I need to adjust the signflips application based on the permutations
         if (permutations.size()) {
-          output.data = matrix_type::Zero (rows, rows);
+          output.data = shuffle_matrix_type::Zero (rows, rows);
           for (index_type i = 0; i != rows; ++i)
             output.data (i, permutations[counter][i]) = 1.0;
         } else {
-          output.data = matrix_type::Identity (rows, rows);
+          output.data = shuffle_matrix_type::Identity (rows, rows);
         }
         if (signflips.size()) {
           for (index_type r = 0; r != rows; ++r) {
             if (signflips[counter][r]) {
               for (index_type c = 0; c != rows; ++c) {
                 if (output.data (r, c))
-                  output.data (r, c) *= -1.0;
+                  output.data (r, c) *= -1;
               }
             }
           }

@@ -257,7 +257,7 @@ void run()
   // Don't use convenience function: No enhancer!
   // Manually construct default shuffling matrix
   // TODO Change to use convenience function; we make an empty enhancer later anyway
-  const matrix_type default_shuffle (matrix_type::Identity (num_inputs, num_inputs));
+  const shuffle_matrix_type default_shuffle (shuffle_matrix_type::Identity (num_inputs, num_inputs));
   matrix_type default_statistic, default_zstat;
   (*glm_test) (default_shuffle, default_statistic, default_zstat);
   for (index_type i = 0; i != num_hypotheses; ++i) {

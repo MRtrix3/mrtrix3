@@ -55,7 +55,7 @@ namespace MR
       {
         public:
           index_type index;
-          matrix_type data;
+          shuffle_matrix_type data;
       };
 
 

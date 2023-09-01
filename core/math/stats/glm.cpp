@@ -666,7 +666,7 @@ namespace MR
 
 
 
-        void TestFixedHomoscedastic::operator() (const matrix_type& shuffling_matrix,
+        void TestFixedHomoscedastic::operator() (const shuffle_matrix_type& shuffling_matrix,
                                                  matrix_type& stats,
                                                  matrix_type& zstats)
         {
@@ -689,7 +689,7 @@ namespace MR
             VAR (y.rows());
             VAR (y.cols());
 #endif
-            Sy.noalias() = shuffling_matrix * S().partitions[ih].Rz * y;
+            Sy.noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y;
 #ifdef GLM_TEST_DEBUG
             VAR (Sy.rows());
             VAR (Sy.cols());
@@ -841,7 +841,7 @@ namespace MR
 
 
 
-        void TestFixedHeteroscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats)
+        void TestFixedHeteroscedastic::operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats)
         {
           assert (index_type(shuffling_matrix.rows()) == num_inputs());
           stats.resize (num_elements(), num_hypotheses());
@@ -853,7 +853,7 @@ namespace MR
 
           for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
             // First two steps are identical to the homoscedastic case
-            Sy.noalias() = shuffling_matrix * S().partitions[ih].Rz * y;
+            Sy.noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y;
 #ifdef GLM_TEST_DEBUG
             //VAR (Sy);
             VAR (Sy.rows());
@@ -979,8 +979,8 @@ namespace MR
             extra_column_data (matrix_type::Constant (measurements.rows(), importers.size(), std::numeric_limits<default_type>::signaling_NaN())),
             element_mask (measurements.rows()),
             permuted_mask (measurements.rows()),
-            intermediate_shuffling_matrix (matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
-            shuffling_matrix_masked (matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            intermediate_shuffling_matrix (shuffle_matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<int8_t>::min())),
+            shuffling_matrix_masked (shuffle_matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<int8_t>::min())),
             Mfull_masked (matrix_type::Constant (measurements.rows(), design.cols() + importers.size(), std::numeric_limits<default_type>::signaling_NaN())),
             pinvMfull_masked (matrix_type::Constant (design.cols() + importers.size(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
             Rm (matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
@@ -1012,8 +1012,8 @@ namespace MR
             extra_column_data (matrix_type::Constant (that.extra_column_data.rows(), that.extra_column_data.cols(), std::numeric_limits<default_type>::signaling_NaN())),
             element_mask (that.element_mask.size()),
             permuted_mask (that.permuted_mask.size()),
-            intermediate_shuffling_matrix (matrix_type::Constant (that.intermediate_shuffling_matrix.rows(), that.intermediate_shuffling_matrix.cols(), std::numeric_limits<default_type>::signaling_NaN())),
-            shuffling_matrix_masked (matrix_type::Constant (that.shuffling_matrix_masked.rows(), that.shuffling_matrix_masked.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            intermediate_shuffling_matrix (shuffle_matrix_type::Constant (that.intermediate_shuffling_matrix.rows(), that.intermediate_shuffling_matrix.cols(), std::numeric_limits<int8_t>::min())),
+            shuffling_matrix_masked (shuffle_matrix_type::Constant (that.shuffling_matrix_masked.rows(), that.shuffling_matrix_masked.cols(), std::numeric_limits<int8_t>::min())),
             Mfull_masked (matrix_type::Constant (that.Mfull_masked.rows(), that.Mfull_masked.cols(), std::numeric_limits<default_type>::signaling_NaN())),
             pinvMfull_masked (matrix_type::Constant (that.pinvMfull_masked.rows(), that.pinvMfull_masked.cols(), std::numeric_limits<default_type>::signaling_NaN())),
             Rm (matrix_type::Constant (that.Rm.rows(), that.Rm.cols(), std::numeric_limits<default_type>::signaling_NaN())),
@@ -1047,7 +1047,7 @@ namespace MR
 
 
 
-        void TestVariableBase::apply_mask (const index_type ie, const matrix_type& shuffling_matrix)
+        void TestVariableBase::apply_mask (const index_type ie, const shuffle_matrix_type& shuffling_matrix)
         {
           const index_type finite_count = element_mask.count();
           // Do we need to reduce the size of our matrices / vectors
@@ -1097,7 +1097,7 @@ namespace MR
             }
             assert (out_index == finite_count);
 #ifndef NDEBUG
-            intermediate_shuffling_matrix.bottomRows (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+            intermediate_shuffling_matrix.bottomRows (num_inputs() - finite_count).fill (std::numeric_limits<int8_t>::min());
 #endif
             // Step 2: Remove columns
             out_index = 0;
@@ -1107,7 +1107,7 @@ namespace MR
             }
             assert (out_index == finite_count);
 #ifndef NDEBUG
-            shuffling_matrix_masked.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+            shuffling_matrix_masked.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<int8_t>::min());
 #endif
 
           }
@@ -1186,7 +1186,7 @@ namespace MR
 
 
 
-        void TestVariableHomoscedastic::operator() (const matrix_type& shuffling_matrix,
+        void TestVariableHomoscedastic::operator() (const shuffle_matrix_type& shuffling_matrix,
                                                     matrix_type& stats,
                                                     matrix_type& zstats)
         {
@@ -1280,7 +1280,7 @@ namespace MR
                     // Now that we have the individual hypothesis model partition for these data,
                     //   the rest of this function should proceed similarly to the fixed
                     //   design matrix case
-                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count) * partition.Rz * y_masked.head (finite_count).matrix();
+                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count).cast<default_type>() * partition.Rz * y_masked.head (finite_count).matrix();
                     lambda = pinvMfull_masked.leftCols(finite_count) * Sy.head(finite_count).matrix();
                     beta[ih].noalias() = c[ih].matrix() * lambda.matrix();
 #ifdef GLM_TEST_DEBUG
@@ -1421,7 +1421,7 @@ namespace MR
 
 
 
-        void TestVariableHeteroscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats)
+        void TestVariableHeteroscedastic::operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats)
         {
           stats.resize (num_elements(), num_hypotheses());
           zstats.resize (num_elements(), num_hypotheses());
@@ -1469,7 +1469,7 @@ namespace MR
 
                     // At this point the implementation diverges from the TestVariableHomoscedastic case,
                     //   more closely mimicing the TestFixedHeteroscedastic case
-                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count) * partition.Rz * y_masked.head (finite_count).matrix();
+                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count).cast<default_type>() * partition.Rz * y_masked.head (finite_count).matrix();
 #ifndef NDEBUG
                     Sy.tail (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
 #endif

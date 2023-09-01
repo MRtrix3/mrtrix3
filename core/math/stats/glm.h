@@ -285,7 +285,7 @@ namespace MR
              * @param stat the matrix containing the output statistics (one column per hypothesis)
              * @param zstat the matrix containing the Z-transformed statistics (one column per hypothesis)
              */
-            virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) = 0;
+            virtual void operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) = 0;
 
             index_type num_inputs () const { return M.rows(); }
             index_type num_elements () const { return y.cols(); }
@@ -354,7 +354,7 @@ namespace MR
              * @param stats the vector containing the output statistics (one column per hypothesis)
              * @param zstats the vector containing the Z-transformed output statistics (one column per hypothesis)
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) override;
+            void operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) override;
 
             index_type num_factors() const override { return M.cols(); }
 
@@ -421,7 +421,7 @@ namespace MR
              * @param stats the vector containing the output statistics (one column per hypothesis)
              * @param zstats the vector containing the Z-transformed output statistics (one column per hypothesis)
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) override;
+            void operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) override;
 
             index_type num_factors() const final { return M.cols(); }
             index_type num_variance_groups() const { return S().num_vgs; }
@@ -461,13 +461,14 @@ namespace MR
             // Temporaries
             matrix_type dof, extra_column_data;
             BitSet element_mask, permuted_mask;
-            matrix_type intermediate_shuffling_matrix, shuffling_matrix_masked, Mfull_masked, pinvMfull_masked, Rm;
+            shuffle_matrix_type intermediate_shuffling_matrix, shuffling_matrix_masked;
+            matrix_type Mfull_masked, pinvMfull_masked, Rm;
             vector_type y_masked, Sy, lambda;
 
             template <class SharedType>
             void set_mask (const SharedType& s, const index_type ie);
 
-            void apply_mask (const index_type ie, const matrix_type& shuffling_matrix);
+            void apply_mask (const index_type ie, const shuffle_matrix_type& shuffling_matrix);
 
         };
 
@@ -522,7 +523,7 @@ namespace MR
              * In TestVariable* classes, this function additionally needs to import any
              * extra external data individually for each element tested.
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) override;
+            void operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) override;
 
             index_type num_factors() const final { return M.cols() + num_importers(); }
             index_type num_importers() const final { return S().importers.size(); }
@@ -587,7 +588,7 @@ namespace MR
              * In TestVariable* classes, this function additionally needs to import the
              * extra external data individually for each element tested.
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) override;
+            void operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) override;
 
             index_type num_factors() const final { return M.cols() + num_importers(); }
             index_type num_variance_groups() const { return S().num_vgs; }

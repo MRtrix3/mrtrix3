@@ -35,6 +35,7 @@ namespace MR
       using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
       using index_type = uint32_t;
       using index_array_type = Eigen::Array<index_type, Eigen::Dynamic, 1>;
+      using shuffle_matrix_type = Eigen::Matrix<int8_t, Eigen::Dynamic, Eigen::Dynamic>;
 
 
 

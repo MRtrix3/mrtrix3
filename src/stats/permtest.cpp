@@ -15,6 +15,7 @@
  */
 
 #include "stats/permtest.h"
+#include "math/stats/typedefs.h"
 
 namespace MR
 {
@@ -226,7 +227,7 @@ namespace MR
         output_statistics.resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
         output_zstats    .resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
         output_enhanced  .resize (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
-        const matrix_type default_shuffle (matrix_type::Identity (stats_calculator->num_inputs(), stats_calculator->num_inputs()));
+        const Math::Stats::shuffle_matrix_type default_shuffle (Math::Stats::shuffle_matrix_type::Identity (stats_calculator->num_inputs(), stats_calculator->num_inputs()));
         ++progress;
 
         (*stats_calculator) (default_shuffle, output_statistics, output_zstats);
@@ -267,7 +268,7 @@ namespace MR
                                null_dist,
                                null_dist_contributions,
                                global_uncorrected_pvalue_count);
-          Thread::run_queue (shuffler, Math::Stats::Shuffle(), Thread::multi (processor));
+          Thread::run_queue (shuffler, Math::Stats::Shuffle(), Thread::multi (processor), Thread::number_of_threads());
         }
         uncorrected_pvalues = global_uncorrected_pvalue_count.cast<default_type>() / default_type(shuffler.size());
       }
