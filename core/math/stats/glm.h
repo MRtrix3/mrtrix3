@@ -19,13 +19,12 @@
 
 #include "app.h"
 #include "types.h"
-
+#include "file/config.h"
 #include "math/condition_number.h"
 #include "math/least_squares.h"
 #include "math/zstatistic.h"
 #include "math/stats/import.h"
 #include "math/stats/typedefs.h"
-
 #include "misc/bitset.h"
 
 #define MRTRIX_USE_ZSTATISTIC_LOOKUP
@@ -44,6 +43,8 @@ namespace MR
         extern const char* const column_ones_description;
 
         App::OptionGroup glm_options (const std::string& element_name);
+
+        index_type batch_size();
 
 
 
@@ -294,7 +295,8 @@ namespace MR
             virtual index_type num_factors() const { return M.cols(); }
 
           protected:
-            const matrix_type& y, M;
+            const matrix_type& y;
+            const matrix_type& M;
             const vector<Hypothesis>& c;
 
             std::shared_ptr<SharedBase> shared;

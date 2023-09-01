@@ -77,6 +77,21 @@ namespace MR
 
 
 
+        index_type batch_size()
+        {
+          //CONF option: GLMBatchSize
+          //CONF default: 1024
+          //CONF Where the GLM design matrix is fixed across all elements,
+          //CONF this is the number of elements for which data shuffling and model
+          //CONF inversion will be performed concurrently,
+          //CONF ie. in a single set of linear algebra operations
+          static const index_type value = File::Config::get_int("GLMBatchSize", 1024);
+          return value;
+        }
+
+
+
+
         void check_design (const matrix_type& design, const bool extra_factors)
         {
           Eigen::ColPivHouseholderQR<matrix_type> decomp;
@@ -609,15 +624,15 @@ namespace MR
         TestFixedHomoscedastic::TestFixedHomoscedastic (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
             TestBase (measurements, design, hypotheses),
 #ifdef NDEBUG
-            Sy (measurements.rows(), measurements.cols()),
-            lambdas (design.cols(), measurements.cols()),
-            residuals (measurements.rows(), measurements.cols()),
-            sse (measurements.cols())
+            Sy (measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size()))),
+            lambdas (design.cols(), std::min(measurements.cols(), ssize_t(batch_size()))),
+            residuals (measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size()))),
+            sse (std::min(measurements.cols(), ssize_t(batch_size())))
 #else
-            Sy (matrix_type::Constant (measurements.rows(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
-            lambdas (matrix_type::Constant (design.cols(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
-            residuals (matrix_type::Constant (measurements.rows(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
-            sse (vector_type::Constant (measurements.cols(), std::numeric_limits<default_type>::signaling_NaN()))
+            Sy (matrix_type::Constant (measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (design.cols(), std::min(measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            residuals (matrix_type::Constant (measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            sse (vector_type::Constant (std::min(measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN()))
 #endif
         {
           shared.reset (new Shared (measurements, design, hypotheses));
@@ -634,15 +649,15 @@ namespace MR
         TestFixedHomoscedastic::TestFixedHomoscedastic (const TestFixedHomoscedastic& that) :
             TestBase (that),
 #ifdef NDEBUG
-            Sy (num_inputs(), num_elements()),
-            lambdas (num_factors(), num_elements()),
-            residuals (num_inputs(), num_elements()),
-            sse (num_elements())
+            Sy (num_inputs(), std::min (num_elements(), batch_size())),
+            lambdas (num_factors(), std::min (num_elements(), batch_size())),
+            residuals (num_inputs(), std::min (num_elements(), batch_size())),
+            sse (std::min (num_elements(), batch_size()))
 #else
-            Sy (matrix_type::Constant (num_inputs(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
-            lambdas (matrix_type::Constant (num_factors(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
-            residuals (matrix_type::Constant (num_inputs(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
-            sse (vector_type::Constant (num_elements(), std::numeric_limits<default_type>::signaling_NaN()))
+            Sy (matrix_type::Constant (num_inputs(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (num_factors(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            residuals (matrix_type::Constant (num_inputs(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            sse (vector_type::Constant (std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN()))
 #endif
         {
           for (index_type ih = 0; ih != num_hypotheses(); ++ih)
@@ -674,6 +689,10 @@ namespace MR
           stats .resize (num_elements(), num_hypotheses());
           zstats.resize (num_elements(), num_hypotheses());
 
+#ifdef GLM_TEST_DEBUG
+          VAR (batch_size());
+#endif
+
           // Freedman-Lane for fixed design matrix case
           // Each hypothesis needs to be handled explicitly on its own
           for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
@@ -689,55 +708,67 @@ namespace MR
             VAR (y.rows());
             VAR (y.cols());
 #endif
-            Sy.noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y;
+
+            for (index_type iestart = 0; iestart < num_elements(); iestart += batch_size()) {
+              const index_type this_batch_size = std::min (num_elements() - iestart, batch_size());
+              Sy.leftCols(this_batch_size).noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y.block(0, iestart, num_inputs(), this_batch_size);
+#ifndef NDEBUG
+              Sy.rightCols(Sy.cols() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            VAR (Sy.rows());
-            VAR (Sy.cols());
-            VAR (S().pinvM.rows());
-            VAR (S().pinvM.cols());
+              VAR (Sy.rows());
+              VAR (Sy.cols());
+              VAR (S().pinvM.rows());
+              VAR (S().pinvM.cols());
 #endif
-            // Now, we regress this shuffled data against the full model
-            lambdas.noalias() = S().pinvM * Sy;
+              // Now, we regress this shuffled data against the full model
+              lambdas.leftCols(this_batch_size).noalias() = S().pinvM * Sy.leftCols(this_batch_size);
+#ifndef NDEBUG
+              lambdas.rightCols(lambdas.cols() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            VAR (lambdas.rows());
-            VAR (lambdas.cols());
-            VAR (S().Rm.rows());
-            VAR (S().Rm.cols());
-            VAR (S().XtX[ih].rows());
-            VAR (S().XtX[ih].cols());
+              VAR (lambdas.rows());
+              VAR (lambdas.cols());
+              VAR (S().Rm.rows());
+              VAR (S().Rm.cols());
+              VAR (S().XtX[ih].rows());
+              VAR (S().XtX[ih].cols());
 #endif
-            sse = (S().Rm*Sy).colwise().squaredNorm();
+              sse.head(this_batch_size) = (S().Rm * Sy.leftCols(this_batch_size)).colwise().squaredNorm();
+#ifndef NDEBUG
+              sse.tail(sse.size() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            VAR (sse.size());
+              VAR (sse.size());
 #endif
-            for (index_type ie = 0; ie != num_elements(); ++ie) {
-              betas[ih].noalias() = c[ih].matrix() * lambdas.col (ie);
-              const default_type F = ((betas[ih].transpose() * S().XtX[ih] * betas[ih]) (0,0) / c[ih].rank())
-                                     / (S().one_over_dof[ih] * sse[ie]);
-              if (!std::isfinite (F)) {
-                stats  (ie, ih) = zstats (ie, ih) = value_type(0);
-              } else if (c[ih].is_F()) {
-                stats  (ie, ih) = F;
-                zstats (ie, ih) =
-#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
-                S().
-#else
-                Math::
-#endif
-                F2z (F, c[ih].rank(), S().dof[ih]);
-              } else {
-                assert (betas[ih].rows() == 1);
-                stats  (ie, ih) = std::sqrt (F) * (betas[ih].sum() > 0.0 ? 1.0 : -1.0);
-                zstats (ie, ih) =
-#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
-                S().
-#else
-                Math::
-#endif
-                t2z (stats (ie, ih), S().dof[ih]);
+              for (index_type ie = 0; ie != this_batch_size; ++ie) {
+                betas[ih].noalias() = c[ih].matrix() * lambdas.col (ie);
+                const default_type F = ((betas[ih].transpose() * S().XtX[ih] * betas[ih]) (0,0) / c[ih].rank())
+                                      / (S().one_over_dof[ih] * sse[ie]);
+                if (!std::isfinite (F)) {
+                  stats  (ie+iestart, ih) = zstats (ie+iestart, ih) = value_type(0);
+                } else if (c[ih].is_F()) {
+                  stats  (ie+iestart, ih) = F;
+                  zstats (ie+iestart, ih) =
+  #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
+                  S().
+  #else
+                  Math::
+  #endif
+                  F2z (F, c[ih].rank(), S().dof[ih]);
+                } else {
+                  assert (betas[ih].rows() == 1);
+                  stats  (ie+iestart, ih) = std::sqrt (F) * (betas[ih].sum() > 0.0 ? 1.0 : -1.0);
+                  zstats (ie+iestart, ih) =
+  #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
+                  S().
+  #else
+                  Math::
+  #endif
+                  t2z (stats (ie+iestart, ih), S().dof[ih]);
+                }
               }
             }
-
           }
         }
 
@@ -784,26 +815,26 @@ namespace MR
                                                             const index_array_type& variance_groups) :
             TestBase (measurements, design, hypotheses),
 #ifdef NDEBUG
-            Sy (measurements.rows(), measurements.cols()),
-            lambdas (design.cols(), measurements.cols()),
-            sq_residuals (measurements.rows(), measurements.cols()),
+            Sy (measurements.rows(), std::min (measurements.cols(), ssize_t(batch_size()))),
+            lambdas (design.cols(), std::min (measurements.cols(), ssize_t(batch_size()))),
+            sq_residuals (measurements.rows(), std::min (measurements.cols(), ssize_t(batch_size()))),
             W (measurements.rows())
 
 #else
-            Sy (matrix_type::Constant (measurements.rows(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
-            lambdas (matrix_type::Constant (design.cols(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
-            sq_residuals (decltype(sq_residuals)::Constant (measurements.rows(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            Sy (matrix_type::Constant (measurements.rows(), std::min (measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (design.cols(), std::min (measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            sq_residuals (decltype(sq_residuals)::Constant (measurements.rows(), std::min (measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
             W (decltype(W)::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN()))
 #endif
         {
           shared.reset (new Shared (measurements, design, hypotheses, variance_groups));
           // Require shared to have been constructed first
 #ifdef NDEBUG
-          sse_per_vg.resize (num_variance_groups(), measurements.cols());
-          Wterms.resize (num_variance_groups(), measurements.cols());
+          sse_per_vg.resize (num_variance_groups(), std::min (num_elements(), batch_size()));
+          Wterms.resize (num_variance_groups(), std::min (num_elements(), batch_size()));
 #else
-          sse_per_vg = decltype(sse_per_vg)::Constant (num_variance_groups(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN());
-          Wterms = decltype(Wterms)::Constant (num_variance_groups(), measurements.cols(), std::numeric_limits<default_type>::signaling_NaN());
+          sse_per_vg = decltype(sse_per_vg)::Constant (num_variance_groups(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN());
+          Wterms = decltype(Wterms)::Constant (num_variance_groups(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN());
 #endif
         }
 
@@ -812,18 +843,18 @@ namespace MR
         TestFixedHeteroscedastic::TestFixedHeteroscedastic (const TestFixedHeteroscedastic& that) :
             TestBase (that),
 #ifdef NDEBUG
-            Sy (num_inputs(), num_elements()),
-            lambdas (num_factors(), num_elements()),
-            sq_residuals (num_inputs(), num_elements()),
-            sse_per_vg (num_variance_groups(), num_elements()),
-            Wterms (num_variance_groups(), num_elements()),
+            Sy (num_inputs(), std::min (num_elements(), batch_size())),
+            lambdas (num_factors(), std::min (num_elements(), batch_size())),
+            sq_residuals (num_inputs(), std::min (num_elements(), batch_size())),
+            sse_per_vg (num_variance_groups(), std::min (num_elements(), batch_size())),
+            Wterms (num_variance_groups(), std::min (num_elements(), batch_size())),
             W (num_inputs())
 #else
-            Sy (matrix_type::Constant (num_inputs(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
-            lambdas (matrix_type::Constant (num_factors(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
-            sq_residuals (decltype(sq_residuals)::Constant (num_inputs(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
-            sse_per_vg (decltype(sse_per_vg)::Constant (num_variance_groups(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
-            Wterms (decltype(Wterms)::Constant (num_variance_groups(), num_elements(), std::numeric_limits<default_type>::signaling_NaN())),
+            Sy (matrix_type::Constant (num_inputs(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (num_factors(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            sq_residuals (decltype(sq_residuals)::Constant (num_inputs(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            sse_per_vg (decltype(sse_per_vg)::Constant (num_variance_groups(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            Wterms (decltype(Wterms)::Constant (num_variance_groups(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
             W (decltype(W)::Constant (num_inputs(), std::numeric_limits<default_type>::signaling_NaN()))
 #endif
         { }
@@ -852,98 +883,118 @@ namespace MR
 #endif
 
           for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
-            // First two steps are identical to the homoscedastic case
-            Sy.noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y;
-#ifdef GLM_TEST_DEBUG
-            //VAR (Sy);
-            VAR (Sy.rows());
-            VAR (Sy.cols());
+
+            for (index_type iestart = 0; iestart < num_elements(); iestart += batch_size()) {
+              const index_type this_batch_size = std::min (num_elements() - iestart, batch_size());
+
+              // First two steps are identical to the homoscedastic case
+              Sy.leftCols(this_batch_size).noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y.block(0, iestart, num_inputs(), this_batch_size);
+#ifndef NDEBUG
+              Sy.rightCols(Sy.cols() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
 #endif
-            lambdas.noalias() = S().pinvM * Sy;
 #ifdef GLM_TEST_DEBUG
-            //VAR (lambdas);
-            VAR (lambdas.rows());
-            VAR (lambdas.cols());
+              //VAR (Sy);
+              VAR (Sy.rows());
+              VAR (Sy.cols());
 #endif
-            // Compute sum of residuals per VG immediately
-            // Variance groups appear across rows, and one column per element tested
-            // Immediately calculate squared residuals; simplifies summation over variance groups
-            sq_residuals = (S().Rm * Sy).array().square();
+              lambdas.leftCols(this_batch_size).noalias() = S().pinvM * Sy.leftCols(this_batch_size);
+#ifndef NDEBUG
+              lambdas.rightCols(lambdas.cols() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            //VAR (sq_residuals);
+              //VAR (lambdas);
+              VAR (lambdas.rows());
+              VAR (lambdas.cols());
 #endif
-            sse_per_vg.setZero();
-            for (index_type input = 0; input != num_inputs(); ++input)
-              sse_per_vg.row (S().VG[input]) += sq_residuals.row (input);
+              // Compute sum of residuals per VG immediately
+              // Variance groups appear across rows, and one column per element tested
+              // Immediately calculate squared residuals; simplifies summation over variance groups
+              sq_residuals.leftCols(this_batch_size) = (S().Rm * Sy.leftCols(this_batch_size)).array().square();
+#ifndef NDEBUG
+              sq_residuals.rightCols(sq_residuals.cols() - this_batch_size).setConstant(std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            //VAR (sse_per_vg);
-            VAR (sse_per_vg.rows());
-            VAR (sse_per_vg.cols());
+              //VAR (sq_residuals);
 #endif
-            // These terms are what appears in the weighting matrix based on the VG to which each input belongs;
-            //   one row per variance group, one column per element to be tested
-            Wterms = sse_per_vg.array().inverse().colwise() * S().Rnn_sums;
-            for (index_type col = 0; col != num_elements(); ++col) {
-              for (index_type row = 0; row != num_variance_groups(); ++row) {
-                if (!std::isfinite (Wterms (row, col)))
-                  Wterms (row, col) = 0.0;
-              }
-            }
+              sse_per_vg.setZero();
+              for (index_type input = 0; input != num_inputs(); ++input)
+                sse_per_vg.block (S().VG[input], 0, 1, this_batch_size) += sq_residuals.block (input, 0, 1, this_batch_size);
+#ifndef NDEBUG
+              sse_per_vg.rightCols(sse_per_vg.cols() - this_batch_size).setConstant(std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            //VAR (Wterms);
-            VAR (Wterms.rows());
-            VAR (Wterms.cols());
+              //VAR (sse_per_vg);
+              VAR (sse_per_vg.rows());
+              VAR (sse_per_vg.cols());
 #endif
-            for (index_type ie = 0; ie != num_elements(); ++ie) {
-              // Need to construct the weights diagonal matrix; is unique for each element
-              default_type W_trace (0.0);
-              for (index_type input = 0; input != num_inputs(); ++input) {
-                W[input] = Wterms (S().VG[input], ie);
-                W_trace += W[input];
-              }
-#ifdef GLM_TEST_DEBUG
-              VAR (W_trace);
+              // These terms are what appears in the weighting matrix based on the VG to which each input belongs;
+              //   one row per variance group, one column per element to be tested
+              Wterms.leftCols(this_batch_size) = sse_per_vg.leftCols(this_batch_size).array().inverse().colwise() * S().Rnn_sums;
+#ifndef NDEBUG
+              Wterms.rightCols(Wterms.cols() - this_batch_size).setConstant(std::numeric_limits<default_type>::signaling_NaN());
 #endif
-              const default_type numerator = lambdas.col (ie).transpose() * c[ih].matrix().transpose() * (c[ih].matrix() * (M.transpose() * W.asDiagonal() * M).inverse() * c[ih].matrix().transpose()).inverse() * c[ih].matrix() * lambdas.col (ie);
-#ifdef GLM_TEST_DEBUG
-              VAR (numerator);
-#endif
-              default_type gamma (0.0);
-              for (index_type vg_index = 0; vg_index != num_variance_groups(); ++vg_index)
-                // Since Wnn is the same for every n in the variance group, can compute that summation as the product of:
-                //   - the value inserted in W for that particular VG
-                //   - the number of inputs that are a part of that VG
-                gamma += S().inv_Rnn_sums[vg_index] * Math::pow2 (1.0 - ((Wterms(vg_index, ie) * S().inputs_per_vg[vg_index]) / W_trace));
-              gamma = 1.0 + (S().gamma_weights[ih] * gamma);
-#ifdef GLM_TEST_DEBUG
-              VAR (gamma);
-#endif
-              const default_type denominator = gamma * c[ih].rank();
-              const default_type G = numerator / denominator;
-              if (!std::isfinite (G)) {
-                stats  (ie, ih) = zstats (ie, ih) = value_type(0);
-              } else {
-                stats  (ie, ih) = c[ih].is_F() ?
-                                  G :
-                                  std::sqrt (G) * ((c[ih].matrix() * lambdas.col (ie)).sum() > 0.0 ? 1.0 : -1.0);
-                if (c[ih].is_F() && c[ih].rank() > 1) {
-                  const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
-#ifdef GLM_TEST_DEBUG
-                  VAR (dof);
-#endif
-                  zstats (ie, ih) = Math::G2z (G, c[ih].rank(), dof);
-                } else {
-                  const default_type dof = Math::welch_satterthwaite (Wterms.col (ie).inverse(), S().inputs_per_vg);
-#ifdef GLM_TEST_DEBUG
-                  VAR (dof);
-#endif
-                  zstats (ie, ih) = c[ih].is_F() ?
-                                    Math::G2z (G, c[ih].rank(), dof) :
-                                    Math::v2z (stats (ie, ih), dof);
+              for (index_type col = 0; col != this_batch_size; ++col) {
+                for (index_type row = 0; row != num_variance_groups(); ++row) {
+                  if (!std::isfinite (Wterms (row, col)))
+                    Wterms (row, col) = 0.0;
                 }
               }
-            }
+#ifdef GLM_TEST_DEBUG
+              //VAR (Wterms);
+              VAR (Wterms.rows());
+              VAR (Wterms.cols());
+#endif
+              for (index_type ie = 0; ie != this_batch_size; ++ie) {
+                // Need to construct the weights diagonal matrix; is unique for each element
+                default_type W_trace (0.0);
+                for (index_type input = 0; input != num_inputs(); ++input) {
+                  W[input] = Wterms (S().VG[input], ie);
+                  W_trace += W[input];
+                }
+#ifdef GLM_TEST_DEBUG
+                VAR (W_trace);
+#endif
+                const default_type numerator = lambdas.col (ie).transpose() * c[ih].matrix().transpose() * (c[ih].matrix() * (M.transpose() * W.asDiagonal() * M).inverse() * c[ih].matrix().transpose()).inverse() * c[ih].matrix() * lambdas.col (ie);
+#ifdef GLM_TEST_DEBUG
+                VAR (numerator);
+#endif
+                default_type gamma (0.0);
+                for (index_type vg_index = 0; vg_index != num_variance_groups(); ++vg_index)
+                  // Since Wnn is the same for every n in the variance group, can compute that summation as the product of:
+                  //   - the value inserted in W for that particular VG
+                  //   - the number of inputs that are a part of that VG
+                  gamma += S().inv_Rnn_sums[vg_index] * Math::pow2 (1.0 - ((Wterms(vg_index, ie) * S().inputs_per_vg[vg_index]) / W_trace));
+                gamma = 1.0 + (S().gamma_weights[ih] * gamma);
+#ifdef GLM_TEST_DEBUG
+                VAR (gamma);
+#endif
+                const default_type denominator = gamma * c[ih].rank();
+                const default_type G = numerator / denominator;
+                if (!std::isfinite (G)) {
+                  stats  (ie+iestart, ih) = zstats (ie+iestart, ih) = value_type(0);
+                } else {
+                  stats  (ie+iestart, ih) = c[ih].is_F() ?
+                                            G :
+                                            std::sqrt (G) * ((c[ih].matrix() * lambdas.col (ie)).sum() > 0.0 ? 1.0 : -1.0);
+                  if (c[ih].is_F() && c[ih].rank() > 1) {
+                    const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
+#ifdef GLM_TEST_DEBUG
+                    VAR (dof);
+#endif
+                    zstats (ie+iestart, ih) = Math::G2z (G, c[ih].rank(), dof);
+                  } else {
+                    const default_type dof = Math::welch_satterthwaite (Wterms.col (ie).inverse(), S().inputs_per_vg);
+#ifdef GLM_TEST_DEBUG
+                    VAR (dof);
+#endif
+                    zstats (ie+iestart, ih) = c[ih].is_F() ?
+                                              Math::G2z (G, c[ih].rank(), dof) :
+                                              Math::v2z (stats (ie+iestart, ih), dof);
+                  }
+                }
+              }
 
+            }
           }
         }
 

@@ -312,6 +312,15 @@ List of MRtrix3 configuration file options
 
      The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
 
+.. option:: GLMBatchSize
+
+    *default: 1024*
+
+     Where the GLM design matrix is fixed across all elements,
+     this is the number of elements for which data shuffling and model
+     inversion will be performed concurrently,
+     ie. in a single set of linear algebra operations
+
 .. option:: HelpCommand
 
     *default: less*
