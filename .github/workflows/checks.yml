@@ -215,15 +215,11 @@ jobs:
     - name: check building of documentation
       run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
 
-  clang-format-check:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-
-    - name: clang-format
-      uses: jidicula/clang-format-action@v4.11.0
+    - name: clang-format check
+      uses: DoozyX/clang-format-lint-action@v0.16.2
       with:
-        clang-format-version: '16'
-        fallback-style: 'LLVM'
-        # Ignore third-party headers.
-        exclude-regex: 'core/file/(json|nifti[12]).h'
+        source: '.'
+        extensions: 'h,cpp'
+        clangFormatVersion: 16
+        # Ignore third party headers
+        exclude: './core/file/json.h ./core/file/nifti1.h ./core/file/nifti2.h'
