@@ -20,21 +20,37 @@
 
 
 
-import json, shutil
+import json, os, shutil
+
+
+
+# These fields are compared across headers;
+#   if these values are not identical, then the expectation of equivalent b=0 image intensity
+#   is erroneous, and that component of the script should not be utilised
+BZERO_CONTRAST_FIELDS = ( 'EchoTime', 'RepetitionTime', 'FlipAngle' )
 
 
 
 def usage(cmdline): #pylint: disable=unused-variable
   cmdline.set_author('Lena Dorfschmidt (ld548@cam.ac.uk) and Jakub Vohryzek (jakub.vohryzek@queens.ox.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Concatenating multiple DWI series accounting for differential intensity scaling')
-  cmdline.add_description('This script concatenates two or more 4D DWI series, accounting for the '
-                          'fact that there may be differences in intensity scaling between those series. '
-                          'This intensity scaling is corrected by determining scaling factors that will '
-                          'make the overall image intensities in the b=0 volumes of each series approximately '
-                          'equivalent.')
+  cmdline.add_description('This script concatenates two or more 4D DWI series, '
+                          'accounting for various detrimental confounds that may affect such an operation. '
+                          'Each of those confounds are described in separate paragraphs below.')
+  cmdline.add_description('There may be differences in intensity scaling between the input series. '
+                          'This intensity scaling is corrected by determining scaling factors that will make '
+                          'the overall image intensities in the b=0 volumes of each series approximately equivalent. '
+                          'This operation is only appropriate if the sequence parameters that influence the contrast '
+                          'of the b=0 image volumes are identical.')
+  cmdline.add_description('Concatenation of DWI series defined on different voxel grids. '
+                          'If the voxel grids of the input DWI series are not precisely identical, '
+                          'then it may not be possible to do a simple concatenation operation. '
+                          'In this scenario the script will determine the appropriate way to combine the input series, '
+                          'ideally only manipulating header transformations and avoiding image interpolation if possible.')
   cmdline.add_argument('inputs', nargs='+', help='Multiple input diffusion MRI series')
   cmdline.add_argument('output', help='The output image series (all DWIs concatenated)')
   cmdline.add_argument('-mask', metavar='image', help='Provide a binary mask within which image intensities will be matched')
+  cmdline.add_argument('-nointensity', action='store_true', help='Do not perform intensity matching based on b=0 volumes')
 
 
 
@@ -71,24 +87,50 @@ def execute(): #pylint: disable=unused-variable
 
   first_header = image.Header(path.from_user(app.ARGS.inputs[0], False))
   check_header(first_header)
-  warn_protocol_mismatch = False
+
+  do_intensity_matching = not app.ARGS.nointensity
+  bzero_contrast_mismatch = False
+  # Determine the most suitable mechanism by which to combine the data across series,
+  #   as we want to minimise unnecessary manipulation of data:
+  #   - 'Equal': Voxel grids match exactly, can do a straight concatenation
+  #     - If user specified a mask, can use it for all series without modification
+  #   - 'Rigidbody': Voxel spacing and sizes match exactly, but header transforms are different
+  #     Will need to apply linear transforms to an average header in order to rotate gradients
+  #     - If user specified a mask, can't proceed
+  #   - 'Inequal': Voxel grids do not match in any reasonable way;
+  #     will need to do an interpolation to get the data onto a common grid
+  #     - If user specified a mask, can't proceed
+  voxel_grid_matching = 'equal'
   for filename in app.ARGS.inputs[1:]:
     this_header = image.Header(path.from_user(filename, False))
     check_header(this_header)
-    if this_header.size()[0:3] != first_header.size()[0:3]:
-      raise MRtrixError('Spatial dimensions of image "' + filename + '" do not match those of first image "' + first_header.name() + '"')
-    for field_name in [ 'EchoTime', 'RepetitionTime', 'FlipAngle' ]:
+    if max(abs(a-b) for a, b in zip(this_header.spacing()[0:3], first_header.spacing()[0:3])) > 1e-5 or this_header.size()[0:3] != first_header.size()[0:3]:
+      voxel_grid_matching = 'inequal'
+    elif voxel_grid_matching == 'equal' and not image.match(this_header, first_header):
+      voxel_grid_matching = 'rigidbody'
+    for field_name in BZERO_CONTRAST_FIELDS:
       first_value = first_header.keyval().get(field_name)
       this_value = this_header.keyval().get(field_name)
       if first_value and this_value and first_value != this_value:
-        warn_protocol_mismatch = True
-  if warn_protocol_mismatch:
-    app.warn('Mismatched protocol acquisition parameters detected between input images; ' + \
-             'the assumption of equivalent intensities between b=0 volumes of different inputs underlying operation of this script may not be valid')
+        bzero_contrast_mismatch = True
+  if voxel_grid_matching == 'rigidbody':
+    app.console('Rigid-body difference in header transforms found between input series;')
+    app.console('series will need to be rigid-body transformed to average header space')
+  elif voxel_grid_matching == 'inequal':
+    app.console('Incompatible voxel grids between input series;')
+    app.console('data will be resampled onto a new average header space')
+  else:
+    assert voxel_grid_matching == 'equal'
+  if bzero_contrast_mismatch:
+    app.warn('Mismatched protocol acquisition parameters detected between input images;')
+    app.warn('since b=0 images may have different intensities / contrasts, intensity matching across series will not be performed')
+    do_intensity_matching = False
   if app.ARGS.mask:
+    if voxel_grid_matching != 'equal':
+      raise MRtrixError('Input mask cannot be unambiguously interpreted due to differences in input image headers')
     mask_header = image.Header(path.from_user(app.ARGS.mask, False))
     if mask_header.size()[0:3] != first_header.size()[0:3]:
-      raise MRtrixError('Spatial dimensions of mask image "' + app.ARGS.mask + '" do not match those of first image "' + first_header.name() + '"')
+      raise MRtrixError('Spatial dimensions of mask image "' + app.ARGS.mask + '" do not match those of input images')
 
   # check output path
   app.check_output_path(path.from_user(app.ARGS.output, False))
@@ -101,47 +143,74 @@ def execute(): #pylint: disable=unused-variable
     run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit')
   app.goto_scratch_dir()
 
-  # extract b=0 volumes within each input series
-  for index in range(0, num_inputs):
-    infile = str(index) + 'in.mif'
-    outfile = str(index) + 'b0.mif'
-    if len(image.Header(infile).size()) > 3:
-      run.command('dwiextract ' + infile + ' ' + outfile + ' -bzero')
+  if do_intensity_matching:
+    # extract b=0 volumes within each input series
+    for index in range(0, num_inputs):
+      infile = str(index) + 'in.mif'
+      outfile = str(index) + 'b0.mif'
+      if len(image.Header(infile).size()) > 3:
+        run.command('dwiextract ' + infile + ' ' + outfile + ' -bzero')
+      else:
+        run.function(shutil.copyfile, infile, outfile)
+    mask_option = ' -mask_input mask.mif -mask_target mask.mif' if app.ARGS.mask else ''
+
+    # for all but the first image series:
+    #   - find multiplicative factor to match b=0 images to those of the first image
+    #   - apply multiplicative factor to whole image series
+    # It would be better to not preferentially treat one of the inputs differently to any other:
+    #   - compare all inputs to all other inputs
+    #   - determine one single appropriate scaling factor for each image based on all results
+    #       can't do a straight geometric average: e.g. if run for 2 images, each would map to
+    #         the the input intensoty of the other image, and so the two corrected images would not match
+    #       should be some mathematical theorem providing the optimal scaling factor for each image
+    #         based on the resulting matrix of optimal scaling factors
+    rescaled_filelist = [ '0in.mif' ]
+    for index in range(1, num_inputs):
+      stderr_text = run.command('mrhistmatch scale ' + str(index) + 'b0.mif 0b0.mif ' + str(index) + 'rescaledb0.mif' + mask_option).stderr
+      scaling_factor = None
+      for line in stderr_text.splitlines():
+        if 'Estimated scale factor is' in line:
+          try:
+            scaling_factor = float(line.split()[-1])
+          except ValueError as exception:
+            raise MRtrixError('Unable to convert scaling factor from mrhistmatch output to floating-point number') from exception
+          break
+      if scaling_factor is None:
+        raise MRtrixError('Unable to extract scaling factor from mrhistmatch output')
+      filename = str(index) + 'rescaled.mif'
+      run.command('mrcalc ' + str(index) + 'in.mif ' + str(scaling_factor) + ' -mult ' + filename)
+      rescaled_filelist.append(filename)
+
     else:
-      run.function(shutil.copyfile, infile, outfile)
+      rescaled_filelist = [str(index) + 'in.mif' for index in range(0, len(app.ARGS.inputs))]
 
-  mask_option = ' -mask_input mask.mif -mask_target mask.mif' if app.ARGS.mask else ''
-
-  # for all but the first image series:
-  #   - find multiplicative factor to match b=0 images to those of the first image
-  #   - apply multiplicative factor to whole image series
-  # It would be better to not preferentially treat one of the inputs differently to any other:
-  #   - compare all inputs to all other inputs
-  #   - determine one single appropriate scaling factor for each image based on all results
-  #       can't do a straight geometric average: e.g. if run for 2 images, each would map to
-  #         the the input intensoty of the other image, and so the two corrected images would not match
-  #       should be some mathematical theorem providing the optimal scaling factor for each image
-  #         based on the resulting matrix of optimal scaling factors
-  filelist = [ '0in.mif' ]
-  for index in range(1, num_inputs):
-    stderr_text = run.command('mrhistmatch scale ' + str(index) + 'b0.mif 0b0.mif ' + str(index) + 'rescaledb0.mif' + mask_option).stderr
-    scaling_factor = None
-    for line in stderr_text.splitlines():
-      if 'Estimated scale factor is' in line:
-        try:
-          scaling_factor = float(line.split()[-1])
-        except ValueError:
-          raise MRtrixError('Unable to convert scaling factor from mrhistmatch output to floating-point number')
-        break
-    if scaling_factor is None:
-      raise MRtrixError('Unable to extract scaling factor from mrhistmatch output')
-    filename = str(index) + 'rescaled.mif'
-    run.command('mrcalc ' + str(index) + 'in.mif ' + str(scaling_factor) + ' -mult ' + filename)
-    filelist.append(filename)
+  if voxel_grid_matching == 'equal':
+    transformed_filelist = rescaled_filelist
+  elif voxel_grid_matching in ('rigidbody', 'inequal'):
+    run.command(['mraverageheader', rescaled_filelist, 'average_header.mif',
+                 '-spacing', ('mean_nearest' if voxel_grid_matching == 'rigidbody' else 'min_nearest')])
+    transformed_filelist = []
+    for item in rescaled_filelist:
+      transformname = os.path.splitext(item)[0] + '_to_avgheader.txt'
+      imagename = os.path.splitext(item)[0] + '_transformed.mif'
+      run.command(['transformcalc', item, 'average_header.mif', 'header', transformname])
+      # Ensure that no non-rigid distortions of image data are applied
+      #   in the process of moving it toward the average header
+      if voxel_grid_matching == 'inequal':
+        newtransformname = os.path.splitext(transformname)[0] + '_rigid.txt'
+        run.command(['transformcalc', transformname, 'rigid', newtransformname])
+        transformname = newtransformname
+      run.command(['mrtransform', item, '-linear', transformname, imagename] \
+                  + (['-template', 'average_header.mif', '-interp', 'sinc'] \
+                     if voxel_grid_matching == 'inequal' \
+                      else []))
+      transformed_filelist.append(imagename)
+  else:
+    assert False
 
   # concatenate all series together
-  run.command('mrcat ' + ' '.join(filelist) + ' - -axis 3 | ' + \
-              'mrconvert - result.mif -json_export result_init.json -strides 0,0,0,1')
+  run.command(['mrcat', transformed_filelist, '-', '-axis', '3', '|',
+              'mrconvert', '-', 'result.mif', '-json_export', 'result_init.json', '-strides', '0,0,0,1'])
 
   # remove current contents of command_history, since there's no sensible
   #   way to choose from which input image the contents should be taken;
@@ -149,10 +218,16 @@ def execute(): #pylint: disable=unused-variable
   with open('result_init.json', 'r') as input_json_file:
     keyval = json.load(input_json_file)
   keyval.pop('command_history', None)
-  with open('result_final.json', 'w') as output_json_file:
+  # If we had to perform interpolation, no longer guaranteed correspondence between
+  #   slice position and relative acquisition time
+  if voxel_grid_matching == 'inequal':
+    keyval.pop('SliceTiming', None)
+  with open('result_final.json', 'w', encoding='utf-8') as output_json_file:
     json.dump(keyval, output_json_file)
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval='result_final.json', force=app.FORCE_OVERWRITE)
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
+              mrconvert_keyval='result_final.json',
+              force=app.FORCE_OVERWRITE)
 
 
 

@@ -15,6 +15,7 @@
  */
 
 #include "math/average_space.h"
+#include "axes.h"
 
 
 namespace MR
@@ -59,6 +60,9 @@ namespace MR
 
  namespace MR
  {
+
+  const char *const avgspace_voxspacing_choices[] {
+    "min_projection", "mean_projection", "min_nearest", "mean_nearest", nullptr };
 
   FORCE_INLINE Eigen::Matrix<default_type, 8, 4> get_cuboid_corners (const Eigen::Matrix<default_type, 4, 1>& xyz1) {
     Eigen::Matrix<default_type, 8, 4>  corners;
@@ -169,7 +173,7 @@ namespace MR
                                       const vector<Header>& input_headers,
                                       const Eigen::Matrix<default_type, 4, 1>& padding,
                                       const vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with,
-                                      int voxel_subsampling) {
+                                      const avgspace_voxspacing_t voxel_spacing_calculation) {
     const size_t num_images = input_headers.size();
     DEBUG ("compute_average_voxel2scanner num_images:" + str(num_images));
     vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transformation_matrices;
@@ -204,36 +208,42 @@ namespace MR
     for (size_t itrafo = 0; itrafo < num_images; itrafo++) {
       Eigen::MatrixXd Other = ScannerSpaceAxis3 * transformation_matrices[itrafo].rotation().transpose();
       Eigen::Quaterniond quat = rot_match_coordinates (ScannerSpaceAxis6, Other);
-      quaternions.col(itrafo) = quat.coeffs();  // internally the coefficients are stored in the following order: [x, y, z, w]
+      // internally the coefficients are stored in the following order: [x, y, z, w]
+      quaternions.col(itrafo) = quat.coeffs();
     }
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es (quaternions * quaternions.transpose(), Eigen::ComputeEigenvectors);
     Eigen::Quaterniond average_quat;
     average_quat.coeffs() = es.eigenvectors().col(3).transpose();
     average_quat.normalize();
-    const Eigen::Matrix3d Raverage (average_quat.toRotationMatrix());
+    const Eigen::Matrix3d Raverage (average_quat.toRotationMatrix().transpose());
     Eigen::MatrixXd rot_vox_size = Eigen::MatrixXd (3, num_images);
     for (size_t itrafo = 0; itrafo < num_images; itrafo++) {
-      Eigen::MatrixXd M = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs();
-      if (voxel_subsampling == 0)
-        rot_vox_size.col(itrafo) = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs().diagonal();
-      else
-        rot_vox_size.col(itrafo) = (Raverage * transformation_matrices[itrafo].linear()).cwiseAbs().colwise().sum();
+      const Eigen::Matrix3d M = Raverage.transpose() * transformation_matrices[itrafo].linear();
+      switch (voxel_spacing_calculation) {
+        case avgspace_voxspacing_t::MIN_PROJECTION:
+          rot_vox_size.col(itrafo) = M.cwiseAbs().diagonal();
+          break;
+        case avgspace_voxspacing_t::MEAN_PROJECTION:
+          rot_vox_size.col(itrafo) = M.cwiseAbs().colwise().sum();
+          break;
+        case avgspace_voxspacing_t::MIN_NEAREST:
+        case avgspace_voxspacing_t::MEAN_NEAREST:
+          {
+            std::array<size_t, 3> perm = Axes::closest(M);
+            for (size_t axis = 0; axis != 3; ++axis)
+              rot_vox_size(axis, itrafo) = input_headers[itrafo].spacing(perm[axis]);
+          }
+          break;
+      }
     }
 
-    switch (voxel_subsampling) {
-      case 0: // maximum voxel size determined by minimum of all projected input image voxel sizes, sampling at or above Nyquist limit
-        projected_voxel_sizes = rot_vox_size.rowwise().minCoeff();
-        break;
-      case 1: // maximum voxel size determined by mean of all projected input image voxel sizes
-        projected_voxel_sizes = rot_vox_size.rowwise().mean();
-        break;
-      default:
-        assert( 0 && "compute_average_voxel2scanner: invalid voxel_subsampling option");
-        break;
-      }
+    projected_voxel_sizes = (voxel_spacing_calculation == avgspace_voxspacing_t::MIN_PROJECTION ||
+                             voxel_spacing_calculation == avgspace_voxspacing_t::MIN_PROJECTION) ?
+                            Eigen::Vector3d(rot_vox_size.rowwise().minCoeff()) :
+                            Eigen::Vector3d(rot_vox_size.rowwise().mean());
 
     Eigen::MatrixXd mat_avg = Eigen::MatrixXd::Zero (4, 4);
-    mat_avg.block<3,3>(0,0) = Raverage.transpose();
+    mat_avg.block<3,3>(0,0) = Raverage;
     mat_avg.col(0) *= projected_voxel_sizes(0);
     mat_avg.col(1) *= projected_voxel_sizes(1);
     mat_avg.col(2) *= projected_voxel_sizes(2);
@@ -264,12 +274,12 @@ namespace MR
 
   Header compute_minimum_average_header (const vector<Header>& input_headers,
                                          const vector<Eigen::Transform<default_type, 3, Eigen::Projective>>& transform_header_with,
-                                         int voxel_subsampling,
+                                         const avgspace_voxspacing_t voxel_spacing_calculation,
                                          Eigen::Matrix<default_type, 4, 1> padding) {
     Eigen::Transform<default_type, 3, Eigen::Projective> average_v2s_trafo;
     Eigen::Vector3d average_space_voxel_extent;
     Eigen::Vector3d projected_voxel_sizes;
-    compute_average_voxel2scanner (average_v2s_trafo, average_space_voxel_extent, projected_voxel_sizes, input_headers, padding, transform_header_with, voxel_subsampling);
+    compute_average_voxel2scanner (average_v2s_trafo, average_space_voxel_extent, projected_voxel_sizes, input_headers, padding, transform_header_with, voxel_spacing_calculation);
 
     // create average space header
     Header header_out;

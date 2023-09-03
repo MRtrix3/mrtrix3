@@ -659,7 +659,7 @@ namespace MR
   void Header::realign_transform ()
   {
     // find which row of the transform is closest to each scanner axis:
-    Axes::get_permutation_to_make_axial (transform(), realign_perm_, realign_flip_);
+    Axes::get_shuffle_to_make_axial (transform(), realign_perm_, realign_flip_);
 
     // check if image is already near-axial, return if true:
     if (realign_perm_[0] == 0 && realign_perm_[1] == 1 && realign_perm_[2] == 2 &&

@@ -31,6 +31,7 @@ namespace MR
 
 
 
+
     //! convert axis directions between formats
     /*! these helper functions convert the definition of
        *  phase-encoding direction between a 3-vector (e.g.
@@ -43,8 +44,10 @@ namespace MR
 
     //! determine the axis permutations and flips necessary to make an image
     //!   appear approximately axial
-    void get_permutation_to_make_axial (const transform_type& T, std::array<size_t, 3>& perm, std::array<bool, 3>& flip);
+    void get_shuffle_to_make_axial(const transform_type &T, std::array<size_t, 3> &perm, std::array<bool, 3> &flip);
 
+    //! determine which vectors of a 3x3 transform are closest to the three axis indices
+    std::array<size_t, 3> closest(const Eigen::Matrix3d &M);
 
 
   }

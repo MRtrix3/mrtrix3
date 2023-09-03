@@ -67,7 +67,7 @@ void usage ()
              "")
 
   + Example ("Calculate the transformation matrix from an original image and an image with modified header",
-             "transformcalc mov mapmovhdr header output",
+             "transformcalc orig_image modified_image header output",
              "")
 
   + Example ("Calculate the average affine matrix of a set of input matrices",
