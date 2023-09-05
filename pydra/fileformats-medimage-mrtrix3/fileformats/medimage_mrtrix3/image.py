@@ -107,7 +107,7 @@ class ImageDataFile(File):
 ImageIn = ty.Union[
     ImageFormat,
     ImageHeader,
-    fileformats.misc.Dicom,
+    fileformats.application.Dicom,
     fileformats.medimage.DicomDir,
     fileformats.medimage.NiftiGzX,
     fileformats.medimage.NiftiGz,
