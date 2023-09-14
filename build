@@ -857,8 +857,8 @@ class Entry:
     self.action = 'RCC'
     with codecs.open (modify_path (self.name, strip=cpp_suffix, add=h_suffix), mode='r', encoding='utf-8') as fd:
       for line in fd:
-        if line.startswith ('//RCC:'):
-          for entry in line[6:].strip().split():
+        if line.startswith ('// RCC:'):
+          for entry in line[7:].strip().split():
             self.deps = self.deps.union (glob.glob (os.path.normpath (os.path.join (mrtrix_dir[-1], 'icons', entry))))
     self.deps.add (config_file)
     qrc_file = os.path.normpath (os.path.join (mrtrix_dir[-1], 'icons', os.path.basename (os.path.dirname(self.name)) + '.qrc'))
