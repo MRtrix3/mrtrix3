@@ -14,9 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-#include "file/path.h"
+// clang-format off
 #include "gui/gui.h"
+#include "command.h"
+// clang-format on
+
+#include "file/path.h"
 #include "gui/shview/file_open.h"
 #include "gui/shview/icons.h"
 #include "gui/shview/render_window.h"
