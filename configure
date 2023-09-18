@@ -90,7 +90,7 @@ ENVIRONMENT VARIABLES
 
     CXX_COMPILER_LAUNCHER
         A custom prefix to invoke the compiler. Useful for tools like ccache.
-        
+
     CXX
         The compiler command to use. The default is "clang++", falling back to
         "g++" if not found.
@@ -138,12 +138,6 @@ ENVIRONMENT VARIABLES
 
     ZLIB_LINKFLAGS
         Any flags required to link with the zlib compression library.
-
-    TIFF_CFLAGS
-        Any flags required to compile with the TIFF library.
-
-    TIFF_LINKFLAGS
-        Any flags required to link with the TIFF library.
 
     PNG_CFLAGS
         Any flags required to compile with the libpng library.
@@ -1078,26 +1072,6 @@ int main (int argc, char* argv[])
 
 
 
-
-
-
-# TIFF:
-
-tiff_cflags = get_flags ([], 'TIFF_CFLAGS', '--cflags libtiff-4')
-tiff_ldflags = get_flags ([ '-ltiff' ], 'TIFF_LINKFLAGS', '--libs libtiff-4')
-
-if compile_test ('TIFF library', cpp_flags + tiff_cflags, ld_flags + tiff_ldflags, '''
-#include <iostream>
-#include <tiffio.h>
-
-int main() {
-  std::cout << TIFFGetVersion();
-  return (0);
-}
-''', on_failure='not found - TIFF support disabled'):
-  cpp_flags += [ '-DMRTRIX_TIFF_SUPPORT' ] + tiff_cflags
-  ld_flags += tiff_ldflags
-  ld_lib_flags += tiff_ldflags
 
 
 
