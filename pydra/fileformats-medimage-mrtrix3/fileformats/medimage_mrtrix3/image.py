@@ -115,7 +115,7 @@ ImageIn = ty.Union[
     fileformats.medimage.Nifti1,
     fileformats.medimage.Nifti2,
     fileformats.medimage.Mgh,
-    fileformats.medimage.MghZip,
+    fileformats.medimage.MghGz,
     fileformats.medimage.Analyze,
 ]
 
@@ -128,6 +128,6 @@ ImageOut = ty.Union[
     fileformats.medimage.Nifti1,
     fileformats.medimage.Nifti2,
     fileformats.medimage.Mgh,
-    fileformats.medimage.MghZip,
+    fileformats.medimage.MghGz,
     fileformats.medimage.Analyze,
 ]
