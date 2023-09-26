@@ -136,7 +136,7 @@ private:
   vector<GLuint> colour_buffers;
   vector<GLuint> intensity_scalar_buffers;
   vector<GLuint> threshold_scalar_buffers;
-  DWI::Tractography::Properties properties;
+  MR::DWI::Tractography::Properties properties;
   vector<vector<GLint>> track_starts;
   vector<vector<GLint>> track_sizes;
   vector<vector<GLint>> original_track_sizes;
