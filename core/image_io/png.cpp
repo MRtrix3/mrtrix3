@@ -29,17 +29,15 @@ namespace MR
 
     void PNG::load (const Header& header, size_t)
     {
-      segsize = header.datatype().bytes() * voxel_count (header) * files.size();
-      addresses.resize (1);
-      addresses[0].reset (new uint8_t [segsize]);
+      DEBUG (std::string("loading PNG image") + (files.size() > 1 ? "s" : "") + " \"" + header.name() + "\"");
       if (is_new) {
+        segsize = (header.datatype().bits() * voxel_count (header) + 7) / 8;
+        addresses.resize (1);
+        addresses[0].reset (new uint8_t[segsize]);
         memset (addresses[0].get(), 0x00, segsize);
-        DEBUG ("allocated memory for PNG image \"" + header.name() + "\"");
       } else {
-        DEBUG (std::string("loading PNG image") + (files.size() > 1 ? "s" : "") + " \"" + header.name() + "\"");
-        size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) + 7) / 8;
-        if (header.ndim() == 4)
-          slice_bytes *= header.size (3);
+        segsize = (header.datatype().bits() * header.size(0) * header.size(1) * (header.ndim() == 4 ? header.size(3) : 1) + 7) / 8;
+        addresses.resize (files.size());
         for (size_t i = 0; i != files.size(); ++i) {
           File::PNG::Reader png (files[i].name);
           if (png.get_width() != header.size(0) ||
@@ -51,7 +49,8 @@ namespace MR
             e.push_back ("File \"" + files[i].name + ": " + str(png.get_width()) + "x" + str(png.get_height()) + " x " + str(png.get_bitdepth()) + "(->" + str(png.get_output_bitdepth()) + ") bits, " + str(png.get_channels()) + " channels");
             throw e;
           }
-          png.load (addresses[0].get() + (i * slice_bytes));
+          addresses[i].reset (new uint8_t[segsize]);
+          png.load (addresses[i].get());
         }
       }
     }
@@ -59,18 +58,18 @@ namespace MR
 
     void PNG::unload (const Header& header)
     {
-      if (addresses.size()) {
-        if (writable) {
-          size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) + 7) / 8;
-          if (header.ndim() == 4)
-            slice_bytes *= header.size (3);
-          for (size_t i = 0; i != files.size(); i++) {
-            File::PNG::Writer png (header, files[i].name);
-            png.save (addresses[0].get() + (i * slice_bytes));
-          }
+      if (writable) {
+        assert (addresses.size() == 1);
+        const size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) * (header.ndim() == 4 ? header.size(3) : 1) + 7) / 8;
+        for (size_t i = 0; i != files.size(); i++) {
+          File::PNG::Writer png (header, files[i].name);
+          png.save (addresses[0].get() + (i * slice_bytes));
         }
-        DEBUG ("deleting buffer for PNG image \"" + header.name() + "\"...");
-        addresses[0].release();
+        delete[] addresses[0].release();
+      } else {
+        assert (files.size() == addresses.size());
+        for (size_t i = 0; i != files.size(); i++)
+          delete[] addresses[i].release();
       }
     }
 

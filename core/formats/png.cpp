@@ -209,7 +209,7 @@ namespace MR
       H.stride(1) = -3;
       H.spacing(1) = 1.0;
       if (H.ndim() > 2) {
-        H.stride(2) = 4;
+        H.stride(2) = -4;
         H.spacing(2) = 1.0;
       }
       if (H.ndim() > 3) {
