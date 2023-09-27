@@ -2,6 +2,7 @@ from pathlib import Path
 import typing as ty
 from fileformats.core import mark
 from fileformats.generic import File
+from fileformats.application import Gzip
 from fileformats.core.mixin import WithMagicNumber
 from fileformats.core.exceptions import FormatMismatchError
 import fileformats.medimage
@@ -83,6 +84,11 @@ class ImageFormat(BaseMrtrixImage):
         return self
 
 
+class ImageFormatGz(Gzip[ImageFormat]):
+
+    ext = ".mif.gz"
+
+
 class ImageHeader(BaseMrtrixImage):
 
     ext = ".mih"
@@ -106,6 +112,7 @@ class ImageDataFile(File):
 
 ImageIn = ty.Union[
     ImageFormat,
+    ImageFormatGz,
     ImageHeader,
     fileformats.application.Dicom,
     fileformats.medimage.DicomDir,
@@ -121,6 +128,7 @@ ImageIn = ty.Union[
 
 ImageOut = ty.Union[
     ImageFormat,
+    ImageFormatGz,
     ImageHeader,
     fileformats.medimage.NiftiGzX,
     fileformats.medimage.NiftiGz,

@@ -31,5 +31,3 @@ class NiftiXB(WithBFile, NiftiX):
 
 class NiftiGzXB(WithBFile, NiftiGzX):
     iana_mime = "application/x-nifti2+gzip.json.b"
-
-
