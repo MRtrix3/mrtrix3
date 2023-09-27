@@ -28,8 +28,8 @@ using namespace Registration;
 
 default_type PADDING_DEFAULT     = 0.0;
 
-enum RESOLUTION {MAX, MEAN};
-const char* resolution_choices[] = { "max", "mean", nullptr };
+avgspace_voxspacing_t SPACING_DEFAULT_VALUE = avgspace_voxspacing_t::MEAN_NEAREST;
+const std::string spacing_default_string = "mean_nearest";
 
 void usage ()
 {
@@ -44,11 +44,11 @@ void usage ()
   OPTIONS
   + Option ("padding", " boundary box padding in voxels. Default: " + str(PADDING_DEFAULT))
   +   Argument ("value").type_float (0.0, std::numeric_limits<default_type>::infinity())
-  + Option ("resolution", " subsampling of template compared to smallest voxel size in any input image. "
-        "Valid options are 'mean': unbiased but loss of resolution for individual images possible, "
-        "and 'max': smallest voxel size of any input image defines the resolution. Default: mean")
-  +   Argument ("type").type_choice (resolution_choices)
-  + Option ("fill", " set the intensity in the first volume of the average space to 1")
+  + Option ("spacing", "Method for determination of voxel spacings based on the set of input images and the average header axes "
+                       "(see Description)."
+                       "Valid options are: " + join(avgspace_voxspacing_choices, ",") + "; default = " + spacing_default_string)
+  + Argument("type").type_choice(avgspace_voxspacing_choices)
+  + Option("fill", "set the intensity in the first volume of the average space to 1") + DataType::options()
   + DataType::options();
 }
 
@@ -63,9 +63,8 @@ void run ()
     auto padding = Eigen::Matrix<default_type, 4, 1>(p, p, p, 1.0);
     INFO("padding in template voxels: " + str(padding.transpose().head<3>()));
 
-    opt = get_options ("resolution");
-    const int resolution = opt.size() ? int(opt[0][0]) : 1;
-    INFO("template voxel subsampling: " + str(resolution));
+    opt = get_options("spacing");
+    const avgspace_voxspacing_t spacing = opt.size() ? avgspace_voxspacing_t(int(opt[0][0])) : SPACING_DEFAULT_VALUE;
 
     bool fill = get_options ("fill").size();
 
@@ -86,7 +85,7 @@ void run ()
     }
 
     vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transform_header_with;
-    auto H = compute_minimum_average_header (headers_in, transform_header_with, resolution, padding);
+    auto H = compute_minimum_average_header (headers_in, transform_header_with, spacing, padding);
     H.datatype() = DataType::Bit;
     if (fill) {
       H.ndim() = dim;
