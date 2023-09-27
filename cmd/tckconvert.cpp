@@ -202,6 +202,7 @@ template <class T> void loadLines(vector<int64_t> &lines, std::ifstream &input, 
 class VTKReader : public ReaderInterface<float> {
 public:
   VTKReader(const std::string &file) :
+      is_legacy (true),
       number_of_lines (0),
       number_of_line_indices (0),
       lineIdx (0)
@@ -253,8 +254,6 @@ public:
           }
           break;
         }
-        // We can safely break
-        break;
       }
     }
   }
@@ -296,9 +295,10 @@ private:
   int number_of_lines;
   int number_of_line_indices;
 
+  int lineIdx;
+
   static const std::string offsets_key;
 
-  int lineIdx;
 };
 
 const std::string VTKReader::offsets_key ("OFFSETS ");
