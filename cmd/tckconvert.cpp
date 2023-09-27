@@ -190,23 +190,25 @@ private:
   size_t current_index = 0;
 };
 
-template <class T> void loadLines(vector<int64_t> &lines, std::ifstream &input, int number_of_line_indices) {
-  vector<T> buffer(number_of_line_indices);
-  input.read((char *)&buffer[0], number_of_line_indices * sizeof(T));
-  lines.resize(number_of_line_indices);
+template <class T> void loadLines(vector<int64_t> &lines, std::ifstream &input, int count) {
+  vector<T> buffer(count);
+  input.read((char *)&buffer[0], count * sizeof(T));
+  lines.resize(count);
   // swap from big endian
-  for (int i = 0; i < number_of_line_indices; i++)
+  for (int i = 0; i < count; i++)
     lines[i] = int64_t(ByteOrder::BE(buffer[i]));
 }
 
 class VTKReader : public ReaderInterface<float> {
 public:
-  VTKReader(const std::string &file) {
+  VTKReader(const std::string &file) :
+      number_of_lines (0),
+      number_of_line_indices (0),
+      lineIdx (0)
+  {
     std::ifstream input(file, std::ios::binary);
     std::string line;
     int number_of_points = 0;
-    number_of_lines = 0;
-    number_of_line_indices = 0;
 
     while (std::getline(input, line)) {
       if (line.find("ASCII") == 0)
@@ -222,44 +224,86 @@ public:
 
         continue;
       } else {
-        if (sscanf(line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices) == 2) {
-          if (line.find("vtktypeint64") != std::string::npos) {
-            loadLines<int64_t>(lines, input, number_of_line_indices);
+        if (sscanf (line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices) == 2) {
+          const off64_t begin_line_data = input.tellg();
+          char offsets_key_buffer[offsets_key.size() + 1];
+          input.read (offsets_key_buffer, offsets_key.size());
+          offsets_key_buffer[offsets_key.size()] = '\0';
+          if (offsets_key_buffer == offsets_key) {
+            is_legacy = false;
+            if (number_of_points != number_of_line_indices)
+              throw Exception ("Unexpected numbers of elements in new offsets-based VTK file \"" + file + "\""
+                                + "(points = " + str(number_of_points) + "; lines = " + str(number_of_lines) + "; line indices = " + str(number_of_line_indices) + ")");
+            std::getline (input, line);
+            if (line == "vtktypeint32")
+              loadLines<int32_t> (lines, input, number_of_lines);
+            else if (line == "vtktypeint64")
+              loadLines<int64_t> (lines, input, number_of_lines);
+            else
+              throw Exception ("Unexpected offset data type \"" + line + "\" in VTK file \"" + file + "\"");
+            // Actual number of streamlines stored is one less than the number of offsets
+            --number_of_lines;
           } else {
-            loadLines<int32_t>(lines, input, number_of_line_indices);
+            is_legacy = true;
+            if (number_of_points + number_of_lines != number_of_line_indices)
+              throw Exception ("Unexpected numbers of elements in legacy format VTK file \"" + file + "\""
+                                + "(points = " + str(number_of_points) + "; lines = " + str(number_of_lines) + "; line indices = " + str(number_of_line_indices) + ")");
+            input.seekg (begin_line_data);
+            loadLines<int32_t> (lines, input, number_of_line_indices);
           }
-          // We can safely break
           break;
         }
+        // We can safely break
+        break;
       }
     }
-    input.close();
-    lineIdx = 0;
   }
 
-  bool operator()(Streamline<float> &tck) {
+  bool operator() (Streamline<float>& tck) {
     tck.clear();
-    if (lineIdx < number_of_line_indices) {
+    if (is_legacy) {
+
+      if (lineIdx >= number_of_line_indices)
+        return false;
+
       int count = lines[lineIdx];
       lineIdx++;
-      for (int i = 0; i < count; i++) {
-        int idx = lines[lineIdx];
-        Eigen::Vector3f f(points[idx * 3], points[idx * 3 + 1], points[idx * 3 + 2]);
-        tck.push_back(f);
-        lineIdx++;
+      for ( int i = 0; i < count; i++ ) {
+        int idx = lines[lineIdx++];
+        tck.push_back({points[idx*3], points[idx*3+1], points[idx*3+2]});
       }
       return true;
+
+    } else {
+
+      if (lineIdx >= number_of_lines)
+        return false;
+
+      const int startIdx = lines[lineIdx];
+      ++lineIdx;
+      const int endIdx = lines[lineIdx];
+      for (int idx = startIdx; idx != endIdx; ++idx)
+        tck.push_back({points[idx*3], points[idx*3+1], points[idx*3+2]});
+      return true;
+
     }
-    return false;
   }
 
 private:
   vector<float> points;
   vector<int64_t> lines;
-  int lineIdx;
+  bool is_legacy;
   int number_of_lines;
   int number_of_line_indices;
+
+  static const std::string offsets_key;
+
+  int lineIdx;
 };
+
+const std::string VTKReader::offsets_key ("OFFSETS ");
+
+
 
 class ASCIIReader : public ReaderInterface<float> {
 public:
