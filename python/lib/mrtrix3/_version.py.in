@@ -1,0 +1,2 @@
+__version__ = "@MRTRIX_VERSION@" #pylint: disable=unused-variable
+__tag__ = "@MRTRIX_GIT_TAG@" #pylint: disable=unused-variable

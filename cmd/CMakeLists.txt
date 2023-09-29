@@ -5,8 +5,6 @@ foreach(CMD ${GUI_CMD_SRCS})
     list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
 endforeach(CMD)
 
-file(GLOB BIN_SCRIPTS ${CMAKE_CURRENT_SOURCE_DIR}/../bin/*)
-
 function(add_cmd CMD_SRC IS_GUI)
     # Extract the filename without an extension (NAME_WE)
     get_filename_component(CMD_NAME ${CMD_SRC} NAME_WE)
@@ -32,6 +30,3 @@ if(BUILD_GUI)
         add_cmd(${CMD} TRUE)
     endforeach(CMD)
 endif()
-
-file(COPY ${BIN_SCRIPTS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-install(FILES ${BIN_SCRIPTS} DESTINATION ${CMAKE_INSTALL_BINDIR})
