@@ -70,7 +70,7 @@ cmdlist=""
 for n in `find "${mrtrix_root}"/cmd/ -name "*.cpp"`; do
   cmdlist=$cmdlist$'\n'`basename $n`
 done
-for n in `find "${mrtrix_root}"/bin/ -type f -print0 | xargs -0 grep -l "import mrtrix3"`; do
+for n in `find "${mrtrix_root}"/python/bin/ -type f -print0 | xargs -0 grep -l "import mrtrix3"`; do
   cmdlist=$cmdlist$'\n'`basename $n`
 done
 

@@ -69,9 +69,10 @@ if(WARNING_AS_ERRORS)
     endif()
 endif()
 
-add_subdirectory(core)
-add_subdirectory(src)
 add_subdirectory(cmd)
+add_subdirectory(core)
+add_subdirectory(python)
+add_subdirectory(src)
 
 if(PROJECT_IS_TOP_LEVEL AND BUILD_TESTS)
     add_subdirectory(testing)

@@ -17,7 +17,7 @@
 *.hdr
 # *.qrc
 *.rste
-/lib/mrtrix3/_version.py
+/python/lib/mrtrix3/_version.py
 /test/src/project_version.h
 /scripts/mrtrix_bash_completion
 /release/
