@@ -207,7 +207,7 @@ def test_{cmd_name}(tmp_path, cli_parse_only):
                     output_type = output_field.type
                     if ty.get_origin(output_type) is specs.MultiInputObj:
                         output_type = ty.get_args(output_type)[0]
-                    if ty.get_origin(output_type) is tuple:
+                    if ty.get_origin(output_type) in (list, tuple):
                         output_type = ty.get_args(output_type)[0]
                     if output_type is ImageOut:
                         output_type = ImageFormat

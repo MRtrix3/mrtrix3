@@ -813,7 +813,9 @@ std::string pydra_usage() {
       "return", "True",   "try",    "while",   "with",     "yield",    "container", "image", "container_xargs"};
 
   // Add import lines
-  std::string s = std::string("import typing as ty \n");
+  std::string s =
+      std::string("# Auto-generated from MRtrix C++ command with '__print_usage_pydra__' secret option\n\n");
+  s += "import typing as ty \n";
   s += "from pathlib import Path  # noqa: F401\n";
   s += "from fileformats.generic import File, Directory  # noqa: F401\n";
   s += "from fileformats.medimage_mrtrix3 import ImageIn, ImageOut, Tracks  # noqa: F401\n";
@@ -887,7 +889,8 @@ std::string pydra_usage() {
 
   auto format_option_type = [&](const Option &opt, bool for_output = false) {
     std::string f;
-    if (opt.flags & AllowMultiple) {
+    bool is_multi = (opt.flags & AllowMultiple) && (!opt.size() || opt[0].type != ArgFileOut);
+    if (is_multi) {
       f += "specs.MultiInputObj[";
     }
     if (!opt.size()) {
@@ -904,7 +907,7 @@ std::string pydra_usage() {
       }
       f += "]";
     }
-    if (opt.flags & AllowMultiple) {
+    if (is_multi) {
       f += "]";
     }
     return f;
@@ -985,16 +988,17 @@ std::string pydra_usage() {
   s += "\n\ninput_fields = [\n\n" + base_indent + "# Arguments\n";
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
+    bool is_multi = (ARGUMENTS[i].flags & AllowMultiple) && (ARGUMENTS[i].type != ArgFileOut);
     s += base_indent + "(\n";
     // Print name of field
     s += indent + "\"" + escape_id(ARGUMENTS[i].id) + "\",\n";
     // Print type
     s += indent;
-    if (ARGUMENTS[i].flags & AllowMultiple) {
+    if (is_multi) {
       s += "specs.MultiInputObj[";
     }
     s += format_type(ARGUMENTS[i].type);
-    if (ARGUMENTS[i].flags & AllowMultiple) {
+    if (is_multi) {
       s += "]";
     }
     s += +",\n" + indent + "{\n";
@@ -1051,11 +1055,18 @@ std::string pydra_usage() {
 
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
     if (ARGUMENTS[i].type == ImageOut || ARGUMENTS[i].type == ArgFileOut || ARGUMENTS[i].type == ArgDirectoryOut) {
+      bool is_multi = ARGUMENTS[i].flags & AllowMultiple;
       s += base_indent + "(\n";
       // Print name of field
       s += indent + "\"" + escape_id(ARGUMENTS[i].id) + "\",\n";
       // Print type
-      s += indent + format_type(ARGUMENTS[i].type, true) + ",\n";
+      std::string type_string;
+      if (is_multi)
+        type_string += "ty.List[";
+      type_string += format_type(ARGUMENTS[i].type, true);
+      if (is_multi)
+        type_string += "]";
+      s += indent + type_string + ",\n";
       s += indent + "{\n";
       s += md_indent + "\"help_string\": \"\"\"" + ARGUMENTS[i].desc + "\"\"\",\n";
       s += indent + "},\n" + base_indent + "),\n";

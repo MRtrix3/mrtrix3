@@ -1,17 +1,9 @@
 import os
 import pytest
 from pathlib import Path
-from fileformats.generic import File
 
 os.environ["PATH"] = str(Path(__file__).parent.parent.parent / "bin") + ":" + os.environ["PATH"]
 os.environ["MRTRIX_CLI_PARSE_ONLY"] = "0"
-
-
-@File.generate_sample_data.register
-def file_generate_sample_data(file: File, dest_dir: Path):
-    a_file = dest_dir / "a_file.x"
-    a_file.write_text("a sample file")
-    return [a_file]
 
 
 @pytest.fixture
