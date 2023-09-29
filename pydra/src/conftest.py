@@ -1,9 +1,10 @@
-# Created from https://github.com/nipype/pydra-fsl/blob/master/pydra/tasks/fsl/conftest.py
-
 import os
 import pytest
 from pathlib import Path
 from fileformats.generic import File
+
+os.environ["PATH"] = str(Path(__file__).parent.parent.parent / "bin") + ":" + os.environ["PATH"]
+os.environ["MRTRIX_CLI_PARSE_ONLY"] = "0"
 
 
 @File.generate_sample_data.register
@@ -13,8 +14,8 @@ def file_generate_sample_data(file: File, dest_dir: Path):
     return [a_file]
 
 
-@pytest.fixture(autouse=True)
-def set_cli_parse_only():
+@pytest.fixture
+def cli_parse_only():
     os.environ['MRTRIX_CLI_PARSE_ONLY'] = '1'
     # You can set more environment variables here if needed
     yield
