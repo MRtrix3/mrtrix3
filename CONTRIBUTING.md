@@ -217,13 +217,20 @@ to be provided in subsequent sections of this document.
       "`./run_pylint`" executes successfully.
 
    -  If there is a chance of your modifications altering the observable
-      behaviour of one or more existing commands, make sure that script
-      "`./run_tests`" executes successfully. When running this script you
-      must specify the test(s) to be run: you can either specify an
-      individual command or unit test, or execute tests for all
-      "`binaries`" or all "`scripts`" (especially important if modifying
-      code that is not specific to an individual command, or modifying
-      a command that is utilised by Python scripts).
+      behaviour of one or more existing commands, make sure that the tests
+      execute successfully. To run the tests, you need to build the project as described above and ensure that you `-DMRTRIX_BUILD_TESTS=ON` in the CMake configuration phase. Then, from the build directory, run `ctest`.
+
+      Each test is prefixed by its category, so names for binary tests start with `bin_` and unit test names
+      start with `unit_`.
+
+      In order to run a specific set of tests, `ctest` allows you to make use of regex expressions, for example:
+
+            $ ctest -R unit # Runs all unit tests
+            $ ctest -R bin # Runs all binary tests
+            $ ctest -R bin_5tt2gmwmi # Runs the binary test for the 5tt2gmwmi command
+            $ ctest -E unit # Runs all tests, except unit tests
+
+      You can also choose to rerun tests have failed by specifying the `--rerun-failed` option. 
 
    -  If your changes involve the addition of one or more novel commands,
       or the modification of help page information of an existing command,
@@ -235,6 +242,7 @@ to be provided in subsequent sections of this document.
       generate the documentation on your local system, and manually inspect
       it for any formatting issues. Instructions for doing so can be found
       in "[`docs/README.md`](https://github.com/MRtrix3/mrtrix3/blob/master/docs/README.md)".
+      See [official documentation for using CTest](https://cmake.org/cmake/help/latest/manual/ctest.1.html).
 
 1. For code contributions, if possible, a unit test or reproducibility
    test should be added. This can be used to:
