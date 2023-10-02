@@ -59,6 +59,14 @@ include(CompilerCache)
 
 use_compiler_cache()
 
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit)
+    message(WARNING
+        "pre-commit git hook for clang-format not found!\n"
+        "Please install pre-commit (e.g. using `apt install pre-commit` or `pip install pre-commit`) "
+        "and then run `pre-commit install` from the ${CMAKE_CURRENT_SOURCE_DIR} directory.")
+endif()
+
+
 add_compile_definitions(
     MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
     $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
