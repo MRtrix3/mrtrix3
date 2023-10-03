@@ -19,7 +19,6 @@
 #include "command.h"
 // clang-format on
 
-#include "gui/mrview/file_open.h"
 #include "gui/mrview/icons.h"
 #include "gui/mrview/mode/list.h"
 #include "gui/mrview/sync/syncmanager.h"
@@ -80,6 +79,19 @@ void usage() {
 }
 
 void run() {
+  GUI::App::setEventHandler([](QEvent *event) {
+    if (event->type() == QEvent::FileOpen) {
+      QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
+      vector<std::unique_ptr<MR::Header>> list;
+      try {
+        list.push_back(make_unique<MR::Header>(MR::Header::open(openEvent->file().toUtf8().data())));
+      } catch (Exception &E) {
+        E.display();
+      }
+      reinterpret_cast<MR::GUI::MRView::Window *>(MR::GUI::App::main_window)->add_images(list);
+    }
+    return false;
+  });
   Q_INIT_RESOURCE(icons);
   GUI::MRView::Window window;
   MR::GUI::MRView::Sync::SyncManager sync; // sync allows syncing between mrview windows in different processes
