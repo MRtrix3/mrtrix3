@@ -1,12 +1,12 @@
 name: Checks
 
 on:
-  push:
   pull_request:
     types: [opened, synchronize]
-    branches:
-      - master
-      - dev
+    branches: [ master, dev]
+    merge_group:
+      types: [checks_requested]
+      branches: [master]
       
 jobs:
   linux-clang-build:
@@ -42,6 +42,7 @@ jobs:
       run: >
         cmake
         -B build
+        -G Ninja
         -D CMAKE_BUILD_TYPE=Release
         -D MRTRIX_BUILD_TESTS=ON
         -D MRTRIX_STL_DEBUGGING=ON
@@ -90,6 +91,7 @@ jobs:
       run: >
         cmake
         -B build
+        -G Ninja
         -D CMAKE_BUILD_TYPE=Release
         -D MRTRIX_BUILD_TESTS=ON
         -D MRTRIX_STL_DEBUGGING=ON
@@ -140,6 +142,7 @@ jobs:
         export PATH=/usr/local/opt/qt5/bin:$PATH;
         cmake
         -B build
+        -G Ninja
         -D CMAKE_BUILD_TYPE=Release
         -D MRTRIX_BUILD_TESTS=ON
         -D MRTRIX_STL_DEBUGGING=ON
@@ -154,6 +157,9 @@ jobs:
     - name: binary tests
       run: cd build && ctest -R bin
 
+    - name: check command documentation
+      run: ./docs/generate_user_docs.sh && git diff --exit-code docs/
+
   windows-build:
 
     runs-on: windows-latest
@@ -162,7 +168,6 @@ jobs:
         shell: msys2 {0}
 
     env:
-      # CFLAGS: -Werror
       CHERE_INVOKING: enabled_from_arguments
       MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
       SCCACHE_GHA_ENABLED: "true"
@@ -206,6 +211,7 @@ jobs:
         run: >
             cmake
             -B build
+            -G Ninja
             -D CMAKE_BUILD_TYPE=Release
             -D MRTRIX_BUILD_TESTS=ON
             -D MRTRIX_STL_DEBUGGING=ON
@@ -248,3 +254,12 @@ jobs:
 
     - name: check building of documentation
       run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
+
+    - name: clang-format check
+      uses: DoozyX/clang-format-lint-action@v0.16.2
+      with:
+        source: '.'
+        extensions: 'h,cpp'
+        clangFormatVersion: 16
+        # Ignore third party headers
+        exclude: './core/file/json.h ./core/file/nifti1.h ./core/file/nifti2.h'
