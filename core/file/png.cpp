@@ -183,6 +183,7 @@ namespace MR
           bit_depth (0),
           filename (filename),
           data_type (H.datatype()),
+          multiplier (1.0),
           outfile (NULL)
       {
         if (Path::exists (filename) && !App::overwrite_files)
@@ -231,17 +232,23 @@ namespace MR
             png_destroy_write_struct (&png_ptr, &info_ptr);
             throw Exception ("Undefined data type in image \"" + H.name() + "\" for PNG writer");
           case DataType::Bit:
-            bit_depth = 1;
+            assert (false);
             break;
           case DataType::UInt8:
+            bit_depth = 8;
+            break;
           case DataType::Float32:
             bit_depth = 8;
+            multiplier = std::numeric_limits<uint8_t>::max(); break;
             break;
           case DataType::UInt16:
           case DataType::UInt32:
           case DataType::UInt64:
+            bit_depth = 16;
+            break;
           case DataType::Float64:
             bit_depth = 16;
+            multiplier = std::numeric_limits<uint16_t>::max(); break;
             break;
         }
         // Detect cases where one axis has a size of 1, and hence represents the image plane
@@ -327,7 +334,7 @@ namespace MR
         };
 
 
-        if (bit_depth == 1 || data_type == DataType::UInt8 || data_type == DataType::UInt16BE) {
+        if (data_type == DataType::UInt8 || data_type == DataType::UInt16BE) {
           finish (data);
         } else {
           uint8_t scratch[row_bytes * height];
