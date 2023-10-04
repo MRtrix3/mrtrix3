@@ -16,4 +16,9 @@ mrconvert mrcat/voxel[].mih - | testing_diff_header -keyval - mrcat/all_axis0.mi
 mrconvert mrcat/all_axis3.mif tmp-[].mif -force && testing_diff_header -keyval tmp-0.mif mrcat/voxel1.mih && testing_diff_header -keyval tmp-1.mif mrcat/voxel2.mih && testing_diff_header -keyval tmp-2.mif mrcat/voxel3.mih && testing_diff_header -keyval tmp-3.mif mrcat/voxel4.mih && testing_diff_header -keyval tmp-4.mif mrcat/voxel5.mih && testing_diff_header -keyval tmp-5.mif mrcat/voxel6.mih
 mrconvert dwi.mif tmp-[]-[].mif -force && testing_diff_image dwi.mif tmp-[]-[].mif
 mrconvert dwi.mif -coord 3 1:2:end -axes 0:2,-1,3 - | testing_diff_image - mrconvert/dwi_select_axes.mif
-
+mrinfo template.mif.gz -transform > tmp.txt && mrconvert template.mif.gz tmp[].png -force && mrconvert tmp[].png -vox 2.5 - | mrtransform - -replace tmp.txt - | mrcalc - 255 -div - | testing_diff_image - $(mrcalc template.mif.gz 1.0 -min -) -abs 0.002
+rm -f tmpaxial*.png && mrconvert template.mif.gz -coord 2 9,19,29,39,49 tmpaxial[].png && testing_diff_image tmpaxial[].png mrconvert/axial[].png
+rm -f tmpcoronal*.png && mrconvert template.mif.gz -coord 1 17,32,47,62,77 -axes 0,2,1 tmpcoronal[].png && testing_diff_image tmpcoronal[].png mrconvert/coronal[].png
+rm -f tmpsagittal*.png && mrconvert template.mif.gz -coord 0 27,47,67 -axes 1,2,0 tmpsagittal[].png && testing_diff_image tmpsagittal[].png mrconvert/sagittal[].png
+rm -f tmpmask*.png && mrconvert mask.mif tmpmask[].png && testing_diff_image tmpmask[].png mrconvert/mask[].png
+rm -f tmptissues*.png && mrconvert dwi2fod/msmt/tissues.mif tmptissues[].png && testing_diff_image tmptissues[].png mrconvert/tissues[].png
