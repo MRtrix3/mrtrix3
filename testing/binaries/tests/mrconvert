@@ -8,7 +8,7 @@ mrconvert mrconvert/in.mif tmp.nii  && testing_diff_image tmp.nii mrconvert/in.m
 mrconvert mrconvert/in.mif -datatype float32 tmp.nii.gz -force && testing_diff_image tmp.nii.gz mrconvert/in.mif
 mrconvert mrconvert/in.mif -strides 3,2,1 tmp.mgh  && testing_diff_image tmp.mgh mrconvert/in.mif
 mrconvert mrconvert/in.mif -strides 1,3,2 -datatype int16 tmp.mgz  && testing_diff_image tmp.mgz mrconvert/in.mif
-mrconvert mrconvert/in.mif tmp-[].png  && echo -e "1 0 0 0\n0 1 0 0\n0 0 1 0\n" > tmp.txt  && testing_diff_image tmp-[].png $(mrcalc mrconvert/in.mif 0 -max - | mrtransform - -replace tmp.txt -)
+mrconvert mrconvert/in.mif tmp-[].png && echo -e "1 0 0 0\n0 1 0 0\n0 0 1 0\n" > tmp.txt && testing_diff_image tmp-[].png $(mrcalc mrconvert/in.mif 0 -max - | mrtransform - -replace tmp.txt -)
 mrconvert unit_warp.mif tmp-[].png -datatype uint8 -force  && echo -e "1 0 0 0\n0 1 0 0\n0 0 1 0\n" > tmp.txt  && testing_diff_image tmp-[].png $(mrcalc unit_warp.mif 0 -max -round - | mrtransform - -replace tmp.txt - | mrconvert - -vox 1,1,1 -)
 mrconvert dwi.mif tmp-[].mif -force && testing_diff_image dwi.mif tmp-[].mif
 mrconvert dwi.mif -coord 3 0:2:end tmp1.mif -force && mrconvert tmp-[0:2:66].mif tmp2.mif && testing_diff_header -keyval tmp1.mif tmp2.mif && testing_diff_image tmp1.mif tmp2.mif
