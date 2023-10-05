@@ -30,14 +30,13 @@ namespace MR
     void PNG::load (const Header& header, size_t)
     {
       DEBUG (std::string("loading PNG image") + (files.size() > 1 ? "s" : "") + " \"" + header.name() + "\"");
+      addresses.resize (1);
+      segsize = (header.datatype().bits() * voxel_count (header) + 7) / 8;
+      addresses[0].reset (new uint8_t[segsize]);
       if (is_new) {
-        segsize = (header.datatype().bits() * voxel_count (header) + 7) / 8;
-        addresses.resize (1);
-        addresses[0].reset (new uint8_t[segsize]);
         memset (addresses[0].get(), 0x00, segsize);
       } else {
-        segsize = (header.datatype().bits() * header.size(0) * header.size(1) * (header.ndim() == 4 ? header.size(3) : 1) + 7) / 8;
-        addresses.resize (files.size());
+        const size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) * (header.ndim() == 4 ? header.size(3) : 1) + 7) / 8;
         for (size_t i = 0; i != files.size(); ++i) {
           File::PNG::Reader png (files[i].name);
           if (png.get_width() != header.size(0) ||
@@ -49,8 +48,7 @@ namespace MR
             e.push_back ("File \"" + files[i].name + ": " + str(png.get_width()) + "x" + str(png.get_height()) + " x " + str(png.get_bitdepth()) + "(->" + str(png.get_output_bitdepth()) + ") bits, " + str(png.get_channels()) + " channels");
             throw e;
           }
-          addresses[i].reset (new uint8_t[segsize]);
-          png.load (addresses[i].get());
+          png.load (addresses[0].get() + (i * slice_bytes));
         }
       }
     }
@@ -58,19 +56,15 @@ namespace MR
 
     void PNG::unload (const Header& header)
     {
+      assert (addresses.size() == 1);
       if (writable) {
-        assert (addresses.size() == 1);
         const size_t slice_bytes = (header.datatype().bits() * header.size(0) * header.size(1) * (header.ndim() == 4 ? header.size(3) : 1) + 7) / 8;
         for (size_t i = 0; i != files.size(); i++) {
           File::PNG::Writer png (header, files[i].name);
           png.save (addresses[0].get() + (i * slice_bytes));
         }
-        delete[] addresses[0].release();
-      } else {
-        assert (files.size() == addresses.size());
-        for (size_t i = 0; i != files.size(); i++)
-          delete[] addresses[i].release();
       }
+      delete[] addresses[0].release();
     }
 
   }
