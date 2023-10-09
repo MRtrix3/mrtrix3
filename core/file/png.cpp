@@ -197,6 +197,8 @@ namespace MR
           throw Exception ("Unable to set jump buffer for PNG structure for image \"" + filename + "\"");
         }
         outfile = fopen (filename.c_str(), "wb");
+        if (!outfile)
+          throw Exception ("Unable to open PNG file for writing for image \"" + filename + "\": " + strerror (errno));
         png_init_io (png_ptr, outfile);
         png_set_compression_level (png_ptr, Z_DEFAULT_COMPRESSION);
         switch (H.ndim()) {
