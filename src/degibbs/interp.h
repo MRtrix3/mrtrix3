@@ -140,6 +140,8 @@ namespace MR {
           }
       };
 
+      // TODO Implement alternative polar interpolator where a weighted _geometric_ mean of magnitudes is taken
+
       // Perform Hermite interpolation on magnitude data only
       // Should recapitulate ringing in input magnitude data with insufficient tension
       class HermiteMagnitude : public Base
