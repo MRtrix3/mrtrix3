@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <zlib.h>
 
-#ifdef MRTRIX_MACOSX
+#if defined(MRTRIX_MACOSX) || defined(MRTRIX_FREEBSD)
 #include <sys/mount.h>
 #include <sys/param.h>
 #elif !defined(MRTRIX_WINDOWS)
