@@ -1,0 +1,39 @@
+{
+    "version" : 2,
+    "configurePresets" : [
+        {
+            "name" : "base",
+            "displayName" : "Base configuration",
+            "hidden" : true,
+            "generator" : "Ninja",
+            "binaryDir": "${sourceParentDir}/build-mrtrix3-${presetName}",
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug",
+            "inherits": "base",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            }
+        },
+        {
+            "name" : "release",
+            "displayName" : "Release",
+            "inherits" : "base",
+            "cacheVariables" : {
+                "CMAKE_BUILD_TYPE" : "Release"
+            }
+        },
+        {
+            "name" : "ci-release-checks",
+            "displayName" : "Release with asserts and warnings as errors",
+            "inherits" : "base",
+            "cacheVariables" : {
+                "CMAKE_BUILD_TYPE" : "Release",
+                "MRTRIX_BUILD_TESTS" : "ON",
+                "MRTRIX_STL_DEBUGGING" : "ON",
+                "MRTRIX_WARNINGS_AS_ERRORS" : "ON"
+            }
+        }
+    ]
+}
