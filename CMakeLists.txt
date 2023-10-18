@@ -92,6 +92,18 @@ if(MRTRIX_WARNINGS_AS_ERRORS)
     endif()
 endif()
 
+
+# Check if a compiler or linker shipped with FSL is used
+get_filename_component(COMPILER_PATH ${CMAKE_CXX_COMPILER} REALPATH)
+get_filename_component(LINKER_PATH ${CMAKE_LINKER} REALPATH)
+if(COMPILER_PATH MATCHES "fsl/bin" OR LINKER_PATH MATCHES "fsl/bin")
+    message(WARNING "It looks like you are using a compiler or linker shipped with FSL. "
+        "This is not recommended, as it may result in unexpected behaviour. "
+        "Please consider using the linker and compiler shipped with your system instead."
+        "See https://github.com/MRtrix3/mrtrix3/wiki/Building-from-source#compilation-failure-due-to-not-using-system-compiler."
+    )
+endif()
+
 add_subdirectory(cmd)
 add_subdirectory(core)
 add_subdirectory(python)
