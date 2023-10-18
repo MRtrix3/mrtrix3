@@ -17,7 +17,7 @@ function(add_unit_test FILE_SRC)
     add_executable(${NAME} ${FILE_SRC})
     target_link_libraries(${NAME} PRIVATE
         mrtrix::headless
-        exec-version-lib
+        mrtrix::exec-version-lib
         mrtrix::tests-lib
     )
     set_target_properties(${NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
