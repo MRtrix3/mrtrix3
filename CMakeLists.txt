@@ -12,6 +12,7 @@ option(MRTRIX_USE_QT6 "Use Qt6 to build" OFF)
 option(MRTRIX_WARNINGS_AS_ERRORS "Compiler warnings result in compilation errors" OFF)
 option(MRTRIX_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(MRTRIX_BUILD_TESTS "Build tests executables" OFF)
+option(MRTRIX_STRIP_CONDA "Strip ananconda/mininconda from PATH to avoid conflicts" ON)
 
 if(MRTRIX_BUILD_TESTS)
     if(CMAKE_VERSION VERSION_GREATER 3.17)
@@ -92,6 +93,17 @@ if(MRTRIX_WARNINGS_AS_ERRORS)
     endif()
 endif()
 
+
+if(MRTRIX_STRIP_CONDA AND DEFINED ENV{CONDA_PREFIX})
+    message(WARNING "CONDA_PREFIX is set to ${CONDA_PREFIX}, adding conda diretories to CMAKE_IGNORE_PATH to avoid conflicts.\n"
+                    "To disable this behaviour, configure CMake with -DMRTRIX_STRIP_CONDA=OFF")
+    set(mrtrix_ignore_path_conda
+        $ENV{CONDA_PREFIX}/bin $ENV{CONDA_PREFIX}/lib $ENV{CONDA_PREFIX}/include
+        $ENV{CONDA_PREFIX} $ENV{CONDA_PREFIX}/Library $ENV{CONDA_PREFIX}/Scripts $ENV{CONDA_PREFIX}/condabin
+        $ENV{CONDA_PREFIX}/Library/bin $ENV{CONDA_PREFIX}/Library/lib $ENV{CONDA_PREFIX}/Library/include
+    )
+    set(CMAKE_IGNORE_PATH "${mrtrix_ignore_path_conda};${CMAKE_IGNORE_PATH}" CACHE STRING "")
+endif()
 
 # Check if a compiler or linker shipped with FSL is used
 get_filename_component(COMPILER_PATH ${CMAKE_CXX_COMPILER} REALPATH)
