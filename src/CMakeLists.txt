@@ -33,14 +33,15 @@ add_custom_target(exec-version-target ALL
     VERBATIM
 )
 
-add_library(exec-version-lib STATIC ${EXEC_VERSION_CPP})
-add_dependencies(exec-version-lib exec-version-target)
+add_library(mrtrix-exec-version-lib STATIC ${EXEC_VERSION_CPP})
+add_library(mrtrix::exec-version-lib ALIAS mrtrix-exec-version-lib)
+add_dependencies(mrtrix-exec-version-lib exec-version-target)
 
 add_library(mrtrix-headless SHARED ${HEADLESS_SOURCES})
 add_library(mrtrix::headless ALIAS mrtrix-headless)
 
 
-target_include_directories(exec-version-lib PUBLIC
+target_include_directories(mrtrix-exec-version-lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

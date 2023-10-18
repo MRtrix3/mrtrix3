@@ -5,6 +5,7 @@ foreach(CMD ${GUI_CMD_SRCS})
     list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
 endforeach(CMD)
 
+
 function(add_cmd CMD_SRC IS_GUI)
     # Extract the filename without an extension (NAME_WE)
     get_filename_component(CMD_NAME ${CMD_SRC} NAME_WE)

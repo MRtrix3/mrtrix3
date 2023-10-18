@@ -6,7 +6,7 @@ function(add_testing_cmd CMD_SRC)
     add_executable(${CMD_NAME} ${CMD})
     target_link_libraries(${CMD_NAME} PRIVATE
         mrtrix::headless
-        exec-version-lib
+        mrtrix::exec-version-lib
         mrtrix::tests-lib
     )
     set_target_properties(${CMD_NAME} PROPERTIES LINK_DEPENDS_NO_SHARED true)
