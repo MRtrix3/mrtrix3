@@ -14,10 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "misc/bitset.h"
 #include "command.h"
 #include "exception.h"
 #include "math/rng.h"
-#include "misc/bitset.h"
 
 using namespace MR;
 using namespace App;
