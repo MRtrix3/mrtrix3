@@ -3,8 +3,8 @@ list(FILTER HEADLESS_SOURCES EXCLUDE REGEX "gui/.*")
 
 file(GLOB_RECURSE GUI_SOURCES gui/*.h gui/*.cpp)
 
-if(BUILD_GUI)
-    if(USE_QT6)
+if(MRTRIX_BUILD_GUI)
+    if(MRTRIX_USE_QT6)
         find_package(Qt6 COMPONENTS Core Gui Widgets OpenGL Network OpenGLWidgets REQUIRED)
         qt6_add_resources(RCC_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/../icons/icons.qrc)
     else()
@@ -59,7 +59,7 @@ target_link_libraries(mrtrix-headless PUBLIC
     mrtrix::core
 )
 
-if(BUILD_GUI)
+if(MRTRIX_BUILD_GUI)
     add_library(mrtrix-gui SHARED ${GUI_SOURCES} ${RCC_SOURCES})
     add_library(mrtrix::gui ALIAS mrtrix-gui)
 
@@ -78,7 +78,7 @@ if(BUILD_GUI)
         Threads::Threads
         ${OPENGL_LIBRARIES}
     )
-    if(USE_QT6)
+    if(MRTRIX_USE_QT6)
         target_link_libraries(mrtrix-gui PUBLIC Qt6::OpenGLWidgets)
     endif()
 endif()
@@ -88,7 +88,7 @@ install(TARGETS mrtrix-headless
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
-if(BUILD_GUI)
+if(MRTRIX_BUILD_GUI)
     install(TARGETS mrtrix-gui
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
