@@ -14,6 +14,7 @@ option(MRTRIX_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(MRTRIX_BUILD_TESTS "Build tests executables" ON)
 
 if(MRTRIX_BUILD_TESTS)
+    list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
     enable_testing()
 endif()
 
