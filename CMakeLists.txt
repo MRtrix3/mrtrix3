@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 project(mrtrix3 VERSION 3.0.4)
 include(GNUInstallDirs)
@@ -14,7 +14,9 @@ option(MRTRIX_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(MRTRIX_BUILD_TESTS "Build tests executables" OFF)
 
 if(MRTRIX_BUILD_TESTS)
-    list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
+    if(CMAKE_VERSION VERSION_GREATER 3.17)
+        list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
+    endif()
     enable_testing()
 endif()
 
@@ -30,6 +32,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+if(CMAKE_VERSION VERSION_LESS 3.21)
+  get_property(not_top DIRECTORY PROPERTY PARENT_DIRECTORY)
+  if(NOT not_top)
+    set(PROJECT_IS_TOP_LEVEL true)
+  endif()
+endif()
+
 if(APPLE)
     set(base @loader_path)
 else()
