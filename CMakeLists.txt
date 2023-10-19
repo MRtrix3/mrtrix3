@@ -45,6 +45,9 @@ set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 
 include(BuildType)
 include(FindFFTW)
+include(CompilerCache)
+
+use_compiler_cache()
 
 add_compile_definitions(
     MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
