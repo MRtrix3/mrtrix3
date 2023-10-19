@@ -14,8 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
 #include "math/erfinv.h"
+#include "command.h"
 
 using namespace MR;
 using namespace App;

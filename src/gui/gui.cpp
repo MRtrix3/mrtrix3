@@ -41,5 +41,11 @@ App::App(int &cmdline_argc, char **cmdline_argv) : QApplication(cmdline_argc, cm
 #endif
 }
 
+bool App::event(QEvent *event) {
+  if (this->event_handler && this->event_handler(event))
+    return true;
+  return QApplication::event(event);
+}
+
 } // namespace GUI
 } // namespace MR

@@ -19,9 +19,9 @@ LOGFILE=pylint.log
 echo logging to \""$LOGFILE"\"
 
 # generate list of tests to run:
-tests="build configure update_copyright"
+tests="update_copyright"
 if [ $# == 0 ]; then
-  for lib_path in lib/mrtrix3/*; do
+  for lib_path in python/lib/mrtrix3/*; do
     if [[ -d ${lib_path} && ! ( ${lib_path} == *"__pycache__"* ) ]]; then
       for src_file in ${lib_path}/*.py; do
         if [[ -f ${src_file} ]]; then
@@ -32,7 +32,7 @@ if [ $# == 0 ]; then
       tests="$tests $lib_path"
     fi
   done
-  for bin_path in bin/*; do
+  for bin_path in python/bin/*; do
     if [ -f ${bin_path} ] && $(head -n1 ${bin_path} | grep -q "#!/usr/bin/python3"); then
       tests="$tests $bin_path"
     fi
@@ -64,7 +64,7 @@ cat >> $LOGFILE <<EOD
 EOD
 
 
-export PYTHONPATH="$(pwd)/lib:$PYTHONPATH"
+export PYTHONPATH="$(pwd)/python/lib:$PYTHONPATH"
 for file in $tests; do
 
   cat >> $LOGFILE <<EOD

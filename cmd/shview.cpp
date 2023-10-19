@@ -20,7 +20,6 @@
 // clang-format on
 
 #include "file/path.h"
-#include "gui/shview/file_open.h"
 #include "gui/shview/icons.h"
 #include "gui/shview/render_window.h"
 #include "math/SH.h"

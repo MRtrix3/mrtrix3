@@ -26,6 +26,8 @@
 #include "file/config.h"
 #include "gui/opengl/gl.h"
 
+#include <functional>
+
 namespace MR {
 namespace GUI {
 
@@ -46,6 +48,11 @@ public:
 
   static QWidget *main_window;
   static App *application;
+
+  static void setEventHandler(std::function<bool(QEvent *)> handler) { App::application->event_handler = handler; }
+
+private:
+  std::function<bool(QEvent *)> event_handler;
 };
 
 } // namespace GUI

@@ -1,129 +1,164 @@
-name: checks
+name: Checks
 
 on:
   pull_request:
     types: [opened, synchronize]
-    branches: [ master, dev ]
-  merge_group:
-    types: [checks_requested]
-    branches: [ master ]
-
-
-
-
-
+    branches: [ master, dev]
+    merge_group:
+      types: [checks_requested]
+      branches: [master]
+      
 jobs:
   linux-clang-build:
-
     runs-on: ubuntu-latest
 
     env:
-      CFLAGS: -Werror
       QT_SELECT: qt5
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
-      CXX_COMPILER_LAUNCHER: sccache
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
 
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev python3-numpy
+         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
+    
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.16.3'
+
+    - name: Print CMake version
+      run: cmake --version
 
     - name: configure
-      run: ./configure -assert || { cat configure.log; false; }
+      run: >
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
-      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+      run: cmake --build build
 
     - name: unit tests
-      run: ./run_tests units || { cat testing_units.log; false; }
+      run: cd build && ctest -R unit
 
     - name: binary tests
-      run: ./run_tests binaries || { cat testing_binaries.log; false; }
-
-
-
-
-
+      run: cd build && ctest -R bin
 
   linux-gcc-build:
 
     runs-on: ubuntu-latest
 
     env:
-      CXX: g++-9
-      CFLAGS: -Werror
       QT_SELECT: qt5
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
-      CXX_COMPILER_LAUNCHER: sccache
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
 
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev
+         sudo apt-get install g++-9 libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
+    
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.16.3'
+    
+    - name: Print CMake version
+      run: cmake --version
 
     - name: configure
-      run: ./configure -nooptim || { cat configure.log; false; }
+      run: >
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
-      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+      run: cmake --build build
 
+    - name: unit tests
+      run: cd build && ctest -R unit
+
+    - name: binary tests
+      run: cd build && ctest -R bin
 
   macos-build:
 
     runs-on: macos-latest
 
     env:
-      CFLAGS: -Werror
-      PACKAGES: "qt5 eigen pkg-config fftw libpng"
+      PACKAGES: "qt5 eigen pkg-config fftw libpng ninja cmake"
       SCCACHE_GHA_ENABLED: "true"
       SCCACHE_CACHE_SIZE: "2G"
-      CXX_COMPILER_LAUNCHER: sccache
 
     steps:
     - uses: actions/checkout@v1
+      with:
+        submodules: true
 
     - name: install dependencies
       run: |
          brew update || brew update     # https://github.com/Homebrew/brew/issues/2491#issuecomment-294207661
          brew install $PACKAGES || brew install $PACKAGES
-         /usr/bin/python3 -m ensurepip && /usr/bin/pip3 install numpy
          brew link --force qt5
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
+  
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.16.3'
+
+    - name: Print CMake version
+      run: cmake --version
 
     - name: configure
-      run: ./configure -assert || { cat configure.log; false; }
+      run: >
+        export PATH=/usr/local/opt/qt5/bin:$PATH;
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_STL_DEBUGGING=ON
+        -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
-      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+      run: cmake --build build
 
     - name: unit tests
-      run: ./run_tests units || { cat testing_units.log; false; }
+      run: cd build && ctest -R unit
 
     - name: binary tests
-      run: ./run_tests binaries || { cat testing_binaries.log; false; }
+      run: cd build && ctest -R bin
 
     - name: check command documentation
-      run: ./docs/generate_user_docs.sh && git diff --exit-code docs/
-
-
-
-
+      run: ./docs/generate_user_docs.sh --build-dir ./build && git diff --exit-code docs/
 
   windows-build:
 
@@ -133,7 +168,6 @@ jobs:
         shell: msys2 {0}
 
     env:
-      # CFLAGS: -Werror
       CHERE_INVOKING: enabled_from_arguments
       MINGW_PACKAGE_PREFIX: mingw-w64-ucrt-x86_64
       SCCACHE_GHA_ENABLED: "true"
@@ -141,7 +175,9 @@ jobs:
       SCCACHE_DIR: ${{ github.workspace }}/.sccache
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v1
+        with:
+          submodules: true
 
       - uses: msys2/setup-msys2@v2
         with:
@@ -151,10 +187,13 @@ jobs:
             git
             python
             ${{env.MINGW_PACKAGE_PREFIX}}-bc
+            ${{env.MINGW_PACKAGE_PREFIX}}-cmake
             ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
             ${{env.MINGW_PACKAGE_PREFIX}}-eigen3
             ${{env.MINGW_PACKAGE_PREFIX}}-fftw
             ${{env.MINGW_PACKAGE_PREFIX}}-gcc
+            ${{env.MINGW_PACKAGE_PREFIX}}-libtiff
+            ${{env.MINGW_PACKAGE_PREFIX}}-ninja
             ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
             ${{env.MINGW_PACKAGE_PREFIX}}-qt5-base
             ${{env.MINGW_PACKAGE_PREFIX}}-qt5-svg
@@ -162,31 +201,33 @@ jobs:
 
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.3
-
+      
       - name: export sccache to msys2 shell
         run: |
           export SCCACHE_UNIX_PATH=$(cygpath -u "$SCCACHE_PATH")
           echo "SCCACHE_UNIX_PATH=$SCCACHE_UNIX_PATH" >> $GITHUB_ENV
-
+      
       - name: configure
-        run: |
-          export CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}}
-          ./configure -assert || { cat configure.log; false; }
+        run: >
+            cmake
+            -B build
+            -G Ninja
+            -D CMAKE_BUILD_TYPE=Release
+            -D MRTRIX_BUILD_TESTS=ON
+            -D MRTRIX_STL_DEBUGGING=ON
+            -D MRTRIX_WARNINGS_AS_ERRORS=ON
+            -D CMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}} .
 
       - name: build
-        run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
-
+        run: cmake --build build
+      
       - name: unit tests
-        run: ./run_tests units || { cat testing_units.log; false; }
-
+        run: cd build && ctest -R unit
+  
       - name: binary tests
-        run: ./run_tests binaries || { cat testing_binaries.log; false; }
-
-
-
+        run: cd build && ctest -R bin
 
   secondary-checks:
-
     runs-on: ubuntu-latest
 
     env:
@@ -194,18 +235,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-
+    
     - name: install dependencies
       run: |
-         sudo apt-get update
-         sudo apt-get install pylint python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip python3-sphinx-notfound-page
+        sudo apt-get update
+        sudo apt-get install pylint python3-sphinx sphinx-rtd-theme-common python3-recommonmark python3-sphinx-rtd-theme python3-pip python3-sphinx-notfound-page
 
     - name: check syntax
       run: ./check_syntax || { cat syntax.log; false; }
 
     - name: pylint
       run: |
-         echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./lib/mrtrix3/_version.py
+         echo "__version__ = 'pylint testing' #pylint: disable=unused-variable" > ./python/lib/mrtrix3/_version.py
          ./run_pylint || { cat pylint.log; false; }
 
     - name: check copyright headers
