@@ -26,7 +26,7 @@ foreach(CMD ${HEADLESS_CMD_SRCS})
     add_cmd(${CMD} FALSE)
 endforeach(CMD)
 
-if(BUILD_GUI)
+if(MRTRIX_BUILD_GUI)
     foreach(CMD ${GUI_CMD_SRCS})
         add_cmd(${CMD} TRUE)
     endforeach(CMD)
