@@ -7,7 +7,7 @@ export PATH
 
 EIGEN_VERSION=3.4.0
 FFTW_VERSION=3.3.10
-QT_VERSION=6.4.1
+QT_VERSION=6.6.0
 
 if [ "$(uname)" = "Linux" ]; then
   OS=linux
