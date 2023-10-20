@@ -85,10 +85,10 @@ else
 
   # 7Z
   if [ "${OS}" = "linux" ]; then
-    FNAME=7z2201-linux-x64.tar.xz
+    FNAME=7z2301-linux-x64.tar.xz
   fi
   if [ "${OS}" = "macos" ]; then
-    FNAME=7z2107-mac.tar.xz
+    FNAME=7z2301-mac.tar.xz
   fi
   curl -s -O https://www.7-zip.org/a/${FNAME}
   tar xf ${FNAME} 7zz
