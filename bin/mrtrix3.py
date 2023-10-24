@@ -14,22 +14,48 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import imp, os, sys
+import os, sys
 from distutils.spawn import find_executable
 
-def imported(lib_path):
-  success = False
-  fp = None
+try:
+  # since importlib code below only works on Python 3.5+
+  # https://stackoverflow.com/a/50395128
+  if sys.version_info < (3,5):
+    raise ImportError
+
+  import importlib.util
+
+  def imported(lib_path):
+    try:
+      spec = importlib.util.spec_from_file_location('mrtrix3', os.path.join (lib_path, 'mrtrix3', '__init__.py'))
+      module = importlib.util.module_from_spec (spec)
+      sys.modules[spec.name] = module
+      spec.loader.exec_module (module)
+      return True
+    except ImportError:
+      return False
+
+except ImportError:
   try:
-    fp, pathname, description = imp.find_module('mrtrix3', [ lib_path ])
-    imp.load_module('mrtrix3', fp, pathname, description)
-    success = True
+    import imp
   except ImportError:
-    pass
-  finally:
-    if fp:
-      fp.close()
-  return success
+    print ('failed to import either imp or importlib module!')
+    sys.exit(1)
+
+  def imported(lib_path):
+    success = False
+    fp = None
+    try:
+      fp, pathname, description = imp.find_module('mrtrix3', [ lib_path ])
+      imp.load_module('mrtrix3', fp, pathname, description)
+      success = True
+    except ImportError:
+      pass
+    finally:
+      if fp:
+        fp.close()
+    return success
+
 
 # Can the MRtrix3 Python modules be found based on their relative location to this file?
 # Note that this includes the case where this file is a softlink within an external module,
