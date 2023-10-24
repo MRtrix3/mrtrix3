@@ -53,15 +53,20 @@ namespace MR {
           value_type get_mean_abs() const { return mean_abs; }
           value_type get_var()      const { return var; }
 
-          unsigned int get_count()   const { return count; }
-          unsigned int get_nonzero() const { return nonzero; }
+          unsigned int get_count()     const { return count; }
+          unsigned int get_nonfinite() const { return nonfinite; }
+          unsigned int get_nonzero()   const { return nonzero; }
 
         private:
           value_type min, max;
           value_type mean, mean_abs, var;
-          unsigned int count, nonzero;
+          unsigned int count, nonfinite, nonzero;
 
       };
+
+
+
+      std::ostream& operator<< (std::ostream&, const StreamlineStats&);
 
 
 

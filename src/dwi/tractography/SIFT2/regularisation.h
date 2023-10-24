@@ -22,7 +22,7 @@
 #include "app.h"
 #include "math/math.h"
 #include "dwi/tractography/SIFT2/cost_and_derivatives.h"
-#include "dwi/tractography/SIFT/types.h"
+#include "dwi/tractography/SIFT2/types.h"
 
 
 // TODO Consider SIFT2::Regularisation namespace
@@ -42,13 +42,6 @@ namespace MR
 
 
 
-      using value_type = SIFT::value_type;
-
-
-
-
-
-
       // New type definitions for regularisation
       // Instead of "tik" and "aTV" regularisation,
       //   will instead have a singular form of regularisation applied in any invocation;
@@ -56,7 +49,7 @@ namespace MR
       // - Is it applied on a per-streamline or a per-fixel basis?
       //   (with the latter being with respect to the fixel-wise mean coefficient)
       // - What functional form does the regularisation function take?
-      //   1. Penalises streamline weight
+      //   1. Penalises streamline weighting factor
       //   2. Penalises streamline coefficient
       //   3. Utilise reg_gamma function
       //
@@ -66,61 +59,64 @@ namespace MR
       // TODO Experiment with non-strong enums,
       //   since we want to be able to template by these
       enum reg_basis_t { STREAMLINE, FIXEL };
-      enum reg_fn_t { WEIGHT, COEFF, GAMMA };
+      enum reg_fn_t { FACTOR, COEFF, GAMMA };
 
       extern const char* reg_basis_choices[];
       extern const char* reg_fn_choices[];
 
       extern App::OptionGroup RegularisationOptions;
 
-      constexpr default_type regularisation_strength_default = 0.1;
+      constexpr default_type regularisation_strength_abs_default = 0.1;
+      constexpr default_type regularisation_strength_diff_default = 0.1;
 
 
 
       // TODO At least initially, would it be safer to assume that a coefficient is always provided?
       // TODO Later we may want to work more natively with weights;
       //   but that may require structural changes elsewhere
-      // TODO Also will want derivatives with respect to weight rather than coefficient
-      FORCE_INLINE value_type reg_weight (const value_type coeff)
+      // TODO Also will want derivatives with respect to weighting factor rather than coefficient
+      FORCE_INLINE value_type reg_factor (const value_type factor)
       {
-        return Math::pow2 (std::exp(coeff) - value_type(1.0));
+        return Math::pow2 (factor - value_type(1.0));
       }
-      FORCE_INLINE value_type reg_weight (const value_type coeff, const value_type base)
+      FORCE_INLINE value_type reg_factor (const WeightingCoeffAndFactor& WCF)
       {
-        return Math::pow2 (std::exp(coeff) - std::exp(base));
+        return reg_factor (WCF.factor());
       }
-
-      FORCE_INLINE value_type dregweight_dcoeff (const value_type coeff)
+      FORCE_INLINE value_type reg_factor (const value_type factor, const value_type ref)
       {
-        const value_type weight = std::exp (coeff);
-        return (value_type(2.0) * weight * (weight - value_type(1.0)));
+        return Math::pow2 (factor - ref);
       }
-      FORCE_INLINE value_type dregweight_dcoeff (const value_type coeff, const value_type base)
+      FORCE_INLINE value_type reg_factor (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
       {
-        const value_type weight = std::exp (coeff);
-        return (value_type(2.0) * weight * (weight - std::exp(base)));
+        return reg_factor (WCF.factor(), ref.factor());
       }
 
-      FORCE_INLINE value_type d2regweight_dcoeff2 (const value_type coeff)
+      FORCE_INLINE value_type dregweight_dcoeff (const WeightingCoeffAndFactor& WCF)
       {
-        const value_type double_weight = value_type(2.0) * std::exp (coeff);
-        return (double_weight * (double_weight - value_type(1.0)));
+        return (value_type(2) * WCF.factor() * (WCF.factor() - value_type(1.0)));
       }
-      FORCE_INLINE value_type d2regweight_dcoeff2 (const value_type coeff, const value_type base)
+      FORCE_INLINE value_type dregweight_dcoeff (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
       {
-        const value_type double_weight = value_type(2.0) * std::exp (coeff);
-        return (double_weight * (double_weight - std::exp(base)));
+        return (value_type(2) * WCF.factor() * (WCF.factor() - ref.factor()));
       }
 
-      FORCE_INLINE value_type d3regweight_dcoeff3 (const value_type coeff)
+      FORCE_INLINE value_type d2regweight_dcoeff2 (const WeightingCoeffAndFactor& WCF)
       {
-        const value_type weight = std::exp (coeff);
-        return (value_type(2.0) * weight * ((value_type(4.0) * weight) - value_type(1.0)));
+        return (value_type(2) * WCF.factor() * ((value_type(2) * WCF.factor()) - value_type(1.0)));
       }
-      FORCE_INLINE value_type d3regweight_dcoeff3 (const value_type coeff, const value_type base)
+      FORCE_INLINE value_type d2regweight_dcoeff2 (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
       {
-        const value_type weight = std::exp (coeff);
-        return (value_type(2.0) * weight * ((value_type(4.0) * weight) - std::exp(base)));
+        return (value_type(2) * WCF.factor() * ((value_type(2) * WCF.factor()) - ref.factor()));
+      }
+
+      FORCE_INLINE value_type d3regweight_dcoeff3 (const WeightingCoeffAndFactor& WCF)
+      {
+        return (value_type(2) * WCF.factor() * ((value_type(4) * WCF.factor()) - value_type(1.0)));
+      }
+      FORCE_INLINE value_type d3regweight_dcoeff3 (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
+      {
+        return (value_type(2) * WCF.factor() * ((value_type(4) * WCF.factor()) - ref.factor()));
       }
 
 
@@ -130,36 +126,44 @@ namespace MR
       {
         return Math::pow2 (coeff);
       }
-      FORCE_INLINE value_type reg_coeff (const value_type coeff, const value_type base)
+      FORCE_INLINE value_type reg_coeff (const WeightingCoeffAndFactor& WCF)
       {
-        return Math::pow2 (coeff - base);
+        return reg_coeff (WCF.coeff());
+      }
+      FORCE_INLINE value_type reg_coeff (const value_type coeff, const value_type ref)
+      {
+        return Math::pow2 (coeff - ref);
+      }
+      FORCE_INLINE value_type reg_coeff (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
+      {
+        return reg_coeff (WCF.coeff(), ref.coeff());
       }
 
-      FORCE_INLINE value_type dregcoeff_dcoeff (const value_type coeff)
+      FORCE_INLINE value_type dregcoeff_dcoeff (const WeightingCoeffAndFactor& WCF)
       {
-        return (value_type(2.0) * coeff);
+        return (value_type(2) * WCF.coeff());
       }
-      FORCE_INLINE value_type dregcoeff_dcoeff (const value_type coeff, const value_type base)
+      FORCE_INLINE value_type dregcoeff_dcoeff (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
       {
-        return (value_type(2.0) * (coeff - base));
-      }
-
-      FORCE_INLINE value_type d2regcoeff_dcoeff2 (const value_type coeff)
-      {
-        return (value_type(2.0));
-      }
-      FORCE_INLINE value_type d2regcoeff_dcoeff2 (const value_type coeff, const value_type base)
-      {
-        return (value_type(2.0));
+        return (value_type(2) * (WCF.coeff() - ref.coeff()));
       }
 
-      FORCE_INLINE value_type d3regcoeff_dcoeff3 (const value_type coeff)
+      FORCE_INLINE value_type d2regcoeff_dcoeff2 (const WeightingCoeffAndFactor& WCF)
       {
-        return (value_type(0.0));
+        return (value_type(2));
       }
-      FORCE_INLINE value_type d3regcoeff_dcoeff3 (const value_type coeff, const value_type base)
+      FORCE_INLINE value_type d2regcoeff_dcoeff2 (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
       {
-        return (value_type(0.0));
+        return (value_type(2));
+      }
+
+      FORCE_INLINE value_type d3regcoeff_dcoeff3 (const WeightingCoeffAndFactor& WCF)
+      {
+        return (value_type(0));
+      }
+      FORCE_INLINE value_type d3regcoeff_dcoeff3 (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
+      {
+        return (value_type(0));
       }
 
 
@@ -169,118 +173,197 @@ namespace MR
 
 
       // TODO Hypothetically could generate all of these using a macro
-      FORCE_INLINE value_type reg_gamma (const value_type coeff)
+      FORCE_INLINE value_type reg_gamma (const WeightingCoeffAndFactor& WCF)
       {
-        return ((coeff <= value_type(0.0)) ? reg_coeff (coeff) : reg_weight (coeff));
+        return ((WCF.coeff() <= value_type(0)) ? reg_coeff (WCF) : reg_factor (WCF));
       }
-      FORCE_INLINE value_type reg_gamma (const value_type coeff, const value_type base)
+      FORCE_INLINE value_type reg_gamma (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
       {
-        return ((coeff <= base) ? reg_coeff (coeff, base) : reg_weight (coeff, base));
-      }
-
-      FORCE_INLINE value_type dreggamma_dcoeff (const value_type coeff)
-      {
-        return ((coeff <= value_type(0.0)) ? dregcoeff_dcoeff (coeff) : dregweight_dcoeff (coeff));
-      }
-      FORCE_INLINE value_type dreggamma_dcoeff (const value_type coeff, const value_type base)
-      {
-        return ((coeff <= base) ? dregcoeff_dcoeff (coeff, base) : dregweight_dcoeff (coeff, base));
+        return ((WCF.coeff() <= ref.coeff()) ? reg_coeff (WCF, ref) : reg_factor (WCF, ref));
       }
 
-      FORCE_INLINE value_type d2reggamma_dcoeff2 (const value_type coeff)
+      FORCE_INLINE value_type dreggamma_dcoeff (const WeightingCoeffAndFactor& WCF)
       {
-        return ((coeff <= value_type(0.0)) ? d2regcoeff_dcoeff2 (coeff) : d2regweight_dcoeff2 (coeff));
+        return ((WCF.coeff() <= value_type(0)) ? dregcoeff_dcoeff (WCF) : dregweight_dcoeff (WCF));
       }
-      FORCE_INLINE value_type d2reggamma_dcoeff2 (const value_type coeff, const value_type base)
+      FORCE_INLINE value_type dreggamma_dcoeff (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
       {
-        return ((coeff <= base) ? d2regcoeff_dcoeff2 (coeff, base) : d2regweight_dcoeff2 (coeff, base));
+        return ((WCF.coeff() <= ref.coeff()) ? dregcoeff_dcoeff (WCF, ref) : dregweight_dcoeff (WCF, ref));
       }
 
-      FORCE_INLINE value_type d3reggamma_dcoeff3 (const value_type coeff)
+      FORCE_INLINE value_type d2reggamma_dcoeff2 (const WeightingCoeffAndFactor& WCF)
       {
-        return ((coeff <= value_type(0.0)) ? d3regcoeff_dcoeff3 (coeff) : d3regweight_dcoeff3 (coeff));
+        return ((WCF.coeff() <= value_type(0)) ? d2regcoeff_dcoeff2 (WCF) : d2regweight_dcoeff2 (WCF));
       }
-      FORCE_INLINE value_type d3reggamma_dcoeff3 (const value_type coeff, const value_type base)
+      FORCE_INLINE value_type d2reggamma_dcoeff2 (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
       {
-        return ((coeff <= base) ? d3regcoeff_dcoeff3 (coeff, base) : d3regweight_dcoeff3 (coeff, base));
+        return ((WCF.coeff() <= ref.coeff()) ? d2regcoeff_dcoeff2 (WCF, ref) : d2regweight_dcoeff2 (WCF, ref));
+      }
+
+      FORCE_INLINE value_type d3reggamma_dcoeff3 (const WeightingCoeffAndFactor& WCF)
+      {
+        return ((WCF.coeff() <= value_type(0)) ? d3regcoeff_dcoeff3 (WCF) : d3regweight_dcoeff3 (WCF));
+      }
+      FORCE_INLINE value_type d3reggamma_dcoeff3 (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref)
+      {
+        return ((WCF.coeff() <= ref.coeff()) ? d3regcoeff_dcoeff3 (WCF, ref) : d3regweight_dcoeff3 (WCF, ref));
       }
 
 
 
 
       template <reg_fn_t T>
-      value_type reg (const value_type coeff);
-      template <> FORCE_INLINE value_type reg<reg_fn_t::WEIGHT> (const value_type coeff) { return reg_weight (coeff); }
-      template <> FORCE_INLINE value_type reg<reg_fn_t::COEFF>  (const value_type coeff) { return reg_coeff  (coeff); }
-      template <> FORCE_INLINE value_type reg<reg_fn_t::GAMMA>  (const value_type coeff) { return reg_gamma  (coeff); }
+      value_type reg (const WeightingCoeffAndFactor& WCF);
+      template <> FORCE_INLINE value_type reg<reg_fn_t::FACTOR> (const WeightingCoeffAndFactor& WCF) { return reg_factor (WCF); }
+      template <> FORCE_INLINE value_type reg<reg_fn_t::COEFF>  (const WeightingCoeffAndFactor& WCF) { return reg_coeff  (WCF); }
+      template <> FORCE_INLINE value_type reg<reg_fn_t::GAMMA>  (const WeightingCoeffAndFactor& WCF) { return reg_gamma  (WCF); }
 
       template <reg_fn_t T>
-      value_type reg (const value_type coeff, const value_type base);
-      template <> FORCE_INLINE value_type reg<reg_fn_t::WEIGHT> (const value_type coeff, const value_type base) { return reg_weight (coeff, base); }
-      template <> FORCE_INLINE value_type reg<reg_fn_t::COEFF>  (const value_type coeff, const value_type base) { return reg_coeff  (coeff, base); }
-      template <> FORCE_INLINE value_type reg<reg_fn_t::GAMMA>  (const value_type coeff, const value_type base) { return reg_gamma  (coeff, base); }
+      value_type reg (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref);
+      template <> FORCE_INLINE value_type reg<reg_fn_t::FACTOR> (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref) { return reg_factor (WCF, ref); }
+      template <> FORCE_INLINE value_type reg<reg_fn_t::COEFF>  (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref) { return reg_coeff  (WCF, ref); }
+      template <> FORCE_INLINE value_type reg<reg_fn_t::GAMMA>  (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref) { return reg_gamma  (WCF, ref); }
 
 
 
 
-      FORCE_INLINE void dxregweight_dcoeffx (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier)
+      template <reg_fn_t T>
+      value_type dreg_dcoeff (const WeightingCoeffAndFactor& WCF);
+      template <> FORCE_INLINE value_type dreg_dcoeff<reg_fn_t::FACTOR> (const WeightingCoeffAndFactor& WCF) { return dregweight_dcoeff (WCF); }
+      template <> FORCE_INLINE value_type dreg_dcoeff<reg_fn_t::COEFF>  (const WeightingCoeffAndFactor& WCF) { return dregcoeff_dcoeff  (WCF); }
+      template <> FORCE_INLINE value_type dreg_dcoeff<reg_fn_t::GAMMA>  (const WeightingCoeffAndFactor& WCF) { return dreggamma_dcoeff  (WCF); }
+
+      template <reg_fn_t T>
+      value_type dreg_dcoeff (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref);
+      template <> FORCE_INLINE value_type dreg_dcoeff<reg_fn_t::FACTOR> (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref) { return dregweight_dcoeff (WCF, ref); }
+      template <> FORCE_INLINE value_type dreg_dcoeff<reg_fn_t::COEFF>  (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref) { return dregcoeff_dcoeff  (WCF, ref); }
+      template <> FORCE_INLINE value_type dreg_dcoeff<reg_fn_t::GAMMA>  (const WeightingCoeffAndFactor& WCF, const WeightingCoeffAndFactor& ref) { return dreggamma_dcoeff  (WCF, ref); }
+
+
+
+      // TODO Reorder reference coeff / weighting factor / delta
+      FORCE_INLINE void dxregweight_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier)
       {
-        const value_type double_weight = value_type(2.0) * weight;
-        result.cost         += multiplier * Math::pow2 (weight - value_type(1.0));
-        result.first_deriv  += multiplier * double_weight * (weight - value_type(1.0));
+        const value_type double_weight = value_type(2) * WCF.factor();
+        result.cost         += multiplier * Math::pow2 (WCF.factor() - value_type(1.0));
+        result.first_deriv  += multiplier * double_weight * (WCF.factor() - value_type(1.0));
         result.second_deriv += multiplier * double_weight * (double_weight - value_type(1.0));
-        result.third_deriv  += multiplier * double_weight * ((value_type(4.0) * weight) - value_type(1.0));
+        result.third_deriv  += multiplier * double_weight * ((value_type(4) * WCF.factor()) - value_type(1.0));
       }
-      FORCE_INLINE void dxregweight_dcoeffx (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier, const value_type base_coeff, const value_type base_weight)
+      FORCE_INLINE void dxregweight_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref)
       {
-        result.cost         += multiplier * Math::pow2 (weight - base_weight);
-        result.first_deriv  += multiplier * value_type(2.0) * weight * (weight - base_weight);
-        result.second_deriv += multiplier * value_type(2.0) * weight * ((value_type(2.0)*weight) - base_weight);
-        result.third_deriv  += multiplier * value_type(2.0) * weight * ((value_type(4.0)*weight) - base_weight);
-      }
-
-      FORCE_INLINE void dxregcoeff_dcoeffx (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier)
-      {
-        result.cost         += multiplier * Math::pow2 (coeff);
-        result.first_deriv  += multiplier * value_type(2.0) * coeff;
-        result.second_deriv += multiplier * value_type(2.0);
-      }
-      FORCE_INLINE void dxregcoeff_dcoeffx (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier, const value_type base_coeff, const value_type base_weight)
-      {
-        result.cost         += multiplier * Math::pow2 (coeff - base_coeff);
-        result.first_deriv  += multiplier * value_type(2.0) * (coeff - base_coeff);
-        result.second_deriv += multiplier * value_type(2.0);
+        result.cost         += multiplier * Math::pow2 (WCF.factor() - ref.factor());
+        result.first_deriv  += multiplier * value_type(2) * WCF.factor() * (WCF.factor() - ref.factor());
+        result.second_deriv += multiplier * value_type(2) * WCF.factor() * ((value_type(2)*WCF.factor()) - ref.factor());
+        result.third_deriv  += multiplier * value_type(2) * WCF.factor() * ((value_type(4)*WCF.factor()) - ref.factor());
       }
 
-      FORCE_INLINE void dxreggamma_dcoeffx (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier)
+      FORCE_INLINE void dxregcoeff_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier)
       {
-        if (coeff <= value_type(0.0))
-          dxregcoeff_dcoeffx (result, coeff, weight, multiplier);
-        else
-          dxregweight_dcoeffx (result, coeff, weight, multiplier);
+        result.cost         += multiplier * Math::pow2 (WCF.coeff());
+        result.first_deriv  += multiplier * value_type(2.0) * WCF.coeff();
+        result.second_deriv += multiplier * value_type(2.0);
       }
-      FORCE_INLINE void dxreggamma_dcoeffx (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier, const value_type base_coeff, const value_type base_weight)
+      FORCE_INLINE void dxregcoeff_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref)
       {
-        if (coeff <= base_coeff)
-          dxregcoeff_dcoeffx (result, coeff, weight, multiplier, base_coeff, base_weight);
+        result.cost         += multiplier * Math::pow2 (WCF.coeff() - ref.coeff());
+        result.first_deriv  += multiplier * value_type(2) * (WCF.coeff() - ref.coeff());
+        result.second_deriv += multiplier * value_type(2);
+      }
+
+      FORCE_INLINE void dxreggamma_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier)
+      {
+        if (WCF.coeff() <= value_type(0.0))
+          dxregcoeff_dcoeffx (result, WCF, multiplier);
         else
-          dxregweight_dcoeffx (result, coeff, weight, multiplier, base_coeff, base_weight);
+          dxregweight_dcoeffx (result, WCF, multiplier);
+      }
+      FORCE_INLINE void dxreggamma_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref)
+      {
+        if (WCF.coeff() <= ref.coeff())
+          dxregcoeff_dcoeffx (result, WCF, multiplier, ref);
+        else
+          dxregweight_dcoeffx (result, WCF, multiplier, ref);
       }
 
 
 
 
       template <reg_fn_t T>
-      void dxreg_dcoeffx (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier);
-      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::WEIGHT> (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier) { dxregweight_dcoeffx (result, coeff, weight, multiplier); }
-      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::COEFF>  (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier) { dxregcoeff_dcoeffx  (result, coeff, weight, multiplier); }
-      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::GAMMA>  (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier) { dxreggamma_dcoeffx  (result, coeff, weight, multiplier); }
+      void dxreg_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier);
+      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::FACTOR> (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier) { dxregweight_dcoeffx (result, WCF, multiplier); }
+      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::COEFF>  (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier) { dxregcoeff_dcoeffx  (result, WCF, multiplier); }
+      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::GAMMA>  (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier) { dxreggamma_dcoeffx  (result, WCF, multiplier); }
 
       template <reg_fn_t T>
-      void dxreg_dcoeffx (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier, const value_type base_coeff, const value_type base_weight);
-      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::WEIGHT> (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier, const value_type base_coeff, const value_type base_weight) { dxregweight_dcoeffx (result, coeff, weight, multiplier, base_coeff, base_weight); }
-      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::COEFF>  (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier, const value_type base_coeff, const value_type base_weight) { dxregcoeff_dcoeffx  (result, coeff, weight, multiplier, base_coeff, base_weight); }
-      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::GAMMA>  (CostAndDerivatives& result, const value_type coeff, const value_type weight, const value_type multiplier, const value_type base_coeff, const value_type base_weight) { dxreggamma_dcoeffx  (result, coeff, weight, multiplier, base_coeff, base_weight); }
+      void dxreg_dcoeffx (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref);
+      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::FACTOR> (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref) { dxregweight_dcoeffx (result, WCF, multiplier, ref); }
+      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::COEFF>  (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref) { dxregcoeff_dcoeffx  (result, WCF, multiplier, ref); }
+      template <> FORCE_INLINE void dxreg_dcoeffx<reg_fn_t::GAMMA>  (CostAndDerivatives& result, const WeightingCoeffAndFactor& WCF, const value_type multiplier, const WeightingCoeffAndFactor& ref) { dxreggamma_dcoeffx  (result, WCF, multiplier, ref); }
+
+
+
+
+
+      // Regularisation for differential mode
+
+      FORCE_INLINE value_type reg_delta (const value_type delta)
+      {
+        return Math::pow2 (delta);
+      }
+      FORCE_INLINE value_type reg_delta (const value_type delta, const value_type ref)
+      {
+        return Math::pow2 (delta - ref);
+      }
+
+      FORCE_INLINE value_type dregdelta_ddelta (const value_type delta)
+      {
+        return (value_type(2) * delta);
+      }
+      FORCE_INLINE value_type dregdelta_ddelta (const value_type delta, const value_type ref)
+      {
+        return (value_type(2) * (delta - ref));
+      }
+
+      FORCE_INLINE value_type d2regdelta_ddelta2 (const value_type delta)
+      {
+        return (value_type(2));
+      }
+      FORCE_INLINE value_type d2regdelta_ddelta2 (const value_type delta, const value_type ref)
+      {
+        return (value_type(2));
+      }
+
+      FORCE_INLINE value_type d3regdelta_ddelta3 (const value_type delta)
+      {
+        return (value_type(0));
+      }
+      FORCE_INLINE value_type d3regdelta_ddelta3 (const value_type delta, const value_type ref)
+      {
+        return (value_type(0));
+      }
+
+
+
+
+      FORCE_INLINE void dxregdelta_ddeltax (CostAndDerivatives& result, const value_type delta, const value_type multiplier)
+      {
+        result.cost         += multiplier * Math::pow2 (delta);
+        result.first_deriv  += multiplier * value_type(2) * delta;
+        result.second_deriv += multiplier * value_type(2);
+      }
+      FORCE_INLINE void dxregdelta_ddeltax (CostAndDerivatives& result, const value_type delta, const value_type multiplier, const value_type ref)
+      {
+        result.cost         += multiplier * Math::pow2 (delta - ref);
+        result.first_deriv  += multiplier * value_type(2) * (delta - ref);
+        result.second_deriv += multiplier * value_type(2);
+      }
+
+
+
+
+
+
 
 
 

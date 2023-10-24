@@ -33,6 +33,7 @@ namespace MR {
           mean_abs (0.0),
           var (0.0),
           count (0),
+          nonfinite (0),
           nonzero (0) { }
 
 
@@ -43,20 +44,25 @@ namespace MR {
           mean_abs (0.0),
           var (0.0),
           count (0),
+          nonfinite (0),
           nonzero (0) { }
 
 
 
       StreamlineStats& StreamlineStats::operator+= (const value_type i)
       {
-        min = std::min (min, i);
-        max = std::max (max, i);
-        mean += i;
-        mean_abs += abs (i);
-        var += Math::pow2 (i);
         ++count;
-        if (i)
-          ++nonzero;
+        if (std::isfinite (i)) {
+          min = std::min (min, i);
+          max = std::max (max, i);
+          mean += i;
+          mean_abs += abs (i);
+          var += Math::pow2 (i);
+          if (i)
+            ++nonzero;
+        } else {
+          ++nonfinite;
+        }
         return *this;
       }
 
@@ -70,6 +76,7 @@ namespace MR {
         mean_abs += i.mean_abs;
         var += i.var;
         count += i.count;
+        nonfinite += i.nonfinite;
         nonzero += i.nonzero;
         return *this;
       }
@@ -82,6 +89,19 @@ namespace MR {
         mean /= value_type(count);
         mean_abs /= value_type(count);
         var /= value_type(count-1);
+      }
+
+
+
+
+
+
+
+      std::ostream& operator<< (std::ostream& stream, const StreamlineStats& stats)
+      {
+        stream << str(stats.get_count()) << " streamlines (" << str(stats.get_nonfinite()) << " nonfinite, " << str(stats.get_nonzero()) << " nonzero): "
+               << "[" << str(stats.get_min()) << " <- " << str(stats.get_mean()) << "+-" << str(std::sqrt(stats.get_var())) << " -> " << str(stats.get_max()) << "]";
+        return stream;
       }
 
 

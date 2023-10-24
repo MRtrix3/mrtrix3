@@ -24,10 +24,12 @@
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
+#include "dwi/tractography/SIFT2/regularisation.h"
 #include "dwi/tractography/SIFT2/streamline_stats.h"
 
 
 //#define SIFT2_COEFF_OPTIMISER_DEBUG
+//#define SIFT2_DELTA_OPTIMISER_DEBUG
 
 
 namespace MR {
@@ -104,7 +106,7 @@ namespace MR {
           ~CoefficientOptimiserGSS() { }
 
         private:
-          value_type get_coeff_change (const SIFT::track_t) const;
+          value_type get_coeff_change (const SIFT::track_t) const final;
 
       };
 */
@@ -130,7 +132,7 @@ namespace MR {
         private:
           Math::QuadraticLineSearch<value_type> qls;
 
-          value_type get_coeff_change (const SIFT::track_t) const;
+          value_type get_coeff_change (const SIFT::track_t) const final;
 
       };
 */
@@ -139,6 +141,9 @@ namespace MR {
 
       // Coefficient optimiser based on iterative root-finding Newton / Halley
       // Early exit if outside the permitted coefficient step range and moving further away
+      // TODO Do I need to template this?
+      // I think I've already done the line search functor; this is not much more than a wrapper...
+      // Or we could just make a different class...
       class CoefficientOptimiserIterative : public CoefficientOptimiserBase
       {
 
@@ -148,13 +153,77 @@ namespace MR {
           ~CoefficientOptimiserIterative();
 
         private:
-          value_type get_coeff_change (const SIFT::track_t) const;
+          value_type get_coeff_change (const SIFT::track_t) const final;
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
           mutable uint64_t iter_count;
 #endif
 
       };
+
+
+
+
+      // TODO New coefficient optimiser based on Barzilai-Borwein gradient descent
+      template <reg_basis_t RegBasis, reg_fn_t RegFn>
+      class CoefficientOptimiserBBGD : public CoefficientOptimiserBase
+      {
+
+        public:
+          CoefficientOptimiserBBGD (TckFactor& tckfactor,
+                                    Eigen::Array<value_type, Eigen::Dynamic, 1>& gradients,
+                                    const value_type step_size,
+                                    StreamlineStats& step_stats,
+                                    StreamlineStats& coefficient_stats,
+                                    unsigned int& nonzero_streamlines,
+                                    BitSet& fixels_to_exclude,
+                                    value_type& sum_costs) :
+              CoefficientOptimiserBase (tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
+              gradients (gradients),
+              step_size (step_size) { }
+
+          CoefficientOptimiserBBGD (const CoefficientOptimiserBBGD& that) :
+              CoefficientOptimiserBase (that),
+              gradients (that.gradients),
+              step_size (that.step_size) { }
+
+          ~CoefficientOptimiserBBGD() { }
+
+        private:
+          Eigen::Array<value_type, Eigen::Dynamic, 1>& gradients;
+          const value_type step_size;
+
+          value_type get_coeff_change (const SIFT::track_t) const final;
+
+      };
+
+
+
+
+      // TODO Create a new class to deal with optimisation of the delta weights
+      // Note that at least for now, this will NOT inherit from CoefficientOptimiserBase
+      class DeltaOptimiserIterative
+      {
+        public:
+          DeltaOptimiserIterative (TckFactor&, StreamlineStats&, StreamlineStats&, value_type&);
+          ~DeltaOptimiserIterative();
+          bool operator() (const SIFT::TrackIndexRange&);
+        private:
+          TckFactor& master;
+          const value_type mu;
+          StreamlineStats& step_stats, delta_stats;
+          value_type& sum_costs;
+
+          StreamlineStats local_stats_steps, local_stats_deltas;
+          mutable value_type local_sum_costs;
+
+          value_type operator() (const SIFT::track_t) const;
+
+#ifdef SIFT2_COEFF_OPTIMISER_DEBUG
+          size_t total, failed, wrong_dir, step_truncated, delta_truncated;
+#endif
+      };
+
 
 
 

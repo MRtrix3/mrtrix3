@@ -28,8 +28,9 @@
 #include "math/sphere/set/adjacency.h"
 
 #include "dwi/tractography/SIFT/model.h"
-#include "dwi/tractography/SIFT/types.h"
 #include "dwi/tractography/SIFT2/regularisation.h"
+#include "dwi/tractography/SIFT2/streamline_stats.h"
+#include "dwi/tractography/SIFT2/types.h"
 
 
 
@@ -40,7 +41,22 @@
 #define SIFT2_MIN_COEFF_DEFAULT (-std::numeric_limits<SIFT::value_type>::infinity())
 #define SIFT2_MAX_COEFF_DEFAULT (std::numeric_limits<SIFT::value_type>::infinity())
 #define SIFT2_MAX_COEFF_STEP_DEFAULT 1.0
+#define SIFT2_MIN_DELTA_DEFAULT -1.0
+#define SIFT2_MAX_DELTA_DEFAULT 1.0
+#define SIFT2_MAX_DELTA_STEP_DEFAULT 0.1
 #define SIFT2_MIN_CF_DECREASE_DEFAULT 2.5e-5
+
+
+
+// TODO For now, branch to BBGD using an envvar,
+//   since aspects of the code other than just the coefficient optimiser need to change
+//#define SIFT2_USE_BBGD
+
+
+
+
+
+
 
 
 
@@ -51,6 +67,9 @@ namespace MR {
 
 
 
+
+      // TODO Once first version is working, put more effort into explicitly handling
+      //   streamlines for which weighting factor is zero during differential processing
 
       class TckFactor : public SIFT::Model
       {
@@ -63,6 +82,13 @@ namespace MR {
           // This differs from a model weight of zero in that it only controls
           //   whether or not a fixel influences the optimisation, not the calculation of mu / cost function
           static const ssize_t exclude_column = 6;
+
+          // TODO Additional columns for differential version
+          static const ssize_t delta_fd_column = 7;
+          static const ssize_t delta_td_column = 8;
+          // TODO Is this even required?
+          // Or can it just be calculated as delta_TD() / TD()?
+          //static const ssize_t mean_delta_td_column = 9;
 
           class Fixel : public SIFT::Model::FixelBase
           {
@@ -85,6 +111,28 @@ namespace MR {
               value_type mean_coeff() const { return (*this)[mean_coeff_column]; }
               bool       excluded()   const { return bool((*this)[exclude_column]); }
 
+
+
+
+              // TODO New functions for experimental BBGD solver
+              value_type get_dcost_dTD_unweighted (const value_type mu) const { return 2.0 * mu * get_diff (mu); }
+              value_type get_dcost_dTD (const value_type mu) const { return weight() * get_dcost_dTD_unweighted (mu); }
+
+
+
+              // TODO New functions for differential fit
+              value_type delta_TD() const { return (*this)[delta_td_column]; }
+              void add_to_delta_TD (const value_type delta_td, const value_type length, const value_type weight) { (*this)[delta_td_column] += delta_td * length * weight; }
+              void add_to_delta_TD (const value_type i) { (*this)[delta_td_column] += i; }
+              //void clear_mean_delta() { (*this)[mean_delta_td_column] = 0.0; }
+              //void normalise_mean_delta() { if (td()) (*this)[mean_delta_td_column] /= td(); if (count() < 2) clear_mean_delta(); }
+              value_type mean_delta() const { return delta_TD() / td(); }
+              value_type delta_FD() const { return (*this)[delta_fd_column]; }
+
+              value_type delta_diff (const value_type mu) const { return (mu * delta_TD()) - delta_FD(); }
+              value_type delta_cost_unweighted (const value_type mu) const { return Math::pow2 (delta_diff(mu)); }
+              value_type delta_cost (const value_type mu) const { return weight() * delta_cost_unweighted(mu); }
+
           };
 
 
@@ -94,14 +142,20 @@ namespace MR {
 
           TckFactor (const std::string& fd_path) :
               Model (fd_path),
-              reg_basis (reg_basis_t::FIXEL),
-              reg_fn (reg_fn_t::GAMMA),
-              reg_multiplier (0.0),
+              reg_basis_abs (reg_basis_t::FIXEL),
+              reg_basis_diff (reg_basis_t::STREAMLINE),
+              reg_fn_abs (reg_fn_t::GAMMA),
+              reg_multiplier_abs (0.0),
+              reg_multiplier_diff (0.0),
+              reg_scaling (std::numeric_limits<value_type>::signaling_NaN()),
               min_iters (SIFT2_MIN_ITERS_DEFAULT),
               max_iters (SIFT2_MAX_ITERS_DEFAULT),
               min_coeff (SIFT2_MIN_COEFF_DEFAULT),
               max_coeff (SIFT2_MAX_COEFF_DEFAULT),
               max_coeff_step (SIFT2_MAX_COEFF_STEP_DEFAULT),
+              min_delta (SIFT2_MIN_DELTA_DEFAULT),
+              max_delta (SIFT2_MAX_DELTA_DEFAULT),
+              max_delta_step (SIFT2_MAX_DELTA_STEP_DEFAULT),
               min_cf_decrease_percentage (SIFT2_MIN_CF_DECREASE_DEFAULT),
               data_scale_term (0.0)
           {
@@ -116,24 +170,37 @@ namespace MR {
 
 
 
-          void set_reg_basis       (const reg_basis_t i) { reg_basis = i; }
-          void set_reg_fn          (const reg_fn_t i)    { reg_fn = i; }
-          void set_reg_lambda      (const value_type);
-          void set_min_iters       (const int    i) { min_iters = i; }
-          void set_max_iters       (const int    i) { max_iters = i; }
+          void set_reg_basis_abs   (const reg_basis_t i) { reg_basis_abs = i; }
+          void set_reg_basis_diff  (const reg_basis_t i) { reg_basis_diff = i; }
+          void set_reg_fn_abs      (const reg_fn_t i)    { reg_fn_abs = i; }
+          void set_reg_lambda_abs  (const value_type i)  { assert (std::isfinite (reg_scaling)); reg_multiplier_abs = i * reg_scaling; }
+          void set_reg_lambda_diff (const value_type i)  { assert (std::isfinite (reg_scaling)); reg_multiplier_diff = i * reg_scaling; }
+          void set_min_iters       (const int i) { min_iters = i; }
+          void set_max_iters       (const int i) { max_iters = i; }
           void set_min_factor      (const value_type i) { min_coeff = i ? std::log(i) : -std::numeric_limits<value_type>::infinity(); }
           void set_min_coeff       (const value_type i) { min_coeff = i; }
           void set_max_factor      (const value_type i) { max_coeff = std::log(i); }
           void set_max_coeff       (const value_type i) { max_coeff = i; }
           void set_max_coeff_step  (const value_type i) { max_coeff_step = i; }
+          void set_min_delta       (const value_type i) { min_delta = i; }
+          void set_max_delta       (const value_type i) { max_delta = i; }
+          void set_max_delta_step  (const value_type i) { max_delta_step = i; }
           void set_min_cf_decrease (const value_type i) { min_cf_decrease_percentage = i; }
 
-          void set_csv_path (const std::string& i) { csv_path = i; }
+          void set_csv_path (const std::string& path);
+
+          void set_coefficients (const std::string& path);
+          void set_factors (const std::string& path);
+
+
+          void import_delta_data (const std::string& delta_path);
 
 
           void store_orig_TDs();
 
           void exclude_fixels (const value_type);
+
+          void calibrate_regularisation();
 
           // Function that prints the cost function, then sets the streamline weights according to
           //   the inverse of length, and re-calculates and prints the cost function
@@ -144,9 +211,10 @@ namespace MR {
           //   see how the cost function fares
           void calc_afcsa();
 
-          void estimate_factors();
+          value_type calc_cost_function_delta();
 
-          value_type calculate_regularisation();
+          template <operation_mode_t Mode>
+          void estimate_weights();
 
           void report_entropy() const;
 
@@ -156,34 +224,75 @@ namespace MR {
           void output_TD_images (const std::string&, const std::string&, const std::string&);
           void output_all_debug_images (const std::string&, const std::string&);
 
+          void output_deltas (const std::string&) const;
+          void output_delta_debug_images (const std::string&, const std::string&);
 
         private:
           Eigen::Array<value_type, Eigen::Dynamic, 1> coefficients;
+          Eigen::Array<value_type, Eigen::Dynamic, 1> deltas;
 
-          reg_basis_t reg_basis;
-          reg_fn_t reg_fn;
-          value_type reg_multiplier;
+          // TODO Eventually may want the ability to use different regularisation bases between absolute and differential modes
+          //   (entirely possible that fixel-wise is preferable for absolute, whereas streamline-wise is preferable for differential)
+          reg_basis_t reg_basis_abs, reg_basis_diff;
+          reg_fn_t reg_fn_abs;
+          // TODO Do we want ability to use different strengths of regularisation between absolute and differential modes?
+          value_type reg_multiplier_abs, reg_multiplier_diff;
+          // TODO Store regularisation scaling term explicitly, since it might need to be applied to two different values
+          value_type reg_scaling;
           size_t min_iters, max_iters;
-          value_type min_coeff, max_coeff, max_coeff_step, min_cf_decrease_percentage;
+          value_type min_coeff, max_coeff, max_coeff_step;
+          value_type min_delta, max_delta, max_delta_step;
+          value_type min_cf_decrease_percentage;
           std::string csv_path;
 
           value_type data_scale_term;
 
 
-          friend class LineSearchFunctor;
+          friend class LineSearchFunctorBase;
+          friend class LineSearchFunctorAbsolute;
+          friend class LineSearchFunctorDifferential;
           friend class CoefficientOptimiserBase;
           //friend class CoefficientOptimiserGSS;
           //friend class CoefficientOptimiserQLS;
           friend class CoefficientOptimiserIterative;
-          friend class FixelUpdater;
+          friend class DeltaOptimiserIterative;
           template <reg_basis_t RegBasis, reg_fn_t RegFn>
-          friend class RegularisationCalculator;
-
+          friend class CoefficientOptimiserBBGD;
+          friend class FixelUpdaterBase;
+          friend class FixelUpdaterAbsolute;
+          friend class FixelUpdaterDifferential;
+          friend class RegularisationCalculatorBase;
+          template <reg_basis_t RegBasis, reg_fn_t RegFn>
+          friend class RegularisationCalculatorAbsolute;
+          template <reg_basis_t RegBasis>
+          friend class RegularisationCalculatorDifferential;
 
           // For when multiple threads are trying to write their final information back
           std::mutex mutex;
 
           void indicate_progress() { if (App::log_level) fprintf (stderr, "."); }
+
+          // This should only be called if coefficients have been loaded from the command-line;
+          //   these limits should otherwise be being enforced by whatever code is responsible for the optimisation
+          void enforce_coeff_limits();
+
+          template <operation_mode_t Mode>
+          void update_fixels();
+          template <operation_mode_t Mode>
+          value_type calculate_regularisation();
+          value_type calculate_entropy() const;
+
+
+
+          template <reg_basis_t RegBasis, reg_fn_t RegFn>
+          void BBGD_update (Eigen::Array<value_type, Eigen::Dynamic, 1>& gradients,
+                            const value_type step_size,
+                            StreamlineStats& step_stats,
+                            StreamlineStats& coefficient_stats,
+                            unsigned int& nonzero_streamlines,
+                            BitSet& fixels_to_exclude,
+                            value_type& sum_costs);
+
 
       };
 

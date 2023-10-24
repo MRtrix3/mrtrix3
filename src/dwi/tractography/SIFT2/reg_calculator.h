@@ -31,64 +31,58 @@ namespace MR {
       namespace SIFT2 {
 
 
-      // TODO Try implementing alternative templated version completely in parallel
-      // Going to have to change multiple things in multiple places before it can all compile together
-      template <reg_basis_t RegBasis, reg_fn_t RegFn>
-      class RegularisationCalculator
+
+
+
+      class RegularisationCalculatorBase
       {
         public:
           using value_type = SIFT::value_type;
 
-          RegularisationCalculator (TckFactor& tckfactor, value_type& global_sum) :
-            master (tckfactor),
-            global_sum (global_sum),
-            local_sum (value_type(0.0)) { }
+          RegularisationCalculatorBase (TckFactor& tckfactor, value_type& global_sum) :
+              master (tckfactor),
+              global_sum (global_sum),
+              local_sum (value_type(0.0)) { }
 
-          ~RegularisationCalculator()
+          ~RegularisationCalculatorBase()
           {
             std::lock_guard<std::mutex> lock (master.mutex);
             global_sum += local_sum;
           }
 
-          bool operator() (const SIFT::TrackIndexRange& range);
+          // TODO Should be possible to define this in the case class,
+          //   and just execute a per-index functor for the derived class
+          virtual bool operator() (const SIFT::TrackIndexRange& range) = 0;
 
-        private:
+        protected:
           TckFactor& master;
           value_type& global_sum;
           value_type local_sum;
       };
 
-      // TODO Not working
-      // Is this a partial template specialisation problem?
-      // TODO Try to get working
-      // template <reg_fn_t RegFn>
-      // bool RegularisationCalculator<reg_basis_t::STREAMLINE, RegFn>::operator() (const SIFT::TrackIndexRange& range)
-      // {
-      //   for (auto track_index : range) {
-      //     const value_type coefficient = master.coefficients[track_index];
-      //     local_sum += reg<RegFn> (coefficient);
-      //   }
-      //   return true;
-      // }
 
 
-      // template <reg_fn_t RegFn>
-      // bool RegularisationCalculator<reg_basis_t::FIXEL, RegFn>::operator() (const SIFT::TrackIndexRange& range)
-      // {
-      //   for (auto track_index : range) {
-      //     const value_type coefficient = master.coefficients[track_index];
-      //     const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
-      //     const value_type contribution_multiplier = 1.0 / this_contribution.get_total_contribution();
-      //     value_type streamline_sum = value_type(0.0);
-      //     for (size_t j = 0; j != this_contribution.dim(); ++j) {
-      //       const TckFactor::Fixel fixel (master, this_contribution[j].get_fixel_index());
-      //       const value_type fixel_coeff_cost = SIFT2::reg<RegFn> (coefficient, fixel.mean_coeff());
-      //       streamline_sum += fixel.weight() * this_contribution[j].get_length() * contribution_multiplier * fixel_coeff_cost;
-      //     }
-      //     local_sum += streamline_sum;
-      //   }
-      //   return true;
-      // }
+      template <reg_basis_t RegBasis, reg_fn_t RegFn>
+      class RegularisationCalculatorAbsolute : public RegularisationCalculatorBase
+      {
+        public:
+          RegularisationCalculatorAbsolute (TckFactor& tckfactor, value_type& global_sum) :
+              RegularisationCalculatorBase (tckfactor, global_sum) { }
+          bool operator() (const SIFT::TrackIndexRange& range) override;
+      };
+
+
+
+
+      template <reg_basis_t RegBasis>
+      class RegularisationCalculatorDifferential : public RegularisationCalculatorBase
+      {
+        public:
+          RegularisationCalculatorDifferential (TckFactor& tckfactor, value_type& global_sum) :
+              RegularisationCalculatorBase (tckfactor, global_sum) { }
+          bool operator() (const SIFT::TrackIndexRange& range) override;
+      };
+
 
 
 

@@ -31,38 +31,82 @@ namespace MR {
 
 
 
-      FixelUpdater::FixelUpdater (TckFactor& tckfactor) :
+      FixelUpdaterBase::FixelUpdaterBase (TckFactor& tckfactor) :
           master (tckfactor),
-          fixel_coeff_sums (tckfactor.nfixels(), 0.0),
-          fixel_TDs        (tckfactor.nfixels(), 0.0),
-          fixel_counts     (tckfactor.nfixels(), 0) { }
+          local_sum_contributions (tckfactor.nfixels(), 0.0) { }
 
 
 
-      FixelUpdater::~FixelUpdater()
+
+
+
+
+      FixelUpdaterAbsolute::FixelUpdaterAbsolute (TckFactor& tckfactor) :
+          FixelUpdaterBase (tckfactor),
+          local_sum_coeffs (tckfactor.nfixels(), 0.0),
+          local_counts     (tckfactor.nfixels(), 0) { }
+
+
+
+      FixelUpdaterAbsolute::~FixelUpdaterAbsolute()
       {
         std::lock_guard<std::mutex> lock (master.mutex);
         for (MR::Fixel::index_type i = 0; i != master.nfixels(); ++i) {
           TckFactor::Fixel fixel (master, i);
-          fixel.add_to_mean_coeff (fixel_coeff_sums[i]);
-          fixel.add (fixel_TDs[i], fixel_counts[i]);
+          fixel.add (local_sum_contributions[i], local_counts[i]);
+          fixel.add_to_mean_coeff (local_sum_coeffs[i]);
         }
       }
 
 
 
-      bool FixelUpdater::operator() (const SIFT::TrackIndexRange& range)
+      bool FixelUpdaterAbsolute::operator() (const SIFT::TrackIndexRange& range)
       {
         for (auto track_index : range) {
-          const value_type coefficient = master.coefficients[track_index];
+          const WeightingCoeffAndFactor WCF (WeightingCoeffAndFactor::from_coeff (master.coefficients[track_index]));
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
-          const value_type weighting_factor = (coefficient > master.min_coeff) ? std::exp (coefficient) : 0.0;
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
             const MR::Fixel::index_type fixel_index = this_contribution[j].get_fixel_index();
             const float length = this_contribution[j].get_length();
-            fixel_coeff_sums[fixel_index] += length * coefficient;
-            fixel_TDs       [fixel_index] += length * weighting_factor;
-            fixel_counts    [fixel_index]++;
+            local_sum_contributions[fixel_index] += length * WCF.factor();
+            local_sum_coeffs       [fixel_index] += length * WCF.coeff();
+            local_counts           [fixel_index]++;
+          }
+        }
+        return true;
+      }
+
+
+
+
+
+      FixelUpdaterDifferential::FixelUpdaterDifferential (TckFactor& tckfactor) :
+          FixelUpdaterBase (tckfactor) { }
+
+
+
+
+      FixelUpdaterDifferential::~FixelUpdaterDifferential()
+      {
+        std::lock_guard<std::mutex> lock (master.mutex);
+        for (MR::Fixel::index_type i = 0; i != master.nfixels(); ++i) {
+          TckFactor::Fixel fixel (master, i);
+          fixel.add_to_delta_TD (local_sum_contributions[i]);
+        }
+      }
+
+
+
+      bool FixelUpdaterDifferential::operator() (const SIFT::TrackIndexRange& range)
+      {
+        for (auto track_index : range) {
+          const value_type weighting_factor (WeightingCoeffAndFactor::from_coeff (master.coefficients[track_index]).factor());
+          const value_type delta (master.deltas[track_index]);
+          const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
+          for (size_t j = 0; j != this_contribution.dim(); ++j) {
+            const MR::Fixel::index_type fixel_index = this_contribution[j].get_fixel_index();
+            const float length = this_contribution[j].get_length();
+            local_sum_contributions[fixel_index] += weighting_factor * length * delta;
           }
         }
         return true;

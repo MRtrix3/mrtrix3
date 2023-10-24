@@ -35,27 +35,38 @@ namespace MR
 
 
       const char* reg_basis_choices[] = { "streamline", "fixel", nullptr };
-      const char* reg_fn_choices[] = { "coefficient", "weight", "gamma", nullptr };
+      const char* reg_fn_choices[] = { "coefficient", "factor", "gamma", nullptr };
 
 
-      OptionGroup RegularisationOptions = OptionGroup ("Options relating to regularisation")
+      OptionGroup RegularisationOptions = OptionGroup ("Options relating to SIFT2 algorithm regularisation")
 
-      + Option ("reg_basis", "The basis upon which regularisation is applied; "
-                             "options are: "
-                             "streamline (regularisation is applied independently to each streamline), "
-                             "fixel (regularisation drives those streamlines traversing each fixel toward a common value) (default)")
+      // TODO Transfer a primary explanation of the different regularisation bases to a Description paragraph
+      + Option ("reg_basis_abs", "The basis upon which regularisation is applied when optimising absolute weights; "
+                                 "options are: "
+                                 "streamline (regularisation is applied independently to each streamline), "
+                                 "fixel (regularisation drives those streamlines traversing each fixel toward a common value) (default)")
         + Argument ("choice").type_choice(reg_basis_choices)
 
-      + Option ("reg_fn", "The form of the regularisation function; "
-                          "options are: "
-                          "coefficient (quadratically penalise difference of exponential coefficients to zero / fixel mean); "
-                          "weight (quadratically penalise difference of streamline weights to one / fixel mean); "
-                          "gamma (penalises coefficient if down-reulating, weight if up-regulating) (default)")
+      + Option ("reg_fn_abs", "The form of the regularisation function when optimising absolute weights; "
+                              "options are: "
+                              "coefficient (quadratically penalise difference of exponential coefficients to zero / fixel mean); "
+                              "factor (quadratically penalise difference of streamline weights to one / fixel mean); "
+                              "gamma (penalises coefficient if down-reulating, factor if up-regulating) (default)")
         + Argument ("choice").type_choice(reg_fn_choices)
 
-      + Option ("reg_strength", "modulate strength of applied regularisation (default: " + str(regularisation_strength_default, 2) + ")")
-        + Argument ("value").type_float (0.0);
+      + Option ("reg_strength_abs", "modulate strength of applied regularisation when optimising absolute weights "
+                                    "(default: " + str(regularisation_strength_abs_default, 2) + ")")
+        + Argument ("value").type_float (0.0)
 
+      + Option ("reg_basis_diff", "The basis upon which regularisation is applied when optimising differential weights; "
+                                  "options are: "
+                                  "streamline (regularisation is applied independently to each streamline) (default), "
+                                  "fixel (regularisation drives those streamlines traversing each fixel toward a common value)")
+        + Argument ("choice").type_choice(reg_basis_choices)
+
+      + Option ("reg_strength_diff", "modulate strength of applied regularisation when optimising differential weights "
+                                     "(default: " + str(regularisation_strength_diff_default, 2) + ")")
+        + Argument ("value").type_float (0.0);
 
 
 

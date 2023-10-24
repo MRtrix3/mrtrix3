@@ -24,6 +24,7 @@
 #include "dwi/tractography/SIFT/types.h"
 #include "dwi/tractography/SIFT2/cost_and_derivatives.h"
 #include "dwi/tractography/SIFT2/tckfactor.h"
+#include "dwi/tractography/SIFT2/types.h"
 
 
 
@@ -39,18 +40,45 @@ namespace MR {
 
 
 
+      // TODO Base class containing all features common to cost function & derivatives calculations
+      //   for either absolute or differential modes
+      class LineSearchFunctorBase
+      {
+        public:
+          using value_type = SIFT::value_type;
+          LineSearchFunctorBase (const SIFT::track_t, TckFactor&);
+
+        protected:
+          const SIFT::track_t track_index;
+          const value_type mu;
+          // TODO Later there may be different regularisation between absolute and differential modes
+          value_type reg_multiplier_streamline;
+          value_type reg_multiplier_fixel;
+
+
+          class FixelBase
+          {
+            public:
+              FixelBase (const SIFT::Track_fixel_contribution&, const TckFactor::Fixel);
+              MR::Fixel::index_type index;
+              value_type length, weight, cost_frac, SL_eff;
+          };
+
+      };
+
+
+
       // TODO New templated version of LineSearchFunctor that will deal with new regularisation templates
       // TODO Consider templating maximal required derivative order?
       // TODO Can we avoid templating the class and just template the functors?
       //   - Worried that this will have downsides...
       //template <reg_basis_t RegBasis, reg_fn_t RegFn>
-      class LineSearchFunctor
+      class LineSearchFunctorAbsolute : public LineSearchFunctorBase
       {
         public:
-          using value_type = SIFT::value_type;
+          LineSearchFunctorAbsolute (const SIFT::track_t, TckFactor&);
 
-          LineSearchFunctor (const SIFT::track_t, TckFactor&);
-
+          // TODO Can these be virtualised?
           template <reg_basis_t RegBasis, reg_fn_t RegFn>
           CostAndDerivatives get (const value_type) const;
           template <reg_basis_t RegBasis, reg_fn_t RegFn>
@@ -59,40 +87,34 @@ namespace MR {
         protected:
 
           // Necessary information for each of those fixels traversed by this streamline
-          class Fixel
+          class Fixel : public LineSearchFunctorBase::FixelBase
           {
             public:
-            Fixel (const SIFT::Track_fixel_contribution&, const TckFactor::Fixel, const value_type, const value_type);
-            MR::Fixel::index_type index;
-            value_type length, weight, TD, cost_frac, SL_eff, dTD_dFs, meanFs, expmeanFs, FD;
+            using BaseType = LineSearchFunctorBase::FixelBase;
+            Fixel (const SIFT::Track_fixel_contribution&, const TckFactor::Fixel, const WeightingCoeffAndFactor&, const WeightingCoeffAndFactor&);
+            value_type TD, dTD_dFs, FD;
+            WeightingCoeffAndFactor WCF;
           };
 
-          const SIFT::track_t track_index;
-          const value_type mu;
           const value_type Fs;
-          const value_type reg_multiplier_streamline;
-          const value_type reg_multipler_fixel;
-
           vector<Fixel> fixels;
 
       };
 
 
 
-
+      // TODO Move to .cpp
       template <reg_basis_t RegBasis, reg_fn_t RegFn>
       CostAndDerivatives
-      LineSearchFunctor::get (const value_type dFs) const
+      LineSearchFunctorAbsolute::get (const value_type dFs) const
       {
-
-        const value_type coefficient = Fs + dFs;
-        const value_type factor = std::exp (coefficient);
+        const WeightingCoeffAndFactor WCF (WeightingCoeffAndFactor::from_coeff (Fs + dFs));
 
         CostAndDerivatives data_result, reg_result;
 
         for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
 
-          const value_type contribution = i->length * factor;
+          const value_type contribution = i->length * WCF.factor();
           const value_type scaled_contribution = mu * contribution;
           const value_type roc_contribution = mu * (contribution + i->dTD_dFs);
           const value_type diff = (mu * (i->TD + contribution + (i->dTD_dFs * dFs))) - i->FD;
@@ -103,14 +125,14 @@ namespace MR {
           data_result.third_deriv += 2.0 * i->weight * i->cost_frac * scaled_contribution * ((3.0*roc_contribution) + diff);
 
           if (RegBasis == reg_basis_t::FIXEL)
-            SIFT2::dxreg_dcoeffx<RegFn> (reg_result, coefficient, factor, i->SL_eff, i->meanFs, i->expmeanFs);
+            SIFT2::dxreg_dcoeffx<RegFn> (reg_result, WCF, i->SL_eff, i->WCF);
 
         }
 
         if (RegBasis == reg_basis_t::STREAMLINE)
-          SIFT2::dxreg_dcoeffx<RegFn> (reg_result, coefficient, factor, reg_multiplier_streamline);
+          SIFT2::dxreg_dcoeffx<RegFn> (reg_result, WCF, reg_multiplier_streamline);
         else
-          reg_result *= reg_multipler_fixel;
+          reg_result *= reg_multiplier_fixel;
 
         return CostAndDerivatives(data_result, reg_result);
       }
@@ -119,21 +141,135 @@ namespace MR {
 
 
       template <reg_basis_t RegBasis, reg_fn_t RegFn>
-      LineSearchFunctor::value_type LineSearchFunctor::operator() (const value_type dFs) const
+      LineSearchFunctorAbsolute::value_type LineSearchFunctorAbsolute::operator() (const value_type dFs) const
       {
+        const WeightingCoeffAndFactor WCF (WeightingCoeffAndFactor::from_coeff (Fs+dFs));
         value_type cf_data = value_type(0.0);
         value_type cf_reg (RegBasis == reg_basis_t::STREAMLINE ?
-                           reg_multiplier_streamline * SIFT2::reg<RegFn> (Fs+dFs) :
+                           reg_multiplier_streamline * SIFT2::reg<RegFn> (WCF) :
                            value_type(0.0));
         for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
-          cf_data += i->cost_frac * i->weight * Math::pow2 ((mu * (i->TD + (i->length * std::exp (Fs+dFs)) + (i->dTD_dFs*dFs))) - i->FD);
+          cf_data += i->cost_frac * i->weight * Math::pow2 ((mu * (i->TD + (i->length * WCF.factor()) + (i->dTD_dFs*dFs))) - i->FD);
           if (RegBasis == reg_basis_t::FIXEL)
-            cf_reg += i->SL_eff * SIFT2::reg<RegFn> (Fs+dFs, i->meanFs);
+            cf_reg += i->SL_eff * SIFT2::reg<RegFn> (WCF, i->WCF);
         }
         if (RegBasis == reg_basis_t::FIXEL)
-          cf_reg *= reg_multipler_fixel;
+          cf_reg *= reg_multiplier_fixel;
         return (cf_data + cf_reg);
       }
+
+
+
+
+
+
+
+
+
+
+
+
+      // TODO Believe this is currently not taking into account absolute streamline weight
+      class LineSearchFunctorDifferential : public LineSearchFunctorBase
+      {
+        public:
+          LineSearchFunctorDifferential (const SIFT::track_t, TckFactor&);
+
+          // Note: No RegFn here; regularisation can _only_ be applied by delta
+          template <reg_basis_t RegBasis>
+          CostAndDerivatives get (const value_type) const;
+          template <reg_basis_t RegBasis>
+          value_type operator() (const value_type) const;
+
+        protected:
+
+          class Fixel : public LineSearchFunctorBase::FixelBase
+          {
+            public:
+            using BaseType = LineSearchFunctorBase::FixelBase;
+            Fixel (const SIFT::Track_fixel_contribution&, const TckFactor::Fixel, const value_type, const value_type);
+            value_type delta_TD, ddeltaTD_dddelta, mean_delta, delta_FD;
+          };
+
+          const value_type weighting_factor;
+          const value_type delta;
+          vector<Fixel> fixels;
+
+      };
+
+
+
+
+
+
+
+      template <reg_basis_t RegBasis>
+      CostAndDerivatives LineSearchFunctorDifferential::get (const value_type ddelta) const
+      {
+        const value_type deltaplusddelta = delta + ddelta;
+        CostAndDerivatives data_result, reg_result;
+
+        for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+
+          const value_type weighted_length = i->length * weighting_factor;
+          //const value_type contribution = weighted_length * deltaplusddelta;
+          //const value_type scaled_contribution = mu * contribution;
+
+          // TODO Get the data cost terms into here directly
+          // Note that fixel TD already has the prior streamline contribution subtracted
+          // cost = frac * weight * diff^2
+          // diff = (u * (dTD + ((delta+ddelta)*length*factor) + (ddeltaTD_ddelta*ddelta)) - dFD
+          const value_type diff = (mu * (i->delta_TD + (deltaplusddelta*weighted_length) + (i->ddeltaTD_dddelta*ddelta))) - i->delta_FD;
+          const value_type ddiff_dddelta = mu * (weighted_length + i->ddeltaTD_dddelta);
+
+          // TODO Should fractional attribution of the fixel cost function be modulated by absolute streamline weighting factor?
+          data_result.cost += i->cost_frac * i->weight * Math::pow2 (diff);
+
+          // dcost_dddelta = dcost_ddiff * ddiff_dddelta
+          //               = (2.0 * frac * weight * diff) * ddiff_dddelta
+          data_result.first_deriv += 2.0 * i->cost_frac * i->weight * diff * ddiff_dddelta;
+
+          // d2cost_dddelta2 = d(dcost_dddelta)_ddiff * ddiff_dddelta
+          //                 = (2.0 * frac * weight * ddiff_dddelta) * ddiff_dddelta
+          data_result.second_deriv += 2.0 * i->cost_frac * i->weight * Math::pow2 (ddiff_dddelta);
+
+          // d3cost_dddelta3 = 0.0
+
+          if (RegBasis == reg_basis_t::FIXEL)
+            SIFT2::dxregdelta_ddeltax (reg_result, deltaplusddelta, i->SL_eff, i->mean_delta);
+
+        }
+
+        if (RegBasis == reg_basis_t::STREAMLINE)
+          SIFT2::dxregdelta_ddeltax (reg_result, deltaplusddelta, reg_multiplier_streamline);
+        else
+          reg_result *= reg_multiplier_fixel;
+
+        return CostAndDerivatives(data_result, reg_result);
+      }
+
+
+
+
+
+      template <reg_basis_t RegBasis>
+      LineSearchFunctorDifferential::value_type LineSearchFunctorDifferential::operator() (const value_type ddelta) const
+      {
+        const value_type deltaplusddelta = delta + ddelta;
+        value_type cf_data = value_type(0.0);
+        value_type cf_reg (RegBasis == reg_basis_t::STREAMLINE ?
+                           reg_multiplier_streamline * SIFT2::reg_delta (deltaplusddelta) :
+                           value_type(0.0));
+        for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+          cf_data += i->cost_frac * i->weight * Math::pow2 ((mu * (i->delta_TD + (i->length * weighting_factor * deltaplusddelta) + (i->ddeltaTD_dddelta*ddelta))) - i->delta_FD);
+          if (RegBasis == reg_basis_t::FIXEL)
+            cf_reg += i->SL_eff * SIFT2::reg_delta (deltaplusddelta, i->mean_delta);
+        }
+        if (RegBasis == reg_basis_t::FIXEL)
+          cf_reg *= reg_multiplier_fixel;
+        return (cf_data + cf_reg);
+      }
+
 
 
 
