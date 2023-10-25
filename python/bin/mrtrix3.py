@@ -17,7 +17,7 @@
 import importlib, os, sys
 
 try:
-  spec = importlib.util.spec_from_file_location('mrtrix3', os.path.normpath(os.path.join(os.path.realpath(__file__), '..', 'lib', '__init__.py')))
+  spec = importlib.util.spec_from_file_location('mrtrix3', os.path.normpath(os.path.join(os.path.realpath(__file__), '..', 'lib', 'mrtrix3', '__init__.py')))
   module = importlib.util.module_from_spec(spec)
   sys.modules[spec.name] = module
   spec.loader.exec_module(module)
