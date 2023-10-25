@@ -39,19 +39,15 @@ namespace MR {
             initialise();
           }
 
-          Assigner() :
-              az_grid_step (std::numeric_limits<default_type>::quiet_NaN()),
-              el_grid_step (std::numeric_limits<default_type>::quiet_NaN()),
-              az_begin (std::numeric_limits<default_type>::quiet_NaN()),
-              el_begin (std::numeric_limits<default_type>::quiet_NaN()) { }
+          Assigner() : resolution (0) { }
 
           index_type operator() (const Eigen::Vector3d& dir) const;
           index_type operator() (const Eigen::Vector3d& dir, const index_type guess) const;
 
         private:
-          Eigen::Array<index_type, Eigen::Dynamic, Eigen::Dynamic> grid_lookup;
-          default_type az_grid_step, el_grid_step;
-          default_type az_begin, el_begin;
+
+          vector<index_type> lookup;
+          size_t resolution;
 
 
           void initialise();
