@@ -211,7 +211,8 @@ namespace MR {
         private:
           TckFactor& master;
           const value_type mu;
-          StreamlineStats& step_stats, delta_stats;
+          StreamlineStats& step_stats;
+          StreamlineStats& delta_stats;
           value_type& sum_costs;
 
           StreamlineStats local_stats_steps, local_stats_deltas;

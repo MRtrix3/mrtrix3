@@ -542,7 +542,7 @@ namespace MR {
             new_delta = master.min_delta;
             dDelta = master.min_delta - old_delta;
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
-            ++cdelta_truncated;
+            ++delta_truncated;
 #endif
           } else if (new_delta > master.max_delta) {
             //new_delta = do_fixel_exclusion (track_index);
