@@ -57,6 +57,7 @@ set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})
 include(BuildType)
 include(FindFFTW)
 include(CompilerCache)
+include(ECMEnableSanitizers)
 
 use_compiler_cache()
 
