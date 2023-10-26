@@ -204,8 +204,3 @@ def execute(): #pylint: disable=unused-variable
     elif best[3] == 'image':
       grad_import_option = ' -fslgrad bvecs' + suffix + ' bvals'
     run.command('mrinfo data.mif' + grad_import_option + grad_export_option, force=app.FORCE_OVERWRITE)
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member

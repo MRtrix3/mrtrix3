@@ -77,7 +77,3 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrconvert out.mif ' + path.from_user(app.ARGS.output),
               mrconvert_keyval=path.from_user(app.ARGS.input, False),
               force=app.FORCE_OVERWRITE)
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member

@@ -102,10 +102,6 @@ else:
 
 
 
-# Generally preferable to use:
-#   "import mrtrix3"
-#   "mrtrix3.execute()"
-# , rather than executing this function directly
 def _execute(module): #pylint: disable=unused-variable
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY

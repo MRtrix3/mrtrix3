@@ -1405,12 +1405,3 @@ def execute(): #pylint: disable=unused-variable
 
   # Finish!
   run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output) + grad_export_option, mrconvert_keyval='output.json', force=app.FORCE_OVERWRITE)
-
-
-
-
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member

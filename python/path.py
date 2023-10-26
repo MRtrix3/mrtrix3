@@ -116,31 +116,9 @@ def name_temporary(suffix): #pylint: disable=unused-variable
 
 
 
-# Determine the name of a sub-directory containing additional data / source files for a script
-# This can be algorithm files in lib/mrtrix3/, or data files in share/mrtrix3/
-# This function appears here rather than in the algorithm module as some scripts may
-#   need to access the shared data directory but not actually be using the algorithm module
-def script_subdir_name(): #pylint: disable=unused-variable
-  from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  frameinfo = inspect.stack()[-1]
-  try:
-    frame = frameinfo.frame
-  except AttributeError: # Prior to Version 3.5
-    frame = frameinfo[0]
-  # If the script has been run through a softlink, we need the name of the original
-  #   script in order to locate the additional data
-  name = os.path.basename(os.path.realpath(inspect.getfile(frame)))
-  if not name[0].isalpha():
-    name = '_' + name
-  app.debug(name)
-  return name
-
-
-
 # Find data in the relevant directory
 # Some scripts come with additional requisite data files; this function makes it easy to find them.
-# For data that is stored in a named sub-directory specifically for a particular script, this function will
-#   need to be used in conjunction with scriptSubDirName()
+# TODO Perhaps this should be looking relative to the executable rather than the library API file?
 def shared_data_path(): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   result = os.path.realpath(os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, os.pardir, 'share', 'mrtrix3')))

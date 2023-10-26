@@ -63,8 +63,3 @@ def execute(): #pylint: disable=unused-variable
     # make a 4D image with one volume
     app.warn('Only one unique b-value present in DWI data; command mrmath with -axis 3 option may be preferable')
     run.command('mrconvert ' + files[0] + ' ' + path.from_user(app.ARGS.output) + ' -axes 0,1,2,-1', mrconvert_keyval=path.from_user(app.ARGS.input, False), force=app.FORCE_OVERWRITE)
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member

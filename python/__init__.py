@@ -81,10 +81,3 @@ def setup_ansi():
   if sys.stderr.isatty() and not ('TerminalColor' in CONFIG and CONFIG['TerminalColor'].lower() in ['no', 'false', '0']):
     ANSI = ANSICodes('\033[0K', '\033[0m', '\033[03;32m', '\033[03;34m', '\033[01;31m', '\033[03;36m', '\033[00;31m') #pylint: disable=unused-variable
 setup_ansi()
-
-
-
-# Execute a command
-def execute(): #pylint: disable=unused-variable
-  from . import app #pylint: disable=import-outside-toplevel
-  app._execute(inspect.getmodule(inspect.stack()[1][0])) # pylint: disable=protected-access

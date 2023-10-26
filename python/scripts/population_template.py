@@ -1483,9 +1483,3 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.template_mask:
     run.command('mrconvert ' + current_template_mask + ' ' + path.from_user(app.ARGS.template_mask, True),
                 mrconvert_keyval='NULL', force=app.FORCE_OVERWRITE)
-
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member

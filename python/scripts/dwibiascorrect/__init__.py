@@ -40,7 +40,7 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import algorithm, app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Find out which algorithm the user has requested
-  alg = algorithm.get_module(app.ARGS.algorithm)
+  alg = algorithm.get(app.ARGS.algorithm)
 
   app.check_output_path(app.ARGS.output)
   app.check_output_path(app.ARGS.bias)
@@ -75,11 +75,3 @@ def execute(): #pylint: disable=unused-variable
 
   # From here, the script splits depending on what estimation algorithm is being used
   alg.execute()
-
-
-
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member

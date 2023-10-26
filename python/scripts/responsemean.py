@@ -76,10 +76,3 @@ def execute(): #pylint: disable=unused-variable
 
   mean_coeffs = [ [ f/len(data) for f in line ] for line in weighted_sum_coeffs ]
   matrix.save_matrix(app.ARGS.output, mean_coeffs, force=app.FORCE_OVERWRITE)
-
-
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member

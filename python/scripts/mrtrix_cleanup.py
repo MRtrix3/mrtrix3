@@ -132,9 +132,3 @@ def execute(): #pylint: disable=unused-variable
       app.console('All items deleted successfully' + print_freed())
   else:
     app.console('No files or directories found')
-
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member

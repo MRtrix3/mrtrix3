@@ -297,12 +297,3 @@ def execute(): #pylint: disable=unused-variable
       app.console('No output from command for any inputs')
 
   app.console('Script reported successful completion for all inputs')
-
-
-
-
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member

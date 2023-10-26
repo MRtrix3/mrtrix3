@@ -39,7 +39,7 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import algorithm, app, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   # Find out which algorithm the user has requested
-  alg = algorithm.get_module(app.ARGS.algorithm)
+  alg = algorithm.get(app.ARGS.algorithm)
 
   alg.check_output_paths()
 
@@ -54,9 +54,3 @@ def execute(): #pylint: disable=unused-variable
     app.warn('Generated image does not perfectly conform to 5TT format:')
     for line in stderr.splitlines():
       app.warn(line)
-
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member

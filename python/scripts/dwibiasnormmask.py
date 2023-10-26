@@ -454,9 +454,3 @@ def execute(): #pylint: disable=unused-variable
     run.command(['mrconvert', tissue_sum_image, path.from_user(app.ARGS.output_tissuesum, False)],
                 mrconvert_keyval=path.from_user(app.ARGS.input, False),
                 force=app.FORCE_OVERWRITE)
-
-
-
-# Execute the script
-import mrtrix3 #pylint: disable=wrong-import-position
-mrtrix3.execute() #pylint: disable=no-member
