@@ -4,8 +4,8 @@
   <dict>
     <key>CFBundleInfoDictionaryVersion</key>  <string>6.0</string>
     <key>CFBundleDevelopmentRegion</key>      <string>en</string>
-    <key>CFBundleName</key>                   <string>MRView</string>
-    <key>CFBundleDisplayName</key>            <string>MRView</string>
+    <key>CFBundleName</key>                   <string>SHView</string>
+    <key>CFBundleDisplayName</key>            <string>SHView</string>
     <key>CFBundleExecutable</key>             <string>${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
     <key>CFBundleIconFile</key>               <string>${MACOSX_BUNDLE_EXECUTABLE_NAME}.icns</string>
     <key>CFBundleIdentifier</key>             <string>org.mrtrix.${MACOSX_BUNDLE_EXECUTABLE_NAME}</string>
