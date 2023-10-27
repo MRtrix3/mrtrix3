@@ -14,9 +14,17 @@ function(add_cmd CMD_SRC IS_GUI)
         $<IF:$<BOOL:${IS_GUI}>,mrtrix::gui,mrtrix::headless>
         mrtrix::exec-version-lib
     )
+    if (IS_GUI)
+        set(mrtrix_icon_macos "${CMAKE_SOURCE_DIR}/icons/macos/${CMD_NAME}.icns")
+        set_source_files_properties(${mrtrix_icon_macos} PROPERTIES 
+            MACOSX_PACKAGE_LOCATION "Resources"
+        )
+        target_sources(${CMD_NAME} PRIVATE ${mrtrix_icon_macos})
+    endif ()
     set_target_properties(${CMD_NAME} PROPERTIES
         MACOSX_BUNDLE ${IS_GUI}
         MACOSX_BUNDLE_INFO_PLIST ${CMAKE_SOURCE_DIR}/cmake/bundle/${CMD_NAME}.plist.in
+        MACOSX_BUNDLE_ICON_FILE "${CMD_NAME}.icns"
         LINK_DEPENDS_NO_SHARED true
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
