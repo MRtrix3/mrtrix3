@@ -14,7 +14,7 @@ function(add_cmd CMD_SRC IS_GUI)
         $<IF:$<BOOL:${IS_GUI}>,mrtrix::gui,mrtrix::headless>
         mrtrix::exec-version-lib
     )
-    if (IS_GUI)
+    if (IS_GUI AND (${CMAKE_SYSTEM_NAME} STREQUAL "Darwin"))
         set(mrtrix_icon_macos "${CMAKE_SOURCE_DIR}/icons/macos/${CMD_NAME}.icns")
         set_source_files_properties(${mrtrix_icon_macos} PROPERTIES 
             MACOSX_PACKAGE_LOCATION "Resources"
