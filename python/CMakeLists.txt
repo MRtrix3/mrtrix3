@@ -1,61 +1,102 @@
-set(PYTHON_VERSION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lib/mrtrix3/_version.py)
+set(PYTHON_VERSION_FILE ${CMAKE_CURRENT_SOURCE_DIR}/_version.py)
+
+set(CMAKE_INSTALL_SRCDIR ${CMAKE_INSTALL_LIBDIR}/../src/)
 
 find_package(Git QUIET)
 
-file(GLOB_RECURSE PYTHON_BIN_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/bin/*
+file(GLOB PYTHON_LIB_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/*.py
 )
 
-file(GLOB_RECURSE PYTHON_LIB_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/*
+file(GLOB_RECURSE PYTHON_SRC_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.py
 )
 
-add_custom_target(Python SOURCES
-    ${PYTHON_BIN_FILES}
+file(GLOB PYTHON_COMMANDS
+    ${CMAKE_CURRENT_SOURCE_DIR}/scripts/*
 )
 
 # We generate the version file at configure time,
 # so tools like Pylint can run without building the project
 execute_process(
-    COMMAND ${CMAKE_COMMAND} 
+    COMMAND ${CMAKE_COMMAND}
     -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
     -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
     -D DST=${PYTHON_VERSION_FILE}
-    -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/lib/mrtrix3/_version.py.in
+    -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/_version.py.in
     -P ${PROJECT_SOURCE_DIR}/cmake/FindVersion.cmake
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 add_custom_target(CopyPythonFiles ALL)
-set(PYTHON_BUILD_BIN_FILES "")
-
-foreach(BIN_FILE ${PYTHON_BIN_FILES})
-    get_filename_component(BIN_FILE_NAME ${BIN_FILE} NAME)
-    set(DST_BIN_FILE ${PROJECT_BINARY_DIR}/bin/${BIN_FILE_NAME})
+set(PYTHON_BUILD_LIB_FILES "")
+set(PYTHON_BUILD_SRC_FILES "")
+foreach(LIB_FILE ${PYTHON_LIB_FILES})
+    get_filename_component(LIB_FILE_NAME ${LIB_FILE} NAME)
+    set(DST_LIB_FILE ${PROJECT_BINARY_DIR}/lib/mrtrix3/${LIB_FILE_NAME})
     add_custom_command(
         TARGET CopyPythonFiles
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${BIN_FILE} ${DST_BIN_FILE}
-        DEPENDS ${BIN_FILE}
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIB_FILE} ${DST_LIB_FILE}
+        DEPENDS ${LIB_FILE}
     )
-    list(APPEND PYTHON_BUILD_BIN_FILES ${DST_BIN_FILE})
+    list(APPEND PYTHON_BUILD_LIB_FILES ${DST_LIB_FILE})
+endforeach()
+foreach(SRC_FILE ${PYTHON_SRC_FILES})
+    file(RELATIVE_PATH SRC_RELPATH ${CMAKE_CURRENT_SOURCE_DIR}/scripts ${SRC_FILE})
+    # Modify path to 5ttgen, since it's not a valid Python module name
+    if(SRC_RELPATH MATCHES "^[0-9].*$")
+        set(SRC_RELPATH _${SRC_RELPATH})
+    endif()
+    set(DST_SRC_FILE ${PROJECT_BINARY_DIR}/src/mrtrix3/${SRC_RELPATH})
+    add_custom_command(
+        TARGET CopyPythonFiles
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SRC_FILE} ${DST_SRC_FILE}
+        DEPENDS ${SRC_FILE}
+    )
+    list(APPEND PYTHON_BUILD_SRC_FILES ${DST_SRC_FILE})
+endforeach()
+foreach(CMDNAME ${PYTHON_COMMANDS})
+    # Strip .py extension
+    # TODO What will happen to module directory names?
+    get_filename_component(BINNAME ${CMDNAME} NAME_WE)
+    set(MODULENAME ${BINNAME})
+    if(MODULENAME MATCHES "^[0-9].*$")
+        set(MODULENAME _${MODULENAME})
+    endif()
+    if(CMDNAME MATCHES "^.*\.py$")
+        set(SPECPATH "'${MODULENAME}.py'")
+    else()
+        set(SPECPATH "'${MODULENAME}', '__init__.py'")
+    endif()
+    set(BINPATH ${PROJECT_BINARY_DIR}/python/${BINNAME})
+    file(WRITE ${BINPATH} "#!${Python3_EXECUTABLE}\n")
+    file(APPEND ${BINPATH} "# -*- coding: utf-8 -*-\n")
+    file(APPEND ${BINPATH} "import importlib.util\n")
+    file(APPEND ${BINPATH} "import os\n")
+    file(APPEND ${BINPATH} "import sys\n")
+    file(APPEND ${BINPATH} "\n")
+    file(APPEND ${BINPATH} "api_location = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'lib', 'mrtrix3', '__init__.py'))\n")
+    file(APPEND ${BINPATH} "api_spec = importlib.util.spec_from_file_location('mrtrix3', api_location)\n")
+    file(APPEND ${BINPATH} "api_module = importlib.util.module_from_spec(api_spec)\n")
+    file(APPEND ${BINPATH} "sys.modules['mrtrix3'] = api_module\n")
+    file(APPEND ${BINPATH} "api_spec.loader.exec_module(api_module)\n")
+    file(APPEND ${BINPATH} "\n")
+    file(APPEND ${BINPATH} "src_spec = importlib.util.spec_from_file_location('${MODULENAME}',\n")
+    file(APPEND ${BINPATH} "    os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'src', 'mrtrix3', ${SPECPATH})))\n")
+    file(APPEND ${BINPATH} "src_module = importlib.util.module_from_spec(src_spec)\n")
+    file(APPEND ${BINPATH} "sys.modules[src_spec.name] = src_module\n")
+    file(APPEND ${BINPATH} "src_spec.loader.exec_module(src_module)\n")
+    file(APPEND ${BINPATH} "\n")
+    file(APPEND ${BINPATH} "from mrtrix3.app import _execute\n")
+    file(APPEND ${BINPATH} "import ${MODULENAME}\n")
+    file(APPEND ${BINPATH} "_execute(${MODULENAME})\n")
+    file(COPY ${BINPATH} DESTINATION ${PROJECT_BINARY_DIR}/bin
+        FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_WRITE GROUP_READ WORLD_EXECUTE WORLD_READ)
 endforeach()
 
-add_custom_command(
-    TARGET CopyPythonFiles
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/lib" "${PROJECT_BINARY_DIR}/lib"
-)
-
-set_target_properties(CopyPythonFiles 
+set_target_properties(CopyPythonFiles
     PROPERTIES ADDITIONAL_CLEAN_FILES
-        "${PYTHON_BUILD_BIN_FILES};${PROJECT_BINARY_DIR}/lib"
-)
-
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/
-    DESTINATION ${CMAKE_INSTALL_BINDIR}
-    USE_SOURCE_PERMISSIONS
-    PATTERN "__pycache__" EXCLUDE
-    PATTERN ".pyc" EXCLUDE
+        "${PYTHON_BUILD_LIB_FILES};${PROJECT_BINARY_DIR}/lib;${PYTHON_BUILD_SRC_FILES};${PROJECT_BINARY_DIR}/src;${PROJECT_BINARY_DIR}/python"
 )
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/
@@ -63,6 +104,13 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/
     USE_SOURCE_PERMISSIONS
     PATTERN "__pycache__" EXCLUDE
     PATTERN "*.py.in" EXCLUDE
+    PATTERN ".pyc" EXCLUDE
+)
+
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/
+    DESTINATION ${CMAKE_INSTALL_SRCDIR}
+    USE_SOURCE_PERMISSIONS
+    PATTERN "__pycache__" EXCLUDE
     PATTERN ".pyc" EXCLUDE
 )
 

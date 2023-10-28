@@ -59,6 +59,8 @@ include(FindFFTW)
 include(CompilerCache)
 include(ECMEnableSanitizers)
 
+find_package(Python3 COMPONENTS Interpreter)
+
 use_compiler_cache()
 
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit)
