@@ -28,30 +28,49 @@ execute_process(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-# TODO Attempt making symlinks during build; see if possible to then copy during install
-add_custom_target(CopyPythonFiles ALL)
+add_custom_target(LinkPythonFiles ALL)
+add_custom_command(
+    TARGET LinkPythonFiles
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/lib/mrtrix3
+)
+add_custom_command(
+    TARGET LinkPythonFiles
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/src/mrtrix3
+)
+foreach(SUBDIR ${PYTHON_ALL_COMMANDS})
+    if(IS_DIRECTORY ${SUBDIR})
+        get_filename_component(CMDNAME ${SUBDIR} NAME)
+        set(MODULENAME ${CMDNAME})
+        if(MODULENAME MATCHES "^[0-9].*$")
+            set(MODULENAME _${MODULENAME})
+        endif()
+        add_custom_command(
+            TARGET LinkPythonFiles
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/src/mrtrix3/${MODULENAME}
+        )
+    endif()
+endforeach()
 set(PYTHON_BUILD_LIB_FILES "")
 set(PYTHON_BUILD_SRC_FILES "")
 foreach(LIB_FILE ${PYTHON_LIB_FILES})
     get_filename_component(LIB_FILE_NAME ${LIB_FILE} NAME)
     set(DST_LIB_FILE ${PROJECT_BINARY_DIR}/lib/mrtrix3/${LIB_FILE_NAME})
     add_custom_command(
-        TARGET CopyPythonFiles
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${LIB_FILE} ${DST_LIB_FILE}
+        TARGET LinkPythonFiles
+        COMMAND ${CMAKE_COMMAND} -E create_symlink ${LIB_FILE} ${DST_LIB_FILE}
         DEPENDS ${LIB_FILE}
     )
     list(APPEND PYTHON_BUILD_LIB_FILES ${DST_LIB_FILE})
 endforeach()
 foreach(SRC_FILE ${PYTHON_ALL_SRC_FILES})
     file(RELATIVE_PATH SRC_RELPATH ${CMAKE_CURRENT_SOURCE_DIR}/scripts ${SRC_FILE})
-    # Modify path to 5ttgen, since it's not a valid Python module name
     if(SRC_RELPATH MATCHES "^[0-9].*$")
         set(SRC_RELPATH _${SRC_RELPATH})
     endif()
     set(DST_SRC_FILE ${PROJECT_BINARY_DIR}/src/mrtrix3/${SRC_RELPATH})
     add_custom_command(
-        TARGET CopyPythonFiles
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SRC_FILE} ${DST_SRC_FILE}
+        TARGET LinkPythonFiles
+        COMMAND ${CMAKE_COMMAND} -E create_symlink ${SRC_FILE} ${DST_SRC_FILE}
         DEPENDS ${SRC_FILE}
     )
     get_filename_component(SRC_RELPATH_DIRECTORY ${SRC_RELPATH} DIRECTORY)
@@ -98,7 +117,7 @@ foreach(CMDNAME ${PYTHON_ALL_COMMANDS})
     list(APPEND PYTHON_BIN_FILES ${PROJECT_BINARY_DIR}/bin/${BINNAME})
 endforeach()
 
-set_target_properties(CopyPythonFiles
+set_target_properties(LinkPythonFiles
     PROPERTIES ADDITIONAL_CLEAN_FILES
         "${PYTHON_BUILD_LIB_FILES};${PROJECT_BINARY_DIR}/lib;${PYTHON_BUILD_SRC_FILES};${PROJECT_BINARY_DIR}/src;${PROJECT_BINARY_DIR}/python"
 )
