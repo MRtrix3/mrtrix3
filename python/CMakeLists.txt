@@ -8,11 +8,11 @@ file(GLOB PYTHON_LIB_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/*.py
 )
 
-file(GLOB_RECURSE PYTHON_SRC_FILES
+file(GLOB_RECURSE PYTHON_ALL_SRC_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/scripts/*.py
 )
 
-file(GLOB PYTHON_COMMANDS
+file(GLOB PYTHON_ALL_COMMANDS
     ${CMAKE_CURRENT_SOURCE_DIR}/scripts/*
 )
 
@@ -28,6 +28,7 @@ execute_process(
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+# TODO Attempt making symlinks during build; see if possible to then copy during install
 add_custom_target(CopyPythonFiles ALL)
 set(PYTHON_BUILD_LIB_FILES "")
 set(PYTHON_BUILD_SRC_FILES "")
@@ -41,7 +42,7 @@ foreach(LIB_FILE ${PYTHON_LIB_FILES})
     )
     list(APPEND PYTHON_BUILD_LIB_FILES ${DST_LIB_FILE})
 endforeach()
-foreach(SRC_FILE ${PYTHON_SRC_FILES})
+foreach(SRC_FILE ${PYTHON_ALL_SRC_FILES})
     file(RELATIVE_PATH SRC_RELPATH ${CMAKE_CURRENT_SOURCE_DIR}/scripts ${SRC_FILE})
     # Modify path to 5ttgen, since it's not a valid Python module name
     if(SRC_RELPATH MATCHES "^[0-9].*$")
@@ -53,11 +54,13 @@ foreach(SRC_FILE ${PYTHON_SRC_FILES})
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${SRC_FILE} ${DST_SRC_FILE}
         DEPENDS ${SRC_FILE}
     )
+    get_filename_component(SRC_RELPATH_DIRECTORY ${SRC_RELPATH} DIRECTORY)
+    install(FILES ${SRC_FILE} DESTINATION ${CMAKE_INSTALL_SRCDIR}/mrtrix3/${SRC_RELPATH_DIRECTORY})
     list(APPEND PYTHON_BUILD_SRC_FILES ${DST_SRC_FILE})
 endforeach()
-foreach(CMDNAME ${PYTHON_COMMANDS})
+set(PYTHON_BIN_FILES "")
+foreach(CMDNAME ${PYTHON_ALL_COMMANDS})
     # Strip .py extension
-    # TODO What will happen to module directory names?
     get_filename_component(BINNAME ${CMDNAME} NAME_WE)
     set(MODULENAME ${BINNAME})
     if(MODULENAME MATCHES "^[0-9].*$")
@@ -92,6 +95,7 @@ foreach(CMDNAME ${PYTHON_COMMANDS})
     file(APPEND ${BINPATH} "_execute(${MODULENAME})\n")
     file(COPY ${BINPATH} DESTINATION ${PROJECT_BINARY_DIR}/bin
         FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_WRITE GROUP_READ WORLD_EXECUTE WORLD_READ)
+    list(APPEND PYTHON_BIN_FILES ${PROJECT_BINARY_DIR}/bin/${BINNAME})
 endforeach()
 
 set_target_properties(CopyPythonFiles
@@ -99,19 +103,13 @@ set_target_properties(CopyPythonFiles
         "${PYTHON_BUILD_LIB_FILES};${PROJECT_BINARY_DIR}/lib;${PYTHON_BUILD_SRC_FILES};${PROJECT_BINARY_DIR}/src;${PROJECT_BINARY_DIR}/python"
 )
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib/
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    USE_SOURCE_PERMISSIONS
-    PATTERN "__pycache__" EXCLUDE
-    PATTERN "*.py.in" EXCLUDE
-    PATTERN ".pyc" EXCLUDE
+install(FILES ${PYTHON_BIN_FILES}
+    PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_WRITE GROUP_READ WORLD_EXECUTE WORLD_READ
+    DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/
-    DESTINATION ${CMAKE_INSTALL_SRCDIR}
-    USE_SOURCE_PERMISSIONS
-    PATTERN "__pycache__" EXCLUDE
-    PATTERN ".pyc" EXCLUDE
+install(FILES ${PYTHON_LIB_FILES}
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/mrtrix3
 )
 
 install(FILES ${PYTHON_VERSION_FILE}
