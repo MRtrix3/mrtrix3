@@ -2,11 +2,9 @@ file(GLOB_RECURSE CORE_SRCS *.cpp *.h)
 
 find_package(Eigen3 REQUIRED NO_MODULE)
 find_package(ZLIB REQUIRED)
-find_package(FFTW REQUIRED)
 find_package(Git QUIET)
 find_package(Threads REQUIRED)
 find_package(PNG QUIET)
-find_package(TIFF QUIET)
 
 add_library(mrtrix-core SHARED ${CORE_SRCS})
 add_library(mrtrix::core ALIAS mrtrix-core)
@@ -46,30 +44,24 @@ target_compile_definitions(mrtrix-core PUBLIC
 )
 
 if(PNG_FOUND)
-    target_compile_definitions(mrtrix-core PUBLIC MRTRIX_PNG_SUPPORT)
-    target_link_libraries(mrtrix-core PUBLIC PNG::PNG)
+    target_compile_definitions(mrtrix-core PRIVATE MRTRIX_PNG_SUPPORT)
+    target_link_libraries(mrtrix-core PRIVATE PNG::PNG)
 else()
     message(WARNING "libpng not found, disabling PNG support")
 endif()
 
-if(TIFF_FOUND)
-    target_compile_definitions(mrtrix-core PUBLIC MRTRIX_TIFF_SUPPORT)
-    target_link_libraries(mrtrix-core PUBLIC TIFF::TIFF)
-else()
-    message(WARNING "libtiff not found, disabling TIFF support")
-endif()
+target_link_libraries(mrtrix-core PRIVATE
+    ZLIB::ZLIB
+    mrtrix::core-version-lib
+    Threads::Threads
+)
 
 target_link_libraries(mrtrix-core PUBLIC
     Eigen3::Eigen
-    ZLIB::ZLIB
-    ${FFTW_LIBRARIES}
-    mrtrix::core-version-lib
-    Threads::Threads
-    ${FFTW_LIBRARIES}
 )
 
 target_include_directories(mrtrix-core PUBLIC 
-    ${CMAKE_CURRENT_SOURCE_DIR} ${FFTW_INCLUDES}
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 install(TARGETS mrtrix-core 

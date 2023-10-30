@@ -1,16 +1,25 @@
+find_package(FFTW REQUIRED)
+
 set(GUI_CMD_SRCS mrview.cpp shview.cpp)
+set(FFTW_CMD_SRCS mrfilter.cpp mrdegibbs.cpp)
 
 file(GLOB HEADLESS_CMD_SRCS *.cpp)
 foreach(CMD ${GUI_CMD_SRCS})
     list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
 endforeach(CMD)
+foreach(CMD ${FFTW_CMD_SRCS})
+    list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
+endforeach(CMD)
 
-
-function(add_cmd CMD_SRC IS_GUI)
+function(add_cmd CMD_SRC IS_GUI NEEDS_FFTW)
     # Extract the filename without an extension (NAME_WE)
     get_filename_component(CMD_NAME ${CMD_SRC} NAME_WE)
     add_executable(${CMD_NAME} ${CMD_SRC})
+    target_include_directories(${CMD_NAME} PRIVATE
+        $<IF:$<BOOL:${NEEDS_FFTW}>,${FFTW_INCLUDES},>
+    )
     target_link_libraries(${CMD_NAME} PRIVATE 
+        $<IF:$<BOOL:${NEEDS_FFTW}>,${FFTW_LIB},>
         $<IF:$<BOOL:${IS_GUI}>,mrtrix::gui,mrtrix::headless>
         mrtrix::exec-version-lib
     )
@@ -23,11 +32,15 @@ endfunction()
 
 
 foreach(CMD ${HEADLESS_CMD_SRCS})
-    add_cmd(${CMD} FALSE)
+    add_cmd(${CMD} FALSE FALSE)
+endforeach(CMD)
+
+foreach(CMD ${FFTW_CMD_SRCS})
+    add_cmd(${CMD} FALSE TRUE)
 endforeach(CMD)
 
 if(MRTRIX_BUILD_GUI)
     foreach(CMD ${GUI_CMD_SRCS})
-        add_cmd(${CMD} TRUE)
+        add_cmd(${CMD} TRUE FALSE)
     endforeach(CMD)
 endif()
