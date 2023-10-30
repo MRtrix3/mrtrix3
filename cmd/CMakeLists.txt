@@ -3,7 +3,7 @@ find_package(FFTW REQUIRED)
 set(GUI_CMD_SRCS mrview.cpp shview.cpp)
 set(FFTW_CMD_SRCS mrfilter.cpp mrdegibbs.cpp)
 
-file(GLOB HEADLESS_CMD_SRCS *.cpp)
+file(GLOB HEADLESS_CMD_SRCS CONFIGURE_DEPENDS *.cpp)
 foreach(CMD ${GUI_CMD_SRCS})
     list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
 endforeach(CMD)
