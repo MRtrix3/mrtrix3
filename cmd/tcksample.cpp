@@ -98,17 +98,18 @@ void usage ()
 
 using value_type = float;
 using vector_type = Eigen::VectorXf;
+using SetVoxel = DWI::Tractography::Mapping::Set<DWI::Tractography::Mapping::Voxel>;
 
 
 
-class TDI { 
+class TDI {
   public:
     TDI (Image<value_type>& image, const size_t num_tracks) :
         image (image),
         progress ("Generating initial TDI", num_tracks) { }
     ~TDI () { progress.done(); }
 
-    bool operator() (const DWI::Tractography::Mapping::SetVoxel& in)
+    bool operator() (const SetVoxel& in)
     {
       for (const auto& v : in) {
         assign_pos_of (v, 0, 3).to (image);
@@ -128,7 +129,7 @@ class TDI {
 
 template <class Interp>
 class SamplerNonPrecise
-{ 
+{
   public:
     SamplerNonPrecise (Image<value_type>& image, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
         interp (image),
@@ -221,7 +222,7 @@ class SamplerNonPrecise
 
 
 class SamplerPrecise
-{ 
+{
   public:
     SamplerPrecise (Image<value_type>& image, const stat_tck statistic, const Image<value_type>& precalc_tdi) :
         image (image),
@@ -238,7 +239,7 @@ class SamplerPrecise
       out.first = tck.get_index();
       value_type sum_lengths = value_type(0);
 
-      DWI::Tractography::Mapping::SetVoxel voxels;
+      SetVoxel voxels;
       (*mapper) (tck, voxels);
 
       if (statistic == MEAN) {
@@ -252,7 +253,7 @@ class SamplerPrecise
       } else if (statistic == MEDIAN) {
         // Should be a weighted median...
         // Just use the n.log(n) algorithm
-        class WeightSort { 
+        class WeightSort {
           public:
             WeightSort (const DWI::Tractography::Mapping::Voxel& voxel, const value_type value) :
               value (value),
@@ -321,7 +322,7 @@ class SamplerPrecise
 
 
 
-class ReceiverBase { 
+class ReceiverBase {
   public:
     ReceiverBase (const size_t num_tracks) :
         received (0),
@@ -350,7 +351,7 @@ class ReceiverBase {
 };
 
 
-class Receiver_Statistic : private ReceiverBase { 
+class Receiver_Statistic : private ReceiverBase {
   public:
     Receiver_Statistic (const size_t num_tracks) :
         ReceiverBase (num_tracks),
@@ -375,7 +376,7 @@ class Receiver_Statistic : private ReceiverBase {
 
 
 
-class Receiver_NoStatistic : private ReceiverBase { 
+class Receiver_NoStatistic : private ReceiverBase {
   public:
     Receiver_NoStatistic (const std::string& path,
                           const size_t num_tracks,
@@ -487,7 +488,7 @@ void run ()
     Thread::run_queue (tdi_reader,
                        Thread::batch (DWI::Tractography::Streamline<value_type>()),
                        Thread::multi (mapper),
-                       Thread::batch (DWI::Tractography::Mapping::SetVoxel()),
+                       Thread::batch (SetVoxel()),
                        tdi_fill);
   }
 

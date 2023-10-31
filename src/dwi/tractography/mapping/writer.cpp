@@ -24,7 +24,7 @@ namespace Mapping {
 
 
 
-const char* writer_dims[] = { "undefined", "greyscale", "DEC", "dixel", "TOD", NULL };
+const char* writer_dims[] = { "undefined", "greyscale", "DEC", "dixel", "TOD", "fixel", nullptr };
 
 
 
