@@ -1,5 +1,6 @@
 import os
 from unittest import mock
+import typing as ty
 from pathlib import Path
 import numpy as np
 from medimages4tests.dummy.nifti import get_image as get_dummy_nifti
@@ -9,7 +10,7 @@ from fileformats.medimage_mrtrix3 import ImageFormat
 
 
 @FileSet.generate_sample_data.register
-def generate_mrtrix_sample_data(mif: ImageFormat, dest_dir: Path):
+def generate_mrtrix_sample_data(mif: ImageFormat, dest_dir: Path, seed: int, stem: ty.Optional[str]):
     nifti = Nifti1(get_dummy_nifti(dest_dir / "nifti.nii"))
     with mock.patch.dict(os.environ, {"MRTRIX_CLI_PARSE_ONLY": "0"}):
         mif = ImageFormat.convert(nifti)

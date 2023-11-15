@@ -2,12 +2,13 @@ import time
 import struct
 import math
 from pathlib import Path
+import typing as ty
 from fileformats.core import FileSet
 from fileformats.medimage_mrtrix3 import Tracks
 
 
 @FileSet.generate_sample_data.register
-def generate_tracks_sample_data(tracks: Tracks, dest_dir: Path):
+def generate_tracks_sample_data(tracks: Tracks, dest_dir: Path, seed: int, stem: ty.Optional[str]):
     """Generate a tracks file with a single straight track of length 10"""
     fspath = dest_dir / "tracks.tck"
     timestamp = str(time.time() * 1e9 + time.process_time_ns())
