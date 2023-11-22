@@ -342,7 +342,7 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
     struct PerThread {
       MutexProtected<Shared> &shared;
       PerThread(const PerThread &) = default;
-      PerThread(PerThread &&) = default;
+      PerThread(PerThread &&) noexcept = default;
       PerThread &operator=(const PerThread &) = delete;
       PerThread &operator=(PerThread &&) = delete;
       ~PerThread() = default;
