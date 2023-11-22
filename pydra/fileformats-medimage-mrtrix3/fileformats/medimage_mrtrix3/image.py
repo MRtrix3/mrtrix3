@@ -1,6 +1,6 @@
 from pathlib import Path
 import typing as ty
-from fileformats.core import mark
+from fileformats.core import hook
 from fileformats.generic import File
 from fileformats.application import Gzip
 from fileformats.core.mixin import WithMagicNumber
@@ -72,7 +72,7 @@ class ImageFormat(BaseMrtrixImage):
 
     ext = ".mif"
 
-    @mark.check
+    @hook.check
     def check_data_file(self):
         if self.data_fspath != self.fspath:
             raise FormatMismatchError(
@@ -93,7 +93,7 @@ class ImageHeader(BaseMrtrixImage):
 
     ext = ".mih"
 
-    @mark.required
+    @hook.required
     @property
     def data_file(self):
         return ImageDataFile(self.data_fspath)

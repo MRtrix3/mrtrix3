@@ -1,4 +1,4 @@
-from fileformats.core import mark
+from fileformats.core import hook
 from fileformats.core.mixin import WithAdjacentFiles
 from fileformats.medimage import DwiEncoding, Nifti1, NiftiGz, NiftiX, NiftiGzX
 
@@ -11,7 +11,7 @@ class BFile(DwiEncoding):
 
 # NIfTI file format gzipped with BIDS side car
 class WithBFile(WithAdjacentFiles):
-    @mark.required
+    @hook.required
     @property
     def encoding(self) -> BFile:
         return BFile(self.select_by_ext(BFile))
