@@ -320,6 +320,11 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
     ProgressBar::SwitchToMultiThreaded progress_functions;
 
     struct Shared {
+      Shared(const Shared &) = delete;
+      Shared(Shared &&) = delete;
+      Shared &operator=(const Shared &) = delete;
+      Shared &operator=(Shared &&) = delete;
+      ~Shared() = default;
       Iterator &iterator;
       decltype(outer_loop(iterator)) loop;
       FORCE_INLINE bool next(Iterator &pos) {
@@ -336,6 +341,11 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
 
     struct PerThread {
       MutexProtected<Shared> &shared;
+      PerThread(const PerThread &) = default;
+      PerThread(PerThread &&) = default;
+      PerThread &operator=(const PerThread &) = delete;
+      PerThread &operator=(PerThread &&) = delete;
+      ~PerThread() = default;
       typename std::remove_reference<Functor>::type func;
       void execute() {
         auto pos = shared.lock()->iterator;
