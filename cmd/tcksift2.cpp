@@ -216,8 +216,8 @@ void run ()
 
   tckfactor.map_streamlines (argument[0]);
   tckfactor.store_orig_TDs();
-
   tckfactor.exclude_fixels (get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT));
+  tckfactor.calibrate_regularisation();
 
   if (debug_path.size()) {
     tckfactor.output_TD_images (debug_path, "origTD_fixel.mif", "trackcount_fixel.mif");
@@ -228,6 +228,15 @@ void run ()
   if (opt.size()) {
     File::OFStream out_mu (opt[0][0]);
     out_mu << tckfactor.mu();
+  }
+
+  opt = get_options ("csv");
+  if (opt.size()) {
+    if (!get_options ("differential").size() && (get_options ("linear").size() || get_options ("in_coeffs").size() || get_options ("in_factors").size())) {
+      WARN ("-csv option will be ignored, as no iterative optimisation is taking place");
+    } else {
+      tckfactor.set_csv_path (opt[0][0]);
+    }
   }
 
   if (get_options ("linear").size()) {
@@ -247,11 +256,6 @@ void run ()
 
   } else {
 
-    opt = get_options ("csv");
-    if (opt.size())
-      tckfactor.set_csv_path (opt[0][0]);
-
-    tckfactor.calibrate_regularisation();
     opt = get_options ("reg_basis_abs");
     if (opt.size())
       tckfactor.set_reg_basis_abs (reg_basis_t (int(opt[0][0])));
