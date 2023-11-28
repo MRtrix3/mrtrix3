@@ -157,7 +157,7 @@ public:
         threshold(threshold),
         peaks_out(npeaks),
         ipeaks_vox(ipeaks_data),
-        precomputer(use_precomputer ? new Math::SH::PrecomputedAL<value_type>(lmax) : nullptr) {}
+        precomputer(use_precomputer ? std::make_shared<Math::SH::PrecomputedAL<value_type>>(lmax) : nullptr) {}
 
   bool operator()(const Item &item) {
 
@@ -175,7 +175,7 @@ public:
 
     for (size_t i = 0; i < size_t(dirs.rows()); i++) {
       Direction p(dirs(i, 0), dirs(i, 1));
-      p.a = Math::SH::get_peak(item.data, lmax, p.v, precomputer);
+      p.a = Math::SH::get_peak(item.data, lmax, p.v, precomputer.get());
       if (std::isfinite(p.a)) {
         for (size_t j = 0; j < all_peaks.size(); j++) {
           if (abs(p.v.dot(all_peaks[j].v)) > DOT_THRESHOLD) {
@@ -249,7 +249,7 @@ private:
   value_type threshold;
   vector<Direction> peaks_out;
   Image<value_type> ipeaks_vox;
-  Math::SH::PrecomputedAL<value_type> *precomputer;
+  std::shared_ptr<Math::SH::PrecomputedAL<value_type>> precomputer;
 
   bool check_input(const Item &item) {
     if (ipeaks_vox.valid()) {
