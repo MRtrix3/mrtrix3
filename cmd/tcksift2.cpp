@@ -315,6 +315,7 @@ void run ()
 
     tckfactor.import_delta_data (opt[0][0]);
     const std::string output_delta_path = opt[0][1];
+    tckfactor.set_reg_lambda_diff (get_option_value("reg_strength_diff", SIFT2::regularisation_strength_diff_default));
 
     if (debug_path.size())
       tckfactor.output_delta_debug_images (debug_path, "before");
