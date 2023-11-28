@@ -526,11 +526,11 @@ namespace MR {
 
           // Line search to optimise each coefficient
           StreamlineStats step_stats, weight_stats;
-          nonzero_streamlines = 0;
           fixels_to_exclude.clear();
           value_type sum_costs = 0.0;
 
 #ifdef SIFT2_USE_BBGD
+          nonzero_streamlines = 0;
           switch (reg_basis_abs) {
             case reg_basis_t::STREAMLINE: {
               switch (reg_fn_abs)
@@ -558,6 +558,7 @@ namespace MR {
           {
             case operation_mode_t::ABSOLUTE:
             {
+              nonzero_streamlines = 0;
               SIFT::TrackIndexRangeWriter writer (SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
               //CoefficientOptimiserGSS worker (*this, /*projected_steps,*/ step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs);
               //CoefficientOptimiserQLS worker (*this, /*projected_steps,*/ step_stats, weight_stats, nonzero_streamlines, fixels_to_exclude, sum_costs);
