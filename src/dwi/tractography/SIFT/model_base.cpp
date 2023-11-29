@@ -301,6 +301,7 @@ namespace MR
 
         void ModelBase::output_all_debug_images (const std::string& dirpath, const std::string& prefix) const
         {
+          output_model_weights (Path::join (dirpath, prefix + "_modelweights.mif"));
           output_tdi_voxel (Path::join (dirpath, prefix + "_tdi_voxel.mif"));
 #ifdef SIFT_MODEL_OUTPUT_SH_IMAGES
           output_tdi_sh (Path::join (dirpath, prefix + "_tdi_sh.mif"));
@@ -320,6 +321,14 @@ namespace MR
 
 
 
+
+      void ModelBase::output_model_weights (const std::string& path) const
+      {
+        Header H (MR::Fixel::data_header_from_nfixels (nfixels()));
+        Image<float> image (Image<float>::create (path, H));
+        for (auto l = Loop(0) (image); l; ++l)
+          image.value() = (*this)[image.index(0)].weight();
+      }
 
       void ModelBase::output_target_voxel (const std::string& path) const
       {

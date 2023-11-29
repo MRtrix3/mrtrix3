@@ -163,6 +163,7 @@ namespace MR
             void set_model_weights (const std::string&);
 
 
+            void output_model_weights (const std::string&) const;
             void output_target_voxel (const std::string&) const;
             void output_target_sh (const std::string&) const;
             void output_target_fixel (const std::string&) const;
