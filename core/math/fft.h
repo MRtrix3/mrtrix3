@@ -41,6 +41,20 @@ public:
     _plan = fftw_plan_dft_1d(other._data.size(), p, p, direction, FFTW_MEASURE);
   }
 
+  FFT1D &operator=(const FFT1D &other) {
+    fftw_destroy_plan(_plan);
+    _data.resize(other._data.size());
+    direction = other.direction;
+    fftw_complex *p = reinterpret_cast<fftw_complex *>(&(_data[0]));
+    _plan = fftw_plan_dft_1d(other._data.size(), p, p, direction, FFTW_MEASURE);
+    return *this;
+  }
+
+  ~FFT1D() { fftw_destroy_plan(_plan); }
+
+  FFT1D(FFT1D &&other) = delete;
+  FFT1D &operator=(FFT1D &&other) = delete;
+
   const size_t size() const { return _data.size(); }
 
   const cdouble &operator[](size_t n) const { return _data[n]; }
