@@ -156,7 +156,7 @@ void Window::GLArea::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < 32; ++i) {
       try {
-        list.push_back(make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
       } catch (Exception &e) {
         e.display();
       }
@@ -745,7 +745,7 @@ void Window::parse_arguments() {
     std::vector<std::unique_ptr<MR::Header>> list;
     for (size_t n = 0; n < MR::App::argument.size(); ++n) {
       try {
-        list.push_back(make_unique<MR::Header>(MR::Header::open(MR::App::argument[n])));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(MR::App::argument[n])));
       } catch (CancelException &e) {
         for (const auto &msg : e.description)
           CONSOLE(msg);
@@ -796,7 +796,7 @@ void Window::image_open_slot() {
   std::vector<std::unique_ptr<MR::Header>> list;
   for (size_t n = 0; n < image_list.size(); ++n) {
     try {
-      list.push_back(make_unique<MR::Header>(MR::Header::open(image_list[n])));
+      list.push_back(std::make_unique<MR::Header>(MR::Header::open(image_list[n])));
     } catch (Exception &E) {
       E.display();
     }
@@ -811,7 +811,7 @@ void Window::image_import_DICOM_slot() {
 
   try {
     std::vector<std::unique_ptr<MR::Header>> list;
-    list.push_back(make_unique<MR::Header>(MR::Header::open(folder)));
+    list.push_back(std::make_unique<MR::Header>(MR::Header::open(folder)));
     add_images(list);
   } catch (CancelException &E) {
     E.display(-1);
@@ -1795,7 +1795,7 @@ void Window::process_commandline_option() {
     if (opt.opt->is("load")) {
       std::vector<std::unique_ptr<MR::Header>> list;
       try {
-        list.push_back(make_unique<MR::Header>(MR::Header::open(opt[0])));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(opt[0])));
       } catch (Exception &e) {
         e.display();
       }
