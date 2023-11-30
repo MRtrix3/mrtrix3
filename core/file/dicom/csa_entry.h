@@ -123,8 +123,8 @@ public:
       v[m] = NaN;
   }
 
-  vector<std::string> get_string() const {
-    vector<std::string> result;
+  std::vector<std::string> get_string() const {
+    std::vector<std::string> result;
     const uint8_t *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {
       const uint32_t length = Raw::fetch_LE<uint32_t>(p);

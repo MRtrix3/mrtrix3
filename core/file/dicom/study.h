@@ -27,7 +27,7 @@ namespace Dicom {
 class Patient;
 class Series;
 
-class Study : public vector<std::shared_ptr<Series>> {
+class Study : public std::vector<std::shared_ptr<Series>> {
 public:
   Study(Patient *parent,
         const std::string &study_name,

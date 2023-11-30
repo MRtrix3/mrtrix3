@@ -28,7 +28,7 @@ namespace Dicom {
 class Study;
 class Image;
 
-class Series : public vector<std::shared_ptr<Image>> {
+class Series : public std::vector<std::shared_ptr<Image>> {
 public:
   Series(Study *parent,
          const std::string &series_name,
@@ -62,7 +62,7 @@ public:
     }
   }
 
-  vector<int> count() const;
+  std::vector<int> count() const;
   bool operator<(const Series &s) const {
     if (number != s.number)
       return number < s.number;

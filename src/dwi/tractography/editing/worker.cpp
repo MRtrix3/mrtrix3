@@ -81,8 +81,8 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
   }
 
   // Split tck into separate tracks based on the mask
-  vector<vector<Eigen::Vector3f>> cropped_tracks;
-  vector<Eigen::Vector3f> temp;
+  std::vector<std::vector<Eigen::Vector3f>> cropped_tracks;
+  std::vector<Eigen::Vector3f> temp;
 
   for (const auto &p : in) {
     const bool contains = properties.mask.contains(p);

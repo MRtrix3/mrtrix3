@@ -211,7 +211,7 @@ public:
 
   template <class ParamType, class VectorType>
   bool robust_estimate(VectorType &gradient,
-                       vector<VectorType> &grad_estimates,
+                       std::vector<VectorType> &grad_estimates,
                        const ParamType &params,
                        const VectorType &parameter_vector,
                        const default_type &weiszfeld_precision,

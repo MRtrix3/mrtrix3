@@ -67,9 +67,9 @@ class Shell {
 
 public:
   Shell() : mean(0.0), stdev(0.0), min(0.0), max(0.0) {}
-  Shell(const Eigen::MatrixXd &grad, const vector<size_t> &indices);
+  Shell(const Eigen::MatrixXd &grad, const std::vector<size_t> &indices);
 
-  const vector<size_t> &get_volumes() const { return volumes; }
+  const std::vector<size_t> &get_volumes() const { return volumes; }
   size_t count() const { return volumes.size(); }
 
   default_type get_mean() const { return mean; }
@@ -88,7 +88,7 @@ public:
   }
 
 protected:
-  vector<size_t> volumes;
+  std::vector<size_t> volumes;
   default_type mean, stdev, min, max;
 };
 
@@ -107,15 +107,15 @@ public:
     return count;
   }
 
-  vector<size_t> get_counts() const {
-    vector<size_t> c(count());
+  std::vector<size_t> get_counts() const {
+    std::vector<size_t> c(count());
     for (size_t n = 0; n < count(); ++n)
       c[n] = shells[n].count();
     return c;
   }
 
-  vector<size_t> get_bvalues() const {
-    vector<size_t> b(count());
+  std::vector<size_t> get_bvalues() const {
+    std::vector<size_t> b(count());
     for (size_t n = 0; n < count(); ++n)
       b[n] = shells[n].get_mean();
     return b;
@@ -140,14 +140,14 @@ public:
   }
 
 protected:
-  vector<Shell> shells;
+  std::vector<Shell> shells;
 
 private:
   using BValueList = decltype(std::declval<const Eigen::MatrixXd>().col(0));
 
   // Functions for current b-value clustering implementation
-  size_t clusterBvalues(const BValueList &, vector<size_t> &) const;
-  void regionQuery(const BValueList &, const default_type, vector<size_t> &) const;
+  size_t clusterBvalues(const BValueList &, std::vector<size_t> &) const;
+  void regionQuery(const BValueList &, const default_type, std::vector<size_t> &) const;
 };
 
 } // namespace DWI

@@ -53,14 +53,14 @@ public:
       data.clear();
     }
 
-    void set_axes(const vector<bool> &i) {
+    void set_axes(const std::vector<bool> &i) {
       enabled_axes = i;
       data.clear();
     }
 
     void initialise(const Header &, const Voxel2Vector &);
 
-    const vector<index_t> &operator[](const size_t index) const {
+    const std::vector<index_t> &operator[](const size_t index) const {
       assert(size());
       assert(index < size());
       return data[index];
@@ -75,8 +75,8 @@ public:
 
   private:
     bool use_26_neighbours;
-    vector<bool> enabled_axes;
-    vector<vector<index_t>> data;
+    std::vector<bool> enabled_axes;
+    std::vector<std::vector<index_t>> data;
   } adjacency;
 
   class Cluster {
@@ -92,24 +92,25 @@ public:
   Connector() {}
 
   // Perform connected components on vectorized binary data
-  void run(vector<Cluster> &, vector<uint32_t> &) const;
-  template <class VectorType> void run(vector<Cluster> &, vector<uint32_t> &, const VectorType &, const float) const;
+  void run(std::vector<Cluster> &, std::vector<uint32_t> &) const;
+  template <class VectorType>
+  void run(std::vector<Cluster> &, std::vector<uint32_t> &, const VectorType &, const float) const;
 
 private:
   // Utility functions that perform the actual connected
   //   components functionality
-  bool next_neighbour(uint32_t &, vector<uint32_t> &) const;
+  bool next_neighbour(uint32_t &, std::vector<uint32_t> &) const;
   template <class VectorType>
-  bool next_neighbour(uint32_t &, vector<uint32_t> &, const VectorType &, const float) const;
+  bool next_neighbour(uint32_t &, std::vector<uint32_t> &, const VectorType &, const float) const;
 
-  void depth_first_search(const uint32_t, Cluster &, vector<uint32_t> &) const;
+  void depth_first_search(const uint32_t, Cluster &, std::vector<uint32_t> &) const;
   template <class VectorType>
-  void depth_first_search(const uint32_t, Cluster &, vector<uint32_t> &, const VectorType &, const float) const;
+  void depth_first_search(const uint32_t, Cluster &, std::vector<uint32_t> &, const VectorType &, const float) const;
 };
 
 template <class VectorType>
-void Connector::run(vector<Cluster> &clusters,
-                    vector<uint32_t> &labels,
+void Connector::run(std::vector<Cluster> &clusters,
+                    std::vector<uint32_t> &labels,
                     const VectorType &data,
                     const float threshold) const {
   assert(adjacency.size());
@@ -129,7 +130,7 @@ void Connector::run(vector<Cluster> &clusters,
 
 template <class VectorType>
 bool Connector::next_neighbour(uint32_t &node,
-                               vector<uint32_t> &labels,
+                               std::vector<uint32_t> &labels,
                                const VectorType &data,
                                const float threshold) const {
   for (auto n : adjacency[node]) {
@@ -144,7 +145,7 @@ bool Connector::next_neighbour(uint32_t &node,
 template <class VectorType>
 void Connector::depth_first_search(const uint32_t root,
                                    Cluster &cluster,
-                                   vector<uint32_t> &labels,
+                                   std::vector<uint32_t> &labels,
                                    const VectorType &data,
                                    const float threshold) const {
   uint32_t node = root;
@@ -213,8 +214,8 @@ public:
     if (progress)
       ++(*progress);
 
-    vector<Connector::Cluster> clusters;
-    vector<uint32_t> labels;
+    std::vector<Connector::Cluster> clusters;
+    std::vector<uint32_t> labels;
     connector.run(clusters, labels);
     // Sort clusters in order from largest to smallest
     std::sort(clusters.begin(), clusters.end(), Connector::largest);
@@ -223,7 +224,7 @@ public:
 
     // Generate a lookup table to map input cluster index to
     //   output cluster index following cluster-size sorting
-    vector<uint32_t> index_lookup(clusters.size() + 1, 0);
+    std::vector<uint32_t> index_lookup(clusters.size() + 1, 0);
     for (uint32_t c = 0; c < clusters.size(); c++) {
       if (clusters[c].size < minsize)
         break;
@@ -246,7 +247,7 @@ public:
     }
   }
 
-  void set_axes(const vector<int> &i) {
+  void set_axes(const std::vector<int> &i) {
     const size_t max_axis = *std::max_element(i.begin(), i.end());
     if (max_axis >= ndim())
       throw Exception("Requested axis for connected-component filter (" + str(max_axis) +
@@ -259,7 +260,7 @@ public:
     }
   }
 
-  void set_axes(const vector<bool> &i) {
+  void set_axes(const std::vector<bool> &i) {
     if (i.size() != ndim())
       throw Exception("Length of axis selection flag vector (" + str(i.size()) +
                       ") does not match dimensionality of connected-component filter (" + str(ndim()) + "D)");
@@ -273,7 +274,7 @@ public:
   void set_minsize(uint32_t value) { minsize = value; }
 
 protected:
-  vector<bool> enabled_axes;
+  std::vector<bool> enabled_axes;
   bool largest_only;
   bool do_26_connectivity;
   uint32_t minsize;

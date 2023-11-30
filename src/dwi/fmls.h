@@ -138,16 +138,16 @@ private:
   DWI::Directions::Mask mask;
   Eigen::Array<default_type, Eigen::Dynamic, 1> values;
   default_type max_peak_value;
-  vector<Eigen::Vector3d> peak_dirs;
+  std::vector<Eigen::Vector3d> peak_dirs;
   Eigen::Vector3d mean_dir;
   default_type integral;
   bool neg;
 };
 
-class FOD_lobes : public vector<FOD_lobe> {
+class FOD_lobes : public std::vector<FOD_lobe> {
 public:
   Eigen::Array3i vox;
-  vector<uint8_t> lut;
+  std::vector<uint8_t> lut;
 };
 
 class SH_coefs : public Eigen::Matrix<default_type, Eigen::Dynamic, 1> {

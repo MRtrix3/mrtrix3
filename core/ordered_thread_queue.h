@@ -161,7 +161,7 @@ template <class Item, class Functor> struct __Sink<__Ordered<Item>, Functor> {
 
 template <class Item> struct Type<__Ordered<__Batch<Item>>> {
   using item = Item;
-  using queue = Queue<__Ordered<vector<Item>>>;
+  using queue = Queue<__Ordered<std::vector<Item>>>;
   using reader = typename queue::Reader;
   using writer = typename queue::Writer;
   using read_item = typename reader::Item;
@@ -170,7 +170,7 @@ template <class Item> struct Type<__Ordered<__Batch<Item>>> {
 
 template <class Item, class Functor> struct __Source<__Ordered<__Batch<Item>>, Functor> {
 
-  using queued_t = __Ordered<vector<Item>>;
+  using queued_t = __Ordered<std::vector<Item>>;
   using passed_t = __Ordered<__Batch<Item>>;
   using queue_t = typename Type<queued_t>::queue;
   using writer_t = typename Type<queued_t>::writer;
@@ -204,8 +204,8 @@ template <class Item, class Functor> struct __Source<__Ordered<__Batch<Item>>, F
 template <class Item1, class Functor, class Item2>
 struct __Pipe<__Ordered<__Batch<Item1>>, Functor, __Ordered<__Batch<Item2>>> {
 
-  using queued1_t = __Ordered<vector<Item1>>;
-  using queued2_t = __Ordered<vector<Item2>>;
+  using queued1_t = __Ordered<std::vector<Item1>>;
+  using queued2_t = __Ordered<std::vector<Item2>>;
   using passed2_t = __Ordered<__Batch<Item2>>;
   using queue1_t = typename Type<queued1_t>::queue;
   using queue2_t = typename Type<queued2_t>::queue;
@@ -244,7 +244,7 @@ struct __Pipe<__Ordered<__Batch<Item1>>, Functor, __Ordered<__Batch<Item2>>> {
 
 template <class Item, class Functor> struct __Sink<__Ordered<__Batch<Item>>, Functor> {
 
-  using queued_t = __Ordered<vector<Item>>;
+  using queued_t = __Ordered<std::vector<Item>>;
   using queue_t = typename Type<queued_t>::queue;
   using reader_t = typename Type<queued_t>::reader;
   using functor_t = typename __job<Functor>::member_type;

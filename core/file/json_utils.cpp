@@ -79,12 +79,12 @@ KeyValues read(const nlohmann::json &json, const KeyValues &preexisting) {
             all_numeric = false;
         }
         if (all_string) {
-          vector<std::string> lines;
+          std::vector<std::string> lines;
           for (const auto &k : *i)
             lines.push_back(unquote(k));
           result.insert(std::make_pair(i.key(), join(lines, "\n")));
         } else if (all_numeric) {
-          vector<std::string> line;
+          std::vector<std::string> line;
           for (const auto &k : *i)
             line.push_back(str(k));
           result.insert(std::make_pair(i.key(), join(line, ",")));
@@ -92,9 +92,9 @@ KeyValues read(const nlohmann::json &json, const KeyValues &preexisting) {
           throw Exception("JSON entry \"" + i.key() + "\" is array but contains mixed data types");
         }
       } else if (num_subarrays == i->size()) {
-        vector<std::string> s;
+        std::vector<std::string> s;
         for (const auto &j : *i) {
-          vector<std::string> line;
+          std::vector<std::string> line;
           for (const auto &k : j)
             line.push_back(unquote(str(k)));
           s.push_back(join(line, ","));
@@ -174,7 +174,7 @@ bool attempt_matrix(const std::pair<std::string, std::string> &kv, nlohmann::jso
     nlohmann::json temp;
     bool noninteger = false;
     for (ssize_t row = 0; row != M_float.rows(); ++row) {
-      vector<default_type> data(M_float.cols());
+      std::vector<default_type> data(M_float.cols());
       for (ssize_t i = 0; i != M_float.cols(); ++i) {
         data[i] = M_float(row, i);
         if (std::floor(data[i]) != data[i])
@@ -197,7 +197,7 @@ bool attempt_matrix(const std::pair<std::string, std::string> &kv, nlohmann::jso
         M_int.transposeInPlace();
       temp[kv.first] = nlohmann::json({});
       for (ssize_t row = 0; row != M_int.rows(); ++row) {
-        vector<int> data(M_int.cols());
+        std::vector<int> data(M_int.cols());
         for (ssize_t i = 0; i != M_int.cols(); ++i)
           data[i] = M_int(row, i);
         if (row)
@@ -253,8 +253,8 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
     return;
   }
 
-  vector<size_t> order;
-  vector<bool> flip;
+  std::vector<size_t> order;
+  std::vector<bool> flip;
   File::NIfTI::axes_on_write(header, order, flip);
   if (order[0] == 0 && order[1] == 1 && order[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
     INFO(

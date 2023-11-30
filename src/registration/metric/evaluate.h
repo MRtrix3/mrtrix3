@@ -269,7 +269,7 @@ public:
 protected:
   MetricType metric;
   ParamType params;
-  vector<size_t> extent;
+  std::vector<size_t> extent;
   size_t iteration;
   Eigen::MatrixXd directions;
   ssize_t overlap_count;

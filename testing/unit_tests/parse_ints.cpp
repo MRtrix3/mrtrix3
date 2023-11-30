@@ -31,7 +31,7 @@ void usage() {
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
 
-vector<std::string> failures;
+std::vector<std::string> failures;
 
 void run() {
 

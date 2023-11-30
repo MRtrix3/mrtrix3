@@ -245,7 +245,7 @@ void Shuffler::initialise(const error_t error_types,
 
   uint64_t max_num_permutations;
   if (eb_within.size()) {
-    vector<index_type> counts(eb_within.maxCoeff() + 1, 0);
+    std::vector<index_type> counts(eb_within.maxCoeff() + 1, 0);
     for (index_type i = 0; i != eb_within.size(); ++i)
       counts[eb_within[i]]++;
     max_num_permutations = 1;
@@ -323,7 +323,7 @@ void Shuffler::initialise(const error_t error_types,
       if (nshuffles == max_shuffles) {
         generate_all_permutations(rows, eb_within, eb_whole);
         assert(permutations.size() == max_num_permutations);
-        vector<PermuteLabels> duplicated_permutations;
+        std::vector<PermuteLabels> duplicated_permutations;
         duplicated_permutations.reserve(max_shuffles);
         for (const auto &p : permutations) {
           for (index_type i = 0; i != max_num_signflips; ++i)
@@ -354,7 +354,7 @@ void Shuffler::initialise(const error_t error_types,
       if (nshuffles == max_shuffles) {
         generate_all_signflips(rows, eb_whole);
         assert(signflips.size() == max_num_signflips);
-        vector<BitSet> duplicated_signflips;
+        std::vector<BitSet> duplicated_signflips;
         duplicated_signflips.reserve(max_shuffles);
         for (index_type i = 0; i != max_num_permutations; ++i)
           duplicated_signflips.insert(duplicated_signflips.end(), signflips.begin(), signflips.end());
@@ -391,7 +391,7 @@ index_array_type Shuffler::load_blocks(const std::string &filename, const bool e
     data.array() -= 1;
     max_coeff--;
   }
-  vector<index_type> counts(max_coeff + 1, 0);
+  std::vector<index_type> counts(max_coeff + 1, 0);
   for (index_type i = 0; i != index_type(data.size()); ++i)
     counts[data[i]]++;
   for (index_type i = 0; i <= max_coeff; ++i) {
@@ -457,7 +457,7 @@ void Shuffler::generate_random_permutations(const index_type num_perms,
     return;
   }
 
-  vector<vector<index_type>> blocks;
+  std::vector<std::vector<index_type>> blocks;
 
   // Within-block exchangeability
   if (eb_within.size()) {
@@ -468,7 +468,7 @@ void Shuffler::generate_random_permutations(const index_type num_perms,
         permuted_labelling = default_labelling;
         // Random permutation within each block independently
         for (index_type ib = 0; ib != blocks.size(); ++ib) {
-          vector<index_type> permuted_block(blocks[ib]);
+          std::vector<index_type> permuted_block(blocks[ib]);
           std::shuffle(permuted_block.begin(), permuted_block.end(), rng);
           for (index_type i = 0; i != permuted_block.size(); ++i)
             permuted_labelling[blocks[ib][i]] = permuted_block[i];
@@ -520,14 +520,14 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
     return;
   }
 
-  vector<vector<index_type>> original;
+  std::vector<std::vector<index_type>> original;
 
   // Within-block exchangeability
   if (eb_within.size()) {
 
     original = indices2blocks(eb_within);
 
-    auto write = [&](const vector<vector<index_type>> &data) {
+    auto write = [&](const std::vector<std::vector<index_type>> &data) {
       PermuteLabels temp(num_rows);
       for (index_type block = 0; block != data.size(); ++block) {
         for (index_type i = 0; i != data[block].size(); ++i)
@@ -536,7 +536,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
       permutations.push_back(std::move(temp));
     };
 
-    vector<vector<index_type>> blocks(original);
+    std::vector<std::vector<index_type>> blocks(original);
     write(blocks);
     do {
       index_type ib = 0;
@@ -577,7 +577,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
 }
 
 void Shuffler::load_permutations(const std::string &filename) {
-  vector<vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
+  std::vector<std::vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
   if (!temp.size())
     throw Exception("no data found in permutations file: " + str(filename));
 
@@ -695,9 +695,9 @@ void Shuffler::generate_all_signflips(const index_type num_rows, const index_arr
   }
 }
 
-vector<vector<index_type>> Shuffler::indices2blocks(const index_array_type &indices) const {
+std::vector<std::vector<index_type>> Shuffler::indices2blocks(const index_array_type &indices) const {
   const index_type num_blocks = indices.maxCoeff() + 1;
-  vector<vector<index_type>> result;
+  std::vector<std::vector<index_type>> result;
   result.resize(num_blocks);
   for (index_type i = 0; i != indices.size(); ++i)
     result[indices[i]].push_back(i);

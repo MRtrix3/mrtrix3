@@ -44,7 +44,7 @@ protected:
   const value_type dh, E, H, C;
   const bool normalise;
 
-  mutable vector<value_type> h_pow_H;
+  mutable std::vector<value_type> h_pow_H;
 
   void operator()(in_column_type, out_column_type) const override;
 };

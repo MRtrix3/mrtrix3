@@ -98,7 +98,7 @@ protected:
     window().updateGL();
   }
 
-  void load(vector<std::unique_ptr<MR::Header>> &list);
+  void load(std::vector<std::unique_ptr<MR::Header>> &list);
   void save(ROI_Item *);
 
   int normal2axis(const Eigen::Vector3f &, const ROI_Item &) const;

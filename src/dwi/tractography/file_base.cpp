@@ -33,7 +33,7 @@ void __ReaderBase__::open(const std::string &file, const std::string &type, Prop
     const std::string key = lowercase(kv.key());
     if (key == "roi" || key == "prior_roi") {
       try {
-        vector<std::string> V(split(kv.value(), " \t", true, 2));
+        std::vector<std::string> V(split(kv.value(), " \t", true, 2));
         if (V.size() != 2)
           throw 1;
         properties.prior_rois.insert(std::pair<std::string, std::string>(V[0], V[1]));

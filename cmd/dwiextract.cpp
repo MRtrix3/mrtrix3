@@ -65,7 +65,7 @@ void run() {
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
-  vector<uint32_t> volumes;
+  std::vector<uint32_t> volumes;
   bool bzero = get_options("bzero").size();
   if (get_options("shells").size() || get_options("singleshell").size()) {
     DWI::Shells shells(grad);
@@ -101,7 +101,7 @@ void run() {
     const auto filter = parse_floats(opt[0][0]);
     if (!(filter.size() == 3 || filter.size() == 4))
       throw Exception("Phase encoding filter must be a comma-separated list of either 3 or 4 numbers");
-    vector<uint32_t> new_volumes;
+    std::vector<uint32_t> new_volumes;
     for (const auto i : volumes) {
       bool keep = true;
       for (size_t axis = 0; axis != 3; ++axis) {

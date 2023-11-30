@@ -41,9 +41,9 @@ private:
   TckFactor &master;
 
   // Each thread needs a local copy of these
-  vector<double> fixel_coeff_sums;
-  vector<double> fixel_TDs;
-  vector<SIFT::track_t> fixel_counts;
+  std::vector<double> fixel_coeff_sums;
+  std::vector<double> fixel_TDs;
+  std::vector<SIFT::track_t> fixel_counts;
 };
 
 } // namespace SIFT2

@@ -48,7 +48,7 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
   GL::Context::Grab context;
   GL::assert_context_is_current();
 
-  vector<float> vertices;
+  std::vector<float> vertices;
   vertices.reserve(3 * in.num_vertices());
   for (size_t v = 0; v != in.num_vertices(); ++v) {
     for (size_t axis = 0; axis != 3; ++axis)
@@ -61,7 +61,7 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
 
   if (!in.have_normals())
     in.calculate_normals();
-  vector<float> normals;
+  std::vector<float> normals;
   normals.reserve(3 * in.num_vertices());
   for (size_t n = 0; n != in.num_vertices(); ++n) {
     for (size_t axis = 0; axis != 3; ++axis)
@@ -81,7 +81,7 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
   gl::EnableVertexAttribArray(1);
   gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
 
-  vector<unsigned int> indices;
+  std::vector<unsigned int> indices;
   indices.reserve(3 * in.num_triangles());
   for (size_t i = 0; i != in.num_triangles(); ++i) {
     for (size_t v = 0; v != 3; ++v)

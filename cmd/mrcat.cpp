@@ -55,7 +55,7 @@ void usage() {
       + DataType::options();
 }
 
-template <typename value_type> void write(vector<Header> &in, const size_t axis, Header &header_out) {
+template <typename value_type> void write(std::vector<Header> &in, const size_t axis, Header &header_out) {
   auto image_out = Image<value_type>::create(header_out.name(), header_out);
   size_t axis_offset = 0;
 
@@ -81,7 +81,7 @@ template <typename value_type> void write(vector<Header> &in, const size_t axis,
 
 void run() {
   size_t num_images = argument.size() - 1;
-  vector<Header> headers;
+  std::vector<Header> headers;
   ssize_t max_axis_nonunity = 0;
   for (size_t i = 0; i != num_images; ++i) {
     Header H = Header::open(argument[i]);

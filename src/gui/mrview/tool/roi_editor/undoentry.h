@@ -54,7 +54,7 @@ struct ROI_UndoEntry {
 
   std::array<GLint, 3> from, size;
   std::array<GLint, 2> tex_size, slice_axes;
-  vector<GLubyte> before, after;
+  std::vector<GLubyte> before, after;
 
   class Shared {
   public:

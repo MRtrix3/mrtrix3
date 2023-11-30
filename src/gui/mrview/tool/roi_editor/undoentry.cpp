@@ -405,7 +405,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
   if (existing_value == insert_mode_value)
     return;
   after[seed_index] = fill_value;
-  vector<std::array<int, 3>> buffer(1, seed_voxel);
+  std::vector<std::array<int, 3>> buffer(1, seed_voxel);
   while (buffer.size()) {
     const std::array<int, 3> v(buffer.back());
     buffer.pop_back();

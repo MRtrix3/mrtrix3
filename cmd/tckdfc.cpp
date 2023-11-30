@@ -212,7 +212,7 @@ private:
 
 void run() {
   bool is_static = get_options("static").size();
-  vector<float> window;
+  std::vector<float> window;
 
   auto opt = get_options("dynamic");
   if (opt.size()) {
@@ -281,7 +281,7 @@ void run() {
 
   Image<float> fmri_image(Image<float>::open(argument[1]).with_direct_io(3));
 
-  vector<default_type> voxel_size;
+  std::vector<default_type> voxel_size;
   opt = get_options("vox");
   if (opt.size())
     voxel_size = parse_floats(opt[0][0]);

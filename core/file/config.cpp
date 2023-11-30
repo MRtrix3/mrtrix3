@@ -120,7 +120,7 @@ void Config::get_RGB(const std::string &key, float *ret, float default_R, float 
   std::string value = get(key);
   if (value.size()) {
     try {
-      vector<default_type> V(parse_floats(value));
+      std::vector<default_type> V(parse_floats(value));
       if (V.size() < 3)
         throw Exception("malformed RGB entry \"" + value + "\" for key \"" + key +
                         "\" in configuration file - ignored");

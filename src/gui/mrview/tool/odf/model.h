@@ -64,7 +64,7 @@ public:
     return 1;
   }
 
-  size_t add_items(const vector<std::string> &list,
+  size_t add_items(const std::vector<std::string> &list,
                    const odf_type_t type,
                    bool colour_by_direction,
                    bool hide_negative_lobes,
@@ -85,7 +85,7 @@ public:
     return index.isValid() ? dynamic_cast<ODF_Item *>(items[index.row()].get()) : NULL;
   }
 
-  vector<std::unique_ptr<ODF_Item>> items;
+  std::vector<std::unique_ptr<ODF_Item>> items;
 };
 
 } // namespace Tool

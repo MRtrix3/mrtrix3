@@ -29,8 +29,8 @@
 using namespace MR;
 using namespace App;
 
-vector<std::string> colourmap_choices_std;
-vector<const char *> colourmap_choices_cstr;
+std::vector<std::string> colourmap_choices_std;
+std::vector<const char *> colourmap_choices_cstr;
 
 void usage() {
 

@@ -149,7 +149,7 @@ protected:
   const size_t window_size;
   const int kernel_width;
   Math::Sinc<value_type> Sinc_x, Sinc_y, Sinc_z;
-  vector<value_type> y_values, z_values;
+  std::vector<value_type> y_values, z_values;
 };
 
 template <class ImageType, typename... Args> inline Sinc<ImageType> make_sinc(const ImageType &parent, Args &&...args) {
