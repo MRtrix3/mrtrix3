@@ -76,7 +76,7 @@ void Mesh::calculate_normals() {
 
 namespace {
 template <typename T>
-void load_vtk_points_binary(std::ifstream &in, const size_t num_vertices, vector<Eigen::Matrix<T, 3, 1>> &out) {
+void load_vtk_points_binary(std::ifstream &in, const size_t num_vertices, std::vector<Eigen::Matrix<T, 3, 1>> &out) {
   out.reserve(num_vertices);
   Eigen::Matrix<T, 3, 1> v;
   for (size_t i = 0; i != num_vertices; ++i) {
@@ -127,7 +127,7 @@ void Mesh::load_vtk(const std::string &path) {
   bool change_endianness = false;
 
   // If both float and big-endian, need to store natively as floats and swap endianness later
-  vector<Eigen::Matrix<float, 3, 1>> vertices_float;
+  std::vector<Eigen::Matrix<float, 3, 1>> vertices_float;
 
   // From here, don't necessarily know which parts of the data will come first
   while (!in.eof()) {
@@ -205,7 +205,7 @@ void Mesh::load_vtk(const std::string &path) {
           if (vertex_count != 3 && vertex_count != 4)
             throw Exception("Could not parse file \"" + path + "\": only support 3- and 4-vertex polygons");
 
-          vector<unsigned int> t(vertex_count, 0);
+          std::vector<unsigned int> t(vertex_count, 0);
 
           if (is_ascii) {
             for (int index = 0; index != vertex_count; ++index) {
@@ -321,7 +321,7 @@ void Mesh::load_stl(const std::string &path) {
       if (attribute_byte_count)
         warn_attribute = true;
 
-      triangles.push_back(vector<uint32_t>{
+      triangles.push_back(std::vector<uint32_t>{
           uint32_t(vertices.size() - 3), uint32_t(vertices.size() - 2), uint32_t(vertices.size() - 1)});
       const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
       if (computed_normal.dot(normal.cast<default_type>()) < 0.0)
@@ -387,7 +387,7 @@ void Mesh::load_stl(const std::string &path) {
         if (vertex_index != 3)
           throw Exception("Error parsing STL file " + Path::basename(path) + ": facet ended with " + str(vertex_index) +
                           " vertices");
-        triangles.push_back(vector<uint32_t>{
+        triangles.push_back(std::vector<uint32_t>{
             uint32_t(vertices.size() - 3), uint32_t(vertices.size() - 2), uint32_t(vertices.size() - 1)});
         vertex_index = 0;
         const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
@@ -465,7 +465,7 @@ void Mesh::load_obj(const std::string &path) {
       // Need to handle:
       // * Either 3 or 4 vertices - write to either triangles or quads
       // * Vertices only, vertices & texture coordinates, vertices & normals, all 3
-      vector<std::string> elements;
+      std::vector<std::string> elements;
       do {
         const size_t first_space = data.find_first_of(' ');
         if (first_space == data.npos) {
@@ -480,9 +480,9 @@ void Mesh::load_obj(const std::string &path) {
       if (elements.size() != 3 && elements.size() != 4)
         throw Exception("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " +
                         str(counter) + ")");
-      vector<FaceData> face_data;
+      std::vector<FaceData> face_data;
       size_t values_per_element = 0;
-      for (vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
+      for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
         FaceData temp;
         temp.vertex = 0;
         temp.texture = 0;
@@ -513,10 +513,10 @@ void Mesh::load_obj(const std::string &path) {
         face_data.push_back(temp);
       }
       if (face_data.size() == 3) {
-        vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
+        std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
         triangles.push_back(Triangle(temp));
       } else {
-        vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
+        std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
         quads.push_back(Quad(temp));
       }
       // The OBJ format allows defining different vertex-based normals for different faces that reference the same

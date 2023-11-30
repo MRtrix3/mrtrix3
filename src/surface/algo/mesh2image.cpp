@@ -41,10 +41,10 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
   // For speed, want the vertex data to be in voxel positions
   Mesh mesh;
-  vector<Eigen::Vector3d> polygon_normals;
+  std::vector<Eigen::Vector3d> polygon_normals;
 
   // For every edge voxel, stores those polygons that may intersect the voxel
-  using Vox2Poly = std::map<Vox, vector<size_t>>;
+  using Vox2Poly = std::map<Vox, std::vector<size_t>>;
   Vox2Poly voxel2poly;
 
   {
@@ -178,7 +178,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
             //   every single voxel within this 3D bounding box, only test it within
             //   those voxels that the polygon actually intersects
             if (overlap(voxel, poly_index)) {
-              vector<size_t> this_voxel_polys;
+              std::vector<size_t> this_voxel_polys;
               // Has this voxel already been intersected by at least one polygon?
               // If it has, we need to concatenate this polygon to the list
               //   (which involves deleting the existing entry then re-writing the concatenated list);
@@ -242,7 +242,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     //   - When expanding each region, count the number of pre-assigned voxels both inside and outside
     //   - For the final region selection, assign values to voxels based on a majority vote
     Image<uint8_t> seed(init_seg);
-    vector<Vox> to_fill;
+    std::vector<Vox> to_fill;
     std::stack<Vox> to_expand;
     for (auto l = Loop(seed)(seed); l; ++l) {
       if (seed.value() == vox_mesh_t::PRELIM_INSIDE || seed.value() == vox_mesh_t::PRELIM_OUTSIDE) {
@@ -353,7 +353,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
   public:
     Source(const Vox2Poly &data) : data(data), i(data.begin()) {}
 
-    bool operator()(std::pair<Vox, vector<size_t>> &out) {
+    bool operator()(std::pair<Vox, std::vector<size_t>> &out) {
       if (i == data.end())
         return false;
       out = std::make_pair(i->first, i->second);
@@ -368,13 +368,13 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
   class Pipe {
   public:
-    Pipe(const Mesh &mesh, const vector<Eigen::Vector3d> &polygon_normals)
+    Pipe(const Mesh &mesh, const std::vector<Eigen::Vector3d> &polygon_normals)
         : mesh(mesh),
           polygon_normals(polygon_normals)
 
     {
       // Generate a set of points within this voxel that need to be tested individually
-      offsets_to_test.reset(new vector<Eigen::Vector3d>());
+      offsets_to_test.reset(new std::vector<Eigen::Vector3d>());
       offsets_to_test->reserve(pve_nsamples);
       for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
         const default_type x = -0.5 + ((default_type(x_idx) + 0.5) / default_type(pve_os_ratio));
@@ -388,12 +388,12 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       }
     }
 
-    bool operator()(const std::pair<Vox, vector<size_t>> &in, std::pair<Vox, float> &out) const {
+    bool operator()(const std::pair<Vox, std::vector<size_t>> &in, std::pair<Vox, float> &out) const {
       const Vox &voxel(in.first);
 
       // Count the number of these points that lie inside the mesh
       size_t inside_mesh_count = 0;
-      for (vector<Vertex>::const_iterator i_p = offsets_to_test->begin(); i_p != offsets_to_test->end(); ++i_p) {
+      for (std::vector<Vertex>::const_iterator i_p = offsets_to_test->begin(); i_p != offsets_to_test->end(); ++i_p) {
         Vertex p(*i_p);
         p += Eigen::Vector3d(voxel[0], voxel[1], voxel[2]);
 
@@ -402,7 +402,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         default_type best_min_distance_from_interior_projection = std::numeric_limits<default_type>::infinity();
 
         // Only test against those polygons that are near this voxel
-        for (vector<size_t>::const_iterator polygon_index = in.second.begin(); polygon_index != in.second.end();
+        for (std::vector<size_t>::const_iterator polygon_index = in.second.begin(); polygon_index != in.second.end();
              ++polygon_index) {
           const Eigen::Vector3d &n(polygon_normals[*polygon_index]);
 
@@ -507,9 +507,9 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
   private:
     const Mesh &mesh;
-    const vector<Eigen::Vector3d> &polygon_normals;
+    const std::vector<Eigen::Vector3d> &polygon_normals;
 
-    std::shared_ptr<vector<Eigen::Vector3d>> offsets_to_test;
+    std::shared_ptr<std::vector<Eigen::Vector3d>> offsets_to_test;
   };
 
   class Sink {
@@ -534,7 +534,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
   Pipe pipe(mesh, polygon_normals);
   Sink sink(image, voxel2poly.size());
 
-  Thread::run_queue(source, std::pair<Vox, vector<size_t>>(), Thread::multi(pipe), std::pair<Vox, float>(), sink);
+  Thread::run_queue(source, std::pair<Vox, std::vector<size_t>>(), Thread::multi(pipe), std::pair<Vox, float>(), sink);
 }
 
 } // namespace Algo

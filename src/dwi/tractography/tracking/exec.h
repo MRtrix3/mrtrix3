@@ -401,7 +401,7 @@ private:
     return false;
   }
 
-  bool satisfy_wm_requirement(const vector<Eigen::Vector3f> &tck) {
+  bool satisfy_wm_requirement(const std::vector<Eigen::Vector3f> &tck) {
     // If using the Seed_test algorithm (indicated by max_num_points == 2), don't want to execute this check
     if (S.max_num_points_preds == 2)
       return true;
@@ -424,7 +424,7 @@ private:
     return false;
   }
 
-  void truncate_exit_sgm(vector<Eigen::Vector3f> &tck) {
+  void truncate_exit_sgm(std::vector<Eigen::Vector3f> &tck) {
     const size_t sgm_start = tck.size() - method.act().sgm_depth;
     assert(sgm_start >= 0 && sgm_start < tck.size());
     size_t best_termination = tck.size() - 1;

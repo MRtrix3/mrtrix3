@@ -32,18 +32,18 @@ public:
   using base_type::name;
   using base_type::size;
 
-  Normalise3D(const ImageType &parent) : base_type(parent) { set_extent(vector<int>(1, 3)); }
+  Normalise3D(const ImageType &parent) : base_type(parent) { set_extent(std::vector<int>(1, 3)); }
 
-  Normalise3D(const ImageType &parent, const vector<uint32_t> &extent) : base_type(parent) { set_extent(extent); }
+  Normalise3D(const ImageType &parent, const std::vector<uint32_t> &extent) : base_type(parent) { set_extent(extent); }
 
-  void set_extent(const vector<uint32_t> &ext) {
+  void set_extent(const std::vector<uint32_t> &ext) {
     for (size_t i = 0; i < ext.size(); ++i)
       if (!(ext[i] & uint32_t(1)))
         throw Exception("expected odd number for extent");
     if (ext.size() != 1 && ext.size() != 3)
       throw Exception("unexpected number of elements specified in extent");
     if (ext.size() == 1)
-      extent = vector<uint32_t>(3, ext[0]);
+      extent = std::vector<uint32_t>(3, ext[0]);
     else
       extent = ext;
 
@@ -83,7 +83,7 @@ public:
   }
 
 protected:
-  vector<uint32_t> extent;
+  std::vector<uint32_t> extent;
   value_type mean;
   value_type pos_value;
   size_t nelements;

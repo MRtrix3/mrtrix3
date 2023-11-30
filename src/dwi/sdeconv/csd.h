@@ -190,7 +190,7 @@ public:
     Eigen::MatrixXd DW_dirs, HR_dirs;
     Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
     default_type neg_lambda, norm_lambda, threshold;
-    vector<size_t> dwis;
+    std::vector<size_t> dwis;
     uint32_t lmax_response, lmax_data, lmax_cmdline, lmax;
     size_t niter;
   };
@@ -252,7 +252,7 @@ protected:
   Eigen::MatrixXd work, HR_T;
   Eigen::VectorXd F, init_F, HR_amps, Mt_b;
   Eigen::LLT<Eigen::MatrixXd> llt;
-  vector<int> neg, old_neg;
+  std::vector<int> neg, old_neg;
 };
 
 } // namespace SDeconv

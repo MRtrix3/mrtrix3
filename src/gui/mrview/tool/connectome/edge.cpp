@@ -96,7 +96,7 @@ Edge::~Edge() {
 }
 
 Edge::Line::Line(const Edge &parent) {
-  vector<Eigen::Vector3f> data;
+  std::vector<Eigen::Vector3f> data;
   data.push_back(parent.get_node_centre(0));
   data.push_back(parent.get_node_centre(1));
 
@@ -221,10 +221,10 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
 
   shared.check_num_points(count);
 
-  vector<Eigen::Vector3f> vertices;
+  std::vector<Eigen::Vector3f> vertices;
   const size_t N = shared.points_per_vertex();
   vertices.reserve(N * data.vertices.size());
-  for (vector<Eigen::Vector3f>::const_iterator i = data.vertices.begin(); i != data.vertices.end(); ++i) {
+  for (std::vector<Eigen::Vector3f>::const_iterator i = data.vertices.begin(); i != data.vertices.end(); ++i) {
     for (size_t j = 0; j != N; ++j)
       vertices.push_back(*i);
   }
@@ -233,9 +233,9 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   if (vertices.size())
     gl::BufferData(gl::ARRAY_BUFFER, vertices.size() * sizeof(Eigen::Vector3f), &vertices[0][0], gl::STATIC_DRAW);
 
-  vector<Eigen::Vector3f> tangents;
+  std::vector<Eigen::Vector3f> tangents;
   tangents.reserve(vertices.size());
-  for (vector<Eigen::Vector3f>::const_iterator i = data.tangents.begin(); i != data.tangents.end(); ++i) {
+  for (std::vector<Eigen::Vector3f>::const_iterator i = data.tangents.begin(); i != data.tangents.end(); ++i) {
     for (size_t j = 0; j != N; ++j)
       tangents.push_back(*i);
   }
@@ -244,14 +244,15 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   if (tangents.size())
     gl::BufferData(gl::ARRAY_BUFFER, tangents.size() * sizeof(Eigen::Vector3f), &tangents[0][0], gl::STATIC_DRAW);
 
-  vector<std::pair<float, float>> normal_multipliers;
+  std::vector<std::pair<float, float>> normal_multipliers;
   const float angle_multiplier = 2.0 * Math::pi / float(shared.points_per_vertex());
   for (size_t i = 0; i != shared.points_per_vertex(); ++i)
     normal_multipliers.push_back(std::make_pair(std::cos(i * angle_multiplier), std::sin(i * angle_multiplier)));
-  vector<Eigen::Vector3f> normals;
+  std::vector<Eigen::Vector3f> normals;
   normals.reserve(vertices.size());
   for (size_t i = 0; i != data.vertices.size(); ++i) {
-    for (vector<std::pair<float, float>>::const_iterator j = normal_multipliers.begin(); j != normal_multipliers.end();
+    for (std::vector<std::pair<float, float>>::const_iterator j = normal_multipliers.begin();
+         j != normal_multipliers.end();
          ++j)
       normals.push_back((j->first * data.normals[i]) + (j->second * data.binormals[i]));
   }

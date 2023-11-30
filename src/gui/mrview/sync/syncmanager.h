@@ -41,7 +41,7 @@ public:
 
 private slots:
   void OnWindowFocusChanged();
-  void OnIPSDataReceived(vector<std::shared_ptr<QByteArray>> all_messages);
+  void OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all_messages);
 
 private:
   InterprocessCommunicator *ips;                                       // used to communicate with other processes

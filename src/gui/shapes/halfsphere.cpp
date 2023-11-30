@@ -92,9 +92,9 @@ public:
 } // namespace
 
 void HalfSphere::LOD(const size_t level_of_detail) {
-  // vector<Vertex> vertices;
+  // std::vector<Vertex> vertices;
   vertices.clear();
-  vector<Triangle> indices;
+  std::vector<Triangle> indices;
 
   for (size_t n = 0; n < NUM_VERTICES; n++)
     vertices.push_back(initial_vertices[n]);

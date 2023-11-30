@@ -57,7 +57,7 @@ public:
   void operator()(in_column_type, const value_type, out_column_type) const override;
 
 protected:
-  std::shared_ptr<vector<vector<size_t>>> adjacency;
+  std::shared_ptr<std::vector<std::vector<size_t>>> adjacency;
   value_type threshold;
 
 private:

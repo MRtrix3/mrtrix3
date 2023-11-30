@@ -67,7 +67,7 @@ public:
 
 protected:
   using base_type::parent;
-  vector<ssize_t> from_, size_;
+  std::vector<ssize_t> from_, size_;
   Iterator iter_;
   transform_type transform_;
 };

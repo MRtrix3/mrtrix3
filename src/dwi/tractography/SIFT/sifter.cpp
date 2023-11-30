@@ -49,7 +49,7 @@ void SIFTer::perform_filtering() {
   // For streamlines that do not contribute to the map, remove an equivalent proportion of length to those that do
   // contribute
   double sum_contributing_length = 0.0, sum_noncontributing_length = 0.0;
-  vector<track_t> noncontributing_indices;
+  std::vector<track_t> noncontributing_indices;
   for (track_t i = 0; i != contributions.size(); ++i) {
     if (contributions[i]) {
       if (contributions[i]->get_total_contribution()) {
@@ -64,7 +64,7 @@ void SIFTer::perform_filtering() {
   // Randomise the order or removal here; faster than trying to select at random later
   std::shuffle(noncontributing_indices.begin(), noncontributing_indices.end(), Math::RNG());
 
-  vector<Cost_fn_gradient_sort> gradient_vector;
+  std::vector<Cost_fn_gradient_sort> gradient_vector;
   try {
     gradient_vector.assign(
         num_tracks(),
@@ -180,7 +180,7 @@ void SIFTer::perform_filtering() {
 
       } else { // Proceed as normal
 
-        const vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
+        const std::vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
         if (candidate == gradient_vector.end()) {
           recalculate = POS_GRADIENT;
           if (!removed_this_iteration)
@@ -374,7 +374,7 @@ void SIFTer::output_selection(const std::string &path) const {
   }
 }
 
-void SIFTer::set_regular_outputs(const vector<uint32_t> &in, const std::string &dirpath) {
+void SIFTer::set_regular_outputs(const std::vector<uint32_t> &in, const std::string &dirpath) {
   for (auto i : in) {
     if (i > 0 && i <= contributions.size())
       output_at_counts.push_back(i);
@@ -387,7 +387,7 @@ void SIFTer::test_sorting_block_size(const size_t num_tracks) const {
 
   Math::RNG::Normal<float> rng;
 
-  vector<Cost_fn_gradient_sort> gradient_vector;
+  std::vector<Cost_fn_gradient_sort> gradient_vector;
   gradient_vector.assign(num_tracks, Cost_fn_gradient_sort(num_tracks, 0.0, 0.0));
   // Fill the gradient vector with random Gaussian data
   for (track_t index = 0; index != num_tracks; ++index) {
@@ -395,16 +395,16 @@ void SIFTer::test_sorting_block_size(const size_t num_tracks) const {
     gradient_vector[index].set(index, value, value);
   }
 
-  vector<size_t> block_sizes;
+  std::vector<size_t> block_sizes;
   for (size_t i = 16; i < num_tracks; i *= 2)
     block_sizes.push_back(i);
   block_sizes.push_back(num_tracks);
 
-  for (vector<size_t>::const_iterator i = block_sizes.begin(); i != block_sizes.end(); ++i) {
+  for (std::vector<size_t>::const_iterator i = block_sizes.begin(); i != block_sizes.end(); ++i) {
     const size_t block_size = *i;
 
     // Make a copy of the gradient vector, so the same data is sorted each time
-    vector<Cost_fn_gradient_sort> temp_gv(gradient_vector);
+    std::vector<Cost_fn_gradient_sort> temp_gv(gradient_vector);
 
     Timer timer;
     // Simulate sorting and filtering
@@ -425,7 +425,7 @@ void SIFTer::test_sorting_block_size(const size_t num_tracks) const {
 double SIFTer::calc_roc_cost_function() const {
   const double current_mu = mu();
   double roc_cost = 0.0;
-  vector<Fixel>::const_iterator i = fixels.begin();
+  std::vector<Fixel>::const_iterator i = fixels.begin();
   for (++i; i != fixels.end(); ++i)
     roc_cost += i->get_d_cost_d_mu(current_mu);
   return roc_cost;

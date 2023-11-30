@@ -124,7 +124,7 @@ public:
   friend inline std::ostream &operator<<(std::ostream &stream, const ROISetBase &R) {
     if (R.R.empty())
       return (stream);
-    vector<ROI>::const_iterator i = R.R.begin();
+    std::vector<ROI>::const_iterator i = R.R.begin();
     stream << *i;
     ++i;
     for (; i != R.R.end(); ++i)
@@ -133,7 +133,7 @@ public:
   }
 
 protected:
-  vector<ROI> R;
+  std::vector<ROI> R;
 };
 
 class ROIUnorderedSet : public ROISetBase {

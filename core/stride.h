@@ -58,7 +58,7 @@ namespace MR {
  * manipulate the strides and convert symbolic into actual strides. */
 namespace Stride {
 
-using List = vector<ssize_t>;
+using List = std::vector<ssize_t>;
 
 extern const App::OptionGroup Options;
 
@@ -101,7 +101,7 @@ private:
 } // namespace
 //! \endcond
 
-//! return the strides of \a header as a vector<ssize_t>
+//! return the strides of \a header as a std::vector<ssize_t>
 template <class HeaderType> List get(const HeaderType &header) {
   List ret(header.ndim());
   for (size_t i = 0; i < header.ndim(); ++i)
@@ -109,7 +109,7 @@ template <class HeaderType> List get(const HeaderType &header) {
   return ret;
 }
 
-//! set the strides of \a header from a vector<ssize_t>
+//! set the strides of \a header from a std::vector<ssize_t>
 template <class HeaderType> void set(HeaderType &header, const List &stride) {
   size_t n = 0;
   for (; n < std::min<size_t>(header.ndim(), stride.size()); ++n)
@@ -128,11 +128,11 @@ template <class HeaderType, class FromHeaderType> void set(HeaderType &header, c
  * absolute stride.
  * \note all strides should be valid (i.e. non-zero). */
 template <class HeaderType>
-vector<size_t>
+std::vector<size_t>
 order(const HeaderType &header, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) {
   to_axis = std::min<size_t>(to_axis, header.ndim());
   assert(to_axis > from_axis);
-  vector<size_t> ret(to_axis - from_axis);
+  std::vector<size_t> ret(to_axis - from_axis);
   for (size_t i = 0; i < ret.size(); ++i)
     ret[i] = from_axis + i;
   Compare<HeaderType> compare(header);
@@ -144,7 +144,7 @@ order(const HeaderType &header, size_t from_axis = 0, size_t to_axis = std::nume
 /*! \return a vector of indices of the axes in order of increasing
  * absolute stride.
  * \note all strides should be valid (i.e. non-zero). */
-template <> inline vector<size_t> order<List>(const List &strides, size_t from_axis, size_t to_axis) {
+template <> inline std::vector<size_t> order<List>(const List &strides, size_t from_axis, size_t to_axis) {
   const Wrapper wrapper(const_cast<List &>(strides));
   return order(wrapper, from_axis, to_axis);
 }
@@ -197,12 +197,12 @@ template <class HeaderType> inline void sanitise(List &strides, const HeaderType
  * zero) or duplicate (absolute) strides, and assigning to each a
  * suitable value. The value chosen for each sanitised stride is the
  * lowest number greater than any of the currently valid strides. */
-List &sanitise(List &current, const List &desired, const vector<ssize_t> &header);
+List &sanitise(List &current, const List &desired, const std::vector<ssize_t> &header);
 
 //! convert strides from symbolic to actual strides
 template <class HeaderType> void actualise(HeaderType &header) {
   sanitise(header);
-  vector<size_t> x(order(header));
+  std::vector<size_t> x(order(header));
   ssize_t skip = 1;
   for (size_t i = 0; i < header.ndim(); ++i) {
     header.stride(x[i]) = header.stride(x[i]) < 0 ? -skip : skip;
@@ -233,7 +233,7 @@ template <class HeaderType> inline List get_actual(const List &strides, const He
 
 //! convert strides from actual to symbolic strides
 template <class HeaderType> void symbolise(HeaderType &header) {
-  vector<size_t> p(order(header));
+  std::vector<size_t> p(order(header));
   for (ssize_t i = 0; i < ssize_t(p.size()); ++i)
     if (header.stride(p[i]) != 0)
       header.stride(p[i]) = header.stride(p[i]) < 0 ? -(i + 1) : i + 1;
@@ -304,7 +304,7 @@ template <class HeaderType> List get_nearest_match(const HeaderType &current, co
   List in(get_symbolic(current)), out(desired);
   out.resize(in.size(), 0);
 
-  vector<ssize_t> dims(current.ndim());
+  std::vector<ssize_t> dims(current.ndim());
   for (size_t n = 0; n < dims.size(); ++n)
     dims[n] = current.size(n);
 

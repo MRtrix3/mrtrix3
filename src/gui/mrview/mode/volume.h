@@ -43,7 +43,7 @@ protected:
   GL::VertexBuffer volume_VB, volume_VI;
   GL::VertexArrayObject volume_VAO;
   GL::Texture depth_texture;
-  vector<GL::vec4> clip;
+  std::vector<GL::vec4> clip;
 
   class Shader : public Displayable::Shader {
   public:
@@ -59,8 +59,8 @@ protected:
   } volume_shader;
 
   Tool::View *get_view_tool() const;
-  vector<std::pair<GL::vec4, bool>> get_active_clip_planes() const;
-  vector<GL::vec4 *> get_clip_planes_to_be_edited() const;
+  std::vector<std::pair<GL::vec4, bool>> get_active_clip_planes() const;
+  std::vector<GL::vec4 *> get_clip_planes_to_be_edited() const;
   bool get_cliphighlightstate() const;
   bool get_clipintersectionmodestate() const;
 };

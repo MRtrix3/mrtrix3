@@ -34,7 +34,7 @@ bool FixedNumPoints::operator()(const Streamline<> &in, Streamline<> &out) const
   if (in.size() < 2)
     return true;
   value_type length = 0.0;
-  vector<value_type> steps;
+  std::vector<value_type> steps;
   for (size_t i = 1; i != in.size(); ++i) {
     const value_type dist = (in[i] - in[i - 1]).norm();
     length += dist;

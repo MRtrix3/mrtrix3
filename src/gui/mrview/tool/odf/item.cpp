@@ -107,7 +107,7 @@ void ODF_Item::DixelPlugin::set_shell(size_t index) {
   if (index >= shells->count())
     throw Exception("Shell index is outside valid range");
   Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> shell_dirs((*shells)[index].count(), 3);
-  const vector<size_t> &volumes = (*shells)[index].get_volumes();
+  const std::vector<size_t> &volumes = (*shells)[index].get_volumes();
   for (size_t row = 0; row != volumes.size(); ++row)
     shell_dirs.row(row) = grad.row(volumes[row]).head<3>().cast<float>();
   auto new_dirs = MR::make_unique<MR::DWI::Directions::Set>(shell_dirs);
@@ -144,7 +144,7 @@ void ODF_Item::DixelPlugin::set_from_file(const std::string &path) {
 
 Eigen::VectorXf ODF_Item::DixelPlugin::get_shell_data(const Eigen::VectorXf &values) const {
   assert(shells);
-  const vector<size_t> &volumes((*shells)[shell_index].get_volumes());
+  const std::vector<size_t> &volumes((*shells)[shell_index].get_volumes());
   Eigen::VectorXf result(volumes.size());
   for (size_t i = 0; i != volumes.size(); ++i)
     result[i] = values[volumes[i]];

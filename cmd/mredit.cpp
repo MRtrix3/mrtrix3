@@ -136,7 +136,7 @@ void run() {
     else
       centre_scannerspace = transform.voxel2scanner * centre_voxelspace;
     std::set<Vox> processed;
-    vector<Vox> to_expand;
+    std::vector<Vox> to_expand;
     const Vox seed_voxel(centre_voxelspace);
     processed.insert(seed_voxel);
     to_expand.push_back(seed_voxel);

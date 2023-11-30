@@ -131,7 +131,7 @@ bool verify_advanced(const std::string &filepath, const File::NPY::ReadInfo &inf
 
 void run() {
   Path::Dir dir(argument[0]);
-  vector<std::string> errors_basic, errors_advanced;
+  std::vector<std::string> errors_basic, errors_advanced;
   size_t check_count = 0;
   size_t wrong_endianness_count = 0;
   size_t advanced_boolean_count = 0;

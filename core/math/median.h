@@ -84,7 +84,7 @@ bool median_weiszfeld(const MatrixType &X,
   }
 
   bool convergence = false;
-  vector<default_type> dist(numIter);
+  std::vector<default_type> dist(numIter);
 
   // Minimizing the sum of the squares of the distances between each point in 'X' and the median.
   size_t i = 0;

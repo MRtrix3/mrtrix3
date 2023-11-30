@@ -30,7 +30,7 @@ public:
   using base_type::parent;
   using base_type::size;
 
-  PermuteAxes(const ImageType &original, const vector<int> &axes) : base_type(original), axes_(axes) {
+  PermuteAxes(const ImageType &original, const std::vector<int> &axes) : base_type(original), axes_(axes) {
     for (int i = 0; i < static_cast<int>(parent().ndim()); ++i) {
       for (size_t a = 0; a < axes_.size(); ++a) {
         if (axes_[a] >= int(parent().ndim()))
@@ -75,8 +75,8 @@ public:
   }
 
 private:
-  vector<int> axes_;
-  vector<size_t> non_existent_axes;
+  std::vector<int> axes_;
+  std::vector<size_t> non_existent_axes;
 };
 
 } // namespace Adapter
