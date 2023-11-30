@@ -461,7 +461,7 @@ Header Header::scratch(const Header &template_header, const std::string &label) 
   H.reset_intensity_scaling();
   H.sanitise();
   H.format_ = "scratch image";
-  H.io = make_unique<ImageIO::Scratch>(H);
+  H.io = std::make_unique<ImageIO::Scratch>(H);
   return H;
 }
 
