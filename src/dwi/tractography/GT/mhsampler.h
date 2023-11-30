@@ -88,7 +88,7 @@ protected:
       *E; // Polymorphic copy requires call to EnergyComputer::clone(), hence references or smart pointers won't do.
 
   Transform T;
-  vector<size_t> dims;
+  std::vector<size_t> dims;
   Image<bool> mask;
 
   std::shared_ptr<SpatialLock<float>> lock;

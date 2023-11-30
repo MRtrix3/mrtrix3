@@ -67,7 +67,7 @@ public:
 protected:
   Image<bool> mask_image;
   Matrix::Reader matrix;
-  vector<Eigen::Vector3f> fixel_positions;
+  std::vector<Eigen::Vector3f> fixel_positions;
   float stdev, gaussian_const1, gaussian_const2, threshold;
 };
 //! @}

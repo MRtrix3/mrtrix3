@@ -69,7 +69,7 @@ public:
 
 protected:
   std::mutex mutex;
-  vector<std::pair<point_type, bool>> lockcentres;
+  std::vector<std::pair<point_type, bool>> lockcentres;
   value_type _tx, _ty, _tz;
 
   bool try_lock(const point_type &pos, ssize_t &idx) {

@@ -32,7 +32,7 @@ namespace MR {
 namespace File {
 namespace Dicom {
 
-std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, vector<std::shared_ptr<Series>> &series) {
+std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<std::shared_ptr<Series>> &series) {
   // ENVVAR name: MRTRIX_PRESERVE_PHILIPS_ISO
   // ENVVAR Do not remove the synthetic isotropically-weighted diffusion
   // ENVVAR image often added at the end of the series on Philips
@@ -62,7 +62,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, vector<std::sh
   H.name() = sbuf;
 
   // build up sorted list of frames:
-  vector<Frame *> frames;
+  std::vector<Frame *> frames;
 
   // loop over series list:
   for (const auto &series_it : series) {
@@ -112,8 +112,8 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, vector<std::sh
     throw Exception("missing image frames for DICOM image \"" + H.name() + "\"");
 
   if (dim[0] > 1) { // switch axes so slice dim is inner-most:
-    vector<Frame *> list(frames);
-    vector<Frame *>::iterator it = frames.begin();
+    std::vector<Frame *> list(frames);
+    std::vector<Frame *>::iterator it = frames.begin();
     for (size_t k = 0; k < dim[2]; ++k)
       for (size_t i = 0; i < dim[0]; ++i)
         for (size_t j = 0; j < dim[1]; ++j)
@@ -143,7 +143,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, vector<std::sh
   //   write the values as a comma-separated list to the header
   auto import_parameter =
       [&](const std::string key, std::function<default_type(Frame *)> functor, const default_type multiplier) -> void {
-    vector<std::string> values;
+    std::vector<std::string> values;
     for (const auto f : frames) {
       const default_type value = functor(f);
       if (!std::isfinite(value))
@@ -306,8 +306,8 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, vector<std::sh
   }
 
   // Slice timing may come from a few different potential sources
-  vector<std::string> slices_timing_str;
-  vector<float> slices_timing_float;
+  std::vector<std::string> slices_timing_str;
+  std::vector<float> slices_timing_float;
   if (image.images_in_mosaic) {
     if (image.mosaic_slices_timing.size() < image.images_in_mosaic) {
       WARN("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) +

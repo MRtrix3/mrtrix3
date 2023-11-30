@@ -96,8 +96,10 @@ inline T lnP(const int N, const T *measured, const T *actual, const T one_over_n
 }
 
 template <typename T>
-inline T
-lnP(const Vector<T> &measured, const Vector<T> &actual, const T one_over_noise_squared, Vector<T> &dP_dactual) {
+inline T lnP(const std::vector<T> &measured,
+             const std::vector<T> &actual,
+             const T one_over_noise_squared,
+             std::vector<T> &dP_dactual) {
   assert(one_over_noise_squared > 0.0);
   assert(measured.size() == actual.size());
   assert(measured.size() == dP_dactual.size());
@@ -125,10 +127,10 @@ lnP(const Vector<T> &measured, const Vector<T> &actual, const T one_over_noise_s
 }
 
 template <typename T>
-inline T lnP(const Vector<T> &measured,
-             const Vector<T> &actual,
+inline T lnP(const std::vector<T> &measured,
+             const std::vector<T> &actual,
              const T one_over_noise_squared,
-             Vector<T> &dP_dactual,
+             std::vector<T> &dP_dactual,
              T &dP_dN) {
   assert(one_over_noise_squared > 0.0);
   assert(measured.size() == actual.size());

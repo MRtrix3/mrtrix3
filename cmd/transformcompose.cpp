@@ -91,7 +91,7 @@ void usage() {
 using value_type = float;
 
 void run() {
-  vector<std::unique_ptr<TransformBase>> transform_list;
+  std::vector<std::unique_ptr<TransformBase>> transform_list;
   std::unique_ptr<Header> template_header;
 
   for (size_t i = 0; i < argument.size() - 1; ++i) {

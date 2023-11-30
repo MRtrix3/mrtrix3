@@ -106,7 +106,7 @@ void run() {
     check_dimensions(mask, header, 0, 3);
   }
 
-  vector<std::string> fields;
+  std::vector<std::string> fields;
   opt = get_options("output");
   for (size_t n = 0; n < opt.size(); ++n)
     fields.push_back(opt[n][0]);

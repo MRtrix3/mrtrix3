@@ -51,8 +51,8 @@ public:
 
 private:
   bool mapping_is_default;
-  vector<index_type> external2internal;
-  vector<index_type> internal2external;
+  std::vector<index_type> external2internal;
+  std::vector<index_type> internal2external;
 };
 
 } // namespace Fixel

@@ -69,7 +69,7 @@ void MeshMulti::load(const std::string &path) {
     } else if (prefix == "f") {
       if (index < 0)
         throw Exception("Malformed OBJ file; face outside object (line " + str(counter) + ")");
-      vector<std::string> elements;
+      std::vector<std::string> elements;
       do {
         const size_t first_space = data.find_first_of(' ');
         if (first_space == data.npos) {
@@ -84,9 +84,9 @@ void MeshMulti::load(const std::string &path) {
       if (elements.size() != 3 && elements.size() != 4)
         throw Exception("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " +
                         str(counter) + ")");
-      vector<FaceData> face_data;
+      std::vector<FaceData> face_data;
       size_t values_per_element = 0;
-      for (vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
+      for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
         FaceData temp;
         temp.vertex = 0;
         temp.texture = 0;
@@ -116,10 +116,10 @@ void MeshMulti::load(const std::string &path) {
         face_data.push_back(temp);
       }
       if (face_data.size() == 3) {
-        vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
+        std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
         triangles.push_back(Triangle(temp));
       } else {
-        vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
+        std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
         quads.push_back(Quad(temp));
       }
     } else if (prefix == "g") {

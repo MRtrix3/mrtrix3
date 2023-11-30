@@ -73,7 +73,7 @@ public:
 
   void set_backtrack();
 
-  virtual void load_factors(const Streamline<> &, vector<default_type> &) const = 0;
+  virtual void load_factors(const Streamline<> &, std::vector<default_type> &) const = 0;
 
 protected:
   const tck_stat_t statistic;
@@ -110,7 +110,7 @@ public:
 
   TWIScalarImagePlugin *clone() const override { return new TWIScalarImagePlugin(*this); }
 
-  void load_factors(const Streamline<> &, vector<default_type> &) const override;
+  void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 };
 
 class TWIFODImagePlugin : public TWIImagePluginBase {
@@ -129,7 +129,7 @@ public:
 
   TWIFODImagePlugin *clone() const override { return new TWIFODImagePlugin(*this); }
 
-  void load_factors(const Streamline<> &, vector<default_type> &) const override;
+  void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 
 private:
   mutable Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh_coeffs;
@@ -144,12 +144,12 @@ public:
 
   TWDFCStaticImagePlugin *clone() const override { return new TWDFCStaticImagePlugin(*this); }
 
-  void load_factors(const Streamline<> &, vector<default_type> &) const override;
+  void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 };
 
 class TWDFCDynamicImagePlugin : public TWIImagePluginBase {
 public:
-  TWDFCDynamicImagePlugin(Image<float> &input_image, const vector<float> &kernel, const ssize_t timepoint)
+  TWDFCDynamicImagePlugin(Image<float> &input_image, const std::vector<float> &kernel, const ssize_t timepoint)
       : TWIImagePluginBase(input_image, ENDS_CORR),
         kernel(kernel),
         kernel_centre((kernel.size() - 1) / 2),
@@ -159,10 +159,10 @@ public:
 
   TWDFCDynamicImagePlugin *clone() const override { return new TWDFCDynamicImagePlugin(*this); }
 
-  void load_factors(const Streamline<> &, vector<default_type> &) const override;
+  void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 
 protected:
-  const vector<float> kernel;
+  const std::vector<float> kernel;
   const ssize_t kernel_centre, sample_centre;
 };
 

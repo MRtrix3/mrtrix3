@@ -175,7 +175,7 @@ public:
     GL::VertexBuffer surface_buffer;
     GL::VertexArrayObject VAO;
 
-    void update_transform(const vector<Shapes::HalfSphere::Vertex> &, int);
+    void update_transform(const std::vector<Shapes::HalfSphere::Vertex> &, int);
 
   } sh;
 

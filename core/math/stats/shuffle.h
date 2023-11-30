@@ -49,7 +49,7 @@ public:
 
 class Shuffler {
 public:
-  typedef vector<index_type> PermuteLabels;
+  typedef std::vector<index_type> PermuteLabels;
   enum class error_t { EE, ISE, BOTH };
 
   // First version reads command-line options in order to determine parameters prior to running initialise();
@@ -81,8 +81,8 @@ public:
 
 private:
   const index_type rows;
-  vector<PermuteLabels> permutations;
-  vector<BitSet> signflips;
+  std::vector<PermuteLabels> permutations;
+  std::vector<BitSet> signflips;
   index_type nshuffles, counter;
   std::unique_ptr<ProgressBar> progress;
 
@@ -126,7 +126,7 @@ private:
 
   void generate_all_signflips(const index_type num_rows, const index_array_type &blocks);
 
-  vector<vector<index_type>> indices2blocks(const index_array_type &) const;
+  std::vector<std::vector<index_type>> indices2blocks(const index_array_type &) const;
 };
 
 } // namespace Stats

@@ -96,8 +96,8 @@ void run() {
   float max_length = -std::numeric_limits<float>::infinity();
   size_t empty_streamlines = 0, zero_length_streamlines = 0;
   default_type sum_lengths = 0.0, sum_weights = 0.0;
-  vector<default_type> histogram;
-  vector<LW> all_lengths;
+  std::vector<default_type> histogram;
+  std::vector<LW> all_lengths;
   all_lengths.reserve(header_count);
 
   {
@@ -113,7 +113,7 @@ void run() {
            "widths");
     }
 
-    vector<float> dump;
+    std::vector<float> dump;
     dump.reserve(header_count);
 
     ProgressBar progress("Reading track file", header_count);
@@ -184,11 +184,11 @@ void run() {
   }
 
   default_type ssd = 0.0;
-  for (vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
+  for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
     ssd += i->get_weight() * Math::pow2(i->get_length() - mean_length);
   const float stdev = sum_weights ? (std::sqrt(ssd / (((count - 1) / default_type(count)) * sum_weights))) : NaN;
 
-  vector<std::string> fields;
+  std::vector<std::string> fields;
   auto opt = get_options("output");
   for (size_t n = 0; n < opt.size(); ++n)
     fields.push_back(opt[n][0]);

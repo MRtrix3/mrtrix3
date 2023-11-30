@@ -75,7 +75,7 @@ void load_rois(Properties &properties) {
 
 Image<bool> Mask::__get_mask(const std::string &name) {
   auto data = Image<bool>::open(name);
-  vector<size_t> bottom(3, 0), top(3, 0);
+  std::vector<size_t> bottom(3, 0), top(3, 0);
   std::fill_n(bottom.begin(), 3, std::numeric_limits<size_t>::max());
 
   size_t sum = 0;

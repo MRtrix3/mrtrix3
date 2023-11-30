@@ -22,8 +22,8 @@ namespace MR {
  *                       Miscellaneous functions                        *
  ************************************************************************/
 
-vector<default_type> parse_floats(const std::string &spec) {
-  vector<default_type> V;
+std::vector<default_type> parse_floats(const std::string &spec) {
+  std::vector<default_type> V;
   if (!spec.size())
     throw Exception("floating-point sequence specifier is empty");
   std::string::size_type start = 0, end;
@@ -63,8 +63,9 @@ vector<default_type> parse_floats(const std::string &spec) {
   return (V);
 }
 
-vector<std::string> split(const std::string &string, const char *delimiters, bool ignore_empty_fields, size_t num) {
-  vector<std::string> V;
+std::vector<std::string>
+split(const std::string &string, const char *delimiters, bool ignore_empty_fields, size_t num) {
+  std::vector<std::string> V;
   if (!string.size())
     return V;
   std::string::size_type start = 0, end;

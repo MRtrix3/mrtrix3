@@ -144,7 +144,7 @@ protected:
   const Shared &S;
   Interpolator<Image<float>>::type source;
 
-  vector<Eigen::Vector3f> positions, tangents;
+  std::vector<Eigen::Vector3f> positions, tangents;
   size_t sample_idx;
 };
 

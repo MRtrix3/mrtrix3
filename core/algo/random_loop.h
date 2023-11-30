@@ -70,9 +70,9 @@ private:
   ImageType &image;
   RandomEngine &engine;
   size_t ax;
-  vector<size_t> idx;
-  vector<size_t>::iterator it;
-  vector<size_t>::iterator stop;
+  std::vector<size_t> idx;
+  std::vector<size_t>::iterator it;
+  std::vector<size_t>::iterator stop;
   size_t max_cnt;
   bool status;
   size_t cnt;

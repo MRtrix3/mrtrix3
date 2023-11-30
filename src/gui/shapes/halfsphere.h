@@ -61,7 +61,7 @@ public:
     float p[3];
   };
 
-  vector<Vertex> vertices;
+  std::vector<Vertex> vertices;
 };
 
 } // namespace Shapes

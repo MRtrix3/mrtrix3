@@ -104,7 +104,7 @@ template <class ImageType, typename IntType> struct __assign_pos_axes {
       MR::apply_for_each(__assign<DestImageType...>(a, __get_index(ref, a)), std::tie(dest...));
   }
   const ImageType &ref;
-  const vector<IntType> axes;
+  const std::vector<IntType> axes;
 };
 } // namespace
 
@@ -174,7 +174,7 @@ assign_pos_of(const ImageType &reference, size_t from_axis = 0, size_t to_axis =
 //! returns a functor to set the position in ref to other voxels
 /*! this can be used as follows:
  * \code
- * vector<int> axes = { 0, 3, 4 };
+ * std::vector<int> axes = { 0, 3, 4 };
  * assign_pos (src_image, axes) (dest_image1, dest_image2);
  * \endcode
  *
@@ -183,13 +183,13 @@ assign_pos_of(const ImageType &reference, size_t from_axis = 0, size_t to_axis =
  * operator[](size_t) methods). */
 template <class ImageType, typename IntType>
 FORCE_INLINE __assign_pos_axes<ImageType, IntType> assign_pos_of(const ImageType &reference,
-                                                                 const vector<IntType> &axes) {
+                                                                 const std::vector<IntType> &axes) {
   return {reference, axes};
 }
 
 template <class ImageType, typename IntType>
 FORCE_INLINE __assign_pos_axes<ImageType, IntType> assign_pos_of(const ImageType &reference,
-                                                                 const vector<IntType> &&axes) {
+                                                                 const std::vector<IntType> &&axes) {
   return assign_pos_of(reference, axes);
 }
 
@@ -266,7 +266,7 @@ template <class HeaderType> inline size_t voxel_count(const HeaderType &in, cons
 }
 
 //! returns the number of voxel in the relevant subvolume of the data set
-template <class HeaderType> inline int64_t voxel_count(const HeaderType &in, const vector<size_t> &axes) {
+template <class HeaderType> inline int64_t voxel_count(const HeaderType &in, const std::vector<size_t> &axes) {
   int64_t fp = 1;
   for (size_t n = 0; n < axes.size(); ++n) {
     assert(axes[n] < in.ndim());
@@ -320,8 +320,10 @@ inline bool spacings_match(
 }
 
 template <class HeaderType1, class HeaderType2>
-inline bool
-spacings_match(const HeaderType1 &in1, const HeaderType2 &in2, const vector<size_t> &axes, const double tol = 0.0) {
+inline bool spacings_match(const HeaderType1 &in1,
+                           const HeaderType2 &in2,
+                           const std::vector<size_t> &axes,
+                           const double tol = 0.0) {
   for (size_t n = 0; n < axes.size(); ++n) {
     if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n])
       return false;
@@ -353,7 +355,7 @@ inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, siz
 }
 
 template <class HeaderType1, class HeaderType2>
-inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, const vector<size_t> &axes) {
+inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, const std::vector<size_t> &axes) {
   for (size_t n = 0; n < axes.size(); ++n) {
     if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n])
       return false;
@@ -387,7 +389,7 @@ inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, siz
 }
 
 template <class HeaderType1, class HeaderType2>
-inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, const vector<size_t> &axes) {
+inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, const std::vector<size_t> &axes) {
   if (!dimensions_match(in1, in2, axes))
     throw Exception("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\" for axes [" +
                     join(axes, ",") + "]" + " (" + dim2str(in1) + " vs. " + dim2str(in2) + ")");

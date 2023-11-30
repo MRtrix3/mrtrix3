@@ -255,7 +255,7 @@ template <class WarpType> FORCE_INLINE WarpType compute_midway_deformation(WarpT
   WarpType deformation = WarpType::scratch(midway_header);
 
   transform_type linear;
-  vector<uint32_t> index(1);
+  std::vector<uint32_t> index(1);
   if (from == 1) {
     linear = Registration::Warp::parse_linear_transform(warp, "linear1");
     index[0] = 0;
@@ -278,7 +278,7 @@ FORCE_INLINE WarpType compute_full_deformation(WarpType &warp, TemplateType &tem
   transform_type linear1 = Registration::Warp::parse_linear_transform(warp, "linear1");
   transform_type linear2 = Registration::Warp::parse_linear_transform(warp, "linear2");
 
-  vector<uint32_t> index(1);
+  std::vector<uint32_t> index(1);
   if (from == 1) {
     index[0] = 0;
     Adapter::Extract1D<Image<default_type>> im1_to_mid(warp, 4, index);

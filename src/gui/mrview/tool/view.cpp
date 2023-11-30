@@ -139,7 +139,7 @@ public:
     endInsertRows();
   }
 
-  vector<ClipPlane> planes;
+  std::vector<ClipPlane> planes;
 };
 
 View::View(Dock *parent) : Base(parent) {
@@ -792,8 +792,8 @@ void View::clip_planes_clear_slot() {
   window().updateGL();
 }
 
-vector<std::pair<GL::vec4, bool>> View::get_active_clip_planes() const {
-  vector<std::pair<GL::vec4, bool>> ret;
+std::vector<std::pair<GL::vec4, bool>> View::get_active_clip_planes() const {
+  std::vector<std::pair<GL::vec4, bool>> ret;
   QItemSelectionModel *selection = clip_planes_list_view->selectionModel();
   if (clip_box->isChecked()) {
     for (int i = 0; i < clip_planes_model->rowCount(); ++i) {
@@ -809,8 +809,8 @@ vector<std::pair<GL::vec4, bool>> View::get_active_clip_planes() const {
   return ret;
 }
 
-vector<GL::vec4 *> View::get_clip_planes_to_be_edited() const {
-  vector<GL::vec4 *> ret;
+std::vector<GL::vec4 *> View::get_clip_planes_to_be_edited() const {
+  std::vector<GL::vec4 *> ret;
   if (clip_box->isChecked()) {
     QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
     for (int i = 0; i < indices.size(); ++i)
@@ -930,7 +930,9 @@ void View::update_lightbox_mode_gui(const Mode::LightBox &mode) {
   reset_light_box_gui_controls();
 }
 
-void View::move_clip_planes_in_out(const ModelViewProjection &projection, vector<GL::vec4 *> &clip, float distance) {
+void View::move_clip_planes_in_out(const ModelViewProjection &projection,
+                                   std::vector<GL::vec4 *> &clip,
+                                   float distance) {
   Eigen::Vector3f d = projection.screen_normal();
   for (size_t n = 0; n < clip.size(); ++n) {
     GL::vec4 &p(*clip[n]);
@@ -939,7 +941,7 @@ void View::move_clip_planes_in_out(const ModelViewProjection &projection, vector
   window().updateGL();
 }
 
-void View::rotate_clip_planes(vector<GL::vec4 *> &clip, const Eigen::Quaternionf &rot) {
+void View::rotate_clip_planes(std::vector<GL::vec4 *> &clip, const Eigen::Quaternionf &rot) {
   const auto &focus(window().focus());
   for (size_t n = 0; n < clip.size(); ++n) {
     GL::vec4 &p(*clip[n]);
@@ -957,7 +959,7 @@ void View::rotate_clip_planes(vector<GL::vec4 *> &clip, const Eigen::Quaternionf
 void View::deactivate() { clip_planes_list_view->selectionModel()->clear(); }
 
 bool View::slice_move_event(const ModelViewProjection &projection, float x) {
-  vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
+  std::vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
   if (!clip.size())
     return false;
   const auto &header = window().image()->header();
@@ -967,7 +969,7 @@ bool View::slice_move_event(const ModelViewProjection &projection, float x) {
 }
 
 bool View::pan_event(const ModelViewProjection &projection) {
-  vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
+  std::vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
   if (!clip.size())
     return false;
   Eigen::Vector3f move = projection.screen_to_model_direction(window().mouse_displacement(), window().target());
@@ -980,7 +982,7 @@ bool View::pan_event(const ModelViewProjection &projection) {
 }
 
 bool View::panthrough_event(const ModelViewProjection &projection) {
-  vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
+  std::vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
   if (!clip.size())
     return false;
   move_clip_planes_in_out(
@@ -989,7 +991,7 @@ bool View::panthrough_event(const ModelViewProjection &projection) {
 }
 
 bool View::tilt_event(const ModelViewProjection &projection) {
-  vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
+  std::vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
   if (!clip.size())
     return false;
   const Eigen::Quaternionf rot = window().get_current_mode()->get_tilt_rotation(projection);
@@ -1000,7 +1002,7 @@ bool View::tilt_event(const ModelViewProjection &projection) {
 }
 
 bool View::rotate_event(const ModelViewProjection &projection) {
-  vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
+  std::vector<GL::vec4 *> clip = get_clip_planes_to_be_edited();
   if (!clip.size())
     return false;
   const Eigen::Quaternionf rot = window().get_current_mode()->get_rotate_rotation(projection);

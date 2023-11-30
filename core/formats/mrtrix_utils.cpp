@@ -19,8 +19,8 @@
 namespace MR {
 namespace Formats {
 
-vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
-  vector<ssize_t> parsed(ndim);
+std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier) {
+  std::vector<ssize_t> parsed(ndim);
 
   size_t sub = 0;
   size_t lim = 0;

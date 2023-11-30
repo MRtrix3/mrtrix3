@@ -41,7 +41,7 @@ void run() {
   if (H.datatype() != DataType::Bit)
     WARN("Input is not a genuine boolean mask image");
   auto in = H.get_image<bool>();
-  vector<Eigen::ArrayXi> locations;
+  std::vector<Eigen::ArrayXi> locations;
   for (auto l = Loop(in)(in); l; ++l) {
     if (in.value()) {
       Eigen::ArrayXi this_voxel(in.ndim());
