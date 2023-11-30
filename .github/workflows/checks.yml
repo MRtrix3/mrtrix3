@@ -47,6 +47,8 @@ jobs:
         -D MRTRIX_BUILD_TESTS=ON
         -D MRTRIX_STL_DEBUGGING=ON
         -D MRTRIX_WARNINGS_AS_ERRORS=ON
+        -D CMAKE_C_COMPILER=clang
+        -D CMAKE_CXX_COMPILER=clang++
 
     - name: build
       run: cmake --build build
