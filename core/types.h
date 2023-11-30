@@ -179,14 +179,6 @@ template <class ValueType>
 struct is_data_type
     : std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> {};
 
-template <typename X, typename... Args> inline std::shared_ptr<X> make_shared(Args &&...args) {
-  return std::shared_ptr<X>(new X(std::forward<Args>(args)...));
-}
-
-template <typename X, typename... Args> inline std::unique_ptr<X> make_unique(Args &&...args) {
-  return std::unique_ptr<X>(new X(std::forward<Args>(args)...));
-}
-
 // required to allow use of abs() call on unsigned integers in template
 // functions, etc, since the standard labels such calls ill-formed:
 // http://en.cppreference.com/w/cpp/numeric/math/abs

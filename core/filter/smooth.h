@@ -104,7 +104,7 @@ public:
   //! Smooth the input image. Both input and output images can be the same image
   template <class InputImageType, class OutputImageType, typename ValueType = float>
   void operator()(InputImageType &input, OutputImageType &output) {
-    std::shared_ptr<Image<ValueType>> in(make_shared<Image<ValueType>>(Image<ValueType>::scratch(input)));
+    std::shared_ptr<Image<ValueType>> in(std::make_shared<Image<ValueType>>(Image<ValueType>::scratch(input)));
     threaded_copy(input, *in);
     std::shared_ptr<Image<ValueType>> out;
 
@@ -120,7 +120,7 @@ public:
     for (size_t dim = 0; dim < 3; dim++) {
       if (stdev[dim] > 0) {
         DEBUG("creating scratch image for smoothing image along dimension " + str(dim));
-        out = make_shared<Image<ValueType>>(Image<ValueType>::scratch(input));
+        out = std::make_shared<Image<ValueType>>(Image<ValueType>::scratch(input));
         Adapter::Gaussian1D<Image<ValueType>> gaussian(*in, stdev[dim], dim, extent[dim], zero_boundary);
         threaded_copy(gaussian, *out, 0, input.ndim(), 2);
         in = out;

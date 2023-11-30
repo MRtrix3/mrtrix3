@@ -87,8 +87,8 @@ public:
       DEBUG("Reorienting FODs...");
       std::shared_ptr<Image<default_type>> im1_image_reoriented;
       std::shared_ptr<Image<default_type>> im2_image_reoriented;
-      im1_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch(params.im1_image));
-      im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch(params.im2_image));
+      im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch(params.im1_image));
+      im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch(params.im2_image));
 
       {
         if (params.mc_settings.size()) {
@@ -183,8 +183,8 @@ public:
       DEBUG("Reorienting FODs...");
       std::shared_ptr<Image<default_type>> im1_image_reoriented;
       std::shared_ptr<Image<default_type>> im2_image_reoriented;
-      im1_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch(params.im1_image));
-      im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch(params.im2_image));
+      im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch(params.im1_image));
+      im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch(params.im2_image));
 
       {
         if (params.mc_settings.size()) {

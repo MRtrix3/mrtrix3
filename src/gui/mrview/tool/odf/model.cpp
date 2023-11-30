@@ -31,7 +31,7 @@ size_t ODF_Model::add_items(const std::vector<std::string> &list,
   std::vector<std::unique_ptr<MR::Header>> hlist;
   for (size_t i = 0; i < list.size(); ++i) {
     try {
-      auto header = make_unique<MR::Header>(MR::Header::open(list[i]));
+      auto header = std::make_unique<MR::Header>(MR::Header::open(list[i]));
       switch (type) {
       case odf_type_t::SH:
         Math::SH::check(*header);
@@ -59,7 +59,7 @@ size_t ODF_Model::add_items(const std::vector<std::string> &list,
     beginInsertRows(QModelIndex(), items.size(), items.size() + hlist.size());
     for (size_t i = 0; i < hlist.size(); ++i)
       items.push_back(
-          make_unique<ODF_Item>(std::move(*hlist[i]), type, scale, hide_negative_lobes, colour_by_direction));
+          std::make_unique<ODF_Item>(std::move(*hlist[i]), type, scale, hide_negative_lobes, colour_by_direction));
     endInsertRows();
   }
 
