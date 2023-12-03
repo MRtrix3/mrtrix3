@@ -550,7 +550,7 @@ def exe_name(item):
 def version_match(item):
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not item in EXE_LIST:
-    app.debug('Command ' + item + ' not found in MRtrix3 bin/ directory')
+    app.debug('Command ' + item + ' not an MRtrix3 executable')
     return item
   exe_path_manual = os.path.join(BIN_PATH, exe_name(item))
   if os.path.isfile(exe_path_manual):

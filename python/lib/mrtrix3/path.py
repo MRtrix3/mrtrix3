@@ -17,7 +17,7 @@
 
 
 
-import ctypes, errno, inspect, os, random, shlex, shutil, string, subprocess, time
+import ctypes, errno, inspect, os, random, shlex, shutil, string, subprocess, sys, time
 from mrtrix3 import CONFIG
 
 
@@ -117,10 +117,10 @@ def name_temporary(suffix): #pylint: disable=unused-variable
 
 
 # Determine the name of a sub-directory containing additional data / source files for a script
-# This can be algorithm files in lib/mrtrix3/, or data files in share/mrtrix3/
+# This can be algorithm files in src/mrtrix3/, or data files in share/mrtrix3/
 # This function appears here rather than in the algorithm module as some scripts may
 #   need to access the shared data directory but not actually be using the algorithm module
-def script_subdir_name(): #pylint: disable=unused-variable
+def script_srcdir_name(): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   frameinfo = inspect.stack()[-1]
   try:

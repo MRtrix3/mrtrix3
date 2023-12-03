@@ -288,10 +288,10 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError('FREESURFER_HOME environment variable not set; required for use of hippocampal subfields module')
     freesurfer_lut_file = os.path.join(os.environ['FREESURFER_HOME'], 'FreeSurferColorLUT.txt')
     check_file(freesurfer_lut_file)
-    hipp_lut_file = os.path.join(path.shared_data_path(), path.script_subdir_name(), 'hsvs', 'HippSubfields.txt')
+    hipp_lut_file = os.path.join(path.shared_data_path(), path.script_srcdir_name(), 'hsvs', 'HippSubfields.txt')
     check_file(hipp_lut_file)
     if hipp_subfield_has_amyg:
-      amyg_lut_file = os.path.join(path.shared_data_path(), path.script_subdir_name(), 'hsvs', 'AmygSubfields.txt')
+      amyg_lut_file = os.path.join(path.shared_data_path(), path.script_srcdir_name(), 'hsvs', 'AmygSubfields.txt')
       check_file(amyg_lut_file)
 
   if app.ARGS.sgm_amyg_hipp:
