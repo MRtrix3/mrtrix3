@@ -86,7 +86,7 @@ namespace MR {
           // loop over images in each series:
           for (auto image_it : *series_it) {
             if (!image_it->transfer_syntax_supported)
-            transfer_syntax_supported = false;
+              transfer_syntax_supported = false;
 
             // if multi-frame, loop over frames in image:
             if (image_it->frames.size()) {
