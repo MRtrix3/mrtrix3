@@ -51,11 +51,11 @@ namespace MR
         return value_type(std::round (sum*norm));
       }
 
-      template <typename value_type>
-      typename std::enable_if<std::is_floating_point<value_type>::value, value_type>::type
-      inline normalise (const default_type sum, const default_type norm)
+      template <typename value_type, typename summing_type>
+      typename std::enable_if<!std::is_same<value_type, bool>::value && !std::is_integral<value_type>::value, value_type>::type
+      inline normalise (const summing_type sum, const default_type norm)
       {
-        return (sum * norm);
+        return value_type (sum * norm);
       }
     }
 
@@ -113,7 +113,7 @@ namespace MR
       public:
 
         using value_type = typename ImageType::value_type;
-
+        using summing_type = typename std::conditional<std::is_arithmetic<value_type>::value, double, cdouble>::type;
 
         template <class HeaderType>
           Reslice (const ImageType& original,
@@ -195,7 +195,7 @@ namespace MR
           using namespace Eigen;
           if (oversampling) {
             Vector3d d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
-            default_type sum (0.0);
+            summing_type sum (0.0);
             Vector3d s;
             for (uint32_t z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
