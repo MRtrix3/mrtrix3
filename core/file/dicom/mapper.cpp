@@ -209,7 +209,7 @@ namespace MR {
         }
 
         size_t nchannels = image.samples_per_pixel;
-        if (nchannels == 1 && !image.frames.size()) {
+        if (nchannels == 1 && !image.frames.size() && frame.number_of_slices == 0) {
           // only guess number of samples per pixel if not explicitly set in
           // DICOM and not using multi-frame:
           nchannels = image.data_size / (frame.dim[0] * frame.dim[1] * (frame.bits_alloc/8));
@@ -236,7 +236,7 @@ namespace MR {
         H.spacing(1) = frame.pixel_size[1];
 
         H.stride(2) = ++current_axis;
-        H.size(2) = dim[1];
+        H.size(2) = frame.number_of_slices != 0 ? frame.number_of_slices : dim[1];
         H.spacing(2) = slice_separation;
 
         if (dim[0]*dim[2] > 1) {
@@ -244,7 +244,6 @@ namespace MR {
           H.size(current_axis) = dim[0]*dim[2];
           ++current_axis;
         }
-
 
         if (frame.bits_alloc == 8)
           H.datatype() = DataType::UInt8;

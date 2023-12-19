@@ -234,6 +234,24 @@ namespace MR {
                 return;
             }
             return;
+          case 0x0054U:
+            switch (item.element) {
+              case 0x0080U:
+                {
+                  const auto slice_vector = item.get_uint();
+                  for (size_t n = 0; n < slice_vector.size(); ++n) {
+                    if (slice_vector[n] != n+1) {
+                      WARN ("non-sequential SliceVector detected in DICOM file - slices are likely to be incorrectly ordered");
+                      break;
+                    }
+                  }
+                }
+                return;
+              case 0x0081U:
+                number_of_slices = item.get_uint(0, number_of_slices);
+                return;
+            }
+            return;
           case 0x0029U: // Siemens CSA entry
             if (item.element == 0x1010U ||
                 item.element == 0x1020U ||
