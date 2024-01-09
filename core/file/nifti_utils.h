@@ -17,6 +17,7 @@
 #ifndef __file_nifti_utils_h__
 #define __file_nifti_utils_h__
 
+#include <array>
 // nifti1_io.h and nifti2_io.h headers must be included after dirent.h (transitively included by header.h)
 // otherwise we run into definitions conflict on Linux
 // clang-format off
@@ -35,7 +36,7 @@ namespace File {
 namespace NIfTI {
 extern bool right_left_warning_issued;
 
-void axes_on_write(const Header &H, std::vector<size_t> &order, std::vector<bool> &flip);
+void axes_on_write(const Header &H, std::vector<size_t> &order, std::array<bool, 3> &flip);
 transform_type adjust_transform(const Header &H, std::vector<size_t> &order);
 
 bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std::string> &suffixes);
