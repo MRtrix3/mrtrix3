@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
 #include <fstream>
 #include <sstream>
 
@@ -254,7 +255,7 @@ void write(const Header &header, nlohmann::json &json, const std::string &image_
   }
 
   std::vector<size_t> order;
-  std::vector<bool> flip;
+  std::array<bool, 3> flip;
   File::NIfTI::axes_on_write(header, order, flip);
   if (order[0] == 0 && order[1] == 1 && order[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
     INFO(

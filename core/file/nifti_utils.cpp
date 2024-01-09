@@ -544,7 +544,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   }
 }
 
-void axes_on_write(const Header &H, std::vector<size_t> &order, std::vector<bool> &flip) {
+void axes_on_write(const Header &H, std::vector<size_t> &order, std::array<bool, 3> &flip) {
   Stride::List strides = Stride::get(H);
   strides.resize(3);
   order = Stride::order(strides);
@@ -552,7 +552,7 @@ void axes_on_write(const Header &H, std::vector<size_t> &order, std::vector<bool
 }
 
 transform_type adjust_transform(const Header &H, std::vector<size_t> &axes) {
-  std::vector<bool> flip;
+  std::array<bool, 3> flip;
   axes_on_write(H, axes, flip);
 
   if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 && !flip[0] && !flip[1] && !flip[2])
