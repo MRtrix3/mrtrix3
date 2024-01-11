@@ -289,6 +289,7 @@ void Writer::save(uint8_t *data) {
       row_pointers[row] = to_write + row * row_bytes;
     png_write_image(png_ptr, row_pointers);
     png_write_end(png_ptr, info_ptr);
+    delete[] row_pointers;
   };
 
   if (bit_depth == 1 || data_type == DataType::UInt8 || data_type == DataType::UInt16BE) {
