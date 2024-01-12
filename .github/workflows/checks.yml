@@ -54,10 +54,10 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -R unit
+      run: cd build && ctest -R unit --output-on-failure
 
     - name: binary tests
-      run: cd build && ctest -R bin
+      run: cd build && ctest -R bin --output-on-failure
 
   linux-gcc-build:
 
@@ -103,10 +103,10 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -R unit
+      run: cd build && ctest -R unit --output-on-failure
 
     - name: binary tests
-      run: cd build && ctest -R bin
+      run: cd build && ctest -R bin --output-on-failure
 
   macos-build:
 
@@ -154,10 +154,10 @@ jobs:
       run: cmake --build build
 
     - name: unit tests
-      run: cd build && ctest -R unit
+      run: cd build && ctest -R unit --output-on-failure
 
     - name: binary tests
-      run: cd build && ctest -R bin
+      run: cd build && ctest -R bin --output-on-failure
 
     - name: check command documentation
       run: ./docs/generate_user_docs.sh --build-dir ./build && git diff --exit-code docs/
@@ -224,10 +224,10 @@ jobs:
         run: cmake --build build
       
       - name: unit tests
-        run: cd build && ctest -R unit
+        run: cd build && ctest -R unit --output-on-failure
   
       - name: binary tests
-        run: cd build && ctest -R bin
+        run: cd build && ctest -R bin --output-on-failure
 
   secondary-checks:
     runs-on: ubuntu-latest
