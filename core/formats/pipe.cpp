@@ -64,7 +64,7 @@ namespace MR
         return false;
 
       if (isatty (STDOUT_FILENO))
-        throw Exception ("attempt to pipe image to standard output (this will leave temporary files behind)");
+        throw Exception ("cannot create output piped image: no command connected at other end of pipe to receive that image");
 
       H.name() = File::create_tempfile (0, "mif");
 
