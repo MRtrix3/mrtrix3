@@ -48,6 +48,9 @@ def usage(cmdline): #pylint: disable=unused-variable
   cmdline.add_example_usage('Testing the command string substitution',
                             'for_each -test * : mrconvert IN PRE.mif',
                             'By specifying the -test option, the script will print to the terminal the results of text substitutions for all of the specified inputs, but will not actually execute those commands. It can therefore be used to verify that the script is receiving the intended set of inputs, and that the text substitutions on those inputs lead to the intended command strings.')
+  cmdline.add_example_usage('Utilising shell operators within the command substitution',
+                            'for_each * : tensor2metric IN/dwi.mif - "|" tensor2metric - -fa IN/fa.mif',
+                            'In this example, if the double-quotes were NOT placed around the pipe operator, then the shell would take the sum total output of the for_each script and pipe that to a single invocation of the tensor2metric command. Since in this example it is instead desired for the pipe operator to be a part of the command string that is executed multiple times by the for_each script, it must be escaped using double-quotes.')
   cmdline.add_argument('inputs',   help='Each of the inputs for which processing should be run', nargs='+')
   cmdline.add_argument('colon',    help='Colon symbol (":") delimiting the for_each inputs & command-line options from the actual command to be executed', type=str, choices=[':'])
   cmdline.add_argument('command',  help='The command string to run for each input, containing any number of substitutions listed in the Description section', type=str)
