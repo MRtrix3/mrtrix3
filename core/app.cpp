@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ OptionGroup __standard_options =
     Option("version", "display version information and exit.");
 
 const char *AUTHOR = nullptr;
-const char *COPYRIGHT = "Copyright (c) 2008-2023 the MRtrix3 contributors.\n"
+const char *COPYRIGHT = "Copyright (c) 2008-2024 the MRtrix3 contributors.\n"
                         "\n"
                         "This Source Code Form is subject to the terms of the Mozilla Public\n"
                         "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
