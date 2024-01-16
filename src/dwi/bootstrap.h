@@ -69,7 +69,6 @@ public:
       voxel_buffer.push_back(vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
     next_voxel = &voxel_buffer[0][0];
     last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);
-    current_chunk = 0;
   }
 
 protected:
@@ -78,14 +77,10 @@ protected:
   vector<vector<value_type>> voxel_buffer;
   value_type *next_voxel;
   value_type *last_voxel;
-  size_t current_chunk;
 
   value_type *allocate_voxel() {
     if (next_voxel == last_voxel) {
-      ++current_chunk;
-      if (current_chunk >= voxel_buffer.size())
-        voxel_buffer.push_back(vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
-      assert(current_chunk < voxel_buffer.size());
+      voxel_buffer.push_back(vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
       next_voxel = &voxel_buffer.back()[0];
       last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);
     }
@@ -95,19 +90,21 @@ protected:
   }
 
   value_type *get_voxel() {
-    value_type *&data(
-        voxels.insert(std::make_pair(Eigen::Vector3i(index(0), index(1), index(2)), nullptr)).first->second);
-    if (!data) {
-      data = allocate_voxel();
-      ssize_t pos = index(3);
-      for (auto l = Loop(3)(*this); l; ++l)
-        data[index(3)] = base_type::value();
-      index(3) = pos;
-      func(data);
-    }
+    const Eigen::Vector3i voxel (index(0), index(1), index(2));
+    const typename std::map<Eigen::Vector3i, value_type *, IndexCompare>::const_iterator existing = voxels.find(voxel);
+    if (existing != voxels.end())
+      return existing->second;
+    value_type* const data = allocate_voxel();
+    ssize_t pos = index(3);
+    for (auto l = Loop(3)(*this); l; ++l)
+      data[index(3)] = base_type::value();
+    index(3) = pos;
+    func(data);
+    voxels.insert (std::make_pair (voxel, data));
     return data;
   }
 };
+
 
 } // namespace DWI
 } // namespace MR
