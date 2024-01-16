@@ -30,7 +30,7 @@ LocalSocketReader::LocalSocketReader(QLocalSocket *mySocket) : QObject(0) {
  * Fires when data is received from another process
  */
 void LocalSocketReader::OnDataReceived() {
-  vector<std::shared_ptr<QByteArray>> messagesReceived;
+  std::vector<std::shared_ptr<QByteArray>> messagesReceived;
   while (socket->bytesAvailable() > 0) {
     // First byte must always by an unsigned int32 stating how much data to read
     // Wait until we've read all of that

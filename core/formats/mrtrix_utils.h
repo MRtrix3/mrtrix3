@@ -47,13 +47,13 @@ void get_mrtrix_file_path(Header &, const std::string &, std::string &, size_t &
 //   this could be an ofstream in the case of .mif, or a stringstream in the case of .mif.gz
 template <class StreamType> void write_mrtrix_header(const Header &, StreamType &);
 
-vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier);
+std::vector<ssize_t> parse_axes(size_t ndim, const std::string &specifier);
 
 template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
   std::string dtype, layout;
-  vector<uint64_t> dim;
-  vector<default_type> vox, scaling;
-  vector<vector<default_type>> transform;
+  std::vector<uint64_t> dim;
+  std::vector<default_type> vox, scaling;
+  std::vector<std::vector<default_type>> transform;
 
   std::string key, value;
   while (next_keyvalue(kv, key, value)) {

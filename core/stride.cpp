@@ -32,7 +32,7 @@ const OptionGroup Options = OptionGroup("Stride options") +
                                    "format can support it.") +
                             Argument("spec").type_various();
 
-List &sanitise(List &current, const List &desired, const vector<ssize_t> &dims) {
+List &sanitise(List &current, const List &desired, const std::vector<ssize_t> &dims) {
   // remove duplicates
   for (size_t i = 0; i < current.size() - 1; ++i) {
     if (dims[i] == 1)

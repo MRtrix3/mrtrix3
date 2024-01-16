@@ -43,7 +43,7 @@ void get_geometric_centre(const ImageType &image, Eigen::Matrix<ValueType, 3, 1>
 void get_centre_of_mass(Image<default_type> &im,
                         Image<default_type> &mask,
                         Eigen::Vector3d &centre_of_mass,
-                        const vector<MultiContrastSetting> &contrast_settings);
+                        const std::vector<MultiContrastSetting> &contrast_settings);
 
 bool get_sorted_eigen_vecs_vals(const Eigen::Matrix<default_type, 3, 3> &mat,
                                 Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> &eigenvectors,
@@ -96,7 +96,7 @@ public:
                      Image<default_type> &mask1,
                      Image<default_type> &mask2,
                      Registration::Transform::Base &transform,
-                     const vector<MultiContrastSetting> &contrast)
+                     const std::vector<MultiContrastSetting> &contrast)
       : im1(image1), im2(image2), transform(transform), mask1(mask1), mask2(mask2), contrast_settings(contrast) {}
 
   void run();
@@ -114,7 +114,7 @@ private:
   Registration::Transform::Base &transform;
   Image<default_type> &mask1;
   Image<default_type> &mask2;
-  const vector<MultiContrastSetting> &contrast_settings;
+  const std::vector<MultiContrastSetting> &contrast_settings;
   Eigen::Vector3d im1_centre, im2_centre;
   Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
   Eigen::Matrix<default_type, 3, 3> im1_covariance_matrix, im2_covariance_matrix;

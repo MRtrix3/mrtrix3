@@ -65,13 +65,13 @@ public:
   Mapped_track_nodelist() : Mapped_track_base(), nodes() {}
 
   void add_node(const node_t i) { nodes.push_back(i); }
-  void set_nodes(const vector<node_t> &i) { nodes = i; }
-  void set_nodes(vector<node_t> &&i) { std::swap(nodes, i); }
+  void set_nodes(const std::vector<node_t> &i) { nodes = i; }
+  void set_nodes(std::vector<node_t> &&i) { std::swap(nodes, i); }
 
-  const vector<node_t> &get_nodes() const { return nodes; }
+  const std::vector<node_t> &get_nodes() const { return nodes; }
 
 private:
-  vector<node_t> nodes;
+  std::vector<node_t> nodes;
 };
 
 } // namespace Connectome

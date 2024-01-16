@@ -268,8 +268,8 @@ Element::Type Element::type() const {
   return OTHER;
 }
 
-vector<int32_t> Element::get_int() const {
-  vector<int32_t> V;
+std::vector<int32_t> Element::get_int() const {
+  std::vector<int32_t> V;
   if (VR == VR_SL)
     for (const uint8_t *p = data; p < data + size; p += sizeof(int32_t))
       V.push_back(Raw::fetch_<int32_t>(p, is_BE));
@@ -287,8 +287,8 @@ vector<int32_t> Element::get_int() const {
   return V;
 }
 
-vector<uint32_t> Element::get_uint() const {
-  vector<uint32_t> V;
+std::vector<uint32_t> Element::get_uint() const {
+  std::vector<uint32_t> V;
   if (VR == VR_UL)
     for (const uint8_t *p = data; p < data + size; p += sizeof(uint32_t))
       V.push_back(Raw::fetch_<uint32_t>(p, is_BE));
@@ -305,8 +305,8 @@ vector<uint32_t> Element::get_uint() const {
   return V;
 }
 
-vector<default_type> Element::get_float() const {
-  vector<default_type> V;
+std::vector<default_type> Element::get_float() const {
+  std::vector<default_type> V;
   if (VR == VR_FD)
     for (const uint8_t *p = data; p < data + size; p += sizeof(float64))
       V.push_back(Raw::fetch_<float64>(p, is_BE));
@@ -341,7 +341,7 @@ std::pair<Date, Time> Element::get_datetime() const {
           Time(std::string(reinterpret_cast<const char *>(data + 8), std::min(size - 8, 13U)))};
 }
 
-vector<std::string> Element::get_string() const {
+std::vector<std::string> Element::get_string() const {
   if (VR == VR_AT)
     return {printf("%04X %04X", Raw::fetch_<uint16_t>(data, is_BE), Raw::fetch_<uint16_t>(data + 2, is_BE))};
 
@@ -397,7 +397,7 @@ std::string Element::as_string() const {
 }
 
 namespace {
-template <class T> inline void print_vec(const vector<T> &V) {
+template <class T> inline void print_vec(const std::vector<T> &V) {
   for (const auto &entry : V)
     fprintf(stdout, "%s ", str(entry).c_str());
 }

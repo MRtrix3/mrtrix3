@@ -35,10 +35,10 @@ FORCE_INLINE Eigen::MatrixXd aPSF_weights_to_FOD_transform(const int num_SH, con
   return delta_matrix.transpose();
 }
 
-FORCE_INLINE vector<vector<ssize_t>> multiContrastSetting2start_nvols(const vector<MultiContrastSetting> &mcsettings,
-                                                                      size_t &max_n_SH) {
+FORCE_INLINE std::vector<std::vector<ssize_t>>
+multiContrastSetting2start_nvols(const std::vector<MultiContrastSetting> &mcsettings, size_t &max_n_SH) {
   max_n_SH = 0;
-  vector<vector<ssize_t>> start_nvols;
+  std::vector<std::vector<ssize_t>> start_nvols;
   if (mcsettings.size() != 0) {
     for (const auto &mc : mcsettings) {
       if (mc.do_reorientation && mc.lmax > 0) {
@@ -59,7 +59,7 @@ public:
                             ssize_t max_n_SH,
                             const transform_type &linear_transform,
                             const Eigen::MatrixXd &directions,
-                            const vector<vector<ssize_t>> &vstart_nvols,
+                            const std::vector<std::vector<ssize_t>> &vstart_nvols,
                             const bool modulate)
       : fod(n_vol), max_n_SH(max_n_SH), start_nvols(vstart_nvols) {
     assert(n_vol > max_n_SH);
@@ -96,7 +96,7 @@ public:
 protected:
   Eigen::VectorXd fod;
   ssize_t max_n_SH;
-  vector<vector<ssize_t>> start_nvols;
+  std::vector<std::vector<ssize_t>> start_nvols;
   Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> transform;
 };
 
@@ -148,9 +148,9 @@ void reorient(FODImageType &input_fod_image,
               const transform_type &transform,
               const Eigen::MatrixXd &directions,
               bool modulate = false,
-              vector<MultiContrastSetting> multi_contrast_settings = vector<MultiContrastSetting>()) {
+              std::vector<MultiContrastSetting> multi_contrast_settings = std::vector<MultiContrastSetting>()) {
   assert(directions.cols() > directions.rows());
-  vector<vector<ssize_t>> start_nvols;
+  std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
   if (multi_contrast_settings.size())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
@@ -181,9 +181,9 @@ void reorient(const std::string progress_message,
               const transform_type &transform,
               const Eigen::MatrixXd &directions,
               bool modulate = false,
-              vector<MultiContrastSetting> multi_contrast_settings = vector<MultiContrastSetting>()) {
+              std::vector<MultiContrastSetting> multi_contrast_settings = std::vector<MultiContrastSetting>()) {
   assert(directions.cols() > directions.rows());
-  vector<vector<ssize_t>> start_nvols;
+  std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
   if (multi_contrast_settings.size())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
@@ -210,7 +210,7 @@ public:
                                ssize_t max_n_SH,
                                Image<default_type> &warp,
                                const Eigen::MatrixXd &directions,
-                               const vector<vector<ssize_t>> &vstart_nvols,
+                               const std::vector<std::vector<ssize_t>> &vstart_nvols,
                                const bool modulate)
       : max_n_SH(max_n_SH),
         n_dirs(directions.cols()),
@@ -278,7 +278,7 @@ protected:
   Adapter::Jacobian<Image<default_type>> jacobian_adapter;
   const Eigen::MatrixXd &directions;
   const bool modulate;
-  const vector<vector<ssize_t>> start_nvols;
+  const std::vector<std::vector<ssize_t>> start_nvols;
   Eigen::VectorXd fod;
   std::map<ssize_t, Eigen::MatrixXd> map_FOD_to_aPSF_transform;
   ssize_t max_n_SHvox;
@@ -340,10 +340,10 @@ void reorient_warp(const std::string progress_message,
                    Image<default_type> &warp,
                    const Eigen::MatrixXd &directions,
                    const bool modulate = false,
-                   vector<MultiContrastSetting> multi_contrast_settings = vector<MultiContrastSetting>()) {
+                   std::vector<MultiContrastSetting> multi_contrast_settings = std::vector<MultiContrastSetting>()) {
   assert(directions.cols() > directions.rows());
   check_dimensions(fod_image, warp, 0, 3);
-  vector<vector<ssize_t>> start_nvols;
+  std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
   if (multi_contrast_settings.size())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
@@ -365,10 +365,10 @@ void reorient_warp(FODImageType &fod_image,
                    Image<default_type> &warp,
                    const Eigen::MatrixXd &directions,
                    const bool modulate = false,
-                   vector<MultiContrastSetting> multi_contrast_settings = vector<MultiContrastSetting>()) {
+                   std::vector<MultiContrastSetting> multi_contrast_settings = std::vector<MultiContrastSetting>()) {
   assert(directions.cols() > directions.rows());
   check_dimensions(fod_image, warp, 0, 3);
-  vector<vector<ssize_t>> start_nvols;
+  std::vector<std::vector<ssize_t>> start_nvols;
   size_t max_n_SH(0);
   if (multi_contrast_settings.size())
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);

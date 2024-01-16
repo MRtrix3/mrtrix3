@@ -548,9 +548,9 @@ void Tractogram::load_tracks() {
 
   DWI::Tractography::Reader<float> file(filename, properties);
   DWI::Tractography::Streamline<float> tck;
-  vector<Eigen::Vector3f> buffer;
-  vector<GLint> starts;
-  vector<GLint> sizes;
+  std::vector<Eigen::Vector3f> buffer;
+  std::vector<GLint> starts;
+  std::vector<GLint> sizes;
   size_t tck_count = 0;
 
   on_FOV_changed();
@@ -605,7 +605,7 @@ void Tractogram::load_end_colours() {
   for (size_t buffer_index = 0, N = vertex_buffers.size(); buffer_index < N; ++buffer_index) {
 
     const size_t num_tracks = num_tracks_per_buffer[buffer_index];
-    vector<Eigen::Vector3f> buffer;
+    std::vector<Eigen::Vector3f> buffer;
     for (size_t buffer_tck_counter = 0; buffer_tck_counter != num_tracks; ++buffer_tck_counter) {
 
       const Eigen::Vector3f &tangent(endpoint_tangents[total_tck_counter++]);
@@ -633,7 +633,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
   erase_intensity_scalar_data();
   value_min = std::numeric_limits<float>::infinity();
   value_max = -std::numeric_limits<float>::infinity();
-  vector<float> buffer;
+  std::vector<float> buffer;
   DWI::Tractography::TrackScalar<float> tck_scalar;
 
   if (Path::has_suffix(filename, ".tsf")) {
@@ -674,7 +674,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filename);
     size_t total_num_tracks = 0;
-    for (vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
+    for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
       total_num_tracks += *i;
     if (size_t(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
@@ -683,7 +683,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
     for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
 
       size_t num_tracks = num_tracks_per_buffer[buffer_index];
-      vector<GLint> &track_lengths(original_track_sizes[buffer_index]);
+      std::vector<GLint> &track_lengths(original_track_sizes[buffer_index]);
 
       for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
         const float value = scalars[running_index];
@@ -725,7 +725,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
   erase_threshold_scalar_data();
   threshold_min = std::numeric_limits<float>::infinity();
   threshold_max = -std::numeric_limits<float>::infinity();
-  vector<float> buffer;
+  std::vector<float> buffer;
   DWI::Tractography::TrackScalar<float> tck_scalar;
 
   if (Path::has_suffix(filename, ".tsf")) {
@@ -766,7 +766,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filename);
     size_t total_num_tracks = 0;
-    for (vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
+    for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
       total_num_tracks += *i;
     if (size_t(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
@@ -775,7 +775,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
     for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
 
       size_t num_tracks = num_tracks_per_buffer[buffer_index];
-      vector<GLint> &track_lengths(original_track_sizes[buffer_index]);
+      std::vector<GLint> &track_lengths(original_track_sizes[buffer_index]);
 
       for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
         const float value = scalars[running_index];
@@ -868,9 +868,9 @@ void Tractogram::set_geometry_type(const TrackGeometryType t) {
   should_update_stride = true;
 }
 
-void Tractogram::load_tracks_onto_GPU(vector<Eigen::Vector3f> &buffer,
-                                      vector<GLint> &starts,
-                                      vector<GLint> &sizes,
+void Tractogram::load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
+                                      std::vector<GLint> &starts,
+                                      std::vector<GLint> &sizes,
                                       size_t &tck_count) {
   GL::assert_context_is_current();
 
@@ -898,7 +898,7 @@ void Tractogram::load_tracks_onto_GPU(vector<Eigen::Vector3f> &buffer,
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_end_colours_onto_GPU(vector<Eigen::Vector3f> &buffer) {
+void Tractogram::load_end_colours_onto_GPU(std::vector<Eigen::Vector3f> &buffer) {
   GL::assert_context_is_current();
 
   GLuint vertexbuffer;
@@ -913,7 +913,7 @@ void Tractogram::load_end_colours_onto_GPU(vector<Eigen::Vector3f> &buffer) {
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_intensity_scalars_onto_GPU(vector<float> &buffer, size_t &tck_count) {
+void Tractogram::load_intensity_scalars_onto_GPU(std::vector<float> &buffer, size_t &tck_count) {
   GL::assert_context_is_current();
 
   assert(num_tracks_per_buffer[intensity_scalar_buffers.size()] == tck_count);
@@ -932,7 +932,7 @@ void Tractogram::load_intensity_scalars_onto_GPU(vector<float> &buffer, size_t &
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_threshold_scalars_onto_GPU(vector<float> &buffer, size_t &tck_count) {
+void Tractogram::load_threshold_scalars_onto_GPU(std::vector<float> &buffer, size_t &tck_count) {
   GL::assert_context_is_current();
 
   assert(num_tracks_per_buffer[threshold_scalar_buffers.size()] == tck_count);

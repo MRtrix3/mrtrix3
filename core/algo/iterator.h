@@ -48,7 +48,7 @@ public:
   }
 
 private:
-  vector<ssize_t> d, p;
+  std::vector<ssize_t> d, p;
 
   void value() const { assert(0); }
 };

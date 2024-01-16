@@ -79,7 +79,7 @@ within_haussdorf(const DWI::Tractography::Streamline<> &tck1, const DWI::Tractog
 }
 
 inline bool within_haussdorf(const DWI::Tractography::Streamline<> &tck,
-                             const vector<DWI::Tractography::Streamline<>> &list,
+                             const std::vector<DWI::Tractography::Streamline<>> &list,
                              float tol) {
   for (auto &tck2 : list) {
     if (within_haussdorf(tck, tck2, tol))
@@ -100,7 +100,7 @@ void run() {
 
   if (get_options("unordered").size()) {
 
-    vector<DWI::Tractography::Streamline<>> ref_list;
+    std::vector<DWI::Tractography::Streamline<>> ref_list;
     DWI::Tractography::Streamline<> tck;
 
     while (reader2(tck))

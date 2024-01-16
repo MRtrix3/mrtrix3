@@ -125,7 +125,7 @@ void run() {
         input_image, std::string("applying connected-component filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("axes");
     if (opt.size()) {
-      const vector<int> axes = opt[0][0];
+      const std::vector<int> axes = opt[0][0];
       filter.set_axes(axes);
     }
     bool largest_only = false;
@@ -188,7 +188,7 @@ void run() {
     Filter::Fill filter(input_image, std::string("filling interior of image ") + Path::basename(argument[0]));
     auto opt = get_options("axes");
     if (opt.size()) {
-      const vector<int> axes = opt[0][0];
+      const std::vector<int> axes = opt[0][0];
       filter.set_axes(axes);
     }
     opt = get_options("connectivity");

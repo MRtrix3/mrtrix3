@@ -37,7 +37,7 @@ public:
   LocalSocketReader(QLocalSocket *mySocket);
 
 signals:
-  void DataReceived(vector<std::shared_ptr<QByteArray>> dat); // emits every message currently available
+  void DataReceived(std::vector<std::shared_ptr<QByteArray>> dat); // emits every message currently available
 
 private slots:
   void OnDataReceived();

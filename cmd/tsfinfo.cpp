@@ -62,7 +62,7 @@ void run() {
 
     if (properties.comments.size()) {
       std::cout << "    Comments:             ";
-      for (vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
+      for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
     }
 
@@ -94,7 +94,7 @@ void run() {
         filename.replace(filename.size() - 4 - num.size(), num.size(), num);
 
         File::OFStream out(filename);
-        for (vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
+        for (std::vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
           out << (*i) << "\n";
         out.close();
 

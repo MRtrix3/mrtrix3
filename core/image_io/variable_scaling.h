@@ -36,7 +36,7 @@ public:
     default_type offset, scale;
   };
 
-  vector<ScaleFactor> scale_factors;
+  std::vector<ScaleFactor> scale_factors;
 
 protected:
   virtual void load(const Header &, size_t);

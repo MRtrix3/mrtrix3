@@ -101,9 +101,9 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
 void InterprocessCommunicator::OnNewIncomingConnection() {
   LocalSocketReader *lsr = new LocalSocketReader(receiver->nextPendingConnection());
   connect(lsr,
-          SIGNAL(DataReceived(vector<std::shared_ptr<QByteArray>>)),
+          SIGNAL(DataReceived(std::vector<std::shared_ptr<QByteArray>>)),
           this,
-          SLOT(OnDataReceived(vector<std::shared_ptr<QByteArray>>)));
+          SLOT(OnDataReceived(std::vector<std::shared_ptr<QByteArray>>)));
 }
 
 /**
@@ -148,8 +148,8 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
 /**
  * Fires when 1+ messages are received from another process.
  */
-void InterprocessCommunicator::OnDataReceived(vector<std::shared_ptr<QByteArray>> allMessages) {
-  vector<std::shared_ptr<QByteArray>> toSync;
+void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteArray>> allMessages) {
+  std::vector<std::shared_ptr<QByteArray>> toSync;
 
   for (size_t i = 0; i < allMessages.size(); i++) {
     std::shared_ptr<QByteArray> dat = allMessages[i];

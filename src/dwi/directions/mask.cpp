@@ -25,7 +25,8 @@ void Mask::erode(const size_t iterations) {
     Mask temp(*this);
     for (size_t d = 0; d != size(); ++d) {
       if (!temp[d]) {
-        for (vector<index_type>::const_iterator i = dirs->get_adj_dirs(d).begin(); i != dirs->get_adj_dirs(d).end();
+        for (std::vector<index_type>::const_iterator i = dirs->get_adj_dirs(d).begin();
+             i != dirs->get_adj_dirs(d).end();
              ++i)
           reset(*i);
       }
@@ -38,7 +39,8 @@ void Mask::dilate(const size_t iterations) {
     Mask temp(*this);
     for (size_t d = 0; d != size(); ++d) {
       if (temp[d]) {
-        for (vector<index_type>::const_iterator i = dirs->get_adj_dirs(d).begin(); i != dirs->get_adj_dirs(d).end();
+        for (std::vector<index_type>::const_iterator i = dirs->get_adj_dirs(d).begin();
+             i != dirs->get_adj_dirs(d).end();
              ++i)
           set(*i);
       }
@@ -54,7 +56,8 @@ size_t Mask::get_min_linkage(const Mask &that) {
 }
 
 bool Mask::is_adjacent(const size_t d) const {
-  for (vector<index_type>::const_iterator i = dirs->get_adj_dirs(d).begin(); i != dirs->get_adj_dirs(d).end(); ++i) {
+  for (std::vector<index_type>::const_iterator i = dirs->get_adj_dirs(d).begin(); i != dirs->get_adj_dirs(d).end();
+       ++i) {
     if (test(*i))
       return true;
   }

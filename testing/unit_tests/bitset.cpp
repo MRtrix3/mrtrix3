@@ -29,7 +29,7 @@ void usage() {
 }
 
 void run() {
-  vector<std::string> failed_tests;
+  std::vector<std::string> failed_tests;
   auto test = [&](const bool result, const std::string msg) {
     if (!result)
       failed_tests.push_back(msg);

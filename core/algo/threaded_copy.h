@@ -38,7 +38,7 @@ struct __copy_func {
 template <class InputImageType, class OutputImageType>
 inline void threaded_copy(InputImageType &source,
                           OutputImageType &destination,
-                          const vector<size_t> &axes,
+                          const std::vector<size_t> &axes,
                           size_t num_axes_in_thread = 1) {
   ThreadedLoop(source, axes, num_axes_in_thread).run(__copy_func(), source, destination);
 }
@@ -56,7 +56,7 @@ template <class InputImageType, class OutputImageType>
 inline void threaded_copy_with_progress_message(const std::string &message,
                                                 InputImageType &source,
                                                 OutputImageType &destination,
-                                                const vector<size_t> &axes,
+                                                const std::vector<size_t> &axes,
                                                 size_t num_axes_in_thread = 1) {
   ThreadedLoop(message, source, axes, num_axes_in_thread).run(__copy_func(), source, destination);
 }
@@ -74,7 +74,7 @@ inline void threaded_copy_with_progress_message(const std::string &message,
 template <class InputImageType, class OutputImageType>
 inline void threaded_copy_with_progress(InputImageType &source,
                                         OutputImageType &destination,
-                                        const vector<size_t> &axes,
+                                        const std::vector<size_t> &axes,
                                         size_t num_axes_in_thread = 1) {
   threaded_copy_with_progress_message("copying from \"" + shorten(source.name()) + "\" to \"" +
                                           shorten(destination.name()) + "\"",

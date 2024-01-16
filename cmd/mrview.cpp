@@ -82,9 +82,9 @@ void run() {
   GUI::App::setEventHandler([](QEvent *event) {
     if (event->type() == QEvent::FileOpen) {
       QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
-      vector<std::unique_ptr<MR::Header>> list;
+      std::vector<std::unique_ptr<MR::Header>> list;
       try {
-        list.push_back(make_unique<MR::Header>(MR::Header::open(openEvent->file().toUtf8().data())));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(openEvent->file().toUtf8().data())));
       } catch (Exception &E) {
         E.display();
       }

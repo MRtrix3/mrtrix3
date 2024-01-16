@@ -37,14 +37,14 @@ public:
         from_(container_cast<decltype(from_)>(from)),
         size_(container_cast<decltype(size_)>(size)),
         index_invalid_lower_upper([&] {
-          vector<vector<ssize_t>> v;
+          std::vector<std::vector<ssize_t>> v;
           for (size_t d = 0; d < from_.size(); ++d) {
-            v.push_back(vector<ssize_t>{from_[d] < 0 ? -(ssize_t)from_[d] - 1 : -1, original.size(d) - from_[d]});
+            v.push_back(std::vector<ssize_t>{from_[d] < 0 ? -(ssize_t)from_[d] - 1 : -1, original.size(d) - from_[d]});
           }
           return v;
         }()),
         index_requires_bound_check([&] {
-          vector<bool> v;
+          std::vector<bool> v;
           for (size_t d = 0; d < from_.size(); ++d) {
             v.push_back(from_[d] < 0 || size_[d] > original.size(d) - from_[d]);
           }
@@ -101,12 +101,12 @@ public:
 
 protected:
   using base_type::parent;
-  const vector<ssize_t> from_, size_;
-  const vector<vector<ssize_t>> index_invalid_lower_upper;
-  const vector<bool> index_requires_bound_check;
+  const std::vector<ssize_t> from_, size_;
+  const std::vector<std::vector<ssize_t>> index_invalid_lower_upper;
+  const std::vector<bool> index_requires_bound_check;
   const value_type fill_;
   transform_type transform_;
-  vector<ssize_t> index_;
+  std::vector<ssize_t> index_;
 };
 
 } // namespace Adapter

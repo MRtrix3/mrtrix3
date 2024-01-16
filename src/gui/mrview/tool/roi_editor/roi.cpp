@@ -272,12 +272,12 @@ void ROI::new_slot() {
 }
 
 void ROI::open_slot() {
-  vector<std::string> names = Dialog::File::get_images(this, "Select ROI images to open", &current_folder);
+  std::vector<std::string> names = Dialog::File::get_images(this, "Select ROI images to open", &current_folder);
   if (names.empty())
     return;
-  vector<std::unique_ptr<MR::Header>> list;
+  std::vector<std::unique_ptr<MR::Header>> list;
   for (size_t n = 0; n < names.size(); ++n)
-    list.push_back(make_unique<MR::Header>(MR::Header::open(names[n])));
+    list.push_back(std::make_unique<MR::Header>(MR::Header::open(names[n])));
 
   load(list);
   in_insert_mode = false;
@@ -288,11 +288,11 @@ void ROI::dropEvent(QDropEvent *event) {
 
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
-    vector<std::unique_ptr<MR::Header>> list;
+    std::vector<std::unique_ptr<MR::Header>> list;
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       try {
-        list.push_back(make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
       } catch (Exception &e) {
         e.display();
       }
@@ -306,7 +306,7 @@ void ROI::dropEvent(QDropEvent *event) {
 }
 
 void ROI::save(ROI_Item *roi) {
-  vector<GLubyte> data(roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
+  std::vector<GLubyte> data(roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
   {
     GL::Context::Grab context;
     GL::assert_context_is_current();
@@ -349,7 +349,7 @@ void ROI::save_slot() {
   save(roi);
 }
 
-void ROI::load(vector<std::unique_ptr<MR::Header>> &list) {
+void ROI::load(std::vector<std::unique_ptr<MR::Header>> &list) {
   list_model->load(list);
   list_view->selectionModel()->clear();
   list_view->selectionModel()->select(list_model->index(list_model->rowCount() - 1, 0, QModelIndex()),
@@ -705,9 +705,9 @@ void ROI::add_commandline_options(MR::App::OptionList &options) {
 
 bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("roi.load")) {
-    vector<std::unique_ptr<MR::Header>> list;
+    std::vector<std::unique_ptr<MR::Header>> list;
     try {
-      list.push_back(make_unique<MR::Header>(MR::Header::open(opt[0])));
+      list.push_back(std::make_unique<MR::Header>(MR::Header::open(opt[0])));
     } catch (Exception &e) {
       e.display();
     }

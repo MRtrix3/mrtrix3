@@ -186,12 +186,12 @@ private:
   File::OFStream VTKout;
   const bool write_ascii;
   size_t offset_num_points;
-  vector<std::pair<size_t, size_t>> track_list;
+  std::vector<std::pair<size_t, size_t>> track_list;
   size_t current_index = 0;
 };
 
-template <class T> void loadLines(vector<int64_t> &lines, std::ifstream &input, int number_of_line_indices) {
-  vector<T> buffer(number_of_line_indices);
+template <class T> void loadLines(std::vector<int64_t> &lines, std::ifstream &input, int number_of_line_indices) {
+  std::vector<T> buffer(number_of_line_indices);
   input.read((char *)&buffer[0], number_of_line_indices * sizeof(T));
   lines.resize(number_of_line_indices);
   // swap from big endian
@@ -254,8 +254,8 @@ public:
   }
 
 private:
-  vector<float> points;
-  vector<int64_t> lines;
+  std::vector<float> points;
+  std::vector<int64_t> lines;
   int lineIdx;
   int number_of_lines;
   int number_of_line_indices;
@@ -308,7 +308,7 @@ public:
 
 private:
   File::NameParser parser;
-  vector<uint32_t> count;
+  std::vector<uint32_t> count;
 };
 
 class PLYWriter : public WriterInterface<float> {

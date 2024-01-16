@@ -18,6 +18,7 @@
 #define __phaseencoding_h__
 
 #include <Eigen/Dense>
+#include <array>
 
 #include "app.h"
 #include "axes.h"
@@ -191,8 +192,8 @@ Eigen::MatrixXd transform_for_image_load(const MatrixType &pe_scheme, const Head
 //! Modifies a phase encoding scheme if being exported alongside a NIfTI image
 template <class MatrixType, class HeaderType>
 Eigen::MatrixXd transform_for_nifti_write(const MatrixType &pe_scheme, const HeaderType &H) {
-  vector<size_t> order;
-  vector<bool> flip;
+  std::vector<size_t> order;
+  std::array<bool, 3> flip;
   File::NIfTI::axes_on_write(H, order, flip);
   if (order[0] == 0 && order[1] == 1 && order[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
     INFO("No transformation of phase encoding data required for export to file");

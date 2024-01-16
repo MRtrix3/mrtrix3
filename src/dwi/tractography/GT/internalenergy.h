@@ -91,7 +91,7 @@ public:
 protected:
   ParticleGrid &pGrid;
   double cpot, dEint;
-  vector<ParticleEnd> neighbourhood;
+  std::vector<ParticleEnd> neighbourhood;
   double normalization;
   Math::RNG::Uniform<double> rng_uniform;
 
