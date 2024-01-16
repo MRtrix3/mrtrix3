@@ -51,11 +51,12 @@ void save_matrix_text(const MatrixType &M,
 
 //! read matrix text data into a 2D vector \a filename
 template <class ValueType = default_type>
-vector<vector<ValueType>> load_matrix_2D_vector(const std::string &filename, vector<std::string> *comments = nullptr) {
+std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::string &filename,
+                                                          std::vector<std::string> *comments = nullptr) {
   std::ifstream stream(filename, std::ios_base::in | std::ios_base::binary);
   if (!stream)
     throw Exception("Unable to open numerical data text file \"" + filename + "\": " + strerror(errno));
-  vector<vector<ValueType>> V;
+  std::vector<std::vector<ValueType>> V;
   std::string sbuf, cbuf;
   size_t hash;
 
@@ -72,7 +73,7 @@ vector<vector<ValueType>> load_matrix_2D_vector(const std::string &filename, vec
       continue;
 
     const auto elements = MR::split(sbuf, " ,;\t", true);
-    V.push_back(vector<ValueType>());
+    V.push_back(std::vector<ValueType>());
     try {
       for (const auto &entry : elements)
         V.back().push_back(to<ValueType>(entry));
@@ -101,7 +102,7 @@ vector<vector<ValueType>> load_matrix_2D_vector(const std::string &filename, vec
 template <class ValueType = default_type>
 Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix_text(const std::string &filename) {
   DEBUG("loading matrix file \"" + filename + "\"...");
-  const vector<vector<ValueType>> V = load_matrix_2D_vector<ValueType>(filename);
+  const std::vector<std::vector<ValueType>> V = load_matrix_2D_vector<ValueType>(filename);
 
   Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M(V.size(), V[0].size());
   for (ssize_t i = 0; i < M.rows(); i++)
@@ -154,8 +155,8 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::
 template <class VectorType> inline transform_type load_transform(const std::string &filename, VectorType &centre) {
   DEBUG("loading transform file \"" + filename + "\"...");
 
-  vector<std::string> comments;
-  const vector<vector<default_type>> V = load_matrix_2D_vector<>(filename, &comments);
+  std::vector<std::string> comments;
+  const std::vector<std::vector<default_type>> V = load_matrix_2D_vector<>(filename, &comments);
 
   if (V.empty())
     throw Exception("transform in file " + filename + " is empty");
@@ -177,7 +178,7 @@ template <class VectorType> inline transform_type load_transform(const std::stri
     centre[0] = NaN;
     centre[1] = NaN;
     centre[2] = NaN;
-    vector<std::string> elements;
+    std::vector<std::string> elements;
     for (auto &line : comments) {
       if (strncmp(line.c_str(), key.c_str(), key.size()) == 0)
         elements = split(strip(line.substr(key.size())), " ,;\t", true);

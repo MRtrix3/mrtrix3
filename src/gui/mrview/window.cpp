@@ -138,7 +138,7 @@ QSize Window::GLArea::sizeHint() const {
   // CONF Initial window size of MRView in pixels.
   // CONF default: 512,512
   std::string init_size_string = lowercase(MR::File::Config::get("MRViewInitWindowSize"));
-  vector<uint32_t> init_window_size;
+  std::vector<uint32_t> init_window_size;
   if (init_size_string.length())
     init_window_size = parse_ints<uint32_t>(init_size_string);
   if (init_window_size.size() == 2)
@@ -152,11 +152,11 @@ void Window::GLArea::dragLeaveEvent(QDragLeaveEvent *event) { event->accept(); }
 void Window::GLArea::dropEvent(QDropEvent *event) {
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
-    vector<std::unique_ptr<MR::Header>> list;
+    std::vector<std::unique_ptr<MR::Header>> list;
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < 32; ++i) {
       try {
-        list.push_back(make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(urlList.at(i).path().toUtf8().constData())));
       } catch (Exception &e) {
         e.display();
       }
@@ -742,10 +742,10 @@ void Window::parse_arguments() {
       }
     }
 
-    vector<std::unique_ptr<MR::Header>> list;
+    std::vector<std::unique_ptr<MR::Header>> list;
     for (size_t n = 0; n < MR::App::argument.size(); ++n) {
       try {
-        list.push_back(make_unique<MR::Header>(MR::Header::open(MR::App::argument[n])));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(MR::App::argument[n])));
       } catch (CancelException &e) {
         for (const auto &msg : e.description)
           CONSOLE(msg);
@@ -789,14 +789,14 @@ Window::~Window() {
 void Window::sync_slot() { emit syncChanged(); }
 
 void Window::image_open_slot() {
-  vector<std::string> image_list = Dialog::File::get_images(this, "Select images to open", &current_folder);
+  std::vector<std::string> image_list = Dialog::File::get_images(this, "Select images to open", &current_folder);
   if (image_list.empty())
     return;
 
-  vector<std::unique_ptr<MR::Header>> list;
+  std::vector<std::unique_ptr<MR::Header>> list;
   for (size_t n = 0; n < image_list.size(); ++n) {
     try {
-      list.push_back(make_unique<MR::Header>(MR::Header::open(image_list[n])));
+      list.push_back(std::make_unique<MR::Header>(MR::Header::open(image_list[n])));
     } catch (Exception &E) {
       E.display();
     }
@@ -810,8 +810,8 @@ void Window::image_import_DICOM_slot() {
     return;
 
   try {
-    vector<std::unique_ptr<MR::Header>> list;
-    list.push_back(make_unique<MR::Header>(MR::Header::open(folder)));
+    std::vector<std::unique_ptr<MR::Header>> list;
+    list.push_back(std::make_unique<MR::Header>(MR::Header::open(folder)));
     add_images(list);
   } catch (CancelException &E) {
     E.display(-1);
@@ -820,7 +820,7 @@ void Window::image_import_DICOM_slot() {
   }
 }
 
-void Window::add_images(vector<std::unique_ptr<MR::Header>> &list) {
+void Window::add_images(std::vector<std::unique_ptr<MR::Header>> &list) {
   if (list.empty())
     return;
 
@@ -1676,7 +1676,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("size")) {
-      vector<uint32_t> glsize = parse_ints<uint32_t>(opt[0]);
+      std::vector<uint32_t> glsize = parse_ints<uint32_t>(opt[0]);
       if (glsize.size() != 2)
         throw Exception("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
       if (glsize[0] < 1 || glsize[1] < 1)
@@ -1718,7 +1718,7 @@ void Window::process_commandline_option() {
 
     if (opt.opt->is("target")) {
       if (image()) {
-        vector<default_type> pos = parse_floats(opt[0]);
+        std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 3)
           throw Exception("-target option expects a comma-separated list of 3 floating-point values");
         set_target(Eigen::Vector3f{float(pos[0]), float(pos[1]), float(pos[2])});
@@ -1729,7 +1729,7 @@ void Window::process_commandline_option() {
 
     if (opt.opt->is("orientation")) {
       if (image()) {
-        vector<default_type> pos = parse_floats(opt[0]);
+        std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 4)
           throw Exception("-orientation option expects a comma-separated list of 4 floating-point values");
         set_orientation({float(pos[0]), float(pos[1]), float(pos[2]), float(pos[3])});
@@ -1740,7 +1740,7 @@ void Window::process_commandline_option() {
 
     if (opt.opt->is("voxel")) {
       if (image()) {
-        vector<default_type> pos = parse_floats(opt[0]);
+        std::vector<default_type> pos = parse_floats(opt[0]);
         if (pos.size() != 3)
           throw Exception("-voxel option expects a comma-separated list of 3 floating-point values");
         set_focus(image()->voxel2scanner() * Eigen::Vector3f{float(pos[0]), float(pos[1]), float(pos[2])});
@@ -1793,9 +1793,9 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("load")) {
-      vector<std::unique_ptr<MR::Header>> list;
+      std::vector<std::unique_ptr<MR::Header>> list;
       try {
-        list.push_back(make_unique<MR::Header>(MR::Header::open(opt[0])));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(opt[0])));
       } catch (Exception &e) {
         e.display();
       }
@@ -1828,7 +1828,7 @@ void Window::process_commandline_option() {
 
     if (opt.opt->is("intensity_range")) {
       if (image()) {
-        vector<default_type> param = parse_floats(opt[0]);
+        std::vector<default_type> param = parse_floats(opt[0]);
         if (param.size() != 2)
           throw Exception("-intensity_range options expects comma-separated list of two floating-point values");
         image()->set_windowing(param[0], param[1]);
@@ -1838,7 +1838,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("position")) {
-      vector<int> pos = parse_ints<int>(opt[0]);
+      std::vector<int> pos = parse_ints<int>(opt[0]);
       if (pos.size() != 2)
         throw Exception("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
       move(pos[0], pos[1]);

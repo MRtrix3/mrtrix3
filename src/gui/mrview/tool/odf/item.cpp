@@ -107,10 +107,10 @@ void ODF_Item::DixelPlugin::set_shell(size_t index) {
   if (index >= shells->count())
     throw Exception("Shell index is outside valid range");
   Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> shell_dirs((*shells)[index].count(), 3);
-  const vector<size_t> &volumes = (*shells)[index].get_volumes();
+  const std::vector<size_t> &volumes = (*shells)[index].get_volumes();
   for (size_t row = 0; row != volumes.size(); ++row)
     shell_dirs.row(row) = grad.row(volumes[row]).head<3>().cast<float>();
-  auto new_dirs = MR::make_unique<MR::DWI::Directions::Set>(shell_dirs);
+  auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(shell_dirs);
   std::swap(dirs, new_dirs);
   shell_index = index;
   dir_type = DixelPlugin::dir_t::DW_SCHEME;
@@ -119,13 +119,13 @@ void ODF_Item::DixelPlugin::set_shell(size_t index) {
 void ODF_Item::DixelPlugin::set_header() {
   if (!header_dirs.rows())
     throw Exception("No direction scheme defined in header");
-  auto new_dirs = MR::make_unique<MR::DWI::Directions::Set>(header_dirs);
+  auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(header_dirs);
   std::swap(dirs, new_dirs);
   dir_type = DixelPlugin::dir_t::HEADER;
 }
 
 void ODF_Item::DixelPlugin::set_internal(const size_t n) {
-  auto new_dirs = MR::make_unique<MR::DWI::Directions::Set>(n);
+  auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(n);
   std::swap(dirs, new_dirs);
   dir_type = DixelPlugin::dir_t::INTERNAL;
 }
@@ -137,14 +137,14 @@ void ODF_Item::DixelPlugin::set_none() {
 }
 
 void ODF_Item::DixelPlugin::set_from_file(const std::string &path) {
-  auto new_dirs = MR::make_unique<MR::DWI::Directions::Set>(path);
+  auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(path);
   std::swap(dirs, new_dirs);
   dir_type = DixelPlugin::dir_t::FILE;
 }
 
 Eigen::VectorXf ODF_Item::DixelPlugin::get_shell_data(const Eigen::VectorXf &values) const {
   assert(shells);
-  const vector<size_t> &volumes((*shells)[shell_index].get_volumes());
+  const std::vector<size_t> &volumes((*shells)[shell_index].get_volumes());
   Eigen::VectorXf result(volumes.size());
   for (size_t i = 0; i != volumes.size(); ++i)
     result[i] = values[volumes[i]];

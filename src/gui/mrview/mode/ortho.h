@@ -44,7 +44,7 @@ public slots:
   void set_show_as_row_slot(bool state);
 
 protected:
-  vector<Projection> projections;
+  std::vector<Projection> projections;
   int current_plane;
   GL::VertexBuffer frame_VB;
   GL::VertexArrayObject frame_VAO;

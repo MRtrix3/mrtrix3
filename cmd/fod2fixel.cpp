@@ -125,7 +125,7 @@ private:
         : dir(dir), integral(integral), max_peak_amp(max_peak_amp) {}
   };
 
-  class Primitive_FOD_lobes : public vector<Primitive_FOD_lobe> {
+  class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> {
   public:
     Primitive_FOD_lobes(const FOD_lobes &in, const index_type maxcount, bool dir_from_peak) : vox(in.vox) {
       const index_type N = maxcount ? std::min(index_type(in.size()), maxcount) : in.size();
@@ -142,7 +142,7 @@ private:
 
   Header H;
   std::string fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path;
-  vector<Primitive_FOD_lobes> lobes;
+  std::vector<Primitive_FOD_lobes> lobes;
   index_type fixel_count;
   index_type max_per_voxel;
   bool dir_from_peak;
@@ -177,7 +177,7 @@ void Segmented_FOD_receiver::commit() {
   index_header.size(3) = 2;
   index_header.datatype() = DataType::from<index_type>();
   index_header.datatype().set_byte_order_native();
-  index_image = make_unique<IndexImage>(IndexImage::create(index_filepath, index_header));
+  index_image = std::make_unique<IndexImage>(IndexImage::create(index_filepath, index_header));
 
   auto fixel_data_header(H);
   fixel_data_header.ndim() = 3;
@@ -191,7 +191,7 @@ void Segmented_FOD_receiver::commit() {
   if (dir_path.size()) {
     auto dir_header(fixel_data_header);
     dir_header.size(1) = 3;
-    dir_image = make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, dir_path), dir_header));
+    dir_image = std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, dir_path), dir_header));
     dir_image->index(1) = 0;
     Fixel::check_fixel_size(*index_image, *dir_image);
   }
@@ -199,7 +199,7 @@ void Segmented_FOD_receiver::commit() {
   if (afd_path.size()) {
     auto afd_header(fixel_data_header);
     afd_header.size(1) = 1;
-    afd_image = make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, afd_path), afd_header));
+    afd_image = std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, afd_path), afd_header));
     afd_image->index(1) = 0;
     Fixel::check_fixel_size(*index_image, *afd_image);
   }
@@ -207,8 +207,8 @@ void Segmented_FOD_receiver::commit() {
   if (peak_amp_path.size()) {
     auto peak_amp_header(fixel_data_header);
     peak_amp_header.size(1) = 1;
-    peak_amp_image =
-        make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, peak_amp_path), peak_amp_header));
+    peak_amp_image = std::make_unique<DataImage>(
+        DataImage::create(Path::join(fixel_directory_path, peak_amp_path), peak_amp_header));
     peak_amp_image->index(1) = 0;
     Fixel::check_fixel_size(*index_image, *peak_amp_image);
   }
@@ -216,7 +216,8 @@ void Segmented_FOD_receiver::commit() {
   if (disp_path.size()) {
     auto disp_header(fixel_data_header);
     disp_header.size(1) = 1;
-    disp_image = make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, disp_path), disp_header));
+    disp_image =
+        std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, disp_path), disp_header));
     disp_image->index(1) = 0;
     Fixel::check_fixel_size(*index_image, *disp_image);
   }

@@ -31,7 +31,7 @@ class ROI_Model : public ListModelBase {
 public:
   ROI_Model(QObject *parent) : ListModelBase(parent) {}
 
-  void load(vector<std::unique_ptr<MR::Header>> &);
+  void load(std::vector<std::unique_ptr<MR::Header>> &);
   void create(MR::Header &&);
 
   ROI_Item *get(QModelIndex &index) { return dynamic_cast<ROI_Item *>(items[index.row()].get()); }

@@ -77,7 +77,7 @@ public:
   ~Window();
 
   void parse_arguments();
-  void add_images(vector<std::unique_ptr<MR::Header>> &list);
+  void add_images(std::vector<std::unique_ptr<MR::Header>> &list);
 
   const QPoint &mouse_position() const { return mouse_position_; }
   const QPoint &mouse_displacement() const { return mouse_displacement_; }
@@ -315,7 +315,7 @@ private:
 
   Tool::Base *tool_has_focus;
 
-  vector<double> render_times;
+  std::vector<double> render_times;
   double best_FPS, best_FPS_time;
   bool show_FPS;
   size_t current_option;

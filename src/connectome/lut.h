@@ -94,7 +94,7 @@ private:
 // Convenience function for constructing a mapping from one lookup table to another
 // NOTE: If the TARGET LUT contains multiple entries for a particular index, and a
 //   mapping TO that index is required, the conversion is ill-formed.
-vector<node_t> get_lut_mapping(const LUT &, const LUT &);
+std::vector<node_t> get_lut_mapping(const LUT &, const LUT &);
 
 } // namespace Connectome
 } // namespace MR

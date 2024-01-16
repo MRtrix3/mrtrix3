@@ -96,7 +96,7 @@ void run() {
   Eigen::IOFormat fmt(Eigen::StreamPrecision, 0, ", ", "\n", "[ ", " ]", "", "");
   std::stringstream com_stringstream;
   com_stringstream << coms.format(fmt);
-  const vector<std::string> com_strings = split(com_stringstream.str(), "\n");
+  const std::vector<std::string> com_strings = split(com_stringstream.str(), "\n");
   assert(com_strings.size() == size_t(masses.size()));
 
   // Find width of first non-empty string, in order to centralise header label

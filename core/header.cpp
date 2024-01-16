@@ -67,8 +67,8 @@ namespace {
 std::string resolve_slice_timing(const std::string &one, const std::string &two) {
   if (one == "variable" || two == "variable")
     return "variable";
-  vector<std::string> one_split = split(one, ",");
-  vector<std::string> two_split = split(two, ",");
+  std::vector<std::string> one_split = split(one, ",");
+  std::vector<std::string> two_split = split(two, ",");
   if (one_split.size() != two_split.size()) {
     DEBUG("Slice timing vectors of inequal length");
     return "invalid";
@@ -132,10 +132,10 @@ void Header::merge_keyval(const Header &H) {
 namespace {
 
 std::string short_description(const Header &H) {
-  vector<std::string> dims;
+  std::vector<std::string> dims;
   for (size_t n = 0; n < H.ndim(); ++n)
     dims.push_back(str(H.size(n)));
-  vector<std::string> vox;
+  std::vector<std::string> vox;
   for (size_t n = 0; n < H.ndim(); ++n)
     vox.push_back(str(H.spacing(n)));
 
@@ -177,7 +177,7 @@ Header Header::open(const std::string &image_name) {
 
       // Convenient to know a priori which loop index corresponds to which image axis
       // This needs to detect unity-sized axes and flag the loop to concatenate data along that axis
-      vector<size_t> loopindex2axis;
+      std::vector<size_t> loopindex2axis;
       size_t axis;
       for (axis = 0; axis != H.ndim(); ++axis) {
         if (H.size(axis) == 1) {
@@ -194,10 +194,10 @@ Header Header::open(const std::string &image_name) {
       // Note that the very first image header has already been opened before this function is
       //   invoked for the first time; "vector<Header>& this_data" is used to propagate this
       //   data to deeper layers when necessary
-      std::function<void(Header &, vector<Header> &, const size_t)> import =
-          [&](Header &result, vector<Header> &this_data, const size_t loop_index) -> void {
+      std::function<void(Header &, std::vector<Header> &, const size_t)> import =
+          [&](Header &result, std::vector<Header> &this_data, const size_t loop_index) -> void {
         if (loop_index == num.size() - 1) {
-          vector<std::unique_ptr<ImageIO::Base>> ios;
+          std::vector<std::unique_ptr<ImageIO::Base>> ios;
           if (this_data.size())
             ios.push_back(std::move(this_data[0].io));
           for (size_t i = this_data.size(); i != size_t(num[loop_index]); ++i) {
@@ -220,7 +220,7 @@ Header Header::open(const std::string &image_name) {
         } // End branch for when loop_index is the maximum, ie. innermost loop
         // For each coordinate along this axis, need to concatenate headers from the
         //   next lower axis
-        vector<Header> nested_data;
+        std::vector<Header> nested_data;
         // The nested concatenation may still include the very first header that has already been read;
         //   this needs to be propagated through to the nested call
         if (this_data.size()) {
@@ -240,7 +240,7 @@ Header Header::open(const std::string &image_name) {
           result.io->merge(*this_data[i].io);
       };
 
-      vector<Header> headers;
+      std::vector<Header> headers;
       headers.push_back(std::move(H));
       import(H, headers, 0);
       H.name() = image_name;
@@ -261,7 +261,7 @@ Header Header::open(const std::string &image_name) {
 }
 
 namespace {
-inline bool check_strides_match(const vector<ssize_t> &a, const vector<ssize_t> &b) {
+inline bool check_strides_match(const std::vector<ssize_t> &a, const std::vector<ssize_t> &b) {
   size_t n = 0;
   for (; n < std::min(a.size(), b.size()); ++n)
     if (a[n] != b[n])
@@ -301,15 +301,15 @@ Header Header::create(const std::string &image_name, const Header &template_head
 
     File::NameParser parser;
     parser.parse(image_name);
-    vector<uint32_t> Pdim(parser.ndim());
+    std::vector<uint32_t> Pdim(parser.ndim());
 
-    vector<int> Hdim(H.ndim());
+    std::vector<int> Hdim(H.ndim());
     for (size_t i = 0; i < H.ndim(); ++i)
       Hdim[i] = H.size(i);
 
     H.name() = image_name;
 
-    const vector<ssize_t> strides(Stride::get_symbolic(H));
+    const std::vector<ssize_t> strides(Stride::get_symbolic(H));
     const Formats::Base **format_handler = Formats::handlers;
     for (; *format_handler; format_handler++)
       if ((*format_handler)->check(H, H.ndim() - Pdim.size()))
@@ -325,7 +325,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
                         "\" (unsupported file extension: " + basename.substr(extension_index) + ")");
     }
 
-    const vector<ssize_t> strides_aftercheck(Stride::get_symbolic(H));
+    const std::vector<ssize_t> strides_aftercheck(Stride::get_symbolic(H));
     if (!check_strides_match(strides, strides_aftercheck)) {
       INFO("output strides for image " + image_name + " modified to " + str(strides_aftercheck) +
            " - requested strides " + str(strides) + " are not supported in " + (*format_handler)->description +
@@ -371,7 +371,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
     }
 
     Header header(H);
-    vector<uint32_t> num(Pdim.size());
+    std::vector<uint32_t> num(Pdim.size());
 
     if (!is_dash(image_name))
       H.name() = parser.name(num);
@@ -461,7 +461,7 @@ Header Header::scratch(const Header &template_header, const std::string &label) 
   H.reset_intensity_scaling();
   H.sanitise();
   H.format_ = "scratch image";
-  H.io = make_unique<ImageIO::Scratch>(H);
+  H.io = std::make_unique<ImageIO::Scratch>(H);
   return H;
 }
 
@@ -684,7 +684,8 @@ void Header::realign_transform() {
   }
 }
 
-Header concatenate(const vector<Header> &headers, const size_t axis_to_concat, const bool permit_datatype_mismatch) {
+Header
+concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, const bool permit_datatype_mismatch) {
   Exception e("Unable to concatenate " + str(headers.size()) + " images along axis " + str(axis_to_concat) + ": ");
 
   auto datatype_test = [&](const bool condition) {

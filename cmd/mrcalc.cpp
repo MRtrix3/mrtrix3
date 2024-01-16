@@ -406,7 +406,7 @@ void usage() {
 
 class Evaluator;
 
-class Chunk : public vector<complex_type> {
+class Chunk : public std::vector<complex_type> {
 public:
   complex_type value;
 };
@@ -417,7 +417,7 @@ public:
   copy_ptr<Image<complex_type>> image;
 };
 
-class ThreadLocalStorage : public vector<ThreadLocalStorageItem> {
+class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
 public:
   void load(Chunk &chunk, Image<complex_type> &image) {
     for (size_t n = 0; n < image.ndim(); ++n)
@@ -451,7 +451,7 @@ public:
   }
 
   const Iterator *iter;
-  vector<size_t> axes, size;
+  std::vector<size_t> axes, size;
 
 private:
   size_t current;
@@ -547,7 +547,7 @@ public:
   const std::string id;
   const char *format;
   bool ZtoR, RtoZ;
-  vector<StackEntry> operands;
+  std::vector<StackEntry> operands;
 
   Chunk &evaluate(ThreadLocalStorage &storage) const {
     Chunk &in1(operands[0].evaluate(storage));
@@ -717,7 +717,7 @@ public:
 };
 
 template <class Operation>
-void unary_operation(const std::string &operation_name, vector<StackEntry> &stack, Operation operation) {
+void unary_operation(const std::string &operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.empty())
     throw Exception("no operand in stack for operation \"" + operation_name + "\"!");
   StackEntry &a(stack[stack.size() - 1]);
@@ -735,7 +735,7 @@ void unary_operation(const std::string &operation_name, vector<StackEntry> &stac
 }
 
 template <class Operation>
-void binary_operation(const std::string &operation_name, vector<StackEntry> &stack, Operation operation) {
+void binary_operation(const std::string &operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.size() < 2)
     throw Exception("not enough operands in stack for operation \"" + operation_name + "\"");
   StackEntry &a(stack[stack.size() - 2]);
@@ -754,7 +754,7 @@ void binary_operation(const std::string &operation_name, vector<StackEntry> &sta
 }
 
 template <class Operation>
-void ternary_operation(const std::string &operation_name, vector<StackEntry> &stack, Operation operation) {
+void ternary_operation(const std::string &operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.size() < 3)
     throw Exception("not enough operands in stack for operation \"" + operation_name + "\"");
   StackEntry &a(stack[stack.size() - 3]);
@@ -815,7 +815,9 @@ void get_header(const StackEntry &entry, Header &header) {
 
 class ThreadFunctor {
 public:
-  ThreadFunctor(const vector<size_t> &inner_axes, const StackEntry &top_of_stack, Image<complex_type> &output_image)
+  ThreadFunctor(const std::vector<size_t> &inner_axes,
+                const StackEntry &top_of_stack,
+                Image<complex_type> &output_image)
       : top_entry(top_of_stack), image(output_image), loop(Loop(inner_axes)) {
     storage.axes = loop.axes;
     storage.size.push_back(image.size(storage.axes[0]));
@@ -855,12 +857,12 @@ public:
 
   const StackEntry &top_entry;
   Image<complex_type> image;
-  decltype(Loop(vector<size_t>())) loop;
+  decltype(Loop(std::vector<size_t>())) loop;
   ThreadLocalStorage storage;
   size_t chunk_size;
 };
 
-void run_operations(const vector<StackEntry> &stack) {
+void run_operations(const std::vector<StackEntry> &stack) {
   Header header;
   get_header(stack[0], header);
 
@@ -966,7 +968,7 @@ public:
  **********************************************************************/
 
 void run() {
-  vector<StackEntry> stack;
+  std::vector<StackEntry> stack;
 
   for (int n = 1; n < App::argc; ++n) {
 

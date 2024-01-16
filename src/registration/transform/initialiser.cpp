@@ -28,7 +28,7 @@ void set_centre_via_mass(Image<default_type> &im1,
                          Image<default_type> &mask2,
                          Registration::Transform::Base &transform,
                          Registration::Transform::Init::LinearInitialisationParams &init,
-                         const vector<MultiContrastSetting> &contrast_settings) {
+                         const std::vector<MultiContrastSetting> &contrast_settings) {
 
   CONSOLE("initialising centre of rotation using centre of mass");
   Eigen::Vector3d im1_centre_mass, im2_centre_mass;
@@ -92,7 +92,7 @@ void initialise_using_image_moments(Image<default_type> &im1,
                                     Image<default_type> &mask2,
                                     Registration::Transform::Base &transform,
                                     Registration::Transform::Init::LinearInitialisationParams &init,
-                                    const vector<MultiContrastSetting> &contrast_settings) {
+                                    const std::vector<MultiContrastSetting> &contrast_settings) {
 
   Image<default_type> bogus_mask;
   CONSOLE("initialising using image moments");
@@ -132,7 +132,7 @@ void initialise_using_rotation_search(Image<default_type> &im1,
                                       Image<default_type> &mask2,
                                       Registration::Transform::Base &transform,
                                       Registration::Transform::Init::LinearInitialisationParams &init,
-                                      const vector<MultiContrastSetting> &contrast_settings);
+                                      const std::vector<MultiContrastSetting> &contrast_settings);
 
 void initialise_using_image_mass(Image<default_type> &im1,
                                  Image<default_type> &im2,
@@ -140,7 +140,7 @@ void initialise_using_image_mass(Image<default_type> &im1,
                                  Image<default_type> &mask2,
                                  Registration::Transform::Base &transform,
                                  Registration::Transform::Init::LinearInitialisationParams &init,
-                                 const vector<MultiContrastSetting> &contrast_settings);
+                                 const std::vector<MultiContrastSetting> &contrast_settings);
 } // namespace Init
 } // namespace Transform
 } // namespace Registration

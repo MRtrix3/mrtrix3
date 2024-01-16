@@ -30,7 +30,7 @@ struct FixelValue {
   float value_max = std::numeric_limits<float>::min();
   float lessthan = value_min, greaterthan = value_max;
   float current_min = value_min, current_max = value_max;
-  vector<float> buffer_store;
+  std::vector<float> buffer_store;
 
   void clear() {
     buffer_store.clear();

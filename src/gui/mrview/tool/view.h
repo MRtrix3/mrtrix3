@@ -44,8 +44,8 @@ public:
 
   QPushButton *clip_on_button[3], *clip_edit_button[3], *clip_modify_button;
 
-  vector<std::pair<GL::vec4, bool>> get_active_clip_planes() const;
-  vector<GL::vec4 *> get_clip_planes_to_be_edited() const;
+  std::vector<std::pair<GL::vec4, bool>> get_active_clip_planes() const;
+  std::vector<GL::vec4 *> get_clip_planes_to_be_edited() const;
   bool get_cliphighlightstate() const;
   bool get_clipintersectionmodestate() const;
 
@@ -137,8 +137,8 @@ private:
   void reset_light_box_gui_controls();
   void set_transparency_from_image();
 
-  void move_clip_planes_in_out(const ModelViewProjection &projection, vector<GL::vec4 *> &clip, float distance);
-  void rotate_clip_planes(vector<GL::vec4 *> &clip, const Eigen::Quaternionf &rot);
+  void move_clip_planes_in_out(const ModelViewProjection &projection, std::vector<GL::vec4 *> &clip, float distance);
+  void rotate_clip_planes(std::vector<GL::vec4 *> &clip, const Eigen::Quaternionf &rot);
 };
 
 } // namespace Tool

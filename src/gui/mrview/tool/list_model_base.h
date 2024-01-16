@@ -83,7 +83,7 @@ public:
     if (count < 1 || row < 0 || row > rowCount() || count != swapped_rows.second)
       return false;
 
-    vector<std::unique_ptr<Displayable>> swapped_items;
+    std::vector<std::unique_ptr<Displayable>> swapped_items;
 
     swapped_items.insert(swapped_items.begin(),
                          std::make_move_iterator(items.begin() + row),
@@ -140,7 +140,7 @@ public:
     endRemoveRows();
   }
 
-  vector<std::unique_ptr<Displayable>> items;
+  std::vector<std::unique_ptr<Displayable>> items;
 
 private:
   std::pair<int, int> swapped_rows;

@@ -142,7 +142,7 @@ void Image::update_texture2D(int plane, int slice) {
   const ssize_t xsize = header().size(x), ysize = header().size(y);
 
   type = gl::FLOAT;
-  vector<float> data;
+  std::vector<float> data;
 
   std::string cmap_name = ColourMap::maps[colourmap].name;
 
@@ -458,7 +458,7 @@ template <typename ValueType> inline void Image::copy_texture_3D() {
   } V(image);
 
   const size_t N = (format == gl::RED ? 1 : 3);
-  vector<ValueType> data(N * V.size(0) * V.size(1));
+  std::vector<ValueType> data(N * V.size(0) * V.size(1));
 
   ProgressBar progress("loading image data", V.size(2));
 
@@ -525,7 +525,7 @@ template <typename ValueType> inline void Image::copy_texture_3D() {
 }
 
 inline void Image::copy_texture_3D_complex() {
-  vector<float> data(2 * image.size(0) * image.size(1));
+  std::vector<float> data(2 * image.size(0) * image.size(1));
 
   ProgressBar progress("loading image data", image.size(2));
 

@@ -66,7 +66,7 @@ public:
   void clear() {
     voxels.clear();
     if (voxel_buffer.empty())
-      voxel_buffer.push_back(vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
+      voxel_buffer.push_back(std::vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
     next_voxel = &voxel_buffer[0][0];
     last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);
     current_chunk = 0;
@@ -75,7 +75,7 @@ public:
 protected:
   Functor func;
   std::map<Eigen::Vector3i, value_type *, IndexCompare> voxels;
-  vector<vector<value_type>> voxel_buffer;
+  std::vector<std::vector<value_type>> voxel_buffer;
   value_type *next_voxel;
   value_type *last_voxel;
   size_t current_chunk;
@@ -84,7 +84,7 @@ protected:
     if (next_voxel == last_voxel) {
       ++current_chunk;
       if (current_chunk >= voxel_buffer.size())
-        voxel_buffer.push_back(vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
+        voxel_buffer.push_back(std::vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
       assert(current_chunk < voxel_buffer.size());
       next_voxel = &voxel_buffer.back()[0];
       last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);

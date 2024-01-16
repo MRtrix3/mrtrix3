@@ -81,9 +81,9 @@ public:
     update_control_points();
   }
 
-  void set_extent(vector<size_t> extent_vector) { extent = std::move(extent_vector); }
+  void set_extent(std::vector<size_t> extent_vector) { extent = std::move(extent_vector); }
 
-  void set_mc_settings(const vector<MultiContrastSetting> &mc_vector) {
+  void set_mc_settings(const std::vector<MultiContrastSetting> &mc_vector) {
     mc_settings = mc_vector;
 
     // set multi contrast weights
@@ -125,7 +125,7 @@ public:
     control_points.block<3, 4>(0, 0).colwise() += centre;
   }
 
-  const vector<size_t> &get_extent() const { return extent; }
+  const std::vector<size_t> &get_extent() const { return extent; }
 
   template <class OptimiserType> void optimiser_update(OptimiserType &optim, const ssize_t overlap_count) {
     DEBUG("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
@@ -155,7 +155,7 @@ public:
     header.keyval()["trafo2"] = str(trafo2.matrix());
     auto check = Image<default_type>::create(image_path, header);
 
-    vector<uint32_t> no_oversampling(3, 1);
+    std::vector<uint32_t> no_oversampling(3, 1);
     Adapter::Reslice<Interp::Linear, Im1ImageType> im1_reslicer(im1_image, midway_image, trafo1, no_oversampling, NAN);
     Adapter::Reslice<Interp::Linear, Im2ImageType> im2_reslicer(im2_image, midway_image, trafo2, no_oversampling, NAN);
 
@@ -222,15 +222,15 @@ public:
 
   bool robust_estimate_subset;
   bool robust_estimate_use_score;
-  MR::vector<int> robust_estimate_subset_from;
-  MR::vector<int> robust_estimate_subset_size;
+  std::vector<int> robust_estimate_subset_from;
+  std::vector<int> robust_estimate_subset_size;
   Image<float> robust_estimate_score1, robust_estimate_score2;
   MR::copy_ptr<Interp::Linear<Image<float>>> robust_estimate_score1_interp;
   MR::copy_ptr<Interp::Linear<Image<float>>> robust_estimate_score2_interp;
 
   Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
-  vector<size_t> extent;
-  vector<MultiContrastSetting> mc_settings;
+  std::vector<size_t> extent;
+  std::vector<MultiContrastSetting> mc_settings;
 
   ProcImageType processed_image;
   MR::copy_ptr<ProcImageInterpolatorType> processed_image_interp;

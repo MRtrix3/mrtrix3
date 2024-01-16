@@ -54,8 +54,8 @@ void Image4D::reload_image_buffer() {
   fixel_val_store.clear();
 
   for (size_t axis = 0; axis < 3; ++axis) {
-    std::fill(slice_fixel_indices[axis].begin(), slice_fixel_indices[axis].end(), vector<GLint>());
-    std::fill(slice_fixel_sizes[axis].begin(), slice_fixel_sizes[axis].end(), vector<GLsizei>());
+    std::fill(slice_fixel_indices[axis].begin(), slice_fixel_indices[axis].end(), std::vector<GLint>());
+    std::fill(slice_fixel_sizes[axis].begin(), slice_fixel_sizes[axis].end(), std::vector<GLsizei>());
     std::fill(slice_fixel_counts[axis].begin(), slice_fixel_counts[axis].end(), 0);
   }
 

@@ -35,9 +35,9 @@ size_t determine_upsample_ratio(const Header &, const std::string &, const float
 size_t determine_upsample_ratio(const Header &, const Tractography::Properties &, const float);
 
 #define MAX_TRACKS_READ_FOR_HEADER 1000000
-void generate_header(Header &, const std::string &, const vector<default_type> &);
+void generate_header(Header &, const std::string &, const std::vector<default_type> &);
 
-void oversample_header(Header &, const vector<default_type> &);
+void oversample_header(Header &, const std::vector<default_type> &);
 
 } // namespace Mapping
 } // namespace Tractography

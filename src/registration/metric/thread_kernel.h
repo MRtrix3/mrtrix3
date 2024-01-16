@@ -318,7 +318,7 @@ protected:
 
 template <class MetricType, class ParamType> struct StochasticThreadKernel {
 public:
-  StochasticThreadKernel(const vector<size_t> &inner_axes,
+  StochasticThreadKernel(const std::vector<size_t> &inner_axes,
                          const default_type density,
                          const MetricType &metric,
                          const ParamType &parameters,
@@ -361,7 +361,7 @@ public:
   }
 
 protected:
-  vector<size_t> inner_axes;
+  std::vector<size_t> inner_axes;
   default_type density;
   MetricType metric;
   ParamType params;

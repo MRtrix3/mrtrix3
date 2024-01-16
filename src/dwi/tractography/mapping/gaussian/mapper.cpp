@@ -32,7 +32,7 @@ void TrackMapper::set_factor(const Streamline<> &tck, SetVoxelExtras &out) const
 
 void TrackMapper::gaussian_smooth_factors(const Streamline<> &tck) const {
 
-  vector<default_type> unsmoothed(factors);
+  std::vector<default_type> unsmoothed(factors);
 
   for (size_t i = 0; i != unsmoothed.size(); ++i) {
 

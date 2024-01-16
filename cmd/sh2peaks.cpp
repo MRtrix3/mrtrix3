@@ -145,7 +145,7 @@ public:
             Eigen::Matrix<value_type, Eigen::Dynamic, 2> &directions,
             int lmax,
             int npeaks,
-            vector<Direction> true_peaks,
+            std::vector<Direction> true_peaks,
             value_type threshold,
             Image<value_type> ipeaks_data,
             bool use_precomputer)
@@ -171,7 +171,7 @@ public:
       return true;
     }
 
-    vector<Direction> all_peaks;
+    std::vector<Direction> all_peaks;
 
     for (size_t i = 0; i < size_t(dirs.rows()); i++) {
       Direction p(dirs(i, 0), dirs(i, 1));
@@ -245,9 +245,9 @@ private:
   Image<value_type> dirs_vox;
   Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
   int lmax, npeaks;
-  vector<Direction> true_peaks;
+  std::vector<Direction> true_peaks;
   value_type threshold;
-  vector<Direction> peaks_out;
+  std::vector<Direction> peaks_out;
   Image<value_type> ipeaks_vox;
   Math::SH::PrecomputedAL<value_type> *precomputer;
 
@@ -299,7 +299,7 @@ void run() {
   int npeaks = get_option_value("num", DEFAULT_NPEAKS);
 
   opt = get_options("direction");
-  vector<Direction> true_peaks;
+  std::vector<Direction> true_peaks;
   for (size_t n = 0; n < opt.size(); ++n) {
     Direction p(Math::pi * to<float>(opt[n][0]) / 180.0, Math::pi * float(opt[n][1]) / 180.0);
     true_peaks.push_back(p);

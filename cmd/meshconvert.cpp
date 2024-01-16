@@ -63,7 +63,7 @@ void run() {
   auto opt = get_options("transform");
   if (opt.size()) {
     auto H = Header::open(opt[0][1]);
-    auto transform = make_unique<Surface::Filter::VertexTransform>(H);
+    auto transform = std::make_unique<Surface::Filter::VertexTransform>(H);
     switch (int(opt[0][0])) {
     case 0:
       transform->set_first2real();

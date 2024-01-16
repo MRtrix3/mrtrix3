@@ -29,7 +29,7 @@ matrix_type fwe_pvalue(const matrix_type &null_distributions, const matrix_type 
   assert(null_distributions.cols() == 1 || null_distributions.cols() == statistics.cols());
   matrix_type pvalues(statistics.rows(), statistics.cols());
 
-  auto s2p = [](const vector<value_type> &null_dist, const matrix_type::ConstColXpr in, matrix_type::ColXpr out) {
+  auto s2p = [](const std::vector<value_type> &null_dist, const matrix_type::ConstColXpr in, matrix_type::ColXpr out) {
     for (index_type element = 0; element != index_type(in.size()); ++element) {
       if (in[element] > 0.0) {
         value_type pvalue = 1.0;
@@ -48,7 +48,7 @@ matrix_type fwe_pvalue(const matrix_type &null_distributions, const matrix_type 
 
   if (null_distributions.cols() == 1) { // strong fwe control
 
-    vector<value_type> sorted_null_dist;
+    std::vector<value_type> sorted_null_dist;
     sorted_null_dist.reserve(null_distributions.rows());
     for (index_type shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
       sorted_null_dist.push_back(null_distributions(shuffle, 0));
@@ -59,7 +59,7 @@ matrix_type fwe_pvalue(const matrix_type &null_distributions, const matrix_type 
   } else { // weak fwe control
 
     for (index_type hypothesis = 0; hypothesis != statistics.cols(); ++hypothesis) {
-      vector<value_type> sorted_null_dist;
+      std::vector<value_type> sorted_null_dist;
       sorted_null_dist.reserve(null_distributions.rows());
       for (index_type shuffle = 0; shuffle != null_distributions.rows(); ++shuffle)
         sorted_null_dist.push_back(null_distributions(shuffle, hypothesis));

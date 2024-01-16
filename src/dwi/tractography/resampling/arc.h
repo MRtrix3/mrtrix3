@@ -46,7 +46,7 @@ private:
     value_type d;
   };
 
-  vector<Plane> planes;
+  std::vector<Plane> planes;
 
 public:
   Arc(const size_t n, const point_type &s, const point_type &e)

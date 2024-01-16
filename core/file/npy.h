@@ -46,7 +46,7 @@ KeyValues parse_dict(std::string);
 struct ReadInfo {
   DataType data_type;
   bool column_major;
-  vector<ssize_t> shape;
+  std::vector<ssize_t> shape;
   KeyValues keyval;
   int64_t data_offset;
 };
@@ -84,7 +84,7 @@ struct WriteInfo {
   DataType data_type;
 };
 
-WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, const vector<size_t> &shape);
+WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, const std::vector<size_t> &shape);
 
 template <class ContType> void save_vector(const ContType &data, const std::string &path) {
   using ValueType = typename container_value_type<ContType>::type;

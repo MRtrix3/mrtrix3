@@ -60,7 +60,7 @@ public:
   // As stored within the header of an existing .tck file
   std::multimap<std::string, std::string> prior_rois;
 
-  vector<std::string> comments;
+  std::vector<std::string> comments;
 
   friend std::ostream &operator<<(std::ostream &stream, const Properties &P);
 };

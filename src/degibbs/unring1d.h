@@ -131,7 +131,7 @@ public:
 private:
   Math::FFT1D &fft;
   Eigen::MatrixXcd shifted;
-  vector<int> shifts;
+  std::vector<int> shifts;
 };
 
 } // namespace Degibbs

@@ -75,7 +75,7 @@ private:
   default_type min, max, bin_width;
   size_t num_bins;
   const bool ignore_zero;
-  vector<default_type> data;
+  std::vector<default_type> data;
 
   default_type get_iqr();
 };

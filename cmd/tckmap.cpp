@@ -255,7 +255,7 @@ void run() {
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
-  vector<default_type> voxel_size = get_option_value("vox", vector<default_type>());
+  std::vector<default_type> voxel_size = get_option_value("vox", std::vector<default_type>());
 
   if (voxel_size.size() == 1) {
     auto v = voxel_size.front();

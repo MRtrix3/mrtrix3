@@ -34,13 +34,13 @@ namespace Editing {
 class Loader {
 
 public:
-  Loader(const vector<std::string> &files)
+  Loader(const std::vector<std::string> &files)
       : file_list(files), dummy_properties(), reader(new Reader<>(file_list[0], dummy_properties)), file_index(0) {}
 
   bool operator()(Streamline<> &);
 
 private:
-  const vector<std::string> &file_list;
+  const std::vector<std::string> &file_list;
   Properties dummy_properties;
   std::unique_ptr<Reader<>> reader;
   size_t file_index;

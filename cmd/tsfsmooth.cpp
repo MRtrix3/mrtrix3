@@ -51,7 +51,7 @@ void run() {
 
   float stdev = get_option_value("stdev", DEFAULT_SMOOTHING);
 
-  vector<float> kernel(2 * ceil(2.5 * stdev) + 1, 0);
+  std::vector<float> kernel(2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;
   float radius = (kernel.size() - 1.0) / 2.0;
   for (size_t c = 0; c < kernel.size(); ++c) {

@@ -64,7 +64,7 @@ public:
 
 protected:
   using base_type::parent;
-  const vector<ssize_t> from_, size_;
+  const std::vector<ssize_t> from_, size_;
   transform_type transform_;
 };
 

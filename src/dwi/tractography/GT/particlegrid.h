@@ -37,7 +37,7 @@ namespace GT {
  */
 class ParticleGrid {
 public:
-  using ParticleVectorType = vector<Particle *>;
+  using ParticleVectorType = std::vector<Particle *>;
 
   template <class HeaderType> ParticleGrid(const HeaderType &image) {
     DEBUG("Initialise particle grid.");
@@ -79,7 +79,7 @@ public:
 protected:
   std::mutex mutex;
   ParticlePool pool;
-  vector<ParticleVectorType> grid;
+  std::vector<ParticleVectorType> grid;
   Math::RNG rng;
   transform_type T_s2g;
   size_t dims[3];

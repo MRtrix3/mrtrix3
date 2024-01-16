@@ -94,14 +94,14 @@ public:
   void clear() {
     std::lock_guard<std::mutex> lock(mutex);
     pool.clear();
-    std::stack<Particle *, deque<Particle *>> e{};
+    std::stack<Particle *, std::deque<Particle *>> e{};
     avail.swap(e);
   }
 
 protected:
   std::mutex mutex;
-  deque<Particle> pool;
-  std::stack<Particle *, deque<Particle *>> avail;
+  std::deque<Particle> pool;
+  std::stack<Particle *, std::deque<Particle *>> avail;
   Math::RNG rng;
 };
 
