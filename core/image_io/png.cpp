@@ -69,7 +69,7 @@ void PNG::unload(const Header &header) {
       }
     }
     DEBUG("deleting buffer for PNG image \"" + header.name() + "\"...");
-    addresses[0].release();
+    addresses[0].reset();
   }
 }
 
