@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -77,7 +77,7 @@ void run() {
   out_header.size(3) = n_sh_coeff;
 
   auto sh_image = Image<float>::create(argument[1], out_header);
-  vector<default_type> sh_values;
+  std::vector<default_type> sh_values;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> apsf_values;
 
   for (auto l1 = Loop("converting fixel image to spherical harmonic image", in_index_image)(in_index_image, sh_image);

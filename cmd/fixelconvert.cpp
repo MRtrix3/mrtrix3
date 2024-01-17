@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -204,7 +204,7 @@ void convert_new2old() {
 
   Header H_index = Fixel::find_index_header(input_fixel_directory);
   Header H_dirs = Fixel::find_directions_header(input_fixel_directory);
-  vector<Header> H_data = Fixel::find_data_headers(input_fixel_directory, H_index, false);
+  std::vector<Header> H_data = Fixel::find_data_headers(input_fixel_directory, H_index, false);
   size_t size_index = H_data.size(), value_index = H_data.size();
 
   for (size_t i = 0; i != H_data.size(); ++i) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -98,7 +98,7 @@ protected:
     window().updateGL();
   }
 
-  void load(vector<std::unique_ptr<MR::Header>> &list);
+  void load(std::vector<std::unique_ptr<MR::Header>> &list);
   void save(ROI_Item *);
 
   int normal2axis(const Eigen::Vector3f &, const ROI_Item &) const;

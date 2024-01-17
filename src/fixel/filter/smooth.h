@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -67,7 +67,7 @@ public:
 protected:
   Image<bool> mask_image;
   Matrix::Reader matrix;
-  vector<Eigen::Vector3f> fixel_positions;
+  std::vector<Eigen::Vector3f> fixel_positions;
   float stdev, gaussian_const1, gaussian_const2, threshold;
 };
 //! @}

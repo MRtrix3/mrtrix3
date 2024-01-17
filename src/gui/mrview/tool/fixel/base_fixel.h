@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -214,28 +214,28 @@ protected:
   virtual FixelValue &get_fixel_value(const std::string &key) const { return fixel_values[key]; }
 
   MR::Header header;
-  vector<std::string> colour_types;
-  vector<std::string> value_types;
-  vector<std::string> threshold_types;
+  std::vector<std::string> colour_types;
+  std::vector<std::string> value_types;
+  std::vector<std::string> threshold_types;
   mutable std::map<const std::string, FixelValue> fixel_values;
   mutable FixelValue dummy_fixel_val_state;
 
-  vector<Eigen::Vector3f> pos_buffer_store;
-  vector<Eigen::Vector3f> dir_buffer_store;
+  std::vector<Eigen::Vector3f> pos_buffer_store;
+  std::vector<Eigen::Vector3f> dir_buffer_store;
 
-  vector<Eigen::Vector3f> regular_grid_buffer_pos;
-  vector<Eigen::Vector3f> regular_grid_buffer_dir;
-  vector<float> regular_grid_buffer_colour;
-  vector<float> regular_grid_buffer_val;
-  vector<float> regular_grid_buffer_threshold;
+  std::vector<Eigen::Vector3f> regular_grid_buffer_pos;
+  std::vector<Eigen::Vector3f> regular_grid_buffer_dir;
+  std::vector<float> regular_grid_buffer_colour;
+  std::vector<float> regular_grid_buffer_val;
+  std::vector<float> regular_grid_buffer_threshold;
 
-  vector<vector<vector<GLint>>> slice_fixel_indices;
-  vector<vector<vector<GLsizei>>> slice_fixel_sizes;
-  vector<vector<GLsizei>> slice_fixel_counts;
+  std::vector<std::vector<std::vector<GLint>>> slice_fixel_indices;
+  std::vector<std::vector<std::vector<GLsizei>>> slice_fixel_sizes;
+  std::vector<std::vector<GLsizei>> slice_fixel_counts;
 
   // Flattened buffer used when cropping to slice
   // To support off-axis rendering, we maintain dict mapping voxels to buffer_pos indices
-  std::unordered_map<std::array<int, 3>, vector<GLint>, IntPointHasher> voxel_to_indices_map;
+  std::unordered_map<std::array<int, 3>, std::vector<GLint>, IntPointHasher> voxel_to_indices_map;
 
   FixelColourType colour_type;
   FixelScaleType scale_type;

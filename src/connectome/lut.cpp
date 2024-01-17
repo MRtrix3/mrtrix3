@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -119,7 +119,7 @@ LUT::file_format LUT::guess_file_format(const std::string &path) {
   std::ifstream in_lut(path, std::ios_base::in);
   if (!in_lut)
     throw Exception("Unable to open lookup table file");
-  vector<Column> columns;
+  std::vector<Column> columns;
   std::string line;
   size_t line_counter = 0;
   while (std::getline(in_lut, line)) {
@@ -267,10 +267,10 @@ void LUT::check_and_insert(const node_t index, const LUT_node &data) {
   insert(std::make_pair(index, data));
 }
 
-vector<node_t> get_lut_mapping(const LUT &in, const LUT &out) {
+std::vector<node_t> get_lut_mapping(const LUT &in, const LUT &out) {
   if (in.empty())
-    return vector<node_t>();
-  vector<node_t> map(in.rbegin()->first + 1, 0);
+    return std::vector<node_t>();
+  std::vector<node_t> map(in.rbegin()->first + 1, 0);
   for (const auto &node_in : in) {
     node_t target = 0;
     for (const auto &node_out : out) {
@@ -278,7 +278,7 @@ vector<node_t> get_lut_mapping(const LUT &in, const LUT &out) {
         if (target) {
           throw Exception("Cannot perform LUT conversion: Node " + str(node_in.first) + " (" +
                           node_in.second.get_name() + ") has multiple possible targets");
-          return vector<node_t>();
+          return std::vector<node_t>();
         }
         target = node_out.first;
         break;

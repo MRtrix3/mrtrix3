@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -53,43 +53,44 @@ private:
 };
 
 // A class for track scalars
-template <typename ValueType = float> class TrackScalar : public vector<ValueType>, public DataIndex {
+template <typename ValueType = float> class TrackScalar : public std::vector<ValueType>, public DataIndex {
 public:
   using value_type = ValueType;
-  using vector<ValueType>::vector;
+  using std::vector<ValueType>::vector;
   TrackScalar() = default;
   TrackScalar(const TrackScalar &) = default;
-  TrackScalar(TrackScalar &&that) : vector<value_type>(std::move(that)), DataIndex(std::move(that)) {}
+  TrackScalar(TrackScalar &&that) : std::vector<value_type>(std::move(that)), DataIndex(std::move(that)) {}
   TrackScalar &operator=(const TrackScalar &that) = default;
   void clear() {
-    vector<ValueType>::clear();
+    std::vector<ValueType>::clear();
     DataIndex::clear();
   }
 };
 
 template <typename ValueType = float>
-class Streamline : public vector<Eigen::Matrix<ValueType, 3, 1>>, public DataIndex {
+class Streamline : public std::vector<Eigen::Matrix<ValueType, 3, 1>>, public DataIndex {
 public:
   using point_type = Eigen::Matrix<ValueType, 3, 1>;
   using value_type = ValueType;
 
   Streamline() : weight(1.0f) {}
 
-  Streamline(size_t size) : vector<point_type>(size), weight(value_type(1.0)) {}
+  Streamline(size_t size) : std::vector<point_type>(size), weight(value_type(1.0)) {}
 
-  Streamline(size_t size, const point_type &fill) : vector<point_type>(size, fill), weight(value_type(1.0)) {}
+  Streamline(size_t size, const point_type &fill) : std::vector<point_type>(size, fill), weight(value_type(1.0)) {}
 
   Streamline(const Streamline &) = default;
   Streamline &operator=(const Streamline &that) = default;
 
-  Streamline(Streamline &&that) : vector<point_type>(std::move(that)), DataIndex(std::move(that)), weight(that.weight) {
+  Streamline(Streamline &&that)
+      : std::vector<point_type>(std::move(that)), DataIndex(std::move(that)), weight(that.weight) {
     that.weight = 1.0f;
   }
 
-  Streamline(const vector<point_type> &tck) : vector<point_type>(tck), DataIndex(), weight(1.0) {}
+  Streamline(const std::vector<point_type> &tck) : std::vector<point_type>(tck), DataIndex(), weight(1.0) {}
 
   Streamline &operator=(Streamline &&that) {
-    vector<point_type>::operator=(std::move(that));
+    std::vector<point_type>::operator=(std::move(that));
     DataIndex::operator=(std::move(that));
     weight = that.weight;
     that.weight = 0.0f;
@@ -97,7 +98,7 @@ public:
   }
 
   void clear() {
-    vector<point_type>::clear();
+    std::vector<point_type>::clear();
     DataIndex::clear();
     weight = 1.0;
   }
@@ -108,7 +109,7 @@ public:
   float weight;
 };
 
-template <typename PointType> typename PointType::Scalar length(const vector<PointType> &tck) {
+template <typename PointType> typename PointType::Scalar length(const std::vector<PointType> &tck) {
   if (tck.empty())
     return std::numeric_limits<typename PointType::Scalar>::quiet_NaN();
   typename PointType::Scalar value = typename PointType::Scalar(0);

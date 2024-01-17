@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -255,7 +255,7 @@ void run() {
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
-  vector<default_type> voxel_size = get_option_value("vox", vector<default_type>());
+  std::vector<default_type> voxel_size = get_option_value("vox", std::vector<default_type>());
 
   if (voxel_size.size() == 1) {
     auto v = voxel_size.front();

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,9 +25,9 @@ SyncManager::SyncManager() : QObject(0) {
   try {
     ips = new InterprocessCommunicator(); // will throw exception if it fails to set up a server
     connect(ips,
-            SIGNAL(SyncDataReceived(vector<std::shared_ptr<QByteArray>>)),
+            SIGNAL(SyncDataReceived(std::vector<std::shared_ptr<QByteArray>>)),
             this,
-            SLOT(OnIPSDataReceived(vector<std::shared_ptr<QByteArray>>)));
+            SLOT(OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>>)));
   } catch (...) {
     ips = 0;
     WARN("Sync set up failed.");
@@ -66,7 +66,7 @@ bool SyncManager::SendData(DataKey code, QByteArray dat) {
 /**
  * Receives a signal from another process that a value to sync has changed
  */
-void SyncManager::OnIPSDataReceived(vector<std::shared_ptr<QByteArray>> all_messages) {
+void SyncManager::OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all_messages) {
   // WARNING This code assumes that the order of syncing operations does not matter
 
   // We have a list of messages found

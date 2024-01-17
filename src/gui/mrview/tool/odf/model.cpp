@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,15 +23,15 @@ namespace GUI {
 namespace MRView {
 namespace Tool {
 
-size_t ODF_Model::add_items(const vector<std::string> &list,
+size_t ODF_Model::add_items(const std::vector<std::string> &list,
                             const odf_type_t type,
                             const bool colour_by_direction,
                             const bool hide_negative_lobes,
                             const float scale) {
-  vector<std::unique_ptr<MR::Header>> hlist;
+  std::vector<std::unique_ptr<MR::Header>> hlist;
   for (size_t i = 0; i < list.size(); ++i) {
     try {
-      auto header = make_unique<MR::Header>(MR::Header::open(list[i]));
+      auto header = std::make_unique<MR::Header>(MR::Header::open(list[i]));
       switch (type) {
       case odf_type_t::SH:
         Math::SH::check(*header);
@@ -59,7 +59,7 @@ size_t ODF_Model::add_items(const vector<std::string> &list,
     beginInsertRows(QModelIndex(), items.size(), items.size() + hlist.size());
     for (size_t i = 0; i < hlist.size(); ++i)
       items.push_back(
-          make_unique<ODF_Item>(std::move(*hlist[i]), type, scale, hide_negative_lobes, colour_by_direction));
+          std::make_unique<ODF_Item>(std::move(*hlist[i]), type, scale, hide_negative_lobes, colour_by_direction));
     endInsertRows();
   }
 

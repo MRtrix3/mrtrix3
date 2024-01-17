@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -57,7 +57,7 @@ struct Properties {
   double ppot;
 
   Eigen::MatrixXf resp_WM;
-  vector<Eigen::VectorXf> resp_ISO;
+  std::vector<Eigen::VectorXf> resp_ISO;
 };
 
 class Stats {

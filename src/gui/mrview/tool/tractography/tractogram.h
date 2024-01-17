@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -129,19 +129,19 @@ private:
   //   streamline tangents and store them; then, if colour by
   //   endpoint is requested, generate the buffer based on these
   //   and the known track sizes
-  vector<Eigen::Vector3f> endpoint_tangents;
+  std::vector<Eigen::Vector3f> endpoint_tangents;
 
-  vector<GLuint> vertex_buffers;
-  vector<GLuint> vertex_array_objects;
-  vector<GLuint> colour_buffers;
-  vector<GLuint> intensity_scalar_buffers;
-  vector<GLuint> threshold_scalar_buffers;
+  std::vector<GLuint> vertex_buffers;
+  std::vector<GLuint> vertex_array_objects;
+  std::vector<GLuint> colour_buffers;
+  std::vector<GLuint> intensity_scalar_buffers;
+  std::vector<GLuint> threshold_scalar_buffers;
   MR::DWI::Tractography::Properties properties;
-  vector<vector<GLint>> track_starts;
-  vector<vector<GLint>> track_sizes;
-  vector<vector<GLint>> original_track_sizes;
-  vector<vector<GLint>> original_track_starts;
-  vector<size_t> num_tracks_per_buffer;
+  std::vector<std::vector<GLint>> track_starts;
+  std::vector<std::vector<GLint>> track_sizes;
+  std::vector<std::vector<GLint>> original_track_sizes;
+  std::vector<std::vector<GLint>> original_track_starts;
+  std::vector<size_t> num_tracks_per_buffer;
   GLint sample_stride;
   bool vao_dirty;
 
@@ -149,13 +149,15 @@ private:
   //   may be used for streamline colouring and thresholding
   float threshold_min, threshold_max;
 
-  void
-  load_tracks_onto_GPU(vector<Eigen::Vector3f> &buffer, vector<GLint> &starts, vector<GLint> &sizes, size_t &tck_count);
+  void load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
+                            std::vector<GLint> &starts,
+                            std::vector<GLint> &sizes,
+                            size_t &tck_count);
 
-  void load_end_colours_onto_GPU(vector<Eigen::Vector3f> &);
+  void load_end_colours_onto_GPU(std::vector<Eigen::Vector3f> &);
 
-  void load_intensity_scalars_onto_GPU(vector<float> &buffer, size_t &tck_count);
-  void load_threshold_scalars_onto_GPU(vector<float> &buffer, size_t &tck_count);
+  void load_intensity_scalars_onto_GPU(std::vector<float> &buffer, size_t &tck_count);
+  void load_threshold_scalars_onto_GPU(std::vector<float> &buffer, size_t &tck_count);
 
   void render_streamlines();
 

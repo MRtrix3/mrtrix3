@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -61,7 +61,7 @@ class Tractography::Model : public ListModelBase {
 public:
   Model(QObject *parent) : ListModelBase(parent) {}
 
-  void add_items(vector<std::string> &filenames, Tractography &tractography_tool) {
+  void add_items(std::vector<std::string> &filenames, Tractography &tractography_tool) {
 
     for (size_t i = 0; i < filenames.size(); ++i) {
       Tractogram *tractogram = new Tractogram(tractography_tool, filenames[i]);
@@ -345,12 +345,12 @@ size_t Tractography::visible_number_colourbars() {
 
 void Tractography::tractogram_open_slot() {
 
-  vector<std::string> list =
+  std::vector<std::string> list =
       Dialog::File::get_files(this, "Select tractograms to open", "Tractograms (*.tck)", &current_folder);
   add_tractogram(list);
 }
 
-void Tractography::add_tractogram(vector<std::string> &list) {
+void Tractography::add_tractogram(std::vector<std::string> &list) {
   if (list.empty()) {
     return;
   }
@@ -367,7 +367,7 @@ void Tractography::dropEvent(QDropEvent *event) {
 
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
-    vector<std::string> list;
+    std::vector<std::string> list;
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       list.push_back(urlList.at(i).path().toUtf8().constData());
@@ -833,7 +833,7 @@ void Tractography::select_last_added_tractogram() {
 bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("tractography.load")) {
-    vector<std::string> list(1, std::string(opt[0]));
+    std::vector<std::string> list(1, std::string(opt[0]));
     add_tractogram(list);
     return true;
   }
@@ -865,7 +865,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
   if (opt.opt->is("tractography.tsf_range")) {
     try {
       // Set the tsf visualisation range
-      vector<default_type> range;
+      std::vector<default_type> range;
       if (process_commandline_option_tsf_option(opt, 2, range))
         scalar_file_options->set_scaling(range[0], range[1]);
     } catch (Exception &E) {
@@ -877,7 +877,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
   if (opt.opt->is("tractography.tsf_thresh")) {
     try {
       // Set the tsf visualisation threshold
-      vector<default_type> range;
+      std::vector<default_type> range;
       if (process_commandline_option_tsf_option(opt, 2, range))
         scalar_file_options->set_threshold(TrackThresholdType::UseColourFile, range[0], range[1]);
     } catch (Exception &E) {
@@ -1030,7 +1030,7 @@ bool Tractography::process_commandline_option_tsf_check_tracto_loaded() {
  * parsed from the options, or null on fail*/
 bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOption &opt,
                                                          uint reqArgSize,
-                                                         vector<default_type> &range) {
+                                                         std::vector<default_type> &range) {
   if (process_commandline_option_tsf_check_tracto_loaded()) {
     QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
     range = opt[0].as_sequence_float();

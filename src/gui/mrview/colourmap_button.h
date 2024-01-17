@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,7 +49,7 @@ public:
   void set_scale_inverted(bool yesno);
   void set_show_colourbar(bool yesno);
   void set_fixed_colour();
-  vector<QAction *> colourmap_actions;
+  std::vector<QAction *> colourmap_actions;
   void open_menu(const QPoint &p) { colourmap_menu->exec(p); }
 
 private:
@@ -59,8 +59,8 @@ private:
   void init_special_colour_menu_items(bool create_shortcuts);
   void init_customise_state_menu_items();
 
-  static const vector<ColourMap::Entry> core_colourmaps_entries;
-  static const vector<ColourMap::Entry> special_colourmaps_entries;
+  static const std::vector<ColourMap::Entry> core_colourmaps_entries;
+  static const std::vector<ColourMap::Entry> special_colourmaps_entries;
 
   ColourMapButtonObserver &observer;
   QActionGroup *core_colourmaps_actions;

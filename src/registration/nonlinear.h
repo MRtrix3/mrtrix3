@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,7 +75,7 @@ public:
       im2_to_mid_linear = linear_transform.get_transform_half_inverse();
 
       INFO("Estimating halfway space");
-      vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
+      std::vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
       // define transfomations that will be applied to the image header when the common space is calculated
       midway_image_header = compute_minimum_average_header(
           im1_image, im2_image, linear_transform.get_transform_half_inverse(), linear_transform.get_transform_half());
@@ -175,19 +175,19 @@ public:
       field_header.ndim() = 4;
       field_header.size(3) = 3;
 
-      im1_to_mid_new = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
-      im2_to_mid_new = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
-      im1_update = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
-      im2_update = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
-      im1_update_new = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
-      im2_update_new = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+      im1_to_mid_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+      im2_to_mid_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+      im1_update = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+      im2_update = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+      im1_update_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+      im2_update_new = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
 
       if (!is_initialised) {
         if (level == 0) {
-          im1_to_mid = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
-          im2_to_mid = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
-          mid_to_im1 = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
-          mid_to_im2 = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+          im1_to_mid = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+          im2_to_mid = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+          mid_to_im1 = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+          mid_to_im2 = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
         } else {
           DEBUG("Upsampling fields");
           {
@@ -383,31 +383,31 @@ public:
     field_header.ndim() = 4;
     field_header.size(3) = 3;
 
-    im1_to_mid = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+    im1_to_mid = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
     input_warps.index(4) = 0;
     threaded_copy(input_warps, *im1_to_mid, 0, 4);
     Registration::Warp::deformation2displacement(*im1_to_mid, *im1_to_mid);
 
-    mid_to_im1 = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+    mid_to_im1 = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
     input_warps.index(4) = 1;
     threaded_copy(input_warps, *mid_to_im1, 0, 4);
     Registration::Warp::deformation2displacement(*mid_to_im1, *mid_to_im1);
 
-    im2_to_mid = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+    im2_to_mid = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
     input_warps.index(4) = 2;
     threaded_copy(input_warps, *im2_to_mid, 0, 4);
     Registration::Warp::deformation2displacement(*im2_to_mid, *im2_to_mid);
 
-    mid_to_im2 = make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
+    mid_to_im2 = std::make_shared<Image<default_type>>(Image<default_type>::scratch(field_header));
     input_warps.index(4) = 3;
     threaded_copy(input_warps, *mid_to_im2, 0, 4);
     Registration::Warp::deformation2displacement(*mid_to_im2, *mid_to_im2);
     is_initialised = true;
   }
 
-  void set_max_iter(const vector<uint32_t> &maxiter) { max_iter = maxiter; }
+  void set_max_iter(const std::vector<uint32_t> &maxiter) { max_iter = maxiter; }
 
-  void set_scale_factor(const vector<default_type> &scalefactor) {
+  void set_scale_factor(const std::vector<default_type> &scalefactor) {
     for (size_t level = 0; level < scalefactor.size(); ++level) {
       if (scalefactor[level] <= 0 || scalefactor[level] > 1)
         throw Exception(
@@ -416,7 +416,7 @@ public:
     scale_factor = scalefactor;
   }
 
-  vector<default_type> get_scale_factor() const { return scale_factor; }
+  std::vector<default_type> get_scale_factor() const { return scale_factor; }
 
   void set_init_grad_step(const default_type step) { gradient_step = step; }
 
@@ -429,7 +429,7 @@ public:
 
   void set_disp_smoothing(const default_type voxel_fwhm) { disp_smoothing = voxel_fwhm; }
 
-  void set_lmax(const vector<uint32_t> &lmax) {
+  void set_lmax(const std::vector<uint32_t> &lmax) {
     for (size_t i = 0; i < lmax.size(); ++i)
       if (lmax[i] % 2)
         throw Exception("the input nonlinear lmax must be even");
@@ -437,7 +437,7 @@ public:
   }
 
   // needs to be set after set_lmax
-  void set_mc_parameters(const vector<MultiContrastSetting> &mcs) { contrasts = mcs; }
+  void set_mc_parameters(const std::vector<MultiContrastSetting> &mcs) { contrasts = mcs; }
 
   ssize_t get_lmax() { return (ssize_t)*std::max_element(fod_lmax.begin(), fod_lmax.end()); }
 
@@ -501,14 +501,15 @@ public:
       throw Exception("CC radius needs to be larger than 1");
     use_cc = true;
     INFO("Cross correlation radius: " + str(radius));
-    cc_extent = vector<size_t>(3, radius * 2 + 1);
+    cc_extent = std::vector<size_t>(3, radius * 2 + 1);
   }
 
   void set_diagnostics_image(const std::basic_string<char> &path) { diagnostics_image_prefix = path; }
 
 protected:
   std::shared_ptr<Image<default_type>> reslice(Image<default_type> &image, Header &header) {
-    std::shared_ptr<Image<default_type>> temp = make_shared<Image<default_type>>(Image<default_type>::scratch(header));
+    std::shared_ptr<Image<default_type>> temp =
+        std::make_shared<Image<default_type>>(Image<default_type>::scratch(header));
     Filter::reslice<Interp::Linear>(image, *temp);
     return temp;
   }
@@ -523,24 +524,24 @@ protected:
   }
 
   bool is_initialised;
-  vector<uint32_t> max_iter;
-  vector<default_type> scale_factor;
+  std::vector<uint32_t> max_iter;
+  std::vector<default_type> scale_factor;
   default_type update_smoothing;
   default_type disp_smoothing;
   default_type gradient_step;
   Eigen::MatrixXd aPSF_directions;
   bool do_reorientation;
-  vector<uint32_t> fod_lmax;
+  std::vector<uint32_t> fod_lmax;
   bool use_cc;
   std::basic_string<char> diagnostics_image_prefix;
 
-  vector<size_t> cc_extent;
+  std::vector<size_t> cc_extent;
 
   transform_type im1_to_mid_linear;
   transform_type im2_to_mid_linear;
   Header midway_image_header;
 
-  vector<MultiContrastSetting> contrasts, stage_contrasts;
+  std::vector<MultiContrastSetting> contrasts, stage_contrasts;
 
   // Internally the warp is stored as a displacement field to enable easy smoothing near the boundaries
   std::shared_ptr<Image<default_type>> im1_to_mid_new;

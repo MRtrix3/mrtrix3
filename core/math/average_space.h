@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@
 
 namespace MR {
 namespace Math {
-double matrix_average(vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd &mat_avg, bool verbose = false);
+double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd &mat_avg, bool verbose = false);
 }
 } // namespace MR
 
@@ -37,8 +37,8 @@ Eigen::Matrix<default_type, 8, 4>
 get_bounding_box(const Header &header, const Eigen::Transform<default_type, 3, Eigen::Projective> &voxel2scanner);
 
 Header compute_minimum_average_header(
-    const vector<Header> &input_headers,
-    const vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
+    const std::vector<Header> &input_headers,
+    const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
     int voxel_subsampling = 1,
     Eigen::Matrix<default_type, 4, 1> padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0));
 
@@ -52,8 +52,8 @@ Header compute_minimum_average_header(
         Eigen::Transform<default_type, 3, Eigen::Projective>::Identity(),
     Eigen::Matrix<default_type, 4, 1> padding = Eigen::Matrix<default_type, 4, 1>(1.0, 1.0, 1.0, 1.0),
     int voxel_subsampling = 1) {
-  vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms{transform_1, transform_2};
-  vector<Header> headers{im1, im2};
+  std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms{transform_1, transform_2};
+  std::vector<Header> headers{im1, im2};
   return compute_minimum_average_header(headers, init_transforms, voxel_subsampling, padding);
 }
 } // namespace MR

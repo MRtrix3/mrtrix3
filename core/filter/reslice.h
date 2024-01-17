@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,7 +46,7 @@ template <template <class ImageType> class Interpolator, class ImageTypeDestinat
 void reslice(ImageTypeSource &source,
              ImageTypeDestination &destination,
              const transform_type &transform = Adapter::NoTransform,
-             const vector<uint32_t> &oversampling = Adapter::AutoOverSample,
+             const std::vector<uint32_t> &oversampling = Adapter::AutoOverSample,
              const typename ImageTypeDestination::value_type value_when_out_of_bounds =
                  Interp::Base<ImageTypeDestination>::default_out_of_bounds_value()) {
   Adapter::Reslice<Interpolator, ImageTypeSource> interp(

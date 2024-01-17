@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,7 +29,7 @@ void usage() {
 }
 
 void run() {
-  vector<std::string> failed_tests;
+  std::vector<std::string> failed_tests;
   auto test = [&](const bool result, const std::string msg) {
     if (!result)
       failed_tests.push_back(msg);

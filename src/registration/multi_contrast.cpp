@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,7 +54,9 @@ protected:
   size_t start_vol;
 };
 
-void preload_data(vector<Header> &input, Image<default_type> &images, const vector<MultiContrastSetting> &mc_params) {
+void preload_data(std::vector<Header> &input,
+                  Image<default_type> &images,
+                  const std::vector<MultiContrastSetting> &mc_params) {
   const size_t n_images = input.size();
   assert(mc_params.size() == input.size());
   size_t sumvols(0);
@@ -78,8 +80,8 @@ void preload_data(vector<Header> &input, Image<default_type> &images, const vect
   } else {
     for (size_t idx = 0; idx < n_images; idx++) {
       size_t ndim = input[idx].ndim();
-      vector<size_t> from(ndim, 0);
-      vector<size_t> size(ndim, 1);
+      std::vector<size_t> from(ndim, 0);
+      std::vector<size_t> size(ndim, 1);
       for (size_t dim = 0; dim < 3; ++dim)
         size[dim] = input[idx].size(dim);
       if (ndim == 4)

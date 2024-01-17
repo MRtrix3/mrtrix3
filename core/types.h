@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -104,7 +104,7 @@ template <class ImageType> class Row;
 
 #ifdef MRTRIX_NO_VLA
 #define VLA(name, type, num)                                                                                           \
-  vector<type> __vla__##name(num);                                                                                     \
+  std::vector<type> __vla__##name(num);                                                                                \
   type *name = &__vla__##name[0]
 #define VLA_MAX(name, type, num, max) type name[max]
 #else
@@ -131,7 +131,7 @@ template <class ImageType> class Row;
 
 #ifdef MRTRIX_NO_NON_POD_VLA
 #define NON_POD_VLA(name, type, num)                                                                                   \
-  vector<type> __vla__##name(num);                                                                                     \
+  std::vector<type> __vla__##name(num);                                                                                \
   type *name = &__vla__##name[0]
 #define NON_POD_VLA_MAX(name, type, num, max) type name[max]
 #else
@@ -179,40 +179,6 @@ template <class ValueType>
 struct is_data_type
     : std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> {};
 
-template <typename X, int N = (alignof(X) > ::MR::malloc_align)>
-class vector : public ::std::vector<X, Eigen::aligned_allocator<X>> {
-public:
-  using ::std::vector<X, Eigen::aligned_allocator<X>>::vector;
-  vector() {}
-};
-
-template <typename X> class vector<X, 0> : public ::std::vector<X> {
-public:
-  using ::std::vector<X>::vector;
-  vector() {}
-};
-
-template <typename X, int N = (alignof(X) > ::MR::malloc_align)>
-class deque : public ::std::deque<X, Eigen::aligned_allocator<X>> {
-public:
-  using ::std::deque<X, Eigen::aligned_allocator<X>>::deque;
-  deque() {}
-};
-
-template <typename X> class deque<X, 0> : public ::std::deque<X> {
-public:
-  using ::std::deque<X>::deque;
-  deque() {}
-};
-
-template <typename X, typename... Args> inline std::shared_ptr<X> make_shared(Args &&...args) {
-  return std::shared_ptr<X>(new X(std::forward<Args>(args)...));
-}
-
-template <typename X, typename... Args> inline std::unique_ptr<X> make_unique(Args &&...args) {
-  return std::unique_ptr<X>(new X(std::forward<Args>(args)...));
-}
-
 // required to allow use of abs() call on unsigned integers in template
 // functions, etc, since the standard labels such calls ill-formed:
 // http://en.cppreference.com/w/cpp/numeric/math/abs
@@ -229,7 +195,7 @@ abs(X x) {
 
 namespace std {
 
-template <class T> inline ostream &operator<<(ostream &stream, const vector<T> &V) {
+template <class T> inline ostream &operator<<(ostream &stream, const std::vector<T> &V) {
   stream << "[ ";
   for (size_t n = 0; n < V.size(); n++)
     stream << V[n] << " ";

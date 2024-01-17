@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,7 @@ namespace GUI {
 namespace MRView {
 namespace Tool {
 
-void ROI_Model::load(vector<std::unique_ptr<MR::Header>> &list) {
+void ROI_Model::load(std::vector<std::unique_ptr<MR::Header>> &list) {
   beginInsertRows(QModelIndex(), items.size(), items.size() + list.size());
   for (size_t i = 0; i < list.size(); ++i) {
     GL::Context::Grab context;

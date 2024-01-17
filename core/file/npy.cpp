@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -185,7 +185,7 @@ KeyValues parse_dict(std::string s) {
   // Expect a dictionary literal; remove curly braces
   s = strip(strip(s, "{", true, false), "}", false, true);
   const std::map<char, char> pairs{{'{', '}'}, {'[', ']'}, {'(', ')'}, {'\'', '\''}, {'"', '"'}};
-  vector<char> openers;
+  std::vector<char> openers;
   bool prev_was_escape = false;
   std::string current, key;
   KeyValues keyval;
@@ -348,7 +348,7 @@ ReadInfo read_header(const std::string &path) {
   return info;
 }
 
-WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, const vector<size_t> &shape) {
+WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, const std::vector<size_t> &shape) {
   assert(shape.size() == 1 || shape.size() == 2);
   WriteInfo info;
   info.data_type = data_type;
