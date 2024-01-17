@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -120,7 +120,7 @@ void Config::get_RGB(const std::string &key, float *ret, float default_R, float 
   std::string value = get(key);
   if (value.size()) {
     try {
-      vector<default_type> V(parse_floats(value));
+      std::vector<default_type> V(parse_floats(value));
       if (V.size() < 3)
         throw Exception("malformed RGB entry \"" + value + "\" for key \"" + key +
                         "\" in configuration file - ignored");

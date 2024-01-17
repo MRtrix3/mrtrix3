@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -82,9 +82,9 @@ void run() {
   GUI::App::setEventHandler([](QEvent *event) {
     if (event->type() == QEvent::FileOpen) {
       QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
-      vector<std::unique_ptr<MR::Header>> list;
+      std::vector<std::unique_ptr<MR::Header>> list;
       try {
-        list.push_back(make_unique<MR::Header>(MR::Header::open(openEvent->file().toUtf8().data())));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(openEvent->file().toUtf8().data())));
       } catch (Exception &E) {
         E.display();
       }

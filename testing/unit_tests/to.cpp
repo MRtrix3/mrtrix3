@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,9 +31,9 @@ void usage() {
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 }
 
-vector<std::string> failures;
+std::vector<std::string> failures;
 
-template <class T> void test(const vector<std::string> &strings, const vector<bool> &results) {
+template <class T> void test(const std::vector<std::string> &strings, const std::vector<bool> &results) {
   for (size_t i = 0; i != strings.size(); ++i) {
     try {
       to<T>(strings[i]);
@@ -47,14 +47,14 @@ template <class T> void test(const vector<std::string> &strings, const vector<bo
 }
 
 void run() {
-  const vector<std::string> data = {
+  const std::vector<std::string> data = {
       "0",         "1",     "2",     "0 ",   " 1",     "0 0",   "0a",       "a0",          "true", "TRUE",     "tru",
       "truee",     "false", "FALSE", "fals", "falsee", "true ", "yes",      "YES",         "yeah", "yess",     "no",
       "NO",        "nope",  "na",    "0.0",  "1e",     "1e-1",  "1e-1a",    "inf",         "INF",  "infinity", "-inf",
       "-infinity", "nan",   "NAN",   "nana", "-nan",   "i",     "I",        "j",           "J",    "-i",       "1i",
       "1i0",       "1+i",   "1+ii",  "a1+i", "1+1+i",  "-1-i",  "inf+infi", " -inf+-nani "};
 
-  const vector<bool> bool_tests = {
+  const std::vector<bool> bool_tests = {
       true,  // "0"
       true,  // "1"
       true,  // "2"
@@ -109,7 +109,7 @@ void run() {
       false  // " -inf+-nani "
   };
 
-  const vector<bool> int_tests = {
+  const std::vector<bool> int_tests = {
       true,  // "0"
       true,  // "1"
       true,  // "2"
@@ -164,7 +164,7 @@ void run() {
       false  // " -inf+-nani "
   };
 
-  const vector<bool> float_tests = {
+  const std::vector<bool> float_tests = {
       true,  // "0"
       true,  // "1"
       true,  // "2"
@@ -219,7 +219,7 @@ void run() {
       false  // " -inf+-nani "
   };
 
-  const vector<bool> complex_tests = {
+  const std::vector<bool> complex_tests = {
       true,  // "0"
       true,  // "1"
       true,  // "2"

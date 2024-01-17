@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -73,7 +73,7 @@ public:
     assert(i < size());
     return unit_vectors[i];
   }
-  const vector<index_type> &get_adj_dirs(const size_t i) const {
+  const std::vector<index_type> &get_adj_dirs(const size_t i) const {
     assert(i < size());
     return adj_dirs[i];
   }
@@ -89,15 +89,15 @@ public:
 
   index_type get_min_linkage(const index_type one, const index_type two) const;
 
-  const vector<Eigen::Vector3d> &get_dirs() const { return unit_vectors; }
+  const std::vector<Eigen::Vector3d> &get_dirs() const { return unit_vectors; }
   const Eigen::Vector3d &operator[](const size_t i) const {
     assert(i < size());
     return unit_vectors[i];
   }
 
 protected:
-  vector<Eigen::Vector3d> unit_vectors;
-  vector<vector<index_type>> adj_dirs; // Note: not self-inclusive
+  std::vector<Eigen::Vector3d> unit_vectors;
+  std::vector<std::vector<index_type>> adj_dirs; // Note: not self-inclusive
 
 private:
   size_t dir_mask_bytes, dir_mask_excess_bits;
@@ -152,7 +152,7 @@ public:
   index_type select_direction(const Eigen::Vector3d &) const;
 
 private:
-  vector<vector<index_type>> grid_lookup;
+  std::vector<std::vector<index_type>> grid_lookup;
   unsigned int num_az_grids, num_el_grids, total_num_angle_grids;
   default_type az_grid_step, el_grid_step;
   default_type az_begin, el_begin;

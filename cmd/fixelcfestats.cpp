@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -251,7 +251,7 @@ void run() {
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from fixel-wise subject data
-  vector<Math::Stats::CohortDataImport> extra_columns;
+  std::vector<Math::Stats::CohortDataImport> extra_columns;
   bool nans_in_columns = false;
   opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
@@ -292,7 +292,7 @@ void run() {
     CONSOLE("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(argument[3]);
+  const std::vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(argument[3]);
   const Math::Stats::index_type num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     throw Exception(

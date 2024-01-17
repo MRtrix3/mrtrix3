@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -47,7 +47,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
 
   // Pre-compute polygon centroids and areas
   VertexList centroids;
-  vector<default_type> areas;
+  std::vector<default_type> areas;
   for (TriangleList::const_iterator p = in.triangles.begin(); p != in.triangles.end(); ++p) {
     centroids.push_back((in.vertices[(*p)[0]] + in.vertices[(*p)[1]] + in.vertices[(*p)[2]]) * (1.0 / 3.0));
     areas.push_back(area(in, *p));
@@ -64,10 +64,10 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
   //
   // Initialisation is different to iterations: Need a single pass to find those
   //   polygons that actually use the vertex
-  vector<std::set<uint32_t>> vert_polys(V, std::set<uint32_t>());
+  std::vector<std::set<uint32_t>> vert_polys(V, std::set<uint32_t>());
   // For each vertex, don't just want to store the polygons within the neighbourhood;
   //   also want to store those that will be expanded from in the next iteration
-  vector<vector<uint32_t>> vert_polys_to_expand(V, vector<uint32_t>());
+  std::vector<std::vector<uint32_t>> vert_polys_to_expand(V, std::vector<uint32_t>());
 
   for (uint32_t t = 0; t != T; ++t) {
     for (uint32_t i = 0; i != 3; ++i) {
@@ -81,7 +81,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
   // Now, we want to expand this selection outwards for each vertex
   // To do this, also want to produce a list for each polygon: containing those polygons
   //   that share a common edge (i.e. two vertices)
-  vector<vector<uint32_t>> poly_neighbours(T, vector<uint32_t>());
+  std::vector<std::vector<uint32_t>> poly_neighbours(T, std::vector<uint32_t>());
   for (uint32_t i = 0; i != T; ++i) {
     for (uint32_t j = i + 1; j != T; ++j) {
       if (in.triangles[i].shares_edge(in.triangles[j])) {
@@ -98,11 +98,11 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
     for (uint32_t v = 0; v != V; ++v) {
 
       // Find polygons at the outer edge of this expanding front, and add them to the neighbourhood for this vertex
-      vector<uint32_t> next_front;
-      for (vector<uint32_t>::const_iterator front = vert_polys_to_expand[v].begin();
+      std::vector<uint32_t> next_front;
+      for (std::vector<uint32_t>::const_iterator front = vert_polys_to_expand[v].begin();
            front != vert_polys_to_expand[v].end();
            ++front) {
-        for (vector<uint32_t>::const_iterator expansion = poly_neighbours[*front].begin();
+        for (std::vector<uint32_t>::const_iterator expansion = poly_neighbours[*front].begin();
              expansion != poly_neighbours[*front].end();
              ++expansion) {
           const std::set<uint32_t>::const_iterator existing = vert_polys[v].find(*expansion);

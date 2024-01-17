@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -87,8 +87,8 @@ public:
       DEBUG("Reorienting FODs...");
       std::shared_ptr<Image<default_type>> im1_image_reoriented;
       std::shared_ptr<Image<default_type>> im2_image_reoriented;
-      im1_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch(params.im1_image));
-      im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch(params.im2_image));
+      im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch(params.im1_image));
+      im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch(params.im2_image));
 
       {
         if (params.mc_settings.size()) {
@@ -183,8 +183,8 @@ public:
       DEBUG("Reorienting FODs...");
       std::shared_ptr<Image<default_type>> im1_image_reoriented;
       std::shared_ptr<Image<default_type>> im2_image_reoriented;
-      im1_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch(params.im1_image));
-      im2_image_reoriented = make_shared<Image<default_type>>(Image<default_type>::scratch(params.im2_image));
+      im1_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch(params.im1_image));
+      im2_image_reoriented = std::make_shared<Image<default_type>>(Image<default_type>::scratch(params.im2_image));
 
       {
         if (params.mc_settings.size()) {
@@ -269,7 +269,7 @@ public:
 protected:
   MetricType metric;
   ParamType params;
-  vector<size_t> extent;
+  std::vector<size_t> extent;
   size_t iteration;
   Eigen::MatrixXd directions;
   ssize_t overlap_count;

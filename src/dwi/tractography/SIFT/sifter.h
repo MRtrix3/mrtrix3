@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,7 +62,7 @@ public:
   void set_term_mu(const float i) { term_mu = i; }
   void set_csv_path(const std::string &i) { csv_path = i; }
 
-  void set_regular_outputs(const vector<uint32_t> &, const std::string &);
+  void set_regular_outputs(const std::vector<uint32_t> &, const std::string &);
 
   // DEBUGGING
   void test_sorting_block_size(const size_t) const;
@@ -77,7 +77,7 @@ protected:
   using MapType::TD_sum;
 
   // User-controllable settings
-  vector<track_t> output_at_counts;
+  std::vector<track_t> output_at_counts;
   std::string debug_dir;
   track_t term_number;
   float term_ratio;
@@ -92,13 +92,16 @@ protected:
   // For calculating the streamline removal gradients in a multi-threaded fashion
   class TrackGradientCalculator {
   public:
-    TrackGradientCalculator(const SIFTer &sifter, vector<Cost_fn_gradient_sort> &v, const double mu, const double r)
+    TrackGradientCalculator(const SIFTer &sifter,
+                            std::vector<Cost_fn_gradient_sort> &v,
+                            const double mu,
+                            const double r)
         : master(sifter), gradient_vector(v), current_mu(mu), current_roc_cost(r) {}
     bool operator()(const TrackIndexRange &) const;
 
   private:
     const SIFTer &master;
-    vector<Cost_fn_gradient_sort> &gradient_vector;
+    std::vector<Cost_fn_gradient_sort> &gradient_vector;
     const double current_mu, current_roc_cost;
   };
 };

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -66,7 +66,8 @@ inline T lnP(const int N, const T *measured, const T *actual, const T one_over_n
   return (0.5 * lnP);
 }
 
-template <typename T> inline T lnP(const Vector<T> &measured, const Vector<T> &actual, const T one_over_noise_squared) {
+template <typename T>
+inline T lnP(const std::vector<T> &measured, const std::vector<T> &actual, const T one_over_noise_squared) {
   assert(one_over_noise_squared > 0.0);
   assert(measured.size() == actual.size());
 
@@ -79,10 +80,10 @@ template <typename T> inline T lnP(const Vector<T> &measured, const Vector<T> &a
 }
 
 template <typename T>
-inline T lnP(const Vector<T> &measured,
-             const Vector<T> &actual,
+inline T lnP(const std::vector<T> &measured,
+             const std::vector<T> &actual,
              const T one_over_noise_squared,
-             Vector<T> &dP_dactual,
+             std::vector<T> &dP_dactual,
              T &dP_dN) {
   assert(one_over_noise_squared > 0.0);
   assert(measured.size() == actual.size());

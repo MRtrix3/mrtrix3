@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,18 +44,18 @@ public:
 
 private slots:
   void OnNewIncomingConnection();
-  void OnDataReceived(vector<std::shared_ptr<QByteArray>> dat);
+  void OnDataReceived(std::vector<std::shared_ptr<QByteArray>> dat);
 
 signals:
-  void
-  SyncDataReceived(vector<std::shared_ptr<QByteArray>> data); // fires when data is received which is for syncing. It is
-                                                              // up to listeners to validate and store this value
+  void SyncDataReceived(
+      std::vector<std::shared_ptr<QByteArray>> data); // fires when data is received which is for syncing. It is
+                                                      // up to listeners to validate and store this value
 
 private:
-  int id;                                                     // id which is unique between mrview processes
-  vector<std::shared_ptr<GUI::MRView::Sync::Client>> senders; // send information
-  QLocalServer *receiver;                                     // listens for information
-  void TryConnectTo(int connectToId);                         // tries to connect with another interprocesscommunicator
+  int id;                                                          // id which is unique between mrview processes
+  std::vector<std::shared_ptr<GUI::MRView::Sync::Client>> senders; // send information
+  QLocalServer *receiver;                                          // listens for information
+  void TryConnectTo(int connectToId); // tries to connect with another interprocesscommunicator
 };
 
 } // namespace Sync
