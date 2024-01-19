@@ -8,11 +8,12 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - uses: ZedThree/clang-tidy-review@v0.14.0
+    - uses: ZedThree/clang-tidy-review@v0.17.0
       id: review
       with:
         apt_packages: g++,libqt5opengl5-dev,libqt5svg5-dev,libglvnd-dev,libeigen3-dev,zlib1g-dev,libfftw3-dev,ninja-build
         cmake_command: cmake . -DCMAKE_EXPORT_COMPILE_COMMANDS=on
+        config_file: ${{ github.workspace }}/.clang-tidy
 
-    - uses: ZedThree/clang-tidy-review/upload@v0.14.0
+    - uses: ZedThree/clang-tidy-review/upload@v0.17.0
       id: upload-review
