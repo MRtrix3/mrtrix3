@@ -197,7 +197,9 @@ def execute(): #pylint: disable=unused-variable
         newtransformname = os.path.splitext(transformname)[0] + '_rigid.txt'
         run.command(['transformcalc', transformname, 'rigid', newtransformname])
         transformname = newtransformname
-      run.command(['mrtransform', item, '-linear', transformname, imagename] \
+      run.command(['mrtransform', item, imagename] \
+                  + ['-linear', transformname] \
+                  + ['-reorient_fod', 'no'] \
                   + (['-template', 'average_header.mif', '-interp', 'sinc'] \
                      if voxel_grid_matching == 'inequal' \
                       else []))
