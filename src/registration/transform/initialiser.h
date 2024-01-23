@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ struct LinearInitialisationParams {
     bool unmasked1;
     bool unmasked2;
     struct rot_search {
-      vector<default_type> angles;
+      std::vector<default_type> angles;
       default_type scale;
       size_t directions;
       bool run_global;
@@ -69,7 +69,7 @@ extern void set_centre_via_mass(Image<default_type> &im1,
                                 Image<default_type> &mask2,
                                 Registration::Transform::Base &transform,
                                 Registration::Transform::Init::LinearInitialisationParams &init,
-                                const vector<MultiContrastSetting> &contrast_settings);
+                                const std::vector<MultiContrastSetting> &contrast_settings);
 
 extern void set_centre_via_image_centres(const Image<default_type> &im1,
                                          const Image<default_type> &im2,
@@ -91,7 +91,7 @@ extern void initialise_using_image_moments(Image<default_type> &im1,
                                            Image<default_type> &mask2,
                                            Registration::Transform::Base &transform,
                                            Registration::Transform::Init::LinearInitialisationParams &init,
-                                           const vector<MultiContrastSetting> &contrast_settings);
+                                           const std::vector<MultiContrastSetting> &contrast_settings);
 
 extern void initialise_using_FOD(Image<default_type> &im1,
                                  Image<default_type> &im2,
@@ -106,7 +106,7 @@ extern void initialise_using_rotation_search(Image<default_type> &im1,
                                              Image<default_type> &mask2,
                                              Registration::Transform::Base &transform,
                                              Registration::Transform::Init::LinearInitialisationParams &init,
-                                             const vector<MultiContrastSetting> &contrast_settings);
+                                             const std::vector<MultiContrastSetting> &contrast_settings);
 
 extern void initialise_using_image_mass(Image<default_type> &im1,
                                         Image<default_type> &im2,
@@ -114,7 +114,7 @@ extern void initialise_using_image_mass(Image<default_type> &im1,
                                         Image<default_type> &mask2,
                                         Registration::Transform::Base &transform,
                                         Registration::Transform::Init::LinearInitialisationParams &init,
-                                        const vector<MultiContrastSetting> &contrast_settings);
+                                        const std::vector<MultiContrastSetting> &contrast_settings);
 } // namespace Init
 } // namespace Transform
 } // namespace Registration

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -66,7 +66,7 @@ public:
   void clear() {
     voxels.clear();
     if (voxel_buffer.empty())
-      voxel_buffer.push_back(vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
+      voxel_buffer.push_back(std::vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
     next_voxel = &voxel_buffer[0][0];
     last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);
   }
@@ -74,13 +74,13 @@ public:
 protected:
   Functor func;
   std::map<Eigen::Vector3i, value_type *, IndexCompare> voxels;
-  vector<vector<value_type>> voxel_buffer;
+  std::vector<std::vector<value_type>> voxel_buffer;
   value_type *next_voxel;
   value_type *last_voxel;
 
   value_type *allocate_voxel() {
     if (next_voxel == last_voxel) {
-      voxel_buffer.push_back(vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
+      voxel_buffer.push_back(std::vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
       next_voxel = &voxel_buffer.back()[0];
       last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);
     }
@@ -90,21 +90,20 @@ protected:
   }
 
   value_type *get_voxel() {
-    const Eigen::Vector3i voxel (index(0), index(1), index(2));
+    const Eigen::Vector3i voxel(index(0), index(1), index(2));
     const typename std::map<Eigen::Vector3i, value_type *, IndexCompare>::const_iterator existing = voxels.find(voxel);
     if (existing != voxels.end())
       return existing->second;
-    value_type* const data = allocate_voxel();
+    value_type *const data = allocate_voxel();
     ssize_t pos = index(3);
     for (auto l = Loop(3)(*this); l; ++l)
       data[index(3)] = base_type::value();
     index(3) = pos;
     func(data);
-    voxels.insert (std::make_pair (voxel, data));
+    voxels.insert(std::make_pair(voxel, data));
     return data;
   }
 };
-
 
 } // namespace DWI
 } // namespace MR

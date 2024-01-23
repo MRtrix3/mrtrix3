@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,7 +35,7 @@ public:
            const Im2ImageType &im2_image,
            const Im1MaskType im1_mask,
            const Im2MaskType im2_mask,
-           const vector<MultiContrastSetting> *contrast_settings = nullptr)
+           const std::vector<MultiContrastSetting> *contrast_settings = nullptr)
       : global_cost(global_energy),
         global_voxel_count(global_voxel_count),
         thread_cost(0.0),
@@ -160,7 +160,7 @@ protected:
   Im1MaskType im1_mask;
   Im2MaskType im2_mask;
 
-  const vector<MultiContrastSetting> *contrast_settings;
+  const std::vector<MultiContrastSetting> *contrast_settings;
   const ssize_t nvols;
   Eigen::VectorXd weight;
 

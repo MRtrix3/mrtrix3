@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,8 +26,8 @@ namespace Shapes {
 
 void Cylinder::LOD(const size_t level_of_detail) {
 
-  vector<Eigen::Vector3f> vertices, normals;
-  vector<Eigen::Array3i> indices;
+  std::vector<Eigen::Vector3f> vertices, normals;
+  std::vector<Eigen::Array3i> indices;
 
   // Want to be able to display using a single DrawElements call; not worth faffing about
   //   with combinations of GL_TRIANGLES and GL_TRIANGLE_FAN

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -134,7 +134,7 @@ public:
   using SValsType = Eigen::VectorXd;
 
   DenoisingFunctor(int ndwi,
-                   const vector<uint32_t> &extent,
+                   const std::vector<uint32_t> &extent,
                    Image<bool> &mask,
                    Image<real_type> &noise,
                    Image<uint16_t> &rank,
@@ -273,7 +273,7 @@ void process_image(Header &data,
                    Image<real_type> &noise,
                    Image<uint16_t> &rank,
                    const std::string &output_name,
-                   const vector<uint32_t> &extent,
+                   const std::vector<uint32_t> &extent,
                    bool exp1) {
   auto input = data.get_image<T>().with_direct_io(3);
   // create output
@@ -299,7 +299,7 @@ void run() {
   }
 
   opt = get_options("extent");
-  vector<uint32_t> extent;
+  std::vector<uint32_t> extent;
   if (opt.size()) {
     extent = parse_ints<uint32_t>(opt[0][0]);
     if (extent.size() == 1)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,8 +21,8 @@ namespace Stats {
 namespace Cluster {
 
 void ClusterSize::operator()(in_column_type input, const value_type T, out_column_type output) const {
-  vector<Filter::Connector::Cluster> clusters;
-  vector<uint32_t> labels(input.size(), 0);
+  std::vector<Filter::Connector::Cluster> clusters;
+  std::vector<uint32_t> labels(input.size(), 0);
   connector.run(clusters, labels, input, T);
   output.resize(input.size());
   for (size_t i = 0; i < size_t(input.size()); ++i)

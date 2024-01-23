@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,7 +62,7 @@ void run() {
   if (opt.size()) {
     std::istringstream hex;
 
-    vector<Tag> tags(opt.size());
+    std::vector<Tag> tags(opt.size());
     for (size_t n = 0; n < opt.size(); ++n) {
       tags[n].group = read_hex(opt[n][0]);
       tags[n].element = read_hex(opt[n][1]);

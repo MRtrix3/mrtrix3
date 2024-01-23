@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -149,7 +149,7 @@ using value_type = double;
 
 void run() {
 
-  vector<Header> input1, input2;
+  std::vector<Header> input1, input2;
   const size_t n_images = argument.size() / 2;
   { // parse arguments and load input headers
     if (n_images * 2 != argument.size()) {
@@ -244,7 +244,7 @@ void run() {
   }
 
   // multi-contrast settings
-  vector<Registration::MultiContrastSetting> mc_params(n_images);
+  std::vector<Registration::MultiContrastSetting> mc_params(n_images);
   for (auto &mc : mc_params) {
     mc.do_reorientation = do_reorientation;
   }
@@ -308,7 +308,7 @@ void run() {
   INFO("maximum input lmax: " + str(max_mc_image_lmax));
 
   opt = get_options("transformed");
-  vector<std::string> im1_transformed_paths;
+  std::vector<std::string> im1_transformed_paths;
   if (opt.size()) {
     if (opt.size() > n_images)
       throw Exception("number of -transformed images exceeds number of contrasts");
@@ -321,8 +321,8 @@ void run() {
     }
   }
 
-  vector<std::string> input1_midway_transformed_paths;
-  vector<std::string> input2_midway_transformed_paths;
+  std::vector<std::string> input1_midway_transformed_paths;
+  std::vector<std::string> input2_midway_transformed_paths;
   opt = get_options("transformed_midway");
   if (opt.size()) {
     if (opt.size() > n_images)
@@ -481,7 +481,7 @@ void run() {
   }
 
   opt = get_options("rigid_lmax");
-  vector<uint32_t> rigid_lmax;
+  std::vector<uint32_t> rigid_lmax;
   if (opt.size()) {
     if (!do_rigid)
       throw Exception("the -rigid_lmax option has been set when no rigid registration is requested");
@@ -632,7 +632,7 @@ void run() {
   }
 
   opt = get_options("affine_lmax");
-  vector<uint32_t> affine_lmax;
+  std::vector<uint32_t> affine_lmax;
   if (opt.size()) {
     if (!do_affine)
       throw Exception("the -affine_lmax option has been set when no affine registration is requested");
@@ -746,7 +746,7 @@ void run() {
     if (!do_nonlinear)
       throw Exception(
           "the non-linear multi-resolution scale factors were input when no non-linear registration is requested");
-    vector<default_type> scale_factors = parse_floats(opt[0][0]);
+    std::vector<default_type> scale_factors = parse_floats(opt[0][0]);
     if (nonlinear_init) {
       WARN("-nl_scale option ignored since only the full resolution will be performed when initialising with "
            "non-linear warp");
@@ -760,7 +760,7 @@ void run() {
     if (!do_nonlinear)
       throw Exception(
           "the number of non-linear iterations have been input when no non-linear registration is requested");
-    vector<uint32_t> iterations_per_level = parse_ints<uint32_t>(opt[0][0]);
+    std::vector<uint32_t> iterations_per_level = parse_ints<uint32_t>(opt[0][0]);
     if (nonlinear_init && iterations_per_level.size() > 1)
       throw Exception("when initialising the non-linear registration the max number of iterations can only be defined "
                       "for a single level");
@@ -792,7 +792,7 @@ void run() {
   }
 
   opt = get_options("nl_lmax");
-  vector<uint32_t> nl_lmax;
+  std::vector<uint32_t> nl_lmax;
   if (opt.size()) {
     if (!do_nonlinear)
       throw Exception("the -nl_lmax option has been set when no non-linear registration is requested");
@@ -810,7 +810,7 @@ void run() {
 
   opt = get_options("mc_weights");
   if (opt.size()) {
-    vector<default_type> mc_weights = parse_floats(opt[0][0]);
+    std::vector<default_type> mc_weights = parse_floats(opt[0][0]);
     if (mc_weights.size() == 1)
       mc_weights.resize(n_images, mc_weights[0]);
     else if (mc_weights.size() != n_images)
@@ -914,7 +914,7 @@ void run() {
     } else { // 3D
       if (rigid_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        vector<size_t> extent(3, 3);
+        std::vector<size_t> extent(3, 3);
         rigid_registration.set_extent(extent);
         rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
       } else if (rigid_metric == Registration::Diff) {
@@ -989,7 +989,7 @@ void run() {
     } else { // 3D
       if (affine_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        vector<size_t> extent(3, 3);
+        std::vector<size_t> extent(3, 3);
         affine_registration.set_extent(extent);
         affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
       } else if (affine_metric == Registration::Diff) {
