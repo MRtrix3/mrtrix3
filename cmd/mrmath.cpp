@@ -310,7 +310,7 @@ public:
 
 protected:
   Voxel2Vector v2v;
-  vector<Operation> data;
+  std::vector<Operation> data;
 };
 
 void run() {
