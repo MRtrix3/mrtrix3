@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,38 +20,30 @@
 #include "connectome/connectome.h"
 #include "connectome/lut.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Tool
-      {
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Tool {
 
-      using MR::Connectome::node_t;
-      using MR::Connectome::LUT_node;
-      using MR::Connectome::LUT;
+using MR::Connectome::LUT;
+using MR::Connectome::LUT_node;
+using MR::Connectome::node_t;
 
-      enum class node_visibility_t { ALL, NONE, DEGREE, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
-      enum class node_geometry_t   { SPHERE, CUBE, OVERLAY, MESH };
-      enum class node_colour_t     { FIXED, RANDOM, FROM_LUT, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
-      enum class node_size_t       { FIXED, NODE_VOLUME, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
-      enum class node_alpha_t      { FIXED, CONNECTOME, FROM_LUT, VECTOR_FILE, MATRIX_FILE };
+enum class node_visibility_t { ALL, NONE, DEGREE, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
+enum class node_geometry_t { SPHERE, CUBE, OVERLAY, MESH };
+enum class node_colour_t { FIXED, RANDOM, FROM_LUT, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
+enum class node_size_t { FIXED, NODE_VOLUME, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
+enum class node_alpha_t { FIXED, CONNECTOME, FROM_LUT, VECTOR_FILE, MATRIX_FILE };
 
-      enum class edge_visibility_t { ALL, NONE, CONNECTOME, MATRIX_FILE };
-      enum class edge_geometry_t   { LINE, CYLINDER, STREAMLINE, STREAMTUBE };
-      enum class edge_colour_t     { FIXED, DIRECTION, CONNECTOME, MATRIX_FILE };
-      enum class edge_size_t       { FIXED, CONNECTOME, MATRIX_FILE };
-      enum class edge_alpha_t      { FIXED, CONNECTOME, MATRIX_FILE };
+enum class edge_visibility_t { ALL, NONE, CONNECTOME, MATRIX_FILE };
+enum class edge_geometry_t { LINE, CYLINDER, STREAMLINE, STREAMTUBE };
+enum class edge_colour_t { FIXED, DIRECTION, CONNECTOME, MATRIX_FILE };
+enum class edge_size_t { FIXED, CONNECTOME, MATRIX_FILE };
+enum class edge_alpha_t { FIXED, CONNECTOME, MATRIX_FILE };
 
-      }
-    }
-  }
-}
+} // namespace Tool
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-
-
-

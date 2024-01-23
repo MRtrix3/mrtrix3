@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,49 +17,38 @@
 #ifndef __dwi_tractography_sift2_fixel_updater_h__
 #define __dwi_tractography_sift2_fixel_updater_h__
 
-
 #include "types.h"
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace SIFT2 {
+namespace DWI {
+namespace Tractography {
+namespace SIFT2 {
 
+class TckFactor;
 
-      class TckFactor;
+class FixelUpdater {
 
+public:
+  FixelUpdater(TckFactor &);
+  ~FixelUpdater();
 
-      class FixelUpdater
-      { MEMALIGN(FixelUpdater)
+  bool operator()(const SIFT::TrackIndexRange &range);
 
-        public:
-          FixelUpdater (TckFactor&);
-          ~FixelUpdater();
+private:
+  TckFactor &master;
 
-          bool operator() (const SIFT::TrackIndexRange& range);
+  // Each thread needs a local copy of these
+  std::vector<double> fixel_coeff_sums;
+  std::vector<double> fixel_TDs;
+  std::vector<SIFT::track_t> fixel_counts;
+};
 
-        private:
-          TckFactor& master;
-
-          // Each thread needs a local copy of these
-          vector<double> fixel_coeff_sums;
-          vector<double> fixel_TDs;
-          vector<SIFT::track_t> fixel_counts;
-
-      };
-
-
-
-      }
-    }
-  }
-}
-
-
+} // namespace SIFT2
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-

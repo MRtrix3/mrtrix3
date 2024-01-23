@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,49 +17,37 @@
 #ifndef __dwi_tractography_resampling_downsampler_h__
 #define __dwi_tractography_resampling_downsampler_h__
 
-
-#include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/resampling/resampling.h"
-
+#include "dwi/tractography/tracking/generated_track.h"
 
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Resampling {
+namespace DWI {
+namespace Tractography {
+namespace Resampling {
 
+class Downsampler : public BaseCRTP<Downsampler> {
 
+public:
+  Downsampler() : ratio(0) {}
+  Downsampler(const size_t downsample_ratio) : ratio(downsample_ratio) {}
 
-        class Downsampler : public BaseCRTP<Downsampler>
-        { MEMALIGN(Downsampler)
+  bool operator()(const Streamline<> &, Streamline<> &) const override;
+  bool valid() const override { return (ratio >= 1); }
 
-          public:
-            Downsampler () : ratio (0) { }
-            Downsampler (const size_t downsample_ratio) : ratio (downsample_ratio) { }
+  // This version guarantees that the seed point is retained, and
+  //   updates the index of the seed point appropriately
+  bool operator()(Tracking::GeneratedTrack &) const;
 
-            bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid() const override { return (ratio >= 1); }
+  size_t get_ratio() const { return ratio; }
+  void set_ratio(const size_t i) { ratio = i; }
 
-            // This version guarantees that the seed point is retained, and
-            //   updates the index of the seed point appropriately
-            bool operator() (Tracking::GeneratedTrack&) const;
+private:
+  size_t ratio;
+};
 
-            size_t get_ratio() const { return ratio; }
-            void set_ratio (const size_t i) { ratio = i; }
-
-          private:
-            size_t ratio;
-
-        };
-
-
-
-
-      }
-    }
-  }
-}
+} // namespace Resampling
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-
-

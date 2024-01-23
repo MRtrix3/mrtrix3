@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,23 +19,17 @@
 
 #include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Dialog
-    {
+namespace MR {
+namespace GUI {
+namespace Dialog {
 
-      class OpenGL : public QDialog
-      { NOMEMALIGN
-        public:
-          OpenGL (QWidget* parent, const GL::Format& format);
-      };
+class OpenGL : public QDialog {
+public:
+  OpenGL(QWidget *parent, const GL::Format &format);
+};
 
-    }
-  }
-}
+} // namespace Dialog
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-

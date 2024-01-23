@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,7 +19,7 @@
 
 #include <Eigen/Core>
 
-#if EIGEN_VERSION_AT_LEAST(3,3,0)
+#if EIGEN_VERSION_AT_LEAST(3, 3, 0)
 #define TCKGEN_EARLY_EXIT_USE_FULL_BINOMIAL
 #include <unsupported/Eigen/SpecialFunctions>
 #define TCKGEN_EARLY_EXIT_PROB_THRESHOLD 0.001
@@ -30,43 +30,31 @@
 
 #include "dwi/tractography/tracking/shared.h"
 
-
 #define TCKGEN_EARLY_EXIT_STOP_TESTING_PERCENTAGE 0.20
 
+namespace MR {
+namespace DWI {
+namespace Tractography {
+namespace Tracking {
 
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
-      namespace Tracking
-      {
+class EarlyExit {
+public:
+  EarlyExit(const SharedBase &shared)
+      : max_num_seeds(shared.max_num_seeds),
+        max_num_tracks(shared.max_num_tracks),
+        counter(0),
+        next_test((max_num_seeds && max_num_tracks) ? (10 * max_num_seeds / max_num_tracks) : 0) {}
 
+  bool operator()(const size_t, const size_t);
 
-        class EarlyExit
-        { NOMEMALIGN
-          public:
-            EarlyExit (const SharedBase& shared) :
-              max_num_seeds (shared.max_num_seeds),
-              max_num_tracks (shared.max_num_tracks),
-              counter (0),
-              next_test ((max_num_seeds && max_num_tracks) ? (10 * max_num_seeds / max_num_tracks) : 0) { }
+private:
+  const size_t max_num_seeds, max_num_tracks;
+  size_t counter, next_test;
+};
 
-            bool operator() (const size_t, const size_t);
-
-          private:
-            const size_t max_num_seeds, max_num_tracks;
-            size_t counter, next_test;
-        };
-
-
-
-      }
-    }
-  }
-}
+} // namespace Tracking
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-

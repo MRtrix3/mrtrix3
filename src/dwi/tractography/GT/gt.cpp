@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,22 +16,18 @@
 
 #include "dwi/tractography/GT/gt.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace GT {
+namespace DWI {
+namespace Tractography {
+namespace GT {
 
-        std::ostream& operator<< (std::ostream& o, Stats const& stats)
-        {
-          return o << stats.Tint << ", " << stats.EextTot << ", " << stats.EintTot << ", " <<
-                      stats.getAcceptanceRate('b') << ", " << stats.getAcceptanceRate('d') << ", " <<
-                      stats.getAcceptanceRate('r') << ", " << stats.getAcceptanceRate('o') << ", " <<
-                      stats.getAcceptanceRate('c');
-        }
-
-      }
-    }
-  }
+std::ostream &operator<<(std::ostream &o, Stats const &stats) {
+  return o << stats.Tint << ", " << stats.EextTot << ", " << stats.EintTot << ", " << stats.getAcceptanceRate('b')
+           << ", " << stats.getAcceptanceRate('d') << ", " << stats.getAcceptanceRate('r') << ", "
+           << stats.getAcceptanceRate('o') << ", " << stats.getAcceptanceRate('c');
 }
 
+} // namespace GT
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR

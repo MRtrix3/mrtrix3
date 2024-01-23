@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,46 +17,33 @@
 #ifndef __dwi_tractography_resampling_fixed_num_points_h__
 #define __dwi_tractography_resampling_fixed_num_points_h__
 
-
 #include "dwi/tractography/resampling/resampling.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Resampling {
+namespace DWI {
+namespace Tractography {
+namespace Resampling {
 
+class FixedNumPoints : public BaseCRTP<FixedNumPoints> {
 
+public:
+  FixedNumPoints() : num_points(0) {}
 
-        class FixedNumPoints : public BaseCRTP<FixedNumPoints>
-        { NOMEMALIGN
+  FixedNumPoints(const size_t n) : num_points(n) {}
 
-          public:
-            FixedNumPoints () :
-                num_points (0) { }
+  bool operator()(const Streamline<> &, Streamline<> &) const override;
+  bool valid() const override { return num_points; }
 
-            FixedNumPoints (const size_t n) :
-                num_points (n) { }
+  void set_num_points(const size_t n) { num_points = n; }
+  size_t get_num_points() const { return num_points; }
 
-            bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid() const override { return num_points; }
+private:
+  size_t num_points;
+};
 
-            void set_num_points (const size_t n) { num_points = n; }
-            size_t get_num_points() const { return num_points; }
-
-          private:
-            size_t num_points;
-
-        };
-
-
-
-      }
-    }
-  }
-}
+} // namespace Resampling
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-
-

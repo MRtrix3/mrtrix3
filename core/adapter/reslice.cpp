@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,9 @@
 
 #include "adapter/reslice.h"
 
-namespace MR
-{
-  namespace Adapter
-  {
-    const transform_type NoTransform = transform_type::Identity();
-    const vector<uint32_t> AutoOverSample;
-  }
-}
-
+namespace MR {
+namespace Adapter {
+const transform_type NoTransform = transform_type::Identity();
+const std::vector<uint32_t> AutoOverSample;
+} // namespace Adapter
+} // namespace MR

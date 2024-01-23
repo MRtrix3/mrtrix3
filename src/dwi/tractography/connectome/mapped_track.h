@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,86 +19,64 @@
 
 #include "dwi/tractography/connectome/connectome.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Connectome {
+namespace DWI {
+namespace Tractography {
+namespace Connectome {
 
+class Mapped_track_base {
 
+public:
+  Mapped_track_base() : track_index(-1), factor(0.0), weight(1.0) {}
 
-        class Mapped_track_base
-        { MEMALIGN(Mapped_track_base)
+  void set_track_index(const size_t i) { track_index = i; }
+  void set_factor(const float i) { factor = i; }
+  void set_weight(const float i) { weight = i; }
 
-          public:
-            Mapped_track_base() :
-              track_index (-1),
-              factor (0.0),
-              weight (1.0) { }
+  size_t get_track_index() const { return track_index; }
+  float get_factor() const { return factor; }
+  float get_weight() const { return weight; }
 
-            void set_track_index (const size_t i) { track_index = i; }
-            void set_factor      (const float i)  { factor = i; }
-            void set_weight      (const float i)  { weight = i; }
+private:
+  size_t track_index;
+  float factor, weight;
+};
 
-            size_t get_track_index() const { return track_index; }
-            float  get_factor()      const { return factor; }
-            float  get_weight()      const { return weight; }
+class Mapped_track_nodepair : public Mapped_track_base {
 
-          private:
-            size_t track_index;
-            float factor, weight;
-        };
+public:
+  Mapped_track_nodepair() : Mapped_track_base(), nodes(std::make_pair(0, 0)) {}
 
+  void set_first_node(const node_t i) { nodes.first = i; }
+  void set_second_node(const node_t i) { nodes.second = i; }
+  void set_nodes(const NodePair i) { nodes = i; }
 
-        class Mapped_track_nodepair : public Mapped_track_base
-        { MEMALIGN(Mapped_track_nodepair)
+  node_t get_first_node() const { return nodes.first; }
+  node_t get_second_node() const { return nodes.second; }
+  const NodePair &get_nodes() const { return nodes; }
 
-          public:
-            Mapped_track_nodepair() :
-              Mapped_track_base (),
-              nodes (std::make_pair (0, 0)) { }
+private:
+  NodePair nodes;
+};
 
-            void set_first_node  (const node_t i)   { nodes.first = i;  }
-            void set_second_node (const node_t i)   { nodes.second = i; }
-            void set_nodes       (const NodePair i) { nodes = i; }
+class Mapped_track_nodelist : public Mapped_track_base {
 
-            node_t get_first_node()     const { return nodes.first;  }
-            node_t get_second_node()    const { return nodes.second; }
-            const NodePair& get_nodes() const { return nodes; }
+public:
+  Mapped_track_nodelist() : Mapped_track_base(), nodes() {}
 
-          private:
-            NodePair nodes;
+  void add_node(const node_t i) { nodes.push_back(i); }
+  void set_nodes(const std::vector<node_t> &i) { nodes = i; }
+  void set_nodes(std::vector<node_t> &&i) { std::swap(nodes, i); }
 
-        };
+  const std::vector<node_t> &get_nodes() const { return nodes; }
 
+private:
+  std::vector<node_t> nodes;
+};
 
-        class Mapped_track_nodelist : public Mapped_track_base
-        { MEMALIGN(Mapped_track_nodelist)
-
-          public:
-            Mapped_track_nodelist() :
-              Mapped_track_base (),
-              nodes () { }
-
-            void add_node   (const node_t i)               { nodes.push_back (i);  }
-            void set_nodes  (const vector<node_t>& i) { nodes = i; }
-            void set_nodes  (vector<node_t>&& i)       { std::swap (nodes, i); }
-
-            const vector<node_t>& get_nodes() const { return nodes; }
-
-          private:
-            vector<node_t> nodes;
-
-        };
-
-
-
-
-      }
-    }
-  }
-}
-
+} // namespace Connectome
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,19 +17,15 @@
 #include "math/SH.h"
 #include "version.h"
 
-namespace MR
-{
-  namespace Math
-  {
-    namespace SH
-    {
+namespace MR {
+namespace Math {
+namespace SH {
 
-      const char* encoding_description =
-        "The spherical harmonic coefficients are stored according to the conventions "
-        "described in the main documentation, which can be found at the following link: \n"
-        "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/spherical_harmonics.html";
+const char *encoding_description =
+    "The spherical harmonic coefficients are stored according to the conventions "
+    "described in the main documentation, which can be found at the following link: \n"
+    "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/spherical_harmonics.html";
 
-    }
-  }
 }
-
+} // namespace Math
+} // namespace MR

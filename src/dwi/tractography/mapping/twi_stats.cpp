@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,23 +16,29 @@
 
 #include "dwi/tractography/mapping/twi_stats.h"
 
-
 namespace MR {
 namespace DWI {
 namespace Tractography {
 namespace Mapping {
 
-
-const char* contrasts[] = { "tdi", "length", "invlength", "scalar_map", "scalar_map_count", "fod_amp", "curvature", "vector_file", 0 };
-const char* voxel_statistics[] = { "sum", "min", "mean", "max", 0 };
+const char *contrasts[] = {
+    "tdi", "length", "invlength", "scalar_map", "scalar_map_count", "fod_amp", "curvature", "vector_file", 0};
+const char *voxel_statistics[] = {"sum", "min", "mean", "max", 0};
 // Note: ENDS_CORR not provided as a command-line option
-const char* track_statistics[] = { "sum", "min", "mean", "max", "median", "mean_nonzero", "gaussian", "ends_min", "ends_mean", "ends_max", "ends_prod", 0 };
+const char *track_statistics[] = {"sum",
+                                  "min",
+                                  "mean",
+                                  "max",
+                                  "median",
+                                  "mean_nonzero",
+                                  "gaussian",
+                                  "ends_min",
+                                  "ends_mean",
+                                  "ends_max",
+                                  "ends_prod",
+                                  0};
 
-
-}
-}
-}
-}
-
-
-
+} // namespace Mapping
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR

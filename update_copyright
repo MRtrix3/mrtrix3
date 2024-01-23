@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2024 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,9 @@
 # See the Mozilla Public License v. 2.0 for more details.
 #
 # For more details, see http://www.mrtrix.org/.
+
+# note: deal with these warnings properly when we drop support for Python 2:
+# pylint: disable=unspecified-encoding
 
 import datetime, os
 from collections import namedtuple
@@ -41,22 +44,23 @@ ProcessFile = namedtuple('ProcessFile', 'path keep_shebang comment')
 
 MRTRIX_ROOT = os.path.abspath(os.path.dirname(__file__))
 APP_CPP_PATH = os.path.join(MRTRIX_ROOT, 'core', 'app.cpp')
-APP_CPP_STRING = 'const char* COPYRIGHT ='
-APP_PY_PATH = os.path.join(MRTRIX_ROOT, 'lib', 'mrtrix3', 'app.py')
+APP_CPP_STRING = 'const char *COPYRIGHT ='
+APP_PY_PATH = os.path.join(MRTRIX_ROOT, 'python', 'lib', 'mrtrix3', 'app.py')
 APP_PY_STRING = '_DEFAULT_COPYRIGHT ='
 
 SEARCH_PATHS = [
     SearchPath('.', False, True, '#', [], ['mrtrix-mrview.desktop']),
-    SearchPath('bin', False, True, '#', [], []),
-    SearchPath('bin', False, True, '#', ['.py'], []),
+    SearchPath(os.path.join('python', 'bin'), False, True, '#', ['.py'], []),
     SearchPath('cmd', False, False, '*', ['.cpp'], []),
     SearchPath('core', True, False, '*', ['.cpp', '.h'], [os.path.join('file', 'json.h'), os.path.join('file', 'nifti1.h'), 'version.h']),
     SearchPath('docs', False, True, '#', [], []),
     SearchPath('matlab', True, False, '%', ['.m'], []),
-    SearchPath('lib', True, False, '#', ['.py'], [os.path.join('mrtrix3', '_version.py')]),
-    SearchPath('share', True, False, '#', ['.txt'], []),
+    SearchPath(os.path.join('python', 'lib'), True, False, '#', ['.py'], [os.path.join('mrtrix3', '_version.py.in')]),
+    SearchPath(os.path.join('share', 'mrtrix3'), True, False, '#', ['.txt'], []),
     SearchPath('src', True, False, '*', ['.cpp', '.h'], []),
-    SearchPath(os.path.join('testing', 'cmd'), False, False, '*', ['.cpp'], []),
+    SearchPath(os.path.join('testing', 'tools'), False, False, '*', ['.cpp'], []),
+    SearchPath(os.path.join('testing', 'unit_tests'), False, False, '*', ['.cpp'], []),
+    SearchPath(os.path.join('testing', 'lib'), False, False, '*', ['.h'], []),
     SearchPath(os.path.join('testing', 'src'), True, False, '*', ['.cpp', '.h'], [])]
 
 
@@ -69,7 +73,7 @@ def main():
 
   def has_shebang(filepath):
     try:
-      with open(filepath, 'r') as shebang_file:
+      with open(filepath, 'r', encoding='utf-8') as shebang_file:
         return shebang_file.read(2) == '#!'
     except UnicodeDecodeError:
       return False
@@ -93,7 +97,7 @@ def main():
             filelist.append(ProcessFile(fullpath, path.need_shebang, path.comment))
 
   for item in filelist:
-    with open(item.path, 'r') as infile:
+    with open(item.path, 'r', encoding='utf-8') as infile:
       data = infile.readlines()
     if not data:
       continue
@@ -112,29 +116,30 @@ def main():
       data = data[next(index for index, value in enumerate(data) if not value.startswith(item.comment)):]
       # Insert new copyright notice
       data = [item.comment + (' ' + line if line else '') + '\n' for line in COPYRIGHT] + data
-    with open(item.path, 'w') as outfile:
+    with open(item.path, 'w', encoding='utf-8') as outfile:
       if shebang:
         outfile.write(shebang + '\n')
       outfile.write(''.join(data))
 
 
 
-  with open(APP_CPP_PATH, 'r') as app_cpp_file:
+  with open(APP_CPP_PATH, 'r', encoding='utf-8') as app_cpp_file:
     data = app_cpp_file.readlines()
   first_line = next(index for index, value in enumerate(data) if value.strip().startswith(APP_CPP_STRING)) + 1
   indent = ' ' * (len(data[first_line]) - len(data[first_line].lstrip()))
-  with open(APP_CPP_PATH, 'w') as app_cpp_file:
-    app_cpp_file.write(''.join(data[:first_line]))
-    for line in COPYRIGHT[:-1]:
+  with open(APP_CPP_PATH, 'w', encoding='utf-8') as app_cpp_file:
+    app_cpp_file.write(''.join(data[:first_line-1]))
+    app_cpp_file.write(APP_CPP_STRING + ' "' + COPYRIGHT[0].replace('"', '\\"') + '\\n"\n')
+    for line in COPYRIGHT[1:-1]:
       app_cpp_file.write(indent + '"' + line.replace('"', '\\"') + '\\n"\n')
     app_cpp_file.write(indent + '"' + COPYRIGHT[-1].replace('"', '\\"') + '\\n";\n')
-    app_cpp_file.write(''.join(data[first_line+len(COPYRIGHT):]))
+    app_cpp_file.write(''.join(data[first_line-1+len(COPYRIGHT):]))
 
 
-  with open(APP_PY_PATH, 'r') as app_py_file:
+  with open(APP_PY_PATH, 'r', encoding='utf-8') as app_py_file:
     data = app_py_file.readlines()
   first_line = next(index for index, value in enumerate(data) if value.startswith(APP_PY_STRING)) + 1
-  with open(APP_PY_PATH, 'w') as app_py_file:
+  with open(APP_PY_PATH, 'w', encoding='utf-8') as app_py_file:
     app_py_file.write(''.join(data[:first_line]))
     app_py_file.write('\'\'\'' + '\n'.join(COPYRIGHT) + '\'\'\'\n')
     app_py_file.write(''.join(data[first_line+len(COPYRIGHT):]))

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,7 @@
 
 #include "gui/shapes/cube.h"
 
-namespace
-{
+namespace {
 
 /*
 
@@ -57,67 +56,60 @@ namespace
 #define NUM_VERTICES 24
 #define NUM_POLYGONS 12
 
-  static const GLfloat vertices[NUM_VERTICES][3] = {
-      {-0.5, -0.5, -0.5}, {-0.5, -0.5, +0.5}, {-0.5, +0.5, -0.5}, {-0.5, +0.5, +0.5}, // -X face
-      {+0.5, -0.5, -0.5}, {+0.5, -0.5, +0.5}, {+0.5, +0.5, -0.5}, {+0.5, +0.5, +0.5}, // +X face
-      {-0.5, -0.5, -0.5}, {-0.5, -0.5, +0.5}, {+0.5, -0.5, -0.5}, {+0.5, -0.5, +0.5}, // -Y face
-      {-0.5, +0.5, -0.5}, {-0.5, +0.5, +0.5}, {+0.5, +0.5, -0.5}, {+0.5, +0.5, +0.5}, // +Y face
-      {-0.5, -0.5, -0.5}, {-0.5, +0.5, -0.5}, {+0.5, -0.5, -0.5}, {+0.5, +0.5, -0.5}, // -Z face
-      {-0.5, -0.5, +0.5}, {-0.5, +0.5, +0.5}, {+0.5, -0.5, +0.5}, {+0.5, +0.5, +0.5}  // +Z face
-  };
+static const GLfloat vertices[NUM_VERTICES][3] = {
+    {-0.5, -0.5, -0.5}, {-0.5, -0.5, +0.5}, {-0.5, +0.5, -0.5}, {-0.5, +0.5, +0.5}, // -X face
+    {+0.5, -0.5, -0.5}, {+0.5, -0.5, +0.5}, {+0.5, +0.5, -0.5}, {+0.5, +0.5, +0.5}, // +X face
+    {-0.5, -0.5, -0.5}, {-0.5, -0.5, +0.5}, {+0.5, -0.5, -0.5}, {+0.5, -0.5, +0.5}, // -Y face
+    {-0.5, +0.5, -0.5}, {-0.5, +0.5, +0.5}, {+0.5, +0.5, -0.5}, {+0.5, +0.5, +0.5}, // +Y face
+    {-0.5, -0.5, -0.5}, {-0.5, +0.5, -0.5}, {+0.5, -0.5, -0.5}, {+0.5, +0.5, -0.5}, // -Z face
+    {-0.5, -0.5, +0.5}, {-0.5, +0.5, +0.5}, {+0.5, -0.5, +0.5}, {+0.5, +0.5, +0.5}  // +Z face
+};
 
-  static const GLfloat normals[NUM_VERTICES][3] = {
-      {-1,  0,  0}, {-1,  0,  0}, {-1,  0,  0}, {-1,  0,  0}, // -X face
-      {+1,  0,  0}, {+1,  0,  0}, {+1,  0,  0}, {+1,  0,  0}, // +X face
-      { 0, -1,  0}, { 0, -1,  0}, { 0, -1,  0}, { 0, -1,  0}, // -Y face
-      { 0, +1,  0}, { 0, +1,  0}, { 0, +1,  0}, { 0, +1,  0}, // +Y face
-      { 0,  0, -1}, { 0,  0, -1}, { 0,  0, -1}, { 0,  0, -1}, // -Z face
-      { 0,  0, +1}, { 0,  0, +1}, { 0,  0, +1}, { 0,  0, +1}, // +Z face
-  };
+static const GLfloat normals[NUM_VERTICES][3] = {
+    {-1, 0, 0}, {-1, 0, 0}, {-1, 0, 0}, {-1, 0, 0}, // -X face
+    {+1, 0, 0}, {+1, 0, 0}, {+1, 0, 0}, {+1, 0, 0}, // +X face
+    {0, -1, 0}, {0, -1, 0}, {0, -1, 0}, {0, -1, 0}, // -Y face
+    {0, +1, 0}, {0, +1, 0}, {0, +1, 0}, {0, +1, 0}, // +Y face
+    {0, 0, -1}, {0, 0, -1}, {0, 0, -1}, {0, 0, -1}, // -Z face
+    {0, 0, +1}, {0, 0, +1}, {0, 0, +1}, {0, 0, +1}, // +Z face
+};
 
-  static const GLuint polygons[NUM_POLYGONS][3] = {
-      { 0 , 1,  2}, { 2,  1,  3}, // -X face
-      { 4,  6,  5}, { 5,  6,  7}, // +X face
-      { 8, 10,  9}, { 9, 10, 11}, // -Y face
-      {12, 13, 14}, {14, 13, 15}, // +Y face
-      {16, 17, 18}, {18, 17, 19}, // -Z face
-      {20, 22, 21}, {21, 22, 23}  // +Z face
-  };
+static const GLuint polygons[NUM_POLYGONS][3] = {
+    {0, 1, 2},
+    {2, 1, 3}, // -X face
+    {4, 6, 5},
+    {5, 6, 7}, // +X face
+    {8, 10, 9},
+    {9, 10, 11}, // -Y face
+    {12, 13, 14},
+    {14, 13, 15}, // +Y face
+    {16, 17, 18},
+    {18, 17, 19}, // -Z face
+    {20, 22, 21},
+    {21, 22, 23} // +Z face
+};
 
+} // namespace
+
+namespace MR {
+namespace GUI {
+namespace Shapes {
+
+void Cube::generate() {
+  vertex_buffer.gen();
+  vertex_buffer.bind(gl::ARRAY_BUFFER);
+  gl::BufferData(gl::ARRAY_BUFFER, 3 * NUM_VERTICES * sizeof(GLfloat), &vertices[0][0], gl::STATIC_DRAW);
+
+  normals_buffer.gen();
+  normals_buffer.bind(gl::ARRAY_BUFFER);
+  gl::BufferData(gl::ARRAY_BUFFER, 3 * NUM_VERTICES * sizeof(GLfloat), &normals[0][0], gl::STATIC_DRAW);
+
+  index_buffer.gen();
+  index_buffer.bind();
+  num_indices = 3 * NUM_POLYGONS * sizeof(GLuint);
+  gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, num_indices, &polygons[0], gl::STATIC_DRAW);
 }
 
-
-
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Shapes
-    {
-
-
-    void Cube::generate()
-    {
-      vertex_buffer.gen();
-      vertex_buffer.bind (gl::ARRAY_BUFFER);
-      gl::BufferData (gl::ARRAY_BUFFER, 3 * NUM_VERTICES * sizeof(GLfloat), &vertices[0][0], gl::STATIC_DRAW);
-
-      normals_buffer.gen();
-      normals_buffer.bind (gl::ARRAY_BUFFER);
-      gl::BufferData (gl::ARRAY_BUFFER, 3 * NUM_VERTICES * sizeof(GLfloat), &normals[0][0], gl::STATIC_DRAW);
-
-      index_buffer.gen();
-      index_buffer.bind();
-      num_indices = 3 * NUM_POLYGONS * sizeof(GLuint);
-      gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, num_indices, &polygons[0], gl::STATIC_DRAW);
-    }
-
-
-
-    }
-  }
-}
-
-
-
-
+} // namespace Shapes
+} // namespace GUI
+} // namespace MR

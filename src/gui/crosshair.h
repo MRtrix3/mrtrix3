@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-
 #ifndef __gui_crosshair_h__
 #define __gui_crosshair_h__
 
@@ -23,31 +22,23 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 
-namespace MR
-{
-  namespace GUI
-  {
+namespace MR {
+namespace GUI {
 
+class ModelViewProjection;
 
-    class ModelViewProjection;
+class Crosshair {
+public:
+  Crosshair() {}
+  void render(const Eigen::Vector3f &focus, const ModelViewProjection &MVP) const;
 
+protected:
+  mutable GL::VertexBuffer VB;
+  mutable GL::VertexArrayObject VAO;
+  mutable GL::Shader::Program program;
+};
 
-    class Crosshair
-    { NOMEMALIGN
-      public:
-          Crosshair() { }
-          void render (const Eigen::Vector3f& focus,
-                       const ModelViewProjection& MVP) const;
-      protected:
-        mutable GL::VertexBuffer VB;
-        mutable GL::VertexArrayObject VAO;
-        mutable GL::Shader::Program program;
-    };
-
-
-
-
-  }
-}
+} // namespace GUI
+} // namespace MR
 
 #endif

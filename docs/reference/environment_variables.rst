@@ -24,6 +24,13 @@ List of MRtrix3 environment variables
      when reading DICOM data, match the StudyName entry against
      the string provided
 
+.. envvar:: MRTRIX_CLI_PARSE_ONLY
+
+     Set the command to parse the provided inputs and then quit
+     if it is set. This can be used in the CI of wrapping code,
+     such as the automatically generated Pydra interfaces.
+     Note that it will have no effect for R interfaces
+
 .. envvar:: MRTRIX_CONFIGFILE
 
      This can be used to set the location of the system-wide
@@ -31,6 +38,12 @@ List of MRtrix3 environment variables
      This can be useful for deployments where access to the system's
      ``/etc`` folder is problematic, or to allow different versions of
      the software to have different configurations, etc.
+
+.. envvar:: MRTRIX_LOGLEVEL
+
+     Set the default terminal verbosity. Default terminal verbosity
+     is 1. This has the same effect as the ``-quiet`` (0),
+     ``-info`` (2) or ``-debug`` (3) comand-line options.
 
 .. envvar:: MRTRIX_NOSIGNALS
 
@@ -47,10 +60,26 @@ List of MRtrix3 environment variables
      :option:`NumberOfThreads` setting in the configuration file, but
      will be overridden by the ENVVAR ``-nthreads`` command-line option.
 
+.. envvar:: MRTRIX_PRESERVE_PHILIPS_ISO
+
+     Do not remove the synthetic isotropically-weighted diffusion
+     image often added at the end of the series on Philips
+     scanners. By default, these images are removed from the series
+     to prevent errors in downstream processing. If this
+     environment variable is set, these images will be preserved in
+     the output.
+     
+     Note that it can be difficult to ascertain which volume is the
+     synthetic isotropically-weighed image, since its DW encoding
+     will normally have been modified from its initial value
+     (e.g. [ 0 0 0 1000 ] for a b=1000 acquisition) to b=0 due to
+     b-value scaling.
+
 .. envvar:: MRTRIX_QUIET
 
      Do not display information messages or progress status. This has
-     the same effect as the ``-quiet`` command-line option.
+     the same effect as the ``-quiet`` command-line option. If set,
+     supersedes the MRTRIX_LOGLEVEL environment variable.
 
 .. envvar:: MRTRIX_RNG_SEED
 

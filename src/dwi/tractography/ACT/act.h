@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,44 +20,39 @@
 #include "app.h"
 #include "header.h"
 
-
 // Actually think it's preferable to not use these
 #define ACT_WM_INT_REQ 0.0
 #define ACT_WM_ABS_REQ 0.0
 
 #define GMWMI_ACCURACY 0.01 // Absolute value of tissue proportion difference
 
-// Number of times a backtrack attempt will be made from a certain maximal track length before the length of truncation is increased
+// Number of times a backtrack attempt will be made from a certain maximal track length before the length of truncation
+// is increased
 #define ACT_BACKTRACK_ATTEMPTS 3
 
+namespace MR {
 
-namespace MR
-{
-
-  namespace App { class OptionGroup; }
-
-  namespace DWI
-  {
-
-    namespace Tractography
-    {
-
-      class Properties;
-
-      namespace ACT
-      {
-
-        extern const App::OptionGroup ACTOption;
-
-        void load_act_properties (Properties& properties);
-
-        void verify_5TT_image (const Header&);
-
-
-      }
-    }
-  }
+namespace App {
+class OptionGroup;
 }
 
-#endif
+namespace DWI {
 
+namespace Tractography {
+
+class Properties;
+
+namespace ACT {
+
+extern const App::OptionGroup ACTOption;
+
+void load_act_properties(Properties &properties);
+
+void verify_5TT_image(const Header &);
+
+} // namespace ACT
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
+
+#endif

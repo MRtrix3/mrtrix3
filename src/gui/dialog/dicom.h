@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,24 +17,19 @@
 #ifndef __dialog_dicom_h__
 #define __dialog_dicom_h__
 
-#include "gui/opengl/gl.h"
 #include "file/dicom/tree.h"
+#include "gui/opengl/gl.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Dialog
-    {
+namespace MR {
+namespace GUI {
+namespace Dialog {
 
-      using namespace MR::File::Dicom;
+using namespace MR::File::Dicom;
 
-      vector<std::shared_ptr<Series>> select_dicom (const Tree& tree);
+std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree);
 
-    }
-  }
-}
+} // namespace Dialog
+} // namespace GUI
+} // namespace MR
 
 #endif
-
-

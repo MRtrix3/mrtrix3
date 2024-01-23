@@ -147,6 +147,7 @@ Table of Contents
    installation/build_from_source
    installation/deployment
    installation/hpc_clusters_install
+   installation/using_containers
 
 .. toctree::
    :maxdepth: 1

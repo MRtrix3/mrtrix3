@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,72 +17,50 @@
 #ifndef __dwi_tractography_seeding_list_h__
 #define __dwi_tractography_seeding_list_h__
 
-
 #include "types.h"
 
 #include "dwi/tractography/seeding/base.h"
 
+namespace MR {
+namespace DWI {
+namespace Tractography {
+namespace Seeding {
 
-namespace MR
-{
-  namespace DWI
-  {
-    namespace Tractography
-    {
-      namespace Seeding
-      {
+class List {
 
+public:
+  List() : total_volume(0.0), total_count(0) {}
 
+  List(const List &) = delete;
 
+  void add(Base *const in);
+  void clear();
+  bool get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d);
 
-      class List
-      { MEMALIGN(List)
+  size_t num_seeds() const { return seeders.size(); }
+  const Base *operator[](const size_t n) const { return seeders[n].get(); }
+  bool is_finite() const { return total_count; }
+  uint32_t get_total_count() const { return total_count; }
 
-        public:
-          List() :
-            total_volume (0.0),
-            total_count (0) { }
-
-          List (const List&) = delete;
-
-
-          void add (Base* const in);
-          void clear();
-          bool get_seed (Eigen::Vector3f& p, Eigen::Vector3f& d);
-
-
-          size_t num_seeds() const { return seeders.size(); }
-          const Base* operator[] (const size_t n) const { return seeders[n].get(); }
-          bool is_finite() const { return total_count; }
-          uint32_t get_total_count() const { return total_count; }
-
-
-          friend inline std::ostream& operator<< (std::ostream& stream, const List& S) {
-            if (S.seeders.empty())
-              return stream;
-            auto i = S.seeders.cbegin();
-            stream << **i;
-            for (++i; i != S.seeders.cend(); ++i)
-              stream << ", " << **i;
-            return (stream);
-          }
-
-
-        private:
-          vector<std::unique_ptr<Base>> seeders;
-          float total_volume;
-          uint32_t total_count;
-
-      };
-
-
-
-
-
-      }
-    }
+  friend inline std::ostream &operator<<(std::ostream &stream, const List &S) {
+    if (S.seeders.empty())
+      return stream;
+    auto i = S.seeders.cbegin();
+    stream << **i;
+    for (++i; i != S.seeders.cend(); ++i)
+      stream << ", " << **i;
+    return (stream);
   }
-}
+
+private:
+  std::vector<std::unique_ptr<Base>> seeders;
+  float total_volume;
+  uint32_t total_count;
+};
+
+} // namespace Seeding
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
