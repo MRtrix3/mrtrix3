@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,7 +55,7 @@ public:
 
   size_t size() const { return reverse.size(); }
 
-  const vector<index_t> &operator[](const size_t index) const {
+  const std::vector<index_t> &operator[](const size_t index) const {
     assert(index < reverse.size());
     return reverse[index];
   }
@@ -70,10 +70,10 @@ public:
 
 private:
   Image<index_t> forward;
-  vector<vector<index_t>> reverse;
+  std::vector<std::vector<index_t>> reverse;
 
-  vector<index_t> pos() const {
-    vector<index_t> result;
+  std::vector<index_t> pos() const {
+    std::vector<index_t> result;
     for (size_t index = 0; index != forward.ndim(); ++index)
       result.push_back(forward.index(index));
     return result;

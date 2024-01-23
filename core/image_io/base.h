@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -76,7 +76,7 @@ public:
     return segsize;
   }
 
-  vector<File::Entry> files;
+  std::vector<File::Entry> files;
 
   void merge(const Base &B) {
     assert(addresses.empty());
@@ -93,7 +93,7 @@ public:
 
 protected:
   size_t segsize;
-  vector<std::unique_ptr<uint8_t[]>> addresses;
+  std::vector<std::unique_ptr<uint8_t[]>> addresses;
   bool is_new, writable;
 
   void check() const { assert(addresses.size()); }

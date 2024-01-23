@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -207,7 +207,7 @@ protected:
   //! pointer to data address whether in RAM or MMap
   void *data_pointer;
   //! voxel indices
-  vector<ssize_t> x;
+  std::vector<ssize_t> x;
   //! voxel indices
   Stride::List strides;
   //! offset to currently pointed-to voxel
@@ -256,14 +256,14 @@ template <typename ValueType> struct TmpImage : public ImageBase<TmpImage<ValueT
 
   TmpImage(const typename Image<ValueType>::Buffer &b,
            void *const data,
-           vector<ssize_t> x,
+           std::vector<ssize_t> x,
            const Stride::List &strides,
            size_t offset)
       : b(b), data(data), x(x), strides(strides), offset(offset) {}
 
   const typename Image<ValueType>::Buffer &b;
   void *const data;
-  vector<ssize_t> x;
+  std::vector<ssize_t> x;
   const Stride::List &strides;
   size_t offset;
 
@@ -345,7 +345,7 @@ template <typename ValueType> Image<ValueType>::~Image() {
       if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
         auto data_buffer = std::move(buffer->data_buffer);
         TmpImage<ValueType> src = {
-            *buffer, data_buffer.get(), vector<ssize_t>(ndim(), 0), strides, Stride::offset(*this)};
+            *buffer, data_buffer.get(), std::vector<ssize_t>(ndim(), 0), strides, Stride::offset(*this)};
         Image<ValueType> dest(buffer);
         threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
       }
@@ -385,7 +385,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
     auto src(*this);
     TmpImage<ValueType> dest = {*buffer,
                                 buffer->data_buffer.get(),
-                                vector<ssize_t>(ndim(), 0),
+                                std::vector<ssize_t>(ndim(), 0),
                                 with_strides,
                                 Stride::offset(with_strides, *this)};
     threaded_copy_with_progress_message("preloading data for \"" + name() + "\"", src, dest);

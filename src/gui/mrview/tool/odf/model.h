@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -64,7 +64,7 @@ public:
     return 1;
   }
 
-  size_t add_items(const vector<std::string> &list,
+  size_t add_items(const std::vector<std::string> &list,
                    const odf_type_t type,
                    bool colour_by_direction,
                    bool hide_negative_lobes,
@@ -85,7 +85,7 @@ public:
     return index.isValid() ? dynamic_cast<ODF_Item *>(items[index.row()].get()) : NULL;
   }
 
-  vector<std::unique_ptr<ODF_Item>> items;
+  std::vector<std::unique_ptr<ODF_Item>> items;
 };
 
 } // namespace Tool

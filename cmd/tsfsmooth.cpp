@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -51,7 +51,7 @@ void run() {
 
   float stdev = get_option_value("stdev", DEFAULT_SMOOTHING);
 
-  vector<float> kernel(2 * ceil(2.5 * stdev) + 1, 0);
+  std::vector<float> kernel(2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;
   float radius = (kernel.size() - 1.0) / 2.0;
   for (size_t c = 0; c < kernel.size(); ++c) {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -332,7 +332,7 @@ public:
   void set_backtrack();
   void add_fod_image(const std::string &);
   void add_twdfc_static_image(Image<float> &);
-  void add_twdfc_dynamic_image(Image<float> &, const vector<float> &, const ssize_t);
+  void add_twdfc_dynamic_image(Image<float> &, const std::vector<float> &, const ssize_t);
   void add_vector_data(const std::string &);
 
 protected:
@@ -340,7 +340,7 @@ protected:
   const tck_stat_t track_statistic;
 
   // Members for when the contribution of a track is not constant along its length
-  mutable vector<default_type> factors;
+  mutable std::vector<default_type> factors;
   void load_factors(const Streamline<> &) const;
 
   // Member for incorporating additional information from an external image into the TWI process

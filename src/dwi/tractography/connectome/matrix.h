@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -83,9 +83,9 @@ private:
   const std::unique_ptr<MR::Connectome::Mat2Vec> mat2vec;
 
   vector_type data, counts;
-  vector<node_t> assignments_single;
-  vector<NodePair> assignments_pairs;
-  vector<vector<node_t>> assignments_lists;
+  std::vector<node_t> assignments_single;
+  std::vector<NodePair> assignments_pairs;
+  std::vector<std::vector<node_t>> assignments_lists;
 
   FORCE_INLINE void apply_data(const size_t, const T, const T);
   FORCE_INLINE void apply_data(const size_t, const size_t, const T, const T);

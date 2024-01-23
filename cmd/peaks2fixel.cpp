@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,9 +43,9 @@ void usage() {
   +Option("dataname", "the name of the output fixel data file encoding peak amplitudes") + Argument("path").type_text();
 }
 
-vector<Eigen::Vector3d> get(Image<float> &data) {
+std::vector<Eigen::Vector3d> get(Image<float> &data) {
   data.index(3) = 0;
-  vector<Eigen::Vector3d> result;
+  std::vector<Eigen::Vector3d> result;
   while (data.index(3) < data.size(3)) {
     Eigen::Vector3d direction;
     for (size_t axis = 0; axis != 3; ++axis) {

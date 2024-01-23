@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -84,7 +84,7 @@ void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
     break;
 
   case transform_t::FS2REAL:
-    vector<size_t> axes(3);
+    std::vector<size_t> axes(3);
     auto M = File::NIfTI::adjust_transform(header, axes);
     Eigen::Vector3d cras(3, 1);
     for (size_t i = 0; i < 3; i++) {

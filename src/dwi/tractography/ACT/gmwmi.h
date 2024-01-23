@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,8 +54,8 @@ public:
   bool find_interface(Eigen::Vector3f &) const;
   Eigen::Vector3f normal(const Eigen::Vector3f &) const;
 
-  Eigen::Vector3f find_interface(const vector<Eigen::Vector3f> &, const bool) const;
-  void crop_track(vector<Eigen::Vector3f> &) const;
+  Eigen::Vector3f find_interface(const std::vector<Eigen::Vector3f> &, const bool) const;
+  void crop_track(std::vector<Eigen::Vector3f> &) const;
 
 protected:
   const Interp interp_template;
@@ -71,7 +71,7 @@ protected:
   Eigen::Vector3f get_normal(const Eigen::Vector3f &, Interp &) const;
   Eigen::Vector3f get_cf_min_step(const Eigen::Vector3f &, Interp &) const;
 
-  Eigen::Vector3f find_interface(const vector<Eigen::Vector3f> &, const bool, Interp &) const;
+  Eigen::Vector3f find_interface(const std::vector<Eigen::Vector3f> &, const bool, Interp &) const;
 
   friend class Track_extender;
   friend class Tractography::Seeding::Dynamic_ACT_additions;

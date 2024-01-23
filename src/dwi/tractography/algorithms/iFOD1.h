@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -212,7 +212,7 @@ protected:
   float calibrate_ratio;
   size_t mean_sample_num, num_sample_runs, num_truncations;
   float max_truncation;
-  vector<Eigen::Vector3f> calibrate_list;
+  std::vector<Eigen::Vector3f> calibrate_list;
 
   float FOD(const Eigen::Vector3f &d) const {
     return (S.precomputer ? S.precomputer.value(values, d) : Math::SH::value(values, d, S.lmax));

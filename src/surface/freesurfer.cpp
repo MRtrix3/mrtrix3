@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,7 +28,7 @@ void read_annot(const std::string &path, label_vector_type &labels, Connectome::
     throw Exception("Error opening input file!");
 
   const int32_t num_vertices = get_BE<int32_t>(in);
-  vector<int32_t> vertices, vertex_labels;
+  std::vector<int32_t> vertices, vertex_labels;
   vertices.reserve(num_vertices);
   vertex_labels.reserve(num_vertices);
   for (int32_t i = 0; i != num_vertices; ++i) {

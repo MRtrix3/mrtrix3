@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,7 +75,7 @@ private:
   default_type min, max, bin_width;
   size_t num_bins;
   const bool ignore_zero;
-  vector<default_type> data;
+  std::vector<default_type> data;
 
   default_type get_iqr();
 };

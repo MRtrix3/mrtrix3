@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -445,7 +445,7 @@ void ODF::setup_ODFtype_UI(const ODF_Item *image) {
     preview->set_lod_enabled(image->odf_type != odf_type_t::DIXEL);
 }
 
-void ODF::add_images(vector<std::string> &list, const odf_type_t mode) {
+void ODF::add_images(std::vector<std::string> &list, const odf_type_t mode) {
   size_t previous_size = image_list_model->rowCount();
   if (!image_list_model->add_items(
           list, mode, colour_by_direction_box->isChecked(), hide_negative_values_box->isChecked(), scale->value()))
@@ -468,7 +468,8 @@ void ODF::closeEvent(QCloseEvent *) { window().disconnect(this); }
 void ODF::onPreviewClosed() { show_preview_button->setChecked(false); }
 
 void ODF::sh_open_slot() {
-  vector<std::string> list = Dialog::File::get_images(&window(), "Select SH-based ODF images to open", &current_folder);
+  std::vector<std::string> list =
+      Dialog::File::get_images(&window(), "Select SH-based ODF images to open", &current_folder);
   if (list.empty())
     return;
 
@@ -476,7 +477,7 @@ void ODF::sh_open_slot() {
 }
 
 void ODF::tensor_open_slot() {
-  vector<std::string> list = Dialog::File::get_images(&window(), "Select tensor images to open", &current_folder);
+  std::vector<std::string> list = Dialog::File::get_images(&window(), "Select tensor images to open", &current_folder);
   if (list.empty())
     return;
 
@@ -484,7 +485,7 @@ void ODF::tensor_open_slot() {
 }
 
 void ODF::dixel_open_slot() {
-  vector<std::string> list =
+  std::vector<std::string> list =
       Dialog::File::get_images(&window(), "Select dixel-based ODF images to open", &current_folder);
   if (list.empty())
     return;
@@ -780,7 +781,7 @@ void ODF::add_commandline_options(MR::App::OptionList &options) {
 bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("odf.load_sh")) {
     try {
-      vector<std::string> list(1, opt[0]);
+      std::vector<std::string> list(1, opt[0]);
       add_images(list, odf_type_t::SH);
     } catch (Exception &e) {
       e.display();
@@ -790,7 +791,7 @@ bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("odf.load_tensor")) {
     try {
-      vector<std::string> list(1, opt[0]);
+      std::vector<std::string> list(1, opt[0]);
       add_images(list, odf_type_t::TENSOR);
     } catch (Exception &e) {
       e.display();
@@ -800,7 +801,7 @@ bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("odf.load_dixel")) {
     try {
-      vector<std::string> list(1, opt[0]);
+      std::vector<std::string> list(1, opt[0]);
       add_images(list, odf_type_t::DIXEL);
     } catch (Exception &e) {
       e.display();

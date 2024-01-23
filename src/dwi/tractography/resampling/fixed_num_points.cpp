@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ bool FixedNumPoints::operator()(const Streamline<> &in, Streamline<> &out) const
   if (in.size() < 2)
     return true;
   value_type length = 0.0;
-  vector<value_type> steps;
+  std::vector<value_type> steps;
   for (size_t i = 1; i != in.size(); ++i) {
     const value_type dist = (in[i] - in[i - 1]).norm();
     length += dist;

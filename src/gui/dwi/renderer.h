@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -175,7 +175,7 @@ public:
     GL::VertexBuffer surface_buffer;
     GL::VertexArrayObject VAO;
 
-    void update_transform(const vector<Shapes::HalfSphere::Vertex> &, int);
+    void update_transform(const std::vector<Shapes::HalfSphere::Vertex> &, int);
 
   } sh;
 
