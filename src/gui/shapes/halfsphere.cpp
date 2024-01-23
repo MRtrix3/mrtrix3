@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -92,9 +92,9 @@ public:
 } // namespace
 
 void HalfSphere::LOD(const size_t level_of_detail) {
-  // vector<Vertex> vertices;
+  // std::vector<Vertex> vertices;
   vertices.clear();
-  vector<Triangle> indices;
+  std::vector<Triangle> indices;
 
   for (size_t n = 0; n < NUM_VERTICES; n++)
     vertices.push_back(initial_vertices[n]);

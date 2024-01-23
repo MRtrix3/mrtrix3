@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -99,7 +99,7 @@ void check_design(const matrix_type &, const bool);
 
 index_array_type load_variance_groups(const index_type num_inputs);
 
-vector<Hypothesis> load_hypotheses(const std::string &file_path);
+std::vector<Hypothesis> load_hypotheses(const std::string &file_path);
 
 /** \addtogroup Statistics
   @{ */
@@ -118,7 +118,7 @@ matrix_type solve_betas(const matrix_type &measurements, const matrix_type &desi
  */
 vector_type abs_effect_size(const matrix_type &measurements, const matrix_type &design, const Hypothesis &hypothesis);
 matrix_type
-abs_effect_size(const matrix_type &measurements, const matrix_type &design, const vector<Hypothesis> &hypotheses);
+abs_effect_size(const matrix_type &measurements, const matrix_type &design, const std::vector<Hypothesis> &hypotheses);
 
 /*! Compute the pooled standard deviation
  * @param measurements a matrix storing the measured data across subjects in each column
@@ -142,7 +142,7 @@ matrix_type stdev(const matrix_type &measurements, const matrix_type &design, co
  */
 vector_type std_effect_size(const matrix_type &measurements, const matrix_type &design, const Hypothesis &hypothesis);
 matrix_type
-std_effect_size(const matrix_type &measurements, const matrix_type &design, const vector<Hypothesis> &hypotheses);
+std_effect_size(const matrix_type &measurements, const matrix_type &design, const std::vector<Hypothesis> &hypotheses);
 
 /*! Compute all GLM-related statistics
  * This function can be used when the design matrix remains fixed for all
@@ -157,7 +157,7 @@ std_effect_size(const matrix_type &measurements, const matrix_type &design, cons
  */
 void all_stats(const matrix_type &measurements,
                const matrix_type &design,
-               const vector<Hypothesis> &hypotheses,
+               const std::vector<Hypothesis> &hypotheses,
                const index_array_type &variance_groups,
                matrix_type &betas,
                matrix_type &abs_effect_size,
@@ -178,8 +178,8 @@ void all_stats(const matrix_type &measurements,
  */
 void all_stats(const matrix_type &measurements,
                const matrix_type &design,
-               const vector<CohortDataImport> &extra_columns,
-               const vector<Hypothesis> &hypotheses,
+               const std::vector<CohortDataImport> &extra_columns,
+               const std::vector<Hypothesis> &hypotheses,
                const index_array_type &variance_groups,
                vector_type &cond,
                matrix_type &betas,
@@ -192,7 +192,7 @@ void all_stats(const matrix_type &measurements,
 // Define a base class for GLM tests
 class TestBase {
 public:
-  TestBase(const matrix_type &measurements, const matrix_type &design, const vector<Hypothesis> &hypotheses)
+  TestBase(const matrix_type &measurements, const matrix_type &design, const std::vector<Hypothesis> &hypotheses)
       : y(measurements), M(design), c(hypotheses), stat2z(new Math::Zstatistic()) {
     assert(y.rows() == M.rows());
     // Can no longer apply this assertion here; GLMTTestVariable later
@@ -226,7 +226,7 @@ public:
 
 protected:
   const matrix_type &y, M;
-  const vector<Hypothesis> &c;
+  const std::vector<Hypothesis> &c;
   std::shared_ptr<Math::Zstatistic> stat2z;
 };
 
@@ -250,7 +250,7 @@ public:
    */
   TestFixedHomoscedastic(const matrix_type &measurements,
                          const matrix_type &design,
-                         const vector<Hypothesis> &hypotheses);
+                         const std::vector<Hypothesis> &hypotheses);
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -261,11 +261,11 @@ public:
 
 protected:
   // New classes to store information relevant to Freedman-Lane implementation
-  vector<Hypothesis::Partition> partitions;
+  std::vector<Hypothesis::Partition> partitions;
   const matrix_type pinvM;
   const matrix_type Rm;
-  vector<matrix_type> XtX;
-  vector<default_type> one_over_dof;
+  std::vector<matrix_type> XtX;
+  std::vector<default_type> one_over_dof;
 };
 //! @}
 
@@ -291,7 +291,7 @@ public:
    */
   TestFixedHeteroscedastic(const matrix_type &measurements,
                            const matrix_type &design,
-                           const vector<Hypothesis> &hypotheses,
+                           const std::vector<Hypothesis> &hypotheses,
                            const index_array_type &variance_groups);
 
   index_type num_variance_groups() const { return num_vgs; }
@@ -309,7 +309,7 @@ protected:
   // Total number of variance groups
   const index_type num_vgs;
   // Number of inputs that are part of each variance group
-  vector<index_type> inputs_per_vg;
+  std::vector<index_type> inputs_per_vg;
   // Might as well construct this in the functor rather than here,
   //   given 1 value for each VG is computed
   vector_type Rnn_sums;
@@ -337,10 +337,10 @@ protected:
  */
 class TestVariableHomoscedastic : public TestBase {
 public:
-  TestVariableHomoscedastic(const vector<CohortDataImport> &importers,
+  TestVariableHomoscedastic(const std::vector<CohortDataImport> &importers,
                             const matrix_type &measurements,
                             const matrix_type &design,
-                            const vector<Hypothesis> &hypotheses,
+                            const std::vector<Hypothesis> &hypotheses,
                             const bool nans_in_data,
                             const bool nans_in_columns);
 
@@ -357,7 +357,7 @@ public:
   index_type num_factors() const override { return M.cols() + importers.size(); }
 
 protected:
-  const vector<CohortDataImport> &importers;
+  const std::vector<CohortDataImport> &importers;
   const bool nans_in_data, nans_in_columns;
 
   void get_mask(const index_type ie, BitSet &, const matrix_type &extra_columns) const;
@@ -387,10 +387,10 @@ protected:
  */
 class TestVariableHeteroscedastic : public TestVariableHomoscedastic {
 public:
-  TestVariableHeteroscedastic(const vector<CohortDataImport> &importers,
+  TestVariableHeteroscedastic(const std::vector<CohortDataImport> &importers,
                               const matrix_type &measurements,
                               const matrix_type &design,
-                              const vector<Hypothesis> &hypotheses,
+                              const std::vector<Hypothesis> &hypotheses,
                               const index_array_type &variance_groups,
                               const bool nans_in_data,
                               const bool nans_in_columns);

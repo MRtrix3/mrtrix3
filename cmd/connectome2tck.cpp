@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -158,9 +158,9 @@ void run() {
   Tractography::Properties properties;
   Tractography::Reader<float> reader(argument[0], properties);
 
-  vector<vector<node_t>> assignments_lists;
+  std::vector<std::vector<node_t>> assignments_lists;
   assignments_lists.reserve(to<size_t>(properties["count"]));
-  vector<NodePair> assignments_pairs;
+  std::vector<NodePair> assignments_pairs;
   bool nonpair_found = false;
   node_t max_node_index = 0;
   {
@@ -172,7 +172,7 @@ void run() {
       if (line.empty())
         continue;
       std::stringstream line_stream(line);
-      vector<node_t> nodes;
+      std::vector<node_t> nodes;
       while (1) {
         node_t n;
         line_stream >> n;
@@ -216,7 +216,7 @@ void run() {
   const bool keep_self = get_options("keep_self").size();
 
   // Get the list of nodes of interest
-  vector<node_t> nodes;
+  std::vector<node_t> nodes;
   opt = get_options("nodes");
   bool manual_node_list = false;
   if (opt.size()) {
@@ -256,8 +256,8 @@ void run() {
     // Load the node image, get the centres of mass
     // Generate exemplars - these can _only_ be done per edge, and requires a mutex per edge to multi-thread
     auto image = Image<node_t>::open(opt[0][0]);
-    vector<Eigen::Vector3f> COMs(max_node_index + 1, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
-    vector<size_t> volumes(max_node_index + 1, 0);
+    std::vector<Eigen::Vector3f> COMs(max_node_index + 1, Eigen::Vector3f(0.0f, 0.0f, 0.0f));
+    std::vector<size_t> volumes(max_node_index + 1, 0);
     for (auto i = Loop()(image); i; ++i) {
       const node_t index = image.value();
       if (index) {
@@ -344,7 +344,7 @@ void run() {
       } else {
         // For each node in the list, write one file for an exemplar to every other node
         ProgressBar progress("writing exemplars to files", nodes.size() * COMs.size());
-        for (vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+        for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
           for (size_t i = first_node; i != COMs.size(); ++i) {
             generator.write(*n,
                             i,
@@ -356,7 +356,7 @@ void run() {
       }
     } else if (file_format == 1) { // One file per node
       ProgressBar progress("writing exemplars to files", nodes.size());
-      for (vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+      for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
         generator.write(
             *n, prefix + str(*n) + ".tck", weights_prefix.size() ? (weights_prefix + str(*n) + ".csv") : "");
         ++progress;
@@ -399,7 +399,7 @@ void run() {
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each edge)");
       break;
     case 1: // One file per node
-      for (vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+      for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
         writer.add(*i, prefix + str(*i) + ".tck", weights_prefix.size() ? (weights_prefix + str(*i) + ".csv") : "");
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
       break;

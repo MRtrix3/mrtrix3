@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -59,7 +59,7 @@ public:
     std::shared_ptr<ProgressBar> progress(message.size() ? new ProgressBar(message, npass + 1) : nullptr);
 
     for (unsigned int pass = 0; pass < npass; pass++) {
-      out = make_shared<Image<bool>>(Image<bool>::scratch(input));
+      out = std::make_shared<Image<bool>>(Image<bool>::scratch(input));
       for (auto l = Loop(*in)(*in, *out); l; ++l)
         out->value() = dilate(*in);
       if (pass < npass - 1)

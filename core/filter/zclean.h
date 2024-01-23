@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -289,7 +289,7 @@ protected:
 
   template <typename ImageType, typename MaskType>
   void calculate_median_mad(ImageType &image, MaskType &mask, size_t nvoxels, float &median, float &mad) {
-    MR::vector<float> vals(nvoxels);
+    std::vector<float> vals(nvoxels);
     size_t idx = 0;
     for (auto l = Loop(0, 3)(mask, image); l; ++l) {
       if (mask.value())

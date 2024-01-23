@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -405,7 +405,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
   if (existing_value == insert_mode_value)
     return;
   after[seed_index] = fill_value;
-  vector<std::array<int, 3>> buffer(1, seed_voxel);
+  std::vector<std::array<int, 3>> buffer(1, seed_voxel);
   while (buffer.size()) {
     const std::array<int, 3> v(buffer.back());
     buffer.pop_back();

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -91,7 +91,7 @@ void run() {
   std::set<std::string> option_list{"threhsold_value", "threshold_connectivity", "fwhm", "minweight", "mask"};
 
   Image<float> single_file;
-  vector<Header> multiple_files;
+  std::vector<Header> multiple_files;
   std::unique_ptr<Fixel::Filter::Base> filter;
 
   {

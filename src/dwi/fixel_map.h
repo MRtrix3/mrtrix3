@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -67,7 +67,7 @@ public:
   const ::MR::Header &header() const { return _header; }
 
 protected:
-  vector<Fixel> fixels;
+  std::vector<Fixel> fixels;
 
 private:
   const class HeaderHelper : public ::MR::Header {

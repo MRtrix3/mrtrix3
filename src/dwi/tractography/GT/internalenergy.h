@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -91,7 +91,7 @@ public:
 protected:
   ParticleGrid &pGrid;
   double cpot, dEint;
-  vector<ParticleEnd> neighbourhood;
+  std::vector<ParticleEnd> neighbourhood;
   double normalization;
   Math::RNG::Uniform<double> rng_uniform;
 

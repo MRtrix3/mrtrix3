@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -130,7 +130,7 @@ protected:
   OutputImageType output;
   const int minW, maxW, num_shifts;
   Math::FFT1D fft;
-  vector<Math::FFT1D> ifft;
+  std::vector<Math::FFT1D> ifft;
 
   int optimumshift(int n, int lsize) {
     int ind = 0;
@@ -161,7 +161,7 @@ protected:
   }
 };
 
-inline vector<size_t> strides_for_axis(int axis) {
+inline std::vector<size_t> strides_for_axis(int axis) {
   switch (axis) {
   case 0:
     return {0, 1, 2};

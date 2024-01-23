@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -325,7 +325,7 @@ void phoenix_scalar(const KeyValues &keyval, const std::string &key, const Funct
     return;
   field = functor(it->second);
 }
-template <typename T> void phoenix_vector(const KeyValues &keyval, const std::string &key, vector<T> &data) {
+template <typename T> void phoenix_vector(const KeyValues &keyval, const std::string &key, std::vector<T> &data) {
   data.clear();
   for (size_t index = 0;; ++index) {
     const auto it = keyval.find(key + "[" + str(index) + "]");
@@ -364,7 +364,7 @@ void Image::decode_csa(const uint8_t *start, const uint8_t *end) {
       mosaic_slices_timing.resize(entry.num_items());
       entry.get_float(mosaic_slices_timing);
     } else if (strcmp("MrPhoenixProtocol", entry.key()) == 0) {
-      const vector<std::string> phoenix = entry.get_string();
+      const std::vector<std::string> phoenix = entry.get_string();
       const auto keyval = read_csa_ascii(phoenix);
       phoenix_scalar(
           keyval,
@@ -411,7 +411,7 @@ void Image::decode_csa(const uint8_t *start, const uint8_t *end) {
       bvalue = G[0] = G[1] = G[2] = 0.0;
 }
 
-KeyValues Image::read_csa_ascii(const vector<std::string> &data) {
+KeyValues Image::read_csa_ascii(const std::vector<std::string> &data) {
 
   auto split_keyval = [](const std::string &s) -> std::pair<std::string, std::string> {
     const size_t delimiter = s.find_first_of("=");
@@ -481,7 +481,7 @@ std::ostream &operator<<(std::ostream &stream, const Image &item) {
 
 namespace {
 
-inline void update_count(size_t num, vector<size_t> &dim, vector<size_t> &index) {
+inline void update_count(size_t num, std::vector<size_t> &dim, std::vector<size_t> &index) {
   for (size_t n = 0; n < num; ++n) {
     if (dim[n] && index[n] != dim[n])
       throw Exception("dimensions mismatch in DICOM series");
@@ -493,9 +493,9 @@ inline void update_count(size_t num, vector<size_t> &dim, vector<size_t> &index)
 
 } // namespace
 
-vector<size_t> Frame::count(const vector<Frame *> &frames) {
-  vector<size_t> dim(3, 0);
-  vector<size_t> index(3, 1);
+std::vector<size_t> Frame::count(const std::vector<Frame *> &frames) {
+  std::vector<size_t> dim(3, 0);
+  std::vector<size_t> index(3, 1);
   const Frame *previous = frames[0];
 
   for (auto frame_it = frames.cbegin() + 1; frame_it != frames.cend(); ++frame_it) {
@@ -522,7 +522,7 @@ vector<size_t> Frame::count(const vector<Frame *> &frames) {
   return dim;
 }
 
-default_type Frame::get_slice_separation(const vector<Frame *> &frames, size_t nslices) {
+default_type Frame::get_slice_separation(const std::vector<Frame *> &frames, size_t nslices) {
   default_type max_gap = 0.0;
   default_type min_separation = std::numeric_limits<default_type>::infinity();
   default_type max_separation = 0.0;
@@ -549,7 +549,7 @@ default_type Frame::get_slice_separation(const vector<Frame *> &frames, size_t n
 }
 
 std::string
-Frame::get_DW_scheme(const vector<Frame *> &frames, const size_t nslices, const transform_type &image_transform) {
+Frame::get_DW_scheme(const std::vector<Frame *> &frames, const size_t nslices, const transform_type &image_transform) {
   if (!std::isfinite(frames[0]->bvalue)) {
     DEBUG("no DW encoding information found in DICOM frames");
     return {};
@@ -592,7 +592,7 @@ Frame::get_DW_scheme(const vector<Frame *> &frames, const size_t nslices, const 
   return dw_scheme;
 }
 
-Eigen::MatrixXd Frame::get_PE_scheme(const vector<Frame *> &frames, const size_t nslices) {
+Eigen::MatrixXd Frame::get_PE_scheme(const std::vector<Frame *> &frames, const size_t nslices) {
   const size_t num_volumes = frames.size() / nslices;
   Eigen::MatrixXd pe_scheme = Eigen::MatrixXd::Zero(num_volumes, 4);
 

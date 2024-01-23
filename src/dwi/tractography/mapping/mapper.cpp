@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -204,7 +204,7 @@ void TrackMapperTWI::add_twdfc_static_image(Image<float> &image) {
 }
 
 void TrackMapperTWI::add_twdfc_dynamic_image(Image<float> &image,
-                                             const vector<float> &kernel,
+                                             const std::vector<float> &kernel,
                                              const ssize_t timepoint) {
   if (image_plugin)
     throw Exception("Cannot add more than one associated image to TWI");
@@ -239,7 +239,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   if (contrast != CURVATURE)
     throw Exception("Unsupported contrast in function TrackMapperTWI::load_factors()");
 
-  vector<Eigen::Vector3d> tangents;
+  std::vector<Eigen::Vector3d> tangents;
   tangents.reserve(tck.size());
 
   // Would like to be able to manipulate the length over which the tangent calculation is affected
@@ -252,7 +252,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
 
   // Need to know the distance along the spline between every point and every other point
   // Start by logging the length of each step
-  vector<default_type> step_sizes;
+  std::vector<default_type> step_sizes;
   step_sizes.reserve(tck.size());
 
   for (size_t i = 0; i != tck.size(); ++i) {
@@ -311,7 +311,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   // Smooth both the tangent vectors and the principal normal vectors according to a Gaussuan kernel
   // Remember: tangent vectors are unit length, but for principal normal vectors length must be preserved!
 
-  vector<Eigen::Vector3d> smoothed_tangents;
+  std::vector<Eigen::Vector3d> smoothed_tangents;
   smoothed_tangents.reserve(tangents.size());
 
   static const default_type gaussian_theta = CURVATURE_TRACK_SMOOTHING_FWHM / (2.0 * sqrt(2.0 * log(2.0)));
