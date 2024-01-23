@@ -20,9 +20,11 @@
 #include "command.h"
 #include "dwi/gradient.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "math/math.h"
 #include "math/median.h"
 #include "memory.h"
+#include "misc/voxel2vector.h"
 #include "phase_encoding.h"
 #include "progressbar.h"
 
@@ -277,40 +279,38 @@ public:
 
 template <class Operation> class ImageKernel : public ImageKernelBase {
 protected:
-  class InitFunctor {
-  public:
-    template <class ImageType> void operator()(ImageType &out) const { out.value() = Operation(); }
-  };
   class ProcessFunctor {
   public:
-    template <class ImageType1, class ImageType2> void operator()(ImageType1 &out, ImageType2 &in) const {
-      Operation op = out.value();
-      op(in.value());
-      out.value() = op;
-    }
+    ProcessFunctor(ImageKernel &master) : master(master) {}
+    template <class ImageType> void operator()(ImageType &in) const { master.data[master.v2v(in)](in.value()); }
+
+  protected:
+    ImageKernel &master;
   };
   class ResultFunctor {
   public:
-    template <class ImageType1, class ImageType2> void operator()(ImageType1 &out, ImageType2 &in) const {
-      Operation op = in.value();
-      out.value() = op.result();
+    ResultFunctor(ImageKernel &master) : master(master) {}
+    template <class ImageType> void operator()(ImageType &out) const {
+      out.value() = master.data[master.v2v(out)].result();
     }
+
+  protected:
+    ImageKernel &master;
   };
 
 public:
-  ImageKernel(const Header &header) : image(Header::scratch(header).get_image<Operation>()) {
-    ThreadedLoop(image).run(InitFunctor(), image);
-  }
+  ImageKernel(const Header &header) : v2v(header), data(voxel_count(header)) {}
 
-  void write_back(Image<value_type> &out) { ThreadedLoop(image).run(ResultFunctor(), out, image); }
+  void write_back(Image<value_type> &out) { ThreadedLoop(out).run(ResultFunctor(*this), out); }
 
   void process(Header &header_in) {
     auto in = header_in.get_image<value_type>();
-    ThreadedLoop(image).run(ProcessFunctor(), image, in);
+    ThreadedLoop(in).run(ProcessFunctor(*this), in);
   }
 
 protected:
-  Image<Operation> image;
+  Voxel2Vector v2v;
+  std::vector<Operation> data;
 };
 
 void run() {
