@@ -41,6 +41,18 @@ public:
 
   template <class MaskType> Voxel2Vector(MaskType &mask) : Voxel2Vector(mask, Header(mask)) {}
 
+  Voxel2Vector(const Header &header)
+      : forward(Image<index_t>::scratch(header, "Voxel to vector index conversion scratch image")) {
+    reverse.reserve(voxel_count(header));
+    index_t counter = 0;
+    for (auto l = Loop(header)(forward); l; ++l) {
+      forward.value() = counter++;
+      reverse.push_back(pos());
+    }
+    DEBUG("Voxel2vector class for image \"" + header.name() + "\" of size " + join(pos(), "x") + " initialised with " +
+          str(reverse.size()) + " elements");
+  }
+
   size_t size() const { return reverse.size(); }
 
   const vector<index_t> &operator[](const size_t index) const {
@@ -59,6 +71,13 @@ public:
 private:
   Image<index_t> forward;
   vector<vector<index_t>> reverse;
+
+  vector<index_t> pos() const {
+    vector<index_t> result;
+    for (size_t index = 0; index != forward.ndim(); ++index)
+      result.push_back(forward.index(index));
+    return result;
+  }
 };
 
 template <class MaskType>
@@ -75,15 +94,13 @@ Voxel2Vector::Voxel2Vector(MaskType &mask, const Header &data)
   for (auto l = Loop(data)(r_mask, forward); l; ++l) {
     if (r_mask.value()) {
       forward.value() = counter++;
-      vector<index_t> pos;
-      for (size_t index = 0; index != data.ndim(); ++index)
-        pos.push_back(forward.index(index));
-      reverse.push_back(pos);
+      reverse.push_back(pos());
     } else {
       forward.value() = invalid;
     }
   }
-  DEBUG("Voxel2Vector class has " + str(reverse.size()) + " non-zero entries");
+  DEBUG("Voxel2vector class for image \"" + data.name() + "\" of size " + join(pos(), "x") + " initialised with " +
+        str(reverse.size()) + " elements");
 }
 
 } // namespace MR
