@@ -364,6 +364,7 @@ namespace MR {
 
         if (!transfer_syntax_supported) {
           WARN ("unsupported transfer syntax found in DICOM data");
+          WARN ("header information is accessible, but commands requiring access to image intensity data will fail");
           WARN ("consider using third-party tools to convert your data to standard uncompressed encoding");
           WARN ("See the MRtrix3 documentation on DICOM handling for details:");
           WARN ("   http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html#error-unsupported-transfer-syntax");
