@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,7 +41,7 @@ size_t determine_upsample_ratio(const Header &header, const Tractography::Proper
   return determine_upsample_ratio(header, properties.get_stepsize(), ratio);
 }
 
-void generate_header(Header &header, const std::string &tck_file_path, const vector<default_type> &voxel_size) {
+void generate_header(Header &header, const std::string &tck_file_path, const std::vector<default_type> &voxel_size) {
 
   Properties properties;
   Reader<> file(tck_file_path, properties);
@@ -84,7 +84,7 @@ void generate_header(Header &header, const std::string &tck_file_path, const vec
   file.close();
 }
 
-void oversample_header(Header &header, const vector<default_type> &voxel_size) {
+void oversample_header(Header &header, const std::vector<default_type> &voxel_size) {
   INFO("oversampling header...");
 
   header.transform().translation() +=

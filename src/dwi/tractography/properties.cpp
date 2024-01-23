@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -115,7 +115,7 @@ std::ostream &operator<<(std::ostream &stream, const Properties &P) {
   for (KeyValues::const_iterator i = P.begin(); i != P.end(); ++i)
     stream << "[ " << i->first << ": " << i->second << " ], ";
   stream << "comments: ";
-  for (vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
+  for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
     stream << "\"" << *i << "\", ";
   return (stream);
 }

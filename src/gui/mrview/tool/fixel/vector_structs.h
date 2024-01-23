@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ struct FixelValue {
   float value_max = std::numeric_limits<float>::min();
   float lessthan = value_min, greaterthan = value_max;
   float current_min = value_min, current_max = value_max;
-  vector<float> buffer_store;
+  std::vector<float> buffer_store;
 
   void clear() {
     buffer_store.clear();

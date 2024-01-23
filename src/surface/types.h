@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,11 +24,11 @@ namespace MR {
 namespace Surface {
 
 using Vertex = Eigen::Vector3d;
-using VertexList = vector<Vertex>;
+using VertexList = std::vector<Vertex>;
 using Triangle = Polygon<3>;
-using TriangleList = vector<Triangle>;
+using TriangleList = std::vector<Triangle>;
 using Quad = Polygon<4>;
-using QuadList = vector<Quad>;
+using QuadList = std::vector<Quad>;
 
 class Vox : public Eigen::Array3i {
 public:

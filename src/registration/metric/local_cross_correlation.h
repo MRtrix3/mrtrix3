@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -112,12 +112,12 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
                      .finished();
   }
 
-  LCCPrecomputeFunctorMasked_Naive(const vector<size_t> &ext, ImageType1 &adapter1, ImageType2 &adapter2)
+  LCCPrecomputeFunctorMasked_Naive(const std::vector<size_t> &ext, ImageType1 &adapter1, ImageType2 &adapter2)
       : extent(ext), in1(adapter1), in2(adapter2) { /* TODO check dimensions and extent */
   }
 
 protected:
-  vector<size_t> extent;
+  std::vector<size_t> extent;
   ImageType1 in1; // store reslice adapter in functor to avoid iterating over it when mask is false
   ImageType2 in2; // TODO: cache interpolated values for neighbourhood iteration
 };
@@ -163,7 +163,7 @@ public:
 
     auto cc_image =
         cc_image_header.template get_image<ProcessedImageValueType>().with_direct_io(Stride::contiguous_along_axis(3));
-    vector<uint32_t> NoOversample;
+    std::vector<uint32_t> NoOversample;
     {
       LogLevelLatch log_level(0);
       if (parameters.im1_mask.valid() or parameters.im2_mask.valid())

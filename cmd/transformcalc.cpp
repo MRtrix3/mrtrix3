@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -213,7 +213,7 @@ void run() {
     transform_type transform_out;
     Eigen::Transform<default_type, 3, Eigen::Projective> Tin;
     Eigen::MatrixXd Min;
-    vector<Eigen::MatrixXd> matrices;
+    std::vector<Eigen::MatrixXd> matrices;
     for (size_t i = 0; i < num_inputs; i++) {
       DEBUG(str(argument[i]));
       Tin = File::Matrix::load_transform(argument[i]);

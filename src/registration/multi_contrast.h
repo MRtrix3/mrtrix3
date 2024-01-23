@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ namespace MR {
 namespace Registration {
 
 FORCE_INLINE void check_image_output(const std::string &image_name, const Header &reference) {
-  vector<std::string> V;
+  std::vector<std::string> V;
   if (!image_name.size())
     throw Exception("image output path is empty");
   if (Path::exists(image_name) && !App::overwrite_files)
@@ -43,7 +43,7 @@ FORCE_INLINE void check_image_output(const std::string &image_name, const Header
   Header H = reference;
   File::NameParser parser;
   parser.parse(image_name);
-  vector<int> Pdim(parser.ndim());
+  std::vector<int> Pdim(parser.ndim());
 
   H.name() = image_name;
 
@@ -106,7 +106,9 @@ inline std::ostream &operator<<(std::ostream &o, const MultiContrastSetting &a) 
   return o;
 }
 
-void preload_data(vector<Header> &input, Image<default_type> &images, const vector<MultiContrastSetting> &mc_params);
+void preload_data(std::vector<Header> &input,
+                  Image<default_type> &images,
+                  const std::vector<MultiContrastSetting> &mc_params);
 
 } // namespace Registration
 } // namespace MR

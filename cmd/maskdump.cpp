@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,7 +41,7 @@ void run() {
   if (H.datatype() != DataType::Bit)
     WARN("Input is not a genuine boolean mask image");
   auto in = H.get_image<bool>();
-  vector<Eigen::ArrayXi> locations;
+  std::vector<Eigen::ArrayXi> locations;
   for (auto l = Loop(in)(in); l; ++l) {
     if (in.value()) {
       Eigen::ArrayXi this_voxel(in.ndim());

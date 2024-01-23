@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -86,7 +86,7 @@ void BufferScratchDump<value_type>::dump_to_file(const std::string &path, const 
   for (const auto &i : H.keyval())
     out_header << "\n" << i.first << ": " << i.second;
 
-  for (vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
+  for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
     out_header << "\ncomments: " << *i;
 
   if (H.transform().is_set()) {

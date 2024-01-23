@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@ namespace File {
 
 namespace {
 
-inline bool in_seq(const vector<uint32_t> &seq, uint32_t val) {
+inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
   if (seq.size() == 0)
     return true;
   for (size_t i = 0; i < seq.size(); i++)
@@ -96,7 +96,7 @@ std::ostream &operator<<(std::ostream &stream, const NameParser &parser) {
   return stream;
 }
 
-bool NameParser::match(const std::string &file_name, vector<uint32_t> &indices) const {
+bool NameParser::match(const std::string &file_name, std::vector<uint32_t> &indices) const {
   uint32_t current = 0;
   size_t num = 0;
   indices.resize(seq_index.size());
@@ -122,7 +122,7 @@ bool NameParser::match(const std::string &file_name, vector<uint32_t> &indices) 
   return true;
 }
 
-void NameParser::calculate_padding(const vector<uint32_t> &maxvals) {
+void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
   assert(maxvals.size() == seq_index.size());
   for (size_t n = 0; n < seq_index.size(); n++)
     assert(maxvals[n] > 0);
@@ -157,7 +157,7 @@ void NameParser::Item::calc_padding(size_t maxval) {
     seq_length += 1;
 }
 
-std::string NameParser::name(const vector<uint32_t> &indices) {
+std::string NameParser::name(const std::vector<uint32_t> &indices) {
   if (!seq_index.size())
     return Path::join(folder_name, array[0].string());
 
@@ -177,7 +177,7 @@ std::string NameParser::name(const vector<uint32_t> &indices) {
   return Path::join(folder_name, str);
 }
 
-std::string NameParser::get_next_match(vector<uint32_t> &indices, bool return_seq_index) {
+std::string NameParser::get_next_match(std::vector<uint32_t> &indices, bool return_seq_index) {
   if (!folder)
     folder.reset(new Path::Dir(folder_name));
 
@@ -208,13 +208,13 @@ bool ParsedName::operator<(const ParsedName &pn) const {
   return false;
 }
 
-vector<uint32_t> ParsedName::List::parse_scan_check(const std::string &specifier, size_t max_num_sequences) {
+std::vector<uint32_t> ParsedName::List::parse_scan_check(const std::string &specifier, size_t max_num_sequences) {
   NameParser parser;
   parser.parse(specifier);
 
   scan(parser);
   std::sort(list.begin(), list.end(), compare_ptr_contents());
-  vector<uint32_t> dim = count();
+  std::vector<uint32_t> dim = count();
 
   for (size_t n = 0; n < dim.size(); n++)
     if (parser.sequence(n).size())
@@ -225,7 +225,7 @@ vector<uint32_t> ParsedName::List::parse_scan_check(const std::string &specifier
 }
 
 void ParsedName::List::scan(NameParser &parser) {
-  vector<uint32_t> index;
+  std::vector<uint32_t> index;
   if (parser.ndim() == 0) {
     list.push_back(std::shared_ptr<ParsedName>(new ParsedName(parser.name(index), index)));
     return;
@@ -240,15 +240,15 @@ void ParsedName::List::scan(NameParser &parser) {
     throw Exception("no matching files found for image specifier \"" + parser.spec() + "\"");
 }
 
-vector<uint32_t> ParsedName::List::count() const {
+std::vector<uint32_t> ParsedName::List::count() const {
   if (!list[0]->ndim()) {
     if (size() == 1)
-      return (vector<uint32_t>());
+      return (std::vector<uint32_t>());
     else
       throw Exception("image number mismatch");
   }
 
-  vector<uint32_t> dim(list[0]->ndim(), 0);
+  std::vector<uint32_t> dim(list[0]->ndim(), 0);
   size_t current_entry = 0;
 
   count_dim(dim, current_entry, 0);
@@ -256,7 +256,7 @@ vector<uint32_t> ParsedName::List::count() const {
   return dim;
 }
 
-void ParsedName::List::count_dim(vector<uint32_t> &dim, size_t &current_entry, size_t current_dim) const {
+void ParsedName::List::count_dim(std::vector<uint32_t> &dim, size_t &current_entry, size_t current_dim) const {
   uint32_t n;
   bool stop = false;
   std::shared_ptr<const ParsedName> first_entry(list[current_entry]);

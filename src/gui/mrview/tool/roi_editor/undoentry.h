@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,7 +54,7 @@ struct ROI_UndoEntry {
 
   std::array<GLint, 3> from, size;
   std::array<GLint, 2> tex_size, slice_axes;
-  vector<GLubyte> before, after;
+  std::vector<GLubyte> before, after;
 
   class Shared {
   public:

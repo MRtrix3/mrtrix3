@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2023 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -114,7 +114,7 @@ void run() {
       sifter.set_csv_path(opt[0][0]);
     opt = get_options("output_at_counts");
     if (opt.size()) {
-      vector<uint32_t> counts = parse_ints<uint32_t>(opt[0][0]);
+      std::vector<uint32_t> counts = parse_ints<uint32_t>(opt[0][0]);
       sifter.set_regular_outputs(counts, debug_path);
     }
 
