@@ -617,7 +617,6 @@ public:
 
 //! a class to hold the coefficients for an apodised disc function.
 template <typename ValueType> class aDF : public ApodizedBase<ValueType> {
-  MEMALIGN(aDF<ValueType>)
 public:
   aDF(const size_t lmax) : ApodizedBase<ValueType>(lmax) {
     switch (lmax) {
