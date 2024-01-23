@@ -46,8 +46,10 @@ public:
   };
 
   Bootstrap(const ImageType &Image, const Functor &functor)
-      : base_type(Image), func(functor), next_voxel(nullptr), last_voxel(nullptr) {
+      : base_type(Image), func(functor), next_voxel(nullptr), last_voxel(nullptr), current_chunk(0) {
     assert(ndim() == 4);
+    voxel_buffer.push_back(std::vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
+    clear();
   }
 
   value_type value() { return get_voxel()[index(3)]; }
@@ -65,10 +67,9 @@ public:
 
   void clear() {
     voxels.clear();
-    if (voxel_buffer.empty())
-      voxel_buffer.push_back(std::vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
     next_voxel = &voxel_buffer[0][0];
     last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);
+    current_chunk = 0;
   }
 
 protected:
@@ -77,11 +78,14 @@ protected:
   std::vector<std::vector<value_type>> voxel_buffer;
   value_type *next_voxel;
   value_type *last_voxel;
+  size_t current_chunk;
 
   value_type *allocate_voxel() {
     if (next_voxel == last_voxel) {
-      voxel_buffer.push_back(std::vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
-      next_voxel = &voxel_buffer.back()[0];
+      if (++current_chunk >= voxel_buffer.size())
+        voxel_buffer.push_back(std::vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
+      assert(current_chunk < voxel_buffer.size());
+      next_voxel = &voxel_buffer[current_chunk][0];
       last_voxel = next_voxel + NUM_VOX_PER_CHUNK * size(3);
     }
     value_type *retval = next_voxel;
@@ -100,7 +104,7 @@ protected:
       data[index(3)] = base_type::value();
     index(3) = pos;
     func(data);
-    voxels.insert(std::make_pair(voxel, data));
+    voxels.insert({voxel, data});
     return data;
   }
 };
