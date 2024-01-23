@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,43 +17,33 @@
 #ifndef __surface_types_h__
 #define __surface_types_h__
 
-
 #include "connectome/connectome.h"
 #include "surface/polygon.h"
 
+namespace MR {
+namespace Surface {
 
+using Vertex = Eigen::Vector3d;
+using VertexList = std::vector<Vertex>;
+using Triangle = Polygon<3>;
+using TriangleList = std::vector<Triangle>;
+using Quad = Polygon<4>;
+using QuadList = std::vector<Quad>;
 
-namespace MR
-{
-  namespace Surface
-  {
-
-
-    using Vertex = Eigen::Vector3;
-    using VertexList = vector<Vertex>;
-    using Triangle = Polygon<3>;
-    using TriangleList = vector<Triangle>;
-    using Quad = Polygon<4>;
-    using QuadList = vector<Quad>;
-
-    class Vox : public Eigen::Array3i
-    { MEMALIGN (Vox)
-      public:
-        using Eigen::Array3i::Array3i;
-        Vox () : Eigen::Array3i (-1, -1, -1) { }
-        Vox (const Eigen::Vector3& p) : Eigen::Array3i (int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2]))) { }
-        bool operator< (const Vox& i) const
-        {
-          return ((*this)[2] == i[2] ? (((*this)[1] == i[1]) ? ((*this)[0] < i[0]) : ((*this)[1] < i[1])) : ((*this)[2] < i[2]));
-        }
-    };
-
-    using label_vector_type = Eigen::Array<Connectome::node_t, Eigen::Dynamic, 1>;
-
-
-
+class Vox : public Eigen::Array3i {
+public:
+  using Eigen::Array3i::Array3i;
+  Vox() : Eigen::Array3i(-1, -1, -1) {}
+  Vox(const Eigen::Vector3d &p) : Eigen::Array3i(int(std::round(p[0])), int(std::round(p[1])), int(std::round(p[2]))) {}
+  bool operator<(const Vox &i) const {
+    return ((*this)[2] == i[2] ? (((*this)[1] == i[1]) ? ((*this)[0] < i[0]) : ((*this)[1] < i[1]))
+                               : ((*this)[2] < i[2]));
   }
-}
+};
+
+using label_vector_type = Eigen::Array<Connectome::node_t, Eigen::Dynamic, 1>;
+
+} // namespace Surface
+} // namespace MR
 
 #endif
-

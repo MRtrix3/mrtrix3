@@ -36,6 +36,7 @@ List of MRtrix3 commands
     commands/dwi2response
     commands/dwi2tensor
     commands/dwibiascorrect
+    commands/dwibiasnormmask
     commands/dwicat
     commands/dwidenoise
     commands/dwiextract
@@ -62,6 +63,7 @@ List of MRtrix3 commands
     commands/labelconvert
     commands/labelsgmfix
     commands/labelstats
+    commands/mask2glass
     commands/maskdump
     commands/maskfilter
     commands/mesh2voxel
@@ -166,6 +168,7 @@ List of MRtrix3 commands
     |python.png|, :ref:`dwi2response`, "Estimate response function(s) for spherical deconvolution"
     |cpp.png|, :ref:`dwi2tensor`, "Diffusion (kurtosis) tensor estimation"
     |python.png|, :ref:`dwibiascorrect`, "Perform B1 field inhomogeneity correction for a DWI volume series"
+    |python.png|, :ref:`dwibiasnormmask`, "Perform a combination of bias field correction, intensity normalisation, and mask derivation, for DWI data"
     |python.png|, :ref:`dwicat`, "Concatenating multiple DWI series accounting for differential intensity scaling"
     |cpp.png|, :ref:`dwidenoise`, "dMRI noise level estimation and denoising using Marchenko-Pastur PCA"
     |cpp.png|, :ref:`dwiextract`, "Extract diffusion-weighted volumes, b=0 volumes, or certain shells from a DWI dataset"
@@ -192,6 +195,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`labelconvert`, "Convert a connectome node image from one lookup table to another"
     |python.png|, :ref:`labelsgmfix`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
     |cpp.png|, :ref:`labelstats`, "Compute statistics of parcels within a label image"
+    |python.png|, :ref:`mask2glass`, "Create a glass brain from mask input"
     |cpp.png|, :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     |cpp.png|, :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
     |cpp.png|, :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"

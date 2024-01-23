@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,81 +23,53 @@
 #include "types.h" // For FORCE_INLINE
 
 namespace MR {
-  namespace {
+namespace {
 
-    template<size_t N>
-      struct Apply { NOMEMALIGN
-        template<typename F, typename T>
-          static FORCE_INLINE void apply (F && f, T && t)
-          {
-            Apply<N-1>::apply (::std::forward<F>(f), ::std::forward<T>(t));
-            ::std::forward<F>(f) (::std::get<N> (::std::forward<T>(t)));
-          }
-      };
-
-    template<>
-      struct Apply<0> { NOMEMALIGN
-        template<typename F, typename T>
-          static FORCE_INLINE void apply (F && f, T && t)
-          {
-            ::std::forward<F>(f) (::std::get<0> (::std::forward<T>(t)));
-          }
-      };
-
-
-
-
-    template<size_t N>
-      struct Unpack { NOMEMALIGN
-        template<typename F, typename T, typename... A>
-          static FORCE_INLINE auto unpack (F && f, T && t, A &&... a)
-          -> decltype(Unpack<N-1>::unpack (
-                ::std::forward<F>(f), ::std::forward<T>(t),
-                ::std::get<N-1>(::std::forward<T>(t)), ::std::forward<A>(a)...
-                ))
-          {
-            return Unpack<N-1>::unpack (::std::forward<F>(f), ::std::forward<T>(t),
-                ::std::get<N-1>(::std::forward<T>(t)), ::std::forward<A>(a)...
-                );
-          }
-      };
-
-    template<>
-      struct Unpack<0> { NOMEMALIGN
-        template<typename F, typename T, typename... A>
-          static FORCE_INLINE auto unpack (F && f, T &&, A &&... a)
-          -> decltype(::std::forward<F>(f)(::std::forward<A>(a)...))
-          {
-            return ::std::forward<F>(f)(::std::forward<A>(a)...);
-          }
-      };
-
+template <size_t N> struct Apply {
+  template <typename F, typename T> static FORCE_INLINE void apply(F &&f, T &&t) {
+    Apply<N - 1>::apply(::std::forward<F>(f), ::std::forward<T>(t));
+    ::std::forward<F>(f)(::std::get<N>(::std::forward<T>(t)));
   }
+};
 
+template <> struct Apply<0> {
+  template <typename F, typename T> static FORCE_INLINE void apply(F &&f, T &&t) {
+    ::std::forward<F>(f)(::std::get<0>(::std::forward<T>(t)));
+  }
+};
 
+template <size_t N> struct Unpack {
+  template <typename F, typename T, typename... A>
+  static FORCE_INLINE auto unpack(F &&f, T &&t, A &&...a) -> decltype(Unpack<N - 1>::unpack(
+      ::std::forward<F>(f), ::std::forward<T>(t), ::std::get<N - 1>(::std::forward<T>(t)), ::std::forward<A>(a)...)) {
+    return Unpack<N - 1>::unpack(
+        ::std::forward<F>(f), ::std::forward<T>(t), ::std::get<N - 1>(::std::forward<T>(t)), ::std::forward<A>(a)...);
+  }
+};
 
+template <> struct Unpack<0> {
+  template <typename F, typename T, typename... A>
+  static FORCE_INLINE auto unpack(F &&f, T &&, A &&...a) -> decltype(::std::forward<F>(f)(::std::forward<A>(a)...)) {
+    return ::std::forward<F>(f)(::std::forward<A>(a)...);
+  }
+};
 
-  //! invoke \c f(x) for each entry in \c t
-  template <class F, class T>
-    FORCE_INLINE void apply (F && f, T && t) 
-    {
-      Apply< ::std::tuple_size<
-        typename ::std::decay<T>::type
-        >::value-1>::apply (::std::forward<F>(f), ::std::forward<T>(t));
-    }
+} // namespace
 
-  //! if \c t is a tuple of elements \c a..., invoke \c f(a...)
-  template<typename F, typename T>
-    FORCE_INLINE auto unpack (F && f, T && t)
-    -> decltype(Unpack< ::std::tuple_size<
-        typename ::std::decay<T>::type
-        >::value>::unpack (::std::forward<F>(f), ::std::forward<T>(t)))
-    {
-      return Unpack< ::std::tuple_size<
-        typename ::std::decay<T>::type
-        >::value>::unpack (::std::forward<F>(f), ::std::forward<T>(t));
-    }
+//! invoke \c f(x) for each entry in \c t
+template <class F, class T> FORCE_INLINE void apply(F &&f, T &&t) {
+  Apply<::std::tuple_size<typename ::std::decay<T>::type>::value - 1>::apply(::std::forward<F>(f),
+                                                                             ::std::forward<T>(t));
 }
 
-#endif
+//! if \c t is a tuple of elements \c a..., invoke \c f(a...)
+template <typename F, typename T>
+FORCE_INLINE auto unpack(F &&f, T &&t)
+    -> decltype(Unpack<::std::tuple_size<typename ::std::decay<T>::type>::value>::unpack(::std::forward<F>(f),
+                                                                                         ::std::forward<T>(t))) {
+  return Unpack<::std::tuple_size<typename ::std::decay<T>::type>::value>::unpack(::std::forward<F>(f),
+                                                                                  ::std::forward<T>(t));
+}
+} // namespace MR
 
+#endif

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,6 @@
 #ifndef __dwi_tractography_editing_worker_h__
 #define __dwi_tractography_editing_worker_h__
 
-
 #include <string>
 
 #include "types.h"
@@ -26,64 +25,52 @@
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/streamline.h"
 
-
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Editing {
+namespace DWI {
+namespace Tractography {
+namespace Editing {
 
+class Worker {
 
+public:
+  Worker(Tractography::Properties &p, const bool inv, const bool end)
+      : properties(p),
+        inverse(inv),
+        ends_only(end),
+        thresholds(p),
+        include_visitation(properties.include, properties.ordered_include) {}
 
+  Worker(const Worker &that)
+      : properties(that.properties),
+        inverse(that.inverse),
+        ends_only(that.ends_only),
+        thresholds(that.thresholds),
+        include_visitation(properties.include, properties.ordered_include) {}
 
-        class Worker
-        { MEMALIGN(Worker)
+  bool operator()(Streamline<> &, Streamline<> &) const;
 
-          public:
-            Worker (Tractography::Properties& p, const bool inv, const bool end) :
-              properties (p),
-              inverse (inv),
-              ends_only (end),
-              thresholds (p),
-              include_visitation (properties.include, properties.ordered_include) { }
+private:
+  const Tractography::Properties &properties;
+  const bool inverse, ends_only;
 
-            Worker (const Worker& that) :
-              properties (that.properties),
-              inverse (that.inverse),
-              ends_only (that.ends_only),
-              thresholds (that.thresholds),
-              include_visitation (properties.include, properties.ordered_include) { }
+  class Thresholds {
+  public:
+    Thresholds(Tractography::Properties &);
+    Thresholds(const Thresholds &);
+    bool operator()(const Streamline<> &) const;
 
+  private:
+    float max_length, min_length;
+    float max_weight, min_weight;
+    float step_size;
+  } thresholds;
 
-            bool operator() (Streamline<>&, Streamline<>&) const;
+  mutable IncludeROIVisitation include_visitation;
+};
 
-
-          private:
-            const Tractography::Properties& properties;
-            const bool inverse, ends_only;
-
-            class Thresholds
-            { NOMEMALIGN
-              public:
-                Thresholds (Tractography::Properties&);
-                Thresholds (const Thresholds&);
-                bool operator() (const Streamline<>&) const;
-              private:
-                float max_length, min_length;
-                float max_weight, min_weight;
-                float step_size;
-            } thresholds;
-
-            mutable IncludeROIVisitation include_visitation;
-
-        };
-
-
-
-
-      }
-    }
-  }
-}
+} // namespace Editing
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif

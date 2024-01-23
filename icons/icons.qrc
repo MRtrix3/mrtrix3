@@ -1,0 +1,53 @@
+<RCC>
+<qresource>
+    <file>adjustbutton.svg</file>
+    <file>brush.svg</file>
+    <file>clear.svg</file>
+    <file>close.svg</file>
+    <file>colourmap.svg</file>
+    <file>copy_from_above.svg</file>
+    <file>copy_from_below.svg</file>
+    <file>cursor_brightness_contrast.svg</file>
+    <file>cursor_crosshairs.svg</file>
+    <file>cursor_draw.svg</file>
+    <file>cursor_erase.svg</file>
+    <file>cursor_pan.svg</file>
+    <file>cursor_pan_through_plane.svg</file>
+    <file>cursor_rotate_inplane.svg</file>
+    <file>cursor_rotate_throughplane.svg</file>
+    <file>cursor_zoom.svg</file>
+    <file>draw.svg</file>
+    <file>erase.svg</file>
+    <file>file.svg</file>
+    <file>fill.svg</file>
+    <file>hide.svg</file>
+    <file>image.svg</file>
+    <file>info.svg</file>
+    <file>inspect.svg</file>
+    <file>invert.svg</file>
+    <file>light.svg</file>
+    <file>lock.svg</file>
+    <file>move.svg</file>
+    <file>mrtrix.png</file>
+    <file>new.svg</file>
+    <file>odf_dixel.svg</file>
+    <file>odf_sh.svg</file>
+    <file>odf_tensor.svg</file>
+    <file>open.svg</file>
+    <file>record.svg</file>
+    <file>rectangle.svg</file>
+    <file>redo.svg</file>
+    <file>reset.svg</file>
+    <file>restore.svg</file>
+    <file>rotate.svg</file>
+    <file>save.svg</file>
+    <file>select_contrast.svg</file>
+    <file>settings.svg</file>
+    <file>start.svg</file>
+    <file>stop.svg</file>
+    <file>tools.svg</file>
+    <file>undo.svg</file>
+    <file>view.svg</file>
+    <file>warn.svg</file>
+</qresource>
+</RCC>

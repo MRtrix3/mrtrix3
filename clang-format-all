@@ -1,0 +1,85 @@
+#!/usr/env/python3
+
+# Copyright (c) 2008-2024 the MRtrix3 contributors.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+# Covered Software is provided under this License on an "as is"
+# basis, without warranty of any kind, either expressed, implied, or
+# statutory, including, without limitation, warranties that the
+# Covered Software is free of defects, merchantable, fit for a
+# particular purpose or non-infringing.
+# See the Mozilla Public License v. 2.0 for more details.
+#
+# For more details, see http://www.mrtrix.org/.
+
+import os
+import argparse
+import subprocess
+import time
+from pathlib import Path
+from multiprocessing import cpu_count
+
+parser = argparse.ArgumentParser(
+    description='Run clang-format on C++ source files.'
+)
+
+parser.add_argument(
+    '-e', '--executable',
+    help='Path to the clang-format executable.',
+    default='clang-format'
+)
+
+args = parser.parse_args()
+clang_format = args.executable
+paths = ['core', 'cmd', 'src', 'testing']
+extensions = ['.h', '.cpp']
+exclusion_list = ['core/file/nifti1.h',
+                  'core/file/nifti2.h',
+                  'core/file/json.h']
+
+# if clang-format path contains spaces, wrap it in quotes
+if ' ' in clang_format and not clang_format.startswith('"'):
+    clang_format = '"{}"'.format(clang_format)
+
+if os.system('{} -version'.format(clang_format)) != 0:
+    raise RuntimeError('Could not find clang-format executable.')
+
+
+def skip_file(file):
+    """Return True if the file should be skipped."""
+    return file.suffix not in extensions or file.as_posix() in exclusion_list
+
+
+def format_file(file):
+    """Run clang-format on a file."""
+    command = '{} -i {}'.format(clang_format, file)
+    return subprocess.Popen(command, shell=True)
+
+
+files = []
+for path in paths:
+    files += [file for file in list(Path(path).rglob('*.*'))
+              if not skip_file(file)]
+
+print('Found {} files to format.'.format(len(files)))
+
+# We want a maximum of num_cpus processes running at once
+processes = []
+num_cpus = cpu_count()
+total = len(files)
+
+try:
+    while len(files) > 0 or len(processes) > 0:
+        processes = [proc for proc in processes if proc.poll() is None]
+        schedule_count = min(num_cpus - len(processes), len(files))
+        processes += [format_file(files.pop(0)) for _ in range(schedule_count)]
+        print('Formatted {}/{} files.'.format(total - len(files), total), end='\r')
+        time.sleep(0.01)
+
+except KeyboardInterrupt:
+    print('Keyboard interrupt received, terminating formatting.')
+    for process in processes:
+        process.terminate()

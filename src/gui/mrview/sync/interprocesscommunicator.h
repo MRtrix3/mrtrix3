@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,54 +18,48 @@
 
 #include <qlocalsocket.h>
 
-#include "gui/mrview/sync/localsocketreader.h"
 #include "gui/mrview/sync/client.h"
-
+#include "gui/mrview/sync/localsocketreader.h"
 
 // maximum number of inter process syncers that are allowed. This can be
 // raised, but may reduce performance when new IPS are created.
 #define MAX_NO_ALLOWED 32
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Sync
-      {
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Sync {
 
-        /**
-        * Sends and receives information from other MRView processes
-        */
-        class InterprocessCommunicator : public QObject
-        { NOMEMALIGN
-          Q_OBJECT
+/**
+ * Sends and receives information from other MRView processes
+ */
+class InterprocessCommunicator : public QObject {
+  Q_OBJECT
 
-        public:
-          InterprocessCommunicator();
-          static void Int32ToChar(char a[], int n);
-          static int CharTo32bitNum(char a[]);
-          bool SendData(QByteArray data);//sends data to be synced
+public:
+  InterprocessCommunicator();
+  static void Int32ToChar(char a[], int n);
+  static int CharTo32bitNum(char a[]);
+  bool SendData(QByteArray data); // sends data to be synced
 
-        private slots:
-          void OnNewIncomingConnection();
-          void OnDataReceived(vector<std::shared_ptr<QByteArray>> dat);
+private slots:
+  void OnNewIncomingConnection();
+  void OnDataReceived(std::vector<std::shared_ptr<QByteArray>> dat);
 
-        signals:
-          void SyncDataReceived(vector<std::shared_ptr<QByteArray>> data); //fires when data is received which is for syncing. It is up to listeners to validate and store this value
+signals:
+  void SyncDataReceived(
+      std::vector<std::shared_ptr<QByteArray>> data); // fires when data is received which is for syncing. It is
+                                                      // up to listeners to validate and store this value
 
-        private:
-          int id;//id which is unique between mrview processes
-          vector<std::shared_ptr<GUI::MRView::Sync::Client>> senders;//send information
-          QLocalServer *receiver;//listens for information
-          void TryConnectTo(int connectToId);//tries to connect with another interprocesscommunicator
+private:
+  int id;                                                          // id which is unique between mrview processes
+  std::vector<std::shared_ptr<GUI::MRView::Sync::Client>> senders; // send information
+  QLocalServer *receiver;                                          // listens for information
+  void TryConnectTo(int connectToId); // tries to connect with another interprocesscommunicator
+};
 
-
-        };
-
-      }
-    }
-  }
-}
+} // namespace Sync
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 #endif

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,55 +20,40 @@
 #include "header.h"
 #include "transform.h"
 
+#include "surface/filter/base.h"
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
-#include "surface/filter/base.h"
 
+namespace MR {
+namespace Surface {
+namespace Filter {
 
+class VertexTransform : public Base {
+public:
+  enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL };
 
-namespace MR
-{
-  namespace Surface
-  {
-    namespace Filter
-    {
+  VertexTransform(const Header &H) : header(H), transform(H), mode(transform_t::UNDEFINED) {}
 
+  void set_first2real() { mode = transform_t::FIRST2REAL; }
+  void set_real2first() { mode = transform_t::REAL2FIRST; }
+  void set_voxel2real() { mode = transform_t::VOXEL2REAL; }
+  void set_real2voxel() { mode = transform_t::REAL2VOXEL; }
+  void set_fs2real() { mode = transform_t::FS2REAL; }
 
-      class VertexTransform : public Base
-      { MEMALIGN (VertexTransform)
-        public:
-          enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL };
+  transform_t get_mode() const { return mode; }
 
-          VertexTransform (const Header& H) :
-              header (H),
-              transform (H),
-              mode (transform_t::UNDEFINED) { }
+  void operator()(const Mesh &, Mesh &) const override;
 
-          void set_first2real() { mode = transform_t::FIRST2REAL; }
-          void set_real2first() { mode = transform_t::REAL2FIRST; }
-          void set_voxel2real() { mode = transform_t::VOXEL2REAL; }
-          void set_real2voxel() { mode = transform_t::REAL2VOXEL; }
-          void set_fs2real   () { mode = transform_t::FS2REAL   ; }
+  void operator()(const MeshMulti &in, MeshMulti &out) const override { Base::operator()(in, out); }
 
-          transform_t get_mode() const { return mode; }
+private:
+  const Header &header;
+  Transform transform;
+  transform_t mode;
+};
 
-          void operator() (const Mesh&, Mesh&) const override;
-
-          void operator() (const MeshMulti& in, MeshMulti& out) const override {
-            Base::operator() (in, out);
-          }
-
-        private:
-          const Header& header;
-          Transform transform;
-          transform_t mode;
-
-      };
-
-
-    }
-  }
-}
+} // namespace Filter
+} // namespace Surface
+} // namespace MR
 
 #endif
-

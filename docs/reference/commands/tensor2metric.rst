@@ -20,6 +20,11 @@ Usage
 Options
 -------
 
+-  **-mask image** only perform computation within the specified binary brain mask image.
+
+Diffusion Tensor Imaging
+^^^^^^^^^^^^^^^^^^^^^^^^
+
 -  **-adc image** compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor. (sometimes also referred to as the mean diffusivity (MD))
 
 -  **-fa image** compute the fractional anisotropy (FA) of the diffusion tensor.
@@ -27,12 +32,6 @@ Options
 -  **-ad image** compute the axial diffusivity (AD) of the diffusion tensor. (equivalent to the principal eigenvalue)
 
 -  **-rd image** compute the radial diffusivity (RD) of the diffusion tensor. (equivalent to the mean of the two non-principal eigenvalues)
-
--  **-cl image** compute the linearity metric of the diffusion tensor. (one of the three Westin shape metrics)
-
--  **-cp image** compute the planarity metric of the diffusion tensor. (one of the three Westin shape metrics)
-
--  **-cs image** compute the sphericity metric of the diffusion tensor. (one of the three Westin shape metrics)
 
 -  **-value image** compute the selected eigenvalue(s) of the diffusion tensor.
 
@@ -42,7 +41,26 @@ Options
 
 -  **-modulate choice** specify how to modulate the magnitude of the eigenvectors. Valid choices are: none, FA, eigval (default = FA).
 
--  **-mask image** only perform computation within the specified binary brain mask image.
+-  **-cl image** compute the linearity metric of the diffusion tensor. (one of the three Westin shape metrics)
+
+-  **-cp image** compute the planarity metric of the diffusion tensor. (one of the three Westin shape metrics)
+
+-  **-cs image** compute the sphericity metric of the diffusion tensor. (one of the three Westin shape metrics)
+
+Diffusion Kurtosis Imaging
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-dkt image** input diffusion kurtosis tensor.
+
+-  **-mk image** compute the mean kurtosis (MK) of the kurtosis tensor.
+
+-  **-ak image** compute the axial kurtosis (AK) of the kurtosis tensor.
+
+-  **-rk image** compute the radial kurtosis (RK) of the kurtosis tensor.
+
+-  **-mk_dirs file** specify the directions used to numerically calculate mean kurtosis (by default, the built-in 300 direction set is used). These should be supplied as a text file containing [ az el ] pairs for the directions.
+
+-  **-rk_ndirs integer** specify the number of directions used to numerically calculate radial kurtosis (by default, 300 directions are used).
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -76,9 +94,9 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** Thijs Dhollander (thijs.dhollander@gmail.com) & Ben Jeurissen (ben.jeurissen@uantwerpen.be) & J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be), Thijs Dhollander (thijs.dhollander@gmail.com) & J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

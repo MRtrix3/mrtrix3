@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,36 +17,25 @@
 #ifndef __dwi_tractography_resampling_endpoints_h__
 #define __dwi_tractography_resampling_endpoints_h__
 
-
 #include "dwi/tractography/resampling/resampling.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Resampling {
+namespace DWI {
+namespace Tractography {
+namespace Resampling {
 
+class Endpoints : public BaseCRTP<Endpoints> {
 
+public:
+  Endpoints() {}
 
-        class Endpoints : public BaseCRTP<Endpoints>
-        { NOMEMALIGN
+  bool operator()(const Streamline<> &, Streamline<> &) const override;
+  bool valid() const override { return true; }
+};
 
-          public:
-            Endpoints() { }
-
-            bool operator() (const Streamline<>&, Streamline<>&) const override;
-            bool valid() const override { return true; }
-
-        };
-
-
-
-      }
-    }
-  }
-}
+} // namespace Resampling
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-
-

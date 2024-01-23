@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,32 +17,14 @@
 #include "file/nifti_utils.h"
 #include "formats/list.h"
 
-namespace MR
-{
-  namespace Formats
-  {
+namespace MR {
+namespace Formats {
 
-    std::unique_ptr<ImageIO::Base> NIfTI1::read (Header& H) const
-    {
-      return File::NIfTI::read<1> (H);
-    }
+std::unique_ptr<ImageIO::Base> NIfTI1::read(Header &H) const { return File::NIfTI::read<1>(H); }
 
+bool NIfTI1::check(Header &H, size_t num_axes) const { return File::NIfTI::check(1, H, num_axes, {".nii", ".img"}); }
 
+std::unique_ptr<ImageIO::Base> NIfTI1::create(Header &H) const { return File::NIfTI::create<1>(H); }
 
-    bool NIfTI1::check (Header& H, size_t num_axes) const
-    {
-      return File::NIfTI::check (1, H, num_axes, { ".nii", ".img" });
-    }
-
-
-
-    std::unique_ptr<ImageIO::Base> NIfTI1::create (Header& H) const
-    {
-      return File::NIfTI::create<1> (H);
-    }
-
-
-
-  }
-}
-
+} // namespace Formats
+} // namespace MR

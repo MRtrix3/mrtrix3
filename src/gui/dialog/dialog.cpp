@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,36 +18,27 @@
 
 #include "app.h"
 #include "exception.h"
-#include "progressbar.h"
 #include "file/dicom/tree.h"
+#include "progressbar.h"
 
 #include "gui/dialog/dicom.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/progress.h"
 #include "gui/dialog/report_exception.h"
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Dialog
-    {
+namespace MR {
+namespace GUI {
+namespace Dialog {
 
+void init() {
+  ::MR::ProgressBar::display_func = ::MR::GUI::Dialog::ProgressBar::display;
+  ::MR::ProgressBar::done_func = ::MR::GUI::Dialog::ProgressBar::done;
+  ::MR::File::Dicom::select_func = ::MR::GUI::Dialog::select_dicom;
+  ::MR::Exception::display_func = ::MR::GUI::Dialog::display_exception;
 
-
-      void init()
-      {
-        ::MR::ProgressBar::display_func = ::MR::GUI::Dialog::ProgressBar::display;
-        ::MR::ProgressBar::done_func = ::MR::GUI::Dialog::ProgressBar::done;
-        ::MR::File::Dicom::select_func = ::MR::GUI::Dialog::select_dicom;
-        ::MR::Exception::display_func = ::MR::GUI::Dialog::display_exception;
-
-        ::MR::App::check_overwrite_files_func = ::MR::GUI::Dialog::File::check_overwrite_files_func;
-      }
-
-
-
-    }
-  }
+  ::MR::App::check_overwrite_files_func = ::MR::GUI::Dialog::File::check_overwrite_files_func;
 }
 
+} // namespace Dialog
+} // namespace GUI
+} // namespace MR

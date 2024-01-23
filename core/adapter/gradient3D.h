@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,45 +20,34 @@
 #include "adapter/gradient1D.h"
 #include "transform.h"
 
-namespace MR
-{
-  namespace Adapter
-  {
+namespace MR {
+namespace Adapter {
 
-    template <class ImageType>
-      class Gradient3D : 
-        public Gradient1D<ImageType> 
-    { MEMALIGN(Gradient3D<ImageType>)
+template <class ImageType> class Gradient3D : public Gradient1D<ImageType> {
 
-      public:
+public:
+  using value_type = Eigen::Matrix<typename ImageType::value_type, 3, 1>;
 
-        using value_type = Eigen::Matrix<typename ImageType::value_type,3,1>;
+  Gradient3D(const ImageType &parent, bool wrt_scanner = false)
+      : Gradient1D<ImageType>(parent, wrt_scanner), wrt_scanner(wrt_scanner), transform(parent) {}
 
-        Gradient3D (const ImageType& parent,
-                    bool wrt_scanner = false) :
-          Gradient1D<ImageType> (parent, wrt_scanner),
-          wrt_scanner (wrt_scanner),
-          transform (parent) {}
+  value_type value() {
+    value_type grad;
+    for (size_t i = 0; i < 3; ++i) {
+      Gradient1D<ImageType>::set_axis(i);
+      grad[i] = Gradient1D<ImageType>::value();
+    }
+    if (wrt_scanner)
+      grad = transform.image2scanner.linear().template cast<typename ImageType::value_type>() * grad;
 
-        value_type value ()
-        {
-          value_type grad;
-          for (size_t i = 0; i < 3; ++i) {
-            Gradient1D<ImageType>::set_axis(i);
-            grad[i] = Gradient1D<ImageType>::value();
-          }
-          if (wrt_scanner)
-            grad = transform.image2scanner.linear().template cast<typename ImageType::value_type>() * grad;
-
-          return grad;
-        }
-
-      protected:
-        const bool wrt_scanner;
-        Transform transform;
-      };
+    return grad;
   }
-}
+
+protected:
+  const bool wrt_scanner;
+  Transform transform;
+};
+} // namespace Adapter
+} // namespace MR
 
 #endif
-

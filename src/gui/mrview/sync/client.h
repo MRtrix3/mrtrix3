@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,42 +16,35 @@
 #ifndef __sync_client_h__
 #define __sync_client_h__
 
-#include <qlocalsocket.h>
 #include "types.h"
+#include <qlocalsocket.h>
 
 class QLocalSocket;
 
+namespace MR {
+namespace GUI {
+namespace MRView {
+namespace Sync {
+/**
+Sends data to another process
+*/
+class Client {
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace MRView
-    {
-      namespace Sync
-      {
-        /**
-        Sends data to another process
-        */
-        class Client
-        { NOMEMALIGN
+public:
+  Client();
+  Client(const Client &) = delete;
+  bool TryConnect();
+  void SetServerName(QString connectTo);
+  QString GetServerName();
+  void SendData(QByteArray dat);
 
-        public:
-          Client();
-          Client(const Client&) = delete;
-          bool TryConnect();
-          void SetServerName(QString connectTo);
-          QString GetServerName();
-          void SendData(QByteArray dat);
+private:
+  QString connectToServerName; // the name of the server (localsocketreader) to connect to
+  QLocalSocket *socket;
+};
 
-
-        private:
-          QString connectToServerName;//the name of the server (localsocketreader) to connect to
-          QLocalSocket *socket;
-        };
-
-      }
-    }
-  }
-}
+} // namespace Sync
+} // namespace MRView
+} // namespace GUI
+} // namespace MR
 #endif

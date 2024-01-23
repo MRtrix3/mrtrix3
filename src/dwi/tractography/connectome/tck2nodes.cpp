@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,75 +19,65 @@
 
 #include "dwi/tractography/connectome/tck2nodes.h"
 
-
 namespace MR {
 namespace DWI {
 namespace Tractography {
 namespace Connectome {
 
-
-
-
-
-node_t Tck2nodes_end_voxels::select_node (const Tractography::Streamline<>& tck, Image<node_t>& v, const bool end) const
-{
-  const Eigen::Vector3 p ((end ? tck.back() : tck.front()).cast<default_type>());
-  const Eigen::Vector3 v_float (transform->scanner2voxel * p);
+node_t
+Tck2nodes_end_voxels::select_node(const Tractography::Streamline<> &tck, Image<node_t> &v, const bool end) const {
+  const Eigen::Vector3d p((end ? tck.back() : tck.front()).cast<default_type>());
+  const Eigen::Vector3d v_float(transform->scanner2voxel * p);
   for (size_t axis = 0; axis != 3; ++axis)
-    v.index(axis) = std::round (v_float[axis]);
-  if (is_out_of_bounds (v))
+    v.index(axis) = std::round(v_float[axis]);
+  if (is_out_of_bounds(v))
     return 0;
   else
     return v.value();
 }
 
-
-
-
-
-void Tck2nodes_radial::initialise_search ()
-{
-  const int max_axis_offset (std::ceil ((max_dist + max_add_dist) / std::min ( { nodes.spacing(0), nodes.spacing(1), nodes.spacing(2) } )));
+void Tck2nodes_radial::initialise_search() {
+  const int max_axis_offset(
+      std::ceil((max_dist + max_add_dist) / std::min({nodes.spacing(0), nodes.spacing(1), nodes.spacing(2)})));
   std::multimap<default_type, voxel_type> radial_search_map;
   voxel_type offset;
   for (offset[2] = -max_axis_offset; offset[2] <= +max_axis_offset; ++offset[2]) {
     for (offset[1] = -max_axis_offset; offset[1] <= +max_axis_offset; ++offset[1]) {
       for (offset[0] = -max_axis_offset; offset[0] <= +max_axis_offset; ++offset[0]) {
-        const default_type dist = std::sqrt (Math::pow2 (offset[2] * nodes.spacing(2)) + Math::pow2 (offset[1] * nodes.spacing(1)) + Math::pow2 (offset[0] * nodes.spacing(0)));
+        const default_type dist =
+            std::sqrt(Math::pow2(offset[2] * nodes.spacing(2)) + Math::pow2(offset[1] * nodes.spacing(1)) +
+                      Math::pow2(offset[0] * nodes.spacing(0)));
         if (dist < (max_dist + max_add_dist))
-          radial_search_map.insert (std::make_pair (dist, offset));
+          radial_search_map.insert(std::make_pair(dist, offset));
       }
     }
   }
-  radial_search.reserve (radial_search_map.size());
+  radial_search.reserve(radial_search_map.size());
   for (auto i = radial_search_map.begin(); i != radial_search_map.end(); ++i)
-    radial_search.push_back (i->second);
+    radial_search.push_back(i->second);
 }
 
-
-
-
-node_t Tck2nodes_radial::select_node (const Tractography::Streamline<>& tck, Image<node_t>& v, const bool end) const
-{
+node_t Tck2nodes_radial::select_node(const Tractography::Streamline<> &tck, Image<node_t> &v, const bool end) const {
   default_type min_dist = max_dist;
   node_t node = 0;
 
-  const Eigen::Vector3 p = (end ? tck.back() : tck.front()).cast<default_type>();
-  const Eigen::Vector3 v_float = transform->scanner2voxel * p;
-  const voxel_type centre { int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])) };
+  const Eigen::Vector3d p = (end ? tck.back() : tck.front()).cast<default_type>();
+  const Eigen::Vector3d v_float = transform->scanner2voxel * p;
+  const voxel_type centre{int(std::round(v_float[0])), int(std::round(v_float[1])), int(std::round(v_float[2]))};
 
-  for (vector<voxel_type>::const_iterator offset = radial_search.begin(); offset != radial_search.end(); ++offset) {
+  for (std::vector<voxel_type>::const_iterator offset = radial_search.begin(); offset != radial_search.end();
+       ++offset) {
 
-    const voxel_type this_voxel (centre + *offset);
-    const Eigen::Vector3 p_voxel (transform->voxel2scanner * this_voxel.matrix().cast<default_type>());
-    const default_type dist ((p - p_voxel).norm());
+    const voxel_type this_voxel(centre + *offset);
+    const Eigen::Vector3d p_voxel(transform->voxel2scanner * this_voxel.matrix().cast<default_type>());
+    const default_type dist((p - p_voxel).norm());
 
-    if (dist > min_dist + 2*max_add_dist)
+    if (dist > min_dist + 2 * max_add_dist)
       return node;
 
     if (dist < min_dist) {
-      assign_pos_of (this_voxel).to (v);
-      if (!is_out_of_bounds (v)) {
+      assign_pos_of(this_voxel).to(v);
+      if (!is_out_of_bounds(v)) {
         const node_t this_node = v.value();
         if (this_node) {
           node = this_node;
@@ -99,56 +89,46 @@ node_t Tck2nodes_radial::select_node (const Tractography::Streamline<>& tck, Ima
   return node;
 }
 
-
-
-
-
-node_t Tck2nodes_revsearch::select_node (const Tractography::Streamline<>& tck, Image<node_t>& v, const bool end) const
-{
+node_t Tck2nodes_revsearch::select_node(const Tractography::Streamline<> &tck, Image<node_t> &v, const bool end) const {
   const int midpoint_index = end ? (tck.size() / 2) : ((tck.size() + 1) / 2);
-  const int start_index    = end ? (tck.size() - 1) : 0;
-  const int step           = end ? -1 : 1;
+  const int start_index = end ? (tck.size() - 1) : 0;
+  const int step = end ? -1 : 1;
 
   default_type dist = 0.0;
 
   for (int index = start_index; index != midpoint_index; index += step) {
-    const Eigen::Vector3 v_float = transform->scanner2voxel * tck[index].cast<default_type>();
-    const voxel_type voxel { int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])) };
-    assign_pos_of (voxel).to (v);
-    if (!is_out_of_bounds (v)) {
+    const Eigen::Vector3d v_float = transform->scanner2voxel * tck[index].cast<default_type>();
+    const voxel_type voxel{int(std::round(v_float[0])), int(std::round(v_float[1])), int(std::round(v_float[2]))};
+    assign_pos_of(voxel).to(v);
+    if (!is_out_of_bounds(v)) {
       const node_t this_node = v.value();
       if (this_node)
         return this_node;
     }
-    if (max_dist && ((dist += (tck[index] - tck[index+step]).norm()) > max_dist))
+    if (max_dist && ((dist += (tck[index] - tck[index + step]).norm()) > max_dist))
       return 0;
   }
 
   return 0;
 }
 
-
-
-
-
-
-node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<>& tck, Image<node_t>& v, const bool end) const
-{
+node_t
+Tck2nodes_forwardsearch::select_node(const Tractography::Streamline<> &tck, Image<node_t> &v, const bool end) const {
   // Start by defining the endpoint and the tangent at the endpoint
   const int index = end ? (tck.size() - 1) : 0;
-  const int step  = end ? -1 : 1;
-  const Eigen::Vector3 p = tck[index].cast<default_type>();
-  Eigen::Vector3 t;
+  const int step = end ? -1 : 1;
+  const Eigen::Vector3d p = tck[index].cast<default_type>();
+  Eigen::Vector3d t;
 
   // Heuristic for determining the tangent at the streamline endpoint
   if (tck.size() > 2) {
-    const Eigen::Vector3 second_last_step = (tck[index+step] - tck[index+2*step]).cast<default_type>();
-    const Eigen::Vector3 last_step = (tck[index] - tck[index+step]).cast<default_type>();
+    const Eigen::Vector3d second_last_step = (tck[index + step] - tck[index + 2 * step]).cast<default_type>();
+    const Eigen::Vector3d last_step = (tck[index] - tck[index + step]).cast<default_type>();
     const default_type length_ratio = last_step.norm() / second_last_step.norm();
-    const Eigen::Vector3 curvature (last_step - (second_last_step * length_ratio));
+    const Eigen::Vector3d curvature(last_step - (second_last_step * length_ratio));
     t = last_step + curvature;
   } else {
-    t = (tck[index] - tck[index+step]).cast<default_type>();
+    t = (tck[index] - tck[index + step]).cast<default_type>();
   }
   t.normalize();
 
@@ -159,20 +139,20 @@ node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<>& t
 
   // Voxel containing streamline endpoint not guaranteed to be appropriate
   // Should it be tested anyway? Probably
-  const Eigen::Vector3 vp (transform->scanner2voxel * p);
-  const voxel_type voxel { int(std::round (vp[0])), int(std::round (vp[1])), int(std::round (vp[2])) };
-  if (is_out_of_bounds (v, voxel))
+  const Eigen::Vector3d vp(transform->scanner2voxel * p);
+  const voxel_type voxel{int(std::round(vp[0])), int(std::round(vp[1])), int(std::round(vp[2]))};
+  if (is_out_of_bounds(v, voxel))
     return 0;
-  visited.insert (voxel);
-  to_test.insert (std::make_pair (default_type(0.0), voxel));
+  visited.insert(voxel);
+  to_test.insert(std::make_pair(default_type(0.0), voxel));
 
   while (to_test.size()) {
 
     const voxel_type voxel = to_test.begin()->second;
-    to_test.erase (to_test.begin());
+    to_test.erase(to_test.begin());
 
-    assign_pos_of (voxel).to (v);
-    if (is_out_of_bounds (v))
+    assign_pos_of(voxel).to(v);
+    if (is_out_of_bounds(v))
       continue;
     const node_t value = v.value();
     if (value)
@@ -185,32 +165,28 @@ node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<>& t
         for (offset[0] = -1; offset[0] <= 1; ++offset[0]) {
 
           const voxel_type v_neighbour = voxel + offset;
-          if (visited.find (v_neighbour) == visited.end()) {
-            visited.insert (v_neighbour);
-            const float cf = get_cf (p, t, v_neighbour);
-            if (std::isfinite (cf))
-              to_test.insert (std::make_pair (cf, v_neighbour));
+          if (visited.find(v_neighbour) == visited.end()) {
+            visited.insert(v_neighbour);
+            const float cf = get_cf(p, t, v_neighbour);
+            if (std::isfinite(cf))
+              to_test.insert(std::make_pair(cf, v_neighbour));
           }
-
         }
       }
     }
-
   }
 
   return 0;
 }
 
-
-
-default_type Tck2nodes_forwardsearch::get_cf (const Eigen::Vector3& p, const Eigen::Vector3& t, const voxel_type& v) const
-{
-  const Eigen::Vector3 vfloat { default_type(v[0]), default_type(v[1]), default_type(v[2]) };
-  const Eigen::Vector3 vp (transform->voxel2scanner * vfloat);
-  Eigen::Vector3 offset (vp - p);
+default_type
+Tck2nodes_forwardsearch::get_cf(const Eigen::Vector3d &p, const Eigen::Vector3d &t, const voxel_type &v) const {
+  const Eigen::Vector3d vfloat{default_type(v[0]), default_type(v[1]), default_type(v[2])};
+  const Eigen::Vector3d vp(transform->voxel2scanner * vfloat);
+  Eigen::Vector3d offset(vp - p);
   const default_type dist = offset.norm();
   offset.normalize();
-  const default_type angle = std::acos (t.dot (offset));
+  const default_type angle = std::acos(t.dot(offset));
   if (angle > angle_limit)
     return NAN;
 
@@ -221,43 +197,24 @@ default_type Tck2nodes_forwardsearch::get_cf (const Eigen::Vector3& p, const Eig
   return (cf > max_dist ? NAN : cf);
 }
 
-
-
-
-
-
-
-
-
-
-void Tck2nodes_all_voxels::select_nodes (const Streamline<>& tck, Image<node_t>& v, vector<node_t>& out) const
-{
+void Tck2nodes_all_voxels::select_nodes(const Streamline<> &tck, Image<node_t> &v, std::vector<node_t> &out) const {
   std::set<node_t> result;
   for (Streamline<>::const_iterator p = tck.begin(); p != tck.end(); ++p) {
-    const Eigen::Vector3 v_float = transform->scanner2voxel * p->cast<default_type>();
-    const voxel_type voxel (int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])));
-    assign_pos_of (voxel).to (v);
-    if (!is_out_of_bounds (v)) {
+    const Eigen::Vector3d v_float = transform->scanner2voxel * p->cast<default_type>();
+    const voxel_type voxel(int(std::round(v_float[0])), int(std::round(v_float[1])), int(std::round(v_float[2])));
+    assign_pos_of(voxel).to(v);
+    if (!is_out_of_bounds(v)) {
       const node_t this_node = v.value();
       if (this_node)
-        result.insert (this_node);
+        result.insert(this_node);
     }
   }
   out.clear();
   for (std::set<node_t>::const_iterator n = result.begin(); n != result.end(); ++n)
-    out.push_back (*n);
+    out.push_back(*n);
 }
 
-
-
-
-
-
-
-}
-}
-}
-}
-
-
-
+} // namespace Connectome
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR

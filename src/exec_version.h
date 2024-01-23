@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,9 +18,9 @@
 #define __exec_version_h__
 
 namespace MR {
-  namespace App {
-    void set_executable_uses_mrtrix_version ();
-  }
+namespace App {
+void set_executable_uses_mrtrix_version();
 }
+} // namespace MR
 
 #endif

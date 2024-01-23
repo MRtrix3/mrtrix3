@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,56 +17,45 @@
 #ifndef __dwi_tractography_sift2_streamline_stats_h__
 #define __dwi_tractography_sift2_streamline_stats_h__
 
-
 #include <cassert>
 #include <limits>
 
 #include "math/math.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace SIFT2 {
+namespace DWI {
+namespace Tractography {
+namespace SIFT2 {
 
+class StreamlineStats {
 
+public:
+  StreamlineStats();
+  StreamlineStats(const StreamlineStats &);
 
-      class StreamlineStats
-      { NOMEMALIGN
+  StreamlineStats &operator+=(const double);
+  StreamlineStats &operator+=(const StreamlineStats &);
 
-        public:
-          StreamlineStats();
-          StreamlineStats (const StreamlineStats&);
+  void normalise();
 
-          StreamlineStats& operator+= (const double);
-          StreamlineStats& operator+= (const StreamlineStats&);
+  double get_min() const { return min; }
+  double get_max() const { return max; }
+  double get_mean() const { return mean; }
+  double get_mean_abs() const { return mean_abs; }
+  double get_var() const { return var; }
 
-          void normalise();
+  unsigned int get_count() const { return count; }
+  unsigned int get_nonzero() const { return nonzero; }
 
-          double get_min()      const { return min; }
-          double get_max()      const { return max; }
-          double get_mean()     const { return mean; }
-          double get_mean_abs() const { return mean_abs; }
-          double get_var()      const { return var; }
+private:
+  double min, max;
+  double mean, mean_abs, var;
+  unsigned int count, nonzero;
+};
 
-          unsigned int get_count()   const { return count; }
-          unsigned int get_nonzero() const { return nonzero; }
-
-        private:
-          double min, max;
-          double mean, mean_abs, var;
-          unsigned int count, nonzero;
-
-      };
-
-
-
-      }
-    }
-  }
-}
-
-
+} // namespace SIFT2
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-

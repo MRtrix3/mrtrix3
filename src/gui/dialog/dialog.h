@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,17 +17,14 @@
 #ifndef __gui_dialog_dialog_h__
 #define __gui_dialog_dialog_h__
 
-namespace MR
-{
-  namespace GUI
-  {
-    namespace Dialog
-    {
+namespace MR {
+namespace GUI {
+namespace Dialog {
 
-      void init();
+void init();
 
-    }
-  }
 }
+} // namespace GUI
+} // namespace MR
 
 #endif

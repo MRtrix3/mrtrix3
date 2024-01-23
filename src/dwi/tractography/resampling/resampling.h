@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2024 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,62 +17,44 @@
 #ifndef __dwi_tractography_resampling_resampling_h__
 #define __dwi_tractography_resampling_resampling_h__
 
-
 #include "app.h"
 
 #include "dwi/tractography/streamline.h"
 
-
 namespace MR {
-  namespace DWI {
-    namespace Tractography {
-      namespace Resampling {
+namespace DWI {
+namespace Tractography {
+namespace Resampling {
 
+extern const App::OptionGroup ResampleOption;
 
+class Base;
+Base *get_resampler();
 
-        extern const App::OptionGroup ResampleOption;
+using value_type = float;
+using point_type = typename Streamline<>::point_type;
 
+// cubic interpolation (tension = 0.0) looks 'bulgy' between control points
+constexpr value_type hermite_tension = value_type(0.1);
 
-        class Base;
-        Base* get_resampler();
+class Base {
+public:
+  Base() {}
+  virtual ~Base() {}
 
-        using value_type = float;
-        using point_type = typename Streamline<>::point_type;
+  virtual Base *clone() const = 0;
+  virtual bool operator()(const Streamline<> &, Streamline<> &) const = 0;
+  virtual bool valid() const = 0;
+};
 
-        // cubic interpolation (tension = 0.0) looks 'bulgy' between control points
-        constexpr value_type hermite_tension = value_type(0.1);
+template <class Derived> class BaseCRTP : public Base {
+public:
+  virtual Base *clone() const { return new Derived(static_cast<Derived const &>(*this)); }
+};
 
-
-        class Base
-        { NOMEMALIGN
-          public:
-            Base() { }
-            virtual ~Base() { }
-
-            virtual Base* clone() const = 0;
-            virtual bool operator() (const Streamline<>&, Streamline<>&) const = 0;
-            virtual bool valid () const = 0;
-
-        };
-
-        template <class Derived>
-        class BaseCRTP : public Base
-        { NOMEMALIGN
-          public:
-            virtual Base* clone() const {
-              return new Derived(static_cast<Derived const&>(*this));
-            }
-        };
-
-
-
-
-      }
-    }
-  }
-}
+} // namespace Resampling
+} // namespace Tractography
+} // namespace DWI
+} // namespace MR
 
 #endif
-
-
-
