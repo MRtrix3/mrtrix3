@@ -313,7 +313,9 @@ template <class MatrixType1, class VectorType2> inline MatrixType1 &sconv_mat(Ma
 }
 
 namespace {
-template <typename> struct __dummy { using type = int; };
+template <typename> struct __dummy {
+  using type = int;
+};
 } // namespace
 
 //! used to speed up SH calculation
