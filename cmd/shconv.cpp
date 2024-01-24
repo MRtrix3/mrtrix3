@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@
 #include "progressbar.h"
 #include "algo/threaded_loop.h"
 #include "image.h"
+#include "file/matrix.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 
@@ -61,7 +62,7 @@ void usage ()
 using value_type = float;
 
 
-class SConvFunctor { MEMALIGN(SConvFunctor)
+class SConvFunctor { 
   public:
   SConvFunctor (const vector<Eigen::MatrixXd>& responses, vector<Image<value_type>>& inputs) :
     responses (responses),
@@ -111,7 +112,7 @@ void run()
     if (inputs[n].ndim() > 4 && inputs[n].size(4) > 1)
       throw Exception ("input ODF contains more than 4 dimensions");
 
-    responses[n] = load_matrix (argument[2*n+1]);
+    responses[n] = File::Matrix::load_matrix (argument[2*n+1]);
     responses[n].conservativeResizeLike (Eigen::MatrixXd::Zero (responses[n].rows(), Math::ZSH::NforL (Math::SH::LforN (inputs[n].size (3)))));
     lmax = std::max (Math::ZSH::LforN (responses[n].cols()), lmax);
 

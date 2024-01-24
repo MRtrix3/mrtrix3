@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,9 @@
  */
 
 #include "command.h"
-#include "progressbar.h"
 #include "datatype.h"
+#include "progressbar.h"
+#include "file/matrix.h"
 
 using namespace MR;
 using namespace App;
@@ -38,8 +39,8 @@ void run ()
 {
   double tol = argument[2];
 
-  Eigen::MatrixXd dir1 = load_matrix (argument[0]);
-  Eigen::MatrixXd dir2 = load_matrix (argument[1]);
+  Eigen::MatrixXd dir1 = File::Matrix::load_matrix (argument[0]);
+  Eigen::MatrixXd dir2 = File::Matrix::load_matrix (argument[1]);
 
   if (dir1.cols() != dir2.cols())
     throw Exception ("number of columns is not the same");

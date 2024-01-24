@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,15 +22,14 @@
 #include "image_diff.h"
 #include "image_helpers.h"
 #include "algo/loop.h"
-#include "fixel/keys.h"
-#include "fixel/types.h"
+#include "fixel/fixel.h"
 #include "formats/mrtrix_utils.h"
 
 
 namespace MR
 {
   class InvalidFixelDirectoryException : public Exception
-  { NOMEMALIGN
+  {
     public:
       InvalidFixelDirectoryException (const std::string& msg) : Exception(msg) {}
       InvalidFixelDirectoryException (const Exception& previous_exception, const std::string& msg)
@@ -300,20 +299,39 @@ namespace MR
       return header;
     }
 
-    //! Generate a header for a sparse data file (Nx1x1) using an index image as a template
-    template <class IndexHeaderType>
-    FORCE_INLINE Header data_header_from_index (IndexHeaderType& index) {
-      Header header (index);
+    //! Generate a header for a sparse data file (Nx1x1)
+    FORCE_INLINE Header data_header_from_nfixels (const size_t nfixels) {
+      Header header;
       header.ndim() = 3;
-      header.size(0) = get_number_of_fixels (index);
+      header.size(0) = nfixels;
       header.size(1) = 1;
       header.size(2) = 1;
+      header.spacing(0) = header.spacing(1) = header.spacing(2) = 1.0;
       header.stride(0) = 1;
       header.stride(1) = 2;
       header.stride(2) = 3;
-      header.transform() = transform_type::Identity();
-      header.datatype() = DataType::Float32;
-      header.datatype().set_byte_order_native();
+      header.spacing(0) = header.spacing(1) = header.spacing(2) = 1.0;
+      header.transform().setIdentity();
+      header.datatype() = DataType::native (DataType::Float32);
+      return header;
+    }
+
+    //! Generate a header for a sparse data file (Nx1x1) using an index image as a template
+    template <class IndexHeaderType>
+    FORCE_INLINE Header data_header_from_index (IndexHeaderType& index) {
+      Header header (data_header_from_nfixels (get_number_of_fixels (index)));
+      for (size_t axis = 0; axis != 3; ++axis)
+        header.spacing (axis) = index.spacing (axis);
+      header.keyval() = index.keyval();
+      return header;
+    }
+
+    //! Generate a header for a fixel directions data file (Nx3x1) based on knowledge of the number of fixels
+    FORCE_INLINE Header directions_header_from_nfixels (const size_t nfixels) {
+      Header header = data_header_from_nfixels (nfixels);
+      header.size(1) = 3;
+      header.stride(0) = 2;
+      header.stride(1) = 1;
       return header;
     }
 
@@ -321,7 +339,11 @@ namespace MR
     template <class IndexHeaderType>
     FORCE_INLINE Header directions_header_from_index (IndexHeaderType& index) {
       Header header = data_header_from_index (index);
+      for (size_t axis = 0; axis != 3; ++axis)
+        header.spacing (axis) = index.spacing (axis);
       header.size(1) = 3;
+      header.stride(0) = 2;
+      header.stride(1) = 1;
       return header;
     }
 

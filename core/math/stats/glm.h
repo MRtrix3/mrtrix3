@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,13 +19,12 @@
 
 #include "app.h"
 #include "types.h"
-
+#include "file/config.h"
 #include "math/condition_number.h"
 #include "math/least_squares.h"
 #include "math/zstatistic.h"
 #include "math/stats/import.h"
 #include "math/stats/typedefs.h"
-
 #include "misc/bitset.h"
 
 #define MRTRIX_USE_ZSTATISTIC_LOOKUP
@@ -45,6 +44,8 @@ namespace MR
 
         App::OptionGroup glm_options (const std::string& element_name);
 
+        index_type batch_size();
+
 
 
         // Define a base class to contain information regarding an individual hypothesis, and
@@ -57,11 +58,11 @@ namespace MR
         //   a t-test and an F-test for the sake of signedness (and taking the square root);
         //   this is managed by having two separate constructor templates
         class Hypothesis
-        { MEMALIGN(Hypothesis)
+        {
           public:
 
             class Partition
-            { MEMALIGN (Partition)
+            {
               public:
                 Partition (const matrix_type& x, const matrix_type& z) :
                     X (x),
@@ -80,16 +81,16 @@ namespace MR
                 const matrix_type Hz, Rz;
                 // rank_x: Rank of X
                 // rank_z: Rank of Z
-                const size_t rank_x, rank_z;
+                const index_type rank_x, rank_z;
             };
 
-            Hypothesis (matrix_type::ConstRowXpr& in, const size_t index) :
+            Hypothesis (matrix_type::ConstRowXpr& in, const index_type index) :
                 c (in),
                 r (Math::rank (c)),
                 F (false),
                 i (index) { check_nonzero(); }
 
-            Hypothesis (const matrix_type& in, const size_t index) :
+            Hypothesis (const matrix_type& in, const index_type index) :
                 c (check_rank (in, index)),
                 r (Math::rank (c)),
                 F (true),
@@ -99,26 +100,26 @@ namespace MR
             Partition partition (const MatrixType&) const;
 
             const matrix_type& matrix() const { return c; }
-            ssize_t cols() const { return c.cols(); }
-            size_t rank() const { return r; }
+            index_type cols() const { return c.cols(); }
+            index_type rank() const { return r; }
             bool is_F() const { return F; }
             std::string name() const { return std::string(F ? "F" : "t") + str(i+1); }
 
           private:
             const matrix_type c;
-            const size_t r;
+            const index_type r;
             const bool F;
-            const size_t i;
+            const index_type i;
 
             void check_nonzero() const;
-            matrix_type check_rank (const matrix_type&, const size_t) const;
+            matrix_type check_rank (const matrix_type&, const index_type) const;
         };
 
 
 
         void check_design (const matrix_type&, const bool);
 
-        index_array_type load_variance_groups (const size_t num_inputs);
+        index_array_type load_variance_groups (const index_type num_inputs);
 
         vector<Hypothesis> load_hypotheses (const ssize_t num_factors);
 
@@ -143,7 +144,7 @@ namespace MR
            * @param design the design matrix
            * @return the matrix containing the output GLM betas (one column of factor betas per element)
            */
-        matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design);
+        matrix_type solve_betas (const measurements_matrix_type& measurements, const matrix_type& design);
 
 
 
@@ -153,8 +154,8 @@ namespace MR
          * @param hypothesis a Hypothesis class instance defining the effect of interest
          * @return the matrix containing the output absolute effect sizes (one column of element effect sizes per contrast)
          */
-        vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
-        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
+        vector_type abs_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
+        matrix_type abs_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
 
 
 
@@ -163,7 +164,7 @@ namespace MR
          * @param design the design matrix
          * @return the vector containing the output standard deviation for each element
          */
-        matrix_type stdev (const matrix_type& measurements, const matrix_type& design);
+        matrix_type stdev (const measurements_matrix_type& measurements, const matrix_type& design);
 
 
 
@@ -172,7 +173,7 @@ namespace MR
          * @param design the design matrix
          * @return the vector containing the output standard deviation for each element
          */
-        matrix_type stdev (const matrix_type& measurements, const matrix_type& design, const index_array_type& variance_groups);
+        matrix_type stdev (const measurements_matrix_type& measurements, const matrix_type& design, const index_array_type& variance_groups);
 
 
 
@@ -182,8 +183,8 @@ namespace MR
          * @param hypothesis a Hypothesis class instance defining the effect of interest
          * @return the matrix containing the output standardised effect sizes (one column of element effect sizes per contrast)
          */
-        vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
-        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
+        vector_type std_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis);
+        matrix_type std_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
 
 
 
@@ -198,7 +199,7 @@ namespace MR
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+        void all_stats (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                         matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev);
 
         /*! Compute all GLM-related statistics
@@ -213,7 +214,7 @@ namespace MR
          * @param std_effect_size the matrix containing the output standardised effect size
          * @param stdev the matrix containing the output standard deviation
          */
-        void all_stats (const matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+        void all_stats (const measurements_matrix_type& measurements, const matrix_type& design, const vector<CohortDataImport>& extra_columns, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                         vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev);
 
         //! @}
@@ -224,7 +225,7 @@ namespace MR
 
         // Only exists to permit the use of a base class pointer in the TestBase class
         class SharedBase
-        { NOMEMALIGN
+        {
           public:
             virtual ~SharedBase() { }
         };
@@ -232,16 +233,16 @@ namespace MR
         using SharedHomoscedasticBase = Math::Zstatistic;
 
         class SharedFixedBase
-        { MEMALIGN(SharedFixedBase)
+        {
           public:
-            SharedFixedBase (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
+            SharedFixedBase (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses);
             vector<Hypothesis::Partition> partitions;
             const matrix_type pinvM;
             const matrix_type Rm;
         };
 
         class SharedVariableBase
-        { MEMALIGN(SharedVariableBase)
+        {
           public:
             SharedVariableBase (const vector<CohortDataImport>& importers,
                                 const bool nans_in_data,
@@ -252,7 +253,7 @@ namespace MR
         };
 
         class SharedHeteroscedasticBase
-        { MEMALIGN(SharedHeteroscedasticBase)
+        {
           public:
             SharedHeteroscedasticBase (const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups);
             index_array_type VG;
@@ -264,9 +265,9 @@ namespace MR
 
 
         class TestBase
-        { MEMALIGN(TestBase)
+        {
           public:
-            TestBase (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
+            TestBase (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
                 y (measurements),
                 M (design),
                 c (hypotheses)
@@ -285,15 +286,17 @@ namespace MR
              * @param stat the matrix containing the output statistics (one column per hypothesis)
              * @param zstat the matrix containing the Z-transformed statistics (one column per hypothesis)
              */
-            virtual void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) = 0;
+            virtual void operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) = 0;
 
-            size_t num_inputs () const { return M.rows(); }
-            size_t num_elements () const { return y.cols(); }
-            size_t num_hypotheses () const { return c.size(); }
-            virtual size_t num_factors() const = 0;
+            index_type num_inputs () const { return M.rows(); }
+            index_type num_elements () const { return y.cols(); }
+            index_type num_hypotheses () const { return c.size(); }
+
+            virtual index_type num_factors() const { return M.cols(); }
 
           protected:
-            const matrix_type& y, M;
+            const measurements_matrix_type& y;
+            const matrix_type& M;
             const vector<Hypothesis>& c;
 
             std::shared_ptr<SharedBase> shared;
@@ -316,16 +319,16 @@ namespace MR
          *     equivalent across all inputs.
          */
         class TestFixedHomoscedastic : public TestBase
-        { MEMALIGN(TestFixedHomoscedastic)
+        {
           public:
 
             class Shared : public SharedBase, public SharedFixedBase
 #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
             , public SharedHomoscedasticBase
 #endif
-            { MEMALIGN(Shared)
+            {
               public:
-                Shared (const matrix_type& measurements,
+                Shared (const measurements_matrix_type& measurements,
                         const matrix_type& design,
                         const vector<Hypothesis>& hypotheses);
                 ~Shared() { }
@@ -340,7 +343,7 @@ namespace MR
              * @param design the design matrix
              * @param hypotheses a vector of Hypothesis instances
              */
-            TestFixedHomoscedastic (const matrix_type& measurements,
+            TestFixedHomoscedastic (const measurements_matrix_type& measurements,
                                     const matrix_type& design,
                                     const vector<Hypothesis>& hypotheses);
 
@@ -353,9 +356,9 @@ namespace MR
              * @param stats the vector containing the output statistics (one column per hypothesis)
              * @param zstats the vector containing the Z-transformed output statistics (one column per hypothesis)
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) override;
+            void operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) override;
 
-            size_t num_factors() const override { return M.cols(); }
+            index_type num_factors() const override { return M.cols(); }
 
             const Shared& S() const { return *dynamic_cast<const Shared* const> (shared.get()); }
 
@@ -382,13 +385,13 @@ namespace MR
          *     all observations can be considered to have the same variance.
          */
         class TestFixedHeteroscedastic : public TestBase
-        { MEMALIGN(TestFixedHeteroscedastic)
+        {
           public:
 
             class Shared : public SharedBase, public SharedFixedBase, public SharedHeteroscedasticBase
-            { MEMALIGN(Shared)
+            {
               public:
-                Shared (const matrix_type& measurements,
+                Shared (const measurements_matrix_type& measurements,
                         const matrix_type& design,
                         const vector<Hypothesis>& hypotheses,
                         const index_array_type& variance_groups);
@@ -406,7 +409,7 @@ namespace MR
              * @param hypotheses a vector of Hypothesis instances
              * @param variance_groups a vector of integers corresponding to variance group assignments (should be indexed from zero)
              */
-            TestFixedHeteroscedastic (const matrix_type& measurements,
+            TestFixedHeteroscedastic (const measurements_matrix_type& measurements,
                                       const matrix_type& design,
                                       const vector<Hypothesis>& hypotheses,
                                       const index_array_type& variance_groups);
@@ -420,10 +423,10 @@ namespace MR
              * @param stats the vector containing the output statistics (one column per hypothesis)
              * @param zstats the vector containing the Z-transformed output statistics (one column per hypothesis)
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) override;
+            void operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats) override;
 
-            virtual size_t num_factors() const final { return M.cols(); }
-            size_t num_variance_groups() const { return S().num_vgs; }
+            index_type num_factors() const final { return M.cols(); }
+            index_type num_variance_groups() const { return S().num_vgs; }
 
             const Shared& S() const { return *dynamic_cast<const Shared* const> (shared.get()); }
 
@@ -443,9 +446,9 @@ namespace MR
 
 
         class TestVariableBase : public TestBase
-        { MEMALIGN(TestVariableBase)
+        {
           public:
-            TestVariableBase (const matrix_type& measurements,
+            TestVariableBase (const measurements_matrix_type& measurements,
                               const matrix_type& design,
                               const vector<Hypothesis>& hypotheses,
                               const vector<CohortDataImport>& importers);
@@ -454,19 +457,22 @@ namespace MR
 
             std::unique_ptr<TestBase> __clone() const override = 0;
 
-            virtual size_t num_importers() const = 0;
+            virtual index_type num_importers() const = 0;
 
           protected:
             // Temporaries
-            matrix_type dof, extra_column_data;
+            matrix_type dof;
+            measurements_matrix_type extra_column_data;
             BitSet element_mask, permuted_mask;
-            matrix_type intermediate_shuffling_matrix, shuffling_matrix_masked, Mfull_masked, pinvMfull_masked, Rm;
-            vector_type y_masked, Sy, lambda;
+            shuffle_matrix_type intermediate_shuffling_matrix, shuffling_matrix_masked;
+            matrix_type Mfull_masked, pinvMfull_masked, Rm;
+            measurements_vector_type y_masked;
+            vector_type Sy, lambda;
 
             template <class SharedType>
-            void set_mask (const SharedType& s, const size_t ie);
+            void set_mask (const SharedType& s, const index_type ie);
 
-            void apply_mask (const size_t ie, const matrix_type& shuffling_matrix);
+            void apply_mask (const index_type ie, const shuffle_matrix_type& shuffling_matrix);
 
         };
 
@@ -488,13 +494,13 @@ namespace MR
          *     equivalent across all inputs.
          */
         class TestVariableHomoscedastic : public TestVariableBase
-        { MEMALIGN(TestVariableHomoscedastic)
+        {
           public:
             class Shared : public SharedBase, public SharedVariableBase
 #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
             , public SharedHomoscedasticBase
 #endif
-            { MEMALIGN(Shared)
+            {
               public:
                 Shared (const vector<CohortDataImport>& importers,
                         const bool nans_in_data,
@@ -502,7 +508,7 @@ namespace MR
                 ~Shared() { }
             };
 
-            TestVariableHomoscedastic (const matrix_type& measurements,
+            TestVariableHomoscedastic (const measurements_matrix_type& measurements,
                                        const matrix_type& design,
                                        const vector<Hypothesis>& hypotheses,
                                        const vector<CohortDataImport>& importers,
@@ -521,10 +527,10 @@ namespace MR
              * In TestVariable* classes, this function additionally needs to import any
              * extra external data individually for each element tested.
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) override;
+            void operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) override;
 
-            size_t num_factors() const final { return M.cols() + num_importers(); }
-            size_t num_importers() const final { return S().importers.size(); }
+            index_type num_factors() const final { return M.cols() + num_importers(); }
+            index_type num_importers() const final { return S().importers.size(); }
 
             const Shared& S() const { return *dynamic_cast<const Shared* const> (shared.get()); }
 
@@ -553,10 +559,10 @@ namespace MR
          *     all observations can be considered to have the same variance.
          */
         class TestVariableHeteroscedastic : public TestVariableBase
-        { MEMALIGN(TestVariableHeteroscedastic)
+        {
           public:
             class Shared : public SharedBase, public SharedVariableBase, public SharedHeteroscedasticBase
-            { MEMALIGN(Shared)
+            {
               public:
                 Shared (const vector<Hypothesis>& hypotheses,
                         const index_array_type& variance_groups,
@@ -566,7 +572,7 @@ namespace MR
                 ~Shared() { }
             };
 
-            TestVariableHeteroscedastic (const matrix_type& measurements,
+            TestVariableHeteroscedastic (const measurements_matrix_type& measurements,
                                          const matrix_type& design,
                                          const vector<Hypothesis>& hypotheses,
                                          const index_array_type& variance_groups,
@@ -586,11 +592,11 @@ namespace MR
              * In TestVariable* classes, this function additionally needs to import the
              * extra external data individually for each element tested.
              */
-            void operator() (const matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) override;
+            void operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stat, matrix_type& zstat) override;
 
-            virtual size_t num_factors() const final { return M.cols() + num_importers(); }
-            size_t num_variance_groups() const { return S().num_vgs; }
-            size_t num_importers() const final { return S().importers.size(); }
+            index_type num_factors() const final { return M.cols() + num_importers(); }
+            index_type num_variance_groups() const { return S().num_vgs; }
+            index_type num_importers() const final { return S().importers.size(); }
 
             const Shared& S() const { return *dynamic_cast<const Shared* const> (shared.get()); }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
 #include "algo/threaded_loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "file/matrix.h"
 #include "math/SH.h"
 
 
@@ -83,7 +84,7 @@ void usage ()
 
 using value_type = float;
 
-class Amp2SHCommon { MEMALIGN(Amp2SHCommon)
+class Amp2SHCommon { 
   public:
     template <class MatrixType>
       Amp2SHCommon (const MatrixType& sh2amp,
@@ -106,7 +107,7 @@ class Amp2SHCommon { MEMALIGN(Amp2SHCommon)
 
 
 
-class Amp2SH { MEMALIGN(Amp2SH)
+class Amp2SH { 
   public:
     Amp2SH (const Amp2SHCommon& common) :
       C (common),
@@ -208,7 +209,7 @@ void run ()
   Eigen::MatrixXd dirs;
   auto opt = get_options ("directions");
   if (opt.size()) {
-    dirs = load_matrix (opt[0][0]);
+    dirs = File::Matrix::load_matrix (opt[0][0]);
     if (dirs.cols() == 3)
       dirs = Math::Sphere::cartesian2spherical (dirs);
   }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,7 +46,7 @@ namespace MR {
 
 
         class MapWriterBase
-        { MEMALIGN(MapWriterBase)
+        { 
 
           public:
             MapWriterBase (const Header& header, const std::string& name, const vox_stat_t s = V_SUM, const writer_dim t = GREYSCALE) :
@@ -100,7 +100,7 @@ namespace MR {
 
         template <typename value_type>
           class MapWriter : public MapWriterBase
-        { MEMALIGN(MapWriter<value_type>)
+        { 
 
           public:
           MapWriter (const Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
@@ -277,8 +277,8 @@ namespace MR {
 
 
           // Convenience functions for Directionally-Encoded Colour processing
-          Eigen::Vector3 get_dec ();
-          void           set_dec (const Eigen::Vector3&);
+          Eigen::Vector3d get_dec ();
+          void           set_dec (const Eigen::Vector3d&);
 
           // Convenience functions for Track Orientation Distribution processing
           void get_tod (      VoxelTOD::vector_type&);
@@ -458,10 +458,10 @@ namespace MR {
 
 
         template <typename value_type>
-          Eigen::Vector3 MapWriter<value_type>::get_dec ()
+          Eigen::Vector3d MapWriter<value_type>::get_dec ()
           {
             assert (type == DEC);
-            Eigen::Vector3 value;
+            Eigen::Vector3d value;
             buffer.index(3) = 0; value[0] = buffer.value();
             buffer.index(3)++;   value[1] = buffer.value();
             buffer.index(3)++;   value[2] = buffer.value();
@@ -469,7 +469,7 @@ namespace MR {
           }
 
         template <typename value_type>
-          void MapWriter<value_type>::set_dec (const Eigen::Vector3& value)
+          void MapWriter<value_type>::set_dec (const Eigen::Vector3d& value)
           {
             assert (type == DEC);
             buffer.index(3) = 0; buffer.value() = value[0];

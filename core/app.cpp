@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,7 @@ namespace MR
 
     const char* AUTHOR = nullptr;
     const char* COPYRIGHT =
-       "Copyright (c) 2008-2021 the MRtrix3 contributors.\n"
+       "Copyright (c) 2008-2023 the MRtrix3 contributors.\n"
        "\n"
        "This Source Code Form is subject to the terms of the Mozilla Public\n"
        "License, v. 2.0. If a copy of the MPL was not distributed with this\n"
@@ -93,10 +93,20 @@ namespace MR
     std::string command_history_string;
     vector<ParsedArgument> argument;
     vector<ParsedOption> option;
+
     //ENVVAR name: MRTRIX_QUIET
     //ENVVAR Do not display information messages or progress status. This has
-    //ENVVAR the same effect as the ``-quiet`` command-line option.
-    int log_level = getenv("MRTRIX_QUIET") ? 0 : 1;
+    //ENVVAR the same effect as the ``-quiet`` command-line option. If set,
+    //ENVVAR supersedes the MRTRIX_LOGLEVEL environment variable.
+
+    //ENVVAR name: MRTRIX_LOGLEVEL
+    //ENVVAR Set the default terminal verbosity. Default terminal verbosity
+    //ENVVAR is 1. This has the same effect as the ``-quiet`` (0),
+    //ENVVAR ``-info`` (2) or ``-debug`` (3) comand-line options.
+    int log_level = getenv("MRTRIX_QUIET") ?
+                    0 :
+                    (getenv("MRTRIX_LOGLEVEL") ? to<int>(getenv("MRTRIX_LOGLEVEL")) : 1);
+
     int exit_error_code = 0;
     bool fail_on_warn = false;
     bool terminal_use_colour = true;
@@ -118,7 +128,7 @@ namespace MR
       inline void get_matches (vector<const Option*>& candidates, const OptionGroup& group, const std::string& stub)
       {
         for (size_t i = 0; i < group.size(); ++i) {
-          if (stub.compare (0, stub.size(), group[i].id, stub.size()) == 0)
+          if (stub.compare (0, stub.size(), std::string(group[i].id), 0, stub.size()) == 0)
             candidates.push_back (&group[i]);
         }
       }
@@ -929,11 +939,10 @@ namespace MR
 
 
 
-
     const Option* match_option (const char* arg)
     {
-      if (arg[0] == '-' && arg[1] && !isdigit (arg[1]) && arg[1] != '.') {
-        while (*arg == '-') arg++;
+      if (consume_dash (arg) && *arg && !isdigit (*arg) && *arg != '.') {
+        while (consume_dash(arg));
         vector<const Option*> candidates;
         std::string root (arg);
 
@@ -1391,7 +1400,7 @@ namespace MR
         std::string msg = std::string ("unexpected value supplied for ");
         if (opt) msg += std::string ("option \"") + opt->id;
         else msg += std::string ("argument \"") + arg->id;
-        msg += std::string ("\" (valid choices are: ") + join (choices, ", ") + ")";
+        msg += std::string ("\" (received \"" + std::string(p) + "\"; valid choices are: ") + join (choices, ", ") + ")";
         throw Exception (msg);
       }
       assert (0);

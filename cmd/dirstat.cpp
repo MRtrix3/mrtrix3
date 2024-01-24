@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@
 #include "header.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "file/matrix.h"
 #include "math/sphere.h"
 
 #include "dwi/directions/file.h"
@@ -107,7 +108,7 @@ void run ()
   }
   catch (Exception& E) {
     try {
-      directions = load_matrix<double> (argument[0]);
+      directions = File::Matrix::load_matrix<double> (argument[0]);
     }
     catch (Exception& E) {
       auto header = Header::open (argument[0]);
@@ -183,7 +184,7 @@ vector<default_type> summarise_E (const vector<double>& E)
 
 
 class Metrics
-{ MEMALIGN (Metrics)
+{ 
   public:
     vector<default_type> BN, UN, BE, UE, SH;
     default_type ASYM;

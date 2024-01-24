@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ namespace MR
     namespace Transform
     {
 
-      class RigidLinearNonSymmetricUpdate { MEMALIGN (RigidLinearNonSymmetricUpdate)
+      class RigidLinearNonSymmetricUpdate { 
         public:
           RigidLinearNonSymmetricUpdate ( ):
             use_convergence_check (false) {  }
@@ -66,7 +66,7 @@ namespace MR
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_control_points_vec;
       };
 
-      class RigidRobustEstimator { MEMALIGN(RigidRobustEstimator)
+      class RigidRobustEstimator { 
         public:
           inline bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
               const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
@@ -82,7 +82,7 @@ namespace MR
       /*! A 3D rigid transformation class for registration.
        *
        */
-      class Rigid : public Base  { MEMALIGN(Rigid)
+      class Rigid : public Base  { 
         public:
 
           using ParameterType = typename Base::ParameterType;
@@ -97,9 +97,9 @@ namespace MR
             this->optimiser_weights << weights, weights, weights;
           }
 
-          Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params (const Eigen::Vector3& p) const ;
+          Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params (const Eigen::Vector3d& p) const ;
 
-          Eigen::MatrixXd get_jacobian_wrt_params (const Eigen::Vector3& p) const ;
+          Eigen::MatrixXd get_jacobian_wrt_params (const Eigen::Vector3d& p) const ;
 
           void set_parameter_vector (const Eigen::Matrix<ParameterType, Eigen::Dynamic, 1>& param_vector);
 

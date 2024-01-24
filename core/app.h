@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -73,7 +73,7 @@ namespace MR
     // @{
 
     //! vector of strings to hold more comprehensive command description
-    class Description : public vector<const char*> { NOMEMALIGN
+    class Description : public vector<const char*> { 
       public:
         Description& operator+ (const char* text) {
           push_back (text);
@@ -92,7 +92,7 @@ namespace MR
 
 
     //! object for storing a single example command usage
-    class Example { NOMEMALIGN
+    class Example { 
       public:
         Example (const std::string& title,
                  const std::string& code,
@@ -107,7 +107,7 @@ namespace MR
     };
 
     //! a class to hold the list of Example's
-    class ExampleList : public vector<Example> { NOMEMALIGN
+    class ExampleList : public vector<Example> { 
       public:
         ExampleList& operator+ (const Example& example) {
           push_back (example);
@@ -121,7 +121,7 @@ namespace MR
 
 
     //! a class to hold the list of Argument's
-    class ArgumentList : public vector<Argument> { NOMEMALIGN
+    class ArgumentList : public vector<Argument> { 
       public:
         ArgumentList& operator+ (const Argument& argument) {
           push_back (argument);
@@ -136,7 +136,7 @@ namespace MR
 
 
     //! a class to hold the list of option groups
-    class OptionList : public vector<OptionGroup> { NOMEMALIGN
+    class OptionList : public vector<OptionGroup> { 
       public:
         OptionList& operator+ (const OptionGroup& option_group) {
           push_back (option_group);
@@ -171,7 +171,7 @@ namespace MR
         if (check_overwrite_files_func)
           check_overwrite_files_func (name);
         else
-          throw Exception ("output file \"" + name + "\" already exists (use -force option to force overwrite)");
+          throw Exception ("output path \"" + name + "\" already exists (use -force option to force overwrite)");
       }
     }
 
@@ -206,7 +206,7 @@ namespace MR
 
 
 
-    class ParsedArgument { NOMEMALIGN
+    class ParsedArgument { 
       public:
         operator std::string () const { return p; }
 
@@ -283,19 +283,29 @@ namespace MR
     //! object storing information about option parsed from command-line
     /*! this is the object stored in the App::options vector, and the type
      * returned by App::get_options(). */
-    class ParsedOption { NOMEMALIGN
+    class ParsedOption { 
       public:
         ParsedOption (const Option* option, const char* const* arguments) :
             opt (option), args (arguments)
         {
           for (size_t i = 0; i != option->size(); ++i) {
-            if (arguments[i][0] == '-' &&
-                !(((*option)[i].type == ImageIn || (*option)[i].type == ImageOut) && !strcmp(arguments[i], std::string("-").c_str())) &&
-                !((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq || (*option)[i].type == FloatSeq || (*option)[i].type == Various)) {
-              WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
-                    ((option->size() == 1) ? "the expected argument" : ("one of the " + str(option->size()) + " expected arguments")) +
-                    " for option \"-" + option->id + "\"; is this what you intended?");
-            }
+            const char* p = arguments[i];
+            if (!consume_dash (p))
+              continue;
+            if (( (*option)[i].type == ImageIn || (*option)[i].type == ImageOut ) && is_dash (arguments[i]))
+              continue;
+            if ((*option)[i].type == Integer || (*option)[i].type == Float || (*option)[i].type == IntSeq ||
+                (*option)[i].type == FloatSeq || (*option)[i].type == Various)
+              continue;
+            WARN (std::string("Value \"") + arguments[i] + "\" is being used as " +
+                ((option->size() == 1) ?
+                 "the expected argument " :
+                 ("one of the " + str(option->size()) + " expected arguments ")) +
+                "for option \"-" + option->id + "\", yet this itself looks like a separate command-line option; " +
+                "the requisite input" +
+                ((option->size() == 1) ? " " : "s ") +
+                "to command-line option \"-" + option->id + "\" may have been erroneously omitted, which may cause " +
+                "other command-line parsing errors");
           }
         }
 

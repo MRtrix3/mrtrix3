@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -99,12 +99,12 @@ using DWI::Tractography::SIFT::FixelBase;
 
 
 
-class Fixel : public FixelBase
-{ MEMALIGN(Fixel)
+class AFDConnFixel : public FixelBase
+{ 
   public:
-    Fixel () : FixelBase (), length (0.0) { }
-    Fixel (const FMLS::FOD_lobe& lobe) : FixelBase (lobe), length (0.0) { }
-    Fixel (const Fixel& that) : FixelBase (that), length (that.length) { }
+    AFDConnFixel () : FixelBase (), length (0.0) { }
+    AFDConnFixel (const FMLS::FOD_lobe& lobe) : FixelBase (lobe), length (0.0) { }
+    AFDConnFixel (const AFDConnFixel& that) : FixelBase (that), length (that.length) { }
 
     void       add_to_selection (const value_type l) { length += l; }
     value_type get_selected_volume (const value_type l) const { return get_TD() ? (get_FOD() * (l / get_TD())) : 0.0; }
@@ -120,11 +120,11 @@ class Fixel : public FixelBase
 
 
 
-class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
-{ MEMALIGN(AFDConnectivity)
+class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<AFDConnFixel>
+{ 
   public:
     AFDConnectivity (Image<value_type>& fod_buffer, const DWI::Directions::FastLookupSet& dirs, const std::string& tck_path, const std::string& wbft_path) :
-        DWI::Tractography::SIFT::ModelBase<Fixel> (fod_buffer, dirs),
+        DWI::Tractography::SIFT::ModelBase<AFDConnFixel> (fod_buffer, dirs),
         have_wbft (wbft_path.size()),
         all_fixels (false),
         mapper (fod_buffer, dirs),
@@ -155,7 +155,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
     Image<value_type> v_fod;
     std::unique_ptr<DWI::FMLS::Segmenter> fmls;
 
-    using Fixel_map<Fixel>::accessor;
+    using Fixel_map<AFDConnFixel>::accessor;
 
 };
 
@@ -211,7 +211,7 @@ value_type AFDConnectivity::get (const std::string& path)
       }
 
       const size_t fixel_index = dixel2fixel (*i);
-      Fixel& fixel = fixels[fixel_index];
+      AFDConnFixel& fixel = fixels[fixel_index];
       fixel.add_to_selection (i->get_length());
       if (have_wbft)
         this_volume += fixel.get_selected_volume (i->get_length());
@@ -233,7 +233,7 @@ value_type AFDConnectivity::get (const std::string& path)
     if (all_fixels) {
 
       // All fixels contribute to the result
-      for (vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+      for (vector<AFDConnFixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
         if (i->is_selected())
           sum_volumes += i->get_FOD();
       }
@@ -245,7 +245,7 @@ value_type AFDConnectivity::get (const std::string& path)
       for (auto l = Loop(v) (v); l; ++l) {
         if (v.value()) {
           value_type voxel_afd = 0.0, max_td = 0.0;
-          for (Fixel_map<Fixel>::Iterator i = begin (v); i; ++i) {
+          for (Fixel_map<AFDConnFixel>::Iterator i = begin (v); i; ++i) {
             if (i().get_selected_length() > max_td) {
               max_td = i().get_selected_length();
               voxel_afd = i().get_FOD();
@@ -272,19 +272,19 @@ value_type AFDConnectivity::get (const std::string& path)
 
 void AFDConnectivity::save (const std::string& path)
 {
-  auto out = Image<value_type>::create (path, Fixel_map<Fixel>::header());
+  auto out = Image<value_type>::create (path, Fixel_map<AFDConnFixel>::header());
   VoxelAccessor v (accessor());
   for (auto l = Loop(v) (v, out); l; ++l) {
     value_type value = 0.0;
     if (have_wbft) {
-      for (Fixel_map<Fixel>::Iterator i = begin (v); i; ++i)
+      for (Fixel_map<AFDConnFixel>::Iterator i = begin (v); i; ++i)
         value += i().get_selected_volume();
     } else if (all_fixels) {
-      for (Fixel_map<Fixel>::Iterator i = begin (v); i; ++i)
+      for (Fixel_map<AFDConnFixel>::Iterator i = begin (v); i; ++i)
         value += (i().is_selected() ? i().get_FOD() : 0.0);
     } else {
       value_type max_td = 0.0;
-      for (Fixel_map<Fixel>::Iterator i = begin (v); i; ++i) {
+      for (Fixel_map<AFDConnFixel>::Iterator i = begin (v); i; ++i) {
         if (i().get_selected_length() > max_td) {
           max_td = i().get_selected_length();
           value = i().get_FOD();

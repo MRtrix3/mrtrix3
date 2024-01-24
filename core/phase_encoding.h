@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,6 +23,8 @@
 #include "app.h"
 #include "axes.h"
 #include "header.h"
+#include "file/matrix.h"
+#include "file/nifti_utils.h"
 #include "file/ofstream.h"
 
 
@@ -61,8 +63,8 @@ namespace MR
 
 
     //! check that the PE scheme matches the DWI data in \a header
-    template <class MatrixType>
-    void check (const Header& header, const MatrixType& PE)
+    template <class MatrixType, class HeaderType>
+    void check (const MatrixType& PE, const HeaderType& header)
     {
       check (PE);
       const ssize_t num_volumes = (header.ndim() > 3) ? header.size (3) : 1;
@@ -95,7 +97,7 @@ namespace MR
         erase ("TotalReadoutTime");
         return;
       }
-      check (header, PE);
+      check (PE, header);
       std::string pe_scheme;
       std::string first_line;
       bool variation = false;
@@ -115,7 +117,7 @@ namespace MR
         erase ("TotalReadoutTime");
       } else {
         erase ("pe_scheme");
-        const Eigen::Vector3 dir { PE(0, 0), PE(0, 1), PE(0, 2) };
+        const Eigen::Vector3d dir { PE(0, 0), PE(0, 1), PE(0, 2) };
         header.keyval()["PhaseEncodingDirection"] = Axes::dir2id (dir);
         if (PE.cols() >= 4)
           header.keyval()["TotalReadoutTime"] = str(PE(0, 3), 3);
@@ -186,40 +188,113 @@ namespace MR
       }
     }
 
-    //! Convert phase-encoding informat from the EDDY config / indices format into a standard scheme
+    //! Convert phase-encoding infor from the EDDY config / indices format into a standard scheme
     Eigen::MatrixXd eddy2scheme (const Eigen::MatrixXd&, const Eigen::Array<int, Eigen::Dynamic, 1>&);
 
 
 
+
+
+    //! Modifies a phase encoding scheme if being imported alongside a non-RAS image
+    template <class MatrixType, class HeaderType>
+    Eigen::MatrixXd transform_for_image_load (const MatrixType& pe_scheme, const HeaderType& H)
+    {
+      std::array<size_t, 3> perm;
+      std::array<bool, 3> flip;
+      H.realignment (perm, flip);
+      if (perm[0] == 0 && perm[1] == 1 && perm[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
+        INFO ("No transformation of external phase encoding data required to accompany image \"" + H.name() + "\"");
+        return pe_scheme;
+      }
+      Eigen::MatrixXd result (pe_scheme.rows(), pe_scheme.cols());
+      for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
+        Eigen::VectorXd new_line = pe_scheme.row (row);
+        for (ssize_t axis = 0; axis != 3; ++axis) {
+          new_line[axis] = pe_scheme(row, perm[axis]);
+          if (new_line[axis] && flip[perm[axis]])
+            new_line[axis] = -new_line[axis];
+        }
+        result.row (row) = new_line;
+      }
+      INFO ("External phase encoding data transformed to match RAS realignment of image \"" + H.name() + "\"");
+      return result;
+    }
+
+    
+    
+
+    //! Modifies a phase encoding scheme if being exported alongside a NIfTI image
+    template <class MatrixType, class HeaderType>
+    Eigen::MatrixXd transform_for_nifti_write (const MatrixType& pe_scheme, const HeaderType& H)
+    {
+      vector<size_t> order;
+      vector<bool> flip;
+      File::NIfTI::axes_on_write (H, order, flip);
+      if (order[0] == 0 && order[1] == 1 && order[2] == 2 && !flip[0] && !flip[1] && !flip[2]) {
+        INFO ("No transformation of phase encoding data required for export to file");
+        return pe_scheme;
+      }
+      Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result (pe_scheme.rows(), pe_scheme.cols());
+      for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
+        Eigen::VectorXd new_line = pe_scheme.row (row);
+        for (ssize_t axis = 0; axis != 3; ++axis)
+          new_line[axis] = pe_scheme(row, order[axis]) && flip[axis] ?
+                           -pe_scheme(row, order[axis]) :
+                           pe_scheme(row, order[axis]);
+        result.row (row) = new_line;
+      }
+      INFO ("Phase encoding data transformed to match NIfTI / MGH image export prior to writing to file");
+      return result;
+    }
+
+
+
+
+    namespace
+    {
+      template <class MatrixType>
+      void __save (const MatrixType& PE, const std::string& path)
+      {
+        File::OFStream out (path);
+        for (ssize_t row = 0; row != PE.rows(); ++row) {
+          // Write phase-encode direction as integers; other information as floating-point
+          out << PE.template block<1, 3>(row, 0).template cast<int>();
+          if (PE.cols() > 3)
+            out << " " << PE.block(row, 3, 1, PE.cols()-3);
+          out << "\n";
+        }
+      }
+    }
+
     //! Save a phase-encoding scheme to file
-    template <class MatrixType>
-    void save (const MatrixType& PE, const std::string& path)
+    // Note that because the output table requires permutation / sign flipping
+    //   only if the output target image is a NIfTI, the output file name must have
+    //   already been set
+    template <class MatrixType, class HeaderType>
+    void save (const MatrixType& PE, const HeaderType& header, const std::string& path)
     {
       try {
-        check (PE);
+        check (PE, header);
       } catch (Exception& e) {
         throw Exception (e, "Cannot export phase-encoding table to file \"" + path + "\"");
       }
 
-      File::OFStream out (path);
-      for (ssize_t row = 0; row != PE.rows(); ++row) {
-        // Write phase-encode direction as integers; other information as floating-point
-        out << PE.template block<1, 3>(row, 0).template cast<int>();
-        if (PE.cols() > 3)
-          out << " " << PE.block(row, 3, 1, PE.cols()-3);
-        out << "\n";
+      if (Path::has_suffix (header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
+        __save (transform_for_nifti_write (PE, header), path);
+      } else {
+        __save (PE, path);
       }
     }
 
     //! Save a phase-encoding scheme to EDDY format config / index files
-    template <class MatrixType>
-    void save_eddy (const MatrixType& PE, const std::string& config_path, const std::string& index_path)
+    template <class MatrixType, class HeaderType>
+    void save_eddy (const MatrixType& PE, const HeaderType& header, const std::string& config_path, const std::string& index_path)
     {
       Eigen::MatrixXd config;
       Eigen::Array<int, Eigen::Dynamic, 1> indices;
-      scheme2eddy (PE, config, indices);
-      save_matrix (config, config_path, KeyValues(), false);
-      save_vector (indices, index_path, KeyValues(), false);
+      scheme2eddy (transform_for_nifti_write (PE, header), config, indices);
+      File::Matrix::save_matrix (config, config_path, KeyValues(), false);
+      File::Matrix::save_vector (indices, index_path, KeyValues(), false);
     }
 
 
@@ -229,9 +304,29 @@ namespace MR
 
 
 
-    //! Load a phase-encoding scheme from either a matrix file, or an EDDY-format comfig / indices file pair
-    Eigen::MatrixXd load (const std::string&);
-    Eigen::MatrixXd load_eddy (const std::string&, const std::string&);
+    //! Load a phase-encoding scheme from a matrix text file
+    template <class HeaderType>
+    Eigen::MatrixXd load (const std::string& path, const HeaderType& header)
+    {
+      const Eigen::MatrixXd PE = File::Matrix::load_matrix (path);
+      check (PE, header);
+      // As with JSON import, need to query the header to discover if the 
+      //   strides / transform were modified on image load to make the image
+      //   data appear approximately axial, in which case we need to apply the
+      //   same transforms to the phase encoding data on load
+      return transform_for_image_load (PE, header);
+    }
+
+    //! Load a phase-encoding scheme from an EDDY-format config / indices file pair
+    template <class HeaderType>
+    Eigen::MatrixXd load_eddy (const std::string& config_path, const std::string& index_path, const HeaderType& header)
+    {
+      const Eigen::MatrixXd config = File::Matrix::load_matrix (config_path);
+      const Eigen::Array<int, Eigen::Dynamic, 1> indices = File::Matrix::load_vector<int> (index_path);
+      const Eigen::MatrixXd PE = eddy2scheme (config, indices);
+      check (PE, header);
+      return transform_for_image_load (PE, header);
+    }
 
 
 

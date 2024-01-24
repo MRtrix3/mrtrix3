@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@
 #include <algorithm>
 #include "command.h"
 #include "math/math.h"
+#include "file/matrix.h"
 #include "math/average_space.h"
 #include "image.h"
 #include "file/nifti_utils.h"
@@ -176,27 +177,27 @@ void run ()
     case 0: { // invert
       if (num_inputs != 1)
         throw Exception ("invert requires 1 input");
-      transform_type input = load_transform (argument[0]);
-      save_transform (input.inverse(), output_path);
+      transform_type input = File::Matrix::load_transform (argument[0]);
+      File::Matrix::save_transform (input.inverse(), output_path);
       break;
     }
     case 1: { // half
       if (num_inputs != 1)
         throw Exception ("half requires 1 input");
-      Eigen::Transform<default_type, 3, Eigen::Projective> input = load_transform (argument[0]);
+      Eigen::Transform<default_type, 3, Eigen::Projective> input = File::Matrix::load_transform (argument[0]);
       transform_type output;
       Eigen::Matrix<default_type, 4, 4> half = input.matrix().sqrt();
       output.matrix() = half.topLeftCorner(3,4);
-      save_transform (output, output_path);
+      File::Matrix::save_transform (output, output_path);
       break;
     }
     case 2: { // rigid
       if (num_inputs != 1)
         throw Exception ("rigid requires 1 input");
-      transform_type input = load_transform (argument[0]);
+      transform_type input = File::Matrix::load_transform (argument[0]);
       transform_type output (input);
       output.linear() = input.rotation();
-      save_transform (output, output_path);
+      File::Matrix::save_transform (output, output_path);
       break;
     }
     case 3: { // header
@@ -206,7 +207,7 @@ void run ()
       auto modified_header = Header::open (argument[1]);
 
       transform_type forward_transform = Transform(modified_header).voxel2scanner * Transform(orig_header).voxel2scanner.inverse();
-      save_transform (forward_transform.inverse(), output_path);
+      File::Matrix::save_transform (forward_transform.inverse(), output_path);
       break;
     }
     case 4: { // average
@@ -218,21 +219,21 @@ void run ()
       vector<Eigen::MatrixXd> matrices;
       for (size_t i = 0; i < num_inputs; i++) {
         DEBUG(str(argument[i]));
-        Tin = load_transform (argument[i]);
+        Tin = File::Matrix::load_transform (argument[i]);
         matrices.push_back(Tin.matrix());
       }
 
       Eigen::MatrixXd average_matrix;
       Math::matrix_average ( matrices, average_matrix);
       transform_out.matrix() = average_matrix.topLeftCorner(3,4);
-      save_transform (transform_out, output_path);
+      File::Matrix::save_transform (transform_out, output_path);
       break;
     }
     case 5: { // interpolate
       if (num_inputs != 3)
         throw Exception ("interpolation requires 3 inputs");
-      transform_type transform1 = load_transform (argument[0]);
-      transform_type transform2 = load_transform (argument[1]);
+      transform_type transform1 = File::Matrix::load_transform (argument[0]);
+      transform_type transform2 = File::Matrix::load_transform (argument[1]);
       default_type t = parse_floats(argument[2])[0];
 
       transform_type transform_out;
@@ -264,13 +265,13 @@ void run ()
       transform_out.linear() = Qout * ((1 - t) * S1 + t * S2);
       INFO("\n"+str(transform_out.matrix().format(
         Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]"))));
-      save_transform (transform_out, output_path);
+      File::Matrix::save_transform (transform_out, output_path);
       break;
     }
     case 6: { // decompose
       if (num_inputs != 1)
         throw Exception ("decomposition requires 1 input");
-      transform_type transform = load_transform (argument[0]);
+      transform_type transform = File::Matrix::load_transform (argument[0]);
 
       Eigen::MatrixXd M = transform.linear();
       Eigen::Matrix3d R = transform.rotation();
@@ -312,10 +313,10 @@ void run ()
     case 7: case 8: { // align_vertices_rigid and align_vertices_rigid_scale
       if (num_inputs != 2)
         throw Exception ("align_vertices_rigid requires 2 inputs");
-      const Eigen::MatrixXd target_vertices = load_matrix (argument[0]);
-      const Eigen::MatrixXd moving_vertices = load_matrix (argument[1]);
+      const Eigen::MatrixXd target_vertices = File::Matrix::load_matrix (argument[0]);
+      const Eigen::MatrixXd moving_vertices = File::Matrix::load_matrix (argument[1]);
       const transform_type T = align_corresponding_vertices (moving_vertices, target_vertices, op==8);
-      save_transform (T, output_path);
+      File::Matrix::save_transform (T, output_path);
       break;
     }
     default: assert (0);

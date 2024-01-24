@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,6 +23,8 @@
 #include "progressbar.h"
 #include "types.h"
 #include "dwi/directions/predefined.h"
+#include "file/matrix.h"
+#include "math/math.h"
 
 
 namespace MR {
@@ -34,7 +36,7 @@ namespace MR {
       using index_type = unsigned int;
 
 
-      class Set { MEMALIGN(Set)
+      class Set { 
 
         public:
 
@@ -43,7 +45,7 @@ namespace MR {
               dir_mask_excess_bits (0),
               dir_mask_excess_bits_mask (0)
           {
-            auto matrix = load_matrix (path);
+            auto matrix = File::Matrix::load_matrix (path);
 
             if (matrix.cols() != 2 && matrix.cols() != 3)
               throw Exception ("Text file \"" + path + "\"does not contain directions as either azimuth-elevation pairs or XYZ triplets");
@@ -84,7 +86,7 @@ namespace MR {
           }
 
           size_t size () const { return unit_vectors.size(); }
-          const Eigen::Vector3& get_dir (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
+          const Eigen::Vector3d& get_dir (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
           const vector<index_type>& get_adj_dirs (const size_t i) const { assert (i < size()); return adj_dirs[i]; }
           bool dirs_are_adjacent (const index_type one, const index_type two) const {
             assert (one < size());
@@ -98,13 +100,13 @@ namespace MR {
 
           index_type get_min_linkage (const index_type one, const index_type two) const;
 
-          const vector<Eigen::Vector3>& get_dirs() const { return unit_vectors; }
-          const Eigen::Vector3& operator[] (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
+          const vector<Eigen::Vector3d>& get_dirs() const { return unit_vectors; }
+          const Eigen::Vector3d& operator[] (const size_t i) const { assert (i < size()); return unit_vectors[i]; }
 
 
         protected:
 
-          vector<Eigen::Vector3> unit_vectors;
+          vector<Eigen::Vector3d> unit_vectors;
           vector< vector<index_type> > adj_dirs; // Note: not self-inclusive
 
 
@@ -152,7 +154,7 @@ namespace MR {
 
 
 
-      class FastLookupSet : public Set { MEMALIGN(FastLookupSet)
+      class FastLookupSet : public Set { 
 
         public:
 
@@ -179,7 +181,7 @@ namespace MR {
               az_begin (that.az_begin),
               el_begin (that.el_begin) { }
 
-          index_type select_direction (const Eigen::Vector3&) const;
+          index_type select_direction (const Eigen::Vector3d&) const;
 
 
 
@@ -192,11 +194,11 @@ namespace MR {
 
           FastLookupSet ();
 
-          index_type select_direction_slow (const Eigen::Vector3&) const;
+          index_type select_direction_slow (const Eigen::Vector3d&) const;
 
           void initialise();
 
-          size_t dir2gridindex (const Eigen::Vector3&) const;
+          size_t dir2gridindex (const Eigen::Vector3d&) const;
 
           void test_lookup() const;
 

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,7 @@
 
 
 
-import json
+import json, shutil
 
 
 
@@ -36,7 +36,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   num_inputs = len(app.ARGS.inputs)
@@ -45,13 +45,26 @@ def execute(): #pylint: disable=unused-variable
 
   # check input data
   def check_header(header):
-    if len(header.size()) != 4:
-      raise MRtrixError('Image "' + header.name() + '" is not a 4D image series')
+    if len(header.size()) > 4:
+      raise MRtrixError('Image "' + header.name() + '" contains more than 4 dimensions')
     if not 'dw_scheme' in header.keyval():
       raise MRtrixError('Image "' + header.name() + '" does not contain a gradient table')
-    num_grad_lines = len(header.keyval()['dw_scheme'])
-    if num_grad_lines != header.size()[3]:
-      raise MRtrixError('Number of lines in gradient table for image "' + header.name() + '" (' + str(num_grad_lines) + ') does not match number of volumes (' + str(header.size()[3]) + ')')
+    dw_scheme = header.keyval()['dw_scheme']
+    try:
+      if isinstance(dw_scheme[0], list):
+        num_grad_lines = len(dw_scheme)
+      elif (isinstance(dw_scheme[0], ( int, float))) and len(dw_scheme) >= 4:
+        num_grad_lines = 1
+      else:
+        raise MRtrixError
+    except (IndexError, MRtrixError):
+      raise MRtrixError('Image "' + header.name() + '" contains gradient table of unknown format') # pylint: disable=raise-missing-from
+    if len(header.size()) == 4:
+      num_volumes = header.size()[3]
+      if num_grad_lines != num_volumes:
+        raise MRtrixError('Number of lines in gradient table for image "' + header.name() + '" (' + str(num_grad_lines) + ') does not match number of volumes (' + str(num_volumes) + ')')
+    elif not (num_grad_lines == 1 and len(dw_scheme) >= 4 and dw_scheme[3] <= float(CONFIG.get('BZeroThreshold', 10.0))):
+      raise MRtrixError('Image "' + header.name() + '" is 3D, and cannot be validated as a b=0 volume')
 
   first_header = image.Header(path.from_user(app.ARGS.inputs[0], False))
   check_header(first_header)
@@ -87,7 +100,12 @@ def execute(): #pylint: disable=unused-variable
 
   # extract b=0 volumes within each input series
   for index in range(0, num_inputs):
-    run.command('dwiextract ' + str(index) + 'in.mif ' + str(index) + 'b0.mif -bzero')
+    infile = str(index) + 'in.mif'
+    outfile = str(index) + 'b0.mif'
+    if len(image.Header(infile).size()) > 3:
+      run.command('dwiextract ' + infile + ' ' + outfile + ' -bzero')
+    else:
+      run.function(shutil.copyfile, infile, outfile)
 
   mask_option = ' -mask_input mask.mif -mask_target mask.mif' if app.ARGS.mask else ''
 
@@ -125,10 +143,10 @@ def execute(): #pylint: disable=unused-variable
   # remove current contents of command_history, since there's no sensible
   #   way to choose from which input image the contents should be taken;
   #   we do however want to keep other contents of keyval (e.g. gradient table)
-  with open('result_init.json', 'r') as input_json_file:
+  with open('result_init.json', 'r', encoding='utf-8') as input_json_file:
     keyval = json.load(input_json_file)
   keyval.pop('command_history', None)
-  with open('result_final.json', 'w') as output_json_file:
+  with open('result_final.json', 'w', encoding='utf-8') as output_json_file:
     json.dump(keyval, output_json_file)
 
   run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output), mrconvert_keyval='result_final.json', force=app.FORCE_OVERWRITE)

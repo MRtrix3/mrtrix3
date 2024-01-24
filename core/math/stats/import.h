@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -48,7 +48,7 @@ namespace MR
        * cases, within the design matrix).
        */
       class SubjectDataImportBase
-      { NOMEMALIGN
+      {
         public:
           SubjectDataImportBase (const std::string& path) :
               path (path) { }
@@ -58,17 +58,17 @@ namespace MR
           * @param row the row of a matrix into which the data from this
           * particular file should be loaded
           */
-          virtual void operator() (matrix_type::RowXpr column) const = 0;
+          virtual void operator() (measurements_matrix_type::RowXpr column) const = 0;
 
           /*!
            * @param index extract the data from this file corresponding to a particular
            * row in the measurements vector
            */
-          virtual default_type operator[] (const size_t index) const = 0;
+          virtual measurements_value_type operator[] (const index_type index) const = 0;
 
           const std::string& name() const { return path; }
 
-          virtual size_t size() const = 0;
+          virtual index_type size() const = 0;
 
         protected:
           const std::string path;
@@ -85,7 +85,7 @@ namespace MR
       //   for each subject a mechanism of data access is spawned & remains open throughout
       //   processing.
       class CohortDataImport
-      { NOMEMALIGN
+      {
         public:
           CohortDataImport() { }
 
@@ -98,12 +98,12 @@ namespace MR
            * @param index for a particular element being tested (data will be acquired for
            * all subjects for that element)
            */
-          vector_type operator() (const size_t index) const;
+          measurements_vector_type operator() (const index_type index) const;
 
           operator bool() const { return bool(files.size()); }
-          size_t size() const { return files.size(); }
+          index_type size() const { return files.size(); }
 
-          std::shared_ptr<SubjectDataImportBase> operator[] (const size_t i) const
+          std::shared_ptr<SubjectDataImportBase> operator[] (const index_type i) const
           {
             assert (i < files.size());
             return files[i];
@@ -139,7 +139,7 @@ namespace MR
             throw Exception ("Unable to open subject file list \"" + listpath + "\"");
           std::string line;
           while (getline (ifs, line)) {
-            size_t p = line.find_last_not_of(" \t");
+            const size_t p = line.find_last_not_of(" \t");
             if (p != std::string::npos)
               line.erase (p+1);
             if (line.size())

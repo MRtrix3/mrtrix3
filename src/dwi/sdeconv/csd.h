@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,10 +20,11 @@
 #include "app.h"
 #include "header.h"
 #include "dwi/gradient.h"
+#include "file/matrix.h"
+#include "math/least_squares.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 #include "dwi/directions/predefined.h"
-#include "math/least_squares.h"
 
 #define NORM_LAMBDA_MULTIPLIER 0.0002
 
@@ -42,10 +43,10 @@ namespace MR
 
     extern const App::OptionGroup CSD_options;
 
-    class CSD { MEMALIGN(CSD)
+    class CSD { 
       public:
 
-        class Shared { MEMALIGN(Shared)
+        class Shared { 
           public:
 
             Shared (const Header& dwi_header) :
@@ -79,10 +80,10 @@ namespace MR
               }
               opt = get_options ("filter");
               if (opt.size())
-                init_filter = load_vector (opt[0][0]);
+                init_filter = File::Matrix::load_vector (opt[0][0]);
               opt = get_options ("directions");
               if (opt.size())
-                HR_dirs = load_matrix (opt[0][0]);
+                HR_dirs = File::Matrix::load_matrix (opt[0][0]);
               opt = get_options ("neg_lambda");
               if (opt.size())
                 neg_lambda = opt[0][0];
@@ -101,7 +102,7 @@ namespace MR
             void set_response (const std::string& path)
             {
               INFO ("loading response function from file \"" + path + "\"");
-              set_response (load_vector (path));
+              set_response (File::Matrix::load_vector (path));
             }
 
             template <class Derived>

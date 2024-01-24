@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,13 @@
 
 #include "header.h"
 #include "raw.h"
+#include "file/config.h"
+#include "file/gz.h"
+#include "file/json_utils.h"
+#include "file/nifti_utils.h"
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
-#include "file/config.h"
-#include "file/nifti_utils.h"
-#include "file/json_utils.h"
-#include "file/gz.h"
 #include "image_io/default.h"
 #include "image_io/gz.h"
 
@@ -33,7 +34,7 @@ namespace MR
     {
 
       namespace {
-        template <class NiftiHeader> struct Type { NOMEMALIGN
+        template <class NiftiHeader> struct Type { 
           using code_type = int16_t;
           using float_type = float32;
           using dim_type = int16_t;
@@ -49,7 +50,7 @@ namespace MR
           static char* regular (NiftiHeader& NH) { return &NH.regular; }
         };
 
-        template <> struct Type<nifti_2_header> { NOMEMALIGN
+        template <> struct Type<nifti_2_header> { 
           using code_type = int32_t;
           using float_type = float64;
           using dim_type = int64_t;
@@ -582,17 +583,21 @@ namespace MR
 
 
 
-
+      void axes_on_write (const Header& H, vector<size_t>& order, vector<bool>& flip)
+      {
+        Stride::List strides = Stride::get (H);
+        strides.resize (3);
+        order = Stride::order (strides);
+        flip = { strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0 };
+      }
 
 
 
 
       transform_type adjust_transform (const Header& H, vector<size_t>& axes)
       {
-        Stride::List strides = Stride::get (H);
-        strides.resize (3);
-        axes = Stride::order (strides);
-        bool flip[] = { strides[axes[0]] < 0, strides[axes[1]] < 0, strides[axes[2]] < 0 };
+        vector<bool> flip;
+        axes_on_write (H, axes, flip);
 
         if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 &&
             !flip[0] && !flip[1] && !flip[2])
@@ -665,14 +670,17 @@ namespace MR
           if (!File::Config::get_bool ("NIfTIAllowBitwise", false))
             H.datatype() = DataType::UInt8;
 
+        if ((H.datatype()() & DataType::Type) == DataType::Float16)
+          H.datatype() = (DataType::Float32 & DataType::Type) | (H.datatype()() & DataType::Attributes);
+
         return true;
       }
 
 
 
       namespace {
-        template <int VERSION> struct Get { NOMEMALIGN using type = nifti_1_header; };
-        template <> struct Get<2> { NOMEMALIGN using type = nifti_2_header; };
+        template <int VERSION> struct Get {  using type = nifti_1_header; };
+        template <> struct Get<2> {  using type = nifti_2_header; };
       }
 
 
@@ -695,7 +703,8 @@ namespace MR
             std::unique_ptr<ImageIO::Default> handler (new ImageIO::Default (H));
             handler->files.push_back (File::Entry (H.name(), ( single_file ? data_offset : 0 )));
             return std::move (handler);
-          } catch (...) {
+          } catch (Exception& e) {
+            e.display();
             return std::unique_ptr<ImageIO::Base>();
           }
         }

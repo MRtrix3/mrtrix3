@@ -17,10 +17,18 @@ Usage
 
 -  *input*: The input DWI series to be checked
 
+Description
+-----------
+
+Note that the corrected gradient table can be output using the -export_grad_{mrtrix,fsl} option.
+
+Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive a binary mask image to be used for streamline seeding and to constrain streamline propagation. More information on mask derivation from DWI data can be found at the following link: 
+https://mrtrix.readthedocs.io/en/3.0.4/dwi_preprocessing/masking.html
+
 Options
 -------
 
-- **-mask image** Provide a brain mask image
+- **-mask image** Provide a mask image within which to seed & constrain tracking
 
 - **-number** Set the number of tracks to generate for each test
 
@@ -79,7 +87,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2021 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

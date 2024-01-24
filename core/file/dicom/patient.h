@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,15 +26,23 @@ namespace MR {
 
       class Study;
 
-      class Patient : public vector<std::shared_ptr<Study>> { NOMEMALIGN
+      class Patient : public vector<std::shared_ptr<Study>> { 
         public:
-          Patient (const std::string& patient_name, const std::string& patient_ID = "", 
-              const std::string& patient_DOB = "") :
+          Patient (const std::string& patient_name, const std::string& patient_ID,
+              const std::string& patient_DOB) :
             name (patient_name), ID (patient_ID), DOB (patient_DOB) { }
           std::string name, ID, DOB;
 
-          std::shared_ptr<Study> find (const std::string& study_name, const std::string& study_ID = "", 
-              const std::string& study_date = "", const std::string& study_time = "");
+          std::shared_ptr<Study> find (const std::string& study_name, const std::string& study_ID = "",
+              const std::string& study_UID = "", const std::string& study_date = "", const std::string& study_time = "");
+
+          bool operator< (const Patient& s) const {
+            if (name != s.name)
+              return name < s.name;
+            if (ID != s.ID)
+              return ID < s.ID;
+            return DOB < s.DOB;
+          }
 
       };
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,7 @@ namespace Connectome {
 // Class for storing any useful information regarding a parcellation node that
 //   may be imported from a lookup table
 class LUT_node
-{ MEMALIGN(LUT_node)
+{ 
 
   public:
 
@@ -92,7 +92,7 @@ class LUT_node
 
 
 class LUT : public std::multimap<node_t, LUT_node>
-{ MEMALIGN(LUT)
+{ 
     enum file_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP, LUT_MRTRIX };
   public:
     using map_type = std::multimap<node_t, LUT_node>;

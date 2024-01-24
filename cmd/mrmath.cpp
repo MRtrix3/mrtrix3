@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -98,7 +98,7 @@ void usage ()
 using value_type = float;
 
 
-class Mean { NOMEMALIGN
+class Mean { 
   public:
     Mean () : sum (0.0), count (0) { }
     void operator() (value_type val) {
@@ -116,7 +116,7 @@ class Mean { NOMEMALIGN
     size_t count;
 };
 
-class Median { NOMEMALIGN
+class Median { 
   public:
     Median () { }
     void operator() (value_type val) {
@@ -129,7 +129,7 @@ class Median { NOMEMALIGN
     vector<value_type> values;
 };
 
-class Sum { NOMEMALIGN
+class Sum { 
   public:
     Sum () : sum (0.0) { }
     void operator() (value_type val) {
@@ -143,7 +143,7 @@ class Sum { NOMEMALIGN
 };
 
 
-class Product { NOMEMALIGN
+class Product { 
   public:
     Product () : product (NAN) { }
     void operator() (value_type val) {
@@ -157,7 +157,7 @@ class Product { NOMEMALIGN
 };
 
 
-class RMS { NOMEMALIGN
+class RMS { 
   public:
     RMS() : sum (0.0), count (0) { }
     void operator() (value_type val) {
@@ -175,7 +175,7 @@ class RMS { NOMEMALIGN
     size_t count;
 };
 
-class NORM2 { NOMEMALIGN
+class NORM2 { 
   public:
     NORM2() : sum (0.0), count (0) { }
     void operator() (value_type val) {
@@ -195,7 +195,7 @@ class NORM2 { NOMEMALIGN
 
 
 // Welford's algorithm to avoid catastrophic cancellation
-class Var { NOMEMALIGN
+class Var { 
   public:
     Var () : delta (0.0), delta2 (0.0), mean (0.0), m2 (0.0), count (0) { }
     void operator() (value_type val) {
@@ -217,14 +217,14 @@ class Var { NOMEMALIGN
 };
 
 
-class Std : public Var { NOMEMALIGN
+class Std : public Var { 
   public:
     Std() : Var() { }
     value_type result () const { return std::sqrt (Var::result()); }
 };
 
 
-class Min { NOMEMALIGN
+class Min { 
   public:
     Min () : min (std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) {
@@ -236,7 +236,7 @@ class Min { NOMEMALIGN
 };
 
 
-class Max { NOMEMALIGN
+class Max { 
   public:
     Max () : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) {
@@ -248,7 +248,7 @@ class Max { NOMEMALIGN
 };
 
 
-class AbsMax { NOMEMALIGN
+class AbsMax { 
   public:
     AbsMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) {
@@ -259,7 +259,7 @@ class AbsMax { NOMEMALIGN
     value_type max;
 };
 
-class MagMax { NOMEMALIGN
+class MagMax { 
   public:
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
@@ -276,7 +276,7 @@ class MagMax { NOMEMALIGN
 
 
 template <class Operation>
-class AxisKernel { NOMEMALIGN
+class AxisKernel { 
   public:
     AxisKernel (size_t axis) : axis (axis) { }
 
@@ -295,7 +295,7 @@ class AxisKernel { NOMEMALIGN
 
 
 
-class ImageKernelBase { NOMEMALIGN
+class ImageKernelBase { 
   public:
     virtual ~ImageKernelBase () { }
     virtual void process (Header& image_in) = 0;
@@ -305,14 +305,14 @@ class ImageKernelBase { NOMEMALIGN
 
 
 template <class Operation>
-class ImageKernel : public ImageKernelBase { NOMEMALIGN
+class ImageKernel : public ImageKernelBase { 
   protected:
-    class InitFunctor { NOMEMALIGN
+    class InitFunctor { 
       public:
         template <class ImageType>
           void operator() (ImageType& out) const { out.value() = Operation(); }
     };
-    class ProcessFunctor { NOMEMALIGN
+    class ProcessFunctor { 
       public:
         template <class ImageType1, class ImageType2>
           void operator() (ImageType1& out, ImageType2& in) const {
@@ -321,7 +321,7 @@ class ImageKernel : public ImageKernelBase { NOMEMALIGN
             out.value() = op;
           }
     };
-    class ResultFunctor { NOMEMALIGN
+    class ResultFunctor { 
       public:
         template <class ImageType1, class ImageType2>
           void operator() (ImageType1& out, ImageType2& in) const {

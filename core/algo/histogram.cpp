@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
  */
 
 #include "algo/histogram.h"
+#include "file/matrix.h"
 
 namespace MR
 {
@@ -46,7 +47,7 @@ namespace MR
       {
         Eigen::MatrixXd M;
         try {
-          M = load_matrix (path);
+          M = File::Matrix::load_matrix (path);
           if (M.cols() == 1)
             throw Exception ("Histogram template must have at least 2 columns");
           vector<default_type>().swap (data);

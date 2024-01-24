@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,12 +21,14 @@
 #include "image.h"
 #include "types.h"
 #include "algo/loop.h"
+#include "file/matrix.h"
 #include "interp/linear.h"
 
 #include "connectome/connectome.h"
 
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/connectome/connectome.h"
+
 
 
 
@@ -40,7 +42,7 @@ namespace Connectome {
 
 // Provide a common interface for calculating the contribution from a
 //   particular streamline to a particular edge of the connectome
-class Metric { MEMALIGN(Metric)
+class Metric { 
 
   public:
     Metric() :
@@ -120,7 +122,7 @@ class Metric { MEMALIGN(Metric)
         return;
       }
       file_path = Path::basename (path);
-      file_values = MR::load_vector (path);
+      file_values = File::Matrix::load_vector (path);
     }
 
 

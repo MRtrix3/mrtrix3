@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,8 +18,8 @@
 
 #include <limits>
 
+#include "file/matrix.h"
 #include "file/path.h"
-#include "math/math.h"
 
 namespace MR
 {
@@ -68,7 +68,7 @@ namespace MR
             mean (NaN),
             max (NaN)
         {
-          base_t temp = MR::load_vector<float> (file);
+          base_t temp = File::Matrix::load_vector<float> (file);
           base_t::operator= (temp);
           calc_stats();
         }
@@ -102,7 +102,7 @@ namespace MR
 
         FileDataVector& FileDataVector::load (const std::string& filename)
         {
-          base_t temp = MR::load_vector<float> (filename);
+          base_t temp = File::Matrix::load_vector<float> (filename);
           base_t::operator= (temp);
           name = qstr (Path::basename (filename));
           calc_stats();

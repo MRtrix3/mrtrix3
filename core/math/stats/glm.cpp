@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 
 #include "debug.h"
 #include "thread_queue.h"
+#include "file/matrix.h"
 #include "math/betainc.h"
 #include "math/erfinv.h"
 #include "math/welch_satterthwaite.h"
@@ -79,6 +80,21 @@ namespace MR
 
 
 
+        index_type batch_size()
+        {
+          //CONF option: GLMBatchSize
+          //CONF default: 1024
+          //CONF Where the GLM design matrix is fixed across all elements,
+          //CONF this is the number of elements for which data shuffling and model
+          //CONF inversion will be performed concurrently,
+          //CONF ie. in a single set of linear algebra operations
+          static const index_type value = File::Config::get_int("GLMBatchSize", 1024);
+          return value;
+        }
+
+
+
+
         void check_design (const matrix_type& design, const bool extra_factors)
         {
           Eigen::ColPivHouseholderQR<matrix_type> decomp;
@@ -106,27 +122,27 @@ namespace MR
 
 
 
-        index_array_type load_variance_groups (const size_t num_inputs)
+        index_array_type load_variance_groups (const index_type num_inputs)
         {
           auto opt = App::get_options ("variance");
           if (!opt.size())
             return index_array_type();
           try {
-            auto data = load_vector<size_t> (opt[0][0]);
-            if (size_t(data.size()) != num_inputs)
+            auto data = File::Matrix::load_vector<index_type> (opt[0][0]);
+            if (index_type(data.size()) != num_inputs)
               throw Exception ("Number of entries in variance group file \"" + std::string(opt[0][0]) + "\" (" + str(data.size()) + ") does not match number of inputs (" + str(num_inputs) + ")");
-            const size_t min_coeff = data.minCoeff();
-            const size_t max_coeff = data.maxCoeff();
+            const index_type min_coeff = data.minCoeff();
+            const index_type max_coeff = data.maxCoeff();
             if (min_coeff > 1)
               throw Exception ("Minimum coefficient needs to be either zero or one");
             if (max_coeff == min_coeff) {
               WARN ("Only a single variance group is defined in file \"" + opt[0][0] + "\"; variance groups will not be used");
               return index_array_type();
             }
-            vector<size_t> count_per_group (max_coeff + 1, 0);
-            for (size_t i = 0; i != size_t(data.size()); ++i)
+            vector<index_type> count_per_group (max_coeff + 1, 0);
+            for (index_type i = 0; i != index_type(data.size()); ++i)
               count_per_group[data[i]]++;
-            for (size_t vg_index = min_coeff; vg_index <= size_t(max_coeff); ++vg_index) {
+            for (index_type vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
               if (!count_per_group[vg_index])
                 throw Exception ("No entries found for variance group " + str(vg_index));
             }
@@ -146,7 +162,7 @@ namespace MR
           vector<Hypothesis> hypotheses;
           auto opt = App::get_options ("ttests");
           if (opt.size()) {
-            const matrix_type contrast_matrix = load_matrix (opt[0][0]);
+            const matrix_type contrast_matrix = File::Matrix::load_matrix (opt[0][0]);
             if (contrast_matrix.cols() != num_factors)
               throw Exception ("Number of columns in T-test matrix file \"" + opt[0][0] + "\" (" + str(contrast_matrix.cols()) + ") does not match number of model factors (" + str(num_factors) + ")");
             for (ssize_t row = 0; row != contrast_matrix.rows(); ++row)
@@ -154,7 +170,7 @@ namespace MR
           }
           opt = App::get_options ("ftest");
           for (size_t i = 0; i != opt.size(); ++i) {
-            const matrix_type ftest_matrix = load_matrix (opt[i][0]);
+            const matrix_type ftest_matrix = File::Matrix::load_matrix (opt[i][0]);
             if (ftest_matrix.cols() != num_factors)
               throw Exception ("Number of columns in F-test matrix \"" + opt[i][0] + "\" (" + str(ftest_matrix.cols()) + ") does not match number of model factors (" + str(num_factors) + ")");
             hypotheses.emplace_back (Hypothesis (ftest_matrix, i));
@@ -169,40 +185,40 @@ namespace MR
 
 
 
-        matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design)
+        matrix_type solve_betas (const measurements_matrix_type& measurements, const matrix_type& design)
         {
-          return design.jacobiSvd (Eigen::ComputeThinU | Eigen::ComputeThinV).solve (measurements);
+          return design.jacobiSvd (Eigen::ComputeThinU | Eigen::ComputeThinV).solve (measurements.cast<default_type>());
         }
 
 
 
-        vector_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
+        vector_type abs_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
         {
           if (hypothesis.is_F())
-            return vector_type::Constant (measurements.rows(), NaN);
+            return vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::quiet_NaN());
           else
             return hypothesis.matrix() * solve_betas (measurements, design);
         }
 
-        matrix_type abs_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
+        matrix_type abs_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
         {
           matrix_type result (measurements.cols(), hypotheses.size());
-          for (size_t ic = 0; ic != hypotheses.size(); ++ic)
+          for (index_type ic = 0; ic != hypotheses.size(); ++ic)
             result.col (ic) = abs_effect_size (measurements, design, hypotheses[ic]);
           return result;
         }
 
 
 
-        matrix_type stdev (const matrix_type& measurements, const matrix_type& design)
+        matrix_type stdev (const measurements_matrix_type& measurements, const matrix_type& design)
         {
-          const matrix_type residuals = measurements - design * solve_betas (measurements, design);
+          const matrix_type residuals = measurements.cast<default_type>() - design * solve_betas (measurements, design);
           const matrix_type sse = residuals.colwise().squaredNorm();
           return (sse.array() / value_type(design.rows()-Math::rank (design))).sqrt();
         }
 
 
-        matrix_type stdev (const matrix_type& measurements, const matrix_type& design, const index_array_type& variance_groups)
+        matrix_type stdev (const measurements_matrix_type& measurements, const matrix_type& design, const index_array_type& variance_groups)
         {
           assert (measurements.rows() == design.rows());
           if (!variance_groups.size())
@@ -211,20 +227,20 @@ namespace MR
           // Residual-forming matrix
           const matrix_type R (matrix_type::Identity (design.rows(), design.rows()) - (design * Math::pinv (design)));
           // Residuals
-          const matrix_type e (R * measurements);
+          const matrix_type e (R * measurements.cast<default_type>());
           // One standard deviation per element per variance group
           // Rows are variance groups, columns are elements
-          const size_t num_vgs = variance_groups.array().maxCoeff() + 1;
+          const index_type num_vgs = variance_groups.array().maxCoeff() + 1;
           // Sum of residual-forming matrix diagonal elements within each variance group
           //   will be equivalent across elements
           vector_type Rnn_sums (vector_type::Zero (num_vgs));
-          for (ssize_t i = 0; i != measurements.rows(); ++i)
+          for (index_type i = 0; i != index_type(measurements.rows()); ++i)
             Rnn_sums[variance_groups[i]] += R.diagonal()[i];
           // For each variance group, get the sum of squared residuals within that group
           matrix_type result (num_vgs, measurements.cols());
-          for (ssize_t ie = 0; ie != measurements.cols(); ++ie) {
+          for (index_type ie = 0; ie != index_type(measurements.cols()); ++ie) {
             vector_type sse (vector_type::Zero (num_vgs));
-            for (ssize_t i = 0; i != measurements.rows(); ++i)
+            for (index_type i = 0; i != index_type(measurements.rows()); ++i)
               sse[variance_groups[i]] += Math::pow2 (e (i, ie));
             // (Rnn_sum / sse) is the inverse of the estimated variance
             result.col (ie) = (sse.array() / Rnn_sums.array()).sqrt();
@@ -234,18 +250,18 @@ namespace MR
 
 
 
-        vector_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
+        vector_type std_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const Hypothesis& hypothesis)
         {
           if (hypothesis.is_F())
-            return vector_type::Constant (measurements.cols(), NaN);
+            return vector_type::Constant (measurements.cols(), std::numeric_limits<default_type>::quiet_NaN());
           return abs_effect_size (measurements, design, hypothesis).array() / stdev (measurements, design).array().col(0);
         }
 
-        matrix_type std_effect_size (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
+        matrix_type std_effect_size (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses)
         {
-          const auto stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design).array().col(0);
+          const vector_type stdev_reciprocal = vector_type::Ones (measurements.cols()) / stdev (measurements, design).array().col(0);
           matrix_type result (measurements.cols(), hypotheses.size());
-          for (size_t ic = 0; ic != hypotheses.size(); ++ic)
+          for (index_type ic = 0; ic != hypotheses.size(); ++ic)
             result.col (ic) = abs_effect_size (measurements, design, hypotheses[ic]) * stdev_reciprocal;
           return result;
         }
@@ -255,7 +271,7 @@ namespace MR
 
 
 
-        void all_stats (const matrix_type& measurements,
+        void all_stats (const measurements_matrix_type& measurements,
                         const matrix_type& design,
                         const vector<Hypothesis>& hypotheses,
                         const index_array_type& variance_groups,
@@ -280,9 +296,9 @@ namespace MR
             ++*progress;
 #endif
           abs_effect_size.resize (measurements.cols(), hypotheses.size());
-          for (size_t ic = 0; ic != hypotheses.size(); ++ic) {
+          for (index_type ic = 0; ic != hypotheses.size(); ++ic) {
             if (hypotheses[ic].is_F()) {
-              abs_effect_size.col (ic).fill (NaN);
+              abs_effect_size.col (ic).fill (std::numeric_limits<default_type>::quiet_NaN());
             } else {
               abs_effect_size.col (ic) = (hypotheses[ic].matrix() * betas).row (0);
             }
@@ -295,7 +311,7 @@ namespace MR
 #endif
           // Explicit calculation of residuals before SSE, rather than in a single
           //   step, appears to be necessary for compatibility with Eigen 3.2.0
-          const matrix_type residuals = (measurements - design * betas);
+          const matrix_type residuals = (measurements.cast<default_type>() - design * betas);
 #ifdef GLM_ALL_STATS_DEBUG
           std::cerr << "Residuals: " << residuals.rows() << " x " << residuals.cols() << ", max " << residuals.array().maxCoeff() << "\n";
 #else
@@ -310,7 +326,7 @@ namespace MR
             ++*progress;
 #endif
           if (variance_groups.size())
-            std_effect_size = matrix_type::Constant (measurements.cols(), hypotheses.size(), NaN);
+            std_effect_size = matrix_type::Constant (measurements.cols(), hypotheses.size(), std::numeric_limits<default_type>::quiet_NaN());
           else
             std_effect_size = abs_effect_size.array().colwise() / stdev.transpose().array().col(0);
 #ifdef GLM_ALL_STATS_DEBUG
@@ -320,7 +336,7 @@ namespace MR
 
 
 
-        void all_stats (const matrix_type& measurements,
+        void all_stats (const measurements_matrix_type& measurements,
                         const matrix_type& fixed_design,
                         const vector<CohortDataImport>& extra_data,
                         const vector<Hypothesis>& hypotheses,
@@ -337,13 +353,13 @@ namespace MR
           }
 
           class Source
-          { NOMEMALIGN
+          {
             public:
-              Source (const size_t num_elements) :
+              Source (const index_type num_elements) :
                   num_elements (num_elements),
                   counter (0),
                   progress (new ProgressBar ("Calculating basic properties of default permutation", num_elements)) { }
-              bool operator() (size_t& element_index)
+              bool operator() (index_type& element_index)
               {
                 element_index = counter++;
                 if (element_index >= num_elements) {
@@ -355,15 +371,15 @@ namespace MR
                 return true;
               }
             private:
-              const size_t num_elements;
-              size_t counter;
+              const index_type num_elements;
+              index_type counter;
               std::unique_ptr<ProgressBar> progress;
           };
 
           class Functor
-          { MEMALIGN(Functor)
+          {
             public:
-              Functor (const matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_data, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
+              Functor (const measurements_matrix_type& data, const matrix_type& design_fixed, const vector<CohortDataImport>& extra_data, const vector<Hypothesis>& hypotheses, const index_array_type& variance_groups,
                        vector_type& cond, matrix_type& betas, matrix_type& abs_effect_size, matrix_type& std_effect_size, matrix_type& stdev) :
                   data (data),
                   design_fixed (design_fixed),
@@ -377,21 +393,21 @@ namespace MR
                   global_stdev (stdev),
                   num_vgs (variance_groups.size() ? variance_groups.maxCoeff()+1 : 1)
               {
-                assert (size_t(design_fixed.cols()) + extra_data.size() == size_t(hypotheses[0].cols()));
+                assert (index_type(design_fixed.cols()) + extra_data.size() == index_type(hypotheses[0].cols()));
               }
-              bool operator() (const size_t& element_index)
+              bool operator() (const index_type& element_index)
               {
-                const matrix_type element_data = data.col (element_index);
+                const measurements_matrix_type element_data = data.col (element_index);
                 matrix_type element_design (design_fixed.rows(), design_fixed.cols() + extra_data.size());
                 element_design.leftCols (design_fixed.cols()) = design_fixed;
                 // For each element-wise design matrix column,
                 //   acquire the data for this particular element, without permutation
-                for (size_t col = 0; col != extra_data.size(); ++col)
-                  element_design.col (design_fixed.cols() + col) = (extra_data[col]) (element_index);
+                for (index_type col = 0; col != extra_data.size(); ++col)
+                  element_design.col (design_fixed.cols() + col) = (extra_data[col])(element_index).cast<default_type>();
                 // For each element-wise design matrix, remove any NaN values
                 //   present in either the input data or imported from the element-wise design matrix column data
-                ssize_t valid_rows = 0;
-                for (ssize_t row = 0; row != data.rows(); ++row) {
+                index_type valid_rows = 0;
+                for (index_type row = 0; row != index_type(data.rows()); ++row) {
                   if (std::isfinite (element_data(row)) && element_design.row (row).allFinite())
                     ++valid_rows;
                 }
@@ -406,11 +422,11 @@ namespace MR
                   }
                 } else if (valid_rows >= element_design.cols()) {
                   // Need to reduce the data and design matrices to contain only finite data
-                  matrix_type element_data_finite (valid_rows, 1);
+                  measurements_matrix_type element_data_finite (valid_rows, 1);
                   matrix_type element_design_finite (valid_rows, element_design.cols());
                   index_array_type variance_groups_finite (variance_groups.size() ? valid_rows : 0);
-                  ssize_t output_row = 0;
-                  for (ssize_t row = 0; row != data.rows(); ++row) {
+                  index_type output_row = 0;
+                  for (index_type row = 0; row != index_type(data.rows()); ++row) {
                     if (std::isfinite (element_data(row)) && element_design.row (row).allFinite()) {
                       element_data_finite(output_row, 0) = element_data(row);
                       element_design_finite.row (output_row) = element_design.row (row);
@@ -440,7 +456,7 @@ namespace MR
                 return true;
               }
             private:
-              const matrix_type& data;
+              const measurements_matrix_type& data;
               const matrix_type& design_fixed;
               const vector<CohortDataImport>& extra_data;
               const vector<Hypothesis>& hypotheses;
@@ -451,16 +467,16 @@ namespace MR
               matrix_type& global_std_effect_size;
               matrix_type& global_stdev;
               matrix_type local_betas, local_abs_effect_size, local_std_effect_size, local_stdev;
-              const size_t num_vgs;
+              const index_type num_vgs;
 
               void zero () {
                 local_betas = matrix_type::Zero (global_betas.rows(), 1);
                 local_abs_effect_size = matrix_type::Zero (1, hypotheses.size());
                 local_std_effect_size = matrix_type::Zero (1, hypotheses.size());
                 local_stdev = matrix_type::Zero (num_vgs, 1);
-                for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
+                for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
                   if (hypotheses[ih].is_F())
-                    local_abs_effect_size (1, ih) = local_std_effect_size (1, ih) = NaN;
+                    local_abs_effect_size (0, ih) = local_std_effect_size (0, ih) = std::numeric_limits<default_type>::quiet_NaN();
                 }
               }
           };
@@ -468,7 +484,7 @@ namespace MR
           Source source (measurements.cols());
           Functor functor (measurements, fixed_design, extra_data, hypotheses, variance_groups,
                            cond, betas, abs_effect_size, std_effect_size, stdev);
-          Thread::run_queue (source, Thread::batch (size_t()), Thread::multi (functor));
+          Thread::run_queue (source, Thread::batch (index_type()), Thread::multi (functor));
         }
 
 
@@ -512,7 +528,7 @@ namespace MR
 
 
 
-        matrix_type Hypothesis::check_rank (const matrix_type& in, const size_t index) const
+        matrix_type Hypothesis::check_rank (const matrix_type& in, const index_type index) const
         {
           // FullPivLU.image() provides column-space of matrix;
           //   here we want the row-space (since it's degeneracy in contrast matrix rows
@@ -534,7 +550,7 @@ namespace MR
 
 
 
-        SharedFixedBase::SharedFixedBase (const matrix_type& measurements,
+        SharedFixedBase::SharedFixedBase (const measurements_matrix_type& measurements,
                                           const matrix_type& design,
                                           const vector<Hypothesis>& hypotheses) :
             pinvM (Math::pinv (design)),
@@ -562,8 +578,8 @@ namespace MR
             num_vgs (variance_groups.maxCoeff() + 1),
             gamma_weights (vector_type::Zero (hypotheses.size()))
         {
-          for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
-            const size_t s = hypotheses[ih].rank();
+          for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
+            const index_type s = hypotheses[ih].rank();
             gamma_weights[ih] = 2.0*(s-1) / default_type(s*(s+2));
           }
         }
@@ -575,7 +591,7 @@ namespace MR
 
 
 
-        TestFixedHomoscedastic::Shared::Shared (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
+        TestFixedHomoscedastic::Shared::Shared (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
             SharedFixedBase (measurements, design, hypotheses)
         {
           for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
@@ -595,29 +611,51 @@ namespace MR
 
 
 
-        TestFixedHomoscedastic::TestFixedHomoscedastic (const matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
+        TestFixedHomoscedastic::TestFixedHomoscedastic (const measurements_matrix_type& measurements, const matrix_type& design, const vector<Hypothesis>& hypotheses) :
             TestBase (measurements, design, hypotheses),
-            Sy (measurements.rows(), measurements.cols()),
-            lambdas (design.cols(), measurements.cols()),
-            residuals (measurements.rows(), measurements.cols()),
-            sse (measurements.cols())
+#ifdef NDEBUG
+            Sy (measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size()))),
+            lambdas (design.cols(), std::min(measurements.cols(), ssize_t(batch_size()))),
+            residuals (measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size()))),
+            sse (std::min(measurements.cols(), ssize_t(batch_size())))
+#else
+            Sy (matrix_type::Constant (measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (design.cols(), std::min(measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            residuals (matrix_type::Constant (measurements.rows(), std::min(measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            sse (vector_type::Constant (std::min(measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
         {
           shared.reset (new Shared (measurements, design, hypotheses));
-          for (size_t ih = 0; ih != hypotheses.size(); ++ih)
+          for (index_type ih = 0; ih != hypotheses.size(); ++ih)
+#ifdef NDEBUG
             betas.emplace_back (matrix_type (hypotheses[ih].matrix().rows(), 1));
+#else
+            betas.emplace_back (matrix_type::Constant (hypotheses[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+#endif
         }
 
 
 
         TestFixedHomoscedastic::TestFixedHomoscedastic (const TestFixedHomoscedastic& that) :
             TestBase (that),
-            Sy (num_inputs(), num_elements()),
-            lambdas (num_factors(), num_elements()),
-            residuals (num_inputs(), num_elements()),
-            sse (num_elements())
+#ifdef NDEBUG
+            Sy (num_inputs(), std::min (num_elements(), batch_size())),
+            lambdas (num_factors(), std::min (num_elements(), batch_size())),
+            residuals (num_inputs(), std::min (num_elements(), batch_size())),
+            sse (std::min (num_elements(), batch_size()))
+#else
+            Sy (matrix_type::Constant (num_inputs(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (num_factors(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            residuals (matrix_type::Constant (num_inputs(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            sse (vector_type::Constant (std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
         {
-          for (size_t ih = 0; ih != num_hypotheses(); ++ih)
+          for (index_type ih = 0; ih != num_hypotheses(); ++ih)
+#ifdef NDEBUG
             betas.emplace_back (matrix_type (c[ih].matrix().rows(), 1));
+#else
+            betas.emplace_back (matrix_type::Constant (c[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+#endif
         }
 
 
@@ -633,17 +671,21 @@ namespace MR
 
 
 
-        void TestFixedHomoscedastic::operator() (const matrix_type& shuffling_matrix,
-                                                matrix_type& stats,
-                                                matrix_type& zstats)
+        void TestFixedHomoscedastic::operator() (const shuffle_matrix_type& shuffling_matrix,
+                                                 matrix_type& stats,
+                                                 matrix_type& zstats)
         {
-          assert (size_t(shuffling_matrix.rows()) == num_inputs());
+          assert (index_type(shuffling_matrix.rows()) == num_inputs());
           stats .resize (num_elements(), num_hypotheses());
           zstats.resize (num_elements(), num_hypotheses());
 
+#ifdef GLM_TEST_DEBUG
+          VAR (batch_size());
+#endif
+
           // Freedman-Lane for fixed design matrix case
           // Each hypothesis needs to be handled explicitly on its own
-          for (size_t ih = 0; ih != num_hypotheses(); ++ih) {
+          for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
 
             // First, we perform permutation of the input data
             // In Freedman-Lane, the initial 'effective' regression against the nuisance
@@ -656,58 +698,67 @@ namespace MR
             VAR (y.rows());
             VAR (y.cols());
 #endif
-            Sy.noalias() = shuffling_matrix * S().partitions[ih].Rz * y;
+
+            for (index_type iestart = 0; iestart < num_elements(); iestart += batch_size()) {
+              const index_type this_batch_size = std::min (num_elements() - iestart, batch_size());
+              Sy.leftCols(this_batch_size).noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y.block(0, iestart, num_inputs(), this_batch_size).cast<default_type>();
+#ifndef NDEBUG
+              Sy.rightCols(Sy.cols() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            VAR (Sy.rows());
-            VAR (Sy.cols());
-            VAR (S().pinvM.rows());
-            VAR (S().pinvM.cols());
+              VAR (Sy.rows());
+              VAR (Sy.cols());
+              VAR (S().pinvM.rows());
+              VAR (S().pinvM.cols());
 #endif
-            // Now, we regress this shuffled data against the full model
-            lambdas.noalias() = S().pinvM * Sy;
+              // Now, we regress this shuffled data against the full model
+              lambdas.leftCols(this_batch_size).noalias() = S().pinvM * Sy.leftCols(this_batch_size);
+#ifndef NDEBUG
+              lambdas.rightCols(lambdas.cols() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            VAR (lambdas.rows());
-            VAR (lambdas.cols());
-            VAR (S().Rm.rows());
-            VAR (S().Rm.cols());
-            VAR (S().XtX[ih].rows());
-            VAR (S().XtX[ih].cols());
+              VAR (lambdas.rows());
+              VAR (lambdas.cols());
+              VAR (S().Rm.rows());
+              VAR (S().Rm.cols());
+              VAR (S().XtX[ih].rows());
+              VAR (S().XtX[ih].cols());
 #endif
-            residuals.noalias() = S().Rm * Sy;
-            sse = residuals.colwise().squaredNorm();
+              sse.head(this_batch_size) = (S().Rm * Sy.leftCols(this_batch_size)).colwise().squaredNorm();
+#ifndef NDEBUG
+              sse.tail(sse.size() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            VAR (residuals.rows());
-            VAR (residuals.cols());
-            VAR (sse.size());
+              VAR (sse.size());
 #endif
-            for (size_t ie = 0; ie != num_elements(); ++ie) {
-              betas[ih].noalias() = c[ih].matrix() * lambdas.col (ie);
-              const default_type F = ((betas[ih].transpose() * S().XtX[ih] * betas[ih]) (0,0) / c[ih].rank())
-                                     / (S().one_over_dof[ih] * sse[ie]);
-              if (!std::isfinite (F)) {
-                stats  (ie, ih) = zstats (ie, ih) = value_type(0);
-              } else if (c[ih].is_F()) {
-                stats  (ie, ih) = F;
-                zstats (ie, ih) =
-#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
-                S().
-#else
-                Math::
-#endif
-                F2z (F, c[ih].rank(), S().dof[ih]);
-              } else {
-                assert (betas[ih].rows() == 1);
-                stats  (ie, ih) = std::sqrt (F) * (betas[ih].sum() > 0.0 ? 1.0 : -1.0);
-                zstats (ie, ih) =
-#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
-                S().
-#else
-                Math::
-#endif
-                t2z (stats (ie, ih), S().dof[ih]);
+              for (index_type ie = 0; ie != this_batch_size; ++ie) {
+                betas[ih].noalias() = c[ih].matrix() * lambdas.col (ie);
+                const default_type F = ((betas[ih].transpose() * S().XtX[ih] * betas[ih]) (0,0) / c[ih].rank())
+                                      / (S().one_over_dof[ih] * sse[ie]);
+                if (!std::isfinite (F)) {
+                  stats  (ie+iestart, ih) = zstats (ie+iestart, ih) = value_type(0);
+                } else if (c[ih].is_F()) {
+                  stats  (ie+iestart, ih) = F;
+                  zstats (ie+iestart, ih) =
+  #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
+                  S().
+  #else
+                  Math::
+  #endif
+                  F2z (F, c[ih].rank(), S().dof[ih]);
+                } else {
+                  assert (betas[ih].rows() == 1);
+                  stats  (ie+iestart, ih) = std::sqrt (F) * (betas[ih].sum() > 0.0 ? 1.0 : -1.0);
+                  zstats (ie+iestart, ih) =
+  #ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
+                  S().
+  #else
+                  Math::
+  #endif
+                  t2z (stats (ie+iestart, ih), S().dof[ih]);
+                }
               }
             }
-
           }
         }
 
@@ -719,7 +770,7 @@ namespace MR
 
 
 
-        TestFixedHeteroscedastic::Shared::Shared (const matrix_type& measurements,
+        TestFixedHeteroscedastic::Shared::Shared (const measurements_matrix_type& measurements,
                                                   const matrix_type& design,
                                                   const vector<Hypothesis>& hypotheses,
                                                   const index_array_type& variance_groups) :
@@ -728,8 +779,11 @@ namespace MR
             inputs_per_vg (num_vgs, 0),
             Rnn_sums (vector_type::Zero (num_vgs))
         {
-          for (size_t input = 0; input != size_t(measurements.rows()); ++input) {
+          // Pre-calculate whatever can be pre-calculated for G-statistic
+          for (index_type input = 0; input != measurements.rows(); ++input) {
+            // Number of inputs belonging to each VG
             inputs_per_vg[variance_groups[input]]++;
+            // Sum of diagonal entries of residual-forming matrix corresponding to each VG
             Rnn_sums[variance_groups[input]] += Rm.diagonal()[input];
           }
 #ifdef GLM_TEST_DEBUG
@@ -745,32 +799,55 @@ namespace MR
 
 
 
-        TestFixedHeteroscedastic::TestFixedHeteroscedastic (const matrix_type& measurements,
+        TestFixedHeteroscedastic::TestFixedHeteroscedastic (const measurements_matrix_type& measurements,
                                                             const matrix_type& design,
                                                             const vector<Hypothesis>& hypotheses,
                                                             const index_array_type& variance_groups) :
             TestBase (measurements, design, hypotheses),
-            Sy (measurements.rows(), measurements.cols()),
-            lambdas (design.cols(), measurements.cols()),
-            sq_residuals (measurements.rows(), measurements.cols()),
+#ifdef NDEBUG
+            Sy (measurements.rows(), std::min (measurements.cols(), ssize_t(batch_size()))),
+            lambdas (design.cols(), std::min (measurements.cols(), ssize_t(batch_size()))),
+            sq_residuals (measurements.rows(), std::min (measurements.cols(), ssize_t(batch_size()))),
             W (measurements.rows())
+
+#else
+            Sy (matrix_type::Constant (measurements.rows(), std::min (measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (design.cols(), std::min (measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            sq_residuals (decltype(sq_residuals)::Constant (measurements.rows(), std::min (measurements.cols(), ssize_t(batch_size())), std::numeric_limits<default_type>::signaling_NaN())),
+            W (decltype(W)::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
         {
           shared.reset (new Shared (measurements, design, hypotheses, variance_groups));
           // Require shared to have been constructed first
-          sse_per_vg.resize (num_variance_groups(), measurements.cols());
-          Wterms.resize (num_variance_groups(), measurements.cols());
+#ifdef NDEBUG
+          sse_per_vg.resize (num_variance_groups(), std::min (num_elements(), batch_size()));
+          Wterms.resize (num_variance_groups(), std::min (num_elements(), batch_size()));
+#else
+          sse_per_vg = decltype(sse_per_vg)::Constant (num_variance_groups(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN());
+          Wterms = decltype(Wterms)::Constant (num_variance_groups(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN());
+#endif
         }
 
 
 
         TestFixedHeteroscedastic::TestFixedHeteroscedastic (const TestFixedHeteroscedastic& that) :
             TestBase (that),
-            Sy (num_inputs(), num_elements()),
-            lambdas (num_factors(), num_elements()),
-            sq_residuals (num_inputs(), num_elements()),
-            sse_per_vg (num_variance_groups(), num_elements()),
-            Wterms (num_variance_groups(), num_elements()),
-            W (num_inputs()) { }
+#ifdef NDEBUG
+            Sy (num_inputs(), std::min (num_elements(), batch_size())),
+            lambdas (num_factors(), std::min (num_elements(), batch_size())),
+            sq_residuals (num_inputs(), std::min (num_elements(), batch_size())),
+            sse_per_vg (num_variance_groups(), std::min (num_elements(), batch_size())),
+            Wterms (num_variance_groups(), std::min (num_elements(), batch_size())),
+            W (num_inputs())
+#else
+            Sy (matrix_type::Constant (num_inputs(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            lambdas (matrix_type::Constant (num_factors(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            sq_residuals (decltype(sq_residuals)::Constant (num_inputs(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            sse_per_vg (decltype(sse_per_vg)::Constant (num_variance_groups(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            Wterms (decltype(Wterms)::Constant (num_variance_groups(), std::min (num_elements(), batch_size()), std::numeric_limits<default_type>::signaling_NaN())),
+            W (decltype(W)::Constant (num_inputs(), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
+        { }
 
 
 
@@ -785,9 +862,9 @@ namespace MR
 
 
 
-        void TestFixedHeteroscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats)
+        void TestFixedHeteroscedastic::operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats)
         {
-          assert (size_t(shuffling_matrix.rows()) == num_inputs());
+          assert (index_type(shuffling_matrix.rows()) == num_inputs());
           stats.resize (num_elements(), num_hypotheses());
           zstats.resize (num_elements(), num_hypotheses());
 
@@ -795,99 +872,119 @@ namespace MR
           //VAR (shuffling_matrix);
 #endif
 
-          for (size_t ih = 0; ih != num_hypotheses(); ++ih) {
-            // First two steps are identical to the homoscedastic case
-            Sy.noalias() = shuffling_matrix * S().partitions[ih].Rz * y;
-#ifdef GLM_TEST_DEBUG
-            //VAR (Sy);
-            VAR (Sy.rows());
-            VAR (Sy.cols());
+          for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
+
+            for (index_type iestart = 0; iestart < num_elements(); iestart += batch_size()) {
+              const index_type this_batch_size = std::min (num_elements() - iestart, batch_size());
+
+              // First two steps are identical to the homoscedastic case
+              Sy.leftCols(this_batch_size).noalias() = shuffling_matrix.cast<default_type>() * S().partitions[ih].Rz * y.block(0, iestart, num_inputs(), this_batch_size).cast<default_type>();
+#ifndef NDEBUG
+              Sy.rightCols(Sy.cols() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
 #endif
-            lambdas.noalias() = S().pinvM * Sy;
 #ifdef GLM_TEST_DEBUG
-            //VAR (lambdas);
-            VAR (lambdas.rows());
-            VAR (lambdas.cols());
+              //VAR (Sy);
+              VAR (Sy.rows());
+              VAR (Sy.cols());
 #endif
-            // Compute sum of residuals per VG immediately
-            // Variance groups appear across rows, and one column per element tested
-            // Immediately calculate squared residuals; simplifies summation over variance groups
-            sq_residuals = (S().Rm * Sy).array().square();
+              lambdas.leftCols(this_batch_size).noalias() = S().pinvM * Sy.leftCols(this_batch_size);
+#ifndef NDEBUG
+              lambdas.rightCols(lambdas.cols() - this_batch_size).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            //VAR (sq_residuals);
+              //VAR (lambdas);
+              VAR (lambdas.rows());
+              VAR (lambdas.cols());
 #endif
-            sse_per_vg.setZero();
-            for (size_t input = 0; input != num_inputs(); ++input)
-              sse_per_vg.row (S().VG[input]) += sq_residuals.row (input);
+              // Compute sum of residuals per VG immediately
+              // Variance groups appear across rows, and one column per element tested
+              // Immediately calculate squared residuals; simplifies summation over variance groups
+              sq_residuals.leftCols(this_batch_size) = (S().Rm * Sy.leftCols(this_batch_size)).array().square();
+#ifndef NDEBUG
+              sq_residuals.rightCols(sq_residuals.cols() - this_batch_size).setConstant(std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            //VAR (sse_per_vg);
-            VAR (sse_per_vg.rows());
-            VAR (sse_per_vg.cols());
+              //VAR (sq_residuals);
 #endif
-            // These terms are what appears in the weighting matrix based on the VG to which each input belongs;
-            //   one row per variance group, one column per element to be tested
-            Wterms = sse_per_vg.array().inverse().colwise() * S().Rnn_sums;
-            for (size_t col = 0; col != num_elements(); ++col) {
-              for (size_t row = 0; row != num_variance_groups(); ++row) {
-                if (!std::isfinite (Wterms (row, col)))
-                  Wterms (row, col) = 0.0;
-              }
-            }
+              sse_per_vg.setZero();
+              for (index_type input = 0; input != num_inputs(); ++input)
+                sse_per_vg.block (S().VG[input], 0, 1, this_batch_size) += sq_residuals.block (input, 0, 1, this_batch_size);
+#ifndef NDEBUG
+              sse_per_vg.rightCols(sse_per_vg.cols() - this_batch_size).setConstant(std::numeric_limits<default_type>::signaling_NaN());
+#endif
 #ifdef GLM_TEST_DEBUG
-            //VAR (Wterms);
-            VAR (Wterms.rows());
-            VAR (Wterms.cols());
+              //VAR (sse_per_vg);
+              VAR (sse_per_vg.rows());
+              VAR (sse_per_vg.cols());
 #endif
-            for (size_t ie = 0; ie != num_elements(); ++ie) {
-              // Need to construct the weights diagonal matrix; is unique for each element
-              default_type W_trace (0.0);
-              for (size_t input = 0; input != num_inputs(); ++input) {
-                W[input] = Wterms (S().VG[input], ie);
-                W_trace += W[input];
-              }
-#ifdef GLM_TEST_DEBUG
-              VAR (W_trace);
+              // These terms are what appears in the weighting matrix based on the VG to which each input belongs;
+              //   one row per variance group, one column per element to be tested
+              Wterms.leftCols(this_batch_size) = sse_per_vg.leftCols(this_batch_size).array().inverse().colwise() * S().Rnn_sums;
+#ifndef NDEBUG
+              Wterms.rightCols(Wterms.cols() - this_batch_size).setConstant(std::numeric_limits<default_type>::signaling_NaN());
 #endif
-              const default_type numerator = lambdas.col (ie).transpose() * c[ih].matrix().transpose() * (c[ih].matrix() * (M.transpose() * W.asDiagonal() * M).inverse() * c[ih].matrix().transpose()).inverse() * c[ih].matrix() * lambdas.col (ie);
-#ifdef GLM_TEST_DEBUG
-              VAR (numerator);
-#endif
-              default_type gamma (0.0);
-              for (size_t vg_index = 0; vg_index != num_variance_groups(); ++vg_index)
-                // Since Wnn is the same for every n in the variance group, can compute that summation as the product of:
-                //   - the value inserted in W for that particular VG
-                //   - the number of inputs that are a part of that VG
-                gamma += S().inv_Rnn_sums[vg_index] * Math::pow2 (1.0 - ((Wterms(vg_index, ie) * S().inputs_per_vg[vg_index]) / W_trace));
-              gamma = 1.0 + (S().gamma_weights[ih] * gamma);
-#ifdef GLM_TEST_DEBUG
-              VAR (gamma);
-#endif
-              const default_type denominator = gamma * c[ih].rank();
-              const default_type G = numerator / denominator;
-              if (!std::isfinite (G)) {
-                stats  (ie, ih) = zstats (ie, ih) = value_type(0);
-              } else {
-                stats  (ie, ih) = c[ih].is_F() ?
-                                  G :
-                                  std::sqrt (G) * ((c[ih].matrix() * lambdas.col (ie)).sum() > 0.0 ? 1.0 : -1.0);
-                if (c[ih].is_F() && c[ih].rank() > 1) {
-                  const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
-#ifdef GLM_TEST_DEBUG
-                  VAR (dof);
-#endif
-                  zstats (ie, ih) = Math::G2z (G, c[ih].rank(), dof);
-                } else {
-                  const default_type dof = Math::welch_satterthwaite (Wterms.col (ie).inverse(), S().inputs_per_vg);
-#ifdef GLM_TEST_DEBUG
-                  VAR (dof);
-#endif
-                  zstats (ie, ih) = c[ih].is_F() ?
-                                    Math::G2z (G, c[ih].rank(), dof) :
-                                    Math::v2z (stats (ie, ih), dof);
+              for (index_type col = 0; col != this_batch_size; ++col) {
+                for (index_type row = 0; row != num_variance_groups(); ++row) {
+                  if (!std::isfinite (Wterms (row, col)))
+                    Wterms (row, col) = 0.0;
                 }
               }
-            }
+#ifdef GLM_TEST_DEBUG
+              //VAR (Wterms);
+              VAR (Wterms.rows());
+              VAR (Wterms.cols());
+#endif
+              for (index_type ie = 0; ie != this_batch_size; ++ie) {
+                // Need to construct the weights diagonal matrix; is unique for each element
+                default_type W_trace (0.0);
+                for (index_type input = 0; input != num_inputs(); ++input) {
+                  W[input] = Wterms (S().VG[input], ie);
+                  W_trace += W[input];
+                }
+#ifdef GLM_TEST_DEBUG
+                VAR (W_trace);
+#endif
+                const default_type numerator = lambdas.col (ie).transpose() * c[ih].matrix().transpose() * (c[ih].matrix() * (M.transpose() * W.asDiagonal() * M).inverse() * c[ih].matrix().transpose()).inverse() * c[ih].matrix() * lambdas.col (ie);
+#ifdef GLM_TEST_DEBUG
+                VAR (numerator);
+#endif
+                default_type gamma (0.0);
+                for (index_type vg_index = 0; vg_index != num_variance_groups(); ++vg_index)
+                  // Since Wnn is the same for every n in the variance group, can compute that summation as the product of:
+                  //   - the value inserted in W for that particular VG
+                  //   - the number of inputs that are a part of that VG
+                  gamma += S().inv_Rnn_sums[vg_index] * Math::pow2 (1.0 - ((Wterms(vg_index, ie) * S().inputs_per_vg[vg_index]) / W_trace));
+                gamma = 1.0 + (S().gamma_weights[ih] * gamma);
+#ifdef GLM_TEST_DEBUG
+                VAR (gamma);
+#endif
+                const default_type denominator = gamma * c[ih].rank();
+                const default_type G = numerator / denominator;
+                if (!std::isfinite (G)) {
+                  stats  (ie+iestart, ih) = zstats (ie+iestart, ih) = value_type(0);
+                } else {
+                  stats  (ie+iestart, ih) = c[ih].is_F() ?
+                                            G :
+                                            std::sqrt (G) * ((c[ih].matrix() * lambdas.col (ie)).sum() > 0.0 ? 1.0 : -1.0);
+                  if (c[ih].is_F() && c[ih].rank() > 1) {
+                    const default_type dof = 2.0 * default_type(c[ih].rank() - 1) / (3.0 * (gamma - 1.0));
+#ifdef GLM_TEST_DEBUG
+                    VAR (dof);
+#endif
+                    zstats (ie+iestart, ih) = Math::G2z (G, c[ih].rank(), dof);
+                  } else {
+                    const default_type dof = Math::welch_satterthwaite (Wterms.col (ie).inverse(), S().inputs_per_vg);
+#ifdef GLM_TEST_DEBUG
+                    VAR (dof);
+#endif
+                    zstats (ie+iestart, ih) = c[ih].is_F() ?
+                                              Math::G2z (G, c[ih].rank(), dof) :
+                                              Math::v2z (stats (ie+iestart, ih), dof);
+                  }
+                }
+              }
 
+            }
           }
         }
 
@@ -900,11 +997,12 @@ namespace MR
 
 
 
-        TestVariableBase::TestVariableBase (const matrix_type& measurements,
+        TestVariableBase::TestVariableBase (const measurements_matrix_type& measurements,
                                             const matrix_type& design,
                                             const vector<Hypothesis>& hypotheses,
                                             const vector<CohortDataImport>& importers) :
             TestBase (measurements, design, hypotheses),
+#ifdef NDEBUG
             dof (measurements.cols(), hypotheses.size()),
             extra_column_data (measurements.rows(), importers.size()),
             element_mask (measurements.rows()),
@@ -916,12 +1014,28 @@ namespace MR
             Rm (measurements.rows(), measurements.rows()),
             y_masked (measurements.rows()),
             Sy (measurements.rows()),
-            lambda (design.cols() + importers.size()) { }
+            lambda (design.cols() + importers.size())
+#else
+            dof (matrix_type::Constant (measurements.cols(), hypotheses.size(), std::numeric_limits<default_type>::signaling_NaN())),
+            extra_column_data (measurements_matrix_type::Constant (measurements.rows(), importers.size(), std::numeric_limits<measurements_value_type>::signaling_NaN())),
+            element_mask (measurements.rows()),
+            permuted_mask (measurements.rows()),
+            intermediate_shuffling_matrix (shuffle_matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<int8_t>::min())),
+            shuffling_matrix_masked (shuffle_matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<int8_t>::min())),
+            Mfull_masked (matrix_type::Constant (measurements.rows(), design.cols() + importers.size(), std::numeric_limits<default_type>::signaling_NaN())),
+            pinvMfull_masked (matrix_type::Constant (design.cols() + importers.size(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            Rm (matrix_type::Constant (measurements.rows(), measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            y_masked (measurements_vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            Sy (vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            lambda (vector_type::Constant (design.cols() + importers.size(), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
+        { }
 
 
 
         TestVariableBase::TestVariableBase (const TestVariableBase& that) :
             TestBase (that),
+#ifdef NDEBUG
             dof (that.dof.rows(), that.dof.cols()),
             extra_column_data (that.extra_column_data.rows(), that.extra_column_data.cols()),
             element_mask (that.element_mask.size()),
@@ -933,59 +1047,75 @@ namespace MR
             Rm (that.Rm.rows(), that.Rm.cols()),
             y_masked (that.y_masked.size()),
             Sy (that.Sy.size()),
-            lambda (that.lambda.size()) { }
+            lambda (that.lambda.size())
+#else
+            dof (matrix_type::Constant (that.dof.rows(), that.dof.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            extra_column_data (measurements_matrix_type::Constant (that.extra_column_data.rows(), that.extra_column_data.cols(), std::numeric_limits<measurements_value_type>::signaling_NaN())),
+            element_mask (that.element_mask.size()),
+            permuted_mask (that.permuted_mask.size()),
+            intermediate_shuffling_matrix (shuffle_matrix_type::Constant (that.intermediate_shuffling_matrix.rows(), that.intermediate_shuffling_matrix.cols(), std::numeric_limits<int8_t>::min())),
+            shuffling_matrix_masked (shuffle_matrix_type::Constant (that.shuffling_matrix_masked.rows(), that.shuffling_matrix_masked.cols(), std::numeric_limits<int8_t>::min())),
+            Mfull_masked (matrix_type::Constant (that.Mfull_masked.rows(), that.Mfull_masked.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            pinvMfull_masked (matrix_type::Constant (that.pinvMfull_masked.rows(), that.pinvMfull_masked.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            Rm (matrix_type::Constant (that.Rm.rows(), that.Rm.cols(), std::numeric_limits<default_type>::signaling_NaN())),
+            y_masked (measurements_vector_type::Constant (that.y_masked.size(), std::numeric_limits<measurements_value_type>::signaling_NaN())),
+            Sy (vector_type::Constant (that.Sy.size(), std::numeric_limits<default_type>::signaling_NaN())),
+            lambda (vector_type::Constant (that.lambda.size(), std::numeric_limits<default_type>::signaling_NaN()))
+#endif
+        { }
 
 
 
         template <class SharedType>
-        void TestVariableBase::set_mask (const SharedType& s, const size_t ie)
+        void TestVariableBase::set_mask (const SharedType& s, const index_type ie)
         {
           element_mask.clear (true);
           if (s.nans_in_data) {
-            for (size_t row = 0; row != num_inputs(); ++row) {
+            for (index_type row = 0; row != num_inputs(); ++row) {
               if (!std::isfinite (y (row, ie)))
                 element_mask[row] = false;
             }
           }
           if (s.nans_in_columns) {
-            for (ssize_t row = 0; row != extra_column_data.rows(); ++row) {
+            for (index_type row = 0; row != extra_column_data.rows(); ++row) {
               if (!extra_column_data.row (row).allFinite())
                 element_mask[row] = false;
             }
           }
         }
-        template void TestVariableBase::set_mask (const TestVariableHomoscedastic::Shared&, const size_t);
-        template void TestVariableBase::set_mask (const TestVariableHeteroscedastic::Shared&, const size_t);
+        template void TestVariableBase::set_mask (const TestVariableHomoscedastic::Shared&, const index_type);
+        template void TestVariableBase::set_mask (const TestVariableHeteroscedastic::Shared&, const index_type);
 
 
 
-        void TestVariableBase::apply_mask (const size_t ie, const matrix_type& shuffling_matrix)
+        void TestVariableBase::apply_mask (const index_type ie, const shuffle_matrix_type& shuffling_matrix)
         {
-          const size_t finite_count = element_mask.count();
+          const index_type finite_count = element_mask.count();
           // Do we need to reduce the size of our matrices / vectors
           //   based on the presence of non-finite values?
           if (finite_count == num_inputs()) {
 
             Mfull_masked.block (0, 0, num_inputs(), M.cols()) = M;
             if (num_importers())
-              Mfull_masked.block (0, M.cols(), num_inputs(), extra_column_data.cols()) = extra_column_data;
+              Mfull_masked.block (0, M.cols(), num_inputs(), extra_column_data.cols()) = extra_column_data.cast<default_type>();
             shuffling_matrix_masked = shuffling_matrix;
             y_masked = y.col (ie);
 
           } else {
+
             permuted_mask.clear (true);
-            size_t out_index = 0;
-            for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+            index_type out_index = 0;
+            for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
               if (element_mask[in_index]) {
                 Mfull_masked.block (out_index, 0, 1, M.cols()) = M.row (in_index);
                 if (num_importers())
-                  Mfull_masked.block (out_index, M.cols(), 1, extra_column_data.cols()) = extra_column_data.row (in_index);
+                  Mfull_masked.block (out_index, M.cols(), 1, extra_column_data.cols()) = extra_column_data.row (in_index).cast<default_type>();
                 y_masked[out_index++] = y(in_index, ie);
               } else {
                 // Any row in the permutation matrix that contains a non-zero entry
                 //   in the column corresponding to in_row needs to be removed
                 //   from the permutation matrix
-                for (ssize_t perm_row = 0; perm_row != shuffling_matrix.rows(); ++perm_row) {
+                for (index_type perm_row = 0; perm_row != shuffling_matrix.rows(); ++perm_row) {
                   if (shuffling_matrix (perm_row, in_index))
                     permuted_mask[perm_row] = false;
                 }
@@ -995,21 +1125,32 @@ namespace MR
             assert (permuted_mask.count() == finite_count);
             assert (Mfull_masked.topRows (finite_count).allFinite());
             assert (y_masked.head (finite_count).allFinite());
+#ifndef NDEBUG
+            Mfull_masked.bottomRows(num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+            y_masked.tail (num_inputs() - finite_count).fill (std::numeric_limits<measurements_value_type>::signaling_NaN());
+#endif
             // Only after we've reduced the design matrix do we now reduce the shuffling matrix
             // Step 1: Remove rows that contain non-zero entries in columns to be removed
             out_index = 0;
-            for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+            for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
               if (permuted_mask[in_index])
                 intermediate_shuffling_matrix.row (out_index++) = shuffling_matrix.row (in_index);
             }
             assert (out_index == finite_count);
+#ifndef NDEBUG
+            intermediate_shuffling_matrix.bottomRows (num_inputs() - finite_count).fill (std::numeric_limits<int8_t>::min());
+#endif
             // Step 2: Remove columns
             out_index = 0;
-            for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+            for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
               if (element_mask[in_index])
                 shuffling_matrix_masked.col (out_index++) = intermediate_shuffling_matrix.col (in_index);
             }
             assert (out_index == finite_count);
+#ifndef NDEBUG
+            shuffling_matrix_masked.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<int8_t>::min());
+#endif
+
           }
         }
 
@@ -1036,7 +1177,7 @@ namespace MR
 
 
 
-        TestVariableHomoscedastic::TestVariableHomoscedastic (const matrix_type& measurements,
+        TestVariableHomoscedastic::TestVariableHomoscedastic (const measurements_matrix_type& measurements,
                                                               const matrix_type& design,
                                                               const vector<Hypothesis>& hypotheses,
                                                               const vector<CohortDataImport>& importers,
@@ -1045,9 +1186,14 @@ namespace MR
             TestVariableBase (measurements, design, hypotheses, importers)
         {
           shared.reset (new Shared(importers, nans_in_data, nans_in_columns));
-          for (size_t ih = 0; ih != hypotheses.size(); ++ih) {
+          for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
+#ifdef NDEBUG
             XtX.emplace_back (hypotheses[ih].matrix().rows(), hypotheses[ih].matrix().rows());
             beta.emplace_back (hypotheses[ih].matrix().rows(), 1);
+#else
+            XtX.emplace_back (matrix_type::Constant (hypotheses[ih].matrix().rows(), hypotheses[ih].matrix().rows(), std::numeric_limits<default_type>::signaling_NaN()));
+            beta.emplace_back (matrix_type::Constant (hypotheses[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+#endif
           }
         }
 
@@ -1056,9 +1202,14 @@ namespace MR
         TestVariableHomoscedastic::TestVariableHomoscedastic (const TestVariableHomoscedastic& that) :
             TestVariableBase (that)
         {
-          for (size_t ih = 0; ih != num_hypotheses(); ++ih) {
+          for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
+#ifdef NDEBUG
             XtX.emplace_back (c[ih].matrix().rows(), c[ih].matrix().rows());
             beta.emplace_back (c[ih].matrix().rows(), 1);
+#else
+            XtX.emplace_back (matrix_type::Constant (c[ih].matrix().rows(), c[ih].matrix().rows(), std::numeric_limits<default_type>::signaling_NaN()));
+            beta.emplace_back (matrix_type::Constant (c[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+#endif
           }
         }
 
@@ -1076,7 +1227,7 @@ namespace MR
 
 
 
-        void TestVariableHomoscedastic::operator() (const matrix_type& shuffling_matrix,
+        void TestVariableHomoscedastic::operator() (const shuffle_matrix_type& shuffling_matrix,
                                                     matrix_type& stats,
                                                     matrix_type& zstats)
         {
@@ -1084,7 +1235,7 @@ namespace MR
           zstats.resize (num_elements(), num_hypotheses());
 
           // Let's loop over elements first, then hypotheses in the inner loop
-          for (size_t ie = 0; ie != num_elements(); ++ie) {
+          for (index_type ie = 0; ie != num_elements(); ++ie) {
 
             // For each element (row in y), need to load the additional data for that element
             //   for all subjects in order to construct the design matrix
@@ -1092,12 +1243,8 @@ namespace MR
             //   rather than re-generating them each time? (More RAM, less CPU)
             // No, most of the time that subject data will be memory-mapped, so pre-loading (in
             //   addition to the duplication of the fixed design matrix contents) would hurt bad
-            for (ssize_t col = 0; col != ssize_t(S().importers.size()); ++col)
+            for (index_type col = 0; col != num_importers(); ++col)
               extra_column_data.col (col) = S().importers[col] (ie);
-#ifdef GLM_TEST_DEBUG
-            VAR (extra_column_data.rows());
-            VAR (extra_column_data.cols());
-#endif
 
             // What can we do here that's common across all hypotheses?
             // - Import the element-wise data
@@ -1115,7 +1262,7 @@ namespace MR
             //     that contain non-zero values in those columns
             //
             set_mask (S(), ie);
-            const size_t finite_count = element_mask.count();
+            const index_type finite_count = element_mask.count();
 #ifdef GLM_TEST_DEBUG
             VAR (element_mask.size());
             VAR (finite_count);
@@ -1127,7 +1274,7 @@ namespace MR
             if (finite_count < std::min (num_inputs(), 2 * num_factors())) {
               stats.row (ie).setZero();
               zstats.row (ie).setZero();
-              dof.row (ie).fill (NaN);
+              dof.row (ie).fill (std::numeric_limits<default_type>::quiet_NaN());
             } else {
               apply_mask (ie, shuffling_matrix);
               assert (Mfull_masked.topRows (finite_count).allFinite());
@@ -1144,15 +1291,22 @@ namespace MR
               if (!std::isfinite (condition_number) || condition_number > 1e5) {
                 stats.row (ie).fill (0.0);
                 zstats.row (ie).fill (0.0);
-                dof.row (ie).fill (NaN);
+                dof.row (ie).fill (std::numeric_limits<default_type>::quiet_NaN());
               } else {
 
-                pinvMfull_masked.leftCols (finite_count) = Math::pinv (Mfull_masked.topRows (finite_count));
+                pinvMfull_masked.leftCols (finite_count).noalias() = Math::pinv (Mfull_masked.topRows (finite_count));
+#ifndef NDEBUG
+                pinvMfull_masked.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
                 Rm.topLeftCorner (finite_count, finite_count).noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked.topRows (finite_count) * pinvMfull_masked.leftCols (finite_count));
+#ifndef NDEBUG
+                Rm.bottomRows (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+                Rm.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
 
                 // We now have our permutation (shuffling) matrix and design matrix prepared,
                 //   and can commence regressing the partitioned model of each hypothesis
-                for (size_t ih = 0; ih != num_hypotheses(); ++ih) {
+                for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
 
                   const auto partition = c[ih].partition (Mfull_masked.topRows (finite_count));
                   dof (ie, ih) = finite_count - partition.rank_x - partition.rank_z;
@@ -1167,8 +1321,8 @@ namespace MR
                     // Now that we have the individual hypothesis model partition for these data,
                     //   the rest of this function should proceed similarly to the fixed
                     //   design matrix case
-                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count) * partition.Rz * y_masked.head (finite_count).matrix();
-                    lambda = pinvMfull_masked * Sy.matrix();
+                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count).cast<default_type>() * partition.Rz * y_masked.head (finite_count).matrix().cast<default_type>();
+                    lambda = pinvMfull_masked.leftCols(finite_count) * Sy.head(finite_count).matrix();
                     beta[ih].noalias() = c[ih].matrix() * lambda.matrix();
 #ifdef GLM_TEST_DEBUG
                     VAR (Sy.size());
@@ -1239,7 +1393,7 @@ namespace MR
 
 
 
-        TestVariableHeteroscedastic::TestVariableHeteroscedastic (const matrix_type& measurements,
+        TestVariableHeteroscedastic::TestVariableHeteroscedastic (const measurements_matrix_type& measurements,
                                                                   const matrix_type& design,
                                                                   const vector<Hypothesis>& hypotheses,
                                                                   const index_array_type& variance_groups,
@@ -1247,29 +1401,52 @@ namespace MR
                                                                   const bool nans_in_data,
                                                                   const bool nans_in_columns) :
             TestVariableBase (measurements, design, hypotheses, importers),
+#ifdef NDEBUG
             W (measurements.rows()),
             sq_residuals (measurements.rows()),
+#else
+            W (vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+            sq_residuals (vector_type::Constant (measurements.rows(), std::numeric_limits<default_type>::signaling_NaN())),
+#endif
             VG_masked (measurements.rows())
         {
           shared.reset (new Shared (hypotheses, variance_groups, importers, nans_in_data, nans_in_columns));
-          // Require shared to have bene initialised
+          // Require shared to have been initialised
+#ifdef NDEBUG
           sse_per_vg.resize (num_variance_groups());
           Rnn_sums.resize (num_variance_groups());
           Wterms.resize (num_variance_groups());
           VG_counts.resize (num_variance_groups());
+#else
+          sse_per_vg = vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN());
+          Rnn_sums = vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN());
+          Wterms = vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN());
+          VG_counts = index_array_type::Zero (num_variance_groups());
+#endif
         }
 
 
 
         TestVariableHeteroscedastic::TestVariableHeteroscedastic (const TestVariableHeteroscedastic& that) :
             TestVariableBase (that),
+#ifdef NDEBUG
             W (num_inputs()),
             sq_residuals (num_inputs()),
             sse_per_vg (num_variance_groups()),
             Rnn_sums (num_variance_groups()),
             Wterms (num_variance_groups()),
             VG_masked (num_inputs()),
-            VG_counts (num_variance_groups()) { }
+            VG_counts (num_variance_groups())
+#else
+            W (vector_type::Constant (num_inputs(), std::numeric_limits<default_type>::signaling_NaN())),
+            sq_residuals (vector_type::Constant (num_inputs(), std::numeric_limits<default_type>::signaling_NaN())),
+            sse_per_vg (vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN())),
+            Rnn_sums (vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN())),
+            Wterms (vector_type::Constant (num_variance_groups(), std::numeric_limits<default_type>::signaling_NaN())),
+            VG_masked (num_inputs()),
+            VG_counts (index_array_type::Zero (num_variance_groups()))
+#endif
+        { }
 
 
 
@@ -1285,17 +1462,17 @@ namespace MR
 
 
 
-        void TestVariableHeteroscedastic::operator() (const matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats)
+        void TestVariableHeteroscedastic::operator() (const shuffle_matrix_type& shuffling_matrix, matrix_type& stats, matrix_type& zstats)
         {
           stats.resize (num_elements(), num_hypotheses());
           zstats.resize (num_elements(), num_hypotheses());
 
-          for (size_t ie = 0; ie != num_elements(); ++ie) {
+          for (index_type ie = 0; ie != num_elements(); ++ie) {
             // Common ground to the TestVariableHomoscedastic case
-            for (size_t col = 0; col != S().importers.size(); ++col)
+            for (index_type col = 0; col != num_importers(); ++col)
               extra_column_data.col (col) = S().importers[col] (ie);
             set_mask (S(), ie);
-            const size_t finite_count = element_mask.count();
+            const index_type finite_count = element_mask.count();
             if (finite_count < std::min (num_inputs(), 2 * num_factors())) {
               stats.row (ie).setZero();
               zstats.row (ie).setZero();
@@ -1307,8 +1484,8 @@ namespace MR
                 zstats.row (ie).fill (0.0);
               } else {
                 VG_counts.setZero();
-                size_t out_index = 0;
-                for (size_t in_index = 0; in_index != num_inputs(); ++in_index) {
+                index_type out_index = 0;
+                for (index_type in_index = 0; in_index != num_inputs(); ++in_index) {
                   if (element_mask[in_index]) {
                     VG_masked[out_index++] = S().VG[in_index];
                     VG_counts[S().VG[in_index]]++;
@@ -1320,28 +1497,41 @@ namespace MR
                   zstats.row (ie).fill (0.0);
                 } else {
                   pinvMfull_masked.leftCols (finite_count) = Math::pinv (Mfull_masked.topRows (finite_count));
+#ifndef NDEBUG
+                  pinvMfull_masked.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
                   Rm.topLeftCorner (finite_count, finite_count).noalias() = matrix_type::Identity (finite_count, finite_count) - (Mfull_masked.topRows (finite_count) * pinvMfull_masked.leftCols (finite_count));
-                  for (size_t ih = 0; ih != num_hypotheses(); ++ih) {
+#ifndef NDEBUG
+                  Rm.bottomRows (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+                  Rm.rightCols (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
+                  for (index_type ih = 0; ih != num_hypotheses(); ++ih) {
                     const auto partition = c[ih].partition (Mfull_masked.topRows (finite_count));
 
                     // At this point the implementation diverges from the TestVariableHomoscedastic case,
                     //   more closely mimicing the TestFixedHeteroscedastic case
-                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count) * partition.Rz * y_masked.head (finite_count).matrix();
+                    Sy.head (finite_count) = shuffling_matrix_masked.topLeftCorner (finite_count, finite_count).cast<default_type>() * partition.Rz * y_masked.head (finite_count).matrix().cast<default_type>();
+#ifndef NDEBUG
+                    Sy.tail (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
                     lambda = pinvMfull_masked.leftCols (finite_count) * Sy.head (finite_count).matrix();
                     sq_residuals.head (finite_count) = (Rm.topLeftCorner (finite_count, finite_count) * Sy.head (finite_count).matrix()).array().square();
+#ifndef NDEBUG
+                    sq_residuals.tail (num_inputs() - finite_count).fill (std::numeric_limits<default_type>::signaling_NaN());
+#endif
                     sse_per_vg.setZero();
                     Rnn_sums.setZero();
-                    for (size_t input = 0; input != finite_count; ++input) {
+                    for (index_type input = 0; input != finite_count; ++input) {
                       sse_per_vg[VG_masked[input]] += sq_residuals[input];
                       Rnn_sums[VG_masked[input]] += Rm.diagonal()[input];
                     }
                     Wterms = sse_per_vg.inverse() * Rnn_sums;
-                    for (size_t vg = 0; vg != num_variance_groups(); ++vg) {
+                    for (index_type vg = 0; vg != num_variance_groups(); ++vg) {
                       if (!std::isfinite (Wterms[vg]))
                         Wterms[vg] = 0.0;
                     }
                     default_type W_trace (0.0);
-                    for (size_t input = 0; input != finite_count; ++input) {
+                    for (index_type input = 0; input != finite_count; ++input) {
                       W[input] = Wterms[VG_masked[input]];
                       W_trace += W[input];
                     }
@@ -1349,7 +1539,7 @@ namespace MR
                     const default_type numerator = lambda.matrix().transpose() * c[ih].matrix().transpose() * (c[ih].matrix() * (Mfull_masked.topRows (finite_count).transpose() * W.matrix().head (finite_count).asDiagonal() * Mfull_masked.topRows (finite_count)).inverse() * c[ih].matrix().transpose()).inverse() * c[ih].matrix() * lambda.matrix();
 
                     default_type gamma (0.0);
-                    for (size_t vg_index = 0; vg_index != num_variance_groups(); ++vg_index)
+                    for (index_type vg_index = 0; vg_index != num_variance_groups(); ++vg_index)
                       gamma += Math::pow2 (1.0 - ((Wterms[vg_index] * VG_counts[vg_index]) / W_trace)) / Rnn_sums[vg_index];
                     gamma = 1.0 + (S().gamma_weights[ih] * gamma);
 

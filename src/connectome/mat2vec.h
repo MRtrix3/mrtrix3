@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ namespace MR {
 
 
     class Mat2Vec
-    { NOMEMALIGN
+    { 
 
       public:
         Mat2Vec (const node_t i) : dim (i) { }

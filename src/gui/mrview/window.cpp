@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,7 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
-
+#include <QDebug>
 #include "app.h"
 #include "timer.h"
 #include "file/config.h"
@@ -118,7 +118,7 @@ namespace MR
           setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
           grabGesture (Qt::PinchGesture);
-          grabGesture (Qt::PanGesture);
+          // grabGesture (Qt::PanGesture); // deactivated to prevent sticky pan: https://github.com/MRtrix3/mrtrix3/issues/761
           QFont font_ = font();
           //CONF option: FontSize
           //CONF The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
@@ -168,6 +168,7 @@ namespace MR
           }
           if (list.size())
             main->add_images (list);
+          event->acceptProposedAction();
         }
       }
 
@@ -255,7 +256,7 @@ namespace MR
           GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
 
-          setDockOptions (AllowTabbedDocks | VerticalTabs);
+          setDockOptions (AllowTabbedDocks);
           setDocumentMode (true);
 
           //CONF option: IconSize
@@ -273,7 +274,7 @@ namespace MR
           QMenu* menu;
           QToolButton* button;
 
-          setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
+          setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::North);
 
           //CONF option: MRViewDockFloating
           //CONF default: 0 (false)
@@ -1024,7 +1025,7 @@ namespace MR
           return;
 
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->create (tools_floating);
-        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+        connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (visibility_slot (bool)));
 
         if (!tools_floating) {
 
@@ -1675,7 +1676,7 @@ namespace MR
 
         int group = get_mouse_mode();
 
-        if (buttons_ == Qt::MidButton)
+        if (buttons_ == Qt::MiddleButton)
           mouse_action = Pan;
         else if (group == 1) {
           if (buttons_ == Qt::LeftButton) {
@@ -1806,11 +1807,8 @@ namespace MR
         if (!image())
           return true;
 
-        if (QGesture* pan = event->gesture(Qt::PanGesture)) {
-          QPanGesture* e = static_cast<QPanGesture*> (pan);
-          mouse_displacement_ = QPoint (e->delta().x(), -e->delta().y());
-          mode->pan_event();
-        }
+        if (log_level > 2)
+          qDebug() << event;
 
         if (QGesture* pinch = event->gesture(Qt::PinchGesture)) {
           QPinchGesture* e = static_cast<QPinchGesture*> (pinch);
@@ -1851,7 +1849,7 @@ namespace MR
 
       void Window::register_camera_interactor (Tool::CameraInteractor* agent)
       {
-        if (camera_interactor)
+        if (camera_interactor && camera_interactor != agent)
           camera_interactor->deactivate();
         camera_interactor = agent;
       }
@@ -2091,12 +2089,12 @@ namespace MR
             return;
           }
 
-          if (opt.opt->is ("orientationlabel")) {
+          if (opt.opt->is ("orientlabel")) {
             try {
               show_orientation_labels_action->setChecked (to<bool> (opt[0]));
             }
             catch (Exception& E) {
-              throw Exception ("-orientationlabel option expects a boolean");
+              throw Exception ("-orientlabel option expects a boolean");
             }
             glarea->update();
             return;
@@ -2173,10 +2171,10 @@ namespace MR
           + Option ("focus", "Either set the position of the crosshairs in scanner coordinates, "
               "with the new position supplied as a comma-separated list of floating-point values or "
               "show or hide the focus cross hair using a boolean value as argument.").allow_multiple()
-          +   Argument ("x,y,z or boolean")
+          +   Argument ("x,y,z or boolean").type_various()
 
           + Option ("target", "Set the target location for the viewing window (the scanner coordinate "
-              "that will appear at the centre of the viewing window")
+              "that will appear at the centre of the viewing window").allow_multiple()
           +   Argument ("x,y,z").type_sequence_float()
 
           + Option ("orientation", "Set the orientation of the camera for the viewing window, in the form of a quaternion representing the rotation away from the z-axis. This should be provided as a list of 4 comma-separated floating point values (this will be automatically normalised).")
@@ -2216,7 +2214,7 @@ namespace MR
           + Option ("voxelinfo", "Show or hide voxel information overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
-          + Option ("orientationlabel", "Show or hide orientation label overlay.").allow_multiple()
+          + Option ("orientlabel", "Show or hide orientation label overlay.").allow_multiple()
           +   Argument ("boolean").type_bool ()
 
           + Option ("colourbar", "Show or hide colourbar overlay.").allow_multiple()
@@ -2257,6 +2255,3 @@ namespace MR
     }
   }
 }
-
-
-

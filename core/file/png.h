@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,10 +21,10 @@
 
 #include <png.h>
 
+#include "fetch_store.h"
 #include "header.h"
 #include "raw.h"
 #include "types.h"
-#include "image_io/fetch_store.h"
 
 namespace MR
 {
@@ -34,7 +34,7 @@ namespace MR
     {
 
       class Reader
-      { MEMALIGN(Reader)
+      { 
         public:
           Reader (const std::string& filename);
           ~Reader();
@@ -67,7 +67,7 @@ namespace MR
 
 
       class Writer
-      { MEMALIGN(Writer)
+      { 
         public:
           Writer (const Header&, const std::string&);
           ~Writer();
@@ -97,16 +97,14 @@ namespace MR
       template <typename T>
       void Writer::fill (uint8_t* in_ptr, uint8_t* out_ptr, const DataType data_type, const size_t num_elements)
       {
-        std::function<default_type(const void*,size_t,default_type,default_type)> fetch_func;
-        std::function<void(default_type,void*,size_t,default_type,default_type)> store_func;
-        __set_fetch_store_functions<default_type> (fetch_func, store_func, data_type);
+        auto fetch_func = __set_fetch_function<default_type> (data_type);
         default_type multiplier = 1.0;
         switch (data_type() & DataType::Type) {
           case DataType::Float32: multiplier = std::numeric_limits<uint8_t>::max(); break;
           case DataType::Float64: multiplier = std::numeric_limits<uint16_t>::max(); break;
         }
         for (size_t i = 0; i != num_elements; ++i) {
-          Raw::store_BE<T> (std::min (default_type(std::numeric_limits<T>::max()), std::max (0.0, std::round(multiplier * fetch_func (in_ptr, 0, 0.0, 1.0)))), out_ptr);
+          Raw::store_BE<T> (std::min (default_type(std::numeric_limits<T>::max()), std::max (0.0, std::round(multiplier * fetch_func (in_ptr, 0)))), out_ptr);
           in_ptr += data_type.bytes();
           out_ptr += sizeof(T);
         }

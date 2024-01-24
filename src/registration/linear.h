@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -60,7 +60,7 @@ namespace MR
     enum OptimiserAlgoType {bbgd, gd, none};
 
 
-    struct StageSetting {  MEMALIGN(StageSetting)
+    struct StageSetting {  
       StageSetting() :
         stage_iterations (1),
         gd_max_iter (500),
@@ -97,7 +97,7 @@ namespace MR
       vector<std::string> diagnostics_images;
     } ;
 
-    class Linear { MEMALIGN(Linear)
+    class Linear { 
 
       public:
 
@@ -442,7 +442,7 @@ namespace MR
 
               // set control point coordinates inside +-1/3 of the midway_image size
               {
-                Eigen::Vector3 ext (midway_image_header.spacing(0) / 6.0,
+                Eigen::Vector3d ext (midway_image_header.spacing(0) / 6.0,
                                     midway_image_header.spacing(1) / 6.0,
                                     midway_image_header.spacing(2) / 6.0);
                 for (size_t i = 0; i<3; ++i)

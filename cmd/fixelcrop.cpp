@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,10 +20,8 @@
 
 #include "image.h"
 
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/keys.h"
-#include "fixel/types.h"
-#include "fixel/types.h"
 
 using namespace MR;
 using namespace App;
@@ -38,7 +36,9 @@ void usage ()
   SYNOPSIS = "Crop/remove fixels from sparse fixel image using a binary fixel mask";
 
   DESCRIPTION
-  + "The mask must be input as a fixel data file the same dimensions as the fixel data file(s) to be cropped.";
+  + "The mask must be input as a fixel data file the same dimensions as the fixel data file(s) to be cropped."
+
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("input_fixel_directory", "input fixel directory, all data files and directions "

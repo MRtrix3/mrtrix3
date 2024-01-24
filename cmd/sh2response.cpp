@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,7 +22,7 @@
 #include "algo/loop.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "math/math.h"
+#include "file/matrix.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 
@@ -147,6 +147,6 @@ void run ()
     std::cout << "\n";
   }
   else {
-    save_vector(response, argument[3]);
+    File::Matrix::save_vector (response, argument[3]);
   }
 }

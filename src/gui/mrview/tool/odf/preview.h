@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,11 +33,11 @@ namespace MR
       {
 
         class ODF_Preview : public QWidget
-        { MEMALIGN(ODF_Preview)
+        { 
             Q_OBJECT
 
             class RenderFrame : public DWI::RenderFrame 
-            { MEMALIGN(RenderFrame)
+            { 
               public:
                 RenderFrame (QWidget* parent);
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
 #include "types.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
+#include "file/matrix.h"
 #include "math/constrained_least_squares.h"
 #include "math/math.h"
 #include "math/SH.h"
@@ -41,10 +42,10 @@ namespace MR
 
       extern const App::OptionGroup MSMT_CSD_options;
 
-      class MSMT_CSD { MEMALIGN(MSMT_CSD)
+      class MSMT_CSD { 
         public:
 
-          class Shared { MEMALIGN(Shared)
+          class Shared { 
             public:
               Shared (const Header& dwi_header) :
                   grad (DWI::get_DW_scheme (dwi_header)),
@@ -62,7 +63,7 @@ namespace MR
                   lmax = parse_ints<uint32_t> (opt[0][0]);
                 opt = get_options ("directions");
                 if (opt.size())
-                  HR_dirs = load_matrix (opt[0][0]);
+                  HR_dirs = File::Matrix::load_matrix (opt[0][0]);
                 opt = get_options ("norm_lambda");
                 if (opt.size())
                   solution_min_norm_regularisation = opt[0][0];
@@ -79,7 +80,7 @@ namespace MR
                 for (const auto& s : files) {
                   Eigen::MatrixXd r;
                   try {
-                    r = load_matrix (s);
+                    r = File::Matrix::load_matrix (s);
                   } catch (Exception& e) {
                     throw Exception (e, "File \"" + s + "\" is not a valid response function file");
                   }

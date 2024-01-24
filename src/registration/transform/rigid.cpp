@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -234,14 +234,14 @@ namespace MR
        */
 
 
-          Eigen::Matrix<default_type, 4, 1> Rigid::get_jacobian_vector_wrt_params (const Eigen::Vector3& p) const {
+          Eigen::Matrix<default_type, 4, 1> Rigid::get_jacobian_vector_wrt_params (const Eigen::Vector3d& p) const {
             Eigen::Matrix<default_type, 4, 1> jac;
             jac.head(3) = p - centre;
             jac(3) = 1.0;
             return jac;
           }
 
-          Eigen::MatrixXd Rigid::get_jacobian_wrt_params (const Eigen::Vector3& p) const {
+          Eigen::MatrixXd Rigid::get_jacobian_wrt_params (const Eigen::Vector3d& p) const {
             Eigen::MatrixXd jacobian (3, 12);
             jacobian.setZero();
             const auto v = get_jacobian_vector_wrt_params(p);

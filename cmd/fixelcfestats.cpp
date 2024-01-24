@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,11 +20,11 @@
 #include "thread_queue.h"
 #include "transform.h"
 #include "algo/loop.h"
+#include "file/matrix.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/index_remapper.h"
-#include "fixel/keys.h"
 #include "fixel/loop.h"
-#include "fixel/types.h"
 #include "fixel/filter/smooth.h"
 #include "math/stats/fwe.h"
 #include "math/stats/glm.h"
@@ -39,11 +39,12 @@
 using namespace MR;
 using namespace App;
 
-using Fixel::index_type;
 using Math::Stats::mask_type;
 using Math::Stats::matrix_type;
 using Math::Stats::value_type;
 using Math::Stats::vector_type;
+using Math::Stats::measurements_value_type;
+using Math::Stats::measurements_matrix_type;
 using Stats::PermTest::count_matrix_type;
 
 #define DEFAULT_ANGLE_THRESHOLD 45.0
@@ -76,8 +77,8 @@ void usage ()
     "thresholding is applied."
 
   + MR::Stats::PermTest::mask_posthoc_description
-
-  + Math::Stats::GLM::column_ones_description;
+  + Math::Stats::GLM::column_ones_description
+  + Fixel::format_description;
 
   REFERENCES
   + "Raffelt, D.; Smith, RE.; Ridgway, GR.; Tournier, JD.; Vaughan, DN.; Rose, S.; Henderson, R.; Connelly, A. " // Internal
@@ -160,12 +161,13 @@ void write_fixel_output (const std::string& filename,
 //   specific subject based on the string path to the image file for
 //   that subject
 class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
-{ MEMALIGN(SubjectFixelImport)
+{
   public:
+    using image_type = Image<measurements_value_type>;
     SubjectFixelImport (const std::string& path) :
         Math::Stats::SubjectDataImportBase (path),
         H (Header::open (path)),
-        data (H.get_image<float>())
+        data (H.get_image<measurements_value_type>())
     {
       for (size_t axis = 1; axis < data.ndim(); ++axis) {
         if (data.size(axis) > 1)
@@ -173,30 +175,28 @@ class SubjectFixelImport : public Math::Stats::SubjectDataImportBase
       }
     }
 
-    void operator() (matrix_type::RowXpr row) const override
+    void operator() (measurements_matrix_type::RowXpr row) const override
     {
-      Image<float> temp (data); // For thread-safety
+      image_type temp (data); // For thread-safety
       for (temp.index(0) = 0; temp.index(0) != temp.size(0); ++temp.index(0))
         row [temp.index(0)] = temp.value();
     }
 
-    default_type operator[] (const size_t index) const override
+    measurements_value_type operator[] (const Math::Stats::index_type index) const override
     {
-      Image<float> temp (data); // For thread-safety
+      image_type temp (data); // For thread-safety
       temp.index(0) = index;
       assert (!is_out_of_bounds (temp));
       return default_type(temp.value());
     }
 
-    size_t size() const override { return data.size(0); }
+    Math::Stats::index_type size() const override { return data.size(0); }
 
     const Header& header() const { return H; }
 
-
-
   private:
     Header H;
-    Image<float> data; // May be mapped input file, or scratch smoothed data
+    image_type data;
 
 };
 
@@ -222,16 +222,16 @@ void run()
 
   const std::string input_fixel_directory = argument[0];
   Header index_header = Fixel::find_index_header (input_fixel_directory);
-  auto index_image = index_header.get_image<index_type>();
+  auto index_image = index_header.get_image<Fixel::index_type>();
 
-  const index_type num_fixels = Fixel::get_number_of_fixels (index_header);
+  const Fixel::index_type num_fixels = Fixel::get_number_of_fixels (index_header);
   CONSOLE ("Number of fixels in template: " + str(num_fixels));
 
   Header fixel_mask_header = Fixel::data_header_from_index (index_header);
   fixel_mask_header.datatype() = DataType::Bit;
   Image<bool> mask;
   auto opt = get_options ("mask");
-  index_type mask_fixels = 0;
+  Fixel::index_type mask_fixels = 0;
   if (opt.size()) {
     mask = Image<bool>::open (opt[0][0]);
     Fixel::check_data_file (mask);
@@ -250,13 +250,13 @@ void run()
   }
   Image<bool> posthoc;
   opt = get_options ("posthoc");
-  index_type posthoc_fixels = 0;
+  Fixel::index_type posthoc_fixels = 0;
   if (opt.size()) {
     posthoc = Image<bool>::open (opt[0][0]);
     Fixel::check_data_file (posthoc);
     if (!Fixel::fixels_match (index_header, posthoc))
       throw Exception ("Post-hoc analysis image provided using -posthoc option does not match fixel template");
-    index_type posthoc_mismatch_count = 0;
+    Fixel::index_type posthoc_mismatch_count = 0;
     for (auto l = Loop(0) (mask, posthoc); l; ++l) {
       if (posthoc.value()) {
         ++posthoc_fixels;
@@ -280,15 +280,15 @@ void run()
   // Preference for finding files relative to input template fixel directory
   Math::Stats::CohortDataImport importer;
   importer.initialise<SubjectFixelImport> (argument[1], input_fixel_directory);
-  for (size_t i = 0; i != importer.size(); ++i) {
+  for (Math::Stats::index_type i = 0; i != importer.size(); ++i) {
     if (!Fixel::fixels_match (index_header, dynamic_cast<SubjectFixelImport*>(importer[i].get())->header()))
       throw Exception ("Fixel data file \"" + importer[i]->name() + "\" does not match template fixel image");
   }
   CONSOLE ("Number of inputs: " + str(importer.size()));
 
   // Load design matrix:
-  const matrix_type design = load_matrix (argument[2]);
-  if (design.rows() != (ssize_t)importer.size())
+  const matrix_type design = File::Matrix::load_matrix (argument[2]);
+  if (size_t(design.rows()) != importer.size())
     throw Exception ("Number of input files does not match number of rows in design matrix");
 
   // Before validating the contrast matrix, we first need to see if there are any
@@ -302,8 +302,8 @@ void run()
     // Check for non-finite values in mask fixels only
     // Can't use generic allFinite() function; need to populate matrix data
     if (!nans_in_columns) {
-      matrix_type column_data (importer.size(), num_fixels);
-      for (size_t j = 0; j != importer.size(); ++j)
+      measurements_matrix_type column_data (importer.size(), num_fixels);
+      for (Math::Stats::index_type j = 0; j != importer.size(); ++j)
         (*extra_columns[i][j]) (column_data.row (j));
       if (mask_fixels == num_fixels) {
         nans_in_columns = !column_data.allFinite();
@@ -317,7 +317,7 @@ void run()
       }
     }
   }
-  const ssize_t num_factors = design.cols() + extra_columns.size();
+  const Math::Stats::index_type num_factors = design.cols() + extra_columns.size();
   CONSOLE ("Number of factors: " + str(num_factors));
   if (extra_columns.size()) {
     CONSOLE ("Number of element-wise design matrix columns: " + str(extra_columns.size()));
@@ -328,13 +328,13 @@ void run()
 
   // Load variance groups
   auto variance_groups = Math::Stats::GLM::load_variance_groups (design.rows());
-  const size_t num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
+  const Math::Stats::index_type num_vgs = variance_groups.size() ? variance_groups.maxCoeff()+1 : 1;
   if (num_vgs > 1)
     CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
   const vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (num_factors);
-  const size_t num_hypotheses = hypotheses.size();
+  const Math::Stats::index_type num_hypotheses = hypotheses.size();
   CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   // Load fixel-fixel connectivity matrix
@@ -352,8 +352,8 @@ void run()
   // It may nevertheless be informative to know whether there are fixels that are included
   //   in the mask but don't have any connectivity; warn the user that these will be
   //   zeroed by the enhancement process
-  index_type num_unconnected_fixels = 0;
-  for (index_type f = 0; f != num_fixels; ++f) {
+  Fixel::index_type num_unconnected_fixels = 0;
+  for (Fixel::index_type f = 0; f != num_fixels; ++f) {
     mask.index (0) = f;
     if (mask.value() && !matrix.size (f))
       ++num_unconnected_fixels;
@@ -373,10 +373,10 @@ void run()
   output_header.keyval()["cfe_c"] = str(cfe_c);
   output_header.keyval()["cfe_legacy"] = str(cfe_legacy);
 
-  matrix_type data = matrix_type::Zero (importer.size(), num_fixels);
+  measurements_matrix_type data (importer.size(), num_fixels);
   {
     ProgressBar progress (std::string ("Loading fixel data (no smoothing)"), importer.size());
-    for (size_t subject = 0; subject != importer.size(); subject++) {
+    for (Math::Stats::index_type subject = 0; subject != importer.size(); subject++) {
       (*importer[subject]) (data.row (subject));
       progress++;
     }
@@ -399,7 +399,7 @@ void run()
   }
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
-  auto postfix = [&] (const size_t i) -> std::string { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
+  auto postfix = [&] (const Math::Stats::index_type i) -> std::string { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
 
   {
     matrix_type betas (num_factors, num_fixels);
@@ -413,11 +413,11 @@ void run()
 
     ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
 
-    for (ssize_t i = 0; i != num_factors; ++i) {
+    for (Math::Stats::index_type i = 0; i != num_factors; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), mask, output_header);
       ++progress;
     }
-    for (size_t i = 0; i != num_hypotheses; ++i) {
+    for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
         write_fixel_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".mif"), abs_effect_size.col(i), mask, output_header);
         ++progress;
@@ -435,7 +435,7 @@ void run()
     if (num_vgs == 1) {
       write_fixel_output (Path::join (output_fixel_directory, "std_dev.mif"), stdev.row (0), mask, output_header);
     } else {
-      for (size_t i = 0; i != num_vgs; ++i) {
+      for (Math::Stats::index_type i = 0; i != num_vgs; ++i) {
         write_fixel_output (Path::join (output_fixel_directory, "std_dev" + str(i) + ".mif"), stdev.row (i), mask, output_header);
         ++progress;
       }
@@ -464,7 +464,7 @@ void run()
   if (do_nonstationarity_adjustment) {
     Stats::PermTest::precompute_empirical_stat (glm_test, cfe_integrator, empirical_skew, empirical_cfe_statistic);
     output_header.keyval()["nonstationarity_adjustment"] = str(true);
-    for (size_t i = 0; i != num_hypotheses; ++i)
+    for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i)
       write_fixel_output (Path::join (output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"), empirical_cfe_statistic.col(i), mask, output_header);
   } else {
     output_header.keyval()["nonstationarity_adjustment"] = str(false);
@@ -473,7 +473,7 @@ void run()
   // Precompute default statistic and CFE statistic
   matrix_type default_statistic, default_zstat, default_enhanced;
   Stats::PermTest::precompute_default_permutation (glm_test, cfe_integrator, empirical_cfe_statistic, default_statistic, default_zstat, default_enhanced);
-  for (size_t i = 0; i != num_hypotheses; ++i) {
+  for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
     write_fixel_output (Path::join (output_fixel_directory, (hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".mif"), default_statistic.col(i), mask, output_header);
     write_fixel_output (Path::join (output_fixel_directory, "Zstat" + postfix(i) + ".mif"), default_zstat.col(i), mask, output_header);
     write_fixel_output (Path::join (output_fixel_directory, "cfe" + postfix(i) + ".mif"), default_enhanced.col(i), mask, output_header);
@@ -505,18 +505,18 @@ void run()
     ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
 
     if (fwe_strong) {
-      save_vector (null_distribution.col(0), Path::join (output_fixel_directory, "null_dist.txt"));
+      File::Matrix::save_vector (null_distribution.col(0), Path::join (output_fixel_directory, "null_dist.txt"));
       ++progress;
     } else {
-      for (size_t i = 0; i != num_hypotheses; ++i) {
-        save_vector (null_distribution.col(i), Path::join (output_fixel_directory, "null_dist" + postfix(i) + ".txt"));
+      for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
+        File::Matrix::save_vector (null_distribution.col(i), Path::join (output_fixel_directory, "null_dist" + postfix(i) + ".txt"));
         ++progress;
       }
     }
 
     const matrix_type pvalue_output = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_enhanced, posthoc_mask);
     ++progress;
-    for (size_t i = 0; i != num_hypotheses; ++i) {
+    for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
       write_fixel_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), posthoc, output_header);
       ++progress;
       write_fixel_output (Path::join (output_fixel_directory, "uncorrected_1mpvalue" + postfix(i) + ".mif"), uncorrected_pvalues.col(i), posthoc, output_header);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,36 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __gui_mrview_colourmap_menu_h__
-#define __gui_mrview_colourmap_menu_h__
-
-#include "colourmap.h"
-#include "gui/opengl/gl.h"
+#include "fixel/fixel.h"
+#include "version.h"
 
 namespace MR
 {
-  namespace GUI
+  namespace Fixel
   {
-    namespace MRView
-    {
 
+    const char* format_description =
+      "Fixel data are stored utilising the fixel directory format "
+      "described in the main documentation, which can be found at the following link: \n"
+      "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/fixel_based_analysis/fixel_directory_format.html";
 
-
-      void create_colourmap_menu (QWidget* parent,
-                                  QActionGroup*& group,
-                                  QMenu* menu,
-                                  QAction** & actions,
-                                  bool create_shortcuts = false,
-                                  bool use_special = true);
-
-
-
-    }
   }
 }
-
-#endif
-
-
-
 

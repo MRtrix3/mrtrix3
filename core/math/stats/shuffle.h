@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,34 +52,34 @@ namespace MR
 
 
       class Shuffle
-      { NOMEMALIGN
+      {
         public:
-          size_t index;
-          matrix_type data;
+          index_type index;
+          shuffle_matrix_type data;
       };
 
 
 
       class Shuffler
-      { NOMEMALIGN
+      {
         public:
-          typedef vector<size_t> PermuteLabels;
+          typedef vector<index_type> PermuteLabels;
           enum class error_t { EE, ISE, BOTH };
 
           // First version reads command-line options in order to determine parameters prior to running initialise();
           //   second and third versions more-or-less call initialise() directly
-          Shuffler (const size_t num_rows,
+          Shuffler (const index_type num_rows,
                     const bool is_nonstationarity,
                     const std::string msg = "");
 
-          Shuffler (const size_t num_rows,
-                    const size_t num_shuffles,
+          Shuffler (const index_type num_rows,
+                    const index_type num_shuffles,
                     const error_t error_types,
                     const bool is_nonstationarity,
                     const std::string msg = "");
 
-          Shuffler (const size_t num_rows,
-                    const size_t num_shuffles,
+          Shuffler (const index_type num_rows,
+                    const index_type num_shuffles,
                     const error_t error_types,
                     const bool is_nonstationarity,
                     const index_array_type& eb_within,
@@ -90,17 +90,17 @@ namespace MR
           //   generate each as it is required, based on the more compressed representations
           bool operator() (Shuffle& output);
 
-          size_t size() const { return nshuffles; }
+          index_type size() const { return nshuffles; }
 
           // Go back to the first permutation
           void reset();
 
 
         private:
-          const size_t rows;
+          const index_type rows;
           vector<PermuteLabels> permutations;
           vector<BitSet> signflips;
-          size_t nshuffles, counter;
+          index_type nshuffles, counter;
           std::unique_ptr<ProgressBar> progress;
 
 
@@ -123,14 +123,14 @@ namespace MR
           // Note that this function does not take into account identical rows and therefore generated
           // permutations are not guaranteed to be unique wrt the computed test statistic.
           // Providing the number of rows is large then the likelihood of generating duplicates is low.
-          void generate_random_permutations (const size_t num_perms,
-                                             const size_t num_rows,
+          void generate_random_permutations (const index_type num_perms,
+                                             const index_type num_rows,
                                              const index_array_type& eb_within,
                                              const index_array_type& eb_whole,
                                              const bool include_default,
                                              const bool permit_duplicates);
 
-          void generate_all_permutations (const size_t num_rows,
+          void generate_all_permutations (const index_type num_rows,
                                           const index_array_type& eb_within,
                                           const index_array_type& eb_whole);
 
@@ -139,17 +139,17 @@ namespace MR
           // Similar functions required for sign-flipping
           bool is_duplicate (const BitSet&) const;
 
-          void generate_random_signflips (const size_t num_signflips,
-                                          const size_t num_rows,
+          void generate_random_signflips (const index_type num_signflips,
+                                          const index_type num_rows,
                                           const index_array_type& blocks,
                                           const bool include_default,
                                           const bool permit_duplicates);
 
-          void generate_all_signflips (const size_t num_rows,
+          void generate_all_signflips (const index_type num_rows,
                                        const index_array_type& blocks);
 
 
-          vector<vector<size_t>> indices2blocks (const index_array_type&) const;
+          vector<vector<index_type>> indices2blocks (const index_array_type&) const;
 
       };
 

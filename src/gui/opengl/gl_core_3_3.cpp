@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,8 +18,6 @@
 #include <cstring>
 #include <cstddef>
 #include "gui/opengl/gl_core_3_3.h"
-
-#define NOMEMALIGN
 
 namespace gl
 {
@@ -2935,7 +2933,7 @@ namespace gl
   namespace
   {
     struct InitializeVariables
-    { NOMEMALIGN
+    {
       InitializeVariables()
       {
         // Extension: 1.0
@@ -3321,20 +3319,20 @@ namespace gl
       }
 
       struct MapEntry
-      { NOMEMALIGN
+      {
         const char *extName;
         bool *extVariable;
       };
 
       struct MapCompare
-      { NOMEMALIGN
+      {
         MapCompare(const char *test_) : test(test_) {}
         bool operator()(const MapEntry &other) { return strcmp(test, other.extName) == 0; }
         const char *test;
       };
 
       struct ClearEntry
-      { NOMEMALIGN
+      {
         void operator()(MapEntry &entry) { *(entry.extVariable) = false;}
       };
 

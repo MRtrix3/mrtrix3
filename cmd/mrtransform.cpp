@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #include "command.h"
 #include "progressbar.h"
 #include "image.h"
+#include "file/matrix.h"
 #include "math/math.h"
 #include "math/sphere.h"
 #include "interp/nearest.h"
@@ -251,7 +252,7 @@ void run ()
   auto opt = get_options ("linear");
   if (opt.size()) {
     linear = true;
-    linear_transform = load_transform (opt[0][0]);
+    linear_transform = File::Matrix::load_transform (opt[0][0]);
   }
 
   // Replace
@@ -264,7 +265,7 @@ void run ()
       linear_transform = template_header.transform();
     } catch (...) {
       try {
-        linear_transform = load_transform (opt[0][0]);
+        linear_transform = File::Matrix::load_transform (opt[0][0]);
       } catch (...) {
         throw Exception ("Unable to extract transform matrix from -replace file \"" + str(opt[0][0]) + "\"");
       }
@@ -290,7 +291,6 @@ void run ()
       output_header.spacing(i) = template_header.spacing(i);
     }
     output_header.transform() = template_header.transform();
-    add_line (output_header.keyval()["comments"], std::string ("regridded to template image \"" + template_header.name() + "\""));
   }
 
   // Warp 5D warp
@@ -405,7 +405,7 @@ void run ()
     Eigen::MatrixXd directions_az_el;
     opt = get_options ("directions");
     if (opt.size())
-      directions_az_el = load_matrix (opt[0][0]);
+      directions_az_el = File::Matrix::load_matrix (opt[0][0]);
     else
       directions_az_el = DWI::Directions::electrostatic_repulsion_300();
     Math::Sphere::spherical2cartesian (directions_az_el, directions_cartesian);
@@ -472,7 +472,7 @@ void run ()
                 "therefore should not be used to reorient directions / diffusion gradients");
         }
         for (ssize_t n = 0; n < grad.rows(); ++n) {
-          Eigen::Vector3 grad_vector = grad.block<1,3>(n,0);
+          Eigen::Vector3d grad_vector = grad.block<1,3>(n,0);
           grad.block<1,3>(n,0) = rotation * grad_vector;
         }
         DWI::set_DW_scheme (output_header, grad);
@@ -508,13 +508,13 @@ void run ()
           }
           if (result.cols() == 2) {
             Eigen::Matrix<default_type, 2, 1> azel (v.data());
-            Eigen::Vector3 dir;
+            Eigen::Vector3d dir;
             Math::Sphere::spherical2cartesian (azel, dir);
             dir = rotation * dir;
             Math::Sphere::cartesian2spherical (dir, azel);
             result.row (l) = azel;
           } else {
-            const Eigen::Vector3 dir = rotation * Eigen::Vector3 (v.data());
+            const Eigen::Vector3d dir = rotation * Eigen::Vector3d (v.data());
             result.row (l) = dir;
           }
           std::stringstream s;
@@ -615,6 +615,8 @@ void run ()
     if (modulate_jac)
       apply_linear_jacobian (output, linear_transform);
 
+    DWI::export_grad_commandline (output);
+
   } else if (warp.valid()) {
 
     if (replace)
@@ -626,7 +628,6 @@ void run ()
         output_header.spacing(i) = warp.spacing(i);
       }
       output_header.transform() = warp.transform();
-      add_line (output_header.keyval()["comments"], std::string ("resliced using warp image \"" + warp.name() + "\""));
     }
 
     auto output = Image<float>::create(argument[1], output_header).with_direct_io();

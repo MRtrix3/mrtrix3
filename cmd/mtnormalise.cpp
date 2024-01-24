@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -104,7 +104,11 @@ void usage ()
     REFERENCES
     + "Raffelt, D.; Dhollander, T.; Tournier, J.-D.; Tabbara, R.; Smith, R. E.; Pierre, E. & Connelly, A. " // Internal
     "Bias Field Correction and Intensity Normalisation for Quantitative Analysis of Apparent Fibre Density. "
-    "In Proc. ISMRM, 2017, 26, 3541";
+    "In Proc. ISMRM, 2017, 26, 3541"
+    + "Dhollander, T.; Tabbara, R.; Rosnarho-Tornstrand, J.; Tournier, J.-D.; Raffelt, D. & Connelly, A. " // Internal
+    "Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. "
+    "In Proc. ISMRM, 2021, 29, 2472";
+;
 
 }
 
@@ -131,13 +135,13 @@ int num_basis_vec_for_order  (int order)
 
 
 // Struct to get user specified number of basis functions
-struct PolyBasisFunction { MEMALIGN (PolyBasisFunction)
+struct PolyBasisFunction { 
   PolyBasisFunction(const int order) :
     n_basis_vecs (num_basis_vec_for_order (order)) { };
 
   const int n_basis_vecs;
 
-  FORCE_INLINE Eigen::VectorXd operator () (const Eigen::Vector3& pos) const {
+  FORCE_INLINE Eigen::VectorXd operator () (const Eigen::Vector3d& pos) const {
     double x = pos[0];
     double y = pos[1];
     double z = pos[2];
@@ -217,7 +221,7 @@ IndexType index_mask_voxels (size_t& num_voxels)
 
 Eigen::MatrixXd initialise_basis (IndexType& index, size_t num_voxels, int order)
 {
-  struct BasisInitialiser { NOMEMALIGN
+  struct BasisInitialiser { 
     BasisInitialiser (const Transform& transform, const PolyBasisFunction& basis_function, Eigen::MatrixXd& basis) :
       basis_function (basis_function),
       transform (transform),
@@ -227,8 +231,8 @@ Eigen::MatrixXd initialise_basis (IndexType& index, size_t num_voxels, int order
       const uint32_t idx = index.value();
       if (idx != std::numeric_limits<uint32_t>::max()) {
         assert (idx < basis.rows());
-        Eigen::Vector3 vox (index.index(0), index.index(1), index.index(2));
-        Eigen::Vector3 pos = transform.voxel2scanner * vox;
+        Eigen::Vector3d vox (index.index(0), index.index(1), index.index(2));
+        Eigen::Vector3d pos = transform.voxel2scanner * vox;
         basis.row(idx) = basis_function (pos);
       }
     }
@@ -260,7 +264,7 @@ void load_data (Eigen::MatrixXd& data, const std::string& image_name, IndexType&
   auto in = ImageType::open (image_name);
   check_dimensions (index, in, 0, 3);
 
-  struct Loader { NOMEMALIGN
+  struct Loader { 
     public:
       Loader (Eigen::MatrixXd& data, int num) : data (data), num (num) { }
 
@@ -279,6 +283,15 @@ void load_data (Eigen::MatrixXd& data, const std::string& image_name, IndexType&
 
 
 
+inline bool lessthan_NaN (const double& a, const double& b) {
+  if (std::isnan (a))
+    return true;
+  if (std::isnan (b))
+    return false;
+  return a<b;
+}
+
+
 
 size_t detect_outliers (
     double outlier_range,
@@ -293,11 +306,11 @@ size_t detect_outliers (
   const size_t upper_quartile_idx = std::round (field.size() * 0.75);
 
   std::nth_element (summed_log_sorted.data(), summed_log_sorted.data() + lower_quartile_idx,
-      summed_log_sorted.data() + summed_log_sorted.size());
+      summed_log_sorted.data() + summed_log_sorted.size(), lessthan_NaN);
   double lower_quartile = summed_log_sorted[lower_quartile_idx];
 
   std::nth_element (summed_log_sorted.data(), summed_log_sorted.data() + upper_quartile_idx,
-      summed_log_sorted.data() + summed_log_sorted.size());
+      summed_log_sorted.data() + summed_log_sorted.size(), lessthan_NaN);
   double upper_quartile = summed_log_sorted[upper_quartile_idx];
 
   INFO ("  outlier rejection quartiles: [ " + str(lower_quartile) + " " + str(upper_quartile) + " ]");
@@ -305,7 +318,7 @@ size_t detect_outliers (
   double lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
   double upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
 
-  struct SetWeight { NOMEMALIGN
+  struct SetWeight { 
     size_t& changed;
     const double lower_outlier_threshold, upper_outlier_threshold;
 
@@ -336,7 +349,11 @@ void compute_balance_factors (
     const Eigen::VectorXd& weights,
     Eigen::VectorXd& balance_factors)
 {
-  Eigen::MatrixXd scaled_data = data.transpose().array().rowwise() * weights.cwiseQuotient (field).transpose().array();
+  Eigen::MatrixXd scaled_data = data.transpose().array().rowwise() / field.transpose().array();
+  for (ssize_t n = 0; n < scaled_data.cols(); ++n) {
+    if (!weights[n])
+      scaled_data.col(n).array() = 0.0;
+  }
   Eigen::MatrixXd HtH (data.cols(), data.cols());
   HtH.triangularView<Eigen::Lower>() = scaled_data * scaled_data.transpose();
   Eigen::LLT<Eigen::MatrixXd> llt;
@@ -362,7 +379,7 @@ void update_field (
     Eigen::VectorXd& field_coeffs,
     Eigen::VectorXd& field)
 {
-  struct LogWeight { NOMEMALIGN
+  struct LogWeight { 
     double operator() (double sum, double weight) const {
       return sum > 0.0 ? weight * (std::log(sum) - log_norm_value) : 0.0;
     }
@@ -394,10 +411,10 @@ ImageType compute_full_field (int order, const Eigen::VectorXd& field_coeffs, co
   auto out = ImageType::scratch (header, "full field");
   Transform transform (out);
 
-  struct FieldWriter { NOMEMALIGN
+  struct FieldWriter { 
     void operator() (ImageType& field) const {
-      Eigen::Vector3 vox (field.index(0), field.index(1), field.index(2));
-      Eigen::Vector3 pos = transform.voxel2scanner * vox;
+      Eigen::Vector3d vox (field.index(0), field.index(1), field.index(2));
+      Eigen::Vector3d pos = transform.voxel2scanner * vox;
       field.value() = std::exp (basis_function (pos).dot (field_coeffs));
     }
 
@@ -426,7 +443,7 @@ void write_weights (const Eigen::VectorXd& data, IndexType& index, const std::st
 
   auto out = ImageType::create (output_file_name, header);
 
-  struct Write { NOMEMALIGN
+  struct Write { 
     void operator() (ImageType& out, IndexType& index) const {
       const uint32_t idx = index.value();
       if (idx != std::numeric_limits<uint32_t>::max()) {
@@ -451,7 +468,7 @@ void write_output (
 {
   using ReplicatorType = Adapter::Replicate<ImageType>;
 
-  struct Scaler { NOMEMALIGN
+  struct Scaler { 
     void operator() (ImageType& original, ImageType& corrected, ReplicatorType& field) const {
       corrected.value() = balance_factor * original.value() / field.value();
     }
@@ -476,8 +493,6 @@ void write_output (
   Scaler scaler = { balance_factor };
   ThreadedLoop (in).run (scaler, in, out, field_broadcast);
 }
-
-
 
 
 
@@ -523,9 +538,16 @@ void run ()
     load_data (data, argument[2*n], index);
   }
 
+  size_t num_non_finite = (!data.array().isFinite()).count();
+  if (num_non_finite > 0) {
+    WARN ("Input data contain " + str(num_non_finite) + " non-finite voxel" + ( num_non_finite > 1 ? "s" : "" ));
+    WARN ("  Results may be affected if the data contain many non-finite values");
+    WARN ("  Please refine your mask to avoid non-finite values if this is a problem");
+  }
+
   auto basis = initialise_basis (index, num_voxels, order);
 
-  struct finite_and_positive { NOMEMALIGN double operator() (double v) const { return std::isfinite(v) && v > 0.0; } };
+  struct finite_and_positive {  double operator() (double v) const { return std::isfinite(v) && v > 0.0; } };
   Eigen::VectorXd weights = data.rowwise().sum().unaryExpr (finite_and_positive());
 
   Eigen::VectorXd field = Eigen::VectorXd::Ones (num_voxels);

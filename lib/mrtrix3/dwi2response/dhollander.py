@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2021 the MRtrix3 contributors.
+# Copyright (c) 2008-2023 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,6 +12,7 @@
 # See the Mozilla Public License v. 2.0 for more details.
 #
 # For more details, see http://www.mrtrix.org/.
+
 
 import math, shlex, shutil
 from mrtrix3 import CONFIG, MRtrixError
@@ -58,6 +59,11 @@ def get_inputs(): #pylint: disable=unused-variable
 
 def needs_single_shell(): #pylint: disable=unused-variable
   return False
+
+
+
+def supports_mask(): #pylint: disable=unused-variable
+  return True
 
 
 
@@ -116,7 +122,7 @@ def execute(): #pylint: disable=unused-variable
   for ibv, bval in enumerate(bvalues):
     app.console(' * b=' + str(bval) + '...')
     meanpath = 'mean_b' + str(bval) + '.mif'
-    run.command('dwiextract dwi.mif -shells ' + str(bval) + ' - | mrmath - mean ' + meanpath + ' -axis 3', show=False)
+    run.command('dwiextract dwi.mif -shells ' + str(bval) + ' - | mrcalc - 0 -max - | mrmath - mean ' + meanpath + ' -axis 3', show=False)
     errpath = 'err_b' + str(bval) + '.mif'
     run.command('mrcalc ' + meanpath + ' -finite ' + meanpath + ' 0 -if 0 -le ' + errpath + ' -datatype bit', show=False)
     errcmd += ' ' + errpath
@@ -251,7 +257,7 @@ def execute(): #pylint: disable=unused-variable
       isiso = [ lm == 0 for lm in sfwm_lmax ]
     else:
       isiso = [ bv < bzero_threshold for bv in bvalues ]
-    with open('ewmrf.txt', 'w') as ewr:
+    with open('ewmrf.txt', 'w', encoding='utf-8') as ewr:
       for iis in isiso:
         if iis:
           ewr.write("%s 0 0 0\n" % refwmcoef)

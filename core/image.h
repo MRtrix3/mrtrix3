@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,8 +22,8 @@
 #include <tuple>
 
 #include "debug.h"
+#include "fetch_store.h"
 #include "header.h"
-#include "image_io/fetch_store.h"
 #include "image_helpers.h"
 #include "formats/mrtrix_utils.h"
 #include "algo/copy.h"
@@ -38,7 +38,7 @@ namespace MR
   template <typename ValueType>
     class Image :
       public ImageBase<Image<ValueType>, ValueType>
-  { MEMALIGN (Image<ValueType>)
+  {
       public:
         using value_type = ValueType;
         class Buffer;
@@ -209,7 +209,6 @@ namespace MR
         size_t data_offset;
     };
 
-  CHECK_MEM_ALIGN (Image<float>);
 
 
 
@@ -217,7 +216,7 @@ namespace MR
 
 
   template <typename ValueType>
-    class Image<ValueType>::Buffer : public Header { MEMALIGN (Image<ValueType>::Buffer)
+    class Image<ValueType>::Buffer : public Header {
       public:
         Buffer() {} // TODO: delete this line! Only for testing memory alignment issues.
         //! construct a Buffer object to access the data in the image specified
@@ -249,11 +248,10 @@ namespace MR
         std::function<void(ValueType,void*,size_t,default_type,default_type)> store_func;
 
         void set_fetch_store_functions () {
-          __set_fetch_store_functions (fetch_func, store_func, datatype());
+          __set_fetch_store_scale_functions (fetch_func, store_func, datatype());
         }
     };
 
-  CHECK_MEM_ALIGN (Image<float>::Buffer);
 
 
 
@@ -275,7 +273,7 @@ namespace MR
     template <typename ValueType>
       struct TmpImage :
         public ImageBase<TmpImage<ValueType>, ValueType>
-    { MEMALIGN (TmpImage<ValueType>)
+    {
         using value_type = ValueType;
 
       TmpImage (const typename Image<ValueType>::Buffer& b, void* const data,
@@ -301,7 +299,6 @@ namespace MR
         FORCE_INLINE void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
       };
 
-    CHECK_MEM_ALIGN (TmpImage<float>);
 
   }
 
@@ -458,7 +455,7 @@ namespace MR
         throw Exception ("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
 
       // try to dump file to mrtrix format if possible (direct IO)
-      if (filename == "-")
+      if (is_dash (filename))
         filename = File::create_tempfile (0, "mif");
 
       DEBUG ("dumping image \"" + name() + "\" to file \"" + filename + "\"...");

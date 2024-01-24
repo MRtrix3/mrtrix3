@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,7 +34,7 @@ namespace MR
 
       // Class to handle the node image overlay
       class NodeOverlay : public MR::GUI::MRView::ImageBase
-      { MEMALIGN(NodeOverlay)
+      { 
         public:
           NodeOverlay (MR::Header&&);
 
@@ -47,7 +47,7 @@ namespace MR
           bool need_update;
 
         public:
-          class Shader : public Displayable::Shader { MEMALIGN(Shader)
+          class Shader : public Displayable::Shader { 
             public:
             virtual std::string vertex_shader_source (const Displayable&);
             virtual std::string fragment_shader_source (const Displayable&);

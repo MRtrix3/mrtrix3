@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,7 +37,7 @@ namespace Connectome {
 
 
 class Selector
-{ MEMALIGN(Selector)
+{ 
   public:
     Selector (const node_t node, const bool keep_self = true) :
       list (1, node),
@@ -72,7 +72,7 @@ class Selector
 
 
 class WriterExemplars
-{ MEMALIGN(WriterExemplars)
+{ 
   public:
     WriterExemplars (const Tractography::Properties&, const vector<node_t>&, const bool, const node_t, const vector<Eigen::Vector3f>&);
 
@@ -101,7 +101,7 @@ class WriterExemplars
 
 
 class WriterExtraction
-{ MEMALIGN(WriterExtraction)
+{ 
 
   public:
     WriterExtraction (const Tractography::Properties&, const vector<node_t>&, const bool, const bool);

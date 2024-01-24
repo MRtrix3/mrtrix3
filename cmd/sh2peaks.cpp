@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,12 +15,13 @@
  */
 
 #include "command.h"
-#include "math/SH.h"
 #include "memory.h"
 #include "progressbar.h"
 #include "thread_queue.h"
 #include "image.h"
 #include "algo/loop.h"
+#include "file/matrix.h"
+#include "math/SH.h"
 
 
 #define DOT_THRESHOLD 0.99
@@ -94,7 +95,7 @@ using value_type = float;
 
 
 
-class Direction { MEMALIGN(Direction)
+class Direction { 
   public:
     Direction () : a (NaN) { }
     Direction (const Direction& d) : a (d.a), v (d.v) { }
@@ -109,7 +110,7 @@ class Direction { MEMALIGN(Direction)
 
 
 
-class Item { MEMALIGN(Item)
+class Item { 
   public:
     Eigen::VectorXf data;
     ssize_t pos[3];
@@ -119,7 +120,7 @@ class Item { MEMALIGN(Item)
 
 
 
-class DataLoader { MEMALIGN(DataLoader)
+class DataLoader { 
   public:
     DataLoader (Image<value_type>& sh_data,
                 const Image<bool>& mask_data) :
@@ -161,7 +162,7 @@ class DataLoader { MEMALIGN(DataLoader)
 
 
 
-class Processor { MEMALIGN(Processor)
+class Processor { 
   public:
     Processor (Image<value_type>& dirs_data,
                Eigen::Matrix<value_type, Eigen::Dynamic, 2>& directions,
@@ -315,7 +316,7 @@ void run ()
   opt = get_options ("seeds");
   Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
   if (opt.size())
-    dirs = load_matrix<value_type> (opt[0][0]);
+    dirs = File::Matrix::load_matrix<value_type> (opt[0][0]);
   else {
     dirs = Eigen::Map<Eigen::Matrix<value_type, 60, 2> > (default_directions, 60, 2);
   }

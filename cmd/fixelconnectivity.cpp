@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2021 the MRtrix3 contributors.
+/* Copyright (c) 2008-2023 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,12 @@
 
 
 #include "command.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
-#include "fixel/index_remapper.h"
+
+#include "dwi/tractography/weights.h"
 #include "fixel/matrix.h"
+
 
 
 #define DEFAULT_ANGLE_THRESHOLD 45.0
@@ -37,7 +40,9 @@ void usage ()
   DESCRIPTION
   + "This command will generate a directory containing three images, which encodes the "
     "fixel-fixel connectivity matrix. Documentation regarding this format and how to "
-    "use it will come in the future.";
+    "use it will come in the future."
+
+  + Fixel::format_description;
 
   ARGUMENTS
   + Argument ("fixel_directory", "the directory containing the fixels between which connectivity will be quantified").type_directory_in()
@@ -57,13 +62,37 @@ void usage ()
     + Argument ("value").type_float (0.0, 90.0)
 
   + Option ("mask", "provide a fixel data file containing a mask of those fixels to be computed; fixels outside the mask will be empty in the output matrix")
-    + Argument ("file").type_image_in();
+    + Argument ("file").type_image_in()
+
+  + DWI::Tractography::TrackWeightsInOption
+
+  + OptionGroup ("Options for additional outputs to be generated")
+
+  + Option ("count", "export a fixel data file encoding the number of connections for each fixel")
+    + Argument ("path").type_image_out()
+
+  + Option ("extent", "export a fixel data file encoding the extent of connectivity (sum of weights) for each fixel")
+    + Argument ("path").type_image_out();
 
 }
 
 
 using value_type = float;
 using Fixel::index_type;
+
+
+
+template <class WriterType>
+void set_optional_outputs (WriterType& writer)
+{
+  auto opt = get_options ("count");
+  if (opt.size())
+    writer.set_count_path (opt[0][0]);
+  opt = get_options ("extent");
+  if (opt.size())
+    writer.set_extent_path (opt[0][0]);
+}
+
 
 
 void run()
@@ -93,14 +122,29 @@ void run()
       fixel_mask.value() = true;
   }
 
-  auto connectivity_matrix = Fixel::Matrix::generate (argument[1],
-                                                      index_image,
-                                                      fixel_mask,
-                                                      angular_threshold);
+  if (get_options ("tck_weights_in").size()) {
 
-  Fixel::Matrix::normalise_and_write (connectivity_matrix,
-                                      connectivity_threshold,
-                                      argument[2]);
+    auto connectivity_matrix = Fixel::Matrix::generate_weighted (argument[1],
+                                                                index_image,
+                                                                fixel_mask,
+                                                                angular_threshold);
+
+    Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixWeighted> writer (connectivity_matrix, connectivity_threshold);
+    set_optional_outputs (writer);
+    writer.save (argument[2]);
+
+  } else {
+
+    auto connectivity_matrix = Fixel::Matrix::generate_unweighted (argument[1],
+                                                                  index_image,
+                                                                  fixel_mask,
+                                                                  angular_threshold);
+
+    Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixUnweighted> writer (connectivity_matrix, connectivity_threshold);
+    set_optional_outputs (writer);
+    writer.save (argument[2]);
+
+  }
 
 }
 
