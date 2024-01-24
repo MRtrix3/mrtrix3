@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
-project(mrtrix3 VERSION 3.0.4)
+project(mrtrix3 LANGUAGES CXX VERSION 3.0.4)
+
 include(GNUInstallDirs)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
