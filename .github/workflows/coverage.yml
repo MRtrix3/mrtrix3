@@ -1,0 +1,76 @@
+
+name: Weekly Coverage Analysis
+
+on:
+  workflow_dispatch:
+  # Run this every Sunday at midnight
+  schedule:
+    - cron: "0 0 * * 0"
+
+jobs:
+  linux-clang-build:
+    runs-on: ubuntu-latest
+
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_CACHE_SIZE: "2G"
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+        ref: dev
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install gcovr libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.3
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.16.3'
+
+    - name: Print CMake version
+      run: cmake --version
+
+    - name: configure
+      run: >
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Debug
+        -D MRTRIX_BUILD_TESTS=ON
+        -D CMAKE_CXX_FLAGS="--coverage"
+
+    - name: build
+      run: cmake --build build
+
+    - name: Unit tests
+      run: cd build && ctest -R unit --output-on-failure
+
+    - name: Binary tests
+      run: cd build && ctest -R bin --output-on-failure
+
+    - name: Report coverage
+      run: >
+        gcovr ${{ github.workspace }}/build
+        --root ${{ github.workspace }}
+        --exclude ${{ github.workspace }}/build
+    
+    - name: Generate html report
+      run: >
+        mkdir report &&
+        gcovr ${{ github.workspace }}/build
+        --root ${{ github.workspace }}
+        --exclude ${{ github.workspace }}/build
+        --html --html-details
+        -o report/coverage.html
+    
+    - name: Upload html report
+      uses: actions/upload-artifact@v2
+      with:
+        name: mrtrix3-coverage-report
+        path: ${{ github.workspace }}/report
