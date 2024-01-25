@@ -13,12 +13,11 @@ Usage
 
 ::
 
-    connectomestats [ options ]  input algorithm design contrast output
+    connectomestats [ options ]  input algorithm design output
 
 -  *input*: a text file listing the file names of the input connectomes
 -  *algorithm*: the algorithm to use in network-based clustering/enhancement. Options are: nbs, tfnbs, none
 -  *design*: the design matrix
--  *contrast*: the contrast matrix
 -  *output*: the filename prefix for all output.
 
 Description
@@ -30,10 +29,18 @@ and:  |br|
 Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A novel threshold-free network-based statistical method: Demonstration and parameter optimisation using in vivo simulated pathology. In Proc ISMRM, 2015, 2846.  |br|
 Note however that not only was the optimisation of these parameters not very precise, but the outcomes of statistical inference (for both this algorithm and the NBS method) can vary markedly for even small changes to enhancement parameters. Therefore the specificity of results obtained using either of these methods should be interpreted with caution.
 
-In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
+Operation of the -posthoc option, and how it differs from the -mask option, is described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/posthoc_testing.html
+
+In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. Matrices specified for t-tests and F-tests must also reflect the presence of this additional column.
 
 Options
 -------
+
+Options for constraining analysis to specific edges
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-posthoc file** provide a matrix file containing a mask of those edges to contribute to statistical inference (see Description)
 
 Options relating to shuffling of data for nonparametric statistical inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -72,11 +79,11 @@ Options for controlling TFCE behaviour
 Options related to the General Linear Model (GLM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+-  **-ttests path** perform one or more t-tests; input matrix text file should contain one row for each hypothesis, with each row performing a dot product with the GLM beta coefficients to form a contrast of interest
+
+-  **-ftest path** *(multiple uses permitted)* perform an F-test; input matrix text file should contain one or more rows, with each row specifying an undirected contrast to contribute to the F-test
+
 -  **-variance file** define variance groups for the G-statistic; measurements for which the expected variance is equivalent should contain the same index
-
--  **-ftests path** perform F-tests; input text file should contain, for each F-test, a row containing ones and zeros, where ones indicate the rows of the contrast matrix to be included in the F-test.
-
--  **-fonly** only assess F-tests; do not perform statistical inference on entries in the contrast matrix
 
 -  **-column path** *(multiple uses permitted)* add a column to the design matrix corresponding to subject edge-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
 

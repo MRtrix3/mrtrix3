@@ -117,7 +117,7 @@ void usage ()
   + Option ("mask", "provide a fixel data file containing a mask of those fixels to contribute to processing")
   + Argument ("file").type_image_in()
 
-  + Option("posthoc", "provide a fixel data file containing a mask of those fixels to contribute to statistical inference (see Description)")
+  + Option("posthoc", "provide a fixel data file containing a mask of those fixels to contribute to statistical inference")
   + Argument ("file").type_image_in()
 
   + Math::Stats::shuffle_options (true, DEFAULT_EMPIRICAL_SKEW)

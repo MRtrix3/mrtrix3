@@ -86,7 +86,7 @@ void usage ()
   OPTIONS
 
   + OptionGroup("Options for constraining analysis to specific fixels")
-  + Option("posthoc", "provide a mask image of those voxels to contribute to statistical inference (see Description)")
+  + Option("posthoc", "provide a mask image of those voxels to contribute to statistical inference")
   + Argument ("file").type_image_in()
 
   + Math::Stats::shuffle_options (true, DEFAULT_EMPIRICAL_SKEW)

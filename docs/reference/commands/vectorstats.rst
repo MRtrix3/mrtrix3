@@ -13,11 +13,10 @@ Usage
 
 ::
 
-    vectorstats [ options ]  input design contrast output
+    vectorstats [ options ]  input design output
 
 -  *input*: a text file listing the file names of the input subject data
 -  *design*: the design matrix
--  *contrast*: the contrast matrix
 -  *output*: the filename prefix for all output
 
 Description
@@ -25,10 +24,17 @@ Description
 
 This command can be used to perform permutation testing of any form of data. The data for each input subject must be stored in a text file, with one value per row. The data for each row across subjects will be tested independently, i.e. there is no statistical enhancement that occurs between the data; however family-wise error control will be used.
 
-In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
+Unlike other statistical inference commands, vectorstats does not provide separate command-line options for masking those elements to contribute to processing versus those elements that contribute to statistical inference (i.e. a post-hoc mask). This is because the difference between these two constructs is whether or not any particular element will or will not contribute to statistical enhancement, yet the defining feature of vectorstats is that no statistical enhancement is performed.
+
+In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. Matrices specified for t-tests and F-tests must also reflect the presence of this additional column.
 
 Options
 -------
+
+Options for constraining analysis to specific elements
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-mask file** provide a vector file specifying a mask of those elements to contribute to processing
 
 Options relating to shuffling of data for nonparametric statistical inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -50,11 +56,11 @@ Options relating to shuffling of data for nonparametric statistical inference
 Options related to the General Linear Model (GLM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+-  **-ttests path** perform one or more t-tests; input matrix text file should contain one row for each hypothesis, with each row performing a dot product with the GLM beta coefficients to form a contrast of interest
+
+-  **-ftest path** *(multiple uses permitted)* perform an F-test; input matrix text file should contain one or more rows, with each row specifying an undirected contrast to contribute to the F-test
+
 -  **-variance file** define variance groups for the G-statistic; measurements for which the expected variance is equivalent should contain the same index
-
--  **-ftests path** perform F-tests; input text file should contain, for each F-test, a row containing ones and zeros, where ones indicate the rows of the contrast matrix to be included in the F-test.
-
--  **-fonly** only assess F-tests; do not perform statistical inference on entries in the contrast matrix
 
 -  **-column path** *(multiple uses permitted)* add a column to the design matrix corresponding to subject element-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
 

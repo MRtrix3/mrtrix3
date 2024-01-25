@@ -59,7 +59,7 @@ namespace MR
 
 
       /*! A class to pre-compute the empirical enhanced statistic image for non-stationarity correction */
-      class PreProcessor { 
+      class PreProcessor {
         public:
           PreProcessor (const std::unique_ptr<Math::Stats::GLM::TestBase>& stats_calculator,
                         const std::shared_ptr<EnhancerBase> enhancer,
@@ -91,7 +91,7 @@ namespace MR
 
 
       /*! A class to perform the permutation testing */
-      class Processor { 
+      class Processor {
         public:
           Processor (const std::unique_ptr<Math::Stats::GLM::TestBase>& stats_calculator,
                      const std::shared_ptr<EnhancerBase> enhancer,

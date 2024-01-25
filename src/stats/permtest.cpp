@@ -15,6 +15,7 @@
  */
 
 #include "stats/permtest.h"
+#include "version.h"
 #include "math/stats/typedefs.h"
 
 namespace MR
@@ -26,17 +27,10 @@ namespace MR
 
 
 
-      const char* const mask_posthoc_description = 
-          "When performing statistical inference, there is a subtle difference between operation of the -mask and "
-          "-posthoc options. Elements excluded from the former will be excluded from intermediate outputs, will "
-          "not contribute to statistical enhancement, and will therefore not contribute to construction of the null "
-          "distribution(s) and will not be assigned corrected p-values. On the other hand, elements excluded "
-          "from the latter will still contribute to statistical enhancement, and will instead only be excluded from "
-          "construction of the null distribution(s) and calculation of p-values. The latter is intended to be used "
-          "in post hoc statistical tests, where a prior inference step has identified a subset of statistically "
-          "significant elements and one seeks to isolate the contributing factors; within such a step, elements for "
-          "which statistical significance was not assigned should nevertheless still contribute to statistical "
-          "enhancement as they did in the prior inference.";
+      const char* const mask_posthoc_description =
+          "Operation of the -posthoc option, and how it differs from the -mask option, "
+          "is described in the main documentation, which can be found at the following link: \n"
+          "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/statistical_inference/posthoc_testing.html";
 
 
 
