@@ -234,7 +234,6 @@ void run() {
   auto opt = get_options ("posthoc");
   if (opt.size()) {
     const std::string posthoc_path = opt[0][0];
-    Image<bool> posthoc_image;
     posthoc_image = Image<bool>::open (posthoc_path);
     if (!(posthoc_image.ndim() == 3 || (posthoc_image.ndim() == 4 && posthoc_image.size(3) == 1)))
       throw Exception ("Post-hoc mask image \"" + posthoc_path + "\" is not 3D");
