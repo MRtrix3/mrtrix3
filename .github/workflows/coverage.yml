@@ -6,7 +6,9 @@ on:
   # Run this every Sunday at midnight
   schedule:
     - cron: "0 0 * * 0"
-
+  # IMPORTANT: remove this before merging
+  pull_request:
+    
 jobs:
   linux-clang-build:
     runs-on: ubuntu-latest
@@ -24,7 +26,8 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install gcovr libqt5opengl5-dev libqt5svg5-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install gcovr qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.3
 
