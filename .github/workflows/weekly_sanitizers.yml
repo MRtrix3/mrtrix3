@@ -2,9 +2,9 @@ name: Nightly checks with sanitizers
 
 on:
   workflow_dispatch:
-  # Run this every day at midnight
+  # Run this every Sunday at midnight
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "0 0 * * 0"
 
 jobs:
   linux-clang-build:
