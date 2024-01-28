@@ -1,4 +1,19 @@
-rm -rf tmp/ && mkdir tmp/ && mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp/ -ttests mrclusterstats/contrast.txt && testing_diff_image tmp/abs_effect.mif mrclusterstats/legacy/abs_effect.mif && testing_diff_image tmp/beta0.mif mrclusterstats/legacy/beta0.mif && testing_diff_image tmp/beta1.mif mrclusterstats/legacy/beta1.mif && testing_diff_image tmp/std_dev.mif mrclusterstats/legacy/std_dev.mif && testing_diff_image tmp/std_effect.mif mrclusterstats/legacy/std_effect.mif && testing_diff_image tmp/tvalue.mif mrclusterstats/legacy/tvalue.mif && mrcalc tmp/fwe_1mpvalue.mif 0.95 -gt - | testing_diff_image - SIFT_phantom/upper.mif
-rm -rf tmp/ && mkdir tmp/ && mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp/ -ttests mrclusterstats/contrast.txt && testing_diff_image tmp/abs_effect.mif mrclusterstats/default/abs_effect.mif && testing_diff_image tmp/beta0.mif mrclusterstats/default/beta0.mif && testing_diff_image tmp/beta1.mif mrclusterstats/default/beta1.mif && testing_diff_image tmp/std_dev.mif mrclusterstats/default/std_dev.mif && testing_diff_image tmp/std_effect.mif mrclusterstats/default/std_effect.mif && testing_diff_image tmp/tfce.mif mrclusterstats/default/tfce.mif && testing_diff_image tmp/tvalue.mif mrclusterstats/default/tvalue.mif && testing_diff_image tmp/Zstat.mif mrclusterstats/default/Zstat.mif && mrcalc tmp/fwe_1mpvalue.mif 0.95 -gt - | testing_diff_image - SIFT_phantom/upper.mif
-rm -rf tmp/ && mkdir tmp/ && mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/upper.mif tmp/ -ttests mrclusterstats/contrast.txt && testing_diff_image tmp/abs_effect.mif mrclusterstats/masked/abs_effect.mif && testing_diff_image tmp/beta0.mif mrclusterstats/masked/beta0.mif && testing_diff_image tmp/beta1.mif mrclusterstats/masked/beta1.mif && testing_diff_image tmp/std_dev.mif mrclusterstats/masked/std_dev.mif && testing_diff_image tmp/std_effect.mif mrclusterstats/masked/std_effect.mif && testing_diff_image tmp/tvalue.mif mrclusterstats/masked/tvalue.mif && mrcalc tmp/fwe_1mpvalue.mif 0.95 -gt - | testing_diff_image - SIFT_phantom/upper.mif
-rm -rf tmp/ && mkdir tmp/ && mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp/ -ttests mrclusterstats/contrast.txt -threshold 3.5 && testing_diff_image tmp/clustersize.mif mrclusterstats/threshold/cluster_sizes.mif && mrcalc tmp/fwe_1mpvalue.mif 0.95 -gt - | testing_diff_image - SIFT_phantom/upper.mif
+# run default:
+mkdir tmp_default && mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp_default/ -ttests mrclusterstats/contrast.txt
+# check outputs:
+( for i in abs_effect beta0 beta1 std_dev std_effect tfce tvalue Zstat; do testing_diff_image tmp_default/$i.mif mrclusterstats/default/$i.mif -abs 1e-6 || exit 1; done ) && mrcalc tmp_default/fwe_1mpvalue.mif 0.95 -gt - | testing_diff_image - SIFT_phantom/upper.mif
+
+# run w. reduced mask:
+mkdir tmp_masked && mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/upper.mif tmp_masked/ -ttests mrclusterstats/contrast.txt
+# check outputs:
+( for i in abs_effect beta0 beta1 std_dev std_effect tfce tvalue Zstat; do testing_diff_image tmp_masked/$i.mif mrclusterstats/masked/$i.mif -abs 1e-6 || exit 1; done ) && mrcalc tmp_masked/fwe_1mpvalue.mif 0.95 -gt - | testing_diff_image - SIFT_phantom/upper.mif
+
+# run w. cluster-forming threshold:
+mkdir tmp_threshold && mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp_threshold/ -ttests mrclusterstats/contrast.txt -threshold 3.5
+# check outputs:
+( for i in abs_effect beta0 beta1 clustersize std_dev std_effect tvalue Zstat; do testing_diff_image tmp_threshold/$i.mif mrclusterstats/threshold/$i.mif -abs 1e-6 || exit 1; done ) && mrcalc tmp_threshold/fwe_1mpvalue.mif 0.95 -gt - | testing_diff_image - SIFT_phantom/upper.mif
+
+# run posthoc analysis:
+mkdir tmp_posthoc && mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp_posthoc/ -ttests mrclusterstats/contrast.txt -posthoc mrclusterstats/posthoc.mif
+# check outputs:
+( for i in abs_effect beta0 beta1 std_dev std_effect tfce tvalue Zstat; do testing_diff_image tmp_posthoc/$i.mif mrclusterstats/posthoc/$i.mif -abs 1e-6 || exit 1; done ) && mrcalc tmp_posthoc/fwe_1mpvalue.mif 0.95 -gt - | testing_diff_image - mrclusterstats/posthoc.mif
