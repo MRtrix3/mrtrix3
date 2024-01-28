@@ -234,14 +234,14 @@ void run()
   const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", EMPIRICAL_SKEW_DEFAULT);
 
-  // Load post-hoc mask
-  mask_type posthoc (mask_type::Ones (num_edges));
+  // Load post-hoc analysis mask
+  mask_type mask_inference (mask_type::Ones (num_edges));
   auto opt = get_options ("posthoc");
   if (opt.size()) {
-    const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> posthoc_matrix (File::Matrix::load_matrix<bool> (opt[0][0]));
-    Connectome::check (posthoc_matrix, num_nodes);
-    mat2vec.M2V (posthoc_matrix, posthoc);
-    CONSOLE ("Number of edges in posthoc analysis: " + str(posthoc.count()) + " / " + str(num_edges));
+    const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> mask_inference_matrix (File::Matrix::load_matrix<bool> (opt[0][0]));
+    Connectome::check (mask_inference_matrix, num_nodes);
+    mat2vec.M2V (mask_inference_matrix, mask_inference);
+    CONSOLE ("Number of edges in posthoc analysis mask: " + str(mask_inference.count()) + " / " + str(num_edges));
   }
 
   // Load design matrix
@@ -381,7 +381,7 @@ void run()
 
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic, default_enhanced, fwe_strong, posthoc,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic, default_enhanced, fwe_strong, mask_inference,
                                        null_distribution, null_contributions, uncorrected_pvalues);
     if (fwe_strong) {
       File::Matrix::save_vector (null_distribution.col(0), output_prefix + "null_dist.txt");
@@ -389,7 +389,7 @@ void run()
       for (index_type i = 0; i != num_hypotheses; ++i)
         File::Matrix::save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".txt");
     }
-    const matrix_type pvalue_output = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_enhanced, posthoc);
+    const matrix_type pvalue_output = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_enhanced, mask_inference);
     for (index_type i = 0; i != num_hypotheses; ++i) {
       File::Matrix::save_matrix (mat2vec.V2M (pvalue_output.col(i)),       output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       File::Matrix::save_matrix (mat2vec.V2M (uncorrected_pvalues.col(i)), output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");

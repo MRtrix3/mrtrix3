@@ -218,8 +218,8 @@ void run() {
   // Load analysis mask and compute adjacency
   auto mask_header = Header::open (argument[2]);
   check_effective_dimensionality (mask_header, 3);
-  auto mask_image = mask_header.get_image<bool>();
-  std::shared_ptr<Voxel2Vector> v2v = make_shared<Voxel2Vector> (mask_image, mask_header);
+  auto mask_processing_image = mask_header.get_image<bool>();
+  std::shared_ptr<Voxel2Vector> v2v = make_shared<Voxel2Vector> (mask_processing_image, mask_header);
   SubjectVoxelImport::set_mapping (v2v);
   Filter::Connector connector;
   connector.adjacency.set_26_adjacency (do_26_connectivity);
@@ -228,40 +228,40 @@ void run() {
   CONSOLE ("Number of voxels in mask: " + str(num_voxels));
 
   // Posthoc analysis mask
-  Image<bool> posthoc_image;
-  mask_type posthoc_mask (num_voxels);
-  size_t posthoc_voxels = 0;
+  Image<bool> mask_inference_image;
+  mask_type mask_inference (num_voxels);
+  size_t mask_infer_voxels = 0;
   auto opt = get_options ("posthoc");
   if (opt.size()) {
     const std::string posthoc_path = opt[0][0];
-    posthoc_image = Image<bool>::open (posthoc_path);
-    if (!(posthoc_image.ndim() == 3 || (posthoc_image.ndim() == 4 && posthoc_image.size(3) == 1)))
+    mask_inference_image = Image<bool>::open (posthoc_path);
+    if (!(mask_inference_image.ndim() == 3 || (mask_inference_image.ndim() == 4 && mask_inference_image.size(3) == 1)))
       throw Exception ("Post-hoc mask image \"" + posthoc_path + "\" is not 3D");
-    if (!dimensions_match (mask_header, posthoc_image, 0, 3))
+    if (!dimensions_match (mask_header, mask_inference_image, 0, 3))
       throw Exception ("Post-hoc image \"" + posthoc_path + "\" does not match mask image");
-    size_t posthoc_mismatch_count = 0;
-    for (auto l = Loop(mask_header) (mask_image, posthoc_image); l; ++l) {
-      if (posthoc_image.value()) {
-        std::array<ssize_t, 3> pos {posthoc_image.index(0), posthoc_image.index(1), posthoc_image.index(2)};
+    size_t mask_mismatch_count = 0;
+    for (auto l = Loop(mask_header) (mask_processing_image, mask_inference_image); l; ++l) {
+      if (mask_inference_image.value()) {
+        std::array<ssize_t, 3> pos {mask_inference_image.index(0), mask_inference_image.index(1), mask_inference_image.index(2)};
         const Voxel2Vector::index_t index = (*v2v) (pos);
-        posthoc_mask[index] = true;
-        ++posthoc_voxels;
-        if (!mask_image.value())
-          ++posthoc_mismatch_count;
+        mask_inference[index] = true;
+        ++mask_infer_voxels;
+        if (!mask_processing_image.value())
+          ++mask_mismatch_count;
       }
     }
-    CONSOLE ("Number of voxels in post-hoc analysis: " + str(posthoc_voxels));
-    if (posthoc_mismatch_count) {
-      WARN ("There are " + str(posthoc_mismatch_count) + " voxels in the post-hoc mask that are absent from the processing mask; "
-            "post-hoc inference cannot be performed in those voxels");
+    CONSOLE ("Number of voxels in post-hoc analysis mask: " + str(mask_infer_voxels));
+    if (mask_mismatch_count) {
+      WARN ("There are " + str(mask_mismatch_count) + " voxels in the post-hoc mask that are absent from the processing mask; "
+            "post-hoc inference cannot and will not be performed in those voxels");
     }
   } else {
-    posthoc_mask = Stats::PermTest::mask_type::Ones (num_voxels);
-    posthoc_voxels = num_voxels;
-    posthoc_image = Image<bool>::scratch (mask_header, "scratch posthoc mask image");
-    copy (mask_image, posthoc_image);
+    mask_inference = Stats::PermTest::mask_type::Ones (num_voxels);
+    mask_infer_voxels = num_voxels;
+    mask_inference_image = Image<bool>::scratch (mask_header, "scratch posthoc mask image");
+    copy (mask_processing_image, mask_inference_image);
   }
-  mask_image.reset(); posthoc_image.reset();
+  mask_processing_image.reset(); mask_inference_image.reset();
 
   // Read file names and check files exist
   CohortDataImport importer;
@@ -434,7 +434,7 @@ void run() {
     matrix_type null_distribution, uncorrected_pvalue;
     count_matrix_type null_contributions;
 
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, default_enhanced, fwe_strong, posthoc_mask,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, default_enhanced, fwe_strong, mask_inference,
                                        null_distribution, null_contributions, uncorrected_pvalue);
 
     ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
@@ -449,14 +449,14 @@ void run() {
       }
     }
 
-    const matrix_type fwe_pvalue_output = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_enhanced, posthoc_mask);
+    const matrix_type fwe_pvalue_output = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_enhanced, mask_inference);
     ++progress;
     for (index_type i = 0; i != num_hypotheses; ++i) {
-      write_output (fwe_pvalue_output.col(i), *v2v, posthoc_image, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);
+      write_output (fwe_pvalue_output.col(i), *v2v, mask_inference_image, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
-      write_output (uncorrected_pvalue.col(i), *v2v, posthoc_image, prefix + "uncorrected_1mpvalue" + postfix(i) + ".mif", output_header);
+      write_output (uncorrected_pvalue.col(i), *v2v, mask_inference_image, prefix + "uncorrected_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
-      write_output (null_contributions.col(i), *v2v, posthoc_image, prefix + "null_contributions" + postfix(i) + ".mif", output_header);
+      write_output (null_contributions.col(i), *v2v, mask_inference_image, prefix + "null_contributions" + postfix(i) + ".mif", output_header);
       ++progress;
     }
 
