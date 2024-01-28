@@ -46,15 +46,20 @@ namespace MR
 
 
 
+      extern const char* const mask_posthoc_description;
+
+
+
       using value_type = Math::Stats::value_type;
       using vector_type = Math::Stats::vector_type;
       using matrix_type = Math::Stats::matrix_type;
       using count_matrix_type = Eigen::Array<uint32_t, Eigen::Dynamic, Eigen::Dynamic>;
+      using mask_type = Math::Stats::mask_type;
 
 
 
       /*! A class to pre-compute the empirical enhanced statistic image for non-stationarity correction */
-      class PreProcessor { 
+      class PreProcessor {
         public:
           PreProcessor (const std::unique_ptr<Math::Stats::GLM::TestBase>& stats_calculator,
                         const std::shared_ptr<EnhancerBase> enhancer,
@@ -86,12 +91,13 @@ namespace MR
 
 
       /*! A class to perform the permutation testing */
-      class Processor { 
+      class Processor {
         public:
           Processor (const std::unique_ptr<Math::Stats::GLM::TestBase>& stats_calculator,
                      const std::shared_ptr<EnhancerBase> enhancer,
                      const matrix_type& empirical_enhanced_statistics,
                      const matrix_type& default_enhanced_statistics,
+                     const mask_type& mask,
                      matrix_type& null_dist,
                      count_matrix_type& global_null_dist_contributions,
                      count_matrix_type& global_uncorrected_pvalue_counter);
@@ -107,6 +113,7 @@ namespace MR
           std::shared_ptr<EnhancerBase> enhancer;
           const matrix_type& empirical_enhanced_statistics;
           const matrix_type& default_enhanced_statistics;
+          const mask_type& mask;
           matrix_type statistics;
           matrix_type zstatistics;
           matrix_type enhanced_statistics;
@@ -146,6 +153,7 @@ namespace MR
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
                              const bool fwe_strong,
+                             const mask_type& mask,
                              matrix_type& perm_dist,
                              count_matrix_type& perm_dist_contributions,
                              matrix_type& uncorrected_pvalues);

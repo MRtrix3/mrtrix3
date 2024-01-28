@@ -59,6 +59,7 @@ void usage ()
   SYNOPSIS = "Voxel-based analysis using permutation testing and threshold-free cluster enhancement";
 
   DESCRIPTION
+      + MR::Stats::PermTest::mask_posthoc_description
       + Math::Stats::GLM::column_ones_description;
 
   REFERENCES
@@ -77,14 +78,17 @@ void usage ()
 
   + Argument ("design", "the design matrix").type_file_in()
 
-  + Argument ("contrast", "the contrast matrix").type_file_in()
-
   + Argument ("mask", "a mask used to define voxels included in the analysis.").type_image_in()
 
   + Argument ("output", "the filename prefix for all output.").type_text();
 
 
   OPTIONS
+
+  + OptionGroup("Options for constraining analysis to specific fixels")
+  + Option("posthoc", "provide a mask image of those voxels to contribute to statistical inference")
+  + Argument ("file").type_image_in()
+
   + Math::Stats::shuffle_options (true, DEFAULT_EMPIRICAL_SKEW)
 
   + Stats::TFCE::Options (DEFAULT_TFCE_DH, DEFAULT_TFCE_E, DEFAULT_TFCE_H)
@@ -111,11 +115,27 @@ template <class VectorType>
 void write_output (const VectorType& data,
                    const Voxel2Vector& v2v,
                    const std::string& path,
-                   const Header& header) {
+                   const Header& header)
+{
   auto image = Image<float>::create (path, header);
   for (index_type i = 0; i != v2v.size(); i++) {
     assign_pos_of (v2v[i]).to (image);
     image.value() = data[i];
+  }
+}
+
+template <class VectorType>
+void write_output (const VectorType& data,
+                   const Voxel2Vector& v2v,
+                   Image<bool> mask,
+                   const std::string& path,
+                   const Header& header)
+{
+  auto image = Image<float>::create (path, header);
+  for (size_t i = 0; i != v2v.size(); i++) {
+    assign_pos_of (v2v[i]).to (image, mask);
+    if (mask.value())
+      image.value() = data[i];
   }
 }
 
@@ -196,15 +216,52 @@ void run() {
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
 
   // Load analysis mask and compute adjacency
-  auto mask_header = Header::open (argument[3]);
+  auto mask_header = Header::open (argument[2]);
   check_effective_dimensionality (mask_header, 3);
-  auto mask_image = mask_header.get_image<bool>();
-  std::shared_ptr<Voxel2Vector> v2v = make_shared<Voxel2Vector> (mask_image, mask_header);
+  auto mask_processing_image = mask_header.get_image<bool>();
+  std::shared_ptr<Voxel2Vector> v2v = make_shared<Voxel2Vector> (mask_processing_image, mask_header);
   SubjectVoxelImport::set_mapping (v2v);
   Filter::Connector connector;
   connector.adjacency.set_26_adjacency (do_26_connectivity);
   connector.adjacency.initialise (mask_header, *v2v);
-  const index_type num_voxels = v2v->size();
+  const Math::Stats::index_type num_voxels = v2v->size();
+  CONSOLE ("Number of voxels in mask: " + str(num_voxels));
+
+  // Posthoc analysis mask
+  Image<bool> mask_inference_image;
+  mask_type mask_inference (num_voxels);
+  size_t mask_infer_voxels = 0;
+  auto opt = get_options ("posthoc");
+  if (opt.size()) {
+    const std::string posthoc_path = opt[0][0];
+    mask_inference_image = Image<bool>::open (posthoc_path);
+    if (!(mask_inference_image.ndim() == 3 || (mask_inference_image.ndim() == 4 && mask_inference_image.size(3) == 1)))
+      throw Exception ("Post-hoc mask image \"" + posthoc_path + "\" is not 3D");
+    if (!dimensions_match (mask_header, mask_inference_image, 0, 3))
+      throw Exception ("Post-hoc image \"" + posthoc_path + "\" does not match mask image");
+    size_t mask_mismatch_count = 0;
+    for (auto l = Loop(mask_header) (mask_processing_image, mask_inference_image); l; ++l) {
+      if (mask_inference_image.value()) {
+        std::array<ssize_t, 3> pos {mask_inference_image.index(0), mask_inference_image.index(1), mask_inference_image.index(2)};
+        const Voxel2Vector::index_t index = (*v2v) (pos);
+        mask_inference[index] = true;
+        ++mask_infer_voxels;
+        if (!mask_processing_image.value())
+          ++mask_mismatch_count;
+      }
+    }
+    CONSOLE ("Number of voxels in post-hoc analysis mask: " + str(mask_infer_voxels));
+    if (mask_mismatch_count) {
+      WARN ("There are " + str(mask_mismatch_count) + " voxels in the post-hoc mask that are absent from the processing mask; "
+            "post-hoc inference cannot and will not be performed in those voxels");
+    }
+  } else {
+    mask_inference = Stats::PermTest::mask_type::Ones (num_voxels);
+    mask_infer_voxels = num_voxels;
+    mask_inference_image = Image<bool>::scratch (mask_header, "scratch posthoc mask image");
+    copy (mask_processing_image, mask_inference_image);
+  }
+  mask_processing_image.reset(); mask_inference_image.reset();
 
   // Read file names and check files exist
   CohortDataImport importer;
@@ -225,7 +282,7 @@ void run() {
   // TODO Functionalise this
   vector<CohortDataImport> extra_columns;
   bool nans_in_columns = false;
-  auto opt = get_options ("column");
+  opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
     extra_columns[i].initialise<SubjectVoxelImport> (opt[i][0]);
@@ -248,12 +305,8 @@ void run() {
     CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[2]);
+  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (num_factors);
   const index_type num_hypotheses = hypotheses.size();
-  if (hypotheses[0].cols() != num_factors)
-    throw Exception ("The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
-                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
-                     + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   measurements_matrix_type data (importer.size(), num_voxels);
@@ -286,7 +339,7 @@ void run() {
     output_header.keyval()["threshold"] = str(cluster_forming_threshold);
   }
 
-  const std::string prefix (argument[4]);
+  const std::string prefix (argument[3]);
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&] (const index_type i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
@@ -381,7 +434,7 @@ void run() {
     matrix_type null_distribution, uncorrected_pvalue;
     count_matrix_type null_contributions;
 
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, default_enhanced, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_enhanced_statistic, default_enhanced, fwe_strong, mask_inference,
                                        null_distribution, null_contributions, uncorrected_pvalue);
 
     ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
@@ -396,14 +449,14 @@ void run() {
       }
     }
 
-    const matrix_type fwe_pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
+    const matrix_type fwe_pvalue_output = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_enhanced, mask_inference);
     ++progress;
     for (index_type i = 0; i != num_hypotheses; ++i) {
-      write_output (fwe_pvalue_output.col(i), *v2v, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);
+      write_output (fwe_pvalue_output.col(i), *v2v, mask_inference_image, prefix + "fwe_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
-      write_output (uncorrected_pvalue.col(i), *v2v, prefix + "uncorrected_1mpvalue" + postfix(i) + ".mif", output_header);
+      write_output (uncorrected_pvalue.col(i), *v2v, mask_inference_image, prefix + "uncorrected_1mpvalue" + postfix(i) + ".mif", output_header);
       ++progress;
-      write_output (null_contributions.col(i), *v2v, prefix + "null_contributions" + postfix(i) + ".mif", output_header);
+      write_output (null_contributions.col(i), *v2v, mask_inference_image, prefix + "null_contributions" + postfix(i) + ".mif", output_header);
       ++progress;
     }
 

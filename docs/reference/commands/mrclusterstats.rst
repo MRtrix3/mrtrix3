@@ -13,21 +13,28 @@ Usage
 
 ::
 
-    mrclusterstats [ options ]  input design contrast mask output
+    mrclusterstats [ options ]  input design mask output
 
 -  *input*: a text file containing the file names of the input images, one file per line
 -  *design*: the design matrix
--  *contrast*: the contrast matrix
 -  *mask*: a mask used to define voxels included in the analysis.
 -  *output*: the filename prefix for all output.
 
 Description
 -----------
 
-In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
+Operation of the -posthoc option, and how it differs from the -mask option, is described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.4/fixel_based_analysis/posthoc_testing.html
+
+In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. Matrices specified for t-tests and F-tests must also reflect the presence of this additional column.
 
 Options
 -------
+
+Options for constraining analysis to specific fixels
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-posthoc file** provide a mask image of those voxels to contribute to statistical inference
 
 Options relating to shuffling of data for nonparametric statistical inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -66,11 +73,11 @@ Options for controlling TFCE behaviour
 Options related to the General Linear Model (GLM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+-  **-ttests path** perform one or more t-tests; input matrix text file should contain one row for each hypothesis, with each row performing a dot product with the GLM beta coefficients to form a contrast of interest
+
+-  **-ftest path** *(multiple uses permitted)* perform an F-test; input matrix text file should contain one or more rows, with each row specifying an undirected contrast to contribute to the F-test
+
 -  **-variance file** define variance groups for the G-statistic; measurements for which the expected variance is equivalent should contain the same index
-
--  **-ftests path** perform F-tests; input text file should contain, for each F-test, a row containing ones and zeros, where ones indicate the rows of the contrast matrix to be included in the F-test.
-
--  **-fonly** only assess F-tests; do not perform statistical inference on entries in the contrast matrix
 
 -  **-column path** *(multiple uses permitted)* add a column to the design matrix corresponding to subject voxel-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
 

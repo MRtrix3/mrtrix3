@@ -38,6 +38,7 @@ using namespace MR::Math::Stats;
 using namespace MR::Math::Stats::GLM;
 
 using Math::Stats::index_type;
+using Math::Stats::mask_type;
 using Math::Stats::matrix_type;
 using Math::Stats::vector_type;
 using Math::Stats::measurements_value_type;
@@ -76,6 +77,9 @@ void usage ()
     "algorithm and the NBS method) can vary markedly for even small changes to "
     "enhancement parameters. Therefore the specificity of results obtained using "
     "either of these methods should be interpreted with caution."
+
+  + MR::Stats::PermTest::mask_posthoc_description
+
   + Math::Stats::GLM::column_ones_description;
 
 
@@ -87,12 +91,20 @@ void usage ()
 
   + Argument ("design", "the design matrix").type_file_in ()
 
-  + Argument ("contrast", "the contrast matrix").type_file_in ()
-
   + Argument ("output", "the filename prefix for all output.").type_text();
 
 
   OPTIONS
+
+  + OptionGroup("Options for constraining analysis to specific edges")
+
+  // TODO Implement
+  // Note that if GLM is modified to receive a mask, no modification of enhancer will be required
+  //+ Option ("mask", "provide a matrix file containing a mask of those edges to contribute to processing")
+  //+ Argument ("file").type_file_in()
+
+  + Option("posthoc", "provide a matrix file containing a mask of those edges to contribute to statistical inference (see Description)")
+  + Argument ("file").type_file_in()
 
   + Math::Stats::shuffle_options (true, EMPIRICAL_SKEW_DEFAULT)
 
@@ -222,6 +234,16 @@ void run()
   const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", EMPIRICAL_SKEW_DEFAULT);
 
+  // Load post-hoc analysis mask
+  mask_type mask_inference (mask_type::Ones (num_edges));
+  auto opt = get_options ("posthoc");
+  if (opt.size()) {
+    const Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> mask_inference_matrix (File::Matrix::load_matrix<bool> (opt[0][0]));
+    Connectome::check (mask_inference_matrix, num_nodes);
+    mat2vec.M2V (mask_inference_matrix, mask_inference);
+    CONSOLE ("Number of edges in posthoc analysis mask: " + str(mask_inference.count()) + " / " + str(num_edges));
+  }
+
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix (argument[2]);
   if (index_type(design.rows()) != importer.size())
@@ -231,7 +253,7 @@ void run()
   //   additional design matrix columns coming from edge-wise subject data
   vector<CohortDataImport> extra_columns;
   bool nans_in_columns = false;
-  auto opt = get_options ("column");
+  opt = get_options ("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back (CohortDataImport());
     extra_columns[i].initialise<SubjectConnectomeImport> (opt[i][0]);
@@ -254,15 +276,11 @@ void run()
     CONSOLE ("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
+  const vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (num_factors);
   const index_type num_hypotheses = hypotheses.size();
-  if (hypotheses[0].cols() != num_factors)
-    throw Exception ("the number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
-                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")"
-                     + (extra_columns.size() ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
-  const std::string output_prefix = argument[4];
+  const std::string output_prefix = argument[3];
 
   // Load input data
   // For compatibility with existing statistics code, symmetric matrix data is adjusted
@@ -363,7 +381,7 @@ void run()
 
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
-    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic, default_enhanced, fwe_strong,
+    Stats::PermTest::run_permutations (glm_test, enhancer, empirical_statistic, default_enhanced, fwe_strong, mask_inference,
                                        null_distribution, null_contributions, uncorrected_pvalues);
     if (fwe_strong) {
       File::Matrix::save_vector (null_distribution.col(0), output_prefix + "null_dist.txt");
@@ -371,7 +389,7 @@ void run()
       for (index_type i = 0; i != num_hypotheses; ++i)
         File::Matrix::save_vector (null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".txt");
     }
-    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced);
+    const matrix_type pvalue_output = MR::Math::Stats::PermTest::fwe_pvalue (null_distribution, default_enhanced, mask_inference);
     for (index_type i = 0; i != num_hypotheses; ++i) {
       File::Matrix::save_matrix (mat2vec.V2M (pvalue_output.col(i)),       output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       File::Matrix::save_matrix (mat2vec.V2M (uncorrected_pvalues.col(i)), output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");

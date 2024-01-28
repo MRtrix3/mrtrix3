@@ -15,6 +15,7 @@
  */
 
 #include "stats/permtest.h"
+#include "version.h"
 #include "math/stats/typedefs.h"
 
 namespace MR
@@ -23,6 +24,14 @@ namespace MR
   {
     namespace PermTest
     {
+
+
+
+      const char* const mask_posthoc_description =
+          "Operation of the -posthoc option, and how it differs from the -mask option, "
+          "is described in the main documentation, which can be found at the following link: \n"
+          "https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/statistical_inference/posthoc_testing.html";
+
 
 
 
@@ -100,6 +109,7 @@ namespace MR
                             const std::shared_ptr<EnhancerBase> enhancer,
                             const matrix_type& empirical_enhanced_statistics,
                             const matrix_type& default_enhanced_statistics,
+                            const mask_type& mask,
                             matrix_type& perm_dist,
                             count_matrix_type& perm_dist_contributions,
                             count_matrix_type& global_uncorrected_pvalue_counter) :
@@ -107,6 +117,7 @@ namespace MR
           enhancer (enhancer),
           empirical_enhanced_statistics (empirical_enhanced_statistics),
           default_enhanced_statistics (default_enhanced_statistics),
+          mask (mask),
           statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           zstatistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
@@ -127,6 +138,7 @@ namespace MR
           enhancer (that.enhancer),
           empirical_enhanced_statistics (that.empirical_enhanced_statistics),
           default_enhanced_statistics (that.default_enhanced_statistics),
+          mask (that.mask),
           statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           zstatistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
           enhanced_statistics (stats_calculator->num_elements(), stats_calculator->num_hypotheses()),
@@ -163,19 +175,19 @@ namespace MR
 
         if (null_dist.cols() == 1) { // strong fwe control
           ssize_t max_element, max_hypothesis;
-          null_dist(shuffle.index, 0) = enhanced_statistics.maxCoeff (&max_element, &max_hypothesis);
+          null_dist(shuffle.index, 0) = (enhanced_statistics.array().colwise() * mask.cast<matrix_type::Scalar>()).maxCoeff (&max_element, &max_hypothesis);
           null_dist_contribution_counter(max_element, max_hypothesis)++;
         } else { // weak fwe control
           ssize_t max_index;
           for (ssize_t ih = 0; ih != enhanced_statistics.cols(); ++ih) {
-            null_dist(shuffle.index, ih) = enhanced_statistics.col (ih).maxCoeff (&max_index);
+            null_dist(shuffle.index, ih) = (enhanced_statistics.col (ih).array() * mask.cast<matrix_type::Scalar>()).maxCoeff (&max_index);
             null_dist_contribution_counter(max_index, ih)++;
           }
         }
 
         for (ssize_t ih = 0; ih != enhanced_statistics.cols(); ++ih) {
           for (ssize_t ie = 0; ie != enhanced_statistics.rows(); ++ie) {
-            if (default_enhanced_statistics(ie, ih) > enhanced_statistics(ie, ih))
+            if (mask[ie] && default_enhanced_statistics(ie, ih) > enhanced_statistics(ie, ih))
               uncorrected_pvalue_counter(ie, ih)++;
           }
         }
@@ -251,11 +263,13 @@ namespace MR
                              const matrix_type& empirical_enhanced_statistic,
                              const matrix_type& default_enhanced_statistics,
                              const bool fwe_strong,
+                             const mask_type& mask,
                              matrix_type& null_dist,
                              count_matrix_type& null_dist_contributions,
                              matrix_type& uncorrected_pvalues)
       {
         assert (stats_calculator);
+        assert (stats_calculator->num_elements() == size_t(mask.size()));
         Math::Stats::Shuffler shuffler (stats_calculator->num_inputs(), false, "Running permutations");
         null_dist.resize (shuffler.size(), fwe_strong ? 1 : stats_calculator->num_hypotheses());
         null_dist_contributions = count_matrix_type::Zero (stats_calculator->num_elements(), stats_calculator->num_hypotheses());
@@ -265,6 +279,7 @@ namespace MR
           Processor processor (stats_calculator, enhancer,
                                empirical_enhanced_statistic,
                                default_enhanced_statistics,
+                               mask,
                                null_dist,
                                null_dist_contributions,
                                global_uncorrected_pvalue_count);

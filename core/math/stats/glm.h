@@ -121,7 +121,7 @@ namespace MR
 
         index_array_type load_variance_groups (const index_type num_inputs);
 
-        vector<Hypothesis> load_hypotheses (const std::string& file_path);
+        vector<Hypothesis> load_hypotheses (const ssize_t num_factors);
 
 
 

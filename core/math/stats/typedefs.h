@@ -30,13 +30,17 @@ namespace MR
 
 
 
+      using index_type = uint32_t;
       using value_type = MR::default_type;
       using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
       using vector_type = Eigen::Array<value_type, Eigen::Dynamic, 1>;
-      using index_type = uint32_t;
+
+      using mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
       using index_array_type = Eigen::Array<index_type, Eigen::Dynamic, 1>;
       using shuffle_matrix_type = Eigen::Matrix<int8_t, Eigen::Dynamic, Eigen::Dynamic>;
 
+      // Capability to internally store measurements at lower precision than
+      //   that at which calculations are performed
       using measurements_value_type = float;
       using measurements_vector_type = Eigen::Matrix<measurements_value_type, Eigen::Dynamic, 1>;
       using measurements_matrix_type = Eigen::Matrix<measurements_value_type, Eigen::Dynamic, Eigen::Dynamic>;
