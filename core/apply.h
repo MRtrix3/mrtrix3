@@ -38,22 +38,6 @@ template <> struct Apply<0> {
   }
 };
 
-template <size_t N> struct Unpack {
-  template <typename F, typename T, typename... A>
-  static FORCE_INLINE auto unpack(F &&f, T &&t, A &&...a) -> decltype(Unpack<N - 1>::unpack(
-      ::std::forward<F>(f), ::std::forward<T>(t), ::std::get<N - 1>(::std::forward<T>(t)), ::std::forward<A>(a)...)) {
-    return Unpack<N - 1>::unpack(
-        ::std::forward<F>(f), ::std::forward<T>(t), ::std::get<N - 1>(::std::forward<T>(t)), ::std::forward<A>(a)...);
-  }
-};
-
-template <> struct Unpack<0> {
-  template <typename F, typename T, typename... A>
-  static FORCE_INLINE auto unpack(F &&f, T &&, A &&...a) -> decltype(::std::forward<F>(f)(::std::forward<A>(a)...)) {
-    return ::std::forward<F>(f)(::std::forward<A>(a)...);
-  }
-};
-
 } // namespace
 
 //! invoke \c f(x) for each entry in \c t
@@ -62,14 +46,6 @@ template <class F, class T> FORCE_INLINE void apply(F &&f, T &&t) {
                                                                              ::std::forward<T>(t));
 }
 
-//! if \c t is a tuple of elements \c a..., invoke \c f(a...)
-template <typename F, typename T>
-FORCE_INLINE auto unpack(F &&f, T &&t)
-    -> decltype(Unpack<::std::tuple_size<typename ::std::decay<T>::type>::value>::unpack(::std::forward<F>(f),
-                                                                                         ::std::forward<T>(t))) {
-  return Unpack<::std::tuple_size<typename ::std::decay<T>::type>::value>::unpack(::std::forward<F>(f),
-                                                                                  ::std::forward<T>(t));
-}
 } // namespace MR
 
 #endif
