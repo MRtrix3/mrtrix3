@@ -21,6 +21,7 @@
 #include "algo/loop.h"
 #include "debug.h"
 #include "thread.h"
+#include <tuple>
 
 namespace MR {
 
@@ -273,8 +274,8 @@ template <int N, class Functor, class... ImageType> struct ThreadedLoopRunInner 
 
   void operator()(const Iterator &pos) {
     assign_pos_of(pos, outer_axes).to(vox);
-    for (auto i = unpack(loop, vox); i; ++i)
-      unpack(func, vox);
+    for (auto i = std::apply(loop, vox); i; ++i)
+      std::apply(func, vox);
   }
 };
 

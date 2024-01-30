@@ -25,6 +25,7 @@
 #include "thread.h"
 #include <algorithm> // std::shuffle
 #include <random>
+#include <tuple>
 // #include "algo/random_loop.h"
 
 namespace MR {
@@ -55,13 +56,13 @@ template <int N, class Functor, class... ImageType> struct RandomThreadedLoopRun
 
   void operator()(const Iterator &pos) {
     assign_pos_of(pos, outer_axes).to(vox);
-    for (auto i = unpack(loop, vox); i; ++i) {
+    for (auto i = std::apply(loop, vox); i; ++i) {
       // if (rng() >= density){
       //   DEBUG (str(pos) + " ...skipped inner");
       //   continue;
       // }
       // DEBUG (str(pos) + " ...used inner");
-      unpack(func, vox);
+      std::apply(func, vox);
     }
   }
 };
