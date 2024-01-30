@@ -27,9 +27,9 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI')
   parser.add_argument('output', type=app.Parser.FileOut(), help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tax\' algorithm')
-  options.add_argument('-peak_ratio', type=float, metavar='value', default=0.1, help='Second-to-first-peak amplitude ratio threshold')
-  options.add_argument('-max_iters', type=int, metavar='iterations', default=20, help='Maximum number of iterations')
-  options.add_argument('-convergence', type=float, metavar='percentage', default=0.5, help='Percentile change in any RF coefficient required to continue iterating')
+  options.add_argument('-peak_ratio', type=app.Parser.Float(0.0, 1.0), metavar='value', default=0.1, help='Second-to-first-peak amplitude ratio threshold')
+  options.add_argument('-max_iters', type=app.Parser.Int(0), metavar='iterations', default=20, help='Maximum number of iterations (set to 0 to force convergence)')
+  options.add_argument('-convergence', type=app.Parser.Float(0.0), metavar='percentage', default=0.5, help='Percentile change in any RF coefficient required to continue iterating')
 
 
 
@@ -63,7 +63,7 @@ def execute(): #pylint: disable=unused-variable
   progress = app.ProgressBar('Optimising')
 
   iteration = 0
-  while iteration < app.ARGS.max_iters:
+  while iteration < app.ARGS.max_iters or not app.ARGS.max_iters:
     prefix = 'iter' + str(iteration) + '_'
 
     # How to initialise response function?

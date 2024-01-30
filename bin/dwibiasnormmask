@@ -94,21 +94,21 @@ def usage(cmdline): #pylint: disable=unused-variable
                               help='Write the scaling factor applied to the DWI series to a text file')
   output_options.add_argument('-output_tissuesum', metavar='image',
                               help='Export the tissue sum image that was used to generate the final mask')
-  output_options.add_argument('-reference', type=float, metavar='value', default=REFERENCE_INTENSITY,
+  output_options.add_argument('-reference', type=app.Parser.Float(0.0), metavar='value', default=REFERENCE_INTENSITY,
                               help='Set the target CSF b=0 intensity in the output DWI series (default: ' + str(REFERENCE_INTENSITY) + ')')
   internal_options = cmdline.add_argument_group('Options relevant to the internal optimisation procedure')
-  internal_options.add_argument('-dice', type=float, default=DICE_COEFF_DEFAULT, metavar='value',
+  internal_options.add_argument('-dice', type=app.Parser.Float(0.0, 1.0), default=DICE_COEFF_DEFAULT, metavar='value',
                                 help='Set the Dice coefficient threshold for similarity of masks between sequential iterations that will '
                                      'result in termination due to convergence; default = ' + str(DICE_COEFF_DEFAULT))
   internal_options.add_argument('-init_mask', metavar='image',
                                  help='Provide an initial mask for the first iteration of the algorithm '
                                       '(if not provided, the default dwi2mask algorithm will be used)')
-  internal_options.add_argument('-max_iters', type=int, default=DWIBIASCORRECT_MAX_ITERS, metavar='count',
+  internal_options.add_argument('-max_iters', type=app.Parser.Int(0), default=DWIBIASCORRECT_MAX_ITERS, metavar='count',
                                 help='The maximum number of iterations (see Description); default is ' + str(DWIBIASCORRECT_MAX_ITERS) + '; '
                                      'set to 0 to proceed until convergence')
   internal_options.add_argument('-mask_algo', choices=MASK_ALGOS, metavar='algorithm',
                                 help='The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description); default: ' + MASK_ALGO_DEFAULT)
-  internal_options.add_argument('-lmax', metavar='values',
+  internal_options.add_argument('-lmax', metavar='values', type=app.Parser.SequenceInt,
                                 help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
                                      'defaults are "' + ','.join(str(item) for item in LMAXES_MULTI) + '" for multi-shell and "' + ','.join(str(item) for item in LMAXES_SINGLE) + '" for single-shell data)')
   app.add_dwgrad_import_options(cmdline)

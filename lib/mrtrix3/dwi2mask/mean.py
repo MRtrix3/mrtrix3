@@ -26,7 +26,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options = parser.add_argument_group('Options specific to the \'mean\' algorithm')
   options.add_argument('-shells', type=app.Parser.SequenceFloat(), metavar='bvalues', help='Comma separated list of shells to be included in the volume averaging')
   options.add_argument('-clean_scale',
-                       type=int,
+                       type=app.Parser.Int(0),
                        default=DEFAULT_CLEAN_SCALE,
                        help='the maximum scale used to cut bridges. A certain maximum scale cuts '
                             'bridges up to a width (in voxels) of 2x the provided scale. Setting '

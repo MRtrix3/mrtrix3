@@ -26,7 +26,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI series')
   parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
   parser.add_argument('-clean_scale',
-                      type=int,
+                      type=app.Parser.Int(0),
                       default=DEFAULT_CLEAN_SCALE,
                       help='the maximum scale used to cut bridges. A certain maximum scale cuts '
                            'bridges up to a width (in voxels) of 2x the provided scale. Setting '

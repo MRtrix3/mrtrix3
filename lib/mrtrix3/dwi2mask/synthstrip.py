@@ -35,9 +35,9 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options=parser.add_argument_group('Options specific to the \'Synthstrip\' algorithm')
   options.add_argument('-stripped', help='The output stripped image')
   options.add_argument('-gpu', action='store_true', default=False, help='Use the GPU')
-  options.add_argument('-model', metavar='file', help='Alternative model weights')
+  options.add_argument('-model', type=app.Parser.FileIn, metavar='file', help='Alternative model weights')
   options.add_argument('-nocsf', action='store_true', default=False, help='Compute the immediate boundary of brain matter excluding surrounding CSF')
-  options.add_argument('-border', type=int, help='Control the boundary distance from the brain')
+  options.add_argument('-border', type=app.Parser.Float(), help='Control the boundary distance from the brain')
 
 
 

@@ -27,10 +27,10 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI')
   parser.add_argument('output', type=app.Parser.FileOut(), help='The output response function text file')
   options = parser.add_argument_group('Options specific to the \'tournier\' algorithm')
-  options.add_argument('-number', type=int, metavar='voxels', default=300, help='Number of single-fibre voxels to use when calculating response function')
-  options.add_argument('-iter_voxels', type=int, metavar='voxels', default=0, help='Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)')
-  options.add_argument('-dilate', type=int, metavar='passes', default=1, help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
-  options.add_argument('-max_iters', type=int, metavar='iterations', default=10, help='Maximum number of iterations')
+  options.add_argument('-number', type=app.Parser.Int(1), metavar='voxels', default=300, help='Number of single-fibre voxels to use when calculating response function')
+  options.add_argument('-iter_voxels', type=app.Parser.Int(0), metavar='voxels', default=0, help='Number of single-fibre voxels to select when preparing for the next iteration (default = 10 x value given in -number)')
+  options.add_argument('-dilate', type=app.Parser.Int(1), metavar='passes', default=1, help='Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration')
+  options.add_argument('-max_iters', type=app.Parser.Int(0), metavar='iterations', default=10, help='Maximum number of iterations (set to 0 to force convergence)')
 
 
 
@@ -59,9 +59,6 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.lmax:
     lmax_option = ' -lmax ' + ','.join(str(item) for item in app.ARGS.lmax)
 
-  if app.ARGS.max_iters < 2:
-    raise MRtrixError('Number of iterations must be at least 2')
-
   progress = app.ProgressBar('Optimising')
 
   iter_voxels = app.ARGS.iter_voxels
@@ -71,7 +68,7 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError ('Number of selected voxels (-iter_voxels) must be greater than number of voxels desired (-number)')
 
   iteration = 0
-  while iteration < app.ARGS.max_iters:
+  while iteration < app.ARGS.max_iters or not app.ARGS.max_iters:
     prefix = 'iter' + str(iteration) + '_'
 
     if iteration == 0:
