@@ -29,8 +29,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('input_dwi', type=app.Parser.ImageIn(), help='The input DWI series')
   parser.add_argument('input_mask', type=app.Parser.ImageIn(), help='The mask within which a reference b=0 intensity will be sampled')
   parser.add_argument('output_dwi', type=app.Parser.ImageOut(), help='The output intensity-normalised DWI series')
-  parser.add_argument('-intensity', type=float, metavar='value', default=DEFAULT_TARGET_INTENSITY, help='Normalise the b=0 signal to a specified value (Default: ' + str(DEFAULT_TARGET_INTENSITY) + ')')
-  parser.add_argument('-percentile', type=int, metavar='value', help='Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value')
+  parser.add_argument('-intensity', type=app.Parser.Float(0.0), metavar='value', default=DEFAULT_TARGET_INTENSITY, help='Normalise the b=0 signal to a specified value (Default: ' + str(DEFAULT_TARGET_INTENSITY) + ')')
+  parser.add_argument('-percentile', type=app.Parser.Float(0.0, 100.0), metavar='value', help='Define the percentile of the b=0 image intensties within the mask used for normalisation; if this option is not supplied then the median value (50th percentile) will be normalised to the desired intensity value')
   app.add_dwgrad_import_options(parser)
 
 
@@ -49,8 +49,6 @@ def execute(): #pylint: disable=unused-variable
     grad_option = ' -fslgrad ' + path.from_user(app.ARGS.fslgrad[0]) + ' ' + path.from_user(app.ARGS.fslgrad[1])
 
   if app.ARGS.percentile:
-    if app.ARGS.percentile < 0.0 or app.ARGS.percentile > 100.0:
-      raise MRtrixError('-percentile value must be between 0 and 100')
     intensities = [float(value) for value in run.command('dwiextract ' + path.from_user(app.ARGS.input_dwi) + grad_option + ' -bzero - | ' + \
                                                          'mrmath - mean - -axis 3 | ' + \
                                                          'mrdump - -mask ' + path.from_user(app.ARGS.input_mask)).stdout.splitlines()]

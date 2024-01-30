@@ -616,6 +616,46 @@ class Parser(argparse.ArgumentParser):
     def _typestring():
       return 'BOOL'
 
+  def Int(min_value=None, max_value=None):
+    assert min_value is None or isinstance(min_value, int)
+    assert max_value is None or isinstance(max_value, int)
+    assert min_value is None or max_value is None or max_value >= min_value
+    class Checker(Parser.CustomTypeBase):
+      def __call__(self, input_value):
+        try:
+          value = int(input_value)
+        except ValueError as exc:
+          raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as integer value') from exc
+        if min_value is not None and value < min_value:
+          raise argparse.ArgumentTypeError('Input value "' + input_value + ' less than minimum permissible value ' + str(min_value))
+        if max_value is not None and value > max_value:
+          raise argparse.ArgumentTypeError('Input value "' + input_value + ' greater than maximum permissible value ' + str(max_value))
+        return value
+      @staticmethod
+      def _typestring():
+        return 'INT ' + ('-9223372036854775808' if min_value is None else str(min_value)) + ' ' + ('9223372036854775807' if max_value is None else str(max_value))
+    return Checker
+
+  def Float(min_value=None, max_value=None):
+    assert min_value is None or isinstance(min_value, float)
+    assert max_value is None or isinstance(max_value, float)
+    assert min_value is None or max_value is None or max_value >= min_value
+    class Checker(Parser.CustomTypeBase):
+      def __call__(self, input_value):
+        try:
+          value = float(input_value)
+        except ValueError as exc:
+          raise argparse.ArgumentTypeError('Could not interpret "' + input_value + '" as floating-point value') from exc
+        if min_value is not None and value < min_value:
+          raise argparse.ArgumentTypeError('Input value "' + input_value + ' less than minimum permissible value ' + str(min_value))
+        if max_value is not None and value > max_value:
+          raise argparse.ArgumentTypeError('Input value "' + input_value + ' greater than maximum permissible value ' + str(max_value))
+        return value
+      @staticmethod
+      def _typestring():
+        return 'FLOAT ' + ('-inf' if min_value is None else str(min_value)) + ' ' + ('inf' if max_value is None else str(max_value))
+    return Checker
+
   class SequenceInt(CustomTypeBase):
     def __call__(self, input_value):
       try:
@@ -743,7 +783,7 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-debug', action='store_true', help='display debugging messages.')
       self.flag_mutually_exclusive_options( [ 'info', 'quiet', 'debug' ] )
       standard_options.add_argument('-force', action='store_true', help='force overwrite of output files.')
-      standard_options.add_argument('-nthreads', metavar='number', type=int, help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).')
+      standard_options.add_argument('-nthreads', metavar='number', type=Parser.Int(0), help='use this number of threads in multi-threaded applications (set to 0 to disable multi-threading).')
       standard_options.add_argument('-config', action='append', type=str, metavar=('key', 'value'), nargs=2, help='temporarily set the value of an MRtrix config file entry.')
       standard_options.add_argument('-help', action='store_true', help='display this information page and exit.')
       standard_options.add_argument('-version', action='store_true', help='display version information and exit.')
@@ -1059,10 +1099,6 @@ class Parser(argparse.ArgumentParser):
     def arg2str(arg):
       if arg.choices:
         return 'CHOICE ' + ' '.join(arg.choices)
-      if isinstance(arg.type, int) or arg.type is int:
-        return 'INT'
-      if isinstance(arg.type, float) or arg.type is float:
-        return 'FLOAT'
       if isinstance(arg.type, str) or arg.type is str or arg.type is None:
         return 'TEXT'
       if isinstance(arg.type, Parser.CustomTypeBase):

@@ -27,9 +27,9 @@ def usage(cmdline): #pylint: disable=unused-variable
                           'than if a binary template mask were to be used as input.')
   cmdline.add_argument('input', type=app.Parser.ImageIn(), help='The input mask image')
   cmdline.add_argument('output', type=app.Parser.ImageOut(), help='The output glass brain image')
-  cmdline.add_argument('-dilate', type=int, default=2, help='Provide number of passes for dilation step; default = 2')
-  cmdline.add_argument('-scale', type=float, default=2.0, help='Provide resolution upscaling value; default = 2.0')
-  cmdline.add_argument('-smooth', type=float, default=1.0, help='Provide standard deviation of smoothing (in mm); default = 1.0')
+  cmdline.add_argument('-dilate', type=app.Parser.Int(0), default=2, help='Provide number of passes for dilation step; default = 2')
+  cmdline.add_argument('-scale', type=app.Parser.Float(0.0), default=2.0, help='Provide resolution upscaling value; default = 2.0')
+  cmdline.add_argument('-smooth', type=app.Parser.Float(0.0), default=1.0, help='Provide standard deviation of smoothing (in mm); default = 1.0')
 
 
 def execute(): #pylint: disable=unused-variable

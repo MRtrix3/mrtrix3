@@ -18,6 +18,8 @@ from mrtrix3 import MRtrixError
 from mrtrix3 import app, image, path, run, utils
 
 
+FA_THRESHOLD_DEFAULT = 0.4
+
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('group', parents=[base_parser])
@@ -30,7 +32,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_argument('output_dir', type=app.Parser.DirectoryOut(), help='The output directory containing all of the intensity normalised DWI images')
   parser.add_argument('fa_template', type=app.Parser.ImageOut(), help='The output population-specific FA template, which is thresholded to estimate a white matter mask')
   parser.add_argument('wm_mask', type=app.Parser.ImageOut(), help='The output white matter mask (in template space), used to estimate the median b=0 white matter value for normalisation')
-  parser.add_argument('-fa_threshold', default='0.4', metavar='value', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: 0.4)')
+  parser.add_argument('-fa_threshold', type=app.Parser.Float(0.0, 1.0), default=FA_THRESHOLD_DEFAULT, metavar='value', help='The threshold applied to the Fractional Anisotropy group template used to derive an approximate white matter mask (default: ' + str(FA_THRESHOLD_DEFAULT) + ')')
 
 
 
@@ -104,7 +106,7 @@ def execute(): #pylint: disable=unused-variable
               + ('' if app.DO_CLEANUP else ' -nocleanup'))
 
   app.console('Generating WM mask in template space')
-  run.command('mrthreshold fa_template.mif -abs ' +  app.ARGS.fa_threshold + ' template_wm_mask.mif')
+  run.command('mrthreshold fa_template.mif -abs ' +  str(app.ARGS.fa_threshold) + ' template_wm_mask.mif')
 
   progress = app.ProgressBar('Intensity normalising subject images', len(input_list))
   utils.make_dir(path.from_user(app.ARGS.output_dir, False))

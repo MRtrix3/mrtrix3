@@ -44,10 +44,11 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_citation('Dhollander, T.; Tabbara, R.; Rosnarho-Tornstrand, J.; Tournier, J.-D.; Raffelt, D. & Connelly, A. '
                       'Multi-tissue log-domain intensity and inhomogeneity normalisation for quantitative apparent fibre density. '
                       'In Proc. ISMRM, 2021, 29, 2472')
-  parser.add_argument('input', help='The input image series to be corrected')
-  parser.add_argument('output', help='The output corrected image series')
+  parser.add_argument('input', type=app.Parser.ImageIn, help='The input image series to be corrected')
+  parser.add_argument('output', type=app.Parser.ImageOut, help='The output corrected image series')
   options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
   options.add_argument('-lmax',
+                       type=app.Parser.SequenceInt,
                        metavar='values',
                        help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
                             'defaults are "' + ','.join(str(item) for item in LMAXES_MULTI) + '" for multi-shell and "' + ','.join(str(item) for item in LMAXES_SINGLE) + '" for single-shell data)')

@@ -49,24 +49,27 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_citation('Dhollander, T.; Raffelt, D. & Connelly, A. '
                       'Unsupervised 3-tissue response function estimation from single-shell or multi-shell diffusion MR data without a co-registered T1 image. '
                       'ISMRM Workshop on Breaking the Barriers of Diffusion MRI, 2016, 5')
-  parser.add_argument('input', help='The input DWI series')
-  parser.add_argument('output', help='The normalised DWI series')
+  parser.add_argument('input', type=app.Parser.ImageIn, help='The input DWI series')
+  parser.add_argument('output', type=app.Parser.ImageOut, help='The normalised DWI series')
   options = parser.add_argument_group('Options specific to the "mtnorm" algorithm')
   options.add_argument('-lmax',
+                       type=app.Parser.SequenceInt,
                        metavar='values',
                        help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
                             'defaults are "' + ','.join(str(item) for item in LMAXES_MULTI) + '" for multi-shell and "' + ','.join(str(item) for item in LMAXES_SINGLE) + '" for single-shell data)')
   options.add_argument('-mask',
+                       type=app.Parser.ImageIn,
                        metavar='image',
                        help='Provide a mask image for relevant calculations '
                             '(if not provided, the default dwi2mask algorithm will be used)')
   options.add_argument('-reference',
-                       type=float,
+                       type=app.Parser.Float(0.0),
                        metavar='value',
                        default=REFERENCE_INTENSITY,
                        help='Set the target CSF b=0 intensity in the output DWI series '
                             '(default: ' + str(REFERENCE_INTENSITY) + ')')
   options.add_argument('-scale',
+                       app.Parser.FileOut,
                        metavar='file',
                        help='Write the scaling factor applied to the DWI series to a text file')
   app.add_dwgrad_import_options(parser)

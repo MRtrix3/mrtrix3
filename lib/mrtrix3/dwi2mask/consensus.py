@@ -29,7 +29,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   options.add_argument('-algorithms', nargs='+', help='Provide a (space- or comma-separated) list of dwi2mask algorithms that are to be utilised')
   options.add_argument('-masks', type=app.Parser.ImageOut(), metavar='image', help='Export a 4D image containing the individual algorithm masks')
   options.add_argument('-template', type=app.Parser.ImageIn(), metavar=('TemplateImage', 'MaskImage'), nargs=2, help='Provide a template image and corresponding mask for those algorithms requiring such')
-  options.add_argument('-threshold', type=float, default=DEFAULT_THRESHOLD, help='The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: ' + str(DEFAULT_THRESHOLD) + ')')
+  options.add_argument('-threshold', type=app.Parser.Float(0.0, 1.0), default=DEFAULT_THRESHOLD, help='The fraction of algorithms that must include a voxel for that voxel to be present in the final mask (default: ' + str(DEFAULT_THRESHOLD) + ')')
 
 
 
