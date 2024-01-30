@@ -20,30 +20,10 @@
 #include <tuple>
 #include <type_traits>
 
-#include "types.h" // For FORCE_INLINE
-
 namespace MR {
-namespace {
-
-template <size_t N> struct Apply {
-  template <typename F, typename T> static FORCE_INLINE void apply(F &&f, T &&t) {
-    Apply<N - 1>::apply(::std::forward<F>(f), ::std::forward<T>(t));
-    ::std::forward<F>(f)(::std::get<N>(::std::forward<T>(t)));
-  }
-};
-
-template <> struct Apply<0> {
-  template <typename F, typename T> static FORCE_INLINE void apply(F &&f, T &&t) {
-    ::std::forward<F>(f)(::std::get<0>(::std::forward<T>(t)));
-  }
-};
-
-} // namespace
-
-//! invoke \c f(x) for each entry in \c t
-template <class F, class T> FORCE_INLINE void apply(F &&f, T &&t) {
-  Apply<::std::tuple_size<typename ::std::decay<T>::type>::value - 1>::apply(::std::forward<F>(f),
-                                                                             ::std::forward<T>(t));
+//! invoke \c Function f for each entry in \c Tuple t
+template <typename Function, typename Tuple> constexpr void apply(Function &&f, Tuple &&t) {
+  std::apply([&f](auto &&...x) { (f(x), ...); }, std::forward<Tuple>(t));
 }
 
 } // namespace MR
