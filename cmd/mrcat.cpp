@@ -30,9 +30,7 @@ void usage() {
   SYNOPSIS = "Concatenate several images into one";
 
   ARGUMENTS
-  +Argument("image1", "the first input image.").type_image_in()
-
-      + Argument("image2", "additional input image(s).").type_image_in().allow_multiple()
+  +Argument("input", "the input images.").type_image_in().allow_multiple()
 
       + Argument("output", "the output image.").type_image_out();
 
@@ -81,6 +79,8 @@ template <typename value_type> void write(std::vector<Header> &in, const size_t 
 
 void run() {
   size_t num_images = argument.size() - 1;
+  if (num_images == 1)
+    throw Exception("More than one input image is required for concatenation operation");
   std::vector<Header> headers;
   ssize_t max_axis_nonunity = 0;
   for (size_t i = 0; i != num_images; ++i) {
