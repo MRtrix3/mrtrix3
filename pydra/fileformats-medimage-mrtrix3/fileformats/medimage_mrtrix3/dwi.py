@@ -1,7 +1,7 @@
 from fileformats.core import hook
 from fileformats.core.mixin import WithAdjacentFiles
 from fileformats.medimage import DwiEncoding, Nifti1, NiftiGz, NiftiX, NiftiGzX
-
+from .image import ImageFormat, ImageHeader, ImageFormatGz
 
 class BFile(DwiEncoding):
     """MRtrix-style diffusion encoding, all in one file"""
@@ -31,3 +31,15 @@ class NiftiXB(WithBFile, NiftiX):
 
 class NiftiGzXB(WithBFile, NiftiGzX):
     iana_mime = "application/x-nifti2+gzip.json.b"
+
+
+class ImageFormatB(WithBFile, ImageFormat):
+    pass
+
+
+class ImageFormatGzB(WithBFile, ImageFormatGz):
+    pass
+
+
+class ImageHeaderB(WithBFile, ImageHeader):
+    pass
