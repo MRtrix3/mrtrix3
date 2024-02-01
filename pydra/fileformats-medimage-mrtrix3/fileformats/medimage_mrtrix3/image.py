@@ -1,11 +1,15 @@
-from pathlib import Path
 import typing as ty
+from pathlib import Path
 from fileformats.core import hook
 from fileformats.generic import File
 from fileformats.application import Gzip
 from fileformats.core.mixin import WithMagicNumber
 from fileformats.core.exceptions import FormatMismatchError
 import fileformats.medimage
+
+
+class MultiLineMetadataValue(list):
+    pass
 
 
 class BaseMrtrixImage(WithMagicNumber, fileformats.medimage.MedicalImage, File):
@@ -40,7 +44,13 @@ class BaseMrtrixImage(WithMagicNumber, fileformats.medimage.MedicalImage, File):
                             value = float(value)
                         except ValueError:
                             pass
-                metadata[key] = value
+                if key in metadata:
+                    if isinstance(metadata[key], MultiLineMetadataValue):
+                        metadata[key].append(value)
+                    else:
+                        metadata[key] = MultiLineMetadataValue([metadata[key], value])
+                else:
+                    metadata[key] = value
                 line = f.readline().decode("utf-8")
         return metadata
 
@@ -108,34 +118,3 @@ class ImageHeader(BaseMrtrixImage):
 class ImageDataFile(File):
 
     ext = ".dat"
-
-
-ImageIn = ty.Union[
-    ImageFormat,
-    ImageFormatGz,
-    ImageHeader,
-    fileformats.application.Dicom,
-    fileformats.medimage.DicomDir,
-    fileformats.medimage.NiftiGzX,
-    fileformats.medimage.NiftiGz,
-    fileformats.medimage.NiftiX,
-    fileformats.medimage.Nifti1,
-    fileformats.medimage.Nifti2,
-    fileformats.medimage.Mgh,
-    fileformats.medimage.MghGz,
-    fileformats.medimage.Analyze,
-]
-
-ImageOut = ty.Union[
-    ImageFormat,
-    ImageFormatGz,
-    ImageHeader,
-    fileformats.medimage.NiftiGzX,
-    fileformats.medimage.NiftiGz,
-    fileformats.medimage.NiftiX,
-    fileformats.medimage.Nifti1,
-    fileformats.medimage.Nifti2,
-    fileformats.medimage.Mgh,
-    fileformats.medimage.MghGz,
-    fileformats.medimage.Analyze,
-]
