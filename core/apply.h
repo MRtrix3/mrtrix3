@@ -22,7 +22,7 @@
 
 namespace MR {
 //! invoke \c Function f for each entry in \c Tuple t
-template <typename Function, typename Tuple> constexpr void apply(Function &&f, Tuple &&t) {
+template <typename Function, typename Tuple> constexpr void apply_for_each(Function &&f, Tuple &&t) {
   std::apply([&f](auto &&...x) { (f(x), ...); }, std::forward<Tuple>(t));
 }
 
