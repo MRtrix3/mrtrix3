@@ -66,7 +66,7 @@ template <class... DestImageType> struct __assign<std::tuple<DestImageType...>> 
   const size_t axis;
   const ssize_t index;
   template <class ImageType> FORCE_INLINE void operator()(ImageType &x) {
-    MR::apply(__assign<DestImageType...>(axis, index), x);
+    MR::apply_for_each(__assign<DestImageType...>(axis, index), x);
   }
 };
 
@@ -83,16 +83,16 @@ template <class... DestImageType> struct __max_axis<std::tuple<DestImageType...>
   __max_axis(size_t &axis) : axis(axis) {}
   size_t &axis;
   template <class ImageType> FORCE_INLINE void operator()(ImageType &x) {
-    MR::apply(__max_axis<DestImageType...>(axis), x);
+    MR::apply_for_each(__max_axis<DestImageType...>(axis), x);
   }
 };
 
 template <class ImageType> struct __assign_pos_axis_range {
   template <class... DestImageType> FORCE_INLINE void to(DestImageType &...dest) const {
     size_t last_axis = to_axis;
-    MR::apply(__max_axis<DestImageType...>(last_axis), std::tie(ref, dest...));
+    MR::apply_for_each(__max_axis<DestImageType...>(last_axis), std::tie(ref, dest...));
     for (size_t n = from_axis; n < last_axis; ++n)
-      MR::apply(__assign<DestImageType...>(n, __get_index(ref, n)), std::tie(dest...));
+      MR::apply_for_each(__assign<DestImageType...>(n, __get_index(ref, n)), std::tie(dest...));
   }
   const ImageType &ref;
   const size_t from_axis, to_axis;
@@ -101,7 +101,7 @@ template <class ImageType> struct __assign_pos_axis_range {
 template <class ImageType, typename IntType> struct __assign_pos_axes {
   template <class... DestImageType> FORCE_INLINE void to(DestImageType &...dest) const {
     for (auto a : axes)
-      MR::apply(__assign<DestImageType...>(a, __get_index(ref, a)), std::tie(dest...));
+      MR::apply_for_each(__assign<DestImageType...>(a, __get_index(ref, a)), std::tie(dest...));
   }
   const ImageType &ref;
   const vector<IntType> axes;
