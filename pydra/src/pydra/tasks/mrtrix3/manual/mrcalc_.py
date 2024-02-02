@@ -293,7 +293,7 @@ class mrcalc(ShellCommandTask):
 
     For more details, see http://www.mrtrix.org/.
     """
-    Operator = MrCalcOp
+    Op = Operator = MrCalcOp
 
     executable = "mrcalc"
     input_spec = mrcalc_input_spec
