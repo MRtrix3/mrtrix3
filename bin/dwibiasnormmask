@@ -108,7 +108,7 @@ def usage(cmdline): #pylint: disable=unused-variable
                                      'set to 0 to proceed until convergence')
   internal_options.add_argument('-mask_algo', choices=MASK_ALGOS, metavar='algorithm',
                                 help='The algorithm to use for mask estimation, potentially based on the ODF sum image (see Description); default: ' + MASK_ALGO_DEFAULT)
-  internal_options.add_argument('-lmax', metavar='values', type=app.Parser.SequenceInt,
+  internal_options.add_argument('-lmax', metavar='values', type=app.Parser.SequenceInt(),
                                 help='The maximum spherical harmonic degree for the estimated FODs (see Description); '
                                      'defaults are "' + ','.join(str(item) for item in LMAXES_MULTI) + '" for multi-shell and "' + ','.join(str(item) for item in LMAXES_SINGLE) + '" for single-shell data)')
   app.add_dwgrad_import_options(cmdline)

@@ -30,14 +30,14 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser.add_description('This algorithm requires that the SynthStrip method be installed and available via PATH; '
                          'this could be via Freesufer 7.3.0 or later, or the dedicated Singularity container.')
   parser.add_citation('A. Hoopes, J. S. Mora, A. V. Dalca, B. Fischl, M. Hoffmann. SynthStrip: Skull-Stripping for Any Brain Image. NeuroImage, 2022, 260, 119474', is_external=True)
-  parser.add_argument('input', help='The input DWI series')
-  parser.add_argument('output', help='The output mask image')
+  parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI series')
+  parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
   options=parser.add_argument_group('Options specific to the \'Synthstrip\' algorithm')
-  options.add_argument('-stripped', help='The output stripped image')
+  options.add_argument('-stripped', type=app.Parser.ImageOut(), help='The output stripped image')
   options.add_argument('-gpu', action='store_true', default=False, help='Use the GPU')
-  options.add_argument('-model', type=app.Parser.FileIn, metavar='file', help='Alternative model weights')
+  options.add_argument('-model', type=app.Parser.FileIn(), metavar='file', help='Alternative model weights')
   options.add_argument('-nocsf', action='store_true', default=False, help='Compute the immediate boundary of brain matter excluding surrounding CSF')
-  options.add_argument('-border', type=app.Parser.Float(), help='Control the boundary distance from the brain')
+  options.add_argument('-border', type=float, help='Control the boundary distance from the brain')
 
 
 

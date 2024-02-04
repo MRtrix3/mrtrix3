@@ -15,7 +15,7 @@ Usage
 
     population_template input_dir template [ options ]
 
--  *input_dir*: Directory containing all input images of a given contrast
+-  *input_dir*: Input directory containing all images of a given contrast
 -  *template*: Output template image
 
 Description
