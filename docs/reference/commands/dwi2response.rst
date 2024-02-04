@@ -573,7 +573,7 @@ Options specific to the 'tax' algorithm
 
 - **-peak_ratio value** Second-to-first-peak amplitude ratio threshold
 
-- **-max_iters iterations** Maximum number of iterations
+- **-max_iters iterations** Maximum number of iterations (set to 0 to force convergence)
 
 - **-convergence percentage** Percentile change in any RF coefficient required to continue iterating
 
@@ -683,7 +683,7 @@ Options specific to the 'tournier' algorithm
 
 - **-dilate passes** Number of mask dilation steps to apply when deriving voxel mask to test in the next iteration
 
-- **-max_iters iterations** Maximum number of iterations
+- **-max_iters iterations** Maximum number of iterations (set to 0 to force convergence)
 
 Options for importing the diffusion gradient table
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

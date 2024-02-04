@@ -14,7 +14,6 @@
 # For more details, see http://www.mrtrix.org/.
 
 import math
-from mrtrix3 import MRtrixError
 from mrtrix3 import app, path, run
 
 

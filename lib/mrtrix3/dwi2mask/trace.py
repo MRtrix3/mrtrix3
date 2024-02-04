@@ -37,7 +37,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   iter_options.add_argument('-iterative',
                             action='store_true',
                             help='(EXPERIMENTAL) Iteratively refine the weights for combination of per-shell trace-weighted images prior to thresholding')
-  iter_options.add_argument('-max_iters', type=int, default=DEFAULT_MAX_ITERS, help='Set the maximum number of iterations for the algorithm (default: ' + str(DEFAULT_MAX_ITERS) + ')')
+  iter_options.add_argument('-max_iters', type=app.Parser.Int(1), default=DEFAULT_MAX_ITERS, help='Set the maximum number of iterations for the algorithm (default: ' + str(DEFAULT_MAX_ITERS) + ')')
 
 
 

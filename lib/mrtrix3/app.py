@@ -585,7 +585,7 @@ class ProgressBar: #pylint: disable=unused-variable
 
 
 # The Parser class is responsible for setting up command-line parsing for the script.
-#   This includes proper CONFIGuration of the argparse functionality, adding standard options
+#   This includes proper configuration of the argparse functionality, adding standard options
 #   that are common for all scripts, providing a custom help page that is consistent with the
 #   MRtrix3 binaries, and defining functions for exporting the help page for the purpose of
 #   automated self-documentation.
@@ -616,11 +616,11 @@ class Parser(argparse.ArgumentParser):
     def _typestring():
       return 'BOOL'
 
-  def Int(min_value=None, max_value=None):
+  def Int(min_value=None, max_value=None): # pylint: disable=invalid-name
     assert min_value is None or isinstance(min_value, int)
     assert max_value is None or isinstance(max_value, int)
     assert min_value is None or max_value is None or max_value >= min_value
-    class Checker(Parser.CustomTypeBase):
+    class IntChecker(Parser.CustomTypeBase):
       def __call__(self, input_value):
         try:
           value = int(input_value)
@@ -633,14 +633,14 @@ class Parser(argparse.ArgumentParser):
         return value
       @staticmethod
       def _typestring():
-        return 'INT ' + ('-9223372036854775808' if min_value is None else str(min_value)) + ' ' + ('9223372036854775807' if max_value is None else str(max_value))
-    return Checker
+        return 'INT ' + (str(-sys.maxsize - 1) if min_value is None else str(min_value)) + ' ' + (str(sys.maxsize) if max_value is None else str(max_value))
+    return IntChecker()
 
-  def Float(min_value=None, max_value=None):
+  def Float(min_value=None, max_value=None): # pylint: disable=invalid-name
     assert min_value is None or isinstance(min_value, float)
     assert max_value is None or isinstance(max_value, float)
     assert min_value is None or max_value is None or max_value >= min_value
-    class Checker(Parser.CustomTypeBase):
+    class FloatChecker(Parser.CustomTypeBase):
       def __call__(self, input_value):
         try:
           value = float(input_value)
@@ -654,7 +654,7 @@ class Parser(argparse.ArgumentParser):
       @staticmethod
       def _typestring():
         return 'FLOAT ' + ('-inf' if min_value is None else str(min_value)) + ' ' + ('inf' if max_value is None else str(max_value))
-    return Checker
+    return FloatChecker()
 
   class SequenceInt(CustomTypeBase):
     def __call__(self, input_value):
@@ -701,6 +701,7 @@ class Parser(argparse.ArgumentParser):
       if not os.path.isfile(input_value):
         raise argparse.ArgumentTypeError('Input path "' + input_value + '" is not a file')
       return input_value
+    @staticmethod
     def _typestring():
       return 'FILEIN'
 
@@ -743,9 +744,11 @@ class Parser(argparse.ArgumentParser):
 
   class TracksOut(FileOut):
     def __call__(self, input_value):
+      super().__call__(input_value)
       if not input_value.endswith('.tck'):
         raise argparse.ArgumentTypeError('Output tractogram path "' + input_value + '" does not use the requisite ".tck" suffix')
       return input_value
+    @staticmethod
     def _typestring():
       return 'TRACKSOUT'
 
@@ -789,8 +792,8 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-version', action='store_true', help='display version information and exit.')
       script_options = self.add_argument_group('Additional standard options for Python scripts')
       script_options.add_argument('-nocleanup', action='store_true', help='do not delete intermediate files during script execution, and do not delete scratch directory at script completion.')
-      script_options.add_argument('-scratch', type=Parser.DirectoryOut, metavar='/path/to/scratch/', help='manually specify the path in which to generate the scratch directory.')
-      script_options.add_argument('-continue', nargs=2, dest='cont', metavar=('ScratchDir', 'LastFile'), help='continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.')
+      script_options.add_argument('-scratch', type=Parser.DirectoryOut(), metavar='/path/to/scratch/', help='manually specify the path in which to generate the scratch directory.')
+      script_options.add_argument('-continue', type=Parser.Various(), nargs=2, dest='cont', metavar=('ScratchDir', 'LastFile'), help='continue the script from a previous execution; must provide the scratch directory path, and the name of the last successfully-generated file.')
     module_file = os.path.realpath (inspect.getsourcefile(inspect.stack()[-1][0]))
     self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
     try:
@@ -1099,6 +1102,10 @@ class Parser(argparse.ArgumentParser):
     def arg2str(arg):
       if arg.choices:
         return 'CHOICE ' + ' '.join(arg.choices)
+      if isinstance(arg.type, int) or arg.type is int:
+        return 'INT ' + str(-sys.maxsize - 1) + ' ' + str(sys.maxsize)
+      if isinstance(arg.type, float) or arg.type is float:
+        return 'FLOAT -inf inf'
       if isinstance(arg.type, str) or arg.type is str or arg.type is None:
         return 'TEXT'
       if isinstance(arg.type, Parser.CustomTypeBase):
@@ -1335,9 +1342,10 @@ class Parser(argparse.ArgumentParser):
 # Define functions for incorporating commonly-used command-line options / option groups
 def add_dwgrad_import_options(cmdline): #pylint: disable=unused-variable
   options = cmdline.add_argument_group('Options for importing the diffusion gradient table')
-  options.add_argument('-grad', type=Parser.FileIn, metavar='file', help='Provide the diffusion gradient table in MRtrix format')
-  options.add_argument('-fslgrad', type=Parser.FileIn, nargs=2, metavar=('bvecs', 'bvals'), help='Provide the diffusion gradient table in FSL bvecs/bvals format')
+  options.add_argument('-grad', type=Parser.FileIn(), metavar='file', help='Provide the diffusion gradient table in MRtrix format')
+  options.add_argument('-fslgrad', type=Parser.FileIn(), nargs=2, metavar=('bvecs', 'bvals'), help='Provide the diffusion gradient table in FSL bvecs/bvals format')
   cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
+
 def read_dwgrad_import_options(): #pylint: disable=unused-variable
   from mrtrix3 import path #pylint: disable=import-outside-toplevel
   assert ARGS
@@ -1352,8 +1360,8 @@ def read_dwgrad_import_options(): #pylint: disable=unused-variable
 
 def add_dwgrad_export_options(cmdline): #pylint: disable=unused-variable
   options = cmdline.add_argument_group('Options for exporting the diffusion gradient table')
-  options.add_argument('-export_grad_mrtrix', type=Parser.FileOut, metavar='grad', help='Export the final gradient table in MRtrix format')
-  options.add_argument('-export_grad_fsl', type=Parser.FileOut, nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
+  options.add_argument('-export_grad_mrtrix', type=Parser.FileOut(), metavar='grad', help='Export the final gradient table in MRtrix format')
+  options.add_argument('-export_grad_fsl', type=Parser.FileOut(), nargs=2, metavar=('bvecs', 'bvals'), help='Export the final gradient table in FSL bvecs/bvals format')
   cmdline.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
 
 
