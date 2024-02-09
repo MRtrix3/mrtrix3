@@ -2,12 +2,14 @@
 
 TAGNAME="$1"
 
+CMAKE=$(which cmake)
+ORIG_PATH=${PATH}
 PATH=$(getconf PATH)
 export PATH
 
 EIGEN_VERSION=3.4.0
 FFTW_VERSION=3.3.10
-QT_VERSION=6.6.0
+QT_VERSION=6.6.1
 
 if [ "$(uname)" = "Linux" ]; then
   OS=linux
@@ -18,11 +20,10 @@ fi
 
 
 ARCHS="x86_64"
-THREADS=$(getconf _NPROCESSORS_ONLN)
 if [ "${OS}" = "macos" ]; then
   ARCHS="x86_64 arm64"
-  MACOS_ARCHS="-arch x86_64 -arch arm64"
-  MACOSX_DEPLOYMENT_TARGET=10.15
+  CMAKE_ARCHS="x86_64;arm64"
+  MACOSX_DEPLOYMENT_TARGET=11.0
   export MACOSX_DEPLOYMENT_TARGET
   MACOSX_VERSION_MIN="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
 fi
@@ -53,12 +54,12 @@ else
       MACOS_ARCH="-arch ${ARCH}"
     fi
     tar xf ${FNAME}
-    mv ${DNAME} ${DNAME}-${ARCH}
-    cd ${DNAME}-${ARCH}
-    CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" ./configure -q -prefix ${PREFIX}-${ARCH} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD}
+    cd ${DNAME}
+    CFLAGS="${MACOS_ARCH} ${MACOSX_VERSION_MIN}" ./configure -q -prefix ${PREFIX} --disable-doc --disable-fortran --disable-debug --disable-threads --disable-dependency-tracking ${SIMD}
     make install > /dev/null
     cd ..
-    rm -r ${DNAME}-${ARCH}
+    rm -r ${DNAME}
+    mv ${PREFIX} ${PREFIX}-${ARCH}
   done
   mkdir -p ${PREFIX}/{include,lib}
   cp ${PREFIX}-x86_64/include/fftw3.h ${PREFIX}/include/fftw3.h
@@ -67,6 +68,7 @@ else
   else
     cp -a ${PREFIX}-x86_64/lib/libfftw3.a ${PREFIX}/lib/libfftw3.a
   fi
+  cp -r ${PREFIX}-x86_64/lib/pkgconfig ${PREFIX}/lib/
   rm -r ${PREFIX}-*/
   rm ${FNAME}
   FFTW_SECONDS=${SECONDS}
@@ -74,12 +76,14 @@ else
   # EIGEN
   SECONDS=0
   DNAME=eigen-${EIGEN_VERSION}
-  FNAME=eigen-${EIGEN_VERSION}.tar.bz2
+  FNAME=${DNAME}.tar.bz2
   curl -s -O -L https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_VERSION}/${FNAME}
   tar xf ${FNAME}
-  mkdir -p ${PREFIX}/include/
-  cp -R ${DNAME}/Eigen ${PREFIX}/include
-  cp -R ${DNAME}/unsupported ${PREFIX}/include
+  cd ${DNAME}
+  ${CMAKE} -B build -DCMAKE_INSTALL_PREFIX=${PREFIX} -DCMAKE_IGNORE_PREFIX_PATH=/opt/homebrew
+  ${CMAKE} --build build
+  ${CMAKE} --install build
+  cd ..
   rm -r ${FNAME} ${DNAME}
   EIGEN_SECONDS=${SECONDS}
 
@@ -122,23 +126,27 @@ else
   tar cpfz ${PREFIX}-${OS}-build-deps.tar.gz mrtrix3
 fi
 
+PATH=${ORIG_PATH}
+export PATH
 # MRTRIX3
 SECONDS=0
 git clone https://github.com/MRtrix3/mrtrix3.git mrtrix3-src -b ${TAGNAME}
 cd ${PREFIX}-src
+sed -i.bak -e '90,101d' cmake/FindFFTW.cmake
 MRTRIX_VERSION=$(git describe --abbrev=8 | tr '-' '_')
-CFLAGS="${MACOS_ARCHS} ${MACOSX_VERSION_MIN} -I${PREFIX}/include" LINKFLAGS="${MACOS_ARCHS} ${MACOSX_VERSION_MIN} -L${PREFIX}/lib" PNG_CFLAGS="-I${PREFIX}/include/QtPng" PNG_LINKFLAGS="-lQt6BundledLibpng" PATH=${PREFIX}/libexec:${PREFIX}/bin:${PATH} CXXSTD=c++17 ./configure
-NUMBER_OF_PROCESSORS=${THREADS} ./build
+cmake -B build -G Ninja -DMRTRIX_USE_QT6=ON -DCMAKE_PREFIX_PATH=${PREFIX} -DCMAKE_IGNORE_PREFIX_PATH="/opt/homebrew;/usr/X11;/usr/X11R6" -DFFTW_USE_STATIC_LIBS=ON -DCMAKE_OSX_ARCHITECTURES=${CMAKE_ARCHS} -DPNG_PNG_INCLUDE_DIR=${PREFIX}/include/QtPng -DPNG_LIBRARY=${PREFIX}/lib/libQt6BundledLibpng.a -DCMAKE_INSTALL_PREFIX=${PREFIX}
+cmake --build build
 cd ..
 MRTRIX_SECONDS=${SECONDS}
 
 
 mv ${PREFIX} ${PREFIX}_dep
 mkdir -p ${PREFIX}
-cp -R ${PREFIX}-src/bin    ${PREFIX}
-cp -R ${PREFIX}-src/lib    ${PREFIX}
-cp -R ${PREFIX}-src/share  ${PREFIX}
-cp -R ${PREFIX}-src/matlab ${PREFIX}
+cmake --install ${PREFIX}-src/build
+#cp -R ${PREFIX}-src/bin    ${PREFIX}
+#cp -R ${PREFIX}-src/lib    ${PREFIX}
+#cp -R ${PREFIX}-src/share  ${PREFIX}
+#cp -R ${PREFIX}-src/matlab ${PREFIX}
 rm -rf ${PREFIX}-src
 
 if [ "${OS}" = "linux" ]; then
