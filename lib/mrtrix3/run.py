@@ -473,7 +473,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
   if shared.get_scratch_dir():
     with shared.lock:
       with open(os.path.join(shared.get_scratch_dir(), 'log.txt'), 'a') as outfile:
-        outfile.write(cmdstring + '\n')
+        outfile.write(' '.join(cmdsplit) + '\n')
 
   return CommandReturn(return_stdout, return_stderr)
 
