@@ -1241,9 +1241,9 @@ def execute(): #pylint: disable=unused-variable
       #   - If one subject's registration fails, this will affect the average and therefore the template which could result in instable behaviour.
       #   - The template appearance changes slightly over levels, but the template and trafos are affected in the same way so should not affect template convergence.
       if not app.ARGS.linear_no_drift_correction:
-        run.command(['transformcalc', [os.path.join('linear_transforms_initial', inp.uid + '.txt') for _inp in ins],
+        run.command(['transformcalc', [os.path.join('linear_transforms_initial', inp.uid + '.txt') for inp in ins],
                     'average', 'linear_transform_average_init.txt', '-quiet'], force=True)
-        run.command(['transformcalc', [os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt') for _inp in ins],
+        run.command(['transformcalc', [os.path.join('linear_transforms_%02i' % level, inp.uid + '.txt') for inp in ins],
                     'average', 'linear_transform_average_%02i_uncorrected.txt' % level, '-quiet'], force=True)
         run.command(['transformcalc', 'linear_transform_average_%02i_uncorrected.txt' % level,
                     'invert', 'linear_transform_average_%02i_uncorrected_inv.txt' % level, '-quiet'], force=True)
