@@ -47,9 +47,9 @@ class RunList: #pylint: disable=unused-variable
       self.progress.done()
       self.valid = False
     else:
-      raise TypeError('Construction of RunList class expects either an '
-                      'integer (number of commands/functions to run), or a '
-                      'list of command strings to execute')
+      raise TypeError('Construction of RunList class expects either '
+                      'an integer (number of commands/functions to run), '
+                      'or a list of command strings to execute')
   def command(self, cmd, **kwargs):
     from mrtrix3 import run #pylint: disable=import-outside-toplevel
     assert self.valid
@@ -83,7 +83,8 @@ def load_keyval(filename, **kwargs): #pylint: disable=unused-variable
   encoding = kwargs.pop('encoding', 'latin1')
   errors = kwargs.pop('errors', 'ignore')
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to utils.load_keyval(): ' + str(kwargs))
+    raise TypeError('Unsupported keyword arguments passed to utils.load_keyval(): '
+                    + str(kwargs))
 
   def decode(line):
     if isinstance(line, bytes):
@@ -121,7 +122,7 @@ def name_temporary(suffix): #pylint: disable=unused-variable
   suffix = suffix.lstrip('.')
   while os.path.exists(full_path):
     random_string = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for x in range(6))
-    full_path = os.path.join(dir_path, prefix + random_string + '.' + suffix)
+    full_path = os.path.join(dir_path, f'{prefix}{random_string}.{suffix}')
   app.debug(full_path)
   return full_path
 
@@ -153,8 +154,8 @@ def make_dir(path): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   try:
     os.makedirs(path)
-    app.debug('Created directory ' + path)
+    app.debug(f'Created directory {path}')
   except OSError as exception:
     if exception.errno != errno.EEXIST:
       raise
-    app.debug('Directory \'' + path + '\' already exists')
+    app.debug(f'Directory "{path}" already exists')

@@ -15,7 +15,7 @@
 
 import shutil
 from mrtrix3 import MRtrixError
-from mrtrix3 import app, path, run
+from mrtrix3 import app, run
 
 
 
@@ -30,38 +30,39 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('ants', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
   parser.set_synopsis('Perform DWI bias field correction using the N4 algorithm as provided in ANTs')
-  parser.add_citation('Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. N4ITK: Improved N3 Bias Correction. IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320', is_external=True)
+  parser.add_citation('Tustison, N.; Avants, B.; Cook, P.; Zheng, Y.; Egan, A.; Yushkevich, P. & Gee, J. '
+                      'N4ITK: Improved N3 Bias Correction. '
+                      'IEEE Transactions on Medical Imaging, 2010, 29, 1310-1320',
+                      is_external=True)
   ants_options = parser.add_argument_group('Options for ANTs N4BiasFieldCorrection command')
   for key in sorted(OPT_N4_BIAS_FIELD_CORRECTION):
-    ants_options.add_argument('-ants_'+key, metavar=OPT_N4_BIAS_FIELD_CORRECTION[key][0], help='N4BiasFieldCorrection option -%s: %s' % (key,OPT_N4_BIAS_FIELD_CORRECTION[key][1]))
-  parser.add_argument('input', type=app.Parser.ImageIn(), help='The input image series to be corrected')
-  parser.add_argument('output', type=app.Parser.ImageOut(), help='The output corrected image series')
-
-
-
-def check_output_paths(): #pylint: disable=unused-variable
-  pass
-
-
-
-def get_inputs(): #pylint: disable=unused-variable
-  pass
+    ants_options.add_argument(f'-ants_{key}',
+                              metavar=OPT_N4_BIAS_FIELD_CORRECTION[key][0],
+                              help=f'N4BiasFieldCorrection option -{key}: {OPT_N4_BIAS_FIELD_CORRECTION[key][1]}')
+  parser.add_argument('input',
+                      type=app.Parser.ImageIn(),
+                      help='The input image series to be corrected')
+  parser.add_argument('output',
+                      type=app.Parser.ImageOut(),
+                      help='The output corrected image series')
 
 
 
 def execute(): #pylint: disable=unused-variable
   if not shutil.which('N4BiasFieldCorrection'):
-    raise MRtrixError('Could not find ANTS program N4BiasFieldCorrection; please check installation')
+    raise MRtrixError('Could not find ANTS program N4BiasFieldCorrection; '
+                      'please check installation')
 
   for key in sorted(OPT_N4_BIAS_FIELD_CORRECTION):
-    if hasattr(app.ARGS, 'ants_' + key):
-      val = getattr(app.ARGS, 'ants_' + key)
+    if hasattr(app.ARGS, f'ants_{key}'):
+      val = getattr(app.ARGS, f'ants_{key}')
       if val is not None:
         OPT_N4_BIAS_FIELD_CORRECTION[key] = (val, 'user defined')
-  ants_options = ' '.join(['-%s %s' %(k, v[0]) for k, v in OPT_N4_BIAS_FIELD_CORRECTION.items()])
+  ants_options = ' '.join([f'-{k} {v[0]}' for k, v in OPT_N4_BIAS_FIELD_CORRECTION.items()])
 
   # Generate a mean b=0 image
-  run.command('dwiextract in.mif - -bzero | mrmath - mean mean_bzero.mif -axis 3')
+  run.command('dwiextract in.mif - -bzero | '
+              'mrmath - mean mean_bzero.mif -axis 3')
 
   # Use the brain mask as a weights image rather than a mask; means that voxels at the edge of the mask
   #   will have a smoothly-varying bias field correction applied, rather than multiplying by 1.0 outside the mask
@@ -69,24 +70,32 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrconvert mask.mif mask.nii -strides +1,+2,+3')
   init_bias_path = 'init_bias.nii'
   corrected_path = 'corrected.nii'
-  run.command('N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [' + corrected_path + ',' + init_bias_path + '] ' + ants_options)
+  run.command(f'N4BiasFieldCorrection -d 3 -i mean_bzero.nii -w mask.nii -o [{corrected_path},{init_bias_path}] {ants_options}')
 
   # N4 can introduce large differences between subjects via a global scaling of the bias field
   # Estimate this scaling based on the total integral of the pre- and post-correction images within the brain mask
-  input_integral  = float(run.command('mrcalc mean_bzero.mif mask.mif -mult - | mrmath - sum - -axis 0 | mrmath - sum - -axis 1 | mrmath - sum - -axis 2 | mrdump -').stdout)
-  output_integral = float(run.command('mrcalc ' + corrected_path + ' mask.mif -mult - | mrmath - sum - -axis 0 | mrmath - sum - -axis 1 | mrmath - sum - -axis 2 | mrdump -').stdout)
+  input_integral  = float(run.command('mrcalc mean_bzero.mif mask.mif -mult - | '
+                                      'mrmath - sum - -axis 0 | '
+                                      'mrmath - sum - -axis 1 | '
+                                      'mrmath - sum - -axis 2 | '
+                                      'mrdump -').stdout)
+  output_integral = float(run.command(f'mrcalc {corrected_path} mask.mif -mult - | '
+                                      'mrmath - sum - -axis 0 | '
+                                      'mrmath - sum - -axis 1 | '
+                                      'mrmath - sum - -axis 2 | '
+                                      'mrdump -').stdout)
   multiplier = output_integral / input_integral
-  app.debug('Integrals: Input = ' + str(input_integral) + '; Output = ' + str(output_integral) + '; resulting multiplier = ' + str(multiplier))
-  run.command('mrcalc ' + init_bias_path + ' ' + str(multiplier) + ' -mult bias.mif')
+  app.debug(f'Integrals: Input = {input_integral}; Output = {output_integral}; resulting multiplier = {multiplier}')
+  run.command(f'mrcalc {init_bias_path} {multiplier} -mult bias.mif')
 
   # Common final steps for all algorithms
   run.command('mrcalc in.mif bias.mif -div result.mif')
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
-              mrconvert_keyval=path.from_user(app.ARGS.input, False),
+  run.command(['mrconvert', 'result.mif', app.ARGS.output],
+              mrconvert_keyval=app.ARGS.input,
               force=app.FORCE_OVERWRITE,
               preserve_pipes=True)
   if app.ARGS.bias:
-    run.command('mrconvert bias.mif ' + path.from_user(app.ARGS.bias),
-                mrconvert_keyval=path.from_user(app.ARGS.input, False),
+    run.command(['mrconvert', 'bias.mif', app.ARGS.bias],
+                mrconvert_keyval=app.ARGS.input,
                 force=app.FORCE_OVERWRITE,
                 preserve_pipes=True)
