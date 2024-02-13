@@ -33,19 +33,58 @@ ATTEMPT_PC = False
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('hsvs', parents=[base_parser])
   parser.set_author('Robert E. Smith (robert.smith@florey.edu.au)')
-  parser.set_synopsis('Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), using FreeSurfer and FSL tools')
-  parser.add_argument('input', type=app.Parser.DirectoryIn(), help='The input FreeSurfer subject directory')
-  parser.add_argument('output', type=app.Parser.ImageOut(), help='The output 5TT image')
-  parser.add_argument('-template', type=app.Parser.ImageIn(), metavar='image', help='Provide an image that will form the template for the generated 5TT image')
-  parser.add_argument('-hippocampi', choices=HIPPOCAMPI_CHOICES, help='Select method to be used for hippocampi (& amygdalae) segmentation; options are: ' + ','.join(HIPPOCAMPI_CHOICES))
-  parser.add_argument('-thalami', choices=THALAMI_CHOICES, help='Select method to be used for thalamic segmentation; options are: ' + ','.join(THALAMI_CHOICES))
-  parser.add_argument('-white_stem', action='store_true', help='Classify the brainstem as white matter')
-  parser.add_citation('Smith, R.; Skoch, A.; Bajada, C.; Caspers, S.; Connelly, A. Hybrid Surface-Volume Segmentation for improved Anatomically-Constrained Tractography. In Proc OHBM 2020')
-  parser.add_citation('Fischl, B. Freesurfer. NeuroImage, 2012, 62(2), 774-781', is_external=True)
-  parser.add_citation('Iglesias, J.E.; Augustinack, J.C.; Nguyen, K.; Player, C.M.; Player, A.; Wright, M.; Roy, N.; Frosch, M.P.; Mc Kee, A.C.; Wald, L.L.; Fischl, B.; and Van Leemput, K. A computational atlas of the hippocampal formation using ex vivo, ultra-high resolution MRI: Application to adaptive segmentation of in vivo MRI. NeuroImage, 2015, 115, 117-137', condition='If FreeSurfer hippocampal subfields module is utilised', is_external=True)
-  parser.add_citation('Saygin, Z.M. & Kliemann, D.; Iglesias, J.E.; van der Kouwe, A.J.W.; Boyd, E.; Reuter, M.; Stevens, A.; Van Leemput, K.; Mc Kee, A.; Frosch, M.P.; Fischl, B.; Augustinack, J.C. High-resolution magnetic resonance imaging reveals nuclei of the human amygdala: manual segmentation to automatic atlas. NeuroImage, 2017, 155, 370-382', condition='If FreeSurfer hippocampal subfields module is utilised and includes amygdalae segmentation', is_external=True)
-  parser.add_citation('Iglesias, J.E.; Insausti, R.; Lerma-Usabiaga, G.; Bocchetta, M.; Van Leemput, K.; Greve, D.N.; van der Kouwe, A.; ADNI; Fischl, B.; Caballero-Gaudes, C.; Paz-Alonso, P.M. A probabilistic atlas of the human thalamic nuclei combining ex vivo MRI and histology. NeuroImage, 2018, 183, 314-326', condition='If -thalami nuclei is used', is_external=True)
-  parser.add_citation('Ardekani, B.; Bachman, A.H. Model-based automatic detection of the anterior and posterior commissures on MRI scans. NeuroImage, 2009, 46(3), 677-682', condition='If ACPCDetect is installed', is_external=True)
+  parser.set_synopsis('Generate a 5TT image based on Hybrid Surface and Volume Segmentation (HSVS), '
+                      'using FreeSurfer and FSL tools')
+  parser.add_argument('input',
+                      type=app.Parser.DirectoryIn(),
+                      help='The input FreeSurfer subject directory')
+  parser.add_argument('output',
+                      type=app.Parser.ImageOut(),
+                      help='The output 5TT image')
+  parser.add_argument('-template',
+                      type=app.Parser.ImageIn(),
+                      metavar='image',
+                      help='Provide an image that will form the template for the generated 5TT image')
+  parser.add_argument('-hippocampi',
+                      choices=HIPPOCAMPI_CHOICES,
+                      help='Select method to be used for hippocampi (& amygdalae) segmentation; '
+                           f'options are: {",".join(HIPPOCAMPI_CHOICES)}')
+  parser.add_argument('-thalami',
+                      choices=THALAMI_CHOICES,
+                      help='Select method to be used for thalamic segmentation; '
+                           f'options are: {",".join(THALAMI_CHOICES)}')
+  parser.add_argument('-white_stem',
+                      action='store_true',
+                      help='Classify the brainstem as white matter')
+  parser.add_citation('Smith, R.; Skoch, A.; Bajada, C.; Caspers, S.; Connelly, A. '
+                      'Hybrid Surface-Volume Segmentation for improved Anatomically-Constrained Tractography. '
+                      'In Proc OHBM 2020')
+  parser.add_citation('Fischl, B. '
+                      'Freesurfer. '
+                      'NeuroImage, 2012, 62(2), 774-781',
+                      is_external=True)
+  parser.add_citation('Iglesias, J.E.; Augustinack, J.C.; Nguyen, K.; Player, C.M.; Player, A.; Wright, M.; Roy, N.; Frosch, M.P.; Mc Kee, A.C.; Wald, L.L.; Fischl, B.; and Van Leemput, K. '
+                      'A computational atlas of the hippocampal formation using ex vivo, ultra-high resolution MRI: '
+                      'Application to adaptive segmentation of in vivo MRI. '
+                      'NeuroImage, 2015, 115, 117-137',
+                      condition='If FreeSurfer hippocampal subfields module is utilised',
+                      is_external=True)
+  parser.add_citation('Saygin, Z.M. & Kliemann, D.; Iglesias, J.E.; van der Kouwe, A.J.W.; Boyd, E.; Reuter, M.; Stevens, A.; Van Leemput, K.; Mc Kee, A.; Frosch, M.P.; Fischl, B.; Augustinack, J.C. '
+                      'High-resolution magnetic resonance imaging reveals nuclei of the human amygdala: '
+                      'manual segmentation to automatic atlas. '
+                      'NeuroImage, 2017, 155, 370-382',
+                      condition='If FreeSurfer hippocampal subfields module is utilised and includes amygdalae segmentation',
+                      is_external=True)
+  parser.add_citation('Iglesias, J.E.; Insausti, R.; Lerma-Usabiaga, G.; Bocchetta, M.; Van Leemput, K.; Greve, D.N.; van der Kouwe, A.; ADNI; Fischl, B.; Caballero-Gaudes, C.; Paz-Alonso, P.M. '
+                      'A probabilistic atlas of the human thalamic nuclei combining ex vivo MRI and histology. '
+                      'NeuroImage, 2018, 183, 314-326',
+                      condition='If -thalami nuclei is used',
+                      is_external=True)
+  parser.add_citation('Ardekani, B.; Bachman, A.H. '
+                      'Model-based automatic detection of the anterior and posterior commissures on MRI scans. '
+                      'NeuroImage, 2009, 46(3), 677-682',
+                      condition='If ACPCDetect is installed',
+                      is_external=True)
 
 
 
@@ -127,38 +166,27 @@ SGM_FIRST_MAP = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-are
 
 def check_file(filepath):
   if not os.path.isfile(filepath):
-    raise MRtrixError('Required input file missing (expected location: ' + filepath + ')')
+    raise MRtrixError(f'Required input file missing '
+                      f'(expected location: {filepath})')
 
 def check_dir(dirpath):
   if not os.path.isdir(dirpath):
-    raise MRtrixError('Unable to find sub-directory \'' + dirpath + '\' within input directory')
-
-
-
-
-def check_output_paths(): #pylint: disable=unused-variable
-  app.check_output_path(app.ARGS.output)
-
-
-
-def get_inputs(): #pylint: disable=unused-variable
-  # Most freeSurfer files will be accessed in-place; no need to pre-convert them into the temporary directory
-  # However convert aparc image so that it does not have to be repeatedly uncompressed
-  run.command('mrconvert ' + path.from_user(os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), True) + ' ' + path.to_scratch('aparc.mif', True),
-              preserve_pipes=True)
-  if app.ARGS.template:
-    run.command('mrconvert ' + path.from_user(app.ARGS.template, True) + ' ' + path.to_scratch('template.mif', True) + ' -axes 0,1,2',
-                preserve_pipes=True)
+    raise MRtrixError(f'Unable to find sub-directory "{dirpath}" within input directory')
 
 
 
 def execute(): #pylint: disable=unused-variable
 
-  subject_dir = os.path.abspath(path.from_user(app.ARGS.input, False))
-  if not os.path.isdir(subject_dir):
-    raise MRtrixError('Input to hsvs algorithm must be a directory')
-  surf_dir = os.path.join(subject_dir, 'surf')
-  mri_dir = os.path.join(subject_dir, 'mri')
+  # Most freeSurfer files will be accessed in-place; no need to pre-convert them into the temporary directory
+  # However convert aparc image so that it does not have to be repeatedly uncompressed
+  run.command(['mrconvert', os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), 'aparc.mif'],
+              preserve_pipes=True)
+  if app.ARGS.template:
+    run.command(['mrconvert', app.ARGS.template, 'template.mif', '-axes', '0,1,2'],
+                preserve_pipes=True)
+
+  surf_dir = os.path.join(app.ARGS.input, 'surf')
+  mri_dir = os.path.join(app.ARGS.input, 'mri')
   check_dir(surf_dir)
   check_dir(mri_dir)
   #aparc_image = os.path.join(mri_dir, 'aparc+aseg.mgz')
@@ -177,7 +205,7 @@ def execute(): #pylint: disable=unused-variable
     # Use brain-extracted, bias-corrected image for FSL tools
     norm_image = os.path.join(mri_dir, 'norm.mgz')
     check_file(norm_image)
-    run.command('mrconvert ' + norm_image + ' T1.nii -stride -1,+2,+3')
+    run.command(f'mrconvert {norm_image} T1.nii -stride -1,+2,+3')
     # Verify FAST availability
     try:
       fast_cmd = fsl.exe_name('fast')
@@ -199,18 +227,20 @@ def execute(): #pylint: disable=unused-variable
     first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
     have_first = first_cmd and os.path.isdir(first_atlas_path)
   else:
-    app.warn('Environment variable FSLDIR is not set; script will run without FSL components')
+    app.warn('Environment variable FSLDIR is not set; '
+             'script will run without FSL components')
 
-  acpc_string = 'anterior ' + ('& posterior commissures' if ATTEMPT_PC else 'commissure')
+  acpc_string = f'anterior {"& posterior commissures" if ATTEMPT_PC else "commissure"}'
   have_acpcdetect = bool(shutil.which('acpcdetect')) and 'ARTHOME' in os.environ
   if have_acpcdetect:
     if have_fast:
-      app.console('ACPCdetect and FSL FAST will be used for explicit segmentation of ' + acpc_string)
+      app.console(f'ACPCdetect and FSL FAST will be used for explicit segmentation of {acpc_string}')
     else:
-      app.warn('ACPCdetect is installed, but FSL FAST not found; cannot segment ' + acpc_string)
+      app.warn(f'ACPCdetect is installed, but FSL FAST not found; '
+               f'cannot segment {acpc_string}')
       have_acpcdetect = False
   else:
-    app.warn('ACPCdetect not installed; cannot segment ' + acpc_string)
+    app.warn(f'ACPCdetect not installed; cannot segment {acpc_string}')
 
   # Need to perform a better search for hippocampal subfield output: names & version numbers may change
   have_hipp_subfields = False
@@ -266,19 +296,23 @@ def execute(): #pylint: disable=unused-variable
   if hippocampi_method:
     if hippocampi_method == 'subfields':
       if not have_hipp_subfields:
-        raise MRtrixError('Could not isolate hippocampal subfields module output (candidate images: ' + str(hipp_subfield_all_images) + ')')
+        raise MRtrixError(f'Could not isolate hippocampal subfields module output '
+                          f'(candidate images: {hipp_subfield_all_images})')
     elif hippocampi_method == 'first':
       if not have_first:
-        raise MRtrixError('Cannot use "first" method for hippocampi segmentation; check FSL installation')
+        raise MRtrixError('Cannot use "first" method for hippocampi segmentation; '
+                          'check FSL installation')
   else:
     if have_hipp_subfields:
       hippocampi_method = 'subfields'
-      app.console('Hippocampal subfields module output detected; will utilise for hippocampi '
-                  + ('and amygdalae ' if hipp_subfield_has_amyg else '')
-                  + 'segmentation')
+      app.console('Hippocampal subfields module output detected; '
+                  'will utilise for hippocampi'
+                  f'{" and amygdalae" if hipp_subfield_has_amyg else ""}'
+                  ' segmentation')
     elif have_first:
       hippocampi_method = 'first'
-      app.console('No hippocampal subfields module output detected, but FSL FIRST is installed; '
+      app.console('No hippocampal subfields module output detected, '
+                  'but FSL FIRST is installed; '
                   'will utilise latter for hippocampi segmentation')
     else:
       hippocampi_method = 'aseg'
@@ -287,7 +321,8 @@ def execute(): #pylint: disable=unused-variable
 
   if hippocampi_method == 'subfields':
     if 'FREESURFER_HOME' not in os.environ:
-      raise MRtrixError('FREESURFER_HOME environment variable not set; required for use of hippocampal subfields module')
+      raise MRtrixError('FREESURFER_HOME environment variable not set; '
+                        'required for use of hippocampal subfields module')
     freesurfer_lut_file = os.path.join(os.environ['FREESURFER_HOME'], 'FreeSurferColorLUT.txt')
     check_file(freesurfer_lut_file)
     hipp_lut_file = os.path.join(path.shared_data_path(), path.script_subdir_name(), 'hsvs', 'HippSubfields.txt')
@@ -309,7 +344,8 @@ def execute(): #pylint: disable=unused-variable
         raise MRtrixError('Could not find thalamic nuclei module output')
     elif thalami_method == 'first':
       if not have_first:
-        raise MRtrixError('Cannot use "first" method for thalami segmentation; check FSL installation')
+        raise MRtrixError('Cannot use "first" method for thalami segmentation; '
+                          'check FSL installation')
   else:
     # Not happy with outputs of thalamic nuclei submodule; default to FIRST
     if have_first:
@@ -341,13 +377,13 @@ def execute(): #pylint: disable=unused-variable
   # Get the main cerebrum segments; these are already smooth
   progress = app.ProgressBar('Mapping FreeSurfer cortical reconstruction to partial volume images', 8)
   for hemi in [ 'lh', 'rh' ]:
-    for basename in [ hemi+'.white', hemi+'.pial' ]:
+    for basename in [ f'{hemi}.white', f'{hemi}.pial' ]:
       filepath = os.path.join(surf_dir, basename)
       check_file(filepath)
-      transformed_path = basename + '_realspace.obj'
-      run.command('meshconvert ' + filepath + ' ' + transformed_path + ' -binary -transform fs2real ' + aparc_image)
+      transformed_path = f'{basename}_realspace.obj'
+      run.command(['meshconvert', filepath, transformed_path, '-binary', '-transform', 'fs2real', aparc_image])
       progress.increment()
-      run.command('mesh2voxel ' + transformed_path + ' ' + template_image + ' ' + basename + '.mif')
+      run.command(['mesh2voxel', transformed_path, template_image, f'{basename}.mif'])
       app.cleanup(transformed_path)
       progress.increment()
   progress.done()
@@ -368,27 +404,28 @@ def execute(): #pylint: disable=unused-variable
     from_aseg.extend(OTHER_SGM_ASEG)
   progress = app.ProgressBar('Smoothing non-cortical structures segmented by FreeSurfer', len(from_aseg) + 2)
   for (index, tissue, name) in from_aseg:
-    init_mesh_path = name + '_init.vtk'
-    smoothed_mesh_path = name + '.vtk'
-    run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq - | voxel2mesh - -threshold 0.5 ' + init_mesh_path)
-    run.command('meshfilter ' + init_mesh_path + ' smooth ' + smoothed_mesh_path)
+    init_mesh_path = f'{name}_init.vtk'
+    smoothed_mesh_path = f'{name}.vtk'
+    run.command(f'mrcalc {aparc_image} {index} -eq - | '
+                f'voxel2mesh - -threshold 0.5 {init_mesh_path}')
+    run.command(['meshfilter', init_mesh_path, 'smooth', smoothed_mesh_path])
     app.cleanup(init_mesh_path)
-    run.command('mesh2voxel ' + smoothed_mesh_path + ' ' + template_image + ' ' + name + '.mif')
+    run.command(['mesh2voxel', smoothed_mesh_path, template_image, f'{name}.mif'])
     app.cleanup(smoothed_mesh_path)
-    tissue_images[tissue-1].append(name + '.mif')
+    tissue_images[tissue-1].append(f'{name}.mif')
     progress.increment()
   # Lateral ventricles are separate as we want to combine with choroid plexus prior to mesh conversion
   for hemi_index, hemi_name in enumerate(['Left', 'Right']):
-    name = hemi_name + '_LatVent_ChorPlex'
-    init_mesh_path = name + '_init.vtk'
-    smoothed_mesh_path = name + '.vtk'
+    name = f'{hemi_name}_LatVent_ChorPlex'
+    init_mesh_path = f'{name}_init.vtk'
+    smoothed_mesh_path = f'{name}.vtk'
     run.command('mrcalc ' + ' '.join(aparc_image + ' ' + str(index) + ' -eq' for index, tissue, name in VENTRICLE_CP_ASEG[hemi_index]) + ' -add - | '
-                + 'voxel2mesh - -threshold 0.5 ' + init_mesh_path)
-    run.command('meshfilter ' + init_mesh_path + ' smooth ' + smoothed_mesh_path)
+                + f'voxel2mesh - -threshold 0.5 {init_mesh_path}')
+    run.command(['meshfilter', init_mesh_path, 'smooth', smoothed_mesh_path])
     app.cleanup(init_mesh_path)
-    run.command('mesh2voxel ' + smoothed_mesh_path + ' ' + template_image + ' ' + name + '.mif')
+    run.command(['mesh2voxel', smoothed_mesh_path, template_image, f'{name}.mif'])
     app.cleanup(smoothed_mesh_path)
-    tissue_images[3].append(name + '.mif')
+    tissue_images[3].append(f'{name}.mif')
     progress.increment()
   progress.done()
 
@@ -397,18 +434,19 @@ def execute(): #pylint: disable=unused-variable
   # Combine corpus callosum segments before smoothing
   progress = app.ProgressBar('Combining and smoothing corpus callosum segmentation', len(CORPUS_CALLOSUM_ASEG) + 3)
   for (index, name) in CORPUS_CALLOSUM_ASEG:
-    run.command('mrcalc ' + aparc_image + ' ' + str(index) + ' -eq ' + name + '.mif -datatype bit')
+    run.command(f'mrcalc {aparc_image} {index} -eq {name}.mif -datatype bit')
     progress.increment()
   cc_init_mesh_path = 'combined_corpus_callosum_init.vtk'
   cc_smoothed_mesh_path = 'combined_corpus_callosum.vtk'
-  run.command('mrmath ' + ' '.join([ name + '.mif' for (index, name) in CORPUS_CALLOSUM_ASEG ]) + ' sum - | voxel2mesh - -threshold 0.5 ' + cc_init_mesh_path)
+  run.command(['mrmath', [f'{name}.mif' for (index, name) in CORPUS_CALLOSUM_ASEG ], 'sum', '-', '|',
+               'voxel2mesh', '-', '-threshold', '0.5', cc_init_mesh_path])
   for name in [ n for _, n in CORPUS_CALLOSUM_ASEG ]:
-    app.cleanup(name + '.mif')
+    app.cleanup(f'{name}.mif')
   progress.increment()
-  run.command('meshfilter ' + cc_init_mesh_path + ' smooth ' + cc_smoothed_mesh_path)
+  run.command(['meshfilter', cc_init_mesh_path, 'smooth', cc_smoothed_mesh_path])
   app.cleanup(cc_init_mesh_path)
   progress.increment()
-  run.command('mesh2voxel ' + cc_smoothed_mesh_path + ' ' + template_image + ' combined_corpus_callosum.mif')
+  run.command(['mesh2voxel', cc_smoothed_mesh_path, template_image, 'combined_corpus_callosum.mif'])
   app.cleanup(cc_smoothed_mesh_path)
   progress.done()
   tissue_images[2].append('combined_corpus_callosum.mif')
@@ -421,25 +459,27 @@ def execute(): #pylint: disable=unused-variable
   bs_fullmask_path = 'brain_stem_init.mif'
   bs_cropmask_path = ''
   progress = app.ProgressBar('Segmenting and cropping brain stem', 5)
-  run.command('mrcalc ' + aparc_image + ' ' + str(BRAIN_STEM_ASEG[0][0]) + ' -eq '
-              + ' -add '.join([ aparc_image + ' ' + str(index) + ' -eq' for index, name in BRAIN_STEM_ASEG[1:] ]) + ' -add '
-              + bs_fullmask_path + ' -datatype bit')
+  run.command(f'mrcalc {aparc_image} {BRAIN_STEM_ASEG[0][0]} -eq '
+              + ' -add '.join([ f'{aparc_image} {index} -eq' for index, name in BRAIN_STEM_ASEG[1:] ])
+              + f' -add {bs_fullmask_path} -datatype bit')
   progress.increment()
   bs_init_mesh_path = 'brain_stem_init.vtk'
-  run.command('voxel2mesh ' + bs_fullmask_path + ' ' + bs_init_mesh_path)
+  run.command(['voxel2mesh', bs_fullmask_path, bs_init_mesh_path])
   progress.increment()
   bs_smoothed_mesh_path = 'brain_stem.vtk'
-  run.command('meshfilter ' + bs_init_mesh_path + ' smooth ' + bs_smoothed_mesh_path)
+  run.command(['meshfilter', bs_init_mesh_path, 'smooth', bs_smoothed_mesh_path])
   app.cleanup(bs_init_mesh_path)
   progress.increment()
-  run.command('mesh2voxel ' + bs_smoothed_mesh_path + ' ' + template_image + ' brain_stem.mif')
+  run.command(['mesh2voxel', bs_smoothed_mesh_path, template_image, 'brain_stem.mif'])
   app.cleanup(bs_smoothed_mesh_path)
   progress.increment()
   fourthventricle_zmin = min(int(line.split()[2]) for line in run.command('maskdump 4th-Ventricle.mif')[0].splitlines())
   if fourthventricle_zmin:
     bs_cropmask_path = 'brain_stem_crop.mif'
-    run.command('mredit brain_stem.mif - ' + ' '.join([ '-plane 2 ' + str(index) + ' 0' for index in range(0, fourthventricle_zmin) ]) + ' | '
-                'mrcalc brain_stem.mif - -sub 1e-6 -gt ' + bs_cropmask_path + ' -datatype bit')
+    run.command('mredit brain_stem.mif - '
+                + ' '.join([ '-plane 2 ' + str(index) + ' 0' for index in range(0, fourthventricle_zmin) ])
+                + ' | '
+                + f'mrcalc brain_stem.mif - -sub 1e-6 -gt {bs_cropmask_path} -datatype bit')
   app.cleanup(bs_fullmask_path)
   progress.done()
 
@@ -455,21 +495,22 @@ def execute(): #pylint: disable=unused-variable
     for subfields_lut_file, structure_name in subfields:
       for hemi, filename in zip([ 'Left', 'Right'], [ prefix + hipp_subfield_image_suffix for prefix in [ 'l', 'r' ] ]):
         # Extract individual components from image and assign to different tissues
-        subfields_all_tissues_image = hemi + '_' + structure_name + '_subfields.mif'
-        run.command('labelconvert ' + os.path.join(mri_dir, filename) + ' ' + freesurfer_lut_file + ' ' + subfields_lut_file + ' ' + subfields_all_tissues_image)
+        subfields_all_tissues_image = f'{hemi}_{structure_name}_subfields.mif'
+        run.command(['labelconvert', os.path.join(mri_dir, filename), freesurfer_lut_file, subfields_lut_file, subfields_all_tissues_image])
         progress.increment()
         for tissue in range(0, 5):
-          init_mesh_path = hemi + '_' + structure_name + '_subfield_' + str(tissue) + '_init.vtk'
-          smooth_mesh_path = hemi + '_' + structure_name + '_subfield_' + str(tissue) + '.vtk'
-          subfield_tissue_image = hemi + '_' + structure_name + '_subfield_' + str(tissue) + '.mif'
-          run.command('mrcalc ' + subfields_all_tissues_image + ' ' + str(tissue+1) + ' -eq - | ' + \
-                      'voxel2mesh - ' + init_mesh_path)
+          init_mesh_path = f'{hemi}_{structure_name}_subfield_{tissue}_init.vtk'
+          smooth_mesh_path = f'{hemi}_{structure_name}_subfield_{tissue}.vtk'
+          subfield_tissue_image = f'{hemi}_{structure_name}_subfield_{tissue}.mif'
+          run.command(f'mrcalc {subfields_all_tissues_image} {tissue+1} -eq - | '
+                      f'voxel2mesh - {init_mesh_path}')
           progress.increment()
           # Since the hippocampal subfields segmentation can include some fine structures, reduce the extent of smoothing
-          run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path + ' -smooth_spatial 2 -smooth_influence 2')
+          run.command(['meshfilter', init_mesh_path, 'smooth', smooth_mesh_path,
+                       '-smooth_spatial', '2', '-smooth_influence', '2'])
           app.cleanup(init_mesh_path)
           progress.increment()
-          run.command('mesh2voxel ' + smooth_mesh_path + ' ' + template_image + ' ' + subfield_tissue_image)
+          run.command(['mesh2voxel', smooth_mesh_path, template_image, subfield_tissue_image])
           app.cleanup(smooth_mesh_path)
           progress.increment()
           tissue_images[tissue].append(subfield_tissue_image)
@@ -480,23 +521,24 @@ def execute(): #pylint: disable=unused-variable
   if thalami_method == 'nuclei':
     progress = app.ProgressBar('Using detected FreeSurfer thalamic nuclei module output', 6)
     for hemi in ['Left', 'Right']:
-      thal_mask_path = hemi + '_Thalamus_mask.mif'
-      init_mesh_path = hemi + '_Thalamus_init.vtk'
-      smooth_mesh_path = hemi + '_Thalamus.vtk'
-      thalamus_image = hemi + '_Thalamus.mif'
+      thal_mask_path = f'{hemi}_Thalamus_mask.mif'
+      init_mesh_path = f'{hemi}_Thalamus_init.vtk'
+      smooth_mesh_path = f'{hemi}_Thalamus.vtk'
+      thalamus_image = f'{hemi}_Thalamus.mif'
       if hemi == 'Right':
-        run.command('mrthreshold ' + os.path.join(mri_dir, thal_nuclei_image) + ' -abs 8200 ' + thal_mask_path)
+        run.command(['mrthreshold', os.path.join(mri_dir, thal_nuclei_image), '-abs', '8200', thal_mask_path])
       else:
-        run.command('mrcalc ' + os.path.join(mri_dir, thal_nuclei_image) + ' 0 -gt '
-                    + os.path.join(mri_dir, thal_nuclei_image) + ' 8200 -lt '
-                    + '-mult ' + thal_mask_path)
-      run.command('voxel2mesh ' + thal_mask_path + ' ' + init_mesh_path)
+        run.command(['mrcalc', os.path.join(mri_dir, thal_nuclei_image), '0', '-gt',
+                     os.path.join(mri_dir, thal_nuclei_image), '8200', '-lt',
+                    '-mult', thal_mask_path])
+      run.command(['voxel2mesh', thal_mask_path, init_mesh_path])
       app.cleanup(thal_mask_path)
       progress.increment()
-      run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path + ' -smooth_spatial 2 -smooth_influence 2')
+      run.command(['meshfilter', init_mesh_path, 'smooth', smooth_mesh_path,
+                   '-smooth_spatial', '2', '-smooth_influence', '2'])
       app.cleanup(init_mesh_path)
       progress.increment()
-      run.command('mesh2voxel ' + smooth_mesh_path + ' ' + template_image + ' ' + thalamus_image)
+      run.command(['mesh2voxel', smooth_mesh_path, template_image, thalamus_image])
       app.cleanup(smooth_mesh_path)
       progress.increment()
       tissue_images[1].append(thalamus_image)
@@ -513,19 +555,19 @@ def execute(): #pylint: disable=unused-variable
       from_first = { key: value for key, value in from_first.items() if 'Hippocampus' not in value and 'Amygdala' not in value }
     if thalami_method != 'first':
       from_first = { key: value for key, value in from_first.items() if 'Thalamus' not in value }
-    run.command(first_cmd + ' -s ' + ','.join(from_first.keys()) + ' -i T1.nii -b -o first')
+    run.command([first_cmd, '-s', ','.join(from_first.keys()), '-i', 'T1.nii', '-b', '-o', 'first'])
     fsl.check_first('first', from_first.keys())
     app.cleanup(glob.glob('T1_to_std_sub.*'))
     progress = app.ProgressBar('Mapping FIRST segmentations to image', 2*len(from_first))
     for key, value in from_first.items():
-      vtk_in_path = 'first-' + key + '_first.vtk'
-      vtk_converted_path = 'first-' + key + '_transformed.vtk'
-      run.command('meshconvert ' + vtk_in_path + ' ' + vtk_converted_path + ' -transform first2real T1.nii')
+      vtk_in_path = f'first-{key}_first.vtk'
+      vtk_converted_path = f'first-{key}_transformed.vtk'
+      run.command(['meshconvert', vtk_in_path, vtk_converted_path, '-transform', 'first2real', 'T1.nii'])
       app.cleanup(vtk_in_path)
       progress.increment()
-      run.command('mesh2voxel ' + vtk_converted_path + ' ' + template_image + ' ' + value + '.mif')
+      run.command(['mesh2voxel', vtk_converted_path, template_image, f'{value}.mif'])
       app.cleanup(vtk_converted_path)
-      tissue_images[1].append(value + '.mif')
+      tissue_images[1].append(f'{value}.mif')
       progress.increment()
     if not have_fast:
       app.cleanup('T1.nii')
@@ -539,17 +581,17 @@ def execute(): #pylint: disable=unused-variable
     # ACPCdetect requires input image to be 16-bit
     # We also want to realign to RAS beforehand so that we can interpret the output voxel locations properly
     acpcdetect_input_image = 'T1RAS_16b.nii'
-    run.command('mrconvert ' + norm_image + ' -datatype uint16 -stride +1,+2,+3 ' + acpcdetect_input_image)
+    run.command(['mrconvert', norm_image, '-datatype', 'uint16', '-stride', '+1,+2,+3', acpcdetect_input_image])
     progress.increment()
-    run.command('acpcdetect -i ' + acpcdetect_input_image)
+    run.command(['acpcdetect', '-i', acpcdetect_input_image])
     progress.increment()
     # We need the header in order to go from voxel coordinates to scanner coordinates
     acpcdetect_input_header = image.Header(acpcdetect_input_image)
-    acpcdetect_output_path = os.path.splitext(acpcdetect_input_image)[0] + '_ACPC.txt'
+    acpcdetect_output_path = f'{os.path.splitext(acpcdetect_input_image)[0]}_ACPC.txt'
     app.cleanup(acpcdetect_input_image)
     with open(acpcdetect_output_path, 'r', encoding='utf-8') as acpc_file:
       acpcdetect_output_data = acpc_file.read().splitlines()
-    app.cleanup(glob.glob(os.path.splitext(acpcdetect_input_image)[0] + "*"))
+    app.cleanup(glob.glob(f'{os.path.splitext(acpcdetect_input_image)[0]}*'))
     # Need to scan through the contents of this file,
     #   isolating the AC and PC locations
     ac_voxel = pc_voxel = None
@@ -573,20 +615,20 @@ def execute(): #pylint: disable=unused-variable
 
     # Generate the mask image within which FAST will be run
     acpc_prefix = 'ACPC' if ATTEMPT_PC else 'AC'
-    acpc_mask_image = acpc_prefix + '_FAST_mask.mif'
-    run.command('mrcalc ' + template_image + ' nan -eq - | '
-                'mredit - ' + acpc_mask_image + ' -scanner '
-                '-sphere ' + ','.join(str(value) for value in ac_scanner) + ' 8 1 '
-                + ('-sphere ' + ','.join(str(value) for value in pc_scanner) + ' 5 1' if ATTEMPT_PC else ''))
+    acpc_mask_image = f'{acpc_prefix}_FAST_mask.mif'
+    run.command(f'mrcalc {template_image} nan -eq - | '
+                f'mredit - {acpc_mask_image} -scanner '
+                + '-sphere ' + ','.join(map(str, ac_scanner)) + ' 8 1 '
+                + ('-sphere ' + ','.join(map(str, pc_scanner)) + ' 5 1' if ATTEMPT_PC else ''))
     progress.increment()
 
-    acpc_t1_masked_image = acpc_prefix + '_T1.nii'
-    run.command('mrtransform ' + norm_image + ' -template ' + template_image + ' - | '
-                'mrcalc - ' + acpc_mask_image + ' -mult ' + acpc_t1_masked_image)
+    acpc_t1_masked_image = f'{acpc_prefix}_T1.nii'
+    run.command(['mrtransform', norm_image, '-template', template_image, '-', '|',
+                'mrcalc', '-', acpc_mask_image, '-mult', acpc_t1_masked_image])
     app.cleanup(acpc_mask_image)
     progress.increment()
 
-    run.command(fast_cmd + ' -N ' + acpc_t1_masked_image)
+    run.command([fast_cmd, '-N', acpc_t1_masked_image])
     app.cleanup(acpc_t1_masked_image)
     progress.increment()
 
@@ -595,10 +637,10 @@ def execute(): #pylint: disable=unused-variable
     # This should involve grabbing just the WM component of these images
     # Actually, in retrospect, it may be preferable to do the AC PC segmentation
     #   earlier on, and simply add them to the list of WM structures
-    acpc_wm_image = acpc_prefix + '.mif'
-    run.command('mrconvert ' + fsl.find_image(acpc_prefix + '_T1_pve_2') + ' ' + acpc_wm_image)
+    acpc_wm_image = f'{acpc_prefix}.mif'
+    run.command(['mrconvert', fsl.find_image(f'{acpc_prefix}_T1_pve_2'), acpc_wm_image])
     tissue_images[2].append(acpc_wm_image)
-    app.cleanup(glob.glob(os.path.splitext(acpc_t1_masked_image)[0] + '*'))
+    app.cleanup(glob.glob(f'{os.path.splitext(acpc_t1_masked_image)[0]}*'))
     progress.done()
 
 
@@ -610,27 +652,28 @@ def execute(): #pylint: disable=unused-variable
     for hemi in [ 'Left-', 'Right-' ]:
       wm_index = [ index for index, tissue, name in CEREBELLUM_ASEG if name.startswith(hemi) and 'White' in name ][0]
       gm_index = [ index for index, tissue, name in CEREBELLUM_ASEG if name.startswith(hemi) and 'Cortex' in name ][0]
-      run.command('mrcalc ' + aparc_image + ' ' + str(wm_index) + ' -eq ' + aparc_image + ' ' + str(gm_index) + ' -eq -add - | ' + \
-                  'voxel2mesh - ' + hemi + 'cerebellum_all_init.vtk')
+      run.command(f'mrcalc {aparc_image} {wm_index} -eq {aparc_image} {gm_index} -eq -add - | '
+                  f'voxel2mesh - {hemi}cerebellum_all_init.vtk')
       progress.increment()
-      run.command('mrcalc ' + aparc_image + ' ' + str(gm_index) + ' -eq - | ' + \
-                  'voxel2mesh - ' + hemi + 'cerebellum_grey_init.vtk')
+      run.command(f'mrcalc {aparc_image} {gm_index} -eq - | '
+                  f'voxel2mesh - {hemi}cerebellum_grey_init.vtk')
       progress.increment()
       for name, tissue in { 'all':2, 'grey':1 }.items():
-        run.command('meshfilter ' + hemi + 'cerebellum_' + name + '_init.vtk smooth ' + hemi + 'cerebellum_' + name + '.vtk')
-        app.cleanup(hemi + 'cerebellum_' + name + '_init.vtk')
+        run.command(f'meshfilter {hemi}cerebellum_{name}_init.vtk smooth {hemi}cerebellum_{name}.vtk')
+        app.cleanup(f'{hemi}cerebellum_{name}_init.vtk')
         progress.increment()
-        run.command('mesh2voxel ' + hemi + 'cerebellum_' + name + '.vtk ' + template_image + ' ' + hemi + 'cerebellum_' + name + '.mif')
-        app.cleanup(hemi + 'cerebellum_' + name + '.vtk')
+        run.command(f'mesh2voxel {hemi}cerebellum_{name}.vtk {template_image} {hemi}cerebellum_{name}.mif')
+        app.cleanup(f'{hemi}cerebellum_{name}.vtk')
         progress.increment()
-        tissue_images[tissue].append(hemi + 'cerebellum_' + name + '.mif')
+        tissue_images[tissue].append(f'{hemi}cerebellum_{name}.mif')
     progress.done()
 
 
   # Construct images with the partial volume of each tissue
   progress = app.ProgressBar('Combining segmentations of all structures corresponding to each tissue type', 5)
   for tissue in range(0,5):
-    run.command('mrmath ' + ' '.join(tissue_images[tissue]) + (' brain_stem.mif' if tissue == 2 else '') + ' sum - | mrcalc - 1.0 -min tissue' + str(tissue) + '_init.mif')
+    run.command('mrmath ' + ' '.join(tissue_images[tissue]) + (' brain_stem.mif' if tissue == 2 else '') + ' sum - | '
+                f'mrcalc - 1.0 -min tissue{tissue}_init.mif')
     app.cleanup(tissue_images[tissue])
     progress.increment()
   progress.done()
@@ -644,34 +687,35 @@ def execute(): #pylint: disable=unused-variable
   tissue_images = [ 'tissue0.mif', 'tissue1.mif', 'tissue2.mif', 'tissue3.mif', 'tissue4.mif' ]
   run.function(os.rename, 'tissue4_init.mif', 'tissue4.mif')
   progress.increment()
-  run.command('mrcalc tissue3_init.mif tissue3_init.mif ' + tissue_images[4] + ' -add 1.0 -sub 0.0 -max -sub 0.0 -max ' + tissue_images[3])
+  run.command(f'mrcalc tissue3_init.mif tissue3_init.mif {tissue_images[4]} -add 1.0 -sub 0.0 -max -sub 0.0 -max {tissue_images[3]}')
   app.cleanup('tissue3_init.mif')
   progress.increment()
-  run.command('mrmath ' + ' '.join(tissue_images[3:5]) + ' sum tissuesum_34.mif')
+  run.command(['mrmath', tissue_images[3:5], 'sum', 'tissuesum_34.mif'])
   progress.increment()
-  run.command('mrcalc tissue1_init.mif tissue1_init.mif tissuesum_34.mif -add 1.0 -sub 0.0 -max -sub 0.0 -max ' + tissue_images[1])
+  run.command(f'mrcalc tissue1_init.mif tissue1_init.mif tissuesum_34.mif -add 1.0 -sub 0.0 -max -sub 0.0 -max {tissue_images[1]}')
   app.cleanup('tissue1_init.mif')
   app.cleanup('tissuesum_34.mif')
   progress.increment()
-  run.command('mrmath ' + tissue_images[1] + ' ' + ' '.join(tissue_images[3:5]) + ' sum tissuesum_134.mif')
+  run.command(['mrmath', tissue_images[1], tissue_images[3:5], 'sum', 'tissuesum_134.mif'])
   progress.increment()
-  run.command('mrcalc tissue2_init.mif tissue2_init.mif tissuesum_134.mif -add 1.0 -sub 0.0 -max -sub 0.0 -max ' + tissue_images[2])
+  run.command(f'mrcalc tissue2_init.mif tissue2_init.mif tissuesum_134.mif -add 1.0 -sub 0.0 -max -sub 0.0 -max {tissue_images[2]}')
   app.cleanup('tissue2_init.mif')
   app.cleanup('tissuesum_134.mif')
   progress.increment()
-  run.command('mrmath ' + ' '.join(tissue_images[1:5]) + ' sum tissuesum_1234.mif')
+  run.command(['mrmath', tissue_images[1:5], 'sum', 'tissuesum_1234.mif'])
   progress.increment()
-  run.command('mrcalc tissue0_init.mif tissue0_init.mif tissuesum_1234.mif -add 1.0 -sub 0.0 -max -sub 0.0 -max ' + tissue_images[0])
+  run.command(f'mrcalc tissue0_init.mif tissue0_init.mif tissuesum_1234.mif -add 1.0 -sub 0.0 -max -sub 0.0 -max {tissue_images[0]}')
   app.cleanup('tissue0_init.mif')
   app.cleanup('tissuesum_1234.mif')
   progress.increment()
   tissue_sum_image = 'tissuesum_01234.mif'
-  run.command('mrmath ' + ' '.join(tissue_images) + ' sum ' + tissue_sum_image)
+  run.command(['mrmath', tissue_images, 'sum', tissue_sum_image])
   progress.done()
 
 
   if app.ARGS.template:
-    run.command('mrtransform ' + mask_image + ' -template template.mif - | mrthreshold - brainmask.mif -abs 0.5')
+    run.command(['mrtransform', mask_image, '-template', 'template.mif', '-', '|',
+                'mrthreshold', '-', 'brainmask.mif', '-abs', '0.5'])
     mask_image = 'brainmask.mif'
 
 
@@ -699,18 +743,19 @@ def execute(): #pylint: disable=unused-variable
       progress = app.ProgressBar('Preparing images of cerebellum for intensity-based segmentation', 9)
       cerebellar_hemi_pvf_images = [ ]
       for hemi in [ 'Left', 'Right' ]:
-        init_mesh_path = hemi + '-Cerebellum-All-Init.vtk'
-        smooth_mesh_path = hemi + '-Cerebellum-All-Smooth.vtk'
-        pvf_image_path = hemi + '-Cerebellum-PVF-Template.mif'
+        init_mesh_path = f'{hemi}-Cerebellum-All-Init.vtk'
+        smooth_mesh_path = f'{hemi}-Cerebellum-All-Smooth.vtk'
+        pvf_image_path = f'{hemi}-Cerebellum-PVF-Template.mif'
         cerebellum_aseg_hemi = [ entry for entry in CEREBELLUM_ASEG if hemi in entry[2] ]
-        run.command('mrcalc ' + aparc_image + ' ' + str(cerebellum_aseg_hemi[0][0]) + ' -eq ' + \
-                    ' -add '.join([ aparc_image + ' ' + str(index) + ' -eq' for index, tissue, name in cerebellum_aseg_hemi[1:] ]) + ' -add - | ' + \
-                    'voxel2mesh - ' + init_mesh_path)
+        run.command(f'mrcalc {aparc_image} {cerebellum_aseg_hemi[0][0]} -eq '
+                    + ' -add '.join([ aparc_image + ' ' + str(index) + ' -eq' for index, tissue, name in cerebellum_aseg_hemi[1:] ])
+                    + ' -add - | '
+                    f'voxel2mesh - {init_mesh_path}')
         progress.increment()
-        run.command('meshfilter ' + init_mesh_path + ' smooth ' + smooth_mesh_path)
+        run.command(['meshfilter', init_mesh_path, 'smooth', smooth_mesh_path])
         app.cleanup(init_mesh_path)
         progress.increment()
-        run.command('mesh2voxel ' + smooth_mesh_path + ' ' + template_image + ' ' + pvf_image_path)
+        run.command(['mesh2voxel', smooth_mesh_path, template_image, pvf_image_path])
         app.cleanup(smooth_mesh_path)
         cerebellar_hemi_pvf_images.append(pvf_image_path)
         progress.increment()
@@ -718,23 +763,23 @@ def execute(): #pylint: disable=unused-variable
       # Combine the two hemispheres together into:
       # - An image in preparation for running FAST
       # - A combined total partial volume fraction image that will be later used for tissue recombination
-      run.command('mrcalc ' + ' '.join(cerebellar_hemi_pvf_images) + ' -add 1.0 -min ' + cerebellum_volume_image)
+      run.command(['mrcalc', cerebellar_hemi_pvf_images, '-add', '1.0', '-min', cerebellum_volume_image])
       app.cleanup(cerebellar_hemi_pvf_images)
       progress.increment()
 
-      run.command('mrthreshold ' + cerebellum_volume_image + ' ' + cerebellum_mask_image + ' -abs 1e-6')
+      run.command(['mrthreshold', cerebellum_volume_image, cerebellum_mask_image, '-abs', '1e-6'])
       progress.increment()
-      run.command('mrtransform ' + norm_image + ' -template ' + template_image + ' - | ' + \
-                  'mrcalc - ' + cerebellum_mask_image + ' -mult ' + t1_cerebellum_masked)
+      run.command(['mrtransform', norm_image, '-template', template_image, '-', '|',
+                  'mrcalc', '-', cerebellum_mask_image, '-mult', t1_cerebellum_masked])
       progress.done()
 
     else:
       app.console('Preparing images of cerebellum for intensity-based segmentation')
-      run.command('mrcalc ' + aparc_image + ' ' + str(CEREBELLUM_ASEG[0][0]) + ' -eq ' + \
-                  ' -add '.join([ aparc_image + ' ' + str(index) + ' -eq' for index, tissue, name in CEREBELLUM_ASEG[1:] ]) + ' -add ' + \
-                  cerebellum_volume_image)
+      run.command(f'mrcalc {aparc_image} {CEREBELLUM_ASEG[0][0]} -eq '
+                  + ' -add '.join([ f'{aparc_image} {index} -eq' for index, tissue, name in CEREBELLUM_ASEG[1:] ])
+                  + f' -add {cerebellum_volume_image}')
       cerebellum_mask_image = cerebellum_volume_image
-      run.command('mrcalc T1.nii ' + cerebellum_mask_image + ' -mult ' + t1_cerebellum_masked)
+      run.command(['mrcalc', 'T1.nii', cerebellum_mask_image, '-mult', t1_cerebellum_masked])
 
     app.cleanup('T1.nii')
 
@@ -747,25 +792,25 @@ def execute(): #pylint: disable=unused-variable
     # FAST memory usage can also be huge when using a high-resolution template image:
     #   Crop T1 image around the cerebellum before feeding to FAST, then re-sample to full template image FoV
     fast_input_image = 'T1_cerebellum.nii'
-    run.command('mrgrid ' + t1_cerebellum_masked + ' crop -mask ' + cerebellum_mask_image + ' ' + fast_input_image)
+    run.command(['mrgrid', t1_cerebellum_masked, 'crop', '-mask', cerebellum_mask_image, fast_input_image])
     app.cleanup(t1_cerebellum_masked)
     # Cleanup of cerebellum_mask_image:
     #   May be same image as cerebellum_volume_image, which is required later
     if cerebellum_mask_image != cerebellum_volume_image:
       app.cleanup(cerebellum_mask_image)
-    run.command(fast_cmd + ' -N ' + fast_input_image)
+    run.command([fast_cmd, '-N', fast_input_image])
     app.cleanup(fast_input_image)
 
     # Use glob to clean up unwanted FAST outputs
     fast_output_prefix = os.path.splitext(fast_input_image)[0]
-    fast_pve_output_prefix = fast_output_prefix + '_pve_'
-    app.cleanup([ entry for entry in glob.glob(fast_output_prefix + '*') if not fast_pve_output_prefix in entry ])
+    fast_pve_output_prefix = f'{fast_output_prefix}_pve_'
+    app.cleanup([ entry for entry in glob.glob(f'{fast_output_prefix}*') if not fast_pve_output_prefix in entry ])
 
     progress = app.ProgressBar('Introducing intensity-based cerebellar segmentation into the 5TT image', 10)
-    fast_outputs_cropped = [ fast_pve_output_prefix + str(n) + fast_suffix for n in range(0,3) ]
-    fast_outputs_template = [ 'FAST_' + str(n) + '.mif' for n in range(0,3) ]
+    fast_outputs_cropped = [ f'{fast_pve_output_prefix}{n}{fast_suffix}' for n in range(0,3) ]
+    fast_outputs_template = [ f'FAST_{n}.mif' for n in range(0,3) ]
     for inpath, outpath in zip(fast_outputs_cropped, fast_outputs_template):
-      run.command('mrtransform ' + inpath + ' -interp nearest -template ' + template_image + ' ' + outpath)
+      run.command(['mrtransform', inpath, '-interp', 'nearest', '-template', template_image, outpath])
       app.cleanup(inpath)
       progress.increment()
     if app.ARGS.template:
@@ -782,29 +827,29 @@ def execute(): #pylint: disable=unused-variable
     new_tissue_images = [ 'tissue0_fast.mif', 'tissue1_fast.mif', 'tissue2_fast.mif', 'tissue3_fast.mif', 'tissue4_fast.mif' ]
     new_tissue_sum_image = 'tissuesum_01234_fast.mif'
     cerebellum_multiplier_image = 'Cerebellar_multiplier.mif'
-    run.command('mrcalc ' + cerebellum_volume_image + ' ' + tissue_sum_image + ' -add 0.5 -gt 1.0 ' + tissue_sum_image + ' -sub 0.0 -if  ' + cerebellum_multiplier_image)
+    run.command(f'mrcalc {cerebellum_volume_image} {tissue_sum_image} -add 0.5 -gt 1.0 {tissue_sum_image} -sub 0.0 -if {cerebellum_multiplier_image}')
     app.cleanup(cerebellum_volume_image)
     progress.increment()
-    run.command('mrconvert ' + tissue_images[0] + ' ' + new_tissue_images[0])
+    run.command(['mrconvert', tissue_images[0], new_tissue_images[0]])
     app.cleanup(tissue_images[0])
     progress.increment()
-    run.command('mrcalc ' + tissue_images[1] + ' ' + cerebellum_multiplier_image + ' ' + fast_outputs_template[1] + ' -mult -add ' + new_tissue_images[1])
+    run.command(f'mrcalc {tissue_images[1]} {cerebellum_multiplier_image} {fast_outputs_template[1]} -mult -add {new_tissue_images[1]}')
     app.cleanup(tissue_images[1])
     app.cleanup(fast_outputs_template[1])
     progress.increment()
-    run.command('mrcalc ' + tissue_images[2] + ' ' + cerebellum_multiplier_image + ' ' + fast_outputs_template[2] + ' -mult -add ' + new_tissue_images[2])
+    run.command(f'mrcalc {tissue_images[2]} {cerebellum_multiplier_image} {fast_outputs_template[2]} -mult -add {new_tissue_images[2]}')
     app.cleanup(tissue_images[2])
     app.cleanup(fast_outputs_template[2])
     progress.increment()
-    run.command('mrcalc ' + tissue_images[3] + ' ' + cerebellum_multiplier_image + ' ' + fast_outputs_template[0] + ' -mult -add ' + new_tissue_images[3])
+    run.command(f'mrcalc {tissue_images[3]} {cerebellum_multiplier_image} {fast_outputs_template[0]} -mult -add {new_tissue_images[3]}')
     app.cleanup(tissue_images[3])
     app.cleanup(fast_outputs_template[0])
     app.cleanup(cerebellum_multiplier_image)
     progress.increment()
-    run.command('mrconvert ' + tissue_images[4] + ' ' + new_tissue_images[4])
+    run.command(['mrconvert', tissue_images[4], new_tissue_images[4]])
     app.cleanup(tissue_images[4])
     progress.increment()
-    run.command('mrmath ' + ' '.join(new_tissue_images) + ' sum ' + new_tissue_sum_image)
+    run.command(['mrmath', new_tissue_images, 'sum', new_tissue_sum_image])
     app.cleanup(tissue_sum_image)
     progress.done()
     tissue_images = new_tissue_images
@@ -825,16 +870,16 @@ def execute(): #pylint: disable=unused-variable
   new_tissue_images = [ tissue_images[0],
                         tissue_images[1],
                         tissue_images[2],
-                        os.path.splitext(tissue_images[3])[0] + '_filled.mif',
+                        f'{os.path.splitext(tissue_images[3])[0]}_filled.mif',
                         tissue_images[4] ]
   csf_fill_image = 'csf_fill.mif'
-  run.command('mrcalc 1.0 ' + tissue_sum_image + ' -sub ' + tissue_sum_image + ' 0.0 -gt ' + mask_image + ' -add 1.0 -min -mult 0.0 -max ' + csf_fill_image)
+  run.command(f'mrcalc 1.0 {tissue_sum_image} -sub {tissue_sum_image} 0.0 -gt {mask_image} -add 1.0 -min -mult 0.0 -max {csf_fill_image}')
   app.cleanup(tissue_sum_image)
   # If no template is specified, this file is part of the FreeSurfer output; hence don't modify
   if app.ARGS.template:
     app.cleanup(mask_image)
   progress.increment()
-  run.command('mrcalc ' + tissue_images[3] + ' ' + csf_fill_image + ' -add ' + new_tissue_images[3])
+  run.command(f'mrcalc {tissue_images[3]} {csf_fill_image} -add {new_tissue_images[3]}')
   app.cleanup(csf_fill_image)
   app.cleanup(tissue_images[3])
   progress.done()
@@ -849,16 +894,16 @@ def execute(): #pylint: disable=unused-variable
     progress = app.ProgressBar('Moving brain stem to volume index 4', 3)
     new_tissue_images = [ tissue_images[0],
                           tissue_images[1],
-                          os.path.splitext(tissue_images[2])[0] + '_no_brainstem.mif',
+                          f'{os.path.splitext(tissue_images[2])[0]}_no_brainstem.mif',
                           tissue_images[3],
-                          os.path.splitext(tissue_images[4])[0] + '_with_brainstem.mif' ]
-    run.command('mrcalc ' + tissue_images[2] + ' brain_stem.mif -min brain_stem_white_overlap.mif')
+                          f'{os.path.splitext(tissue_images[4])[0]}_with_brainstem.mif' ]
+    run.command(f'mrcalc {tissue_images[2]} brain_stem.mif -min brain_stem_white_overlap.mif')
     app.cleanup('brain_stem.mif')
     progress.increment()
-    run.command('mrcalc ' + tissue_images[2] + ' brain_stem_white_overlap.mif -sub ' + new_tissue_images[2])
+    run.command(f'mrcalc {tissue_images[2]} brain_stem_white_overlap.mif -sub {new_tissue_images[2]}')
     app.cleanup(tissue_images[2])
     progress.increment()
-    run.command('mrcalc ' + tissue_images[4] + ' brain_stem_white_overlap.mif -add ' + new_tissue_images[4])
+    run.command(f'mrcalc {tissue_images[4]} brain_stem_white_overlap.mif -add {new_tissue_images[4]}')
     app.cleanup(tissue_images[4])
     app.cleanup('brain_stem_white_overlap.mif')
     progress.done()
@@ -870,11 +915,11 @@ def execute(): #pylint: disable=unused-variable
   app.console('Concatenating tissue volumes into 5TT format')
   precrop_result_image = '5TT.mif'
   if bs_cropmask_path:
-    run.command('mrcat ' + ' '.join(tissue_images) + ' - -axis 3 | ' + \
-                '5ttedit - ' + precrop_result_image + ' -none ' + bs_cropmask_path)
+    run.command(['mrcat', tissue_images, '-', '-axis', '3', '|',
+                '5ttedit', '-', precrop_result_image, '-none', bs_cropmask_path])
     app.cleanup(bs_cropmask_path)
   else:
-    run.command('mrcat ' + ' '.join(tissue_images) + ' ' + precrop_result_image + ' -axis 3')
+    run.command(['mrcat', tissue_images, precrop_result_image, '-axis', '3'])
   app.cleanup(tissue_images)
 
 
@@ -885,11 +930,14 @@ def execute(): #pylint: disable=unused-variable
   else:
     app.console('Cropping final 5TT image')
     crop_mask_image = 'crop_mask.mif'
-    run.command('mrconvert ' + precrop_result_image + ' -coord 3 0,1,2,4 - | mrmath - sum - -axis 3 | mrthreshold - - -abs 0.001 | maskfilter - dilate ' + crop_mask_image)
-    run.command('mrgrid ' + precrop_result_image + ' crop result.mif -mask ' + crop_mask_image)
+    run.command(f'mrconvert {precrop_result_image} -coord 3 0,1,2,4 - | '
+                f'mrmath - sum - -axis 3 | '
+                f'mrthreshold - - -abs 0.001 | '
+                f'maskfilter - dilate {crop_mask_image}')
+    run.command(f'mrgrid {precrop_result_image} crop result.mif -mask {crop_mask_image}')
     app.cleanup(crop_mask_image)
     app.cleanup(precrop_result_image)
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
-              mrconvert_keyval=path.from_user(os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'), True),
+  run.command(['mrconvert', 'result.mif', app.ARGS.output],
+              mrconvert_keyval=os.path.join(app.ARGS.input, 'mri', 'aparc+aseg.mgz'),
               force=app.FORCE_OVERWRITE)

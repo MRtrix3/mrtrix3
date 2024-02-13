@@ -27,7 +27,9 @@ def direction(string): #pylint: disable=unused-variable
   try:
     pe_axis = abs(int(string))
     if pe_axis > 2:
-      raise MRtrixError('When specified as a number, phase encoding axis must be either 0, 1 or 2 (positive or negative)')
+      raise MRtrixError('When specified as a number, '
+                        'phase encoding axis must be either 0, 1 or 2 '
+                        '(positive or negative)')
     reverse = (string.contains('-')) # Allow -0
     pe_dir = [0,0,0]
     if reverse:
@@ -61,8 +63,8 @@ def direction(string): #pylint: disable=unused-variable
     elif string == 'k-':
       pe_dir = [0,0,-1]
     else:
-      raise MRtrixError('Unrecognized phase encode direction specifier: ' + string) # pylint: disable=raise-missing-from
-  app.debug(string + ' -> ' + str(pe_dir))
+      raise MRtrixError(f'Unrecognized phase encode direction specifier: {string}') # pylint: disable=raise-missing-from
+  app.debug(f'{string} -> {pe_dir}')
   return pe_dir
 
 
@@ -73,7 +75,8 @@ def get_scheme(arg): #pylint: disable=unused-variable
   from mrtrix3 import app, image #pylint: disable=import-outside-toplevel
   if not isinstance(arg, image.Header):
     if not isinstance(arg, str):
-      raise TypeError('Error trying to derive phase-encoding scheme from \'' + str(arg) + '\': Not an image header or file path')
+      raise TypeError(f'Error trying to derive phase-encoding scheme from "{arg}": '
+                      'Not an image header or file path')
     arg = image.Header(arg)
   if 'pe_scheme' in arg.keyval():
     app.debug(str(arg.keyval()['pe_scheme']))
@@ -96,7 +99,8 @@ def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
   add_to_command_history = bool(kwargs.pop('add_to_command_history', True))
   header = kwargs.pop('header', { })
   if kwargs:
-    raise TypeError('Unsupported keyword arguments passed to phaseencoding.save(): ' + str(kwargs))
+    raise TypeError('Unsupported keyword arguments passed to phaseencoding.save(): '
+                    + str(kwargs))
 
   if not scheme:
     raise MRtrixError('phaseencoding.save() cannot be run on an empty scheme')
@@ -104,7 +108,7 @@ def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
     raise TypeError('Input to phaseencoding.save() must be a 2D matrix')
   if len(scheme[0]) != 4:
     raise MRtrixError('Input to phaseencoding.save() not a valid scheme '
-                      '(contains ' + str(len(scheme[0])) + ' columns rather than 4)')
+                      f'(contains {len(scheme[0])} columns rather than 4)')
 
   if header:
     if isinstance(header, str):
@@ -120,7 +124,7 @@ def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
 
   if add_to_command_history and COMMAND_HISTORY_STRING:
     if 'command_history' in header:
-      header['command_history'] += '\n' + COMMAND_HISTORY_STRING
+      header['command_history'] += f'\n{COMMAND_HISTORY_STRING}'
     else:
       header['command_history'] = COMMAND_HISTORY_STRING
 
@@ -129,4 +133,4 @@ def save(filename, scheme, **kwargs): #pylint: disable=unused-variable
       for line in value.splitlines():
         outfile.write('# ' + key + ': ' + line + '\n')
     for line in scheme:
-      outfile.write('{:.0f} {:.0f} {:.0f} {:.15g}\n'.format(*line))
+      outfile.write(f'{line[0]:.0f} {line[1]:.0f} {line[2]:.0f} {line[3]:.15g}\n')

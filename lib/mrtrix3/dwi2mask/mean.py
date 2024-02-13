@@ -15,44 +15,43 @@
 
 from mrtrix3 import app, run
 
+NEEDS_MEAN_BZERO = False # pylint: disable=unused-variable
 DEFAULT_CLEAN_SCALE = 2
 
 def usage(base_parser, subparsers): #pylint: disable=unused-variable
   parser = subparsers.add_parser('mean', parents=[base_parser])
   parser.set_author('Warda Syeda (wtsyeda@unimelb.edu.au)')
   parser.set_synopsis('Generate a mask based on simply averaging all volumes in the DWI series')
-  parser.add_argument('input', type=app.Parser.ImageIn(), help='The input DWI series')
-  parser.add_argument('output', type=app.Parser.ImageOut(), help='The output mask image')
-  options = parser.add_argument_group('Options specific to the \'mean\' algorithm')
-  options.add_argument('-shells', type=app.Parser.SequenceFloat(), metavar='bvalues', help='Comma separated list of shells to be included in the volume averaging')
+  parser.add_argument('input',
+                      type=app.Parser.ImageIn(),
+                      help='The input DWI series')
+  parser.add_argument('output',
+                      type=app.Parser.ImageOut(),
+                      help='The output mask image')
+  options = parser.add_argument_group('Options specific to the "mean" algorithm')
+  options.add_argument('-shells',
+                       type=app.Parser.SequenceFloat(),
+                       metavar='bvalues',
+                       help='Comma separated list of shells to be included in the volume averaging')
   options.add_argument('-clean_scale',
                        type=app.Parser.Int(0),
                        default=DEFAULT_CLEAN_SCALE,
-                       help='the maximum scale used to cut bridges. A certain maximum scale cuts '
-                            'bridges up to a width (in voxels) of 2x the provided scale. Setting '
-                            'this to 0 disables the mask cleaning step. (Default: ' + str(DEFAULT_CLEAN_SCALE) + ')')
-
-
-
-def get_inputs(): #pylint: disable=unused-variable
-  pass
-
-
-
-def needs_mean_bzero(): #pylint: disable=unused-variable
-  return False
+                       help='the maximum scale used to cut bridges. '
+                            'A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale. '
+                            'Setting this to 0 disables the mask cleaning step. '
+                            f'(Default: {DEFAULT_CLEAN_SCALE})')
 
 
 
 def execute(): #pylint: disable=unused-variable
 
-  run.command(('dwiextract input.mif - -shells ' + ','.join(str(f) for f in app.ARGS.shells) + ' | mrmath -' \
+  run.command(('dwiextract input.mif - -shells ' + ','.join(map(str, app.ARGS.shells)) + ' | mrmath -' \
                 if app.ARGS.shells \
-                else 'mrmath input.mif')
-              + ' mean - -axis 3 |'
-              + ' mrthreshold - - |'
-              + ' maskfilter - connect -largest - |'
-              + ' maskfilter - fill - |'
-              + ' maskfilter - clean -scale ' + str(app.ARGS.clean_scale) + ' mask.mif')
+                else 'mrmath input.mif') +
+              ' mean - -axis 3 |'
+              ' mrthreshold - - |'
+              ' maskfilter - connect -largest - |'
+              ' maskfilter - fill - |'
+              f' maskfilter - clean -scale {app.ARGS.clean_scale} mask.mif')
 
   return 'mask.mif'

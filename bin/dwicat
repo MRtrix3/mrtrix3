@@ -24,22 +24,32 @@ import json, shutil
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
 
-  cmdline.set_author('Lena Dorfschmidt (ld548@cam.ac.uk) and Jakub Vohryzek (jakub.vohryzek@queens.ox.ac.uk) and Robert E. Smith (robert.smith@florey.edu.au)')
+  cmdline.set_author('Lena Dorfschmidt (ld548@cam.ac.uk) '
+                     'and Jakub Vohryzek (jakub.vohryzek@queens.ox.ac.uk) '
+                     'and Robert E. Smith (robert.smith@florey.edu.au)')
   cmdline.set_synopsis('Concatenating multiple DWI series accounting for differential intensity scaling')
   cmdline.add_description('This script concatenates two or more 4D DWI series, accounting for the '
                           'fact that there may be differences in intensity scaling between those series. '
                           'This intensity scaling is corrected by determining scaling factors that will '
                           'make the overall image intensities in the b=0 volumes of each series approximately '
                           'equivalent.')
-  cmdline.add_argument('inputs', nargs='+', type=app.Parser.ImageIn(), help='Multiple input diffusion MRI series')
-  cmdline.add_argument('output', type=app.Parser.ImageOut(), help='The output image series (all DWIs concatenated)')
-  cmdline.add_argument('-mask', metavar='image', type=app.Parser.ImageIn(), help='Provide a binary mask within which image intensities will be matched')
+  cmdline.add_argument('inputs',
+                       nargs='+',
+                       type=app.Parser.ImageIn(),
+                       help='Multiple input diffusion MRI series')
+  cmdline.add_argument('output',
+                       type=app.Parser.ImageOut(),
+                       help='The output image series (all DWIs concatenated)')
+  cmdline.add_argument('-mask',
+                       metavar='image',
+                       type=app.Parser.ImageIn(),
+                       help='Provide a binary mask within which image intensities will be matched')
 
 
 
 def execute(): #pylint: disable=unused-variable
   from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
-  from mrtrix3 import app, image, path, run #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import app, image, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   num_inputs = len(app.ARGS.inputs)
   if num_inputs < 2:
@@ -48,9 +58,9 @@ def execute(): #pylint: disable=unused-variable
   # check input data
   def check_header(header):
     if len(header.size()) > 4:
-      raise MRtrixError('Image "' + header.name() + '" contains more than 4 dimensions')
+      raise MRtrixError(f'Image "{header.name()}" contains more than 4 dimensions')
     if not 'dw_scheme' in header.keyval():
-      raise MRtrixError('Image "' + header.name() + '" does not contain a gradient table')
+      raise MRtrixError(f'Image "{header.name()}" does not contain a gradient table')
     dw_scheme = header.keyval()['dw_scheme']
     try:
       if isinstance(dw_scheme[0], list):
@@ -60,22 +70,24 @@ def execute(): #pylint: disable=unused-variable
       else:
         raise MRtrixError
     except (IndexError, MRtrixError):
-      raise MRtrixError('Image "' + header.name() + '" contains gradient table of unknown format') # pylint: disable=raise-missing-from
+      raise MRtrixError(f'Image "{header.name()}" contains gradient table of unknown format') # pylint: disable=raise-missing-from
     if len(header.size()) == 4:
       num_volumes = header.size()[3]
       if num_grad_lines != num_volumes:
-        raise MRtrixError('Number of lines in gradient table for image "' + header.name() + '" (' + str(num_grad_lines) + ') does not match number of volumes (' + str(num_volumes) + ')')
+        raise MRtrixError(f'Number of lines in gradient table for image "{header.name()}" ({num_grad_lines}) '
+                          f'does not match number of volumes ({num_volumes})')
     elif not (num_grad_lines == 1 and len(dw_scheme) >= 4 and dw_scheme[3] <= float(CONFIG.get('BZeroThreshold', 10.0))):
-      raise MRtrixError('Image "' + header.name() + '" is 3D, and cannot be validated as a b=0 volume')
+      raise MRtrixError(f'Image "{header.name()}" is 3D, and cannot be validated as a b=0 volume')
 
-  first_header = image.Header(path.from_user(app.ARGS.inputs[0], False))
+  first_header = image.Header(app.ARGS.inputs[0])
   check_header(first_header)
   warn_protocol_mismatch = False
   for filename in app.ARGS.inputs[1:]:
-    this_header = image.Header(path.from_user(filename, False))
+    this_header = image.Header(filename)
     check_header(this_header)
     if this_header.size()[0:3] != first_header.size()[0:3]:
-      raise MRtrixError('Spatial dimensions of image "' + filename + '" do not match those of first image "' + first_header.name() + '"')
+      raise MRtrixError(f'Spatial dimensions of image "{filename}" '
+                        f'do not match those of first image "{first_header.name()}"')
     for field_name in [ 'EchoTime', 'RepetitionTime', 'FlipAngle' ]:
       first_value = first_header.keyval().get(field_name)
       this_value = this_header.keyval().get(field_name)
@@ -85,29 +97,25 @@ def execute(): #pylint: disable=unused-variable
     app.warn('Mismatched protocol acquisition parameters detected between input images; ' + \
              'the assumption of equivalent intensities between b=0 volumes of different inputs underlying operation of this script may not be valid')
   if app.ARGS.mask:
-    mask_header = image.Header(path.from_user(app.ARGS.mask, False))
+    mask_header = image.Header(app.ARGS.mask)
     if mask_header.size()[0:3] != first_header.size()[0:3]:
-      raise MRtrixError('Spatial dimensions of mask image "' + app.ARGS.mask + '" do not match those of first image "' + first_header.name() + '"')
-
-  # check output path
-  app.check_output_path(path.from_user(app.ARGS.output, False))
+      raise MRtrixError(f'Spatial dimensions of mask image "{app.ARGS.mask}" do not match those of first image "{first_header.name()}"')
 
   # import data to scratch directory
-  app.make_scratch_dir()
+  app.activate_scratch_dir()
   for index, filename in enumerate(app.ARGS.inputs):
-    run.command('mrconvert ' + path.from_user(filename) + ' ' + path.to_scratch(str(index) + 'in.mif'),
+    run.command(['mrconvert', filename, f'{index}in.mif'],
                 preserve_pipes=True)
   if app.ARGS.mask:
-    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit',
+    run.command(['mrconvert', app.ARGS.mask, 'mask.mif', '-datatype', 'bit'],
                 preserve_pipes=True)
-  app.goto_scratch_dir()
 
   # extract b=0 volumes within each input series
   for index in range(0, num_inputs):
-    infile = str(index) + 'in.mif'
-    outfile = str(index) + 'b0.mif'
+    infile = f'{index}in.mif'
+    outfile = f'{index}b0.mif'
     if len(image.Header(infile).size()) > 3:
-      run.command('dwiextract ' + infile + ' ' + outfile + ' -bzero')
+      run.command(f'dwiextract {infile} {outfile} -bzero')
     else:
       run.function(shutil.copyfile, infile, outfile)
 
@@ -125,7 +133,7 @@ def execute(): #pylint: disable=unused-variable
   #         based on the resulting matrix of optimal scaling factors
   filelist = [ '0in.mif' ]
   for index in range(1, num_inputs):
-    stderr_text = run.command('mrhistmatch scale ' + str(index) + 'b0.mif 0b0.mif ' + str(index) + 'rescaledb0.mif' + mask_option).stderr
+    stderr_text = run.command(f'mrhistmatch scale {index}b0.mif 0b0.mif {index}rescaledb0.mif {mask_option}').stderr
     scaling_factor = None
     for line in stderr_text.splitlines():
       if 'Estimated scale factor is' in line:
@@ -136,13 +144,13 @@ def execute(): #pylint: disable=unused-variable
         break
     if scaling_factor is None:
       raise MRtrixError('Unable to extract scaling factor from mrhistmatch output')
-    filename = str(index) + 'rescaled.mif'
-    run.command('mrcalc ' + str(index) + 'in.mif ' + str(scaling_factor) + ' -mult ' + filename)
+    filename = f'{index}rescaled.mif'
+    run.command(f'mrcalc {index}in.mif {scaling_factor} -mult {filename}')
     filelist.append(filename)
 
   # concatenate all series together
-  run.command('mrcat ' + ' '.join(filelist) + ' - -axis 3 | ' + \
-              'mrconvert - result.mif -json_export result_init.json -strides 0,0,0,1')
+  run.command(['mrcat', filelist, '-', '-axis', '3', '|',
+               'mrconvert', '-', 'result.mif', '-json_export', 'result_init.json', '-strides', '0,0,0,1'])
 
   # remove current contents of command_history, since there's no sensible
   #   way to choose from which input image the contents should be taken;
@@ -153,7 +161,7 @@ def execute(): #pylint: disable=unused-variable
   with open('result_final.json', 'w', encoding='utf-8') as output_json_file:
     json.dump(keyval, output_json_file)
 
-  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
+  run.command(['mrconvert', 'result.mif', app.ARGS.output],
               mrconvert_keyval='result_final.json',
               force=app.FORCE_OVERWRITE)
 
