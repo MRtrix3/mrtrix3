@@ -9,7 +9,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(MRTRIX_BASE_VERSION "${CMAKE_PROJECT_VERSION}")
 
 option(MRTRIX_BUILD_GUI "Build the MRtrix3 GUI" ON)
-option(MRTRIX_USE_QT6 "Use Qt6 to build" OFF)
+option(MRTRIX_USE_QT6 "Use Qt6 to build" ON)
 option(MRTRIX_WARNINGS_AS_ERRORS "Compiler warnings result in compilation errors" OFF)
 option(MRTRIX_STL_DEBUGGING "Enable STL debug mode" OFF)
 option(MRTRIX_BUILD_TESTS "Build tests executables" OFF)
