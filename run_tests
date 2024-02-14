@@ -188,7 +188,8 @@ EOD
     [[ -n "$cmd" ]] || continue
     echo -n '# command: '$cmd >> $LOGFILE
     (
-      export PATH="$(pwd)/testing/bin:${MRTRIX_BINDIR}:$PATH";
+      export PATH="$(pwd)/testing/bin:${MRTRIX_BINDIR}:$PATH"
+      export PYTHONPATH="$(pwd)/lib"
       cd $datadir
       eval $cmd
     ) > .__tmp.log 2>&1
