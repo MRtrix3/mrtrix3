@@ -181,7 +181,7 @@ if [ "${OS}" = "macos" ]; then
 fi
 
 cd ${PREFIX}/..
-tar cfz mrtrix3-${OS}-${TAGNAME}.tar.gz mrtrix3
+tar cfJ mrtrix3-${OS}-${TAGNAME}.tar.xz mrtrix3
 rm -rf ${PREFIX}
 
 TOTAL_SECONDS=$((FFTW_SECONDS + EIGEN_SECONDS + QT_SECONDS + MRTRIX_SECONDS))

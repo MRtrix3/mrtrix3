@@ -40,15 +40,18 @@ if [ ! -d "/usr/local/bin" ]; then
   fi
 fi
 
-url=https://github.com/MRtrix3/mrtrix3/releases/download/${tag}/mrtrix3-macos-${tag}.tar.gz
 
-if [ -z "${url}" ]; then
-  echo "ERROR: Could not find tarball of latest release ..."
-  exit
+url=https://github.com/MRtrix3/mrtrix3/releases/download/${tag}/mrtrix3-macos-${tag}.tar.xz
+echo "Attempting to download "${url}" ..."
+if /usr/bin/curl --fail -sL "${url}" -O; then
+  echo "Downloaded "${url}" ..."
+else
+  url=https://github.com/MRtrix3/mrtrix3/releases/download/${tag}/mrtrix3-macos-${tag}.tar.gz
+  echo "Attempting to download "${url}" ..."
+  if /usr/bin/curl --fail -sL "${url}" -O; then
+    echo "Downloaded "${url}" .."
+  fi
 fi
-
-echo "Downloading "${url}" ..."
-/usr/bin/curl -sL "${url}" -O
 
 tarball=$(basename "${url}")
 if [ ! -f "${tarball}" ]; then
