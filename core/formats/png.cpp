@@ -70,16 +70,16 @@ namespace MR
       }
 
       H.size(0) = png.get_width();
-      H.stride(0) = -3;
+      H.stride(0) = -2;
 
       H.size(1) = png.get_height();
-      H.stride(1) = -4;
+      H.stride(1) = -3;
 
       H.size(2) = 1;
-      H.stride(2) = 1;
+      H.stride(2) = 4;
 
       if (H.ndim() == 4)
-        H.stride(3) = 2;
+        H.stride(3) = 1;
 
       H.spacing (0) = H.spacing (1) = H.spacing (2) = 1.0;
       H.transform().setIdentity();
