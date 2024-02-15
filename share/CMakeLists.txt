@@ -15,3 +15,7 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/icons/hicolor
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/applications/mrview.desktop
     DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
 )
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/mime/mrtrix-mime.xml
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/mime
+)
