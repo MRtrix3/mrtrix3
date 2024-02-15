@@ -143,10 +143,7 @@ MRTRIX_SECONDS=${SECONDS}
 mv ${PREFIX} ${PREFIX}_dep
 mkdir -p ${PREFIX}
 cmake --install ${PREFIX}-src/build
-#cp -R ${PREFIX}-src/bin    ${PREFIX}
-#cp -R ${PREFIX}-src/lib    ${PREFIX}
-#cp -R ${PREFIX}-src/share  ${PREFIX}
-#cp -R ${PREFIX}-src/matlab ${PREFIX}
+cp -R ${PREFIX}-src/matlab ${PREFIX}
 rm -rf ${PREFIX}-src
 
 if [ "${OS}" = "linux" ]; then
