@@ -159,7 +159,7 @@ if [ "${OS}" = "macos" ]; then
   rm -r ${PREFIX}/lib/*.framework/Qt*
   rm -r ${PREFIX}/lib/*.framework/Resources
   mkdir -p ${PREFIX}/bin/plugins/{platforms,imageformats,styles}
-  cp -a ${PREFIX}_dep/plugins/platforms/libqcocoa.dylib  ${PREFIX}/bin/plugins/platforms
+  cp -a ${PREFIX}_dep/plugins/platforms/libq{cocoa,offscreen}.dylib  ${PREFIX}/bin/plugins/platforms
   cp -a ${PREFIX}_dep/plugins/imageformats/libqsvg.dylib ${PREFIX}/bin/plugins/imageformats
   cp -a ${PREFIX}_dep/plugins/styles/libqmacstyle.dylib ${PREFIX}/bin/plugins/styles
 fi
