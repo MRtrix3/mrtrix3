@@ -92,7 +92,8 @@ def execute(): #pylint: disable=unused-variable
     if len(lmax) not in [2, 3]:
       raise MRtrixError('Length of lmax vector expected to be either 2 or 3')
   if app.ARGS.init_mask:
-    run.command(['mrconvert', app.ARGS.init_mask, 'init_mask.mif', '-datatype', 'bit'])
+    run.command(['mrconvert', app.ARGS.init_mask, 'init_mask.mif', '-datatype', 'bit'],
+                preserve_pipes=True)
 
   # Determine whether we are working with single-shell or multi-shell data
   bvalues = [

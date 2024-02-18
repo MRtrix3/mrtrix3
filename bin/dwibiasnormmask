@@ -172,10 +172,13 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError(f'{software} command "{command}" not found; cannot use for internal mask calculations')
 
   app.activate_scratch_dir()
-  grad_import_option = app.read_dwgrad_import_options()
-  run.command(f'mrconvert {app.ARGS.input} input.mif {grad_import_option}')
+  run.command(['mrconvert', app.ARGS.input, 'input.mif']
+              + app.dwgrad_import_options(),
+              preserve_pipes=True)
   if app.ARGS.init_mask:
-    run.command(f'mrconvert {app.ARGS.init_mask} dwi_mask_init.mif -datatype bit')
+    run.command(['mrconvert', app.ARGS.init_mask, 'dwi_mask_init.mif',
+                 '-datatype', 'bit'],
+                 preserve_pipes=True)
 
 
 

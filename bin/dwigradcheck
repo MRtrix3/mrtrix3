@@ -206,16 +206,20 @@ def execute(): #pylint: disable=unused-variable
 
   # If requested, extract what has been detected as the best gradient table, and
   #   export it in the format requested by the user
-  grad_export_option = app.read_dwgrad_export_options()
+  grad_export_option = app.dwgrad_export_options()
   if grad_export_option:
     best = lengths[0]
     perm = ''.join(map(str, best[2]))
     suffix = f'_flip{best[1]}_perm{perm}_{best[3]}'
     if best[3] == 'scanner':
-      grad_import_option = f' -grad grad{suffix}.b'
+      grad_import_option = ['-grad', 'grad{suffix}.b']
     elif best[3] == 'image':
-      grad_import_option = f' -fslgrad bvecs{suffix} bvals'
-    run.command(f'mrinfo data.mif {grad_import_option} {grad_export_option}',
+      grad_import_option = ['-fslgrad', 'bvecs{suffix}', 'bvals']
+    else:
+      assert False
+    run.command(['mrinfo', 'data.mif']
+                + grad_import_option
+                + grad_export_option,
                 force=app.FORCE_OVERWRITE)
 
 

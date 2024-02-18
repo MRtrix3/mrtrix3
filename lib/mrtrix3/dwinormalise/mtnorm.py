@@ -97,11 +97,13 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError('Length of lmax vector expected to be either 2 or 3')
 
   # Get input data into the scratch directory
-  grad_option = app.read_dwgrad_import_options().split(' ')
   app.activate_scratch_dir()
-  run.command(['mrconvert', app.ARGS.input, 'input.mif'] + grad_option)
+  run.command(['mrconvert', app.ARGS.input, 'input.mif']
+               + app.dwgrad_import_options(),
+               preserve_pipes=True)
   if app.ARGS.mask:
-    run.command(['mrconvert', app.ARGS.mask, 'mask.mif', '-datatype', 'bit'])
+    run.command(['mrconvert', app.ARGS.mask, 'mask.mif', '-datatype', 'bit'],
+                preserve_pipes=True)
 
   # Make sure we have a valid mask available
   if app.ARGS.mask:

@@ -471,7 +471,7 @@ class Contrasts:
     self.suff = [f'_c{c}' for c in map(str, range(n_contrasts))]
     self.names = [os.path.relpath(f, os.path.commonprefix(app.ARGS.input_dir)) for f in app.ARGS.input_dir]
 
-    self.templates_out = [t for t in app.ARGS.template]
+    self.templates_out = list(app.ARGS.template)
 
     self.mc_weight_initial_alignment = [None for _ in range(self.n_contrasts)]
     self.mc_weight_rigid = [None for _ in range(self.n_contrasts)]
