@@ -656,7 +656,7 @@ class Parser(argparse.ArgumentParser):
     assert min_value is None or isinstance(min_value, int)
     assert max_value is None or isinstance(max_value, int)
     assert min_value is None or max_value is None or max_value >= min_value
-    class IntChecker(Parser.CustomTypeBase):
+    class IntBounded(Parser.CustomTypeBase):
       def __call__(self, input_value):
         try:
           value = int(input_value)
@@ -670,13 +670,13 @@ class Parser(argparse.ArgumentParser):
       @staticmethod
       def _typestring():
         return f'INT {-sys.maxsize - 1 if min_value is None else min_value} {sys.maxsize if max_value is None else max_value}'
-    return IntChecker()
+    return IntBounded()
 
   def Float(min_value=None, max_value=None): # pylint: disable=invalid-name
     assert min_value is None or isinstance(min_value, float)
     assert max_value is None or isinstance(max_value, float)
     assert min_value is None or max_value is None or max_value >= min_value
-    class FloatChecker(Parser.CustomTypeBase):
+    class FloatBounded(Parser.CustomTypeBase):
       def __call__(self, input_value):
         try:
           value = float(input_value)
@@ -690,7 +690,7 @@ class Parser(argparse.ArgumentParser):
       @staticmethod
       def _typestring():
         return f'FLOAT {"-inf" if min_value is None else str(min_value)} {"inf" if max_value is None else str(max_value)}'
-    return FloatChecker()
+    return FloatBounded()
 
   class SequenceInt(CustomTypeBase):
     def __call__(self, input_value):
@@ -1118,7 +1118,10 @@ class Parser(argparse.ArgumentParser):
           elif option.nargs == '?':
             group_text += ' <optional value>'
         elif option.type is not None:
-          group_text += f' {option.type.__name__.upper()}'
+          if hasattr(option.type, '__class__'):
+            group_text += f' {option.type.__class__.__name__.upper()}'
+          else:
+            group_text += f' {option.type.__name__.upper()}'
         elif option.default is None:
           group_text += f' {option.dest.upper()}'
         # Any options that haven't tripped one of the conditions above should be a store_true or store_false, and
