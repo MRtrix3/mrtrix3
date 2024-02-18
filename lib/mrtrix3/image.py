@@ -129,7 +129,7 @@ def axis2dir(string): #pylint: disable=unused-variable
 def check_3d_nonunity(image_in): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
   if not isinstance(image_in, Header):
-    if not isinstance(image_in, str) and not isinstance(image_in, app._FilesystemPath):
+    if not isinstance(image_in, str) and not isinstance(image_in, pathlib.Path):
       raise MRtrixError(f'Error trying to test "{image_in}": '
                         'Not an image header or file path')
     image_in = Header(image_in)

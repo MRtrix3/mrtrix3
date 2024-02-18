@@ -46,14 +46,15 @@ def execute(): #pylint: disable=unused-variable
 
   input_header = image.Header(app.ARGS.input)
   image.check_3d_nonunity(input_header)
-  grad_import_option = app.read_dwgrad_import_options()
+  grad_import_option = app.dwgrad_import_options()
   if not grad_import_option and 'dw_scheme' not in input_header.keyval():
     raise MRtrixError('Script requires diffusion gradient table: '
                       'either in image header, or using -grad / -fslgrad option')
 
   app.activate_scratch_dir()
   # Get input data into the scratch directory
-  run.command(f'mrconvert {app.ARGS.input} input.mif -strides 0,0,0,1 {grad_import_option}',
+  run.command(['mrconvert', app.ARGS.input, 'input.mif', '-strides', '0,0,0,1']
+              + grad_import_option,
               preserve_pipes=True)
 
   # Generate a mean b=0 image (common task in many algorithms)
@@ -84,8 +85,8 @@ def execute(): #pylint: disable=unused-variable
   #   the DWI data are valid
   #   (want to ensure that no algorithm includes any voxels where
   #   there is no valid DWI data, regardless of how they operate)
-  run.command(f'mrcalc {mask_path} input_pos_mask.mif -mult - | '
-              f'mrconvert - {app.ARGS.output} -strides {strides} -datatype bit',
+  run.command(['mrcalc', mask_path, 'input_pos_mask.mif', '-mult', '-', '|',
+               'mrconvert', '-', app.ARGS.output, '-strides', strides, '-datatype', 'bit'],
               mrconvert_keyval=app.ARGS.input,
               force=app.FORCE_OVERWRITE,
               preserve_pipes=True)

@@ -582,7 +582,7 @@ class _UserFileOutPath(UserPath):
   def __init__(self, *args, **kwargs):
     super().__init__(self, *args, **kwargs)
   def check_output(self):
-    if self.exists:
+    if self.exists():
       if FORCE_OVERWRITE:
         warn(f'Output file path "{str(self)}" already exists; '
               'will be overwritten at script completion')
@@ -594,16 +594,16 @@ class _UserDirOutPath(UserPath):
   def __init__(self, *args, **kwargs):
     super().__init__(self, *args, **kwargs)
   def check_output(self):
-    if self.exists:
+    if self.exists():
       if FORCE_OVERWRITE:
         warn(f'Output directory path "{str(self)}" already exists; '
               'will be overwritten at script completion')
       else:
         raise MRtrixError(f'Output directory "{str(self)}" already exists '
                           '(use -force to overwrite)')
-  def mkdir(self, **kwargs):
-    # Always force parents=True for user-specified path
-    parents = kwargs.pop('parents', True)
+  # Force parents=True for user-specified path
+  # Force exist_ok=False for user-specified path
+  def mkdir(self, mode=0o777):
     while True:
       if FORCE_OVERWRITE:
         try:
@@ -611,11 +611,11 @@ class _UserDirOutPath(UserPath):
         except OSError:
           pass
       try:
-        super().mkdir(parents=parents, **kwargs)
+        super().mkdir(mode, parents=True, exist_ok=False)
         return
       except FileExistsError:
         if not FORCE_OVERWRITE:
-          raise MRtrixError(f'Output directory "{str(self)}" already exists '
+          raise MRtrixError(f'Output directory "{str(self)}" already exists ' # pylint: disable=raise-missing-from
                             '(use -force to override)')
 
 
@@ -652,7 +652,7 @@ class Parser(argparse.ArgumentParser):
     def _typestring():
       return 'BOOL'
 
-  def Int(min_value=None, max_value=None): # pylint: disable=invalid-name
+  def Int(min_value=None, max_value=None): # pylint: disable=invalid-name,no-self-argument
     assert min_value is None or isinstance(min_value, int)
     assert max_value is None or isinstance(max_value, int)
     assert min_value is None or max_value is None or max_value >= min_value
@@ -672,7 +672,7 @@ class Parser(argparse.ArgumentParser):
         return f'INT {-sys.maxsize - 1 if min_value is None else min_value} {sys.maxsize if max_value is None else max_value}'
     return IntBounded()
 
-  def Float(min_value=None, max_value=None): # pylint: disable=invalid-name
+  def Float(min_value=None, max_value=None): # pylint: disable=invalid-name,no-self-argument
     assert min_value is None or isinstance(min_value, float)
     assert max_value is None or isinstance(max_value, float)
     assert min_value is None or max_value is None or max_value >= min_value
@@ -1447,14 +1447,13 @@ def add_dwgrad_import_options(cmdline): #pylint: disable=unused-variable
                        help='Provide the diffusion gradient table in FSL bvecs/bvals format')
   cmdline.flag_mutually_exclusive_options( [ 'grad', 'fslgrad' ] )
 
-# TODO Change these to yield lists rather than strings
-def read_dwgrad_import_options(): #pylint: disable=unused-variable
+def dwgrad_import_options(): #pylint: disable=unused-variable
   assert ARGS
   if ARGS.grad:
-    return f' -grad {ARGS.grad}'
+    return ['-grad', ARGS.grad]
   if ARGS.fslgrad:
-    return f' -fslgrad {ARGS.fslgrad[0]} {ARGS.fslgrad[1]}'
-  return ''
+    return ['-fslgrad', ARGS.fslgrad[0], ARGS.fslgrad[1]]
+  return []
 
 
 
@@ -1472,15 +1471,13 @@ def add_dwgrad_export_options(cmdline): #pylint: disable=unused-variable
                        help='Export the final gradient table in FSL bvecs/bvals format')
   cmdline.flag_mutually_exclusive_options( [ 'export_grad_mrtrix', 'export_grad_fsl' ] )
 
-
-
-def read_dwgrad_export_options(): #pylint: disable=unused-variable
+def dwgrad_export_options(): #pylint: disable=unused-variable
   assert ARGS
   if ARGS.export_grad_mrtrix:
-    return f' -export_grad_mrtrix {ARGS.export_grad_mrtrix}'
+    return ['-export_grad_mrtrix', ARGS.export_grad_mrtrix]
   if ARGS.export_grad_fsl:
-    return f' -export_grad_fsl {ARGS.export_grad_fsl[0]} {ARGS.export_grad_fsl[1]}'
-  return ''
+    return ['-export_grad_fsl', ARGS.export_grad_fsl[0], ARGS.export_grad_fsl[1]]
+  return []
 
 
 

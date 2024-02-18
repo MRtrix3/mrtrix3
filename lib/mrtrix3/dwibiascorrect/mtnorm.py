@@ -97,9 +97,9 @@ def execute(): #pylint: disable=unused-variable
 
   tissues = [Tissue('WM'), Tissue('GM'), Tissue('CSF')]
 
-  # TODO Fix
+  dwi2response_mask_option = ['-mask', 'mask.mif'] if app.ARGS.mask else []
   run.command(['dwi2response', 'dhollander', 'in.mif', [tissue.rffile for tissue in tissues]]
-              .extend(['-mask', 'mask.mif'] if app.ARGS.mask else []))
+              + dwi2response_mask_option)
 
   # Immediately remove GM if we can't deal with it
   if not multishell:

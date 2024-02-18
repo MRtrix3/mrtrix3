@@ -288,10 +288,6 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError('Could not find any version of FSL eddy command')
   fsl_suffix = fsl.suffix()
 
-  # Export the gradient table to the path requested by the user if necessary
-  grad_export_option = app.read_dwgrad_export_options()
-
-
   eddyqc_files = [ 'eddy_parameters', 'eddy_movement_rms', 'eddy_restricted_movement_rms', \
                    'eddy_post_eddy_shell_alignment_parameters', 'eddy_post_eddy_shell_PE_translation_parameters', \
                    'eddy_outlier_report', 'eddy_outlier_map', 'eddy_outlier_n_stdev_map', 'eddy_outlier_n_sqr_stdev_map', \
@@ -377,12 +373,10 @@ def execute(): #pylint: disable=unused-variable
 
   # Convert all input images into MRtrix format and store in scratch directory first
   app.activate_scratch_dir()
-  grad_import_option = app.read_dwgrad_import_options()
-  json_import_option = ''
-  if app.ARGS.json_import:
-    json_import_option = f' -json_import {app.ARGS.json_import}'
-  json_export_option = ' -json_export dwi.json'
-  run.command(f'mrconvert {app.ARGS.input} dwi.mif {grad_import_option} {json_import_option} {json_export_option}',
+  run.command(['mrconvert', app.ARGS.input, 'dwi.mif']
+              + (['-json_import', app.ARGS.json_import] if app.ARGS.json_import else [])
+              + ['-json_export', 'dwi.json']
+              + app.dwgrad_import_options(),
               preserve_pipes=True)
   if app.ARGS.se_epi:
     image.check_3d_nonunity(app.ARGS.se_epi)
@@ -1575,7 +1569,8 @@ def execute(): #pylint: disable=unused-variable
 
 
   # Finish!
-  run.command(f'mrconvert result.mif {app.ARGS.output} {grad_export_option}',
+  run.command(['mrconvert', 'result.mif', app.ARGS.output]
+              + app.dwgrad_export_options(),
               mrconvert_keyval='output.json',
               force=app.FORCE_OVERWRITE)
 

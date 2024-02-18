@@ -50,8 +50,8 @@ def execute(): #pylint: disable=unused-variable
   alg = algorithm.get_module(app.ARGS.algorithm)
 
   app.activate_scratch_dir()
-  grad_import_option = app.read_dwgrad_import_options()
-  run.command(f'mrconvert {app.ARGS.input} in.mif {grad_import_option}',
+  run.command(['mrconvert', app.ARGS.input, 'in.mif']
+              + app.dwgrad_import_options(),
               preserve_pipes=True)
   if app.ARGS.mask:
     run.command(['mrconvert', app.ARGS.mask, 'mask.mif', '-datatype', 'bit'],

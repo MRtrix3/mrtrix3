@@ -78,16 +78,16 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError('Value(s) of lmax must be even')
     if alg.NEEDS_SINGLE_SHELL and not len(app.ARGS.lmax) == 1:
       raise MRtrixError('Can only specify a single lmax value for single-shell algorithms')
-  shells_option = ''
+  shells_option = []
   if app.ARGS.shells:
     if alg.NEEDS_SINGLE_SHELL and len(app.ARGS.shells) != 1:
       raise MRtrixError('Can only specify a single b-value shell for single-shell algorithms')
-    shells_option = ' -shells ' + ','.join(map(str,app.ARGS.shells))
-  singleshell_option = ''
+    shells_option = ['-shells', ','.join(map(str,app.ARGS.shells))]
+  singleshell_option = []
   if alg.NEEDS_SINGLE_SHELL:
-    singleshell_option = ' -singleshell -no_bzero'
+    singleshell_option = ['-singleshell', '-no_bzero']
 
-  grad_import_option = app.read_dwgrad_import_options()
+  grad_import_option = app.dwgrad_import_options()
   if not grad_import_option and 'dw_scheme' not in image.Header(app.ARGS.input).keyval():
     raise MRtrixError('Script requires diffusion gradient table: '
                       'either in image header, or using -grad / -fslgrad option')
@@ -96,18 +96,22 @@ def execute(): #pylint: disable=unused-variable
   # Get standard input data into the scratch directory
   if alg.NEEDS_SINGLE_SHELL or shells_option:
     app.console(f'Importing DWI data ({app.ARGS.input}) and selecting b-values...')
-    run.command(f'mrconvert {app.ARGS.input} - -strides 0,0,0,1 {grad_import_option} | '
-                f'dwiextract - dwi.mif {shells_option} {singleshell_option}',
+    run.command(['mrconvert', app.ARGS.input, '-', '-strides', '0,0,0,1']
+                + grad_import_option
+                + ['|', 'dwiextract', '-', 'dwi.mif']
+                + shells_option
+                + singleshell_option,
                 show=False,
                 preserve_pipes=True)
   else: # Don't discard b=0 in multi-shell algorithms
     app.console(f'Importing DWI data ({app.ARGS.input})...')
-    run.command(f'mrconvert {app.ARGS.input} dwi.mif -strides 0,0,0,1 {grad_import_option}',
+    run.command(['mrconvert', app.ARGS.input, 'dwi.mif', '-strides', '0,0,0,1']
+                + grad_import_option,
                 show=False,
                 preserve_pipes=True)
   if app.ARGS.mask:
     app.console(f'Importing mask ({app.ARGS.mask})...')
-    run.command(f'mrconvert {app.ARGS.mask} mask.mif -datatype bit',
+    run.command(['mrconvert', app.ARGS.mask, 'mask.mif', '-datatype', 'bit'],
                 show=False,
                 preserve_pipes=True)
 

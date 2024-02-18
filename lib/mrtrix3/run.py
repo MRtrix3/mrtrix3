@@ -350,7 +350,7 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
       if cmdstack[-1][0] != 'mrconvert':
         raise TypeError('Argument "mrconvert_keyval=" can only be used '
                         'if the mrconvert command is being invoked')
-      if isinstance(mrconvert_keyval, app._FilesystemPath):
+      if isinstance(mrconvert_keyval, pathlib.Path):
         cmdstack[-1].extend([ '-copy_properties', str(mrconvert_keyval) ])
       else:
         assert not (mrconvert_keyval[0] in [ '\'', '"' ] or mrconvert_keyval[-1] in [ '\'', '"' ])
