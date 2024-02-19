@@ -226,14 +226,18 @@ def execute(): #pylint: disable=unused-variable
 
   if app.ARGS.template:
     run.command(['mrconvert', app.ARGS.template[0], 'template_image.nii',
-                '-strides', '+1,+2,+3'])
+                '-strides', '+1,+2,+3'],
+                preserve_pipes=True)
     run.command(['mrconvert', app.ARGS.template[1], 'template_mask.nii',
-                '-strides', '+1,+2,+3', '-datatype', 'uint8'])
+                '-strides', '+1,+2,+3', '-datatype', 'uint8'],
+                preserve_pipes=True)
   elif all(item in CONFIG for item in ['Dwi2maskTemplateImage', 'Dwi2maskTemplateMask']):
     run.command(['mrconvert', CONFIG['Dwi2maskTemplateImage'], 'template_image.nii',
-                '-strides', '+1,+2,+3'])
+                '-strides', '+1,+2,+3'],
+                preserve_pipes=True)
     run.command(['mrconvert', CONFIG['Dwi2maskTemplateMask'], 'template_mask.nii',
-                '-strides', '+1,+2,+3', '-datatype', 'uint8'])
+                '-strides', '+1,+2,+3', '-datatype', 'uint8'],
+                preserve_pipes=True)
   else:
     raise MRtrixError('No template image information available from '
                       'either command-line or MRtrix configuration file(s)')

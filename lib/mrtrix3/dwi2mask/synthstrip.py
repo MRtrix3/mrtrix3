@@ -93,5 +93,6 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.stripped:
     run.command(['mrconvert', stripped_file, app.ARGS.stripped],
                 mrconvert_keyval=app.ARGS.input,
+                preserve_pipes=True,
                 force=app.FORCE_OVERWRITE)
   return output_file

@@ -145,6 +145,7 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.tissuesum:
     run.command(['mrconvert', tissue_sum_image, app.ARGS.tissuesum],
                 mrconvert_keyval=app.ARGS.input,
+                preserve_pipes=True,
                 force=app.FORCE_OVERWRITE)
 
   return mask_image
