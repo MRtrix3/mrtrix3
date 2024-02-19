@@ -425,16 +425,19 @@ def execute(): #pylint: disable=unused-variable
 
   run.command(['mrconvert', dwi_image, app.ARGS.output_dwi],
               mrconvert_keyval=app.ARGS.input,
+              preserve_pipes=True,
               force=app.FORCE_OVERWRITE)
 
   if app.ARGS.output_bias:
     run.command(['mrconvert', bias_field_image, app.ARGS.output_bias],
                 mrconvert_keyval=app.ARGS.input,
+                preserve_pipes=True,
                 force=app.FORCE_OVERWRITE)
 
   if app.ARGS.output_mask:
     run.command(['mrconvert', dwi_mask_image, app.ARGS.output_mask],
                 mrconvert_keyval=app.ARGS.input,
+                preserve_pipes=True,
                 force=app.FORCE_OVERWRITE)
 
   if app.ARGS.output_scale:
@@ -445,6 +448,7 @@ def execute(): #pylint: disable=unused-variable
   if app.ARGS.output_tissuesum:
     run.command(['mrconvert', tissue_sum_image, app.ARGS.output_tissuesum],
                 mrconvert_keyval=app.ARGS.input,
+                preserve_pipes=True,
                 force=app.FORCE_OVERWRITE)
 
 
