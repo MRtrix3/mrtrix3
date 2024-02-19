@@ -132,14 +132,14 @@ bool match(const std::string &pattern, const std::string &text, bool ignore_case
 
 std::istream &getline(std::istream &stream, std::string &string) {
   std::getline(stream, string);
-  if (string.size() > 0)
+  if (!string.empty())
     if (string[string.size() - 1] == 015)
       string.resize(string.size() - 1);
   return stream;
 }
 
 std::string &add_line(std::string &original, const std::string &new_line) {
-  return original.size() ? (original += "\n" + new_line) : (original = new_line);
+  return original.empty() ? (original = new_line) : (original += "\n" + new_line);
 }
 
 std::string shorten(const std::string &text, size_t longest, size_t prefix) {
@@ -177,10 +177,10 @@ std::string printf(const char *format, ...) {
 }
 
 std::string strip(const std::string &string, const std::string &ws, bool left, bool right) {
-  std::string::size_type start = (left ? string.find_first_not_of(ws) : 0);
+  const std::string::size_type start = (left ? string.find_first_not_of(ws) : 0);
   if (start == std::string::npos)
     return "";
-  std::string::size_type end = (right ? string.find_last_not_of(ws) + 1 : std::string::npos);
+  const std::string::size_type end = (right ? string.find_last_not_of(ws) + 1 : std::string::npos);
   return string.substr(start, end - start);
 }
 
@@ -189,7 +189,7 @@ std::string unquote(const std::string &string) {
     return string;
   if (!(string.front() == '\"' && string.back() == '\"'))
     return string;
-  const std::string substring = string.substr(1, string.size() - 2);
+  std::string substring = string.substr(1, string.size() - 2);
   if (std::none_of(substring.begin(), substring.end(), [](const char &c) { return c == '\"'; }))
     return substring;
   return string;
