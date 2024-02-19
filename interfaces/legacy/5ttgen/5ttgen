@@ -1,7 +1,7 @@
 Generate a 5TT image suitable for ACT
 5ttgen acts as a "master" script for generating a five-tissue-type (5TT) segmented tissue image suitable for use in Anatomically-Constrained Tractography (ACT). A range of different algorithms are available for completing this task. When using this script, the name of the algorithm to be used must appear as the first argument on the command-line after "5ttgen". The subsequent compulsory arguments and options available depend on the particular algorithm being invoked.
 Each algorithm available also has its own help page, including necessary references; e.g. to see the help page of the "fsl" algorithm, type "5ttgen fsl".
-ARGUMENT algorithm CHOICE freesurfer fsl gif hsvs
+ARGUMENT algorithm 0 0 CHOICE freesurfer fsl gif hsvs
 OPTION -nocrop 1 0
 Do NOT crop the resulting 5TT image to reduce its size (keep the same dimensions as the input image)
 OPTION -sgm_amyg_hipp 1 0

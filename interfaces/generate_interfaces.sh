@@ -42,7 +42,7 @@ for n in `echo "$cmdlist" | sort`; do
   if `grep -q "algorithm\.get_module" "${mrtrix_root}/bin/${cmdpath}"`; then
     mkdir $legacy_root/$cmdname
     $cmdpath __print_full_usage__ > $legacy_root/$cmdname/$cmdname
-    algorithms=`grep "ARGUMENT algorithm CHOICE" $legacy_root/$cmdname/$cmdname | cut -d" " -f 4-`
+    algorithms=`grep "ARGUMENT algorithm 0 0 CHOICE" $legacy_root/$cmdname/$cmdname | cut -d" " -f 6-`
     for a in $algorithms; do
       $cmdpath $a __print_full_usage__ > $legacy_root/$cmdname/$a
     done

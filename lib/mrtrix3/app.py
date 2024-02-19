@@ -1213,7 +1213,7 @@ class Parser(argparse.ArgumentParser):
       return '1' if nargs in ('*', '+') else '0'
 
     if self._subparsers:
-      sys.stdout.write(f'ARGUMENT algorithm CHOICE {" ".join(self._subparsers._group_actions[0].choices)}\n')
+      sys.stdout.write(f'ARGUMENT algorithm 0 0 CHOICE {" ".join(self._subparsers._group_actions[0].choices)}\n')
     else:
       for arg in self._positionals._group_actions:
         sys.stdout.write(f'ARGUMENT {arg.dest} 0 {allow_multiple(arg.nargs)} {arg2str(arg)}\n')
