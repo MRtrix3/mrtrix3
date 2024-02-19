@@ -1212,9 +1212,12 @@ class Parser(argparse.ArgumentParser):
     def allow_multiple(nargs):
       return '1' if nargs in ('*', '+') else '0'
 
-    for arg in self._positionals._group_actions:
-      sys.stdout.write(f'ARGUMENT {arg.dest} 0 {allow_multiple(arg.nargs)} {arg2str(arg)}\n')
-      sys.stdout.write(f'{arg.help}\n')
+    if self._subparsers:
+      sys.stdout.write(f'ARGUMENT algorithm 0 0 CHOICE {" ".join(self._subparsers._group_actions[0].choices)}\n')
+    else:
+      for arg in self._positionals._group_actions:
+        sys.stdout.write(f'ARGUMENT {arg.dest} 0 {allow_multiple(arg.nargs)} {arg2str(arg)}\n')
+        sys.stdout.write(f'{arg.help}\n')
 
     def print_group_options(group):
       for option in group._group_actions:
