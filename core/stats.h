@@ -19,6 +19,8 @@
 
 #include "math/median.h"
 
+#include <iomanip>
+
 namespace MR {
 
 namespace Stats {

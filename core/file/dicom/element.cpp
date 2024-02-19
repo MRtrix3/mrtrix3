@@ -18,6 +18,8 @@
 #include "debug.h"
 #include "file/path.h"
 
+#include <iomanip>
+
 namespace MR {
 namespace File {
 namespace Dicom {
