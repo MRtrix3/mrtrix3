@@ -214,3 +214,6 @@ jobs:
 
     - name: check building of documentation
       run: python3 -m sphinx -n -N -W -w sphinx.log docs/ tmp/
+
+    - name: check interface documentation
+      run: ./interfaces/generate_interfaces.sh && git diff --exit-code
