@@ -39,12 +39,14 @@ for n in `echo "$cmdlist" | sort`; do
       cmdpath=${cmdpath}'.exe'
     fi
   esac
-  $cmdpath __print_full_usage__ > $legacy_root/$cmdname.txt
   if `grep -q "algorithm\.get_module" "${mrtrix_root}/bin/${cmdpath}"`; then
     mkdir $legacy_root/$cmdname
-    algorithms=`grep "ARGUMENT algorithm CHOICE" $legacy_root/$cmdname.txt | cut -d" " -f 4-`
+    $cmdpath __print_full_usage__ > $legacy_root/$cmdname/$cmdname
+    algorithms=`grep "ARGUMENT algorithm CHOICE" $legacy_root/$cmdname/$cmdname | cut -d" " -f 4-`
     for a in $algorithms; do
-      $cmdpath $a __print_full_usage__ > $legacy_root/$cmdname/$a.txt
+      $cmdpath $a __print_full_usage__ > $legacy_root/$cmdname/$a
     done
+  else
+    $cmdpath __print_full_usage__ > $legacy_root/$cmdname
   fi
 done
