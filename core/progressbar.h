@@ -217,6 +217,7 @@ template <class TextFunc> FORCE_INLINE void ProgressBar::update(TextFunc &&text_
   if (!show)
     return;
   double time = timer.elapsed();
+  const std::unique_lock<std::mutex> lock(mutex);
   if (increment && _multiplier) {
     if (++current_val >= next_percent) {
       set_text(text_func());
@@ -246,6 +247,7 @@ template <class TextFunc> FORCE_INLINE void ProgressBar::update(TextFunc &&text_
 FORCE_INLINE void ProgressBar::operator++() {
   if (!show)
     return;
+  const std::unique_lock<std::mutex> lock(mutex);
   if (_multiplier) {
     if (++current_val >= next_percent) {
       _value = std::round(current_val / _multiplier);
